@@ -6,6 +6,26 @@
   overflow-y: auto;
 }
 
+@media (max-width: 1024px) {
+  .sidebar {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  .sidebar-section {
+    border-right: 1px solid var(--border);
+    border-bottom: none;
+  }
+
+  .sidebar-section:last-child {
+    border-right: none;
+  }
+}
+
 .sidebar-section {
   padding: 20px;
   border-bottom: 1px solid var(--border);

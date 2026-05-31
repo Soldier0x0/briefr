@@ -94,6 +94,23 @@ input:focus, textarea:focus {
   border-top: 1px solid var(--border);
 }
 
+/* Feed column must not overflow its grid track */
+.content-grid > :first-child {
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-main {
+    padding: 0 12px;
+  }
+}
+
 /* ── Utility ───────────────────────────────────────────── */
 .mono {
   font-family: var(--font-mono);

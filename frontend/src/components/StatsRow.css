@@ -4,6 +4,16 @@
   border-bottom: 1px solid var(--border);
 }
 
+@media (max-width: 640px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-cell:nth-child(2) {
+    border-right: none;
+  }
+}
+
 .stat-cell {
   padding: 24px 20px;
   border-right: 1px solid var(--border);

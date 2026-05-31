@@ -9,11 +9,17 @@
 .header-inner {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 16px;
   height: 52px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .header-tagline { display: none; }
+  .header-clock   { display: none; }
+  .header-right   { gap: 8px; }
 }
 
 /* Left: logo */
