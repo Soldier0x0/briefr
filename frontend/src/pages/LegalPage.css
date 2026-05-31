@@ -1,9 +1,13 @@
 .legal-main { flex: 1; }
 
 .legal-content {
-  max-width: 720px;
+  max-width: 860px;
   margin: 0 auto;
-  padding: 40px 20px 80px;
+  padding: 40px 24px 80px;
+}
+
+@media (min-width: 1200px) {
+  .legal-content { max-width: 960px; }
 }
 
 .legal-back {

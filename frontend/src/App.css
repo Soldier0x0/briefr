@@ -100,8 +100,6 @@ input:focus, textarea:focus {
 
 .app-main {
   flex: 1;
-  max-width: 1400px;
-  margin: 0 auto;
   width: 100%;
   padding: 0 24px;
 }
@@ -148,6 +146,15 @@ input:focus, textarea:focus {
   border-width: 0;
 }
 
+/* ── Last refreshed bar ────────────────────────────────── */
+.last-refreshed {
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+
 /* ── Footer ────────────────────────────────────────────── */
 .app-footer {
   border-top: 1px solid var(--border);
@@ -155,8 +162,6 @@ input:focus, textarea:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1400px;
-  margin: 0 auto;
   width: 100%;
 }
 

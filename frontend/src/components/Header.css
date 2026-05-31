@@ -7,9 +7,8 @@
 }
 
 .header-inner {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 16px;
+  width: 100%;
+  padding: 0 24px;
   height: 52px;
   display: flex;
   align-items: center;

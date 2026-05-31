@@ -11,7 +11,7 @@ import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
-import { fetchStats } from './api.js'
+import { fetchStats, fetchHealth } from './api.js'
 
 const DEFAULT_FILTERS = {
   severity: null,
@@ -20,6 +20,33 @@ const DEFAULT_FILTERS = {
   epss_min: null,
   search: '',
   stack: '',
+}
+
+// ── Last-refreshed helper ─────────────────────────────────
+function timeAgoMinutes(sqliteUtc) {
+  if (!sqliteUtc) return null
+  const date = new Date(sqliteUtc.replace(' ', 'T') + 'Z')
+  const diff  = Math.floor((Date.now() - date.getTime()) / 60000)
+  if (diff < 1)  return 'just now'
+  if (diff < 60) return `${diff} minute${diff === 1 ? '' : 's'} ago`
+  const h = Math.floor(diff / 60)
+  if (h < 24)    return `${h} hour${h === 1 ? '' : 's'} ago`
+  return `${Math.floor(h / 24)} days ago`
+}
+
+function LastRefreshed({ timestamp }) {
+  const [, tick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => tick(n => n + 1), 60000)
+    return () => clearInterval(id)
+  }, [])
+  const label = timeAgoMinutes(timestamp)
+  if (!label) return null
+  return (
+    <p className="last-refreshed mono" aria-live="polite">
+      Last refreshed {label}
+    </p>
+  )
 }
 
 function cycleFilter(filters) {
@@ -38,7 +65,7 @@ function cycleFilter(filters) {
 function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
                    digestOpen, setDigestOpen, digestCVEs, setDigestCVEs,
                    searchFocusTrigger, setSearchFocusTrigger, aboutOpen, setAboutOpen,
-                   timezone }) {
+                   timezone, lastUpdated }) {
 
   const handleBrief = useCallback((stack) => {
     setFilters(prev => ({ ...prev, stack }))
@@ -57,6 +84,7 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
     <>
       <Hero onBrief={handleBrief} />
       <StatsRow stats={stats} />
+      <LastRefreshed timestamp={lastUpdated} />
       <div className="content-grid">
         <CVEFeed
           filters={filters}
@@ -84,9 +112,11 @@ export default function App() {
   const [timezone, setTimezone]                 = useState(() => {
     try { return localStorage.getItem('vektor_timezone') || 'UTC' } catch { return 'UTC' }
   })
+  const [lastUpdated, setLastUpdated]           = useState(null)
 
   useEffect(() => {
     fetchStats().then(setStats).catch(() => {})
+    fetchHealth().then(h => setLastUpdated(h.last_updated)).catch(() => {})
   }, [])
 
   // Keep timezone state in sync when Header dispatches changes
@@ -145,6 +175,7 @@ export default function App() {
                   aboutOpen={aboutOpen}
                   setAboutOpen={setAboutOpen}
                   timezone={timezone}
+                  lastUpdated={lastUpdated}
                 />
               )}
               {activeTab === 'ioc' && <IOCLookup />}
