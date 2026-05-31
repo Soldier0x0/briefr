@@ -102,13 +102,17 @@ async def run_daily_refresh() -> None:
 
             if missing_kev:
                 logger.info("Step 2.5: Cross-fetching %d KEV CVEs missing from cves table", len(missing_kev))
+                kev_short_map = {
+                    e.get("cveID", ""): e.get("shortDescription", "")
+                    for e in kev_entries
+                }
                 kev_cross_fetched = 0
                 for kev_cve_id in missing_kev:
                     try:
                         cve_data = await fetch_cve_by_id(kev_cve_id, nvd_api_key)
                         if cve_data:
                             cve_data["is_kev"] = True
-                            kev_short = entry.get("shortDescription", "")
+                            kev_short = kev_short_map.get(kev_cve_id, "")
                             if kev_short:
                                 cve_data["summary"] = kev_short
                             db = await get_db()

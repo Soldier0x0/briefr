@@ -146,11 +146,11 @@ export default function DetailDrawer({ cve, onClose }) {
                 label="EPSS"
                 value={epss ?? 'N/A'}
                 color={
-                  epss == null
+                  cve.epss_score == null
                     ? 'var(--text3)'
-                    : parseFloat(epss) >= 50
+                    : cve.epss_score >= 0.5
                       ? 'var(--red)'
-                      : parseFloat(epss) >= 20
+                      : cve.epss_score >= 0.2
                         ? 'var(--amber)'
                         : 'var(--green)'
                 }
