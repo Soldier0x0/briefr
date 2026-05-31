@@ -5,8 +5,16 @@ set -euo pipefail
 INSTALL_DIR="/opt/briefr"
 APP_USER="briefr"
 
+ensure_app_user() {
+  if ! id -u "${APP_USER}" &>/dev/null; then
+    echo "==> Creating system user '${APP_USER}' (required by systemd units)"
+    useradd --system --no-create-home --shell /usr/sbin/nologin "${APP_USER}"
+  fi
+}
+
 run_git() {
-  if [ "$(stat -c '%U' "${INSTALL_DIR}/.git" 2>/dev/null)" = "${APP_USER}" ] && [ "$(id -u)" -eq 0 ]; then
+  ensure_app_user
+  if [ "$(id -u)" -eq 0 ]; then
     sudo -u "${APP_USER}" git -C "${INSTALL_DIR}" "$@"
   else
     git -C "${INSTALL_DIR}" "$@"
@@ -20,32 +28,19 @@ echo "==> Pulling latest from main"
 run_git pull origin main
 
 echo "==> Fixing ownership"
-if id -u "${APP_USER}" &>/dev/null; then
-  chown -R "${APP_USER}:${APP_USER}" "${INSTALL_DIR}"
-  chmod 750 "${INSTALL_DIR}/backend"
-  [ -f "${INSTALL_DIR}/backend/.env" ] && chmod 640 "${INSTALL_DIR}/backend/.env"
-fi
+ensure_app_user
+chown -R "${APP_USER}:${APP_USER}" "${INSTALL_DIR}"
+chmod 750 "${INSTALL_DIR}/backend"
+[ -f "${INSTALL_DIR}/backend/.env" ] && chmod 640 "${INSTALL_DIR}/backend/.env"
 
 echo "==> Updating Python dependencies"
-if id -u "${APP_USER}" &>/dev/null; then
-  sudo -u "${APP_USER}" "${INSTALL_DIR}/venv/bin/pip" install -r "${INSTALL_DIR}/backend/requirements.txt"
-else
-  "${INSTALL_DIR}/venv/bin/pip" install -r "${INSTALL_DIR}/backend/requirements.txt"
-fi
+sudo -u "${APP_USER}" "${INSTALL_DIR}/venv/bin/pip" install -r "${INSTALL_DIR}/backend/requirements.txt"
 
 echo "==> Updating frontend dependencies"
-if id -u "${APP_USER}" &>/dev/null; then
-  sudo -u "${APP_USER}" bash -c "cd '${INSTALL_DIR}/frontend' && npm install"
-else
-  cd "${INSTALL_DIR}/frontend" && npm install
-fi
+sudo -u "${APP_USER}" bash -c "cd '${INSTALL_DIR}/frontend' && npm install"
 
 echo "==> Verifying backend imports"
-if id -u "${APP_USER}" &>/dev/null; then
-  sudo -u "${APP_USER}" "${INSTALL_DIR}/venv/bin/python" -c "import sys; sys.path.insert(0, '${INSTALL_DIR}/backend'); import main; print('import ok')"
-else
-  "${INSTALL_DIR}/venv/bin/python" -c "import sys; sys.path.insert(0, '${INSTALL_DIR}/backend'); import main; print('import ok')"
-fi
+sudo -u "${APP_USER}" bash -c "cd '${INSTALL_DIR}/backend' && '${INSTALL_DIR}/venv/bin/python' -c 'import main; print(\"import ok\")'"
 
 echo "==> Starting BRIEFR services"
 systemctl daemon-reload
