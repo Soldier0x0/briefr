@@ -24,6 +24,9 @@ chmod 750 "${INSTALL_DIR}/backend"
 [ -f "${INSTALL_DIR}/backend/.env" ] && chmod 640 "${INSTALL_DIR}/backend/.env"
 chmod 755 "${INSTALL_DIR}/deploy/"*.sh 2>/dev/null || true
 chmod 755 "${INSTALL_DIR}/venv/bin/"* 2>/dev/null || true
+if [ -d "${INSTALL_DIR}/frontend/node_modules/.bin" ]; then
+  chmod 755 "${INSTALL_DIR}/frontend/node_modules/.bin/"* 2>/dev/null || true
+fi
 
 echo "OK: ${INSTALL_DIR} is owned by ${APP_USER} with usable permissions"
 echo "Next: systemctl restart briefr.target && curl -s http://127.0.0.1:8000/api/health"
