@@ -1,3 +1,11 @@
+# PRIVACY NOTE:
+# IOC lookup values are sent to VirusTotal and AbuseIPDB.
+# These are third-party services with their own privacy policies.
+# We do NOT log the IOC values or associate them with any user.
+# The ioc_cache table stores the IOC value and result for 6 hours
+# to reduce API calls. This cache is local to your server only.
+# Users are informed of this in the UI and in the Privacy Policy.
+
 import logging
 
 import httpx

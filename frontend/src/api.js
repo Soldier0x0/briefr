@@ -1,10 +1,20 @@
 const BASE = '/api'
 
 async function request(path, options = {}) {
-  const res = await fetch(`${BASE}${path}`, options)
+  let res
+  try {
+    res = await fetch(`${BASE}${path}`, options)
+  } catch {
+    const err = new Error('Network error — is the backend running?')
+    err.status = 0
+    throw err
+  }
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: res.statusText }))
-    throw new Error(body.detail || `HTTP ${res.status}`)
+    const err = new Error(body.detail || `HTTP ${res.status}`)
+    err.status = res.status
+    throw err
   }
   return res.json()
 }
@@ -19,13 +29,13 @@ export function fetchHealth() {
 
 export function fetchCVEs(params = {}) {
   const qs = new URLSearchParams()
-  if (params.severity) qs.set('severity', params.severity)
-  if (params.kev_only) qs.set('kev_only', 'true')
-  if (params.poc_only) qs.set('poc_only', 'true')
-  if (params.search) qs.set('search', params.search)
-  if (params.stack) qs.set('stack', params.stack)
-  if (params.page) qs.set('page', String(params.page))
-  if (params.limit) qs.set('limit', String(params.limit))
+  if (params.severity)  qs.set('severity', params.severity)
+  if (params.kev_only)  qs.set('kev_only', 'true')
+  if (params.poc_only)  qs.set('poc_only', 'true')
+  if (params.search)    qs.set('search', params.search)
+  if (params.stack)     qs.set('stack', params.stack)
+  if (params.page)      qs.set('page', String(params.page))
+  if (params.limit)     qs.set('limit', String(params.limit))
   const query = qs.toString()
   return request(`/cves${query ? `?${query}` : ''}`)
 }
