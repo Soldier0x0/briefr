@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { triggerRefresh } from '../api.js'
+import ShortcutsPanel from './ShortcutsPanel.jsx'
 import {
   COMMON_TIMEZONES,
   formatTime,
@@ -251,6 +252,9 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezone
           >
             {refreshing ? 'REFRESHING...' : '↻ REFRESH'}
           </button>
+
+          {/* Keyboard shortcuts — always visible in header */}
+          <ShortcutsPanel />
         </div>
       </div>
     </header>
