@@ -1,5 +1,5 @@
 .cve-card {
-  padding: 16px 20px;
+  padding: 16px 20px 16px 36px; /* left padding makes room for checkbox */
   border-bottom: 1px solid var(--border);
   border-left: 3px solid var(--border);
   background: var(--bg);
@@ -8,10 +8,34 @@
   display: block;
   width: 100%;
   text-align: left;
+  position: relative;
 }
 
 .cve-card:hover {
   background: var(--bg2);
+}
+
+.cve-card.cve-selected {
+  background: color-mix(in srgb, var(--red-dim) 40%, var(--bg));
+}
+
+/* Checkbox — visible on hover or when checked */
+.card-checkbox {
+  position: absolute;
+  top: 15px;
+  left: 10px;
+  width: 14px;
+  height: 14px;
+  opacity: 0;
+  cursor: pointer;
+  accent-color: var(--red);
+  z-index: 2;
+  transition: opacity 0.12s;
+}
+
+.cve-card:hover .card-checkbox,
+.cve-card.cve-selected .card-checkbox {
+  opacity: 1;
 }
 
 .cve-card:focus-visible {

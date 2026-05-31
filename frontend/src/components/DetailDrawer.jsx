@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { buildSingleReport, copyToClipboard } from '../utils/report.js'
 import './DetailDrawer.css'
 
 // ── Helpers ───────────────────────────────────────────────
@@ -20,53 +21,6 @@ function mitreUrl(id) {
   if (!id) return null
   const clean = id.replace(/\./g, '/')
   return `https://attack.mitre.org/techniques/${clean}`
-}
-
-function buildReport(cve) {
-  const now = new Date().toISOString()
-  const epss = epssPercent(cve.epss_score)
-  const products = Array.isArray(cve.affected_products) ? cve.affected_products : []
-  const urls = Array.isArray(cve.source_urls) ? cve.source_urls.slice(0, 5) : []
-  const productList = products.map(p => p.split(':')[1] || p).join(', ') || 'Unknown'
-
-  return [
-    `# CVE Intelligence Report`,
-    `Generated: ${now}`,
-    `Source: VEKTOR / projectjupiter.in`,
-    ``,
-    ``,
-    `## ${cve.cve_id} — ${cve.severity || 'UNKNOWN'}`,
-    ``,
-    ``,
-    `**CVSS Score:** ${cve.cvss_score != null ? cve.cvss_score.toFixed(1) : 'N/A'}  `,
-    `**EPSS:** ${epss != null ? `${epss}%` : 'N/A'} exploit probability  `,
-    `**CISA KEV:** ${cve.is_kev ? 'Yes' : 'No'}  `,
-    `**Patch Available:** ${cve.patch_available ? 'Yes' : 'No'}  `,
-    ``,
-    ``,
-    `### Description`,
-    cve.description || 'No description available.',
-    ``,
-    ``,
-    `### Plain English`,
-    cve.summary || 'No plain English summary available.',
-    ``,
-    ``,
-    `### Affected`,
-    productList,
-    ``,
-    ``,
-    `### MITRE ATT&CK`,
-    cve.mitre_technique ? cve.mitre_technique : 'Not mapped.',
-    ``,
-    ``,
-    `### References`,
-    ...urls,
-    ``,
-    ``,
-    `---`,
-    `Free intelligence via VEKTOR — projectjupiter.in`,
-  ].join('\n')
 }
 
 // ── Metrics cell ──────────────────────────────────────────
@@ -98,35 +52,10 @@ export default function DetailDrawer({ cve, onClose }) {
 
   async function handleCopyReport() {
     if (!cve) return
-    const text = buildReport(cve)
-
-    // navigator.clipboard requires HTTPS — fall back to execCommand for HTTP LAN
-    if (navigator.clipboard && window.isSecureContext) {
-      try {
-        await navigator.clipboard.writeText(text)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-        return
-      } catch {
-        // fall through to execCommand
-      }
-    }
-
-    // execCommand fallback (HTTP / non-secure contexts)
-    const ta = document.createElement('textarea')
-    ta.value = text
-    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none'
-    document.body.appendChild(ta)
-    ta.focus()
-    ta.select()
-    try {
-      document.execCommand('copy')
+    const ok = await copyToClipboard(buildSingleReport(cve))
+    if (ok) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // both methods failed — nothing we can do without HTTPS
-    } finally {
-      document.body.removeChild(ta)
     }
   }
 

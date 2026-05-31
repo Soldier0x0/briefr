@@ -28,7 +28,7 @@ function epssColor(score) {
   return 'var(--green)'
 }
 
-export default function CVECard({ cve, onSelect }) {
+export default function CVECard({ cve, onSelect, selected, onToggleSelect }) {
   const sevClass = severityClass(cve.severity)
   const epss = typeof cve.epss_score === 'number' ? cve.epss_score : null
   const products = Array.isArray(cve.affected_products) ? cve.affected_products : []
@@ -45,15 +45,35 @@ export default function CVECard({ cve, onSelect }) {
     }
   }
 
+  function handleCheckChange(e) {
+    e.stopPropagation()
+    if (onToggleSelect) onToggleSelect(cve)
+  }
+
+  function handleCheckClick(e) {
+    e.stopPropagation()
+  }
+
   return (
     <article
-      className={`cve-card sev-${sevClass}`}
+      className={`cve-card sev-${sevClass}${selected ? ' cve-selected' : ''}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="button"
       aria-label={`CVE ${cve.cve_id}, severity ${cve.severity || 'unknown'}. Click to view details.`}
     >
+      {/* Hover checkbox — top-left */}
+      <input
+        type="checkbox"
+        className="card-checkbox"
+        checked={!!selected}
+        onChange={handleCheckChange}
+        onClick={handleCheckClick}
+        aria-label={`Select ${cve.cve_id} for bulk report`}
+        tabIndex={-1}
+      />
+
       {/* Top row: ID + badges */}
       <div className="cve-top">
         <span className="cve-id" aria-label={`CVE ID: ${cve.cve_id}`}>

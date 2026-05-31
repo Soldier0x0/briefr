@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { fetchCVEs } from '../api.js'
+import { buildCombinedReport, copyToClipboard } from '../utils/report.js'
 import FilterBar from './FilterBar.jsx'
 import CVECard from './CVECard.jsx'
 import './CVEFeed.css'
@@ -24,6 +25,9 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [hasMore, setHasMore] = useState(true)
+  // { [cveId]: cveObject } — persists data at selection time for report generation
+  const [selectedMap, setSelectedMap] = useState({})
+  const [copyAllState, setCopyAllState] = useState('idle') // idle | copied
   const sentinelRef = useRef(null)
   const abortRef = useRef(null)
 
@@ -58,11 +62,12 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     }
   }, [])
 
-  // Reset and reload when filters change
+  // Reset and reload when filters change; also clear selection
   useEffect(() => {
     setPage(1)
     setCves([])
     setHasMore(true)
+    setSelectedMap({})
     load(1, filters, false)
   }, [filters, load])
 
@@ -89,6 +94,31 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     observer.observe(sentinel)
     return () => observer.disconnect()
   }, [loading, hasMore])
+
+  function handleToggleSelect(cve) {
+    setSelectedMap(prev => {
+      const next = { ...prev }
+      if (next[cve.cve_id]) {
+        delete next[cve.cve_id]
+      } else {
+        next[cve.cve_id] = cve
+      }
+      return next
+    })
+  }
+
+  async function handleCopyAll() {
+    const selected = Object.values(selectedMap)
+    if (!selected.length) return
+    const ok = await copyToClipboard(buildCombinedReport(selected))
+    if (ok) {
+      setCopyAllState('copied')
+      setTimeout(() => setCopyAllState('idle'), 2000)
+    }
+  }
+
+  const selectedIds = Object.keys(selectedMap)
+  const selectedCount = selectedIds.length
 
   const showSkeleton = loading && cves.length === 0
   const showEmpty = !loading && !error && cves.length === 0
@@ -139,6 +169,8 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
             key={cve.cve_id}
             cve={cve}
             onSelect={onSelectCVE}
+            selected={!!selectedMap[cve.cve_id]}
+            onToggleSelect={handleToggleSelect}
           />
         ))}
       </div>
@@ -159,6 +191,36 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
       {!hasMore && cves.length > 0 && (
         <div className="feed-end" aria-label="End of results">
           <span>// {cves.length} of {total} shown</span>
+        </div>
+      )}
+
+      {/* Floating multi-select action bar */}
+      {selectedCount > 0 && (
+        <div
+          className="float-action-bar"
+          role="toolbar"
+          aria-label={`${selectedCount} CVEs selected`}
+          aria-live="polite"
+        >
+          <span className="float-count mono">
+            {selectedCount} selected
+          </span>
+          <div className="float-actions">
+            <button
+              className={`float-btn float-btn-primary${copyAllState === 'copied' ? ' copied' : ''}`}
+              onClick={handleCopyAll}
+              aria-label={`Copy combined report for all ${selectedCount} selected CVEs`}
+            >
+              {copyAllState === 'copied' ? 'Copied!' : 'COPY ALL REPORTS'}
+            </button>
+            <button
+              className="float-btn"
+              onClick={() => setSelectedMap({})}
+              aria-label="Clear all selections"
+            >
+              CLEAR
+            </button>
+          </div>
         </div>
       )}
     </div>

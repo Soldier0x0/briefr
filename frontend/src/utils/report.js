@@ -1,0 +1,96 @@
+// Shared report building and clipboard utilities
+// Used by DetailDrawer (single) and CVEFeed multi-select (combined)
+
+function cveSection(cve) {
+  const epss = cve.epss_score != null ? (cve.epss_score * 100).toFixed(1) : null
+  const products = Array.isArray(cve.affected_products) ? cve.affected_products : []
+  const urls = Array.isArray(cve.source_urls) ? cve.source_urls.slice(0, 5) : []
+  const productList = products.map(p => p.split(':')[1] || p).join(', ') || 'Unknown'
+
+  return [
+    `## ${cve.cve_id} — ${cve.severity || 'UNKNOWN'}`,
+    ``,
+    ``,
+    `**CVSS Score:** ${cve.cvss_score != null ? cve.cvss_score.toFixed(1) : 'N/A'}  `,
+    `**EPSS:** ${epss != null ? `${epss}%` : 'N/A'} exploit probability  `,
+    `**CISA KEV:** ${cve.is_kev ? 'Yes' : 'No'}  `,
+    `**Patch Available:** ${cve.patch_available ? 'Yes' : 'No'}  `,
+    ``,
+    ``,
+    `### Description`,
+    cve.description || 'No description available.',
+    ``,
+    ``,
+    `### Plain English`,
+    cve.summary || 'No plain English summary available.',
+    ``,
+    ``,
+    `### Affected`,
+    productList,
+    ``,
+    ``,
+    `### MITRE ATT&CK`,
+    cve.mitre_technique || 'Not mapped.',
+    ``,
+    ``,
+    `### References`,
+    ...urls,
+  ].join('\n')
+}
+
+export function buildSingleReport(cve) {
+  const now = new Date().toISOString()
+  return [
+    `# CVE Intelligence Report`,
+    `Generated: ${now}`,
+    `Source: VEKTOR / projectjupiter.in`,
+    ``,
+    ``,
+    cveSection(cve),
+    ``,
+    ``,
+    `---`,
+    `Free intelligence via VEKTOR — projectjupiter.in`,
+  ].join('\n')
+}
+
+export function buildCombinedReport(cves) {
+  const now = new Date().toISOString()
+  const sections = cves.map(cveSection).join('\n\n---\n\n')
+  return [
+    `# CVE Intelligence Report`,
+    `Generated: ${now}`,
+    `Source: VEKTOR / projectjupiter.in`,
+    ``,
+    ``,
+    sections,
+    ``,
+    ``,
+    `---`,
+    `Free intelligence via VEKTOR — projectjupiter.in`,
+  ].join('\n')
+}
+
+// Works on both HTTPS (clipboard API) and HTTP (execCommand fallback)
+export async function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch { /* fall through to execCommand */ }
+  }
+  const ta = document.createElement('textarea')
+  ta.value = text
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;z-index:9999'
+  document.body.appendChild(ta)
+  ta.focus()
+  ta.select()
+  try {
+    document.execCommand('copy')
+    return true
+  } catch {
+    return false
+  } finally {
+    document.body.removeChild(ta)
+  }
+}
