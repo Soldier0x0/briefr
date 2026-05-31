@@ -98,12 +98,35 @@ export default function DetailDrawer({ cve, onClose }) {
 
   async function handleCopyReport() {
     if (!cve) return
+    const text = buildReport(cve)
+
+    // navigator.clipboard requires HTTPS — fall back to execCommand for HTTP LAN
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+        return
+      } catch {
+        // fall through to execCommand
+      }
+    }
+
+    // execCommand fallback (HTTP / non-secure contexts)
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none'
+    document.body.appendChild(ta)
+    ta.focus()
+    ta.select()
     try {
-      await navigator.clipboard.writeText(buildReport(cve))
+      document.execCommand('copy')
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // clipboard unavailable
+      // both methods failed — nothing we can do without HTTPS
+    } finally {
+      document.body.removeChild(ta)
     }
   }
 
