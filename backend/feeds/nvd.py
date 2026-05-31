@@ -5,11 +5,6 @@ from typing import Any
 
 import httpx
 
-from enrichment.cve import (
-    build_plain_summary,
-    extract_mitre_technique,
-    has_public_poc,
-)
 from tracking import record_api_call
 
 logger = logging.getLogger(__name__)
@@ -126,6 +121,13 @@ def _is_valid_api_key(key: str | None) -> bool:
     return True
 
 
+def _nvd_request_headers(api_key: str | None, *, key_rejected: bool = False) -> dict[str, str]:
+    """NVD API 2.0 requires the key in the request header, not the query string."""
+    if _is_valid_api_key(api_key) and not key_rejected:
+        return {"apiKey": api_key.strip()}
+    return {}
+
+
 async def _fetch_page(
     client: httpx.AsyncClient,
     params: dict,
@@ -133,22 +135,28 @@ async def _fetch_page(
     _key_rejected: bool = False,
 ) -> dict:
     request_params = dict(params)
-    use_key = _is_valid_api_key(api_key) and not _key_rejected
-    if use_key:
-        request_params["apiKey"] = api_key
+    headers = _nvd_request_headers(api_key, key_rejected=_key_rejected)
+    use_key = bool(headers)
 
     for attempt in range(5):
         try:
-            response = await client.get(NVD_BASE_URL, params=request_params, timeout=60.0)
+            response = await client.get(
+                NVD_BASE_URL,
+                params=request_params,
+                headers=headers,
+                timeout=60.0,
+            )
             if response.status_code == 429:
                 wait_time = RATE_LIMIT_WAIT * (attempt + 1)
                 logger.warning("NVD rate limited (429). Waiting %d seconds before retry %d.", wait_time, attempt + 1)
                 await asyncio.sleep(wait_time)
                 continue
             if response.status_code == 404 and use_key:
+                nvd_msg = response.headers.get("message", "")
                 logger.warning(
-                    "NVD returned 404 with API key — key may not be activated yet. "
-                    "Retrying without key (anonymous rate limits apply)."
+                    "NVD returned 404 with API key (%s) — key may be invalid or not activated. "
+                    "Retrying without key (anonymous rate limits apply).",
+                    nvd_msg or "no message header",
                 )
                 return await _fetch_page(client, params, api_key, _key_rejected=True)
             response.raise_for_status()
