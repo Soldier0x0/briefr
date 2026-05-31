@@ -37,7 +37,7 @@ export default function PrivacyPage() {
       <h2 className="legal-section-heading">3. localStorage (browser only)</h2>
       <p className="legal-p">
         Your tech stack input is saved to your browser's localStorage under the
-        key <code>vektor_stack</code>. This data never leaves your browser and is
+        key <code>briefr_stack</code>. This data never leaves your browser and is
         never transmitted to our server. You can clear it at any time in your
         browser settings.
       </p>
@@ -63,7 +63,7 @@ export default function PrivacyPage() {
 
       <h2 className="legal-section-heading">6. Children</h2>
       <p className="legal-p">
-        VEKTOR is a technical security tool intended for professionals and
+        BRIEFR is a technical security tool intended for professionals and
         researchers. It is not directed at children under the age of 13.
       </p>
     </LegalPage>

@@ -85,7 +85,7 @@ export function formatAbsolute(isoString, tz) {
 // For copy-report and digest: "2026-06-01 00:03:01 IST (18:33:01 UTC)"
 export function getReportTimestamp() {
   const now = new Date()
-  const tz = localStorage.getItem('vektor_timezone') || 'UTC'
+  const tz = localStorage.getItem('briefr_timezone') || 'UTC'
   if (tz === 'UTC') {
     return formatDateTime(now, 'UTC') + ' UTC'
   }
@@ -97,6 +97,6 @@ export function getReportTimestamp() {
 
 // Dispatch when timezone changes so App can propagate via props
 export function setTimezone(tz) {
-  localStorage.setItem('vektor_timezone', tz)
-  window.dispatchEvent(new CustomEvent('vektor-timezone-change', { detail: tz }))
+  localStorage.setItem('briefr_timezone', tz)
+  window.dispatchEvent(new CustomEvent('briefr-timezone-change', { detail: tz }))
 }
