@@ -243,20 +243,29 @@ async def fetch_recent_cves(api_key: str | None = None, days_back: int = 7) -> l
 async def fetch_cve_by_id(cve_id: str, api_key: str | None = None) -> dict | None:
     """Fetch a single CVE by ID from the NVD API."""
     params: dict = {"cveId": cve_id}
-    if _is_valid_api_key(api_key):
-        params["apiKey"] = api_key
+    key_rejected = False
 
     async with httpx.AsyncClient() as client:
         for attempt in range(3):
+            headers = _nvd_request_headers(api_key, key_rejected=key_rejected)
             try:
-                response = await client.get(NVD_BASE_URL, params=params, timeout=30.0)
+                response = await client.get(
+                    NVD_BASE_URL,
+                    params=params,
+                    headers=headers,
+                    timeout=30.0,
+                )
                 if response.status_code == 429:
                     await asyncio.sleep(RATE_LIMIT_WAIT)
                     continue
-                if response.status_code == 404 and _is_valid_api_key(api_key):
-                    # Key rejected — retry without key
-                    logger.warning("NVD 404 for %s with key — retrying anonymously", cve_id)
-                    params.pop("apiKey", None)
+                if response.status_code == 404 and headers:
+                    nvd_msg = response.headers.get("message", "")
+                    logger.warning(
+                        "NVD 404 for %s with API key (%s) — retrying anonymously",
+                        cve_id,
+                        nvd_msg or "no message header",
+                    )
+                    key_rejected = True
                     continue
                 if response.status_code == 404:
                     return None
