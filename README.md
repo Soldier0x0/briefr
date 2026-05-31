@@ -134,6 +134,4 @@ MIT License — free to self-host, fork, and modify. Attribution appreciated.
 <p align="left">
   <strong>Built by</strong> Sai Harsha Vardhan<br/>
   <a href="https://www.linkedin.com/in/sai-harsha-vardhan/">LinkedIn</a>
-  &nbsp;·&nbsp;
-  <a href="https://github.com/Soldier0x0">GitHub</a>
 </p>
