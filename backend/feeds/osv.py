@@ -2,6 +2,8 @@ import logging
 
 import httpx
 
+from tracking import record_api_call
+
 logger = logging.getLogger(__name__)
 
 OSV_QUERY_URL = "https://api.osv.dev/v1/query"
@@ -28,6 +30,8 @@ async def fetch_osv_by_cve(cve_id: str) -> list[dict]:
         except Exception as exc:
             logger.error("OSV unexpected error for %s: %s", cve_id, exc)
             return []
+
+    await record_api_call("osv", 1)
 
     vulns = data.get("vulns", [])
     results = []

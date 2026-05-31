@@ -3,6 +3,8 @@ import logging
 
 import httpx
 
+from tracking import record_api_call
+
 logger = logging.getLogger(__name__)
 
 EPSS_URL = "https://api.first.org/data/v1/epss"
@@ -58,5 +60,6 @@ async def fetch_epss(cve_ids: list) -> dict:
             if idx < len(batches) - 1:
                 await asyncio.sleep(1)
 
-    logger.info("EPSS fetch complete: scores for %d CVEs retrieved", len(all_scores))
+    await record_api_call("epss", len(batches))
+    logger.info("EPSS fetch complete: scores for %d CVEs retrieved (%d requests)", len(all_scores), len(batches))
     return all_scores

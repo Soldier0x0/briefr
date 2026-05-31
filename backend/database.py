@@ -60,6 +60,17 @@ async def init_db() -> None:
             );
 
             CREATE INDEX IF NOT EXISTS idx_kev_due_date ON kev_deadlines(due_date);
+
+            CREATE TABLE IF NOT EXISTS api_usage (
+                service TEXT NOT NULL,
+                date_utc TEXT NOT NULL,
+                month_utc TEXT NOT NULL,
+                count INTEGER DEFAULT 0,
+                PRIMARY KEY (service, date_utc)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_api_usage_month ON api_usage(month_utc);
+            CREATE INDEX IF NOT EXISTS idx_api_usage_date ON api_usage(date_utc);
         """)
         await db.commit()
     finally:

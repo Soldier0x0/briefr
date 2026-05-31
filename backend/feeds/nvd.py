@@ -5,6 +5,8 @@ from typing import Any
 
 import httpx
 
+from tracking import record_api_call
+
 logger = logging.getLogger(__name__)
 
 NVD_BASE_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
@@ -179,11 +181,13 @@ async def fetch_recent_cves(api_key: str | None = None, days_back: int = 7) -> l
     }
 
     all_cves = []
+    pages_fetched = 0
 
     async with httpx.AsyncClient() as client:
         logger.info("Fetching NVD CVEs from %s to %s", pub_start, pub_end)
 
         first_page = await _fetch_page(client, base_params, api_key)
+        pages_fetched += 1
         total_results = first_page.get("totalResults", 0)
         vulnerabilities = first_page.get("vulnerabilities", [])
 
@@ -200,6 +204,7 @@ async def fetch_recent_cves(api_key: str | None = None, days_back: int = 7) -> l
             await asyncio.sleep(6)
 
             page_data = await _fetch_page(client, page_params, api_key)
+            pages_fetched += 1
             page_vulns = page_data.get("vulnerabilities", [])
 
             if not page_vulns:
@@ -217,5 +222,6 @@ async def fetch_recent_cves(api_key: str | None = None, days_back: int = 7) -> l
 
             start_index += RESULTS_PER_PAGE
 
-    logger.info("NVD fetch complete: %d CVEs retrieved", len(all_cves))
+    await record_api_call("nvd", pages_fetched)
+    logger.info("NVD fetch complete: %d CVEs retrieved (%d API requests)", len(all_cves), pages_fetched)
     return all_cves

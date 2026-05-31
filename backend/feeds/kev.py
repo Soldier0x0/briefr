@@ -2,6 +2,8 @@ import logging
 
 import httpx
 
+from tracking import record_api_call
+
 logger = logging.getLogger(__name__)
 
 KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
@@ -38,5 +40,6 @@ async def fetch_kev() -> list[dict]:
             }
         )
 
+    await record_api_call("kev", 1)
     logger.info("KEV fetch complete: %d entries retrieved", len(results))
     return results

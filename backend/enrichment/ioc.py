@@ -2,6 +2,8 @@ import logging
 
 import httpx
 
+from tracking import record_api_call
+
 logger = logging.getLogger(__name__)
 
 VT_BASE_URL = "https://www.virustotal.com/api/v3"
@@ -171,8 +173,10 @@ async def lookup_ioc(
 
             if vt_key:
                 vt_data = await _lookup_vt_ip(client, value, vt_key)
+                await record_api_call("virustotal", 1)
             if abuse_key:
                 abuse_data = await _lookup_abuseipdb(client, value, abuse_key)
+                await record_api_call("abuseipdb", 1)
 
             if vt_data:
                 malicious, total, tags, last_seen = _parse_vt_stats(vt_data)
@@ -194,6 +198,7 @@ async def lookup_ioc(
             vt_data = {}
             if vt_key:
                 vt_data = await _lookup_vt_hash(client, value, vt_key)
+                await record_api_call("virustotal", 1)
 
             if vt_data:
                 malicious, total, tags, last_seen = _parse_vt_stats(vt_data)
@@ -209,6 +214,7 @@ async def lookup_ioc(
             vt_data = {}
             if vt_key:
                 vt_data = await _lookup_vt_domain(client, value, vt_key)
+                await record_api_call("virustotal", 1)
 
             if vt_data:
                 malicious, total, tags, last_seen = _parse_vt_stats(vt_data)

@@ -3,6 +3,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, Request, Response
@@ -28,6 +29,7 @@ from database import (
 from enrichment.ioc import lookup_ioc
 from feeds.osv import fetch_osv_by_cve
 from scheduler import maybe_run_on_startup, start_scheduler, stop_scheduler
+from tracking import get_usage_stats
 
 
 @asynccontextmanager
@@ -87,8 +89,27 @@ def _row_to_cve_dict(row) -> dict:
     return d
 
 
+def _format_time_in_tz(dt: datetime, tz_name: str) -> dict:
+    try:
+        tz = ZoneInfo(tz_name)
+        local = dt.astimezone(tz)
+        return {
+            "iso": local.isoformat(),
+            "display": local.strftime("%Y-%m-%d %H:%M:%S %Z"),
+            "timezone": tz_name,
+            "utc_offset": local.strftime("%z"),
+        }
+    except (ZoneInfoNotFoundError, Exception):
+        return {"error": f"Unknown timezone: {tz_name}"}
+
+
 @app.get("/api/health")
-async def health():
+async def health(
+    tz: str | None = Query(
+        default=None,
+        description="IANA timezone name for local time display (e.g. Asia/Kolkata, America/New_York)",
+    ),
+):
     db = await get_db()
     try:
         cve_count = await get_cve_count(db)
@@ -96,11 +117,44 @@ async def health():
     finally:
         await db.close()
 
-    return {
+    now_utc = datetime.now(timezone.utc)
+    default_tz = os.environ.get("DEFAULT_TIMEZONE", "UTC")
+    display_tz = tz or default_tz
+
+    response: dict = {
         "status": "ok",
         "cve_count": cve_count,
         "last_updated": last_updated,
+        "server_time_utc": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "server_time_local": _format_time_in_tz(now_utc, display_tz),
     }
+    return response
+
+
+@app.get("/api/time")
+async def server_time(
+    tz: str | None = Query(
+        default=None,
+        description="IANA timezone name (e.g. Asia/Kolkata). Defaults to DEFAULT_TIMEZONE env var.",
+    ),
+):
+    now_utc = datetime.now(timezone.utc)
+    default_tz = os.environ.get("DEFAULT_TIMEZONE", "UTC")
+    display_tz = tz or default_tz
+
+    result = {
+        "utc": {
+            "iso": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "display": now_utc.strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "epoch": int(now_utc.timestamp()),
+        },
+        "local": _format_time_in_tz(now_utc, display_tz),
+    }
+
+    if tz and tz != default_tz:
+        result["default_tz"] = _format_time_in_tz(now_utc, default_tz)
+
+    return result
 
 
 @app.get("/api/stats")
@@ -315,6 +369,18 @@ async def kev_deadlines():
         await db.close()
 
     return {"data": [dict(row) for row in rows]}
+
+
+@app.get("/api/usage")
+async def api_usage():
+    now_utc = datetime.now(timezone.utc)
+    stats = await get_usage_stats()
+    return {
+        "as_of_utc": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "today_date_utc": now_utc.strftime("%Y-%m-%d"),
+        "this_month_utc": now_utc.strftime("%Y-%m"),
+        "services": stats,
+    }
 
 
 if __name__ == "__main__":
