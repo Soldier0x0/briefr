@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -28,7 +29,7 @@ from database import (
 )
 from enrichment.ioc import lookup_ioc
 from feeds.osv import fetch_osv_by_cve
-from scheduler import maybe_run_on_startup, start_scheduler, stop_scheduler
+from scheduler import maybe_run_on_startup, run_daily_refresh, start_scheduler, stop_scheduler
 from tracking import get_usage_stats
 
 
@@ -353,16 +354,28 @@ async def ioc_lookup(body: IocLookupRequest):
     return result
 
 
+@app.post("/api/refresh")
+async def manual_refresh():
+    asyncio.create_task(run_daily_refresh())
+    return {"status": "ok", "message": "Refresh started in background"}
+
+
 @app.get("/api/kev/deadlines")
-async def kev_deadlines():
+async def kev_deadlines(
+    sort: str = Query(default="recent", description="Sort order: recent (by dateAdded DESC) or urgent (by dueDate ASC)"),
+):
+    order_clause = (
+        "ORDER BY date_added DESC"
+        if sort == "recent"
+        else "ORDER BY due_date ASC"
+    )
     db = await get_db()
     try:
         rows = await db.execute_fetchall(
-            """
-            SELECT cve_id, product, short_description, required_action, due_date, updated_at
+            f"""
+            SELECT cve_id, product, short_description, required_action, due_date, date_added, updated_at
             FROM kev_deadlines
-            WHERE due_date IS NOT NULL AND due_date != ''
-            ORDER BY due_date ASC
+            {order_clause}
             """
         )
     finally:

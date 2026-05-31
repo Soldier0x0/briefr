@@ -225,3 +225,41 @@ async def fetch_recent_cves(api_key: str | None = None, days_back: int = 7) -> l
     await record_api_call("nvd", pages_fetched)
     logger.info("NVD fetch complete: %d CVEs retrieved (%d API requests)", len(all_cves), pages_fetched)
     return all_cves
+
+
+async def fetch_cve_by_id(cve_id: str, api_key: str | None = None) -> dict | None:
+    """Fetch a single CVE by ID from the NVD API."""
+    params: dict = {"cveId": cve_id}
+    if _is_valid_api_key(api_key):
+        params["apiKey"] = api_key
+
+    async with httpx.AsyncClient() as client:
+        for attempt in range(3):
+            try:
+                response = await client.get(NVD_BASE_URL, params=params, timeout=30.0)
+                if response.status_code == 429:
+                    await asyncio.sleep(RATE_LIMIT_WAIT)
+                    continue
+                if response.status_code == 404 and _is_valid_api_key(api_key):
+                    # Key rejected — retry without key
+                    logger.warning("NVD 404 for %s with key — retrying anonymously", cve_id)
+                    params.pop("apiKey", None)
+                    continue
+                if response.status_code == 404:
+                    return None
+                response.raise_for_status()
+                data = response.json()
+                vulns = data.get("vulnerabilities", [])
+                if not vulns:
+                    return None
+                await record_api_call("nvd", 1)
+                return _parse_cve_item(vulns[0])
+            except httpx.RequestError as exc:
+                logger.error("NVD request error fetching %s: %s", cve_id, exc)
+                if attempt < 2:
+                    await asyncio.sleep(2 ** attempt)
+                    continue
+            except Exception as exc:
+                logger.error("Unexpected error fetching %s: %s", cve_id, exc)
+                return None
+    return None

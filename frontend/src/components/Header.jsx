@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { triggerRefresh } from '../api.js'
 import './Header.css'
 
 function utcClock() {
@@ -9,17 +10,25 @@ function utcClock() {
 }
 
 export default function Header({ activeTab, onTabChange, onAboutOpen }) {
-  const [clock, setClock] = useState(utcClock)
+  const [clock, setClock]         = useState(utcClock)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     const id = setInterval(() => setClock(utcClock()), 1000)
     return () => clearInterval(id)
   }, [])
 
+  async function handleRefresh() {
+    if (refreshing) return
+    setRefreshing(true)
+    try { await triggerRefresh() } catch {}
+    setTimeout(() => setRefreshing(false), 3000)
+  }
+
   return (
     <header className="header" role="banner">
       <div className="header-inner">
-        {/* Left: logo (clickable → about) */}
+        {/* Left: logo */}
         <div className="header-left">
           <button
             className="header-logo-btn"
@@ -32,7 +41,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen }) {
           <span className="header-tagline">CVE intelligence</span>
         </div>
 
-        {/* Center: nav tabs (only shown on feed pages) */}
+        {/* Center: tabs (hidden on legal pages) */}
         {activeTab !== null && (
           <nav className="header-nav" aria-label="Main navigation">
             <button
@@ -54,30 +63,18 @@ export default function Header({ activeTab, onTabChange, onAboutOpen }) {
           </nav>
         )}
 
-        {/* Right: legal links, live dot, clock */}
+        {/* Right: legal links, live dot, clock, refresh */}
         <div className="header-right">
           <nav className="header-legal" aria-label="Legal links">
-            <button
-              className="header-legal-link"
-              onClick={onAboutOpen}
-              aria-label="About VEKTOR"
-            >
+            <button className="header-legal-link" onClick={onAboutOpen} aria-label="About VEKTOR">
               About
             </button>
             <span className="header-legal-sep" aria-hidden="true">&middot;</span>
-            <Link
-              to="/privacy"
-              className="header-legal-link"
-              aria-label="Privacy Policy"
-            >
+            <Link to="/privacy" className="header-legal-link" aria-label="Privacy Policy">
               Privacy
             </Link>
             <span className="header-legal-sep" aria-hidden="true">&middot;</span>
-            <Link
-              to="/terms"
-              className="header-legal-link"
-              aria-label="Terms of Service"
-            >
+            <Link to="/terms" className="header-legal-link" aria-label="Terms of Service">
               Terms
             </Link>
           </nav>
@@ -86,9 +83,20 @@ export default function Header({ activeTab, onTabChange, onAboutOpen }) {
             <span className="live-dot" aria-hidden="true" />
             LIVE
           </span>
-          <time className="header-clock" aria-label="Current UTC time" dateTime={new Date().toISOString()}>
+
+          <time className="header-clock" aria-label="Current UTC time">
             {clock}
           </time>
+
+          <button
+            className="header-refresh-btn"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            aria-label={refreshing ? 'Refresh in progress' : 'Manually trigger data refresh'}
+            title="Trigger manual data refresh"
+          >
+            {refreshing ? 'REFRESHING...' : '↻ REFRESH'}
+          </button>
         </div>
       </div>
     </header>

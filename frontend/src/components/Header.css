@@ -16,10 +16,34 @@
   gap: 16px;
 }
 
+.header-refresh-btn {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.1s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.header-refresh-btn:hover:not(:disabled) {
+  color: var(--text2);
+}
+
+.header-refresh-btn:disabled {
+  color: var(--text3);
+  cursor: default;
+}
+
 @media (max-width: 640px) {
-  .header-tagline { display: none; }
-  .header-clock   { display: none; }
-  .header-right   { gap: 8px; }
+  .header-tagline      { display: none; }
+  .header-clock        { display: none; }
+  .header-right        { gap: 8px; }
+  .header-refresh-btn  { display: none; }
 }
 
 /* Left: logo */

@@ -222,6 +222,13 @@
   line-height: 1.4;
 }
 
+.kev-date-added {
+  font-size: 0.5625rem;
+  color: var(--text3);
+  letter-spacing: 0.04em;
+  margin-top: 3px;
+}
+
 .kev-badge {
   font-family: var(--font-mono);
   font-size: 0.5625rem;

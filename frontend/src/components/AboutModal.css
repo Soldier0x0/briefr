@@ -1,7 +1,7 @@
 .about-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   z-index: 500;
   display: flex;
   align-items: center;
@@ -12,8 +12,9 @@
 .about-box {
   background: var(--bg2);
   border: 1px solid var(--border2);
-  max-width: 560px;
-  width: 100%;
+  border-radius: 0;
+  max-width: 540px;
+  width: 90%;
   padding: 40px;
   position: relative;
 }
@@ -32,9 +33,7 @@
   transition: color 0.1s;
 }
 
-.about-close:hover {
-  color: var(--text);
-}
+.about-close:hover { color: var(--text); }
 
 .about-logo {
   font-family: var(--font-mono);
@@ -47,33 +46,35 @@
 
 .about-subtitle {
   font-family: var(--font-body);
-  font-size: 0.9375rem;
+  font-size: 13px;
   color: var(--text2);
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .about-divider {
   border: none;
   border-top: 1px solid var(--border);
-  margin: 0 0 24px;
+  margin: 0 0 20px;
 }
 
 .about-description {
-  font-size: 0.9375rem;
+  font-family: var(--font-body);
+  font-size: 13px;
   color: var(--text2);
   line-height: 1.7;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .about-sources-section {
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
 .about-sources-label {
   display: block;
-  font-size: 0.5625rem;
-  letter-spacing: 0.14em;
+  font-size: 9px;
+  letter-spacing: 0.15em;
   color: var(--text3);
+  text-transform: uppercase;
   margin-bottom: 10px;
 }
 
@@ -84,51 +85,40 @@
 }
 
 .about-source-tag {
-  font-size: 0.6875rem;
+  font-size: 10px;
   letter-spacing: 0.04em;
   color: var(--text2);
   background: var(--bg3);
   border: 1px solid var(--border2);
+  border-radius: 0;
   padding: 4px 10px;
 }
 
 .about-built-by {
-  font-size: 0.875rem;
+  font-family: var(--font-body);
+  font-size: 13px;
   color: var(--text2);
-  margin-bottom: 20px;
-}
-
-.about-built-by a {
-  color: var(--accent);
-  text-decoration: none;
-  transition: color 0.1s;
-}
-
-.about-built-by a:hover {
-  color: var(--text);
+  margin-bottom: 16px;
 }
 
 .about-legal-links {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.06em;
 }
 
-.about-legal-links a {
+.about-legal-link {
+  font-size: 10px;
+  letter-spacing: 0.06em;
   color: var(--text3);
   text-decoration: none;
   transition: color 0.1s;
 }
 
-.about-legal-links a:hover {
-  color: var(--text2);
-}
+.about-legal-link:hover { color: var(--text2); }
 
 .about-dot {
+  font-size: 10px;
   color: var(--text3);
+  user-select: none;
 }

@@ -15,7 +15,7 @@ from database import (
     upsert_cve,
     upsert_kev,
 )
-from feeds.nvd import fetch_recent_cves
+from feeds.nvd import fetch_recent_cves, fetch_cve_by_id
 from feeds.kev import fetch_kev
 from feeds.epss import fetch_epss
 
@@ -74,6 +74,41 @@ async def run_daily_refresh() -> None:
             await db.close()
 
         logger.info("Step 2/3 complete: %d KEV entries processed", kev_count)
+
+        # Step 2.5: Cross-fetch KEV CVEs not yet in cves table
+        try:
+            db = await get_db()
+            try:
+                existing_ids = set(await get_all_cve_ids(db))
+            finally:
+                await db.close()
+
+            missing_kev = [
+                e.get("cveID", "") for e in kev_entries
+                if e.get("cveID") and e.get("cveID") not in existing_ids
+            ]
+
+            if missing_kev:
+                logger.info("Step 2.5: Cross-fetching %d KEV CVEs missing from cves table", len(missing_kev))
+                kev_cross_fetched = 0
+                for kev_cve_id in missing_kev:
+                    try:
+                        cve_data = await fetch_cve_by_id(kev_cve_id, nvd_api_key)
+                        if cve_data:
+                            cve_data["is_kev"] = True
+                            db = await get_db()
+                            try:
+                                await upsert_cve(db, cve_data)
+                                await db.commit()
+                                kev_cross_fetched += 1
+                            finally:
+                                await db.close()
+                    except Exception as exc:
+                        logger.error("KEV cross-fetch failed for %s: %s", kev_cve_id, exc)
+                    await asyncio.sleep(1)
+                logger.info("Step 2.5 complete: %d KEV CVEs newly inserted", kev_cross_fetched)
+        except Exception as exc:
+            logger.error("Step 2.5 failed (KEV cross-fetch): %s", exc)
 
     except Exception as exc:
         logger.error("Step 2/3 failed (KEV fetch): %s", exc)

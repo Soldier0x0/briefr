@@ -5,12 +5,16 @@ const QUICK_FILTERS = [
   { id: 'all',      label: 'ALL' },
   { id: 'kev',      label: 'KEV' },
   { id: 'critical', label: 'CRITICAL' },
+  { id: 'high',     label: 'HIGH' },
+  { id: 'medium',   label: 'MEDIUM' },
   { id: 'poc',      label: 'PoC' },
 ]
 
 function deriveActive(filters) {
   if (filters.kev_only && !filters.poc_only && !filters.severity) return 'kev'
   if (filters.severity === 'CRITICAL' && !filters.kev_only && !filters.poc_only) return 'critical'
+  if (filters.severity === 'HIGH'     && !filters.kev_only && !filters.poc_only) return 'high'
+  if (filters.severity === 'MEDIUM'   && !filters.kev_only && !filters.poc_only) return 'medium'
   if (filters.poc_only && !filters.kev_only && !filters.severity) return 'poc'
   return 'all'
 }
@@ -43,10 +47,12 @@ export default function FilterBar({
 
   function handleQuickFilter(id) {
     const base = { severity: null, kev_only: false, poc_only: false }
-    if (id === 'kev')       onFiltersChange({ ...base, kev_only: true })
+    if (id === 'kev')           onFiltersChange({ ...base, kev_only: true })
     else if (id === 'critical') onFiltersChange({ ...base, severity: 'CRITICAL' })
-    else if (id === 'poc')  onFiltersChange({ ...base, poc_only: true })
-    else                    onFiltersChange(base)
+    else if (id === 'high')     onFiltersChange({ ...base, severity: 'HIGH' })
+    else if (id === 'medium')   onFiltersChange({ ...base, severity: 'MEDIUM' })
+    else if (id === 'poc')      onFiltersChange({ ...base, poc_only: true })
+    else                        onFiltersChange(base)
   }
 
   function handleSearchChange(e) {

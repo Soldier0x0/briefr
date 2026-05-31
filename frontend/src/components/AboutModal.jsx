@@ -2,7 +2,13 @@ import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import './AboutModal.css'
 
-const SOURCES = ['NVD / NIST', 'CISA KEV', 'EPSS by FIRST.org', 'OSV.dev']
+const SOURCES = [
+  'NVD/NIST',
+  'CISA KEV',
+  'EPSS by FIRST.org',
+  'OSV.dev',
+  'GitHub Advisory',
+]
 
 export default function AboutModal({ onClose }) {
   useEffect(() => {
@@ -23,26 +29,23 @@ export default function AboutModal({ onClose }) {
       aria-labelledby="about-title"
     >
       <div className="about-box">
-        <button
-          className="about-close"
-          onClick={onClose}
-          aria-label="Close about modal (Escape)"
-        >
+        <button className="about-close" onClick={onClose} aria-label="Close (Escape)">
           &#x2715;
         </button>
 
-        <div className="about-logo" aria-label="VEKTOR">VEKTOR</div>
+        <div className="about-logo" id="about-title">VEKTOR</div>
         <div className="about-subtitle">Free CVE Intelligence</div>
 
         <hr className="about-divider" />
 
         <p className="about-description">
           VEKTOR aggregates vulnerability data from public government and
-          open-source sources daily. No account required. No tracking. No cost.
+          open-source sources every day at 06:00 IST. No account required.
+          No cookies. No tracking. No cost.
         </p>
 
         <div className="about-sources-section">
-          <span className="about-sources-label mono">DATA SOURCES</span>
+          <span className="about-sources-label mono">// DATA SOURCES</span>
           <div className="about-sources-tags">
             {SOURCES.map(s => (
               <span key={s} className="about-source-tag mono">{s}</span>
@@ -50,24 +53,18 @@ export default function AboutModal({ onClose }) {
           </div>
         </div>
 
+        <hr className="about-divider" />
+
         <p className="about-built-by">
-          Built by{' '}
-          <a
-            href="https://github.com/Soldier0x0"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Sai Harsha Vardhan on GitHub"
-          >
-            Sai Harsha Vardhan
-          </a>
+          Built by Sai Harsha Vardhan
         </p>
 
         <div className="about-legal-links">
-          <Link to="/privacy" onClick={onClose} aria-label="Privacy Policy">
+          <Link to="/privacy" onClick={onClose} className="about-legal-link mono">
             Privacy Policy
           </Link>
           <span className="about-dot" aria-hidden="true">&middot;</span>
-          <Link to="/terms" onClick={onClose} aria-label="Terms of Service">
+          <Link to="/terms" onClick={onClose} className="about-legal-link mono">
             Terms of Service
           </Link>
         </div>

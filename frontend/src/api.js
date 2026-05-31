@@ -44,8 +44,8 @@ export function fetchCVE(cveId) {
   return request(`/cves/${encodeURIComponent(cveId)}`)
 }
 
-export function fetchKEVDeadlines() {
-  return request('/kev/deadlines')
+export function fetchKEVDeadlines(sort = 'recent') {
+  return request(`/kev/deadlines?sort=${sort}`)
 }
 
 export function fetchUsage() {
@@ -58,4 +58,8 @@ export function lookupIOC(value, type) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ value, type }),
   })
+}
+
+export function triggerRefresh() {
+  return request('/refresh', { method: 'POST' })
 }

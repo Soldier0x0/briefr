@@ -38,7 +38,7 @@ function deadlineBadgeClass(days) {
 
 function deadlineBadgeLabel(days) {
   if (days === null) return 'unknown'
-  if (days < 0)  return `${Math.abs(days)}d overdue`
+  if (days < 0)  return 'OVERDUE'
   if (days === 0) return 'today'
   return `${days}d left`
 }
@@ -72,8 +72,9 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
   const sparkMax = Math.max(...sparkBars, 1)
 
   useEffect(() => {
-    fetchKEVDeadlines()
-      .then(data => setKevDeadlines((data.data || []).slice(0, 8)))
+    // sort=recent returns entries sorted by dateAdded DESC (most recently added first)
+    fetchKEVDeadlines('recent')
+      .then(data => setKevDeadlines((data.data || []).slice(0, 10)))
       .catch(() => {})
   }, [])
 
@@ -154,12 +155,17 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
                   <span className="kev-cve-id" aria-label={`CVE ID: ${entry.cve_id}`}>
                     {entry.cve_id}
                   </span>
-                  <span className={`kev-badge ${badgeClass}`} aria-label={`Due: ${badgeLabel}`}>
+                  <span className={`kev-badge ${badgeClass}`} aria-label={`Status: ${badgeLabel}`}>
                     {badgeLabel}
                   </span>
                 </div>
                 {entry.short_description && (
                   <p className="kev-desc">{entry.short_description.slice(0, 80)}</p>
+                )}
+                {entry.date_added && (
+                  <p className="kev-date-added mono" aria-label={`Added to KEV: ${entry.date_added}`}>
+                    added {entry.date_added}
+                  </p>
                 )}
               </li>
             )

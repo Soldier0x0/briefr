@@ -37,6 +37,7 @@ async def fetch_kev() -> list[dict]:
                 "shortDescription": entry.get("shortDescription", ""),
                 "requiredAction": entry.get("requiredAction", ""),
                 "dueDate": entry.get("dueDate", ""),
+                "dateAdded": entry.get("dateAdded", ""),
             }
         )
 

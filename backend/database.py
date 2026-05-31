@@ -56,10 +56,12 @@ async def init_db() -> None:
                 short_description TEXT,
                 required_action TEXT,
                 due_date TEXT,
+                date_added TEXT,
                 updated_at TEXT DEFAULT (datetime('now'))
             );
 
             CREATE INDEX IF NOT EXISTS idx_kev_due_date ON kev_deadlines(due_date);
+            CREATE INDEX IF NOT EXISTS idx_kev_date_added ON kev_deadlines(date_added);
 
             CREATE TABLE IF NOT EXISTS api_usage (
                 service TEXT NOT NULL,
@@ -73,6 +75,13 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_api_usage_date ON api_usage(date_utc);
         """)
         await db.commit()
+
+        # Migration: add date_added column if it doesn't exist on existing installs
+        try:
+            await db.execute("ALTER TABLE kev_deadlines ADD COLUMN date_added TEXT DEFAULT ''")
+            await db.commit()
+        except Exception:
+            pass  # Column already exists
     finally:
         await db.close()
 
@@ -142,13 +151,14 @@ async def update_epss_scores(db: aiosqlite.Connection, scores: dict) -> None:
 async def upsert_kev(db: aiosqlite.Connection, entry: dict) -> None:
     await db.execute(
         """
-        INSERT INTO kev_deadlines (cve_id, product, short_description, required_action, due_date, updated_at)
-        VALUES (:cve_id, :product, :short_description, :required_action, :due_date, datetime('now'))
+        INSERT INTO kev_deadlines (cve_id, product, short_description, required_action, due_date, date_added, updated_at)
+        VALUES (:cve_id, :product, :short_description, :required_action, :due_date, :date_added, datetime('now'))
         ON CONFLICT(cve_id) DO UPDATE SET
             product = excluded.product,
             short_description = excluded.short_description,
             required_action = excluded.required_action,
             due_date = excluded.due_date,
+            date_added = excluded.date_added,
             updated_at = datetime('now')
         """,
         {
@@ -157,6 +167,7 @@ async def upsert_kev(db: aiosqlite.Connection, entry: dict) -> None:
             "short_description": entry.get("shortDescription", ""),
             "required_action": entry.get("requiredAction", ""),
             "due_date": entry.get("dueDate", ""),
+            "date_added": entry.get("dateAdded", ""),
         },
     )
 
