@@ -193,8 +193,12 @@ def _parse_nvd_datetime(value: str) -> datetime | None:
     text = value.strip()
     try:
         if text.endswith("Z"):
-            return datetime.fromisoformat(text.replace("Z", "+00:00"))
-        return datetime.fromisoformat(text)
+            dt = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        else:
+            dt = datetime.fromisoformat(text)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
     except ValueError:
         logger.warning("Could not parse NVD datetime: %r", value)
         return None

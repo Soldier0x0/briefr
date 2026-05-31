@@ -78,20 +78,29 @@ async def _run_daily_refresh() -> None:
             days_back=days_back,
             overlap_minutes=overlap_minutes,
         )
-        if len(cves) > max_cves:
+        cves.sort(key=lambda x: x.get("modified") or "")
+
+        capped = len(cves) > max_cves
+        if capped:
             logger.warning(
                 "NVD returned %d CVEs; capping upsert at MAX_CVES_PER_FETCH=%d",
                 len(cves),
                 max_cves,
             )
-        cves = cves[:max_cves]
+            cves = cves[:max_cves]
+
+        if capped and cves:
+            last_modified = cves[-1].get("modified")
+            new_watermark = last_modified if last_modified else mod_end_iso
+        else:
+            new_watermark = mod_end_iso
 
         db = await get_db()
         try:
             for cve in cves:
                 await upsert_cve(db, cve)
                 new_or_updated += 1
-            await set_nvd_sync_watermark(db, mod_end_iso)
+            await set_nvd_sync_watermark(db, new_watermark)
             await db.commit()
         finally:
             await db.close()
