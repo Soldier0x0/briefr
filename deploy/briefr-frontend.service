@@ -1,0 +1,20 @@
+[Unit]
+Description=BRIEFR CVE Intelligence Frontend
+After=network.target briefr-backend.service
+Wants=briefr-backend.service
+
+[Service]
+Type=simple
+User=briefr
+Group=briefr
+WorkingDirectory=/opt/briefr/frontend
+Environment="PATH=/usr/bin:/bin"
+ExecStart=/usr/bin/npm run dev
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=briefr-frontend
+
+[Install]
+WantedBy=multi-user.target

@@ -152,12 +152,17 @@
 }
 
 .metric-cell {
-  padding: 10px 0;
+  padding: 10px 16px;
   border-right: 1px solid var(--border);
+}
+
+.metric-cell:first-child {
+  padding-left: 0;
 }
 
 .metric-cell:last-child {
   border-right: none;
+  padding-right: 0;
 }
 
 .metric-value {

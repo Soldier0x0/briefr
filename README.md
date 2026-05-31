@@ -81,6 +81,25 @@ npm run dev    # http://localhost:5173 — proxies /api to :8000
 
 Production deploy: `npm run build`, then serve `frontend/dist` behind nginx. See `deploy/setup.sh` for systemd install on Debian.
 
+### Server deployment (systemd)
+
+1. Create a system user: `useradd --system --no-create-home --shell /usr/sbin/nologin briefr`
+2. Clone to `/opt/briefr`, set up the backend venv and `backend/.env` (see Installation above).
+3. Install frontend deps: `cd /opt/briefr/frontend && npm install`
+4. Copy the three unit files to `/etc/systemd/system/`:
+   - `deploy/briefr-backend.service`
+   - `deploy/briefr-frontend.service`
+   - `deploy/briefr.target`
+5. Enable and start: `systemctl daemon-reload && systemctl enable briefr.target && systemctl start briefr.target`
+6. Open firewall ports **5173** (frontend) and **8000** (API), e.g. `ufw allow 5173/tcp && ufw allow 8000/tcp`
+7. Set `ALLOWED_ORIGINS` in `backend/.env` to your frontend URL(s), e.g. `http://your-server:5173` and your production domain.
+
+**Update** (after pulling new commits):
+
+```bash
+sudo /opt/briefr/deploy/briefr-update.sh
+```
+
 ### Environment Variables
 
 | Variable | Description | Where to get it |

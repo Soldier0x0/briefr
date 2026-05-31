@@ -1,0 +1,6 @@
+[Unit]
+Description=BRIEFR CVE Intelligence Stack
+Wants=briefr-backend.service briefr-frontend.service
+
+[Install]
+WantedBy=multi-user.target
