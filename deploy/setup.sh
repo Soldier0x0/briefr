@@ -4,7 +4,7 @@
 set -euo pipefail
 
 REPO_URL="https://github.com/Soldier0x0/briefr.git"
-INSTALL_DIR="/opt/vektor"
+INSTALL_DIR="/opt/briefr"
 APP_USER="briefr"
 
 echo "========================================================"
@@ -113,7 +113,7 @@ if [ ! -f "${INSTALL_DIR}/backend/.env" ]; then
     echo ""
     echo "  ┌─────────────────────────────────────────────────────┐"
     echo "  │  ACTION REQUIRED — edit your API keys:              │"
-    echo "  │  nano /opt/vektor/backend/.env                      │"
+    echo "  │  nano /opt/briefr/backend/.env                      │"
     echo "  │  Then: systemctl restart briefr-backend             │"
     echo "  └─────────────────────────────────────────────────────┘"
     echo ""

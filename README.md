@@ -64,8 +64,8 @@ Every morning, security analysts manually check NVD, CISA KEV, VirusTotal, and E
 ### Installation
 
 ```bash
-git clone https://github.com/Soldier0x0/briefr.git /opt/vektor
-cd /opt/vektor/backend
+git clone https://github.com/Soldier0x0/briefr.git /opt/briefr
+cd /opt/briefr/backend
 python3.11 -m venv ../venv
 ../venv/bin/pip install -r requirements.txt
 cp .env.example .env   # add your API keys
@@ -74,7 +74,7 @@ cp .env.example .env   # add your API keys
 ```
 
 ```bash
-cd /opt/vektor/frontend
+cd /opt/briefr/frontend
 npm install
 npm run dev    # http://localhost:5173 — proxies /api to :8000
 ```
@@ -131,5 +131,9 @@ MIT License — free to self-host, fork, and modify. Attribution appreciated.
 
 ---
 
-Built by Sai Harsha Vardhan  
-[LinkedIn](https://www.linkedin.com/in/sai-harsha-vardhan/) · [GitHub](https://github.com/Soldier0x0)
+<p align="left">
+  <strong>Built by</strong> Sai Harsha Vardhan<br/>
+  <a href="https://www.linkedin.com/in/sai-harsha-vardhan/">LinkedIn</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/Soldier0x0">GitHub</a>
+</p>
