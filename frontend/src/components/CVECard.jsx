@@ -34,7 +34,10 @@ function epssColor(score) {
 export default function CVECard({ cve, onSelect, selected, onToggleSelect, timezone = 'UTC', navSelected, cardRef }) {
   const [shareCopied, setShareCopied] = useState(false)
   const sevClass = severityClass(cve.severity)
-  const epss = typeof cve.epss_score === 'number' ? cve.epss_score : null
+  const epss =
+    typeof cve.epss_score === 'number' && cve.epss_score >= 0
+      ? cve.epss_score
+      : null
   const products = Array.isArray(cve.affected_products) ? cve.affected_products : []
   const cwes = Array.isArray(cve.cwe_ids) ? cve.cwe_ids : []
 
@@ -125,8 +128,8 @@ export default function CVECard({ cve, onSelect, selected, onToggleSelect, timez
               KEV
             </span>
           )}
-          {!cve.patch_available && (
-            <span className="badge badge-poc" title="No patch available — exploit may be public">
+          {cve.has_poc && (
+            <span className="badge badge-poc" title="Public exploit or PoC reference in NVD">
               PoC
             </span>
           )}

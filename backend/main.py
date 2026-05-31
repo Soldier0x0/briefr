@@ -86,6 +86,7 @@ def _row_to_cve_dict(row) -> dict:
             except (json.JSONDecodeError, TypeError):
                 d[field] = []
     d["is_kev"] = bool(d.get("is_kev", 0))
+    d["has_poc"] = bool(d.get("has_poc", 0))
     d["patch_available"] = bool(d.get("patch_available", 0))
     return d
 
@@ -194,6 +195,7 @@ async def list_cves(
     severity: str | None = Query(default=None, description="CRITICAL/HIGH/MEDIUM/LOW"),
     kev_only: bool = Query(default=False),
     poc_only: bool = Query(default=False),
+    epss_min: float | None = Query(default=None, ge=0.0, le=1.0),
     search: str | None = Query(default=None, max_length=200),
     stack: str | None = Query(default=None, max_length=500),
     page: int = Query(default=1, ge=1),
@@ -213,7 +215,11 @@ async def list_cves(
         conditions.append("is_kev = 1")
 
     if poc_only:
-        conditions.append("patch_available = 0")
+        conditions.append("has_poc = 1")
+
+    if epss_min is not None:
+        conditions.append("epss_score IS NOT NULL AND epss_score >= ?")
+        params.append(epss_min)
 
     if search:
         conditions.append("(cve_id LIKE ? OR description LIKE ?)")
@@ -242,11 +248,11 @@ async def list_cves(
             f"""
             SELECT cve_id, description, cvss_score, severity, published, modified,
                    affected_products, mitre_technique, summary, is_kev, epss_score,
-                   patch_available, source_urls, cwe_ids, updated_at
+                   has_poc, patch_available, source_urls, cwe_ids, updated_at
             FROM cves
             {where_clause}
             ORDER BY
-                CASE WHEN epss_score IS NOT NULL THEN epss_score ELSE 0 END DESC,
+                CASE WHEN epss_score IS NOT NULL THEN epss_score ELSE -1 END DESC,
                 CASE severity
                     WHEN 'CRITICAL' THEN 1
                     WHEN 'HIGH' THEN 2
@@ -297,7 +303,7 @@ async def get_cve(cve_id: str):
             """
             SELECT cve_id, description, cvss_score, severity, published, modified,
                    affected_products, mitre_technique, summary, is_kev, epss_score,
-                   patch_available, source_urls, cwe_ids, updated_at
+                   has_poc, patch_available, source_urls, cwe_ids, updated_at
             FROM cves
             WHERE cve_id = ?
             """,
@@ -314,6 +320,12 @@ async def get_cve(cve_id: str):
     try:
         osv_data = await fetch_osv_by_cve(cve_id.upper())
         cve["osv_packages"] = osv_data
+        if not cve.get("summary"):
+            for entry in osv_data:
+                osv_summary = (entry.get("summary") or "").strip()
+                if osv_summary:
+                    cve["summary"] = osv_summary
+                    break
     except Exception as exc:
         logger.error("OSV lookup failed for %s: %s", cve_id, exc)
         cve["osv_packages"] = []
