@@ -1,5 +1,5 @@
 [Unit]
-Description=BRIEFR CVE Intelligence Stack
+Description=BRIEFR (backend + frontend)
 Wants=briefr-backend.service briefr-frontend.service
 
 [Install]

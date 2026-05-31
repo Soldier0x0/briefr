@@ -1,5 +1,5 @@
 [Unit]
-Description=BRIEFR CVE Intelligence Frontend
+Description=BRIEFR Frontend (Vite on 5173)
 After=network.target briefr-backend.service
 Wants=briefr-backend.service
 
@@ -8,8 +8,10 @@ Type=simple
 User=briefr
 Group=briefr
 WorkingDirectory=/opt/briefr/frontend
+Environment="HOME=/var/lib/briefr"
 Environment="PATH=/usr/bin:/bin"
-ExecStart=/usr/bin/npm run dev
+Environment="npm_config_cache=/var/lib/briefr/.npm"
+ExecStart=/usr/bin/npm run dev -- --host 0.0.0.0 --port 5173
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -17,4 +19,4 @@ StandardError=journal
 SyslogIdentifier=briefr-frontend
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=briefr.target

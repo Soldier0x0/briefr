@@ -21,8 +21,7 @@ SyslogIdentifier=briefr-backend
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
-ReadOnlyPaths=/opt/briefr/venv
 ReadWritePaths=/opt/briefr/backend
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=briefr.target
