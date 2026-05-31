@@ -62,7 +62,7 @@ export default function CVECard({ cve, onSelect, selected, onToggleSelect, timez
     e.stopPropagation()
     const desc = (cve.description || '').slice(0, 60).trimEnd()
     const url = `https://projectjupiter.in/cve/${cve.cve_id}`
-    const text = `${cve.cve_id} — ${desc}\nvia VEKTOR: ${url}`
+    const text = `${cve.cve_id} — ${desc}\nvia BRIEFR: ${url}`
     const ok = await copyToClipboard(text)
     if (ok) {
       setShareCopied(true)

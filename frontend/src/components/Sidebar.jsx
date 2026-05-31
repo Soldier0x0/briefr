@@ -176,7 +176,7 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
       {/* ── Section 4: Data Sources ── */}
       <section className="sidebar-section" aria-labelledby="sources-heading">
         <h2 id="sources-heading" className="sidebar-heading">DATA SOURCES</h2>
-        <ul className="sources-list" aria-label="Data sources used by VEKTOR">
+        <ul className="sources-list" aria-label="Data sources used by BRIEFR">
           {DATA_SOURCES.map(src => (
             <li key={src.name} className="source-item">
               <span className="source-bullet" aria-hidden="true">--</span>

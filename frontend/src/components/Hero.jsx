@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import './Hero.css'
 
-const STACK_KEY = 'vektor_stack'
+const STACK_KEY = 'briefr_stack'
 
 export default function Hero({ onBrief }) {
   const [stack, setStack] = useState(() => {
@@ -22,7 +22,7 @@ export default function Hero({ onBrief }) {
   }
 
   return (
-    <section className="hero" aria-label="VEKTOR brief">
+    <section className="hero" aria-label="BRIEFR brief">
       <h1 className="hero-heading">
         <em>What broke overnight.</em>
       </h1>

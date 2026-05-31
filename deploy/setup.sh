@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# VEKTOR backend setup script — Debian 11 / 12 / 13
+# BRIEFR backend setup script — Debian 11 / 12 / 13
 # Run as root: bash setup.sh
 set -euo pipefail
 
-REPO_URL="https://github.com/Soldier0x0/vektor.git"
+REPO_URL="https://github.com/Soldier0x0/briefr.git"
 INSTALL_DIR="/opt/vektor"
-APP_USER="vektor"
+APP_USER="briefr"
 
 echo "========================================================"
-echo " VEKTOR Backend Setup"
+echo " BRIEFR Backend Setup"
 echo "========================================================"
 
 # ── Step 1: Detect Debian version ──────────────────────────
@@ -114,7 +114,7 @@ if [ ! -f "${INSTALL_DIR}/backend/.env" ]; then
     echo "  ┌─────────────────────────────────────────────────────┐"
     echo "  │  ACTION REQUIRED — edit your API keys:              │"
     echo "  │  nano /opt/vektor/backend/.env                      │"
-    echo "  │  Then: systemctl restart vektor-backend             │"
+    echo "  │  Then: systemctl restart briefr-backend             │"
     echo "  └─────────────────────────────────────────────────────┘"
     echo ""
 else
@@ -136,20 +136,20 @@ echo "==> [7/7] Installing systemd service and configuring firewall"
 
 # Patch the ExecStart line to use whatever python venv was created
 sed -i "s|ExecStart=.*|ExecStart=${INSTALL_DIR}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1 --log-level info|" \
-    "${INSTALL_DIR}/deploy/vektor-backend.service"
+    "${INSTALL_DIR}/deploy/briefr-backend.service"
 sed -i "s|WorkingDirectory=.*|WorkingDirectory=${INSTALL_DIR}/backend|" \
-    "${INSTALL_DIR}/deploy/vektor-backend.service"
+    "${INSTALL_DIR}/deploy/briefr-backend.service"
 sed -i "s|EnvironmentFile=.*|EnvironmentFile=${INSTALL_DIR}/backend/.env|" \
-    "${INSTALL_DIR}/deploy/vektor-backend.service"
+    "${INSTALL_DIR}/deploy/briefr-backend.service"
 sed -i "s|ReadWritePaths=.*|ReadWritePaths=${INSTALL_DIR}/backend|" \
-    "${INSTALL_DIR}/deploy/vektor-backend.service"
+    "${INSTALL_DIR}/deploy/briefr-backend.service"
 sed -i "s|Environment=.*|Environment=PATH=${INSTALL_DIR}/venv/bin|" \
-    "${INSTALL_DIR}/deploy/vektor-backend.service"
+    "${INSTALL_DIR}/deploy/briefr-backend.service"
 
-cp "${INSTALL_DIR}/deploy/vektor-backend.service" /etc/systemd/system/vektor-backend.service
+cp "${INSTALL_DIR}/deploy/briefr-backend.service" /etc/systemd/system/briefr-backend.service
 systemctl daemon-reload
-systemctl enable vektor-backend
-systemctl restart vektor-backend
+systemctl enable briefr-backend
+systemctl restart briefr-backend
 
 # Open port 8000 for LAN testing (no nginx yet)
 ufw allow OpenSSH
@@ -165,7 +165,7 @@ sleep 3
 
 echo ""
 echo "Service status:"
-systemctl status vektor-backend --no-pager -l | head -15
+systemctl status briefr-backend --no-pager -l | head -15
 
 SERVER_IP=$(hostname -I | awk '{print $1}')
 echo ""
@@ -178,7 +178,7 @@ echo "Or open in a browser:"
 echo "  http://${SERVER_IP}:8000/api/docs   (Swagger UI)"
 echo ""
 echo "Watch live logs:"
-echo "  journalctl -u vektor-backend -f"
+echo "  journalctl -u briefr-backend -f"
 echo ""
 echo "Pull updates later:"
-echo "  git -C ${INSTALL_DIR} pull && systemctl restart vektor-backend"
+echo "  git -C ${INSTALL_DIR} pull && systemctl restart briefr-backend"

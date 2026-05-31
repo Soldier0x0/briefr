@@ -110,7 +110,7 @@ export default function App() {
   const [searchFocusTrigger, setSearchFocusTrigger] = useState(0)
   const [aboutOpen, setAboutOpen]               = useState(false)
   const [timezone, setTimezone]                 = useState(() => {
-    try { return localStorage.getItem('vektor_timezone') || 'UTC' } catch { return 'UTC' }
+    try { return localStorage.getItem('briefr_timezone') || 'UTC' } catch { return 'UTC' }
   })
   const [lastUpdated, setLastUpdated]           = useState(null)
 
@@ -122,8 +122,8 @@ export default function App() {
   // Keep timezone state in sync when Header dispatches changes
   useEffect(() => {
     const handler = (e) => setTimezone(e.detail)
-    window.addEventListener('vektor-timezone-change', handler)
-    return () => window.removeEventListener('vektor-timezone-change', handler)
+    window.addEventListener('briefr-timezone-change', handler)
+    return () => window.removeEventListener('briefr-timezone-change', handler)
   }, [])
 
   // ── Global keyboard shortcuts ─────────────────────────────
@@ -183,7 +183,7 @@ export default function App() {
 
             <footer className="app-footer" role="contentinfo">
               <div className="footer-left">
-                <span>VEKTOR</span> // CVE intelligence platform // data from NVD, CISA, FIRST, OSV
+                <span>BRIEFR</span> // CVE intelligence platform // data from NVD, CISA, FIRST, OSV
               </div>
               <div className="footer-right" style={{ fontSize: '0.6875rem', color: 'var(--text3)' }}>
                 All times UTC &mdash; not a substitute for professional security advice

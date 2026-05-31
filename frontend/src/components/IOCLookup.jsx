@@ -283,7 +283,7 @@ export default function IOCLookup() {
     const { label } = verdictInfo(result.malicious_votes, result.total_votes)
     const tags = (result.tags || []).join(', ') || 'none'
     const lines = [
-      'IOC Report — VEKTOR',
+      'IOC Report — BRIEFR',
       `Type:    ${result.type?.toUpperCase()}`,
       `Value:   ${result.value}`,
       `Verdict: ${label.toUpperCase()}`,
@@ -293,7 +293,7 @@ export default function IOCLookup() {
       `Tags:    ${tags}`,
       result.vt_link    ? `Report:  ${result.vt_link}` : null,
       '',
-      'Source: VEKTOR — VirusTotal + AbuseIPDB',
+      'Source: BRIEFR — VirusTotal + AbuseIPDB',
     ].filter(l => l !== null).join('\n')
 
     try {

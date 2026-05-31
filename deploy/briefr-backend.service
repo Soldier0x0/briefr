@@ -1,12 +1,12 @@
 [Unit]
-Description=VEKTOR CVE Intelligence Backend
+Description=BRIEFR CVE Intelligence Backend
 After=network.target
 Wants=network-online.target
 
 [Service]
 Type=exec
-User=vektor
-Group=vektor
+User=briefr
+Group=briefr
 WorkingDirectory=/opt/vektor/backend
 Environment="PATH=/opt/vektor/venv/bin"
 EnvironmentFile=/opt/vektor/backend/.env
@@ -15,7 +15,7 @@ Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=vektor-backend
+SyslogIdentifier=briefr-backend
 
 # Security hardening
 NoNewPrivileges=yes

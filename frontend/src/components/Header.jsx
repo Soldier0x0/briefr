@@ -21,14 +21,14 @@ function applyTheme(theme) {
   } else {
     document.documentElement.removeAttribute('data-theme')
   }
-  try { localStorage.setItem('vektor_theme', theme) } catch {}
+  try { localStorage.setItem('briefr_theme', theme) } catch {}
 }
 
 export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezoneChange }) {
   const [now, setNow]               = useState(new Date())
   const [theme, setTheme]           = useState(getCurrentTheme)
   const [tz, setTz]                 = useState(() => {
-    try { return localStorage.getItem('vektor_timezone') || 'UTC' } catch { return 'UTC' }
+    try { return localStorage.getItem('briefr_timezone') || 'UTC' } catch { return 'UTC' }
   })
   const [popoverOpen, setPopoverOpen]   = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -99,8 +99,8 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezone
       <div className="header-inner">
         {/* Left: logo */}
         <div className="header-left">
-          <button className="header-logo-btn" onClick={onAboutOpen} aria-label="Open about VEKTOR">
-            VEKTOR
+          <button className="header-logo-btn" onClick={onAboutOpen} aria-label="Open about BRIEFR">
+            BRIEFR
           </button>
           <span className="header-divider" aria-hidden="true">//</span>
           <span className="header-tagline">CVE intelligence</span>
@@ -142,7 +142,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezone
 
           {/* Legal links — hidden on mobile, shown inline on desktop */}
           <nav className="header-legal header-legal-desktop" aria-label="Legal links">
-            <button className="header-legal-link" onClick={onAboutOpen} aria-label="About VEKTOR">
+            <button className="header-legal-link" onClick={onAboutOpen} aria-label="About BRIEFR">
               About
             </button>
             <span className="header-legal-sep" aria-hidden="true">&middot;</span>

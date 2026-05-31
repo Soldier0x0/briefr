@@ -26,7 +26,7 @@ function buildDigest(cves, filters) {
   const filterStr = activeFilters.length > 0 ? activeFilters.join(', ') : 'none'
 
   const header = [
-    `VEKTOR — CVE DIGEST`,
+    `BRIEFR — CVE DIGEST`,
     `Date:      ${dateStr}`,
     `Generated: ${timeStr}`,
     `Filters: ${filterStr}`,
@@ -81,7 +81,7 @@ export default function DigestModal({ cves, filters, onClose }) {
       <div className="digest-panel">
         <div className="digest-header">
           <div className="digest-header-left">
-            <h2 id="digest-title" className="digest-title mono">VEKTOR DIGEST</h2>
+            <h2 id="digest-title" className="digest-title mono">BRIEFR DIGEST</h2>
             <span className="digest-count mono" aria-label={`${cves.length} CVEs`}>
               {cves.length} CVEs
             </span>

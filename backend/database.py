@@ -3,7 +3,7 @@ import json
 import aiosqlite
 from pathlib import Path
 
-DB_PATH = os.environ.get("DB_PATH", "vektor.db")
+DB_PATH = os.environ.get("DB_PATH", "briefr.db")
 
 
 async def get_db() -> aiosqlite.Connection:

@@ -44,14 +44,14 @@ export function buildSingleReport(cve) {
   return [
     `# CVE Intelligence Report`,
     `Generated: ${getReportTimestamp()}`,
-    `Source: VEKTOR / projectjupiter.in`,
+    `Source: BRIEFR / projectjupiter.in`,
     ``,
     ``,
     cveSection(cve),
     ``,
     ``,
     `---`,
-    `Free intelligence via VEKTOR — projectjupiter.in`,
+    `Free intelligence via BRIEFR — projectjupiter.in`,
   ].join('\n')
 }
 
@@ -60,14 +60,14 @@ export function buildCombinedReport(cves) {
   return [
     `# CVE Intelligence Report`,
     `Generated: ${getReportTimestamp()}`,
-    `Source: VEKTOR / projectjupiter.in`,
+    `Source: BRIEFR / projectjupiter.in`,
     ``,
     ``,
     sections,
     ``,
     ``,
     `---`,
-    `Free intelligence via VEKTOR — projectjupiter.in`,
+    `Free intelligence via BRIEFR — projectjupiter.in`,
   ].join('\n')
 }
 

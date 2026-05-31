@@ -33,13 +33,13 @@ export default function AboutModal({ onClose }) {
           &#x2715;
         </button>
 
-        <div className="about-logo" id="about-title">VEKTOR</div>
+        <div className="about-logo" id="about-title">BRIEFR</div>
         <div className="about-subtitle">Free CVE Intelligence</div>
 
         <hr className="about-divider" />
 
         <p className="about-description">
-          VEKTOR aggregates vulnerability data from public government and
+          BRIEFR aggregates vulnerability data from public government and
           open-source sources every day at 06:00 IST. No account required.
           No cookies. No tracking. No cost.
         </p>
