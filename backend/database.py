@@ -29,7 +29,8 @@ async def init_db() -> None:
                 mitre_technique TEXT,
                 summary TEXT,
                 is_kev INTEGER DEFAULT 0,
-                epss_score REAL DEFAULT 0.0,
+                epss_score REAL,
+                has_poc INTEGER DEFAULT 0,
                 patch_available INTEGER DEFAULT 0,
                 source_urls TEXT DEFAULT '[]',
                 cwe_ids TEXT DEFAULT '[]',
@@ -40,6 +41,7 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_cves_published ON cves(published);
             CREATE INDEX IF NOT EXISTS idx_cves_is_kev ON cves(is_kev);
             CREATE INDEX IF NOT EXISTS idx_cves_epss ON cves(epss_score);
+            CREATE INDEX IF NOT EXISTS idx_cves_has_poc ON cves(has_poc);
 
             CREATE TABLE IF NOT EXISTS ioc_cache (
                 value TEXT PRIMARY KEY,
@@ -76,12 +78,20 @@ async def init_db() -> None:
         """)
         await db.commit()
 
-        # Migration: add date_added column if it doesn't exist on existing installs
-        try:
-            await db.execute("ALTER TABLE kev_deadlines ADD COLUMN date_added TEXT DEFAULT ''")
-            await db.commit()
-        except Exception:
-            pass  # Column already exists
+        for migration in (
+            "ALTER TABLE kev_deadlines ADD COLUMN date_added TEXT DEFAULT ''",
+            "ALTER TABLE cves ADD COLUMN has_poc INTEGER DEFAULT 0",
+        ):
+            try:
+                await db.execute(migration)
+                await db.commit()
+            except Exception:
+                pass
+
+        await db.execute(
+            "UPDATE cves SET epss_score = NULL WHERE epss_score = 0.0"
+        )
+        await db.commit()
     finally:
         await db.close()
 
@@ -92,11 +102,11 @@ async def upsert_cve(db: aiosqlite.Connection, cve: dict) -> None:
         INSERT INTO cves (
             cve_id, description, cvss_score, severity, published, modified,
             affected_products, mitre_technique, summary, is_kev, epss_score,
-            patch_available, source_urls, cwe_ids, updated_at
+            has_poc, patch_available, source_urls, cwe_ids, updated_at
         ) VALUES (
             :cve_id, :description, :cvss_score, :severity, :published, :modified,
             :affected_products, :mitre_technique, :summary, :is_kev, :epss_score,
-            :patch_available, :source_urls, :cwe_ids, datetime('now')
+            :has_poc, :patch_available, :source_urls, :cwe_ids, datetime('now')
         )
         ON CONFLICT(cve_id) DO UPDATE SET
             description = excluded.description,
@@ -105,7 +115,9 @@ async def upsert_cve(db: aiosqlite.Connection, cve: dict) -> None:
             published = excluded.published,
             modified = excluded.modified,
             affected_products = excluded.affected_products,
-            mitre_technique = excluded.mitre_technique,
+            mitre_technique = COALESCE(excluded.mitre_technique, cves.mitre_technique),
+            summary = COALESCE(excluded.summary, cves.summary),
+            has_poc = CASE WHEN excluded.has_poc = 1 THEN 1 ELSE cves.has_poc END,
             patch_available = excluded.patch_available,
             source_urls = excluded.source_urls,
             cwe_ids = excluded.cwe_ids,
@@ -122,7 +134,8 @@ async def upsert_cve(db: aiosqlite.Connection, cve: dict) -> None:
             "mitre_technique": cve.get("mitre_technique"),
             "summary": cve.get("summary"),
             "is_kev": 1 if cve.get("is_kev") else 0,
-            "epss_score": cve.get("epss_score", 0.0),
+            "epss_score": cve.get("epss_score"),
+            "has_poc": 1 if cve.get("has_poc") else 0,
             "patch_available": 1 if cve.get("patch_available") else 0,
             "source_urls": json.dumps(cve.get("source_urls", [])),
             "cwe_ids": json.dumps(cve.get("cwe_ids", [])),
@@ -141,11 +154,71 @@ async def mark_cves_as_kev(db: aiosqlite.Connection, cve_ids: list) -> None:
 
 
 async def update_epss_scores(db: aiosqlite.Connection, scores: dict) -> None:
-    rows = [(score, cve_id) for cve_id, score in scores.items()]
+    rows = [(score, cve_id.upper()) for cve_id, score in scores.items()]
     await db.executemany(
         "UPDATE cves SET epss_score = ? WHERE cve_id = ?",
         rows,
     )
+
+
+
+
+async def backfill_display_fields(db: aiosqlite.Connection) -> int:
+    """Fill summary/MITRE from stored NVD fields when missing (no re-fetch)."""
+    from enrichment.cve import build_plain_summary, extract_mitre_from_urls
+
+    rows = await db.execute_fetchall(
+        """
+        SELECT cve_id, description, source_urls, mitre_technique, summary
+        FROM cves
+        WHERE summary IS NULL OR summary = '' OR mitre_technique IS NULL
+        """
+    )
+    updated = 0
+    for row in rows:
+        urls = json.loads(row["source_urls"] or "[]")
+        summary = row["summary"]
+        if not summary:
+            summary = build_plain_summary(row["description"] or "")
+        mitre = row["mitre_technique"] or extract_mitre_from_urls(urls)
+        if not summary and not mitre:
+            continue
+        await db.execute(
+            """
+            UPDATE cves
+            SET summary = COALESCE(?, summary),
+                mitre_technique = COALESCE(?, mitre_technique)
+            WHERE cve_id = ?
+            """,
+            (summary, mitre, row["cve_id"]),
+        )
+        updated += 1
+    return updated
+
+
+async def enrich_kev_summaries(db: aiosqlite.Connection) -> int:
+    """Fill plain-English summary from CISA KEV short descriptions."""
+    cursor = await db.execute(
+        """
+        UPDATE cves
+        SET summary = (
+            SELECT k.short_description
+            FROM kev_deadlines k
+            WHERE k.cve_id = cves.cve_id
+              AND k.short_description IS NOT NULL
+              AND k.short_description != ''
+        )
+        WHERE is_kev = 1
+          AND (summary IS NULL OR summary = '')
+          AND EXISTS (
+            SELECT 1 FROM kev_deadlines k
+            WHERE k.cve_id = cves.cve_id
+              AND k.short_description IS NOT NULL
+              AND k.short_description != ''
+          )
+        """
+    )
+    return cursor.rowcount
 
 
 async def upsert_kev(db: aiosqlite.Connection, entry: dict) -> None:

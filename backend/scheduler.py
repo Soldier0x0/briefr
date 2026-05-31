@@ -7,6 +7,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from database import (
+    backfill_display_fields,
+    enrich_kev_summaries,
     get_db,
     get_all_cve_ids,
     get_cve_count,
@@ -30,6 +32,7 @@ async def run_daily_refresh() -> None:
 
     nvd_api_key = os.environ.get("NVD_API_KEY")
     max_cves = int(os.environ.get("MAX_CVES_PER_FETCH", "2000"))
+    days_back = int(os.environ.get("NVD_DAYS_BACK", "14"))
 
     new_or_updated = 0
     kev_count = 0
@@ -37,7 +40,7 @@ async def run_daily_refresh() -> None:
 
     try:
         logger.info("Step 1/3: Fetching CVEs from NVD")
-        cves = await fetch_recent_cves(api_key=nvd_api_key, days_back=7)
+        cves = await fetch_recent_cves(api_key=nvd_api_key, days_back=days_back)
         cves = cves[:max_cves]
 
         db = await get_db()
@@ -75,6 +78,15 @@ async def run_daily_refresh() -> None:
 
         logger.info("Step 2/3 complete: %d KEV entries processed", kev_count)
 
+        db = await get_db()
+        try:
+            kev_summaries = await enrich_kev_summaries(db)
+            await db.commit()
+            if kev_summaries:
+                logger.info("Enriched %d KEV summaries from CISA descriptions", kev_summaries)
+        finally:
+            await db.close()
+
         # Step 2.5: Cross-fetch KEV CVEs not yet in cves table
         try:
             db = await get_db()
@@ -96,6 +108,9 @@ async def run_daily_refresh() -> None:
                         cve_data = await fetch_cve_by_id(kev_cve_id, nvd_api_key)
                         if cve_data:
                             cve_data["is_kev"] = True
+                            kev_short = entry.get("shortDescription", "")
+                            if kev_short:
+                                cve_data["summary"] = kev_short
                             db = await get_db()
                             try:
                                 await upsert_cve(db, cve_data)
@@ -137,6 +152,19 @@ async def run_daily_refresh() -> None:
 
     except Exception as exc:
         logger.error("Step 3/3 failed (EPSS fetch): %s", exc)
+
+    try:
+        logger.info("Step 4/4: Backfilling summaries and MITRE mappings")
+        db = await get_db()
+        try:
+            filled = await backfill_display_fields(db)
+            await enrich_kev_summaries(db)
+            await db.commit()
+            logger.info("Step 4/4 complete: enriched %d CVE display fields", filled)
+        finally:
+            await db.close()
+    except Exception as exc:
+        logger.error("Step 4/4 failed (display enrichment): %s", exc)
 
     end_time = datetime.now(timezone.utc)
     duration = (end_time - start_time).total_seconds()

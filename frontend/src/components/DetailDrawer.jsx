@@ -12,9 +12,9 @@ function severityColor(sev) {
   return 'var(--text3)'
 }
 
-function epssPercent(score) {
-  if (score == null) return null
-  return (score * 100).toFixed(1)
+function epssDisplay(score) {
+  if (score == null || score === undefined) return null
+  return `${(score * 100).toFixed(1)}%`
 }
 
 function mitreUrl(id) {
@@ -68,7 +68,7 @@ export default function DetailDrawer({ cve, onClose }) {
   const products = Array.isArray(cve.affected_products) ? cve.affected_products : []
   const cwes     = Array.isArray(cve.cwe_ids) ? cve.cwe_ids : []
   const urls     = Array.isArray(cve.source_urls) ? cve.source_urls.slice(0, 5) : []
-  const epss     = epssPercent(cve.epss_score)
+  const epss     = epssDisplay(cve.epss_score)
   const sevColor = severityColor(cve.severity)
 
   return (
@@ -142,13 +142,19 @@ export default function DetailDrawer({ cve, onClose }) {
                   color={sevColor}
                 />
               )}
-              {epss != null && (
-                <MetricCell
-                  label="EPSS"
-                  value={`${epss}%`}
-                  color={parseFloat(epss) >= 50 ? 'var(--red)' : parseFloat(epss) >= 20 ? 'var(--amber)' : 'var(--green)'}
-                />
-              )}
+              <MetricCell
+                label="EPSS"
+                value={epss ?? 'N/A'}
+                color={
+                  epss == null
+                    ? 'var(--text3)'
+                    : parseFloat(epss) >= 50
+                      ? 'var(--red)'
+                      : parseFloat(epss) >= 20
+                        ? 'var(--amber)'
+                        : 'var(--green)'
+                }
+              />
               <MetricCell
                 label="CISA KEV"
                 value={cve.is_kev ? 'YES' : 'NO'}

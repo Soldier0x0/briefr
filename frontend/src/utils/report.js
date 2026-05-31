@@ -4,7 +4,10 @@
 import { getReportTimestamp } from './timezone.js'
 
 function cveSection(cve) {
-  const epss = cve.epss_score != null ? (cve.epss_score * 100).toFixed(1) : null
+  const epss =
+    cve.epss_score != null && cve.epss_score !== undefined
+      ? (cve.epss_score * 100).toFixed(1)
+      : null
   const products = Array.isArray(cve.affected_products) ? cve.affected_products : []
   const urls = Array.isArray(cve.source_urls) ? cve.source_urls.slice(0, 5) : []
   const productList = products.map(p => p.split(':')[1] || p).join(', ') || 'Unknown'
