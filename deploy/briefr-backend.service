@@ -9,7 +9,7 @@ User=briefr
 Group=briefr
 WorkingDirectory=/opt/briefr/backend
 Environment="PATH=/opt/briefr/venv/bin"
-EnvironmentFile=-/opt/briefr/backend/.env
+EnvironmentFile=/opt/briefr/backend/.env
 ExecStart=/opt/briefr/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1 --log-level info
 Restart=always
 RestartSec=10
@@ -21,6 +21,7 @@ SyslogIdentifier=briefr-backend
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
+ReadOnlyPaths=/opt/briefr/venv
 ReadWritePaths=/opt/briefr/backend
 
 [Install]
