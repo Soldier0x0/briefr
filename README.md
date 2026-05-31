@@ -81,24 +81,42 @@ npm run dev    # http://localhost:5173 — proxies /api to :8000
 
 Production deploy: `npm run build`, then serve `frontend/dist` behind nginx. See `deploy/setup.sh` for systemd install on Debian.
 
-### Server deployment (systemd)
+### Update EPSS scores (database)
 
-1. Create a system user: `useradd --system --no-create-home --shell /usr/sbin/nologin briefr`
-2. Clone to `/opt/briefr`, set up the backend venv and `backend/.env` (see Installation above).
-3. Install frontend deps: `cd /opt/briefr/frontend && npm install`
-4. Copy the three unit files to `/etc/systemd/system/`:
-   - `deploy/briefr-backend.service`
-   - `deploy/briefr-frontend.service`
-   - `deploy/briefr.target`
-5. Enable and start: `systemctl daemon-reload && systemctl enable briefr.target && systemctl start briefr.target`
-6. Open firewall ports **5173** (frontend) and **8000** (API), e.g. `ufw allow 5173/tcp && ufw allow 8000/tcp`
-7. Set `ALLOWED_ORIGINS` in `backend/.env` to your frontend URL(s), e.g. `http://your-server:5173` and your production domain.
-
-**Update** (after pulling new commits):
+After `git pull`, refresh EPSS from the FIRST daily feed without re-fetching all CVEs from NVD:
 
 ```bash
-sudo /opt/briefr/deploy/briefr-update.sh
+bash /opt/briefr/deploy/refresh-epss.sh
 ```
+
+Or trigger a full ingest (NVD + KEV + EPSS + summaries):
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/refresh
+journalctl -u briefr-backend -f
+```
+
+Check coverage:
+
+```bash
+sqlite3 /opt/briefr/backend/briefr.db \
+  "SELECT COUNT(*) AS total, SUM(epss_score IS NOT NULL) AS with_epss FROM cves;"
+```
+
+### Production with nginx (not Vite dev)
+
+1. Install nginx: `apt-get install -y nginx`
+2. Set `ALLOWED_ORIGINS` in `backend/.env` to your public URL (e.g. `http://192.168.1.50` or `https://projectjupiter.in`)
+3. Run:
+
+```bash
+git pull origin main
+bash /opt/briefr/deploy/setup-nginx-production.sh
+```
+
+This builds `frontend/dist`, installs `deploy/nginx-briefr-http.conf` (LAN HTTP), disables `briefr-frontend` (Vite), and proxies `/api/` to the backend on port 8000.
+
+For HTTPS + `projectjupiter.in`, use `USE_TLS=1 bash deploy/setup-nginx-production.sh` after certbot certificates exist.
 
 ### Environment Variables
 
