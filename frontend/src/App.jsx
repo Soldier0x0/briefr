@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Routes, Route, useNavigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import Header from './components/Header.jsx'
 import Hero from './components/Hero.jsx'
 import StatsRow from './components/StatsRow.jsx'
@@ -37,7 +37,8 @@ function cycleFilter(filters) {
 
 function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
                    digestOpen, setDigestOpen, digestCVEs, setDigestCVEs,
-                   searchFocusTrigger, setSearchFocusTrigger, aboutOpen, setAboutOpen }) {
+                   searchFocusTrigger, setSearchFocusTrigger, aboutOpen, setAboutOpen,
+                   timezone }) {
 
   const handleBrief = useCallback((stack) => {
     setFilters(prev => ({ ...prev, stack }))
@@ -143,6 +144,7 @@ export default function App() {
                   setSearchFocusTrigger={setSearchFocusTrigger}
                   aboutOpen={aboutOpen}
                   setAboutOpen={setAboutOpen}
+                  timezone={timezone}
                 />
               )}
               {activeTab === 'ioc' && <IOCLookup />}
