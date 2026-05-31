@@ -18,7 +18,7 @@ function SkeletonCard() {
   )
 }
 
-export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGenerateDigest, searchFocusTrigger }) {
+export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGenerateDigest, searchFocusTrigger, timezone }) {
   const [cves, setCves] = useState([])
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(null)
@@ -171,6 +171,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
             onSelect={onSelectCVE}
             selected={!!selectedMap[cve.cve_id]}
             onToggleSelect={handleToggleSelect}
+            timezone={timezone || 'UTC'}
           />
         ))}
       </div>

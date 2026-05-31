@@ -11,6 +11,16 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+    <!-- Apply saved theme before React renders to prevent flash -->
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('vektor_theme') === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light')
+          }
+        } catch (_) {}
+      })()
+    </script>
     <title>VEKTOR — CVE Intelligence</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a08'/><text x='4' y='24' font-family='monospace' font-size='20' fill='%23e85533'>V</text></svg>" />
   </head>

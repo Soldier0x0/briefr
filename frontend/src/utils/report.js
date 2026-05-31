@@ -1,6 +1,8 @@
 // Shared report building and clipboard utilities
 // Used by DetailDrawer (single) and CVEFeed multi-select (combined)
 
+import { getReportTimestamp } from './timezone.js'
+
 function cveSection(cve) {
   const epss = cve.epss_score != null ? (cve.epss_score * 100).toFixed(1) : null
   const products = Array.isArray(cve.affected_products) ? cve.affected_products : []
@@ -39,10 +41,9 @@ function cveSection(cve) {
 }
 
 export function buildSingleReport(cve) {
-  const now = new Date().toISOString()
   return [
     `# CVE Intelligence Report`,
-    `Generated: ${now}`,
+    `Generated: ${getReportTimestamp()}`,
     `Source: VEKTOR / projectjupiter.in`,
     ``,
     ``,
@@ -55,11 +56,10 @@ export function buildSingleReport(cve) {
 }
 
 export function buildCombinedReport(cves) {
-  const now = new Date().toISOString()
   const sections = cves.map(cveSection).join('\n\n---\n\n')
   return [
     `# CVE Intelligence Report`,
-    `Generated: ${now}`,
+    `Generated: ${getReportTimestamp()}`,
     `Source: VEKTOR / projectjupiter.in`,
     ``,
     ``,

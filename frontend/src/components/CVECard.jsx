@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { copyToClipboard } from '../utils/report.js'
+import { formatAbsolute } from '../utils/timezone.js'
 import './CVECard.css'
 
 function timeAgo(isoString) {
@@ -30,7 +31,7 @@ function epssColor(score) {
   return 'var(--green)'
 }
 
-export default function CVECard({ cve, onSelect, selected, onToggleSelect }) {
+export default function CVECard({ cve, onSelect, selected, onToggleSelect, timezone = 'UTC' }) {
   const [shareCopied, setShareCopied] = useState(false)
   const sevClass = severityClass(cve.severity)
   const epss = typeof cve.epss_score === 'number' ? cve.epss_score : null
@@ -197,7 +198,12 @@ export default function CVECard({ cve, onSelect, selected, onToggleSelect }) {
         )}
         <span className="meta-item meta-time" aria-label={`Published: ${cve.published}`}>
           <span className="meta-key">published</span>
-          <span className="meta-val">{timeAgo(cve.published)}</span>
+          <span
+            className="meta-val time-tooltip-wrap"
+            title={formatAbsolute(cve.published, timezone)}
+          >
+            {timeAgo(cve.published)}
+          </span>
         </span>
       </div>
     </article>

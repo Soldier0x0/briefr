@@ -63,6 +63,7 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
           onSelectCVE={setSelectedCVE}
           onGenerateDigest={handleGenerateDigest}
           searchFocusTrigger={searchFocusTrigger}
+          timezone={timezone}
         />
         <Sidebar filters={filters} onFiltersChange={handleFiltersChange} stats={stats} />
       </div>
@@ -79,9 +80,19 @@ export default function App() {
   const [digestCVEs, setDigestCVEs]             = useState([])
   const [searchFocusTrigger, setSearchFocusTrigger] = useState(0)
   const [aboutOpen, setAboutOpen]               = useState(false)
+  const [timezone, setTimezone]                 = useState(() => {
+    try { return localStorage.getItem('vektor_timezone') || 'UTC' } catch { return 'UTC' }
+  })
 
   useEffect(() => {
     fetchStats().then(setStats).catch(() => {})
+  }, [])
+
+  // Keep timezone state in sync when Header dispatches changes
+  useEffect(() => {
+    const handler = (e) => setTimezone(e.detail)
+    window.addEventListener('vektor-timezone-change', handler)
+    return () => window.removeEventListener('vektor-timezone-change', handler)
   }, [])
 
   // ── Global keyboard shortcuts ─────────────────────────────
@@ -113,6 +124,7 @@ export default function App() {
               activeTab={activeTab}
               onTabChange={setActiveTab}
               onAboutOpen={() => setAboutOpen(true)}
+              onTimezoneChange={setTimezone}
             />
 
             <div className="app-main">

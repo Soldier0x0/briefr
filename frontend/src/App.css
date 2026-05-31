@@ -21,6 +21,25 @@
   --font-display: 'DM Serif Display', Georgia, serif;
 }
 
+/* ── Light mode overrides ──────────────────────────────── */
+[data-theme="light"] {
+  --bg:          #f5f3ee;
+  --bg2:         #eeece7;
+  --bg3:         #e4e2dc;
+  --border:      #d0cec8;
+  --border2:     #c0bdb6;
+  --text:        #1a1a17;
+  --text2:       #4a4844;
+  --text3:       #8a8880;
+  --red:         #c0391a;
+  --red-dim:     #f5ddd8;
+  --amber:       #9e6200;
+  --amber-dim:   #f5e8cc;
+  --green:       #2e7a4a;
+  --green-dim:   #d4eade;
+  --accent:      #8a6e3a;
+}
+
 /* ── Reset ─────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;

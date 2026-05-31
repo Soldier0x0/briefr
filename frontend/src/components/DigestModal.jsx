@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { getReportTimestamp } from '../utils/timezone.js'
 import './DigestModal.css'
 
 function severityTag(sev) {
@@ -13,7 +14,7 @@ function severityTag(sev) {
 function buildDigest(cves, filters) {
   const now = new Date()
   const dateStr = now.toISOString().split('T')[0]
-  const timeStr = now.toISOString()
+  const timeStr = getReportTimestamp()
 
   const activeFilters = []
   if (filters.severity) activeFilters.push(filters.severity)
@@ -26,7 +27,7 @@ function buildDigest(cves, filters) {
 
   const header = [
     `VEKTOR — CVE DIGEST`,
-    `Date:    ${dateStr}`,
+    `Date:      ${dateStr}`,
     `Generated: ${timeStr}`,
     `Filters: ${filterStr}`,
     ``,
