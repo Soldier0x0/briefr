@@ -41,7 +41,6 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_cves_published ON cves(published);
             CREATE INDEX IF NOT EXISTS idx_cves_is_kev ON cves(is_kev);
             CREATE INDEX IF NOT EXISTS idx_cves_epss ON cves(epss_score);
-            CREATE INDEX IF NOT EXISTS idx_cves_has_poc ON cves(has_poc);
 
             CREATE TABLE IF NOT EXISTS ioc_cache (
                 value TEXT PRIMARY KEY,
@@ -87,6 +86,14 @@ async def init_db() -> None:
                 await db.commit()
             except Exception:
                 pass
+
+        try:
+            await db.execute(
+                "CREATE INDEX IF NOT EXISTS idx_cves_has_poc ON cves(has_poc)"
+            )
+            await db.commit()
+        except Exception:
+            pass
 
         await db.execute(
             "UPDATE cves SET epss_score = NULL WHERE epss_score = 0.0"
