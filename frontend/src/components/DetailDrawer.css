@@ -1,0 +1,300 @@
+/* ── Overlay ─────────────────────────────────────────────── */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 8, 0);
+  z-index: 200;
+  pointer-events: none;
+  transition: background 0.25s ease;
+}
+
+.drawer-overlay-active {
+  background: rgba(10, 10, 8, 0.72);
+  pointer-events: all;
+  cursor: pointer;
+}
+
+/* ── Panel ───────────────────────────────────────────────── */
+.drawer-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 480px;
+  max-width: 100vw;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  z-index: 201;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.drawer-panel-open {
+  transform: translateX(0);
+}
+
+@media (max-width: 520px) {
+  .drawer-panel {
+    width: 100vw;
+    border-left: none;
+  }
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+.drawer-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.drawer-cve-id {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drawer-sev-badge {
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+.drawer-close {
+  font-size: 1rem;
+  color: var(--text3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  flex-shrink: 0;
+  transition: color 0.1s;
+  line-height: 1;
+}
+
+.drawer-close:hover {
+  color: var(--text);
+}
+
+.drawer-close:focus-visible {
+  outline: 1px solid var(--accent);
+}
+
+/* ── Body ────────────────────────────────────────────────── */
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.drawer-section {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.drawer-section:last-child {
+  border-bottom: none;
+}
+
+.drawer-section-label {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  color: var(--text3);
+  margin-bottom: 10px;
+}
+
+/* Description */
+.drawer-description {
+  font-size: 0.875rem;
+  color: var(--text2);
+  line-height: 1.65;
+}
+
+/* Summary blockquote */
+.drawer-summary {
+  border-left: 3px solid var(--accent);
+  padding: 10px 14px;
+  background: var(--bg3);
+  font-size: 0.875rem;
+  color: var(--text);
+  line-height: 1.6;
+  font-style: normal;
+}
+
+/* Metrics */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+}
+
+.metric-cell {
+  padding: 10px 0;
+  border-right: 1px solid var(--border);
+}
+
+.metric-cell:last-child {
+  border-right: none;
+}
+
+.metric-value {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.metric-label {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+}
+
+/* Affected products */
+.product-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.product-tag {
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--text2);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  padding: 3px 8px;
+}
+
+.cwe-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.cwe-tag {
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+}
+
+/* MITRE ATT&CK */
+.mitre-card {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mitre-id {
+  font-size: 0.875rem;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.mitre-link {
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: color 0.1s;
+}
+
+.mitre-link:hover {
+  color: var(--text);
+}
+
+/* References */
+.refs-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.refs-link {
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  color: var(--text3);
+  text-decoration: none;
+  word-break: break-all;
+  display: block;
+  line-height: 1.4;
+  transition: color 0.1s;
+}
+
+.refs-link:hover {
+  color: var(--accent);
+}
+
+/* Copy report */
+.drawer-section-action {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.copy-report-btn {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  padding: 8px 20px;
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s, background 0.1s;
+}
+
+.copy-report-btn:hover {
+  border-color: var(--text3);
+  color: var(--text);
+}
+
+.copy-report-btn.copied {
+  color: var(--green);
+  border-color: var(--green);
+  background: var(--green-dim);
+}
+
+.copy-hint {
+  font-size: 0.6875rem;
+  color: var(--text3);
+}

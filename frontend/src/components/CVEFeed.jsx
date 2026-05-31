@@ -17,7 +17,7 @@ function SkeletonCard() {
   )
 }
 
-export default function CVEFeed({ filters, onFiltersChange, onSelectCVE }) {
+export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGenerateDigest, searchFocusTrigger }) {
   const [cves, setCves] = useState([])
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(null)
@@ -100,6 +100,8 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE }) {
         filters={filters}
         onFiltersChange={onFiltersChange}
         total={total}
+        onGenerateDigest={() => onGenerateDigest && onGenerateDigest(cves)}
+        searchFocusTrigger={searchFocusTrigger}
       />
 
       {showError && (

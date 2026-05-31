@@ -76,6 +76,7 @@ input:focus, textarea:focus {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  position: relative; /* Required for DigestModal absolute overlay */
 }
 
 .app-main {
@@ -153,6 +154,16 @@ input:focus, textarea:focus {
 .footer-right {
   font-size: 0.75rem;
   color: var(--text3);
+}
+
+/* ── Keyboard shortcut badge ───────────────────────────── */
+kbd {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--text2);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  padding: 1px 5px;
 }
 
 /* ── Scrollbar ─────────────────────────────────────────── */

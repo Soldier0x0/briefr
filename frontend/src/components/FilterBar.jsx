@@ -15,22 +15,38 @@ function deriveActive(filters) {
   return 'all'
 }
 
-export default function FilterBar({ filters, onFiltersChange, total }) {
+export default function FilterBar({
+  filters,
+  onFiltersChange,
+  total,
+  onGenerateDigest,
+  searchFocusTrigger,
+}) {
   const [localSearch, setLocalSearch] = useState(filters.search || '')
-  const debounceRef = useRef(null)
+  const debounceRef  = useRef(null)
+  const searchRef    = useRef(null)
 
+  // Sync local search when filters.search cleared from outside
   useEffect(() => {
     setLocalSearch(filters.search || '')
   }, [filters.search])
+
+  // / shortcut: focus search input when trigger increments
+  useEffect(() => {
+    if (searchFocusTrigger > 0 && searchRef.current) {
+      searchRef.current.focus()
+      searchRef.current.select()
+    }
+  }, [searchFocusTrigger])
 
   const active = deriveActive(filters)
 
   function handleQuickFilter(id) {
     const base = { severity: null, kev_only: false, poc_only: false }
-    if (id === 'kev')      onFiltersChange({ ...base, kev_only: true })
+    if (id === 'kev')       onFiltersChange({ ...base, kev_only: true })
     else if (id === 'critical') onFiltersChange({ ...base, severity: 'CRITICAL' })
-    else if (id === 'poc') onFiltersChange({ ...base, poc_only: true })
-    else                   onFiltersChange(base)
+    else if (id === 'poc')  onFiltersChange({ ...base, poc_only: true })
+    else                    onFiltersChange(base)
   }
 
   function handleSearchChange(e) {
@@ -45,7 +61,7 @@ export default function FilterBar({ filters, onFiltersChange, total }) {
   return (
     <div className="filter-bar" role="toolbar" aria-label="CVE feed filters">
       <div className="filter-bar-left">
-        <span className="filter-title">
+        <span className="filter-title mono">
           CVE FEED
           {total != null && (
             <span className="filter-count" aria-label={`${total} results`}>
@@ -56,6 +72,15 @@ export default function FilterBar({ filters, onFiltersChange, total }) {
       </div>
 
       <div className="filter-bar-right">
+        <button
+          className="digest-btn"
+          onClick={onGenerateDigest}
+          aria-label="Generate digest of current CVE results"
+          title="Generate digest of currently visible CVEs"
+        >
+          GENERATE DIGEST
+        </button>
+
         <div className="filter-buttons" role="group" aria-label="Quick filters">
           {QUICK_FILTERS.map(f => (
             <button
@@ -71,12 +96,13 @@ export default function FilterBar({ filters, onFiltersChange, total }) {
         </div>
 
         <input
+          ref={searchRef}
           type="search"
           className="filter-search"
           value={localSearch}
           onChange={handleSearchChange}
           placeholder="search CVE-ID or keyword..."
-          aria-label="Search CVEs by ID or keyword"
+          aria-label="Search CVEs by ID or keyword (press / to focus)"
           autoComplete="off"
           spellCheck="false"
         />

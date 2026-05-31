@@ -44,6 +44,27 @@
   gap: 10px;
 }
 
+.digest-btn {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--border2);
+  padding: 4px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.1s, border-color 0.1s, background 0.1s;
+}
+
+.digest-btn:hover {
+  color: var(--text);
+  border-color: var(--text3);
+  background: var(--bg3);
+}
+
 .filter-buttons {
   display: flex;
   gap: 2px;
