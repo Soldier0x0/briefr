@@ -30,12 +30,51 @@
   flex-shrink: 0;
 }
 
-.header-logo {
+.header-logo-btn {
   font-family: var(--font-mono);
   font-size: 0.9375rem;
   font-weight: 500;
   color: var(--red);
   letter-spacing: 0.08em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.12s;
+}
+
+.header-logo-btn:hover {
+  color: var(--text);
+}
+
+/* Legal nav links */
+.header-legal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-legal-link {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.1s;
+}
+
+.header-legal-link:hover {
+  color: var(--text2);
+}
+
+.header-legal-sep {
+  font-size: 10px;
+  color: var(--text3);
+  user-select: none;
 }
 
 .header-divider {

@@ -211,7 +211,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
               onClick={handleCopyAll}
               aria-label={`Copy combined report for all ${selectedCount} selected CVEs`}
             >
-              {copyAllState === 'copied' ? 'Copied!' : 'COPY ALL REPORTS'}
+              {copyAllState === 'copied' ? `Copied ${selectedCount} reports` : 'COPY ALL REPORTS'}
             </button>
             <button
               className="float-btn"

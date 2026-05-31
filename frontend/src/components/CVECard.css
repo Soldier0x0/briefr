@@ -1,5 +1,5 @@
 .cve-card {
-  padding: 16px 20px 16px 36px; /* left padding makes room for checkbox */
+  padding: 14px 40px 14px 36px; /* left: checkbox space, right: share btn space */
   border-bottom: 1px solid var(--border);
   border-left: 3px solid var(--border);
   background: var(--bg);
@@ -15,29 +15,6 @@
   background: var(--bg2);
 }
 
-.cve-card.cve-selected {
-  background: color-mix(in srgb, var(--red-dim) 40%, var(--bg));
-}
-
-/* Checkbox — visible on hover or when checked */
-.card-checkbox {
-  position: absolute;
-  top: 15px;
-  left: 10px;
-  width: 14px;
-  height: 14px;
-  opacity: 0;
-  cursor: pointer;
-  accent-color: var(--red);
-  z-index: 2;
-  transition: opacity 0.12s;
-}
-
-.cve-card:hover .card-checkbox,
-.cve-card.cve-selected .card-checkbox {
-  opacity: 1;
-}
-
 .cve-card:focus-visible {
   outline: 1px solid var(--accent);
   outline-offset: -1px;
@@ -50,7 +27,117 @@
 .cve-card.sev-low      { border-left-color: var(--text3); }
 .cve-card.sev-unknown  { border-left-color: var(--border); }
 
-/* Top row */
+/* Selected state */
+.cve-card.cve-selected {
+  background: color-mix(in srgb, var(--red-dim) 35%, var(--bg));
+}
+
+/* ── Custom rectangular checkbox ─────────────────────────── */
+.card-checkbox-wrap {
+  position: absolute;
+  top: 13px;
+  left: 8px;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cve-card:hover .card-checkbox-wrap,
+.cve-card.cve-selected .card-checkbox-wrap {
+  opacity: 1;
+}
+
+.card-checkbox-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+.card-checkbox-box {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border2);
+  border-radius: 0;
+  background: transparent;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.card-checkbox-input:checked ~ .card-checkbox-box,
+.card-checkbox-input:checked + .card-checkbox-box {
+  background: var(--red);
+  border-color: var(--red);
+}
+
+/* White checkmark when checked */
+.card-checkbox-input:checked ~ .card-checkbox-box::after,
+.card-checkbox-input:checked + .card-checkbox-box::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: 2px solid #ffffff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+/* ── Share button ─────────────────────────────────────────── */
+.card-share-wrap {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.cve-card:hover .card-share-wrap {
+  opacity: 1;
+}
+
+.card-share-btn {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--text3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  transition: color 0.1s;
+}
+
+.card-share-btn:hover {
+  color: var(--accent);
+}
+
+.share-tooltip {
+  position: absolute;
+  top: -26px;
+  right: 0;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--green);
+  font-size: 0.5625rem;
+  letter-spacing: 0.08em;
+  padding: 3px 7px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ── Top row ──────────────────────────────────────────────── */
 .cve-top {
   display: flex;
   align-items: flex-start;

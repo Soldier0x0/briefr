@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { copyToClipboard } from '../utils/report.js'
 import './CVECard.css'
 
 function timeAgo(isoString) {
@@ -29,6 +31,7 @@ function epssColor(score) {
 }
 
 export default function CVECard({ cve, onSelect, selected, onToggleSelect }) {
+  const [shareCopied, setShareCopied] = useState(false)
   const sevClass = severityClass(cve.severity)
   const epss = typeof cve.epss_score === 'number' ? cve.epss_score : null
   const products = Array.isArray(cve.affected_products) ? cve.affected_products : []
@@ -54,6 +57,18 @@ export default function CVECard({ cve, onSelect, selected, onToggleSelect }) {
     e.stopPropagation()
   }
 
+  async function handleShare(e) {
+    e.stopPropagation()
+    const desc = (cve.description || '').slice(0, 60).trimEnd()
+    const url = `https://projectjupiter.in/cve/${cve.cve_id}`
+    const text = `${cve.cve_id} — ${desc}\nvia VEKTOR: ${url}`
+    const ok = await copyToClipboard(text)
+    if (ok) {
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 1500)
+    }
+  }
+
   return (
     <article
       className={`cve-card sev-${sevClass}${selected ? ' cve-selected' : ''}`}
@@ -63,16 +78,38 @@ export default function CVECard({ cve, onSelect, selected, onToggleSelect }) {
       role="button"
       aria-label={`CVE ${cve.cve_id}, severity ${cve.severity || 'unknown'}. Click to view details.`}
     >
-      {/* Hover checkbox — top-left */}
-      <input
-        type="checkbox"
-        className="card-checkbox"
-        checked={!!selected}
-        onChange={handleCheckChange}
+      {/* Custom rectangular checkbox — top-left, hover-only */}
+      <label
+        className="card-checkbox-wrap"
         onClick={handleCheckClick}
         aria-label={`Select ${cve.cve_id} for bulk report`}
-        tabIndex={-1}
-      />
+      >
+        <input
+          type="checkbox"
+          className="card-checkbox-input"
+          checked={!!selected}
+          onChange={handleCheckChange}
+          tabIndex={-1}
+        />
+        <span className="card-checkbox-box" aria-hidden="true" />
+      </label>
+
+      {/* Share button — top-right, hover-only */}
+      <div className="card-share-wrap">
+        <button
+          className="card-share-btn"
+          onClick={handleShare}
+          aria-label={`Copy share link for ${cve.cve_id}`}
+          tabIndex={-1}
+        >
+          &#x2197;
+        </button>
+        {shareCopied && (
+          <span className="share-tooltip mono" role="status" aria-live="polite">
+            Link copied
+          </span>
+        )}
+      </div>
 
       {/* Top row: ID + badges */}
       <div className="cve-top">
@@ -131,9 +168,7 @@ export default function CVECard({ cve, onSelect, selected, onToggleSelect }) {
               style={{ width: `${Math.min(epss * 100, 100)}%`, background: epssColor(epss) }}
             />
           </div>
-          <span className="epss-label">
-            EPSS {(epss * 100).toFixed(1)}%
-          </span>
+          <span className="epss-label">EPSS {(epss * 100).toFixed(1)}%</span>
         </div>
       )}
 
