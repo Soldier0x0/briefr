@@ -1,0 +1,51 @@
+const BASE = '/api'
+
+async function request(path, options = {}) {
+  const res = await fetch(`${BASE}${path}`, options)
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(body.detail || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
+export function fetchStats() {
+  return request('/stats')
+}
+
+export function fetchHealth() {
+  return request('/health')
+}
+
+export function fetchCVEs(params = {}) {
+  const qs = new URLSearchParams()
+  if (params.severity) qs.set('severity', params.severity)
+  if (params.kev_only) qs.set('kev_only', 'true')
+  if (params.poc_only) qs.set('poc_only', 'true')
+  if (params.search) qs.set('search', params.search)
+  if (params.stack) qs.set('stack', params.stack)
+  if (params.page) qs.set('page', String(params.page))
+  if (params.limit) qs.set('limit', String(params.limit))
+  const query = qs.toString()
+  return request(`/cves${query ? `?${query}` : ''}`)
+}
+
+export function fetchCVE(cveId) {
+  return request(`/cves/${encodeURIComponent(cveId)}`)
+}
+
+export function fetchKEVDeadlines() {
+  return request('/kev/deadlines')
+}
+
+export function fetchUsage() {
+  return request('/usage')
+}
+
+export function lookupIOC(value, type) {
+  return request('/ioc/lookup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ value, type }),
+  })
+}

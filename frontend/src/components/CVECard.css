@@ -1,0 +1,176 @@
+.cve-card {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+  transition: background 0.1s;
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+
+.cve-card:hover {
+  background: var(--bg2);
+}
+
+.cve-card:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* Severity border variants */
+.cve-card.sev-critical { border-left-color: var(--red); }
+.cve-card.sev-high     { border-left-color: var(--amber); }
+.cve-card.sev-medium   { border-left-color: var(--border2); }
+.cve-card.sev-low      { border-left-color: var(--text3); }
+.cve-card.sev-unknown  { border-left-color: var(--border); }
+
+/* Top row */
+.cve-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.cve-id {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+/* Badges */
+.cve-badges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+}
+
+.badge-kev {
+  color: var(--red);
+  background: var(--red-dim);
+  border-color: var(--red);
+}
+
+.badge-poc {
+  color: var(--amber);
+  background: var(--amber-dim);
+  border-color: var(--amber);
+}
+
+.badge-patch {
+  color: var(--green);
+  background: var(--green-dim);
+  border-color: var(--green);
+}
+
+.badge-cvss {
+  color: var(--text2);
+  background: var(--bg3);
+  border-color: var(--border2);
+}
+
+.badge-cvss-critical {
+  color: var(--red);
+  background: var(--red-dim);
+  border-color: var(--red);
+}
+
+.badge-cvss-high {
+  color: var(--amber);
+  background: var(--amber-dim);
+  border-color: var(--amber);
+}
+
+/* Description */
+.cve-description {
+  font-size: 0.875rem;
+  color: var(--text2);
+  line-height: 1.55;
+  margin-bottom: 10px;
+}
+
+/* Plain English summary block */
+.cve-summary {
+  border-left: 3px solid var(--accent);
+  padding: 8px 12px;
+  margin: 10px 0;
+  font-size: 0.875rem;
+  color: var(--text);
+  background: var(--bg2);
+  font-style: normal;
+  line-height: 1.5;
+}
+
+/* EPSS */
+.cve-epss {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.epss-track {
+  flex: 1;
+  height: 3px;
+  background: var(--bg3);
+  border: none;
+  overflow: hidden;
+}
+
+.epss-fill {
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+.epss-label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+/* Meta row */
+.cve-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+}
+
+.meta-key {
+  font-family: var(--font-mono);
+  color: var(--text3);
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+}
+
+.meta-val {
+  font-family: var(--font-mono);
+  color: var(--text2);
+  font-size: 0.6875rem;
+}

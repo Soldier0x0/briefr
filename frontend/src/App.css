@@ -1,0 +1,157 @@
+/* ── Design tokens ─────────────────────────────────────── */
+:root {
+  --bg:          #0a0a08;
+  --bg2:         #111110;
+  --bg3:         #1a1a17;
+  --border:      #2a2a25;
+  --border2:     #333330;
+  --text:        #e8e6df;
+  --text2:       #9a9890;
+  --text3:       #5a5850;
+  --red:         #e85533;
+  --red-dim:     #3d1a12;
+  --amber:       #d4860a;
+  --amber-dim:   #2e1e04;
+  --green:       #4a9e6a;
+  --green-dim:   #0d2318;
+  --accent:      #c8b88a;
+
+  --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-display: 'DM Serif Display', Georgia, serif;
+}
+
+/* ── Reset ─────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--text);
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input, textarea {
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  outline: none;
+}
+
+input:focus, textarea:focus {
+  border-color: var(--border2);
+}
+
+/* ── Layout ────────────────────────────────────────────── */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 24px;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 0;
+  align-items: start;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Utility ───────────────────────────────────────────── */
+.mono {
+  font-family: var(--font-mono);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ── Footer ────────────────────────────────────────────── */
+.app-footer {
+  border-top: 1px solid var(--border);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.footer-left {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text3);
+}
+
+.footer-left span {
+  color: var(--red);
+}
+
+.footer-right {
+  font-size: 0.75rem;
+  color: var(--text3);
+}
+
+/* ── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text3);
+}

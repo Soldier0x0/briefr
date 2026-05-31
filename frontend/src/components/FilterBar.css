@@ -1,0 +1,75 @@
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  top: 52px;
+  z-index: 10;
+}
+
+.filter-title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--text2);
+}
+
+.filter-count {
+  color: var(--text3);
+}
+
+.filter-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 2px;
+}
+
+.filter-btn {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--text2);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 4px 11px;
+  transition: color 0.1s, background 0.1s, border-color 0.1s;
+}
+
+.filter-btn:hover {
+  color: var(--text);
+  border-color: var(--border2);
+}
+
+.filter-btn.active {
+  color: var(--bg);
+  background: var(--red);
+  border-color: var(--red);
+}
+
+.filter-search {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  width: 220px;
+}
+
+.filter-search::placeholder {
+  color: var(--text3);
+}
+
+.filter-search::-webkit-search-cancel-button {
+  display: none;
+}
