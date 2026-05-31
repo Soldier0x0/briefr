@@ -123,9 +123,11 @@ async def _fetch_page(
     client: httpx.AsyncClient,
     params: dict,
     api_key: str | None,
+    _key_rejected: bool = False,
 ) -> dict:
     request_params = dict(params)
-    if _is_valid_api_key(api_key):
+    use_key = _is_valid_api_key(api_key) and not _key_rejected
+    if use_key:
         request_params["apiKey"] = api_key
 
     for attempt in range(5):
@@ -136,6 +138,12 @@ async def _fetch_page(
                 logger.warning("NVD rate limited (429). Waiting %d seconds before retry %d.", wait_time, attempt + 1)
                 await asyncio.sleep(wait_time)
                 continue
+            if response.status_code == 404 and use_key:
+                logger.warning(
+                    "NVD returned 404 with API key — key may not be activated yet. "
+                    "Retrying without key (anonymous rate limits apply)."
+                )
+                return await _fetch_page(client, params, api_key, _key_rejected=True)
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as exc:
@@ -160,8 +168,8 @@ async def fetch_recent_cves(api_key: str | None = None, days_back: int = 7) -> l
     now = datetime.now(timezone.utc)
     start_date = now - timedelta(days=days_back)
 
-    pub_start = start_date.strftime("%Y-%m-%dT%H:%M:%S.000")
-    pub_end = now.strftime("%Y-%m-%dT%H:%M:%S.000")
+    pub_start = start_date.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    pub_end = now.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
     base_params = {
         "pubStartDate": pub_start,
