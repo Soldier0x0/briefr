@@ -25,11 +25,12 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [hasMore, setHasMore] = useState(true)
-  // { [cveId]: cveObject } — persists data at selection time for report generation
   const [selectedMap, setSelectedMap] = useState({})
-  const [copyAllState, setCopyAllState] = useState('idle') // idle | copied
+  const [copyAllState, setCopyAllState] = useState('idle')
+  const [navIndex, setNavIndex] = useState(null) // arrow-key selected card index
   const sentinelRef = useRef(null)
   const abortRef = useRef(null)
+  const cardRefs = useRef([])
 
   const load = useCallback(async (currentPage, currentFilters, append) => {
     if (abortRef.current) abortRef.current.abort()
@@ -62,14 +63,46 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     }
   }, [])
 
-  // Reset and reload when filters change; also clear selection
+  // Reset and reload when filters change; also clear selection + nav
   useEffect(() => {
     setPage(1)
     setCves([])
     setHasMore(true)
     setSelectedMap({})
+    setNavIndex(null)
     load(1, filters, false)
   }, [filters, load])
+
+  // Arrow-key navigation (only when search/textarea not focused)
+  useEffect(() => {
+    function handleNav(e) {
+      const tag = document.activeElement?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (!cves.length) return
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setNavIndex(prev => {
+          const next = prev === null ? 0 : Math.min(prev + 1, cves.length - 1)
+          cardRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+          return next
+        })
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setNavIndex(prev => {
+          const next = prev === null ? 0 : Math.max(prev - 1, 0)
+          cardRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+          return next
+        })
+      } else if (e.key === 'Enter' && navIndex !== null && cves[navIndex]) {
+        onSelectCVE(cves[navIndex])
+      } else if (e.key === 'Escape' && navIndex !== null) {
+        setNavIndex(null)
+      }
+    }
+    document.addEventListener('keydown', handleNav)
+    return () => document.removeEventListener('keydown', handleNav)
+  }, [cves, navIndex, onSelectCVE])
 
   // Load next page when page increments beyond 1
   useEffect(() => {
@@ -164,7 +197,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
       )}
 
       <div aria-live="polite" aria-atomic="false" className="cve-list">
-        {cves.map(cve => (
+        {cves.map((cve, idx) => (
           <CVECard
             key={cve.cve_id}
             cve={cve}
@@ -172,6 +205,8 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
             selected={!!selectedMap[cve.cve_id]}
             onToggleSelect={handleToggleSelect}
             timezone={timezone || 'UTC'}
+            navSelected={navIndex === idx}
+            cardRef={el => { cardRefs.current[idx] = el }}
           />
         ))}
       </div>

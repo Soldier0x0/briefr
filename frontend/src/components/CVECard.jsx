@@ -31,7 +31,7 @@ function epssColor(score) {
   return 'var(--green)'
 }
 
-export default function CVECard({ cve, onSelect, selected, onToggleSelect, timezone = 'UTC' }) {
+export default function CVECard({ cve, onSelect, selected, onToggleSelect, timezone = 'UTC', navSelected, cardRef }) {
   const [shareCopied, setShareCopied] = useState(false)
   const sevClass = severityClass(cve.severity)
   const epss = typeof cve.epss_score === 'number' ? cve.epss_score : null
@@ -72,12 +72,14 @@ export default function CVECard({ cve, onSelect, selected, onToggleSelect, timez
 
   return (
     <article
-      className={`cve-card sev-${sevClass}${selected ? ' cve-selected' : ''}`}
+      ref={cardRef}
+      className={`cve-card sev-${sevClass}${selected ? ' cve-selected' : ''}${navSelected ? ' cve-nav-selected' : ''}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="button"
       aria-label={`CVE ${cve.cve_id}, severity ${cve.severity || 'unknown'}. Click to view details.`}
+      aria-current={navSelected ? 'true' : undefined}
     >
       {/* Custom rectangular checkbox — top-left, hover-only */}
       <label

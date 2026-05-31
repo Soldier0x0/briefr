@@ -106,7 +106,7 @@ input:focus, textarea:focus {
 
 .content-grid {
   display: grid;
-  grid-template-columns: 1fr 300px;
+  grid-template-columns: 1fr 280px;
   gap: 0;
   align-items: start;
   border-top: 1px solid var(--border);
@@ -115,6 +115,12 @@ input:focus, textarea:focus {
 /* Feed column must not overflow its grid track */
 .content-grid > :first-child {
   min-width: 0;
+}
+
+@media (max-width: 1279px) and (min-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr 240px;
+  }
 }
 
 @media (max-width: 1024px) {

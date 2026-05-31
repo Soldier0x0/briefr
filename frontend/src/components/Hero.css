@@ -5,7 +5,7 @@
 
 .hero-heading {
   font-family: var(--font-display);
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(1.5rem, 5vw, 3rem);
   font-weight: 400;
   font-style: italic;
   color: var(--text);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { triggerRefresh } from '../api.js'
 import {
@@ -29,10 +29,12 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezone
   const [tz, setTz]                 = useState(() => {
     try { return localStorage.getItem('vektor_timezone') || 'UTC' } catch { return 'UTC' }
   })
-  const [popoverOpen, setPopoverOpen] = useState(false)
-  const [search, setSearch]         = useState('')
-  const [refreshing, setRefreshing] = useState(false)
-  const popoverRef                  = useRef(null)
+  const [popoverOpen, setPopoverOpen]   = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [search, setSearch]             = useState('')
+  const [refreshing, setRefreshing]     = useState(false)
+  const popoverRef                      = useRef(null)
+  const mobileMenuRef                   = useRef(null)
 
   // Tick every second
   useEffect(() => {
@@ -40,18 +42,20 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezone
     return () => clearInterval(id)
   }, [])
 
-  // Close popover on outside click
+  // Close popovers on outside click
   useEffect(() => {
-    if (!popoverOpen) return
     function onDown(e) {
-      if (popoverRef.current && !popoverRef.current.contains(e.target)) {
+      if (popoverOpen && popoverRef.current && !popoverRef.current.contains(e.target)) {
         setPopoverOpen(false)
         setSearch('')
+      }
+      if (mobileMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
+        setMobileMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', onDown)
     return () => document.removeEventListener('mousedown', onDown)
-  }, [popoverOpen])
+  }, [popoverOpen, mobileMenuOpen])
 
   function toggleTheme() {
     const next = theme === 'dark' ? 'light' : 'dark'
@@ -135,8 +139,8 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezone
             ◐
           </button>
 
-          {/* Legal links */}
-          <nav className="header-legal" aria-label="Legal links">
+          {/* Legal links — hidden on mobile, shown inline on desktop */}
+          <nav className="header-legal header-legal-desktop" aria-label="Legal links">
             <button className="header-legal-link" onClick={onAboutOpen} aria-label="About VEKTOR">
               About
             </button>
@@ -145,6 +149,34 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezone
             <span className="header-legal-sep" aria-hidden="true">&middot;</span>
             <Link to="/terms" className="header-legal-link">Terms</Link>
           </nav>
+
+          {/* Mobile "···" menu */}
+          <div className="mobile-menu-wrap header-legal-mobile" ref={mobileMenuRef}>
+            <button
+              className="mobile-menu-btn"
+              onClick={() => setMobileMenuOpen(v => !v)}
+              aria-label="Open navigation menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              &middot;&middot;&middot;
+            </button>
+            {mobileMenuOpen && (
+              <div className="mobile-menu-dropdown">
+                <button
+                  className="mobile-menu-item"
+                  onClick={() => { setMobileMenuOpen(false); onAboutOpen() }}
+                >
+                  About
+                </button>
+                <Link to="/privacy" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                  Privacy
+                </Link>
+                <Link to="/terms" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                  Terms
+                </Link>
+              </div>
+            )}
+          </div>
 
           {/* Live dot */}
           <span className="live-indicator" aria-label="Live data feed active">

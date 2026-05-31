@@ -9,6 +9,7 @@ import IOCLookup from './components/IOCLookup.jsx'
 import DetailDrawer from './components/DetailDrawer.jsx'
 import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
+import ShortcutsPanel from './components/ShortcutsPanel.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import { fetchStats, fetchHealth } from './api.js'
@@ -185,12 +186,12 @@ export default function App() {
               <div className="footer-left">
                 <span>VEKTOR</span> // CVE intelligence platform // data from NVD, CISA, FIRST, OSV
               </div>
-              <div className="footer-right mono" style={{ fontSize: '0.6875rem', color: 'var(--text3)' }}>
-                Press <kbd>/</kbd> to search &nbsp;&middot;&nbsp;
-                <kbd>F</kbd> to cycle filters &nbsp;&middot;&nbsp;
-                <kbd>Esc</kbd> to close
+              <div className="footer-right" style={{ fontSize: '0.6875rem', color: 'var(--text3)' }}>
+                All times UTC &mdash; not a substitute for professional security advice
               </div>
             </footer>
+
+            <ShortcutsPanel />
 
             <DetailDrawer cve={selectedCVE} onClose={() => setSelectedCVE(null)} />
 

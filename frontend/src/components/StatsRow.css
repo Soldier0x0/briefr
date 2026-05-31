@@ -4,13 +4,22 @@
   border-bottom: 1px solid var(--border);
 }
 
-@media (max-width: 640px) {
+/* 2×2 grid on tablet and below */
+@media (max-width: 1024px) {
   .stats-row {
     grid-template-columns: repeat(2, 1fr);
   }
 
   .stat-cell:nth-child(2) {
     border-right: none;
+  }
+
+  .stat-cell:nth-child(3) {
+    border-top: 1px solid var(--border);
+  }
+
+  .stat-cell:nth-child(4) {
+    border-top: 1px solid var(--border);
   }
 }
 
