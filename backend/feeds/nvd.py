@@ -179,12 +179,114 @@ async def _fetch_page(
     raise RuntimeError("NVD API failed after maximum retries")
 
 
+def _format_nvd_datetime(dt: datetime) -> str:
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+
+def _parse_nvd_datetime(value: str) -> datetime | None:
+    if not value or not value.strip():
+        return None
+    text = value.strip()
+    try:
+        if text.endswith("Z"):
+            return datetime.fromisoformat(text.replace("Z", "+00:00"))
+        return datetime.fromisoformat(text)
+    except ValueError:
+        logger.warning("Could not parse NVD datetime: %r", value)
+        return None
+
+
+async def _fetch_cves_paginated(
+    client: httpx.AsyncClient,
+    base_params: dict,
+    api_key: str | None,
+    *,
+    log_label: str,
+) -> list[dict]:
+    all_cves: list[dict] = []
+    pages_fetched = 0
+
+    first_page = await _fetch_page(client, base_params, api_key)
+    pages_fetched += 1
+    total_results = first_page.get("totalResults", 0)
+    vulnerabilities = first_page.get("vulnerabilities", [])
+
+    for item in vulnerabilities:
+        all_cves.append(_parse_cve_item(item))
+
+    logger.info("NVD %s: fetched %d/%d CVEs (page 1)", log_label, len(all_cves), total_results)
+
+    start_index = RESULTS_PER_PAGE
+    while start_index < total_results:
+        page_params = dict(base_params)
+        page_params["startIndex"] = start_index
+
+        await asyncio.sleep(6)
+
+        page_data = await _fetch_page(client, page_params, api_key)
+        pages_fetched += 1
+        page_vulns = page_data.get("vulnerabilities", [])
+
+        if not page_vulns:
+            break
+
+        for item in page_vulns:
+            all_cves.append(_parse_cve_item(item))
+
+        logger.info(
+            "NVD %s: fetched %d/%d CVEs (startIndex=%d)",
+            log_label,
+            len(all_cves),
+            total_results,
+            start_index,
+        )
+
+        start_index += RESULTS_PER_PAGE
+
+    await record_api_call("nvd", pages_fetched)
+    logger.info(
+        "NVD %s complete: %d CVEs retrieved (%d API requests)",
+        log_label,
+        len(all_cves),
+        pages_fetched,
+    )
+    return all_cves
+
+
+async def fetch_cves_by_last_modified(
+    api_key: str | None,
+    mod_start: datetime,
+    mod_end: datetime,
+) -> list[dict]:
+    mod_start_str = _format_nvd_datetime(mod_start)
+    mod_end_str = _format_nvd_datetime(mod_end)
+    base_params = {
+        "lastModStartDate": mod_start_str,
+        "lastModEndDate": mod_end_str,
+        "resultsPerPage": RESULTS_PER_PAGE,
+        "startIndex": 0,
+    }
+
+    async with httpx.AsyncClient() as client:
+        logger.info("Fetching NVD CVEs modified from %s to %s", mod_start_str, mod_end_str)
+        return await _fetch_cves_paginated(
+            client,
+            base_params,
+            api_key,
+            log_label="incremental",
+        )
+
+
 async def fetch_recent_cves(api_key: str | None = None, days_back: int = 7) -> list[dict]:
     now = datetime.now(timezone.utc)
     start_date = now - timedelta(days=days_back)
 
-    pub_start = start_date.strftime("%Y-%m-%dT%H:%M:%S.000Z")
-    pub_end = now.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    pub_start = _format_nvd_datetime(start_date)
+    pub_end = _format_nvd_datetime(now)
 
     base_params = {
         "pubStartDate": pub_start,
@@ -193,51 +295,47 @@ async def fetch_recent_cves(api_key: str | None = None, days_back: int = 7) -> l
         "startIndex": 0,
     }
 
-    all_cves = []
-    pages_fetched = 0
-
     async with httpx.AsyncClient() as client:
-        logger.info("Fetching NVD CVEs from %s to %s", pub_start, pub_end)
+        logger.info("Fetching NVD CVEs published from %s to %s", pub_start, pub_end)
+        return await _fetch_cves_paginated(
+            client,
+            base_params,
+            api_key,
+            log_label="bootstrap",
+        )
 
-        first_page = await _fetch_page(client, base_params, api_key)
-        pages_fetched += 1
-        total_results = first_page.get("totalResults", 0)
-        vulnerabilities = first_page.get("vulnerabilities", [])
 
-        for item in vulnerabilities:
-            all_cves.append(_parse_cve_item(item))
+async def fetch_nvd_cve_updates(
+    api_key: str | None,
+    *,
+    watermark: str | None,
+    days_back: int = 14,
+    overlap_minutes: int = 15,
+) -> tuple[list[dict], str, bool]:
+    """
+    Fetch CVEs for a refresh cycle.
 
-        logger.info("NVD: fetched %d/%d CVEs (page 1)", len(all_cves), total_results)
+    Returns (cves, mod_end_iso_for_watermark, used_incremental).
+    """
+    now = datetime.now(timezone.utc)
+    mod_end_iso = _format_nvd_datetime(now)
 
-        start_index = RESULTS_PER_PAGE
-        while start_index < total_results:
-            page_params = dict(base_params)
-            page_params["startIndex"] = start_index
+    if watermark:
+        mod_start = _parse_nvd_datetime(watermark)
+        if mod_start is None:
+            logger.warning("Invalid NVD watermark %r — using full publish-window sync", watermark)
+        else:
+            mod_start = mod_start - timedelta(minutes=overlap_minutes)
+            if (now - mod_start) > timedelta(days=120):
+                mod_start = now - timedelta(days=120)
+                logger.warning("NVD watermark older than 120 days — clamping start to %s", mod_start.isoformat())
+            cves = await fetch_cves_by_last_modified(api_key, mod_start, now)
+            return cves, mod_end_iso, True
 
-            await asyncio.sleep(6)
+    logger.info("No NVD watermark — full sync for CVEs published in the last %d days", days_back)
+    cves = await fetch_recent_cves(api_key=api_key, days_back=days_back)
+    return cves, mod_end_iso, False
 
-            page_data = await _fetch_page(client, page_params, api_key)
-            pages_fetched += 1
-            page_vulns = page_data.get("vulnerabilities", [])
-
-            if not page_vulns:
-                break
-
-            for item in page_vulns:
-                all_cves.append(_parse_cve_item(item))
-
-            logger.info(
-                "NVD: fetched %d/%d CVEs (startIndex=%d)",
-                len(all_cves),
-                total_results,
-                start_index,
-            )
-
-            start_index += RESULTS_PER_PAGE
-
-    await record_api_call("nvd", pages_fetched)
-    logger.info("NVD fetch complete: %d CVEs retrieved (%d API requests)", len(all_cves), pages_fetched)
-    return all_cves
 
 
 async def fetch_cve_by_id(cve_id: str, api_key: str | None = None) -> dict | None:

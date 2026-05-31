@@ -24,12 +24,19 @@ from database import (
     get_cve_count,
     get_ioc_cache,
     get_last_updated,
+    get_nvd_sync_watermark,
     init_db,
     set_ioc_cache,
 )
 from enrichment.ioc import lookup_ioc
 from feeds.osv import fetch_osv_by_cve
-from scheduler import maybe_run_on_startup, run_daily_refresh, start_scheduler, stop_scheduler
+from scheduler import (
+    maybe_run_on_startup,
+    refresh_in_progress,
+    run_daily_refresh,
+    start_scheduler,
+    stop_scheduler,
+)
 from tracking import get_usage_stats
 
 
@@ -116,6 +123,7 @@ async def health(
     try:
         cve_count = await get_cve_count(db)
         last_updated = await get_last_updated(db)
+        nvd_sync_watermark = await get_nvd_sync_watermark(db)
     finally:
         await db.close()
 
@@ -127,6 +135,8 @@ async def health(
         "status": "ok",
         "cve_count": cve_count,
         "last_updated": last_updated,
+        "nvd_sync_watermark": nvd_sync_watermark,
+        "refresh_in_progress": refresh_in_progress(),
         "server_time_utc": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "server_time_local": _format_time_in_tz(now_utc, display_tz),
     }
@@ -368,6 +378,11 @@ async def ioc_lookup(body: IocLookupRequest):
 
 @app.post("/api/refresh")
 async def manual_refresh():
+    if refresh_in_progress():
+        raise HTTPException(
+            status_code=409,
+            detail="A refresh is already running. Wait for it to finish before starting another.",
+        )
     asyncio.create_task(run_daily_refresh())
     return {"status": "ok", "message": "Refresh started in background"}
 

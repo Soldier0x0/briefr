@@ -12,35 +12,78 @@ from database import (
     get_db,
     get_all_cve_ids,
     get_cve_count,
+    get_nvd_sync_watermark,
     mark_cves_as_kev,
+    resolve_nvd_watermark,
+    set_nvd_sync_watermark,
     update_epss_scores,
     upsert_cve,
     upsert_kev,
 )
-from feeds.nvd import fetch_recent_cves, fetch_cve_by_id
+from feeds.nvd import fetch_cve_by_id, fetch_nvd_cve_updates
 from feeds.kev import fetch_kev
 from feeds.epss import fetch_epss
 
 logger = logging.getLogger(__name__)
 
 _scheduler: AsyncIOScheduler | None = None
+_refresh_lock = asyncio.Lock()
 
 
-async def run_daily_refresh() -> None:
+def refresh_in_progress() -> bool:
+    return _refresh_lock.locked()
+
+
+async def run_daily_refresh() -> bool:
+    if _refresh_lock.locked():
+        logger.warning("Refresh already in progress — ignoring duplicate request")
+        return False
+
+    async with _refresh_lock:
+        await _run_daily_refresh()
+    return True
+
+
+async def _run_daily_refresh() -> None:
     start_time = datetime.now(timezone.utc)
     logger.info("Daily CVE refresh started at %s", start_time.isoformat())
 
     nvd_api_key = os.environ.get("NVD_API_KEY")
     max_cves = int(os.environ.get("MAX_CVES_PER_FETCH", "2000"))
     days_back = int(os.environ.get("NVD_DAYS_BACK", "14"))
+    overlap_minutes = int(os.environ.get("NVD_SYNC_OVERLAP_MINUTES", "15"))
 
     new_or_updated = 0
     kev_count = 0
     epss_updated = 0
 
     try:
+        db = await get_db()
+        try:
+            had_watermark = await get_nvd_sync_watermark(db) is not None
+            watermark = await resolve_nvd_watermark(db)
+            if watermark and not had_watermark:
+                logger.info(
+                    "Seeded NVD incremental watermark from existing CVE data: %s",
+                    watermark,
+                )
+                await db.commit()
+        finally:
+            await db.close()
+
         logger.info("Step 1/3: Fetching CVEs from NVD")
-        cves = await fetch_recent_cves(api_key=nvd_api_key, days_back=days_back)
+        cves, mod_end_iso, used_incremental = await fetch_nvd_cve_updates(
+            nvd_api_key,
+            watermark=watermark,
+            days_back=days_back,
+            overlap_minutes=overlap_minutes,
+        )
+        if len(cves) > max_cves:
+            logger.warning(
+                "NVD returned %d CVEs; capping upsert at MAX_CVES_PER_FETCH=%d",
+                len(cves),
+                max_cves,
+            )
         cves = cves[:max_cves]
 
         db = await get_db()
@@ -48,11 +91,13 @@ async def run_daily_refresh() -> None:
             for cve in cves:
                 await upsert_cve(db, cve)
                 new_or_updated += 1
+            await set_nvd_sync_watermark(db, mod_end_iso)
             await db.commit()
         finally:
             await db.close()
 
-        logger.info("Step 1/3 complete: %d CVEs upserted", new_or_updated)
+        mode = "incremental (lastMod)" if used_incremental else "full (published window)"
+        logger.info("Step 1/3 complete (%s): %d CVEs upserted", mode, new_or_updated)
 
     except Exception as exc:
         logger.error("Step 1/3 failed (NVD fetch): %s", exc)
