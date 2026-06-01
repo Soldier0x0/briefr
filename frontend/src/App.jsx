@@ -65,7 +65,7 @@ function cycleFilter(filters) {
 function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
                    digestOpen, setDigestOpen, digestCVEs, setDigestCVEs,
                    searchFocusTrigger, setSearchFocusTrigger, aboutOpen, setAboutOpen,
-                   timezone, lastUpdated }) {
+                   timezone, lastUpdated, nextRefreshUtc, refreshSchedule }) {
 
   const handleBrief = useCallback((stack) => {
     setFilters(prev => ({ ...prev, stack }))
@@ -84,12 +84,7 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
     <>
       <Hero onBrief={handleBrief} />
       <StatsRow stats={stats} />
-      <FeedRefreshStatus
-        lastUpdated={lastUpdated}
-        nextRefreshUtc={nextRefreshUtc}
-        timezone={timezone}
-        refreshSchedule={refreshSchedule}
-      />
+      <LastRefreshed timestamp={lastUpdated} />
       <div className="content-grid">
         <CVEFeed
           filters={filters}

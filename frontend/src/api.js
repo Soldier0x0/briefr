@@ -23,8 +23,9 @@ export function fetchStats() {
   return request('/stats')
 }
 
-export function fetchHealth() {
-  return request('/health')
+export function fetchHealth(tz = 'UTC') {
+  const qs = new URLSearchParams({ tz })
+  return request(`/health?${qs}`)
 }
 
 export function fetchCVEs(params = {}) {
@@ -58,4 +59,8 @@ export function lookupIOC(value, type) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ value, type }),
   })
+}
+
+export function triggerRefresh() {
+  return request('/refresh', { method: 'POST' })
 }
