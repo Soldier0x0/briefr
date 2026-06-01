@@ -57,10 +57,15 @@ export default function TermsPage() {
         Pradesh, India.
       </p>
 
-      <h2 className="legal-section-heading">8. Contact</h2>
+      <h2 className="legal-section-heading">8. License</h2>
       <p className="legal-p">
-        Open an issue on the BRIEFR GitHub repository for any questions about
-        these terms.
+        BRIEFR is free to use at projectjupiter.in. The source code is proprietary.
+        Unauthorised copying or redistribution of the codebase is not permitted.
+      </p>
+
+      <h2 className="legal-section-heading">9. Contact</h2>
+      <p className="legal-p">
+        For questions about these terms, contact us through projectjupiter.in.
       </p>
     </LegalPage>
   )

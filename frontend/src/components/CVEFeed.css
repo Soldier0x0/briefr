@@ -1,6 +1,14 @@
 .cve-feed {
   border-right: 1px solid var(--border);
   min-height: 80vh;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .cve-feed {
+    border-right: none;
+  }
 }
 
 .cve-list {

@@ -6,6 +6,7 @@ import CVECard from './CVECard.jsx'
 import './CVEFeed.css'
 
 const PAGE_LIMIT = 20
+const LAST_VISIT_KEY = 'briefr_last_visit'
 
 function SkeletonCard() {
   return (
@@ -18,7 +19,7 @@ function SkeletonCard() {
   )
 }
 
-export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGenerateDigest, searchFocusTrigger, timezone }) {
+export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGenerateDigest, onDigestRequest, searchFocusTrigger, timezone }) {
   const [cves, setCves] = useState([])
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(null)
@@ -28,7 +29,9 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   const [hasMore, setHasMore] = useState(true)
   const [selectedMap, setSelectedMap] = useState({})
   const [copyAllState, setCopyAllState] = useState('idle')
-  const [navIndex, setNavIndex] = useState(null)
+  const [selectedIndex, setSelectedIndex] = useState(null)
+  const [lastVisit, setLastVisit] = useState(null)
+  const [visitReady, setVisitReady] = useState(false)
   const sentinelRef = useRef(null)
   const abortRef = useRef(null)
   const cardRefs = useRef([])
@@ -39,6 +42,24 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   const hasMoreRef = useRef(true)
   const initialLoadDoneRef = useRef(false)
   const sentinelVisibleRef = useRef(false)
+
+  useEffect(() => {
+    let stored = null
+    try {
+      const raw = localStorage.getItem(LAST_VISIT_KEY)
+      if (raw) stored = new Date(raw)
+    } catch {}
+    setLastVisit(stored)
+    setVisitReady(true)
+    try {
+      localStorage.setItem(LAST_VISIT_KEY, new Date().toISOString())
+    } catch {}
+  }, [])
+
+  function isNewSinceVisit(cve) {
+    if (!visitReady || !lastVisit || !cve.published) return false
+    return new Date(cve.published) > lastVisit
+  }
 
   filtersRef.current = filters
   loadingRef.current = loading
@@ -101,6 +122,13 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     loadPage(pageRef.current + 1, true)
   }, [loadPage])
 
+  useEffect(() => {
+    if (!onDigestRequest) return
+    onDigestRequest(() => {
+      if (onGenerateDigest && cves.length) onGenerateDigest(cves)
+    })
+  }, [onDigestRequest, onGenerateDigest, cves])
+
   // Reset and reload when filters change
   useEffect(() => {
     pageRef.current = 1
@@ -109,42 +137,42 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     setHasMore(true)
     hasMoreRef.current = true
     setSelectedMap({})
-    setNavIndex(null)
+    setSelectedIndex(null)
     initialLoadDoneRef.current = false
     sentinelVisibleRef.current = false
     loadPage(1, false)
   }, [filters, loadPage])
 
-  // Arrow-key navigation
+  // Arrow-key card navigation (inactive while search is focused)
   useEffect(() => {
     function handleNav(e) {
       const tag = document.activeElement?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       if (!cves.length) return
 
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        setNavIndex(prev => {
+        setSelectedIndex(prev => {
           const next = prev === null ? 0 : Math.min(prev + 1, cves.length - 1)
           cardRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
           return next
         })
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
-        setNavIndex(prev => {
+        setSelectedIndex(prev => {
           const next = prev === null ? 0 : Math.max(prev - 1, 0)
           cardRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
           return next
         })
-      } else if (e.key === 'Enter' && navIndex !== null && cves[navIndex]) {
-        onSelectCVE(cves[navIndex])
-      } else if (e.key === 'Escape' && navIndex !== null) {
-        setNavIndex(null)
+      } else if (e.key === 'Enter' && selectedIndex !== null && cves[selectedIndex]) {
+        onSelectCVE(cves[selectedIndex])
+      } else if (e.key === 'Escape' && selectedIndex !== null) {
+        setSelectedIndex(null)
       }
     }
     document.addEventListener('keydown', handleNav)
     return () => document.removeEventListener('keydown', handleNav)
-  }, [cves, navIndex, onSelectCVE])
+  }, [cves, selectedIndex, onSelectCVE])
 
   // Infinite scroll: stable observer (refs only — do not depend on loading state)
   useEffect(() => {
@@ -246,7 +274,8 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
             selected={!!selectedMap[cve.cve_id]}
             onToggleSelect={handleToggleSelect}
             timezone={timezone || 'UTC'}
-            navSelected={navIndex === idx}
+            navSelected={selectedIndex === idx}
+            isNew={isNewSinceVisit(cve)}
             cardRef={el => { cardRefs.current[idx] = el }}
           />
         ))}

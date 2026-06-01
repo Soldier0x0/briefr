@@ -35,9 +35,8 @@
 /* Arrow-key nav highlight */
 .cve-card.cve-nav-selected {
   background: var(--bg2);
-  border-left-color: var(--red) !important;
-  outline: 1px solid var(--border2);
-  outline-offset: -1px;
+  border-left: 1px solid var(--red);
+  outline: none;
 }
 
 /* ── Custom rectangular checkbox ─────────────────────────── */
@@ -312,9 +311,41 @@
   font-size: 0.6875rem;
 }
 
+.meta-val.age-fresh { color: var(--green); }
+.meta-val.age-recent { color: var(--amber); }
+.meta-val.age-old { color: var(--text3); }
+
+/* NEW since last visit badge */
+.cve-new-badge {
+  position: absolute;
+  top: 10px;
+  right: 32px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  background: var(--red);
+  color: #fff;
+  padding: 2px 5px;
+  border-radius: 0;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
+.cve-card:hover .cve-new-badge,
+.cve-card.cve-nav-selected .cve-new-badge {
+  right: 32px;
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .cve-card {
+    padding: 20px 40px 20px 36px;
+  }
+}
+
 @media (max-width: 640px) {
   .cve-card {
-    padding: 12px 12px 12px 30px;
+    padding: 16px 16px 16px 30px;
   }
 
   .card-checkbox-wrap {
@@ -322,6 +353,10 @@
   }
 
   .card-share-wrap {
-    right: 6px;
+    right: 8px;
+  }
+
+  .cve-new-badge {
+    right: 28px;
   }
 }
