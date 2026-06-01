@@ -74,6 +74,12 @@ async def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_api_usage_month ON api_usage(month_utc);
             CREATE INDEX IF NOT EXISTS idx_api_usage_date ON api_usage(date_utc);
+
+            CREATE TABLE IF NOT EXISTS sync_state (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TEXT DEFAULT (datetime('now'))
+            );
         """)
         await db.commit()
 
@@ -293,3 +299,52 @@ async def get_last_updated(db: aiosqlite.Connection) -> str | None:
 async def get_all_cve_ids(db: aiosqlite.Connection) -> list:
     rows = await db.execute_fetchall("SELECT cve_id FROM cves")
     return [r["cve_id"] for r in rows]
+
+NVD_SYNC_WATERMARK_KEY = "nvd_last_mod_end"
+
+
+async def get_nvd_sync_watermark(db: aiosqlite.Connection) -> str | None:
+    rows = await db.execute_fetchall(
+        "SELECT value FROM sync_state WHERE key = ?",
+        (NVD_SYNC_WATERMARK_KEY,),
+    )
+    return rows[0]["value"] if rows else None
+
+
+async def set_nvd_sync_watermark(db: aiosqlite.Connection, value: str) -> None:
+    await db.execute(
+        """
+        INSERT INTO sync_state (key, value, updated_at)
+        VALUES (?, ?, datetime('now'))
+        ON CONFLICT(key) DO UPDATE SET
+            value = excluded.value,
+            updated_at = datetime('now')
+        """,
+        (NVD_SYNC_WATERMARK_KEY, value),
+    )
+
+
+async def seed_nvd_watermark_from_cves(db: aiosqlite.Connection) -> str | None:
+    rows = await db.execute_fetchall(
+        """
+        SELECT MAX(modified) AS latest
+        FROM cves
+        WHERE modified IS NOT NULL AND modified != ''
+        """
+    )
+    latest = rows[0]["latest"] if rows else None
+    if not latest:
+        return None
+    await set_nvd_sync_watermark(db, latest)
+    return latest
+
+
+async def resolve_nvd_watermark(db: aiosqlite.Connection, *, min_cves: int = 10) -> str | None:
+    watermark = await get_nvd_sync_watermark(db)
+    if watermark:
+        return watermark
+    count = await get_cve_count(db)
+    if count < min_cves:
+        return None
+    return await seed_nvd_watermark_from_cves(db)
+
