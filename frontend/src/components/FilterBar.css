@@ -38,6 +38,22 @@
   color: var(--text3);
 }
 
+.filter-stack-clear {
+  margin-left: 10px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  vertical-align: baseline;
+}
+
+.filter-stack-clear:hover {
+  color: var(--red);
+}
+
 .filter-bar-right {
   display: flex;
   align-items: center;

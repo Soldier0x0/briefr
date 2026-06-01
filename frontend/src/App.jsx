@@ -92,8 +92,12 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
                    timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
                    onDigestRequest }) {
 
-  const handleStackChange = useCallback((stack) => {
+  const handleBrief = useCallback((stack) => {
     setFilters(prev => ({ ...prev, stack: stack || '' }))
+  }, [setFilters])
+
+  const handleClearStack = useCallback(() => {
+    setFilters(prev => ({ ...prev, stack: '' }))
   }, [setFilters])
 
   const handleFiltersChange = useCallback((next) => {
@@ -107,7 +111,11 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
 
   return (
     <>
-      <Hero activeStack={filters.stack} onStackChange={handleStackChange} />
+      <Hero
+        activeStack={filters.stack}
+        onBrief={handleBrief}
+        onClearStack={handleClearStack}
+      />
       <StatsRow stats={stats} />
       <FeedRefreshStatus
         lastUpdated={lastUpdated}

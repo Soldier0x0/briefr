@@ -230,11 +230,23 @@ def _text_match_or_clause(terms: list[str]) -> tuple[str, list]:
 def _parse_stack_terms(stack: str | None) -> list[str]:
     if not stack:
         return []
-    return [
-        p.strip().lower()
-        for p in stack.split(",")
-        if p.strip() and len(p.strip()) >= 2
-    ]
+    return [p.strip().lower() for p in stack.split(",") if p.strip()]
+
+
+def _stack_match_clause(stack: str | None) -> tuple[str, list, list[str]]:
+    """Match stack terms against description or affected_products (parameterised)."""
+    terms = _parse_stack_terms(stack)
+    if not terms:
+        return "", [], []
+
+    parts: list[str] = []
+    params: list = []
+    for term in terms:
+        parts.append("(LOWER(description) LIKE ? OR LOWER(affected_products) LIKE ?)")
+        like = f"%{term}%"
+        params.extend([like, like])
+
+    return "(" + " OR ".join(parts) + ")", params, terms
 
 
 CVE_ORDER_BY = """
@@ -292,14 +304,10 @@ def _build_cve_filters(
         search_term = f"%{search}%"
         params.extend([search_term, search_term])
 
-    stack_products = _parse_stack_terms(stack)
-    if stack_products:
-        stack_clause, stack_params = _text_match_or_clause(stack_products)
+    stack_clause, stack_params, stack_products = _stack_match_clause(stack)
+    if stack_clause:
         conditions.append(stack_clause)
         params.extend(stack_params)
-    elif stack and stack.strip():
-        # Stack provided but every term was too short — match nothing
-        conditions.append("1 = 0")
 
     if vendors:
         vendor_list = [v.strip() for v in vendors.split(",") if v.strip()]

@@ -3,67 +3,82 @@ import { fetchCVEs } from '../api.js'
 import './Hero.css'
 
 const STACK_KEY = 'briefr_stack'
+const DEBOUNCE_MS = 800
 
-export default function Hero({ activeStack, onStackChange }) {
+export default function Hero({ activeStack, onBrief, onClearStack }) {
   const [stack, setStack] = useState(() => {
     try { return localStorage.getItem(STACK_KEY) || '' } catch { return '' }
   })
   const [matchCount, setMatchCount] = useState(null)
-  const [matchLoading, setMatchLoading] = useState(false)
+  const [searching, setSearching] = useState(false)
   const debounceRef = useRef(null)
-  const stackRef = useRef(stack)
-
-  stackRef.current = stack
+  const previewSeqRef = useRef(0)
+  const hadAppliedStackRef = useRef(false)
 
   useEffect(() => {
     try { localStorage.setItem(STACK_KEY, stack) } catch {}
   }, [stack])
 
-  // Apply saved stack to feed on first load
+  // Clear input when stack filter removed from feed (× clear stack)
   useEffect(() => {
-    const trimmed = stack.trim()
-    if (trimmed && !activeStack) {
-      onStackChange(trimmed)
+    if (activeStack) {
+      hadAppliedStackRef.current = true
+      return
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Sync when stack cleared from sidebar
-  useEffect(() => {
-    if (activeStack !== stackRef.current) {
-      setStack(activeStack || '')
+    if (hadAppliedStackRef.current) {
+      setStack('')
+      setMatchCount(null)
+      setSearching(false)
+      hadAppliedStackRef.current = false
     }
   }, [activeStack])
 
+  // Preview count only — does not filter the feed until BRIEF
   useEffect(() => {
     const trimmed = stack.trim()
     if (!trimmed) {
       setMatchCount(null)
-      setMatchLoading(false)
-      onStackChange('')
+      setSearching(false)
       return
     }
 
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      setMatchLoading(true)
-      onStackChange(trimmed)
+      const seq = ++previewSeqRef.current
+      setSearching(true)
       fetchCVEs({ stack: trimmed, limit: 1, page: 1 })
-        .then(data => setMatchCount(data.total ?? 0))
-        .catch(() => setMatchCount(null))
-        .finally(() => setMatchLoading(false))
-    }, 600)
+        .then(data => {
+          if (seq !== previewSeqRef.current) return
+          setMatchCount(data.total ?? 0)
+        })
+        .catch(() => {
+          if (seq !== previewSeqRef.current) return
+          setMatchCount(null)
+        })
+        .finally(() => {
+          if (seq !== previewSeqRef.current) return
+          setSearching(false)
+        })
+    }, DEBOUNCE_MS)
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }, [stack, onStackChange])
+  }, [stack])
 
-  function handleClear() {
-    setStack('')
-    onStackChange('')
-    setMatchCount(null)
+  function applyBrief() {
+    const trimmed = stack.trim()
+    if (trimmed) onBrief(trimmed)
   }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      applyBrief()
+    }
+  }
+
+  const showCountLine = stack.trim().length > 0
 
   return (
     <section className="hero" aria-label="BRIEFR brief">
@@ -82,31 +97,30 @@ export default function Hero({ activeStack, onStackChange }) {
           className="stack-input"
           value={stack}
           onChange={e => setStack(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="nginx, python, linux kernel, postgres..."
           aria-label="Enter your technology stack to filter CVEs"
           autoComplete="off"
           spellCheck="false"
         />
-        {stack.trim() && (
-          <button
-            type="button"
-            className="stack-clear-input-btn"
-            onClick={handleClear}
-            aria-label="Clear stack filter"
-          >
-            ×
-          </button>
-        )}
+        <button
+          type="button"
+          className="stack-brief-btn"
+          onClick={applyBrief}
+          disabled={!stack.trim()}
+          aria-label="Filter CVE feed by entered stack"
+        >
+          BRIEF
+        </button>
       </div>
 
-      {stack.trim() && (matchLoading || matchCount != null) && (
+      {showCountLine && (
         <p className="stack-match-count mono" aria-live="polite">
-          {matchLoading
-            ? 'Counting matches…'
-            : `${matchCount.toLocaleString()} CVE${matchCount === 1 ? '' : 's'} match your stack`}
-          {!matchLoading && activeStack && (
-            <span className="stack-match-hint"> · feed filtered</span>
-          )}
+          {searching
+            ? 'Searching...'
+            : matchCount === null
+              ? 'Searching...'
+              : `${matchCount.toLocaleString()} CVE${matchCount === 1 ? '' : 's'} match your stack`}
         </p>
       )}
     </section>

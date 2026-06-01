@@ -125,6 +125,16 @@ export default function FilterBar({
                 &nbsp;// {total.toLocaleString()}
               </span>
             )}
+            {filters.stack && (
+              <button
+                type="button"
+                className="filter-stack-clear mono"
+                onClick={() => onFiltersChange({ stack: '' })}
+                aria-label="Clear stack filter and show all CVEs"
+              >
+                × clear stack
+              </button>
+            )}
           </span>
         </div>
 
