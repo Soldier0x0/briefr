@@ -9,6 +9,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 from database import (
     backfill_display_fields,
+    backfill_has_poc,
     enrich_kev_summaries,
     get_db,
     get_all_cve_ids,
@@ -241,9 +242,14 @@ async def _run_daily_refresh() -> None:
         db = await get_db()
         try:
             filled = await backfill_display_fields(db)
+            poc_marked = await backfill_has_poc(db)
             await enrich_kev_summaries(db)
             await db.commit()
-            logger.info("Step 4/4 complete: enriched %d CVE display fields", filled)
+            logger.info(
+                "Step 4/4 complete: enriched %d display fields, %d PoC flags set",
+                filled,
+                poc_marked,
+            )
         finally:
             await db.close()
     except Exception as exc:
