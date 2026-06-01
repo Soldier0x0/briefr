@@ -163,8 +163,8 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
                   <p className="kev-desc">{entry.short_description.slice(0, 80)}</p>
                 )}
                 {entry.date_added && (
-                  <p className="kev-date-added mono" aria-label={`Added to KEV: ${entry.date_added}`}>
-                    added {entry.date_added}
+                  <p className="kev-date-added mono" aria-label={`Date added to KEV: ${entry.date_added}`}>
+                    {entry.date_added}
                   </p>
                 )}
               </li>
