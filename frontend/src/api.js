@@ -59,4 +59,3 @@ export function lookupIOC(value, type) {
     body: JSON.stringify({ value, type }),
   })
 }
-

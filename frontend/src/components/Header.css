@@ -279,24 +279,6 @@
   text-align: center;
 }
 
-/* ── Refresh button ───────────────────────────────────────── */
-.header-refresh-btn {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  color: var(--text3);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.1s;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.header-refresh-btn:hover:not(:disabled) { color: var(--text2); }
-.header-refresh-btn:disabled { color: var(--text3); cursor: default; }
-
 /* ── Responsive ───────────────────────────────────────────── */
 /* ── Mobile menu ─────────────────────────────────────────── */
 .header-legal-desktop { display: flex; }

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { triggerRefresh } from '../api.js'
 import ShortcutsPanel from './ShortcutsPanel.jsx'
 import {
   COMMON_TIMEZONES,
@@ -33,7 +32,6 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezone
   const [popoverOpen, setPopoverOpen]   = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [search, setSearch]             = useState('')
-  const [refreshing, setRefreshing]     = useState(false)
   const popoverRef                      = useRef(null)
   const mobileMenuRef                   = useRef(null)
 
@@ -70,13 +68,6 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezone
     if (onTimezoneChange) onTimezoneChange(newTz)
     setPopoverOpen(false)
     setSearch('')
-  }
-
-  async function handleRefresh() {
-    if (refreshing) return
-    setRefreshing(true)
-    try { await triggerRefresh() } catch {}
-    setTimeout(() => setRefreshing(false), 3000)
   }
 
   // Formatted times
@@ -128,7 +119,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezone
           </nav>
         )}
 
-        {/* Right: theme toggle, legal, live dot, clock, refresh */}
+        {/* Right: theme toggle, legal, live dot, clock */}
         <div className="header-right">
           {/* Theme toggle */}
           <button
@@ -242,16 +233,6 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezone
               </div>
             )}
           </div>
-
-          {/* Manual refresh */}
-          <button
-            className="header-refresh-btn"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            aria-label={refreshing ? 'Refresh in progress' : 'Manually trigger data refresh'}
-          >
-            {refreshing ? 'REFRESHING...' : '↻ REFRESH'}
-          </button>
 
           {/* Keyboard shortcuts — always visible in header */}
           <ShortcutsPanel />
