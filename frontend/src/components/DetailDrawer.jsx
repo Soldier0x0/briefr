@@ -7,8 +7,20 @@ function severityColor(sev) {
   const s = (sev || '').toUpperCase()
   if (s === 'CRITICAL') return 'var(--red)'
   if (s === 'HIGH')     return 'var(--amber)'
-  if (s === 'MEDIUM')   return 'var(--text2)'
-  if (s === 'LOW')      return 'var(--text3)'
+  if (s === 'MEDIUM')   return 'var(--accent)'
+  if (s === 'LOW')      return 'var(--green)'
+  return 'var(--text3)'
+}
+
+
+function cvssMetricColor(score, severity) {
+  const fromSev = severityColor(severity)
+  if ((severity || '').toUpperCase() !== 'UNKNOWN') return fromSev
+  if (score == null) return 'var(--text3)'
+  if (score >= 9.0) return 'var(--red)'
+  if (score >= 7.0) return 'var(--amber)'
+  if (score >= 4.0) return 'var(--accent)'
+  if (score > 0) return 'var(--green)'
   return 'var(--text3)'
 }
 
@@ -70,6 +82,7 @@ export default function DetailDrawer({ cve, onClose }) {
   const urls     = Array.isArray(cve.source_urls) ? cve.source_urls.slice(0, 5) : []
   const epss     = epssDisplay(cve.epss_score)
   const sevColor = severityColor(cve.severity)
+  const cvssValColor = cvssMetricColor(cve.cvss_score, cve.severity)
 
   return (
     <>
@@ -135,22 +148,24 @@ export default function DetailDrawer({ cve, onClose }) {
           <section className="drawer-section" aria-labelledby="metrics-heading">
             <h2 id="metrics-heading" className="drawer-section-label">METRICS</h2>
             <div className="metrics-row">
-              {cve.cvss_score != null && (
+              {cve.cvss_score != null ? (
                 <MetricCell
                   label="CVSS"
                   value={cve.cvss_score.toFixed(1)}
-                  color={sevColor}
+                  color={cvssValColor}
                 />
+              ) : (
+                <MetricCell label="CVSS" value="N/A" color="var(--text3)" />
               )}
               <MetricCell
                 label="EPSS"
                 value={epss ?? 'N/A'}
                 color={
-                  cve.epss_score == null
+                  epss == null
                     ? 'var(--text3)'
-                    : cve.epss_score >= 0.5
+                    : parseFloat(epss) >= 50
                       ? 'var(--red)'
-                      : cve.epss_score >= 0.2
+                      : parseFloat(epss) >= 20
                         ? 'var(--amber)'
                         : 'var(--green)'
                 }

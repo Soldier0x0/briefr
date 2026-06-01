@@ -217,6 +217,24 @@
   border-color: var(--amber);
 }
 
+.badge-cvss-medium {
+  color: var(--accent);
+  background: rgba(255, 140, 50, 0.12);
+  border-color: var(--accent);
+}
+
+.badge-cvss-low {
+  color: var(--green);
+  background: var(--green-dim);
+  border-color: var(--green);
+}
+
+.badge-cvss-unknown {
+  color: var(--text3);
+  background: var(--bg3);
+  border-color: var(--border2);
+}
+
 /* Description */
 .cve-description {
   font-size: 0.875rem;
