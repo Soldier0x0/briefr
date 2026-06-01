@@ -81,43 +81,6 @@ npm run dev    # http://localhost:5173 — proxies /api to :8000
 
 Production deploy: `npm run build`, then serve `frontend/dist` behind nginx. See `deploy/setup.sh` for systemd install on Debian.
 
-### Update EPSS scores (database)
-
-After `git pull`, refresh EPSS from the FIRST daily feed without re-fetching all CVEs from NVD:
-
-```bash
-bash /opt/briefr/deploy/refresh-epss.sh
-```
-
-Or trigger a full ingest (NVD + KEV + EPSS + summaries):
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/refresh
-journalctl -u briefr-backend -f
-```
-
-Check coverage:
-
-```bash
-sqlite3 /opt/briefr/backend/briefr.db \
-  "SELECT COUNT(*) AS total, SUM(epss_score IS NOT NULL) AS with_epss FROM cves;"
-```
-
-### Production with nginx (not Vite dev)
-
-1. Install nginx: `apt-get install -y nginx`
-2. Set `ALLOWED_ORIGINS` in `backend/.env` to your public URL (e.g. `http://192.168.1.50` or `https://projectjupiter.in`)
-3. Run:
-
-```bash
-git pull origin main
-bash /opt/briefr/deploy/setup-nginx-production.sh
-```
-
-This builds `frontend/dist`, installs `deploy/nginx-briefr-http.conf` (LAN HTTP), disables `briefr-frontend` (Vite), and proxies `/api/` to the backend on port 8000.
-
-For HTTPS + `projectjupiter.in`, use `USE_TLS=1 bash deploy/setup-nginx-production.sh` after certbot certificates exist.
-
 ### Environment Variables
 
 | Variable | Description | Where to get it |
@@ -129,8 +92,6 @@ For HTTPS + `projectjupiter.in`, use `USE_TLS=1 bash deploy/setup-nginx-producti
 | `CACHE_REFRESH_HOUR` | Daily feed hour (IST) | Default `6` |
 | `CACHE_REFRESH_MINUTE` | Daily feed minute (IST) | Default `0` |
 | `MAX_CVES_PER_FETCH` | Cap per NVD refresh | Default `2000` |
-| `NVD_DAYS_BACK` | Published-date window for initial NVD sync only | Default `14` |
-| `NVD_SYNC_OVERLAP_MINUTES` | Overlap for incremental `lastMod` sync | Default `15` |
 | `DEFAULT_TIMEZONE` | Server display timezone | Default `Asia/Kolkata` |
 | `DB_PATH` | SQLite database file | Default `briefr.db` in backend dir |
 
@@ -138,13 +99,13 @@ For HTTPS + `projectjupiter.in`, use `USE_TLS=1 bash deploy/setup-nginx-producti
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/health` | Service health, CVE count, NVD sync watermark, refresh status |
+| `GET /api/health` | Service health, CVE count, last refresh time |
 | `GET /api/time` | Server UTC and local time |
 | `GET /api/stats` | Severity and KEV summary counts |
 | `GET /api/cves` | Paginated, filterable CVE list |
 | `GET /api/cves/{cve_id}` | Single CVE detail with OSV packages |
 | `POST /api/ioc/lookup` | IOC enrichment (ip, hash, domain) |
-| `POST /api/refresh` | Trigger background CVE refresh |
+| `POST /api/refresh` | Operator-only (`curl`); daily cron via `CACHE_REFRESH_*` — no UI button |
 | `GET /api/kev/deadlines` | CISA KEV entries with due dates |
 | `GET /api/usage` | External API usage counters |
 
