@@ -23,21 +23,25 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState(null)
   const [hasMore, setHasMore] = useState(true)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [selectedMap, setSelectedMap] = useState({})
   const [copyAllState, setCopyAllState] = useState('idle')
   const [navIndex, setNavIndex] = useState(null)
   const sentinelRef = useRef(null)
   const abortRef = useRef(null)
   const cardRefs = useRef([])
-  const filtersRef = useRef(filters)
   const pageRef = useRef(1)
+  const filtersRef = useRef(filters)
+  const loadingRef = useRef(false)
   const isLoadingMoreRef = useRef(false)
   const hasMoreRef = useRef(true)
+  const initialLoadDoneRef = useRef(false)
+  const sentinelVisibleRef = useRef(false)
 
   filtersRef.current = filters
+  loadingRef.current = loading
   isLoadingMoreRef.current = isLoadingMore
   hasMoreRef.current = hasMore
 
@@ -63,13 +67,15 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
       if (controller.signal.aborted) return
 
       setTotal(data.total)
-      setHasMore(data.data.length >= PAGE_LIMIT)
+      const nextHasMore = pageNum < data.pages && data.data.length > 0
+      setHasMore(nextHasMore)
+      hasMoreRef.current = nextHasMore
       setCves(prev => (append ? [...prev, ...data.data] : data.data))
       pageRef.current = pageNum
       setPage(pageNum)
     } catch (err) {
       if (!controller.signal.aborted) {
-        if (!append) setError(err.message)
+        setError(err.message)
       }
     } finally {
       if (!controller.signal.aborted) {
@@ -77,22 +83,39 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
           setIsLoadingMore(false)
         } else {
           setLoading(false)
+          initialLoadDoneRef.current = true
         }
       }
     }
   }, [])
 
-  // On mount / filter change: fetch only page 1
+  const loadNextPage = useCallback(() => {
+    if (
+      loadingRef.current ||
+      isLoadingMoreRef.current ||
+      !hasMoreRef.current ||
+      !initialLoadDoneRef.current
+    ) {
+      return
+    }
+    loadPage(pageRef.current + 1, true)
+  }, [loadPage])
+
+  // Reset and reload when filters change
   useEffect(() => {
     pageRef.current = 1
     setPage(1)
     setCves([])
     setHasMore(true)
+    hasMoreRef.current = true
     setSelectedMap({})
     setNavIndex(null)
+    initialLoadDoneRef.current = false
+    sentinelVisibleRef.current = false
     loadPage(1, false)
   }, [filters, loadPage])
 
+  // Arrow-key navigation
   useEffect(() => {
     function handleNav(e) {
       const tag = document.activeElement?.tagName
@@ -123,23 +146,28 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     return () => document.removeEventListener('keydown', handleNav)
   }, [cves, navIndex, onSelectCVE])
 
+  // Infinite scroll: stable observer (refs only — do not depend on loading state)
   useEffect(() => {
     const sentinel = sentinelRef.current
     if (!sentinel) return
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (!entries[0].isIntersecting) return
-        if (isLoadingMoreRef.current || !hasMoreRef.current) return
+        const visible = entries[0].isIntersecting
+        const wasVisible = sentinelVisibleRef.current
+        sentinelVisibleRef.current = visible
 
-        const nextPage = pageRef.current + 1
-        loadPage(nextPage, true)
+        // Edge-trigger: load only when sentinel enters view, not on every re-observe
+        if (visible && !wasVisible) {
+          loadNextPage()
+        }
       },
-      { rootMargin: '200px' }
+      { root: null, rootMargin: '0px', threshold: 0 }
     )
+
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [loadPage])
+  }, [loadNextPage])
 
   function handleToggleSelect(cve) {
     setSelectedMap(prev => {
@@ -224,9 +252,9 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
         ))}
       </div>
 
-      <div ref={sentinelRef} style={{ height: '1px' }} />
+      <div ref={sentinelRef} className="scroll-sentinel" aria-hidden="true" />
 
-      {isLoadingMore && cves.length > 0 && (
+      {isLoadingMore && (
         <div className="feed-loading-more" aria-live="polite" aria-label="Loading more CVEs">
           <span className="loading-dots" aria-hidden="true">
             <span /><span /><span />
