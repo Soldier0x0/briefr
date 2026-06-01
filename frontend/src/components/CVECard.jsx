@@ -25,6 +25,17 @@ function severityClass(sev) {
   return 'unknown'
 }
 
+function cvssBadgeClass(score, severity) {
+  const fromSev = severityClass(severity)
+  if (fromSev !== 'unknown') return fromSev
+  if (score == null) return 'unknown'
+  if (score >= 9.0) return 'critical'
+  if (score >= 7.0) return 'high'
+  if (score >= 4.0) return 'medium'
+  if (score > 0) return 'low'
+  return 'unknown'
+}
+
 function epssColor(score) {
   if (score >= 0.7) return 'var(--red)'
   if (score >= 0.3) return 'var(--amber)'
@@ -34,6 +45,7 @@ function epssColor(score) {
 export default function CVECard({ cve, onSelect, selected, onToggleSelect, timezone = 'UTC', navSelected, cardRef }) {
   const [shareCopied, setShareCopied] = useState(false)
   const sevClass = severityClass(cve.severity)
+  const cvssClass = cvssBadgeClass(cve.cvss_score, cve.severity)
   const epss =
     typeof cve.epss_score === 'number' && cve.epss_score >= 0
       ? cve.epss_score
@@ -135,7 +147,7 @@ export default function CVECard({ cve, onSelect, selected, onToggleSelect, timez
           )}
           {cve.cvss_score != null && (
             <span
-              className={`badge badge-cvss badge-cvss-${sevClass}`}
+              className={`badge badge-cvss badge-cvss-${cvssClass}`}
               title={`CVSS score: ${cve.cvss_score} (${cve.severity})`}
             >
               CVSS {cve.cvss_score.toFixed(1)}
