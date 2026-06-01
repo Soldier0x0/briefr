@@ -178,13 +178,15 @@ async def update_epss_scores(db: aiosqlite.Connection, scores: dict) -> None:
 
 async def backfill_display_fields(db: aiosqlite.Connection) -> int:
     """Fill summary/MITRE from stored NVD fields when missing (no re-fetch)."""
-    from enrichment.cve import build_plain_summary, extract_mitre_from_urls
+    from enrichment.cve import build_plain_summary, extract_mitre_from_urls, has_public_poc_from_urls
 
     rows = await db.execute_fetchall(
         """
-        SELECT cve_id, description, source_urls, mitre_technique, summary
+        SELECT cve_id, description, source_urls, mitre_technique, summary, has_poc
         FROM cves
-        WHERE summary IS NULL OR summary = '' OR mitre_technique IS NULL
+        WHERE summary IS NULL OR summary = ''
+           OR mitre_technique IS NULL
+           OR has_poc = 0
         """
     )
     updated = 0
@@ -194,20 +196,45 @@ async def backfill_display_fields(db: aiosqlite.Connection) -> int:
         if not summary:
             summary = build_plain_summary(row["description"] or "")
         mitre = row["mitre_technique"] or extract_mitre_from_urls(urls)
-        if not summary and not mitre:
+        poc_flag = row["has_poc"]
+        if not poc_flag:
+            poc_flag = 1 if has_public_poc_from_urls(urls) else 0
+        if not summary and not mitre and not poc_flag:
             continue
         await db.execute(
             """
             UPDATE cves
             SET summary = COALESCE(?, summary),
-                mitre_technique = COALESCE(?, mitre_technique)
+                mitre_technique = COALESCE(?, mitre_technique),
+                has_poc = CASE WHEN ? = 1 THEN 1 ELSE has_poc END
             WHERE cve_id = ?
             """,
-            (summary, mitre, row["cve_id"]),
+            (summary, mitre, poc_flag, row["cve_id"]),
         )
         updated += 1
     return updated
 
+
+
+
+async def backfill_has_poc(db: aiosqlite.Connection) -> int:
+    """Set has_poc from stored reference URLs (no NVD re-fetch)."""
+    from enrichment.cve import has_public_poc_from_urls
+
+    rows = await db.execute_fetchall(
+        "SELECT cve_id, source_urls FROM cves WHERE has_poc = 0"
+    )
+    updated = 0
+    for row in rows:
+        urls = json.loads(row["source_urls"] or "[]")
+        if not has_public_poc_from_urls(urls):
+            continue
+        await db.execute(
+            "UPDATE cves SET has_poc = 1 WHERE cve_id = ?",
+            (row["cve_id"],),
+        )
+        updated += 1
+    return updated
 
 async def enrich_kev_summaries(db: aiosqlite.Connection) -> int:
     """Fill plain-English summary from CISA KEV short descriptions."""
