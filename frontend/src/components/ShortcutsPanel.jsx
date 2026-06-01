@@ -4,7 +4,7 @@ import './ShortcutsPanel.css'
 const SHORTCUTS = [
   { key: '/',     desc: 'Focus search' },
   { key: 'F',     desc: 'Cycle filters' },
-  { key: 'Esc',   desc: 'Close drawer / modal' },
+  { key: 'Esc',   desc: 'Close drawer or modal' },
   { key: '↑ ↓',   desc: 'Navigate CVE cards' },
   { key: 'Enter', desc: 'Open selected card' },
   { key: 'G D',   desc: 'Generate digest' },

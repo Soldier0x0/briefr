@@ -51,6 +51,7 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 body {
@@ -60,6 +61,7 @@ body {
   font-size: 0.9375rem;
   line-height: 1.6;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 a {
@@ -101,7 +103,9 @@ input:focus, textarea:focus {
 .app-main {
   flex: 1;
   width: 100%;
+  max-width: 100%;
   padding: 0 24px;
+  overflow-x: hidden;
 }
 
 .content-grid {

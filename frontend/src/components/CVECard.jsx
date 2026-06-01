@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { copyToClipboard } from '../utils/report.js'
 import { formatAbsolute } from '../utils/timezone.js'
+import { publishedAgeClass } from '../utils/cveAge.js'
 import './CVECard.css'
 
 function timeAgo(isoString) {
@@ -42,7 +43,7 @@ function epssColor(score) {
   return 'var(--green)'
 }
 
-export default function CVECard({ cve, onSelect, selected, onToggleSelect, timezone = 'UTC', navSelected, cardRef }) {
+export default function CVECard({ cve, onSelect, selected, onToggleSelect, timezone = 'UTC', navSelected, cardRef, isNew }) {
   const [shareCopied, setShareCopied] = useState(false)
   const sevClass = severityClass(cve.severity)
   const cvssClass = cvssBadgeClass(cve.cvss_score, cve.severity)
@@ -111,6 +112,12 @@ export default function CVECard({ cve, onSelect, selected, onToggleSelect, timez
         />
         <span className="card-checkbox-box" aria-hidden="true" />
       </label>
+
+      {isNew && (
+        <span className="cve-new-badge mono" aria-label="New since your last visit">
+          NEW
+        </span>
+      )}
 
       {/* Share button — top-right, hover-only */}
       <div className="card-share-wrap">
@@ -216,7 +223,7 @@ export default function CVECard({ cve, onSelect, selected, onToggleSelect, timez
         <span className="meta-item meta-time" aria-label={`Published: ${cve.published}`}>
           <span className="meta-key">published</span>
           <span
-            className="meta-val time-tooltip-wrap"
+            className={`meta-val time-tooltip-wrap ${publishedAgeClass(cve.published)}`}
             title={formatAbsolute(cve.published, timezone)}
           >
             {timeAgo(cve.published)}

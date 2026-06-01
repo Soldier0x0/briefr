@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import Header from './components/Header.jsx'
 import Hero from './components/Hero.jsx'
 import StatsRow from './components/StatsRow.jsx'
@@ -9,6 +9,7 @@ import IOCLookup from './components/IOCLookup.jsx'
 import DetailDrawer from './components/DetailDrawer.jsx'
 import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
+import ShortcutsPanel from './components/ShortcutsPanel.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import { fetchStats, fetchHealth } from './api.js'
@@ -88,7 +89,8 @@ function cycleFilter(filters) {
 function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
                    digestOpen, setDigestOpen, digestCVEs, setDigestCVEs,
                    searchFocusTrigger, setSearchFocusTrigger, aboutOpen, setAboutOpen,
-                   timezone, lastUpdated, nextRefreshUtc, refreshSchedule }) {
+                   timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
+                   onDigestRequest }) {
 
   const handleBrief = useCallback((stack) => {
     setFilters(prev => ({ ...prev, stack }))
@@ -119,6 +121,7 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
           onFiltersChange={handleFiltersChange}
           onSelectCVE={setSelectedCVE}
           onGenerateDigest={handleGenerateDigest}
+          onDigestRequest={onDigestRequest}
           searchFocusTrigger={searchFocusTrigger}
           timezone={timezone}
         />
@@ -128,8 +131,15 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
   )
 }
 
+function FeedShortcuts() {
+  return <ShortcutsPanel />
+}
+
 export default function App() {
+  const location = useLocation()
   const [activeTab, setActiveTab]               = useState('feed')
+  const digestCVEsRef = useRef([])
+  const generateDigestRef = useRef(null)
   const [filters, setFilters]                   = useState(DEFAULT_FILTERS)
   const [stats, setStats]                       = useState(null)
   const [selectedCVE, setSelectedCVE]           = useState(null)
@@ -171,8 +181,21 @@ export default function App() {
     return () => window.removeEventListener('briefr-timezone-change', handler)
   }, [])
 
+  const handleGenerateDigest = useCallback((cves) => {
+    setDigestCVEs(cves)
+    digestCVEsRef.current = cves
+    setDigestOpen(true)
+  }, [])
+
+  const registerDigestHandler = useCallback((fn) => {
+    generateDigestRef.current = fn
+  }, [])
+
   // ── Global keyboard shortcuts ─────────────────────────────
   useEffect(() => {
+    let gPending = false
+    let gTimer = null
+
     function handleKey(e) {
       if (e.key === 'Escape') {
         if (aboutOpen)    { setAboutOpen(false);  return }
@@ -182,12 +205,38 @@ export default function App() {
       }
       const tag = document.activeElement?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
       if (e.key === '/') { e.preventDefault(); setSearchFocusTrigger(n => n + 1) }
       if (e.key === 'f' || e.key === 'F') setFilters(cycleFilter)
+
+      if (e.key === 'g' || e.key === 'G') {
+        gPending = true
+        if (gTimer) clearTimeout(gTimer)
+        gTimer = setTimeout(() => { gPending = false }, 800)
+        return
+      }
+      if ((e.key === 'd' || e.key === 'D') && gPending) {
+        gPending = false
+        if (gTimer) clearTimeout(gTimer)
+        e.preventDefault()
+        if (generateDigestRef.current) {
+          generateDigestRef.current()
+        } else if (digestCVEsRef.current.length) {
+          handleGenerateDigest(digestCVEsRef.current)
+        }
+      }
     }
     document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
-  }, [aboutOpen, selectedCVE, digestOpen])
+    return () => {
+      document.removeEventListener('keydown', handleKey)
+      if (gTimer) clearTimeout(gTimer)
+    }
+  }, [aboutOpen, selectedCVE, digestOpen, handleGenerateDigest])
+
+  const showFeedShortcuts =
+    location.pathname !== '/privacy' &&
+    location.pathname !== '/terms' &&
+    activeTab === 'feed'
 
   return (
     <div className="app">
@@ -223,10 +272,13 @@ export default function App() {
                   lastUpdated={lastUpdated}
                   nextRefreshUtc={nextRefreshUtc}
                   refreshSchedule={refreshSchedule}
+                  onDigestRequest={registerDigestHandler}
                 />
               )}
               {activeTab === 'ioc' && <IOCLookup />}
             </div>
+
+            {showFeedShortcuts && <FeedShortcuts />}
 
             <footer className="app-footer" role="contentinfo">
               <div className="footer-left">

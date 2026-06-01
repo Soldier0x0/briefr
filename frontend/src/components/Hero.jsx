@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { fetchCVEs } from '../api.js'
 import './Hero.css'
 
 const STACK_KEY = 'briefr_stack'
@@ -7,10 +8,31 @@ export default function Hero({ onBrief }) {
   const [stack, setStack] = useState(() => {
     try { return localStorage.getItem(STACK_KEY) || '' } catch { return '' }
   })
+  const [matchCount, setMatchCount] = useState(null)
   const inputRef = useRef(null)
+  const debounceRef = useRef(null)
 
   useEffect(() => {
     try { localStorage.setItem(STACK_KEY, stack) } catch {}
+  }, [stack])
+
+  useEffect(() => {
+    const trimmed = stack.trim()
+    if (!trimmed) {
+      setMatchCount(null)
+      return
+    }
+
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      fetchCVEs({ stack: trimmed, limit: 1, page: 1 })
+        .then(data => setMatchCount(data.total))
+        .catch(() => setMatchCount(null))
+    }, 800)
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
   }, [stack])
 
   function handleBrief() {
@@ -53,6 +75,12 @@ export default function Hero({ onBrief }) {
           BRIEF
         </button>
       </div>
+
+      {stack.trim() && matchCount != null && (
+        <p className="stack-match-count mono" aria-live="polite">
+          {matchCount.toLocaleString()} CVE{matchCount === 1 ? '' : 's'} match your stack
+        </p>
+      )}
     </section>
   )
 }

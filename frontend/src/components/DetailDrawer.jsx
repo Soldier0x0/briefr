@@ -71,6 +71,21 @@ export default function DetailDrawer({ cve, onClose }) {
     }
   }
 
+  // C — copy report while drawer is open
+  useEffect(() => {
+    if (!isOpen) return
+    function onKey(e) {
+      const tag = document.activeElement?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault()
+        handleCopyReport()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [isOpen, cve])
+
   if (!cve) {
     return (
       <div className={`drawer-overlay`} aria-hidden="true" />
