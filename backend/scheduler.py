@@ -1,7 +1,8 @@
 import asyncio
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -25,6 +26,30 @@ from feeds.kev import fetch_kev
 from feeds.epss import fetch_epss
 
 logger = logging.getLogger(__name__)
+
+
+SCHEDULER_REFRESH_TZ = "Asia/Kolkata"
+
+
+def get_refresh_schedule() -> dict:
+    return {
+        "hour": int(os.environ.get("CACHE_REFRESH_HOUR", "6")),
+        "minute": int(os.environ.get("CACHE_REFRESH_MINUTE", "0")),
+        "timezone": SCHEDULER_REFRESH_TZ,
+    }
+
+
+def get_next_scheduled_refresh_utc() -> datetime:
+    sched = get_refresh_schedule()
+    tz = ZoneInfo(sched["timezone"])
+    now_local = datetime.now(tz)
+    candidate = now_local.replace(
+        hour=sched["hour"], minute=sched["minute"], second=0, microsecond=0,
+    )
+    if candidate <= now_local:
+        candidate += timedelta(days=1)
+    return candidate.astimezone(timezone.utc)
+
 
 _scheduler: AsyncIOScheduler | None = None
 _refresh_lock = asyncio.Lock()
@@ -243,13 +268,14 @@ async def maybe_run_on_startup() -> None:
 def start_scheduler() -> AsyncIOScheduler:
     global _scheduler
 
-    refresh_hour = int(os.environ.get("CACHE_REFRESH_HOUR", "6"))
-    refresh_minute = int(os.environ.get("CACHE_REFRESH_MINUTE", "0"))
+    sched = get_refresh_schedule()
+    refresh_hour = sched["hour"]
+    refresh_minute = sched["minute"]
 
-    scheduler = AsyncIOScheduler(timezone="Asia/Kolkata")
+    scheduler = AsyncIOScheduler(timezone=SCHEDULER_REFRESH_TZ)
     scheduler.add_job(
         run_daily_refresh,
-        trigger=CronTrigger(hour=refresh_hour, minute=refresh_minute, timezone="Asia/Kolkata"),
+        trigger=CronTrigger(hour=refresh_hour, minute=refresh_minute, timezone=SCHEDULER_REFRESH_TZ),
         id="daily_cve_refresh",
         name="Daily CVE Refresh",
         replace_existing=True,
