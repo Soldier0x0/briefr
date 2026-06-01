@@ -153,10 +153,19 @@
   background: var(--red-dim);
 }
 
+.export-success {
+  font-size: 10px;
+  color: var(--green);
+  padding: 6px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--green-dim);
+}
+
 .vendor-filter-block {
   border-bottom: 1px solid var(--border);
-  background: var(--bg2);
-  padding: 10px 20px 12px;
+  background: var(--bg3);
+  padding: 12px 20px 14px;
+  border-top: 1px solid var(--border2);
 }
 
 .vendor-filter-header {
@@ -197,10 +206,10 @@
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.06em;
-  padding: 5px 12px;
-  border: 1px solid var(--border2);
-  background: var(--bg3);
-  color: var(--text2);
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
   border-radius: 0;
   white-space: nowrap;
   cursor: pointer;

@@ -60,26 +60,21 @@
   color: var(--text3);
 }
 
-.stack-brief-btn {
+.stack-clear-input-btn {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  color: var(--bg);
-  background: var(--red);
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--text3);
+  background: transparent;
   border: none;
-  padding: 0 20px;
+  border-left: 1px solid var(--border);
+  padding: 0 14px;
   cursor: pointer;
-  transition: background 0.12s;
   flex-shrink: 0;
 }
 
-.stack-brief-btn:hover {
-  background: var(--text);
-}
-
-.stack-brief-btn:active {
-  background: var(--accent);
+.stack-clear-input-btn:hover {
+  color: var(--red);
 }
 
 .stack-match-count {
@@ -110,8 +105,10 @@
     justify-content: center;
   }
 
-  .stack-brief-btn {
+  .stack-clear-input-btn {
     width: 100%;
-    padding: 10px 20px;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding: 8px;
   }
 }

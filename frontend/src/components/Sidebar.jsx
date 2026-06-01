@@ -66,9 +66,14 @@ const DATA_SOURCES = [
   { name: 'VirusTotal', url: 'https://www.virustotal.com/' },
 ]
 
+const KEV_PREVIEW = 5
+
 export default function Sidebar({ filters, onFiltersChange, stats }) {
   const [kevDeadlines, setKevDeadlines] = useState([])
+  const [kevExpanded, setKevExpanded] = useState(false)
   const sparkBars = buildSparkline(stats)
+  const visibleKev = kevExpanded ? kevDeadlines : kevDeadlines.slice(0, KEV_PREVIEW)
+  const hiddenKevCount = Math.max(0, kevDeadlines.length - KEV_PREVIEW)
   const sparkMax = Math.max(...sparkBars, 1)
 
   useEffect(() => {
@@ -145,7 +150,7 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
           <p className="sidebar-empty">Loading deadlines...</p>
         )}
         <ul className="kev-list" aria-label="Upcoming KEV remediation deadlines">
-          {kevDeadlines.map(entry => {
+          {visibleKev.map(entry => {
             const days = daysUntil(entry.due_date)
             const badgeClass = deadlineBadgeClass(days)
             const badgeLabel = deadlineBadgeLabel(days)
@@ -171,6 +176,26 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
             )
           })}
         </ul>
+        {hiddenKevCount > 0 && !kevExpanded && (
+          <button
+            type="button"
+            className="kev-expand-btn mono"
+            onClick={() => setKevExpanded(true)}
+            aria-label={`Show ${hiddenKevCount} more KEV deadlines`}
+          >
+            + {hiddenKevCount} more
+          </button>
+        )}
+        {kevExpanded && kevDeadlines.length > KEV_PREVIEW && (
+          <button
+            type="button"
+            className="kev-expand-btn mono"
+            onClick={() => setKevExpanded(false)}
+            aria-label="Show fewer KEV deadlines"
+          >
+            Show less
+          </button>
+        )}
       </section>
 
       {/* ── Section 4: Data Sources ── */}

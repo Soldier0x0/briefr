@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { fetchCVEs } from '../api.js'
+import { fetchCVEsForExport } from '../api.js'
 import { cvesToCsvRows, downloadCsv, exportFilename } from '../utils/exportCsv.js'
 import './FilterBar.css'
 
@@ -41,6 +41,7 @@ export default function FilterBar({
   const [localSearch, setLocalSearch] = useState(filters.search || '')
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState(null)
+  const [exportSuccess, setExportSuccess] = useState(null)
   const debounceRef  = useRef(null)
   const searchRef    = useRef(null)
 
@@ -92,34 +93,22 @@ export default function FilterBar({
     if (exporting) return
     setExporting(true)
     setExportError(null)
+    setExportSuccess(null)
     try {
-      const all = []
-      let page = 1
-      let pages = 1
-      const limit = 50
+      const data = await fetchCVEsForExport(filters)
+      const rows = data.data || []
 
-      while (page <= pages && all.length < 500) {
-        const data = await fetchCVEs({
-          ...filters,
-          page,
-          limit,
-        })
-        pages = data.pages
-        all.push(...data.data)
-        if (!data.data.length) break
-        page += 1
-      }
-
-      if (!all.length) {
+      if (!rows.length) {
         setExportError('No CVEs to export for current filters.')
         return
       }
 
-      const rows = all.slice(0, 500)
       const csv = cvesToCsvRows(rows)
       downloadCsv(csv, exportFilename())
+      setExportSuccess(`Downloaded ${rows.length.toLocaleString()} CVEs.`)
+      window.setTimeout(() => setExportSuccess(null), 4000)
     } catch (err) {
-      setExportError(err.message || 'Export failed. Is the API running?')
+      setExportError(err.message || 'Export failed. Restart the backend and try again.')
     } finally {
       setExporting(false)
     }
@@ -142,6 +131,7 @@ export default function FilterBar({
         <div className="filter-bar-right">
           <div className="filter-action-btns">
             <button
+              type="button"
               className="digest-btn"
               onClick={onGenerateDigest}
               aria-label="Generate digest of current CVE results"
@@ -150,6 +140,7 @@ export default function FilterBar({
               GENERATE DIGEST
             </button>
             <button
+              type="button"
               className="export-btn"
               onClick={handleExportCsv}
               disabled={exporting}
@@ -191,6 +182,11 @@ export default function FilterBar({
       {exportError && (
         <p className="export-error mono" role="alert">
           {exportError}
+        </p>
+      )}
+      {exportSuccess && (
+        <p className="export-success mono" role="status">
+          {exportSuccess}
         </p>
       )}
 

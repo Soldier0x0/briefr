@@ -4,47 +4,65 @@ import './Hero.css'
 
 const STACK_KEY = 'briefr_stack'
 
-export default function Hero({ onBrief }) {
+export default function Hero({ activeStack, onStackChange }) {
   const [stack, setStack] = useState(() => {
     try { return localStorage.getItem(STACK_KEY) || '' } catch { return '' }
   })
   const [matchCount, setMatchCount] = useState(null)
   const [matchLoading, setMatchLoading] = useState(false)
-  const inputRef = useRef(null)
   const debounceRef = useRef(null)
+  const stackRef = useRef(stack)
+
+  stackRef.current = stack
 
   useEffect(() => {
     try { localStorage.setItem(STACK_KEY, stack) } catch {}
   }, [stack])
+
+  // Apply saved stack to feed on first load
+  useEffect(() => {
+    const trimmed = stack.trim()
+    if (trimmed && !activeStack) {
+      onStackChange(trimmed)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Sync when stack cleared from sidebar
+  useEffect(() => {
+    if (activeStack !== stackRef.current) {
+      setStack(activeStack || '')
+    }
+  }, [activeStack])
 
   useEffect(() => {
     const trimmed = stack.trim()
     if (!trimmed) {
       setMatchCount(null)
       setMatchLoading(false)
+      onStackChange('')
       return
     }
 
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
       setMatchLoading(true)
+      onStackChange(trimmed)
       fetchCVEs({ stack: trimmed, limit: 1, page: 1 })
         .then(data => setMatchCount(data.total ?? 0))
         .catch(() => setMatchCount(null))
         .finally(() => setMatchLoading(false))
-    }, 800)
+    }, 600)
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }, [stack])
+  }, [stack, onStackChange])
 
-  function handleBrief() {
-    if (stack.trim()) onBrief(stack.trim())
-  }
-
-  function handleKeyDown(e) {
-    if (e.key === 'Enter') handleBrief()
+  function handleClear() {
+    setStack('')
+    onStackChange('')
+    setMatchCount(null)
   }
 
   return (
@@ -60,24 +78,25 @@ export default function Hero({ onBrief }) {
         <label htmlFor="stack-input" className="stack-label">STACK //</label>
         <input
           id="stack-input"
-          ref={inputRef}
           type="text"
           className="stack-input"
           value={stack}
           onChange={e => setStack(e.target.value)}
-          onKeyDown={handleKeyDown}
           placeholder="nginx, python, linux kernel, postgres..."
           aria-label="Enter your technology stack to filter CVEs"
           autoComplete="off"
           spellCheck="false"
         />
-        <button
-          className="stack-brief-btn"
-          onClick={handleBrief}
-          aria-label="Generate brief for entered stack"
-        >
-          BRIEF
-        </button>
+        {stack.trim() && (
+          <button
+            type="button"
+            className="stack-clear-input-btn"
+            onClick={handleClear}
+            aria-label="Clear stack filter"
+          >
+            ×
+          </button>
+        )}
       </div>
 
       {stack.trim() && (matchLoading || matchCount != null) && (
@@ -85,8 +104,8 @@ export default function Hero({ onBrief }) {
           {matchLoading
             ? 'Counting matches…'
             : `${matchCount.toLocaleString()} CVE${matchCount === 1 ? '' : 's'} match your stack`}
-          {!matchLoading && (
-            <span className="stack-match-hint"> · press BRIEF to filter the feed</span>
+          {!matchLoading && activeStack && (
+            <span className="stack-match-hint"> · feed filtered</span>
           )}
         </p>
       )}

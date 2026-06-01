@@ -98,9 +98,9 @@
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.08em;
-  color: var(--text2);
+  color: var(--text);
   background: var(--bg3);
-  border: 1px solid var(--border2);
+  border: 1px solid var(--border);
   cursor: pointer;
   padding: 5px 10px;
   line-height: 1;

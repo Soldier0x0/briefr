@@ -47,6 +47,20 @@ export function fetchCVE(cveId) {
   return request(`/cves/${encodeURIComponent(cveId)}`)
 }
 
+export function fetchCVEsForExport(params = {}) {
+  const qs = new URLSearchParams()
+  if (params.severity)  qs.set('severity', params.severity)
+  if (params.kev_only)  qs.set('kev_only', 'true')
+  if (params.poc_only)  qs.set('poc_only', 'true')
+  if (params.epss_min != null) qs.set('epss_min', String(params.epss_min))
+  if (params.search)    qs.set('search', params.search)
+  if (params.stack)     qs.set('stack', params.stack)
+  if (params.vendors)   qs.set('vendors', params.vendors)
+  qs.set('max_rows', '500')
+  const query = qs.toString()
+  return request(`/cves/export${query ? `?${query}` : ''}`)
+}
+
 export function fetchKEVDeadlines(sort = 'recent') {
   return request(`/kev/deadlines?sort=${sort}`)
 }

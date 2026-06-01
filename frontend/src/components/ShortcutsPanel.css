@@ -31,8 +31,11 @@
 }
 
 .shortcuts-wrap--header .shortcuts-btn {
-  border-color: var(--border);
-  color: var(--accent);
+  border-color: var(--red);
+  color: var(--text);
+  background: var(--red-dim);
+  min-width: 44px;
+  font-weight: 600;
 }
 
 .shortcuts-btn:hover {
