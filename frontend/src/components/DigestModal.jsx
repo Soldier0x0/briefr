@@ -23,6 +23,7 @@ function buildDigest(cves, filters) {
   if (filters.epss_min) activeFilters.push(`EPSS>${filters.epss_min * 100}%`)
   if (filters.search)   activeFilters.push(`search:"${filters.search}"`)
   if (filters.stack)    activeFilters.push(`stack:"${filters.stack}"`)
+  if (filters.vendors)  activeFilters.push(`vendors:${filters.vendors}`)
   const filterStr = activeFilters.length > 0 ? activeFilters.join(', ') : 'none'
 
   const header = [

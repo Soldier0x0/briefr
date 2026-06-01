@@ -36,6 +36,7 @@ export function fetchCVEs(params = {}) {
   if (params.epss_min != null) qs.set('epss_min', String(params.epss_min))
   if (params.search)    qs.set('search', params.search)
   if (params.stack)     qs.set('stack', params.stack)
+  if (params.vendors)   qs.set('vendors', params.vendors)
   if (params.page)      qs.set('page', String(params.page))
   if (params.limit)     qs.set('limit', String(params.limit))
   const query = qs.toString()

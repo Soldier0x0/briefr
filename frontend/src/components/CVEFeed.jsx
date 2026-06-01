@@ -249,7 +249,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
           <span>No results for your filters.</span>
           <button
             className="feed-clear-btn"
-            onClick={() => onFiltersChange({ severity: null, kev_only: false, poc_only: false, search: '', epss_min: null })}
+            onClick={() => onFiltersChange({ severity: null, kev_only: false, poc_only: false, search: '', epss_min: null, vendors: '' })}
             aria-label="Clear all filters"
           >
             Clear filters

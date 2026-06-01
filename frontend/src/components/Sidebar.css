@@ -1,9 +1,6 @@
 .sidebar {
   background: var(--bg);
-  position: sticky;
-  top: 52px;
-  max-height: calc(100vh - 52px);
-  overflow-y: auto;
+  align-self: start;
 }
 
 @media (max-width: 1024px) {

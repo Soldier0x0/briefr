@@ -11,7 +11,7 @@ const SHORTCUTS = [
   { key: 'C',     desc: 'Copy report (drawer open)' },
 ]
 
-export default function ShortcutsPanel() {
+export default function ShortcutsPanel({ placement = 'header' }) {
   const [open, setOpen] = useState(false)
   const wrapRef = useRef(null)
 
@@ -34,7 +34,7 @@ export default function ShortcutsPanel() {
   }, [open])
 
   return (
-    <div className="shortcuts-wrap" ref={wrapRef}>
+    <div className={`shortcuts-wrap shortcuts-wrap--${placement}`} ref={wrapRef}>
       {open && (
         <div
           className="shortcuts-panel"
@@ -61,7 +61,7 @@ export default function ShortcutsPanel() {
         aria-expanded={open}
         title="Keyboard shortcuts"
       >
-        ?
+        {placement === 'header' ? 'KEYS' : '?'}
       </button>
     </div>
   )

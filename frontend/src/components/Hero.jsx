@@ -9,6 +9,7 @@ export default function Hero({ onBrief }) {
     try { return localStorage.getItem(STACK_KEY) || '' } catch { return '' }
   })
   const [matchCount, setMatchCount] = useState(null)
+  const [matchLoading, setMatchLoading] = useState(false)
   const inputRef = useRef(null)
   const debounceRef = useRef(null)
 
@@ -20,14 +21,17 @@ export default function Hero({ onBrief }) {
     const trimmed = stack.trim()
     if (!trimmed) {
       setMatchCount(null)
+      setMatchLoading(false)
       return
     }
 
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
+      setMatchLoading(true)
       fetchCVEs({ stack: trimmed, limit: 1, page: 1 })
-        .then(data => setMatchCount(data.total))
+        .then(data => setMatchCount(data.total ?? 0))
         .catch(() => setMatchCount(null))
+        .finally(() => setMatchLoading(false))
     }, 800)
 
     return () => {
@@ -76,9 +80,14 @@ export default function Hero({ onBrief }) {
         </button>
       </div>
 
-      {stack.trim() && matchCount != null && (
+      {stack.trim() && (matchLoading || matchCount != null) && (
         <p className="stack-match-count mono" aria-live="polite">
-          {matchCount.toLocaleString()} CVE{matchCount === 1 ? '' : 's'} match your stack
+          {matchLoading
+            ? 'Counting matches…'
+            : `${matchCount.toLocaleString()} CVE${matchCount === 1 ? '' : 's'} match your stack`}
+          {!matchLoading && (
+            <span className="stack-match-hint"> · press BRIEF to filter the feed</span>
+          )}
         </p>
       )}
     </section>

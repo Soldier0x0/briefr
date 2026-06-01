@@ -85,9 +85,13 @@
 .stack-match-count {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--text3);
+  color: var(--text2);
   margin-top: 8px;
   letter-spacing: 0.02em;
+}
+
+.stack-match-hint {
+  color: var(--text3);
 }
 
 @media (max-width: 640px) {

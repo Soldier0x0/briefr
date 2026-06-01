@@ -211,6 +211,22 @@ async def stats():
     }
 
 
+def _text_match_or_clause(terms: list[str]) -> tuple[str, list]:
+    """Match any term against description, summary, or affected_products JSON."""
+    if not terms:
+        return "", []
+    parts = []
+    bind: list = []
+    for term in terms:
+        like = f"%{term.lower()}%"
+        parts.append(
+            "(LOWER(cve_id) LIKE ? OR LOWER(description) LIKE ? "
+            "OR LOWER(summary) LIKE ? OR LOWER(affected_products) LIKE ?)"
+        )
+        bind.extend([like, like, like, like])
+    return "(" + " OR ".join(parts) + ")", bind
+
+
 @app.get("/api/cves")
 async def list_cves(
     severity: str | None = Query(default=None, description="CRITICAL/HIGH/MEDIUM/LOW"),
@@ -219,6 +235,7 @@ async def list_cves(
     epss_min: float | None = Query(default=None, ge=0.0, le=1.0),
     search: str | None = Query(default=None, max_length=200),
     stack: str | None = Query(default=None, max_length=500),
+    vendors: str | None = Query(default=None, max_length=500),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=50),
 ):
@@ -247,9 +264,20 @@ async def list_cves(
         search_term = f"%{search}%"
         params.extend([search_term, search_term])
 
-    stack_products = []
+    stack_products: list[str] = []
     if stack:
         stack_products = [p.strip().lower() for p in stack.split(",") if p.strip()]
+        stack_clause, stack_params = _text_match_or_clause(stack_products)
+        if stack_clause:
+            conditions.append(stack_clause)
+            params.extend(stack_params)
+
+    if vendors:
+        vendor_list = [v.strip() for v in vendors.split(",") if v.strip()]
+        vendor_clause, vendor_params = _text_match_or_clause(vendor_list)
+        if vendor_clause:
+            conditions.append(vendor_clause)
+            params.extend(vendor_params)
 
     where_clause = ""
     if conditions:
@@ -294,8 +322,13 @@ async def list_cves(
     if stack_products:
         def relevance_score(cve: dict) -> int:
             products = [p.lower() for p in cve.get("affected_products", [])]
+            desc = (cve.get("description") or "").lower()
+            summary = (cve.get("summary") or "").lower()
             score = 0
             for sp in stack_products:
+                if sp in desc or sp in summary:
+                    score += 1
+                    continue
                 for p in products:
                     if sp in p:
                         score += 1

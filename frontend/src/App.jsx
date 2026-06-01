@@ -9,7 +9,6 @@ import IOCLookup from './components/IOCLookup.jsx'
 import DetailDrawer from './components/DetailDrawer.jsx'
 import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
-import ShortcutsPanel from './components/ShortcutsPanel.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import { fetchStats, fetchHealth } from './api.js'
@@ -22,6 +21,7 @@ const DEFAULT_FILTERS = {
   epss_min: null,
   search: '',
   stack: '',
+  vendors: '',
 }
 
 // ── Last-refreshed helper ─────────────────────────────────
@@ -129,10 +129,6 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
       </div>
     </>
   )
-}
-
-function FeedShortcuts() {
-  return <ShortcutsPanel />
 }
 
 export default function App() {
@@ -250,6 +246,7 @@ export default function App() {
               onTabChange={setActiveTab}
               onAboutOpen={() => setAboutOpen(true)}
               onTimezoneChange={setTimezone}
+              showShortcuts={showFeedShortcuts}
             />
 
             <div className="app-main">
@@ -277,8 +274,6 @@ export default function App() {
               )}
               {activeTab === 'ioc' && <IOCLookup />}
             </div>
-
-            {showFeedShortcuts && <FeedShortcuts />}
 
             <footer className="app-footer" role="contentinfo">
               <div className="footer-left">
