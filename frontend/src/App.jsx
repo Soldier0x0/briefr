@@ -11,7 +11,7 @@ import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
-import { fetchStats, fetchHealth } from './api.js'
+import { fetchStats, fetchHealth, fetchCVE } from './api.js'
 import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
 
 const DEFAULT_FILTERS = {
@@ -22,6 +22,7 @@ const DEFAULT_FILTERS = {
   search: '',
   stack: '',
   vendors: '',
+  technique: '',
 }
 
 // ── Last-refreshed helper ─────────────────────────────────
@@ -109,6 +110,13 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
     setDigestOpen(true)
   }, [setDigestCVEs, setDigestOpen])
 
+  const handleSelectCVE = useCallback((cve) => {
+    setSelectedCVE(cve)
+    fetchCVE(cve.cve_id)
+      .then(full => setSelectedCVE(full))
+      .catch(() => {})
+  }, [setSelectedCVE])
+
   return (
     <>
       <Hero
@@ -127,7 +135,7 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
         <CVEFeed
           filters={filters}
           onFiltersChange={handleFiltersChange}
-          onSelectCVE={setSelectedCVE}
+          onSelectCVE={handleSelectCVE}
           onGenerateDigest={handleGenerateDigest}
           onDigestRequest={onDigestRequest}
           searchFocusTrigger={searchFocusTrigger}

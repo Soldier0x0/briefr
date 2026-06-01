@@ -37,6 +37,7 @@ export function fetchCVEs(params = {}) {
   if (params.search)    qs.set('search', params.search)
   if (params.stack)     qs.set('stack', params.stack)
   if (params.vendors)   qs.set('vendors', params.vendors)
+  if (params.technique) qs.set('technique', params.technique)
   if (params.page)      qs.set('page', String(params.page))
   if (params.limit)     qs.set('limit', String(params.limit))
   const query = qs.toString()
@@ -56,9 +57,14 @@ export function fetchCVEsForExport(params = {}) {
   if (params.search)    qs.set('search', params.search)
   if (params.stack)     qs.set('stack', params.stack)
   if (params.vendors)   qs.set('vendors', params.vendors)
+  if (params.technique) qs.set('technique', params.technique)
   qs.set('max_rows', '500')
   const query = qs.toString()
   return request(`/cves/export${query ? `?${query}` : ''}`)
+}
+
+export function fetchTopTechniques(limit = 10) {
+  return request(`/techniques/top?limit=${limit}`)
 }
 
 export function fetchKEVDeadlines(sort = 'recent') {

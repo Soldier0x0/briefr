@@ -1,0 +1,227 @@
+"""
+MITRE ATT&CK Enterprise STIX + CTID CVE→technique mappings.
+"""
+
+from __future__ import annotations
+
+import csv
+import io
+import json
+import logging
+import re
+from typing import Any
+
+import httpx
+
+logger = logging.getLogger(__name__)
+
+ENTERPRISE_ATTACK_URL = (
+    "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
+)
+CVE_MAPPINGS_CSV_URL = (
+    "https://raw.githubusercontent.com/center-for-threat-informed-defense/"
+    "mappings-explorer/main/src/mapex_convert/mappings/Att%26ckToCveMappings.csv"
+)
+KEV_ATTACK_MAPPINGS_URL = (
+    "https://raw.githubusercontent.com/center-for-threat-informed-defense/"
+    "mappings-explorer/main/mappings/kev/attack-16.1/kev-07.28.2025/enterprise/"
+    "kev-07.28.2025_attack-16.1-enterprise.json"
+)
+
+TECHNIQUE_ID_RE = re.compile(r"^T\d{4}(?:\.\d{3})?$", re.IGNORECASE)
+
+# Columns in CTID CSV that hold semicolon-separated technique IDs
+CVE_TECHNIQUE_COLUMNS = (
+    "Primary Impact",
+    "Secondary Impact",
+    "Exploitation Technique",
+    "Uncategorized",
+)
+
+
+def technique_url(technique_id: str) -> str:
+    tid = technique_id.strip().upper()
+    if "." in tid:
+        base, sub = tid.split(".", 1)
+        return f"https://attack.mitre.org/techniques/{base}/{sub}/"
+    return f"https://attack.mitre.org/techniques/{tid}/"
+
+
+def _format_tactic(phase_name: str) -> str:
+    return phase_name.replace("-", " ").title()
+
+
+def _normalize_technique_id(raw: str) -> str | None:
+    tid = raw.strip().upper()
+    if TECHNIQUE_ID_RE.match(tid):
+        return tid
+    return None
+
+
+def _split_technique_field(value: str) -> list[str]:
+    if not value or not str(value).strip():
+        return []
+    out: list[str] = []
+    for part in str(value).replace(",", ";").split(";"):
+        tid = _normalize_technique_id(part)
+        if tid and tid not in out:
+            out.append(tid)
+    return out
+
+
+async def _fetch_bytes(url: str, timeout: float = 180.0) -> bytes:
+    async with httpx.AsyncClient(follow_redirects=True) as client:
+        response = await client.get(url, timeout=timeout)
+        response.raise_for_status()
+        return response.content
+
+
+def parse_enterprise_attack_stix(data: dict) -> list[dict]:
+    """Parse MITRE Enterprise ATT&CK STIX bundle into mitre_techniques rows."""
+    techniques: dict[str, dict] = {}
+
+    for obj in data.get("objects", []):
+        if obj.get("type") != "attack-pattern" or obj.get("revoked"):
+            continue
+        if obj.get("x_mitre_deprecated"):
+            continue
+
+        technique_id = None
+        for ref in obj.get("external_references", []):
+            if ref.get("source_name") == "mitre-attack" and ref.get("external_id", "").startswith("T"):
+                technique_id = _normalize_technique_id(ref["external_id"])
+                break
+        if not technique_id:
+            continue
+
+        phases = obj.get("kill_chain_phases") or []
+        tactic = ""
+        if phases:
+            tactic = _format_tactic(phases[0].get("phase_name", ""))
+
+        description = (obj.get("description") or "").strip()
+        if len(description) > 500:
+            description = description[:497] + "..."
+
+        platforms = obj.get("x_mitre_platforms") or []
+        if not isinstance(platforms, list):
+            platforms = []
+
+        techniques[technique_id] = {
+            "technique_id": technique_id,
+            "name": (obj.get("name") or technique_id).strip(),
+            "description": description,
+            "tactic": tactic,
+            "url": technique_url(technique_id),
+            "platforms": platforms,
+        }
+
+    return list(techniques.values())
+
+
+def parse_cve_mappings_csv(text: str) -> dict[str, list[str]]:
+    """Parse CTID Att&ckToCveMappings.csv → { CVE-ID: [Txxxx, ...] }."""
+    mapping: dict[str, set[str]] = {}
+    reader = csv.DictReader(io.StringIO(text))
+    for row in reader:
+        cve_id = (row.get("CVE ID") or row.get("CVE_ID") or "").strip().upper()
+        if not cve_id.startswith("CVE-"):
+            continue
+        techniques: set[str] = set()
+        for col in CVE_TECHNIQUE_COLUMNS:
+            for tid in _split_technique_field(row.get(col, "")):
+                techniques.add(tid)
+        if techniques:
+            if cve_id not in mapping:
+                mapping[cve_id] = set()
+            mapping[cve_id].update(techniques)
+
+    return {cve: sorted(tids) for cve, tids in mapping.items()}
+
+
+def parse_kev_attack_mappings(data: dict) -> dict[str, list[str]]:
+    """Parse CTID KEV→ATT&CK enterprise mapping JSON."""
+    mapping: dict[str, set[str]] = {}
+    for obj in data.get("mapping_objects", []):
+        cve_id = (obj.get("capability_id") or "").strip().upper()
+        if not cve_id.startswith("CVE-"):
+            continue
+        tid = _normalize_technique_id(obj.get("attack_object_id") or "")
+        if not tid:
+            continue
+        mapping.setdefault(cve_id, set()).add(tid)
+    return {cve: sorted(tids) for cve, tids in mapping.items()}
+
+
+def merge_cve_technique_maps(*sources: dict[str, list[str]]) -> dict[str, list[str]]:
+    merged: dict[str, set[str]] = {}
+    for source in sources:
+        for cve_id, tids in source.items():
+            merged.setdefault(cve_id, set()).update(tids)
+    return {cve: sorted(tids) for cve, tids in merged.items()}
+
+
+async def download_enterprise_attack() -> list[dict]:
+    logger.info("Downloading MITRE Enterprise ATT&CK STIX from %s", ENTERPRISE_ATTACK_URL)
+    raw = await _fetch_bytes(ENTERPRISE_ATTACK_URL)
+    data = json.loads(raw)
+    techniques = parse_enterprise_attack_stix(data)
+    logger.info("Parsed %d ATT&CK techniques from STIX", len(techniques))
+    return techniques
+
+
+async def download_cve_technique_mappings() -> dict[str, list[str]]:
+    logger.info("Downloading CTID CVE→ATT&CK mappings CSV")
+    csv_text = (await _fetch_bytes(CVE_MAPPINGS_CSV_URL)).decode("utf-8", errors="replace")
+    csv_map = parse_cve_mappings_csv(csv_text)
+    logger.info("CVE mappings from CSV: %d CVEs", len(csv_map))
+
+    kev_map: dict[str, list[str]] = {}
+    try:
+        logger.info("Downloading CTID KEV→ATT&CK mappings")
+        kev_raw = await _fetch_bytes(KEV_ATTACK_MAPPINGS_URL)
+        kev_data = json.loads(kev_raw)
+        kev_map = parse_kev_attack_mappings(kev_data)
+        logger.info("CVE mappings from KEV ATT&CK: %d CVEs", len(kev_map))
+    except Exception as exc:
+        logger.warning("KEV ATT&CK mapping fetch failed (non-fatal): %s", exc)
+
+    merged = merge_cve_technique_maps(csv_map, kev_map)
+    logger.info("Total unique CVE→technique mappings: %d CVEs", len(merged))
+    return merged
+
+
+async def refresh_mitre_data(db) -> dict[str, int]:
+    """
+    Refresh mitre_techniques and cve_technique_map tables.
+    Returns counts: techniques, cve_mappings, cve_links_inserted.
+    """
+    from database import (
+        clear_cve_technique_map,
+        get_all_cve_ids_set,
+        replace_mitre_techniques,
+        upsert_cve_technique_pairs,
+    )
+
+    techniques = await download_enterprise_attack()
+    cve_map = await download_cve_technique_mappings()
+
+    await replace_mitre_techniques(db, techniques)
+    await clear_cve_technique_map(db)
+
+    known_cves = await get_all_cve_ids_set(db)
+    pairs: list[tuple[str, str]] = []
+    for cve_id, tids in cve_map.items():
+        if cve_id not in known_cves:
+            continue
+        for tid in tids:
+            pairs.append((cve_id, tid))
+
+    inserted = await upsert_cve_technique_pairs(db, pairs)
+    await db.commit()
+
+    return {
+        "techniques": len(techniques),
+        "cve_mappings_source": len(cve_map),
+        "cve_links": inserted,
+    }

@@ -80,6 +80,27 @@ async def init_db() -> None:
                 value TEXT NOT NULL,
                 updated_at TEXT DEFAULT (datetime('now'))
             );
+
+            CREATE TABLE IF NOT EXISTS mitre_techniques (
+                technique_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                tactic TEXT DEFAULT '',
+                url TEXT NOT NULL,
+                platforms TEXT DEFAULT '[]'
+            );
+
+            CREATE TABLE IF NOT EXISTS cve_technique_map (
+                cve_id TEXT NOT NULL,
+                technique_id TEXT NOT NULL,
+                PRIMARY KEY (cve_id, technique_id),
+                FOREIGN KEY (technique_id) REFERENCES mitre_techniques(technique_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_cve_technique_map_technique
+                ON cve_technique_map(technique_id);
+            CREATE INDEX IF NOT EXISTS idx_cve_technique_map_cve
+                ON cve_technique_map(cve_id);
         """)
         await db.commit()
 
@@ -326,6 +347,105 @@ async def get_last_updated(db: aiosqlite.Connection) -> str | None:
 async def get_all_cve_ids(db: aiosqlite.Connection) -> list:
     rows = await db.execute_fetchall("SELECT cve_id FROM cves")
     return [r["cve_id"] for r in rows]
+
+
+async def get_all_cve_ids_set(db: aiosqlite.Connection) -> set[str]:
+    rows = await db.execute_fetchall("SELECT cve_id FROM cves")
+    return {r["cve_id"] for r in rows}
+
+
+async def replace_mitre_techniques(db: aiosqlite.Connection, techniques: list[dict]) -> None:
+    await db.execute("DELETE FROM mitre_techniques")
+    if not techniques:
+        return
+    await db.executemany(
+        """
+        INSERT INTO mitre_techniques (
+            technique_id, name, description, tactic, url, platforms
+        ) VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        [
+            (
+                t["technique_id"],
+                t["name"],
+                t.get("description", ""),
+                t.get("tactic", ""),
+                t["url"],
+                json.dumps(t.get("platforms", [])),
+            )
+            for t in techniques
+        ],
+    )
+
+
+async def clear_cve_technique_map(db: aiosqlite.Connection) -> None:
+    await db.execute("DELETE FROM cve_technique_map")
+
+
+async def upsert_cve_technique_pairs(
+    db: aiosqlite.Connection, pairs: list[tuple[str, str]]
+) -> int:
+    if not pairs:
+        return 0
+    await db.executemany(
+        """
+        INSERT OR IGNORE INTO cve_technique_map (cve_id, technique_id)
+        VALUES (?, ?)
+        """,
+        pairs,
+    )
+    return len(pairs)
+
+
+async def get_techniques_for_cve(db: aiosqlite.Connection, cve_id: str) -> list[dict]:
+    rows = await db.execute_fetchall(
+        """
+        SELECT m.technique_id, m.name, m.tactic, m.url
+        FROM cve_technique_map c
+        JOIN mitre_techniques m ON c.technique_id = m.technique_id
+        WHERE c.cve_id = ?
+        ORDER BY m.technique_id
+        """,
+        (cve_id.upper(),),
+    )
+    return [
+        {
+            "id": r["technique_id"],
+            "name": r["name"],
+            "tactic": r["tactic"],
+            "url": r["url"],
+        }
+        for r in rows
+    ]
+
+
+async def get_top_techniques(db: aiosqlite.Connection, limit: int = 10) -> list[dict]:
+    rows = await db.execute_fetchall(
+        """
+        SELECT m.technique_id, m.name, m.tactic, m.url, COUNT(*) AS cnt
+        FROM cve_technique_map c
+        JOIN mitre_techniques m ON c.technique_id = m.technique_id
+        GROUP BY m.technique_id, m.name, m.tactic, m.url
+        ORDER BY cnt DESC, m.technique_id
+        LIMIT ?
+        """,
+        (limit,),
+    )
+    return [
+        {
+            "technique_id": r["technique_id"],
+            "name": r["name"],
+            "tactic": r["tactic"],
+            "count": r["cnt"],
+            "url": r["url"],
+        }
+        for r in rows
+    ]
+
+
+async def get_mitre_technique_count(db: aiosqlite.Connection) -> int:
+    rows = await db.execute_fetchall("SELECT COUNT(*) AS cnt FROM mitre_techniques")
+    return rows[0]["cnt"] if rows else 0
 
 NVD_SYNC_WATERMARK_KEY = "nvd_last_mod_end"
 

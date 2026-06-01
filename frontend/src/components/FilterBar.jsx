@@ -135,6 +135,16 @@ export default function FilterBar({
                 × clear stack
               </button>
             )}
+            {filters.technique && (
+              <button
+                type="button"
+                className="filter-stack-clear mono"
+                onClick={() => onFiltersChange({ technique: '' })}
+                aria-label="Clear ATT&CK technique filter"
+              >
+                × clear technique
+              </button>
+            )}
           </span>
         </div>
 

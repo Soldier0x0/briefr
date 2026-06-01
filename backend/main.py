@@ -25,9 +25,12 @@ from database import (
     get_ioc_cache,
     get_last_updated,
     get_nvd_sync_watermark,
+    get_techniques_for_cve,
+    get_top_techniques,
     init_db,
     set_ioc_cache,
 )
+from scheduler import run_weekly_mitre_refresh
 from enrichment.ioc import lookup_ioc
 from feeds.osv import fetch_osv_by_cve
 from scheduler import (
@@ -278,6 +281,7 @@ def _build_cve_filters(
     search: str | None,
     stack: str | None,
     vendors: str | None,
+    technique: str | None = None,
 ) -> tuple[list[str], list, list[str]]:
     conditions: list[str] = []
     params: list = []
@@ -316,6 +320,15 @@ def _build_cve_filters(
             conditions.append(vendor_clause)
             params.extend(vendor_params)
 
+    if technique:
+        tid = technique.strip().upper()
+        if not tid.startswith("T"):
+            raise HTTPException(status_code=400, detail="Invalid ATT&CK technique ID")
+        conditions.append(
+            "cve_id IN (SELECT cve_id FROM cve_technique_map WHERE technique_id = ?)"
+        )
+        params.append(tid)
+
     return conditions, params, stack_products
 
 
@@ -350,11 +363,12 @@ async def list_cves(
     search: str | None = Query(default=None, max_length=200),
     stack: str | None = Query(default=None, max_length=500),
     vendors: str | None = Query(default=None, max_length=500),
+    technique: str | None = Query(default=None, max_length=32),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=50),
 ):
     conditions, params, stack_products = _build_cve_filters(
-        severity, kev_only, poc_only, epss_min, search, stack, vendors
+        severity, kev_only, poc_only, epss_min, search, stack, vendors, technique
     )
 
     where_clause = ""
@@ -398,11 +412,12 @@ async def export_cves(
     search: str | None = Query(default=None, max_length=200),
     stack: str | None = Query(default=None, max_length=500),
     vendors: str | None = Query(default=None, max_length=500),
+    technique: str | None = Query(default=None, max_length=32),
     max_rows: int = Query(default=500, ge=1, le=500),
 ):
     """Return up to 500 CVE rows matching filters (for CSV export)."""
     conditions, params, stack_products = _build_cve_filters(
-        severity, kev_only, poc_only, epss_min, search, stack, vendors
+        severity, kev_only, poc_only, epss_min, search, stack, vendors, technique
     )
 
     where_clause = ""
@@ -420,6 +435,24 @@ async def export_cves(
 
     cve_list = _sort_by_stack_relevance([_row_to_cve_dict(row) for row in rows], stack_products)
     return {"total": len(cve_list), "data": cve_list}
+
+
+@app.get("/api/techniques/top")
+async def top_techniques(
+    limit: int = Query(default=10, ge=1, le=50),
+):
+    db = await get_db()
+    try:
+        data = await get_top_techniques(db, limit=limit)
+    finally:
+        await db.close()
+    return {"data": data}
+
+
+@app.post("/api/refresh/mitre")
+async def manual_mitre_refresh():
+    asyncio.create_task(run_weekly_mitre_refresh())
+    return {"status": "ok", "message": "MITRE ATT&CK refresh started in background"}
 
 
 @app.get("/api/cves/{cve_id}")
@@ -446,6 +479,12 @@ async def get_cve(cve_id: str):
         raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
 
     cve = _row_to_cve_dict(rows[0])
+
+    db2 = await get_db()
+    try:
+        cve["techniques"] = await get_techniques_for_cve(db2, cve_id.upper())
+    finally:
+        await db2.close()
 
     try:
         osv_data = await fetch_osv_by_cve(cve_id.upper())

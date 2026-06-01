@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { fetchKEVDeadlines } from '../api.js'
+import { fetchKEVDeadlines, fetchTopTechniques } from '../api.js'
 import './Sidebar.css'
 
 function Toggle({ label, checked, onChange, id }) {
@@ -68,9 +68,12 @@ const DATA_SOURCES = [
 
 const KEV_PREVIEW = 5
 
+const TOP_TECHNIQUES_LIMIT = 5
+
 export default function Sidebar({ filters, onFiltersChange, stats }) {
   const [kevDeadlines, setKevDeadlines] = useState([])
   const [kevExpanded, setKevExpanded] = useState(false)
+  const [topTechniques, setTopTechniques] = useState([])
   const sparkBars = buildSparkline(stats)
   const visibleKev = kevExpanded ? kevDeadlines : kevDeadlines.slice(0, KEV_PREVIEW)
   const hiddenKevCount = Math.max(0, kevDeadlines.length - KEV_PREVIEW)
@@ -82,6 +85,17 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
       .then(data => setKevDeadlines((data.data || []).slice(0, 10)))
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    fetchTopTechniques(TOP_TECHNIQUES_LIMIT)
+      .then(data => setTopTechniques(data.data || []))
+      .catch(() => {})
+  }, [])
+
+  function handleTechniqueClick(techniqueId) {
+    const next = filters.technique === techniqueId ? '' : techniqueId
+    onFiltersChange({ technique: next })
+  }
 
   return (
     <aside className="sidebar" aria-label="Filters and supplementary data">
@@ -116,6 +130,19 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
               className="stack-clear"
               onClick={() => onFiltersChange({ stack: '' })}
               aria-label="Clear stack filter"
+            >
+              x
+            </button>
+          </div>
+        )}
+        {filters.technique && (
+          <div className="active-stack" aria-label={`Active ATT&CK filter: ${filters.technique}`}>
+            <span className="stack-key">TECH</span>
+            <span className="stack-val">{filters.technique}</span>
+            <button
+              className="stack-clear"
+              onClick={() => onFiltersChange({ technique: '' })}
+              aria-label="Clear technique filter"
             >
               x
             </button>
@@ -198,7 +225,35 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
         )}
       </section>
 
-      {/* ── Section 4: Data Sources ── */}
+      {/* ── Section 4: Top Techniques ── */}
+      <section className="sidebar-section" aria-labelledby="techniques-heading">
+        <h2 id="techniques-heading" className="sidebar-heading">// TOP TECHNIQUES</h2>
+        {topTechniques.length === 0 && (
+          <p className="sidebar-empty">No technique data yet.</p>
+        )}
+        <ul className="technique-list" aria-label="Most frequent ATT&CK techniques in database">
+          {topTechniques.map(tech => {
+            const active = filters.technique === tech.technique_id
+            return (
+              <li key={tech.technique_id}>
+                <button
+                  type="button"
+                  className={`technique-row${active ? ' technique-row-active' : ''}`}
+                  onClick={() => handleTechniqueClick(tech.technique_id)}
+                  aria-pressed={active}
+                  aria-label={`Filter CVEs by ${tech.technique_id}: ${tech.name}, ${tech.count} CVEs`}
+                >
+                  <span className="technique-row-id mono">{tech.technique_id}</span>
+                  <span className="technique-row-name">{tech.name}</span>
+                  <span className="technique-row-count mono">{tech.count}</span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
+
+      {/* ── Section 5: Data Sources ── */}
       <section className="sidebar-section" aria-labelledby="sources-heading">
         <h2 id="sources-heading" className="sidebar-heading">DATA SOURCES</h2>
         <ul className="sources-list" aria-label="Data sources used by BRIEFR">

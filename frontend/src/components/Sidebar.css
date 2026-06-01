@@ -266,6 +266,60 @@
 .badge-ok      { color: var(--green); background: var(--green-dim); border-color: var(--green); }
 .badge-neutral { color: var(--text3); background: var(--bg3); border-color: var(--border); }
 
+/* ── Top Techniques ── */
+.technique-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.technique-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 8px;
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.technique-row:hover {
+  background: var(--bg3);
+  border-color: var(--border);
+}
+
+.technique-row-active {
+  background: var(--bg3);
+  border-color: var(--red);
+}
+
+.technique-row-id {
+  font-size: 0.6875rem;
+  color: var(--red);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.technique-row-name {
+  font-size: 0.75rem;
+  color: var(--text2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.technique-row-count {
+  font-size: 0.625rem;
+  color: var(--text3);
+  letter-spacing: 0.04em;
+}
+
 /* ── Data Sources ── */
 .sources-list {
   list-style: none;

@@ -25,6 +25,7 @@ from database import (
 from feeds.nvd import fetch_cve_by_id, fetch_nvd_cve_updates
 from feeds.kev import fetch_kev
 from feeds.epss import fetch_epss
+from feeds.mitre import refresh_mitre_data
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,7 @@ def get_next_scheduled_refresh_utc() -> datetime:
 
 _scheduler: AsyncIOScheduler | None = None
 _refresh_lock = asyncio.Lock()
+_mitre_refresh_lock = asyncio.Lock()
 
 
 def refresh_in_progress() -> bool:
@@ -266,6 +268,48 @@ async def _run_daily_refresh() -> None:
     )
 
 
+async def run_weekly_mitre_refresh() -> bool:
+    if _mitre_refresh_lock.locked():
+        logger.warning("MITRE refresh already in progress — skipping")
+        return False
+
+    async with _mitre_refresh_lock:
+        start = datetime.now(timezone.utc)
+        logger.info("Weekly MITRE ATT&CK refresh started at %s", start.isoformat())
+        try:
+            db = await get_db()
+            try:
+                stats = await refresh_mitre_data(db)
+            finally:
+                await db.close()
+            logger.info(
+                "MITRE refresh complete: %d techniques, %d CVE links (from %d source CVEs)",
+                stats["techniques"],
+                stats["cve_links"],
+                stats["cve_mappings_source"],
+            )
+            return True
+        except Exception as exc:
+            logger.error("Weekly MITRE refresh failed: %s", exc)
+            return False
+
+
+async def maybe_run_mitre_on_startup() -> None:
+    from database import get_mitre_technique_count
+
+    db = await get_db()
+    try:
+        count = await get_mitre_technique_count(db)
+    finally:
+        await db.close()
+
+    if count < 10:
+        logger.info("MITRE techniques table empty — running initial MITRE refresh")
+        asyncio.create_task(run_weekly_mitre_refresh())
+    else:
+        logger.info("MITRE techniques loaded (%d rows)", count)
+
+
 async def maybe_run_on_startup() -> None:
     db = await get_db()
     try:
@@ -278,6 +322,8 @@ async def maybe_run_on_startup() -> None:
         asyncio.create_task(run_daily_refresh())
     else:
         logger.info("CVE table has %d rows. Skipping startup fetch.", count)
+
+    await maybe_run_mitre_on_startup()
 
 
 def start_scheduler() -> AsyncIOScheduler:
@@ -295,11 +341,24 @@ def start_scheduler() -> AsyncIOScheduler:
         name="Daily CVE Refresh",
         replace_existing=True,
     )
+    mitre_minute = int(os.environ.get("MITRE_REFRESH_MINUTE", "30"))
+    scheduler.add_job(
+        run_weekly_mitre_refresh,
+        trigger=CronTrigger(
+            day_of_week="sun",
+            hour=refresh_hour,
+            minute=mitre_minute,
+            timezone=SCHEDULER_REFRESH_TZ,
+        ),
+        id="weekly_mitre_refresh",
+        name="Weekly MITRE ATT&CK Refresh",
+        replace_existing=True,
+    )
 
     scheduler.start()
     _scheduler = scheduler
     logger.info(
-        "Scheduler started. Daily refresh scheduled at %02d:%02d IST.",
+        "Scheduler started. Daily CVE refresh at %02d:%02d IST; MITRE refresh weekly (Sunday).",
         refresh_hour,
         refresh_minute,
     )
