@@ -24,12 +24,21 @@ from database import (
     get_cve_count,
     get_ioc_cache,
     get_last_updated,
+    get_nvd_sync_watermark,
     init_db,
     set_ioc_cache,
 )
 from enrichment.ioc import lookup_ioc
 from feeds.osv import fetch_osv_by_cve
-from scheduler import maybe_run_on_startup, run_daily_refresh, start_scheduler, stop_scheduler
+from scheduler import (
+    get_next_scheduled_refresh_utc,
+    get_refresh_schedule,
+    maybe_run_on_startup,
+    refresh_in_progress,
+    run_daily_refresh,
+    start_scheduler,
+    stop_scheduler,
+)
 from tracking import get_usage_stats
 
 
@@ -86,6 +95,7 @@ def _row_to_cve_dict(row) -> dict:
             except (json.JSONDecodeError, TypeError):
                 d[field] = []
     d["is_kev"] = bool(d.get("is_kev", 0))
+    d["has_poc"] = bool(d.get("has_poc", 0))
     d["patch_available"] = bool(d.get("patch_available", 0))
     return d
 
@@ -115,6 +125,7 @@ async def health(
     try:
         cve_count = await get_cve_count(db)
         last_updated = await get_last_updated(db)
+        nvd_sync_watermark = await get_nvd_sync_watermark(db)
     finally:
         await db.close()
 
@@ -122,10 +133,21 @@ async def health(
     default_tz = os.environ.get("DEFAULT_TIMEZONE", "UTC")
     display_tz = tz or default_tz
 
+    next_refresh_utc = get_next_scheduled_refresh_utc()
+    refresh_schedule = get_refresh_schedule()
+
     response: dict = {
         "status": "ok",
         "cve_count": cve_count,
         "last_updated": last_updated,
+        "nvd_sync_watermark": nvd_sync_watermark,
+        "refresh_in_progress": refresh_in_progress(),
+        "next_refresh_at_utc": next_refresh_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "next_refresh_in_user_tz": _format_time_in_tz(next_refresh_utc, display_tz),
+        "next_refresh_in_scheduler_tz": _format_time_in_tz(
+            next_refresh_utc, refresh_schedule["timezone"]
+        ),
+        "refresh_schedule": refresh_schedule,
         "server_time_utc": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "server_time_local": _format_time_in_tz(now_utc, display_tz),
     }
@@ -194,6 +216,7 @@ async def list_cves(
     severity: str | None = Query(default=None, description="CRITICAL/HIGH/MEDIUM/LOW"),
     kev_only: bool = Query(default=False),
     poc_only: bool = Query(default=False),
+    epss_min: float | None = Query(default=None, ge=0.0, le=1.0),
     search: str | None = Query(default=None, max_length=200),
     stack: str | None = Query(default=None, max_length=500),
     page: int = Query(default=1, ge=1),
@@ -213,7 +236,11 @@ async def list_cves(
         conditions.append("is_kev = 1")
 
     if poc_only:
-        conditions.append("patch_available = 0")
+        conditions.append("has_poc = 1")
+
+    if epss_min is not None:
+        conditions.append("epss_score IS NOT NULL AND epss_score >= ?")
+        params.append(epss_min)
 
     if search:
         conditions.append("(cve_id LIKE ? OR description LIKE ?)")
@@ -242,11 +269,11 @@ async def list_cves(
             f"""
             SELECT cve_id, description, cvss_score, severity, published, modified,
                    affected_products, mitre_technique, summary, is_kev, epss_score,
-                   patch_available, source_urls, cwe_ids, updated_at
+                   has_poc, patch_available, source_urls, cwe_ids, updated_at
             FROM cves
             {where_clause}
             ORDER BY
-                CASE WHEN epss_score IS NOT NULL THEN epss_score ELSE 0 END DESC,
+                published DESC,
                 CASE severity
                     WHEN 'CRITICAL' THEN 1
                     WHEN 'HIGH' THEN 2
@@ -254,7 +281,7 @@ async def list_cves(
                     WHEN 'LOW' THEN 4
                     ELSE 5
                 END,
-                published DESC
+                CASE WHEN epss_score IS NOT NULL THEN epss_score ELSE -1 END DESC
             LIMIT ? OFFSET ?
             """,
             params + [limit, offset],
@@ -297,7 +324,7 @@ async def get_cve(cve_id: str):
             """
             SELECT cve_id, description, cvss_score, severity, published, modified,
                    affected_products, mitre_technique, summary, is_kev, epss_score,
-                   patch_available, source_urls, cwe_ids, updated_at
+                   has_poc, patch_available, source_urls, cwe_ids, updated_at
             FROM cves
             WHERE cve_id = ?
             """,
@@ -314,6 +341,12 @@ async def get_cve(cve_id: str):
     try:
         osv_data = await fetch_osv_by_cve(cve_id.upper())
         cve["osv_packages"] = osv_data
+        if not cve.get("summary"):
+            for entry in osv_data:
+                osv_summary = (entry.get("summary") or "").strip()
+                if osv_summary:
+                    cve["summary"] = osv_summary
+                    break
     except Exception as exc:
         logger.error("OSV lookup failed for %s: %s", cve_id, exc)
         cve["osv_packages"] = []
@@ -356,8 +389,13 @@ async def ioc_lookup(body: IocLookupRequest):
 
 @app.post("/api/refresh")
 async def manual_refresh():
+    if refresh_in_progress():
+        raise HTTPException(
+            status_code=409,
+            detail="A refresh is already running. Wait for it to finish before starting another.",
+        )
     asyncio.create_task(run_daily_refresh())
-    return {"status": "ok", "message": "Refresh started"}
+    return {"status": "ok", "message": "Refresh started in background"}
 
 
 @app.get("/api/kev/deadlines")

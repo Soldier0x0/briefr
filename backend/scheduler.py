@@ -1,60 +1,142 @@
 import asyncio
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from database import (
+    backfill_display_fields,
+    backfill_has_poc,
+    enrich_kev_summaries,
     get_db,
     get_all_cve_ids,
     get_cve_count,
+    get_nvd_sync_watermark,
     mark_cves_as_kev,
+    resolve_nvd_watermark,
+    set_nvd_sync_watermark,
     update_epss_scores,
     upsert_cve,
     upsert_kev,
 )
-from feeds.nvd import fetch_recent_cves, fetch_cve_by_id
+from feeds.nvd import fetch_cve_by_id, fetch_nvd_cve_updates
 from feeds.kev import fetch_kev
 from feeds.epss import fetch_epss
 
 logger = logging.getLogger(__name__)
 
+
+SCHEDULER_REFRESH_TZ = "Asia/Kolkata"
+
+
+def get_refresh_schedule() -> dict:
+    return {
+        "hour": int(os.environ.get("CACHE_REFRESH_HOUR", "6")),
+        "minute": int(os.environ.get("CACHE_REFRESH_MINUTE", "0")),
+        "timezone": SCHEDULER_REFRESH_TZ,
+    }
+
+
+def get_next_scheduled_refresh_utc() -> datetime:
+    sched = get_refresh_schedule()
+    tz = ZoneInfo(sched["timezone"])
+    now_local = datetime.now(tz)
+    candidate = now_local.replace(
+        hour=sched["hour"], minute=sched["minute"], second=0, microsecond=0,
+    )
+    if candidate <= now_local:
+        candidate += timedelta(days=1)
+    return candidate.astimezone(timezone.utc)
+
+
 _scheduler: AsyncIOScheduler | None = None
+_refresh_lock = asyncio.Lock()
 
 
-async def run_daily_refresh() -> None:
+def refresh_in_progress() -> bool:
+    return _refresh_lock.locked()
+
+
+async def run_daily_refresh() -> bool:
+    if _refresh_lock.locked():
+        logger.warning("Refresh already in progress — ignoring duplicate request")
+        return False
+
+    async with _refresh_lock:
+        await _run_daily_refresh()
+    return True
+
+
+async def _run_daily_refresh() -> None:
     start_time = datetime.now(timezone.utc)
     logger.info("Daily CVE refresh started at %s", start_time.isoformat())
 
     nvd_api_key = os.environ.get("NVD_API_KEY")
     max_cves = int(os.environ.get("MAX_CVES_PER_FETCH", "2000"))
+    days_back = int(os.environ.get("NVD_DAYS_BACK", "14"))
+    overlap_minutes = int(os.environ.get("NVD_SYNC_OVERLAP_MINUTES", "15"))
 
     new_or_updated = 0
     kev_count = 0
     epss_updated = 0
 
     try:
+        db = await get_db()
+        try:
+            had_watermark = await get_nvd_sync_watermark(db) is not None
+            watermark = await resolve_nvd_watermark(db)
+            if watermark and not had_watermark:
+                logger.info(
+                    "Seeded NVD incremental watermark from existing CVE data: %s",
+                    watermark,
+                )
+                await db.commit()
+        finally:
+            await db.close()
+
         logger.info("Step 1/3: Fetching CVEs from NVD")
-        cves = await fetch_recent_cves(api_key=nvd_api_key, days_back=7)
-        cves = cves[:max_cves]
+        cves, mod_end_iso, used_incremental = await fetch_nvd_cve_updates(
+            nvd_api_key,
+            watermark=watermark,
+            days_back=days_back,
+            overlap_minutes=overlap_minutes,
+        )
+        cves.sort(key=lambda x: x.get("modified") or "")
+
+        capped = len(cves) > max_cves
+        if capped:
+            logger.warning(
+                "NVD returned %d CVEs; capping upsert at MAX_CVES_PER_FETCH=%d",
+                len(cves),
+                max_cves,
+            )
+            cves = cves[:max_cves]
+
+        if capped and cves:
+            last_modified = cves[-1].get("modified")
+            new_watermark = last_modified if last_modified else mod_end_iso
+        else:
+            new_watermark = mod_end_iso
 
         db = await get_db()
         try:
             for cve in cves:
                 await upsert_cve(db, cve)
                 new_or_updated += 1
+            await set_nvd_sync_watermark(db, new_watermark)
             await db.commit()
         finally:
             await db.close()
 
-        logger.info("Step 1/3 complete: %d CVEs upserted", new_or_updated)
+        mode = "incremental (lastMod)" if used_incremental else "full (published window)"
+        logger.info("Step 1/3 complete (%s): %d CVEs upserted", mode, new_or_updated)
 
     except Exception as exc:
         logger.error("Step 1/3 failed (NVD fetch): %s", exc)
 
-    kev_entries: list = []
     try:
         logger.info("Step 2/3: Fetching CISA KEV catalog")
         kev_entries = await fetch_kev()
@@ -78,37 +160,54 @@ async def run_daily_refresh() -> None:
 
         db = await get_db()
         try:
-            existing_ids = set(await get_all_cve_ids(db))
+            kev_summaries = await enrich_kev_summaries(db)
+            await db.commit()
+            if kev_summaries:
+                logger.info("Enriched %d KEV summaries from CISA descriptions", kev_summaries)
         finally:
             await db.close()
 
-        kev_cve_ids = [e.get("cveID", "") for e in kev_entries if e.get("cveID")]
-        missing_kev = [cve_id for cve_id in kev_cve_ids if cve_id not in existing_ids]
+        # Step 2.5: Cross-fetch KEV CVEs not yet in cves table
+        try:
+            db = await get_db()
+            try:
+                existing_ids = set(await get_all_cve_ids(db))
+            finally:
+                await db.close()
 
-        if missing_kev:
-            logger.info(
-                "Step 2.5: Cross-fetching %d KEV CVEs missing from cves table",
-                len(missing_kev),
-            )
-            kev_cross_fetched = 0
-            for kev_cve_id in missing_kev:
-                try:
-                    cve_data = await fetch_cve_by_id(kev_cve_id, nvd_api_key)
-                    if cve_data:
-                        cve_data["is_kev"] = True
-                        db = await get_db()
-                        try:
-                            await upsert_cve(db, cve_data)
-                            await db.commit()
-                            kev_cross_fetched += 1
-                        finally:
-                            await db.close()
-                except Exception as exc:
-                    logger.error("KEV cross-fetch failed for %s: %s", kev_cve_id, exc)
-                await asyncio.sleep(1)
-            logger.info("Step 2.5 complete: %d KEV CVEs newly fetched from NVD", kev_cross_fetched)
-        else:
-            logger.info("Step 2.5: All KEV CVEs already present in cves table")
+            missing_kev = [
+                e.get("cveID", "") for e in kev_entries
+                if e.get("cveID") and e.get("cveID") not in existing_ids
+            ]
+
+            if missing_kev:
+                logger.info("Step 2.5: Cross-fetching %d KEV CVEs missing from cves table", len(missing_kev))
+                kev_short_map = {
+                    e.get("cveID", ""): e.get("shortDescription", "")
+                    for e in kev_entries
+                }
+                kev_cross_fetched = 0
+                for kev_cve_id in missing_kev:
+                    try:
+                        cve_data = await fetch_cve_by_id(kev_cve_id, nvd_api_key)
+                        if cve_data:
+                            cve_data["is_kev"] = True
+                            kev_short = kev_short_map.get(kev_cve_id, "")
+                            if kev_short:
+                                cve_data["summary"] = kev_short
+                            db = await get_db()
+                            try:
+                                await upsert_cve(db, cve_data)
+                                await db.commit()
+                                kev_cross_fetched += 1
+                            finally:
+                                await db.close()
+                    except Exception as exc:
+                        logger.error("KEV cross-fetch failed for %s: %s", kev_cve_id, exc)
+                    await asyncio.sleep(1)
+                logger.info("Step 2.5 complete: %d KEV CVEs newly inserted", kev_cross_fetched)
+        except Exception as exc:
+            logger.error("Step 2.5 failed (KEV cross-fetch): %s", exc)
 
     except Exception as exc:
         logger.error("Step 2/3 failed (KEV fetch): %s", exc)
@@ -138,6 +237,24 @@ async def run_daily_refresh() -> None:
     except Exception as exc:
         logger.error("Step 3/3 failed (EPSS fetch): %s", exc)
 
+    try:
+        logger.info("Step 4/4: Backfilling summaries and MITRE mappings")
+        db = await get_db()
+        try:
+            filled = await backfill_display_fields(db)
+            poc_marked = await backfill_has_poc(db)
+            await enrich_kev_summaries(db)
+            await db.commit()
+            logger.info(
+                "Step 4/4 complete: enriched %d display fields, %d PoC flags set",
+                filled,
+                poc_marked,
+            )
+        finally:
+            await db.close()
+    except Exception as exc:
+        logger.error("Step 4/4 failed (display enrichment): %s", exc)
+
     end_time = datetime.now(timezone.utc)
     duration = (end_time - start_time).total_seconds()
     logger.info(
@@ -166,13 +283,14 @@ async def maybe_run_on_startup() -> None:
 def start_scheduler() -> AsyncIOScheduler:
     global _scheduler
 
-    refresh_hour = int(os.environ.get("CACHE_REFRESH_HOUR", "6"))
-    refresh_minute = int(os.environ.get("CACHE_REFRESH_MINUTE", "0"))
+    sched = get_refresh_schedule()
+    refresh_hour = sched["hour"]
+    refresh_minute = sched["minute"]
 
-    scheduler = AsyncIOScheduler(timezone="Asia/Kolkata")
+    scheduler = AsyncIOScheduler(timezone=SCHEDULER_REFRESH_TZ)
     scheduler.add_job(
         run_daily_refresh,
-        trigger=CronTrigger(hour=refresh_hour, minute=refresh_minute, timezone="Asia/Kolkata"),
+        trigger=CronTrigger(hour=refresh_hour, minute=refresh_minute, timezone=SCHEDULER_REFRESH_TZ),
         id="daily_cve_refresh",
         name="Daily CVE Refresh",
         replace_existing=True,
