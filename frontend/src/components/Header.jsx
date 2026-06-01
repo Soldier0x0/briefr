@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import ShortcutsPanel from './ShortcutsPanel.jsx'
 import {
   COMMON_TIMEZONES,
   formatTime,
@@ -22,7 +23,7 @@ function applyTheme(theme) {
   try { localStorage.setItem('briefr_theme', theme) } catch {}
 }
 
-export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezoneChange }) {
+export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezoneChange, showShortcuts }) {
   const [now, setNow]               = useState(new Date())
   const [theme, setTheme]           = useState(getCurrentTheme)
   const [tz, setTz]                 = useState(() => {
@@ -120,6 +121,8 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezone
 
         {/* Right: theme toggle, legal, live dot, clock */}
         <div className="header-right">
+          {showShortcuts && <ShortcutsPanel placement="header" />}
+
           {/* Theme toggle */}
           <button
             className="theme-toggle"
@@ -127,7 +130,12 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezone
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
           >
-            ◐
+            <span className="theme-toggle-icon" aria-hidden="true">
+              {theme === 'dark' ? '☀' : '☾'}
+            </span>
+            <span className="theme-toggle-label mono">
+              {theme === 'dark' ? 'LIGHT' : 'DARK'}
+            </span>
           </button>
 
           {/* Legal links — hidden on mobile, shown inline on desktop */}

@@ -25,9 +25,12 @@ from database import (
     get_ioc_cache,
     get_last_updated,
     get_nvd_sync_watermark,
+    get_techniques_for_cve,
+    get_top_techniques,
     init_db,
     set_ioc_cache,
 )
+from scheduler import run_weekly_mitre_refresh
 from enrichment.ioc import lookup_ioc
 from feeds.osv import fetch_osv_by_cve
 from scheduler import (
@@ -211,18 +214,76 @@ async def stats():
     }
 
 
-@app.get("/api/cves")
-async def list_cves(
-    severity: str | None = Query(default=None, description="CRITICAL/HIGH/MEDIUM/LOW"),
-    kev_only: bool = Query(default=False),
-    poc_only: bool = Query(default=False),
-    epss_min: float | None = Query(default=None, ge=0.0, le=1.0),
-    search: str | None = Query(default=None, max_length=200),
-    stack: str | None = Query(default=None, max_length=500),
-    page: int = Query(default=1, ge=1),
-    limit: int = Query(default=20, ge=1, le=50),
-):
-    conditions = []
+def _text_match_or_clause(terms: list[str]) -> tuple[str, list]:
+    """Match any term against description, summary, or affected_products JSON."""
+    if not terms:
+        return "", []
+    parts = []
+    bind: list = []
+    for term in terms:
+        like = f"%{term.lower()}%"
+        parts.append(
+            "(LOWER(cve_id) LIKE ? OR LOWER(description) LIKE ? "
+            "OR LOWER(summary) LIKE ? OR LOWER(affected_products) LIKE ?)"
+        )
+        bind.extend([like, like, like, like])
+    return "(" + " OR ".join(parts) + ")", bind
+
+
+def _parse_stack_terms(stack: str | None) -> list[str]:
+    if not stack:
+        return []
+    return [p.strip().lower() for p in stack.split(",") if p.strip()]
+
+
+def _stack_match_clause(stack: str | None) -> tuple[str, list, list[str]]:
+    """Match stack terms against description or affected_products (parameterised)."""
+    terms = _parse_stack_terms(stack)
+    if not terms:
+        return "", [], []
+
+    parts: list[str] = []
+    params: list = []
+    for term in terms:
+        parts.append("(LOWER(description) LIKE ? OR LOWER(affected_products) LIKE ?)")
+        like = f"%{term}%"
+        params.extend([like, like])
+
+    return "(" + " OR ".join(parts) + ")", params, terms
+
+
+CVE_ORDER_BY = """
+    ORDER BY
+        published DESC,
+        CASE severity
+            WHEN 'CRITICAL' THEN 1
+            WHEN 'HIGH' THEN 2
+            WHEN 'MEDIUM' THEN 3
+            WHEN 'LOW' THEN 4
+            ELSE 5
+        END,
+        CASE WHEN epss_score IS NOT NULL THEN epss_score ELSE -1 END DESC
+"""
+
+CVE_SELECT = """
+    SELECT cve_id, description, cvss_score, severity, published, modified,
+           affected_products, mitre_technique, summary, is_kev, epss_score,
+           has_poc, patch_available, source_urls, cwe_ids, updated_at
+    FROM cves
+"""
+
+
+def _build_cve_filters(
+    severity: str | None,
+    kev_only: bool,
+    poc_only: bool,
+    epss_min: float | None,
+    search: str | None,
+    stack: str | None,
+    vendors: str | None,
+    technique: str | None = None,
+) -> tuple[list[str], list, list[str]]:
+    conditions: list[str] = []
     params: list = []
 
     if severity:
@@ -247,9 +308,68 @@ async def list_cves(
         search_term = f"%{search}%"
         params.extend([search_term, search_term])
 
-    stack_products = []
-    if stack:
-        stack_products = [p.strip().lower() for p in stack.split(",") if p.strip()]
+    stack_clause, stack_params, stack_products = _stack_match_clause(stack)
+    if stack_clause:
+        conditions.append(stack_clause)
+        params.extend(stack_params)
+
+    if vendors:
+        vendor_list = [v.strip() for v in vendors.split(",") if v.strip()]
+        vendor_clause, vendor_params = _text_match_or_clause(vendor_list)
+        if vendor_clause:
+            conditions.append(vendor_clause)
+            params.extend(vendor_params)
+
+    if technique:
+        tid = technique.strip().upper()
+        if not tid.startswith("T"):
+            raise HTTPException(status_code=400, detail="Invalid ATT&CK technique ID")
+        conditions.append(
+            "cve_id IN (SELECT cve_id FROM cve_technique_map WHERE technique_id = ?)"
+        )
+        params.append(tid)
+
+    return conditions, params, stack_products
+
+
+def _sort_by_stack_relevance(cve_list: list[dict], stack_products: list[str]) -> list[dict]:
+    if not stack_products:
+        return cve_list
+
+    def relevance_score(cve: dict) -> int:
+        products = [p.lower() for p in cve.get("affected_products", [])]
+        desc = (cve.get("description") or "").lower()
+        summary = (cve.get("summary") or "").lower()
+        score = 0
+        for sp in stack_products:
+            if sp in desc or sp in summary:
+                score += 1
+                continue
+            for p in products:
+                if sp in p:
+                    score += 1
+                    break
+        return score
+
+    return sorted(cve_list, key=relevance_score, reverse=True)
+
+
+@app.get("/api/cves")
+async def list_cves(
+    severity: str | None = Query(default=None, description="CRITICAL/HIGH/MEDIUM/LOW"),
+    kev_only: bool = Query(default=False),
+    poc_only: bool = Query(default=False),
+    epss_min: float | None = Query(default=None, ge=0.0, le=1.0),
+    search: str | None = Query(default=None, max_length=200),
+    stack: str | None = Query(default=None, max_length=500),
+    vendors: str | None = Query(default=None, max_length=500),
+    technique: str | None = Query(default=None, max_length=32),
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=50),
+):
+    conditions, params, stack_products = _build_cve_filters(
+        severity, kev_only, poc_only, epss_min, search, stack, vendors, technique
+    )
 
     where_clause = ""
     if conditions:
@@ -266,43 +386,13 @@ async def list_cves(
         total = count_rows[0]["cnt"] if count_rows else 0
 
         rows = await db.execute_fetchall(
-            f"""
-            SELECT cve_id, description, cvss_score, severity, published, modified,
-                   affected_products, mitre_technique, summary, is_kev, epss_score,
-                   has_poc, patch_available, source_urls, cwe_ids, updated_at
-            FROM cves
-            {where_clause}
-            ORDER BY
-                published DESC,
-                CASE severity
-                    WHEN 'CRITICAL' THEN 1
-                    WHEN 'HIGH' THEN 2
-                    WHEN 'MEDIUM' THEN 3
-                    WHEN 'LOW' THEN 4
-                    ELSE 5
-                END,
-                CASE WHEN epss_score IS NOT NULL THEN epss_score ELSE -1 END DESC
-            LIMIT ? OFFSET ?
-            """,
+            f"{CVE_SELECT} {where_clause} {CVE_ORDER_BY} LIMIT ? OFFSET ?",
             params + [limit, offset],
         )
     finally:
         await db.close()
 
-    cve_list = [_row_to_cve_dict(row) for row in rows]
-
-    if stack_products:
-        def relevance_score(cve: dict) -> int:
-            products = [p.lower() for p in cve.get("affected_products", [])]
-            score = 0
-            for sp in stack_products:
-                for p in products:
-                    if sp in p:
-                        score += 1
-                        break
-            return score
-
-        cve_list.sort(key=relevance_score, reverse=True)
+    cve_list = _sort_by_stack_relevance([_row_to_cve_dict(row) for row in rows], stack_products)
 
     return {
         "total": total,
@@ -311,6 +401,58 @@ async def list_cves(
         "pages": (total + limit - 1) // limit if total > 0 else 0,
         "data": cve_list,
     }
+
+
+@app.get("/api/cves/export")
+async def export_cves(
+    severity: str | None = Query(default=None),
+    kev_only: bool = Query(default=False),
+    poc_only: bool = Query(default=False),
+    epss_min: float | None = Query(default=None, ge=0.0, le=1.0),
+    search: str | None = Query(default=None, max_length=200),
+    stack: str | None = Query(default=None, max_length=500),
+    vendors: str | None = Query(default=None, max_length=500),
+    technique: str | None = Query(default=None, max_length=32),
+    max_rows: int = Query(default=500, ge=1, le=500),
+):
+    """Return up to 500 CVE rows matching filters (for CSV export)."""
+    conditions, params, stack_products = _build_cve_filters(
+        severity, kev_only, poc_only, epss_min, search, stack, vendors, technique
+    )
+
+    where_clause = ""
+    if conditions:
+        where_clause = "WHERE " + " AND ".join(conditions)
+
+    db = await get_db()
+    try:
+        rows = await db.execute_fetchall(
+            f"{CVE_SELECT} {where_clause} {CVE_ORDER_BY} LIMIT ?",
+            params + [max_rows],
+        )
+    finally:
+        await db.close()
+
+    cve_list = _sort_by_stack_relevance([_row_to_cve_dict(row) for row in rows], stack_products)
+    return {"total": len(cve_list), "data": cve_list}
+
+
+@app.get("/api/techniques/top")
+async def top_techniques(
+    limit: int = Query(default=10, ge=1, le=50),
+):
+    db = await get_db()
+    try:
+        data = await get_top_techniques(db, limit=limit)
+    finally:
+        await db.close()
+    return {"data": data}
+
+
+@app.post("/api/refresh/mitre")
+async def manual_mitre_refresh():
+    asyncio.create_task(run_weekly_mitre_refresh())
+    return {"status": "ok", "message": "MITRE ATT&CK refresh started in background"}
 
 
 @app.get("/api/cves/{cve_id}")
@@ -337,6 +479,12 @@ async def get_cve(cve_id: str):
         raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
 
     cve = _row_to_cve_dict(rows[0])
+
+    db2 = await get_db()
+    try:
+        cve["techniques"] = await get_techniques_for_cve(db2, cve_id.upper())
+    finally:
+        await db2.close()
 
     try:
         osv_data = await fetch_osv_by_cve(cve_id.upper())

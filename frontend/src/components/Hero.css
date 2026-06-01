@@ -74,20 +74,29 @@
   flex-shrink: 0;
 }
 
-.stack-brief-btn:hover {
+.stack-brief-btn:hover:not(:disabled) {
   background: var(--text);
 }
 
-.stack-brief-btn:active {
+.stack-brief-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.stack-brief-btn:active:not(:disabled) {
   background: var(--accent);
 }
 
 .stack-match-count {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--text3);
+  color: var(--text2);
   margin-top: 8px;
   letter-spacing: 0.02em;
+}
+
+.stack-match-hint {
+  color: var(--text3);
 }
 
 @media (max-width: 640px) {

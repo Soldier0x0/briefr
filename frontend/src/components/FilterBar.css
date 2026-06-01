@@ -38,6 +38,22 @@
   color: var(--text3);
 }
 
+.filter-stack-clear {
+  margin-left: 10px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  vertical-align: baseline;
+}
+
+.filter-stack-clear:hover {
+  color: var(--red);
+}
+
 .filter-bar-right {
   display: flex;
   align-items: center;
@@ -145,44 +161,87 @@
   cursor: wait;
 }
 
-.vendor-filter-row {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding: 8px 20px;
+.export-error {
+  font-size: 10px;
+  color: var(--red);
+  padding: 6px 20px;
   border-bottom: 1px solid var(--border);
-  background: var(--bg);
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  background: var(--red-dim);
 }
 
-.vendor-filter-row::-webkit-scrollbar {
-  display: none;
+.export-success {
+  font-size: 10px;
+  color: var(--green);
+  padding: 6px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--green-dim);
+}
+
+.vendor-filter-block {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg3);
+  padding: 12px 20px 14px;
+  border-top: 1px solid var(--border2);
+}
+
+.vendor-filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.vendor-filter-label {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--text2);
+}
+
+.vendor-clear-btn {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.vendor-clear-btn:hover {
+  color: var(--red);
+}
+
+.vendor-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .vendor-btn {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.06em;
-  padding: 4px 12px;
+  padding: 6px 14px;
   border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text3);
+  background: var(--bg);
+  color: var(--text);
   border-radius: 0;
   white-space: nowrap;
-  flex-shrink: 0;
   cursor: pointer;
-  transition: color 0.1s, border-color 0.1s;
+  transition: color 0.1s, border-color 0.1s, background 0.1s;
 }
 
 .vendor-btn:hover {
-  color: var(--text2);
-  border-color: var(--border2);
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--bg);
 }
 
 .vendor-btn.active {
   border-color: var(--red);
   color: var(--text);
+  background: var(--red-dim);
 }
 
 @media (max-width: 640px) {
@@ -202,7 +261,11 @@
     padding: 4px 6px;
   }
 
-  .vendor-filter-row {
-    padding: 8px 12px;
+  .vendor-filter-block {
+    padding: 10px 12px 12px;
+  }
+
+  .export-error {
+    padding: 6px 12px;
   }
 }

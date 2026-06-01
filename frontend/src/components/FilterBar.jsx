@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { fetchCVEs } from '../api.js'
+import { fetchCVEsForExport } from '../api.js'
 import { cvesToCsvRows, downloadCsv, exportFilename } from '../utils/exportCsv.js'
 import './FilterBar.css'
 
@@ -26,11 +26,9 @@ function deriveActive(filters) {
   return 'all'
 }
 
-function activeVendor(search) {
-  const q = (search || '').trim()
-  if (!q) return null
-  const match = VENDORS.find(v => v.toLowerCase() === q.toLowerCase())
-  return match || null
+function parseVendors(vendorsStr) {
+  if (!vendorsStr || !vendorsStr.trim()) return []
+  return vendorsStr.split(',').map(v => v.trim()).filter(Boolean)
 }
 
 export default function FilterBar({
@@ -42,6 +40,8 @@ export default function FilterBar({
 }) {
   const [localSearch, setLocalSearch] = useState(filters.search || '')
   const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState(null)
+  const [exportSuccess, setExportSuccess] = useState(null)
   const debounceRef  = useRef(null)
   const searchRef    = useRef(null)
 
@@ -57,7 +57,7 @@ export default function FilterBar({
   }, [searchFocusTrigger])
 
   const active = deriveActive(filters)
-  const vendorActive = activeVendor(filters.search)
+  const selectedVendors = parseVendors(filters.vendors)
 
   function handleQuickFilter(id) {
     const base = { severity: null, kev_only: false, poc_only: false }
@@ -79,41 +79,36 @@ export default function FilterBar({
   }
 
   function handleVendorClick(vendor) {
-    if (vendorActive === vendor) {
-      setLocalSearch('')
-      onFiltersChange({ search: '' })
-    } else {
-      setLocalSearch(vendor)
-      onFiltersChange({ search: vendor })
-    }
+    const next = selectedVendors.includes(vendor)
+      ? selectedVendors.filter(v => v !== vendor)
+      : [...selectedVendors, vendor]
+    onFiltersChange({ vendors: next.join(',') })
+  }
+
+  function clearVendors() {
+    onFiltersChange({ vendors: '' })
   }
 
   async function handleExportCsv() {
     if (exporting) return
     setExporting(true)
+    setExportError(null)
+    setExportSuccess(null)
     try {
-      const all = []
-      let page = 1
-      let pages = 1
-      const limit = 100
+      const data = await fetchCVEsForExport(filters)
+      const rows = data.data || []
 
-      while (page <= pages && all.length < 500) {
-        const data = await fetchCVEs({
-          ...filters,
-          page,
-          limit,
-        })
-        pages = data.pages
-        all.push(...data.data)
-        if (!data.data.length) break
-        page += 1
+      if (!rows.length) {
+        setExportError('No CVEs to export for current filters.')
+        return
       }
 
-      const rows = all.slice(0, 500)
       const csv = cvesToCsvRows(rows)
       downloadCsv(csv, exportFilename())
-    } catch {
-      // silent — user can retry
+      setExportSuccess(`Downloaded ${rows.length.toLocaleString()} CVEs.`)
+      window.setTimeout(() => setExportSuccess(null), 4000)
+    } catch (err) {
+      setExportError(err.message || 'Export failed. Restart the backend and try again.')
     } finally {
       setExporting(false)
     }
@@ -130,12 +125,33 @@ export default function FilterBar({
                 &nbsp;// {total.toLocaleString()}
               </span>
             )}
+            {filters.stack && (
+              <button
+                type="button"
+                className="filter-stack-clear mono"
+                onClick={() => onFiltersChange({ stack: '' })}
+                aria-label="Clear stack filter and show all CVEs"
+              >
+                × clear stack
+              </button>
+            )}
+            {filters.technique && (
+              <button
+                type="button"
+                className="filter-stack-clear mono"
+                onClick={() => onFiltersChange({ technique: '' })}
+                aria-label="Clear ATT&CK technique filter"
+              >
+                × clear technique
+              </button>
+            )}
           </span>
         </div>
 
         <div className="filter-bar-right">
           <div className="filter-action-btns">
             <button
+              type="button"
               className="digest-btn"
               onClick={onGenerateDigest}
               aria-label="Generate digest of current CVE results"
@@ -144,6 +160,7 @@ export default function FilterBar({
               GENERATE DIGEST
             </button>
             <button
+              type="button"
               className="export-btn"
               onClick={handleExportCsv}
               disabled={exporting}
@@ -182,23 +199,49 @@ export default function FilterBar({
         </div>
       </div>
 
+      {exportError && (
+        <p className="export-error mono" role="alert">
+          {exportError}
+        </p>
+      )}
+      {exportSuccess && (
+        <p className="export-success mono" role="status">
+          {exportSuccess}
+        </p>
+      )}
+
       {active === 'all' && (
-        <div
-          className="vendor-filter-row"
-          role="group"
-          aria-label="Filter by vendor"
-        >
-          {VENDORS.map(v => (
-            <button
-              key={v}
-              type="button"
-              className={`vendor-btn${vendorActive === v ? ' active' : ''}`}
-              onClick={() => handleVendorClick(v)}
-              aria-pressed={vendorActive === v}
-            >
-              {v}
-            </button>
-          ))}
+        <div className="vendor-filter-block">
+          <div className="vendor-filter-header">
+            <span className="vendor-filter-label mono">// VENDORS</span>
+            {selectedVendors.length > 0 && (
+              <button
+                type="button"
+                className="vendor-clear-btn mono"
+                onClick={clearVendors}
+                aria-label="Clear all vendor filters"
+              >
+                CLEAR ({selectedVendors.length})
+              </button>
+            )}
+          </div>
+          <div
+            className="vendor-filter-row"
+            role="group"
+            aria-label="Filter by vendor (multi-select)"
+          >
+            {VENDORS.map(v => (
+              <button
+                key={v}
+                type="button"
+                className={`vendor-btn${selectedVendors.includes(v) ? ' active' : ''}`}
+                onClick={() => handleVendorClick(v)}
+                aria-pressed={selectedVendors.includes(v)}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </>

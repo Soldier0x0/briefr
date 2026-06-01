@@ -9,10 +9,9 @@ import IOCLookup from './components/IOCLookup.jsx'
 import DetailDrawer from './components/DetailDrawer.jsx'
 import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
-import ShortcutsPanel from './components/ShortcutsPanel.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
-import { fetchStats, fetchHealth } from './api.js'
+import { fetchStats, fetchHealth, fetchCVE } from './api.js'
 import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
 
 const DEFAULT_FILTERS = {
@@ -22,6 +21,8 @@ const DEFAULT_FILTERS = {
   epss_min: null,
   search: '',
   stack: '',
+  vendors: '',
+  technique: '',
 }
 
 // ── Last-refreshed helper ─────────────────────────────────
@@ -93,7 +94,11 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
                    onDigestRequest }) {
 
   const handleBrief = useCallback((stack) => {
-    setFilters(prev => ({ ...prev, stack }))
+    setFilters(prev => ({ ...prev, stack: stack || '' }))
+  }, [setFilters])
+
+  const handleClearStack = useCallback(() => {
+    setFilters(prev => ({ ...prev, stack: '' }))
   }, [setFilters])
 
   const handleFiltersChange = useCallback((next) => {
@@ -105,9 +110,20 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
     setDigestOpen(true)
   }, [setDigestCVEs, setDigestOpen])
 
+  const handleSelectCVE = useCallback((cve) => {
+    setSelectedCVE(cve)
+    fetchCVE(cve.cve_id)
+      .then(full => setSelectedCVE(full))
+      .catch(() => {})
+  }, [setSelectedCVE])
+
   return (
     <>
-      <Hero onBrief={handleBrief} />
+      <Hero
+        activeStack={filters.stack}
+        onBrief={handleBrief}
+        onClearStack={handleClearStack}
+      />
       <StatsRow stats={stats} />
       <FeedRefreshStatus
         lastUpdated={lastUpdated}
@@ -119,7 +135,7 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
         <CVEFeed
           filters={filters}
           onFiltersChange={handleFiltersChange}
-          onSelectCVE={setSelectedCVE}
+          onSelectCVE={handleSelectCVE}
           onGenerateDigest={handleGenerateDigest}
           onDigestRequest={onDigestRequest}
           searchFocusTrigger={searchFocusTrigger}
@@ -129,10 +145,6 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
       </div>
     </>
   )
-}
-
-function FeedShortcuts() {
-  return <ShortcutsPanel />
 }
 
 export default function App() {
@@ -250,6 +262,7 @@ export default function App() {
               onTabChange={setActiveTab}
               onAboutOpen={() => setAboutOpen(true)}
               onTimezoneChange={setTimezone}
+              showShortcuts={showFeedShortcuts}
             />
 
             <div className="app-main">
@@ -277,8 +290,6 @@ export default function App() {
               )}
               {activeTab === 'ioc' && <IOCLookup />}
             </div>
-
-            {showFeedShortcuts && <FeedShortcuts />}
 
             <footer className="app-footer" role="contentinfo">
               <div className="footer-left">

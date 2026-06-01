@@ -29,7 +29,9 @@ function epssDisplay(score) {
   return `${(score * 100).toFixed(1)}%`
 }
 
-function mitreUrl(id) {
+function techniqueLink(tech) {
+  if (tech?.url) return tech.url
+  const id = tech?.id || tech?.technique_id
   if (!id) return null
   const clean = id.replace(/\./g, '/')
   return `https://attack.mitre.org/techniques/${clean}`
@@ -98,6 +100,7 @@ export default function DetailDrawer({ cve, onClose }) {
   const epss     = epssDisplay(cve.epss_score)
   const sevColor = severityColor(cve.severity)
   const cvssValColor = cvssMetricColor(cve.cvss_score, cve.severity)
+  const techniques = Array.isArray(cve.techniques) ? cve.techniques : []
 
   return (
     <>
@@ -220,23 +223,46 @@ export default function DetailDrawer({ cve, onClose }) {
           )}
 
           {/* ── MITRE ATT&CK ── */}
-          {cve.mitre_technique && (
-            <section className="drawer-section" aria-labelledby="mitre-heading">
-              <h2 id="mitre-heading" className="drawer-section-label">MITRE ATT&CK</h2>
-              <div className="mitre-card" role="group" aria-label={`MITRE technique: ${cve.mitre_technique}`}>
-                <span className="mitre-id mono">{cve.mitre_technique}</span>
-                <a
-                  className="mitre-link mono"
-                  href={mitreUrl(cve.mitre_technique)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`View ${cve.mitre_technique} on MITRE ATT&CK (opens new tab)`}
-                >
-                  View on ATT&CK &rarr;
-                </a>
+          <section className="drawer-section" aria-labelledby="mitre-heading">
+            <h2 id="mitre-heading" className="drawer-section-label">MITRE ATT&CK</h2>
+            {techniques.length === 0 ? (
+              <p className="mitre-empty mono">// No ATT&CK mapping available</p>
+            ) : (
+              <div className="mitre-techniques" role="list" aria-label="Mapped ATT&CK techniques">
+                {techniques.map(tech => {
+                  const tid = tech.id || tech.technique_id
+                  const href = techniqueLink(tech)
+                  return (
+                    <article
+                      key={tid}
+                      className="mitre-technique-card"
+                      role="listitem"
+                      aria-label={`${tid}: ${tech.name}`}
+                    >
+                      <div className="mitre-technique-top">
+                        <span className="mitre-technique-id mono">{tid}</span>
+                        {tech.tactic && (
+                          <span className="mitre-tactic-badge mono">{tech.tactic}</span>
+                        )}
+                      </div>
+                      <p className="mitre-technique-name">{tech.name}</p>
+                      {href && (
+                        <a
+                          className="mitre-technique-link mono"
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`View ${tid} on attack.mitre.org (opens new tab)`}
+                        >
+                          attack.mitre.org &rarr;
+                        </a>
+                      )}
+                    </article>
+                  )
+                })}
               </div>
-            </section>
-          )}
+            )}
+          </section>
 
           {/* ── References ── */}
           {urls.length > 0 && (

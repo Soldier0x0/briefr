@@ -3,45 +3,82 @@ import { fetchCVEs } from '../api.js'
 import './Hero.css'
 
 const STACK_KEY = 'briefr_stack'
+const DEBOUNCE_MS = 800
 
-export default function Hero({ onBrief }) {
+export default function Hero({ activeStack, onBrief, onClearStack }) {
   const [stack, setStack] = useState(() => {
     try { return localStorage.getItem(STACK_KEY) || '' } catch { return '' }
   })
   const [matchCount, setMatchCount] = useState(null)
-  const inputRef = useRef(null)
+  const [searching, setSearching] = useState(false)
   const debounceRef = useRef(null)
+  const previewSeqRef = useRef(0)
+  const hadAppliedStackRef = useRef(false)
 
   useEffect(() => {
     try { localStorage.setItem(STACK_KEY, stack) } catch {}
   }, [stack])
 
+  // Clear input when stack filter removed from feed (× clear stack)
+  useEffect(() => {
+    if (activeStack) {
+      hadAppliedStackRef.current = true
+      return
+    }
+    if (hadAppliedStackRef.current) {
+      setStack('')
+      setMatchCount(null)
+      setSearching(false)
+      hadAppliedStackRef.current = false
+    }
+  }, [activeStack])
+
+  // Preview count only — does not filter the feed until BRIEF
   useEffect(() => {
     const trimmed = stack.trim()
     if (!trimmed) {
       setMatchCount(null)
+      setSearching(false)
       return
     }
 
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
+      const seq = ++previewSeqRef.current
+      setSearching(true)
       fetchCVEs({ stack: trimmed, limit: 1, page: 1 })
-        .then(data => setMatchCount(data.total))
-        .catch(() => setMatchCount(null))
-    }, 800)
+        .then(data => {
+          if (seq !== previewSeqRef.current) return
+          setMatchCount(data.total ?? 0)
+        })
+        .catch(() => {
+          if (seq !== previewSeqRef.current) return
+          setMatchCount(null)
+        })
+        .finally(() => {
+          if (seq !== previewSeqRef.current) return
+          setSearching(false)
+        })
+    }, DEBOUNCE_MS)
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
   }, [stack])
 
-  function handleBrief() {
-    if (stack.trim()) onBrief(stack.trim())
+  function applyBrief() {
+    const trimmed = stack.trim()
+    if (trimmed) onBrief(trimmed)
   }
 
   function handleKeyDown(e) {
-    if (e.key === 'Enter') handleBrief()
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      applyBrief()
+    }
   }
+
+  const showCountLine = stack.trim().length > 0
 
   return (
     <section className="hero" aria-label="BRIEFR brief">
@@ -56,7 +93,6 @@ export default function Hero({ onBrief }) {
         <label htmlFor="stack-input" className="stack-label">STACK //</label>
         <input
           id="stack-input"
-          ref={inputRef}
           type="text"
           className="stack-input"
           value={stack}
@@ -68,17 +104,23 @@ export default function Hero({ onBrief }) {
           spellCheck="false"
         />
         <button
+          type="button"
           className="stack-brief-btn"
-          onClick={handleBrief}
-          aria-label="Generate brief for entered stack"
+          onClick={applyBrief}
+          disabled={!stack.trim()}
+          aria-label="Filter CVE feed by entered stack"
         >
           BRIEF
         </button>
       </div>
 
-      {stack.trim() && matchCount != null && (
+      {showCountLine && (
         <p className="stack-match-count mono" aria-live="polite">
-          {matchCount.toLocaleString()} CVE{matchCount === 1 ? '' : 's'} match your stack
+          {searching
+            ? 'Searching...'
+            : matchCount === null
+              ? 'Searching...'
+              : `${matchCount.toLocaleString()} CVE${matchCount === 1 ? '' : 's'} match your stack`}
         </p>
       )}
     </section>

@@ -1,48 +1,65 @@
 .shortcuts-wrap {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 100;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
 }
 
-/* ? button */
+.shortcuts-wrap--header {
+  flex-shrink: 0;
+}
+
+/* Button */
 .shortcuts-btn {
-  width: 28px;
   height: 28px;
+  min-width: 28px;
+  padding: 0 8px;
   background: var(--bg3);
   border: 1px solid var(--border2);
   border-radius: 0;
   cursor: pointer;
   font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text3);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--text2);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.1s, color 0.1s;
+  transition: border-color 0.1s, color 0.1s, background 0.1s;
   flex-shrink: 0;
 }
 
-.shortcuts-btn:hover {
-  border-color: var(--border);
-  color: var(--text2);
+.shortcuts-wrap--header .shortcuts-btn {
+  border-color: var(--red);
+  color: var(--text);
+  background: var(--red-dim);
+  min-width: 44px;
+  font-weight: 600;
 }
 
-/* Panel — opens above the fixed ? button */
+.shortcuts-btn:hover {
+  border-color: var(--red);
+  color: var(--text);
+  background: var(--bg2);
+}
+
+/* Panel */
 .shortcuts-panel {
   position: absolute;
-  bottom: calc(100% + 8px);
   right: 0;
   background: var(--bg2);
   border: 1px solid var(--border2);
   border-radius: 0;
   padding: 16px;
   width: 220px;
-  z-index: 1;
+  z-index: 250;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.shortcuts-wrap--header .shortcuts-panel {
+  top: calc(100% + 8px);
+  bottom: auto;
 }
 
 .shortcuts-title {
