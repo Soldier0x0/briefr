@@ -153,6 +153,20 @@ def parse_kev_attack_mappings(data: dict) -> dict[str, list[str]]:
     return {cve: sorted(tids) for cve, tids in mapping.items()}
 
 
+def resolve_technique_id(tid: str, known_ids: set[str]) -> str | None:
+    """Map a technique ID to a row in mitre_techniques (parent fallback for sub-techniques)."""
+    normalized = _normalize_technique_id(tid)
+    if not normalized:
+        return None
+    if normalized in known_ids:
+        return normalized
+    if "." in normalized:
+        parent = normalized.split(".", 1)[0]
+        if parent in known_ids:
+            return parent
+    return None
+
+
 def merge_cve_technique_maps(*sources: dict[str, list[str]]) -> dict[str, list[str]]:
     merged: dict[str, set[str]] = {}
     for source in sources:
@@ -209,13 +223,31 @@ async def refresh_mitre_data(db) -> dict[str, int]:
     await replace_mitre_techniques(db, techniques)
     await clear_cve_technique_map(db)
 
+    known_technique_ids = {t["technique_id"] for t in techniques}
     known_cves = await get_all_cve_ids_set(db)
     pairs: list[tuple[str, str]] = []
+    seen_pairs: set[tuple[str, str]] = set()
+    skipped_unknown = 0
+
     for cve_id, tids in cve_map.items():
         if cve_id not in known_cves:
             continue
         for tid in tids:
-            pairs.append((cve_id, tid))
+            resolved = resolve_technique_id(tid, known_technique_ids)
+            if not resolved:
+                skipped_unknown += 1
+                continue
+            key = (cve_id, resolved)
+            if key in seen_pairs:
+                continue
+            seen_pairs.add(key)
+            pairs.append(key)
+
+    if skipped_unknown:
+        logger.info(
+            "Skipped %d CVE→technique links (technique not in Enterprise STIX)",
+            skipped_unknown,
+        )
 
     inserted = await upsert_cve_technique_pairs(db, pairs)
     await db.commit()
@@ -224,4 +256,5 @@ async def refresh_mitre_data(db) -> dict[str, int]:
         "techniques": len(techniques),
         "cve_mappings_source": len(cve_map),
         "cve_links": inserted,
+        "skipped_unknown_techniques": skipped_unknown,
     }

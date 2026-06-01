@@ -383,17 +383,17 @@ async def clear_cve_technique_map(db: aiosqlite.Connection) -> None:
 
 
 async def upsert_cve_technique_pairs(
-    db: aiosqlite.Connection, pairs: list[tuple[str, str]]
+    db: aiosqlite.Connection, pairs: list[tuple[str, str]], *, chunk_size: int = 5000
 ) -> int:
     if not pairs:
         return 0
-    await db.executemany(
-        """
+    sql = """
         INSERT OR IGNORE INTO cve_technique_map (cve_id, technique_id)
         VALUES (?, ?)
-        """,
-        pairs,
-    )
+    """
+    for i in range(0, len(pairs), chunk_size):
+        chunk = pairs[i : i + chunk_size]
+        await db.executemany(sql, chunk)
     return len(pairs)
 
 
