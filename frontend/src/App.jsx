@@ -84,7 +84,12 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
     <>
       <Hero onBrief={handleBrief} />
       <StatsRow stats={stats} />
-      <LastRefreshed timestamp={lastUpdated} />
+      <FeedRefreshStatus
+        lastUpdated={lastUpdated}
+        nextRefreshUtc={nextRefreshUtc}
+        timezone={timezone}
+        refreshSchedule={refreshSchedule}
+      />
       <div className="content-grid">
         <CVEFeed
           filters={filters}

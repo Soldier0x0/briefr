@@ -159,6 +159,16 @@ input:focus, textarea:focus {
   color: var(--text3);
   padding: 7px 0;
   border-bottom: 1px solid var(--border);
+  line-height: 1.5;
+}
+
+.refresh-status-sep {
+  color: var(--text3);
+}
+
+.refresh-status-hint {
+  color: var(--text3);
+  opacity: 0.85;
 }
 
 /* ── Footer ────────────────────────────────────────────── */

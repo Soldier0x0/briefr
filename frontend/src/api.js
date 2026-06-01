@@ -32,7 +32,6 @@ export function fetchCVEs(params = {}) {
   if (params.severity)  qs.set('severity', params.severity)
   if (params.kev_only)  qs.set('kev_only', 'true')
   if (params.poc_only)  qs.set('poc_only', 'true')
-  if (params.epss_min != null) qs.set('epss_min', String(params.epss_min))
   if (params.search)    qs.set('search', params.search)
   if (params.stack)     qs.set('stack', params.stack)
   if (params.page)      qs.set('page', String(params.page))
@@ -61,6 +60,3 @@ export function lookupIOC(value, type) {
   })
 }
 
-export function triggerRefresh() {
-  return request('/refresh', { method: 'POST' })
-}

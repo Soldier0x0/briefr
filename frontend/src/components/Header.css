@@ -354,7 +354,6 @@
 @media (max-width: 640px) {
   .header-tagline      { display: none; }
   .header-right        { gap: 8px; }
-  .header-refresh-btn  { display: none; }
   .clock-utc           { display: none; }
   .clock-sep           { display: none; }
   .header-legal-desktop { display: none; }

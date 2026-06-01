@@ -129,8 +129,6 @@ For HTTPS + `projectjupiter.in`, use `USE_TLS=1 bash deploy/setup-nginx-producti
 | `CACHE_REFRESH_HOUR` | Daily feed hour (IST) | Default `6` |
 | `CACHE_REFRESH_MINUTE` | Daily feed minute (IST) | Default `0` |
 | `MAX_CVES_PER_FETCH` | Cap per NVD refresh | Default `2000` |
-| `NVD_DAYS_BACK` | Published-date window for initial NVD sync only | Default `14` |
-| `NVD_SYNC_OVERLAP_MINUTES` | Overlap for incremental `lastMod` sync | Default `15` |
 | `DEFAULT_TIMEZONE` | Server display timezone | Default `Asia/Kolkata` |
 | `DB_PATH` | SQLite database file | Default `briefr.db` in backend dir |
 
@@ -138,13 +136,13 @@ For HTTPS + `projectjupiter.in`, use `USE_TLS=1 bash deploy/setup-nginx-producti
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/health` | Service health, CVE count, NVD sync watermark, refresh status |
+| `GET /api/health` | Service health, CVE count, last refresh time |
 | `GET /api/time` | Server UTC and local time |
 | `GET /api/stats` | Severity and KEV summary counts |
 | `GET /api/cves` | Paginated, filterable CVE list |
 | `GET /api/cves/{cve_id}` | Single CVE detail with OSV packages |
 | `POST /api/ioc/lookup` | IOC enrichment (ip, hash, domain) |
-| `POST /api/refresh` | Trigger background CVE refresh |
+| `POST /api/refresh` | Operator-only (`curl`); daily cron via `CACHE_REFRESH_*` — no UI button |
 | `GET /api/kev/deadlines` | CISA KEV entries with due dates |
 | `GET /api/usage` | External API usage counters |
 
