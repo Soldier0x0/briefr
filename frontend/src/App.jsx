@@ -12,6 +12,7 @@ import AboutModal from './components/AboutModal.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import { fetchStats, fetchHealth } from './api.js'
+import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
 
 const DEFAULT_FILTERS = {
   severity: null,
@@ -34,17 +35,39 @@ function timeAgoMinutes(sqliteUtc) {
   return `${Math.floor(h / 24)} days ago`
 }
 
-function LastRefreshed({ timestamp }) {
+function formatScheduleLabel(schedule) {
+  if (!schedule) return null
+  const hh = String(schedule.hour).padStart(2, '0')
+  const mm = String(schedule.minute).padStart(2, '0')
+  return `${hh}:${mm} ${getTzAbbr(schedule.timezone)}`
+}
+
+function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSchedule }) {
   const [, tick] = useState(0)
   useEffect(() => {
     const id = setInterval(() => tick(n => n + 1), 60000)
     return () => clearInterval(id)
   }, [])
-  const label = timeAgoMinutes(timestamp)
-  if (!label) return null
+
+  const lastLabel = timeAgoMinutes(lastUpdated)
+  const nextUtcLabel = nextRefreshUtc ? formatAbsolute(nextRefreshUtc, 'UTC') : null
+  const nextUserLabel =
+    nextRefreshUtc && timezone ? formatAbsolute(nextRefreshUtc, timezone) : null
+  const scheduleLabel = formatScheduleLabel(refreshSchedule)
+
+  if (!lastLabel && !nextUtcLabel) return null
+
   return (
     <p className="last-refreshed mono" aria-live="polite">
-      Last refreshed {label}
+      {lastLabel && <span>Last refreshed {lastLabel}</span>}
+      {lastLabel && nextUtcLabel && <span> · </span>}
+      {nextUtcLabel && (
+        <span>
+          Next refresh at {nextUtcLabel}
+          {nextUserLabel && timezone !== 'UTC' && <> · {nextUserLabel}</>}
+          {scheduleLabel && <> (auto daily {scheduleLabel})</>}
+        </span>
+      )}
     </p>
   )
 }
@@ -84,7 +107,12 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
     <>
       <Hero onBrief={handleBrief} />
       <StatsRow stats={stats} />
-      <LastRefreshed timestamp={lastUpdated} />
+      <FeedRefreshStatus
+        lastUpdated={lastUpdated}
+        nextRefreshUtc={nextRefreshUtc}
+        timezone={timezone}
+        refreshSchedule={refreshSchedule}
+      />
       <div className="content-grid">
         <CVEFeed
           filters={filters}
@@ -113,11 +141,28 @@ export default function App() {
     try { return localStorage.getItem('briefr_timezone') || 'UTC' } catch { return 'UTC' }
   })
   const [lastUpdated, setLastUpdated]           = useState(null)
+  const [nextRefreshUtc, setNextRefreshUtc]     = useState(null)
+  const [refreshSchedule, setRefreshSchedule]   = useState(null)
+
+  const loadHealth = useCallback(() => {
+    fetchHealth(timezone)
+      .then(h => {
+        setLastUpdated(h.last_updated ?? null)
+        setNextRefreshUtc(h.next_refresh_at_utc ?? null)
+        setRefreshSchedule(h.refresh_schedule ?? null)
+      })
+      .catch(() => {})
+  }, [timezone])
 
   useEffect(() => {
     fetchStats().then(setStats).catch(() => {})
-    fetchHealth().then(h => setLastUpdated(h.last_updated)).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    loadHealth()
+    const id = setInterval(loadHealth, 60000)
+    return () => clearInterval(id)
+  }, [loadHealth])
 
   // Keep timezone state in sync when Header dispatches changes
   useEffect(() => {
@@ -176,6 +221,8 @@ export default function App() {
                   setAboutOpen={setAboutOpen}
                   timezone={timezone}
                   lastUpdated={lastUpdated}
+                  nextRefreshUtc={nextRefreshUtc}
+                  refreshSchedule={refreshSchedule}
                 />
               )}
               {activeTab === 'ioc' && <IOCLookup />}
