@@ -5,3 +5,4 @@ apscheduler==3.11.2
 python-dotenv==1.2.2
 pydantic==2.13.4
 aiosqlite==0.22.1
+PyYAML==6.0.2

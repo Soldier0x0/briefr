@@ -116,6 +116,14 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezone
             >
               IOC LOOKUP
             </button>
+            <button
+              className={`header-tab${activeTab === 'atlas' ? ' active' : ''}`}
+              onClick={() => onTabChange('atlas')}
+              aria-label="Switch to AI threats (MITRE ATLAS)"
+              aria-current={activeTab === 'atlas' ? 'page' : undefined}
+            >
+              AI THREATS
+            </button>
           </nav>
         )}
 
