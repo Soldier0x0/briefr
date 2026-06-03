@@ -445,6 +445,7 @@ def _build_cve_filters(
         params.append(day)
 
     if summary_only:
+        # Enriched plain-English only (CISA KEV short text, OSV, etc.) — not NVD auto-truncate
         conditions.append(
             "summary IS NOT NULL AND TRIM(summary) != ''"
         )

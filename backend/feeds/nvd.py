@@ -5,7 +5,7 @@ from typing import Any
 
 import httpx
 
-from enrichment.cve import build_plain_summary, extract_mitre_technique, has_public_poc
+from enrichment.cve import extract_mitre_technique, has_public_poc
 from tracking import record_api_call
 
 logger = logging.getLogger(__name__)
@@ -102,7 +102,7 @@ def _parse_cve_item(item: dict) -> dict:
         "modified": modified,
         "affected_products": affected_products,
         "mitre_technique": extract_mitre_technique(references),
-        "summary": build_plain_summary(description),
+        "summary": None,
         "is_kev": False,
         "epss_score": None,
         "has_poc": has_public_poc(references),

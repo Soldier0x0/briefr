@@ -101,3 +101,16 @@ def build_plain_summary(
     if osv_summary and osv_summary.strip():
         return osv_summary.strip()
     return simplify_description(description)
+
+
+def is_auto_generated_summary(
+    summary: str | None,
+    description: str | None,
+) -> bool:
+    """True when summary is only the first-sentence NVD truncate, not KEV/OSV enrichment."""
+    if not summary or not str(summary).strip():
+        return False
+    auto = simplify_description(description or "")
+    if not auto:
+        return False
+    return str(summary).strip() == auto.strip()

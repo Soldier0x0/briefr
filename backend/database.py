@@ -362,42 +362,58 @@ async def get_related_cves(
 
 
 async def backfill_display_fields(db: aiosqlite.Connection) -> int:
-    """Fill summary/MITRE from stored NVD fields when missing (no re-fetch)."""
-    from enrichment.cve import build_plain_summary, extract_mitre_from_urls, has_public_poc_from_urls
+    """Fill MITRE / PoC from stored NVD fields when missing (no auto plain-summary)."""
+    from enrichment.cve import extract_mitre_from_urls, has_public_poc_from_urls
 
     rows = await db.execute_fetchall(
         """
-        SELECT cve_id, description, source_urls, mitre_technique, summary, has_poc
+        SELECT cve_id, description, source_urls, mitre_technique, has_poc
         FROM cves
-        WHERE summary IS NULL OR summary = ''
-           OR mitre_technique IS NULL
-           OR has_poc = 0
+        WHERE mitre_technique IS NULL OR has_poc = 0
         """
     )
     updated = 0
     for row in rows:
         urls = json.loads(row["source_urls"] or "[]")
-        summary = row["summary"]
-        if not summary:
-            summary = build_plain_summary(row["description"] or "")
         mitre = row["mitre_technique"] or extract_mitre_from_urls(urls)
         poc_flag = row["has_poc"]
         if not poc_flag:
             poc_flag = 1 if has_public_poc_from_urls(urls) else 0
-        if not summary and not mitre and not poc_flag:
+        if not mitre and not poc_flag:
             continue
         await db.execute(
             """
             UPDATE cves
-            SET summary = COALESCE(?, summary),
-                mitre_technique = COALESCE(?, mitre_technique),
+            SET mitre_technique = COALESCE(?, mitre_technique),
                 has_poc = CASE WHEN ? = 1 THEN 1 ELSE has_poc END
             WHERE cve_id = ?
             """,
-            (summary, mitre, poc_flag, row["cve_id"]),
+            (mitre, poc_flag, row["cve_id"]),
         )
         updated += 1
     return updated
+
+
+async def strip_auto_generated_summaries(db: aiosqlite.Connection) -> int:
+    """Remove NVD first-sentence summaries so Plain English filter is meaningful."""
+    from enrichment.cve import is_auto_generated_summary
+
+    rows = await db.execute_fetchall(
+        """
+        SELECT cve_id, description, summary
+        FROM cves
+        WHERE summary IS NOT NULL AND TRIM(summary) != ''
+        """
+    )
+    cleared = 0
+    for row in rows:
+        if is_auto_generated_summary(row["summary"], row["description"]):
+            await db.execute(
+                "UPDATE cves SET summary = NULL WHERE cve_id = ?",
+                (row["cve_id"],),
+            )
+            cleared += 1
+    return cleared
 
 
 
