@@ -34,7 +34,6 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   const [lastVisit, setLastVisit] = useState(null)
   const [visitReady, setVisitReady] = useState(false)
   const [showingRange, setShowingRange] = useState(null)
-  const feedRef = useRef(null)
   const sentinelRef = useRef(null)
   const abortRef = useRef(null)
   const cardRefs = useRef([])
@@ -45,6 +44,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   const hasMoreRef = useRef(true)
   const initialLoadDoneRef = useRef(false)
   const sentinelVisibleRef = useRef(false)
+  const filtersInitialMountRef = useRef(true)
 
   useEffect(() => {
     let stored = null
@@ -57,6 +57,16 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     try {
       localStorage.setItem(LAST_VISIT_KEY, new Date().toISOString())
     } catch {}
+  }, [])
+
+  // Keep Hero/stack visible on first paint; avoid browser scroll restoration
+  useEffect(() => {
+    const prev = history.scrollRestoration
+    history.scrollRestoration = 'manual'
+    window.scrollTo(0, 0)
+    return () => {
+      history.scrollRestoration = prev
+    }
   }, [])
 
   function isNewSinceVisit(cve) {
@@ -174,14 +184,10 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   }, [cves, updateShowingRange])
 
   function scrollFeedToTop() {
-    if (feedRef.current) {
-      feedRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // Reset and reload when filters change; scroll feed to top
+  // Reset and reload when filters change; scroll to page top (keeps Hero/stack visible)
   useEffect(() => {
     pageRef.current = 1
     setPage(1)
@@ -193,7 +199,13 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     initialLoadDoneRef.current = false
     sentinelVisibleRef.current = false
     setShowingRange(null)
-    scrollFeedToTop()
+
+    if (filtersInitialMountRef.current) {
+      filtersInitialMountRef.current = false
+    } else {
+      scrollFeedToTop()
+    }
+
     loadPage(1, false)
   }, [filters, loadPage])
 
@@ -281,7 +293,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   const showError = !!error && cves.length === 0
 
   return (
-    <div ref={feedRef} className="cve-feed" role="region" aria-label="CVE feed">
+    <div className="cve-feed" role="region" aria-label="CVE feed">
       <FilterBar
         filters={filters}
         onFiltersChange={onFiltersChange}
