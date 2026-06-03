@@ -524,3 +524,122 @@
   color: var(--accent);
   letter-spacing: 0.04em;
 }
+
+/* ── API quota (collapsible) ─────────────────────────────── */
+.ioc-quota-wrap {
+  margin-top: 16px;
+}
+
+.ioc-quota-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  padding: 4px 0;
+}
+
+.ioc-quota-toggle:hover {
+  color: var(--text2);
+}
+
+.ioc-quota-chevron {
+  display: inline-block;
+  font-size: 0.5rem;
+  transition: transform 0.15s ease;
+}
+
+.ioc-quota-chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+.ioc-quota-panel {
+  margin-top: 10px;
+  padding: 12px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+}
+
+.ioc-quota-loading,
+.ioc-quota-error,
+.ioc-quota-asof {
+  font-size: 0.625rem;
+  color: var(--text3);
+  margin: 0 0 10px;
+}
+
+.ioc-quota-error {
+  color: var(--red);
+}
+
+.quota-service-block {
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.quota-service-block:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.quota-service-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  color: var(--text);
+}
+
+.quota-rate {
+  font-size: 0.5625rem;
+  color: var(--text3);
+  letter-spacing: 0.04em;
+}
+
+.quota-meter {
+  margin-bottom: 8px;
+}
+
+.quota-meter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+  gap: 8px;
+}
+
+.quota-meter-label {
+  font-size: 0.625rem;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.quota-meter-val {
+  font-size: 0.625rem;
+  color: var(--text2);
+}
+
+.quota-meter-note,
+.quota-service-note {
+  font-size: 0.5625rem;
+  color: var(--text3);
+  margin: 4px 0 0;
+  line-height: 1.4;
+}
+
+.quota-track {
+  height: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+}
+
+.quota-fill {
+  height: 100%;
+  min-width: 0;
+  transition: width 0.25s ease;
+}

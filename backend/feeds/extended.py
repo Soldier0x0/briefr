@@ -48,6 +48,13 @@ WEAPONISED_HINTS = (
 )
 
 
+def abusech_headers(auth_key: str | None) -> dict[str, str]:
+    """Single Auth-Key from https://auth.abuse.ch/ works for MalwareBazaar and URLhaus."""
+    if not auth_key or not auth_key.strip():
+        return {}
+    return {"Auth-Key": auth_key.strip()}
+
+
 def extract_ipv4_from_cve(description: str | None, source_urls: list | None) -> list[str]:
     """IPv4 addresses mentioned in CVE text or reference URLs (max 5)."""
     found: set[str] = set()
@@ -186,19 +193,29 @@ async def fetch_greynoise_ip(ip: str, api_key: str) -> dict | None:
         return None
 
 
-async def fetch_malwarebazaar_hash(file_hash: str) -> dict | None:
+async def fetch_malwarebazaar_hash(
+    file_hash: str, abusech_auth_key: str | None = None
+) -> dict | None:
     try:
         async with httpx.AsyncClient(timeout=25.0) as client:
             response = await client.post(
                 MALWAREBazaar_URL,
                 data={"query": "get_info", "hash": file_hash.lower()},
+                headers=abusech_headers(abusech_auth_key),
             )
         await record_api_call("malwarebazaar", 1)
 
+        if response.status_code in (401, 403):
+            logger.warning("MalwareBazaar auth rejected — check ABUSECH_AUTH_KEY")
+            return None
         if response.status_code != 200:
             return None
         data = response.json()
-        if data.get("query_status") != "ok":
+        status = (data.get("query_status") or "").lower()
+        if status in ("unknown_auth_key", "no_auth_key"):
+            logger.warning("MalwareBazaar requires ABUSECH_AUTH_KEY")
+            return None
+        if status != "ok":
             return None
         entry = data.get("data")
         if isinstance(entry, list):
@@ -228,27 +245,46 @@ async def fetch_malwarebazaar_hash(file_hash: str) -> dict | None:
         return None
 
 
-async def fetch_urlhaus_indicator(value: str, ioc_type: str) -> dict | None:
+async def fetch_urlhaus_indicator(
+    value: str,
+    ioc_type: str,
+    abusech_auth_key: str | None = None,
+) -> dict | None:
     """Lookup URLhaus for a URL or domain/host."""
+    headers = abusech_headers(abusech_auth_key)
     try:
         async with httpx.AsyncClient(timeout=25.0) as client:
             if ioc_type == "domain":
+                payload = {"host": value.lower()}
+                if abusech_auth_key:
+                    payload["auth_key"] = abusech_auth_key.strip()
                 response = await client.post(
                     URLHAUS_HOST_API,
-                    json={"host": value.lower()},
+                    json=payload,
+                    headers=headers,
                 )
             else:
                 url = value if value.startswith(("http://", "https://")) else f"http://{value}"
+                form = {"url": url}
+                if abusech_auth_key:
+                    form["auth_key"] = abusech_auth_key.strip()
                 response = await client.post(
                     URLHAUS_URL_API,
-                    data={"url": url},
+                    data=form,
+                    headers=headers,
                 )
         await record_api_call("urlhaus", 1)
 
+        if response.status_code in (401, 403):
+            logger.warning("URLhaus auth rejected — check ABUSECH_AUTH_KEY")
+            return None
         if response.status_code != 200:
             return None
         data = response.json()
         status = (data.get("query_status") or "").lower()
+        if status in ("unknown_auth_key", "no_auth_key"):
+            logger.warning("URLhaus requires ABUSECH_AUTH_KEY")
+            return None
         if status in ("no_results", "invalid_host", "invalid_url"):
             return None
         if status not in ("ok", "ok_host"):

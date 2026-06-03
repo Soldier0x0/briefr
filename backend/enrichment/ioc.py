@@ -159,6 +159,7 @@ async def lookup_ioc(
     vt_key: str,
     abuse_key: str,
     greynoise_key: str = "",
+    abusech_key: str = "",
     db=None,
 ) -> dict:
     if ioc_type not in ("ip", "hash", "domain"):
@@ -238,7 +239,7 @@ async def lookup_ioc(
             from feeds.extended import fetch_malwarebazaar_hash
             from templates.intelligence import malwarebazaar_sentence
 
-            mb = await fetch_malwarebazaar_hash(value)
+            mb = await fetch_malwarebazaar_hash(value, abusech_key or None)
             result["malwarebazaar"] = mb
             result["malwarebazaar_sentence"] = malwarebazaar_sentence(mb)
 
@@ -263,7 +264,7 @@ async def lookup_ioc(
             from feeds.extended import fetch_urlhaus_indicator
             from templates.intelligence import urlhaus_sentence
 
-            uh = await fetch_urlhaus_indicator(value, "domain")
+            uh = await fetch_urlhaus_indicator(value, "domain", abusech_key or None)
             result["urlhaus"] = uh
             result["urlhaus_sentence"] = urlhaus_sentence(uh)
 
