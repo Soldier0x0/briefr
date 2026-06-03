@@ -615,6 +615,13 @@
   margin: 0 0 6px;
 }
 
+.drawer-gn-sentence {
+  font-size: 0.8125rem;
+  color: var(--text2);
+  line-height: 1.5;
+  margin: 0 0 6px;
+}
+
 /* Affected products */
 .product-tags {
   display: flex;

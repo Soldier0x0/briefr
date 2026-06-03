@@ -292,7 +292,10 @@ function TabIntel({ techniques, publicExploits, greynoiseScans }) {
                       {cls.toUpperCase()}
                     </span>
                   </div>
-                  {scan.name && (
+                  {scan.sentence && (
+                    <p className="drawer-gn-sentence">{scan.sentence}</p>
+                  )}
+                  {scan.name && !scan.sentence && (
                     <p className="drawer-gn-name mono">{scan.name}</p>
                   )}
                   {scan.link && (

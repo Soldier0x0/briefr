@@ -369,9 +369,13 @@ async def greynoise_scans_for_cve(
 ) -> list[dict]:
     if not api_key:
         return []
+    from templates.intelligence import greynoise_sentence
+
     scans: list[dict] = []
     for ip in extract_ipv4_from_cve(description, source_urls):
         gn = await greynoise_for_ip(db, ip, api_key)
         if gn:
+            gn = dict(gn)
+            gn["sentence"] = greynoise_sentence(gn)
             scans.append(gn)
     return scans
