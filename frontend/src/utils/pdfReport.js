@@ -4,6 +4,11 @@
 import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
 import { fetchCVE, fetchCVESentences } from '../api.js'
+import {
+  aiFooterNoteForSource,
+  formatExecutiveSummaryBody,
+  loadPdfExecutiveSummary,
+} from './pdfAiSummary.js'
 import { getReportTimestamp } from './timezone.js'
 
 export const TLP_OPTIONS = [
@@ -86,6 +91,11 @@ function applyFootersAndStripes(doc, meta) {
       doc.setFontSize(7)
       doc.setTextColor(80, 80, 80)
       doc.text(meta.tlpLabel, PAGE_W - MARGIN, FOOTER_Y - 4, { align: 'right' })
+    }
+    if (meta.aiFooterNote) {
+      doc.setFontSize(6)
+      doc.setTextColor(110, 110, 110)
+      doc.text(meta.aiFooterNote, PAGE_W / 2, FOOTER_Y + 4, { align: 'center' })
     }
   }
 }
@@ -268,7 +278,7 @@ async function captureSparkline(element) {
   }
 }
 
-function renderSingleCvePages(doc, ctx, cve, meta, sparklineDataUrl, { newPage = false } = {}) {
+function renderSingleCvePages(doc, ctx, cve, meta, sparklineDataUrl, { newPage = false, executiveSummaryText = null } = {}) {
   const border = severityBorderColor(cve.severity)
   const sentences = cve.sentences || {}
   const techniques = cve.techniques || []
@@ -284,16 +294,16 @@ function renderSingleCvePages(doc, ctx, cve, meta, sparklineDataUrl, { newPage =
   }
   ctx.y = drawPageHeader(doc, meta, cve, true)
 
-  const execParts = [
+  const execBody = executiveSummaryText || [
     sentences.risk || `Severity: ${cve.severity || 'Unknown'}.`,
     cve.summary || cve.description || 'No plain-language summary available.',
     sentences.exploit_likelihood || (cve.epss_score != null
       ? `EPSS exploitation probability: ${(cve.epss_score * 100).toFixed(1)}%.`
       : ''),
     sentences.patch || (cve.patch_available ? 'Patch is available.' : 'No patch flagged in BRIEFR.'),
-  ].filter(Boolean)
+  ].filter(Boolean).join('\n\n')
 
-  drawSection(ctx, 'EXECUTIVE SUMMARY', execParts.join('\n\n'), border)
+  drawSection(ctx, 'EXECUTIVE SUMMARY', execBody, border)
 
   if (sparklineDataUrl) {
     ensureSpace(ctx, 28)
@@ -375,19 +385,36 @@ export async function enrichCveForPdf(cve) {
 
 export async function downloadSingleCvePdf(cve, options = {}) {
   const enriched = await enrichCveForPdf(cve)
-  const meta = buildMeta(options)
+  const summaryData = await loadPdfExecutiveSummary({
+    cves: [enriched],
+    investigationDuration: 1,
+  })
+  const meta = buildMeta({
+    ...options,
+    aiFooterNote: summaryData ? aiFooterNoteForSource(summaryData.source) : null,
+  })
   const sparklineDataUrl = await captureSparkline(options.sparklineElement)
+  const executiveSummaryText = summaryData
+    ? formatExecutiveSummaryBody(summaryData)
+    : null
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const ctx = { doc, y: CONTENT_TOP, pageNum: 1 }
-  renderSingleCvePages(doc, ctx, enriched, meta, sparklineDataUrl)
+  renderSingleCvePages(doc, ctx, enriched, meta, sparklineDataUrl, { executiveSummaryText })
   applyFootersAndStripes(doc, meta)
   doc.save(`${enriched.cve_id}-briefr-report.pdf`)
 }
 
 export async function downloadBulkCvePdf(cves, options = {}) {
-  const meta = buildMeta(options)
   const enrichedList = await Promise.all(cves.map(c => enrichCveForPdf(c)))
+  const summaryData = await loadPdfExecutiveSummary({
+    cves: enrichedList,
+    investigationDuration: 1,
+  })
+  const meta = buildMeta({
+    ...options,
+    aiFooterNote: summaryData ? aiFooterNoteForSource(summaryData.source) : null,
+  })
 
   const critical = enrichedList.filter(c => (c.severity || '').toUpperCase() === 'CRITICAL').length
   const kev = enrichedList.filter(c => c.is_kev).length
@@ -408,17 +435,22 @@ export async function downloadBulkCvePdf(cves, options = {}) {
     ctx.y += 3.5
   })
   ctx.y += 4
+
+  const bulkSummaryBody = summaryData
+    ? formatExecutiveSummaryBody(summaryData)
+    : [
+        `Total CVEs: ${enrichedList.length}`,
+        `Critical: ${critical}`,
+        `CISA KEV: ${kev}`,
+        immediate.length
+          ? `Immediate action:\n${immediate.map(id => `• ${id}`).join('\n')}`
+          : 'Immediate action: Review selected CVEs by severity.',
+      ].join('\n\n')
+
   drawSection(
     ctx,
     'BULK CVE REPORT — EXECUTIVE SUMMARY',
-    [
-      `Total CVEs: ${enrichedList.length}`,
-      `Critical: ${critical}`,
-      `CISA KEV: ${kev}`,
-      immediate.length
-        ? `Immediate action:\n${immediate.map(id => `• ${id}`).join('\n')}`
-        : 'Immediate action: Review selected CVEs by severity.',
-    ].join('\n\n'),
+    bulkSummaryBody,
     [232, 85, 51],
   )
 
@@ -447,5 +479,6 @@ function buildMeta(options) {
     analystName: (options.analystName || '').trim(),
     tlpColor: tlp.color,
     tlpLabel: tlp.label,
+    aiFooterNote: options.aiFooterNote || null,
   }
 }

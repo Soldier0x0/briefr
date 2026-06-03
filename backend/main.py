@@ -9,7 +9,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Any
 
 load_dotenv()
 
@@ -52,6 +53,7 @@ from scheduler import (
     start_scheduler,
     stop_scheduler,
 )
+from ai.summary import generate_executive_summary
 from investigation_summary import generate_investigation_summary
 from tracking import get_ioc_usage_stats, get_usage_stats
 from templates.intelligence import (
@@ -119,6 +121,13 @@ class InvestigationItemRef(BaseModel):
 class InvestigationSummaryRequest(BaseModel):
     items: list[InvestigationItemRef]
     duration_minutes: int = 1
+
+
+class AiSummaryRequest(BaseModel):
+    cves: list[dict[str, Any]] = Field(default_factory=list)
+    iocs: list[dict[str, Any]] = Field(default_factory=list)
+    actors: list[dict[str, Any]] = Field(default_factory=list)
+    investigation_duration: int = Field(default=1, ge=1, le=10080)
 
 
 class IocLookupRequest(BaseModel):
@@ -929,9 +938,28 @@ async def api_usage_ioc():
     }
 
 
+@app.post("/api/ai/summary")
+async def ai_summary(body: AiSummaryRequest):
+    """AI executive summary for PDF export (Groq → Anthropic → template)."""
+    return await generate_executive_summary(
+        cves=body.cves,
+        iocs=body.iocs,
+        actors=body.actors,
+        investigation_duration=body.investigation_duration,
+    )
+
+
+@app.get("/api/ai/summary")
+async def ai_summary_get():
+    """Discovery: summaries require POST with CVE/IOC/actor payloads (PDF export only)."""
+    return {
+        "detail": "Use POST /api/ai/summary with JSON body: cves, iocs, actors, investigation_duration",
+    }
+
+
 @app.post("/api/investigation/summary")
 async def investigation_summary(body: InvestigationSummaryRequest):
-    """Executive summary for investigation PDF (Groq if GROQ_API_KEY set)."""
+    """Executive summary for investigation PDF (legacy; prefer /api/ai/summary)."""
     payload = [
         {
             "type": item.type,

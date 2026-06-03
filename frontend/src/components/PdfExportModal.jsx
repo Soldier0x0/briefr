@@ -8,6 +8,7 @@ export default function PdfExportModal({
   onConfirm,
   onCancel,
   busy = false,
+  busyLabel = 'Generating summary...',
 }) {
   const [tlp, setTlp] = useState('WHITE')
   const [analystName, setAnalystName] = useState('')
@@ -96,7 +97,7 @@ export default function PdfExportModal({
               Cancel
             </button>
             <button type="submit" className="pdf-modal-btn pdf-modal-btn-primary" disabled={busy}>
-              {busy ? 'Generating…' : 'Generate PDF'}
+              {busy ? busyLabel : 'Generate PDF'}
             </button>
           </div>
         </form>

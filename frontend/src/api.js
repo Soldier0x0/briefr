@@ -126,3 +126,22 @@ export function fetchInvestigationSummary(items, durationMinutes) {
     body: JSON.stringify({ items, duration_minutes: durationMinutes }),
   })
 }
+
+/** AI executive summary — only call when analyst exports a PDF. */
+export function fetchAiSummary({
+  cves = [],
+  iocs = [],
+  actors = [],
+  investigationDuration = 1,
+}) {
+  return request('/ai/summary', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      cves,
+      iocs,
+      actors,
+      investigation_duration: investigationDuration,
+    }),
+  })
+}

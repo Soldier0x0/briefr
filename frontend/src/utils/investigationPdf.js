@@ -2,8 +2,12 @@
  * Investigation thread PDF (browser-side jsPDF).
  */
 import { jsPDF } from 'jspdf'
-import { fetchInvestigationSummary } from '../api.js'
 import { enrichCveForPdf } from './pdfReport.js'
+import {
+  aiFooterNoteForSource,
+  formatExecutiveSummaryBody,
+  loadPdfExecutiveSummary,
+} from './pdfAiSummary.js'
 import { TLP_OPTIONS, TLP_OVERVIEW } from './pdfReport.js'
 import { getReportTimestamp } from './timezone.js'
 const T_CVE = 'cve'
@@ -38,6 +42,7 @@ function buildMeta(options) {
     analystName: (options.analystName || '').trim(),
     tlpColor: tlp.color,
     tlpLabel: tlp.label,
+    aiFooterNote: options.aiFooterNote || null,
   }
 }
 
@@ -62,6 +67,11 @@ function applyFooters(doc, meta) {
       FOOTER_Y,
       { align: 'center' },
     )
+    if (meta.aiFooterNote) {
+      doc.setFontSize(6)
+      doc.setTextColor(110, 110, 110)
+      doc.text(meta.aiFooterNote, PAGE_W / 2, FOOTER_Y + 4, { align: 'center' })
+    }
   }
 }
 
@@ -174,32 +184,42 @@ const SOURCES = [
 ]
 
 export async function downloadInvestigationPdf(items, startTime, options = {}) {
-  const meta = buildMeta(options)
   const durationMin = Math.max(1, Math.round((Date.now() - startTime) / 60000))
-
-  const apiItems = items.map(i => ({
-    type: i.type,
-    id: i.id,
-    description: i.description,
-    pivotFrom: i.pivotFrom
-      ? { type: i.pivotFrom.type, id: i.pivotFrom.id }
-      : null,
-  }))
-
-  let summaryData
-  try {
-    summaryData = await fetchInvestigationSummary(apiItems, durationMin)
-  } catch {
-    summaryData = {
-      summary: `Investigation with ${items.length} items over ${durationMin} minutes.`,
-      source: 'template',
-    }
-  }
 
   const cveIds = [...new Set(items.filter(i => i.type === T_CVE).map(i => i.id))]
   const cveDetails = await Promise.all(
     cveIds.map(id => enrichCveForPdf({ cve_id: id }).catch(() => ({ cve_id: id }))),
   )
+
+  const iocItems = items.filter(i => i.type === T_IOC)
+  const actorItems = items.filter(i => i.type === T_ACTOR)
+
+  let summaryData = await loadPdfExecutiveSummary({
+    cves: cveDetails,
+    iocs: iocItems.map(i => ({
+      value: i.id,
+      description: i.description,
+    })),
+    actors: actorItems.map(i => ({
+      name: i.title || i.id,
+      description: i.description,
+    })),
+    investigationDuration: durationMin,
+  })
+
+  if (!summaryData) {
+    summaryData = {
+      executive_summary: `Investigation with ${items.length} items over ${durationMin} minutes.`,
+      key_findings: [],
+      confidence: 'low',
+      source: 'template',
+    }
+  }
+
+  const meta = buildMeta({
+    ...options,
+    aiFooterNote: aiFooterNoteForSource(summaryData.source),
+  })
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const ctx = { doc, y: CONTENT_TOP }
@@ -236,16 +256,20 @@ export async function downloadInvestigationPdf(items, startTime, options = {}) {
 
   doc.addPage()
   ctx.y = CONTENT_TOP
-  drawSectionBody(ctx, 'EXECUTIVE SUMMARY', summaryData.summary)
+  drawSectionBody(ctx, 'EXECUTIVE SUMMARY', formatExecutiveSummaryBody(summaryData))
   if (summaryData.source === 'template') {
     doc.setFontSize(7)
     doc.setTextColor(120, 120, 120)
-    doc.text('(Template summary — set GROQ_API_KEY for AI-generated text)', MARGIN, ctx.y)
+    doc.text(
+      '(Template summary — set GROQ_API_KEY or ANTHROPIC_API_KEY for AI-generated text)',
+      MARGIN,
+      ctx.y,
+    )
     ctx.y += 8
   }
 
-  const iocs = items.filter(i => i.type === T_IOC)
-  const actors = items.filter(i => i.type === T_ACTOR)
+  const iocs = iocItems
+  const actors = actorItems
   const techniques = items.filter(i => i.type === T_TECHNIQUE)
 
   if (cveDetails.length) {
