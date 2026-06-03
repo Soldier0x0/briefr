@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { lookupIOC, fetchIOCUsage } from '../api.js'
+import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
+import { extractActorTags } from '../utils/investigationActors.js'
 import './IOCLookup.css'
 
 // ── Type detection ────────────────────────────────────────
@@ -395,7 +397,8 @@ function ScoreRing({ malicious, total, color }) {
   )
 }
 
-function IPResultBody({ result }) {
+function IPResultBody({ result, onViewActorTechniques }) {
+  const actorTags = extractActorTags(result.tags)
   const { label, color, pct } = verdictInfo(result.malicious_votes ?? 0, result.total_votes ?? 0)
   const abuse = result.abuseipdb || {}
   const abuseScore = result.abuse_score ?? abuse.abuse_score
@@ -583,6 +586,28 @@ function IPResultBody({ result }) {
           )}
         </EnrichmentBlock>
       )}
+
+      {actorTags.length > 0 && (
+        <section className="ioc-enrichment-block ioc-actor-tags" aria-label="Threat actor tags">
+          <h3 className="ioc-enrichment-heading mono">// THREAT ACTOR TAGS</h3>
+          <div className="ioc-actor-tag-row">
+            {actorTags.map(tag => (
+              <span key={tag} className="ioc-actor-tag mono">{tag}</span>
+            ))}
+          </div>
+          {onViewActorTechniques && actorTags.map(tag => (
+            <button
+              key={`btn-${tag}`}
+              type="button"
+              className="ioc-pivot-btn"
+              style={{ marginTop: 8 }}
+              onClick={() => onViewActorTechniques(tag)}
+            >
+              → View Techniques ({tag})
+            </button>
+          ))}
+        </section>
+      )}
     </>
   )
 }
@@ -647,7 +672,8 @@ function HistoryItem({ item, onRerun }) {
 }
 
 // ── Main component ────────────────────────────────────────
-export default function IOCLookup() {
+export default function IOCLookup({ prefill }) {
+  const investigation = useInvestigationOptional()
   const [value, setValue]       = useState('')
   const [iocType, setIocType]   = useState('ip')
   const [detected, setDetected] = useState(null)
@@ -658,6 +684,7 @@ export default function IOCLookup() {
   const [history, setHistory]   = useState([])   // session-only, no localStorage
 
   const detectDebounce = useRef(null)
+  const prefillHandled = useRef(null)
 
   // Auto-detect type after 500ms pause
   const handleValueChange = useCallback((e) => {
@@ -724,6 +751,16 @@ export default function IOCLookup() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!prefill?.value) return
+    if (prefillHandled.current === prefill.trigger) return
+    prefillHandled.current = prefill.trigger
+    setValue(prefill.value)
+    setIocType('ip')
+    setDetected('ip')
+    runLookup(prefill.value, 'ip')
+  }, [prefill?.value, prefill?.trigger])
 
   function handleKeyDown(e) {
     if (e.key === 'Enter') runLookup()
@@ -860,7 +897,18 @@ export default function IOCLookup() {
           </div>
 
           {result.type === 'ip' ? (
-            <IPResultBody result={result} />
+            <IPResultBody
+              result={result}
+              onViewActorTechniques={
+                investigation
+                  ? (actor) => investigation.pivotToAtlasActor(actor, {
+                      type: 'ioc',
+                      id: result.value,
+                      title: result.value,
+                    })
+                  : undefined
+              }
+            />
           ) : (
             <>
               <ThreatBar

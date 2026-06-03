@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
+import { InvestigationProvider } from './context/InvestigationContext.jsx'
+import InvestigationPanel from './components/InvestigationPanel.jsx'
 import Header from './components/Header.jsx'
 import Hero from './components/Hero.jsx'
 import StatsRow from './components/StatsRow.jsx'
@@ -15,6 +17,8 @@ import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import { fetchStats, fetchHealth, fetchCVE } from './api.js'
 import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
+import { useInvestigation } from './context/InvestigationContext.jsx'
+import './components/InvestigationPanel.css'
 
 const DEFAULT_FILTERS = {
   severity: null,
@@ -169,6 +173,8 @@ export default function App() {
   const [lastUpdated, setLastUpdated]           = useState(null)
   const [nextRefreshUtc, setNextRefreshUtc]     = useState(null)
   const [refreshSchedule, setRefreshSchedule]   = useState(null)
+  const [iocPrefill, setIocPrefill]             = useState(null)
+  const [atlasActorFilter, setAtlasActorFilter] = useState(null)
 
   const loadHealth = useCallback(() => {
     fetchHealth(timezone)
@@ -207,12 +213,22 @@ export default function App() {
     generateDigestRef.current = fn
   }, [])
 
-  const handleOpenCVEFromAtlas = useCallback((cveId) => {
-    setActiveTab('feed')
+  const openCveById = useCallback((cveId) => {
     fetchCVE(cveId)
       .then(full => setSelectedCVE(full))
       .catch(() => setSelectedCVE({ cve_id: cveId }))
   }, [])
+
+  const investigationNav = useMemo(() => ({
+    setActiveTab,
+    setIocPrefill: (ip) => setIocPrefill({ value: ip, trigger: Date.now() }),
+    setAtlasActorFilter,
+    clearAtlasFilter: () => setAtlasActorFilter(null),
+    openCve: (cveId) => {
+      setActiveTab('feed')
+      openCveById(cveId)
+    },
+  }), [openCveById])
 
   // ── Global keyboard shortcuts ─────────────────────────────
   useEffect(() => {
@@ -262,22 +278,100 @@ export default function App() {
     activeTab === 'feed'
 
   return (
-    <div className="app">
+    <InvestigationProvider navigation={investigationNav}>
       <Routes>
         <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/terms"   element={<TermsPage />} />
-        <Route path="*" element={
-          <>
-            <Header
+        <Route path="/terms" element={<TermsPage />} />
+        <Route
+          path="*"
+          element={(
+            <AppLayout
               activeTab={activeTab}
-              onTabChange={setActiveTab}
+              setActiveTab={setActiveTab}
+              showFeedShortcuts={showFeedShortcuts}
               onAboutOpen={() => setAboutOpen(true)}
               onTimezoneChange={setTimezone}
-              showShortcuts={showFeedShortcuts}
+              iocPrefill={iocPrefill}
+              atlasActorFilter={atlasActorFilter}
+              onClearAtlasFilter={() => setAtlasActorFilter(null)}
+              stats={stats}
+              filters={filters}
+              setFilters={setFilters}
+              selectedCVE={selectedCVE}
+              setSelectedCVE={setSelectedCVE}
+              digestOpen={digestOpen}
+              setDigestOpen={setDigestOpen}
+              digestCVEs={digestCVEs}
+              setDigestCVEs={setDigestCVEs}
+              searchFocusTrigger={searchFocusTrigger}
+              setSearchFocusTrigger={setSearchFocusTrigger}
+              aboutOpen={aboutOpen}
+              setAboutOpen={setAboutOpen}
+              timezone={timezone}
+              lastUpdated={lastUpdated}
+              nextRefreshUtc={nextRefreshUtc}
+              refreshSchedule={refreshSchedule}
+              onDigestRequest={registerDigestHandler}
+              openCveById={openCveById}
             />
+          )}
+        />
+      </Routes>
+    </InvestigationProvider>
+  )
+}
 
-            <div className="app-main">
-              {activeTab === 'feed' && (
+function AppLayout({
+  activeTab,
+  setActiveTab,
+  showFeedShortcuts,
+  onAboutOpen,
+  onTimezoneChange,
+  iocPrefill,
+  atlasActorFilter,
+  onClearAtlasFilter,
+  stats,
+  filters,
+  setFilters,
+  selectedCVE,
+  setSelectedCVE,
+  digestOpen,
+  setDigestOpen,
+  digestCVEs,
+  setDigestCVEs,
+  searchFocusTrigger,
+  setSearchFocusTrigger,
+  aboutOpen,
+  setAboutOpen,
+  timezone,
+  lastUpdated,
+  nextRefreshUtc,
+  refreshSchedule,
+  onDigestRequest,
+  openCveById,
+}) {
+  const { showPanel, panelExpanded } = useInvestigation()
+  const layoutClass = [
+    'app',
+    'app-layout',
+    showPanel ? 'has-investigation' : '',
+    showPanel && panelExpanded ? 'investigation-expanded' : '',
+  ].filter(Boolean).join(' ')
+
+  return (
+    <div className={layoutClass}>
+      <InvestigationPanel />
+      <div className="app-shell">
+        <Header
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onAboutOpen={onAboutOpen}
+          onTimezoneChange={onTimezoneChange}
+          showShortcuts={showFeedShortcuts}
+        />
+
+        <div className="app-main">
+          {activeTab === 'feed' && (
                 <MainApp
                   stats={stats}
                   filters={filters}
@@ -296,12 +390,17 @@ export default function App() {
                   lastUpdated={lastUpdated}
                   nextRefreshUtc={nextRefreshUtc}
                   refreshSchedule={refreshSchedule}
-                  onDigestRequest={registerDigestHandler}
+                  onDigestRequest={onDigestRequest}
                 />
               )}
-              {activeTab === 'ioc' && <IOCLookup />}
+              {activeTab === 'ioc' && (
+                <IOCLookup prefill={iocPrefill} />
+              )}
               {activeTab === 'atlas' && (
-                <AIThreats onOpenCVE={handleOpenCVEFromAtlas} />
+                <AIThreats
+                  actorFilter={atlasActorFilter}
+                  onClearActorFilter={onClearAtlasFilter}
+                />
               )}
             </div>
 
@@ -328,9 +427,7 @@ export default function App() {
             {aboutOpen && (
               <AboutModal onClose={() => setAboutOpen(false)} />
             )}
-          </>
-        } />
-      </Routes>
+      </div>
     </div>
   )
 }

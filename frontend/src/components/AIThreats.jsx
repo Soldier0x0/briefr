@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { fetchAtlasCaseStudies, fetchAtlasTechniques } from '../api.js'
+import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
 import './AIThreats.css'
 
 function oneLineDescription(text) {
@@ -8,7 +9,13 @@ function oneLineDescription(text) {
   return line.length > 140 ? `${line.slice(0, 137)}...` : line
 }
 
-export default function AIThreats({ onOpenCVE }) {
+function matchesActor(text, actorFilter) {
+  if (!actorFilter || !text) return true
+  return text.toLowerCase().includes(actorFilter.toLowerCase())
+}
+
+export default function AIThreats({ actorFilter, onClearActorFilter }) {
+  const investigation = useInvestigationOptional()
   const [tacticGroups, setTacticGroups] = useState([])
   const [caseStudies, setCaseStudies] = useState([])
   const [loading, setLoading] = useState(true)
@@ -45,10 +52,37 @@ export default function AIThreats({ onOpenCVE }) {
     setOpenTactics(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
-  function handleCVEClick(cveId, e) {
+  const filteredCaseStudies = useMemo(() => {
+    if (!actorFilter) return caseStudies
+    return caseStudies.filter(study => {
+      const hay = `${study.name} ${study.target} ${study.summary}`.toLowerCase()
+      return hay.includes(actorFilter.toLowerCase())
+    })
+  }, [caseStudies, actorFilter])
+
+  const filteredTacticGroups = useMemo(() => {
+    if (!actorFilter) return tacticGroups
+    const studyTechIds = new Set()
+    filteredCaseStudies.forEach(s => {
+      ;(s.techniques || []).forEach(tid => studyTechIds.add(tid))
+      ;(s.technique_details || []).forEach(t => studyTechIds.add(t.technique_id))
+    })
+    return tacticGroups
+      .map(group => ({
+        ...group,
+        techniques: group.techniques.filter(
+          t => studyTechIds.has(t.technique_id) || matchesActor(t.name, actorFilter),
+        ),
+      }))
+      .filter(g => g.techniques.length > 0)
+  }, [tacticGroups, filteredCaseStudies, actorFilter])
+
+  function handleCVEClick(cveId, studyName, e) {
     e.preventDefault()
     e.stopPropagation()
-    if (onOpenCVE) onOpenCVE(cveId)
+    if (investigation) {
+      investigation.pivotToCveFromAtlas(cveId, studyName)
+    }
   }
 
   return (
@@ -77,6 +111,19 @@ export default function AIThreats({ onOpenCVE }) {
         <p className="ai-state ai-state-error" role="alert">{error}</p>
       )}
 
+      {actorFilter && (
+        <div className="ai-actor-filter-banner" role="status">
+          <span>
+            Filtered to threat context matching <strong>{actorFilter}</strong>
+          </span>
+          {onClearActorFilter && (
+            <button type="button" className="ai-actor-filter-clear mono" onClick={onClearActorFilter}>
+              Clear filter
+            </button>
+          )}
+        </div>
+      )}
+
       {!loading && !error && (
         <div className="ai-layout">
           <section className="ai-col-techniques" aria-labelledby="ai-techniques-heading">
@@ -87,7 +134,7 @@ export default function AIThreats({ onOpenCVE }) {
               MITRE ATLAS adversarial ML techniques (not Enterprise ATT&amp;CK).
             </p>
             <div className="ai-tactic-list">
-              {tacticGroups.map(group => {
+              {(actorFilter ? filteredTacticGroups : tacticGroups).map(group => {
                 const key = group.tactic_id || group.tactic_name
                 const open = !!openTactics[key]
                 return (
@@ -136,7 +183,7 @@ export default function AIThreats({ onOpenCVE }) {
             </h2>
             <p className="ai-col-note">Documented adversarial ML incidents and exercises.</p>
             <div className="ai-case-list">
-              {caseStudies.map(study => {
+              {(actorFilter ? filteredCaseStudies : caseStudies).map(study => {
                 const expanded = expandedStudy === study.study_id
                 const badges = study.technique_details || []
                 return (
@@ -202,7 +249,7 @@ export default function AIThreats({ onOpenCVE }) {
                                   key={cveId}
                                   type="button"
                                   className="ai-cve-link mono"
-                                  onClick={e => handleCVEClick(cveId, e)}
+                                  onClick={e => handleCVEClick(cveId, study.name, e)}
                                 >
                                   {cveId}
                                 </button>
