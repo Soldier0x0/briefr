@@ -25,6 +25,20 @@ function verdictInfo(malicious, total) {
   return               { label: 'malicious',   color: 'var(--red)',   pct }
 }
 
+function abuseScoreColor(score) {
+  if (score == null) return 'var(--text3)'
+  if (score >= 75) return 'var(--red)'
+  if (score >= 40) return 'var(--amber)'
+  return 'var(--green)'
+}
+
+function enginePillClass(category) {
+  if (category === 'malicious') return 'malicious'
+  if (category === 'suspicious') return 'suspicious'
+  if (category === 'harmless') return 'harmless'
+  return 'undetected'
+}
+
 // ── Error message mapping ─────────────────────────────────
 function parseError(err) {
   if (err.status === 0)   return 'Network error — is the backend running?'
@@ -189,14 +203,40 @@ function UsageMeter({ label, used, limit, percentUsed, warning }) {
   )
 }
 
+function quotaChipFillClass(warning) {
+  if (!warning) return ''
+  if (warning.includes('exceeded')) return 'danger'
+  if (warning.includes('near')) return 'warn'
+  return ''
+}
+
+function quotaChipSummary(svc) {
+  if (svc.this_week?.limit != null) {
+    const u = svc.this_week.used ?? 0
+    const l = svc.this_week.limit
+    return `${u} / ${l} week`
+  }
+  if (svc.today?.limit != null) {
+    const u = svc.today.used ?? 0
+    const l = svc.today.limit
+    return `${u} / ${l} today`
+  }
+  return `${svc.today?.used ?? 0} calls`
+}
+
+function quotaChipPercent(svc) {
+  if (svc.this_week?.limit != null) return svc.this_week.percent_used ?? 0
+  if (svc.today?.limit != null) return svc.today.percent_used ?? 0
+  return null
+}
+
 function IOCQuotaPanel() {
-  const [open, setOpen] = useState(false)
+  const [detailOpen, setDetailOpen] = useState(false)
   const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (!open) return
     let cancelled = false
     setLoading(true)
     setError(null)
@@ -214,47 +254,70 @@ function IOCQuotaPanel() {
         if (!cancelled) setLoading(false)
       })
     return () => { cancelled = true }
-  }, [open])
+  }, [])
 
   const services = data?.services || []
 
   return (
-    <div className="ioc-quota-wrap">
-      <button
-        type="button"
-        className="ioc-quota-toggle mono"
-        onClick={() => setOpen(o => !o)}
-        aria-expanded={open}
-        aria-controls="ioc-quota-panel"
-      >
-        <span className={`ioc-quota-chevron${open ? '' : ' collapsed'}`} aria-hidden="true">
-          ▾
-        </span>
-        // API QUOTA
-      </button>
+    <div className="ioc-quota-wrap" role="region" aria-label="IOC API quota usage">
+      <div className="ioc-quota-panel" id="ioc-quota-panel">
+        <p className="ioc-quota-asof mono" style={{ marginBottom: 10 }}>
+          // API QUOTA — BRIEFR calls from this server
+          {!loading && data?.today_date_utc && (
+            <> · UTC {data.today_date_utc}{data.as_of_utc ? ` ${data.as_of_utc.slice(11, 19)}` : ''}</>
+          )}
+        </p>
 
-      {open && (
-        <div id="ioc-quota-panel" className="ioc-quota-panel" role="region" aria-label="IOC API quota usage">
-          {loading && (
-            <p className="ioc-quota-loading mono">// Loading usage counters…</p>
-          )}
-          {error && (
-            <p className="ioc-quota-error mono" role="alert">{error}</p>
-          )}
-          {!loading && !error && services.length > 0 && (
-            <>
-              <p className="ioc-quota-asof mono">
-                UTC {data?.today_date_utc}
-                {data?.as_of_utc ? ` · ${data.as_of_utc.slice(11, 19)}` : ''}
-              </p>
-              {services.map(svc => (
-                <div key={svc.service} className="quota-service-block">
-                  <div className="quota-service-title">
-                    <span className="mono">{svc.name}</span>
-                    {svc.rate_limit && (
-                      <span className="quota-rate mono">{svc.rate_limit}</span>
-                    )}
-                  </div>
+        {loading && (
+          <p className="ioc-quota-loading mono">// Loading usage counters…</p>
+        )}
+        {error && (
+          <p className="ioc-quota-error mono" role="alert">{error}</p>
+        )}
+
+        {!loading && !error && services.length > 0 && (
+          <div className="ioc-quota-strip">
+            {services.map(svc => {
+              const pct = quotaChipPercent(svc)
+              return (
+                <div key={svc.service} className="ioc-quota-chip">
+                  <span className="ioc-quota-chip-name mono">{svc.name}</span>
+                  <span className="ioc-quota-chip-val mono">{quotaChipSummary(svc)}</span>
+                  {pct != null && (
+                    <div className="ioc-quota-chip-bar" aria-hidden="true">
+                      <div
+                        className={`ioc-quota-chip-fill ${quotaChipFillClass(svc.warning)}`}
+                        style={{ width: `${Math.min(pct, 100)}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        <button
+          type="button"
+          className="ioc-quota-toggle mono"
+          onClick={() => setDetailOpen(o => !o)}
+          aria-expanded={detailOpen}
+        >
+          <span className={`ioc-quota-chevron${detailOpen ? '' : ' collapsed'}`} aria-hidden="true">▾</span>
+          {detailOpen ? 'Hide limits & notes' : 'Show limits & notes'}
+        </button>
+
+        {detailOpen && !loading && !error && services.length > 0 && (
+          <div className="ioc-quota-detail" style={{ marginTop: 12 }}>
+            {services.map(svc => (
+              <div key={svc.service} className="quota-service-block">
+                <div className="quota-service-title">
+                  <span className="mono">{svc.name}</span>
+                  {svc.rate_limit && (
+                    <span className="quota-rate mono">{svc.rate_limit}</span>
+                  )}
+                </div>
+                {svc.today?.limit != null && (
                   <UsageMeter
                     label="Today"
                     used={svc.today?.used ?? 0}
@@ -262,25 +325,265 @@ function IOCQuotaPanel() {
                     percentUsed={svc.today?.percent_used}
                     warning={svc.warning}
                   />
-                  {svc.this_month?.limit != null && (
-                    <UsageMeter
-                      label="This month"
-                      used={svc.this_month?.used ?? 0}
-                      limit={svc.this_month?.limit}
-                      percentUsed={svc.this_month?.percent_used}
-                      warning={svc.warning}
-                    />
-                  )}
-                  {svc.notes && (
-                    <p className="quota-service-note mono">{svc.notes}</p>
-                  )}
-                </div>
-              ))}
-            </>
+                )}
+                {svc.this_week?.limit != null && (
+                  <UsageMeter
+                    label="This week (UTC Mon–Sun)"
+                    used={svc.this_week?.used ?? 0}
+                    limit={svc.this_week?.limit}
+                    percentUsed={svc.this_week?.percent_used}
+                    warning={svc.warning}
+                  />
+                )}
+                {svc.this_month?.limit != null && (
+                  <UsageMeter
+                    label="This month"
+                    used={svc.this_month?.used ?? 0}
+                    limit={svc.this_month?.limit}
+                    percentUsed={svc.this_month?.percent_used}
+                    warning={svc.warning}
+                  />
+                )}
+                {svc.today?.limit == null && svc.this_week?.limit == null && (
+                  <UsageMeter
+                    label="Today"
+                    used={svc.today?.used ?? 0}
+                    limit={null}
+                    percentUsed={null}
+                    warning={svc.warning}
+                  />
+                )}
+                {svc.notes && (
+                  <p className="quota-service-note mono">{svc.notes}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ScoreRing({ malicious, total, color }) {
+  const pct = total > 0 ? Math.min((malicious / total) * 100, 100) : 0
+  const r = 38
+  const circ = 2 * Math.PI * r
+  const offset = circ - (pct / 100) * circ
+
+  return (
+    <div className="ioc-score-ring" aria-hidden="true">
+      <svg viewBox="0 0 88 88">
+        <circle cx="44" cy="44" r={r} fill="none" stroke="var(--bg3)" strokeWidth="6" />
+        <circle
+          cx="44"
+          cy="44"
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth="6"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+        />
+      </svg>
+      <div className="ioc-score-ring-label">
+        <span className="ioc-score-ring-num" style={{ color }}>{malicious}</span>
+        <span className="ioc-score-ring-denom">/ {total || '—'}</span>
+      </div>
+    </div>
+  )
+}
+
+function IPResultBody({ result }) {
+  const { label, color, pct } = verdictInfo(result.malicious_votes ?? 0, result.total_votes ?? 0)
+  const abuse = result.abuseipdb || {}
+  const abuseScore = result.abuse_score ?? abuse.abuse_score
+  const engines = result.vt_engines || []
+  const flagged = engines.filter(e => e.category === 'malicious' || e.category === 'suspicious')
+  const gnClass = result.greynoise?.classification === 'malicious'
+    ? 'malicious'
+    : result.greynoise?.classification === 'benign' ? 'benign' : ''
+
+  const heroLine = () => {
+    if (total > 0 && pct >= 0.1) {
+      return (
+        <>
+          <strong style={{ color }}>{result.malicious_votes}</strong> of{' '}
+          <strong>{result.total_votes}</strong> security vendors flagged this IP as{' '}
+          <strong style={{ color }}>{label}</strong>.
+        </>
+      )
+    }
+    if (abuseScore != null && abuseScore >= 75) {
+      return (
+        <>
+          AbuseIPDB reports <strong style={{ color: abuseScoreColor(abuseScore) }}>{abuseScore}%</strong>{' '}
+          confidence of abuse
+          {abuse.total_reports != null && (
+            <> ({abuse.total_reports.toLocaleString()} reports)</>
+          )}.
+        </>
+      )
+    }
+    return <>Limited threat intelligence — check external links below.</>
+  }
+
+  const total = result.total_votes ?? 0
+
+  return (
+    <>
+      {(result.sources_missing?.length > 0) && (
+        <p className="ioc-sources-hint mono" role="status">
+          // Missing API keys: {result.sources_missing.join(', ')} — add to backend/.env
+        </p>
+      )}
+
+      <div className="ioc-results-hero">
+        <ScoreRing
+          malicious={result.malicious_votes ?? 0}
+          total={total}
+          color={color}
+        />
+        <div className="ioc-results-hero-text">
+          <p className="ioc-results-hero-title">{heroLine()}</p>
+          <ThreatBar malicious={result.malicious_votes ?? 0} total={total} />
+          {result.greynoise?.classification && (
+            <span className={`ioc-greynoise-chip ${gnClass}`}>
+              GreyNoise: {result.greynoise.classification}
+              {result.greynoise.name ? ` · ${result.greynoise.name}` : ''}
+            </span>
           )}
         </div>
+      </div>
+
+      {abuseScore != null && (
+        <div className="ioc-abuse-section">
+          <div className="ioc-abuse-label">
+            <span>ABUSE CONFIDENCE</span>
+            <span className="ioc-abuse-score-num" style={{ color: abuseScoreColor(abuseScore) }}>
+              {abuseScore}%
+            </span>
+          </div>
+          <div className="ioc-abuse-track" role="progressbar" aria-valuenow={abuseScore} aria-valuemin={0} aria-valuemax={100}>
+            <div
+              className="ioc-abuse-fill"
+              style={{ width: `${abuseScore}%`, background: abuseScoreColor(abuseScore) }}
+            />
+          </div>
+        </div>
       )}
-    </div>
+
+      <div className="ioc-meta-cards">
+        <div className="ioc-meta-card">
+          <h3 className="ioc-meta-card-title">// NETWORK</h3>
+          <div className="ioc-meta-row">
+            <span className="ioc-meta-key">ISP</span>
+            <span className="ioc-meta-val">{abuse.isp || '—'}</span>
+          </div>
+          <div className="ioc-meta-row">
+            <span className="ioc-meta-key">Usage</span>
+            <span className="ioc-meta-val">{abuse.usage_type || '—'}</span>
+          </div>
+          <div className="ioc-meta-row">
+            <span className="ioc-meta-key">Domain</span>
+            <span className="ioc-meta-val">{abuse.domain || '—'}</span>
+          </div>
+          <div className="ioc-meta-row">
+            <span className="ioc-meta-key">ASN</span>
+            <span className="ioc-meta-val">
+              {result.vt_network?.asn || '—'}
+              {result.vt_network?.as_owner ? ` · ${result.vt_network.as_owner}` : ''}
+            </span>
+          </div>
+        </div>
+        <div className="ioc-meta-card">
+          <h3 className="ioc-meta-card-title">// REPUTATION</h3>
+          <div className="ioc-meta-row">
+            <span className="ioc-meta-key">Country</span>
+            <span className="ioc-meta-val">
+              {abuse.country_name || result.country || '—'}
+              {abuse.country_code ? ` (${abuse.country_code})` : ''}
+            </span>
+          </div>
+          <div className="ioc-meta-row">
+            <span className="ioc-meta-key">Reports</span>
+            <span className="ioc-meta-val">
+              {abuse.total_reports != null ? abuse.total_reports.toLocaleString() : '—'}
+              {abuse.num_distinct_users != null ? ` from ${abuse.num_distinct_users} sources` : ''}
+            </span>
+          </div>
+          <div className="ioc-meta-row">
+            <span className="ioc-meta-key">Last reported</span>
+            <span className="ioc-meta-val mono">
+              {abuse.last_reported_at
+                ? String(abuse.last_reported_at).replace('T', ' ').slice(0, 16)
+                : '—'}
+            </span>
+          </div>
+          <div className="ioc-meta-row">
+            <span className="ioc-meta-key">Flags</span>
+            <span className="ioc-meta-val">
+              {abuse.is_tor ? 'Tor ' : ''}
+              {abuse.is_whitelisted ? 'Whitelisted' : ''}
+              {!abuse.is_tor && !abuse.is_whitelisted ? '—' : ''}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {engines.length > 0 && (
+        <div className="ioc-vt-engines">
+          <h3 className="ioc-vt-engines-title">
+            // VIRUSTOTAL — {flagged.length} flagged of {engines.length} engines
+          </h3>
+          <div className="ioc-engine-grid">
+            {engines.map(eng => (
+              <div
+                key={eng.name}
+                className={`ioc-engine-pill ${enginePillClass(eng.category)}`}
+                title={eng.result || eng.category}
+              >
+                <span className="ioc-engine-name">{eng.name}</span>
+                <span className="ioc-engine-verdict">
+                  {eng.category === 'malicious' || eng.category === 'suspicious'
+                    ? (eng.result || eng.category)
+                    : eng.category}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="ioc-external-links">
+        {result.vt_link && (
+          <a className="action-btn action-btn-primary" href={result.vt_link} target="_blank" rel="noopener noreferrer">
+            VirusTotal &rarr;
+          </a>
+        )}
+        {result.abuseipdb_link && (
+          <a className="action-btn" href={result.abuseipdb_link} target="_blank" rel="noopener noreferrer">
+            AbuseIPDB &rarr;
+          </a>
+        )}
+        {result.greynoise?.link && (
+          <a className="action-btn" href={result.greynoise.link} target="_blank" rel="noopener noreferrer">
+            GreyNoise &rarr;
+          </a>
+        )}
+      </div>
+
+      {result.greynoise_sentence && (
+        <EnrichmentBlock heading="// GREYNOISE" sentence={result.greynoise_sentence}>
+          {result.greynoise?.link && (
+            <a className="ioc-enrichment-link mono" href={result.greynoise.link} target="_blank" rel="noopener noreferrer">
+              View on GreyNoise &rarr;
+            </a>
+          )}
+        </EnrichmentBlock>
+      )}
+    </>
   )
 }
 
@@ -445,6 +748,10 @@ export default function IOCLookup() {
       `Score:   ${result.malicious_votes ?? 0} / ${result.total_votes ?? 0} engines flagged`,
       result.country    ? `Country: ${result.country}` : null,
       result.abuse_score != null ? `Abuse:   ${result.abuse_score} / 100` : null,
+      result.abuseipdb?.isp ? `ISP:     ${result.abuseipdb.isp}` : null,
+      result.abuseipdb?.total_reports != null
+        ? `Reports: ${result.abuseipdb.total_reports}`
+        : null,
       `Tags:    ${tags}`,
       result.vt_link    ? `Report:  ${result.vt_link}` : null,
       result.greynoise_sentence ? `GreyNoise: ${result.greynoise_sentence}` : null,
@@ -552,14 +859,19 @@ export default function IOCLookup() {
             </div>
           </div>
 
-          <ThreatBar
-            malicious={result.malicious_votes ?? 0}
-            total={result.total_votes ?? 0}
-          />
+          {result.type === 'ip' ? (
+            <IPResultBody result={result} />
+          ) : (
+            <>
+              <ThreatBar
+                malicious={result.malicious_votes ?? 0}
+                total={result.total_votes ?? 0}
+              />
+              <DetailGrid result={result} />
+            </>
+          )}
 
-          <DetailGrid result={result} />
-
-          {result.type === 'ip' && result.greynoise_sentence && (
+          {result.type === 'ip' ? null : result.greynoise_sentence && (
             <EnrichmentBlock
               heading="// GREYNOISE"
               sentence={result.greynoise_sentence}

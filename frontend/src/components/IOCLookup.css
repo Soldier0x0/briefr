@@ -1,5 +1,6 @@
 .ioc-lookup {
-  max-width: 860px;
+  max-width: 920px;
+  margin: 0 auto;
   padding: 48px 0 80px;
 }
 
@@ -8,6 +9,12 @@
   margin-bottom: 36px;
   padding-bottom: 24px;
   border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.ioc-page-header .ioc-page-sub {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .ioc-page-title {
@@ -525,9 +532,307 @@
   letter-spacing: 0.04em;
 }
 
-/* ── API quota (collapsible) ─────────────────────────────── */
+/* ── API quota (always visible) ──────────────────────────── */
 .ioc-quota-wrap {
-  margin-top: 16px;
+  margin-top: 20px;
+}
+
+.ioc-quota-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ioc-quota-chip {
+  padding: 8px 10px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.ioc-quota-chip-name {
+  display: block;
+  font-size: 0.5625rem;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.ioc-quota-chip-val {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--text);
+}
+
+.ioc-quota-chip-bar {
+  height: 3px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.ioc-quota-chip-fill {
+  height: 100%;
+  background: var(--text2);
+  transition: width 0.25s ease;
+}
+
+.ioc-quota-chip-fill.warn { background: var(--amber); }
+.ioc-quota-chip-fill.danger { background: var(--red); }
+
+/* ── Rich IP results ─────────────────────────────────────── */
+.ioc-results-hero {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.ioc-score-ring {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+}
+
+.ioc-score-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ioc-score-ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  line-height: 1.1;
+}
+
+.ioc-score-ring-num {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.ioc-score-ring-denom {
+  font-size: 0.625rem;
+  color: var(--text3);
+}
+
+.ioc-results-hero-text {
+  flex: 1;
+  min-width: 200px;
+}
+
+.ioc-results-hero-title {
+  font-size: 0.9375rem;
+  color: var(--text);
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+
+.ioc-results-hero-title strong {
+  font-weight: 600;
+}
+
+.ioc-abuse-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ioc-abuse-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--text2);
+}
+
+.ioc-abuse-score-num {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.ioc-abuse-track {
+  height: 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.ioc-abuse-fill {
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+.ioc-meta-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.ioc-meta-card {
+  padding: 16px 20px;
+  border-right: 1px solid var(--border);
+}
+
+.ioc-meta-card:last-child {
+  border-right: none;
+}
+
+.ioc-meta-card-title {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.ioc-meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8125rem;
+}
+
+.ioc-meta-row:last-child {
+  border-bottom: none;
+}
+
+.ioc-meta-key {
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.ioc-meta-val {
+  color: var(--text);
+  text-align: right;
+  word-break: break-word;
+}
+
+.ioc-meta-val a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.ioc-meta-val a:hover {
+  text-decoration: underline;
+}
+
+.ioc-vt-engines {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ioc-vt-engines-title {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  margin-bottom: 12px;
+}
+
+.ioc-engine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.ioc-engine-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 0.6875rem;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+}
+
+.ioc-engine-pill.malicious {
+  border-color: var(--red);
+  background: var(--red-dim);
+  color: var(--red);
+}
+
+.ioc-engine-pill.suspicious {
+  border-color: var(--amber);
+  background: var(--amber-dim);
+  color: var(--amber);
+}
+
+.ioc-engine-pill.harmless,
+.ioc-engine-pill.undetected {
+  color: var(--text3);
+}
+
+.ioc-engine-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ioc-engine-verdict {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ioc-sources-hint {
+  margin: 0;
+  padding: 10px 20px;
+  font-size: 0.75rem;
+  color: var(--amber);
+  background: var(--amber-dim);
+  border-bottom: 1px solid var(--border);
+}
+
+.ioc-greynoise-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  font-size: 0.6875rem;
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+}
+
+.ioc-greynoise-chip.malicious {
+  border-color: var(--red);
+  color: var(--red);
+  background: var(--red-dim);
+}
+
+.ioc-greynoise-chip.benign {
+  border-color: var(--green);
+  color: var(--green);
+  background: var(--green-dim);
+}
+
+.ioc-external-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 20px 12px;
 }
 
 .ioc-quota-toggle {
