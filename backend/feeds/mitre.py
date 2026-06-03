@@ -18,6 +18,10 @@ logger = logging.getLogger(__name__)
 ENTERPRISE_ATTACK_URL = (
     "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
 )
+CVE_MAPPINGS_JSON_URL = (
+    "https://raw.githubusercontent.com/center-for-threat-informed-defense/"
+    "mappings-explorer/main/src/mappings/NVD/attack-14.0/enterprise/CVE_mappings.json"
+)
 CVE_MAPPINGS_CSV_URL = (
     "https://raw.githubusercontent.com/center-for-threat-informed-defense/"
     "mappings-explorer/main/src/mapex_convert/mappings/Att%26ckToCveMappings.csv"
@@ -119,6 +123,82 @@ def parse_enterprise_attack_stix(data: dict) -> list[dict]:
     return list(techniques.values())
 
 
+def parse_cve_mappings_json(data: Any) -> dict[str, list[str]]:
+    """
+    Parse CVE→ATT&CK JSON mapping file.
+    Supports { "CVE-2021-44228": ["T1190", ...], ... } and list-of-objects forms.
+    """
+    mapping: dict[str, set[str]] = {}
+
+    def add_pair(cve_id: str, tid_raw: str) -> None:
+        tid = _normalize_technique_id(tid_raw)
+        if not tid:
+            return
+        cve = cve_id.strip().upper()
+        if not cve.startswith("CVE-"):
+            return
+        mapping.setdefault(cve, set()).add(tid)
+
+    if isinstance(data, dict):
+        for key, value in data.items():
+            key_upper = str(key).strip().upper()
+            if key_upper.startswith("CVE-"):
+                if isinstance(value, list):
+                    for item in value:
+                        if isinstance(item, str):
+                            add_pair(key_upper, item)
+                        elif isinstance(item, dict):
+                            add_pair(
+                                key_upper,
+                                item.get("technique_id")
+                                or item.get("attack_object_id")
+                                or item.get("id")
+                                or "",
+                            )
+                elif isinstance(value, str):
+                    for tid in _split_technique_field(value):
+                        mapping.setdefault(key_upper, set()).add(tid)
+            elif key in ("mappings", "cve_mappings", "data") and isinstance(value, list):
+                for entry in value:
+                    if not isinstance(entry, dict):
+                        continue
+                    cve_id = (
+                        entry.get("cve_id")
+                        or entry.get("cveID")
+                        or entry.get("CVE ID")
+                        or entry.get("capability_id")
+                        or ""
+                    )
+                    tids = entry.get("technique_ids") or entry.get("techniques") or []
+                    if isinstance(tids, list):
+                        for tid in tids:
+                            add_pair(str(cve_id), str(tid))
+                    else:
+                        tid = entry.get("technique_id") or entry.get("attack_object_id") or ""
+                        add_pair(str(cve_id), str(tid))
+
+    if isinstance(data, list):
+        for entry in data:
+            if not isinstance(entry, dict):
+                continue
+            cve_id = (
+                entry.get("cve_id")
+                or entry.get("cveID")
+                or entry.get("CVE ID")
+                or entry.get("capability_id")
+                or ""
+            )
+            tids = entry.get("technique_ids") or entry.get("techniques") or []
+            if isinstance(tids, list):
+                for tid in tids:
+                    add_pair(str(cve_id), str(tid))
+            else:
+                tid = entry.get("technique_id") or entry.get("attack_object_id") or ""
+                add_pair(str(cve_id), str(tid))
+
+    return {cve: sorted(tids) for cve, tids in mapping.items()}
+
+
 def parse_cve_mappings_csv(text: str) -> dict[str, list[str]]:
     """Parse CTID Att&ckToCveMappings.csv → { CVE-ID: [Txxxx, ...] }."""
     mapping: dict[str, set[str]] = {}
@@ -185,10 +265,23 @@ async def download_enterprise_attack() -> list[dict]:
 
 
 async def download_cve_technique_mappings() -> dict[str, list[str]]:
-    logger.info("Downloading CTID CVE→ATT&CK mappings CSV")
-    csv_text = (await _fetch_bytes(CVE_MAPPINGS_CSV_URL)).decode("utf-8", errors="replace")
-    csv_map = parse_cve_mappings_csv(csv_text)
-    logger.info("CVE mappings from CSV: %d CVEs", len(csv_map))
+    cve_map: dict[str, list[str]] = {}
+    try:
+        logger.info("Downloading CTID CVE→ATT&CK mappings JSON from %s", CVE_MAPPINGS_JSON_URL)
+        json_raw = await _fetch_bytes(CVE_MAPPINGS_JSON_URL)
+        json_data = json.loads(json_raw)
+        cve_map = parse_cve_mappings_json(json_data)
+        logger.info("CVE mappings from JSON: %d CVEs", len(cve_map))
+    except Exception as exc:
+        logger.warning("CVE mappings JSON unavailable, using CSV fallback: %s", exc)
+
+    if not cve_map:
+        logger.info("Downloading CTID CVE→ATT&CK mappings CSV")
+        csv_text = (await _fetch_bytes(CVE_MAPPINGS_CSV_URL)).decode("utf-8", errors="replace")
+        cve_map = parse_cve_mappings_csv(csv_text)
+        logger.info("CVE mappings from CSV: %d CVEs", len(cve_map))
+
+    csv_map = cve_map
 
     kev_map: dict[str, list[str]] = {}
     try:

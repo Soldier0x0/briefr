@@ -150,45 +150,41 @@ function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading })
 
 function TabIntel({ techniques }) {
   return (
-    <>
-      <section className="drawer-section" aria-labelledby="mitre-heading">
-        <h3 id="mitre-heading" className="drawer-section-label">MITRE ATT&CK</h3>
-        {techniques.length === 0 ? (
-          <p className="mitre-empty mono">// No ATT&CK mapping available</p>
-        ) : (
-          <div className="mitre-techniques" role="list">
-            {techniques.map(tech => {
-              const tid = tech.id || tech.technique_id
-              const href = techniqueLink(tech)
-              return (
-                <article key={tid} className="mitre-technique-card" role="listitem">
-                  <div className="mitre-technique-top">
-                    <span className="mitre-technique-id mono">{tid}</span>
-                    {tech.tactic && (
-                      <span className="mitre-tactic-badge mono">{tech.tactic}</span>
-                    )}
-                  </div>
-                  <p className="mitre-technique-name">{tech.name}</p>
-                  {href && (
-                    <a
-                      className="mitre-technique-link mono"
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      attack.mitre.org &rarr;
-                    </a>
+    <section className="drawer-section" aria-labelledby="mitre-heading">
+      <h3 id="mitre-heading" className="drawer-section-label">MITRE ATT&CK</h3>
+      {techniques.length === 0 ? (
+        <p className="mitre-empty mono">// No ATT&CK mapping available</p>
+      ) : (
+        <div className="mitre-techniques" role="list" aria-label="Mapped ATT&CK techniques">
+          {techniques.map(tech => {
+            const tid = tech.id || tech.technique_id
+            const href = techniqueLink(tech)
+            return (
+              <article key={tid} className="mitre-technique-card" role="listitem">
+                <div className="mitre-technique-top">
+                  <span className="mitre-technique-id mono">{tid}</span>
+                  {tech.tactic && (
+                    <span className="mitre-tactic-badge mono">{tech.tactic}</span>
                   )}
-                </article>
-              )
-            })}
-          </div>
-        )}
-      </section>
-      <Phase2Block title="KNOWN EXPLOITATION IPS" />
-      <Phase2Block title="APT GROUPS" />
-      <Phase2Block title="PUBLIC EXPLOITS" />
-    </>
+                </div>
+                <p className="mitre-technique-name">{tech.name}</p>
+                {href && (
+                  <a
+                    className="mitre-technique-link mono"
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`View ${tid} on attack.mitre.org (opens new tab)`}
+                  >
+                    attack.mitre.org &rarr;
+                  </a>
+                )}
+              </article>
+            )
+          })}
+        </div>
+      )}
+    </section>
   )
 }
 

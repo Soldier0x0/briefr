@@ -227,7 +227,7 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
 
       {/* ── Section 4: Top Techniques ── */}
       <section className="sidebar-section" aria-labelledby="techniques-heading">
-        <h2 id="techniques-heading" className="sidebar-heading">// TOP TECHNIQUES</h2>
+        <h2 id="techniques-heading" className="sidebar-heading">// TOP TECHNIQUES THIS WEEK</h2>
         {topTechniques.length === 0 && (
           <p className="sidebar-empty">No technique data yet.</p>
         )}
