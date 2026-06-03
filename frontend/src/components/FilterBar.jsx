@@ -31,10 +31,24 @@ function parseVendors(vendorsStr) {
   return vendorsStr.split(',').map(v => v.trim()).filter(Boolean)
 }
 
+export function hasActiveFilters(filters) {
+  return !!(
+    (filters.search && filters.search.trim()) ||
+    filters.stack ||
+    filters.technique ||
+    filters.vendors ||
+    filters.kev_only ||
+    filters.poc_only ||
+    filters.epss_min != null ||
+    filters.severity
+  )
+}
+
 export default function FilterBar({
   filters,
   onFiltersChange,
   total,
+  showingRange,
   onGenerateDigest,
   searchFocusTrigger,
 }) {
@@ -121,9 +135,22 @@ export default function FilterBar({
           <span className="filter-title mono">
             CVE FEED
             {total != null && (
-              <span className="filter-count" aria-label={`${total} results`}>
-                &nbsp;// {total.toLocaleString()}
-              </span>
+              <>
+                <span className="filter-count" aria-label={`${total} results`}>
+                  &nbsp;//{' '}
+                  {hasActiveFilters(filters)
+                    ? `${total.toLocaleString()} matches`
+                    : total.toLocaleString()}
+                </span>
+                {showingRange && showingRange.end > 0 && (
+                  <span
+                    className="filter-showing"
+                    aria-label={`Showing rows ${showingRange.start} through ${showingRange.end}`}
+                  >
+                    &nbsp;·&nbsp;Showing {showingRange.start}-{showingRange.end}
+                  </span>
+                )}
+              </>
             )}
             {filters.stack && (
               <button

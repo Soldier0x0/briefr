@@ -3,6 +3,7 @@ import { fetchCVEs } from '../api.js'
 import { buildCombinedReport, copyToClipboard } from '../utils/report.js'
 import FilterBar from './FilterBar.jsx'
 import CVECard from './CVECard.jsx'
+import ScrollToTop from './ScrollToTop.jsx'
 import './CVEFeed.css'
 
 const PAGE_LIMIT = 20
@@ -32,6 +33,8 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   const [selectedIndex, setSelectedIndex] = useState(null)
   const [lastVisit, setLastVisit] = useState(null)
   const [visitReady, setVisitReady] = useState(false)
+  const [showingRange, setShowingRange] = useState(null)
+  const feedRef = useRef(null)
   const sentinelRef = useRef(null)
   const abortRef = useRef(null)
   const cardRefs = useRef([])
@@ -66,6 +69,33 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   isLoadingMoreRef.current = isLoadingMore
   hasMoreRef.current = hasMore
 
+  const updateShowingRange = useCallback(() => {
+    const cards = cardRefs.current.filter(Boolean)
+    if (!cards.length) {
+      setShowingRange(null)
+      return
+    }
+
+    const viewportH = window.innerHeight
+    let first = null
+    let last = null
+
+    cards.forEach((el, idx) => {
+      const rect = el.getBoundingClientRect()
+      if (rect.bottom > 0 && rect.top < viewportH) {
+        if (first === null) first = idx
+        last = idx
+      }
+    })
+
+    if (first === null) {
+      first = 0
+      last = Math.min(cards.length - 1, 0)
+    }
+
+    setShowingRange({ start: first + 1, end: last + 1 })
+  }, [])
+
   const loadPage = useCallback(async (pageNum, append) => {
     if (abortRef.current) abortRef.current.abort()
     const controller = new AbortController()
@@ -91,7 +121,11 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
       const nextHasMore = pageNum < data.pages && data.data.length > 0
       setHasMore(nextHasMore)
       hasMoreRef.current = nextHasMore
-      setCves(prev => (append ? [...prev, ...data.data] : data.data))
+      setCves(prev => {
+        const next = append ? [...prev, ...data.data] : data.data
+        requestAnimationFrame(() => updateShowingRange())
+        return next
+      })
       pageRef.current = pageNum
       setPage(pageNum)
     } catch (err) {
@@ -108,7 +142,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
         }
       }
     }
-  }, [])
+  }, [updateShowingRange])
 
   const loadNextPage = useCallback(() => {
     if (
@@ -129,7 +163,25 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     })
   }, [onDigestRequest, onGenerateDigest, cves])
 
-  // Reset and reload when filters change
+  useEffect(() => {
+    updateShowingRange()
+    window.addEventListener('scroll', updateShowingRange, { passive: true })
+    window.addEventListener('resize', updateShowingRange, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', updateShowingRange)
+      window.removeEventListener('resize', updateShowingRange)
+    }
+  }, [cves, updateShowingRange])
+
+  function scrollFeedToTop() {
+    if (feedRef.current) {
+      feedRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  // Reset and reload when filters change; scroll feed to top
   useEffect(() => {
     pageRef.current = 1
     setPage(1)
@@ -140,6 +192,8 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     setSelectedIndex(null)
     initialLoadDoneRef.current = false
     sentinelVisibleRef.current = false
+    setShowingRange(null)
+    scrollFeedToTop()
     loadPage(1, false)
   }, [filters, loadPage])
 
@@ -227,14 +281,16 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   const showError = !!error && cves.length === 0
 
   return (
-    <div className="cve-feed" role="region" aria-label="CVE feed">
+    <div ref={feedRef} className="cve-feed" role="region" aria-label="CVE feed">
       <FilterBar
         filters={filters}
         onFiltersChange={onFiltersChange}
         total={total}
+        showingRange={showingRange}
         onGenerateDigest={() => onGenerateDigest && onGenerateDigest(cves)}
         searchFocusTrigger={searchFocusTrigger}
       />
+      <ScrollToTop />
 
       {showError && (
         <div className="feed-state feed-error" role="alert">

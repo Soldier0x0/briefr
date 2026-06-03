@@ -38,6 +38,14 @@
   color: var(--text3);
 }
 
+.filter-showing {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text3);
+  font-weight: 400;
+}
+
 .filter-stack-clear {
   margin-left: 10px;
   font-size: 10px;
