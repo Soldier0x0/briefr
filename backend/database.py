@@ -101,6 +101,33 @@ async def init_db() -> None:
                 ON cve_technique_map(technique_id);
             CREATE INDEX IF NOT EXISTS idx_cve_technique_map_cve
                 ON cve_technique_map(cve_id);
+
+            CREATE TABLE IF NOT EXISTS atlas_techniques (
+                technique_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                tactic TEXT DEFAULT '',
+                tactic_id TEXT DEFAULT '',
+                url TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_atlas_techniques_tactic
+                ON atlas_techniques(tactic);
+
+            CREATE TABLE IF NOT EXISTS atlas_case_studies (
+                study_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                summary TEXT DEFAULT '',
+                summary_full TEXT DEFAULT '',
+                techniques TEXT DEFAULT '[]',
+                target TEXT DEFAULT '',
+                date TEXT DEFAULT '',
+                study_type TEXT DEFAULT '',
+                cve_ids TEXT DEFAULT '[]'
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_atlas_case_studies_date
+                ON atlas_case_studies(date);
         """)
         await db.commit()
 
@@ -446,6 +473,132 @@ async def get_top_techniques(db: aiosqlite.Connection, limit: int = 10) -> list[
 async def get_mitre_technique_count(db: aiosqlite.Connection) -> int:
     rows = await db.execute_fetchall("SELECT COUNT(*) AS cnt FROM mitre_techniques")
     return rows[0]["cnt"] if rows else 0
+
+
+async def replace_atlas_techniques(db: aiosqlite.Connection, techniques: list[dict]) -> None:
+    await db.execute("DELETE FROM atlas_techniques")
+    if not techniques:
+        return
+    await db.executemany(
+        """
+        INSERT INTO atlas_techniques (
+            technique_id, name, description, tactic, tactic_id, url
+        ) VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        [
+            (
+                t["technique_id"],
+                t["name"],
+                t.get("description", ""),
+                t.get("tactic", ""),
+                t.get("tactic_id", ""),
+                t["url"],
+            )
+            for t in techniques
+        ],
+    )
+
+
+async def replace_atlas_case_studies(db: aiosqlite.Connection, studies: list[dict]) -> None:
+    await db.execute("DELETE FROM atlas_case_studies")
+    if not studies:
+        return
+    await db.executemany(
+        """
+        INSERT INTO atlas_case_studies (
+            study_id, name, summary, summary_full, techniques,
+            target, date, study_type, cve_ids
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        [
+            (
+                s["study_id"],
+                s["name"],
+                s.get("summary", ""),
+                s.get("summary_full", ""),
+                json.dumps(s.get("techniques", [])),
+                s.get("target", ""),
+                s.get("date", ""),
+                s.get("study_type", ""),
+                json.dumps(s.get("cve_ids", [])),
+            )
+            for s in studies
+        ],
+    )
+
+
+async def get_atlas_technique_count(db: aiosqlite.Connection) -> int:
+    rows = await db.execute_fetchall("SELECT COUNT(*) AS cnt FROM atlas_techniques")
+    return rows[0]["cnt"] if rows else 0
+
+
+async def get_atlas_techniques_grouped(db: aiosqlite.Connection) -> list[dict]:
+    rows = await db.execute_fetchall(
+        """
+        SELECT technique_id, name, description, tactic, tactic_id, url
+        FROM atlas_techniques
+        ORDER BY tactic, technique_id
+        """
+    )
+    groups: dict[str, dict] = {}
+    for row in rows:
+        tactic_name = row["tactic"] or "Uncategorized"
+        tactic_id = row["tactic_id"] or tactic_name
+        key = tactic_id
+        if key not in groups:
+            groups[key] = {
+                "tactic_id": tactic_id,
+                "tactic_name": tactic_name,
+                "techniques": [],
+            }
+        groups[key]["techniques"].append(
+            {
+                "technique_id": row["technique_id"],
+                "name": row["name"],
+                "description": row["description"],
+                "url": row["url"],
+            }
+        )
+    return sorted(groups.values(), key=lambda g: g["tactic_name"])
+
+
+def _parse_json_list(raw: str | None) -> list:
+    if not raw:
+        return []
+    try:
+        data = json.loads(raw)
+        return data if isinstance(data, list) else []
+    except (json.JSONDecodeError, TypeError):
+        return []
+
+
+async def get_atlas_case_studies(
+    db: aiosqlite.Connection, *, limit: int = 50
+) -> list[dict]:
+    rows = await db.execute_fetchall(
+        """
+        SELECT study_id, name, summary, summary_full, techniques,
+               target, date, study_type, cve_ids
+        FROM atlas_case_studies
+        ORDER BY date DESC, name
+        LIMIT ?
+        """,
+        (limit,),
+    )
+    return [
+        {
+            "study_id": r["study_id"],
+            "name": r["name"],
+            "summary": r["summary"],
+            "summary_full": r["summary_full"],
+            "techniques": _parse_json_list(r["techniques"]),
+            "target": r["target"],
+            "date": r["date"],
+            "study_type": r["study_type"],
+            "cve_ids": _parse_json_list(r["cve_ids"]),
+        }
+        for r in rows
+    ]
 
 NVD_SYNC_WATERMARK_KEY = "nvd_last_mod_end"
 

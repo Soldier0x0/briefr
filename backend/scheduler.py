@@ -25,6 +25,7 @@ from database import (
 from feeds.nvd import fetch_cve_by_id, fetch_nvd_cve_updates
 from feeds.kev import fetch_kev
 from feeds.epss import fetch_epss
+from feeds.atlas import refresh_atlas_data
 from feeds.mitre import refresh_mitre_data
 
 logger = logging.getLogger(__name__)
@@ -275,11 +276,13 @@ async def run_weekly_mitre_refresh() -> bool:
 
     async with _mitre_refresh_lock:
         start = datetime.now(timezone.utc)
-        logger.info("Weekly MITRE ATT&CK refresh started at %s", start.isoformat())
+        logger.info("Weekly MITRE ATT&CK + ATLAS refresh started at %s", start.isoformat())
+        ok = True
         try:
             db = await get_db()
             try:
                 stats = await refresh_mitre_data(db)
+                atlas_stats = await refresh_atlas_data(db)
             finally:
                 await db.close()
             logger.info(
@@ -288,26 +291,36 @@ async def run_weekly_mitre_refresh() -> bool:
                 stats["cve_links"],
                 stats["cve_mappings_source"],
             )
-            return True
+            logger.info(
+                "ATLAS refresh complete: %d techniques, %d case studies",
+                atlas_stats["techniques"],
+                atlas_stats["case_studies"],
+            )
         except Exception as exc:
-            logger.error("Weekly MITRE refresh failed: %s", exc)
-            return False
+            logger.error("Weekly MITRE/ATLAS refresh failed: %s", exc)
+            ok = False
+        return ok
 
 
 async def maybe_run_mitre_on_startup() -> None:
-    from database import get_mitre_technique_count
+    from database import get_atlas_technique_count, get_mitre_technique_count
 
     db = await get_db()
     try:
-        count = await get_mitre_technique_count(db)
+        mitre_count = await get_mitre_technique_count(db)
+        atlas_count = await get_atlas_technique_count(db)
     finally:
         await db.close()
 
-    if count < 10:
-        logger.info("MITRE techniques table empty — running initial MITRE refresh")
+    if mitre_count < 10 or atlas_count < 10:
+        logger.info(
+            "MITRE/ATLAS tables sparse (mitre=%d, atlas=%d) — running initial refresh",
+            mitre_count,
+            atlas_count,
+        )
         asyncio.create_task(run_weekly_mitre_refresh())
     else:
-        logger.info("MITRE techniques loaded (%d rows)", count)
+        logger.info("MITRE techniques loaded (%d rows), ATLAS (%d rows)", mitre_count, atlas_count)
 
 
 async def maybe_run_on_startup() -> None:
@@ -351,14 +364,14 @@ def start_scheduler() -> AsyncIOScheduler:
             timezone=SCHEDULER_REFRESH_TZ,
         ),
         id="weekly_mitre_refresh",
-        name="Weekly MITRE ATT&CK Refresh",
+        name="Weekly MITRE ATT&CK + ATLAS Refresh",
         replace_existing=True,
     )
 
     scheduler.start()
     _scheduler = scheduler
     logger.info(
-        "Scheduler started. Daily CVE refresh at %02d:%02d IST; MITRE refresh weekly (Sunday).",
+        "Scheduler started. Daily CVE refresh at %02d:%02d IST; MITRE+ATLAS refresh weekly (Sunday).",
         refresh_hour,
         refresh_minute,
     )

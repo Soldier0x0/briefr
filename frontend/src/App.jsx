@@ -6,6 +6,7 @@ import StatsRow from './components/StatsRow.jsx'
 import CVEFeed from './components/CVEFeed.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import IOCLookup from './components/IOCLookup.jsx'
+import AIThreats from './components/AIThreats.jsx'
 import DetailDrawer from './components/DetailDrawer.jsx'
 import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
@@ -203,6 +204,13 @@ export default function App() {
     generateDigestRef.current = fn
   }, [])
 
+  const handleOpenCVEFromAtlas = useCallback((cveId) => {
+    setActiveTab('feed')
+    fetchCVE(cveId)
+      .then(full => setSelectedCVE(full))
+      .catch(() => setSelectedCVE({ cve_id: cveId }))
+  }, [])
+
   // ── Global keyboard shortcuts ─────────────────────────────
   useEffect(() => {
     let gPending = false
@@ -289,6 +297,9 @@ export default function App() {
                 />
               )}
               {activeTab === 'ioc' && <IOCLookup />}
+              {activeTab === 'atlas' && (
+                <AIThreats onOpenCVE={handleOpenCVEFromAtlas} />
+              )}
             </div>
 
             <footer className="app-footer" role="contentinfo">

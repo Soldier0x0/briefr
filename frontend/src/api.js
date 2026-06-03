@@ -71,6 +71,14 @@ export function fetchTopTechniques(limit = 10) {
   return request(`/techniques/top?limit=${limit}`)
 }
 
+export function fetchAtlasTechniques() {
+  return request('/atlas/techniques')
+}
+
+export function fetchAtlasCaseStudies(limit = 50) {
+  return request(`/atlas/casestudies?limit=${limit}`)
+}
+
 export function fetchKEVDeadlines(sort = 'recent') {
   return request(`/kev/deadlines?sort=${sort}`)
 }

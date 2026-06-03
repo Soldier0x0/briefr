@@ -20,6 +20,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 from database import (
+    get_atlas_case_studies,
+    get_atlas_techniques_grouped,
     get_db,
     get_cve_count,
     get_ioc_cache,
@@ -457,10 +459,52 @@ async def top_techniques(
     return {"data": data}
 
 
+@app.get("/api/atlas/techniques")
+async def atlas_techniques_grouped():
+    """MITRE ATLAS techniques grouped by tactic (AI/ML threats — not Enterprise ATT&CK)."""
+    db = await get_db()
+    try:
+        groups = await get_atlas_techniques_grouped(db)
+    finally:
+        await db.close()
+    return {"data": groups, "source": "MITRE ATLAS"}
+
+
+@app.get("/api/atlas/casestudies")
+async def atlas_case_studies(
+    limit: int = Query(default=50, ge=1, le=100),
+):
+    """Recent ATLAS case studies with technique and CVE references."""
+    db = await get_db()
+    try:
+        studies = await get_atlas_case_studies(db, limit=limit)
+        tech_rows = await db.execute_fetchall(
+            "SELECT technique_id, name FROM atlas_techniques"
+        )
+        tech_names = {r["technique_id"]: r["name"] for r in tech_rows}
+    finally:
+        await db.close()
+
+    for study in studies:
+        study["technique_details"] = [
+            {
+                "technique_id": tid,
+                "name": tech_names.get(tid, tid),
+                "url": f"https://atlas.mitre.org/techniques/{tid}",
+            }
+            for tid in study.get("techniques", [])
+        ]
+
+    return {"data": studies, "source": "MITRE ATLAS"}
+
+
 @app.post("/api/refresh/mitre")
 async def manual_mitre_refresh():
     asyncio.create_task(run_weekly_mitre_refresh())
-    return {"status": "ok", "message": "MITRE ATT&CK refresh started in background"}
+    return {
+        "status": "ok",
+        "message": "MITRE ATT&CK + ATLAS refresh started in background",
+    }
 
 
 @app.get("/api/cves/{cve_id}/sentences")
