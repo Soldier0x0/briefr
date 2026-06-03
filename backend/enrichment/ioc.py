@@ -1,5 +1,6 @@
 # PRIVACY NOTE:
-# IOC lookup values are sent to VirusTotal and AbuseIPDB.
+# IOC lookup values are sent to VirusTotal, AbuseIPDB, and (for IPs) GreyNoise;
+# file hashes may be sent to MalwareBazaar; domains/URLs to URLhaus.
 # These are third-party services with their own privacy policies.
 # We do NOT log the IOC values or associate them with any user.
 # The ioc_cache table stores the IOC value and result for 6 hours
@@ -157,6 +158,8 @@ async def lookup_ioc(
     ioc_type: str,
     vt_key: str,
     abuse_key: str,
+    greynoise_key: str = "",
+    db=None,
 ) -> dict:
     if ioc_type not in ("ip", "hash", "domain"):
         return _error_result(value, ioc_type, f"Unknown IOC type: {ioc_type}")
@@ -172,6 +175,12 @@ async def lookup_ioc(
         "abuse_score": None,
         "vt_link": None,
         "error": None,
+        "greynoise": None,
+        "malwarebazaar": None,
+        "urlhaus": None,
+        "greynoise_sentence": None,
+        "malwarebazaar_sentence": None,
+        "urlhaus_sentence": None,
     }
 
     async with httpx.AsyncClient() as client:
@@ -202,6 +211,14 @@ async def lookup_ioc(
                 if not result["country"]:
                     result["country"] = abuse_attrs.get("countryCode")
 
+            if greynoise_key and db is not None:
+                from feeds.extended import greynoise_for_ip
+                from templates.intelligence import greynoise_sentence
+
+                gn = await greynoise_for_ip(db, value, greynoise_key)
+                result["greynoise"] = gn
+                result["greynoise_sentence"] = greynoise_sentence(gn)
+
         elif ioc_type == "hash":
             vt_data = {}
             if vt_key:
@@ -217,6 +234,13 @@ async def lookup_ioc(
                 result["vt_link"] = f"https://www.virustotal.com/gui/file/{value}"
             else:
                 result["error"] = "Hash not found in VirusTotal"
+
+            from feeds.extended import fetch_malwarebazaar_hash
+            from templates.intelligence import malwarebazaar_sentence
+
+            mb = await fetch_malwarebazaar_hash(value)
+            result["malwarebazaar"] = mb
+            result["malwarebazaar_sentence"] = malwarebazaar_sentence(mb)
 
         elif ioc_type == "domain":
             vt_data = {}
@@ -235,5 +259,12 @@ async def lookup_ioc(
                 result["vt_link"] = f"https://www.virustotal.com/gui/domain/{value}"
             else:
                 result["error"] = "Domain not found in VirusTotal"
+
+            from feeds.extended import fetch_urlhaus_indicator
+            from templates.intelligence import urlhaus_sentence
+
+            uh = await fetch_urlhaus_indicator(value, "domain")
+            result["urlhaus"] = uh
+            result["urlhaus_sentence"] = urlhaus_sentence(uh)
 
     return result

@@ -497,3 +497,30 @@
 .idle-arrow {
   color: var(--border2);
 }
+
+/* ── Extended enrichment ───────────────────────────────────── */
+.ioc-enrichment-block {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.ioc-enrichment-heading {
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  margin-bottom: 8px;
+}
+
+.ioc-enrichment-sentence {
+  font-size: 0.875rem;
+  color: var(--text2);
+  line-height: 1.6;
+  margin: 0 0 8px;
+}
+
+.ioc-enrichment-link {
+  font-size: 0.6875rem;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}

@@ -34,6 +34,12 @@ from database import (
     init_db,
     set_ioc_cache,
 )
+from feeds.extended import (
+    fetch_circl_cve,
+    greynoise_scans_for_cve,
+    load_sploitus_exploits_for_cve,
+    merge_circl_into_cve,
+)
 from scheduler import run_weekly_mitre_refresh
 from enrichment.ioc import lookup_ioc
 from feeds.osv import fetch_osv_by_cve
@@ -51,6 +57,7 @@ from templates.intelligence import (
     epss_sentence_or_fallback,
     exploit_sentence,
     exploits_from_cve,
+    greynoise_sentence,
     kev_sentence,
     patch_sentence,
     severity_sentence,
@@ -635,6 +642,9 @@ async def get_cve_sentences(cve_id: str):
             """,
             (cve_key,),
         )
+
+        sploitus_exploits = await load_sploitus_exploits_for_cve(db, cve_key)
+        await db.commit()
     finally:
         await db.close()
 
@@ -645,14 +655,16 @@ async def get_cve_sentences(cve_id: str):
         due_date = (kev_row.get("due_date") or "").strip()
         fix = (kev_row.get("required_action") or "").strip()
 
-    exploits = exploits_from_cve(has_poc, source_urls)
+    exploit_items = [{"type": e.get("type", "poc")} for e in sploitus_exploits]
+    if not exploit_items:
+        exploit_items = exploits_from_cve(has_poc, source_urls)
     cvss = row.get("cvss_score")
 
     return {
         "cve_id": cve_key,
         "risk": severity_sentence(row.get("severity"), cvss),
         "exploit_likelihood": epss_sentence_or_fallback(row.get("epss_score"), is_kev),
-        "public_exploits": exploit_sentence(exploits),
+        "public_exploits": exploit_sentence(exploit_items),
         "patch": patch_sentence(patch_available, fix),
         "kev": kev_sentence(is_kev, due_date),
     }
@@ -745,6 +757,38 @@ async def get_cve(cve_id: str):
         logger.error("OSV lookup failed for %s: %s", cve_id, exc)
         cve["osv_packages"] = []
 
+    db3 = await get_db()
+    try:
+        cve["public_exploits"] = await load_sploitus_exploits_for_cve(db3, cve_id.upper())
+        await db3.commit()
+    except Exception as exc:
+        logger.error("Sploitus load failed for %s: %s", cve_id, exc)
+        cve["public_exploits"] = []
+    finally:
+        await db3.close()
+
+    try:
+        circl = await fetch_circl_cve(cve_id.upper())
+        cve = merge_circl_into_cve(cve, circl)
+    except Exception as exc:
+        logger.error("CIRCL enrichment failed for %s: %s", cve_id, exc)
+
+    greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
+    db4 = await get_db()
+    try:
+        cve["greynoise_scans"] = await greynoise_scans_for_cve(
+            db4,
+            cve.get("description"),
+            cve.get("source_urls"),
+            greynoise_key,
+        )
+        await db4.commit()
+    except Exception as exc:
+        logger.error("GreyNoise scan failed for %s: %s", cve_id, exc)
+        cve["greynoise_scans"] = []
+    finally:
+        await db4.close()
+
     return cve
 
 
@@ -762,15 +806,24 @@ async def ioc_lookup(body: IocLookupRequest):
 
     vt_key = os.environ.get("VIRUSTOTAL_API_KEY", "")
     abuse_key = os.environ.get("ABUSEIPDB_API_KEY", "")
+    greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
 
     db = await get_db()
     try:
         cached = await get_ioc_cache(db, value)
         if cached is not None:
             cached["cached"] = True
+            if ioc_type == "ip" and greynoise_key:
+                from feeds.extended import greynoise_for_ip
+
+                gn = await greynoise_for_ip(db, value, greynoise_key)
+                cached["greynoise"] = gn
+                cached["greynoise_sentence"] = greynoise_sentence(gn)
             return cached
 
-        result = await lookup_ioc(value, ioc_type, vt_key, abuse_key)
+        result = await lookup_ioc(
+            value, ioc_type, vt_key, abuse_key, greynoise_key, db=db
+        )
         result["cached"] = False
 
         await set_ioc_cache(db, value, ioc_type, result)
