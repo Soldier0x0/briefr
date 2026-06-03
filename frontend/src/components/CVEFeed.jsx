@@ -6,6 +6,7 @@ import PdfExportModal from './PdfExportModal.jsx'
 import FilterBar from './FilterBar.jsx'
 import CVECard from './CVECard.jsx'
 import ScrollToTop from './ScrollToTop.jsx'
+import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
 import './CVEFeed.css'
 
 const PAGE_LIMIT = 20
@@ -23,6 +24,7 @@ function SkeletonCard() {
 }
 
 export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGenerateDigest, onDigestRequest, searchFocusTrigger, timezone }) {
+  const investigation = useInvestigationOptional()
   const [cves, setCves] = useState([])
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(null)
@@ -382,6 +384,17 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
             navSelected={selectedIndex === idx}
             isNew={isNewSinceVisit(cve)}
             cardRef={el => { cardRefs.current[idx] = el }}
+            inThread={investigation?.isCveInThread?.(cve.cve_id)}
+            onInvestigate={
+              investigation
+                ? (c) => investigation.startInvestigation(c)
+                : undefined
+            }
+            onLookupIoc={
+              investigation
+                ? (c) => investigation.pivotToIocFromCve(c)
+                : undefined
+            }
           />
         ))}
       </div>

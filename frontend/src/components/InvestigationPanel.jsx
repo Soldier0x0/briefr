@@ -108,6 +108,7 @@ export default function InvestigationPanel() {
     items,
     startTime,
     showPanel,
+    threadSummary,
     panelExpanded,
     setPanelExpanded,
     mobileSheetOpen,
@@ -149,7 +150,15 @@ export default function InvestigationPanel() {
           count={count}
         />
         {panelExpanded && (
-          <ThreadList items={items} startTime={startTime} pivotLabel={pivotLabel} />
+          <>
+            <p className="inv-thread-summary mono">{threadSummary}</p>
+            {count === 1 && (
+              <p className="inv-thread-hint">
+                Pivot to IOC or ATLAS, or export a PDF when you are ready.
+              </p>
+            )}
+            <ThreadList items={items} startTime={startTime} pivotLabel={pivotLabel} />
+          </>
         )}
       </aside>
 
@@ -195,6 +204,12 @@ export default function InvestigationPanel() {
                 Clear
               </button>
             </div>
+            <p className="inv-thread-summary mono">{threadSummary}</p>
+            {count === 1 && (
+              <p className="inv-thread-hint">
+                Pivot to IOC or ATLAS, or export a PDF when you are ready.
+              </p>
+            )}
             <ThreadList items={items} startTime={startTime} pivotLabel={pivotLabel} />
           </div>
         </div>

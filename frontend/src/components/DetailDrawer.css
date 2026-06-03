@@ -167,6 +167,34 @@
   flex-shrink: 0;
 }
 
+.drawer-inv-btn {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  color: var(--red);
+  background: transparent;
+  border: 1px solid var(--red);
+  border-radius: 0;
+  padding: 6px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.drawer-inv-btn:hover {
+  background: var(--red-dim);
+}
+
+.drawer-inv-btn-secondary {
+  color: var(--text2);
+  border-color: var(--border2);
+}
+
+.drawer-inv-btn-secondary:hover {
+  color: var(--text);
+  border-color: var(--text3);
+  background: var(--bg3);
+}
+
 .drawer-report-wrap {
   position: relative;
 }

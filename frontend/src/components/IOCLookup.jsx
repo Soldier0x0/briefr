@@ -685,6 +685,9 @@ export default function IOCLookup({ prefill }) {
 
   const detectDebounce = useRef(null)
   const prefillHandled = useRef(null)
+  const [indicatorQueue, setIndicatorQueue] = useState([])
+  const [fromCveId, setFromCveId] = useState(null)
+  const pivotFromRef = useRef(null)
 
   // Auto-detect type after 500ms pause
   const handleValueChange = useCallback((e) => {
@@ -703,7 +706,7 @@ export default function IOCLookup({ prefill }) {
     if (detectDebounce.current) clearTimeout(detectDebounce.current)
   }, [])
 
-  async function runLookup(lookupValue, lookupType) {
+  async function runLookup(lookupValue, lookupType, options = {}) {
     const trimmed = (lookupValue ?? value).trim()
     const type    = lookupType ?? iocType
     if (!trimmed) return
@@ -730,6 +733,10 @@ export default function IOCLookup({ prefill }) {
         setResult(data)
       }
 
+      if (investigation?.isActive && !data.error) {
+        investigation.recordIocPivot(trimmed, options.pivotFrom ?? pivotFromRef.current)
+      }
+
       // Add to session history (deduplicate by value, cap at 5)
       const verdict = verdictInfo(data.malicious_votes, data.total_votes)
       setHistory(prev => {
@@ -753,14 +760,37 @@ export default function IOCLookup({ prefill }) {
   }
 
   useEffect(() => {
-    if (!prefill?.value) return
+    if (!prefill?.trigger) return
     if (prefillHandled.current === prefill.trigger) return
     prefillHandled.current = prefill.trigger
-    setValue(prefill.value)
-    setIocType('ip')
-    setDetected('ip')
-    runLookup(prefill.value, 'ip')
-  }, [prefill?.value, prefill?.trigger])
+
+    const indicators = Array.isArray(prefill.indicators) && prefill.indicators.length
+      ? prefill.indicators
+      : prefill.value
+        ? [{ type: 'ip', value: prefill.value }]
+        : []
+
+    setFromCveId(prefill.fromCveId || null)
+    pivotFromRef.current = prefill.pivotFrom || null
+    setIndicatorQueue(indicators)
+
+    const first = indicators[0]
+    if (!first?.value) return
+
+    setValue(first.value)
+    const t = first.type === 'domain' ? 'domain' : first.type === 'hash' ? 'hash' : 'ip'
+    setIocType(t)
+    setDetected(t)
+    // Analyst reviews chips first; prefill input only (no auto-lookup blast)
+  }, [prefill?.trigger, prefill?.value, prefill?.indicators, prefill?.fromCveId, prefill?.pivotFrom])
+
+  function selectQueuedIndicator(ind) {
+    if (!ind?.value) return
+    const t = ind.type === 'domain' ? 'domain' : ind.type === 'hash' ? 'hash' : 'ip'
+    setValue(ind.value)
+    setIocType(t)
+    setDetected(t)
+  }
 
   function handleKeyDown(e) {
     if (e.key === 'Enter') runLookup()
@@ -820,6 +850,30 @@ export default function IOCLookup({ prefill }) {
           and URLhaus. Paste an IP address, file hash, or domain name below.
         </p>
       </div>
+
+      {fromCveId && (
+        <div className="ioc-from-cve-banner mono" role="status">
+          Indicators suggested from <span className="ioc-from-cve-id">{fromCveId}</span>
+          — select a chip, then run LOOKUP when ready.
+        </div>
+      )}
+
+      {indicatorQueue.length > 0 && (
+        <div className="ioc-indicator-queue" role="group" aria-label="Suggested indicators">
+          {indicatorQueue.map(ind => (
+            <button
+              key={`${ind.type}:${ind.value}`}
+              type="button"
+              className={`ioc-indicator-chip mono${value.trim() === ind.value ? ' selected' : ''}`}
+              onClick={() => selectQueuedIndicator(ind)}
+              aria-pressed={value.trim() === ind.value}
+            >
+              <span className="ioc-chip-type">{ind.type.toUpperCase()}</span>
+              {ind.value}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Input section ── */}
       <div className="ioc-input-section">

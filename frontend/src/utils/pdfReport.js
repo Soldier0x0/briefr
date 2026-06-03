@@ -13,6 +13,16 @@ export const TLP_OPTIONS = [
   { id: 'RED', label: 'TLP:RED', color: [239, 68, 68] },
 ]
 
+export const TLP_OVERVIEW =
+  'Traffic Light Protocol (TLP) marks how far you may share this report. See first.org/tlp.'
+
+export const TLP_HINTS = {
+  WHITE: 'May be shared without restriction.',
+  GREEN: 'Community sharing only — not for public channels.',
+  AMBER: 'Limited distribution — need-to-know within your organization.',
+  RED: 'Named recipients only — do not forward further.',
+}
+
 const BRAND = '#e85533'
 const PAGE_W = 210
 const PAGE_H = 297
@@ -389,6 +399,15 @@ export async function downloadBulkCvePdf(cves, options = {}) {
   const ctx = { doc, y: CONTENT_TOP, pageNum: 1 }
 
   ctx.y = drawPageHeader(doc, meta, null, false)
+  const tlpLines = splitLines(doc, TLP_OVERVIEW, PAGE_W - MARGIN * 2)
+  doc.setFont(FONT_BODY, 'normal')
+  doc.setFontSize(7)
+  doc.setTextColor(100, 100, 100)
+  tlpLines.forEach(line => {
+    doc.text(line, MARGIN, ctx.y)
+    ctx.y += 3.5
+  })
+  ctx.y += 4
   drawSection(
     ctx,
     'BULK CVE REPORT — EXECUTIVE SUMMARY',

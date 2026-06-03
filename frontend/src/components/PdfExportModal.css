@@ -32,6 +32,14 @@
   margin: 0 0 18px;
 }
 
+.pdf-tlp-hint {
+  font-size: 0.75rem;
+  color: var(--text2);
+  line-height: 1.45;
+  margin: 10px 0 0;
+  padding-left: 2px;
+}
+
 .pdf-modal-fieldset {
   border: none;
   margin: 0 0 16px;

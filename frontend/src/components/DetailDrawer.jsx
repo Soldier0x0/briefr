@@ -438,11 +438,6 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const investigation = useInvestigationOptional()
 
   useEffect(() => {
-    if (!cve?.cve_id || !investigation?.onCveDrawerOpened) return
-    investigation.onCveDrawerOpened(cve)
-  }, [cve?.cve_id, cve, investigation])
-
-  useEffect(() => {
     if (!cve?.cve_id) {
       setSentences(null)
       setSentencesLoading(false)
@@ -664,6 +659,26 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
               )}
             </div>
             <div className="drawer-header-actions">
+              {investigation && (
+                <>
+                  <button
+                    type="button"
+                    className="drawer-inv-btn mono"
+                    onClick={() => investigation.startInvestigation(cve)}
+                    aria-label={`Add ${cve.cve_id} to investigation`}
+                  >
+                    {investigation.isCveInThread(cve.cve_id) ? 'In thread' : 'Investigate'}
+                  </button>
+                  <button
+                    type="button"
+                    className="drawer-inv-btn drawer-inv-btn-secondary mono"
+                    onClick={() => investigation.pivotToIocFromCve(cve)}
+                    aria-label={`Look up indicators from ${cve.cve_id}`}
+                  >
+                    Lookup IOC
+                  </button>
+                </>
+              )}
               <div className="drawer-report-wrap" ref={reportRef}>
                 <button
                   type="button"

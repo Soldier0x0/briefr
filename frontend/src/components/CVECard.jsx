@@ -43,7 +43,19 @@ function epssColor(score) {
   return 'var(--green)'
 }
 
-export default function CVECard({ cve, onSelect, selected, onToggleSelect, timezone = 'UTC', navSelected, cardRef, isNew }) {
+export default function CVECard({
+  cve,
+  onSelect,
+  selected,
+  onToggleSelect,
+  timezone = 'UTC',
+  navSelected,
+  cardRef,
+  isNew,
+  inThread = false,
+  onInvestigate,
+  onLookupIoc,
+}) {
   const [shareCopied, setShareCopied] = useState(false)
   const sevClass = severityClass(cve.severity)
   const cvssClass = cvssBadgeClass(cve.cvss_score, cve.severity)
@@ -74,6 +86,16 @@ export default function CVECard({ cve, onSelect, selected, onToggleSelect, timez
     e.stopPropagation()
   }
 
+  function handleInvestigate(e) {
+    e.stopPropagation()
+    onInvestigate?.(cve)
+  }
+
+  function handleLookupIoc(e) {
+    e.stopPropagation()
+    onLookupIoc?.(cve)
+  }
+
   async function handleShare(e) {
     e.stopPropagation()
     const desc = (cve.description || '').slice(0, 60).trimEnd()
@@ -89,7 +111,7 @@ export default function CVECard({ cve, onSelect, selected, onToggleSelect, timez
   return (
     <article
       ref={cardRef}
-      className={`cve-card sev-${sevClass}${selected ? ' cve-selected' : ''}${navSelected ? ' cve-nav-selected' : ''}`}
+      className={`cve-card sev-${sevClass}${selected ? ' cve-selected' : ''}${navSelected ? ' cve-nav-selected' : ''}${inThread ? ' cve-card-in-thread' : ''}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}
@@ -112,6 +134,12 @@ export default function CVECard({ cve, onSelect, selected, onToggleSelect, timez
         />
         <span className="card-checkbox-box" aria-hidden="true" />
       </label>
+
+      {inThread && (
+        <span className="cve-thread-badge mono" aria-label="In investigation thread">
+          IN THREAD
+        </span>
+      )}
 
       {isNew && (
         <span className="cve-new-badge mono" aria-label="New since your last visit">
@@ -230,6 +258,32 @@ export default function CVECard({ cve, onSelect, selected, onToggleSelect, timez
           </span>
         </span>
       </div>
+
+      {(onInvestigate || onLookupIoc) && (
+        <div className="cve-card-actions" role="group" aria-label="Investigation actions">
+          {onInvestigate && (
+            <button
+              type="button"
+              className="cve-action-btn mono"
+              onClick={handleInvestigate}
+              disabled={inThread}
+              aria-label={`Add ${cve.cve_id} to investigation`}
+            >
+              {inThread ? 'In thread' : 'Investigate'}
+            </button>
+          )}
+          {onLookupIoc && (
+            <button
+              type="button"
+              className="cve-action-btn cve-action-btn-secondary mono"
+              onClick={handleLookupIoc}
+              aria-label={`Look up indicators from ${cve.cve_id} in IOC tab`}
+            >
+              Lookup in IOC
+            </button>
+          )}
+        </div>
+      )}
     </article>
   )
 }
