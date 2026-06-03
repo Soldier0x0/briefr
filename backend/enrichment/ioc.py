@@ -153,6 +153,54 @@ def _parse_vt_stats(vt_data: dict) -> tuple[int, int, list, str | None]:
     return malicious, total, tags, last_seen
 
 
+def _parse_vt_engines(vt_data: dict) -> list[dict]:
+    attrs = vt_data.get("data", {}).get("attributes", {})
+    results = attrs.get("last_analysis_results") or {}
+    engines: list[dict] = []
+    for name, row in results.items():
+        if not isinstance(row, dict):
+            continue
+        category = (row.get("category") or "undetected").lower()
+        engines.append(
+            {
+                "name": name,
+                "category": category,
+                "result": row.get("result") or "",
+            }
+        )
+    order = {"malicious": 0, "suspicious": 1, "timeout": 2, "undetected": 3, "harmless": 4}
+    engines.sort(key=lambda e: (order.get(e["category"], 9), e["name"].lower()))
+    return engines
+
+
+def _parse_vt_network(vt_data: dict) -> dict:
+    attrs = vt_data.get("data", {}).get("attributes", {})
+    asn = attrs.get("asn")
+    as_owner = attrs.get("as_owner") or attrs.get("network") or ""
+    return {
+        "asn": f"AS{asn}" if asn else None,
+        "as_owner": as_owner or None,
+        "network": attrs.get("network"),
+    }
+
+
+def _parse_abuseipdb(abuse_data: dict) -> dict:
+    abuse_attrs = abuse_data.get("data") or {}
+    return {
+        "abuse_score": abuse_attrs.get("abuseConfidenceScore"),
+        "country_code": abuse_attrs.get("countryCode"),
+        "country_name": abuse_attrs.get("countryName"),
+        "isp": abuse_attrs.get("isp"),
+        "domain": abuse_attrs.get("domain"),
+        "usage_type": abuse_attrs.get("usageType"),
+        "total_reports": abuse_attrs.get("totalReports"),
+        "num_distinct_users": abuse_attrs.get("numDistinctUsers"),
+        "is_whitelisted": abuse_attrs.get("isWhitelisted"),
+        "is_tor": abuse_attrs.get("isTor"),
+        "last_reported_at": abuse_attrs.get("lastReportedAt"),
+    }
+
+
 async def lookup_ioc(
     value: str,
     ioc_type: str,
@@ -182,35 +230,55 @@ async def lookup_ioc(
         "greynoise_sentence": None,
         "malwarebazaar_sentence": None,
         "urlhaus_sentence": None,
+        "vt_engines": [],
+        "vt_stats": None,
+        "vt_network": None,
+        "abuseipdb": None,
+        "abuseipdb_link": None,
+        "sources_missing": [],
     }
 
     async with httpx.AsyncClient() as client:
         if ioc_type == "ip":
             vt_data = {}
             abuse_data = {}
+            missing: list[str] = []
 
             if vt_key:
                 vt_data = await _lookup_vt_ip(client, value, vt_key)
                 await record_api_call("virustotal", 1)
+            else:
+                missing.append("virustotal")
             if abuse_key:
                 abuse_data = await _lookup_abuseipdb(client, value, abuse_key)
                 await record_api_call("abuseipdb", 1)
+            else:
+                missing.append("abuseipdb")
+
+            result["sources_missing"] = missing
+            result["abuseipdb_link"] = f"https://www.abuseipdb.com/check/{value}"
 
             if vt_data:
                 malicious, total, tags, last_seen = _parse_vt_stats(vt_data)
+                attrs = vt_data.get("data", {}).get("attributes", {})
                 result["malicious_votes"] = malicious
                 result["total_votes"] = total
                 result["tags"] = tags
                 result["last_seen"] = last_seen
-                attrs = vt_data.get("data", {}).get("attributes", {})
                 result["country"] = attrs.get("country")
+                result["vt_link"] = f"https://www.virustotal.com/gui/ip-address/{value}"
+                result["vt_engines"] = _parse_vt_engines(vt_data)
+                result["vt_stats"] = attrs.get("last_analysis_stats") or {}
+                result["vt_network"] = _parse_vt_network(vt_data)
+            elif vt_key:
                 result["vt_link"] = f"https://www.virustotal.com/gui/ip-address/{value}"
 
             if abuse_data:
-                abuse_attrs = abuse_data.get("data", {})
-                result["abuse_score"] = abuse_attrs.get("abuseConfidenceScore")
+                parsed = _parse_abuseipdb(abuse_data)
+                result["abuseipdb"] = parsed
+                result["abuse_score"] = parsed.get("abuse_score")
                 if not result["country"]:
-                    result["country"] = abuse_attrs.get("countryCode")
+                    result["country"] = parsed.get("country_code")
 
             if greynoise_key and db is not None:
                 from feeds.extended import greynoise_for_ip
