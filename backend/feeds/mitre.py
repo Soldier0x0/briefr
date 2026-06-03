@@ -8,6 +8,7 @@ import csv
 import io
 import json
 import logging
+import os
 import re
 from typing import Any
 
@@ -18,10 +19,7 @@ logger = logging.getLogger(__name__)
 ENTERPRISE_ATTACK_URL = (
     "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
 )
-CVE_MAPPINGS_JSON_URL = (
-    "https://raw.githubusercontent.com/center-for-threat-informed-defense/"
-    "mappings-explorer/main/src/mappings/NVD/attack-14.0/enterprise/CVE_mappings.json"
-)
+# Official CTID bulk CVE→ATT&CK file (spec CVE_mappings.json path 404 on GitHub as of 2026)
 CVE_MAPPINGS_CSV_URL = (
     "https://raw.githubusercontent.com/center-for-threat-informed-defense/"
     "mappings-explorer/main/src/mapex_convert/mappings/Att%26ckToCveMappings.csv"
@@ -266,22 +264,22 @@ async def download_enterprise_attack() -> list[dict]:
 
 async def download_cve_technique_mappings() -> dict[str, list[str]]:
     cve_map: dict[str, list[str]] = {}
-    try:
-        logger.info("Downloading CTID CVE→ATT&CK mappings JSON from %s", CVE_MAPPINGS_JSON_URL)
-        json_raw = await _fetch_bytes(CVE_MAPPINGS_JSON_URL)
-        json_data = json.loads(json_raw)
-        cve_map = parse_cve_mappings_json(json_data)
-        logger.info("CVE mappings from JSON: %d CVEs", len(cve_map))
-    except Exception as exc:
-        logger.warning("CVE mappings JSON unavailable, using CSV fallback: %s", exc)
+
+    json_url = os.environ.get("MITRE_CVE_MAPPINGS_JSON_URL", "").strip()
+    if json_url:
+        try:
+            logger.info("Downloading CVE→ATT&CK mappings JSON from %s", json_url)
+            json_data = json.loads(await _fetch_bytes(json_url))
+            cve_map = parse_cve_mappings_json(json_data)
+            logger.info("CVE mappings from JSON: %d CVEs", len(cve_map))
+        except Exception as exc:
+            logger.warning("Custom CVE mappings JSON failed: %s", exc)
 
     if not cve_map:
-        logger.info("Downloading CTID CVE→ATT&CK mappings CSV")
+        logger.info("Downloading CTID CVE→ATT&CK mappings CSV from mappings-explorer")
         csv_text = (await _fetch_bytes(CVE_MAPPINGS_CSV_URL)).decode("utf-8", errors="replace")
         cve_map = parse_cve_mappings_csv(csv_text)
-        logger.info("CVE mappings from CSV: %d CVEs", len(cve_map))
-
-    csv_map = cve_map
+        logger.info("CVE mappings from CTID CSV: %d CVEs", len(cve_map))
 
     kev_map: dict[str, list[str]] = {}
     try:
@@ -293,9 +291,27 @@ async def download_cve_technique_mappings() -> dict[str, list[str]]:
     except Exception as exc:
         logger.warning("KEV ATT&CK mapping fetch failed (non-fatal): %s", exc)
 
-    merged = merge_cve_technique_maps(csv_map, kev_map)
+    merged = merge_cve_technique_maps(cve_map, kev_map)
     logger.info("Total unique CVE→technique mappings: %d CVEs", len(merged))
     return merged
+
+
+async def cve_technique_from_db_column(db) -> dict[str, list[str]]:
+    """Supplement CTID mappings with mitre_technique values already on CVE rows."""
+    rows = await db.execute_fetchall(
+        """
+        SELECT cve_id, mitre_technique
+        FROM cves
+        WHERE mitre_technique IS NOT NULL AND TRIM(mitre_technique) != ''
+        """
+    )
+    mapping: dict[str, set[str]] = {}
+    for row in rows:
+        cve_id = row["cve_id"]
+        tid = _normalize_technique_id(row["mitre_technique"] or "")
+        if tid:
+            mapping.setdefault(cve_id, set()).add(tid)
+    return {cve: sorted(tids) for cve, tids in mapping.items()}
 
 
 async def refresh_mitre_data(db) -> dict[str, int]:
@@ -312,6 +328,14 @@ async def refresh_mitre_data(db) -> dict[str, int]:
 
     techniques = await download_enterprise_attack()
     cve_map = await download_cve_technique_mappings()
+    db_column_map = await cve_technique_from_db_column(db)
+    if db_column_map:
+        cve_map = merge_cve_technique_maps(cve_map, db_column_map)
+        logger.info(
+            "Added %d CVEs from mitre_technique column; merged total %d CVEs",
+            len(db_column_map),
+            len(cve_map),
+        )
 
     # Clear mappings before replacing techniques (FK: map.technique_id → mitre_techniques)
     await clear_cve_technique_map(db)
@@ -351,4 +375,5 @@ async def refresh_mitre_data(db) -> dict[str, int]:
         "cve_mappings_source": len(cve_map),
         "cve_links": inserted,
         "skipped_unknown_techniques": skipped_unknown,
+        "mapping_sources": "ctid_csv+kev_json+db_column",
     }
