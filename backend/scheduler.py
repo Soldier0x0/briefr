@@ -18,6 +18,7 @@ from database import (
     mark_cves_as_kev,
     resolve_nvd_watermark,
     set_nvd_sync_watermark,
+    snapshot_epss_scores,
     update_epss_scores,
     upsert_cve,
     upsert_kev,
@@ -230,8 +231,11 @@ async def _run_daily_refresh() -> None:
 
             db = await get_db()
             try:
+                snapshotted = await snapshot_epss_scores(db)
                 await update_epss_scores(db, scores)
                 await db.commit()
+                if snapshotted:
+                    logger.info("EPSS history snapshot: %d CVE scores saved", snapshotted)
             finally:
                 await db.close()
 

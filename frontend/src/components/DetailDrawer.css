@@ -361,32 +361,131 @@
 }
 
 /* EPSS bar */
+.drawer-back-btn {
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--text2);
+  padding: 2px 6px 2px 0;
+  margin-right: 2px;
+}
+
+.drawer-back-btn:hover {
+  color: var(--accent);
+}
+
 .drawer-epss-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   margin-bottom: 8px;
+  gap: 12px;
 }
 
 .drawer-epss-header .drawer-section-label {
   margin-bottom: 0;
 }
 
+.drawer-epss-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .drawer-epss-value {
   font-size: 0.8125rem;
   letter-spacing: 0.04em;
+  color: var(--text);
 }
 
-.drawer-epss-track {
-  height: 8px;
+.drawer-epss-trend {
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+}
+
+.drawer-epss-trend--rising {
+  color: var(--red);
+}
+
+.drawer-epss-trend--falling {
+  color: var(--green);
+}
+
+.drawer-epss-trend--stable {
+  color: var(--text3);
+}
+
+.drawer-epss-sparkline {
+  display: block;
+}
+
+.drawer-epss-loading {
+  font-size: 0.6875rem;
+  color: var(--text3);
+  margin: 0;
+}
+
+.drawer-related-empty {
+  font-size: 0.75rem;
+  color: var(--text3);
+  margin: 0;
+}
+
+.drawer-related-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-related-item {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
   background: var(--bg3);
-  border: 1px solid var(--border2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.1s, background 0.1s;
 }
 
-.drawer-epss-fill {
-  height: 100%;
-  min-width: 0;
-  transition: width 0.3s ease;
+.drawer-related-item:hover {
+  border-color: var(--border2);
+  background: var(--bg);
+}
+
+.drawer-related-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.drawer-related-id {
+  font-size: 0.8125rem;
+  color: var(--accent);
+}
+
+.drawer-related-sev {
+  font-size: 0.5625rem;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border: 1px solid;
+}
+
+.drawer-related-cvss {
+  font-size: 0.6875rem;
+  color: var(--text2);
+  margin-left: auto;
+}
+
+.drawer-related-desc {
+  font-size: 0.8125rem;
+  color: var(--text2);
+  line-height: 1.45;
+  margin: 0;
 }
 
 .drawer-patch-status {

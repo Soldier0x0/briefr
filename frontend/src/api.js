@@ -57,6 +57,14 @@ export function fetchCVESentences(cveId) {
   return request(`/cves/${encodeURIComponent(cveId)}/sentences`)
 }
 
+export function fetchCVEEpssHistory(cveId) {
+  return request(`/cves/${encodeURIComponent(cveId)}/epss-history`)
+}
+
+export function fetchCVERelated(cveId, limit = 5) {
+  return request(`/cves/${encodeURIComponent(cveId)}/related?limit=${limit}`)
+}
+
 export function fetchCVEsForExport(params = {}) {
   const qs = new URLSearchParams()
   if (params.severity)  qs.set('severity', params.severity)

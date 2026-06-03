@@ -24,9 +24,11 @@ from database import (
     get_atlas_techniques_grouped,
     get_db,
     get_cve_count,
+    get_epss_history,
     get_ioc_cache,
     get_last_updated,
     get_nvd_sync_watermark,
+    get_related_cves,
     get_techniques_for_cve,
     get_top_techniques,
     init_db,
@@ -654,6 +656,49 @@ async def get_cve_sentences(cve_id: str):
         "patch": patch_sentence(patch_available, fix),
         "kev": kev_sentence(is_kev, due_date),
     }
+
+
+@app.get("/api/cves/{cve_id}/epss-history")
+async def get_cve_epss_history(cve_id: str):
+    if not cve_id.upper().startswith("CVE-"):
+        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+
+    cve_key = cve_id.upper()
+    db = await get_db()
+    try:
+        exists = await db.execute_fetchall(
+            "SELECT 1 FROM cves WHERE cve_id = ?", (cve_key,)
+        )
+        if not exists:
+            raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
+        history = await get_epss_history(db, cve_key, days=30)
+    finally:
+        await db.close()
+
+    return history
+
+
+@app.get("/api/cves/{cve_id}/related")
+async def get_cve_related(
+    cve_id: str,
+    limit: int = Query(default=5, ge=1, le=20),
+):
+    if not cve_id.upper().startswith("CVE-"):
+        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+
+    cve_key = cve_id.upper()
+    db = await get_db()
+    try:
+        exists = await db.execute_fetchall(
+            "SELECT 1 FROM cves WHERE cve_id = ?", (cve_key,)
+        )
+        if not exists:
+            raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
+        related = await get_related_cves(db, cve_key, limit=limit)
+    finally:
+        await db.close()
+
+    return {"data": related}
 
 
 @app.get("/api/cves/{cve_id}")
