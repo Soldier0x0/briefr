@@ -101,6 +101,10 @@ export function fetchUsage() {
   return request('/usage')
 }
 
+export function fetchIOCUsage() {
+  return request('/usage/ioc')
+}
+
 export function lookupIOC(value, type) {
   return request('/ioc/lookup', {
     method: 'POST',

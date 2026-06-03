@@ -22,8 +22,9 @@ export default function PrivacyPage() {
       <p className="legal-p">
         When you use IOC Lookup, your submitted IP address, file hash, or domain
         is sent to third-party enrichment services: VirusTotal, AbuseIPDB,
-        GreyNoise (IP addresses only), MalwareBazaar (file hashes only), and
-        URLhaus (domains only). The combined result is cached locally for up to
+        GreyNoise (IP addresses only), and abuse.ch (MalwareBazaar for hashes and
+        URLhaus for domains — one shared Auth-Key from auth.abuse.ch). The combined
+        result is cached locally for up to
         6 hours to reduce API calls; GreyNoise IP results are refreshed at most
         every 1 hour. This cache stores only the IOC value and the enrichment
         result — not associated with any user or session.
@@ -55,8 +56,7 @@ export default function PrivacyPage() {
         <li>VirusTotal — IOC enrichment — only when you use IOC Lookup</li>
         <li>AbuseIPDB — IP reputation — only when you use IOC Lookup</li>
         <li>GreyNoise — internet scanning context for IPs — only when you use IOC Lookup (requires server API key)</li>
-        <li>MalwareBazaar (abuse.ch) — malware family for file hashes — IOC Lookup only</li>
-        <li>URLhaus (abuse.ch) — malicious URL/domain listings — IOC Lookup only</li>
+        <li>abuse.ch (MalwareBazaar + URLhaus) — one Auth-Key — IOC Lookup for hashes and domains</li>
         <li>Sploitus — public exploit search per CVE — server-side when you open CVE detail (Intel tab)</li>
         <li>CIRCL CVE-Search — supplemental CVE references — server-side on CVE detail load</li>
         <li>Google Fonts — typography — every page load from your browser</li>

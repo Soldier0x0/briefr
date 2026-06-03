@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { lookupIOC } from '../api.js'
+import { lookupIOC, fetchIOCUsage } from '../api.js'
 import './IOCLookup.css'
 
 // ── Type detection ────────────────────────────────────────
@@ -135,6 +135,149 @@ function DetailGrid({ result }) {
               <span key={tag} className="ioc-tag mono">{tag}</span>
             ))}
           </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function quotaBarColor(warning) {
+  if (!warning) return 'var(--text2)'
+  if (warning.includes('exceeded')) return 'var(--red)'
+  if (warning.includes('near')) return 'var(--amber)'
+  return 'var(--text2)'
+}
+
+function UsageMeter({ label, used, limit, percentUsed, warning }) {
+  if (limit == null) {
+    return (
+      <div className="quota-meter quota-meter--unmetered">
+        <div className="quota-meter-head">
+          <span className="quota-meter-label">{label}</span>
+          <span className="quota-meter-val mono">{used.toLocaleString()} today</span>
+        </div>
+        <p className="quota-meter-note mono">// no published daily cap · fair use</p>
+      </div>
+    )
+  }
+
+  const pct = Math.min(Math.max(percentUsed ?? 0, 0), 100)
+  const fillColor = quotaBarColor(warning)
+
+  return (
+    <div className="quota-meter">
+      <div className="quota-meter-head">
+        <span className="quota-meter-label">{label}</span>
+        <span className="quota-meter-val mono" style={{ color: fillColor }}>
+          {used.toLocaleString()} / {limit.toLocaleString()}
+        </span>
+      </div>
+      <div
+        className="quota-track"
+        role="progressbar"
+        aria-valuenow={Math.round(pct)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${label}: ${Math.round(pct)}% of daily quota used`}
+      >
+        <div
+          className="quota-fill"
+          style={{ width: `${pct}%`, background: fillColor }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function IOCQuotaPanel() {
+  const [open, setOpen] = useState(false)
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    fetchIOCUsage()
+      .then(payload => {
+        if (!cancelled) setData(payload)
+      })
+      .catch(err => {
+        if (!cancelled) {
+          setError(err.message || 'Could not load quota')
+          setData(null)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [open])
+
+  const services = data?.services || []
+
+  return (
+    <div className="ioc-quota-wrap">
+      <button
+        type="button"
+        className="ioc-quota-toggle mono"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        aria-controls="ioc-quota-panel"
+      >
+        <span className={`ioc-quota-chevron${open ? '' : ' collapsed'}`} aria-hidden="true">
+          ▾
+        </span>
+        // API QUOTA
+      </button>
+
+      {open && (
+        <div id="ioc-quota-panel" className="ioc-quota-panel" role="region" aria-label="IOC API quota usage">
+          {loading && (
+            <p className="ioc-quota-loading mono">// Loading usage counters…</p>
+          )}
+          {error && (
+            <p className="ioc-quota-error mono" role="alert">{error}</p>
+          )}
+          {!loading && !error && services.length > 0 && (
+            <>
+              <p className="ioc-quota-asof mono">
+                UTC {data?.today_date_utc}
+                {data?.as_of_utc ? ` · ${data.as_of_utc.slice(11, 19)}` : ''}
+              </p>
+              {services.map(svc => (
+                <div key={svc.service} className="quota-service-block">
+                  <div className="quota-service-title">
+                    <span className="mono">{svc.name}</span>
+                    {svc.rate_limit && (
+                      <span className="quota-rate mono">{svc.rate_limit}</span>
+                    )}
+                  </div>
+                  <UsageMeter
+                    label="Today"
+                    used={svc.today?.used ?? 0}
+                    limit={svc.today?.limit}
+                    percentUsed={svc.today?.percent_used}
+                    warning={svc.warning}
+                  />
+                  {svc.this_month?.limit != null && (
+                    <UsageMeter
+                      label="This month"
+                      used={svc.this_month?.used ?? 0}
+                      limit={svc.this_month?.limit}
+                      percentUsed={svc.this_month?.percent_used}
+                      warning={svc.warning}
+                    />
+                  )}
+                  {svc.notes && (
+                    <p className="quota-service-note mono">{svc.notes}</p>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
         </div>
       )}
     </div>
@@ -378,6 +521,8 @@ export default function IOCLookup() {
           {'// Lookups are sent to third-party enrichment APIs (see Privacy Policy).'}<br />
           {'// Results cached locally (6h IOC, 1h GreyNoise). No user accounts.'}
         </p>
+
+        <IOCQuotaPanel />
       </div>
 
       {/* ── Error state ── */}

@@ -52,7 +52,7 @@ from scheduler import (
     start_scheduler,
     stop_scheduler,
 )
-from tracking import get_usage_stats
+from tracking import get_ioc_usage_stats, get_usage_stats
 from templates.intelligence import (
     epss_sentence_or_fallback,
     exploit_sentence,
@@ -807,6 +807,7 @@ async def ioc_lookup(body: IocLookupRequest):
     vt_key = os.environ.get("VIRUSTOTAL_API_KEY", "")
     abuse_key = os.environ.get("ABUSEIPDB_API_KEY", "")
     greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
+    abusech_key = os.environ.get("ABUSECH_AUTH_KEY", "")
 
     db = await get_db()
     try:
@@ -822,7 +823,13 @@ async def ioc_lookup(body: IocLookupRequest):
             return cached
 
         result = await lookup_ioc(
-            value, ioc_type, vt_key, abuse_key, greynoise_key, db=db
+            value,
+            ioc_type,
+            vt_key,
+            abuse_key,
+            greynoise_key,
+            abusech_key,
+            db=db,
         )
         result["cached"] = False
 
@@ -873,6 +880,19 @@ async def kev_deadlines(
 async def api_usage():
     now_utc = datetime.now(timezone.utc)
     stats = await get_usage_stats()
+    return {
+        "as_of_utc": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "today_date_utc": now_utc.strftime("%Y-%m-%d"),
+        "this_month_utc": now_utc.strftime("%Y-%m"),
+        "services": stats,
+    }
+
+
+@app.get("/api/usage/ioc")
+async def api_usage_ioc():
+    """API quota counters for IOC Lookup enrichment sources."""
+    now_utc = datetime.now(timezone.utc)
+    stats = await get_ioc_usage_stats()
     return {
         "as_of_utc": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "today_date_utc": now_utc.strftime("%Y-%m-%d"),
