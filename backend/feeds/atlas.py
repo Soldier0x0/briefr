@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import re
+from datetime import date, datetime
 from typing import Any
 
 import httpx
@@ -32,8 +33,19 @@ def atlas_technique_url(technique_id: str) -> str:
     return f"https://atlas.mitre.org/techniques/{tid}"
 
 
-def _truncate(text: str, max_len: int) -> str:
-    text = (text or "").strip()
+def _as_text(value: Any, default: str = "") -> str:
+    """Coerce YAML scalars (including date/datetime) to a plain string."""
+    if value is None:
+        return default
+    if isinstance(value, datetime):
+        return value.date().isoformat() if hasattr(value, "date") else value.isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
+    return str(value).strip()
+
+
+def _truncate(text: Any, max_len: int) -> str:
+    text = _as_text(text)
     if len(text) <= max_len:
         return text
     return text[: max_len - 3] + "..."
@@ -45,8 +57,8 @@ def _format_tactic_name(tactic_id: str, tactic_names: dict[str, str]) -> str:
     return tactic_id.replace("AML.TA", "").replace("-", " ").strip() or tactic_id
 
 
-def _normalize_technique_id(raw: str) -> str | None:
-    tid = (raw or "").strip().upper()
+def _normalize_technique_id(raw: Any) -> str | None:
+    tid = _as_text(raw).upper()
     if TECHNIQUE_ID_RE.match(tid):
         return tid
     return None
@@ -75,7 +87,7 @@ def parse_atlas_yaml(data: dict) -> tuple[list[dict], list[dict]]:
     tactic_names: dict[str, str] = {}
     for tactic in matrix.get("tactics") or []:
         if tactic.get("object-type") == "tactic" and tactic.get("id"):
-            tactic_names[tactic["id"]] = (tactic.get("name") or tactic["id"]).strip()
+            tactic_names[tactic["id"]] = _as_text(tactic.get("name"), tactic["id"])
 
     techniques_out: list[dict] = []
     seen_techniques: set[str] = set()
@@ -106,7 +118,7 @@ def parse_atlas_yaml(data: dict) -> tuple[list[dict], list[dict]]:
         techniques_out.append(
             {
                 "technique_id": technique_id,
-                "name": (tech.get("name") or technique_id).strip(),
+                "name": _as_text(tech.get("name"), technique_id),
                 "description": description,
                 "tactic": tactic_label,
                 "tactic_id": tactic_ids[0] if tactic_ids else "",
@@ -118,7 +130,7 @@ def parse_atlas_yaml(data: dict) -> tuple[list[dict], list[dict]]:
     for study in data.get("case-studies") or []:
         if study.get("object-type") != "case-study":
             continue
-        study_id = (study.get("id") or "").strip()
+        study_id = _as_text(study.get("id"))
         if not study_id:
             continue
 
@@ -139,24 +151,28 @@ def parse_atlas_yaml(data: dict) -> tuple[list[dict], list[dict]]:
                 ref_texts.append(str(ref.get("title") or ""))
                 ref_texts.append(str(ref.get("url") or ""))
 
-        summary_raw = study.get("summary") or ""
+        summary_raw = _as_text(study.get("summary"))
         cve_ids = extract_cve_ids(
             summary_raw,
-            study.get("name") or "",
+            _as_text(study.get("name")),
             *proc_texts,
             *ref_texts,
         )
 
+        incident = study.get("incident-date")
+        created = study.get("created_date")
+        date_val = incident if incident is not None else created
+
         case_studies_out.append(
             {
                 "study_id": study_id,
-                "name": (study.get("name") or study_id).strip(),
+                "name": _as_text(study.get("name"), study_id),
                 "summary": _truncate(summary_raw, 400),
-                "summary_full": summary_raw.strip(),
+                "summary_full": summary_raw,
                 "techniques": technique_ids,
-                "target": (study.get("target") or "AI / ML system").strip(),
-                "date": (study.get("incident-date") or study.get("created_date") or "").strip(),
-                "study_type": (study.get("case-study-type") or "").strip(),
+                "target": _as_text(study.get("target"), "AI / ML system"),
+                "date": _as_text(date_val),
+                "study_type": _as_text(study.get("case-study-type")),
                 "cve_ids": cve_ids,
             }
         )
