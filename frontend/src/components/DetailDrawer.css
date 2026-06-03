@@ -1,58 +1,137 @@
+/* ── Feed layout when drawer open (scoped from drawer, no other components) ── */
+@media (min-width: 1280px) {
+  body.briefr-drawer-open .content-grid {
+    width: 35vw;
+    max-width: 35vw;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  body.briefr-drawer-open .content-grid {
+    width: 25vw;
+    max-width: 25vw;
+  }
+}
+
 /* ── Overlay ─────────────────────────────────────────────── */
 .drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 10, 8, 0);
+  background: rgba(0, 0, 0, 0);
   z-index: 200;
   pointer-events: none;
   transition: background 0.25s ease;
 }
 
 .drawer-overlay-active {
-  background: rgba(10, 10, 8, 0.72);
+  background: rgba(0, 0, 0, 0.5);
   pointer-events: all;
   cursor: pointer;
 }
 
 /* ── Panel ───────────────────────────────────────────────── */
 .drawer-panel {
+  --white: #ffffff;
+
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 480px;
-  max-width: 100vw;
-  background: var(--bg2);
-  border-left: 1px solid var(--border);
   z-index: 201;
+  background: var(--bg2);
   display: flex;
   flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  transition: transform 0.25s ease;
 }
 
-.drawer-panel-open {
-  transform: translateX(0);
+[data-theme="light"] .drawer-panel {
+  --white: var(--text);
 }
 
-@media (max-width: 520px) {
+/* Desktop: right slide-in, 65vw */
+@media (min-width: 1280px) {
   .drawer-panel {
-    width: 100vw;
-    border-left: none;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    width: 65vw;
+    max-width: 65vw;
+    border-left: 1px solid var(--border);
+    transform: translateX(100%);
   }
+
+  .drawer-panel-open {
+    transform: translateX(0);
+  }
+
+  .drawer-sheet-handle {
+    display: none;
+  }
+}
+
+/* Tablet: 75vw */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .drawer-panel {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    width: 75vw;
+    max-width: 75vw;
+    border-left: 1px solid var(--border);
+    transform: translateX(100%);
+  }
+
+  .drawer-panel-open {
+    transform: translateX(0);
+  }
+
+  .drawer-sheet-handle {
+    display: none;
+  }
+}
+
+/* Mobile: bottom sheet */
+@media (max-width: 1023px) {
+  .drawer-panel {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 75vh;
+    max-height: 75vh;
+    border-top: 1px solid var(--border);
+    transform: translateY(100%);
+  }
+
+  .drawer-panel-open {
+    transform: translateY(0);
+  }
+}
+
+.drawer-sheet-handle {
+  flex-shrink: 0;
+  width: 32px;
+  height: 4px;
+  margin: 10px auto 4px;
+  background: var(--border2);
+  border-radius: 2px;
+}
+
+/* Fixed chrome: header + tabs */
+.drawer-chrome {
+  flex-shrink: 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
 }
 
 /* ── Header ──────────────────────────────────────────────── */
 .drawer-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
-  flex-shrink: 0;
+  padding: 14px 16px 10px;
 }
 
 .drawer-header-left {
@@ -60,16 +139,16 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
+  flex-wrap: wrap;
 }
 
 .drawer-cve-id {
-  font-size: 0.9375rem;
-  font-weight: 500;
-  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--white);
   letter-spacing: 0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .drawer-sev-badge {
@@ -81,31 +160,131 @@
   flex-shrink: 0;
 }
 
+.drawer-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.drawer-report-wrap {
+  position: relative;
+}
+
+.drawer-report-btn {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+  color: #fff;
+  background: var(--red);
+  border: none;
+  border-radius: 0;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.drawer-report-btn:hover {
+  opacity: 0.9;
+}
+
+.drawer-report-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 168px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-report-item {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-align: left;
+  padding: 10px 14px;
+  color: var(--text2);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: color 0.1s, background 0.1s;
+}
+
+.drawer-report-item:last-child {
+  border-bottom: none;
+}
+
+.drawer-report-item:hover {
+  color: var(--text);
+  background: var(--bg3);
+}
+
 .drawer-close {
   font-size: 1rem;
   color: var(--text3);
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px 8px;
-  flex-shrink: 0;
-  transition: color 0.1s;
+  padding: 6px 8px;
   line-height: 1;
+  transition: color 0.1s;
 }
 
 .drawer-close:hover {
   color: var(--text);
 }
 
-.drawer-close:focus-visible {
+.drawer-close:focus-visible,
+.drawer-report-btn:focus-visible,
+.drawer-tab:focus-visible {
   outline: 1px solid var(--accent);
+  outline-offset: 1px;
 }
 
-/* ── Body ────────────────────────────────────────────────── */
-.drawer-body {
+/* ── Tabs ────────────────────────────────────────────────── */
+.drawer-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.drawer-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.drawer-tab {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.drawer-tab-active {
+  color: var(--text);
+  border-bottom-color: var(--red);
+}
+
+.drawer-tab:hover:not(.drawer-tab-active) {
+  color: var(--text2);
+}
+
+/* ── Scrollable tab content ──────────────────────────────── */
+.drawer-tab-panel {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .drawer-section {
@@ -126,14 +305,19 @@
   margin-bottom: 10px;
 }
 
-/* Description */
+.drawer-phase2 {
+  font-size: 0.75rem;
+  color: var(--text3);
+  margin: 0;
+}
+
 .drawer-description {
   font-size: 0.875rem;
   color: var(--text2);
   line-height: 1.65;
+  margin: 0;
 }
 
-/* Summary blockquote */
 .drawer-summary {
   border-left: 3px solid var(--accent);
   padding: 10px 14px;
@@ -142,42 +326,54 @@
   color: var(--text);
   line-height: 1.6;
   font-style: normal;
+  margin: 0;
 }
 
-/* Metrics */
-.metrics-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0;
-}
-
-.metric-cell {
-  padding: 10px 16px;
-  border-right: 1px solid var(--border);
-}
-
-.metric-cell:first-child {
-  padding-left: 0;
-}
-
-.metric-cell:last-child {
-  border-right: none;
-  padding-right: 0;
-}
-
-.metric-value {
+.drawer-cvss-score {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: 400;
   line-height: 1;
-  margin-bottom: 4px;
+  margin: 0;
 }
 
-.metric-label {
-  font-family: var(--font-mono);
-  font-size: 0.5625rem;
-  letter-spacing: 0.1em;
-  color: var(--text3);
+/* EPSS bar */
+.drawer-epss-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.drawer-epss-header .drawer-section-label {
+  margin-bottom: 0;
+}
+
+.drawer-epss-value {
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+}
+
+.drawer-epss-track {
+  height: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+}
+
+.drawer-epss-fill {
+  height: 100%;
+  min-width: 0;
+  transition: width 0.3s ease;
+}
+
+.drawer-patch-status {
+  font-size: 0.8125rem;
+  color: var(--text2);
+  margin: 0;
+}
+
+.drawer-kev-flag {
+  color: var(--red);
 }
 
 /* Affected products */
@@ -284,6 +480,8 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin: 0;
+  padding: 0;
 }
 
 .refs-link {
@@ -299,41 +497,4 @@
 
 .refs-link:hover {
   color: var(--accent);
-}
-
-/* Copy report */
-.drawer-section-action {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.copy-report-btn {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  color: var(--text);
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  padding: 8px 20px;
-  cursor: pointer;
-  transition: color 0.1s, border-color 0.1s, background 0.1s;
-}
-
-.copy-report-btn:hover {
-  border-color: var(--text3);
-  color: var(--text);
-}
-
-.copy-report-btn.copied {
-  color: var(--green);
-  border-color: var(--green);
-  background: var(--green-dim);
-}
-
-.copy-hint {
-  font-size: 0.6875rem;
-  color: var(--text3);
 }
