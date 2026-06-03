@@ -48,6 +48,10 @@ export function fetchCVE(cveId) {
   return request(`/cves/${encodeURIComponent(cveId)}`)
 }
 
+export function fetchCVESentences(cveId) {
+  return request(`/cves/${encodeURIComponent(cveId)}/sentences`)
+}
+
 export function fetchCVEsForExport(params = {}) {
   const qs = new URLSearchParams()
   if (params.severity)  qs.set('severity', params.severity)

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { fetchCVESentences } from '../api.js'
 import { buildSingleReport, copyToClipboard } from '../utils/report.js'
 import './DetailDrawer.css'
 
@@ -16,29 +17,6 @@ function severityColor(sev) {
   if (s === 'MEDIUM')   return 'var(--accent)'
   if (s === 'LOW')      return 'var(--green)'
   return 'var(--text3)'
-}
-
-function cvssMetricColor(score, severity) {
-  const fromSev = severityColor(severity)
-  if ((severity || '').toUpperCase() !== 'UNKNOWN') return fromSev
-  if (score == null) return 'var(--text3)'
-  if (score >= 9.0) return 'var(--red)'
-  if (score >= 7.0) return 'var(--amber)'
-  if (score >= 4.0) return 'var(--accent)'
-  if (score > 0) return 'var(--green)'
-  return 'var(--text3)'
-}
-
-function epssPercent(score) {
-  if (score == null || score === undefined) return null
-  return score * 100
-}
-
-function epssBarColor(pct) {
-  if (pct == null) return 'var(--text3)'
-  if (pct >= 50) return 'var(--red)'
-  if (pct >= 20) return 'var(--amber)'
-  return 'var(--green)'
 }
 
 function techniqueLink(tech) {
@@ -59,24 +37,14 @@ function Phase2Block({ title }) {
   )
 }
 
-function EpssBar({ score }) {
-  const pct = epssPercent(score)
-  const color = epssBarColor(pct)
+function HumanSentence({ label, text }) {
+  if (!text) return null
+  const headingId = `human-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
   return (
-    <div className="drawer-epss" aria-label={pct != null ? `EPSS ${pct.toFixed(1)} percent` : 'EPSS not available'}>
-      <div className="drawer-epss-header">
-        <span className="drawer-section-label">EPSS</span>
-        <span className="drawer-epss-value mono" style={{ color }}>
-          {pct != null ? `${pct.toFixed(1)}%` : 'N/A'}
-        </span>
-      </div>
-      <div className="drawer-epss-track">
-        <div
-          className="drawer-epss-fill"
-          style={{ width: pct != null ? `${Math.min(100, pct)}%` : '0%', background: color }}
-        />
-      </div>
-    </div>
+    <section className="drawer-section" aria-labelledby={headingId}>
+      <h3 id={headingId} className="drawer-human-label mono">{label}</h3>
+      <p className="drawer-human-text">{text}</p>
+    </section>
   )
 }
 
@@ -104,41 +72,42 @@ function downloadPdf(cve) {
   }
 }
 
-function TabOverview({ cve, products, cwes, urls, cvssValColor }) {
+function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading }) {
   return (
     <>
       {cve.description && (
         <section className="drawer-section" aria-labelledby="desc-heading">
-          <h3 id="desc-heading" className="drawer-section-label">DESCRIPTION</h3>
+          <h3 id="desc-heading" className="drawer-human-label mono">DESCRIPTION</h3>
           <p className="drawer-description">{cve.description}</p>
         </section>
       )}
 
       {cve.summary && (
         <section className="drawer-section" aria-labelledby="plain-heading">
-          <h3 id="plain-heading" className="drawer-section-label">// PLAIN ENGLISH</h3>
+          <h3 id="plain-heading" className="drawer-human-label mono">PLAIN ENGLISH</h3>
           <blockquote className="drawer-summary">{cve.summary}</blockquote>
         </section>
       )}
 
-      <section className="drawer-section" aria-labelledby="cvss-heading">
-        <h3 id="cvss-heading" className="drawer-section-label">CVSS</h3>
-        <p
-          className="drawer-cvss-score"
-          style={{ color: cvssValColor }}
-          aria-label={`CVSS score ${cve.cvss_score != null ? cve.cvss_score.toFixed(1) : 'not available'}`}
-        >
-          {cve.cvss_score != null ? cve.cvss_score.toFixed(1) : 'N/A'}
-        </p>
-      </section>
+      {sentencesLoading && (
+        <section className="drawer-section">
+          <p className="drawer-human-loading mono">// Loading intelligence summary...</p>
+        </section>
+      )}
 
-      <section className="drawer-section">
-        <EpssBar score={cve.epss_score} />
-      </section>
+      {sentences && (
+        <>
+          <HumanSentence label="RISK ASSESSMENT" text={sentences.risk} />
+          <HumanSentence label="EXPLOIT LIKELIHOOD" text={sentences.exploit_likelihood} />
+          <HumanSentence label="PUBLIC EXPLOITS" text={sentences.public_exploits} />
+          <HumanSentence label="PATCH STATUS" text={sentences.patch} />
+          <HumanSentence label="CISA KEV STATUS" text={sentences.kev} />
+        </>
+      )}
 
       {products.length > 0 && (
         <section className="drawer-section" aria-labelledby="affected-heading">
-          <h3 id="affected-heading" className="drawer-section-label">AFFECTED PRODUCTS</h3>
+          <h3 id="affected-heading" className="drawer-human-label mono">AFFECTED PRODUCTS</h3>
           <div className="product-tags" aria-label="Affected products">
             {products.map(p => (
               <span key={p} className="product-tag mono" title={p}>
@@ -156,21 +125,9 @@ function TabOverview({ cve, products, cwes, urls, cvssValColor }) {
         </section>
       )}
 
-      <section className="drawer-section" aria-labelledby="patch-heading">
-        <h3 id="patch-heading" className="drawer-section-label">PATCH</h3>
-        <p className="drawer-patch-status mono">
-          <span style={{ color: cve.patch_available ? 'var(--green)' : 'var(--amber)' }}>
-            {cve.patch_available ? 'Available' : 'Not confirmed'}
-          </span>
-          {cve.is_kev && (
-            <span className="drawer-kev-flag"> · CISA KEV</span>
-          )}
-        </p>
-      </section>
-
       {urls.length > 0 && (
         <section className="drawer-section" aria-labelledby="refs-heading">
-          <h3 id="refs-heading" className="drawer-section-label">REFERENCES</h3>
+          <h3 id="refs-heading" className="drawer-human-label mono">REFERENCES</h3>
           <ul className="refs-list" aria-label="Source references">
             {urls.map(url => (
               <li key={url} className="refs-item">
@@ -253,8 +210,32 @@ export default function DetailDrawer({ cve, onClose }) {
   const [activeTab, setActiveTab] = useState('overview')
   const [reportOpen, setReportOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [sentences, setSentences] = useState(null)
+  const [sentencesLoading, setSentencesLoading] = useState(false)
   const reportRef = useRef(null)
   const isOpen = !!cve
+
+  useEffect(() => {
+    if (!cve?.cve_id) {
+      setSentences(null)
+      setSentencesLoading(false)
+      return
+    }
+    let cancelled = false
+    setSentences(null)
+    setSentencesLoading(true)
+    fetchCVESentences(cve.cve_id)
+      .then(data => {
+        if (!cancelled) setSentences(data)
+      })
+      .catch(() => {
+        if (!cancelled) setSentences(null)
+      })
+      .finally(() => {
+        if (!cancelled) setSentencesLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [cve?.cve_id])
 
   useEffect(() => {
     if (isOpen) {
@@ -321,7 +302,6 @@ export default function DetailDrawer({ cve, onClose }) {
   const cwes = Array.isArray(cve.cwe_ids) ? cve.cwe_ids : []
   const urls = Array.isArray(cve.source_urls) ? cve.source_urls.slice(0, 5) : []
   const sevColor = severityColor(cve.severity)
-  const cvssValColor = cvssMetricColor(cve.cvss_score, cve.severity)
   const techniques = Array.isArray(cve.techniques) ? cve.techniques : []
 
   return (
@@ -426,7 +406,8 @@ export default function DetailDrawer({ cve, onClose }) {
               products={products}
               cwes={cwes}
               urls={urls}
-              cvssValColor={cvssValColor}
+              sentences={sentences}
+              sentencesLoading={sentencesLoading}
             />
           )}
           {activeTab === 'intel' && <TabIntel techniques={techniques} />}
