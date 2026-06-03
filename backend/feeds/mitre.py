@@ -220,8 +220,9 @@ async def refresh_mitre_data(db) -> dict[str, int]:
     techniques = await download_enterprise_attack()
     cve_map = await download_cve_technique_mappings()
 
-    await replace_mitre_techniques(db, techniques)
+    # Clear mappings before replacing techniques (FK: map.technique_id → mitre_techniques)
     await clear_cve_technique_map(db)
+    await replace_mitre_techniques(db, techniques)
 
     known_technique_ids = {t["technique_id"] for t in techniques}
     known_cves = await get_all_cve_ids_set(db)
