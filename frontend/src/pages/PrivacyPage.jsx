@@ -21,10 +21,12 @@ export default function PrivacyPage() {
       <h3 className="legal-sub-heading">IOC lookup cache</h3>
       <p className="legal-p">
         When you use IOC Lookup, your submitted IP address, file hash, or domain
-        is sent to VirusTotal and AbuseIPDB (third-party services). The result is
-        cached locally for 6 hours to reduce API calls. This cache stores only
-        the IOC value and the enrichment result — not associated with any user or
-        session. Cache entries are automatically deleted after 6 hours.
+        is sent to third-party enrichment services: VirusTotal, AbuseIPDB,
+        GreyNoise (IP addresses only), MalwareBazaar (file hashes only), and
+        URLhaus (domains only). The combined result is cached locally for up to
+        6 hours to reduce API calls; GreyNoise IP results are refreshed at most
+        every 1 hour. This cache stores only the IOC value and the enrichment
+        result — not associated with any user or session.
       </p>
 
       <h3 className="legal-sub-heading">Server logs</h3>
@@ -52,6 +54,11 @@ export default function PrivacyPage() {
         <li>OSV.dev — open-source vulnerability data — server-side, once daily</li>
         <li>VirusTotal — IOC enrichment — only when you use IOC Lookup</li>
         <li>AbuseIPDB — IP reputation — only when you use IOC Lookup</li>
+        <li>GreyNoise — internet scanning context for IPs — only when you use IOC Lookup (requires server API key)</li>
+        <li>MalwareBazaar (abuse.ch) — malware family for file hashes — IOC Lookup only</li>
+        <li>URLhaus (abuse.ch) — malicious URL/domain listings — IOC Lookup only</li>
+        <li>Sploitus — public exploit search per CVE — server-side when you open CVE detail (Intel tab)</li>
+        <li>CIRCL CVE-Search — supplemental CVE references — server-side on CVE detail load</li>
         <li>Google Fonts — typography — every page load from your browser</li>
       </ul>
 

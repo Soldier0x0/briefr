@@ -141,6 +141,18 @@ function DetailGrid({ result }) {
   )
 }
 
+function EnrichmentBlock({ heading, sentence, children }) {
+  if (!sentence && !children) return null
+  const headingId = `ioc-${heading.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`
+  return (
+    <section className="ioc-enrichment-block" aria-labelledby={headingId}>
+      <h3 id={headingId} className="ioc-enrichment-heading mono">{heading}</h3>
+      {sentence && <p className="ioc-enrichment-sentence">{sentence}</p>}
+      {children}
+    </section>
+  )
+}
+
 function ActionRow({ result, onCopy, copied }) {
   const hasVTLink = !!result.vt_link
 
@@ -292,8 +304,11 @@ export default function IOCLookup() {
       result.abuse_score != null ? `Abuse:   ${result.abuse_score} / 100` : null,
       `Tags:    ${tags}`,
       result.vt_link    ? `Report:  ${result.vt_link}` : null,
+      result.greynoise_sentence ? `GreyNoise: ${result.greynoise_sentence}` : null,
+      result.malwarebazaar_sentence ? `MalwareBazaar: ${result.malwarebazaar_sentence}` : null,
+      result.urlhaus_sentence ? `URLhaus: ${result.urlhaus_sentence}` : null,
       '',
-      'Source: BRIEFR — VirusTotal + AbuseIPDB',
+      'Source: BRIEFR — VirusTotal, AbuseIPDB, GreyNoise, MalwareBazaar, URLhaus',
     ].filter(l => l !== null).join('\n')
 
     try {
@@ -314,8 +329,8 @@ export default function IOCLookup() {
       <div className="ioc-page-header">
         <h1 className="ioc-page-title">IOC LOOKUP</h1>
         <p className="ioc-page-sub">
-          Enrich indicators of compromise against VirusTotal and AbuseIPDB.
-          Paste an IP address, file hash, or domain name below.
+          Enrich indicators against VirusTotal, AbuseIPDB, GreyNoise, MalwareBazaar,
+          and URLhaus. Paste an IP address, file hash, or domain name below.
         </p>
       </div>
 
@@ -360,8 +375,8 @@ export default function IOCLookup() {
         </div>
 
         <p className="ioc-privacy-notice mono" role="note">
-          {'// Lookups are sent to VirusTotal and AbuseIPDB. Results cached'}<br />
-          {'// locally for 6h. No user data is stored. See Privacy Policy.'}
+          {'// Lookups are sent to third-party enrichment APIs (see Privacy Policy).'}<br />
+          {'// Results cached locally (6h IOC, 1h GreyNoise). No user accounts.'}
         </p>
       </div>
 
@@ -399,6 +414,49 @@ export default function IOCLookup() {
 
           <DetailGrid result={result} />
 
+          {result.type === 'ip' && result.greynoise_sentence && (
+            <EnrichmentBlock
+              heading="// GREYNOISE"
+              sentence={result.greynoise_sentence}
+            >
+              {result.greynoise?.link && (
+                <a
+                  className="ioc-enrichment-link mono"
+                  href={result.greynoise.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View on GreyNoise &rarr;
+                </a>
+              )}
+            </EnrichmentBlock>
+          )}
+
+          {result.type === 'hash' && result.malwarebazaar_sentence && (
+            <EnrichmentBlock
+              heading="// MALWAREBAZAAR"
+              sentence={result.malwarebazaar_sentence}
+            />
+          )}
+
+          {result.type === 'domain' && result.urlhaus_sentence && (
+            <EnrichmentBlock
+              heading="// URLHAUS"
+              sentence={result.urlhaus_sentence}
+            >
+              {result.urlhaus?.reference && (
+                <a
+                  className="ioc-enrichment-link mono"
+                  href={result.urlhaus.reference}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  URLhaus record &rarr;
+                </a>
+              )}
+            </EnrichmentBlock>
+          )}
+
           <ActionRow result={result} onCopy={copyReport} copied={copied} />
         </div>
       )}
@@ -423,9 +481,11 @@ export default function IOCLookup() {
           <div className="idle-flow mono" aria-hidden="true">
             <span className="idle-node">INDICATOR</span>
             <span className="idle-arrow">--&gt;</span>
-            <span className="idle-node">VIRUSTOTAL</span>
+            <span className="idle-node">VT</span>
             <span className="idle-arrow">+</span>
             <span className="idle-node">ABUSEIPDB</span>
+            <span className="idle-arrow">+</span>
+            <span className="idle-node">MORE</span>
             <span className="idle-arrow">--&gt;</span>
             <span className="idle-node">VERDICT</span>
           </div>

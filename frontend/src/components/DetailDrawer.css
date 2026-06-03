@@ -498,6 +498,130 @@
   color: var(--red);
 }
 
+.drawer-intel-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.drawer-intel-section-head .drawer-human-label {
+  margin-bottom: 0;
+}
+
+.drawer-count-badge {
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  background: var(--bg3);
+}
+
+.drawer-intel-empty {
+  font-size: 0.75rem;
+  color: var(--text3);
+  margin: 0;
+}
+
+.drawer-exploit-list,
+.drawer-gn-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.drawer-exploit-item,
+.drawer-gn-item {
+  padding: 10px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+}
+
+.drawer-exploit-top,
+.drawer-gn-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.drawer-exploit-type {
+  font-size: 0.5625rem;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border: 1px solid var(--border2);
+}
+
+.drawer-exploit-type--weaponised,
+.drawer-exploit-type--weaponized {
+  color: var(--red);
+  border-color: var(--red-dim);
+}
+
+.drawer-exploit-type--poc {
+  color: var(--amber);
+  border-color: var(--amber-dim);
+}
+
+.drawer-exploit-source,
+.drawer-exploit-date,
+.drawer-gn-ip {
+  font-size: 0.6875rem;
+  color: var(--text3);
+}
+
+.drawer-exploit-title {
+  font-size: 0.8125rem;
+  color: var(--text);
+  line-height: 1.45;
+  margin: 0 0 6px;
+}
+
+.drawer-exploit-link {
+  font-size: 0.6875rem;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+.drawer-gn-class {
+  font-size: 0.5625rem;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border: 1px solid var(--border2);
+}
+
+.drawer-gn-class--malicious {
+  color: var(--red);
+  border-color: var(--red-dim);
+}
+
+.drawer-gn-class--benign {
+  color: var(--green);
+  border-color: var(--green-dim);
+}
+
+.drawer-gn-class--unknown {
+  color: var(--text3);
+}
+
+.drawer-gn-name {
+  font-size: 0.75rem;
+  color: var(--text2);
+  margin: 0 0 6px;
+}
+
+.drawer-gn-sentence {
+  font-size: 0.8125rem;
+  color: var(--text2);
+  line-height: 1.5;
+  margin: 0 0 6px;
+}
+
 /* Affected products */
 .product-tags {
   display: flex;

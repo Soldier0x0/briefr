@@ -138,6 +138,29 @@ async def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_epss_history_cve_date
                 ON epss_history(cve_id, recorded_date);
+
+            CREATE TABLE IF NOT EXISTS cve_exploits (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                cve_id TEXT NOT NULL,
+                title TEXT NOT NULL DEFAULT '',
+                type TEXT NOT NULL DEFAULT 'poc',
+                source TEXT NOT NULL DEFAULT '',
+                url TEXT NOT NULL DEFAULT '',
+                published_date TEXT DEFAULT '',
+                fetched_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_cve_exploits_cve
+                ON cve_exploits(cve_id);
+
+            CREATE TABLE IF NOT EXISTS feed_cache (
+                cache_key TEXT PRIMARY KEY,
+                result TEXT NOT NULL,
+                cached_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_feed_cache_cached_at
+                ON feed_cache(cached_at);
         """)
         await db.commit()
 
@@ -471,6 +494,78 @@ async def set_ioc_cache(db: aiosqlite.Connection, value: str, ioc_type: str, res
         """,
         (value, ioc_type, json.dumps(result)),
     )
+
+
+async def get_feed_cache(
+    db: aiosqlite.Connection, cache_key: str, max_age_hours: float
+) -> dict | None:
+    row = await db.execute_fetchall(
+        """
+        SELECT result FROM feed_cache
+        WHERE cache_key = ?
+          AND cached_at > datetime('now', ?)
+        """,
+        (cache_key, f"-{max_age_hours} hours"),
+    )
+    if row:
+        return json.loads(row[0]["result"])
+    return None
+
+
+async def set_feed_cache(db: aiosqlite.Connection, cache_key: str, result: dict) -> None:
+    await db.execute(
+        """
+        INSERT INTO feed_cache (cache_key, result, cached_at)
+        VALUES (?, ?, datetime('now'))
+        ON CONFLICT(cache_key) DO UPDATE SET
+            result = excluded.result,
+            cached_at = datetime('now')
+        """,
+        (cache_key, json.dumps(result)),
+    )
+
+
+async def get_cached_cve_exploits(
+    db: aiosqlite.Connection, cve_id: str, max_age_hours: float = 6
+) -> list[dict] | None:
+    cached = await get_feed_cache(db, f"sploitus:{cve_id.upper()}", max_age_hours)
+    if cached is None:
+        return None
+    return cached.get("exploits", [])
+
+
+async def store_cve_exploits(
+    db: aiosqlite.Connection, cve_id: str, exploits: list[dict]
+) -> None:
+    await replace_cve_exploits(db, cve_id, exploits)
+    await set_feed_cache(
+        db,
+        f"sploitus:{cve_id.upper()}",
+        {"exploits": exploits},
+    )
+
+
+async def replace_cve_exploits(
+    db: aiosqlite.Connection, cve_id: str, exploits: list[dict]
+) -> None:
+    key = cve_id.upper()
+    await db.execute("DELETE FROM cve_exploits WHERE cve_id = ?", (key,))
+    for exp in exploits:
+        await db.execute(
+            """
+            INSERT INTO cve_exploits (
+                cve_id, title, type, source, url, published_date, fetched_at
+            ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+            """,
+            (
+                key,
+                exp.get("title") or "",
+                exp.get("type") or "poc",
+                exp.get("source") or "",
+                exp.get("url") or "",
+                exp.get("published_date") or "",
+            ),
+        )
 
 
 async def get_cve_count(db: aiosqlite.Connection) -> int:

@@ -127,6 +127,67 @@ def exploits_from_cve(has_poc: bool, source_urls: list | None) -> list[dict]:
     return exploits
 
 
+def greynoise_sentence(gn: dict | None) -> str:
+    if not gn:
+        return (
+            "GreyNoise scanning intelligence is not available for this address."
+        )
+    classification = (gn.get("classification") or "unknown").lower()
+    name = (gn.get("name") or "").strip()
+    ip = gn.get("ip") or "this address"
+    if classification == "malicious":
+        detail = f" ({name})" if name else ""
+        return (
+            f"GreyNoise classifies {ip} as malicious internet scanning activity"
+            f"{detail}. Treat associated traffic as hostile."
+        )
+    if classification == "benign":
+        detail = f" — {name}" if name else ""
+        return (
+            f"GreyNoise classifies {ip} as benign or common business traffic"
+            f"{detail}. Noise is unlikely to reflect targeted attack activity."
+        )
+    if not gn.get("noise"):
+        return (
+            f"GreyNoise has not observed widespread scanning from {ip}. "
+            "It has not appeared in their internet noise feed."
+        )
+    return (
+        f"GreyNoise has seen scanning activity from {ip} but cannot firmly "
+        "classify it as benign or malicious."
+    )
+
+
+def malwarebazaar_sentence(mb: dict | None) -> str:
+    if not mb or not (mb.get("malware_family") or mb.get("tags")):
+        return (
+            "MalwareBazaar has no malware sample metadata linked to this hash."
+        )
+    family = (mb.get("malware_family") or "unknown family").strip()
+    first = (mb.get("first_seen") or "").strip()
+    tags = mb.get("tags") or []
+    tag_str = ", ".join(tags[:5]) if tags else "no tags"
+    when = f", first seen {first}" if first else ""
+    return (
+        f"MalwareBazaar associates this hash with {family}{when}. "
+        f"Community tags: {tag_str}."
+    )
+
+
+def urlhaus_sentence(uh: dict | None) -> str:
+    if not uh or not uh.get("threat_type"):
+        return "URLhaus has no active malware distribution record for this indicator."
+    threat = uh.get("threat_type") or "malware"
+    tags = uh.get("tags") or []
+    reporter = (uh.get("reporter") or "").strip()
+    tag_str = ", ".join(tags[:5]) if tags else "none listed"
+    rep = f" Reported by {reporter}." if reporter else ""
+    return (
+        f"URLhaus lists this indicator as {threat} distribution. "
+        f"Tags: {tag_str}.{rep}"
+    )
+
+
 def epss_sentence_or_fallback(score: float | None, kev: bool) -> str:
     if score is None:
         base = (

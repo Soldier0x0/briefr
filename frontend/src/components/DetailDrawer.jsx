@@ -217,43 +217,140 @@ function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading, e
   )
 }
 
-function TabIntel({ techniques }) {
+function exploitTypeLabel(type) {
+  const t = (type || '').toLowerCase()
+  if (t === 'weaponised' || t === 'weaponized') return 'Weaponised'
+  return 'PoC'
+}
+
+function TabIntel({ techniques, publicExploits, greynoiseScans }) {
+  const exploits = Array.isArray(publicExploits) ? publicExploits : []
+  const scans = Array.isArray(greynoiseScans) ? greynoiseScans : []
+
   return (
-    <section className="drawer-section" aria-labelledby="mitre-heading">
-      <h3 id="mitre-heading" className="drawer-section-label">MITRE ATT&CK</h3>
-      {techniques.length === 0 ? (
-        <p className="mitre-empty mono">// No ATT&CK mapping available</p>
-      ) : (
-        <div className="mitre-techniques" role="list" aria-label="Mapped ATT&CK techniques">
-          {techniques.map(tech => {
-            const tid = tech.id || tech.technique_id
-            const href = techniqueLink(tech)
-            return (
-              <article key={tid} className="mitre-technique-card" role="listitem">
-                <div className="mitre-technique-top">
-                  <span className="mitre-technique-id mono">{tid}</span>
-                  {tech.tactic && (
-                    <span className="mitre-tactic-badge mono">{tech.tactic}</span>
+    <>
+      <section className="drawer-section" aria-labelledby="exploits-heading">
+        <div className="drawer-intel-section-head">
+          <h3 id="exploits-heading" className="drawer-human-label mono">
+            // PUBLIC EXPLOITS
+          </h3>
+          <span className="drawer-count-badge mono" aria-label={`${exploits.length} exploits`}>
+            {exploits.length}
+          </span>
+        </div>
+        {exploits.length === 0 ? (
+          <p className="drawer-intel-empty mono">// No public exploits indexed for this CVE</p>
+        ) : (
+          <ul className="drawer-exploit-list" aria-label="Public exploits from Sploitus">
+            {exploits.map((exp, idx) => (
+              <li key={exp.url || `${exp.title}-${idx}`} className="drawer-exploit-item">
+                <div className="drawer-exploit-top">
+                  <span
+                    className={`drawer-exploit-type mono drawer-exploit-type--${(exp.type || 'poc').toLowerCase()}`}
+                  >
+                    {exploitTypeLabel(exp.type)}
+                  </span>
+                  {exp.source && (
+                    <span className="drawer-exploit-source mono">{exp.source}</span>
+                  )}
+                  {exp.published_date && (
+                    <span className="drawer-exploit-date mono">{exp.published_date}</span>
                   )}
                 </div>
-                <p className="mitre-technique-name">{tech.name}</p>
-                {href && (
+                <p className="drawer-exploit-title">{exp.title}</p>
+                {exp.url && (
                   <a
-                    className="mitre-technique-link mono"
-                    href={href}
+                    className="drawer-exploit-link mono"
+                    href={exp.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={`View ${tid} on attack.mitre.org (opens new tab)`}
                   >
-                    attack.mitre.org &rarr;
+                    View exploit &rarr;
                   </a>
                 )}
-              </article>
-            )
-          })}
-        </div>
-      )}
-    </section>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="drawer-section" aria-labelledby="scanning-heading">
+        <h3 id="scanning-heading" className="drawer-human-label mono">// ACTIVE SCANNING</h3>
+        {scans.length === 0 ? (
+          <p className="drawer-intel-empty mono">
+            // No exploitation-related IPs found in this CVE record
+          </p>
+        ) : (
+          <ul className="drawer-gn-list" aria-label="GreyNoise scanning context">
+            {scans.map(scan => {
+              const cls = (scan.classification || 'unknown').toLowerCase()
+              return (
+                <li key={scan.ip} className="drawer-gn-item">
+                  <div className="drawer-gn-top">
+                    <span className="drawer-gn-ip mono">{scan.ip}</span>
+                    <span className={`drawer-gn-class mono drawer-gn-class--${cls}`}>
+                      {cls.toUpperCase()}
+                    </span>
+                  </div>
+                  {scan.sentence && (
+                    <p className="drawer-gn-sentence">{scan.sentence}</p>
+                  )}
+                  {scan.name && !scan.sentence && (
+                    <p className="drawer-gn-name mono">{scan.name}</p>
+                  )}
+                  {scan.link && (
+                    <a
+                      className="drawer-exploit-link mono"
+                      href={scan.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      GreyNoise viz &rarr;
+                    </a>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section className="drawer-section" aria-labelledby="mitre-heading">
+        <h3 id="mitre-heading" className="drawer-section-label">MITRE ATT&CK</h3>
+        {techniques.length === 0 ? (
+          <p className="mitre-empty mono">// No ATT&CK mapping available</p>
+        ) : (
+          <div className="mitre-techniques" role="list" aria-label="Mapped ATT&CK techniques">
+            {techniques.map(tech => {
+              const tid = tech.id || tech.technique_id
+              const href = techniqueLink(tech)
+              return (
+                <article key={tid} className="mitre-technique-card" role="listitem">
+                  <div className="mitre-technique-top">
+                    <span className="mitre-technique-id mono">{tid}</span>
+                    {tech.tactic && (
+                      <span className="mitre-tactic-badge mono">{tech.tactic}</span>
+                    )}
+                  </div>
+                  <p className="mitre-technique-name">{tech.name}</p>
+                  {href && (
+                    <a
+                      className="mitre-technique-link mono"
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`View ${tid} on attack.mitre.org (opens new tab)`}
+                    >
+                      attack.mitre.org &rarr;
+                    </a>
+                  )}
+                </article>
+              )
+            })}
+          </div>
+        )}
+      </section>
+    </>
   )
 }
 
@@ -626,7 +723,13 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
               epssLoading={epssLoading}
             />
           )}
-          {activeTab === 'intel' && <TabIntel techniques={techniques} />}
+          {activeTab === 'intel' && (
+            <TabIntel
+              techniques={techniques}
+              publicExploits={cve.public_exploits}
+              greynoiseScans={cve.greynoise_scans}
+            />
+          )}
           {activeTab === 'detect' && <TabDetect />}
           {activeTab === 'related' && (
             <TabRelated
