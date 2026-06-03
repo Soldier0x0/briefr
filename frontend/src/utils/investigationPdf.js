@@ -4,7 +4,7 @@
 import { jsPDF } from 'jspdf'
 import { fetchInvestigationSummary } from '../api.js'
 import { enrichCveForPdf } from './pdfReport.js'
-import { TLP_OPTIONS } from './pdfReport.js'
+import { TLP_OPTIONS, TLP_OVERVIEW } from './pdfReport.js'
 import { getReportTimestamp } from './timezone.js'
 const T_CVE = 'cve'
 const T_IOC = 'ioc'
@@ -219,8 +219,17 @@ export async function downloadInvestigationPdf(items, startTime, options = {}) {
   if (meta.analystName) doc.text(`Analyst: ${meta.analystName}`, MARGIN, 54)
   doc.text(`Date: ${new Date().toLocaleString('en-GB')}`, MARGIN, meta.analystName ? 60 : 54)
   doc.text(`Duration: ${formatDuration(startTime)}`, MARGIN, meta.analystName ? 66 : 60)
-  doc.text(`Classification: ${meta.tlpLabel}`, MARGIN, meta.analystName ? 72 : 66)
-  doc.text(`Items in thread: ${items.length}`, MARGIN, meta.analystName ? 78 : 72)
+  let coverY = meta.analystName ? 72 : 66
+  doc.text(`Classification: ${meta.tlpLabel}`, MARGIN, coverY)
+  coverY += 6
+  doc.text(`Items in thread: ${items.length}`, MARGIN, coverY)
+  coverY += 10
+  doc.setFontSize(8)
+  const tlpNote = splitLines(doc, TLP_OVERVIEW, PAGE_W - MARGIN * 2)
+  tlpNote.forEach(line => {
+    doc.text(line, MARGIN, coverY)
+    coverY += 4
+  })
 
   doc.addPage()
   drawTimelinePage(doc, items, startTime)

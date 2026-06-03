@@ -39,6 +39,10 @@
   outline: none;
 }
 
+.cve-card.cve-card-in-thread {
+  background: color-mix(in srgb, var(--red-dim) 12%, var(--bg));
+}
+
 /* ── Custom rectangular checkbox ─────────────────────────── */
 .card-checkbox-wrap {
   position: absolute;
@@ -316,6 +320,19 @@
 .meta-val.age-old { color: var(--text3); }
 
 /* NEW since last visit badge */
+.cve-thread-badge {
+  position: absolute;
+  top: 10px;
+  right: 88px;
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  color: var(--red);
+  border: 1px solid var(--red);
+  padding: 2px 5px;
+  pointer-events: none;
+}
+
 .cve-new-badge {
   position: absolute;
   top: 10px;
@@ -341,6 +358,46 @@
   .cve-card {
     padding: 20px 40px 20px 36px;
   }
+}
+
+.cve-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.cve-action-btn {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  padding: 5px 10px;
+  border: 1px solid var(--red);
+  background: transparent;
+  color: var(--red);
+  cursor: pointer;
+}
+
+.cve-action-btn:hover:not(:disabled) {
+  background: var(--red-dim);
+}
+
+.cve-action-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.cve-action-btn-secondary {
+  border-color: var(--border2);
+  color: var(--text2);
+}
+
+.cve-action-btn-secondary:hover {
+  border-color: var(--text3);
+  color: var(--text);
+  background: var(--bg2);
 }
 
 @media (max-width: 640px) {

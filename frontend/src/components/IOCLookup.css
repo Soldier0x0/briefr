@@ -33,6 +33,51 @@
   max-width: 560px;
 }
 
+.ioc-from-cve-banner {
+  font-size: 0.6875rem;
+  color: var(--text2);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.ioc-from-cve-id {
+  color: var(--red);
+}
+
+.ioc-indicator-queue {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.ioc-indicator-chip {
+  font-size: 0.625rem;
+  padding: 6px 10px;
+  border: 1px solid var(--border2);
+  background: var(--bg2);
+  color: var(--text2);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ioc-indicator-chip:hover,
+.ioc-indicator-chip.selected {
+  border-color: var(--red);
+  color: var(--text);
+}
+
+.ioc-chip-type {
+  font-size: 0.5rem;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+}
+
 /* ── Input section ───────────────────────────────────────── */
 .ioc-input-section {
   margin-bottom: 32px;

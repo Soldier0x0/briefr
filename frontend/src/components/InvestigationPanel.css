@@ -105,6 +105,22 @@
   color: var(--text3);
 }
 
+.inv-thread-summary {
+  font-size: 0.5625rem;
+  color: var(--text3);
+  padding: 0 10px 6px;
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+
+.inv-thread-hint {
+  font-size: 0.6875rem;
+  color: var(--text2);
+  line-height: 1.4;
+  padding: 0 10px 10px;
+  margin: 0;
+}
+
 .inv-panel-actions {
   display: flex;
   gap: 6px;

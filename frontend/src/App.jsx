@@ -221,7 +221,17 @@ export default function App() {
 
   const investigationNav = useMemo(() => ({
     setActiveTab,
-    setIocPrefill: (ip) => setIocPrefill({ value: ip, trigger: Date.now() }),
+    setIocPrefill: (payload) => {
+      if (typeof payload === 'string') {
+        setIocPrefill({
+          value: payload,
+          indicators: [{ type: 'ip', value: payload }],
+          trigger: Date.now(),
+        })
+        return
+      }
+      setIocPrefill({ ...payload, trigger: payload.trigger ?? Date.now() })
+    },
     setAtlasActorFilter,
     clearAtlasFilter: () => setAtlasActorFilter(null),
     openCve: (cveId) => {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { TLP_OPTIONS } from '../utils/pdfReport.js'
+import { TLP_OPTIONS, TLP_OVERVIEW, TLP_HINTS } from '../utils/pdfReport.js'
 import './PdfExportModal.css'
 
 export default function PdfExportModal({
@@ -43,7 +43,7 @@ export default function PdfExportModal({
       >
         <h2 id="pdf-modal-title" className="pdf-modal-title mono">{title}</h2>
         <p className="pdf-modal-sub">
-          Choose TLP classification for the document. Analyst name is optional and is not stored.
+          {TLP_OVERVIEW} Analyst name is optional and is not stored.
         </p>
 
         <form onSubmit={handleSubmit}>
@@ -69,6 +69,11 @@ export default function PdfExportModal({
                 </label>
               ))}
             </div>
+            {TLP_HINTS[tlp] && (
+              <p className="pdf-tlp-hint" id="pdf-tlp-hint">
+                {TLP_HINTS[tlp]}
+              </p>
+            )}
           </fieldset>
 
           <label className="pdf-modal-label mono" htmlFor="pdf-analyst-name">

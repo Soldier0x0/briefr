@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { extractIndicatorsFromCve } from '../utils/extractIndicatorsFromCve.js'
 
 export const INV_TYPES = {
   CVE: 'cve',
@@ -32,6 +33,22 @@ function pivotLabel(item) {
   return `${badge} ${item.id}`
 }
 
+function buildThreadSummary(items) {
+  const counts = { cve: 0, ioc: 0, actor: 0, technique: 0 }
+  items.forEach(i => {
+    if (i.type === INV_TYPES.CVE) counts.cve += 1
+    else if (i.type === INV_TYPES.IOC) counts.ioc += 1
+    else if (i.type === INV_TYPES.ACTOR) counts.actor += 1
+    else if (i.type === INV_TYPES.TECHNIQUE) counts.technique += 1
+  })
+  const parts = []
+  if (counts.cve) parts.push(`${counts.cve} CVE${counts.cve > 1 ? 's' : ''}`)
+  if (counts.ioc) parts.push(`${counts.ioc} IOC${counts.ioc > 1 ? 's' : ''}`)
+  if (counts.actor) parts.push(`${counts.actor} actor${counts.actor > 1 ? 's' : ''}`)
+  if (counts.technique) parts.push(`${counts.technique} AI technique${counts.technique > 1 ? 's' : ''}`)
+  return parts.join(' · ') || 'No items'
+}
+
 export function InvestigationProvider({ children, navigation }) {
   const [items, setItems] = useState([])
   const [startTime, setStartTime] = useState(null)
@@ -41,7 +58,16 @@ export function InvestigationProvider({ children, navigation }) {
   itemsRef.current = items
 
   const isActive = items.length > 0
-  const showPanel = items.length >= 2
+  const showPanel = items.length >= 1
+  const threadSummary = useMemo(() => buildThreadSummary(items), [items])
+  const cveIdsInThread = useMemo(
+    () => new Set(items.filter(i => i.type === INV_TYPES.CVE).map(i => i.id)),
+    [items],
+  )
+  const isCveInThread = useCallback(
+    (cveId) => !!(cveId && cveIdsInThread.has(cveId)),
+    [cveIdsInThread],
+  )
 
   const lastItem = items.length ? items[items.length - 1] : null
 
@@ -91,26 +117,29 @@ export function InvestigationProvider({ children, navigation }) {
     })
   }, [recordItem])
 
-  const onCveDrawerOpened = useCallback((cve) => {
+  const startInvestigation = useCallback((cve) => {
     if (!cve?.cve_id) return
-    if (!itemsRef.current.length) {
-      ensureCveInThread(cve, INV_SOURCES.DRAWER)
-      return
+    if (!itemsRef.current.some(i => i.type === INV_TYPES.CVE && i.id === cve.cve_id)) {
+      ensureCveInThread(cve, INV_SOURCES.FEED)
     }
-    const already = itemsRef.current.some(i => i.type === INV_TYPES.CVE && i.id === cve.cve_id)
-    if (!already) {
-      const prev = itemsRef.current[itemsRef.current.length - 1]
-      recordItem({
-        type: INV_TYPES.CVE,
-        id: cve.cve_id,
-        title: cve.cve_id,
-        description: (cve.summary || cve.description || '').slice(0, 120),
-        source: INV_SOURCES.DRAWER,
-        pivotFrom: prev,
-        meta: { severity: cve.severity, is_kev: cve.is_kev },
-      })
-    }
-  }, [ensureCveInThread, recordItem])
+    setPanelExpanded(true)
+  }, [ensureCveInThread])
+
+  const recordIocPivot = useCallback((ip, from) => {
+    const fromItem = from || itemsRef.current[itemsRef.current.length - 1]
+    const exists = itemsRef.current.some(
+      i => i.type === INV_TYPES.IOC && i.id === ip,
+    )
+    if (exists) return
+    recordItem({
+      type: INV_TYPES.IOC,
+      id: ip,
+      title: ip,
+      description: `Indicator lookup: ${ip}`,
+      source: INV_SOURCES.IOC,
+      pivotFrom: fromItem,
+    })
+  }, [recordItem])
 
   const pivotToIoc = useCallback((ip, cveContext) => {
     const from = cveContext || itemsRef.current[itemsRef.current.length - 1]
@@ -127,17 +156,31 @@ export function InvestigationProvider({ children, navigation }) {
         })
       }
     }
-    recordItem({
-      type: INV_TYPES.IOC,
-      id: ip,
-      title: ip,
-      description: `Indicator lookup: ${ip}`,
-      source: INV_SOURCES.IOC,
-      pivotFrom: from,
-    })
+    recordIocPivot(ip, from)
     navigation?.setActiveTab?.('ioc')
-    navigation?.setIocPrefill?.(ip)
-  }, [recordItem, navigation])
+    navigation?.setIocPrefill?.({
+      value: ip,
+      indicators: [{ type: 'ip', value: ip }],
+      trigger: Date.now(),
+    })
+  }, [recordItem, recordIocPivot, navigation])
+
+  const pivotToIocFromCve = useCallback((cve) => {
+    if (!cve?.cve_id) return
+    ensureCveInThread(cve, INV_SOURCES.FEED)
+    const indicators = extractIndicatorsFromCve(cve)
+    const fromCve = itemsRef.current.find(
+      i => i.type === INV_TYPES.CVE && i.id === cve.cve_id,
+    )
+    navigation?.setActiveTab?.('ioc')
+    navigation?.setIocPrefill?.({
+      indicators,
+      value: indicators[0]?.value,
+      fromCveId: cve.cve_id,
+      pivotFrom: fromCve,
+      trigger: Date.now(),
+    })
+  }, [ensureCveInThread, navigation])
 
   const pivotToAtlasActor = useCallback((actorName, fromItem) => {
     const from = fromItem || itemsRef.current[itemsRef.current.length - 1]
@@ -184,6 +227,7 @@ export function InvestigationProvider({ children, navigation }) {
     startTime,
     isActive,
     showPanel,
+    threadSummary,
     panelExpanded,
     setPanelExpanded,
     mobileSheetOpen,
@@ -192,8 +236,11 @@ export function InvestigationProvider({ children, navigation }) {
     recordItem,
     clearInvestigation,
     ensureCveInThread,
-    onCveDrawerOpened,
+    startInvestigation,
+    isCveInThread,
+    recordIocPivot,
     pivotToIoc,
+    pivotToIocFromCve,
     pivotToAtlasActor,
     pivotToCveFromAtlas,
     pivotToTechnique,
@@ -203,14 +250,18 @@ export function InvestigationProvider({ children, navigation }) {
     startTime,
     isActive,
     showPanel,
+    threadSummary,
     panelExpanded,
     mobileSheetOpen,
     lastItem,
     recordItem,
     clearInvestigation,
     ensureCveInThread,
-    onCveDrawerOpened,
+    startInvestigation,
+    isCveInThread,
+    recordIocPivot,
     pivotToIoc,
+    pivotToIocFromCve,
     pivotToAtlasActor,
     pivotToCveFromAtlas,
     pivotToTechnique,
