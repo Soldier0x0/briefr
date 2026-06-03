@@ -10,6 +10,7 @@ from apscheduler.triggers.cron import CronTrigger
 from database import (
     backfill_display_fields,
     backfill_has_poc,
+    strip_auto_generated_summaries,
     enrich_kev_summaries,
     get_db,
     get_all_cve_ids,
@@ -245,17 +246,21 @@ async def _run_daily_refresh() -> None:
         logger.error("Step 3/3 failed (EPSS fetch): %s", exc)
 
     try:
-        logger.info("Step 4/4: Backfilling summaries and MITRE mappings")
+        logger.info("Step 4/4: Enriching display fields and plain-English summaries")
         db = await get_db()
         try:
+            stripped = await strip_auto_generated_summaries(db)
             filled = await backfill_display_fields(db)
             poc_marked = await backfill_has_poc(db)
-            await enrich_kev_summaries(db)
+            kev_summaries = await enrich_kev_summaries(db)
             await db.commit()
             logger.info(
-                "Step 4/4 complete: enriched %d display fields, %d PoC flags set",
+                "Step 4/4 complete: stripped %d auto summaries, enriched %d fields, "
+                "%d PoC flags, %d KEV summaries",
+                stripped,
                 filled,
                 poc_marked,
+                kev_summaries,
             )
         finally:
             await db.close()
@@ -331,6 +336,14 @@ async def maybe_run_on_startup() -> None:
     db = await get_db()
     try:
         count = await get_cve_count(db)
+        if count >= 10:
+            stripped = await strip_auto_generated_summaries(db)
+            await enrich_kev_summaries(db)
+            await db.commit()
+            if stripped:
+                logger.info(
+                    "Startup: cleared %d auto-generated plain summaries", stripped
+                )
     finally:
         await db.close()
 

@@ -146,10 +146,13 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
         )}
         <Toggle
           id="toggle-plain-english"
-          label="Plain English"
+          label="Plain English only"
           checked={!!filters.summary_only}
           onChange={val => onFiltersChange({ summary_only: val })}
         />
+        <p className="sidebar-filter-hint" id="plain-english-filter-hint">
+          Shows CVEs with a CISA or enriched summary block on the card — not NVD text alone.
+        </p>
         {filters.stack && (
           <div className="active-stack" aria-label={`Active stack filter: ${filters.stack}`}>
             <span className="stack-key">STACK</span>

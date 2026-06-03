@@ -186,6 +186,16 @@ export default function FilterBar({
                 × clear {filters.published_on}
               </button>
             )}
+            {filters.summary_only && (
+              <button
+                type="button"
+                className="filter-stack-clear mono"
+                onClick={() => onFiltersChange({ summary_only: false })}
+                aria-label="Clear plain English filter"
+              >
+                × plain English only
+              </button>
+            )}
           </span>
         </div>
 
