@@ -382,6 +382,7 @@ def _build_cve_filters(
     vendors: str | None,
     technique: str | None = None,
     published_on: str | None = None,
+    summary_only: bool = False,
 ) -> tuple[list[str], list, list[str]]:
     conditions: list[str] = []
     params: list = []
@@ -434,6 +435,11 @@ def _build_cve_filters(
         conditions.append("DATE(published) = ?")
         params.append(day)
 
+    if summary_only:
+        conditions.append(
+            "summary IS NOT NULL AND TRIM(summary) != ''"
+        )
+
     return conditions, params, stack_products
 
 
@@ -470,6 +476,7 @@ async def list_cves(
     vendors: str | None = Query(default=None, max_length=500),
     technique: str | None = Query(default=None, max_length=32),
     published_on: str | None = Query(default=None, max_length=10),
+    summary_only: bool = Query(default=False),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=50),
 ):
@@ -483,6 +490,7 @@ async def list_cves(
         vendors,
         technique,
         published_on,
+        summary_only,
     )
 
     where_clause = ""
@@ -528,6 +536,7 @@ async def export_cves(
     vendors: str | None = Query(default=None, max_length=500),
     technique: str | None = Query(default=None, max_length=32),
     published_on: str | None = Query(default=None, max_length=10),
+    summary_only: bool = Query(default=False),
     max_rows: int = Query(default=500, ge=1, le=500),
 ):
     """Return up to 500 CVE rows matching filters (for CSV export)."""
@@ -541,6 +550,7 @@ async def export_cves(
         vendors,
         technique,
         published_on,
+        summary_only,
     )
 
     where_clause = ""

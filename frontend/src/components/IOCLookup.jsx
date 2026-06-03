@@ -792,6 +792,27 @@ export default function IOCLookup({ prefill }) {
     setDetected(t)
   }
 
+  function clearLookup() {
+    setValue('')
+    setIocType('ip')
+    setDetected(null)
+    setResult(null)
+    setError(null)
+    setCopied(false)
+    setIndicatorQueue([])
+    setFromCveId(null)
+    pivotFromRef.current = null
+    prefillHandled.current = null
+  }
+
+  const hasLookupState = !!(
+    value.trim() ||
+    result ||
+    error ||
+    indicatorQueue.length ||
+    fromCveId
+  )
+
   function handleKeyDown(e) {
     if (e.key === 'Enter') runLookup()
   }
@@ -912,6 +933,15 @@ export default function IOCLookup({ prefill }) {
                 <span /><span /><span />
               </span>
             ) : 'LOOKUP'}
+          </button>
+          <button
+            type="button"
+            className="ioc-clear-btn mono"
+            onClick={clearLookup}
+            disabled={loading || !hasLookupState}
+            aria-label="Clear IOC lookup input and results"
+          >
+            CLEAR
           </button>
         </div>
 

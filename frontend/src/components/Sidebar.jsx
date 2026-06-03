@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { fetchKEVDeadlines, fetchTopTechniques } from '../api.js'
+import { getSavedStack } from '../utils/cveFilters.js'
 import './Sidebar.css'
 
 function Toggle({ label, checked, onChange, id }) {
@@ -74,6 +75,7 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
   const [kevDeadlines, setKevDeadlines] = useState([])
   const [kevExpanded, setKevExpanded] = useState(false)
   const [topTechniques, setTopTechniques] = useState([])
+  const savedStack = getSavedStack()
   const sparkBars = buildSparkline(stats)
   const visibleKev = kevExpanded ? kevDeadlines : kevDeadlines.slice(0, KEV_PREVIEW)
   const hiddenKevCount = Math.max(0, kevDeadlines.length - KEV_PREVIEW)
@@ -121,6 +123,32 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
           label="EPSS > 50%"
           checked={filters.epss_min === 0.5}
           onChange={val => onFiltersChange({ epss_min: val ? 0.5 : null })}
+        />
+        <Toggle
+          id="toggle-my-stack"
+          label="My stack only"
+          checked={!!filters.my_stack_only}
+          onChange={val => {
+            if (val && !savedStack) return
+            if (val) {
+              onFiltersChange({ my_stack_only: true, stack: savedStack })
+            } else {
+              const next = { my_stack_only: false }
+              if (filters.stack === savedStack) next.stack = ''
+              onFiltersChange(next)
+            }
+          }}
+        />
+        {!savedStack && (
+          <p className="sidebar-filter-hint">
+            Enter your stack in the hero bar above, then enable this filter.
+          </p>
+        )}
+        <Toggle
+          id="toggle-plain-english"
+          label="Plain English"
+          checked={!!filters.summary_only}
+          onChange={val => onFiltersChange({ summary_only: val })}
         />
         {filters.stack && (
           <div className="active-stack" aria-label={`Active stack filter: ${filters.stack}`}>

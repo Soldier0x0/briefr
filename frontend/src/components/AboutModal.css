@@ -101,6 +101,15 @@
   margin-bottom: 16px;
 }
 
+.about-author-link {
+  color: var(--red);
+  text-decoration: none;
+}
+
+.about-author-link:hover {
+  text-decoration: underline;
+}
+
 .about-legal-links {
   display: flex;
   align-items: center;

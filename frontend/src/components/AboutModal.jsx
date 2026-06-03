@@ -56,7 +56,15 @@ export default function AboutModal({ onClose }) {
         <hr className="about-divider" />
 
         <p className="about-built-by">
-          Built by Sai Harsha Vardhan
+          Built by{' '}
+          <a
+            href="https://www.linkedin.com/in/sai-harsha-vardhan/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="about-author-link"
+          >
+            Sai Harsha Vardhan
+          </a>
         </p>
 
         <div className="about-legal-links">

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { fetchCVEsForExport } from '../api.js'
+import { toApiCveParams } from '../utils/cveFilters.js'
 import { cvesToCsvRows, downloadCsv, exportFilename } from '../utils/exportCsv.js'
 import './FilterBar.css'
 
@@ -41,7 +42,9 @@ export function hasActiveFilters(filters) {
     filters.poc_only ||
     filters.epss_min != null ||
     filters.severity ||
-    filters.published_on
+    filters.published_on ||
+    filters.my_stack_only ||
+    filters.summary_only
   )
 }
 
@@ -110,7 +113,7 @@ export default function FilterBar({
     setExportError(null)
     setExportSuccess(null)
     try {
-      const data = await fetchCVEsForExport(filters)
+      const data = await fetchCVEsForExport(toApiCveParams(filters))
       const rows = data.data || []
 
       if (!rows.length) {

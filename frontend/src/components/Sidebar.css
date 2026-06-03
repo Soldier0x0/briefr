@@ -112,6 +112,14 @@
   user-select: none;
 }
 
+.sidebar-filter-hint {
+  font-size: 0.625rem;
+  color: var(--text3);
+  line-height: 1.4;
+  margin: -4px 0 10px 28px;
+  max-width: 180px;
+}
+
 /* Active stack filter */
 .active-stack {
   display: flex;
