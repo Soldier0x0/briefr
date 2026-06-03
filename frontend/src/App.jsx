@@ -315,7 +315,11 @@ export default function App() {
             </footer>
 
 
-            <DetailDrawer cve={selectedCVE} onClose={() => setSelectedCVE(null)} />
+            <DetailDrawer
+              cve={selectedCVE}
+              onClose={() => setSelectedCVE(null)}
+              onCveReplace={setSelectedCVE}
+            />
 
             {digestOpen && (
               <DigestModal cves={digestCVEs} filters={filters} onClose={() => setDigestOpen(false)} />

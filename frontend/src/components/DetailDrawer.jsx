@@ -1,6 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
-import { fetchCVESentences } from '../api.js'
+import {
+  fetchCVE,
+  fetchCVEEpssHistory,
+  fetchCVERelated,
+  fetchCVESentences,
+} from '../api.js'
 import { buildSingleReport, copyToClipboard } from '../utils/report.js'
+import {
+  buildEpssSparklinePoints,
+  epssSparklinePolyline,
+  epssTrendLabel,
+  EPSS_SPARKLINE_HEIGHT,
+  EPSS_SPARKLINE_WIDTH,
+} from '../utils/epssSparkline.js'
 import './DetailDrawer.css'
 
 const TABS = [
@@ -27,6 +39,12 @@ function techniqueLink(tech) {
   return `https://attack.mitre.org/techniques/${clean}`
 }
 
+function truncateText(text, maxLen) {
+  const t = (text || '').trim()
+  if (t.length <= maxLen) return t
+  return `${t.slice(0, maxLen - 1)}…`
+}
+
 function Phase2Block({ title }) {
   const headingId = `phase2-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
   return (
@@ -44,6 +62,55 @@ function HumanSentence({ label, text }) {
     <section className="drawer-section" aria-labelledby={headingId}>
       <h3 id={headingId} className="drawer-human-label mono">{label}</h3>
       <p className="drawer-human-text">{text}</p>
+    </section>
+  )
+}
+
+function EpssTrendSection({ cve, history, loading }) {
+  const score =
+    typeof cve.epss_score === 'number' && cve.epss_score >= 0 ? cve.epss_score : null
+  const points = buildEpssSparklinePoints(history, score)
+  const polyline = epssSparklinePolyline(points)
+  const trend = epssTrendLabel(history, score)
+
+  if (score == null && !points.length && !loading) return null
+
+  const pctLabel = score != null ? `${(score * 100).toFixed(1)}%` : '—'
+
+  return (
+    <section className="drawer-section" aria-labelledby="epss-heading">
+      <div className="drawer-epss-header">
+        <h3 id="epss-heading" className="drawer-section-label">EPSS</h3>
+        <div className="drawer-epss-meta">
+          <span className="drawer-epss-value mono">{pctLabel}</span>
+          <span className={`drawer-epss-trend mono drawer-epss-trend--${trend.tone}`}>
+            {trend.label}
+          </span>
+        </div>
+      </div>
+      {loading ? (
+        <p className="drawer-epss-loading mono">// Loading EPSS trend…</p>
+      ) : polyline ? (
+        <svg
+          className="drawer-epss-sparkline"
+          width={EPSS_SPARKLINE_WIDTH}
+          height={EPSS_SPARKLINE_HEIGHT}
+          viewBox={`0 0 ${EPSS_SPARKLINE_WIDTH} ${EPSS_SPARKLINE_HEIGHT}`}
+          role="img"
+          aria-label={`EPSS score trend, last ${points.length} days`}
+        >
+          <polyline
+            points={polyline}
+            fill="none"
+            stroke="var(--red)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : (
+        <p className="drawer-epss-loading mono">// No EPSS history yet</p>
+      )}
     </section>
   )
 }
@@ -72,9 +139,11 @@ function downloadPdf(cve) {
   }
 }
 
-function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading }) {
+function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading }) {
   return (
     <>
+      <EpssTrendSection cve={cve} history={epssHistory} loading={epssLoading} />
+
       {cve.description && (
         <section className="drawer-section" aria-labelledby="desc-heading">
           <h3 id="desc-heading" className="drawer-human-label mono">DESCRIPTION</h3>
@@ -198,23 +267,89 @@ function TabDetect() {
   )
 }
 
-function TabRelated() {
-  return <Phase2Block title="OTHER CVES — SAME PRODUCT (30 DAYS)" />
+function TabRelated({ related, loading, onSelectRelated }) {
+  if (loading) {
+    return (
+      <section className="drawer-section">
+        <p className="drawer-related-empty mono">// Loading related CVEs…</p>
+      </section>
+    )
+  }
+
+  if (!related.length) {
+    return (
+      <section className="drawer-section">
+        <p className="drawer-related-empty mono">// No related CVEs found in last 30 days</p>
+      </section>
+    )
+  }
+
+  return (
+    <section className="drawer-section" aria-labelledby="related-heading">
+      <h3 id="related-heading" className="drawer-human-label mono">SAME PRODUCT (30 DAYS)</h3>
+      <ul className="drawer-related-list" aria-label="Related CVEs">
+        {related.map(item => {
+          const sev = (item.severity || '').toUpperCase()
+          const sevCol = severityColor(item.severity)
+          return (
+            <li key={item.cve_id}>
+              <button
+                type="button"
+                className="drawer-related-item"
+                onClick={() => onSelectRelated(item.cve_id)}
+                aria-label={`Open ${item.cve_id}`}
+              >
+                <div className="drawer-related-top">
+                  <span className="drawer-related-id mono">{item.cve_id}</span>
+                  {sev && (
+                    <span
+                      className="drawer-related-sev mono"
+                      style={{ color: sevCol, borderColor: sevCol }}
+                    >
+                      {sev}
+                    </span>
+                  )}
+                  {item.cvss_score != null && (
+                    <span className="drawer-related-cvss mono">
+                      CVSS {Number(item.cvss_score).toFixed(1)}
+                    </span>
+                  )}
+                </div>
+                <p className="drawer-related-desc">
+                  {truncateText(item.description, 80)}
+                </p>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
 }
 
-export default function DetailDrawer({ cve, onClose }) {
+export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const [activeTab, setActiveTab] = useState('overview')
   const [reportOpen, setReportOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [sentences, setSentences] = useState(null)
   const [sentencesLoading, setSentencesLoading] = useState(false)
+  const [epssHistory, setEpssHistory] = useState([])
+  const [epssLoading, setEpssLoading] = useState(false)
+  const [related, setRelated] = useState([])
+  const [relatedLoading, setRelatedLoading] = useState(false)
+  const [backStack, setBackStack] = useState([])
   const reportRef = useRef(null)
+  const navigatingRef = useRef(false)
   const isOpen = !!cve
 
   useEffect(() => {
     if (!cve?.cve_id) {
       setSentences(null)
       setSentencesLoading(false)
+      setEpssHistory([])
+      setEpssLoading(false)
+      setRelated([])
+      setRelatedLoading(false)
       return
     }
     let cancelled = false
@@ -232,6 +367,56 @@ export default function DetailDrawer({ cve, onClose }) {
       })
     return () => { cancelled = true }
   }, [cve?.cve_id])
+
+  useEffect(() => {
+    if (!cve?.cve_id) {
+      setEpssHistory([])
+      setEpssLoading(false)
+      return
+    }
+    let cancelled = false
+    setEpssLoading(true)
+    fetchCVEEpssHistory(cve.cve_id)
+      .then(data => {
+        if (!cancelled) setEpssHistory(Array.isArray(data) ? data : [])
+      })
+      .catch(() => {
+        if (!cancelled) setEpssHistory([])
+      })
+      .finally(() => {
+        if (!cancelled) setEpssLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [cve?.cve_id])
+
+  useEffect(() => {
+    if (!cve?.cve_id || activeTab !== 'related') return
+    let cancelled = false
+    setRelatedLoading(true)
+    fetchCVERelated(cve.cve_id, 5)
+      .then(data => {
+        if (!cancelled) setRelated(data.data || [])
+      })
+      .catch(() => {
+        if (!cancelled) setRelated([])
+      })
+      .finally(() => {
+        if (!cancelled) setRelatedLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [cve?.cve_id, activeTab])
+
+  useEffect(() => {
+    if (!isOpen) {
+      setBackStack([])
+      return
+    }
+    if (navigatingRef.current) {
+      navigatingRef.current = false
+      return
+    }
+    setBackStack([])
+  }, [cve?.cve_id, isOpen])
 
   useEffect(() => {
     if (isOpen) {
@@ -276,6 +461,28 @@ export default function DetailDrawer({ cve, onClose }) {
     setReportOpen(false)
   }
 
+  function handleBack() {
+    if (!backStack.length || !onCveReplace) return
+    navigatingRef.current = true
+    const prev = backStack[backStack.length - 1]
+    setBackStack(stack => stack.slice(0, -1))
+    onCveReplace(prev)
+    setActiveTab('related')
+  }
+
+  async function handleSelectRelated(cveId) {
+    if (!cve || !onCveReplace) return
+    navigatingRef.current = true
+    setBackStack(stack => [...stack, cve])
+    setActiveTab('overview')
+    try {
+      const full = await fetchCVE(cveId)
+      onCveReplace(full)
+    } catch {
+      onCveReplace({ cve_id: cveId })
+    }
+  }
+
   useEffect(() => {
     if (!isOpen) return
     function onKey(e) {
@@ -299,6 +506,7 @@ export default function DetailDrawer({ cve, onClose }) {
   const urls = Array.isArray(cve.source_urls) ? cve.source_urls.slice(0, 5) : []
   const sevColor = severityColor(cve.severity)
   const techniques = Array.isArray(cve.techniques) ? cve.techniques : []
+  const canGoBack = backStack.length > 0
 
   return (
     <>
@@ -319,6 +527,16 @@ export default function DetailDrawer({ cve, onClose }) {
         <div className="drawer-chrome">
           <header className="drawer-header">
             <div className="drawer-header-left">
+              {canGoBack && (
+                <button
+                  type="button"
+                  className="drawer-back-btn mono"
+                  onClick={handleBack}
+                  aria-label="Back to previous CVE"
+                >
+                  ←
+                </button>
+              )}
               <span className="drawer-cve-id mono">{cve.cve_id}</span>
               {cve.severity && (
                 <span
@@ -404,11 +622,19 @@ export default function DetailDrawer({ cve, onClose }) {
               urls={urls}
               sentences={sentences}
               sentencesLoading={sentencesLoading}
+              epssHistory={epssHistory}
+              epssLoading={epssLoading}
             />
           )}
           {activeTab === 'intel' && <TabIntel techniques={techniques} />}
           {activeTab === 'detect' && <TabDetect />}
-          {activeTab === 'related' && <TabRelated />}
+          {activeTab === 'related' && (
+            <TabRelated
+              related={related}
+              loading={relatedLoading}
+              onSelectRelated={handleSelectRelated}
+            />
+          )}
         </div>
       </aside>
     </>

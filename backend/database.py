@@ -128,6 +128,16 @@ async def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_atlas_case_studies_date
                 ON atlas_case_studies(date);
+
+            CREATE TABLE IF NOT EXISTS epss_history (
+                cve_id TEXT NOT NULL,
+                score REAL NOT NULL,
+                recorded_date TEXT NOT NULL,
+                PRIMARY KEY (cve_id, recorded_date)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_epss_history_cve_date
+                ON epss_history(cve_id, recorded_date);
         """)
         await db.commit()
 
@@ -214,12 +224,116 @@ async def mark_cves_as_kev(db: aiosqlite.Connection, cve_ids: list) -> None:
     )
 
 
+async def snapshot_epss_scores(db: aiosqlite.Connection, recorded_date: str | None = None) -> int:
+    """Persist current EPSS scores before a bulk update (one row per CVE per day)."""
+    from datetime import date
+
+    day = recorded_date or date.today().isoformat()
+    cursor = await db.execute(
+        """
+        INSERT OR REPLACE INTO epss_history (cve_id, score, recorded_date)
+        SELECT cve_id, epss_score, ?
+        FROM cves
+        WHERE epss_score IS NOT NULL
+        """,
+        (day,),
+    )
+    return cursor.rowcount
+
+
 async def update_epss_scores(db: aiosqlite.Connection, scores: dict) -> None:
     rows = [(score, cve_id.upper()) for cve_id, score in scores.items()]
     await db.executemany(
         "UPDATE cves SET epss_score = ? WHERE cve_id = ?",
         rows,
     )
+
+
+async def get_epss_history(
+    db: aiosqlite.Connection, cve_id: str, days: int = 30
+) -> list[dict]:
+    rows = await db.execute_fetchall(
+        """
+        SELECT recorded_date AS date, score
+        FROM epss_history
+        WHERE cve_id = ?
+          AND recorded_date >= DATE('now', ?)
+        ORDER BY recorded_date ASC
+        """,
+        (cve_id.upper(), f"-{days - 1} days"),
+    )
+    return [{"date": row["date"], "score": row["score"]} for row in rows]
+
+
+async def get_related_cves(
+    db: aiosqlite.Connection, cve_id: str, limit: int = 5
+) -> list[dict]:
+    """CVEs sharing an affected product (vendor:product), published in last 30 days."""
+    cve_key = cve_id.upper()
+    rows = await db.execute_fetchall(
+        "SELECT affected_products FROM cves WHERE cve_id = ?",
+        (cve_key,),
+    )
+    if not rows:
+        return []
+
+    raw = rows[0]["affected_products"] or "[]"
+    try:
+        products = json.loads(raw) if isinstance(raw, str) else raw
+    except (json.JSONDecodeError, TypeError):
+        products = []
+
+    products = [p for p in products if isinstance(p, str) and ":" in p]
+    if not products:
+        return []
+
+    conditions: list[str] = []
+    params: list = [cve_key]
+    for product in products[:10]:
+        needle = f'%"{product.lower()}"%'
+        conditions.append("LOWER(affected_products) LIKE ?")
+        params.append(needle)
+
+    where_products = "(" + " OR ".join(conditions) + ")"
+    params.append(limit)
+
+    related = await db.execute_fetchall(
+        f"""
+        SELECT cve_id, description, cvss_score, severity, published, epss_score
+        FROM cves
+        WHERE cve_id != ?
+          AND published IS NOT NULL
+          AND published != ''
+          AND DATE(published) >= DATE('now', '-30 days')
+          AND {where_products}
+        ORDER BY
+          CASE WHEN cvss_score IS NULL THEN -1 ELSE cvss_score END DESC,
+          published DESC
+        LIMIT ?
+        """,
+        params,
+    )
+
+    seen: set[str] = set()
+    out: list[dict] = []
+    for row in related:
+        rid = row["cve_id"]
+        if rid in seen:
+            continue
+        seen.add(rid)
+        out.append(
+            {
+                "cve_id": rid,
+                "description": row["description"] or "",
+                "cvss_score": row["cvss_score"],
+                "severity": row["severity"],
+                "published": row["published"],
+                "epss_score": row["epss_score"],
+            }
+        )
+        if len(out) >= limit:
+            break
+    return out
 
 
 
