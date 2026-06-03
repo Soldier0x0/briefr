@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { fetchCVEs } from '../api.js'
+import { STACK_STORAGE_KEY, toApiCveParams } from '../utils/cveFilters.js'
 import './Hero.css'
-
-const STACK_KEY = 'briefr_stack'
 const DEBOUNCE_MS = 800
 
 export default function Hero({ activeStack, onBrief, onClearStack }) {
   const [stack, setStack] = useState(() => {
-    try { return localStorage.getItem(STACK_KEY) || '' } catch { return '' }
+    try { return localStorage.getItem(STACK_STORAGE_KEY) || '' } catch { return '' }
   })
   const [matchCount, setMatchCount] = useState(null)
   const [searching, setSearching] = useState(false)
@@ -16,7 +15,7 @@ export default function Hero({ activeStack, onBrief, onClearStack }) {
   const hadAppliedStackRef = useRef(false)
 
   useEffect(() => {
-    try { localStorage.setItem(STACK_KEY, stack) } catch {}
+    try { localStorage.setItem(STACK_STORAGE_KEY, stack) } catch {}
   }, [stack])
 
   // Clear input when stack filter removed from feed (× clear stack)
@@ -46,7 +45,7 @@ export default function Hero({ activeStack, onBrief, onClearStack }) {
     debounceRef.current = setTimeout(() => {
       const seq = ++previewSeqRef.current
       setSearching(true)
-      fetchCVEs({ stack: trimmed, limit: 1, page: 1 })
+      fetchCVEs(toApiCveParams({ stack: trimmed, limit: 1, page: 1 }))
         .then(data => {
           if (seq !== previewSeqRef.current) return
           setMatchCount(data.total ?? 0)

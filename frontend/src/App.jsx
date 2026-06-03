@@ -30,6 +30,8 @@ const DEFAULT_FILTERS = {
   vendors: '',
   technique: '',
   published_on: '',
+  my_stack_only: false,
+  summary_only: false,
 }
 
 // ── Last-refreshed helper ─────────────────────────────────
@@ -174,7 +176,15 @@ export default function App() {
   const [nextRefreshUtc, setNextRefreshUtc]     = useState(null)
   const [refreshSchedule, setRefreshSchedule]   = useState(null)
   const [iocPrefill, setIocPrefill]             = useState(null)
+  const [iocSessionKey, setIocSessionKey]       = useState(0)
   const [atlasActorFilter, setAtlasActorFilter] = useState(null)
+
+  useEffect(() => {
+    if (activeTab === 'feed') {
+      setIocPrefill(null)
+      setIocSessionKey(k => k + 1)
+    }
+  }, [activeTab])
 
   const loadHealth = useCallback(() => {
     fetchHealth(timezone)
@@ -221,6 +231,8 @@ export default function App() {
 
   const investigationNav = useMemo(() => ({
     setActiveTab,
+    clearIocPrefill: () => setIocPrefill(null),
+    resetIocSession: () => setIocSessionKey(k => k + 1),
     setIocPrefill: (payload) => {
       if (typeof payload === 'string') {
         setIocPrefill({
@@ -302,6 +314,7 @@ export default function App() {
               onAboutOpen={() => setAboutOpen(true)}
               onTimezoneChange={setTimezone}
               iocPrefill={iocPrefill}
+              iocSessionKey={iocSessionKey}
               atlasActorFilter={atlasActorFilter}
               onClearAtlasFilter={() => setAtlasActorFilter(null)}
               stats={stats}
@@ -338,6 +351,7 @@ function AppLayout({
   onAboutOpen,
   onTimezoneChange,
   iocPrefill,
+  iocSessionKey,
   atlasActorFilter,
   onClearAtlasFilter,
   stats,
@@ -376,6 +390,7 @@ function AppLayout({
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onAboutOpen={onAboutOpen}
+          onLogoClick={() => setActiveTab('feed')}
           onTimezoneChange={onTimezoneChange}
           showShortcuts={showFeedShortcuts}
         />
@@ -404,7 +419,7 @@ function AppLayout({
                 />
               )}
               {activeTab === 'ioc' && (
-                <IOCLookup prefill={iocPrefill} />
+                <IOCLookup key={iocSessionKey} prefill={iocPrefill} />
               )}
               {activeTab === 'atlas' && (
                 <AIThreats

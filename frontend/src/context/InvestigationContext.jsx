@@ -123,7 +123,9 @@ export function InvestigationProvider({ children, navigation }) {
       ensureCveInThread(cve, INV_SOURCES.FEED)
     }
     setPanelExpanded(true)
-  }, [ensureCveInThread])
+    navigation?.clearIocPrefill?.()
+    navigation?.resetIocSession?.()
+  }, [ensureCveInThread, navigation])
 
   const recordIocPivot = useCallback((ip, from) => {
     const fromItem = from || itemsRef.current[itemsRef.current.length - 1]

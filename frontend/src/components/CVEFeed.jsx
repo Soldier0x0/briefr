@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { fetchCVEs } from '../api.js'
+import { toApiCveParams } from '../utils/cveFilters.js'
 import { buildCombinedReport, copyToClipboard } from '../utils/report.js'
 import { downloadBulkCvePdf } from '../utils/pdfReport.js'
 import PdfExportModal from './PdfExportModal.jsx'
@@ -128,7 +129,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
 
     try {
       const data = await fetchCVEs({
-        ...filtersRef.current,
+        ...toApiCveParams(filtersRef.current),
         page: pageNum,
         limit: PAGE_LIMIT,
       })
@@ -356,7 +357,16 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
           <span>No results for your filters.</span>
           <button
             className="feed-clear-btn"
-            onClick={() => onFiltersChange({ severity: null, kev_only: false, poc_only: false, search: '', epss_min: null, vendors: '' })}
+            onClick={() => onFiltersChange({
+              severity: null,
+              kev_only: false,
+              poc_only: false,
+              search: '',
+              epss_min: null,
+              vendors: '',
+              my_stack_only: false,
+              summary_only: false,
+            })}
             aria-label="Clear all filters"
           >
             Clear filters

@@ -23,7 +23,7 @@ function applyTheme(theme) {
   try { localStorage.setItem('briefr_theme', theme) } catch {}
 }
 
-export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezoneChange, showShortcuts }) {
+export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClick, onTimezoneChange, showShortcuts }) {
   const [now, setNow]               = useState(new Date())
   const [theme, setTheme]           = useState(getCurrentTheme)
   const [tz, setTz]                 = useState(() => {
@@ -90,7 +90,11 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTimezone
       <div className="header-inner">
         {/* Left: logo */}
         <div className="header-left">
-          <button className="header-logo-btn" onClick={onAboutOpen} aria-label="Open about BRIEFR">
+          <button
+            className="header-logo-btn"
+            onClick={onLogoClick || (() => onTabChange?.('feed'))}
+            aria-label="Go to CVE brief feed"
+          >
             BRIEFR
           </button>
           <span className="header-divider" aria-hidden="true">//</span>
