@@ -3,7 +3,7 @@ import json
 import logging
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from dotenv import load_dotenv
@@ -224,6 +224,59 @@ async def stats():
     }
 
 
+@app.get("/api/stats/timeline")
+async def stats_timeline(
+    days: int = Query(default=90, ge=1, le=365),
+):
+    """Daily CVE counts grouped by published date (calendar day, UTC)."""
+    db = await get_db()
+    try:
+        rows = await db.execute_fetchall(
+            """
+            SELECT DATE(published) AS date,
+                   COUNT(*) AS count,
+                   SUM(CASE WHEN severity = 'CRITICAL' THEN 1 ELSE 0 END) AS critical,
+                   SUM(CASE WHEN is_kev = 1 THEN 1 ELSE 0 END) AS kev
+            FROM cves
+            WHERE published IS NOT NULL
+              AND published != ''
+              AND DATE(published) >= DATE('now', ?)
+            GROUP BY DATE(published)
+            ORDER BY date ASC
+            """,
+            (f"-{days - 1} days",),
+        )
+    finally:
+        await db.close()
+
+    by_date = {
+        row["date"]: {
+            "date": row["date"],
+            "count": row["count"],
+            "critical": row["critical"],
+            "kev": row["kev"],
+        }
+        for row in rows
+        if row["date"]
+    }
+
+    end = date.today()
+    start = end - timedelta(days=days - 1)
+    timeline: list[dict] = []
+    cursor = start
+    while cursor <= end:
+        key = cursor.isoformat()
+        entry = by_date.get(key)
+        timeline.append(
+            entry
+            if entry
+            else {"date": key, "count": 0, "critical": 0, "kev": 0}
+        )
+        cursor += timedelta(days=1)
+
+    return timeline
+
+
 def _text_match_or_clause(terms: list[str]) -> tuple[str, list]:
     """Match any term against description, summary, or affected_products JSON."""
     if not terms:
@@ -283,6 +336,15 @@ CVE_SELECT = """
 """
 
 
+def _validate_published_on(value: str) -> str:
+    """YYYY-MM-DD for filtering CVEs published on a single calendar day."""
+    import re
+
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        raise HTTPException(status_code=400, detail="published_on must be YYYY-MM-DD")
+    return value
+
+
 def _build_cve_filters(
     severity: str | None,
     kev_only: bool,
@@ -292,6 +354,7 @@ def _build_cve_filters(
     stack: str | None,
     vendors: str | None,
     technique: str | None = None,
+    published_on: str | None = None,
 ) -> tuple[list[str], list, list[str]]:
     conditions: list[str] = []
     params: list = []
@@ -339,6 +402,11 @@ def _build_cve_filters(
         )
         params.append(tid)
 
+    if published_on:
+        day = _validate_published_on(published_on.strip())
+        conditions.append("DATE(published) = ?")
+        params.append(day)
+
     return conditions, params, stack_products
 
 
@@ -374,11 +442,20 @@ async def list_cves(
     stack: str | None = Query(default=None, max_length=500),
     vendors: str | None = Query(default=None, max_length=500),
     technique: str | None = Query(default=None, max_length=32),
+    published_on: str | None = Query(default=None, max_length=10),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=50),
 ):
     conditions, params, stack_products = _build_cve_filters(
-        severity, kev_only, poc_only, epss_min, search, stack, vendors, technique
+        severity,
+        kev_only,
+        poc_only,
+        epss_min,
+        search,
+        stack,
+        vendors,
+        technique,
+        published_on,
     )
 
     where_clause = ""
@@ -423,11 +500,20 @@ async def export_cves(
     stack: str | None = Query(default=None, max_length=500),
     vendors: str | None = Query(default=None, max_length=500),
     technique: str | None = Query(default=None, max_length=32),
+    published_on: str | None = Query(default=None, max_length=10),
     max_rows: int = Query(default=500, ge=1, le=500),
 ):
     """Return up to 500 CVE rows matching filters (for CSV export)."""
     conditions, params, stack_products = _build_cve_filters(
-        severity, kev_only, poc_only, epss_min, search, stack, vendors, technique
+        severity,
+        kev_only,
+        poc_only,
+        epss_min,
+        search,
+        stack,
+        vendors,
+        technique,
+        published_on,
     )
 
     where_clause = ""
