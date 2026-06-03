@@ -40,7 +40,8 @@ export function hasActiveFilters(filters) {
     filters.kev_only ||
     filters.poc_only ||
     filters.epss_min != null ||
-    filters.severity
+    filters.severity ||
+    filters.published_on
   )
 }
 
@@ -170,6 +171,16 @@ export default function FilterBar({
                 aria-label="Clear ATT&CK technique filter"
               >
                 × clear technique
+              </button>
+            )}
+            {filters.published_on && (
+              <button
+                type="button"
+                className="filter-stack-clear mono"
+                onClick={() => onFiltersChange({ published_on: '' })}
+                aria-label="Clear published date filter"
+              >
+                × clear {filters.published_on}
               </button>
             )}
           </span>

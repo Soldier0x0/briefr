@@ -23,6 +23,10 @@ export function fetchStats() {
   return request('/stats')
 }
 
+export function fetchStatsTimeline(days = 90) {
+  return request(`/stats/timeline?days=${days}`)
+}
+
 export function fetchHealth(tz = 'UTC') {
   const qs = new URLSearchParams({ tz })
   return request(`/health?${qs}`)
@@ -38,6 +42,7 @@ export function fetchCVEs(params = {}) {
   if (params.stack)     qs.set('stack', params.stack)
   if (params.vendors)   qs.set('vendors', params.vendors)
   if (params.technique) qs.set('technique', params.technique)
+  if (params.published_on) qs.set('published_on', params.published_on)
   if (params.page)      qs.set('page', String(params.page))
   if (params.limit)     qs.set('limit', String(params.limit))
   const query = qs.toString()
@@ -62,6 +67,7 @@ export function fetchCVEsForExport(params = {}) {
   if (params.stack)     qs.set('stack', params.stack)
   if (params.vendors)   qs.set('vendors', params.vendors)
   if (params.technique) qs.set('technique', params.technique)
+  if (params.published_on) qs.set('published_on', params.published_on)
   qs.set('max_rows', '500')
   const query = qs.toString()
   return request(`/cves/export${query ? `?${query}` : ''}`)

@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom'
 import Header from './components/Header.jsx'
 import Hero from './components/Hero.jsx'
 import StatsRow from './components/StatsRow.jsx'
+import TimelineHeatmap from './components/TimelineHeatmap.jsx'
 import CVEFeed from './components/CVEFeed.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import IOCLookup from './components/IOCLookup.jsx'
@@ -24,6 +25,7 @@ const DEFAULT_FILTERS = {
   stack: '',
   vendors: '',
   technique: '',
+  published_on: '',
 }
 
 // ── Last-refreshed helper ─────────────────────────────────
@@ -126,6 +128,7 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
         onClearStack={handleClearStack}
       />
       <StatsRow stats={stats} />
+      <TimelineHeatmap filters={filters} onFiltersChange={handleFiltersChange} />
       <FeedRefreshStatus
         lastUpdated={lastUpdated}
         nextRefreshUtc={nextRefreshUtc}
