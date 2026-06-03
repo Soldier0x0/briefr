@@ -116,3 +116,11 @@ export function lookupIOC(value, type) {
 export function triggerRefresh() {
   return request('/refresh', { method: 'POST' })
 }
+
+export function fetchInvestigationSummary(items, durationMinutes) {
+  return request('/investigation/summary', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items, duration_minutes: durationMinutes }),
+  })
+}

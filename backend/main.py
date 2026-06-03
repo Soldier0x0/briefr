@@ -52,6 +52,7 @@ from scheduler import (
     start_scheduler,
     stop_scheduler,
 )
+from investigation_summary import generate_investigation_summary
 from tracking import get_ioc_usage_stats, get_usage_stats
 from templates.intelligence import (
     epss_sentence_or_fallback,
@@ -101,6 +102,23 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
+
+
+class InvestigationPivotRef(BaseModel):
+    type: str | None = None
+    id: str | None = None
+
+
+class InvestigationItemRef(BaseModel):
+    type: str
+    id: str
+    description: str = ""
+    pivotFrom: InvestigationPivotRef | None = None
+
+
+class InvestigationSummaryRequest(BaseModel):
+    items: list[InvestigationItemRef]
+    duration_minutes: int = 1
 
 
 class IocLookupRequest(BaseModel):
@@ -899,6 +917,26 @@ async def api_usage_ioc():
         "this_month_utc": now_utc.strftime("%Y-%m"),
         "services": stats,
     }
+
+
+@app.post("/api/investigation/summary")
+async def investigation_summary(body: InvestigationSummaryRequest):
+    """Executive summary for investigation PDF (Groq if GROQ_API_KEY set)."""
+    payload = [
+        {
+            "type": item.type,
+            "id": item.id,
+            "description": item.description,
+            "pivot_from": (
+                {"type": item.pivotFrom.type, "id": item.pivotFrom.id}
+                if item.pivotFrom
+                else None
+            ),
+        }
+        for item in body.items
+    ]
+    result = await generate_investigation_summary(payload, body.duration_minutes)
+    return result
 
 
 if __name__ == "__main__":

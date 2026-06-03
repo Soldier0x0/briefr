@@ -8,6 +8,7 @@ import {
 import { buildSingleReport, copyToClipboard } from '../utils/report.js'
 import { downloadSingleCvePdf } from '../utils/pdfReport.js'
 import PdfExportModal from './PdfExportModal.jsx'
+import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
 import {
   buildEpssSparklinePoints,
   epssSparklinePolyline,
@@ -207,7 +208,7 @@ function exploitTypeLabel(type) {
   return 'PoC'
 }
 
-function TabIntel({ techniques, publicExploits, greynoiseScans }) {
+function TabIntel({ techniques, publicExploits, greynoiseScans, cve, onInvestigateIp }) {
   const exploits = Array.isArray(publicExploits) ? publicExploits : []
   const scans = Array.isArray(greynoiseScans) ? greynoiseScans : []
 
@@ -291,6 +292,15 @@ function TabIntel({ techniques, publicExploits, greynoiseScans }) {
                     >
                       GreyNoise viz &rarr;
                     </a>
+                  )}
+                  {onInvestigateIp && scan.ip && (
+                    <button
+                      type="button"
+                      className="drawer-investigate-btn"
+                      onClick={() => onInvestigateIp(scan.ip, cve)}
+                    >
+                      → Investigate
+                    </button>
                   )}
                 </li>
               )
@@ -425,6 +435,12 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const epssSparklineRef = useRef(null)
   const navigatingRef = useRef(false)
   const isOpen = !!cve
+  const investigation = useInvestigationOptional()
+
+  useEffect(() => {
+    if (!cve?.cve_id || !investigation?.onCveDrawerOpened) return
+    investigation.onCveDrawerOpened(cve)
+  }, [cve?.cve_id, cve, investigation])
 
   useEffect(() => {
     if (!cve?.cve_id) {
@@ -732,6 +748,17 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
               techniques={techniques}
               publicExploits={cve.public_exploits}
               greynoiseScans={cve.greynoise_scans}
+              cve={cve}
+              onInvestigateIp={
+                investigation
+                  ? (ip, cveCtx) => investigation.pivotToIoc(ip, {
+                      type: 'cve',
+                      id: cveCtx.cve_id,
+                      title: cveCtx.cve_id,
+                      description: (cveCtx.summary || '').slice(0, 80),
+                    })
+                  : undefined
+              }
             />
           )}
           {activeTab === 'detect' && <TabDetect />}
