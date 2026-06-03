@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { fetchCVEs } from '../api.js'
 import { buildCombinedReport, copyToClipboard } from '../utils/report.js'
+import { downloadBulkCvePdf } from '../utils/pdfReport.js'
+import PdfExportModal from './PdfExportModal.jsx'
 import FilterBar from './FilterBar.jsx'
 import CVECard from './CVECard.jsx'
 import ScrollToTop from './ScrollToTop.jsx'
@@ -30,6 +32,10 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   const [hasMore, setHasMore] = useState(true)
   const [selectedMap, setSelectedMap] = useState({})
   const [copyAllState, setCopyAllState] = useState('idle')
+  const [bulkMenuOpen, setBulkMenuOpen] = useState(false)
+  const [bulkPdfModalOpen, setBulkPdfModalOpen] = useState(false)
+  const [bulkPdfBusy, setBulkPdfBusy] = useState(false)
+  const bulkMenuRef = useRef(null)
   const [selectedIndex, setSelectedIndex] = useState(null)
   const [lastVisit, setLastVisit] = useState(null)
   const [visitReady, setVisitReady] = useState(false)
@@ -275,13 +281,44 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     })
   }
 
+  useEffect(() => {
+    if (!bulkMenuOpen) return
+    function onDocClick(e) {
+      if (bulkMenuRef.current && !bulkMenuRef.current.contains(e.target)) {
+        setBulkMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [bulkMenuOpen])
+
   async function handleCopyAll() {
     const selected = Object.values(selectedMap)
     if (!selected.length) return
     const ok = await copyToClipboard(buildCombinedReport(selected))
     if (ok) {
       setCopyAllState('copied')
+      setBulkMenuOpen(false)
       setTimeout(() => setCopyAllState('idle'), 2000)
+    }
+  }
+
+  function handleBulkPdfClick() {
+    setBulkMenuOpen(false)
+    setBulkPdfModalOpen(true)
+  }
+
+  async function handleBulkPdfConfirm({ tlp, analystName }) {
+    const selected = Object.values(selectedMap)
+    if (!selected.length) return
+    setBulkPdfBusy(true)
+    try {
+      await downloadBulkCvePdf(selected, { tlp, analystName })
+      setBulkPdfModalOpen(false)
+    } catch (err) {
+      console.error('Bulk PDF failed:', err)
+    } finally {
+      setBulkPdfBusy(false)
     }
   }
 
@@ -376,13 +413,38 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
             {selectedCount} selected
           </span>
           <div className="float-actions">
-            <button
-              className={`float-btn float-btn-primary${copyAllState === 'copied' ? ' copied' : ''}`}
-              onClick={handleCopyAll}
-              aria-label={`Copy combined report for all ${selectedCount} selected CVEs`}
-            >
-              {copyAllState === 'copied' ? `Copied ${selectedCount} reports` : 'COPY ALL REPORTS'}
-            </button>
+            <div className="float-report-wrap" ref={bulkMenuRef}>
+              <button
+                type="button"
+                className={`float-btn float-btn-primary${copyAllState === 'copied' ? ' copied' : ''}`}
+                onClick={() => setBulkMenuOpen(o => !o)}
+                aria-expanded={bulkMenuOpen}
+                aria-haspopup="menu"
+                aria-label={`Report actions for ${selectedCount} selected CVEs`}
+              >
+                {copyAllState === 'copied' ? `Copied ${selectedCount}` : 'COPY ALL REPORTS ▾'}
+              </button>
+              {bulkMenuOpen && (
+                <div className="float-report-menu" role="menu">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="float-report-item mono"
+                    onClick={handleBulkPdfClick}
+                  >
+                    Download PDF
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="float-report-item mono"
+                    onClick={handleCopyAll}
+                  >
+                    Copy Markdown
+                  </button>
+                </div>
+              )}
+            </div>
             <button
               className="float-btn"
               onClick={() => setSelectedMap({})}
@@ -393,6 +455,14 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
           </div>
         </div>
       )}
+
+      <PdfExportModal
+        open={bulkPdfModalOpen}
+        title={`Bulk PDF — ${selectedCount} CVE${selectedCount === 1 ? '' : 's'}`}
+        busy={bulkPdfBusy}
+        onConfirm={handleBulkPdfConfirm}
+        onCancel={() => !bulkPdfBusy && setBulkPdfModalOpen(false)}
+      />
     </div>
   )
 }

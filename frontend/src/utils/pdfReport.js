@@ -1,0 +1,432 @@
+/**
+ * Browser-side CVE PDF reports (jsPDF + optional html2canvas capture).
+ */
+import { jsPDF } from 'jspdf'
+import html2canvas from 'html2canvas'
+import { fetchCVE, fetchCVESentences } from '../api.js'
+import { getReportTimestamp } from './timezone.js'
+
+export const TLP_OPTIONS = [
+  { id: 'WHITE', label: 'TLP:WHITE', color: null },
+  { id: 'GREEN', label: 'TLP:GREEN', color: [34, 197, 94] },
+  { id: 'AMBER', label: 'TLP:AMBER', color: [245, 158, 11] },
+  { id: 'RED', label: 'TLP:RED', color: [239, 68, 68] },
+]
+
+const BRAND = '#e85533'
+const PAGE_W = 210
+const PAGE_H = 297
+const MARGIN = 15
+const CONTENT_TOP = 18
+const CONTENT_BOTTOM = 262
+const FOOTER_Y = 285
+const STRIPE_H = 4
+
+const FONT_BODY = 'helvetica'
+const FONT_MONO = 'courier'
+
+const DATA_SOURCES = [
+  { name: 'NVD (NIST)', url: 'https://nvd.nist.gov' },
+  { name: 'CISA KEV', url: 'https://www.cisa.gov/known-exploited-vulnerabilities-catalog' },
+  { name: 'FIRST EPSS', url: 'https://www.first.org/epss' },
+  { name: 'OSV.dev', url: 'https://osv.dev' },
+  { name: 'MITRE ATT&CK', url: 'https://attack.mitre.org' },
+  { name: 'Sploitus', url: 'https://sploitus.com' },
+  { name: 'GreyNoise', url: 'https://www.greynoise.io' },
+]
+
+function severityBorderColor(sev) {
+  const s = (sev || '').toUpperCase()
+  if (s === 'CRITICAL') return [232, 85, 51]
+  if (s === 'HIGH') return [245, 158, 11]
+  return [200, 200, 200]
+}
+
+function splitLines(doc, text, maxWidth) {
+  if (!text) return []
+  return doc.splitTextToSize(String(text).replace(/\r\n/g, '\n'), maxWidth)
+}
+
+function ensureSpace(ctx, needed) {
+  if (ctx.y + needed > CONTENT_BOTTOM) {
+    ctx.doc.addPage()
+    ctx.pageNum += 1
+    ctx.y = CONTENT_TOP
+  }
+}
+
+function drawTlpStripes(doc, tlpColor) {
+  if (!tlpColor) return
+  doc.setFillColor(...tlpColor)
+  doc.rect(0, 0, PAGE_W, STRIPE_H, 'F')
+  doc.rect(0, PAGE_H - STRIPE_H, PAGE_W, STRIPE_H, 'F')
+}
+
+function applyFootersAndStripes(doc, meta) {
+  const total = doc.getNumberOfPages()
+  for (let p = 1; p <= total; p += 1) {
+    doc.setPage(p)
+    drawTlpStripes(doc, meta.tlpColor)
+    doc.setFont(FONT_BODY, 'normal')
+    doc.setFontSize(7)
+    doc.setTextColor(100, 100, 100)
+    const footer = `BRIEFR — projectjupiter.in | Generated ${meta.timestamp} | Page ${p} of ${total}`
+    doc.text(footer, PAGE_W / 2, FOOTER_Y, { align: 'center' })
+    if (meta.tlpLabel && meta.tlpLabel !== 'TLP:WHITE') {
+      doc.setFontSize(7)
+      doc.setTextColor(80, 80, 80)
+      doc.text(meta.tlpLabel, PAGE_W - MARGIN, FOOTER_Y - 4, { align: 'right' })
+    }
+  }
+}
+
+function drawSection(ctx, title, bodyLines, borderRgb) {
+  const maxW = PAGE_W - MARGIN * 2 - 4
+  const lines = Array.isArray(bodyLines) ? bodyLines : splitLines(ctx.doc, bodyLines, maxW)
+  const blockH = 10 + lines.length * 4.5 + 6
+  ensureSpace(ctx, blockH)
+
+  const x = MARGIN
+  const y0 = ctx.y
+  if (borderRgb) {
+    ctx.doc.setFillColor(...borderRgb)
+    ctx.doc.rect(x, y0, 2, blockH - 2, 'F')
+  }
+
+  ctx.doc.setFont(FONT_MONO, 'bold')
+  ctx.doc.setFontSize(8)
+  ctx.doc.setTextColor(...hexToRgb(BRAND))
+  ctx.doc.text(`// ${title}`, x + 5, y0 + 5)
+
+  ctx.doc.setFont(FONT_BODY, 'normal')
+  ctx.doc.setFontSize(9)
+  ctx.doc.setTextColor(30, 30, 30)
+  let y = y0 + 11
+  lines.forEach(line => {
+    ctx.doc.text(line, x + 5, y)
+    y += 4.5
+  })
+  ctx.y = y0 + blockH
+}
+
+function hexToRgb(hex) {
+  const h = hex.replace('#', '')
+  return [
+    parseInt(h.slice(0, 2), 16),
+    parseInt(h.slice(2, 4), 16),
+    parseInt(h.slice(4, 6), 16),
+  ]
+}
+
+function drawCheckboxList(ctx, title, items, borderRgb) {
+  const maxW = PAGE_W - MARGIN * 2 - 12
+  const lines = items.flatMap(item => splitLines(ctx.doc, item, maxW))
+  const blockH = 10 + lines.length * 5 + 6
+  ensureSpace(ctx, blockH)
+
+  const x = MARGIN
+  const y0 = ctx.y
+  if (borderRgb) {
+    ctx.doc.setFillColor(...borderRgb)
+    ctx.doc.rect(x, y0, 2, blockH - 2, 'F')
+  }
+
+  ctx.doc.setFont(FONT_MONO, 'bold')
+  ctx.doc.setFontSize(8)
+  ctx.doc.setTextColor(...hexToRgb(BRAND))
+  ctx.doc.text(`// ${title}`, x + 5, y0 + 5)
+
+  ctx.doc.setFont(FONT_BODY, 'normal')
+  ctx.doc.setFontSize(9)
+  ctx.doc.setTextColor(30, 30, 30)
+  let y = y0 + 12
+  items.forEach(item => {
+    const itemLines = splitLines(ctx.doc, item, maxW)
+    itemLines.forEach((line, idx) => {
+      if (idx === 0) {
+        ctx.doc.rect(x + 5, y - 3, 3, 3)
+      }
+      ctx.doc.text(line, x + 11, y)
+      y += 5
+    })
+  })
+  ctx.y = y0 + blockH
+}
+
+function drawPageHeader(doc, meta, cve, isFirstPageOfCve = true) {
+  doc.setFont(FONT_MONO, 'bold')
+  doc.setFontSize(14)
+  doc.setTextColor(...hexToRgb(BRAND))
+  doc.text('BRIEFR', MARGIN, 12)
+
+  doc.setFont(FONT_BODY, 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(80, 80, 80)
+  doc.text(meta.dateLine, PAGE_W - MARGIN, 10, { align: 'right' })
+  if (meta.analystName) {
+    doc.text(`Analyst: ${meta.analystName}`, PAGE_W - MARGIN, 14, { align: 'right' })
+  }
+
+  if (isFirstPageOfCve && cve) {
+    doc.setFont(FONT_MONO, 'bold')
+    doc.setFontSize(18)
+    doc.setTextColor(20, 20, 20)
+    doc.text(cve.cve_id || '', MARGIN, 24)
+
+    let badgeX = MARGIN
+    const badgeY = 30
+    const badges = []
+    if (cve.severity) badges.push((cve.severity || '').toUpperCase())
+    if (cve.is_kev) badges.push('KEV')
+    if (cve.cvss_score != null) badges.push(`CVSS ${Number(cve.cvss_score).toFixed(1)}`)
+    if (cve.epss_score != null) badges.push(`EPSS ${(cve.epss_score * 100).toFixed(1)}%`)
+
+    doc.setFontSize(8)
+    badges.forEach(b => {
+      const w = doc.getTextWidth(b) + 6
+      doc.setDrawColor(...hexToRgb(BRAND))
+      doc.setLineWidth(0.3)
+      doc.rect(badgeX, badgeY - 4, w, 6)
+      doc.setTextColor(...hexToRgb(BRAND))
+      doc.text(b, badgeX + 3, badgeY)
+      badgeX += w + 4
+    })
+    return 38
+  }
+  return CONTENT_TOP
+}
+
+function detectionLinesFromTechniques(techniques) {
+  const lines = []
+  ;(techniques || []).forEach(tech => {
+    const desc = (tech.description || '').trim()
+    if (!desc) return
+    const short = desc.length > 400 ? `${desc.slice(0, 397)}…` : desc
+    lines.push(`${tech.id || tech.technique_id}: ${short}`)
+  })
+  if (!lines.length) {
+    return ['No ATT&CK detection guidance text is stored for mapped techniques.']
+  }
+  return lines
+}
+
+function recommendedActions(cve, sentences) {
+  const items = []
+  if (cve.patch_available) {
+    items.push(`Immediate: Apply vendor patch${cve.is_kev ? ' (CISA KEV — priority)' : ''}.`)
+  } else {
+    items.push('Immediate: Apply vendor mitigations; monitor for patch release.')
+  }
+  const techCount = (cve.techniques || []).length
+  items.push(
+    techCount > 0
+      ? `Short term: Review logs and detections for ${techCount} mapped ATT&CK technique(s).`
+      : 'Short term: Review authentication and exposure logs for suspicious activity.',
+  )
+  items.push(
+    cve.epss_score != null
+      ? `Ongoing: Monitor EPSS trend (current ${(cve.epss_score * 100).toFixed(1)}%).`
+      : 'Ongoing: Monitor EPSS and threat feeds for exploitation signals.',
+  )
+  if (sentences?.patch) items[0] = `Immediate: ${sentences.patch}`
+  return items
+}
+
+function sourcesForCve(cve) {
+  const urls = new Set(DATA_SOURCES.map(s => s.url))
+  const list = [...DATA_SOURCES]
+  ;(cve.source_urls || []).slice(0, 8).forEach(u => {
+    if (u && !urls.has(u)) {
+      urls.add(u)
+      list.push({ name: 'Reference', url: u })
+    }
+  })
+  return list
+}
+
+async function captureSparkline(element) {
+  if (!element) return null
+  try {
+    const canvas = await html2canvas(element, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      logging: false,
+    })
+    return canvas.toDataURL('image/png')
+  } catch {
+    return null
+  }
+}
+
+function renderSingleCvePages(doc, ctx, cve, meta, sparklineDataUrl, { newPage = false } = {}) {
+  const border = severityBorderColor(cve.severity)
+  const sentences = cve.sentences || {}
+  const techniques = cve.techniques || []
+  const exploits = cve.public_exploits || []
+  const scans = cve.greynoise_scans || []
+  const products = (cve.affected_products || []).map(p => p.split(':').pop() || p).join(', ')
+  const cwes = (cve.cwe_ids || []).join(', ')
+  const fix = cve.osv_packages?.[0]?.fix || ''
+
+  if (newPage) {
+    doc.addPage()
+    ctx.pageNum += 1
+  }
+  ctx.y = drawPageHeader(doc, meta, cve, true)
+
+  const execParts = [
+    sentences.risk || `Severity: ${cve.severity || 'Unknown'}.`,
+    cve.summary || cve.description || 'No plain-language summary available.',
+    sentences.exploit_likelihood || (cve.epss_score != null
+      ? `EPSS exploitation probability: ${(cve.epss_score * 100).toFixed(1)}%.`
+      : ''),
+    sentences.patch || (cve.patch_available ? 'Patch is available.' : 'No patch flagged in BRIEFR.'),
+  ].filter(Boolean)
+
+  drawSection(ctx, 'EXECUTIVE SUMMARY', execParts.join('\n\n'), border)
+
+  if (sparklineDataUrl) {
+    ensureSpace(ctx, 28)
+    const imgW = 70
+    const imgH = 18
+    ctx.doc.addImage(sparklineDataUrl, 'PNG', MARGIN + 5, ctx.y, imgW, imgH)
+    ctx.y += imgH + 6
+  }
+
+  const techParts = [
+    cve.description || 'No description.',
+    products ? `Affected: ${products}` : '',
+    fix ? `Fix: ${fix}` : '',
+    cwes ? `CWE: ${cwes}` : '',
+  ].filter(Boolean)
+  drawSection(ctx, 'TECHNICAL DETAIL', techParts.join('\n\n'), border)
+
+  const intelParts = [
+    sentences.exploit_likelihood || '',
+    sentences.kev || (cve.is_kev ? 'Listed on CISA KEV.' : 'Not on CISA KEV.'),
+    sentences.public_exploits || '',
+    exploits.length
+      ? exploits.map(e => `• ${e.title || 'Exploit'} (${e.type || 'poc'})`).join('\n')
+      : '',
+    scans.length
+      ? scans.map(s => `• ${s.ip}: ${s.classification || 'unknown'}${s.sentence ? ` — ${s.sentence}` : ''}`).join('\n')
+      : '',
+    'APT groups: None identified in BRIEFR data.',
+  ].filter(Boolean)
+  drawSection(ctx, 'THREAT INTELLIGENCE', intelParts.join('\n\n'), border)
+
+  if (techniques.length) {
+    const mitreLines = techniques.map(t => {
+      const tid = t.id || t.technique_id
+      return `${tid} — ${t.name || 'Unknown'} (${t.tactic || 'tactic n/a'})`
+    })
+    drawSection(ctx, 'MITRE ATT&CK', mitreLines.join('\n'), border)
+    drawSection(ctx, 'DETECTION OPPORTUNITIES', detectionLinesFromTechniques(techniques), border)
+  } else {
+    drawSection(ctx, 'MITRE ATT&CK', 'No techniques mapped.', border)
+    drawSection(ctx, 'DETECTION OPPORTUNITIES', 'No detection guidance — no ATT&CK mapping.', border)
+  }
+
+  drawCheckboxList(ctx, 'RECOMMENDED ACTIONS', recommendedActions(cve, sentences), border)
+
+  const srcLines = sourcesForCve(cve).map(s => `${s.name}: ${s.url}`)
+  drawSection(ctx, 'SOURCES', srcLines.join('\n'), border)
+}
+
+export async function enrichCveForPdf(cve) {
+  const id = cve?.cve_id
+  if (!id) return cve
+
+  let full = cve
+  if (!cve.techniques?.length && !cve.description) {
+    try {
+      full = await fetchCVE(id)
+    } catch {
+      full = cve
+    }
+  } else if (!cve.techniques?.length) {
+    try {
+      const fetched = await fetchCVE(id)
+      full = { ...cve, ...fetched }
+    } catch {
+      full = cve
+    }
+  }
+
+  let sentences = null
+  try {
+    sentences = await fetchCVESentences(id)
+  } catch {
+    sentences = null
+  }
+
+  return { ...full, sentences: sentences || {} }
+}
+
+export async function downloadSingleCvePdf(cve, options = {}) {
+  const enriched = await enrichCveForPdf(cve)
+  const meta = buildMeta(options)
+  const sparklineDataUrl = await captureSparkline(options.sparklineElement)
+
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  const ctx = { doc, y: CONTENT_TOP, pageNum: 1 }
+  renderSingleCvePages(doc, ctx, enriched, meta, sparklineDataUrl)
+  applyFootersAndStripes(doc, meta)
+  doc.save(`${enriched.cve_id}-briefr-report.pdf`)
+}
+
+export async function downloadBulkCvePdf(cves, options = {}) {
+  const meta = buildMeta(options)
+  const enrichedList = await Promise.all(cves.map(c => enrichCveForPdf(c)))
+
+  const critical = enrichedList.filter(c => (c.severity || '').toUpperCase() === 'CRITICAL').length
+  const kev = enrichedList.filter(c => c.is_kev).length
+  const immediate = enrichedList
+    .filter(c => c.is_kev || (c.severity || '').toUpperCase() === 'CRITICAL')
+    .map(c => c.cve_id)
+
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  const ctx = { doc, y: CONTENT_TOP, pageNum: 1 }
+
+  ctx.y = drawPageHeader(doc, meta, null, false)
+  drawSection(
+    ctx,
+    'BULK CVE REPORT — EXECUTIVE SUMMARY',
+    [
+      `Total CVEs: ${enrichedList.length}`,
+      `Critical: ${critical}`,
+      `CISA KEV: ${kev}`,
+      immediate.length
+        ? `Immediate action:\n${immediate.map(id => `• ${id}`).join('\n')}`
+        : 'Immediate action: Review selected CVEs by severity.',
+    ].join('\n\n'),
+    [232, 85, 51],
+  )
+
+  enrichedList.forEach(cve => {
+    renderSingleCvePages(doc, ctx, cve, meta, null, { newPage: true })
+  })
+
+  applyFootersAndStripes(doc, meta)
+  const stamp = new Date().toISOString().slice(0, 10)
+  doc.save(`briefr-bulk-report-${stamp}.pdf`)
+}
+
+function buildMeta(options) {
+  const tlp = TLP_OPTIONS.find(t => t.id === options.tlp) || TLP_OPTIONS[0]
+  const now = new Date()
+  const dateLine = now.toLocaleString('en-GB', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  return {
+    timestamp: getReportTimestamp(),
+    dateLine,
+    analystName: (options.analystName || '').trim(),
+    tlpColor: tlp.color,
+    tlpLabel: tlp.label,
+  }
+}

@@ -636,7 +636,7 @@ async def upsert_cve_technique_pairs(
 async def get_techniques_for_cve(db: aiosqlite.Connection, cve_id: str) -> list[dict]:
     rows = await db.execute_fetchall(
         """
-        SELECT m.technique_id, m.name, m.tactic, m.url
+        SELECT m.technique_id, m.name, m.tactic, m.url, m.description
         FROM cve_technique_map c
         JOIN mitre_techniques m ON c.technique_id = m.technique_id
         WHERE c.cve_id = ?
@@ -650,6 +650,7 @@ async def get_techniques_for_cve(db: aiosqlite.Connection, cve_id: str) -> list[
             "name": r["name"],
             "tactic": r["tactic"],
             "url": r["url"],
+            "description": (r["description"] or "").strip(),
         }
         for r in rows
     ]

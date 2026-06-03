@@ -6,6 +6,8 @@ import {
   fetchCVESentences,
 } from '../api.js'
 import { buildSingleReport, copyToClipboard } from '../utils/report.js'
+import { downloadSingleCvePdf } from '../utils/pdfReport.js'
+import PdfExportModal from './PdfExportModal.jsx'
 import {
   buildEpssSparklinePoints,
   epssSparklinePolyline,
@@ -66,7 +68,7 @@ function HumanSentence({ label, text }) {
   )
 }
 
-function EpssTrendSection({ cve, history, loading }) {
+function EpssTrendSection({ cve, history, loading, epssSparklineRef }) {
   const score =
     typeof cve.epss_score === 'number' && cve.epss_score >= 0 ? cve.epss_score : null
   const points = buildEpssSparklinePoints(history, score)
@@ -92,6 +94,7 @@ function EpssTrendSection({ cve, history, loading }) {
         <p className="drawer-epss-loading mono">// Loading EPSS trend…</p>
       ) : polyline ? (
         <svg
+          ref={epssSparklineRef}
           className="drawer-epss-sparkline"
           width={EPSS_SPARKLINE_WIDTH}
           height={EPSS_SPARKLINE_HEIGHT}
@@ -115,34 +118,15 @@ function EpssTrendSection({ cve, history, loading }) {
   )
 }
 
-function buildPrintableHtml(cve) {
-  const report = buildSingleReport(cve)
-  const escaped = report
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${cve.cve_id} Report</title>
-<style>
-  body { font-family: system-ui, sans-serif; padding: 2rem; line-height: 1.5; color: #111; }
-  pre { white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 12px; }
-</style></head><body><pre>${escaped}</pre></body></html>`
-}
-
-function downloadPdf(cve) {
-  const w = window.open('', '_blank', 'noopener,noreferrer')
-  if (!w) return
-  w.document.write(buildPrintableHtml(cve))
-  w.document.close()
-  w.focus()
-  w.onload = () => {
-    w.print()
-  }
-}
-
-function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading }) {
+function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
   return (
     <>
-      <EpssTrendSection cve={cve} history={epssHistory} loading={epssLoading} />
+      <EpssTrendSection
+        cve={cve}
+        history={epssHistory}
+        loading={epssLoading}
+        epssSparklineRef={epssSparklineRef}
+      />
 
       {cve.description && (
         <section className="drawer-section" aria-labelledby="desc-heading">
@@ -435,7 +419,10 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const [related, setRelated] = useState([])
   const [relatedLoading, setRelatedLoading] = useState(false)
   const [backStack, setBackStack] = useState([])
+  const [pdfModalOpen, setPdfModalOpen] = useState(false)
+  const [pdfBusy, setPdfBusy] = useState(false)
   const reportRef = useRef(null)
+  const epssSparklineRef = useRef(null)
   const navigatingRef = useRef(false)
   const isOpen = !!cve
 
@@ -552,10 +539,26 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
     }
   }
 
-  function handleDownloadPdf() {
-    if (!cve) return
-    downloadPdf(cve)
+  function handleDownloadPdfClick() {
     setReportOpen(false)
+    setPdfModalOpen(true)
+  }
+
+  async function handlePdfConfirm({ tlp, analystName }) {
+    if (!cve) return
+    setPdfBusy(true)
+    try {
+      await downloadSingleCvePdf(cve, {
+        tlp,
+        analystName,
+        sparklineElement: epssSparklineRef.current,
+      })
+      setPdfModalOpen(false)
+    } catch (err) {
+      console.error('PDF generation failed:', err)
+    } finally {
+      setPdfBusy(false)
+    }
   }
 
   function handleBack() {
@@ -661,7 +664,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
                       type="button"
                       role="menuitem"
                       className="drawer-report-item mono"
-                      onClick={handleDownloadPdf}
+                      onClick={handleDownloadPdfClick}
                     >
                       Download PDF
                     </button>
@@ -721,6 +724,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
               sentencesLoading={sentencesLoading}
               epssHistory={epssHistory}
               epssLoading={epssLoading}
+              epssSparklineRef={epssSparklineRef}
             />
           )}
           {activeTab === 'intel' && (
@@ -740,6 +744,14 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
           )}
         </div>
       </aside>
+
+      <PdfExportModal
+        open={pdfModalOpen}
+        title={`PDF report — ${cve.cve_id}`}
+        busy={pdfBusy}
+        onConfirm={handlePdfConfirm}
+        onCancel={() => !pdfBusy && setPdfModalOpen(false)}
+      />
     </>
   )
 }
