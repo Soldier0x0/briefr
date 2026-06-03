@@ -43,6 +43,14 @@ from scheduler import (
     stop_scheduler,
 )
 from tracking import get_usage_stats
+from templates.intelligence import (
+    epss_sentence_or_fallback,
+    exploit_sentence,
+    exploits_from_cve,
+    kev_sentence,
+    patch_sentence,
+    severity_sentence,
+)
 
 
 @asynccontextmanager
@@ -453,6 +461,69 @@ async def top_techniques(
 async def manual_mitre_refresh():
     asyncio.create_task(run_weekly_mitre_refresh())
     return {"status": "ok", "message": "MITRE ATT&CK refresh started in background"}
+
+
+@app.get("/api/cves/{cve_id}/sentences")
+async def get_cve_sentences(cve_id: str):
+    if not cve_id.upper().startswith("CVE-"):
+        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+
+    cve_key = cve_id.upper()
+    db = await get_db()
+    try:
+        rows = await db.execute_fetchall(
+            """
+            SELECT cve_id, cvss_score, severity, is_kev, epss_score,
+                   has_poc, patch_available, source_urls
+            FROM cves
+            WHERE cve_id = ?
+            """,
+            (cve_key,),
+        )
+        if not rows:
+            raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
+
+        row = dict(rows[0])
+        is_kev = bool(row.get("is_kev", 0))
+        has_poc = bool(row.get("has_poc", 0))
+        patch_available = bool(row.get("patch_available", 0))
+
+        source_urls = row.get("source_urls") or "[]"
+        if isinstance(source_urls, str):
+            try:
+                source_urls = json.loads(source_urls)
+            except (json.JSONDecodeError, TypeError):
+                source_urls = []
+
+        kev_rows = await db.execute_fetchall(
+            """
+            SELECT due_date, required_action
+            FROM kev_deadlines
+            WHERE cve_id = ?
+            """,
+            (cve_key,),
+        )
+    finally:
+        await db.close()
+
+    due_date = ""
+    fix = ""
+    if kev_rows:
+        kev_row = dict(kev_rows[0])
+        due_date = (kev_row.get("due_date") or "").strip()
+        fix = (kev_row.get("required_action") or "").strip()
+
+    exploits = exploits_from_cve(has_poc, source_urls)
+    cvss = row.get("cvss_score")
+
+    return {
+        "cve_id": cve_key,
+        "risk": severity_sentence(row.get("severity"), cvss),
+        "exploit_likelihood": epss_sentence_or_fallback(row.get("epss_score"), is_kev),
+        "public_exploits": exploit_sentence(exploits),
+        "patch": patch_sentence(patch_available, fix),
+        "kev": kev_sentence(is_kev, due_date),
+    }
 
 
 @app.get("/api/cves/{cve_id}")
