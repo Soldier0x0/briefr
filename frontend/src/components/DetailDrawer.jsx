@@ -15,6 +15,7 @@ import {
   epssTrendLabel,
   EPSS_SPARKLINE_HEIGHT,
   EPSS_SPARKLINE_WIDTH,
+  hasEnoughEpssHistory,
 } from '../utils/epssSparkline.js'
 import DrawerAtlasSection from './DrawerAtlasSection.jsx'
 import './DetailDrawer.css'
@@ -70,49 +71,87 @@ function HumanSentence({ label, text }) {
   )
 }
 
+function drawerEpssBarColor(score) {
+  if (score >= 0.5) return 'var(--red)'
+  if (score >= 0.2) return 'var(--amber)'
+  return 'var(--green)'
+}
+
+function EpssStaticBar({ score }) {
+  const pct = Math.min(score * 100, 100)
+  return (
+    <div
+      className="drawer-epss-static"
+      aria-label={`EPSS exploitation probability: ${pct.toFixed(1)}%`}
+    >
+      <div
+        className="drawer-epss-track"
+        role="progressbar"
+        aria-valuenow={Math.round(pct)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div
+          className="drawer-epss-fill"
+          style={{ width: `${pct}%`, background: drawerEpssBarColor(score) }}
+        />
+      </div>
+    </div>
+  )
+}
+
 function EpssTrendSection({ cve, history, loading, epssSparklineRef }) {
   const score =
     typeof cve.epss_score === 'number' && cve.epss_score >= 0 ? cve.epss_score : null
   const points = buildEpssSparklinePoints(history, score)
   const polyline = epssSparklinePolyline(points)
   const trend = epssTrendLabel(history, score)
+  const showSparkline = !loading && hasEnoughEpssHistory(points) && !!polyline
+  const showStaticBar = !loading && score != null && !showSparkline
 
   if (score == null && !points.length && !loading) return null
 
   const pctLabel = score != null ? `${(score * 100).toFixed(1)}%` : '—'
+  const trendLine = (
+    <p className={`drawer-epss-trend-line mono drawer-epss-trend--${trend.tone}`}>
+      {trend.label}
+      {'  '}
+      {pctLabel}
+    </p>
+  )
 
   return (
     <section className="drawer-section" aria-labelledby="epss-heading">
-      <div className="drawer-epss-header">
-        <h3 id="epss-heading" className="drawer-section-label">EPSS</h3>
-        <div className="drawer-epss-meta">
-          <span className="drawer-epss-value mono">{pctLabel}</span>
-          <span className={`drawer-epss-trend mono drawer-epss-trend--${trend.tone}`}>
-            {trend.label}
-          </span>
-        </div>
-      </div>
+      <h3 id="epss-heading" className="drawer-section-label">EPSS</h3>
       {loading ? (
         <p className="drawer-epss-loading mono">// Loading EPSS trend…</p>
-      ) : polyline ? (
-        <svg
-          ref={epssSparklineRef}
-          className="drawer-epss-sparkline"
-          width={EPSS_SPARKLINE_WIDTH}
-          height={EPSS_SPARKLINE_HEIGHT}
-          viewBox={`0 0 ${EPSS_SPARKLINE_WIDTH} ${EPSS_SPARKLINE_HEIGHT}`}
-          role="img"
-          aria-label={`EPSS score trend, last ${points.length} days`}
-        >
-          <polyline
-            points={polyline}
-            fill="none"
-            stroke="var(--red)"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+      ) : showSparkline ? (
+        <>
+          <svg
+            ref={epssSparklineRef}
+            className="drawer-epss-sparkline"
+            width={EPSS_SPARKLINE_WIDTH}
+            height={EPSS_SPARKLINE_HEIGHT}
+            viewBox={`0 0 ${EPSS_SPARKLINE_WIDTH} ${EPSS_SPARKLINE_HEIGHT}`}
+            role="img"
+            aria-label={`EPSS score trend, last ${points.length} days`}
+          >
+            <polyline
+              points={polyline}
+              fill="none"
+              stroke="var(--red)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          {trendLine}
+        </>
+      ) : showStaticBar ? (
+        <>
+          <EpssStaticBar score={score} />
+          {trendLine}
+        </>
       ) : (
         <p className="drawer-epss-loading mono">// No EPSS history yet</p>
       )}
@@ -460,16 +499,22 @@ function TabDetect() {
 function TabRelated({ related, loading, onSelectRelated }) {
   if (loading) {
     return (
-      <section className="drawer-section">
-        <p className="drawer-related-empty mono">// Loading related CVEs…</p>
+      <section className="drawer-section drawer-related-loading" aria-busy="true">
+        <ul className="drawer-related-skeleton-list" aria-label="Loading related CVEs">
+          {[0, 1, 2].map(i => (
+            <li key={i} className="drawer-related-skeleton" aria-hidden="true" />
+          ))}
+        </ul>
       </section>
     )
   }
 
   if (!related.length) {
     return (
-      <section className="drawer-section">
-        <p className="drawer-related-empty mono">// No related CVEs found in last 30 days</p>
+      <section className="drawer-section drawer-related-empty-wrap">
+        <p className="drawer-related-empty mono">
+          // No related CVEs found in the last 30 days for this product
+        </p>
       </section>
     )
   }
@@ -506,7 +551,7 @@ function TabRelated({ related, loading, onSelectRelated }) {
                   )}
                 </div>
                 <p className="drawer-related-desc">
-                  {truncateText(item.description, 80)}
+                  {truncateText(item.description, 90)}
                 </p>
               </button>
             </li>
