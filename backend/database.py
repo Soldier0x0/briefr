@@ -161,6 +161,22 @@ async def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_feed_cache_cached_at
                 ON feed_cache(cached_at);
+
+            CREATE TABLE IF NOT EXISTS cve_change_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                cve_id TEXT NOT NULL,
+                field_name TEXT NOT NULL,
+                old_value TEXT NOT NULL DEFAULT '',
+                new_value TEXT NOT NULL DEFAULT '',
+                detected_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_cve_change_history_cve
+                ON cve_change_history(cve_id);
+            CREATE INDEX IF NOT EXISTS idx_cve_change_history_detected
+                ON cve_change_history(detected_at);
+            CREATE INDEX IF NOT EXISTS idx_cve_change_history_field
+                ON cve_change_history(field_name);
         """)
         await db.commit()
 
@@ -190,7 +206,88 @@ async def init_db() -> None:
         await db.close()
 
 
+TRACKED_CVE_FIELDS = frozenset({"cvss_score", "epss_score", "is_kev", "has_poc"})
+
+
+def _change_value_str(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "1" if value else "0"
+    if isinstance(value, (int, float)):
+        if isinstance(value, float):
+            text = f"{value:.6f}".rstrip("0").rstrip(".")
+            return text or "0"
+        return str(value)
+    return str(value)
+
+
+def _values_differ(old: object, new: object) -> bool:
+    if old is None and new is None:
+        return False
+    if old is None or new is None:
+        return True
+    if isinstance(old, float) and isinstance(new, float):
+        return abs(old - new) > 1e-9
+    return old != new
+
+
+async def record_cve_change(
+    db: aiosqlite.Connection,
+    cve_id: str,
+    field_name: str,
+    old_value: object,
+    new_value: object,
+) -> None:
+    if field_name not in TRACKED_CVE_FIELDS:
+        return
+    old_s = _change_value_str(old_value)
+    new_s = _change_value_str(new_value)
+    if old_s == new_s:
+        return
+    await db.execute(
+        """
+        INSERT INTO cve_change_history (cve_id, field_name, old_value, new_value, detected_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (cve_id.upper(), field_name, old_s, new_s),
+    )
+
+
+async def _get_cve_change_snapshot(
+    db: aiosqlite.Connection, cve_id: str
+) -> dict | None:
+    rows = await db.execute_fetchall(
+        """
+        SELECT cvss_score, epss_score, is_kev, has_poc
+        FROM cves WHERE cve_id = ?
+        """,
+        (cve_id.upper(),),
+    )
+    if not rows:
+        return None
+    row = rows[0]
+    return {
+        "cvss_score": row["cvss_score"],
+        "epss_score": row["epss_score"],
+        "is_kev": int(row["is_kev"] or 0),
+        "has_poc": int(row["has_poc"] or 0),
+    }
+
+
 async def upsert_cve(db: aiosqlite.Connection, cve: dict) -> None:
+    cve_id = (cve.get("cve_id") or "").upper()
+    if not cve_id:
+        return
+
+    prior = await _get_cve_change_snapshot(db, cve_id)
+    incoming_poc = 1 if cve.get("has_poc") else 0
+    incoming_kev = 1 if cve.get("is_kev") else 0
+    if prior:
+        new_poc = 1 if prior["has_poc"] or incoming_poc else 0
+    else:
+        new_poc = incoming_poc
+
     await db.execute(
         """
         INSERT INTO cves (
@@ -236,14 +333,38 @@ async def upsert_cve(db: aiosqlite.Connection, cve: dict) -> None:
         },
     )
 
+    new_cvss = cve.get("cvss_score")
+    if prior:
+        if _values_differ(prior["cvss_score"], new_cvss):
+            await record_cve_change(db, cve_id, "cvss_score", prior["cvss_score"], new_cvss)
+        if prior["has_poc"] == 0 and new_poc == 1:
+            await record_cve_change(db, cve_id, "has_poc", 0, 1)
+    else:
+        if incoming_kev:
+            await record_cve_change(db, cve_id, "is_kev", 0, 1)
+        if incoming_poc:
+            await record_cve_change(db, cve_id, "has_poc", 0, 1)
+        if new_cvss is not None:
+            await record_cve_change(db, cve_id, "cvss_score", None, new_cvss)
+
 
 async def mark_cves_as_kev(db: aiosqlite.Connection, cve_ids: list) -> None:
     if not cve_ids:
         return
-    placeholders = ",".join("?" * len(cve_ids))
+    normalized = [c.upper() for c in cve_ids if c]
+    placeholders = ",".join("?" * len(normalized))
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT cve_id, is_kev FROM cves
+        WHERE cve_id IN ({placeholders}) AND is_kev = 0
+        """,
+        normalized,
+    )
+    for row in rows:
+        await record_cve_change(db, row["cve_id"], "is_kev", 0, 1)
     await db.execute(
         f"UPDATE cves SET is_kev = 1 WHERE cve_id IN ({placeholders})",
-        cve_ids,
+        normalized,
     )
 
 
@@ -265,11 +386,27 @@ async def snapshot_epss_scores(db: aiosqlite.Connection, recorded_date: str | No
 
 
 async def update_epss_scores(db: aiosqlite.Connection, scores: dict) -> None:
-    rows = [(score, cve_id.upper()) for cve_id, score in scores.items()]
-    await db.executemany(
-        "UPDATE cves SET epss_score = ? WHERE cve_id = ?",
-        rows,
-    )
+    if not scores:
+        return
+    updates: list[tuple[float, str]] = []
+    for cve_id, score in scores.items():
+        key = cve_id.upper()
+        rows = await db.execute_fetchall(
+            "SELECT epss_score FROM cves WHERE cve_id = ?",
+            (key,),
+        )
+        if not rows:
+            continue
+        old = rows[0]["epss_score"]
+        if not _values_differ(old, score):
+            continue
+        await record_cve_change(db, key, "epss_score", old, score)
+        updates.append((score, key))
+    if updates:
+        await db.executemany(
+            "UPDATE cves SET epss_score = ? WHERE cve_id = ?",
+            updates,
+        )
 
 
 async def get_epss_history(
@@ -430,12 +567,44 @@ async def backfill_has_poc(db: aiosqlite.Connection) -> int:
         urls = json.loads(row["source_urls"] or "[]")
         if not has_public_poc_from_urls(urls):
             continue
+        await record_cve_change(db, row["cve_id"], "has_poc", 0, 1)
         await db.execute(
             "UPDATE cves SET has_poc = 1 WHERE cve_id = ?",
             (row["cve_id"],),
         )
         updated += 1
     return updated
+
+
+async def get_recent_cve_changes(
+    db: aiosqlite.Connection,
+    *,
+    limit: int = 100,
+    field_name: str | None = None,
+    since_hours: int | None = None,
+) -> list[dict]:
+    clauses: list[str] = []
+    params: list[object] = []
+    if field_name:
+        clauses.append("field_name = ?")
+        params.append(field_name)
+    if since_hours is not None and since_hours > 0:
+        clauses.append("detected_at >= datetime('now', ?)")
+        params.append(f"-{since_hours} hours")
+    where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+    params.append(limit)
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT id, cve_id, field_name, old_value, new_value, detected_at
+        FROM cve_change_history
+        {where}
+        ORDER BY detected_at DESC, id DESC
+        LIMIT ?
+        """,
+        params,
+    )
+    return [dict(r) for r in rows]
+
 
 async def enrich_kev_summaries(db: aiosqlite.Connection) -> int:
     """Fill plain-English summary from CISA KEV short descriptions."""

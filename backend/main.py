@@ -29,6 +29,7 @@ from database import (
     get_ioc_cache,
     get_last_updated,
     get_nvd_sync_watermark,
+    get_recent_cve_changes,
     get_related_cves,
     get_techniques_for_cve,
     get_top_techniques,
@@ -45,11 +46,16 @@ from scheduler import run_weekly_mitre_refresh
 from enrichment.ioc import lookup_ioc
 from feeds.osv import fetch_osv_by_cve
 from scheduler import (
+    get_ingest_status,
+    get_ingest_intervals,
     get_next_scheduled_refresh_utc,
     get_refresh_schedule,
     maybe_run_on_startup,
     refresh_in_progress,
     run_daily_refresh,
+    run_epss_sync,
+    run_kev_sync,
+    run_nvd_incremental_sync,
     start_scheduler,
     stop_scheduler,
 )
@@ -184,6 +190,7 @@ async def health(
 
     next_refresh_utc = get_next_scheduled_refresh_utc()
     refresh_schedule = get_refresh_schedule()
+    ingest = get_ingest_status()
 
     response: dict = {
         "status": "ok",
@@ -191,6 +198,10 @@ async def health(
         "last_updated": last_updated,
         "nvd_sync_watermark": nvd_sync_watermark,
         "refresh_in_progress": refresh_in_progress(),
+        "ingest": ingest,
+        "next_nvd_sync_at_utc": next_refresh_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "next_nvd_sync_in_user_tz": _format_time_in_tz(next_refresh_utc, display_tz),
+        "ingest_intervals": get_ingest_intervals(),
         "next_refresh_at_utc": next_refresh_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "next_refresh_in_user_tz": _format_time_in_tz(next_refresh_utc, display_tz),
         "next_refresh_in_scheduler_tz": _format_time_in_tz(
@@ -201,6 +212,34 @@ async def health(
         "server_time_local": _format_time_in_tz(now_utc, display_tz),
     }
     return response
+
+
+@app.get("/api/changes")
+async def cve_changes(
+    limit: int = Query(default=50, ge=1, le=500),
+    field: str | None = Query(default=None, description="Filter: cvss_score, epss_score, is_kev, has_poc"),
+    since_hours: int | None = Query(default=24, ge=1, le=168),
+):
+    """Recent tracked field changes for analyst awareness."""
+    allowed = {"cvss_score", "epss_score", "is_kev", "has_poc"}
+    if field is not None and field not in allowed:
+        raise HTTPException(
+            status_code=400,
+            detail=f"field must be one of: {', '.join(sorted(allowed))}",
+        )
+
+    db = await get_db()
+    try:
+        changes = await get_recent_cve_changes(
+            db,
+            limit=limit,
+            field_name=field,
+            since_hours=since_hours,
+        )
+    finally:
+        await db.close()
+
+    return {"data": changes, "count": len(changes)}
 
 
 @app.get("/api/time")
@@ -884,10 +923,37 @@ async def manual_refresh():
     if refresh_in_progress():
         raise HTTPException(
             status_code=409,
-            detail="A refresh is already running. Wait for it to finish before starting another.",
+            detail="An ingest job is already running. Wait for it to finish before starting another.",
         )
     asyncio.create_task(run_daily_refresh())
-    return {"status": "ok", "message": "Refresh started in background"}
+    return {
+        "status": "ok",
+        "message": "Full ingest started (NVD, then KEV, then EPSS) in background",
+    }
+
+
+@app.post("/api/refresh/nvd")
+async def manual_nvd_refresh():
+    if refresh_in_progress():
+        raise HTTPException(status_code=409, detail="An ingest job is already running.")
+    asyncio.create_task(run_nvd_incremental_sync())
+    return {"status": "ok", "message": "NVD incremental sync started in background"}
+
+
+@app.post("/api/refresh/kev")
+async def manual_kev_refresh():
+    if refresh_in_progress():
+        raise HTTPException(status_code=409, detail="An ingest job is already running.")
+    asyncio.create_task(run_kev_sync())
+    return {"status": "ok", "message": "KEV metadata sync started in background"}
+
+
+@app.post("/api/refresh/epss")
+async def manual_epss_refresh():
+    if refresh_in_progress():
+        raise HTTPException(status_code=409, detail="An ingest job is already running.")
+    asyncio.create_task(run_epss_sync())
+    return {"status": "ok", "message": "EPSS score sync started in background"}
 
 
 @app.get("/api/kev/deadlines")
