@@ -32,6 +32,7 @@ async def init_db() -> None:
                 epss_score REAL,
                 has_poc INTEGER DEFAULT 0,
                 patch_available INTEGER DEFAULT 0,
+                has_ai_context INTEGER DEFAULT 0,
                 source_urls TEXT DEFAULT '[]',
                 cwe_ids TEXT DEFAULT '[]',
                 updated_at TEXT DEFAULT (datetime('now'))
@@ -184,6 +185,7 @@ async def init_db() -> None:
         for migration in (
             "ALTER TABLE kev_deadlines ADD COLUMN date_added TEXT DEFAULT ''",
             "ALTER TABLE cves ADD COLUMN has_poc INTEGER DEFAULT 0",
+            "ALTER TABLE cves ADD COLUMN has_ai_context INTEGER DEFAULT 0",
             "ALTER TABLE mitre_techniques ADD COLUMN detection TEXT DEFAULT ''",
         ):
             try:
@@ -240,11 +242,11 @@ _UPSERT_CVE_SQL = """
     INSERT INTO cves (
         cve_id, description, cvss_score, severity, published, modified,
         affected_products, mitre_technique, summary, is_kev, epss_score,
-        has_poc, patch_available, source_urls, cwe_ids, updated_at
+        has_poc, patch_available, has_ai_context, source_urls, cwe_ids, updated_at
     ) VALUES (
         :cve_id, :description, :cvss_score, :severity, :published, :modified,
         :affected_products, :mitre_technique, :summary, :is_kev, :epss_score,
-        :has_poc, :patch_available, :source_urls, :cwe_ids, datetime('now')
+        :has_poc, :patch_available, :has_ai_context, :source_urls, :cwe_ids, datetime('now')
     )
     ON CONFLICT(cve_id) DO UPDATE SET
         description = excluded.description,
@@ -257,6 +259,7 @@ _UPSERT_CVE_SQL = """
         summary = COALESCE(excluded.summary, cves.summary),
         has_poc = CASE WHEN excluded.has_poc = 1 THEN 1 ELSE cves.has_poc END,
         patch_available = excluded.patch_available,
+        has_ai_context = excluded.has_ai_context,
         source_urls = excluded.source_urls,
         cwe_ids = excluded.cwe_ids,
         updated_at = datetime('now')
@@ -278,6 +281,7 @@ def _cve_upsert_params(cve: dict) -> dict:
         "epss_score": cve.get("epss_score"),
         "has_poc": 1 if cve.get("has_poc") else 0,
         "patch_available": 1 if cve.get("patch_available") else 0,
+        "has_ai_context": 1 if cve.get("has_ai_context") else 0,
         "source_urls": json.dumps(cve.get("source_urls", [])),
         "cwe_ids": json.dumps(cve.get("cwe_ids", [])),
     }
@@ -400,8 +404,12 @@ async def upsert_cves(db: aiosqlite.Connection, cves: list[dict]) -> None:
     snapshots = await _load_cve_change_snapshots(db, ids)
     history: list[tuple[str, str, str, str]] = []
 
+    from feeds.ai_context import analyze_cve_ai_context
+
     for cve in valid:
         cve_id = (cve.get("cve_id") or "").upper()
+        has_ai, _atlas_tids = analyze_cve_ai_context(cve)
+        cve["has_ai_context"] = has_ai
         _append_upsert_change_rows(cve_id, cve, snapshots.get(cve_id), history)
         await db.execute(_UPSERT_CVE_SQL, _cve_upsert_params(cve))
 
@@ -1147,3 +1155,152 @@ async def resolve_nvd_watermark(db: aiosqlite.Connection, *, min_cves: int = 10)
         return None
     return await seed_nvd_watermark_from_cves(db)
 
+async def clear_cve_atlas_map(db: aiosqlite.Connection) -> None:
+    await db.execute("DELETE FROM cve_atlas_map")
+
+
+async def upsert_cve_atlas_pairs(
+    db: aiosqlite.Connection, pairs: list[tuple[str, str]]
+) -> int:
+    if not pairs:
+        return 0
+    await db.executemany(
+        """
+        INSERT OR IGNORE INTO cve_atlas_map (cve_id, technique_id)
+        VALUES (?, ?)
+        """,
+        pairs,
+    )
+    return len(pairs)
+
+
+async def replace_cve_atlas_map_for_cve(
+    db: aiosqlite.Connection, cve_id: str, technique_ids: list[str]
+) -> None:
+    cve_key = cve_id.upper()
+    await db.execute("DELETE FROM cve_atlas_map WHERE cve_id = ?", (cve_key,))
+    if technique_ids:
+        await upsert_cve_atlas_pairs(
+            db, [(cve_key, tid.upper()) for tid in technique_ids if tid]
+        )
+
+
+async def get_atlas_techniques_for_cve(
+    db: aiosqlite.Connection, cve_id: str
+) -> list[dict]:
+    rows = await db.execute_fetchall(
+        """
+        SELECT t.technique_id, t.name, t.description, t.tactic, t.url
+        FROM cve_atlas_map m
+        JOIN atlas_techniques t ON t.technique_id = m.technique_id
+        WHERE m.cve_id = ?
+        ORDER BY t.technique_id
+        """,
+        (cve_id.upper(),),
+    )
+    return [
+        {
+            "technique_id": r["technique_id"],
+            "id": r["technique_id"],
+            "name": r["name"],
+            "description": r["description"],
+            "tactic": r["tactic"],
+            "url": r["url"],
+        }
+        for r in rows
+    ]
+
+
+async def get_atlas_case_studies_for_cve(
+    db: aiosqlite.Connection, cve_id: str, *, limit: int = 2
+) -> list[dict]:
+    cve_key = cve_id.upper()
+    rows = await db.execute_fetchall(
+        """
+        SELECT study_id, name, summary, techniques, target, date, cve_ids
+        FROM atlas_case_studies
+        ORDER BY date DESC, name
+        LIMIT 200
+        """
+    )
+    out: list[dict] = []
+    for row in rows:
+        cve_ids = _parse_json_list(row["cve_ids"])
+        if cve_key not in cve_ids:
+            continue
+        out.append(
+            {
+                "study_id": row["study_id"],
+                "name": row["name"],
+                "summary": row["summary"],
+                "techniques": _parse_json_list(row["techniques"]),
+                "target": row["target"],
+                "incident_date": row["date"],
+            }
+        )
+        if len(out) >= limit:
+            break
+    return out
+
+
+async def count_ai_ml_profile_alerts(
+    db: aiosqlite.Connection, frameworks: list[str]
+) -> int:
+    if not frameworks:
+        return 0
+    rows = await db.execute_fetchall(
+        """
+        SELECT cve_id, description, affected_products
+        FROM cves
+        WHERE has_ai_context = 1
+        """
+    )
+    from feeds.ai_context import cve_matches_declared_frameworks
+
+    count = 0
+    for row in rows:
+        cve = {
+            "description": row["description"],
+            "affected_products": _parse_json_list(row["affected_products"])
+            if isinstance(row["affected_products"], str)
+            else row["affected_products"],
+        }
+        if cve_matches_declared_frameworks(cve, frameworks):
+            count += 1
+    return count
+
+
+async def refresh_all_cve_ai_context(db: aiosqlite.Connection) -> dict[str, int]:
+    """Recompute has_ai_context and cve_atlas_map for every CVE."""
+    from feeds.ai_context import analyze_cve_ai_context
+
+    rows = await db.execute_fetchall(
+        """
+        SELECT cve_id, description, affected_products
+        FROM cves
+        """
+    )
+    atlas_rows = await db.execute_fetchall(
+        "SELECT technique_id FROM atlas_techniques"
+    )
+    known_atlas = {r["technique_id"] for r in atlas_rows}
+
+    flagged = 0
+    links = 0
+    for row in rows:
+        cve_id = row["cve_id"]
+        products = _parse_json_list(row["affected_products"])
+        cve = {"description": row["description"], "affected_products": products}
+        has_ai, tids = analyze_cve_ai_context(cve)
+        await db.execute(
+            "UPDATE cves SET has_ai_context = ? WHERE cve_id = ?",
+            (1 if has_ai else 0, cve_id),
+        )
+        if has_ai:
+            flagged += 1
+        valid = [t for t in tids if t in known_atlas]
+        await replace_cve_atlas_map_for_cve(db, cve_id, valid)
+        links += len(valid)
+
+    await db.commit()
+    return {"cves_flagged": flagged, "atlas_links": links}

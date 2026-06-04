@@ -1,13 +1,8 @@
-/* ── Feed layout when drawer open (feed column only; sidebar hidden) ── */
+/* ── Feed layout when drawer open (scoped from drawer, no other components) ── */
 @media (min-width: 1280px) {
   body.briefr-drawer-open .content-grid {
     width: 35vw;
     max-width: 35vw;
-    grid-template-columns: 1fr;
-  }
-
-  body.briefr-drawer-open .content-grid > .sidebar {
-    display: none;
   }
 }
 
@@ -15,11 +10,6 @@
   body.briefr-drawer-open .content-grid {
     width: 25vw;
     max-width: 25vw;
-    grid-template-columns: 1fr;
-  }
-
-  body.briefr-drawer-open .content-grid > .sidebar {
-    display: none;
   }
 }
 
@@ -693,6 +683,137 @@
   padding: 2px 6px;
 }
 
+/* MITRE ATLAS (Intel tab) */
+.drawer-atlas-label {
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.drawer-atlas-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.drawer-atlas-badge {
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  border: 1px solid var(--border2);
+  padding: 3px 8px;
+}
+
+.drawer-atlas-badge:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.drawer-atlas-profile-warn {
+  font-size: 0.75rem;
+  color: var(--amber);
+  margin: 0 0 12px;
+  letter-spacing: 0.02em;
+}
+
+.drawer-atlas-subhead {
+  font-size: 9px;
+  color: var(--text3);
+  margin: 16px 0 8px;
+  letter-spacing: 0.06em;
+}
+
+.atlas-techniques {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.atlas-technique-card {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  padding: 12px 14px;
+}
+
+.atlas-technique-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.atlas-technique-id {
+  font-size: 0.8125rem;
+  color: var(--red);
+  letter-spacing: 0.04em;
+}
+
+.atlas-tactic-badge {
+  font-size: 9px;
+  color: var(--text3);
+  border: 1px solid var(--border2);
+  padding: 2px 6px;
+}
+
+.atlas-technique-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0 0 4px;
+}
+
+.atlas-technique-desc {
+  font-size: 0.8125rem;
+  color: var(--text2);
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+
+.atlas-technique-link {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
+.atlas-case-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.atlas-case-item {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+}
+
+.atlas-case-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0 0 4px;
+}
+
+.atlas-case-summary {
+  font-size: 0.8125rem;
+  color: var(--text2);
+  margin: 0 0 6px;
+  line-height: 1.4;
+}
+
+.atlas-case-meta {
+  font-size: 0.6875rem;
+  color: var(--text3);
+  margin: 0;
+}
+
 /* MITRE ATT&CK */
 .mitre-empty {
   font-size: 0.75rem;
@@ -783,111 +904,23 @@
   color: var(--accent);
 }
 
-.drawer-risk-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.drawer-risk-total {
-  font-family: var(--font-display);
-  font-size: 2rem;
-  line-height: 1;
-}
-
-.drawer-risk-breakdown {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.drawer-risk-row-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.drawer-risk-label {
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  color: var(--text3);
-  text-transform: uppercase;
-}
-
-.drawer-risk-points {
-  font-size: 9px;
-  color: var(--text2);
-}
-
-.drawer-risk-bar-track {
-  height: 4px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  margin-bottom: 6px;
-}
-
-.drawer-risk-bar-fill {
-  height: 100%;
-  background: var(--accent);
-  min-width: 2px;
-}
-
-.drawer-risk-sentence {
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  color: var(--text2);
-  margin: 0;
-}
-
-
-.mitre-technique-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  justify-content: flex-end;
-}
-
-.mitre-technique-id {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--red);
-}
-
-.mitre-technique-icon-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  font-size: 0.875rem;
-  color: var(--text2);
-  text-decoration: none;
-  border: 1px solid var(--border);
-  background: var(--bg3);
-}
-
-.mitre-technique-name {
-  font-family: var(--font-body);
-  font-size: 13px;
-}
-
-.mitre-detection-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--text3);
-}
-
-.mitre-detection-text {
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--text2);
-  margin: 8px 0 0;
-}
+/* MITRE ATLAS (Intel tab) */
+.drawer-atlas-label { font-size: 9px; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin: 0; }
+.drawer-atlas-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.drawer-atlas-badge { font-size: 9px; color: var(--text3); letter-spacing: 0.04em; text-decoration: none; border: 1px solid var(--border2); padding: 3px 8px; }
+.drawer-atlas-badge:hover { color: var(--accent); border-color: var(--accent); }
+.drawer-atlas-profile-warn { font-size: 0.75rem; color: var(--amber); margin: 0 0 12px; letter-spacing: 0.02em; }
+.drawer-atlas-subhead { font-size: 9px; color: var(--text3); margin: 16px 0 8px; letter-spacing: 0.06em; }
+.atlas-techniques { display: flex; flex-direction: column; gap: 10px; }
+.atlas-technique-card { background: var(--bg3); border: 1px solid var(--border2); padding: 12px 14px; }
+.atlas-technique-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.atlas-technique-id { font-size: 0.8125rem; color: var(--red); letter-spacing: 0.04em; }
+.atlas-tactic-badge { font-size: 9px; color: var(--text3); border: 1px solid var(--border2); padding: 2px 6px; }
+.atlas-technique-name { font-size: 0.875rem; font-weight: 500; margin: 0 0 4px; }
+.atlas-technique-desc { font-size: 0.8125rem; color: var(--text2); margin: 0 0 8px; line-height: 1.45; }
+.atlas-technique-link { font-size: 0.75rem; color: var(--accent); }
+.atlas-case-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.atlas-case-item { background: var(--bg2); border: 1px solid var(--border); padding: 10px 12px; }
+.atlas-case-name { font-size: 0.875rem; font-weight: 500; margin: 0 0 4px; }
+.atlas-case-summary { font-size: 0.8125rem; color: var(--text2); margin: 0 0 6px; line-height: 1.4; }
+.atlas-case-meta { font-size: 0.6875rem; color: var(--text3); margin: 0; }

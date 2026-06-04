@@ -16,6 +16,10 @@ import AboutModal from './components/AboutModal.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import { fetchStats, fetchHealth, fetchCVE } from './api.js'
+import {
+  aiFrameworksQueryParam,
+  hasDeclaredAiAssets,
+} from './utils/aiAssets.js'
 import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 import './components/InvestigationPanel.css'
@@ -32,6 +36,9 @@ const DEFAULT_FILTERS = {
   published_on: '',
   my_stack_only: false,
   summary_only: false,
+  ai_context_only: false,
+  ai_profile: '',
+  ai_profile_match: false,
 }
 
 // ── Last-refreshed helper ─────────────────────────────────
@@ -46,27 +53,11 @@ function timeAgoMinutes(sqliteUtc) {
   return `${Math.floor(h / 24)} days ago`
 }
 
-function formatIngestCadence(schedule) {
+function formatScheduleLabel(schedule) {
   if (!schedule) return null
-  const parts = []
-  if (schedule.nvd_interval_hours != null) {
-    parts.push(`NVD every ${schedule.nvd_interval_hours}h`)
-  }
-  if (schedule.kev_interval_minutes != null) {
-    parts.push(`KEV every ${schedule.kev_interval_minutes}m`)
-  }
-  if (schedule.epss_interval_hours != null) {
-    parts.push(`EPSS every ${schedule.epss_interval_hours}h`)
-  }
-  const tz = schedule.timezone ? getTzAbbr(schedule.timezone) : ''
-  const mitreH = schedule.mitre_weekly_hour ?? schedule.hour
-  const mitreM = schedule.mitre_weekly_minute ?? schedule.minute
-  if (mitreH != null && mitreM != null) {
-    const hh = String(mitreH).padStart(2, '0')
-    const mm = String(mitreM).padStart(2, '0')
-    parts.push(`MITRE weekly Sun ${hh}:${mm}${tz ? ` ${tz}` : ''}`)
-  }
-  return parts.length ? parts.join(' · ') : null
+  const hh = String(schedule.hour).padStart(2, '0')
+  const mm = String(schedule.minute).padStart(2, '0')
+  return `${hh}:${mm} ${getTzAbbr(schedule.timezone)}`
 }
 
 function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSchedule }) {
@@ -80,7 +71,7 @@ function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSched
   const nextUtcLabel = nextRefreshUtc ? formatAbsolute(nextRefreshUtc, 'UTC') : null
   const nextUserLabel =
     nextRefreshUtc && timezone ? formatAbsolute(nextRefreshUtc, timezone) : null
-  const cadenceLabel = formatIngestCadence(refreshSchedule)
+  const scheduleLabel = formatScheduleLabel(refreshSchedule)
 
   if (!lastLabel && !nextUtcLabel) return null
 
@@ -92,7 +83,7 @@ function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSched
         <span>
           Next refresh at {nextUtcLabel}
           {nextUserLabel && timezone !== 'UTC' && <> · {nextUserLabel}</>}
-          {cadenceLabel && <> · {cadenceLabel}</>}
+          {scheduleLabel && <> (auto daily {scheduleLabel})</>}
         </span>
       )}
     </p>
@@ -130,6 +121,19 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
     setFilters(prev => ({ ...prev, ...next }))
   }, [setFilters])
 
+  const handleAiAlertsClick = useCallback(() => {
+    const fw = aiFrameworksQueryParam()
+    handleFiltersChange({
+      severity: null,
+      kev_only: false,
+      poc_only: false,
+      epss_min: null,
+      ai_context_only: true,
+      ai_profile: fw,
+      ai_profile_match: true,
+    })
+  }, [handleFiltersChange])
+
   const handleGenerateDigest = useCallback((cves) => {
     setDigestCVEs(cves)
     setDigestOpen(true)
@@ -149,7 +153,11 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
         onBrief={handleBrief}
         onClearStack={handleClearStack}
       />
-      <StatsRow stats={stats} />
+      <StatsRow
+        stats={stats}
+        showAiAlerts={hasDeclaredAiAssets()}
+        onAiAlertsClick={handleAiAlertsClick}
+      />
       <TimelineHeatmap filters={filters} onFiltersChange={handleFiltersChange} />
       <FeedRefreshStatus
         lastUpdated={lastUpdated}
@@ -212,9 +220,20 @@ export default function App() {
       .catch(() => {})
   }, [timezone])
 
-  useEffect(() => {
-    fetchStats().then(setStats).catch(() => {})
+  const loadStats = useCallback(() => {
+    const fw = aiFrameworksQueryParam()
+    fetchStats(fw).then(setStats).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    loadStats()
+  }, [loadStats])
+
+  useEffect(() => {
+    const onStackChange = () => loadStats()
+    window.addEventListener('briefr-stack-change', onStackChange)
+    return () => window.removeEventListener('briefr-stack-change', onStackChange)
+  }, [loadStats])
 
   useEffect(() => {
     loadHealth()
