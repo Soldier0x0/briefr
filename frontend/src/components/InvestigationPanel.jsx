@@ -122,10 +122,10 @@ export default function InvestigationPanel() {
 
   if (!showPanel || !startTime) return null
 
-  async function handlePdfConfirm({ tlp, analystName }) {
+  async function handlePdfConfirm({ analystName }) {
     setPdfBusy(true)
     try {
-      await downloadInvestigationPdf(items, startTime, { tlp, analystName })
+      await downloadInvestigationPdf(items, startTime, { analystName })
       setPdfModalOpen(false)
     } catch (err) {
       console.error('Investigation PDF failed:', err)

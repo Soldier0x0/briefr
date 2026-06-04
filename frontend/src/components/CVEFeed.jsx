@@ -311,12 +311,12 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     setBulkPdfModalOpen(true)
   }
 
-  async function handleBulkPdfConfirm({ tlp, analystName }) {
+  async function handleBulkPdfConfirm({ analystName }) {
     const selected = Object.values(selectedMap)
     if (!selected.length) return
     setBulkPdfBusy(true)
     try {
-      await downloadBulkCvePdf(selected, { tlp, analystName })
+      await downloadBulkCvePdf(selected, { analystName })
       setBulkPdfModalOpen(false)
     } catch (err) {
       console.error('Bulk PDF failed:', err)

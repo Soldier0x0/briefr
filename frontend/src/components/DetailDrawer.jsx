@@ -555,12 +555,11 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
     setPdfModalOpen(true)
   }
 
-  async function handlePdfConfirm({ tlp, analystName }) {
+  async function handlePdfConfirm({ analystName }) {
     if (!cve) return
     setPdfBusy(true)
     try {
       await downloadSingleCvePdf(cve, {
-        tlp,
         analystName,
         sparklineElement: epssSparklineRef.current,
       })
