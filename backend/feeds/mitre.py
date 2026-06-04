@@ -237,12 +237,27 @@ def parse_cve_mappings_json(data: Any) -> dict[str, list[str]]:
     return {cve: sorted(tids) for cve, tids in mapping.items()}
 
 
+def _csv_field(row: dict[str, str], *names: str) -> str:
+    for name in names:
+        if name in row:
+            return row[name] or ""
+        bom_key = f"\ufeff{name}"
+        if bom_key in row:
+            return row[bom_key] or ""
+    return ""
+
+
 def parse_cve_mappings_csv(text: str) -> dict[str, list[str]]:
     """Parse CTID Att&ckToCveMappings.csv → { CVE-ID: [Txxxx, ...] }."""
+    text = text.lstrip("\ufeff")
     mapping: dict[str, set[str]] = {}
     reader = csv.DictReader(io.StringIO(text))
+    if reader.fieldnames:
+        reader.fieldnames = [
+            (f or "").lstrip("\ufeff").strip() for f in reader.fieldnames
+        ]
     for row in reader:
-        cve_id = (row.get("CVE ID") or row.get("CVE_ID") or "").strip().upper()
+        cve_id = _csv_field(row, "CVE ID", "CVE_ID").strip().upper()
         if not cve_id.startswith("CVE-"):
             continue
         techniques: set[str] = set()
@@ -303,7 +318,7 @@ async def download_enterprise_attack() -> list[dict]:
 
 
 async def download_cve_technique_mappings() -> dict[str, list[str]]:
-    cve_map: dict[str, list[str]] = {}
+    sources: list[dict[str, list[str]]] = []
 
     json_url = (
         os.environ.get("MITRE_CVE_MAPPINGS_JSON_URL", "").strip()
@@ -312,16 +327,24 @@ async def download_cve_technique_mappings() -> dict[str, list[str]]:
     try:
         logger.info("Downloading CVE→ATT&CK mappings JSON from %s", json_url)
         json_data = json.loads(await _fetch_bytes(json_url))
-        cve_map = parse_cve_mappings_json(json_data)
-        logger.info("CVE mappings from JSON: %d CVEs", len(cve_map))
+        json_map = parse_cve_mappings_json(json_data)
+        logger.info("CVE mappings from JSON: %d CVEs", len(json_map))
+        if json_map:
+            sources.append(json_map)
     except Exception as exc:
-        logger.warning("CVE mappings JSON unavailable (%s), trying CSV fallback", exc)
+        logger.warning("CVE mappings JSON unavailable (%s), using CSV/KEV sources", exc)
 
-    if not cve_map:
+    try:
         logger.info("Downloading CTID CVE→ATT&CK mappings CSV from mappings-explorer")
-        csv_text = (await _fetch_bytes(CVE_MAPPINGS_CSV_URL)).decode("utf-8", errors="replace")
-        cve_map = parse_cve_mappings_csv(csv_text)
-        logger.info("CVE mappings from CTID CSV: %d CVEs", len(cve_map))
+        csv_text = (await _fetch_bytes(CVE_MAPPINGS_CSV_URL)).decode(
+            "utf-8-sig", errors="replace"
+        )
+        csv_map = parse_cve_mappings_csv(csv_text)
+        logger.info("CVE mappings from CTID CSV: %d CVEs", len(csv_map))
+        if csv_map:
+            sources.append(csv_map)
+    except Exception as exc:
+        logger.warning("CTID CSV mapping fetch failed (non-fatal): %s", exc)
 
     kev_map: dict[str, list[str]] = {}
     try:
@@ -330,10 +353,12 @@ async def download_cve_technique_mappings() -> dict[str, list[str]]:
         kev_data = json.loads(kev_raw)
         kev_map = parse_kev_attack_mappings(kev_data)
         logger.info("CVE mappings from KEV ATT&CK: %d CVEs", len(kev_map))
+        if kev_map:
+            sources.append(kev_map)
     except Exception as exc:
         logger.warning("KEV ATT&CK mapping fetch failed (non-fatal): %s", exc)
 
-    merged = merge_cve_technique_maps(cve_map, kev_map)
+    merged = merge_cve_technique_maps(*sources) if sources else {}
     logger.info("Total unique CVE→technique mappings: %d CVEs", len(merged))
     return merged
 
