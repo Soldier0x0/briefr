@@ -58,6 +58,15 @@ export function fetchCVESentences(cveId) {
   return request(`/cves/${encodeURIComponent(cveId)}/sentences`)
 }
 
+export function fetchCVEScore(cveId, assets = null) {
+  const qs = new URLSearchParams()
+  if (assets?.length) {
+    qs.set('assets', JSON.stringify(assets))
+  }
+  const query = qs.toString()
+  return request(`/cves/${encodeURIComponent(cveId)}/score${query ? `?${query}` : ''}`)
+}
+
 export function fetchCVEEpssHistory(cveId) {
   return request(`/cves/${encodeURIComponent(cveId)}/epss-history`)
 }

@@ -417,3 +417,26 @@
     right: 28px;
   }
 }
+
+.card-risk-score {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.card-share-wrap {
+  top: 44px;
+}
+
+.badge-cvss-secondary {
+  font-size: 0.5625rem;
+  padding: 1px 5px;
+  opacity: 0.85;
+}

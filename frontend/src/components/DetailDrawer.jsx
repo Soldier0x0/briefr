@@ -3,6 +3,7 @@ import {
   fetchCVE,
   fetchCVEEpssHistory,
   fetchCVERelated,
+  fetchCVEScore,
   fetchCVESentences,
 } from '../api.js'
 import { buildSingleReport, copyToClipboard } from '../utils/report.js'
@@ -16,6 +17,12 @@ import {
   EPSS_SPARKLINE_HEIGHT,
   EPSS_SPARKLINE_WIDTH,
 } from '../utils/epssSparkline.js'
+import {
+  calculateRiskScore,
+  exploitsFromCveFields,
+  getUserAssetProfile,
+  riskScoreColor,
+} from '../utils/riskScore.js'
 import './DetailDrawer.css'
 
 const TABS = [
@@ -119,9 +126,53 @@ function EpssTrendSection({ cve, history, loading, epssSparklineRef }) {
   )
 }
 
-function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
+
+function RiskScoreBreakdown({ scoreData, scoreLoading }) {
+  if (scoreLoading) {
+    return (
+      <section className="drawer-section" aria-labelledby="risk-score-heading">
+        <h3 id="risk-score-heading" className="drawer-human-label mono">BRIEFR RISK SCORE</h3>
+        <p className="drawer-human-loading mono">// Calculating risk score...</p>
+      </section>
+    )
+  }
+  if (!scoreData) return null
+  const score = scoreData.score
+  const color = riskScoreColor(score)
+  return (
+    <section className="drawer-section drawer-risk-section" aria-labelledby="risk-score-heading">
+      <div className="drawer-risk-header">
+        <h3 id="risk-score-heading" className="drawer-human-label mono">BRIEFR RISK SCORE</h3>
+        <span className="drawer-risk-total" style={{ color }} aria-label={`Score ${score}`}>
+          {score}
+        </span>
+      </div>
+      <ul className="drawer-risk-breakdown" aria-label="Risk score component breakdown">
+        {scoreData.breakdown.map(row => (
+          <li key={row.id} className="drawer-risk-row">
+            <div className="drawer-risk-row-head">
+              <span className="drawer-risk-label mono">{row.label}</span>
+              <span className="drawer-risk-points mono">{row.points}</span>
+            </div>
+            <div className="drawer-risk-bar-track" aria-hidden="true">
+              <div
+                className="drawer-risk-bar-fill"
+                style={{ width: `${Math.min(100, row.value * 100)}%` }}
+              />
+            </div>
+            <p className="drawer-risk-sentence">{row.sentence}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading, scoreData, scoreLoading, epssHistory, epssLoading, epssSparklineRef }) {
   return (
     <>
+      <RiskScoreBreakdown scoreData={scoreData} scoreLoading={scoreLoading} />
+
       <EpssTrendSection
         cve={cve}
         history={epssHistory}
@@ -151,11 +202,11 @@ function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading, e
 
       {sentences && (
         <>
-          <HumanSentence label="RISK ASSESSMENT" text={sentences.risk} />
-          <HumanSentence label="EXPLOIT LIKELIHOOD" text={sentences.exploit_likelihood} />
-          <HumanSentence label="PUBLIC EXPLOITS" text={sentences.public_exploits} />
+          <HumanSentence label="SEVERITY" text={sentences.severity || sentences.risk} />
+          <HumanSentence label="EXPLOIT LIKELIHOOD (EPSS)" text={sentences.epss || sentences.exploit_likelihood} />
+          <HumanSentence label="CISA KEV" text={sentences.kev} />
+          <HumanSentence label="PUBLIC EXPLOITS" text={sentences.exploit || sentences.public_exploits} />
           <HumanSentence label="PATCH STATUS" text={sentences.patch} />
-          <HumanSentence label="CISA KEV STATUS" text={sentences.kev} />
         </>
       )}
 
@@ -437,13 +488,6 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const isOpen = !!cve
   const investigation = useInvestigationOptional()
 
-  function handleOverlayPointerDown(e) {
-    if (e.button !== 0) return
-    e.preventDefault()
-    e.stopPropagation()
-    onClose()
-  }
-
   useEffect(() => {
     if (!cve?.cve_id) {
       setSentences(null)
@@ -467,6 +511,34 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
       .finally(() => {
         if (!cancelled) setSentencesLoading(false)
       })
+
+  useEffect(() => {
+    if (!cve?.cve_id) {
+      setScoreData(null)
+      setScoreLoading(false)
+      return
+    }
+    let cancelled = false
+    setScoreLoading(true)
+    setScoreData(null)
+    const profile = getUserAssetProfile()
+    const exploits = exploitsFromCveFields(cve)
+    if (profile?.length) {
+      if (!cancelled) {
+        setScoreData(calculateRiskScore(cve, profile, exploits))
+        setScoreLoading(false)
+      }
+      return () => { cancelled = true }
+    }
+    fetchCVEScore(cve.cve_id)
+      .then(data => { if (!cancelled) setScoreData(data) })
+      .catch(() => {
+        if (!cancelled) setScoreData(calculateRiskScore(cve, null, exploits))
+      })
+      .finally(() => { if (!cancelled) setScoreLoading(false) })
+    return () => { cancelled = true }
+  }, [cve])
+
     return () => { cancelled = true }
   }, [cve?.cve_id])
 
@@ -629,7 +701,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
     <>
       <div
         className="drawer-overlay drawer-overlay-active"
-        onPointerDown={handleOverlayPointerDown}
+        onClick={onClose}
         aria-hidden="true"
       />
 
@@ -759,6 +831,8 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
               urls={urls}
               sentences={sentences}
               sentencesLoading={sentencesLoading}
+              scoreData={scoreData}
+              scoreLoading={scoreLoading}
               epssHistory={epssHistory}
               epssLoading={epssLoading}
               epssSparklineRef={epssSparklineRef}

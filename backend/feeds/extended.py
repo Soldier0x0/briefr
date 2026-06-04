@@ -67,6 +67,8 @@ def extract_ipv4_from_cve(description: str | None, source_urls: list | None) -> 
 
 def _normalize_exploit_type(raw_type: str, title: str, source: str) -> str:
     blob = f"{raw_type} {title} {source}".lower()
+    if "metasploit" in blob:
+        return "metasploit"
     if any(h in blob for h in WEAPONISED_HINTS):
         return "weaponised"
     if "poc" in blob or "proof" in blob or "github" in blob:

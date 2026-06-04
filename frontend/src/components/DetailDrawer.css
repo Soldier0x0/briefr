@@ -782,3 +782,66 @@
 .refs-link:hover {
   color: var(--accent);
 }
+
+.drawer-risk-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.drawer-risk-total {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.drawer-risk-breakdown {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.drawer-risk-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.drawer-risk-label {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  text-transform: uppercase;
+}
+
+.drawer-risk-points {
+  font-size: 9px;
+  color: var(--text2);
+}
+
+.drawer-risk-bar-track {
+  height: 4px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+
+.drawer-risk-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  min-width: 2px;
+}
+
+.drawer-risk-sentence {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text2);
+  margin: 0;
+}
