@@ -80,7 +80,7 @@ function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSched
   const nextUtcLabel = nextRefreshUtc ? formatAbsolute(nextRefreshUtc, 'UTC') : null
   const nextUserLabel =
     nextRefreshUtc && timezone ? formatAbsolute(nextRefreshUtc, timezone) : null
-  const scheduleLabel = formatScheduleLabel(refreshSchedule)
+  const cadenceLabel = formatIngestCadence(refreshSchedule)
 
   if (!lastLabel && !nextUtcLabel) return null
 
@@ -92,7 +92,7 @@ function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSched
         <span>
           Next refresh at {nextUtcLabel}
           {nextUserLabel && timezone !== 'UTC' && <> · {nextUserLabel}</>}
-          {scheduleLabel && <> (auto daily {scheduleLabel})</>}
+          {cadenceLabel && <> · {cadenceLabel}</>}
         </span>
       )}
     </p>
