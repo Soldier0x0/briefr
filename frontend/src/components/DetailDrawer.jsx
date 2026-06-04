@@ -437,6 +437,13 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const isOpen = !!cve
   const investigation = useInvestigationOptional()
 
+  function handleOverlayPointerDown(e) {
+    if (e.button !== 0) return
+    e.preventDefault()
+    e.stopPropagation()
+    onClose()
+  }
+
   useEffect(() => {
     if (!cve?.cve_id) {
       setSentences(null)
@@ -580,12 +587,6 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
     setActiveTab('related')
   }
 
-  function handleBackdropPointerDown(e) {
-    e.preventDefault()
-    e.stopPropagation()
-    onClose()
-  }
-
   async function handleSelectRelated(cveId) {
     if (!cve || !onCveReplace) return
     navigatingRef.current = true
@@ -628,7 +629,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
     <>
       <div
         className="drawer-overlay drawer-overlay-active"
-        onPointerDown={handleBackdropPointerDown}
+        onClick={onClose}
         aria-hidden="true"
       />
 
