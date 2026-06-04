@@ -7,14 +7,25 @@
 set -euo pipefail
 
 INSTALL_DIR="/opt/briefr"
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
 APP_USER="briefr"
 APP_HOME="/var/lib/briefr"
 NGINX_SITE="${NGINX_SITE:-/etc/nginx/sites-available/briefr}"
-VITE_SERVICE="briefr-frontend.service"
 
 if [ "$(id -u)" -ne 0 ]; then
-  echo "Run as root: bash $0"
+  echo "Run as root: bash ${SCRIPT_PATH}"
   exit 1
+fi
+
+# Pull first, then re-exec so we always run the latest script body (bash does not
+# re-read the file after git pull while a run is in progress).
+if [ "${BRIEFR_UPDATE_REEXECED:-}" != "1" ]; then
+  echo "==> Pulling latest from main"
+  git config --global --add safe.directory "${INSTALL_DIR}" 2>/dev/null || true
+  git -C "${INSTALL_DIR}" remote set-url origin https://github.com/Soldier0x0/briefr.git 2>/dev/null || true
+  git -C "${INSTALL_DIR}" pull origin main
+  export BRIEFR_UPDATE_REEXECED=1
+  exec bash "${SCRIPT_PATH}" "$@"
 fi
 
 ensure_app_user() {
@@ -63,13 +74,17 @@ ensure_nginx() {
 install_nginx_site() {
   ensure_nginx
   local use_tls=0
+  local site_mode="HTTP"
   if [ "${USE_TLS:-}" = "1" ]; then
     use_tls=1
   elif [ -f /etc/letsencrypt/live/projectjupiter.in/fullchain.pem ]; then
     use_tls=1
   fi
+  if [ "${use_tls}" = "1" ]; then
+    site_mode="HTTPS"
+  fi
 
-  echo "==> Installing nginx site (${use_tls:+HTTPS}${use_tls:-HTTP})"
+  echo "==> Installing nginx site (${site_mode})"
   if [ "${use_tls}" = "1" ]; then
     cp "${INSTALL_DIR}/deploy/nginx-briefr.conf" "${NGINX_SITE}"
   else
@@ -89,11 +104,9 @@ install_systemd_units() {
 
 disable_vite_dev() {
   echo "==> Disabling Vite dev server (production uses nginx + frontend/dist)"
-  systemctl stop briefr-frontend 2>/dev/null || true
+  systemctl stop briefr.target briefr-frontend 2>/dev/null || true
   systemctl disable briefr-frontend 2>/dev/null || true
-  if [ -f "/etc/systemd/system/${VITE_SERVICE}" ]; then
-    systemctl mask briefr-frontend 2>/dev/null || true
-  fi
+  systemctl mask briefr-frontend 2>/dev/null || true
 }
 
 build_frontend() {
@@ -112,11 +125,6 @@ build_frontend() {
 
 echo "==> Stopping services"
 systemctl stop briefr.target briefr-frontend briefr-backend 2>/dev/null || true
-
-echo "==> Pulling latest from main"
-git config --global --add safe.directory "${INSTALL_DIR}" 2>/dev/null || true
-git -C "${INSTALL_DIR}" remote set-url origin https://github.com/Soldier0x0/briefr.git 2>/dev/null || true
-git -C "${INSTALL_DIR}" pull origin main
 
 fix_tree_permissions
 
@@ -142,7 +150,7 @@ echo "==> Service status"
 systemctl status briefr-backend --no-pager -l | head -15 || true
 systemctl status nginx --no-pager -l | head -10 || true
 if systemctl is-active --quiet briefr-frontend 2>/dev/null; then
-  echo "WARNING: briefr-frontend (Vite) is still running — run: systemctl stop briefr-frontend"
+  echo "WARNING: briefr-frontend (Vite) is still running — run: systemctl stop briefr-frontend && systemctl mask briefr-frontend"
 else
   echo "briefr-frontend (Vite :5173): disabled (expected)"
 fi
