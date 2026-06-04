@@ -437,13 +437,6 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const isOpen = !!cve
   const investigation = useInvestigationOptional()
 
-  function handleOverlayPointerDown(e) {
-    if (e.button !== 0) return
-    e.preventDefault()
-    e.stopPropagation()
-    onClose()
-  }
-
   useEffect(() => {
     if (!cve?.cve_id) {
       setSentences(null)
@@ -629,7 +622,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
     <>
       <div
         className="drawer-overlay drawer-overlay-active"
-        onClick={onClose}
+        onPointerDown={handleOverlayPointerDown}
         aria-hidden="true"
       />
 
