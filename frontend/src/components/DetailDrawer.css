@@ -845,3 +845,49 @@
   color: var(--text2);
   margin: 0;
 }
+
+
+.mitre-technique-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.mitre-technique-id {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--red);
+}
+
+.mitre-technique-icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  font-size: 0.875rem;
+  color: var(--text2);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+}
+
+.mitre-technique-name {
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+
+.mitre-detection-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+}
+
+.mitre-detection-text {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text2);
+  margin: 8px 0 0;
+}

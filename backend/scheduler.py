@@ -57,20 +57,15 @@ def get_ingest_intervals() -> dict:
 
 
 def get_refresh_schedule() -> dict:
-    """Ingest cadence + weekly MITRE window (for /api/health UI)."""
+    """Backward-compatible schedule hint (NVD hourly cadence)."""
     intervals = get_ingest_intervals()
-    mitre_hour = int(os.environ.get("CACHE_REFRESH_HOUR", "6"))
-    mitre_minute = int(os.environ.get("MITRE_REFRESH_MINUTE", "30"))
     return {
+        "hour": int(os.environ.get("CACHE_REFRESH_HOUR", "6")),
+        "minute": int(os.environ.get("CACHE_REFRESH_MINUTE", "0")),
         "timezone": intervals["timezone"],
         "nvd_interval_hours": intervals["nvd_hours"],
         "kev_interval_minutes": intervals["kev_minutes"],
         "epss_interval_hours": intervals["epss_hours"],
-        "mitre_weekly_hour": mitre_hour,
-        "mitre_weekly_minute": mitre_minute,
-        # Legacy keys (hour/minute were shown as misleading "daily" refresh)
-        "hour": mitre_hour,
-        "minute": mitre_minute,
     }
 
 
@@ -483,13 +478,13 @@ def start_scheduler() -> AsyncIOScheduler:
         coalesce=True,
     )
 
-    refresh_hour = int(os.environ.get("CACHE_REFRESH_HOUR", "6"))
-    mitre_minute = int(os.environ.get("MITRE_REFRESH_MINUTE", "30"))
+    mitre_hour = int(os.environ.get("MITRE_REFRESH_HOUR", "2"))
+    mitre_minute = int(os.environ.get("MITRE_REFRESH_MINUTE", "0"))
     scheduler.add_job(
         run_weekly_mitre_refresh,
         trigger=CronTrigger(
             day_of_week="sun",
-            hour=refresh_hour,
+            hour=mitre_hour,
             minute=mitre_minute,
             timezone=sched_tz,
         ),
@@ -508,7 +503,7 @@ def start_scheduler() -> AsyncIOScheduler:
         intervals["nvd_hours"],
         intervals["kev_minutes"],
         intervals["epss_hours"],
-        refresh_hour,
+        mitre_hour,
         mitre_minute,
     )
     return scheduler

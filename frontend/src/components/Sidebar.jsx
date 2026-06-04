@@ -272,11 +272,11 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
                   className={`technique-row${active ? ' technique-row-active' : ''}`}
                   onClick={() => handleTechniqueClick(tech.technique_id)}
                   aria-pressed={active}
-                  aria-label={`Filter CVEs by ${tech.technique_id}: ${tech.name}, ${tech.count} CVEs`}
+                  aria-label={`Filter CVEs by ${tech.technique_id}: ${tech.name}, ${tech.cve_count ?? tech.count} CVEs`}
                 >
                   <span className="technique-row-id mono">{tech.technique_id}</span>
                   <span className="technique-row-name">{tech.name}</span>
-                  <span className="technique-row-count mono">{tech.count}</span>
+                  <span className="technique-row-count mono">{tech.cve_count ?? tech.count}</span>
                 </button>
               </li>
             )

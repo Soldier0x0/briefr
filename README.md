@@ -163,6 +163,8 @@ Force HTTPS config: `USE_TLS=1 bash /opt/briefr/deploy/briefr-update.sh` (requir
 | `GET /api/stats` | Severity and KEV summary counts |
 | `GET /api/cves` | Paginated, filterable CVE list |
 | `GET /api/cves/{cve_id}` | Single CVE detail with OSV packages |
+| `GET /api/techniques/top` | Top ATT&CK techniques by mapped CVE count |
+| `POST /api/refresh/mitre` | Refresh MITRE ATT&CK Enterprise STIX + CVE mappings |
 | `GET /api/cves/{cve_id}/sentences` | Humanized intelligence sentences (`severity`, `epss`, `kev`, `exploit`, `patch`) |
 | `GET /api/cves/{cve_id}/score` | BRIEFR Risk Score v1.1a (optional `?assets=` JSON array; defaults asset match to neutral) |
 | `POST /api/ioc/lookup` | IOC enrichment (ip, hash, domain) |
