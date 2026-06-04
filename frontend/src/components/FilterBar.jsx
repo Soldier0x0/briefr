@@ -57,7 +57,7 @@ export default function FilterBar({
   searchFocusTrigger,
 }) {
   const [localSearch, setLocalSearch] = useState(filters.search || '')
-  const [exporting, setExporting] = useState(false)
+  const [exporting, setExporting] = useState(null)
   const [exportError, setExportError] = useState(null)
   const [exportSuccess, setExportSuccess] = useState(null)
   const debounceRef  = useRef(null)
@@ -107,28 +107,48 @@ export default function FilterBar({
     onFiltersChange({ vendors: '' })
   }
 
+  async function fetchExportRows() {
+    const data = await fetchCVEsForExport(toApiCveParams(filters))
+    const rows = data.data || []
+    if (!rows.length) {
+      throw new Error('No CVEs to export for current filters.')
+    }
+    return rows
+  }
+
   async function handleExportCsv() {
     if (exporting) return
-    setExporting(true)
+    setExporting('csv')
     setExportError(null)
     setExportSuccess(null)
     try {
-      const data = await fetchCVEsForExport(toApiCveParams(filters))
-      const rows = data.data || []
-
-      if (!rows.length) {
-        setExportError('No CVEs to export for current filters.')
-        return
-      }
-
+      const rows = await fetchExportRows()
       const csv = cvesToCsvRows(rows)
       downloadCsv(csv, exportFilename())
-      setExportSuccess(`Downloaded ${rows.length.toLocaleString()} CVEs.`)
+      setExportSuccess(`Downloaded ${rows.length.toLocaleString()} CVEs as CSV.`)
       window.setTimeout(() => setExportSuccess(null), 4000)
     } catch (err) {
       setExportError(err.message || 'Export failed. Restart the backend and try again.')
     } finally {
-      setExporting(false)
+      setExporting(null)
+    }
+  }
+
+  async function handleExportXlsx() {
+    if (exporting) return
+    setExporting('xlsx')
+    setExportError(null)
+    setExportSuccess(null)
+    try {
+      const rows = await fetchExportRows()
+      const { downloadCvesXlsx, exportXlsxFilename } = await import('../utils/exportXlsx.js')
+      await downloadCvesXlsx(rows, exportXlsxFilename())
+      setExportSuccess(`Downloaded ${rows.length.toLocaleString()} CVEs as Excel (.xlsx).`)
+      window.setTimeout(() => setExportSuccess(null), 4000)
+    } catch (err) {
+      setExportError(err.message || 'Excel export failed. Restart the backend and try again.')
+    } finally {
+      setExporting(null)
     }
   }
 
@@ -214,11 +234,21 @@ export default function FilterBar({
               type="button"
               className="export-btn"
               onClick={handleExportCsv}
-              disabled={exporting}
+              disabled={!!exporting}
               aria-label="Export filtered CVEs to CSV"
-              title="Export all filtered CVEs (up to 500) as CSV"
+              title="Export all filtered CVEs (up to 500) as CSV for integrations"
             >
-              {exporting ? 'EXPORTING...' : 'EXPORT CSV'}
+              {exporting === 'csv' ? 'EXPORTING...' : 'EXPORT CSV'}
+            </button>
+            <button
+              type="button"
+              className="export-btn export-btn-xlsx"
+              onClick={handleExportXlsx}
+              disabled={!!exporting}
+              aria-label="Export filtered CVEs to Excel"
+              title="Export filtered CVEs (up to 500) as a formatted Excel workbook"
+            >
+              {exporting === 'xlsx' ? 'EXPORTING...' : 'EXPORT XLSX'}
             </button>
           </div>
 
