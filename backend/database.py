@@ -232,6 +232,89 @@ def _values_differ(old: object, new: object) -> bool:
     return old != new
 
 
+_SQLITE_IN_CHUNK = 500
+
+_UPSERT_CVE_SQL = """
+    INSERT INTO cves (
+        cve_id, description, cvss_score, severity, published, modified,
+        affected_products, mitre_technique, summary, is_kev, epss_score,
+        has_poc, patch_available, source_urls, cwe_ids, updated_at
+    ) VALUES (
+        :cve_id, :description, :cvss_score, :severity, :published, :modified,
+        :affected_products, :mitre_technique, :summary, :is_kev, :epss_score,
+        :has_poc, :patch_available, :source_urls, :cwe_ids, datetime('now')
+    )
+    ON CONFLICT(cve_id) DO UPDATE SET
+        description = excluded.description,
+        cvss_score = excluded.cvss_score,
+        severity = excluded.severity,
+        published = excluded.published,
+        modified = excluded.modified,
+        affected_products = excluded.affected_products,
+        mitre_technique = COALESCE(excluded.mitre_technique, cves.mitre_technique),
+        summary = COALESCE(excluded.summary, cves.summary),
+        has_poc = CASE WHEN excluded.has_poc = 1 THEN 1 ELSE cves.has_poc END,
+        patch_available = excluded.patch_available,
+        source_urls = excluded.source_urls,
+        cwe_ids = excluded.cwe_ids,
+        updated_at = datetime('now')
+"""
+
+
+def _cve_upsert_params(cve: dict) -> dict:
+    return {
+        "cve_id": cve.get("cve_id", ""),
+        "description": cve.get("description", ""),
+        "cvss_score": cve.get("cvss_score"),
+        "severity": cve.get("severity", "UNKNOWN"),
+        "published": cve.get("published", ""),
+        "modified": cve.get("modified", ""),
+        "affected_products": json.dumps(cve.get("affected_products", [])),
+        "mitre_technique": cve.get("mitre_technique"),
+        "summary": cve.get("summary"),
+        "is_kev": 1 if cve.get("is_kev") else 0,
+        "epss_score": cve.get("epss_score"),
+        "has_poc": 1 if cve.get("has_poc") else 0,
+        "patch_available": 1 if cve.get("patch_available") else 0,
+        "source_urls": json.dumps(cve.get("source_urls", [])),
+        "cwe_ids": json.dumps(cve.get("cwe_ids", [])),
+    }
+
+
+def _append_upsert_change_rows(
+    cve_id: str,
+    cve: dict,
+    prior: dict | None,
+    history: list[tuple[str, str, str, str]],
+) -> None:
+    incoming_poc = 1 if cve.get("has_poc") else 0
+    incoming_kev = 1 if cve.get("is_kev") else 0
+    new_poc = (1 if prior["has_poc"] or incoming_poc else 0) if prior else incoming_poc
+    new_cvss = cve.get("cvss_score")
+
+    if prior:
+        if _values_differ(prior["cvss_score"], new_cvss):
+            history.append(
+                (
+                    cve_id,
+                    "cvss_score",
+                    _change_value_str(prior["cvss_score"]),
+                    _change_value_str(new_cvss),
+                )
+            )
+        if prior["has_poc"] == 0 and new_poc == 1:
+            history.append((cve_id, "has_poc", "0", "1"))
+    else:
+        if incoming_kev:
+            history.append((cve_id, "is_kev", "0", "1"))
+        if incoming_poc:
+            history.append((cve_id, "has_poc", "0", "1"))
+        if new_cvss is not None:
+            history.append(
+                (cve_id, "cvss_score", "", _change_value_str(new_cvss))
+            )
+
+
 async def record_cve_change(
     db: aiosqlite.Connection,
     cve_id: str,
@@ -254,98 +337,77 @@ async def record_cve_change(
     )
 
 
-async def _get_cve_change_snapshot(
-    db: aiosqlite.Connection, cve_id: str
-) -> dict | None:
-    rows = await db.execute_fetchall(
-        """
-        SELECT cvss_score, epss_score, is_kev, has_poc
-        FROM cves WHERE cve_id = ?
-        """,
-        (cve_id.upper(),),
-    )
+async def _insert_cve_changes_batch(
+    db: aiosqlite.Connection,
+    rows: list[tuple[str, str, str, str]],
+) -> None:
     if not rows:
-        return None
-    row = rows[0]
-    return {
-        "cvss_score": row["cvss_score"],
-        "epss_score": row["epss_score"],
-        "is_kev": int(row["is_kev"] or 0),
-        "has_poc": int(row["has_poc"] or 0),
-    }
+        return
+    await db.executemany(
+        """
+        INSERT INTO cve_change_history (cve_id, field_name, old_value, new_value, detected_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        rows,
+    )
+
+
+async def _load_cve_change_snapshots(
+    db: aiosqlite.Connection, cve_ids: list[str]
+) -> dict[str, dict]:
+    snapshots: dict[str, dict] = {}
+    normalized = [c.upper() for c in cve_ids if c]
+    for i in range(0, len(normalized), _SQLITE_IN_CHUNK):
+        chunk = normalized[i : i + _SQLITE_IN_CHUNK]
+        placeholders = ",".join("?" * len(chunk))
+        rows = await db.execute_fetchall(
+            f"""
+            SELECT cve_id, cvss_score, epss_score, is_kev, has_poc
+            FROM cves WHERE cve_id IN ({placeholders})
+            """,
+            chunk,
+        )
+        for row in rows:
+            snapshots[row["cve_id"]] = {
+                "cvss_score": row["cvss_score"],
+                "epss_score": row["epss_score"],
+                "is_kev": int(row["is_kev"] or 0),
+                "has_poc": int(row["has_poc"] or 0),
+            }
+    return snapshots
+
+
+def _cve_id_filter_clause(cve_ids: list[str] | None) -> tuple[str, list[str]]:
+    if not cve_ids:
+        return "", []
+    normalized = [c.upper() for c in cve_ids if c]
+    if not normalized:
+        return "", []
+    placeholders = ",".join("?" * len(normalized))
+    return f" AND cve_id IN ({placeholders})", normalized
+
+
+async def upsert_cves(db: aiosqlite.Connection, cves: list[dict]) -> None:
+    if not cves:
+        return
+    valid = [c for c in cves if (c.get("cve_id") or "").strip()]
+    if not valid:
+        return
+
+    ids = [(c.get("cve_id") or "").upper() for c in valid]
+    snapshots = await _load_cve_change_snapshots(db, ids)
+    history: list[tuple[str, str, str, str]] = []
+
+    for cve in valid:
+        cve_id = (cve.get("cve_id") or "").upper()
+        _append_upsert_change_rows(cve_id, cve, snapshots.get(cve_id), history)
+        await db.execute(_UPSERT_CVE_SQL, _cve_upsert_params(cve))
+
+    await _insert_cve_changes_batch(db, history)
 
 
 async def upsert_cve(db: aiosqlite.Connection, cve: dict) -> None:
-    cve_id = (cve.get("cve_id") or "").upper()
-    if not cve_id:
-        return
-
-    prior = await _get_cve_change_snapshot(db, cve_id)
-    incoming_poc = 1 if cve.get("has_poc") else 0
-    incoming_kev = 1 if cve.get("is_kev") else 0
-    if prior:
-        new_poc = 1 if prior["has_poc"] or incoming_poc else 0
-    else:
-        new_poc = incoming_poc
-
-    await db.execute(
-        """
-        INSERT INTO cves (
-            cve_id, description, cvss_score, severity, published, modified,
-            affected_products, mitre_technique, summary, is_kev, epss_score,
-            has_poc, patch_available, source_urls, cwe_ids, updated_at
-        ) VALUES (
-            :cve_id, :description, :cvss_score, :severity, :published, :modified,
-            :affected_products, :mitre_technique, :summary, :is_kev, :epss_score,
-            :has_poc, :patch_available, :source_urls, :cwe_ids, datetime('now')
-        )
-        ON CONFLICT(cve_id) DO UPDATE SET
-            description = excluded.description,
-            cvss_score = excluded.cvss_score,
-            severity = excluded.severity,
-            published = excluded.published,
-            modified = excluded.modified,
-            affected_products = excluded.affected_products,
-            mitre_technique = COALESCE(excluded.mitre_technique, cves.mitre_technique),
-            summary = COALESCE(excluded.summary, cves.summary),
-            has_poc = CASE WHEN excluded.has_poc = 1 THEN 1 ELSE cves.has_poc END,
-            patch_available = excluded.patch_available,
-            source_urls = excluded.source_urls,
-            cwe_ids = excluded.cwe_ids,
-            updated_at = datetime('now')
-        """,
-        {
-            "cve_id": cve.get("cve_id", ""),
-            "description": cve.get("description", ""),
-            "cvss_score": cve.get("cvss_score"),
-            "severity": cve.get("severity", "UNKNOWN"),
-            "published": cve.get("published", ""),
-            "modified": cve.get("modified", ""),
-            "affected_products": json.dumps(cve.get("affected_products", [])),
-            "mitre_technique": cve.get("mitre_technique"),
-            "summary": cve.get("summary"),
-            "is_kev": 1 if cve.get("is_kev") else 0,
-            "epss_score": cve.get("epss_score"),
-            "has_poc": 1 if cve.get("has_poc") else 0,
-            "patch_available": 1 if cve.get("patch_available") else 0,
-            "source_urls": json.dumps(cve.get("source_urls", [])),
-            "cwe_ids": json.dumps(cve.get("cwe_ids", [])),
-        },
-    )
-
-    new_cvss = cve.get("cvss_score")
-    if prior:
-        if _values_differ(prior["cvss_score"], new_cvss):
-            await record_cve_change(db, cve_id, "cvss_score", prior["cvss_score"], new_cvss)
-        if prior["has_poc"] == 0 and new_poc == 1:
-            await record_cve_change(db, cve_id, "has_poc", 0, 1)
-    else:
-        if incoming_kev:
-            await record_cve_change(db, cve_id, "is_kev", 0, 1)
-        if incoming_poc:
-            await record_cve_change(db, cve_id, "has_poc", 0, 1)
-        if new_cvss is not None:
-            await record_cve_change(db, cve_id, "cvss_score", None, new_cvss)
+    await upsert_cves(db, [cve])
 
 
 async def mark_cves_as_kev(db: aiosqlite.Connection, cve_ids: list) -> None:
@@ -360,8 +422,8 @@ async def mark_cves_as_kev(db: aiosqlite.Connection, cve_ids: list) -> None:
         """,
         normalized,
     )
-    for row in rows:
-        await record_cve_change(db, row["cve_id"], "is_kev", 0, 1)
+    history = [(row["cve_id"], "is_kev", "0", "1") for row in rows]
+    await _insert_cve_changes_batch(db, history)
     await db.execute(
         f"UPDATE cves SET is_kev = 1 WHERE cve_id IN ({placeholders})",
         normalized,
@@ -388,20 +450,39 @@ async def snapshot_epss_scores(db: aiosqlite.Connection, recorded_date: str | No
 async def update_epss_scores(db: aiosqlite.Connection, scores: dict) -> None:
     if not scores:
         return
+
+    needed_list = list({cve_id.upper() for cve_id in scores})
+    existing: dict[str, float | None] = {}
+    for i in range(0, len(needed_list), _SQLITE_IN_CHUNK):
+        chunk = needed_list[i : i + _SQLITE_IN_CHUNK]
+        placeholders = ",".join("?" * len(chunk))
+        rows = await db.execute_fetchall(
+            f"SELECT cve_id, epss_score FROM cves WHERE cve_id IN ({placeholders})",
+            chunk,
+        )
+        for row in rows:
+            existing[row["cve_id"].upper()] = row["epss_score"]
+
+    history: list[tuple[str, str, str, str]] = []
     updates: list[tuple[float, str]] = []
     for cve_id, score in scores.items():
         key = cve_id.upper()
-        rows = await db.execute_fetchall(
-            "SELECT epss_score FROM cves WHERE cve_id = ?",
-            (key,),
-        )
-        if not rows:
+        if key not in existing:
             continue
-        old = rows[0]["epss_score"]
+        old = existing[key]
         if not _values_differ(old, score):
             continue
-        await record_cve_change(db, key, "epss_score", old, score)
+        history.append(
+            (
+                key,
+                "epss_score",
+                _change_value_str(old),
+                _change_value_str(score),
+            )
+        )
         updates.append((score, key))
+
+    await _insert_cve_changes_batch(db, history)
     if updates:
         await db.executemany(
             "UPDATE cves SET epss_score = ? WHERE cve_id = ?",
@@ -498,16 +579,20 @@ async def get_related_cves(
 
 
 
-async def backfill_display_fields(db: aiosqlite.Connection) -> int:
+async def backfill_display_fields(
+    db: aiosqlite.Connection, cve_ids: list[str] | None = None
+) -> int:
     """Fill MITRE / PoC from stored NVD fields when missing (no auto plain-summary)."""
     from enrichment.cve import extract_mitre_from_urls, has_public_poc_from_urls
 
+    id_clause, id_params = _cve_id_filter_clause(cve_ids)
     rows = await db.execute_fetchall(
-        """
+        f"""
         SELECT cve_id, description, source_urls, mitre_technique, has_poc
         FROM cves
-        WHERE mitre_technique IS NULL OR has_poc = 0
-        """
+        WHERE (mitre_technique IS NULL OR has_poc = 0){id_clause}
+        """,
+        id_params,
     )
     updated = 0
     for row in rows:
@@ -531,16 +616,20 @@ async def backfill_display_fields(db: aiosqlite.Connection) -> int:
     return updated
 
 
-async def strip_auto_generated_summaries(db: aiosqlite.Connection) -> int:
+async def strip_auto_generated_summaries(
+    db: aiosqlite.Connection, cve_ids: list[str] | None = None
+) -> int:
     """Remove NVD first-sentence summaries so Plain English filter is meaningful."""
     from enrichment.cve import is_auto_generated_summary
 
+    id_clause, id_params = _cve_id_filter_clause(cve_ids)
     rows = await db.execute_fetchall(
-        """
+        f"""
         SELECT cve_id, description, summary
         FROM cves
-        WHERE summary IS NOT NULL AND TRIM(summary) != ''
-        """
+        WHERE summary IS NOT NULL AND TRIM(summary) != ''{id_clause}
+        """,
+        id_params,
     )
     cleared = 0
     for row in rows:
@@ -555,25 +644,32 @@ async def strip_auto_generated_summaries(db: aiosqlite.Connection) -> int:
 
 
 
-async def backfill_has_poc(db: aiosqlite.Connection) -> int:
+async def backfill_has_poc(
+    db: aiosqlite.Connection, cve_ids: list[str] | None = None
+) -> int:
     """Set has_poc from stored reference URLs (no NVD re-fetch)."""
     from enrichment.cve import has_public_poc_from_urls
 
+    id_clause, id_params = _cve_id_filter_clause(cve_ids)
     rows = await db.execute_fetchall(
-        "SELECT cve_id, source_urls FROM cves WHERE has_poc = 0"
+        f"SELECT cve_id, source_urls FROM cves WHERE has_poc = 0{id_clause}",
+        id_params,
     )
-    updated = 0
+    history: list[tuple[str, str, str, str]] = []
+    updates: list[tuple[str]] = []
     for row in rows:
         urls = json.loads(row["source_urls"] or "[]")
         if not has_public_poc_from_urls(urls):
             continue
-        await record_cve_change(db, row["cve_id"], "has_poc", 0, 1)
-        await db.execute(
+        history.append((row["cve_id"], "has_poc", "0", "1"))
+        updates.append((row["cve_id"],))
+    await _insert_cve_changes_batch(db, history)
+    if updates:
+        await db.executemany(
             "UPDATE cves SET has_poc = 1 WHERE cve_id = ?",
-            (row["cve_id"],),
+            updates,
         )
-        updated += 1
-    return updated
+    return len(updates)
 
 
 async def get_recent_cve_changes(
@@ -735,21 +831,24 @@ async def replace_cve_exploits(
 ) -> None:
     key = cve_id.upper()
     await db.execute("DELETE FROM cve_exploits WHERE cve_id = ?", (key,))
-    for exp in exploits:
-        await db.execute(
+    if exploits:
+        await db.executemany(
             """
             INSERT INTO cve_exploits (
                 cve_id, title, type, source, url, published_date, fetched_at
             ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
             """,
-            (
-                key,
-                exp.get("title") or "",
-                exp.get("type") or "poc",
-                exp.get("source") or "",
-                exp.get("url") or "",
-                exp.get("published_date") or "",
-            ),
+            [
+                (
+                    key,
+                    exp.get("title") or "",
+                    exp.get("type") or "poc",
+                    exp.get("source") or "",
+                    exp.get("url") or "",
+                    exp.get("published_date") or "",
+                )
+                for exp in exploits
+            ],
         )
 
 

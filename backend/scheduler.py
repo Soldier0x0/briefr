@@ -23,6 +23,7 @@ from database import (
     strip_auto_generated_summaries,
     update_epss_scores,
     upsert_cve,
+    upsert_cves,
     upsert_kev,
 )
 from feeds.nvd import fetch_cve_by_id, fetch_nvd_cve_updates
@@ -77,7 +78,12 @@ def _next_interval_fire_utc(hours: int = 0, minutes: int = 0) -> datetime:
 
 
 def get_next_scheduled_refresh_utc() -> datetime:
-    """Next NVD incremental sync (approximate; APScheduler owns exact timing)."""
+    """Next NVD incremental sync from APScheduler, or interval fallback."""
+    global _scheduler
+    if _scheduler and _scheduler.running:
+        job = _scheduler.get_job("nvd_incremental_sync")
+        if job and job.next_run_time:
+            return job.next_run_time.astimezone(timezone.utc)
     return _next_interval_fire_utc(hours=get_ingest_intervals()["nvd_hours"])
 
 
@@ -161,13 +167,20 @@ async def _run_nvd_incremental_sync() -> None:
 
         db = await get_db()
         try:
-            for cve in cves:
-                await upsert_cve(db, cve)
-                new_or_updated += 1
+            await upsert_cves(db, cves)
+            new_or_updated = len(cves)
             await set_nvd_sync_watermark(db, new_watermark)
-            stripped = await strip_auto_generated_summaries(db)
-            filled = await backfill_display_fields(db)
-            poc_marked = await backfill_has_poc(db)
+            updated_ids = [
+                (cve.get("cve_id") or "").upper()
+                for cve in cves
+                if cve.get("cve_id")
+            ]
+            if updated_ids:
+                stripped = await strip_auto_generated_summaries(db, updated_ids)
+                filled = await backfill_display_fields(db, updated_ids)
+                poc_marked = await backfill_has_poc(db, updated_ids)
+            else:
+                stripped = filled = poc_marked = 0
             await db.commit()
             logger.info(
                 "NVD post-process: stripped %d summaries, %d display fields, %d PoC flags",
@@ -242,41 +255,37 @@ async def _cross_fetch_missing_kev_cves(kev_entries: list[dict], nvd_api_key: st
         db = await get_db()
         try:
             existing_ids = set(await get_all_cve_ids(db))
+            missing_kev = [
+                e.get("cveID", "")
+                for e in kev_entries
+                if e.get("cveID") and e.get("cveID") not in existing_ids
+            ]
+            if not missing_kev:
+                return
+
+            logger.info("KEV cross-fetch: %d CVEs missing from cves table", len(missing_kev))
+            kev_short_map = {
+                e.get("cveID", ""): e.get("shortDescription", "") for e in kev_entries
+            }
+            kev_cross_fetched = 0
+            for kev_cve_id in missing_kev:
+                try:
+                    cve_data = await fetch_cve_by_id(kev_cve_id, nvd_api_key)
+                    if cve_data:
+                        cve_data["is_kev"] = True
+                        kev_short = kev_short_map.get(kev_cve_id, "")
+                        if kev_short:
+                            cve_data["summary"] = kev_short
+                        await upsert_cve(db, cve_data)
+                        kev_cross_fetched += 1
+                except Exception as exc:
+                    logger.error("KEV cross-fetch failed for %s: %s", kev_cve_id, exc)
+                await asyncio.sleep(1)
+            if kev_cross_fetched:
+                await db.commit()
+            logger.info("KEV cross-fetch complete: %d CVEs inserted", kev_cross_fetched)
         finally:
             await db.close()
-
-        missing_kev = [
-            e.get("cveID", "")
-            for e in kev_entries
-            if e.get("cveID") and e.get("cveID") not in existing_ids
-        ]
-        if not missing_kev:
-            return
-
-        logger.info("KEV cross-fetch: %d CVEs missing from cves table", len(missing_kev))
-        kev_short_map = {
-            e.get("cveID", ""): e.get("shortDescription", "") for e in kev_entries
-        }
-        kev_cross_fetched = 0
-        for kev_cve_id in missing_kev:
-            try:
-                cve_data = await fetch_cve_by_id(kev_cve_id, nvd_api_key)
-                if cve_data:
-                    cve_data["is_kev"] = True
-                    kev_short = kev_short_map.get(kev_cve_id, "")
-                    if kev_short:
-                        cve_data["summary"] = kev_short
-                    db = await get_db()
-                    try:
-                        await upsert_cve(db, cve_data)
-                        await db.commit()
-                        kev_cross_fetched += 1
-                    finally:
-                        await db.close()
-            except Exception as exc:
-                logger.error("KEV cross-fetch failed for %s: %s", kev_cve_id, exc)
-            await asyncio.sleep(1)
-        logger.info("KEV cross-fetch complete: %d CVEs inserted", kev_cross_fetched)
     except Exception as exc:
         logger.error("KEV cross-fetch step failed: %s", exc)
 

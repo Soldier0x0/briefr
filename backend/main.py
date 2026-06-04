@@ -335,7 +335,7 @@ async def stats_timeline(
         if row["date"]
     }
 
-    end = date.today()
+    end = datetime.now(timezone.utc).date()
     start = end - timedelta(days=days - 1)
     timeline: list[dict] = []
     cursor = start
@@ -795,6 +795,7 @@ async def get_cve(cve_id: str):
     if not cve_id.upper().startswith("CVE-"):
         raise HTTPException(status_code=400, detail="Invalid CVE ID format")
 
+    cve_key = cve_id.upper()
     db = await get_db()
     try:
         rows = await db.execute_fetchall(
@@ -805,24 +806,38 @@ async def get_cve(cve_id: str):
             FROM cves
             WHERE cve_id = ?
             """,
-            (cve_id.upper(),),
+            (cve_key,),
         )
+        if not rows:
+            raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
+
+        cve = _row_to_cve_dict(rows[0])
+        cve["techniques"] = await get_techniques_for_cve(db, cve_key)
+
+        try:
+            cve["public_exploits"] = await load_sploitus_exploits_for_cve(db, cve_key)
+            await db.commit()
+        except Exception as exc:
+            logger.error("Sploitus load failed for %s: %s", cve_id, exc)
+            cve["public_exploits"] = []
+
+        greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
+        try:
+            cve["greynoise_scans"] = await greynoise_scans_for_cve(
+                db,
+                cve.get("description"),
+                cve.get("source_urls"),
+                greynoise_key,
+            )
+            await db.commit()
+        except Exception as exc:
+            logger.error("GreyNoise scan failed for %s: %s", cve_id, exc)
+            cve["greynoise_scans"] = []
     finally:
         await db.close()
 
-    if not rows:
-        raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
-
-    cve = _row_to_cve_dict(rows[0])
-
-    db2 = await get_db()
     try:
-        cve["techniques"] = await get_techniques_for_cve(db2, cve_id.upper())
-    finally:
-        await db2.close()
-
-    try:
-        osv_data = await fetch_osv_by_cve(cve_id.upper())
+        osv_data = await fetch_osv_by_cve(cve_key)
         cve["osv_packages"] = osv_data
         if not cve.get("summary"):
             for entry in osv_data:
@@ -834,37 +849,11 @@ async def get_cve(cve_id: str):
         logger.error("OSV lookup failed for %s: %s", cve_id, exc)
         cve["osv_packages"] = []
 
-    db3 = await get_db()
     try:
-        cve["public_exploits"] = await load_sploitus_exploits_for_cve(db3, cve_id.upper())
-        await db3.commit()
-    except Exception as exc:
-        logger.error("Sploitus load failed for %s: %s", cve_id, exc)
-        cve["public_exploits"] = []
-    finally:
-        await db3.close()
-
-    try:
-        circl = await fetch_circl_cve(cve_id.upper())
+        circl = await fetch_circl_cve(cve_key)
         cve = merge_circl_into_cve(cve, circl)
     except Exception as exc:
         logger.error("CIRCL enrichment failed for %s: %s", cve_id, exc)
-
-    greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
-    db4 = await get_db()
-    try:
-        cve["greynoise_scans"] = await greynoise_scans_for_cve(
-            db4,
-            cve.get("description"),
-            cve.get("source_urls"),
-            greynoise_key,
-        )
-        await db4.commit()
-    except Exception as exc:
-        logger.error("GreyNoise scan failed for %s: %s", cve_id, exc)
-        cve["greynoise_scans"] = []
-    finally:
-        await db4.close()
 
     return cve
 
