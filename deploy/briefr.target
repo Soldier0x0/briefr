@@ -1,6 +1,6 @@
 [Unit]
-Description=BRIEFR (backend + frontend)
-Wants=briefr-backend.service briefr-frontend.service
+Description=BRIEFR backend (UI served by nginx from frontend/dist)
+Wants=briefr-backend.service
 
 [Install]
 WantedBy=multi-user.target

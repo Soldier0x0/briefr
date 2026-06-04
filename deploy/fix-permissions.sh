@@ -29,4 +29,4 @@ if [ -d "${INSTALL_DIR}/frontend/node_modules/.bin" ]; then
 fi
 
 echo "OK: ${INSTALL_DIR} is owned by ${APP_USER} with usable permissions"
-echo "Next: systemctl restart briefr.target && curl -s http://127.0.0.1:8000/api/health"
+echo "Next: bash ${INSTALL_DIR}/deploy/briefr-update.sh"
