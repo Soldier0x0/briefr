@@ -57,15 +57,20 @@ def get_ingest_intervals() -> dict:
 
 
 def get_refresh_schedule() -> dict:
-    """Backward-compatible schedule hint (NVD hourly cadence)."""
+    """Ingest cadence + weekly MITRE window (for /api/health UI)."""
     intervals = get_ingest_intervals()
+    mitre_hour = int(os.environ.get("CACHE_REFRESH_HOUR", "6"))
+    mitre_minute = int(os.environ.get("MITRE_REFRESH_MINUTE", "30"))
     return {
-        "hour": int(os.environ.get("CACHE_REFRESH_HOUR", "6")),
-        "minute": int(os.environ.get("CACHE_REFRESH_MINUTE", "0")),
         "timezone": intervals["timezone"],
         "nvd_interval_hours": intervals["nvd_hours"],
         "kev_interval_minutes": intervals["kev_minutes"],
         "epss_interval_hours": intervals["epss_hours"],
+        "mitre_weekly_hour": mitre_hour,
+        "mitre_weekly_minute": mitre_minute,
+        # Legacy keys (hour/minute were shown as misleading "daily" refresh)
+        "hour": mitre_hour,
+        "minute": mitre_minute,
     }
 
 

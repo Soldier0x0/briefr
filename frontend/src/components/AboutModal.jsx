@@ -40,7 +40,8 @@ export default function AboutModal({ onClose }) {
 
         <p className="about-description">
           BRIEFR aggregates vulnerability data from public government and
-          open-source sources every day at 06:00 IST. No account required.
+          open-source sources on a rolling schedule (NVD hourly, KEV every
+          15 minutes, EPSS every 6 hours). No account required.
           No cookies. No tracking. No cost.
         </p>
 
