@@ -437,6 +437,13 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const isOpen = !!cve
   const investigation = useInvestigationOptional()
 
+  function handleOverlayPointerDown(e) {
+    if (e.button !== 0) return
+    e.preventDefault()
+    e.stopPropagation()
+    onClose()
+  }
+
   useEffect(() => {
     if (!cve?.cve_id) {
       setSentences(null)
