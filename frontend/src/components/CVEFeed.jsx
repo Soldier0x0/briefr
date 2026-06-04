@@ -54,6 +54,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   const initialLoadDoneRef = useRef(false)
   const sentinelVisibleRef = useRef(false)
   const filtersInitialMountRef = useRef(true)
+  const pendingScrollRestoreRef = useRef(null)
 
   useEffect(() => {
     let stored = null
