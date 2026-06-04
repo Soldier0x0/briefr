@@ -482,6 +482,8 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const [backStack, setBackStack] = useState([])
   const [pdfModalOpen, setPdfModalOpen] = useState(false)
   const [pdfBusy, setPdfBusy] = useState(false)
+  const [scoreData, setScoreData] = useState(null)
+  const [scoreLoading, setScoreLoading] = useState(false)
   const reportRef = useRef(null)
   const epssSparklineRef = useRef(null)
   const navigatingRef = useRef(false)
@@ -492,10 +494,6 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
     if (!cve?.cve_id) {
       setSentences(null)
       setSentencesLoading(false)
-      setEpssHistory([])
-      setEpssLoading(false)
-      setRelated([])
-      setRelatedLoading(false)
       return
     }
     let cancelled = false
@@ -511,6 +509,8 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
       .finally(() => {
         if (!cancelled) setSentencesLoading(false)
       })
+    return () => { cancelled = true }
+  }, [cve?.cve_id])
 
   useEffect(() => {
     if (!cve?.cve_id) {
@@ -524,23 +524,27 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
     const profile = getUserAssetProfile()
     const exploits = exploitsFromCveFields(cve)
     if (profile?.length) {
-      if (!cancelled) {
-        setScoreData(calculateRiskScore(cve, profile, exploits))
-        setScoreLoading(false)
-      }
+      setScoreData(calculateRiskScore(cve, profile, exploits))
+      setScoreLoading(false)
       return () => { cancelled = true }
     }
     fetchCVEScore(cve.cve_id)
-      .then(data => { if (!cancelled) setScoreData(data) })
+      .then(data => {
+        if (!cancelled) {
+          setScoreData({
+            score: data.score,
+            breakdown: data.breakdown ?? [],
+          })
+        }
+      })
       .catch(() => {
         if (!cancelled) setScoreData(calculateRiskScore(cve, null, exploits))
       })
-      .finally(() => { if (!cancelled) setScoreLoading(false) })
+      .finally(() => {
+        if (!cancelled) setScoreLoading(false)
+      })
     return () => { cancelled = true }
-  }, [cve])
-
-    return () => { cancelled = true }
-  }, [cve?.cve_id])
+  }, [cve?.cve_id, cve])
 
   useEffect(() => {
     if (!cve?.cve_id) {
