@@ -6,6 +6,7 @@ import {
   fetchCVESentences,
 } from '../api.js'
 import { buildSingleReport, copyToClipboard } from '../utils/report.js'
+import { formatAbsolute } from '../utils/timezone.js'
 import { downloadSingleCvePdf } from '../utils/pdfReport.js'
 import PdfExportModal from './PdfExportModal.jsx'
 import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
@@ -17,6 +18,8 @@ import {
   EPSS_SPARKLINE_WIDTH,
 } from '../utils/epssSparkline.js'
 import './DetailDrawer.css'
+
+const HISTORY_MAX = 10
 
 const TABS = [
   { id: 'overview', label: 'OVERVIEW' },
@@ -34,6 +37,17 @@ function severityColor(sev) {
   return 'var(--text3)'
 }
 
+function cvssMetricColor(score, severity) {
+  const fromSev = severityColor(severity)
+  if ((severity || '').toUpperCase() !== 'UNKNOWN') return fromSev
+  if (score == null) return 'var(--text3)'
+  if (score >= 9.0) return 'var(--red)'
+  if (score >= 7.0) return 'var(--amber)'
+  if (score >= 4.0) return 'var(--accent)'
+  if (score > 0) return 'var(--green)'
+  return 'var(--text3)'
+}
+
 function techniqueLink(tech) {
   if (tech?.url) return tech.url
   const id = tech?.id || tech?.technique_id
@@ -48,14 +62,19 @@ function truncateText(text, maxLen) {
   return `${t.slice(0, maxLen - 1)}…`
 }
 
-function Phase2Block({ title }) {
-  const headingId = `phase2-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+function TabPhase2Placeholder({ message }) {
   return (
-    <section className="drawer-section" aria-labelledby={headingId}>
-      <h3 id={headingId} className="drawer-section-label">{title}</h3>
-      <p className="drawer-phase2 mono">// Coming in Phase 2</p>
+    <section className="drawer-section">
+      <p className="drawer-phase2 mono">{message}</p>
     </section>
   )
+}
+
+function intelTabHasContent(cve, techniques) {
+  if (techniques.length > 0) return true
+  if (Array.isArray(cve.public_exploits) && cve.public_exploits.length > 0) return true
+  if (Array.isArray(cve.greynoise_scans) && cve.greynoise_scans.length > 0) return true
+  return false
 }
 
 function HumanSentence({ label, text }) {
@@ -119,16 +138,22 @@ function EpssTrendSection({ cve, history, loading, epssSparklineRef }) {
   )
 }
 
-function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
+function TabOverview({
+  cve,
+  products,
+  cwes,
+  urls,
+  cvssValColor,
+  sentences,
+  sentencesLoading,
+  epssHistory,
+  epssLoading,
+  epssSparklineRef,
+}) {
+  const publishedLabel = cve.published ? formatAbsolute(cve.published, 'UTC') : null
+
   return (
     <>
-      <EpssTrendSection
-        cve={cve}
-        history={epssHistory}
-        loading={epssLoading}
-        epssSparklineRef={epssSparklineRef}
-      />
-
       {cve.description && (
         <section className="drawer-section" aria-labelledby="desc-heading">
           <h3 id="desc-heading" className="drawer-human-label mono">DESCRIPTION</h3>
@@ -159,6 +184,24 @@ function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading, e
         </>
       )}
 
+      <section className="drawer-section" aria-labelledby="cvss-heading">
+        <h3 id="cvss-heading" className="drawer-human-label mono">CVSS</h3>
+        <p
+          className="drawer-cvss-score"
+          style={{ color: cvssValColor }}
+          aria-label={`CVSS score ${cve.cvss_score != null ? Number(cve.cvss_score).toFixed(1) : 'not available'}`}
+        >
+          {cve.cvss_score != null ? Number(cve.cvss_score).toFixed(1) : 'N/A'}
+        </p>
+      </section>
+
+      <EpssTrendSection
+        cve={cve}
+        history={epssHistory}
+        loading={epssLoading}
+        epssSparklineRef={epssSparklineRef}
+      />
+
       {products.length > 0 && (
         <section className="drawer-section" aria-labelledby="affected-heading">
           <h3 id="affected-heading" className="drawer-human-label mono">AFFECTED PRODUCTS</h3>
@@ -176,6 +219,25 @@ function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading, e
               ))}
             </div>
           )}
+        </section>
+      )}
+
+      <section className="drawer-section" aria-labelledby="patch-heading">
+        <h3 id="patch-heading" className="drawer-human-label mono">PATCH</h3>
+        <p className="drawer-patch-status mono">
+          <span style={{ color: cve.patch_available ? 'var(--green)' : 'var(--amber)' }}>
+            {cve.patch_available ? 'Available' : 'Not confirmed'}
+          </span>
+          {cve.is_kev && (
+            <span className="drawer-kev-flag"> · CISA KEV</span>
+          )}
+        </p>
+      </section>
+
+      {publishedLabel && (
+        <section className="drawer-section" aria-labelledby="published-heading">
+          <h3 id="published-heading" className="drawer-human-label mono">PUBLISHED</h3>
+          <p className="drawer-published mono">{publishedLabel}</p>
         </section>
       )}
 
@@ -350,11 +412,7 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, cve, onInvestiga
 
 function TabDetect() {
   return (
-    <>
-      <Phase2Block title="LOG PATTERNS" />
-      <Phase2Block title="SIEM QUERY SUGGESTIONS" />
-      <Phase2Block title="YARA RULE AVAILABILITY" />
-    </>
+    <TabPhase2Placeholder message="// Detection rules loading in Phase 2" />
   )
 }
 
@@ -429,6 +487,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const [related, setRelated] = useState([])
   const [relatedLoading, setRelatedLoading] = useState(false)
   const [backStack, setBackStack] = useState([])
+  const [panelOpen, setPanelOpen] = useState(false)
   const [pdfModalOpen, setPdfModalOpen] = useState(false)
   const [pdfBusy, setPdfBusy] = useState(false)
   const reportRef = useRef(null)
@@ -519,10 +578,15 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
       document.body.style.overflow = 'hidden'
       setActiveTab('overview')
       setReportOpen(false)
-    } else {
-      document.body.classList.remove('briefr-drawer-open')
-      document.body.style.overflow = ''
+      setPanelOpen(false)
+      const frame = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setPanelOpen(true))
+      })
+      return () => cancelAnimationFrame(frame)
     }
+    setPanelOpen(false)
+    document.body.classList.remove('briefr-drawer-open')
+    document.body.style.overflow = ''
     return () => {
       document.body.classList.remove('briefr-drawer-open')
       document.body.style.overflow = ''
@@ -583,7 +647,10 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   async function handleSelectRelated(cveId) {
     if (!cve || !onCveReplace) return
     navigatingRef.current = true
-    setBackStack(stack => [...stack, cve])
+    setBackStack(stack => {
+      const next = [...stack, cve]
+      return next.length > HISTORY_MAX ? next.slice(-HISTORY_MAX) : next
+    })
     setActiveTab('overview')
     try {
       const full = await fetchCVE(cveId)
@@ -615,19 +682,20 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const cwes = Array.isArray(cve.cwe_ids) ? cve.cwe_ids : []
   const urls = Array.isArray(cve.source_urls) ? cve.source_urls.slice(0, 5) : []
   const sevColor = severityColor(cve.severity)
+  const cvssValColor = cvssMetricColor(cve.cvss_score, cve.severity)
   const techniques = Array.isArray(cve.techniques) ? cve.techniques : []
   const canGoBack = backStack.length > 0
 
   return (
     <>
       <div
-        className="drawer-overlay drawer-overlay-active"
+        className={`drawer-overlay drawer-overlay-active${panelOpen ? ' drawer-overlay-visible' : ''}`}
         onClick={onClose}
         aria-hidden="true"
       />
 
       <aside
-        className="drawer-panel drawer-panel-open"
+        className={`drawer-panel${panelOpen ? ' drawer-panel-open' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={`CVE detail: ${cve.cve_id}`}
@@ -711,7 +779,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
               </div>
               <button
                 type="button"
-                className="drawer-close"
+                className="drawer-close mono"
                 onClick={onClose}
                 aria-label="Close drawer (Escape)"
               >
@@ -750,6 +818,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
               products={products}
               cwes={cwes}
               urls={urls}
+              cvssValColor={cvssValColor}
               sentences={sentences}
               sentencesLoading={sentencesLoading}
               epssHistory={epssHistory}
@@ -758,22 +827,26 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
             />
           )}
           {activeTab === 'intel' && (
-            <TabIntel
-              techniques={techniques}
-              publicExploits={cve.public_exploits}
-              greynoiseScans={cve.greynoise_scans}
-              cve={cve}
-              onInvestigateIp={
-                investigation
-                  ? (ip, cveCtx) => investigation.pivotToIoc(ip, {
-                      type: 'cve',
-                      id: cveCtx.cve_id,
-                      title: cveCtx.cve_id,
-                      description: (cveCtx.summary || '').slice(0, 80),
-                    })
-                  : undefined
-              }
-            />
+            intelTabHasContent(cve, techniques) ? (
+              <TabIntel
+                techniques={techniques}
+                publicExploits={cve.public_exploits}
+                greynoiseScans={cve.greynoise_scans}
+                cve={cve}
+                onInvestigateIp={
+                  investigation
+                    ? (ip, cveCtx) => investigation.pivotToIoc(ip, {
+                        type: 'cve',
+                        id: cveCtx.cve_id,
+                        title: cveCtx.cve_id,
+                        description: (cveCtx.summary || '').slice(0, 80),
+                      })
+                    : undefined
+                }
+              />
+            ) : (
+              <TabPhase2Placeholder message="// Intelligence data loading in Phase 2" />
+            )
           )}
           {activeTab === 'detect' && <TabDetect />}
           {activeTab === 'related' && (
