@@ -1297,22 +1297,38 @@ async def refresh_all_cve_ai_context(db: aiosqlite.Connection) -> dict[str, int]
     )
     known_atlas = {r["technique_id"] for r in atlas_rows}
 
+    cve_updates: list[tuple[int, str]] = []
+    atlas_pairs: list[tuple[str, str]] = []
     flagged = 0
-    links = 0
+
     for row in rows:
         cve_id = row["cve_id"]
         products = _parse_json_list(row["affected_products"])
         cve = {"description": row["description"], "affected_products": products}
         has_ai, tids = analyze_cve_ai_context(cve)
-        await db.execute(
-            "UPDATE cves SET has_ai_context = ? WHERE cve_id = ?",
-            (1 if has_ai else 0, cve_id),
-        )
+        cve_updates.append((1 if has_ai else 0, cve_id))
         if has_ai:
             flagged += 1
-        valid = [t for t in tids if t in known_atlas]
-        await replace_cve_atlas_map_for_cve(db, cve_id, valid)
-        links += len(valid)
+        cve_key = cve_id.upper()
+        for tid in tids:
+            if tid in known_atlas:
+                atlas_pairs.append((cve_key, tid.upper()))
+
+    if cve_updates:
+        await db.executemany(
+            "UPDATE cves SET has_ai_context = ? WHERE cve_id = ?",
+            cve_updates,
+        )
+
+    await db.execute("DELETE FROM cve_atlas_map")
+    if atlas_pairs:
+        await db.executemany(
+            """
+            INSERT OR IGNORE INTO cve_atlas_map (cve_id, technique_id)
+            VALUES (?, ?)
+            """,
+            atlas_pairs,
+        )
 
     await db.commit()
-    return {"cves_flagged": flagged, "atlas_links": links}
+    return {"cves_flagged": flagged, "atlas_links": len(atlas_pairs)}
