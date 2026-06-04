@@ -161,7 +161,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
         }
       }
     }
-  }, [])
+  }, [updateShowingRange])
 
   const loadNextPage = useCallback(() => {
     if (
@@ -192,12 +192,14 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     }
   }, [cves, updateShowingRange])
 
-  function scrollFeedToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  // Reset and reload when filters change; scroll to page top (keeps Hero/stack visible)
+  // Reset and reload when filters change; preserve scroll position (do not jump to top)
   useEffect(() => {
+    if (filtersInitialMountRef.current) {
+      filtersInitialMountRef.current = false
+    } else {
+      pendingScrollRestoreRef.current = window.scrollY
+    }
+
     pageRef.current = 1
     setPage(1)
     setCves([])
@@ -209,14 +211,18 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     sentinelVisibleRef.current = false
     setShowingRange(null)
 
-    if (filtersInitialMountRef.current) {
-      filtersInitialMountRef.current = false
-    } else {
-      scrollFeedToTop()
-    }
-
     loadPage(1, false)
   }, [filters, loadPage])
+
+  useEffect(() => {
+    const restoreY = pendingScrollRestoreRef.current
+    if (restoreY == null || loading || cves.length === 0) return
+    pendingScrollRestoreRef.current = null
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: restoreY, behavior: 'instant' })
+      updateShowingRange()
+    })
+  }, [loading, cves.length, updateShowingRange])
 
   // Arrow-key card navigation (inactive while search is focused)
   useEffect(() => {
