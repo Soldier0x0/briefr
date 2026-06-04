@@ -219,7 +219,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     if (restoreY == null || loading || cves.length === 0) return
     pendingScrollRestoreRef.current = null
     requestAnimationFrame(() => {
-      window.scrollTo({ top: restoreY, behavior: 'instant' })
+      window.scrollTo({ top: restoreY, behavior: 'auto' })
       updateShowingRange()
     })
   }, [loading, cves.length, updateShowingRange])
