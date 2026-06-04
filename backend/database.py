@@ -1231,28 +1231,23 @@ async def get_atlas_case_studies_for_cve(
         """
         SELECT study_id, name, summary, techniques, target, date, cve_ids
         FROM atlas_case_studies
+        WHERE cve_ids LIKE ?
         ORDER BY date DESC, name
-        LIMIT 200
-        """
+        LIMIT ?
+        """,
+        (f'%"{cve_key}"%', limit),
     )
-    out: list[dict] = []
-    for row in rows:
-        cve_ids = _parse_json_list(row["cve_ids"])
-        if cve_key not in cve_ids:
-            continue
-        out.append(
-            {
-                "study_id": row["study_id"],
-                "name": row["name"],
-                "summary": row["summary"],
-                "techniques": _parse_json_list(row["techniques"]),
-                "target": row["target"],
-                "incident_date": row["date"],
-            }
-        )
-        if len(out) >= limit:
-            break
-    return out
+    return [
+        {
+            "study_id": row["study_id"],
+            "name": row["name"],
+            "summary": row["summary"],
+            "techniques": _parse_json_list(row["techniques"]),
+            "target": row["target"],
+            "incident_date": row["date"],
+        }
+        for row in rows
+    ]
 
 
 async def count_ai_ml_profile_alerts(
