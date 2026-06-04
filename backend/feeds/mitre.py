@@ -311,7 +311,9 @@ async def download_cve_technique_mappings() -> dict[str, list[str]]:
 
     if not cve_map:
         logger.info("Downloading CTID CVE→ATT&CK mappings CSV from mappings-explorer")
-        csv_text = (await _fetch_bytes(CVE_MAPPINGS_CSV_URL)).decode("utf-8", errors="replace")
+        csv_text = (await _fetch_bytes(CVE_MAPPINGS_CSV_URL)).decode(
+            "utf-8-sig", errors="replace"
+        )
         cve_map = parse_cve_mappings_csv(csv_text)
         logger.info("CVE mappings from CTID CSV: %d CVEs", len(cve_map))
 
