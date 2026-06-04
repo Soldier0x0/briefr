@@ -3,7 +3,6 @@ import {
   fetchCVE,
   fetchCVEEpssHistory,
   fetchCVERelated,
-  fetchCVEScore,
   fetchCVESentences,
 } from '../api.js'
 import { buildSingleReport, copyToClipboard } from '../utils/report.js'
@@ -17,12 +16,7 @@ import {
   EPSS_SPARKLINE_HEIGHT,
   EPSS_SPARKLINE_WIDTH,
 } from '../utils/epssSparkline.js'
-import {
-  calculateRiskScore,
-  exploitsFromCveFields,
-  getUserAssetProfile,
-  riskScoreColor,
-} from '../utils/riskScore.js'
+import DrawerAtlasSection from './DrawerAtlasSection.jsx'
 import './DetailDrawer.css'
 
 const TABS = [
@@ -45,53 +39,8 @@ function techniqueLink(tech) {
   if (tech?.url) return tech.url
   const id = tech?.id || tech?.technique_id
   if (!id) return null
-  const tid = String(id).toUpperCase()
-  if (tid.includes('.')) {
-    const [base, sub] = tid.split('.')
-    return `https://attack.mitre.org/techniques/${base}/${sub}/`
-  }
-  return `https://attack.mitre.org/techniques/${tid}/`
-}
-
-function MitreTechniqueCard({ tech }) {
-  const tid = tech.id || tech.technique_id
-  const href = techniqueLink(tech)
-  const detection = (tech.detection || '').trim()
-  const tactics = (tech.tactic || '')
-    .split(',')
-    .map(t => t.trim())
-    .filter(Boolean)
-
-  return (
-    <article className="mitre-technique-card" role="listitem">
-      <div className="mitre-technique-top">
-        <span className="mitre-technique-id mono">{tid}</span>
-        <div className="mitre-technique-meta">
-          {tactics.map(t => (
-            <span key={t} className="mitre-tactic-badge mono">{t}</span>
-          ))}
-          {href && (
-            <a
-              className="mitre-technique-icon-link"
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`View ${tid} on MITRE ATT&CK (opens new tab)`}
-            >
-              &#x2197;
-            </a>
-          )}
-        </div>
-      </div>
-      <p className="mitre-technique-name">{tech.name}</p>
-      {detection && (
-        <details className="mitre-detection">
-          <summary className="mitre-detection-label mono">// DETECTION</summary>
-          <p className="mitre-detection-text">{detection}</p>
-        </details>
-      )}
-    </article>
-  )
+  const clean = id.replace(/\./g, '/')
+  return `https://attack.mitre.org/techniques/${clean}/`
 }
 
 function truncateText(text, maxLen) {
@@ -171,53 +120,9 @@ function EpssTrendSection({ cve, history, loading, epssSparklineRef }) {
   )
 }
 
-
-function RiskScoreBreakdown({ scoreData, scoreLoading }) {
-  if (scoreLoading) {
-    return (
-      <section className="drawer-section" aria-labelledby="risk-score-heading">
-        <h3 id="risk-score-heading" className="drawer-human-label mono">BRIEFR RISK SCORE</h3>
-        <p className="drawer-human-loading mono">// Calculating risk score...</p>
-      </section>
-    )
-  }
-  if (!scoreData) return null
-  const score = scoreData.score
-  const color = riskScoreColor(score)
-  return (
-    <section className="drawer-section drawer-risk-section" aria-labelledby="risk-score-heading">
-      <div className="drawer-risk-header">
-        <h3 id="risk-score-heading" className="drawer-human-label mono">BRIEFR RISK SCORE</h3>
-        <span className="drawer-risk-total" style={{ color }} aria-label={`Score ${score}`}>
-          {score}
-        </span>
-      </div>
-      <ul className="drawer-risk-breakdown" aria-label="Risk score component breakdown">
-        {scoreData.breakdown.map(row => (
-          <li key={row.id} className="drawer-risk-row">
-            <div className="drawer-risk-row-head">
-              <span className="drawer-risk-label mono">{row.label}</span>
-              <span className="drawer-risk-points mono">{row.points}</span>
-            </div>
-            <div className="drawer-risk-bar-track" aria-hidden="true">
-              <div
-                className="drawer-risk-bar-fill"
-                style={{ width: `${Math.min(100, row.value * 100)}%` }}
-              />
-            </div>
-            <p className="drawer-risk-sentence">{row.sentence}</p>
-          </li>
-        ))}
-      </ul>
-    </section>
-  )
-}
-
-function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading, scoreData, scoreLoading, epssHistory, epssLoading, epssSparklineRef }) {
+function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
   return (
     <>
-      <RiskScoreBreakdown scoreData={scoreData} scoreLoading={scoreLoading} />
-
       <EpssTrendSection
         cve={cve}
         history={epssHistory}
@@ -247,11 +152,11 @@ function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading, s
 
       {sentences && (
         <>
-          <HumanSentence label="SEVERITY" text={sentences.severity || sentences.risk} />
-          <HumanSentence label="EXPLOIT LIKELIHOOD (EPSS)" text={sentences.epss || sentences.exploit_likelihood} />
-          <HumanSentence label="CISA KEV" text={sentences.kev} />
-          <HumanSentence label="PUBLIC EXPLOITS" text={sentences.exploit || sentences.public_exploits} />
+          <HumanSentence label="RISK ASSESSMENT" text={sentences.risk} />
+          <HumanSentence label="EXPLOIT LIKELIHOOD" text={sentences.exploit_likelihood} />
+          <HumanSentence label="PUBLIC EXPLOITS" text={sentences.public_exploits} />
           <HumanSentence label="PATCH STATUS" text={sentences.patch} />
+          <HumanSentence label="CISA KEV STATUS" text={sentences.kev} />
         </>
       )}
 
@@ -302,6 +207,102 @@ function exploitTypeLabel(type) {
   const t = (type || '').toLowerCase()
   if (t === 'weaponised' || t === 'weaponized') return 'Weaponised'
   return 'PoC'
+}
+
+function atlasTechniqueHref(tech) {
+  if (tech?.url) return tech.url
+  const id = tech?.technique_id || tech?.id
+  if (!id) return null
+  return `https://atlas.mitre.org/techniques/${String(id).toUpperCase()}/`
+}
+
+function TabAtlas({ cve, atlasTechniques, atlasCaseStudies }) {
+  if (!cve?.has_ai_context) return null
+
+  const techniques = Array.isArray(atlasTechniques) ? atlasTechniques : []
+  const studies = Array.isArray(atlasCaseStudies) ? atlasCaseStudies : []
+  const affectsDeclared = cveMatchesDeclaredAi(cve)
+
+  return (
+    <section className="drawer-section drawer-atlas-section" aria-labelledby="atlas-heading">
+      <div className="drawer-atlas-head">
+        <h3 id="atlas-heading" className="drawer-atlas-label mono">
+          // AI/ML THREAT CONTEXT
+        </h3>
+        <a
+          className="drawer-atlas-badge mono"
+          href="https://atlas.mitre.org/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Powered by MITRE ATLAS
+        </a>
+      </div>
+
+      {affectsDeclared && (
+        <p className="drawer-atlas-profile-warn mono">
+          This CVE may affect your declared AI/ML systems
+        </p>
+      )}
+
+      {techniques.length === 0 ? (
+        <p className="drawer-intel-empty mono">// No ATLAS techniques linked for this CVE</p>
+      ) : (
+        <div className="atlas-techniques" role="list" aria-label="Relevant ATLAS techniques">
+          {techniques.map(tech => {
+            const tid = tech.technique_id || tech.id
+            const href = atlasTechniqueHref(tech)
+            const desc = (tech.description || '').trim()
+            const oneLine = desc.split(/\n/)[0]
+            return (
+              <article key={tid} className="atlas-technique-card" role="listitem">
+                <div className="atlas-technique-top">
+                  <span className="atlas-technique-id mono">{tid}</span>
+                  {tech.tactic && (
+                    <span className="atlas-tactic-badge mono">{tech.tactic}</span>
+                  )}
+                </div>
+                <p className="atlas-technique-name">{tech.name}</p>
+                {oneLine && (
+                  <p className="atlas-technique-desc">{oneLine}</p>
+                )}
+                {href && (
+                  <a
+                    className="atlas-technique-link mono"
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    atlas.mitre.org &rarr;
+                  </a>
+                )}
+              </article>
+            )
+          })}
+        </div>
+      )}
+
+      {studies.length > 0 && (
+        <div className="atlas-case-studies">
+          <h4 className="drawer-atlas-subhead mono">// RELATED CASE STUDIES</h4>
+          <ul className="atlas-case-list">
+            {studies.map(study => (
+              <li key={study.study_id} className="atlas-case-item">
+                <p className="atlas-case-name">{study.name}</p>
+                {study.summary && (
+                  <p className="atlas-case-summary">{study.summary}</p>
+                )}
+                <p className="atlas-case-meta mono">
+                  {study.target || 'AI system'}
+                  {study.incident_date ? ` · ${study.incident_date}` : ''}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  )
 }
 
 function TabIntel({ techniques, publicExploits, greynoiseScans, cve, onInvestigateIp }) {
@@ -406,19 +407,42 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, cve, onInvestiga
       </section>
 
       <section className="drawer-section" aria-labelledby="mitre-heading">
-        <h3 id="mitre-heading" className="drawer-human-label mono">// MITRE ATT&CK</h3>
+        <h3 id="mitre-heading" className="drawer-section-label">MITRE ATT&CK</h3>
         {techniques.length === 0 ? (
-          <p className="mitre-empty mono">
-            // No ATT&CK mapping available for this CVE
-          </p>
+          <p className="mitre-empty mono">// No ATT&CK mapping available</p>
         ) : (
           <div className="mitre-techniques" role="list" aria-label="Mapped ATT&CK techniques">
-            {techniques.map(tech => (
-              <MitreTechniqueCard key={tech.id || tech.technique_id} tech={tech} />
-            ))}
+            {techniques.map(tech => {
+              const tid = tech.id || tech.technique_id
+              const href = techniqueLink(tech)
+              return (
+                <article key={tid} className="mitre-technique-card" role="listitem">
+                  <div className="mitre-technique-top">
+                    <span className="mitre-technique-id mono">{tid}</span>
+                    {tech.tactic && (
+                      <span className="mitre-tactic-badge mono">{tech.tactic}</span>
+                    )}
+                  </div>
+                  <p className="mitre-technique-name">{tech.name}</p>
+                  {href && (
+                    <a
+                      className="mitre-technique-link mono"
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`View ${tid} on attack.mitre.org (opens new tab)`}
+                    >
+                      attack.mitre.org &rarr;
+                    </a>
+                  )}
+                </article>
+              )
+            })}
           </div>
         )}
       </section>
+
+      <DrawerAtlasSection cve={cve} />
     </>
   )
 }
@@ -506,8 +530,6 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const [backStack, setBackStack] = useState([])
   const [pdfModalOpen, setPdfModalOpen] = useState(false)
   const [pdfBusy, setPdfBusy] = useState(false)
-  const [scoreData, setScoreData] = useState(null)
-  const [scoreLoading, setScoreLoading] = useState(false)
   const reportRef = useRef(null)
   const epssSparklineRef = useRef(null)
   const navigatingRef = useRef(false)
@@ -518,6 +540,10 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
     if (!cve?.cve_id) {
       setSentences(null)
       setSentencesLoading(false)
+      setEpssHistory([])
+      setEpssLoading(false)
+      setRelated([])
+      setRelatedLoading(false)
       return
     }
     let cancelled = false
@@ -535,40 +561,6 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
       })
     return () => { cancelled = true }
   }, [cve?.cve_id])
-
-  useEffect(() => {
-    if (!cve?.cve_id) {
-      setScoreData(null)
-      setScoreLoading(false)
-      return
-    }
-    let cancelled = false
-    setScoreLoading(true)
-    setScoreData(null)
-    const profile = getUserAssetProfile()
-    const exploits = exploitsFromCveFields(cve)
-    if (profile?.length) {
-      setScoreData(calculateRiskScore(cve, profile, exploits))
-      setScoreLoading(false)
-      return () => { cancelled = true }
-    }
-    fetchCVEScore(cve.cve_id)
-      .then(data => {
-        if (!cancelled) {
-          setScoreData({
-            score: data.score,
-            breakdown: data.breakdown ?? [],
-          })
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setScoreData(calculateRiskScore(cve, null, exploits))
-      })
-      .finally(() => {
-        if (!cancelled) setScoreLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [cve?.cve_id, cve])
 
   useEffect(() => {
     if (!cve?.cve_id) {
@@ -781,7 +773,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
                     onClick={() => investigation.pivotToIocFromCve(cve)}
                     aria-label={`Look up indicators from ${cve.cve_id}`}
                   >
-                    Lookup in IOC
+                    Lookup IOC
                   </button>
                 </>
               )}
@@ -859,8 +851,6 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
               urls={urls}
               sentences={sentences}
               sentencesLoading={sentencesLoading}
-              scoreData={scoreData}
-              scoreLoading={scoreLoading}
               epssHistory={epssHistory}
               epssLoading={epssLoading}
               epssSparklineRef={epssSparklineRef}

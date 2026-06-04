@@ -9,6 +9,7 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
 from database import (
+    refresh_all_cve_ai_context,
     backfill_display_fields,
     backfill_has_poc,
     enrich_kev_summaries,
@@ -370,6 +371,7 @@ async def run_weekly_mitre_refresh() -> bool:
             try:
                 stats = await refresh_mitre_data(db)
                 atlas_stats = await refresh_atlas_data(db)
+                ai_stats = await refresh_all_cve_ai_context(db)
                 await db.commit()
             finally:
                 await db.close()
@@ -383,6 +385,11 @@ async def run_weekly_mitre_refresh() -> bool:
                 "ATLAS refresh complete: %d techniques, %d case studies",
                 atlas_stats["techniques"],
                 atlas_stats["case_studies"],
+            )
+            logger.info(
+                "AI context refresh: %d CVEs flagged, %d ATLAS links",
+                ai_stats.get("cves_flagged", 0),
+                ai_stats.get("atlas_links", 0),
             )
         except Exception as exc:
             logger.error("Weekly MITRE/ATLAS refresh failed: %s", exc)

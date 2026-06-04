@@ -21,7 +21,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 from database import (
+    count_ai_ml_profile_alerts,
     get_atlas_case_studies,
+    get_atlas_case_studies_for_cve,
+    get_atlas_techniques_for_cve,
     get_atlas_techniques_grouped,
     get_db,
     get_cve_count,
@@ -153,6 +156,7 @@ def _row_to_cve_dict(row) -> dict:
     d["is_kev"] = bool(d.get("is_kev", 0))
     d["has_poc"] = bool(d.get("has_poc", 0))
     d["patch_available"] = bool(d.get("patch_available", 0))
+    d["has_ai_context"] = bool(d.get("has_ai_context", 0))
     return d
 
 
@@ -270,7 +274,13 @@ async def server_time(
 
 
 @app.get("/api/stats")
-async def stats():
+async def stats(
+    ai_frameworks: str | None = Query(
+        default=None,
+        max_length=500,
+        description="Comma-separated AI/ML frameworks from user asset profile",
+    ),
+):
     db = await get_db()
     try:
         rows_critical = await db.execute_fetchall(
@@ -288,6 +298,10 @@ async def stats():
         rows_24h = await db.execute_fetchall(
             "SELECT COUNT(*) as cnt FROM cves WHERE published >= datetime('now', '-1 day')"
         )
+        ai_ml_alerts = 0
+        if ai_frameworks:
+            frameworks = [f.strip() for f in ai_frameworks.split(",") if f.strip()]
+            ai_ml_alerts = await count_ai_ml_profile_alerts(db, frameworks)
     finally:
         await db.close()
 
@@ -297,6 +311,7 @@ async def stats():
         "kev_count": rows_kev[0]["cnt"] if rows_kev else 0,
         "patched": rows_patched[0]["cnt"] if rows_patched else 0,
         "last_24h": rows_24h[0]["cnt"] if rows_24h else 0,
+        "ai_ml_alerts": ai_ml_alerts,
     }
 
 
@@ -407,7 +422,7 @@ CVE_ORDER_BY = """
 CVE_SELECT = """
     SELECT cve_id, description, cvss_score, severity, published, modified,
            affected_products, mitre_technique, summary, is_kev, epss_score,
-           has_poc, patch_available, source_urls, cwe_ids, updated_at
+           has_poc, patch_available, has_ai_context, source_urls, cwe_ids, updated_at
     FROM cves
 """
 
@@ -432,9 +447,14 @@ def _build_cve_filters(
     technique: str | None = None,
     published_on: str | None = None,
     summary_only: bool = False,
+    ai_context_only: bool = False,
+    ai_profile: str | None = None,
 ) -> tuple[list[str], list, list[str]]:
     conditions: list[str] = []
     params: list = []
+
+    if ai_context_only:
+        conditions.append("has_ai_context = 1")
 
     if severity:
         severity_upper = severity.upper()
@@ -484,6 +504,14 @@ def _build_cve_filters(
         conditions.append("DATE(published) = ?")
         params.append(day)
 
+    if ai_profile:
+        framework_list = [f.strip() for f in ai_profile.split(",") if f.strip()]
+        if framework_list:
+            fw_clause, fw_params = _text_match_or_clause(framework_list)
+            if fw_clause:
+                conditions.append(f"(has_ai_context = 1 AND ({fw_clause}))")
+                params.extend(fw_params)
+
     if summary_only:
         # Enriched plain-English only (CISA KEV short text, OSV, etc.) — not NVD auto-truncate
         conditions.append(
@@ -527,6 +555,8 @@ async def list_cves(
     technique: str | None = Query(default=None, max_length=32),
     published_on: str | None = Query(default=None, max_length=10),
     summary_only: bool = Query(default=False),
+    ai_context_only: bool = Query(default=False),
+    ai_profile: str | None = Query(default=None, max_length=500),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=50),
 ):
@@ -541,6 +571,8 @@ async def list_cves(
         technique,
         published_on,
         summary_only,
+        ai_context_only,
+        ai_profile,
     )
 
     where_clause = ""
@@ -587,6 +619,8 @@ async def export_cves(
     technique: str | None = Query(default=None, max_length=32),
     published_on: str | None = Query(default=None, max_length=10),
     summary_only: bool = Query(default=False),
+    ai_context_only: bool = Query(default=False),
+    ai_profile: str | None = Query(default=None, max_length=500),
     max_rows: int = Query(default=500, ge=1, le=500),
 ):
     """Return up to 500 CVE rows matching filters (for CSV export)."""
@@ -601,6 +635,8 @@ async def export_cves(
         technique,
         published_on,
         summary_only,
+        ai_context_only,
+        ai_profile,
     )
 
     where_clause = ""
@@ -691,7 +727,7 @@ async def get_cve_sentences(cve_id: str):
         rows = await db.execute_fetchall(
             """
             SELECT cve_id, cvss_score, severity, is_kev, epss_score,
-                   has_poc, patch_available, source_urls
+                   has_poc, patch_available, has_ai_context, source_urls
             FROM cves
             WHERE cve_id = ?
             """,
@@ -794,7 +830,7 @@ async def get_cve_score(
             """
             SELECT cve_id, description, cvss_score, severity, published, modified,
                    affected_products, mitre_technique, summary, is_kev, epss_score,
-                   has_poc, patch_available, source_urls, cwe_ids, updated_at
+                   has_poc, patch_available, has_ai_context, source_urls, cwe_ids, updated_at
             FROM cves
             WHERE cve_id = ?
             """,
@@ -892,7 +928,7 @@ async def get_cve(cve_id: str):
             """
             SELECT cve_id, description, cvss_score, severity, published, modified,
                    affected_products, mitre_technique, summary, is_kev, epss_score,
-                   has_poc, patch_available, source_urls, cwe_ids, updated_at
+                   has_poc, patch_available, has_ai_context, source_urls, cwe_ids, updated_at
             FROM cves
             WHERE cve_id = ?
             """,
@@ -903,6 +939,8 @@ async def get_cve(cve_id: str):
 
         cve = _row_to_cve_dict(rows[0])
         cve["techniques"] = await get_techniques_for_cve(db, cve_key)
+        cve["atlas_techniques"] = await get_atlas_techniques_for_cve(db, cve_key)
+        cve["atlas_case_studies"] = await get_atlas_case_studies_for_cve(db, cve_key, limit=2)
 
         try:
             cve["public_exploits"] = await load_sploitus_exploits_for_cve(db, cve_key)

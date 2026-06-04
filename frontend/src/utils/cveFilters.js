@@ -33,5 +33,15 @@ export function toApiCveParams(filters) {
 
   delete params.my_stack_only
 
+  if (rest.ai_context_only) {
+    params.ai_context_only = true
+  }
+  delete params.ai_context_only
+
+  if (rest.ai_profile_match && params.ai_profile) {
+    /* ai_profile already set for API */
+  }
+  delete params.ai_profile_match
+
   return params
 }

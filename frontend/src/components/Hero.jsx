@@ -16,6 +16,7 @@ export default function Hero({ activeStack, onBrief, onClearStack }) {
 
   useEffect(() => {
     try { localStorage.setItem(STACK_STORAGE_KEY, stack) } catch {}
+    window.dispatchEvent(new CustomEvent('briefr-stack-change'))
   }, [stack])
 
   // Clear input when stack filter removed from feed (× clear stack)

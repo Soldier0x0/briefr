@@ -19,8 +19,11 @@ async function request(path, options = {}) {
   return res.json()
 }
 
-export function fetchStats() {
-  return request('/stats')
+export function fetchStats(aiFrameworks = '') {
+  const qs = new URLSearchParams()
+  if (aiFrameworks) qs.set('ai_frameworks', aiFrameworks)
+  const q = qs.toString()
+  return request(`/stats${q ? `?${q}` : ''}`)
 }
 
 export function fetchStatsTimeline(days = 90) {
@@ -44,6 +47,8 @@ export function fetchCVEs(params = {}) {
   if (params.technique) qs.set('technique', params.technique)
   if (params.published_on) qs.set('published_on', params.published_on)
   if (params.summary_only) qs.set('summary_only', 'true')
+  if (params.ai_context_only) qs.set('ai_context_only', 'true')
+  if (params.ai_profile) qs.set('ai_profile', params.ai_profile)
   if (params.page)      qs.set('page', String(params.page))
   if (params.limit)     qs.set('limit', String(params.limit))
   const query = qs.toString()
@@ -56,15 +61,6 @@ export function fetchCVE(cveId) {
 
 export function fetchCVESentences(cveId) {
   return request(`/cves/${encodeURIComponent(cveId)}/sentences`)
-}
-
-export function fetchCVEScore(cveId, assets = null) {
-  const qs = new URLSearchParams()
-  if (assets?.length) {
-    qs.set('assets', JSON.stringify(assets))
-  }
-  const query = qs.toString()
-  return request(`/cves/${encodeURIComponent(cveId)}/score${query ? `?${query}` : ''}`)
 }
 
 export function fetchCVEEpssHistory(cveId) {

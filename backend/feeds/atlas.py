@@ -18,7 +18,10 @@ logger = logging.getLogger(__name__)
 
 ATLAS_YAML_URL = os.environ.get(
     "ATLAS_YAML_URL",
-    "https://raw.githubusercontent.com/mitre-atlas/atlas-data/main/dist/ATLAS.yaml",
+    "https://raw.githubusercontent.com/mitre-atlas/atlas-data/main/data/ATLAS.yaml",
+)
+ATLAS_YAML_FALLBACK = (
+    "https://raw.githubusercontent.com/mitre-atlas/atlas-data/main/dist/ATLAS.yaml"
 )
 ATLAS_CASE_STUDIES_DIR_URL = (
     "https://api.github.com/repos/mitre-atlas/atlas-data/contents/data/case-studies"
@@ -181,8 +184,19 @@ def parse_atlas_yaml(data: dict) -> tuple[list[dict], list[dict]]:
 
 
 async def download_atlas_bundle() -> tuple[list[dict], list[dict]]:
-    logger.info("Downloading MITRE ATLAS from %s", ATLAS_YAML_URL)
-    raw = await _fetch_bytes(ATLAS_YAML_URL)
+    urls = [ATLAS_YAML_URL, ATLAS_YAML_FALLBACK]
+    raw = None
+    last_err = None
+    for url in urls:
+        try:
+            logger.info("Downloading MITRE ATLAS from %s", url)
+            raw = await _fetch_bytes(url)
+            break
+        except Exception as exc:
+            last_err = exc
+            logger.warning("ATLAS YAML fetch failed for %s: %s", url, exc)
+    if raw is None:
+        raise last_err or RuntimeError("ATLAS YAML download failed")
     text = raw.decode("utf-8", errors="replace")
     if text.startswith("---"):
         text = text.split("---", 1)[-1]

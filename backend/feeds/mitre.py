@@ -19,10 +19,6 @@ logger = logging.getLogger(__name__)
 ENTERPRISE_ATTACK_URL = (
     "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
 )
-CVE_MAPPINGS_JSON_URL = (
-    "https://raw.githubusercontent.com/center-for-threat-informed-defense/"
-    "mappings-explorer/main/src/mappings/NVD/attack-14.0/enterprise/CVE_mappings.json"
-)
 # Official CTID bulk CVE→ATT&CK file (spec CVE_mappings.json path 404 on GitHub as of 2026)
 CVE_MAPPINGS_CSV_URL = (
     "https://raw.githubusercontent.com/center-for-threat-informed-defense/"
@@ -35,6 +31,40 @@ KEV_ATTACK_MAPPINGS_URL = (
 )
 
 TECHNIQUE_ID_RE = re.compile(r"^T\d{4}(?:\.\d{3})?$", re.IGNORECASE)
+
+# AI/ML library keywords and ATLAS hint mapping (used by feeds.ai_context)
+AI_ML_KEYWORDS: tuple[str, ...] = (
+    "tensorflow",
+    "pytorch",
+    "torch",
+    "langchain",
+    "openai",
+    "huggingface",
+    "transformers",
+    "scikit-learn",
+    "sklearn",
+    "onnx",
+    "keras",
+    "jax",
+    "anthropic",
+    "llama",
+    "mistral",
+    "ollama",
+    "stable-diffusion",
+    "diffusers",
+    "spacy",
+    "nltk",
+    "gensim",
+)
+
+CVE_TO_ATLAS_HINTS: dict[str, list[str]] = {
+    "code execution": ["AML.T0040", "AML.T0043"],
+    "injection": ["AML.T0051", "AML.T0054"],
+    "data poisoning": ["AML.T0020", "AML.T0043"],
+    "model theft": ["AML.T0037", "AML.T0038"],
+    "denial of service": ["AML.T0029", "AML.T0016"],
+    "authentication": ["AML.T0012", "AML.T0013"],
+}
 
 # Columns in CTID CSV that hold semicolon-separated technique IDs
 CVE_TECHNIQUE_COLUMNS = (
@@ -55,38 +85,6 @@ def technique_url(technique_id: str) -> str:
 
 def _format_tactic(phase_name: str) -> str:
     return phase_name.replace("-", " ").title()
-
-
-def _truncate(text: str, max_len: int) -> str:
-    text = (text or "").strip()
-    if len(text) <= max_len:
-        return text
-    return text[: max_len - 3] + "..."
-
-
-def _build_detection_by_attack_pattern(data: dict) -> dict[str, str]:
-    """Map attack-pattern STIX id → detection guidance from detection-strategy objects."""
-    strategies = {
-        o["id"]: o
-        for o in data.get("objects", [])
-        if o.get("type") == "x-mitre-detection-strategy"
-    }
-    by_ap: dict[str, list[str]] = {}
-    for obj in data.get("objects", []):
-        if obj.get("type") != "relationship" or obj.get("relationship_type") != "detects":
-            continue
-        src = obj.get("source_ref") or ""
-        tgt = obj.get("target_ref") or ""
-        strat = strategies.get(src) or strategies.get(tgt)
-        if not strat:
-            continue
-        ap_ref = tgt if tgt.startswith("attack-pattern--") else src
-        if not ap_ref.startswith("attack-pattern--"):
-            continue
-        chunk = (strat.get("description") or strat.get("name") or "").strip()
-        if chunk:
-            by_ap.setdefault(ap_ref, []).append(chunk)
-    return {ap: _truncate(" ".join(parts), 400) for ap, parts in by_ap.items()}
 
 
 def _normalize_technique_id(raw: str) -> str | None:
@@ -117,7 +115,6 @@ async def _fetch_bytes(url: str, timeout: float = 180.0) -> bytes:
 def parse_enterprise_attack_stix(data: dict) -> list[dict]:
     """Parse MITRE Enterprise ATT&CK STIX bundle into mitre_techniques rows."""
     techniques: dict[str, dict] = {}
-    detection_by_ap = _build_detection_by_attack_pattern(data)
 
     for obj in data.get("objects", []):
         if obj.get("type") != "attack-pattern" or obj.get("revoked"):
@@ -134,15 +131,13 @@ def parse_enterprise_attack_stix(data: dict) -> list[dict]:
             continue
 
         phases = obj.get("kill_chain_phases") or []
-        tactic_names: list[str] = []
-        for phase in phases:
-            name = _format_tactic(phase.get("phase_name", ""))
-            if name and name not in tactic_names:
-                tactic_names.append(name)
-        tactic = ", ".join(tactic_names)
+        tactic = ""
+        if phases:
+            tactic = _format_tactic(phases[0].get("phase_name", ""))
 
-        description = _truncate(obj.get("description") or "", 500)
-        detection = detection_by_ap.get(obj.get("id") or "", "")
+        description = (obj.get("description") or "").strip()
+        if len(description) > 500:
+            description = description[:497] + "..."
 
         platforms = obj.get("x_mitre_platforms") or []
         if not isinstance(platforms, list):
@@ -155,7 +150,6 @@ def parse_enterprise_attack_stix(data: dict) -> list[dict]:
             "tactic": tactic,
             "url": technique_url(technique_id),
             "platforms": platforms,
-            "detection": detection,
         }
 
     return list(techniques.values())
@@ -237,27 +231,12 @@ def parse_cve_mappings_json(data: Any) -> dict[str, list[str]]:
     return {cve: sorted(tids) for cve, tids in mapping.items()}
 
 
-def _csv_field(row: dict[str, str], *names: str) -> str:
-    for name in names:
-        if name in row:
-            return row[name] or ""
-        bom_key = f"\ufeff{name}"
-        if bom_key in row:
-            return row[bom_key] or ""
-    return ""
-
-
 def parse_cve_mappings_csv(text: str) -> dict[str, list[str]]:
     """Parse CTID Att&ckToCveMappings.csv → { CVE-ID: [Txxxx, ...] }."""
-    text = text.lstrip("\ufeff")
     mapping: dict[str, set[str]] = {}
     reader = csv.DictReader(io.StringIO(text))
-    if reader.fieldnames:
-        reader.fieldnames = [
-            (f or "").lstrip("\ufeff").strip() for f in reader.fieldnames
-        ]
     for row in reader:
-        cve_id = _csv_field(row, "CVE ID", "CVE_ID").strip().upper()
+        cve_id = (row.get("CVE ID") or row.get("CVE_ID") or "").strip().upper()
         if not cve_id.startswith("CVE-"):
             continue
         techniques: set[str] = set()
@@ -318,33 +297,25 @@ async def download_enterprise_attack() -> list[dict]:
 
 
 async def download_cve_technique_mappings() -> dict[str, list[str]]:
-    sources: list[dict[str, list[str]]] = []
+    cve_map: dict[str, list[str]] = {}
 
-    json_url = (
-        os.environ.get("MITRE_CVE_MAPPINGS_JSON_URL", "").strip()
-        or CVE_MAPPINGS_JSON_URL
-    )
-    try:
-        logger.info("Downloading CVE→ATT&CK mappings JSON from %s", json_url)
-        json_data = json.loads(await _fetch_bytes(json_url))
-        json_map = parse_cve_mappings_json(json_data)
-        logger.info("CVE mappings from JSON: %d CVEs", len(json_map))
-        if json_map:
-            sources.append(json_map)
-    except Exception as exc:
-        logger.warning("CVE mappings JSON unavailable (%s), using CSV/KEV sources", exc)
+    json_url = os.environ.get("MITRE_CVE_MAPPINGS_JSON_URL", "").strip()
+    if json_url:
+        try:
+            logger.info("Downloading CVE→ATT&CK mappings JSON from %s", json_url)
+            json_data = json.loads(await _fetch_bytes(json_url))
+            cve_map = parse_cve_mappings_json(json_data)
+            logger.info("CVE mappings from JSON: %d CVEs", len(cve_map))
+        except Exception as exc:
+            logger.warning("Custom CVE mappings JSON failed: %s", exc)
 
-    try:
+    if not cve_map:
         logger.info("Downloading CTID CVE→ATT&CK mappings CSV from mappings-explorer")
         csv_text = (await _fetch_bytes(CVE_MAPPINGS_CSV_URL)).decode(
             "utf-8-sig", errors="replace"
         )
-        csv_map = parse_cve_mappings_csv(csv_text)
-        logger.info("CVE mappings from CTID CSV: %d CVEs", len(csv_map))
-        if csv_map:
-            sources.append(csv_map)
-    except Exception as exc:
-        logger.warning("CTID CSV mapping fetch failed (non-fatal): %s", exc)
+        cve_map = parse_cve_mappings_csv(csv_text)
+        logger.info("CVE mappings from CTID CSV: %d CVEs", len(cve_map))
 
     kev_map: dict[str, list[str]] = {}
     try:
@@ -353,12 +324,10 @@ async def download_cve_technique_mappings() -> dict[str, list[str]]:
         kev_data = json.loads(kev_raw)
         kev_map = parse_kev_attack_mappings(kev_data)
         logger.info("CVE mappings from KEV ATT&CK: %d CVEs", len(kev_map))
-        if kev_map:
-            sources.append(kev_map)
     except Exception as exc:
         logger.warning("KEV ATT&CK mapping fetch failed (non-fatal): %s", exc)
 
-    merged = merge_cve_technique_maps(*sources) if sources else {}
+    merged = merge_cve_technique_maps(cve_map, kev_map)
     logger.info("Total unique CVE→technique mappings: %d CVEs", len(merged))
     return merged
 
