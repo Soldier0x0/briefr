@@ -11,23 +11,6 @@ import {
 } from './pdfAiSummary.js'
 import { getReportTimestamp } from './timezone.js'
 
-export const TLP_OPTIONS = [
-  { id: 'WHITE', label: 'TLP:WHITE', color: null },
-  { id: 'GREEN', label: 'TLP:GREEN', color: [34, 197, 94] },
-  { id: 'AMBER', label: 'TLP:AMBER', color: [245, 158, 11] },
-  { id: 'RED', label: 'TLP:RED', color: [239, 68, 68] },
-]
-
-export const TLP_OVERVIEW =
-  'Traffic Light Protocol (TLP) marks how far you may share this report. See first.org/tlp.'
-
-export const TLP_HINTS = {
-  WHITE: 'May be shared without restriction.',
-  GREEN: 'Community sharing only — not for public channels.',
-  AMBER: 'Limited distribution — need-to-know within your organization.',
-  RED: 'Named recipients only — do not forward further.',
-}
-
 const BRAND = '#e85533'
 const PAGE_W = 210
 const PAGE_H = 297
@@ -35,7 +18,6 @@ const MARGIN = 15
 const CONTENT_TOP = 18
 const CONTENT_BOTTOM = 262
 const FOOTER_Y = 285
-const STRIPE_H = 4
 
 const FONT_BODY = 'helvetica'
 const FONT_MONO = 'courier'
@@ -70,28 +52,15 @@ function ensureSpace(ctx, needed) {
   }
 }
 
-function drawTlpStripes(doc, tlpColor) {
-  if (!tlpColor) return
-  doc.setFillColor(...tlpColor)
-  doc.rect(0, 0, PAGE_W, STRIPE_H, 'F')
-  doc.rect(0, PAGE_H - STRIPE_H, PAGE_W, STRIPE_H, 'F')
-}
-
 function applyFootersAndStripes(doc, meta) {
   const total = doc.getNumberOfPages()
   for (let p = 1; p <= total; p += 1) {
     doc.setPage(p)
-    drawTlpStripes(doc, meta.tlpColor)
     doc.setFont(FONT_BODY, 'normal')
     doc.setFontSize(7)
     doc.setTextColor(100, 100, 100)
     const footer = `BRIEFR — projectjupiter.in | Generated ${meta.timestamp} | Page ${p} of ${total}`
     doc.text(footer, PAGE_W / 2, FOOTER_Y, { align: 'center' })
-    if (meta.tlpLabel && meta.tlpLabel !== 'TLP:WHITE') {
-      doc.setFontSize(7)
-      doc.setTextColor(80, 80, 80)
-      doc.text(meta.tlpLabel, PAGE_W - MARGIN, FOOTER_Y - 4, { align: 'right' })
-    }
     if (meta.aiFooterNote) {
       doc.setFontSize(6)
       doc.setTextColor(110, 110, 110)
@@ -426,15 +395,15 @@ export async function downloadBulkCvePdf(cves, options = {}) {
   const ctx = { doc, y: CONTENT_TOP, pageNum: 1 }
 
   ctx.y = drawPageHeader(doc, meta, null, false)
-  const tlpLines = splitLines(doc, TLP_OVERVIEW, PAGE_W - MARGIN * 2)
   doc.setFont(FONT_BODY, 'normal')
   doc.setFontSize(7)
   doc.setTextColor(100, 100, 100)
-  tlpLines.forEach(line => {
-    doc.text(line, MARGIN, ctx.y)
-    ctx.y += 3.5
-  })
-  ctx.y += 4
+  doc.text(
+    'Aggregated from public sources (NVD, CISA KEV, EPSS, and related OSINT).',
+    MARGIN,
+    ctx.y,
+  )
+  ctx.y += 8
 
   const bulkSummaryBody = summaryData
     ? formatExecutiveSummaryBody(summaryData)
@@ -464,7 +433,6 @@ export async function downloadBulkCvePdf(cves, options = {}) {
 }
 
 function buildMeta(options) {
-  const tlp = TLP_OPTIONS.find(t => t.id === options.tlp) || TLP_OPTIONS[0]
   const now = new Date()
   const dateLine = now.toLocaleString('en-GB', {
     year: 'numeric',
@@ -477,8 +445,6 @@ function buildMeta(options) {
     timestamp: getReportTimestamp(),
     dateLine,
     analystName: (options.analystName || '').trim(),
-    tlpColor: tlp.color,
-    tlpLabel: tlp.label,
     aiFooterNote: options.aiFooterNote || null,
   }
 }

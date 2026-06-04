@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { TLP_OPTIONS, TLP_OVERVIEW, TLP_HINTS } from '../utils/pdfReport.js'
 import './PdfExportModal.css'
 
 export default function PdfExportModal({
@@ -10,13 +9,11 @@ export default function PdfExportModal({
   busy = false,
   busyLabel = 'Generating summary...',
 }) {
-  const [tlp, setTlp] = useState('WHITE')
   const [analystName, setAnalystName] = useState('')
   const dialogRef = useRef(null)
 
   useEffect(() => {
     if (!open) return
-    setTlp('WHITE')
     setAnalystName('')
     function onKey(e) {
       if (e.key === 'Escape' && !busy) onCancel()
@@ -29,7 +26,7 @@ export default function PdfExportModal({
 
   function handleSubmit(e) {
     e.preventDefault()
-    onConfirm({ tlp, analystName: analystName.trim() })
+    onConfirm({ analystName: analystName.trim() })
   }
 
   return (
@@ -44,39 +41,10 @@ export default function PdfExportModal({
       >
         <h2 id="pdf-modal-title" className="pdf-modal-title mono">{title}</h2>
         <p className="pdf-modal-sub">
-          {TLP_OVERVIEW} Analyst name is optional and is not stored.
+          Reports use publicly available intelligence only. Analyst name is optional and is not stored.
         </p>
 
         <form onSubmit={handleSubmit}>
-          <fieldset className="pdf-modal-fieldset">
-            <legend className="pdf-modal-legend mono">Classification</legend>
-            <div className="pdf-tlp-options" role="radiogroup" aria-label="TLP classification">
-              {TLP_OPTIONS.map(opt => (
-                <label
-                  key={opt.id}
-                  className={`pdf-tlp-option${tlp === opt.id ? ' selected' : ''}`}
-                  style={opt.color ? { '--tlp-preview': `rgb(${opt.color.join(',')})` } : undefined}
-                >
-                  <input
-                    type="radio"
-                    name="tlp"
-                    value={opt.id}
-                    checked={tlp === opt.id}
-                    onChange={() => setTlp(opt.id)}
-                    disabled={busy}
-                  />
-                  <span className="pdf-tlp-swatch" aria-hidden="true" />
-                  <span className="mono">{opt.label}</span>
-                </label>
-              ))}
-            </div>
-            {TLP_HINTS[tlp] && (
-              <p className="pdf-tlp-hint" id="pdf-tlp-hint">
-                {TLP_HINTS[tlp]}
-              </p>
-            )}
-          </fieldset>
-
           <label className="pdf-modal-label mono" htmlFor="pdf-analyst-name">
             Analyst name (optional)
           </label>

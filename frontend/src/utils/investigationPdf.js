@@ -8,7 +8,6 @@ import {
   formatExecutiveSummaryBody,
   loadPdfExecutiveSummary,
 } from './pdfAiSummary.js'
-import { TLP_OPTIONS, TLP_OVERVIEW } from './pdfReport.js'
 import { getReportTimestamp } from './timezone.js'
 const T_CVE = 'cve'
 const T_IOC = 'ioc'
@@ -22,7 +21,6 @@ const MARGIN = 15
 const CONTENT_TOP = 20
 const CONTENT_BOTTOM = 262
 const FOOTER_Y = 285
-const STRIPE_H = 4
 const FONT_BODY = 'helvetica'
 const FONT_MONO = 'courier'
 
@@ -36,28 +34,17 @@ function hexToRgb(hex) {
 }
 
 function buildMeta(options) {
-  const tlp = TLP_OPTIONS.find(t => t.id === options.tlp) || TLP_OPTIONS[0]
   return {
     timestamp: getReportTimestamp(),
     analystName: (options.analystName || '').trim(),
-    tlpColor: tlp.color,
-    tlpLabel: tlp.label,
     aiFooterNote: options.aiFooterNote || null,
   }
-}
-
-function drawTlpStripes(doc, tlpColor) {
-  if (!tlpColor) return
-  doc.setFillColor(...tlpColor)
-  doc.rect(0, 0, PAGE_W, STRIPE_H, 'F')
-  doc.rect(0, PAGE_H - STRIPE_H, PAGE_W, STRIPE_H, 'F')
 }
 
 function applyFooters(doc, meta) {
   const total = doc.getNumberOfPages()
   for (let p = 1; p <= total; p += 1) {
     doc.setPage(p)
-    drawTlpStripes(doc, meta.tlpColor)
     doc.setFont(FONT_BODY, 'normal')
     doc.setFontSize(7)
     doc.setTextColor(100, 100, 100)
@@ -240,16 +227,14 @@ export async function downloadInvestigationPdf(items, startTime, options = {}) {
   doc.text(`Date: ${new Date().toLocaleString('en-GB')}`, MARGIN, meta.analystName ? 60 : 54)
   doc.text(`Duration: ${formatDuration(startTime)}`, MARGIN, meta.analystName ? 66 : 60)
   let coverY = meta.analystName ? 72 : 66
-  doc.text(`Classification: ${meta.tlpLabel}`, MARGIN, coverY)
-  coverY += 6
   doc.text(`Items in thread: ${items.length}`, MARGIN, coverY)
-  coverY += 10
+  coverY += 8
   doc.setFontSize(8)
-  const tlpNote = splitLines(doc, TLP_OVERVIEW, PAGE_W - MARGIN * 2)
-  tlpNote.forEach(line => {
-    doc.text(line, MARGIN, coverY)
-    coverY += 4
-  })
+  doc.text(
+    'Compiled from public OSINT (NVD, CISA KEV, EPSS, and related feeds).',
+    MARGIN,
+    coverY,
+  )
 
   doc.addPage()
   drawTimelinePage(doc, items, startTime)
