@@ -20,7 +20,7 @@ function StatCell({ value, label, variant, loading, onClick, interactive }) {
 export default function StatsRow({ stats, showAiAlerts, onAiAlertsClick }) {
   const loading = !stats
   const aiCount = stats?.ai_ml_alerts ?? 0
-  const showAi = showAiAlerts && aiCount > 0
+  const showAi = showAiAlerts && (loading || aiCount > 0)
 
   return (
     <section
