@@ -40,7 +40,7 @@ function techniqueLink(tech) {
   const id = tech?.id || tech?.technique_id
   if (!id) return null
   const clean = id.replace(/\./g, '/')
-  return `https://attack.mitre.org/techniques/${clean}`
+  return `https://attack.mitre.org/techniques/${clean}/`
 }
 
 function truncateText(text, maxLen) {
