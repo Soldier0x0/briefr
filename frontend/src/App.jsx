@@ -46,11 +46,27 @@ function timeAgoMinutes(sqliteUtc) {
   return `${Math.floor(h / 24)} days ago`
 }
 
-function formatScheduleLabel(schedule) {
+function formatIngestCadence(schedule) {
   if (!schedule) return null
-  const hh = String(schedule.hour).padStart(2, '0')
-  const mm = String(schedule.minute).padStart(2, '0')
-  return `${hh}:${mm} ${getTzAbbr(schedule.timezone)}`
+  const parts = []
+  if (schedule.nvd_interval_hours != null) {
+    parts.push(`NVD every ${schedule.nvd_interval_hours}h`)
+  }
+  if (schedule.kev_interval_minutes != null) {
+    parts.push(`KEV every ${schedule.kev_interval_minutes}m`)
+  }
+  if (schedule.epss_interval_hours != null) {
+    parts.push(`EPSS every ${schedule.epss_interval_hours}h`)
+  }
+  const tz = schedule.timezone ? getTzAbbr(schedule.timezone) : ''
+  const mitreH = schedule.mitre_weekly_hour ?? schedule.hour
+  const mitreM = schedule.mitre_weekly_minute ?? schedule.minute
+  if (mitreH != null && mitreM != null) {
+    const hh = String(mitreH).padStart(2, '0')
+    const mm = String(mitreM).padStart(2, '0')
+    parts.push(`MITRE weekly Sun ${hh}:${mm}${tz ? ` ${tz}` : ''}`)
+  }
+  return parts.length ? parts.join(' · ') : null
 }
 
 function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSchedule }) {
@@ -96,7 +112,7 @@ function cycleFilter(filters) {
   return { ...filters, kev_only: false, poc_only: false, severity: null }
 }
 
-function MainApp({ stats, filters, setFilters, onSelectCVE,
+function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
                    digestOpen, setDigestOpen, digestCVEs, setDigestCVEs,
                    searchFocusTrigger, setSearchFocusTrigger, aboutOpen, setAboutOpen,
                    timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
@@ -119,6 +135,13 @@ function MainApp({ stats, filters, setFilters, onSelectCVE,
     setDigestOpen(true)
   }, [setDigestCVEs, setDigestOpen])
 
+  const handleSelectCVE = useCallback((cve) => {
+    setSelectedCVE(cve)
+    fetchCVE(cve.cve_id)
+      .then(full => setSelectedCVE(full))
+      .catch(() => {})
+  }, [setSelectedCVE])
+
   return (
     <>
       <Hero
@@ -138,7 +161,7 @@ function MainApp({ stats, filters, setFilters, onSelectCVE,
         <CVEFeed
           filters={filters}
           onFiltersChange={handleFiltersChange}
-          onSelectCVE={onSelectCVE}
+          onSelectCVE={handleSelectCVE}
           onGenerateDigest={handleGenerateDigest}
           onDigestRequest={onDigestRequest}
           searchFocusTrigger={searchFocusTrigger}
@@ -158,8 +181,6 @@ export default function App() {
   const [filters, setFilters]                   = useState(DEFAULT_FILTERS)
   const [stats, setStats]                       = useState(null)
   const [selectedCVE, setSelectedCVE]           = useState(null)
-  const ignoreCveSelectUntilRef                   = useRef(0)
-  const cveSelectGenerationRef                    = useRef(0)
   const [digestOpen, setDigestOpen]             = useState(false)
   const [digestCVEs, setDigestCVEs]             = useState([])
   const [searchFocusTrigger, setSearchFocusTrigger] = useState(0)
@@ -219,36 +240,10 @@ export default function App() {
   }, [])
 
   const openCveById = useCallback((cveId) => {
-    const gen = ++cveSelectGenerationRef.current
     fetchCVE(cveId)
-      .then(full => {
-        if (cveSelectGenerationRef.current !== gen) return
-        setSelectedCVE(full)
-      })
-      .catch(() => {
-        if (cveSelectGenerationRef.current !== gen) return
-        setSelectedCVE({ cve_id: cveId })
-      })
+      .then(full => setSelectedCVE(full))
+      .catch(() => setSelectedCVE({ cve_id: cveId }))
   }, [])
-
-  const handleCloseDrawer = useCallback(() => {
-    ignoreCveSelectUntilRef.current = performance.now() + 400
-    cveSelectGenerationRef.current += 1
-    setSelectedCVE(null)
-  }, [])
-
-  const handleSelectCVE = useCallback((cve) => {
-    if (performance.now() < ignoreCveSelectUntilRef.current) return
-    if (selectedCVE?.cve_id === cve.cve_id) return
-    const gen = ++cveSelectGenerationRef.current
-    setSelectedCVE(cve)
-    fetchCVE(cve.cve_id)
-      .then(full => {
-        if (cveSelectGenerationRef.current !== gen) return
-        setSelectedCVE(full)
-      })
-      .catch(() => {})
-  }, [selectedCVE])
 
   const investigationNav = useMemo(() => ({
     setActiveTab,
@@ -281,7 +276,7 @@ export default function App() {
     function handleKey(e) {
       if (e.key === 'Escape') {
         if (aboutOpen)    { setAboutOpen(false);  return }
-        if (selectedCVE)  { handleCloseDrawer(); return }
+        if (selectedCVE)  { setSelectedCVE(null); return }
         if (digestOpen)   { setDigestOpen(false); return }
         return
       }
@@ -313,7 +308,7 @@ export default function App() {
       document.removeEventListener('keydown', handleKey)
       if (gTimer) clearTimeout(gTimer)
     }
-  }, [aboutOpen, selectedCVE, digestOpen, handleGenerateDigest, handleCloseDrawer])
+  }, [aboutOpen, selectedCVE, digestOpen, handleGenerateDigest])
 
   const showFeedShortcuts =
     location.pathname !== '/privacy' &&
@@ -357,8 +352,6 @@ export default function App() {
               refreshSchedule={refreshSchedule}
               onDigestRequest={registerDigestHandler}
               openCveById={openCveById}
-              onSelectCVE={handleSelectCVE}
-              onCloseDrawer={handleCloseDrawer}
             />
           )}
         />
@@ -396,8 +389,6 @@ function AppLayout({
   refreshSchedule,
   onDigestRequest,
   openCveById,
-  onSelectCVE,
-  onCloseDrawer,
 }) {
   const { showPanel, panelExpanded } = useInvestigation()
   const layoutClass = [
@@ -426,7 +417,8 @@ function AppLayout({
                   stats={stats}
                   filters={filters}
                   setFilters={setFilters}
-                  onSelectCVE={onSelectCVE}
+                  selectedCVE={selectedCVE}
+                  setSelectedCVE={setSelectedCVE}
                   digestOpen={digestOpen}
                   setDigestOpen={setDigestOpen}
                   digestCVEs={digestCVEs}
@@ -465,7 +457,7 @@ function AppLayout({
 
             <DetailDrawer
               cve={selectedCVE}
-              onClose={onCloseDrawer}
+              onClose={() => setSelectedCVE(null)}
               onCveReplace={setSelectedCVE}
             />
 
