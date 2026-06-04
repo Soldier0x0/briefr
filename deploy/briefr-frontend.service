@@ -1,5 +1,6 @@
 [Unit]
-Description=BRIEFR Frontend (Vite on 5173)
+# Dev only — production uses nginx + frontend/dist (see briefr-update.sh)
+Description=BRIEFR Frontend dev server (Vite on 5173)
 After=network.target briefr-backend.service
 Wants=briefr-backend.service
 

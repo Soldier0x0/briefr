@@ -113,20 +113,28 @@ sqlite3 /opt/briefr/backend/briefr.db \
   "SELECT COUNT(*) AS total, SUM(epss_score IS NOT NULL) AS with_epss FROM cves;"
 ```
 
-### Production with nginx (not Vite dev)
+### Production deploy (nginx, not Vite)
 
-1. Install nginx: `apt-get install -y nginx`
-2. Set `ALLOWED_ORIGINS` in `backend/.env` to your public URL (e.g. `http://192.168.1.50` or `https://projectjupiter.in`)
-3. Run:
+After initial `deploy/setup.sh`, every update (frontend + backend) is one command as **root**:
 
 ```bash
-git pull origin main
-bash /opt/briefr/deploy/setup-nginx-production.sh
+bash /opt/briefr/deploy/briefr-update.sh
 ```
 
-This builds `frontend/dist`, installs `deploy/nginx-briefr-http.conf` (LAN HTTP), disables `briefr-frontend` (Vite), and proxies `/api/` to the backend on port 8000.
+This script:
 
-For HTTPS + `projectjupiter.in`, use `USE_TLS=1 bash deploy/setup-nginx-production.sh` after certbot certificates exist.
+- Pulls `main` from GitHub
+- Updates Python and npm dependencies
+- Runs `npm run build` → `/opt/briefr/frontend/dist`
+- Installs/refreshes the nginx site (`deploy/nginx-briefr-http.conf` or HTTPS if certbot certs exist)
+- **Stops and disables** `briefr-frontend` (Vite on 5173)
+- Restarts `briefr-backend` and reloads nginx
+
+Set `ALLOWED_ORIGINS` in `backend/.env` to your public URL (e.g. `http://192.168.1.50`, `https://projectjupiter.in`) — not `:5173`.
+
+Force HTTPS config: `USE_TLS=1 bash /opt/briefr/deploy/briefr-update.sh` (requires Let's Encrypt certs for `projectjupiter.in`).
+
+`setup-nginx-production.sh` is an alias for the same update script.
 
 ### Environment Variables
 
