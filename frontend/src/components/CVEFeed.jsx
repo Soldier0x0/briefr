@@ -161,7 +161,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
         }
       }
     }
-  }, [updateShowingRange])
+  }, [])
 
   const loadNextPage = useCallback(() => {
     if (

@@ -29,21 +29,26 @@
 
 .filter-title {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.1em;
-  color: var(--text2);
-}
-
-.filter-count {
+  font-size: 10px;
+  letter-spacing: 0.06em;
   color: var(--text3);
+  font-weight: 400;
 }
 
+.filter-count,
 .filter-showing {
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   color: var(--text3);
   font-weight: 400;
+}
+
+.filter-meta-sep {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  opacity: 0.6;
 }
 
 .filter-stack-clear {
@@ -138,9 +143,7 @@
 
 .filter-action-btns {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
   flex-shrink: 0;
 }
