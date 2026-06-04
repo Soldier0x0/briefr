@@ -29,6 +29,7 @@ from database import (
     get_ioc_cache,
     get_last_updated,
     get_nvd_sync_watermark,
+    get_recent_cve_changes,
     get_related_cves,
     get_techniques_for_cve,
     get_top_techniques,
@@ -45,11 +46,16 @@ from scheduler import run_weekly_mitre_refresh
 from enrichment.ioc import lookup_ioc
 from feeds.osv import fetch_osv_by_cve
 from scheduler import (
+    get_ingest_status,
+    get_ingest_intervals,
     get_next_scheduled_refresh_utc,
     get_refresh_schedule,
     maybe_run_on_startup,
     refresh_in_progress,
     run_daily_refresh,
+    run_epss_sync,
+    run_kev_sync,
+    run_nvd_incremental_sync,
     start_scheduler,
     stop_scheduler,
 )
@@ -184,6 +190,7 @@ async def health(
 
     next_refresh_utc = get_next_scheduled_refresh_utc()
     refresh_schedule = get_refresh_schedule()
+    ingest = get_ingest_status()
 
     response: dict = {
         "status": "ok",
@@ -191,6 +198,10 @@ async def health(
         "last_updated": last_updated,
         "nvd_sync_watermark": nvd_sync_watermark,
         "refresh_in_progress": refresh_in_progress(),
+        "ingest": ingest,
+        "next_nvd_sync_at_utc": next_refresh_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "next_nvd_sync_in_user_tz": _format_time_in_tz(next_refresh_utc, display_tz),
+        "ingest_intervals": get_ingest_intervals(),
         "next_refresh_at_utc": next_refresh_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "next_refresh_in_user_tz": _format_time_in_tz(next_refresh_utc, display_tz),
         "next_refresh_in_scheduler_tz": _format_time_in_tz(
@@ -201,6 +212,34 @@ async def health(
         "server_time_local": _format_time_in_tz(now_utc, display_tz),
     }
     return response
+
+
+@app.get("/api/changes")
+async def cve_changes(
+    limit: int = Query(default=50, ge=1, le=500),
+    field: str | None = Query(default=None, description="Filter: cvss_score, epss_score, is_kev, has_poc"),
+    since_hours: int | None = Query(default=24, ge=1, le=168),
+):
+    """Recent tracked field changes for analyst awareness."""
+    allowed = {"cvss_score", "epss_score", "is_kev", "has_poc"}
+    if field is not None and field not in allowed:
+        raise HTTPException(
+            status_code=400,
+            detail=f"field must be one of: {', '.join(sorted(allowed))}",
+        )
+
+    db = await get_db()
+    try:
+        changes = await get_recent_cve_changes(
+            db,
+            limit=limit,
+            field_name=field,
+            since_hours=since_hours,
+        )
+    finally:
+        await db.close()
+
+    return {"data": changes, "count": len(changes)}
 
 
 @app.get("/api/time")
@@ -296,7 +335,7 @@ async def stats_timeline(
         if row["date"]
     }
 
-    end = date.today()
+    end = datetime.now(timezone.utc).date()
     start = end - timedelta(days=days - 1)
     timeline: list[dict] = []
     cursor = start
@@ -756,6 +795,7 @@ async def get_cve(cve_id: str):
     if not cve_id.upper().startswith("CVE-"):
         raise HTTPException(status_code=400, detail="Invalid CVE ID format")
 
+    cve_key = cve_id.upper()
     db = await get_db()
     try:
         rows = await db.execute_fetchall(
@@ -766,24 +806,38 @@ async def get_cve(cve_id: str):
             FROM cves
             WHERE cve_id = ?
             """,
-            (cve_id.upper(),),
+            (cve_key,),
         )
+        if not rows:
+            raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
+
+        cve = _row_to_cve_dict(rows[0])
+        cve["techniques"] = await get_techniques_for_cve(db, cve_key)
+
+        try:
+            cve["public_exploits"] = await load_sploitus_exploits_for_cve(db, cve_key)
+            await db.commit()
+        except Exception as exc:
+            logger.error("Sploitus load failed for %s: %s", cve_id, exc)
+            cve["public_exploits"] = []
+
+        greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
+        try:
+            cve["greynoise_scans"] = await greynoise_scans_for_cve(
+                db,
+                cve.get("description"),
+                cve.get("source_urls"),
+                greynoise_key,
+            )
+            await db.commit()
+        except Exception as exc:
+            logger.error("GreyNoise scan failed for %s: %s", cve_id, exc)
+            cve["greynoise_scans"] = []
     finally:
         await db.close()
 
-    if not rows:
-        raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
-
-    cve = _row_to_cve_dict(rows[0])
-
-    db2 = await get_db()
     try:
-        cve["techniques"] = await get_techniques_for_cve(db2, cve_id.upper())
-    finally:
-        await db2.close()
-
-    try:
-        osv_data = await fetch_osv_by_cve(cve_id.upper())
+        osv_data = await fetch_osv_by_cve(cve_key)
         cve["osv_packages"] = osv_data
         if not cve.get("summary"):
             for entry in osv_data:
@@ -795,37 +849,11 @@ async def get_cve(cve_id: str):
         logger.error("OSV lookup failed for %s: %s", cve_id, exc)
         cve["osv_packages"] = []
 
-    db3 = await get_db()
     try:
-        cve["public_exploits"] = await load_sploitus_exploits_for_cve(db3, cve_id.upper())
-        await db3.commit()
-    except Exception as exc:
-        logger.error("Sploitus load failed for %s: %s", cve_id, exc)
-        cve["public_exploits"] = []
-    finally:
-        await db3.close()
-
-    try:
-        circl = await fetch_circl_cve(cve_id.upper())
+        circl = await fetch_circl_cve(cve_key)
         cve = merge_circl_into_cve(cve, circl)
     except Exception as exc:
         logger.error("CIRCL enrichment failed for %s: %s", cve_id, exc)
-
-    greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
-    db4 = await get_db()
-    try:
-        cve["greynoise_scans"] = await greynoise_scans_for_cve(
-            db4,
-            cve.get("description"),
-            cve.get("source_urls"),
-            greynoise_key,
-        )
-        await db4.commit()
-    except Exception as exc:
-        logger.error("GreyNoise scan failed for %s: %s", cve_id, exc)
-        cve["greynoise_scans"] = []
-    finally:
-        await db4.close()
 
     return cve
 
@@ -884,10 +912,37 @@ async def manual_refresh():
     if refresh_in_progress():
         raise HTTPException(
             status_code=409,
-            detail="A refresh is already running. Wait for it to finish before starting another.",
+            detail="An ingest job is already running. Wait for it to finish before starting another.",
         )
     asyncio.create_task(run_daily_refresh())
-    return {"status": "ok", "message": "Refresh started in background"}
+    return {
+        "status": "ok",
+        "message": "Full ingest started (NVD, then KEV, then EPSS) in background",
+    }
+
+
+@app.post("/api/refresh/nvd")
+async def manual_nvd_refresh():
+    if refresh_in_progress():
+        raise HTTPException(status_code=409, detail="An ingest job is already running.")
+    asyncio.create_task(run_nvd_incremental_sync())
+    return {"status": "ok", "message": "NVD incremental sync started in background"}
+
+
+@app.post("/api/refresh/kev")
+async def manual_kev_refresh():
+    if refresh_in_progress():
+        raise HTTPException(status_code=409, detail="An ingest job is already running.")
+    asyncio.create_task(run_kev_sync())
+    return {"status": "ok", "message": "KEV metadata sync started in background"}
+
+
+@app.post("/api/refresh/epss")
+async def manual_epss_refresh():
+    if refresh_in_progress():
+        raise HTTPException(status_code=409, detail="An ingest job is already running.")
+    asyncio.create_task(run_epss_sync())
+    return {"status": "ok", "message": "EPSS score sync started in background"}
 
 
 @app.get("/api/kev/deadlines")

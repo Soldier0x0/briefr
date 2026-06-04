@@ -20,21 +20,26 @@ function formatUtcDate(d) {
 
 /**
  * Build a 7 × weekCount grid (rows = Sun–Sat, columns = weeks) for GitHub-style heatmap.
+ * Window ends on today (UTC) so recent days are never truncated by a fixed column count.
  */
 export function buildHeatmapGrid(timeline, displayDays, weekCount) {
   const byDate = Object.fromEntries(timeline.map(row => [row.date, row]))
 
-  const end = parseUtcDate(timeline[timeline.length - 1]?.date || formatUtcDate(new Date()))
+  const end = parseUtcDate(formatUtcDate(new Date()))
   const start = new Date(end)
   start.setUTCDate(start.getUTCDate() - (displayDays - 1))
 
   const gridStart = new Date(start)
   gridStart.setUTCDate(gridStart.getUTCDate() - gridStart.getUTCDay())
 
-  const grid = Array.from({ length: 7 }, () => Array(weekCount).fill(null))
+  const msPerDay = 86400000
+  const daysInGrid = Math.floor((end - gridStart) / msPerDay) + 1
+  const columns = Math.max(weekCount, Math.ceil(daysInGrid / 7))
+
+  const grid = Array.from({ length: 7 }, () => Array(columns).fill(null))
   const cursor = new Date(gridStart)
 
-  for (let col = 0; col < weekCount; col++) {
+  for (let col = 0; col < columns; col++) {
     for (let row = 0; row < 7; row++) {
       const key = formatUtcDate(cursor)
       if (cursor >= start && cursor <= end) {
@@ -53,7 +58,7 @@ export function buildHeatmapGrid(timeline, displayDays, weekCount) {
   return grid
 }
 
+/** Week columns needed for displayDays plus Sunday-alignment padding (max 6 days). */
 export function weekCountForDays(displayDays) {
-  const weeks = Math.ceil(displayDays / 7) + 1
-  return Math.min(13, Math.max(weeks, 1))
+  return Math.ceil((displayDays + 6) / 7)
 }

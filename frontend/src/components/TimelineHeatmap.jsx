@@ -41,7 +41,7 @@ export default function TimelineHeatmap({ filters, onFiltersChange }) {
   const wrapRef = useRef(null)
 
   const displayDays = isMobile ? MOBILE_DAYS : DESKTOP_DAYS
-  const weekCount = isMobile ? weekCountForDays(MOBILE_DAYS) : 13
+  const weekCount = weekCountForDays(displayDays)
   const cellSize = isMobile ? 10 : 12
 
   useEffect(() => {
