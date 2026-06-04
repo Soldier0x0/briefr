@@ -155,6 +155,7 @@ export default function FilterBar({
   return (
     <>
       <div className="filter-bar" role="toolbar" aria-label="CVE feed filters">
+        <div className="filter-bar-top">
         <div className="filter-bar-left">
           <span className="filter-title mono">
             CVE FEED
@@ -219,7 +220,6 @@ export default function FilterBar({
           </span>
         </div>
 
-        <div className="filter-bar-right">
           <div className="filter-action-btns">
             <button
               type="button"
@@ -251,7 +251,9 @@ export default function FilterBar({
               {exporting === 'xlsx' ? 'EXPORTING...' : 'EXPORT XLSX'}
             </button>
           </div>
+        </div>
 
+        <div className="filter-bar-controls">
           <div className="filter-buttons" role="group" aria-label="Quick filters">
             {QUICK_FILTERS.map(f => (
               <button
