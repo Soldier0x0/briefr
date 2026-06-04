@@ -159,6 +159,7 @@ export default function App() {
   const [stats, setStats]                       = useState(null)
   const [selectedCVE, setSelectedCVE]           = useState(null)
   const ignoreCveSelectUntilRef                   = useRef(0)
+  const cveSelectGenerationRef                    = useRef(0)
   const [digestOpen, setDigestOpen]             = useState(false)
   const [digestCVEs, setDigestCVEs]             = useState([])
   const [searchFocusTrigger, setSearchFocusTrigger] = useState(0)
@@ -218,22 +219,34 @@ export default function App() {
   }, [])
 
   const openCveById = useCallback((cveId) => {
+    const gen = ++cveSelectGenerationRef.current
     fetchCVE(cveId)
-      .then(full => setSelectedCVE(full))
-      .catch(() => setSelectedCVE({ cve_id: cveId }))
+      .then(full => {
+        if (cveSelectGenerationRef.current !== gen) return
+        setSelectedCVE(full)
+      })
+      .catch(() => {
+        if (cveSelectGenerationRef.current !== gen) return
+        setSelectedCVE({ cve_id: cveId })
+      })
   }, [])
 
   const handleCloseDrawer = useCallback(() => {
     ignoreCveSelectUntilRef.current = performance.now() + 400
+    cveSelectGenerationRef.current += 1
     setSelectedCVE(null)
   }, [])
 
   const handleSelectCVE = useCallback((cve) => {
     if (performance.now() < ignoreCveSelectUntilRef.current) return
     if (selectedCVE?.cve_id === cve.cve_id) return
+    const gen = ++cveSelectGenerationRef.current
     setSelectedCVE(cve)
     fetchCVE(cve.cve_id)
-      .then(full => setSelectedCVE(full))
+      .then(full => {
+        if (cveSelectGenerationRef.current !== gen) return
+        setSelectedCVE(full)
+      })
       .catch(() => {})
   }, [selectedCVE])
 

@@ -156,9 +156,27 @@ else
 fi
 
 echo ""
-echo "==> Health checks"
-curl -sf "http://127.0.0.1:8000/api/health" >/dev/null && echo "    Backend :8000  OK" || echo "    Backend :8000  FAILED"
-curl -sf "http://127.0.0.1/api/health" >/dev/null && echo "    Nginx /api   OK" || echo "    Nginx /api   FAILED (check nginx site / server_name)"
+echo "==> Health checks (retry up to 15s — backend may still be starting)"
+health_ok=0
+for i in 1 2 3 4 5; do
+  if curl -sf "http://127.0.0.1:8000/api/health" >/dev/null; then
+    health_ok=1
+    break
+  fi
+  sleep 3
+done
+if [ "${health_ok}" -eq 1 ]; then
+  echo "    Backend :8000  OK"
+else
+  echo "    Backend :8000  FAILED"
+  echo "    Diagnose: journalctl -u briefr-backend -n 50 --no-pager"
+  echo "             bash ${INSTALL_DIR}/deploy/check-backend.sh"
+fi
+if curl -sf "http://127.0.0.1/api/health" >/dev/null; then
+  echo "    Nginx /api   OK"
+else
+  echo "    Nginx /api   FAILED (backend must be up; check /etc/nginx/sites-enabled/briefr)"
+fi
 if [ -f "${INSTALL_DIR}/frontend/dist/index.html" ]; then
   echo "    Frontend dist OK"
 fi
