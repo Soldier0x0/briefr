@@ -169,6 +169,11 @@
   cursor: wait;
 }
 
+.export-btn-xlsx {
+  color: var(--text);
+  border-color: var(--border2);
+}
+
 .export-error {
   font-size: 10px;
   color: var(--red);
