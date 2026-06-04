@@ -103,9 +103,31 @@ def exploit_sentence(exploits: list) -> str:
     )
 
 
+_PATCH_IMPERATIVE_PREFIXES = (
+    "apply ", "install ", "update ", "upgrade ", "deploy ",
+    "implement ", "migrate ", "remove ", "disable ",
+)
+
+
+def _patch_action_clause(fix: str) -> str:
+    text = fix.strip()
+    if not text:
+        return ""
+    if text[-1] not in ".!?":
+        text += "."
+    lower = text.lower()
+    if any(lower.startswith(prefix) for prefix in _PATCH_IMPERATIVE_PREFIXES):
+        return text
+    return f"Apply {text}"
+
+
 def patch_sentence(available: bool, fix: Optional[str]) -> str:
     if available and fix:
-        return f"A patch is available. Apply {fix} immediately to remediate."
+        action = _patch_action_clause(fix)
+        return (
+            f"A patch is available. {action} "
+            "Remediate this vulnerability as soon as possible."
+        )
     if available:
         return "A patch is available from the vendor. Apply as soon as possible."
     return (

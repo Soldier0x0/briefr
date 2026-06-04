@@ -63,3 +63,10 @@ def test_parse_cve_mappings_csv():
     csv_text = "CVE ID,Primary Impact,Secondary Impact,Exploitation Technique,Uncategorized\nCVE-2024-0001,T1190,,,\n"
     mapping = parse_cve_mappings_csv(csv_text)
     assert mapping["CVE-2024-0001"] == ["T1190"]
+
+def test_parse_cve_mappings_csv_handles_utf8_bom():
+    csv_text = (
+        "\ufeffCVE ID,Primary Impact,Secondary Impact,Exploitation Technique,Uncategorized\n"
+        "CVE-2024-0001,T1059,,,\n"
+    )
+    assert parse_cve_mappings_csv(csv_text) == {"CVE-2024-0001": ["T1059"]}

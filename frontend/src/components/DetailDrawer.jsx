@@ -781,7 +781,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
                     onClick={() => investigation.pivotToIocFromCve(cve)}
                     aria-label={`Look up indicators from ${cve.cve_id}`}
                   >
-                    Lookup IOC
+                    Lookup in IOC
                   </button>
                 </>
               )}
