@@ -131,6 +131,16 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_atlas_case_studies_date
                 ON atlas_case_studies(date);
 
+            CREATE TABLE IF NOT EXISTS cve_atlas_map (
+                cve_id TEXT NOT NULL,
+                technique_id TEXT NOT NULL,
+                PRIMARY KEY (cve_id, technique_id),
+                FOREIGN KEY (technique_id) REFERENCES atlas_techniques(technique_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_cve_atlas_map_cve
+                ON cve_atlas_map(cve_id);
+
             CREATE TABLE IF NOT EXISTS epss_history (
                 cve_id TEXT NOT NULL,
                 score REAL NOT NULL,
@@ -187,6 +197,8 @@ async def init_db() -> None:
             "ALTER TABLE cves ADD COLUMN has_poc INTEGER DEFAULT 0",
             "ALTER TABLE cves ADD COLUMN has_ai_context INTEGER DEFAULT 0",
             "ALTER TABLE mitre_techniques ADD COLUMN detection TEXT DEFAULT ''",
+            "CREATE TABLE IF NOT EXISTS cve_atlas_map (cve_id TEXT NOT NULL, technique_id TEXT NOT NULL, PRIMARY KEY (cve_id, technique_id), FOREIGN KEY (technique_id) REFERENCES atlas_techniques(technique_id))",
+            "CREATE INDEX IF NOT EXISTS idx_cve_atlas_map_cve ON cve_atlas_map(cve_id)",
         ):
             try:
                 await db.execute(migration)
