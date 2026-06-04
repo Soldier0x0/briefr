@@ -1,7 +1,12 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { copyToClipboard } from '../utils/report.js'
 import { formatAbsolute } from '../utils/timezone.js'
 import { publishedAgeClass } from '../utils/cveAge.js'
+import {
+  calculateRiskScore,
+  getUserAssetProfile,
+  riskScoreColor,
+} from '../utils/riskScore.js'
 import './CVECard.css'
 
 function timeAgo(isoString) {
@@ -65,6 +70,13 @@ export default function CVECard({
       : null
   const products = Array.isArray(cve.affected_products) ? cve.affected_products : []
   const cwes = Array.isArray(cve.cwe_ids) ? cve.cwe_ids : []
+  const userAssets = getUserAssetProfile()
+  const riskResult = useMemo(
+    () => calculateRiskScore(cve, userAssets),
+    [cve, userAssets],
+  )
+  const riskScore = riskResult.score
+  const riskColor = riskScoreColor(riskScore)
 
   function handleClick() {
     if (onSelect) onSelect(cve)
@@ -147,6 +159,14 @@ export default function CVECard({
         </span>
       )}
 
+      <div
+        className="card-risk-score"
+        style={{ color: riskColor }}
+        aria-label={`BRIEFR Risk Score ${riskScore}`}
+      >
+        {Math.round(riskScore)}
+      </div>
+
       {/* Share button — top-right, hover-only */}
       <div className="card-share-wrap">
         <button
@@ -182,7 +202,7 @@ export default function CVECard({
           )}
           {cve.cvss_score != null && (
             <span
-              className={`badge badge-cvss badge-cvss-${cvssClass}`}
+              className={`badge badge-cvss badge-cvss-secondary badge-cvss-${cvssClass}`}
               title={`CVSS score: ${cve.cvss_score} (${cve.severity})`}
             >
               CVSS {cve.cvss_score.toFixed(1)}

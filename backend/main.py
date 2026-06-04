@@ -62,6 +62,7 @@ from scheduler import (
 from ai.summary import generate_executive_summary
 from investigation_summary import generate_investigation_summary
 from tracking import get_ioc_usage_stats, get_usage_stats
+from scoring.risk import calculate_risk_score
 from templates.intelligence import (
     epss_sentence_or_fallback,
     exploit_sentence,
@@ -713,7 +714,7 @@ async def get_cve_sentences(cve_id: str):
 
         kev_rows = await db.execute_fetchall(
             """
-            SELECT due_date, required_action
+            SELECT due_date, required_action, date_added
             FROM kev_deadlines
             WHERE cve_id = ?
             """,
@@ -726,24 +727,113 @@ async def get_cve_sentences(cve_id: str):
         await db.close()
 
     due_date = ""
+    date_added = ""
     fix = ""
     if kev_rows:
         kev_row = dict(kev_rows[0])
         due_date = (kev_row.get("due_date") or "").strip()
+        date_added = (kev_row.get("date_added") or "").strip()
         fix = (kev_row.get("required_action") or "").strip()
 
     exploit_items = [{"type": e.get("type", "poc")} for e in sploitus_exploits]
     if not exploit_items:
         exploit_items = exploits_from_cve(has_poc, source_urls)
     cvss = row.get("cvss_score")
+    if cvss is None:
+        cvss = 0.0
+
+    severity = severity_sentence(row.get("severity") or "", cvss)
+    epss = epss_sentence_or_fallback(row.get("epss_score"), is_kev)
+    kev = kev_sentence(is_kev, due_date or None, date_added or None)
+    exploit = exploit_sentence(exploit_items)
+    patch = patch_sentence(patch_available, fix or None)
 
     return {
         "cve_id": cve_key,
-        "risk": severity_sentence(row.get("severity"), cvss),
-        "exploit_likelihood": epss_sentence_or_fallback(row.get("epss_score"), is_kev),
-        "public_exploits": exploit_sentence(exploit_items),
-        "patch": patch_sentence(patch_available, fix),
-        "kev": kev_sentence(is_kev, due_date),
+        "severity": severity,
+        "epss": epss,
+        "kev": kev,
+        "exploit": exploit,
+        "patch": patch,
+        "risk": severity,
+        "exploit_likelihood": epss,
+        "public_exploits": exploit,
+    }
+
+
+def _parse_user_assets(assets: str | None) -> list | None:
+    if not assets or not str(assets).strip():
+        return None
+    text = str(assets).strip()
+    try:
+        data = json.loads(text)
+        if isinstance(data, list):
+            return data
+    except json.JSONDecodeError:
+        pass
+    return [part.strip() for part in text.split(",") if part.strip()]
+
+
+@app.get("/api/cves/{cve_id}/score")
+async def get_cve_score(
+    cve_id: str,
+    assets: str | None = Query(
+        default=None,
+        description="Optional JSON array of asset strings/objects for profile match",
+    ),
+):
+    if not cve_id.upper().startswith("CVE-"):
+        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+
+    cve_key = cve_id.upper()
+    user_assets = _parse_user_assets(assets)
+
+    db = await get_db()
+    try:
+        rows = await db.execute_fetchall(
+            """
+            SELECT cve_id, description, cvss_score, severity, published, modified,
+                   affected_products, mitre_technique, summary, is_kev, epss_score,
+                   has_poc, patch_available, source_urls, cwe_ids, updated_at
+            FROM cves
+            WHERE cve_id = ?
+            """,
+            (cve_key,),
+        )
+        if not rows:
+            raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
+
+        cve = _row_to_cve_dict(rows[0])
+
+        kev_rows = await db.execute_fetchall(
+            """
+            SELECT due_date, date_added
+            FROM kev_deadlines
+            WHERE cve_id = ?
+            """,
+            (cve_key,),
+        )
+
+        sploitus_exploits = await load_sploitus_exploits_for_cve(db, cve_key)
+        await db.commit()
+    finally:
+        await db.close()
+
+    if kev_rows:
+        kev_row = dict(kev_rows[0])
+        cve["kev_due_date"] = (kev_row.get("due_date") or "").strip()
+        cve["kev_date_added"] = (kev_row.get("date_added") or "").strip()
+
+    exploits = sploitus_exploits or exploits_from_cve(
+        cve.get("has_poc"), cve.get("source_urls")
+    )
+    result = calculate_risk_score(cve, user_assets, exploits)
+
+    return {
+        "cve_id": cve_key,
+        "score": result["score"],
+        "breakdown": result["breakdown"],
+        "components": result["components"],
     }
 
 
