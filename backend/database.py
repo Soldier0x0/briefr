@@ -87,7 +87,8 @@ async def init_db() -> None:
                 description TEXT DEFAULT '',
                 tactic TEXT DEFAULT '',
                 url TEXT NOT NULL,
-                platforms TEXT DEFAULT '[]'
+                platforms TEXT DEFAULT '[]',
+                detection TEXT DEFAULT ''
             );
 
             CREATE TABLE IF NOT EXISTS cve_technique_map (
@@ -183,6 +184,7 @@ async def init_db() -> None:
         for migration in (
             "ALTER TABLE kev_deadlines ADD COLUMN date_added TEXT DEFAULT ''",
             "ALTER TABLE cves ADD COLUMN has_poc INTEGER DEFAULT 0",
+            "ALTER TABLE mitre_techniques ADD COLUMN detection TEXT DEFAULT ''",
         ):
             try:
                 await db.execute(migration)
@@ -881,8 +883,8 @@ async def replace_mitre_techniques(db: aiosqlite.Connection, techniques: list[di
     await db.executemany(
         """
         INSERT INTO mitre_techniques (
-            technique_id, name, description, tactic, url, platforms
-        ) VALUES (?, ?, ?, ?, ?, ?)
+            technique_id, name, description, tactic, url, platforms, detection
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
         [
             (
@@ -892,6 +894,7 @@ async def replace_mitre_techniques(db: aiosqlite.Connection, techniques: list[di
                 t.get("tactic", ""),
                 t["url"],
                 json.dumps(t.get("platforms", [])),
+                t.get("detection", ""),
             )
             for t in techniques
         ],
@@ -920,7 +923,7 @@ async def upsert_cve_technique_pairs(
 async def get_techniques_for_cve(db: aiosqlite.Connection, cve_id: str) -> list[dict]:
     rows = await db.execute_fetchall(
         """
-        SELECT m.technique_id, m.name, m.tactic, m.url, m.description
+        SELECT m.technique_id, m.name, m.tactic, m.url, m.description, m.detection
         FROM cve_technique_map c
         JOIN mitre_techniques m ON c.technique_id = m.technique_id
         WHERE c.cve_id = ?
@@ -934,6 +937,7 @@ async def get_techniques_for_cve(db: aiosqlite.Connection, cve_id: str) -> list[
             "name": r["name"],
             "tactic": r["tactic"],
             "url": r["url"],
+            "detection": (r["detection"] or "").strip(),
             "description": (r["description"] or "").strip(),
         }
         for r in rows
@@ -957,6 +961,7 @@ async def get_top_techniques(db: aiosqlite.Connection, limit: int = 10) -> list[
             "technique_id": r["technique_id"],
             "name": r["name"],
             "tactic": r["tactic"],
+            "cve_count": r["cnt"],
             "count": r["cnt"],
             "url": r["url"],
         }

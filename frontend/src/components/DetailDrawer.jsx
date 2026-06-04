@@ -45,8 +45,53 @@ function techniqueLink(tech) {
   if (tech?.url) return tech.url
   const id = tech?.id || tech?.technique_id
   if (!id) return null
-  const clean = id.replace(/\./g, '/')
-  return `https://attack.mitre.org/techniques/${clean}`
+  const tid = String(id).toUpperCase()
+  if (tid.includes('.')) {
+    const [base, sub] = tid.split('.')
+    return `https://attack.mitre.org/techniques/${base}/${sub}/`
+  }
+  return `https://attack.mitre.org/techniques/${tid}/`
+}
+
+function MitreTechniqueCard({ tech }) {
+  const tid = tech.id || tech.technique_id
+  const href = techniqueLink(tech)
+  const detection = (tech.detection || '').trim()
+  const tactics = (tech.tactic || '')
+    .split(',')
+    .map(t => t.trim())
+    .filter(Boolean)
+
+  return (
+    <article className="mitre-technique-card" role="listitem">
+      <div className="mitre-technique-top">
+        <span className="mitre-technique-id mono">{tid}</span>
+        <div className="mitre-technique-meta">
+          {tactics.map(t => (
+            <span key={t} className="mitre-tactic-badge mono">{t}</span>
+          ))}
+          {href && (
+            <a
+              className="mitre-technique-icon-link"
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`View ${tid} on MITRE ATT&CK (opens new tab)`}
+            >
+              &#x2197;
+            </a>
+          )}
+        </div>
+      </div>
+      <p className="mitre-technique-name">{tech.name}</p>
+      {detection && (
+        <details className="mitre-detection">
+          <summary className="mitre-detection-label mono">// DETECTION</summary>
+          <p className="mitre-detection-text">{detection}</p>
+        </details>
+      )}
+    </article>
+  )
 }
 
 function truncateText(text, maxLen) {
@@ -361,37 +406,16 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, cve, onInvestiga
       </section>
 
       <section className="drawer-section" aria-labelledby="mitre-heading">
-        <h3 id="mitre-heading" className="drawer-section-label">MITRE ATT&CK</h3>
+        <h3 id="mitre-heading" className="drawer-human-label mono">// MITRE ATT&CK</h3>
         {techniques.length === 0 ? (
-          <p className="mitre-empty mono">// No ATT&CK mapping available</p>
+          <p className="mitre-empty mono">
+            // No ATT&CK mapping available for this CVE
+          </p>
         ) : (
           <div className="mitre-techniques" role="list" aria-label="Mapped ATT&CK techniques">
-            {techniques.map(tech => {
-              const tid = tech.id || tech.technique_id
-              const href = techniqueLink(tech)
-              return (
-                <article key={tid} className="mitre-technique-card" role="listitem">
-                  <div className="mitre-technique-top">
-                    <span className="mitre-technique-id mono">{tid}</span>
-                    {tech.tactic && (
-                      <span className="mitre-tactic-badge mono">{tech.tactic}</span>
-                    )}
-                  </div>
-                  <p className="mitre-technique-name">{tech.name}</p>
-                  {href && (
-                    <a
-                      className="mitre-technique-link mono"
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`View ${tid} on attack.mitre.org (opens new tab)`}
-                    >
-                      attack.mitre.org &rarr;
-                    </a>
-                  )}
-                </article>
-              )
-            })}
+            {techniques.map(tech => (
+              <MitreTechniqueCard key={tech.id || tech.technique_id} tech={tech} />
+            ))}
           </div>
         )}
       </section>
