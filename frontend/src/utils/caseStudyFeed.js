@@ -157,25 +157,87 @@ async function fetchAtlasCards() {
   return parseAtlasYamlCaseStudies(text)
 }
 
-function parseAtlasYamlCaseStudies(yamlText) {
+/** Normalize LF, CRLF, and legacy CR line endings to LF for regex parsing. */
+export function normalizeLineEndings(text) {
+  return String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+}
+
+function stripYamlScalar(value) {
+  if (!value) return ''
+  let v = value.trim()
+  if ((v.startsWith("'") && v.endsWith("'")) || (v.startsWith('"') && v.endsWith('"'))) {
+    v = v.slice(1, -1)
+  }
+  return v.trim()
+}
+
+function parseAtlasYamlField(block, fieldNames) {
+  for (const field of fieldNames) {
+    const escaped = field.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const patterns = [
+      new RegExp(`\\n  ${escaped}:\\s*([^\\n]+)`),
+      new RegExp(`\\n    ${escaped}:\\s*([^\\n]+)`),
+    ]
+    for (const re of patterns) {
+      const match = block.match(re)
+      if (match) return stripYamlScalar(match[1])
+    }
+  }
+  return ''
+}
+
+function splitAtlasCaseStudyBlocks(yamlText) {
+  const text = normalizeLineEndings(yamlText)
+  const blocks = []
+
+  const sectionMatch = text.match(/(?:^|\n)case-studies:\s*\n([\s\S]*)$/)
+  if (sectionMatch?.[1]) {
+    for (const block of sectionMatch[1].split(/\n(?=- id:)/)) {
+      if (/object-type:\s*case-study/.test(block)) blocks.push(block)
+    }
+  }
+
+  // Alternate indented list style (older/custom YAML exports).
+  if (!blocks.length && /\n  - object-type: case-study/.test(text)) {
+    blocks.push(...text.split(/\n  - object-type: case-study/).slice(1))
+  }
+
+  return blocks
+}
+
+export function parseAtlasYamlCaseStudies(yamlText) {
   const studies = []
-  const blocks = yamlText.split(/\r?\n  - object-type: case-study/)
-  for (const block of blocks.slice(1)) {
-    const idMatch = block.match(/\r?\n    id:\s*(\S+)/)
-    const nameMatch = block.match(/\r?\n    name:\s*([^\r\n]+)/)
-    const summaryMatch = block.match(/\r?\n    summary:\s*([^\r\n]+)/)
-    const dateMatch = block.match(/\r?\n    date:\s*['"]?([^'"\r\n]+)/)
-    const targetMatch = block.match(/\r?\n    target:\s*([^\r\n]+)/)
+  for (const block of splitAtlasCaseStudyBlocks(yamlText)) {
+    const idMatch =
+      block.match(/^- id:\s*(\S+)/) ||
+      block.match(/\n {2,4}id:\s*(\S+)/)
     const studyId = idMatch?.[1] || ''
+    if (!studyId) continue
+
+    const name = parseAtlasYamlField(block, ['name']) || studyId
+    const summary = parseAtlasYamlField(block, ['summary'])
+    const date = parseAtlasYamlField(block, ['incident-date', 'date', 'created_date'])
+    const target = parseAtlasYamlField(block, ['target'])
+    const actor = parseAtlasYamlField(block, ['actor', 'incident_group'])
+    const techniques = [
+      ...new Set(
+        [...block.matchAll(/(?:^|\n)\s*technique:\s*(AML\.T\d{4}(?:\.\d{3})?)/gim)]
+          .map(m => m[1].toUpperCase()),
+      ),
+    ]
+
     studies.push(
       normalizeAtlasStudy({
         study_id: studyId,
-        name: (nameMatch?.[1] || studyId).replace(/^['"]|['"]$/g, ''),
-        summary: summaryMatch?.[1]?.replace(/^['"]|['"]$/g, '') || '',
-        date: dateMatch?.[1] || '',
-        target: targetMatch?.[1]?.replace(/^['"]|['"]$/g, '') || '',
+        name,
+        summary,
+        date,
+        target,
+        actor,
         url: studyId ? `https://atlas.mitre.org/studies/${studyId}` : 'https://atlas.mitre.org/',
-        techniques: [...block.matchAll(/AML\.T\d{4}(?:\.\d{3})?/gi)].map(m => m[0].toUpperCase()),
+        techniques: techniques.length
+          ? techniques
+          : [...block.matchAll(/AML\.T\d{4}(?:\.\d{3})?/gi)].map(m => m[0].toUpperCase()),
       }),
     )
   }
