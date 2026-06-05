@@ -76,6 +76,7 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
 
   useEffect(() => {
     setSearch(initialSearch)
+    setDebounced(initialSearch)
   }, [initialSearch])
 
   useEffect(() => {
@@ -142,7 +143,11 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
           <button
             type="button"
             className="cs-search-clear mono"
-            onClick={() => { setSearch(''); onClearFilter?.() }}
+            onClick={() => {
+              setSearch('')
+              setDebounced('')
+              onClearFilter?.()
+            }}
             aria-label="Clear search"
           >
             ×
