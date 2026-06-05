@@ -139,6 +139,7 @@ class AiSummaryRequest(BaseModel):
 class IocLookupRequest(BaseModel):
     value: str
     type: str
+    greynoise: bool = False
 
 
 def _row_to_cve_dict(row) -> dict:

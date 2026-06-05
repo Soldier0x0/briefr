@@ -21,7 +21,7 @@ VT_BASE_URL = "https://www.virustotal.com/api/v3"
 ABUSEIPDB_URL = "https://api.abuseipdb.com/api/v2/check"
 
 _DOMAIN_LABEL_RE = re.compile(
-    r"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$"
+    r"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$"
 )
 
 _ERROR_RESULT_TEMPLATE = {

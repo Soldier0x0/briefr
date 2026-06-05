@@ -159,13 +159,13 @@ async function fetchAtlasCards() {
 
 function parseAtlasYamlCaseStudies(yamlText) {
   const studies = []
-  const blocks = yamlText.split(/\n  - object-type: case-study/)
+  const blocks = yamlText.split(/\r?\n  - object-type: case-study/)
   for (const block of blocks.slice(1)) {
-    const idMatch = block.match(/\n    id:\s*(\S+)/)
-    const nameMatch = block.match(/\n    name:\s*(.+)/)
-    const summaryMatch = block.match(/\n    summary:\s*(.+)/)
-    const dateMatch = block.match(/\n    date:\s*['"]?([^'"\n]+)/)
-    const targetMatch = block.match(/\n    target:\s*(.+)/)
+    const idMatch = block.match(/\r?\n    id:\s*(\S+)/)
+    const nameMatch = block.match(/\r?\n    name:\s*([^\r\n]+)/)
+    const summaryMatch = block.match(/\r?\n    summary:\s*([^\r\n]+)/)
+    const dateMatch = block.match(/\r?\n    date:\s*['"]?([^'"\r\n]+)/)
+    const targetMatch = block.match(/\r?\n    target:\s*([^\r\n]+)/)
     const studyId = idMatch?.[1] || ''
     studies.push(
       normalizeAtlasStudy({

@@ -75,7 +75,7 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
 
 
   useEffect(() => {
-    if (initialSearch) setSearch(initialSearch)
+    setSearch(initialSearch)
   }, [initialSearch])
 
   useEffect(() => {
