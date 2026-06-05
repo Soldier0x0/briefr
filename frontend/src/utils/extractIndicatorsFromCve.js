@@ -2,6 +2,8 @@
  * Pull analyst-reviewable IOC candidates from a CVE record (no auto-lookup).
  */
 
+import { DOMAIN_EXTRACT_RE, isValidDomain } from './domainValidation.js'
+
 const DOMAIN_BLOCKLIST = new Set([
   'nist.gov',
   'nvd.nist.gov',
@@ -23,9 +25,6 @@ const DOMAIN_BLOCKLIST = new Set([
 
 const IPV4_RE =
   /\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\b/g
-
-const DOMAIN_RE =
-  /\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}\b/gi
 
 function domainBlocked(host) {
   const h = host.toLowerCase()
@@ -77,8 +76,9 @@ export function extractIndicatorsFromCve(cve, max = 5) {
     for (const ip of ips) {
       if (!push('ip', ip)) break
     }
-    const domains = text.match(DOMAIN_RE) || []
+    const domains = text.match(DOMAIN_EXTRACT_RE) || []
     for (const d of domains) {
+      if (!isValidDomain(d)) continue
       if (!push('domain', d)) break
     }
   }

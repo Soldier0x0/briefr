@@ -8,21 +8,17 @@
 # Users are informed of this in the UI and in the Privacy Policy.
 
 import logging
-import re
 from urllib.parse import urlparse
 
 import httpx
 
+from enrichment.domain_validation import is_valid_domain
 from tracking import record_api_call
 
 logger = logging.getLogger(__name__)
 
 VT_BASE_URL = "https://www.virustotal.com/api/v3"
 ABUSEIPDB_URL = "https://api.abuseipdb.com/api/v2/check"
-
-_DOMAIN_LABEL_RE = re.compile(
-    r"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$"
-)
 
 _ERROR_RESULT_TEMPLATE = {
     "value": "",
@@ -244,7 +240,7 @@ async def lookup_ioc(
         return _error_result(value, ioc_type, f"Unknown IOC type: {ioc_type}")
 
     value = normalize_ioc_value(value, ioc_type)
-    if ioc_type == "domain" and value and not _DOMAIN_LABEL_RE.match(value):
+    if ioc_type == "domain" and value and not is_valid_domain(value):
         return _error_result(value, ioc_type, "Invalid domain format")
 
     result = {

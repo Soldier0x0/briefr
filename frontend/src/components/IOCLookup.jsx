@@ -2,12 +2,12 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { lookupIOC, fetchIOCUsage } from '../api.js'
 import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
 import { extractActorTags } from '../utils/investigationActors.js'
+import { isValidDomain } from '../utils/domainValidation.js'
 import './IOCLookup.css'
 
 // ── Type detection ────────────────────────────────────────
 const IPV4_RE     = /^(\d{1,3}\.){3}\d{1,3}$/
 const HASH_RE     = /^[0-9a-fA-F]{32}$|^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$/
-const DOMAIN_RE   = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/
 
 function extractDomain(val) {
   let v = val.trim()
@@ -39,7 +39,7 @@ function detectType(val) {
   if (IPV4_RE.test(v)) return 'ip'
   if (HASH_RE.test(v)) return 'hash'
   const domain = extractDomain(v)
-  if (DOMAIN_RE.test(domain)) return 'domain'
+  if (isValidDomain(domain)) return 'domain'
   return null
 }
 
