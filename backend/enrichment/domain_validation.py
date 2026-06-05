@@ -1,6 +1,7 @@
 """Validate DNS hostnames for IOC domain lookups (ASCII + IDN/punycode)."""
 
 import re
+from urllib.parse import urlparse
 
 # DNS label: 1-63 chars, alphanumeric + hyphen, no leading/trailing hyphen.
 _LABEL = r"[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?"
@@ -14,6 +15,13 @@ def is_valid_domain(host: str) -> bool:
         return False
 
     host = host.rstrip(".").lower()
+    if ":" in host and not host.startswith("["):
+        try:
+            parsed = urlparse(f"http://{host}")
+            if parsed.hostname:
+                host = parsed.hostname
+        except ValueError:
+            host = host.split(":", 1)[0]
     if not host or len(host) > 253:
         return False
 

@@ -13,14 +13,18 @@ function extractDomain(val) {
   let v = val.trim()
   if (!v) return ''
   try {
+    const bare = v.split('/')[0].split('?')[0].split('#')[0]
     if (v.includes('://') || v.startsWith('//')) {
       const url = v.includes('://') ? v : `https:${v}`
-      v = new URL(url).hostname || v
+      v = new URL(url).hostname || bare
+    } else if (bare.includes(':') && !bare.startsWith('[')) {
+      v = new URL(`http://${bare}`).hostname || bare.split(':')[0]
     } else {
-      v = v.split('/')[0].split('?')[0].split('#')[0]
+      v = bare
     }
   } catch {
     v = v.split('/')[0].split('?')[0].split('#')[0]
+    if (v.includes(':') && !v.startsWith('[')) v = v.split(':')[0]
   }
   return v.replace(/\.$/, '').toLowerCase()
 }

@@ -16,6 +16,7 @@ from enrichment.domain_validation import is_valid_domain
         "example.xn--p1ai",
         "münchen.de",
         "sub-domain.example.org",
+        "example.com:8080",
     ],
 )
 def test_accepts_valid_domains(host):
@@ -37,3 +38,10 @@ def test_accepts_valid_domains(host):
 )
 def test_rejects_invalid_domains(host):
     assert is_valid_domain(host) is False
+
+
+def test_normalize_strips_port_before_validation():
+    from enrichment.ioc import normalize_ioc_value
+
+    assert normalize_ioc_value("example.com:8080/path", "domain") == "example.com"
+    assert normalize_ioc_value("https://api.github-status.com:443/x", "domain") == "api.github-status.com"

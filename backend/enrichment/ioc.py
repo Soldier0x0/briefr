@@ -49,7 +49,12 @@ def normalize_ioc_value(value: str, ioc_type: str) -> str:
             except ValueError:
                 pass
         else:
-            v = v.split("/")[0].split("?")[0].split("#")[0]
+            bare = v.split("/")[0].split("?")[0].split("#")[0]
+            try:
+                parsed = urlparse(f"http://{bare}")
+                v = parsed.hostname or bare.split(":")[0] if ":" in bare else bare
+            except ValueError:
+                v = bare.split(":")[0] if ":" in bare else bare
         v = v.rstrip(".").lower()
     elif ioc_type == "hash":
         v = v.lower()
