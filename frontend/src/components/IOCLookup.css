@@ -121,11 +121,28 @@
 .ioc-controls {
   display: flex;
   align-items: stretch;
+  flex-wrap: wrap;
   gap: 0;
   margin-top: -1px;
   border: 1px solid var(--border);
   border-top: none;
   background: var(--bg3);
+}
+
+.ioc-greynoise-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+  color: var(--text3);
+  padding: 0 14px;
+  border-left: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.ioc-greynoise-opt input {
+  accent-color: var(--accent);
 }
 
 /* Type selector */

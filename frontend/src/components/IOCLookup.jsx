@@ -9,12 +9,37 @@ const IPV4_RE     = /^(\d{1,3}\.){3}\d{1,3}$/
 const HASH_RE     = /^[0-9a-fA-F]{32}$|^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$/
 const DOMAIN_RE   = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$/
 
+function extractDomain(val) {
+  let v = val.trim()
+  if (!v) return ''
+  try {
+    if (v.includes('://') || v.startsWith('//')) {
+      const url = v.includes('://') ? v : `https:${v}`
+      v = new URL(url).hostname || v
+    } else {
+      v = v.split('/')[0].split('?')[0].split('#')[0]
+    }
+  } catch {
+    v = v.split('/')[0].split('?')[0].split('#')[0]
+  }
+  return v.replace(/\.$/, '').toLowerCase()
+}
+
+function normalizeIocValue(val, type) {
+  const v = val.trim()
+  if (!v) return v
+  if (type === 'domain') return extractDomain(v)
+  if (type === 'hash') return v.toLowerCase()
+  return v
+}
+
 function detectType(val) {
   const v = val.trim()
   if (!v) return null
-  if (IPV4_RE.test(v))   return 'ip'
-  if (HASH_RE.test(v))   return 'hash'
-  if (DOMAIN_RE.test(v)) return 'domain'
+  if (IPV4_RE.test(v)) return 'ip'
+  if (HASH_RE.test(v)) return 'hash'
+  const domain = extractDomain(v)
+  if (DOMAIN_RE.test(domain)) return 'domain'
   return null
 }
 
@@ -682,6 +707,7 @@ export default function IOCLookup({ prefill }) {
   const [error, setError]       = useState(null)
   const [copied, setCopied]     = useState(false)
   const [history, setHistory]   = useState([])   // session-only, no localStorage
+  const [includeGreynoise, setIncludeGreynoise] = useState(false)
 
   const detectDebounce = useRef(null)
   const prefillHandled = useRef(null)
@@ -707,16 +733,18 @@ export default function IOCLookup({ prefill }) {
   }, [])
 
   async function runLookup(lookupValue, lookupType, options = {}) {
-    const trimmed = (lookupValue ?? value).trim()
-    const type    = lookupType ?? iocType
-    if (!trimmed) return
+    const raw = (lookupValue ?? value).trim()
+    const type = lookupType ?? iocType
+    if (!raw) return
+    const trimmed = normalizeIocValue(raw, type)
 
     setLoading(true)
     setResult(null)
     setError(null)
 
     try {
-      const data = await lookupIOC(trimmed, type)
+      const useGreynoise = type === 'ip' && (options.greynoise ?? includeGreynoise)
+      const data = await lookupIOC(trimmed, type, { greynoise: useGreynoise })
 
       // Surface backend-level auth/not-found errors
       if (data.error) {
@@ -867,8 +895,8 @@ export default function IOCLookup({ prefill }) {
       <div className="ioc-page-header">
         <h1 className="ioc-page-title">IOC LOOKUP</h1>
         <p className="ioc-page-sub">
-          Enrich indicators against VirusTotal, AbuseIPDB, GreyNoise, MalwareBazaar,
-          and URLhaus. Paste an IP address, file hash, or domain name below.
+          Enrich indicators against VirusTotal, AbuseIPDB, MalwareBazaar, and URLhaus.
+          GreyNoise is optional for IP lookups (50 calls/week). Paste an IP, hash, or domain below.
         </p>
       </div>
 
@@ -907,7 +935,7 @@ export default function IOCLookup({ prefill }) {
           value={value}
           onChange={handleValueChange}
           onKeyDown={handleKeyDown}
-          placeholder="8.8.8.8  /  d41d8cd98f00b204e9800998ecf8427e  /  example.com"
+          placeholder="8.8.8.8  /  d41d8cd98f00b204e9800998ecf8427e  /  example.com or https://example.com/path"
           aria-label="Enter IOC value — IP address, file hash, or domain"
           rows={3}
           autoComplete="off"
@@ -922,6 +950,16 @@ export default function IOCLookup({ prefill }) {
             onChange={setIocType}
             detected={detected}
           />
+          {iocType === 'ip' && (
+            <label className="ioc-greynoise-opt mono">
+              <input
+                type="checkbox"
+                checked={includeGreynoise}
+                onChange={e => setIncludeGreynoise(e.target.checked)}
+              />
+              Include GreyNoise (uses weekly quota)
+            </label>
+          )}
           <button
             className="ioc-lookup-btn"
             onClick={() => runLookup()}

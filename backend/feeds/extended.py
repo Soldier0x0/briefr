@@ -67,8 +67,6 @@ def extract_ipv4_from_cve(description: str | None, source_urls: list | None) -> 
 
 def _normalize_exploit_type(raw_type: str, title: str, source: str) -> str:
     blob = f"{raw_type} {title} {source}".lower()
-    if "metasploit" in blob:
-        return "metasploit"
     if any(h in blob for h in WEAPONISED_HINTS):
         return "weaponised"
     if "poc" in blob or "proof" in blob or "github" in blob:
@@ -282,7 +280,13 @@ async def fetch_urlhaus_indicator(
             return None
         if response.status_code != 200:
             return None
-        data = response.json()
+        try:
+            data = response.json()
+        except (ValueError, TypeError) as exc:
+            logger.error("URLhaus returned non-JSON body: %s", exc)
+            return None
+        if not isinstance(data, dict):
+            return None
         status = (data.get("query_status") or "").lower()
         if status in ("unknown_auth_key", "no_auth_key"):
             logger.warning("URLhaus requires ABUSECH_AUTH_KEY")

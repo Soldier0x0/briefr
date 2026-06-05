@@ -8,6 +8,8 @@
 # Users are informed of this in the UI and in the Privacy Policy.
 
 import logging
+import re
+from urllib.parse import urlparse
 
 import httpx
 
@@ -17,6 +19,10 @@ logger = logging.getLogger(__name__)
 
 VT_BASE_URL = "https://www.virustotal.com/api/v3"
 ABUSEIPDB_URL = "https://api.abuseipdb.com/api/v2/check"
+
+_DOMAIN_LABEL_RE = re.compile(
+    r"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$"
+)
 
 _ERROR_RESULT_TEMPLATE = {
     "value": "",
@@ -30,6 +36,28 @@ _ERROR_RESULT_TEMPLATE = {
     "vt_link": None,
     "error": None,
 }
+
+
+def normalize_ioc_value(value: str, ioc_type: str) -> str:
+    """Normalize user input before cache keys and upstream API calls."""
+    v = (value or "").strip()
+    if not v:
+        return v
+    if ioc_type == "domain":
+        if "://" in v or v.startswith("//"):
+            try:
+                parsed = urlparse(v if "://" in v else f"https:{v}")
+                host = parsed.hostname
+                if host:
+                    v = host
+            except ValueError:
+                pass
+        else:
+            v = v.split("/")[0].split("?")[0].split("#")[0]
+        v = v.rstrip(".").lower()
+    elif ioc_type == "hash":
+        v = v.lower()
+    return v
 
 
 def _error_result(value: str, ioc_type: str, error_msg: str) -> dict:
@@ -209,9 +237,15 @@ async def lookup_ioc(
     greynoise_key: str = "",
     abusech_key: str = "",
     db=None,
+    *,
+    include_greynoise: bool = False,
 ) -> dict:
     if ioc_type not in ("ip", "hash", "domain"):
         return _error_result(value, ioc_type, f"Unknown IOC type: {ioc_type}")
+
+    value = normalize_ioc_value(value, ioc_type)
+    if ioc_type == "domain" and value and not _DOMAIN_LABEL_RE.match(value):
+        return _error_result(value, ioc_type, "Invalid domain format")
 
     result = {
         "value": value,
@@ -280,7 +314,7 @@ async def lookup_ioc(
                 if not result["country"]:
                     result["country"] = parsed.get("country_code")
 
-            if greynoise_key and db is not None:
+            if include_greynoise and greynoise_key and db is not None:
                 from feeds.extended import greynoise_for_ip
                 from templates.intelligence import greynoise_sentence
 
@@ -326,14 +360,29 @@ async def lookup_ioc(
                 attrs = vt_data.get("data", {}).get("attributes", {})
                 result["country"] = attrs.get("country")
                 result["vt_link"] = f"https://www.virustotal.com/gui/domain/{value}"
-            else:
-                result["error"] = "Domain not found in VirusTotal"
+                result["vt_engines"] = _parse_vt_engines(vt_data)
+                result["vt_stats"] = attrs.get("last_analysis_stats") or {}
+            elif vt_key:
+                result["vt_link"] = f"https://www.virustotal.com/gui/domain/{value}"
 
-            from feeds.extended import fetch_urlhaus_indicator
-            from templates.intelligence import urlhaus_sentence
+            uh = None
+            try:
+                from feeds.extended import fetch_urlhaus_indicator
+                from templates.intelligence import urlhaus_sentence
 
-            uh = await fetch_urlhaus_indicator(value, "domain", abusech_key or None)
-            result["urlhaus"] = uh
-            result["urlhaus_sentence"] = urlhaus_sentence(uh)
+                uh = await fetch_urlhaus_indicator(value, "domain", abusech_key or None)
+                result["urlhaus"] = uh
+                result["urlhaus_sentence"] = urlhaus_sentence(uh)
+            except Exception as exc:
+                logger.error("URLhaus enrichment failed for domain %s: %s", value, exc)
+                result["urlhaus_sentence"] = (
+                    "URLhaus lookup failed — other sources may still be available."
+                )
+
+            if not vt_data and not (uh and uh.get("threat_type")):
+                if not vt_key:
+                    result["error"] = "VirusTotal API key not configured"
+                else:
+                    result["error"] = "Domain not found in VirusTotal or URLhaus"
 
     return result

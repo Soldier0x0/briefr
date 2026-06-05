@@ -19,11 +19,8 @@ async function request(path, options = {}) {
   return res.json()
 }
 
-export function fetchStats(aiFrameworks = '') {
-  const qs = new URLSearchParams()
-  if (aiFrameworks) qs.set('ai_frameworks', aiFrameworks)
-  const q = qs.toString()
-  return request(`/stats${q ? `?${q}` : ''}`)
+export function fetchStats() {
+  return request('/stats')
 }
 
 export function fetchStatsTimeline(days = 90) {
@@ -47,8 +44,6 @@ export function fetchCVEs(params = {}) {
   if (params.technique) qs.set('technique', params.technique)
   if (params.published_on) qs.set('published_on', params.published_on)
   if (params.summary_only) qs.set('summary_only', 'true')
-  if (params.ai_context_only) qs.set('ai_context_only', 'true')
-  if (params.ai_profile) qs.set('ai_profile', params.ai_profile)
   if (params.page)      qs.set('page', String(params.page))
   if (params.limit)     qs.set('limit', String(params.limit))
   const query = qs.toString()
@@ -112,11 +107,11 @@ export function fetchIOCUsage() {
   return request('/usage/ioc')
 }
 
-export function lookupIOC(value, type) {
+export function lookupIOC(value, type, { greynoise = false } = {}) {
   return request('/ioc/lookup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ value, type }),
+    body: JSON.stringify({ value, type, greynoise: !!greynoise }),
   })
 }
 

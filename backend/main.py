@@ -21,10 +21,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 from database import (
-    count_ai_ml_profile_alerts,
     get_atlas_case_studies,
-    get_atlas_case_studies_for_cve,
-    get_atlas_techniques_for_cve,
     get_atlas_techniques_grouped,
     get_db,
     get_cve_count,
@@ -65,7 +62,6 @@ from scheduler import (
 from ai.summary import generate_executive_summary
 from investigation_summary import generate_investigation_summary
 from tracking import get_ioc_usage_stats, get_usage_stats
-from scoring.risk import calculate_risk_score
 from templates.intelligence import (
     epss_sentence_or_fallback,
     exploit_sentence,
@@ -156,7 +152,6 @@ def _row_to_cve_dict(row) -> dict:
     d["is_kev"] = bool(d.get("is_kev", 0))
     d["has_poc"] = bool(d.get("has_poc", 0))
     d["patch_available"] = bool(d.get("patch_available", 0))
-    d["has_ai_context"] = bool(d.get("has_ai_context", 0))
     return d
 
 
@@ -274,13 +269,7 @@ async def server_time(
 
 
 @app.get("/api/stats")
-async def stats(
-    ai_frameworks: str | None = Query(
-        default=None,
-        max_length=500,
-        description="Comma-separated AI/ML frameworks from user asset profile",
-    ),
-):
+async def stats():
     db = await get_db()
     try:
         rows_critical = await db.execute_fetchall(
@@ -298,10 +287,6 @@ async def stats(
         rows_24h = await db.execute_fetchall(
             "SELECT COUNT(*) as cnt FROM cves WHERE published >= datetime('now', '-1 day')"
         )
-        ai_ml_alerts = 0
-        if ai_frameworks:
-            frameworks = [f.strip() for f in ai_frameworks.split(",") if f.strip()]
-            ai_ml_alerts = await count_ai_ml_profile_alerts(db, frameworks)
     finally:
         await db.close()
 
@@ -311,7 +296,6 @@ async def stats(
         "kev_count": rows_kev[0]["cnt"] if rows_kev else 0,
         "patched": rows_patched[0]["cnt"] if rows_patched else 0,
         "last_24h": rows_24h[0]["cnt"] if rows_24h else 0,
-        "ai_ml_alerts": ai_ml_alerts,
     }
 
 
@@ -422,7 +406,7 @@ CVE_ORDER_BY = """
 CVE_SELECT = """
     SELECT cve_id, description, cvss_score, severity, published, modified,
            affected_products, mitre_technique, summary, is_kev, epss_score,
-           has_poc, patch_available, has_ai_context, source_urls, cwe_ids, updated_at
+           has_poc, patch_available, source_urls, cwe_ids, updated_at
     FROM cves
 """
 
@@ -447,14 +431,9 @@ def _build_cve_filters(
     technique: str | None = None,
     published_on: str | None = None,
     summary_only: bool = False,
-    ai_context_only: bool = False,
-    ai_profile: str | None = None,
 ) -> tuple[list[str], list, list[str]]:
     conditions: list[str] = []
     params: list = []
-
-    if ai_context_only:
-        conditions.append("has_ai_context = 1")
 
     if severity:
         severity_upper = severity.upper()
@@ -504,14 +483,6 @@ def _build_cve_filters(
         conditions.append("DATE(published) = ?")
         params.append(day)
 
-    if ai_profile:
-        framework_list = [f.strip() for f in ai_profile.split(",") if f.strip()]
-        if framework_list:
-            fw_clause, fw_params = _text_match_or_clause(framework_list)
-            if fw_clause:
-                conditions.append(f"(has_ai_context = 1 AND ({fw_clause}))")
-                params.extend(fw_params)
-
     if summary_only:
         # Enriched plain-English only (CISA KEV short text, OSV, etc.) — not NVD auto-truncate
         conditions.append(
@@ -555,8 +526,6 @@ async def list_cves(
     technique: str | None = Query(default=None, max_length=32),
     published_on: str | None = Query(default=None, max_length=10),
     summary_only: bool = Query(default=False),
-    ai_context_only: bool = Query(default=False),
-    ai_profile: str | None = Query(default=None, max_length=500),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=50),
 ):
@@ -571,8 +540,6 @@ async def list_cves(
         technique,
         published_on,
         summary_only,
-        ai_context_only,
-        ai_profile,
     )
 
     where_clause = ""
@@ -619,8 +586,6 @@ async def export_cves(
     technique: str | None = Query(default=None, max_length=32),
     published_on: str | None = Query(default=None, max_length=10),
     summary_only: bool = Query(default=False),
-    ai_context_only: bool = Query(default=False),
-    ai_profile: str | None = Query(default=None, max_length=500),
     max_rows: int = Query(default=500, ge=1, le=500),
 ):
     """Return up to 500 CVE rows matching filters (for CSV export)."""
@@ -635,8 +600,6 @@ async def export_cves(
         technique,
         published_on,
         summary_only,
-        ai_context_only,
-        ai_profile,
     )
 
     where_clause = ""
@@ -727,7 +690,7 @@ async def get_cve_sentences(cve_id: str):
         rows = await db.execute_fetchall(
             """
             SELECT cve_id, cvss_score, severity, is_kev, epss_score,
-                   has_poc, patch_available, has_ai_context, source_urls
+                   has_poc, patch_available, source_urls
             FROM cves
             WHERE cve_id = ?
             """,
@@ -750,7 +713,7 @@ async def get_cve_sentences(cve_id: str):
 
         kev_rows = await db.execute_fetchall(
             """
-            SELECT due_date, required_action, date_added
+            SELECT due_date, required_action
             FROM kev_deadlines
             WHERE cve_id = ?
             """,
@@ -763,113 +726,24 @@ async def get_cve_sentences(cve_id: str):
         await db.close()
 
     due_date = ""
-    date_added = ""
     fix = ""
     if kev_rows:
         kev_row = dict(kev_rows[0])
         due_date = (kev_row.get("due_date") or "").strip()
-        date_added = (kev_row.get("date_added") or "").strip()
         fix = (kev_row.get("required_action") or "").strip()
 
     exploit_items = [{"type": e.get("type", "poc")} for e in sploitus_exploits]
     if not exploit_items:
         exploit_items = exploits_from_cve(has_poc, source_urls)
     cvss = row.get("cvss_score")
-    if cvss is None:
-        cvss = 0.0
-
-    severity = severity_sentence(row.get("severity") or "", cvss)
-    epss = epss_sentence_or_fallback(row.get("epss_score"), is_kev)
-    kev = kev_sentence(is_kev, due_date or None, date_added or None)
-    exploit = exploit_sentence(exploit_items)
-    patch = patch_sentence(patch_available, fix or None)
 
     return {
         "cve_id": cve_key,
-        "severity": severity,
-        "epss": epss,
-        "kev": kev,
-        "exploit": exploit,
-        "patch": patch,
-        "risk": severity,
-        "exploit_likelihood": epss,
-        "public_exploits": exploit,
-    }
-
-
-def _parse_user_assets(assets: str | None) -> list | None:
-    if not assets or not str(assets).strip():
-        return None
-    text = str(assets).strip()
-    try:
-        data = json.loads(text)
-        if isinstance(data, list):
-            return data
-    except json.JSONDecodeError:
-        pass
-    return [part.strip() for part in text.split(",") if part.strip()]
-
-
-@app.get("/api/cves/{cve_id}/score")
-async def get_cve_score(
-    cve_id: str,
-    assets: str | None = Query(
-        default=None,
-        description="Optional JSON array of asset strings/objects for profile match",
-    ),
-):
-    if not cve_id.upper().startswith("CVE-"):
-        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
-
-    cve_key = cve_id.upper()
-    user_assets = _parse_user_assets(assets)
-
-    db = await get_db()
-    try:
-        rows = await db.execute_fetchall(
-            """
-            SELECT cve_id, description, cvss_score, severity, published, modified,
-                   affected_products, mitre_technique, summary, is_kev, epss_score,
-                   has_poc, patch_available, has_ai_context, source_urls, cwe_ids, updated_at
-            FROM cves
-            WHERE cve_id = ?
-            """,
-            (cve_key,),
-        )
-        if not rows:
-            raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
-
-        cve = _row_to_cve_dict(rows[0])
-
-        kev_rows = await db.execute_fetchall(
-            """
-            SELECT due_date, date_added
-            FROM kev_deadlines
-            WHERE cve_id = ?
-            """,
-            (cve_key,),
-        )
-
-        sploitus_exploits = await load_sploitus_exploits_for_cve(db, cve_key)
-        await db.commit()
-    finally:
-        await db.close()
-
-    if kev_rows:
-        kev_row = dict(kev_rows[0])
-        cve["kev_due_date"] = (kev_row.get("due_date") or "").strip()
-        cve["kev_date_added"] = (kev_row.get("date_added") or "").strip()
-
-    exploits = sploitus_exploits or exploits_from_cve(
-        cve.get("has_poc"), cve.get("source_urls")
-    )
-    result = calculate_risk_score(cve, user_assets, exploits)
-
-    return {
-        "cve_id": cve_key,
-        "score": result["score"],
-        "breakdown": result["breakdown"],
-        "components": result["components"],
+        "risk": severity_sentence(row.get("severity"), cvss),
+        "exploit_likelihood": epss_sentence_or_fallback(row.get("epss_score"), is_kev),
+        "public_exploits": exploit_sentence(exploit_items),
+        "patch": patch_sentence(patch_available, fix),
+        "kev": kev_sentence(is_kev, due_date),
     }
 
 
@@ -928,7 +802,7 @@ async def get_cve(cve_id: str):
             """
             SELECT cve_id, description, cvss_score, severity, published, modified,
                    affected_products, mitre_technique, summary, is_kev, epss_score,
-                   has_poc, patch_available, has_ai_context, source_urls, cwe_ids, updated_at
+                   has_poc, patch_available, source_urls, cwe_ids, updated_at
             FROM cves
             WHERE cve_id = ?
             """,
@@ -939,8 +813,6 @@ async def get_cve(cve_id: str):
 
         cve = _row_to_cve_dict(rows[0])
         cve["techniques"] = await get_techniques_for_cve(db, cve_key)
-        cve["atlas_techniques"] = await get_atlas_techniques_for_cve(db, cve_key)
-        cve["atlas_case_studies"] = await get_atlas_case_studies_for_cve(db, cve_key, limit=2)
 
         try:
             cve["public_exploits"] = await load_sploitus_exploits_for_cve(db, cve_key)
@@ -988,27 +860,33 @@ async def get_cve(cve_id: str):
 
 @app.post("/api/ioc/lookup")
 async def ioc_lookup(body: IocLookupRequest):
-    value = body.value.strip()
+    raw_value = body.value.strip()
     ioc_type = body.type.strip().lower()
 
-    if not value:
+    if not raw_value:
         raise HTTPException(status_code=400, detail="value is required")
     if ioc_type not in ("ip", "hash", "domain"):
         raise HTTPException(status_code=400, detail="type must be ip, hash, or domain")
-    if len(value) > 512:
+    if len(raw_value) > 512:
         raise HTTPException(status_code=400, detail="value too long")
+
+    value = normalize_ioc_value(raw_value, ioc_type)
+    if not value:
+        raise HTTPException(status_code=400, detail="value is required")
 
     vt_key = os.environ.get("VIRUSTOTAL_API_KEY", "")
     abuse_key = os.environ.get("ABUSEIPDB_API_KEY", "")
     greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
     abusech_key = os.environ.get("ABUSECH_AUTH_KEY", "")
+    want_greynoise = bool(body.greynoise) and ioc_type == "ip"
 
     db = await get_db()
     try:
         cached = await get_ioc_cache(db, value)
         if cached is not None:
             cached["cached"] = True
-            if ioc_type == "ip" and greynoise_key:
+            cached["value"] = value
+            if want_greynoise and greynoise_key:
                 from feeds.extended import greynoise_for_ip
 
                 gn = await greynoise_for_ip(db, value, greynoise_key)
@@ -1024,11 +902,17 @@ async def ioc_lookup(body: IocLookupRequest):
             greynoise_key,
             abusech_key,
             db=db,
+            include_greynoise=want_greynoise,
         )
         result["cached"] = False
 
         await set_ioc_cache(db, value, ioc_type, result)
         await db.commit()
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("IOC lookup failed for %s (%s): %s", value, ioc_type, exc)
+        raise HTTPException(status_code=500, detail="IOC lookup failed") from exc
     finally:
         await db.close()
 
