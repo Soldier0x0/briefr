@@ -1,9 +1,5 @@
-import { fetchAtlasCaseStudies } from '../api.js'
-import {
-  ATLAS_YAML_FALLBACK,
-  CASE_STUDY_SOURCES,
-  RSS_PROXY_BASE,
-} from '../config/caseStudySources.js'
+import { fetchAtlasCaseStudies, fetchIncidentNews } from '../api.js'
+import { ATLAS_YAML_FALLBACK } from '../config/caseStudySources.js'
 
 const TECHNIQUE_RE = /\b(T\d{4}(?:\.\d{3})?|AML\.T\d{4}(?:\.\d{3})?)\b/gi
 
@@ -45,67 +41,6 @@ function extractMeta(title, description) {
     if (lower.includes(hint.toLowerCase())) tags.push(hint)
   }
   return { techniques, tags }
-}
-
-function parseRssXml(xmlText, source) {
-  const doc = new DOMParser().parseFromString(xmlText, 'text/xml')
-  if (doc.querySelector('parsererror')) {
-    throw new Error('Invalid RSS XML')
-  }
-
-  const nodes = [
-    ...doc.querySelectorAll('item'),
-    ...doc.querySelectorAll('entry'),
-  ]
-
-  return nodes.map(node => {
-    const title = stripHtml(
-      node.querySelector('title')?.textContent || '',
-    )
-    const linkEl =
-      node.querySelector('link[href]') ||
-      node.querySelector('link') ||
-      node.querySelector('guid')
-    let url = linkEl?.getAttribute?.('href') || linkEl?.textContent || ''
-    url = url.trim()
-    const description = stripHtml(
-      node.querySelector('description')?.textContent ||
-      node.querySelector('content\\:encoded')?.textContent ||
-      node.querySelector('summary')?.textContent ||
-      node.querySelector('content')?.textContent ||
-      '',
-    )
-    const publishedAt =
-      parseRssDate(node.querySelector('pubDate')?.textContent) ||
-      parseRssDate(node.querySelector('published')?.textContent) ||
-      parseRssDate(node.querySelector('updated')?.textContent) ||
-      new Date().toISOString()
-    const { techniques, tags } = extractMeta(title, description)
-
-    return {
-      id: url || `${source.id}:${title}`,
-      source: source.label,
-      sourceId: source.id,
-      title,
-      description: truncateSentences(description || title),
-      publishedAt,
-      url,
-      techniques,
-      tags,
-      kind: 'news',
-    }
-  }).filter(card => card.title && card.url)
-}
-
-// SOURCE: https://api.allorigins.win/raw?url=<RSS_URL>
-export async function fetchRssSource(source) {
-  const proxyUrl = `${RSS_PROXY_BASE}${encodeURIComponent(source.url)}`
-  const res = await fetch(proxyUrl)
-  if (!res.ok) {
-    throw new Error(`${source.label}: HTTP ${res.status}`)
-  }
-  const xml = await res.text()
-  return parseRssXml(xml, source)
 }
 
 function normalizeAtlasStudy(study) {
@@ -245,20 +180,18 @@ export function parseAtlasYamlCaseStudies(yamlText) {
 }
 
 export async function loadCaseStudyFeed() {
-  const rssSources = CASE_STUDY_SOURCES.filter(s => s.type === 'rss')
   const cards = []
   const errors = []
 
-  await Promise.all(
-    rssSources.map(async source => {
-      try {
-        const items = await fetchRssSource(source)
-        cards.push(...items)
-      } catch (err) {
-        errors.push({ source: source.label, message: err.message || 'Failed to load' })
-      }
-    }),
-  )
+  try {
+    const newsRes = await fetchIncidentNews()
+    cards.push(...(newsRes.data || []))
+    for (const err of newsRes.errors || []) {
+      errors.push(err)
+    }
+  } catch (err) {
+    errors.push({ source: 'News feeds', message: err.message || 'Failed to load' })
+  }
 
   try {
     const atlasCards = await fetchAtlasCards()

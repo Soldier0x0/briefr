@@ -95,6 +95,10 @@ export function fetchAtlasCaseStudies(limit = 50) {
   return request(`/atlas/casestudies?limit=${limit}`)
 }
 
+export function fetchIncidentNews() {
+  return request('/case-studies/news')
+}
+
 export function fetchKEVDeadlines(sort = 'recent') {
   return request(`/kev/deadlines?sort=${sort}`)
 }
@@ -107,11 +111,11 @@ export function fetchIOCUsage() {
   return request('/usage/ioc')
 }
 
-export function lookupIOC(value, type, { greynoise = false } = {}) {
+export function lookupIOC(value, type) {
   return request('/ioc/lookup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ value, type, greynoise: !!greynoise }),
+    body: JSON.stringify({ value, type }),
   })
 }
 
