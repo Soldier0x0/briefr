@@ -401,34 +401,31 @@
   color: var(--accent);
 }
 
-.drawer-epss-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+.drawer-epss-header .drawer-section-label,
+.drawer-section > .drawer-section-label#epss-heading {
   margin-bottom: 8px;
-  gap: 12px;
 }
 
-.drawer-epss-header .drawer-section-label {
-  margin-bottom: 0;
+.drawer-epss-static {
+  width: 200px;
 }
 
-.drawer-epss-meta {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-shrink: 0;
+.drawer-epss-track {
+  width: 200px;
+  height: 3px;
+  background: var(--bg3);
+  overflow: hidden;
 }
 
-.drawer-epss-value {
-  font-size: 0.8125rem;
-  letter-spacing: 0.04em;
-  color: var(--text);
+.drawer-epss-fill {
+  height: 100%;
+  transition: width 0.4s ease;
 }
 
-.drawer-epss-trend {
+.drawer-epss-trend-line {
   font-size: 0.6875rem;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
+  margin: 8px 0 0;
 }
 
 .drawer-epss-trend--rising {
@@ -453,10 +450,40 @@
   margin: 0;
 }
 
+.drawer-related-empty-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  text-align: center;
+}
+
 .drawer-related-empty {
   font-size: 0.75rem;
   color: var(--text3);
   margin: 0;
+}
+
+.drawer-related-skeleton-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-related-skeleton {
+  height: 72px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  animation: drawer-skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes drawer-skeleton-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
 }
 
 .drawer-related-list {
@@ -492,8 +519,10 @@
 }
 
 .drawer-related-id {
-  font-size: 0.8125rem;
-  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--white);
+  letter-spacing: 0.02em;
 }
 
 .drawer-related-sev {
@@ -510,7 +539,8 @@
 }
 
 .drawer-related-desc {
-  font-size: 0.8125rem;
+  font-family: var(--font-body);
+  font-size: 12px;
   color: var(--text2);
   line-height: 1.45;
   margin: 0;

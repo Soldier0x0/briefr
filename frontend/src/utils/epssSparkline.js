@@ -2,6 +2,8 @@ const SPARK_W = 200
 const SPARK_H = 40
 const PAD = 3
 
+export const EPSS_SPARKLINE_MIN_DAYS = 7
+
 /** @typedef {{ date: string, score: number }} EpssPoint */
 
 /**
@@ -30,6 +32,11 @@ export function buildEpssSparklinePoints(history, currentScore) {
     .map(p => ({ date: String(p.date).slice(0, 10), score: Number(p.score) }))
 }
 
+/** @param {EpssPoint[]} points */
+export function hasEnoughEpssHistory(points) {
+  return Array.isArray(points) && points.length >= EPSS_SPARKLINE_MIN_DAYS
+}
+
 /**
  * @param {EpssPoint[]} points
  * @returns {string | null} polyline points attribute
@@ -56,7 +63,7 @@ export function epssSparklinePolyline(points) {
 }
 
 /**
- * Rising / Falling / Stable from >5% change over ~7 days.
+ * Rising / Falling / Stable from absolute EPSS change vs ~7 days ago.
  * @param {EpssPoint[]} points
  * @param {number | null | undefined} currentScore
  */
@@ -67,6 +74,7 @@ export function epssTrendLabel(points, currentScore) {
   }
 
   const latest = sorted[sorted.length - 1]
+  const current = latest.score
   const latestMs = Date.parse(`${latest.date}T12:00:00Z`)
   const targetMs = latestMs - 7 * 86400000
 
@@ -84,12 +92,7 @@ export function epssTrendLabel(points, currentScore) {
     return { label: 'Stable', tone: 'stable' }
   }
 
-  const base = baseline.score
-  if (base <= 0) {
-    return { label: 'Stable', tone: 'stable' }
-  }
-
-  const change = (latest.score - base) / base
+  const change = current - baseline.score
   if (change > 0.05) return { label: 'Rising', tone: 'rising' }
   if (change < -0.05) return { label: 'Falling', tone: 'falling' }
   return { label: 'Stable', tone: 'stable' }
