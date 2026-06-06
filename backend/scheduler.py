@@ -42,6 +42,7 @@ _nvd_lock = asyncio.Lock()
 _kev_lock = asyncio.Lock()
 _epss_lock = asyncio.Lock()
 _mitre_refresh_lock = asyncio.Lock()
+_otx_lock = asyncio.Lock()
 
 
 def get_scheduler_timezone() -> str:
@@ -457,6 +458,34 @@ async def maybe_run_on_startup() -> None:
     await maybe_run_mitre_on_startup()
 
 
+async def run_otx_nightly_sync() -> bool:
+    if _otx_lock.locked():
+        logger.warning("OTX nightly correlation already in progress — skipping")
+        return False
+
+    async with _otx_lock:
+        api_key = os.environ.get("OTX_API_KEY", "")
+        if not api_key:
+            logger.info("OTX_API_KEY not set — skipping nightly correlation")
+            return False
+        db = await get_db()
+        try:
+            from feeds.otx import run_otx_nightly_correlation
+
+            stats = await run_otx_nightly_correlation(db, api_key)
+            await db.commit()
+            logger.info(
+                "OTX nightly correlation complete: %d CVEs, %d pulses cached",
+                stats.get("cves", 0),
+                stats.get("pulses", 0),
+            )
+        except Exception as exc:
+            logger.error("OTX nightly correlation failed: %s", exc)
+        finally:
+            await db.close()
+    return True
+
+
 def start_scheduler() -> AsyncIOScheduler:
     global _scheduler
 
@@ -510,17 +539,36 @@ def start_scheduler() -> AsyncIOScheduler:
         max_instances=1,
     )
 
+    otx_hour = int(os.environ.get("OTX_CORRELATION_HOUR", "2"))
+    otx_minute = int(os.environ.get("OTX_CORRELATION_MINUTE", "0"))
+    otx_tz = ZoneInfo(os.environ.get("OTX_CORRELATION_TIMEZONE", "Asia/Kolkata"))
+    scheduler.add_job(
+        run_otx_nightly_sync,
+        trigger=CronTrigger(
+            hour=otx_hour,
+            minute=otx_minute,
+            timezone=otx_tz,
+        ),
+        id="otx_nightly_correlation",
+        name="OTX Nightly Campaign Correlation",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+    )
+
     scheduler.start()
     _scheduler = scheduler
     logger.info(
         "Scheduler started (tz=%s). NVD every %dh; KEV every %dm; EPSS every %dh; "
-        "MITRE+ATLAS weekly Sunday %02d:%02d.",
+        "MITRE+ATLAS weekly Sunday %02d:%02d; OTX nightly %02d:%02d IST.",
         tz_name,
         intervals["nvd_hours"],
         intervals["kev_minutes"],
         intervals["epss_hours"],
         mitre_hour,
         mitre_minute,
+        otx_hour,
+        otx_minute,
     )
     return scheduler
 

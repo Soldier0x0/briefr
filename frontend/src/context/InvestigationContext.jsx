@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react'
 import { extractIndicatorsFromCve } from '../utils/extractIndicatorsFromCve.js'
+import { fetchOTXPulseIocs } from '../api.js'
 
 export const INV_TYPES = {
   CVE: 'cve',
@@ -184,6 +185,23 @@ export function InvestigationProvider({ children, navigation }) {
     })
   }, [ensureCveInThread, navigation])
 
+  const pivotToOtxPulse = useCallback(async (pulse, cve) => {
+    if (!pulse?.pulse_id) return
+    ensureCveInThread(cve, INV_SOURCES.DRAWER)
+    const fromCve = itemsRef.current.find(i => i.type === INV_TYPES.CVE && i.id === cve?.cve_id)
+    try {
+      const res = await fetchOTXPulseIocs(pulse.pulse_id)
+      const indicators = res?.data?.indicators || []
+      if (!indicators.length) return
+      navigation?.setActiveTab?.('ioc')
+      navigation?.setIocPrefill?.({ indicators: indicators.slice(0, 3), value: indicators[0]?.value, fromCveId: cve?.cve_id, pivotFrom: fromCve, trigger: Date.now() })
+    } catch {
+      /* pulse IOC fetch failed */
+    }
+  }, [ensureCveInThread, navigation])
+
+  const openCveById = useCallback((cveId) => { if (!cveId) return; navigation?.openCve?.(cveId) }, [navigation])
+
   const pivotToAtlasActor = useCallback((actorName, fromItem) => {
     const from = fromItem || itemsRef.current[itemsRef.current.length - 1]
     recordItem({
@@ -243,6 +261,8 @@ export function InvestigationProvider({ children, navigation }) {
     recordIocPivot,
     pivotToIoc,
     pivotToIocFromCve,
+    pivotToOtxPulse,
+    openCveById,
     pivotToAtlasActor,
     pivotToCveFromAtlas,
     pivotToTechnique,
@@ -264,6 +284,8 @@ export function InvestigationProvider({ children, navigation }) {
     recordIocPivot,
     pivotToIoc,
     pivotToIocFromCve,
+    pivotToOtxPulse,
+    openCveById,
     pivotToAtlasActor,
     pivotToCveFromAtlas,
     pivotToTechnique,

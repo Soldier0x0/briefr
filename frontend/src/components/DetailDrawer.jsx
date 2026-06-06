@@ -345,9 +345,10 @@ function TabAtlas({ cve, atlasTechniques, atlasCaseStudies }) {
   )
 }
 
-function TabIntel({ techniques, publicExploits, greynoiseScans, cve, onInvestigateIp }) {
+function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, cve, onInvestigateIp, onInvestigatePulse }) {
   const exploits = Array.isArray(publicExploits) ? publicExploits : []
   const scans = Array.isArray(greynoiseScans) ? greynoiseScans : []
+  const pulses = Array.isArray(otxPulses) ? otxPulses : []
 
   return (
     <>
@@ -442,6 +443,37 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, cve, onInvestiga
                 </li>
               )
             })}
+          </ul>
+        )}
+      </section>
+
+
+      <section className="drawer-section" aria-labelledby="campaigns-heading">
+        <div className="drawer-intel-section-head">
+          <h3 id="campaigns-heading" className="drawer-human-label mono">// ACTIVE CAMPAIGNS</h3>
+          <span className="drawer-count-badge mono">{pulses.length}</span>
+        </div>
+        {pulses.length === 0 ? (
+          <p className="drawer-intel-empty mono">// No community intelligence found for this CVE</p>
+        ) : (
+          <ul className="drawer-otx-list">
+            {pulses.map(pulse => (
+              <li key={pulse.pulse_id} className="drawer-otx-item">
+                <p className="drawer-otx-name">{pulse.pulse_name}</p>
+                <div className="drawer-otx-meta">
+                  {pulse.author && <span className="drawer-otx-author mono">{pulse.author}</span>}
+                  {pulse.created_date && <span className="drawer-otx-date mono">{String(pulse.created_date).slice(0, 10)}</span>}
+                  {pulse.ioc_count > 0 && <span className="drawer-otx-ioc-count mono">{pulse.ioc_count} IOCs</span>}
+                </div>
+                <div className="drawer-otx-tags">
+                  {pulse.adversary && <span className="drawer-otx-adversary mono">{pulse.adversary}</span>}
+                  {(pulse.malware_families || []).slice(0, 4).map(fam => <span key={fam} className="drawer-otx-malware mono">{fam}</span>)}
+                </div>
+                {onInvestigatePulse && pulse.pulse_id && (
+                  <button type="button" className="drawer-investigate-btn" onClick={() => onInvestigatePulse(pulse, cve)}>→ Investigate IOCs</button>
+                )}
+              </li>
+            ))}
           </ul>
         )}
       </section>
@@ -907,6 +939,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
               techniques={techniques}
               publicExploits={cve.public_exploits}
               greynoiseScans={cve.greynoise_scans}
+              otxPulses={cve.otx_pulses}
               cve={cve}
               onInvestigateIp={
                 investigation
@@ -918,6 +951,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
                     })
                   : undefined
               }
+              onInvestigatePulse={investigation?.pivotToOtxPulse ? (pulse, cveCtx) => investigation.pivotToOtxPulse(pulse, cveCtx) : undefined}
             />
           )}
           {activeTab === 'detect' && <TabDetect />}

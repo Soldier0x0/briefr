@@ -613,6 +613,13 @@
   margin: 0 0 8px;
 }
 
+
+.ioc-otx-pulse-list { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ioc-otx-pulse-item { font-size: 0.75rem; color: var(--text2); }
+.ioc-otx-cve-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ioc-otx-cve-link { font-size: 0.6875rem; letter-spacing: 0.04em; color: var(--accent); background: var(--bg3); border: 1px solid var(--border2); padding: 3px 8px; cursor: pointer; }
+.ioc-otx-cve-link:hover { border-color: var(--accent); }
+
 .ioc-enrichment-link {
   font-size: 0.6875rem;
   color: var(--accent);

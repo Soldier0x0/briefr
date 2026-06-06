@@ -189,6 +189,35 @@ async def init_db() -> None:
                 ON cve_change_history(detected_at);
             CREATE INDEX IF NOT EXISTS idx_cve_change_history_field
                 ON cve_change_history(field_name);
+
+            CREATE TABLE IF NOT EXISTS otx_cve_pulses (
+                cve_id TEXT NOT NULL,
+                pulse_id TEXT NOT NULL,
+                pulse_name TEXT NOT NULL DEFAULT '',
+                author TEXT DEFAULT '',
+                created_date TEXT DEFAULT '',
+                adversary TEXT DEFAULT '',
+                malware_families TEXT DEFAULT '[]',
+                ioc_count INTEGER DEFAULT 0,
+                tags TEXT DEFAULT '[]',
+                fetched_at TEXT DEFAULT (datetime('now')),
+                PRIMARY KEY (cve_id, pulse_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_otx_cve_pulses_cve
+                ON otx_cve_pulses(cve_id);
+
+            CREATE TABLE IF NOT EXISTS otx_pulse_iocs (
+                pulse_id TEXT NOT NULL,
+                ioc_type TEXT NOT NULL DEFAULT '',
+                ioc_value TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                fetched_at TEXT DEFAULT (datetime('now')),
+                PRIMARY KEY (pulse_id, ioc_type, ioc_value)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_pulse
+                ON otx_pulse_iocs(pulse_id);
         """)
         await db.commit()
 
@@ -931,6 +960,148 @@ async def replace_cve_exploits(
                 for exp in exploits
             ],
         )
+
+
+
+async def replace_otx_cve_pulses(
+    db: aiosqlite.Connection, cve_id: str, pulses: list[dict]
+) -> None:
+    key = cve_id.upper()
+    await db.execute("DELETE FROM otx_cve_pulses WHERE cve_id = ?", (key,))
+    if not pulses:
+        return
+    await db.executemany(
+        """
+        INSERT INTO otx_cve_pulses (
+            cve_id, pulse_id, pulse_name, author, created_date,
+            adversary, malware_families, ioc_count, tags, fetched_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        """,
+        [
+            (
+                key,
+                p.get("pulse_id") or "",
+                p.get("pulse_name") or "",
+                p.get("author") or "",
+                p.get("created_date") or "",
+                p.get("adversary") or "",
+                json.dumps(p.get("malware_families") or []),
+                int(p.get("ioc_count") or 0),
+                json.dumps(p.get("tags") or []),
+            )
+            for p in pulses
+            if p.get("pulse_id")
+        ],
+    )
+
+
+async def store_otx_cve_pulses(
+    db: aiosqlite.Connection, cve_id: str, pulses: list[dict]
+) -> None:
+    key = cve_id.upper()
+    await replace_otx_cve_pulses(db, key, pulses)
+    await set_feed_cache(db, f"otx:cve:{key}", {"pulses": pulses})
+
+
+async def read_otx_cve_pulses(
+    db: aiosqlite.Connection, cve_id: str, max_age_hours: float = 6
+) -> list[dict] | None:
+    rows = await db.execute_fetchall(
+        """
+        SELECT pulse_id, pulse_name, author, created_date, adversary,
+               malware_families, ioc_count, tags
+        FROM otx_cve_pulses
+        WHERE cve_id = ?
+          AND fetched_at > datetime('now', ?)
+        ORDER BY created_date DESC
+        """,
+        (cve_id.upper(), f"-{max_age_hours} hours"),
+    )
+    if not rows:
+        return None
+    return [
+        {
+            "pulse_id": row["pulse_id"],
+            "pulse_name": row["pulse_name"],
+            "author": row["author"],
+            "created_date": row["created_date"],
+            "adversary": row["adversary"],
+            "malware_families": json.loads(row["malware_families"] or "[]"),
+            "ioc_count": row["ioc_count"],
+            "tags": json.loads(row["tags"] or "[]"),
+        }
+        for row in rows
+    ]
+
+
+async def replace_otx_pulse_iocs(
+    db: aiosqlite.Connection, pulse_id: str, iocs: list[dict]
+) -> None:
+    await db.execute("DELETE FROM otx_pulse_iocs WHERE pulse_id = ?", (pulse_id,))
+    if not iocs:
+        return
+    await db.executemany(
+        """
+        INSERT INTO otx_pulse_iocs (
+            pulse_id, ioc_type, ioc_value, description, fetched_at
+        ) VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        [
+            (
+                pulse_id,
+                row.get("ioc_type") or "",
+                row.get("ioc_value") or "",
+                row.get("description") or "",
+            )
+            for row in iocs
+            if row.get("ioc_value")
+        ],
+    )
+
+
+async def store_otx_pulse_iocs(
+    db: aiosqlite.Connection, pulse_id: str, iocs: list[dict]
+) -> None:
+    await replace_otx_pulse_iocs(db, pulse_id, iocs)
+    await set_feed_cache(db, f"otx:pulse:{pulse_id}", {"iocs": iocs})
+
+
+async def read_otx_pulse_iocs(
+    db: aiosqlite.Connection, pulse_id: str, max_age_hours: float = 6
+) -> list[dict] | None:
+    rows = await db.execute_fetchall(
+        """
+        SELECT ioc_type, ioc_value, description
+        FROM otx_pulse_iocs
+        WHERE pulse_id = ?
+          AND fetched_at > datetime('now', ?)
+        """,
+        (pulse_id, f"-{max_age_hours} hours"),
+    )
+    if not rows:
+        return None
+    return [
+        {
+            "ioc_type": row["ioc_type"],
+            "ioc_value": row["ioc_value"],
+            "description": row["description"],
+        }
+        for row in rows
+    ]
+
+
+async def get_recent_cve_ids_for_otx(
+    db: aiosqlite.Connection, days: int = 7
+) -> list[str]:
+    rows = await db.execute_fetchall(
+        """
+        SELECT cve_id FROM cves
+        WHERE DATE(published) >= DATE('now', ?)
+        ORDER BY published DESC
+        """,
+        (f"-{days} days",),
+    )
+    return [row["cve_id"] for row in rows]
 
 
 async def get_cve_count(db: aiosqlite.Connection) -> int:

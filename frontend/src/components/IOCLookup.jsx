@@ -426,7 +426,7 @@ function ScoreRing({ malicious, total, color }) {
   )
 }
 
-function IPResultBody({ result, onViewActorTechniques }) {
+function IPResultBody({ result, onViewActorTechniques, onOpenCve }) {
   const actorTags = extractActorTags(result.tags)
   const { label, color, pct } = verdictInfo(result.malicious_votes ?? 0, result.total_votes ?? 0)
   const abuse = result.abuseipdb || {}
@@ -616,6 +616,8 @@ function IPResultBody({ result, onViewActorTechniques }) {
         </EnrichmentBlock>
       )}
 
+      <OtxEnrichment result={result} onOpenCve={onOpenCve} />
+
       {actorTags.length > 0 && (
         <section className="ioc-enrichment-block ioc-actor-tags" aria-label="Threat actor tags">
           <h3 className="ioc-enrichment-heading mono">// THREAT ACTOR TAGS</h3>
@@ -638,6 +640,34 @@ function IPResultBody({ result, onViewActorTechniques }) {
         </section>
       )}
     </>
+  )
+}
+
+
+function OtxEnrichment({ result, onOpenCve }) {
+  if (!result?.otx_sentence && !result?.otx?.pulse_count) return null
+  const otx = result.otx || {}
+  const pulses = Array.isArray(otx.pulses) ? otx.pulses : []
+  const cves = Array.isArray(otx.related_cves) ? otx.related_cves : []
+  return (
+    <EnrichmentBlock heading="// OTX" sentence={result.otx_sentence}>
+      {pulses.length > 0 && (
+        <ul className="ioc-otx-pulse-list">
+          {pulses.slice(0, 6).map(p => (
+            <li key={p.pulse_id || p.name} className="ioc-otx-pulse-item mono">
+              {p.name}{p.adversary ? ` · ${p.adversary}` : ''}
+            </li>
+          ))}
+        </ul>
+      )}
+      {cves.length > 0 && onOpenCve && (
+        <div className="ioc-otx-cve-links">
+          {cves.map(cveId => (
+            <button key={cveId} type="button" className="ioc-otx-cve-link mono" onClick={() => onOpenCve(cveId)}>{cveId}</button>
+          ))}
+        </div>
+      )}
+    </EnrichmentBlock>
   )
 }
 
@@ -1025,6 +1055,7 @@ export default function IOCLookup({ prefill }) {
           {result.type === 'ip' ? (
             <IPResultBody
               result={result}
+              onOpenCve={investigation?.openCveById}
               onViewActorTechniques={
                 investigation
                   ? (actor) => investigation.pivotToAtlasActor(actor, {
@@ -1093,6 +1124,8 @@ export default function IOCLookup({ prefill }) {
               )}
             </EnrichmentBlock>
           )}
+
+          {result.type !== 'ip' && (<OtxEnrichment result={result} onOpenCve={investigation?.openCveById} />)}
 
           <ActionRow result={result} onCopy={copyReport} copied={copied} />
         </div>
