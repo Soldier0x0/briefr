@@ -9,17 +9,13 @@ import TimelineHeatmap from './components/TimelineHeatmap.jsx'
 import CVEFeed from './components/CVEFeed.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import IOCLookup from './components/IOCLookup.jsx'
-import AIThreats from './components/AIThreats.jsx'
+import CaseStudies from './components/CaseStudies.jsx'
 import DetailDrawer from './components/DetailDrawer.jsx'
 import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import { fetchStats, fetchHealth, fetchCVE } from './api.js'
-import {
-  aiFrameworksQueryParam,
-  hasDeclaredAiAssets,
-} from './utils/aiAssets.js'
 import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 import './components/InvestigationPanel.css'
@@ -36,9 +32,6 @@ const DEFAULT_FILTERS = {
   published_on: '',
   my_stack_only: false,
   summary_only: false,
-  ai_context_only: false,
-  ai_profile: '',
-  ai_profile_match: false,
 }
 
 // ── Last-refreshed helper ─────────────────────────────────
@@ -121,19 +114,6 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
     setFilters(prev => ({ ...prev, ...next }))
   }, [setFilters])
 
-  const handleAiAlertsClick = useCallback(() => {
-    const fw = aiFrameworksQueryParam()
-    handleFiltersChange({
-      severity: null,
-      kev_only: false,
-      poc_only: false,
-      epss_min: null,
-      ai_context_only: true,
-      ai_profile: fw,
-      ai_profile_match: true,
-    })
-  }, [handleFiltersChange])
-
   const handleGenerateDigest = useCallback((cves) => {
     setDigestCVEs(cves)
     setDigestOpen(true)
@@ -153,11 +133,7 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
         onBrief={handleBrief}
         onClearStack={handleClearStack}
       />
-      <StatsRow
-        stats={stats}
-        showAiAlerts={hasDeclaredAiAssets()}
-        onAiAlertsClick={handleAiAlertsClick}
-      />
+      <StatsRow stats={stats} />
       <TimelineHeatmap filters={filters} onFiltersChange={handleFiltersChange} />
       <FeedRefreshStatus
         lastUpdated={lastUpdated}
@@ -220,20 +196,9 @@ export default function App() {
       .catch(() => {})
   }, [timezone])
 
-  const loadStats = useCallback(() => {
-    const fw = aiFrameworksQueryParam()
-    fetchStats(fw).then(setStats).catch(() => {})
+  useEffect(() => {
+    fetchStats().then(setStats).catch(() => {})
   }, [])
-
-  useEffect(() => {
-    loadStats()
-  }, [loadStats])
-
-  useEffect(() => {
-    const onStackChange = () => loadStats()
-    window.addEventListener('briefr-stack-change', onStackChange)
-    return () => window.removeEventListener('briefr-stack-change', onStackChange)
-  }, [loadStats])
 
   useEffect(() => {
     loadHealth()
@@ -457,9 +422,9 @@ function AppLayout({
                 <IOCLookup key={iocSessionKey} prefill={iocPrefill} />
               )}
               {activeTab === 'atlas' && (
-                <AIThreats
-                  actorFilter={atlasActorFilter}
-                  onClearActorFilter={onClearAtlasFilter}
+                <CaseStudies
+                  initialSearch={atlasActorFilter || ''}
+                  onClearFilter={onClearAtlasFilter}
                 />
               )}
             </div>
