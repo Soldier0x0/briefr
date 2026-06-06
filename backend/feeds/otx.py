@@ -72,20 +72,44 @@ def _author_name(raw: dict) -> str:
 
 
 
+
+def _normalize_malware_families(value) -> list[str]:
+    if isinstance(value, str):
+        return [m.strip() for m in value.split(",") if m.strip()]
+    if not isinstance(value, list):
+        return []
+    out: list[str] = []
+    for item in value:
+        if isinstance(item, str) and item.strip():
+            out.append(item.strip())
+        elif isinstance(item, dict):
+            label = item.get("name") or item.get("family") or item.get("id") or ""
+            if str(label).strip():
+                out.append(str(label).strip())
+    return out
+
+
+def _normalize_adversary(value) -> str:
+    if isinstance(value, list):
+        value = value[0] if value else ""
+    if isinstance(value, dict):
+        return str(value.get("name") or value.get("id") or "").strip()
+    return str(value).strip() if value else ""
+
+
+
 def _normalize_pulse(raw: dict) -> dict:
-    malware = raw.get("malware_families") or raw.get("malware_family") or []
-    if isinstance(malware, str):
-        malware = [m.strip() for m in malware.split(",") if m.strip()]
+    malware = _normalize_malware_families(
+        raw.get("malware_families") or raw.get("malware_family") or []
+    )
 
     tags = _parse_json_list(raw.get("tags"))
-    adversary = (
+    adversary = _normalize_adversary(
         raw.get("adversary")
         or raw.get("actor")
         or raw.get("threat_actor")
         or ""
     )
-    if isinstance(adversary, list):
-        adversary = adversary[0] if adversary else ""
 
     return {
         "pulse_id": str(raw.get("id") or raw.get("pulse_id") or ""),
@@ -125,6 +149,7 @@ async def fetch_cve_pulses(cve_id: str, api_key: str) -> list[dict]:
 
     pulse_info = data.get("pulse_info") or {}
     raw_pulses = pulse_info.get("pulses") or []
+    pulse_count = int(pulse_info.get("count") or 0)
     pulses: list[dict] = []
     for raw in raw_pulses:
         if not isinstance(raw, dict):
@@ -133,6 +158,12 @@ async def fetch_cve_pulses(cve_id: str, api_key: str) -> list[dict]:
             pulses.append(_normalize_pulse(raw))
         except Exception as exc:
             logger.warning("OTX pulse normalize failed for %s: %s", cve_id, exc)
+    if pulse_count > 0 and not pulses:
+        logger.error(
+            "OTX returned count=%s but parsed 0 pulses for %s — check pulse schema",
+            pulse_count,
+            cve_id,
+        )
     return pulses
 
 
