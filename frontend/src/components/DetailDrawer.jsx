@@ -345,7 +345,7 @@ function TabAtlas({ cve, atlasTechniques, atlasCaseStudies }) {
   )
 }
 
-function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, cve, onInvestigateIp, onInvestigatePulse }) {
+function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxConfigured, cve, onInvestigateIp, onInvestigatePulse }) {
   const exploits = Array.isArray(publicExploits) ? publicExploits : []
   const scans = Array.isArray(greynoiseScans) ? greynoiseScans : []
   const pulses = Array.isArray(otxPulses) ? otxPulses : []
@@ -394,6 +394,11 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, cve, 
               </li>
             ))}
           </ul>
+        )}
+        {exploits.some(exp => exp.requires_terms_acceptance) && (
+          <p className="drawer-intel-hint mono">
+            // Packet Storm links open in your browser and require a one-time Terms acceptance (once per session).
+          </p>
         )}
       </section>
 
@@ -453,7 +458,9 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, cve, 
           <h3 id="campaigns-heading" className="drawer-human-label mono">// ACTIVE CAMPAIGNS</h3>
           <span className="drawer-count-badge mono">{pulses.length}</span>
         </div>
-        {pulses.length === 0 ? (
+        {otxConfigured === false ? (
+          <p className="drawer-intel-empty mono">// OTX not configured — add OTX_API_KEY to backend .env and restart</p>
+        ) : pulses.length === 0 ? (
           <p className="drawer-intel-empty mono">// No community intelligence found for this CVE</p>
         ) : (
           <ul className="drawer-otx-list">
@@ -940,6 +947,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
               publicExploits={cve.public_exploits}
               greynoiseScans={cve.greynoise_scans}
               otxPulses={cve.otx_pulses}
+              otxConfigured={cve.otx_configured}
               cve={cve}
               onInvestigateIp={
                 investigation
