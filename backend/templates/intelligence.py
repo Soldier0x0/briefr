@@ -185,13 +185,7 @@ def normalize_exploit_reference_url(url: str) -> str:
     normalized = url.strip()
     if "packetstorm" in normalized.lower():
         normalized = re.sub(
-            r"^https?://(?:www\.)?packetstormsecurity\.com",
-            "https://packetstorm.news",
-            normalized,
-            flags=re.I,
-        )
-        normalized = re.sub(
-            r"^http://(?:www\.)?packetstorm\.news",
+            r"^https?://(?:www\.)?packetstorm(?:security)?\.(?:com|news)",
             "https://packetstorm.news",
             normalized,
             flags=re.I,

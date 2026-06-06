@@ -458,7 +458,7 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
           <h3 id="campaigns-heading" className="drawer-human-label mono">// ACTIVE CAMPAIGNS</h3>
           <span className="drawer-count-badge mono">{pulses.length}</span>
         </div>
-        {!otxConfigured ? (
+        {otxConfigured === false ? (
           <p className="drawer-intel-empty mono">// OTX not configured — add OTX_API_KEY to backend .env and restart</p>
         ) : pulses.length === 0 ? (
           <p className="drawer-intel-empty mono">// No community intelligence found for this CVE</p>
