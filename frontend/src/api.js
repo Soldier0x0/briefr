@@ -111,11 +111,15 @@ export function fetchIOCUsage() {
   return request('/usage/ioc')
 }
 
-export function lookupIOC(value, type) {
+export function lookupIOC(value, type, options = {}) {
   return request('/ioc/lookup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ value, type }),
+    body: JSON.stringify({
+      value,
+      type,
+      greynoise: Boolean(options.greynoise),
+    }),
   })
 }
 

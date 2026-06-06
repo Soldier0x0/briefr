@@ -1035,3 +1035,17 @@
   min-width: 0;
   transition: width 0.25s ease;
 }
+
+.ioc-malware-family {
+  font-size: 0.8125rem;
+  color: var(--text2);
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+}
+
+.ioc-malware-family strong {
+  color: var(--red);
+  font-weight: 600;
+}
