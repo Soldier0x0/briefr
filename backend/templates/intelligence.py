@@ -288,6 +288,26 @@ def malwarebazaar_sentence(mb: dict | None) -> str:
     )
 
 
+def otx_sentence(otx: dict | None) -> str:
+    if not otx or not otx.get("pulse_count"):
+        return (
+            "AlienVault OTX has no community pulses referencing this indicator."
+        )
+    count = int(otx.get("pulse_count") or 0)
+    adversary = (otx.get("adversary") or "").strip()
+    families = otx.get("malware_families") or []
+    cves = otx.get("related_cves") or []
+    parts = [f"{count} community pulse{'s' if count != 1 else ''} reference this indicator"]
+    if adversary:
+        parts.append(f"most recent adversary attribution: {adversary}")
+    if families:
+        fam_str = ", ".join(families[:4])
+        parts.append(f"associated malware families: {fam_str}")
+    if cves:
+        parts.append(f"linked CVEs: {', '.join(cves[:5])}")
+    return ". ".join(parts) + "."
+
+
 def urlhaus_sentence(uh: dict | None) -> str:
     if not uh or not uh.get("threat_type"):
         return "URLhaus has no active malware distribution record for this indicator."

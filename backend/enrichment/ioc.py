@@ -240,6 +240,7 @@ async def lookup_ioc(
     db=None,
     *,
     include_greynoise: bool = False,
+    otx_key: str = "",
 ) -> dict:
     if ioc_type not in ("ip", "hash", "domain"):
         return _error_result(value, ioc_type, f"Unknown IOC type: {ioc_type}")
@@ -265,6 +266,8 @@ async def lookup_ioc(
         "greynoise_sentence": None,
         "malwarebazaar_sentence": None,
         "urlhaus_sentence": None,
+        "otx": None,
+        "otx_sentence": None,
         "vt_engines": [],
         "vt_stats": None,
         "vt_network": None,
@@ -395,5 +398,13 @@ async def lookup_ioc(
                     result["error"] = "VirusTotal API key not configured"
                 else:
                     result["error"] = "Domain not found in VirusTotal or URLhaus"
+
+    if otx_key and db is not None:
+        from feeds.otx import lookup_otx_for_ioc
+        from templates.intelligence import otx_sentence
+
+        otx = await lookup_otx_for_ioc(db, value, ioc_type, otx_key)
+        result["otx"] = otx
+        result["otx_sentence"] = otx_sentence(otx)
 
     return result

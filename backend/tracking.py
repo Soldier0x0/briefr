@@ -102,6 +102,15 @@ API_LIMITS: dict[str, dict] = {
         "notes": "CVE enrichment (not IOC Lookup).",
         "docs_url": "https://cve.circl.lu/",
     },
+    "otx": {
+        "name": "AlienVault OTX",
+        "daily_limit": None,
+        "monthly_limit": 10000,
+        "rate_limit": "10,000 req/month (free tier)",
+        "notes": "Campaign correlation via community pulses. BRIEFR caches 6h per CVE/pulse/IOC.",
+        "docs_url": "https://otx.alienvault.com/api",
+        "cache_hours": 6,
+    },
 }
 
 # IOC Lookup tab: display order and optional aggregate of usage counters
@@ -109,6 +118,7 @@ IOC_QUOTA_SERVICES: list[tuple[str, list[str] | None]] = [
     ("virustotal", None),
     ("abuseipdb", None),
     ("greynoise", None),
+    ("otx", None),
     ("malwarebazaar", None),
     ("urlhaus", None),
 ]

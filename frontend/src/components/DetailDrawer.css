@@ -678,6 +678,17 @@
   margin: 0 0 6px;
 }
 
+
+.drawer-otx-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.drawer-otx-item { padding: 12px; background: var(--bg2); border: 1px solid var(--border); }
+.drawer-otx-name { font-size: 0.875rem; color: var(--text); margin: 0 0 8px; line-height: 1.4; }
+.drawer-otx-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.drawer-otx-author { font-size: 0.6875rem; color: var(--text3); }
+.drawer-otx-date, .drawer-otx-ioc-count { font-size: 0.6875rem; color: var(--text3); }
+.drawer-otx-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.drawer-otx-adversary { font-size: 0.625rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); background: var(--red-dim); padding: 2px 8px; }
+.drawer-otx-malware { font-size: 0.625rem; letter-spacing: 0.04em; color: var(--text2); background: var(--bg3); border: 1px solid var(--border2); padding: 2px 8px; }
+
 .drawer-gn-sentence {
   font-size: 0.8125rem;
   color: var(--text2);

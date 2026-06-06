@@ -40,6 +40,7 @@ from feeds.extended import (
     greynoise_scans_for_cve,
     load_public_exploits_for_cve,
 )
+from feeds.otx import load_otx_pulses_for_cve, load_pulse_iocs, top_pulse_ipv4s
 from scheduler import run_weekly_mitre_refresh
 from enrichment.ioc import lookup_ioc
 from feeds.osv import fetch_osv_by_cve
@@ -65,6 +66,7 @@ from templates.intelligence import (
     exploit_sentence,
     exploits_from_cve,
     greynoise_sentence,
+    otx_sentence,
     kev_sentence,
     patch_sentence,
     severity_sentence,
@@ -876,6 +878,14 @@ async def get_cve(cve_id: str):
         except Exception as exc:
             logger.error("GreyNoise scan failed for %s: %s", cve_id, exc)
             cve["greynoise_scans"] = []
+
+        otx_key = os.environ.get("OTX_API_KEY", "")
+        try:
+            cve["otx_pulses"] = await load_otx_pulses_for_cve(db, cve_key, otx_key)
+            await db.commit()
+        except Exception as exc:
+            logger.error("OTX pulse load failed for %s: %s", cve_id, exc)
+            cve["otx_pulses"] = []
     finally:
         await db.close()
 
@@ -907,6 +917,49 @@ async def get_cve(cve_id: str):
     return cve
 
 
+
+@app.get("/api/otx/pulses/{pulse_id}/iocs")
+async def get_otx_pulse_iocs(
+    pulse_id: str,
+    limit: int = Query(default=10, ge=1, le=50),
+):
+    otx_key = os.environ.get("OTX_API_KEY", "")
+    if not otx_key:
+        raise HTTPException(status_code=503, detail="OTX_API_KEY not configured")
+
+    db = await get_db()
+    try:
+        iocs = await load_pulse_iocs(db, pulse_id, otx_key)
+        ips = await top_pulse_ipv4s(db, pulse_id, otx_key, limit=3)
+        await db.commit()
+    finally:
+        await db.close()
+
+    indicators: list[dict[str, str]] = []
+    for ip in ips:
+        indicators.append({"type": "ip", "value": ip})
+    for row in iocs:
+        ioc_t = (row.get("ioc_type") or "").upper()
+        val = row.get("ioc_value") or ""
+        if not val:
+            continue
+        if ioc_t in ("IPV4", "IPV6"):
+            mapped = "ip"
+        elif ioc_t in ("DOMAIN", "HOSTNAME"):
+            mapped = "domain"
+        elif ioc_t.startswith("FILE_HASH") or ioc_t == "FILE":
+            mapped = "hash"
+        else:
+            continue
+        entry = {"type": mapped, "value": val}
+        if entry not in indicators:
+            indicators.append(entry)
+        if len(indicators) >= limit:
+            break
+
+    return {"data": {"iocs": iocs, "ips": ips, "indicators": indicators[:limit]}}
+
+
 @app.post("/api/ioc/lookup")
 async def ioc_lookup(body: IocLookupRequest):
     value = body.value.strip()
@@ -923,6 +976,7 @@ async def ioc_lookup(body: IocLookupRequest):
     abuse_key = os.environ.get("ABUSEIPDB_API_KEY", "")
     greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
     abusech_key = os.environ.get("ABUSECH_AUTH_KEY", "")
+    otx_key = os.environ.get("OTX_API_KEY", "")
 
     db = await get_db()
     try:
@@ -938,6 +992,12 @@ async def ioc_lookup(body: IocLookupRequest):
             elif ioc_type == "ip":
                 cached["greynoise"] = None
                 cached["greynoise_sentence"] = None
+            if otx_key:
+                from feeds.otx import lookup_otx_for_ioc
+
+                otx = await lookup_otx_for_ioc(db, value, ioc_type, otx_key)
+                cached["otx"] = otx
+                cached["otx_sentence"] = otx_sentence(otx)
             return cached
 
         result = await lookup_ioc(
@@ -949,6 +1009,7 @@ async def ioc_lookup(body: IocLookupRequest):
             abusech_key,
             db=db,
             include_greynoise=body.greynoise,
+            otx_key=otx_key,
         )
         result["cached"] = False
 

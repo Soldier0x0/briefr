@@ -123,6 +123,10 @@ export function lookupIOC(value, type, options = {}) {
   })
 }
 
+export function fetchOTXPulseIocs(pulseId, limit = 10) {
+  return request(`/otx/pulses/${encodeURIComponent(pulseId)}/iocs?limit=${limit}`)
+}
+
 export function triggerRefresh() {
   return request('/refresh', { method: 'POST' })
 }
