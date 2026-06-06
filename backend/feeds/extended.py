@@ -92,7 +92,7 @@ def _sploitus_exploit_url(item: dict) -> str:
     return ""
 
 
-async def fetch_sploitus_exploits(cve_id: str, limit: int = 25) -> list[dict]:
+async def fetch_sploitus_exploits(cve_id: str, limit: int = 25) -> list[dict] | None:
     """Search Sploitus for public exploits linked to a CVE."""
     query = cve_id.upper()
     payload = {
@@ -121,15 +121,34 @@ async def fetch_sploitus_exploits(cve_id: str, limit: int = 25) -> list[dict]:
 
         if response.status_code in (422, 499, 429):
             logger.warning("Sploitus rate limit or rejection for %s: %s", query, response.status_code)
-            return []
+            return None
         if response.status_code != 200:
             logger.warning("Sploitus HTTP %s for %s", response.status_code, query)
-            return []
+            return None
 
-        data = response.json()
-        items = data.get("exploits") or []
+        raw = response.json()
+        if isinstance(raw, list):
+            items = raw
+        elif isinstance(raw, dict):
+            items = raw.get("exploits") or raw.get("results") or []
+            if not items and raw.get("exploits_total"):
+                logger.warning(
+                    "Sploitus returned exploits_total=%s but no exploits list for %s",
+                    raw.get("exploits_total"),
+                    query,
+                )
+                return None
+        else:
+            logger.warning("Unexpected Sploitus root payload for %s: %s", query, type(raw).__name__)
+            return None
+        if not isinstance(items, list):
+            logger.warning("Unexpected Sploitus payload type for %s", query)
+            return None
+
         out: list[dict] = []
         for item in items[:limit]:
+            if not isinstance(item, dict):
+                continue
             title = (item.get("title") or "Untitled exploit").strip()
             source = (item.get("type") or item.get("language") or "unknown").strip()
             exploit_type = _normalize_exploit_type(
@@ -150,10 +169,10 @@ async def fetch_sploitus_exploits(cve_id: str, limit: int = 25) -> list[dict]:
         return out
     except httpx.HTTPError as exc:
         logger.error("Sploitus request failed for %s: %s", query, exc)
-        return []
+        return None
     except (json.JSONDecodeError, TypeError) as exc:
         logger.error("Sploitus parse failed for %s: %s", query, exc)
-        return []
+        return None
 
 
 async def fetch_greynoise_ip(ip: str, api_key: str) -> dict | None:
@@ -402,8 +421,36 @@ async def load_sploitus_exploits_for_cve(db, cve_id: str) -> list[dict]:
         return table_rows
 
     exploits = await fetch_sploitus_exploits(cve_id)
-    await store_cve_exploits(db, cve_id, exploits)
-    return exploits
+    if exploits is not None:
+        await store_cve_exploits(db, cve_id, exploits)
+        return exploits
+
+    logger.info("Sploitus request failed or returned no exploits for %s", cve_id.upper())
+    return []
+
+
+async def load_public_exploits_for_cve(
+    db,
+    cve_id: str,
+    *,
+    has_poc: bool = False,
+    source_urls: list | None = None,
+) -> list[dict]:
+    """Sploitus first; fall back to exploit references from NVD source URLs."""
+    sploitus = await load_sploitus_exploits_for_cve(db, cve_id)
+    if sploitus:
+        return sploitus
+
+    from templates.intelligence import refs_to_exploit_cards
+
+    refs = refs_to_exploit_cards(has_poc, source_urls)
+    if refs:
+        logger.info(
+            "Using %d NVD reference exploit(s) for %s (Sploitus had no hits)",
+            len(refs),
+            cve_id.upper(),
+        )
+    return refs
 
 
 async def load_circl_for_cve(db, cve_id: str) -> dict | None:
