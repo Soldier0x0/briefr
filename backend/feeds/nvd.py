@@ -101,6 +101,7 @@ def _parse_cve_item(item: dict) -> dict:
         "published": published,
         "modified": modified,
         "affected_products": affected_products,
+        "cpe_matches": cpe_matches,
         "mitre_technique": extract_mitre_technique(references),
         "summary": None,
         "is_kev": False,

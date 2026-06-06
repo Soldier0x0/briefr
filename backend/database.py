@@ -224,6 +224,7 @@ async def init_db() -> None:
         for migration in (
             "ALTER TABLE kev_deadlines ADD COLUMN date_added TEXT DEFAULT ''",
             "ALTER TABLE cves ADD COLUMN has_poc INTEGER DEFAULT 0",
+            "ALTER TABLE cves ADD COLUMN cpe_matches TEXT DEFAULT '[]'",
             "ALTER TABLE cves ADD COLUMN has_ai_context INTEGER DEFAULT 0",
             "ALTER TABLE mitre_techniques ADD COLUMN detection TEXT DEFAULT ''",
             "CREATE TABLE IF NOT EXISTS cve_atlas_map (cve_id TEXT NOT NULL, technique_id TEXT NOT NULL, PRIMARY KEY (cve_id, technique_id), FOREIGN KEY (technique_id) REFERENCES atlas_techniques(technique_id))",
@@ -296,6 +297,7 @@ _UPSERT_CVE_SQL = """
         published = excluded.published,
         modified = excluded.modified,
         affected_products = excluded.affected_products,
+        cpe_matches = excluded.cpe_matches,
         mitre_technique = COALESCE(excluded.mitre_technique, cves.mitre_technique),
         summary = COALESCE(excluded.summary, cves.summary),
         has_poc = CASE WHEN excluded.has_poc = 1 THEN 1 ELSE cves.has_poc END,
@@ -316,6 +318,7 @@ def _cve_upsert_params(cve: dict) -> dict:
         "published": cve.get("published", ""),
         "modified": cve.get("modified", ""),
         "affected_products": json.dumps(cve.get("affected_products", [])),
+        "cpe_matches": json.dumps(cve.get("cpe_matches", [])),
         "mitre_technique": cve.get("mitre_technique"),
         "summary": cve.get("summary"),
         "is_kev": 1 if cve.get("is_kev") else 0,
@@ -1557,3 +1560,27 @@ async def refresh_all_cve_ai_context(db: aiosqlite.Connection) -> dict[str, int]
 
     await db.commit()
     return {"cves_flagged": flagged, "atlas_links": len(atlas_pairs)}
+
+
+async def match_cves_for_assets(
+    db: aiosqlite.Connection, assets: list[dict]
+) -> dict[str, int]:
+    """Score every CVE in the database against analyst assets (in-memory request only)."""
+    from matching.cpe import score_cve_for_assets
+
+    rows = await db.execute_fetchall(
+        "SELECT cve_id, cpe_matches, affected_products FROM cves"
+    )
+    scores: dict[str, int] = {}
+    for row in rows:
+        cpe_matches = _parse_json_list(row["cpe_matches"])
+        if not cpe_matches:
+            for entry in _parse_json_list(row["affected_products"]):
+                if isinstance(entry, str) and ":" in entry:
+                    vendor, product = entry.split(":", 1)
+                    cpe_matches.append({"vendor": vendor, "product": product})
+
+        score = score_cve_for_assets(cpe_matches, assets)
+        if score > 0:
+            scores[row["cve_id"]] = score
+    return scores

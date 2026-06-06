@@ -34,6 +34,7 @@ from database import (
     get_techniques_for_cve,
     get_top_techniques,
     init_db,
+    match_cves_for_assets,
     set_ioc_cache,
 )
 from feeds.extended import (
@@ -109,6 +110,20 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self'; "
+        "style-src 'self' https://fonts.googleapis.com; "
+        "font-src https://fonts.gstatic.com; "
+        "connect-src 'self'; "
+        "img-src 'self' data:; "
+        "frame-ancestors 'none'; "
+        "object-src 'none'; "
+        "base-uri 'self'"
+    )
+    response.headers["Permissions-Policy"] = (
+        "geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()"
+    )
     return response
 
 
@@ -127,6 +142,17 @@ class InvestigationItemRef(BaseModel):
 class InvestigationSummaryRequest(BaseModel):
     items: list[InvestigationItemRef]
     duration_minutes: int = 1
+
+
+class AssetMatchItem(BaseModel):
+    product: str = Field(..., max_length=200)
+    version: str = Field(default="", max_length=100)
+    vendor: str = Field(default="", max_length=100)
+
+
+class AssetMatchRequest(BaseModel):
+    assets: list[AssetMatchItem] = Field(default_factory=list, max_length=500)
+
 
 
 class AiSummaryRequest(BaseModel):
@@ -593,6 +619,22 @@ async def list_cves(
         "pages": (total + limit - 1) // limit if total > 0 else 0,
         "data": cve_list,
     }
+
+
+@app.post("/api/cves/match")
+async def match_cves_to_assets(body: AssetMatchRequest):
+    """Pre-calculate CVE exposure scores for analyst assets (POST body only)."""
+    assets = [a.model_dump() for a in body.assets if a.product.strip()]
+    if not assets:
+        return {"matches": {}}
+
+    db = await get_db()
+    try:
+        scores = await match_cves_for_assets(db, assets)
+    finally:
+        await db.close()
+
+    return {"matches": scores}
 
 
 @app.get("/api/cves/export")

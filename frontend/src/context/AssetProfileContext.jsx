@@ -1,0 +1,128 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from 'react'
+import AssetWarning from '../components/AssetWarning.jsx'
+import AssetWizard from '../components/AssetWizard.jsx'
+import SessionLockOverlay from '../components/SessionLockOverlay.jsx'
+import { fetchCveAssetMatch } from '../api.js'
+import { useInactivityTimeout } from '../hooks/useInactivityTimeout.js'
+import { parseProfileFile, profileToMatchAssets } from '../utils/assetProfileIo.js'
+
+const AssetProfileContext = createContext(null)
+
+export function AssetProfileProvider({ children }) {
+  const [profile, setProfile] = useState(null)
+  const [matchScores, setMatchScores] = useState({})
+  const [isLocked, setIsLocked] = useState(false)
+  const [flow, setFlow] = useState(null)
+
+  const isLoaded = profile !== null && !isLocked
+  const assetAware = isLoaded
+
+  const clearProfile = useCallback(() => {
+    setProfile(null)
+    setMatchScores({})
+    setIsLocked(false)
+    setFlow(null)
+  }, [])
+
+  const lockSession = useCallback(() => {
+    setProfile(null)
+    setMatchScores({})
+    setIsLocked(true)
+    setFlow(null)
+  }, [])
+
+  const applyProfile = useCallback(async (nextProfile) => {
+    setProfile(nextProfile)
+    setIsLocked(false)
+    setFlow(null)
+    const assets = profileToMatchAssets(nextProfile)
+    if (!assets.length) {
+      setMatchScores({})
+      return
+    }
+    try {
+      const res = await fetchCveAssetMatch(assets)
+      setMatchScores(res?.matches || {})
+    } catch {
+      setMatchScores({})
+    }
+  }, [])
+
+  const openProfileFlow = useCallback(() => {
+    setFlow('warning')
+  }, [])
+
+  const loadProfileFromFile = useCallback(async (file) => {
+    const parsed = await parseProfileFile(file)
+    await applyProfile(parsed)
+  }, [applyProfile])
+
+  useInactivityTimeout({
+    enabled: isLoaded,
+    onTimeout: lockSession,
+  })
+
+  const value = useMemo(
+    () => ({
+      profile,
+      matchScores,
+      isLoaded,
+      assetAware,
+      isLocked,
+      openProfileFlow,
+      clearProfile,
+      loadProfileFromFile,
+      getMatchScore: (cveId) => matchScores[cveId] || 0,
+    }),
+    [
+      profile,
+      matchScores,
+      isLoaded,
+      assetAware,
+      isLocked,
+      openProfileFlow,
+      clearProfile,
+      loadProfileFromFile,
+    ],
+  )
+
+  return (
+    <AssetProfileContext.Provider value={value}>
+      {children}
+      {flow === 'warning' && (
+        <AssetWarning
+          onAccept={() => setFlow('wizard')}
+          onSkip={() => setFlow(null)}
+          onClose={() => setFlow(null)}
+        />
+      )}
+      {flow === 'wizard' && (
+        <AssetWizard
+          onComplete={applyProfile}
+          onCancel={() => setFlow(null)}
+        />
+      )}
+      {isLocked && (
+        <SessionLockOverlay onLoadProfile={loadProfileFromFile} />
+      )}
+    </AssetProfileContext.Provider>
+  )
+}
+
+export function useAssetProfile() {
+  const ctx = useContext(AssetProfileContext)
+  if (!ctx) {
+    throw new Error('useAssetProfile must be used within AssetProfileProvider')
+  }
+  return ctx
+}
+
+export function useAssetProfileOptional() {
+  return useContext(AssetProfileContext)
+}

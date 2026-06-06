@@ -8,6 +8,7 @@ import FilterBar from './FilterBar.jsx'
 import CVECard from './CVECard.jsx'
 import ScrollToTop from './ScrollToTop.jsx'
 import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
+import { useAssetProfileOptional } from '../context/AssetProfileContext.jsx'
 import './CVEFeed.css'
 
 const PAGE_LIMIT = 20
@@ -24,8 +25,23 @@ function SkeletonCard() {
   )
 }
 
+function sortByExposure(cves, getMatchScore) {
+  return [...cves].sort((a, b) => {
+    const diff = getMatchScore(b.cve_id) - getMatchScore(a.cve_id)
+    if (diff !== 0) return diff
+    return (b.cvss_score ?? 0) - (a.cvss_score ?? 0)
+  })
+}
+
 export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGenerateDigest, onDigestRequest, searchFocusTrigger, timezone }) {
   const investigation = useInvestigationOptional()
+  const assetCtx = useAssetProfileOptional()
+  const assetAware = Boolean(assetCtx?.isLoaded)
+  const getMatchScore = assetCtx?.getMatchScore ?? (() => 0)
+  const assetAwareRef = useRef(assetAware)
+  const getMatchScoreRef = useRef(getMatchScore)
+  assetAwareRef.current = assetAware
+  getMatchScoreRef.current = getMatchScore
   const [cves, setCves] = useState([])
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(null)
@@ -54,7 +70,6 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   const initialLoadDoneRef = useRef(false)
   const sentinelVisibleRef = useRef(false)
   const filtersInitialMountRef = useRef(true)
-  const pendingScrollRestoreRef = useRef(null)
 
   useEffect(() => {
     let stored = null
@@ -141,8 +156,11 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
       const nextHasMore = pageNum < data.pages && data.data.length > 0
       setHasMore(nextHasMore)
       hasMoreRef.current = nextHasMore
+      const pageRows = assetAwareRef.current
+        ? sortByExposure(data.data, getMatchScoreRef.current)
+        : data.data
       setCves(prev => {
-        const next = append ? [...prev, ...data.data] : data.data
+        const next = append ? [...prev, ...pageRows] : pageRows
         requestAnimationFrame(() => updateShowingRange())
         return next
       })
@@ -193,14 +211,17 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     }
   }, [cves, updateShowingRange])
 
-  // Reset and reload when filters change; preserve scroll position (do not jump to top)
-  useEffect(() => {
-    if (filtersInitialMountRef.current) {
-      filtersInitialMountRef.current = false
-    } else {
-      pendingScrollRestoreRef.current = window.scrollY
-    }
+  function scrollFeedToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
+  useEffect(() => {
+    if (!assetAware || !cves.length) return
+    setCves(prev => sortByExposure(prev, getMatchScore))
+  }, [assetCtx?.matchScores, assetAware])
+
+  // Reset and reload when filters change; scroll to page top (keeps Hero/stack visible)
+  useEffect(() => {
     pageRef.current = 1
     setPage(1)
     setCves([])
@@ -212,18 +233,14 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     sentinelVisibleRef.current = false
     setShowingRange(null)
 
+    if (filtersInitialMountRef.current) {
+      filtersInitialMountRef.current = false
+    } else {
+      scrollFeedToTop()
+    }
+
     loadPage(1, false)
   }, [filters, loadPage])
-
-  useEffect(() => {
-    const restoreY = pendingScrollRestoreRef.current
-    if (restoreY == null || loading || cves.length === 0) return
-    pendingScrollRestoreRef.current = null
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: restoreY, behavior: 'auto' })
-      updateShowingRange()
-    })
-  }, [loading, cves.length, updateShowingRange])
 
   // Arrow-key card navigation (inactive while search is focused)
   useEffect(() => {
@@ -412,6 +429,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
                 ? (c) => investigation.pivotToIocFromCve(c)
                 : undefined
             }
+            exposureScore={assetAware ? getMatchScore(cve.cve_id) : 0}
           />
         ))}
       </div>

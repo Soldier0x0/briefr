@@ -54,6 +54,15 @@ export function fetchCVE(cveId) {
   return request(`/cves/${encodeURIComponent(cveId)}`)
 }
 
+/** Asset profile CPE match — sole API endpoint that receives asset inventory. */
+export function fetchCveAssetMatch(assets) {
+  return request('/cves/match', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ assets }),
+  })
+}
+
 export function fetchCVESentences(cveId) {
   return request(`/cves/${encodeURIComponent(cveId)}/sentences`)
 }
