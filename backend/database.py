@@ -848,6 +848,66 @@ async def store_cve_exploits(
     )
 
 
+async def read_cve_exploits_from_db(
+    db: aiosqlite.Connection, cve_id: str, max_age_hours: float = 6
+) -> list[dict] | None:
+    rows = await db.execute_fetchall(
+        """
+        SELECT title, type, source, url, published_date
+        FROM cve_exploits
+        WHERE cve_id = ?
+          AND fetched_at > datetime('now', ?)
+        ORDER BY published_date DESC
+        """,
+        (cve_id.upper(), f"-{max_age_hours} hours"),
+    )
+    if not rows:
+        return None
+    return [
+        {
+            "title": row["title"],
+            "type": row["type"],
+            "source": row["source"],
+            "url": row["url"],
+            "published_date": row["published_date"],
+        }
+        for row in rows
+    ]
+
+
+async def update_cve_source_urls(
+    db: aiosqlite.Connection, cve_id: str, source_urls: list[str]
+) -> None:
+    await db.execute(
+        """
+        UPDATE cves
+        SET source_urls = ?, updated_at = datetime('now')
+        WHERE cve_id = ?
+        """,
+        (json.dumps(source_urls), cve_id.upper()),
+    )
+
+
+async def get_cve_ids_missing_circl_capec(
+    db: aiosqlite.Connection, limit: int = 100
+) -> list[str]:
+    rows = await db.execute_fetchall(
+        """
+        SELECT c.cve_id
+        FROM cves c
+        LEFT JOIN feed_cache fc
+          ON fc.cache_key = 'circl:' || c.cve_id
+         AND fc.cached_at > datetime('now', '-168 hours')
+         AND json_array_length(json_extract(fc.result, '$.capec')) > 0
+        WHERE fc.cache_key IS NULL
+        ORDER BY c.is_kev DESC, c.has_poc DESC, c.published DESC
+        LIMIT ?
+        """,
+        (limit,),
+    )
+    return [row["cve_id"] for row in rows]
+
+
 async def replace_cve_exploits(
     db: aiosqlite.Connection, cve_id: str, exploits: list[dict]
 ) -> None:

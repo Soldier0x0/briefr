@@ -1063,6 +1063,12 @@ export default function IOCLookup({ prefill }) {
             </EnrichmentBlock>
           )}
 
+          {result.type === 'hash' && result.malwarebazaar?.malware_family && (
+            <p className="ioc-malware-family mono" role="status">
+              Malware family: <strong>{result.malwarebazaar.malware_family}</strong>
+            </p>
+          )}
+
           {result.type === 'hash' && result.malwarebazaar_sentence && (
             <EnrichmentBlock
               heading="// MALWAREBAZAAR"

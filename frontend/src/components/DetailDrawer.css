@@ -615,15 +615,20 @@
   border: 1px solid var(--border2);
 }
 
-.drawer-exploit-type--weaponised,
-.drawer-exploit-type--weaponized {
+.drawer-exploit-type--metasploit {
   color: var(--red);
   border-color: var(--red-dim);
 }
 
-.drawer-exploit-type--poc {
+.drawer-exploit-type--weaponised,
+.drawer-exploit-type--weaponized {
   color: var(--amber);
   border-color: var(--amber-dim);
+}
+
+.drawer-exploit-type--poc {
+  color: var(--text3);
+  border-color: var(--border2);
 }
 
 .drawer-exploit-source,

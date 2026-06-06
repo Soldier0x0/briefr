@@ -339,10 +339,15 @@ async def lookup_ioc(
             else:
                 result["error"] = "Hash not found in VirusTotal"
 
-            from feeds.extended import fetch_malwarebazaar_hash
+            from feeds.extended import lookup_malwarebazaar
             from templates.intelligence import malwarebazaar_sentence
 
-            mb = await fetch_malwarebazaar_hash(value, abusech_key or None)
+            if db is not None:
+                mb = await lookup_malwarebazaar(db, value, abusech_key or None)
+            else:
+                from feeds.extended import fetch_malwarebazaar_hash
+
+                mb = await fetch_malwarebazaar_hash(value, abusech_key or None)
             result["malwarebazaar"] = mb
             result["malwarebazaar_sentence"] = malwarebazaar_sentence(mb)
 
@@ -368,10 +373,15 @@ async def lookup_ioc(
 
             uh = None
             try:
-                from feeds.extended import fetch_urlhaus_indicator
+                from feeds.extended import lookup_urlhaus
                 from templates.intelligence import urlhaus_sentence
 
-                uh = await fetch_urlhaus_indicator(value, "domain", abusech_key or None)
+                if db is not None:
+                    uh = await lookup_urlhaus(db, value, "domain", abusech_key or None)
+                else:
+                    from feeds.extended import fetch_urlhaus_indicator
+
+                    uh = await fetch_urlhaus_indicator(value, "domain", abusech_key or None)
                 result["urlhaus"] = uh
                 result["urlhaus_sentence"] = urlhaus_sentence(uh)
             except Exception as exc:

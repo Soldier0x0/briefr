@@ -28,6 +28,7 @@ MALWAREBazaar_URL = "https://mb-api.abuse.ch/api/v1/"
 URLHAUS_URL_API = "https://urlhaus-api.abuse.ch/v1/url/"
 URLHAUS_HOST_API = "https://urlhaus-api.abuse.ch/v1/host/"
 CIRCL_CVE_URL = "https://cve.circl.lu/api/cve"
+CIRCL_CACHE_HOURS = 168  # 7 days
 
 CHROME_UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -67,9 +68,14 @@ def extract_ipv4_from_cve(description: str | None, source_urls: list | None) -> 
 
 def _normalize_exploit_type(raw_type: str, title: str, source: str) -> str:
     blob = f"{raw_type} {title} {source}".lower()
-    if any(h in blob for h in WEAPONISED_HINTS):
+    if "metasploit" in blob:
+        return "metasploit"
+    if any(
+        h in blob
+        for h in ("exploitdb", "exploit-db", "weaponized", "weaponised", "in-the-wild")
+    ):
         return "weaponised"
-    if "poc" in blob or "proof" in blob or "github" in blob:
+    if "poc" in blob or "proof" in blob or "github" in blob or "packetstorm" in blob:
         return "poc"
     return "poc"
 
@@ -382,14 +388,153 @@ def merge_circl_into_cve(cve: dict, circl: dict | None) -> dict:
 
 
 async def load_sploitus_exploits_for_cve(db, cve_id: str) -> list[dict]:
-    from database import get_cached_cve_exploits, store_cve_exploits
+    from database import get_cached_cve_exploits, read_cve_exploits_from_db, store_cve_exploits
 
     cached = await get_cached_cve_exploits(db, cve_id)
     if cached is not None:
         return cached
+
+    table_rows = await read_cve_exploits_from_db(db, cve_id, max_age_hours=6)
+    if table_rows is not None:
+        from database import set_feed_cache
+
+        await set_feed_cache(db, f"sploitus:{cve_id.upper()}", {"exploits": table_rows})
+        return table_rows
+
     exploits = await fetch_sploitus_exploits(cve_id)
     await store_cve_exploits(db, cve_id, exploits)
     return exploits
+
+
+async def load_circl_for_cve(db, cve_id: str) -> dict | None:
+    from database import get_feed_cache, set_feed_cache
+
+    cache_key = f"circl:{cve_id.upper()}"
+    cached = await get_feed_cache(db, cache_key, max_age_hours=CIRCL_CACHE_HOURS)
+    if cached is not None:
+        return cached
+    result = await fetch_circl_cve(cve_id)
+    if result is not None:
+        await set_feed_cache(db, cache_key, result)
+    return result
+
+
+async def enrich_cve_circl(db, cve: dict) -> dict:
+    """Merge CIRCL data when CAPEC or supplemental refs are not yet present."""
+    cve_id = (cve.get("cve_id") or "").upper()
+    if not cve_id:
+        return cve
+
+    existing_capec = cve.get("capec_ids") or []
+    if existing_capec:
+        return cve
+
+    from database import get_feed_cache
+
+    cache_key = f"circl:{cve_id}"
+    cached = await get_feed_cache(db, cache_key, max_age_hours=CIRCL_CACHE_HOURS)
+    circl = cached if cached is not None else await load_circl_for_cve(db, cve_id)
+    merged = merge_circl_into_cve(cve, circl)
+
+    extra = (merged.get("circl") or {}).get("extra_reference_count", 0)
+    if extra:
+        from database import update_cve_source_urls
+
+        await update_cve_source_urls(db, cve_id, merged.get("source_urls") or [])
+
+    return merged
+
+
+async def enrich_cves_extended(db, cve_ids: list[str], *, max_per_run: int = 40) -> dict[str, int]:
+    """Scheduler pass: Sploitus for PoC/KEV CVEs; CIRCL for entries missing CAPEC."""
+    stats = {"sploitus": 0, "circl": 0}
+    if not cve_ids:
+        return stats
+
+    from database import get_cve_ids_missing_circl_capec
+
+    sploitus_ids: list[str] = []
+    for cve_id in cve_ids[:max_per_run]:
+        rows = await db.execute_fetchall(
+            "SELECT has_poc, is_kev FROM cves WHERE cve_id = ?",
+            (cve_id.upper(),),
+        )
+        if rows and (rows[0]["has_poc"] or rows[0]["is_kev"]):
+            sploitus_ids.append(cve_id.upper())
+
+    for cve_id in sploitus_ids:
+        try:
+            await load_sploitus_exploits_for_cve(db, cve_id)
+            stats["sploitus"] += 1
+        except Exception as exc:
+            logger.warning("Scheduler Sploitus failed for %s: %s", cve_id, exc)
+
+    circl_ids = await get_cve_ids_missing_circl_capec(db, limit=max_per_run)
+    for cve_id in circl_ids:
+        try:
+            rows = await db.execute_fetchall(
+                "SELECT cve_id, source_urls, cwe_ids FROM cves WHERE cve_id = ?",
+                (cve_id.upper(),),
+            )
+            if not rows:
+                continue
+            row = rows[0]
+            import json
+
+            urls = row["source_urls"] or "[]"
+            if isinstance(urls, str):
+                urls = json.loads(urls)
+            cwe = row["cwe_ids"] or "[]"
+            if isinstance(cwe, str):
+                cwe = json.loads(cwe)
+            cve = {
+                "cve_id": row["cve_id"],
+                "source_urls": urls,
+                "cwe_ids": cwe,
+            }
+            await enrich_cve_circl(db, cve)
+            stats["circl"] += 1
+        except Exception as exc:
+            logger.warning("Scheduler CIRCL failed for %s: %s", cve_id, exc)
+
+    return stats
+
+
+async def lookup_malwarebazaar(
+    db, file_hash: str, abusech_auth_key: str | None = None
+) -> dict | None:
+    from database import get_feed_cache, set_feed_cache
+
+    cache_key = f"malwarebazaar:{file_hash.lower()}"
+    cached = await get_feed_cache(db, cache_key, max_age_hours=24)
+    if cached is not None:
+        return cached
+    result = await fetch_malwarebazaar_hash(file_hash, abusech_auth_key)
+    if result is not None:
+        await set_feed_cache(db, cache_key, result)
+    return result
+
+
+async def lookup_urlhaus(
+    db,
+    value: str,
+    ioc_type: str = "domain",
+    abusech_auth_key: str | None = None,
+) -> dict | None:
+    from database import get_feed_cache, set_feed_cache
+
+    cache_key = f"urlhaus:{ioc_type}:{value.lower()}"
+    cached = await get_feed_cache(db, cache_key, max_age_hours=6)
+    if cached is not None:
+        return cached
+    result = await fetch_urlhaus_indicator(value, ioc_type, abusech_auth_key)
+    if result is not None:
+        await set_feed_cache(db, cache_key, result)
+    return result
+
+
+async def lookup_greynoise(db, ip: str, api_key: str) -> dict | None:
+    return await greynoise_for_ip(db, ip, api_key)
 
 
 async def greynoise_for_ip(db, ip: str, api_key: str) -> dict | None:

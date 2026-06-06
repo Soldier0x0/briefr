@@ -37,10 +37,8 @@ from database import (
     set_ioc_cache,
 )
 from feeds.extended import (
-    fetch_circl_cve,
     greynoise_scans_for_cve,
     load_sploitus_exploits_for_cve,
-    merge_circl_into_cve,
 )
 from scheduler import run_weekly_mitre_refresh
 from enrichment.ioc import lookup_ioc
@@ -865,8 +863,14 @@ async def get_cve(cve_id: str):
         cve["osv_packages"] = []
 
     try:
-        circl = await fetch_circl_cve(cve_key)
-        cve = merge_circl_into_cve(cve, circl)
+        db = await get_db()
+        try:
+            from feeds.extended import enrich_cve_circl
+
+            cve = await enrich_cve_circl(db, cve)
+            await db.commit()
+        finally:
+            await db.close()
     except Exception as exc:
         logger.error("CIRCL enrichment failed for %s: %s", cve_id, exc)
 
@@ -895,12 +899,15 @@ async def ioc_lookup(body: IocLookupRequest):
         cached = await get_ioc_cache(db, value)
         if cached is not None:
             cached["cached"] = True
-            if ioc_type == "ip" and greynoise_key:
+            if ioc_type == "ip" and body.greynoise and greynoise_key:
                 from feeds.extended import greynoise_for_ip
 
                 gn = await greynoise_for_ip(db, value, greynoise_key)
                 cached["greynoise"] = gn
                 cached["greynoise_sentence"] = greynoise_sentence(gn)
+            elif ioc_type == "ip":
+                cached["greynoise"] = None
+                cached["greynoise_sentence"] = None
             return cached
 
         result = await lookup_ioc(
@@ -911,6 +918,7 @@ async def ioc_lookup(body: IocLookupRequest):
             greynoise_key,
             abusech_key,
             db=db,
+            include_greynoise=body.greynoise,
         )
         result["cached"] = False
 

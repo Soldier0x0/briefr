@@ -244,6 +244,7 @@ function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading, e
 
 function exploitTypeLabel(type) {
   const t = (type || '').toLowerCase()
+  if (t === 'metasploit') return 'Metasploit'
   if (t === 'weaponised' || t === 'weaponized') return 'Weaponised'
   return 'PoC'
 }

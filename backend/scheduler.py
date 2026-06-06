@@ -182,6 +182,15 @@ async def _run_nvd_incremental_sync() -> None:
                 poc_marked = await backfill_has_poc(db, updated_ids)
             else:
                 stripped = filled = poc_marked = 0
+            if updated_ids:
+                from feeds.extended import enrich_cves_extended
+
+                ext_stats = await enrich_cves_extended(db, updated_ids)
+                logger.info(
+                    "Extended enrichment: Sploitus %d, CIRCL %d",
+                    ext_stats.get("sploitus", 0),
+                    ext_stats.get("circl", 0),
+                )
             await db.commit()
             logger.info(
                 "NVD post-process: stripped %d summaries, %d display fields, %d PoC flags",
