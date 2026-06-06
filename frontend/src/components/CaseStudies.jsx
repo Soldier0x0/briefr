@@ -193,57 +193,33 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
         </section>
 
         <aside className="cs-sidebar" aria-label="Sidebar highlights">
-          <section className="cs-sidebar-block" aria-labelledby="cs-atlas-heading">
+          <section className="cs-sidebar-section" aria-labelledby="cs-atlas-heading">
             <h2 id="cs-atlas-heading" className="cs-section-label mono">LATEST FROM ATLAS</h2>
             {loading ? (
               <SkeletonCards count={3} />
             ) : atlasLatest.length === 0 ? (
               <p className="cs-sidebar-empty mono">// No ATLAS case studies loaded</p>
             ) : (
-              <ul className="cs-sidebar-list">
+              <div className="cs-feed">
                 {atlasLatest.map(card => (
-                  <li key={card.id}>
-                    <a
-                      className="cs-sidebar-link"
-                      href={card.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <span className="cs-sidebar-link-title">{card.title}</span>
-                      <span className="cs-sidebar-link-meta mono">
-                        {card.target || 'AI system'} · {relativeDate(card.publishedAt)}
-                      </span>
-                    </a>
-                  </li>
+                  <FeedCard key={card.id} card={card} query={debounced} />
                 ))}
-              </ul>
+              </div>
             )}
           </section>
 
-          <section className="cs-sidebar-block" aria-labelledby="cs-campaign-heading">
+          <section className="cs-sidebar-section" aria-labelledby="cs-campaign-heading">
             <h2 id="cs-campaign-heading" className="cs-section-label mono">ACTIVE CAMPAIGNS</h2>
             {loading ? (
               <SkeletonCards count={3} />
             ) : campaigns.length === 0 ? (
               <p className="cs-sidebar-empty mono">// No campaign headlines in current feeds</p>
             ) : (
-              <ul className="cs-sidebar-list">
+              <div className="cs-feed">
                 {campaigns.map(card => (
-                  <li key={card.id}>
-                    <a
-                      className="cs-sidebar-link"
-                      href={card.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <span className="cs-sidebar-link-title">{card.title}</span>
-                      <span className="cs-sidebar-link-meta mono">
-                        {card.source} · {relativeDate(card.publishedAt)}
-                      </span>
-                    </a>
-                  </li>
+                  <FeedCard key={card.id} card={card} query={debounced} />
                 ))}
-              </ul>
+              </div>
             )}
           </section>
         </aside>

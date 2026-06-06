@@ -222,49 +222,8 @@
   gap: 28px;
 }
 
-.cs-sidebar-block {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  padding: 16px;
-}
-
-.cs-sidebar-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.cs-sidebar-link {
-  display: block;
-  text-decoration: none;
-  color: var(--text);
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.cs-sidebar-list li:last-child .cs-sidebar-link {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.cs-sidebar-link:hover .cs-sidebar-link-title {
-  color: var(--accent);
-}
-
-.cs-sidebar-link-title {
-  display: block;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  margin-bottom: 4px;
-}
-
-.cs-sidebar-link-meta {
-  font-size: 0.625rem;
-  color: var(--text3);
-  letter-spacing: 0.03em;
+.cs-sidebar-section {
+  min-width: 0;
 }
 
 .cs-skeleton-list {
