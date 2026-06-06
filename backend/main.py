@@ -643,6 +643,20 @@ async def atlas_techniques_grouped():
     return {"data": groups, "source": "MITRE ATLAS"}
 
 
+@app.get("/api/case-studies/news")
+async def case_studies_news():
+    """Cybersecurity news RSS feeds for the Case Studies tab (server-side fetch)."""
+    from feeds.incident_news import fetch_all_incident_news
+
+    db = await get_db()
+    try:
+        cards, errors = await fetch_all_incident_news(db)
+        await db.commit()
+    finally:
+        await db.close()
+    return {"data": cards, "errors": errors}
+
+
 @app.get("/api/atlas/casestudies")
 async def atlas_case_studies(
     limit: int = Query(default=50, ge=1, le=100),
@@ -861,33 +875,27 @@ async def get_cve(cve_id: str):
 
 @app.post("/api/ioc/lookup")
 async def ioc_lookup(body: IocLookupRequest):
-    raw_value = body.value.strip()
+    value = body.value.strip()
     ioc_type = body.type.strip().lower()
 
-    if not raw_value:
+    if not value:
         raise HTTPException(status_code=400, detail="value is required")
     if ioc_type not in ("ip", "hash", "domain"):
         raise HTTPException(status_code=400, detail="type must be ip, hash, or domain")
-    if len(raw_value) > 512:
+    if len(value) > 512:
         raise HTTPException(status_code=400, detail="value too long")
-
-    value = normalize_ioc_value(raw_value, ioc_type)
-    if not value:
-        raise HTTPException(status_code=400, detail="value is required")
 
     vt_key = os.environ.get("VIRUSTOTAL_API_KEY", "")
     abuse_key = os.environ.get("ABUSEIPDB_API_KEY", "")
     greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
     abusech_key = os.environ.get("ABUSECH_AUTH_KEY", "")
-    want_greynoise = bool(body.greynoise) and ioc_type == "ip"
 
     db = await get_db()
     try:
         cached = await get_ioc_cache(db, value)
         if cached is not None:
             cached["cached"] = True
-            cached["value"] = value
-            if want_greynoise and greynoise_key:
+            if ioc_type == "ip" and greynoise_key:
                 from feeds.extended import greynoise_for_ip
 
                 gn = await greynoise_for_ip(db, value, greynoise_key)
@@ -903,17 +911,11 @@ async def ioc_lookup(body: IocLookupRequest):
             greynoise_key,
             abusech_key,
             db=db,
-            include_greynoise=want_greynoise,
         )
         result["cached"] = False
 
         await set_ioc_cache(db, value, ioc_type, result)
         await db.commit()
-    except HTTPException:
-        raise
-    except Exception as exc:
-        logger.exception("IOC lookup failed for %s (%s): %s", value, ioc_type, exc)
-        raise HTTPException(status_code=500, detail="IOC lookup failed") from exc
     finally:
         await db.close()
 
