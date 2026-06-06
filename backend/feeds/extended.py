@@ -126,10 +126,26 @@ async def fetch_sploitus_exploits(cve_id: str, limit: int = 25) -> list[dict]:
             logger.warning("Sploitus HTTP %s for %s", response.status_code, query)
             return []
 
-        data = response.json()
-        items = data.get("exploits") or []
+        raw = response.json()
+        items: list = []
+        if isinstance(raw, list):
+            items = raw
+        elif isinstance(raw, dict):
+            items = raw.get("exploits") or raw.get("results") or []
+            if not items and raw.get("exploits_total"):
+                logger.warning(
+                    "Sploitus returned exploits_total=%s but no exploits list for %s",
+                    raw.get("exploits_total"),
+                    query,
+                )
+        if not isinstance(items, list):
+            logger.warning("Unexpected Sploitus payload type for %s", query)
+            items = []
+
         out: list[dict] = []
         for item in items[:limit]:
+            if not isinstance(item, dict):
+                continue
             title = (item.get("title") or "Untitled exploit").strip()
             source = (item.get("type") or item.get("language") or "unknown").strip()
             exploit_type = _normalize_exploit_type(

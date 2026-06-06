@@ -367,6 +367,11 @@ def _text_match_or_clause(terms: list[str]) -> tuple[str, list]:
     return "(" + " OR ".join(parts) + ")", bind
 
 
+def _is_cve_id(value: str) -> bool:
+  import re as _re
+  return bool(_re.fullmatch(r"CVE-\d{4}-\d+", value.strip(), _re.IGNORECASE))
+
+
 def _parse_stack_terms(stack: str | None) -> list[str]:
     if not stack:
         return []
@@ -374,17 +379,27 @@ def _parse_stack_terms(stack: str | None) -> list[str]:
 
 
 def _stack_match_clause(stack: str | None) -> tuple[str, list, list[str]]:
-    """Match stack terms against description or affected_products (parameterised)."""
-    terms = _parse_stack_terms(stack)
-    if not terms:
+    """Match stack terms: exact CVE ID, otherwise description/products substring."""
+    if not stack or not stack.strip():
+        return "", [], []
+
+    raw_terms = [p.strip() for p in stack.split(",") if p.strip()]
+    if not raw_terms:
         return "", [], []
 
     parts: list[str] = []
     params: list = []
-    for term in terms:
-        parts.append("(LOWER(description) LIKE ? OR LOWER(affected_products) LIKE ?)")
-        like = f"%{term}%"
-        params.extend([like, like])
+    terms: list[str] = []
+    for raw in raw_terms:
+        terms.append(raw.lower())
+        if _is_cve_id(raw):
+            parts.append("cve_id = ?")
+            params.append(raw.strip().upper())
+        else:
+            term = raw.lower()
+            parts.append("(LOWER(description) LIKE ? OR LOWER(affected_products) LIKE ?)")
+            like = f"%{term}%"
+            params.extend([like, like])
 
     return "(" + " OR ".join(parts) + ")", params, terms
 
@@ -452,9 +467,14 @@ def _build_cve_filters(
         params.append(epss_min)
 
     if search:
-        conditions.append("(cve_id LIKE ? OR description LIKE ?)")
-        search_term = f"%{search}%"
-        params.extend([search_term, search_term])
+        search_stripped = search.strip()
+        if _is_cve_id(search_stripped):
+            conditions.append("cve_id = ?")
+            params.append(search_stripped.upper())
+        else:
+            conditions.append("(cve_id LIKE ? OR description LIKE ? OR summary LIKE ?)")
+            search_term = f"%{search_stripped}%"
+            params.extend([search_term, search_term, search_term])
 
     stack_clause, stack_params, stack_products = _stack_match_clause(stack)
     if stack_clause:
