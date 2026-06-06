@@ -43,56 +43,6 @@ function extractMeta(title, description) {
   return { techniques, tags }
 }
 
-function parseRssXml(xmlText, source) {
-  const doc = new DOMParser().parseFromString(xmlText, 'text/xml')
-  if (doc.querySelector('parsererror')) {
-    throw new Error('Invalid RSS XML')
-  }
-
-  const nodes = [
-    ...doc.querySelectorAll('item'),
-    ...doc.querySelectorAll('entry'),
-  ]
-
-  return nodes.map(node => {
-    const title = stripHtml(
-      node.querySelector('title')?.textContent || '',
-    )
-    const linkEl =
-      node.querySelector('link[href]') ||
-      node.querySelector('link') ||
-      node.querySelector('guid')
-    let url = linkEl?.getAttribute?.('href') || linkEl?.textContent || ''
-    url = url.trim()
-    const description = stripHtml(
-      node.querySelector('description')?.textContent ||
-      node.querySelector('content\\:encoded')?.textContent ||
-      node.querySelector('summary')?.textContent ||
-      node.querySelector('content')?.textContent ||
-      '',
-    )
-    const publishedAt =
-      parseRssDate(node.querySelector('pubDate')?.textContent) ||
-      parseRssDate(node.querySelector('published')?.textContent) ||
-      parseRssDate(node.querySelector('updated')?.textContent) ||
-      new Date().toISOString()
-    const { techniques, tags } = extractMeta(title, description)
-
-    return {
-      id: url || `${source.id}:${title}`,
-      source: source.label,
-      sourceId: source.id,
-      title,
-      description: truncateSentences(description || title),
-      publishedAt,
-      url,
-      techniques,
-      tags,
-      kind: 'news',
-    }
-  }).filter(card => card.title && card.url)
-}
-
 function normalizeAtlasStudy(study) {
   const techniques = (study.techniques || study.technique_ids || []).map(t =>
     String(t).toUpperCase(),
