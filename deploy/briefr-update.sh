@@ -4,6 +4,9 @@
 #
 # Serves the UI from /opt/briefr/frontend/dist via nginx (not Vite on 5173).
 # Optional: USE_TLS=1 to force HTTPS nginx config (default: auto if certbot cert exists).
+# Optional env:
+#   BRIEFR_SKIP_SMOKE=1    — skip OTX Intel smoke after deploy
+#   BRIEFR_STRICT_SMOKE=1  — fail update if Intel smoke fails (default: warn only)
 set -euo pipefail
 
 INSTALL_DIR="/opt/briefr"
@@ -179,6 +182,25 @@ else
 fi
 if [ -f "${INSTALL_DIR}/frontend/dist/index.html" ]; then
   echo "    Frontend dist OK"
+fi
+
+# Intel smoke (OTX + CVE API) — runs after backend health check
+SMOKE_SCRIPT="${INSTALL_DIR}/deploy/smoke-intel.sh"
+if [ "${BRIEFR_SKIP_SMOKE:-0}" = "1" ]; then
+  echo "    Intel smoke    skipped (BRIEFR_SKIP_SMOKE=1)"
+elif [ ! -f "${SMOKE_SCRIPT}" ]; then
+  echo "    Intel smoke    skipped (smoke-intel.sh not found)"
+elif [ "${health_ok}" -ne 1 ]; then
+  echo "    Intel smoke    skipped (backend not healthy)"
+else
+  if bash "${SMOKE_SCRIPT}"; then
+    echo "    Intel smoke    OK"
+  elif [ "${BRIEFR_STRICT_SMOKE:-0}" = "1" ]; then
+    echo "FAIL: Intel smoke check failed (BRIEFR_STRICT_SMOKE=1)"
+    exit 1
+  else
+    echo "    Intel smoke    WARN (failed; deploy completed — set BRIEFR_STRICT_SMOKE=1 to fail)"
+  fi
 fi
 
 SERVER_IP="$(hostname -I | awk '{print $1}')"
