@@ -168,7 +168,7 @@ for i in 1 2 3 4 5; do
   fi
   sleep 3
 done
-if [ "${health_ok}" -eq 1 ]; then
+if [ "${health_ok:-0}" -eq 1 ]; then
   echo "    Backend :8000  OK"
 else
   echo "    Backend :8000  FAILED"
@@ -190,7 +190,7 @@ if [ "${BRIEFR_SKIP_SMOKE:-0}" = "1" ]; then
   echo "    Intel smoke    skipped (BRIEFR_SKIP_SMOKE=1)"
 elif [ ! -f "${SMOKE_SCRIPT}" ]; then
   echo "    Intel smoke    skipped (smoke-intel.sh not found)"
-elif [ "${health_ok}" -ne 1 ]; then
+elif [ "${health_ok:-0}" -ne 1 ]; then
   echo "    Intel smoke    skipped (backend not healthy)"
 else
   if bash "${SMOKE_SCRIPT}"; then
