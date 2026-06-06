@@ -450,13 +450,16 @@ async def enrich_cves_extended(db, cve_ids: list[str], *, max_per_run: int = 40)
     from database import get_cve_ids_missing_circl_capec
 
     sploitus_ids: list[str] = []
-    for cve_id in cve_ids[:max_per_run]:
+    chunk = cve_ids[:max_per_run]
+    if chunk:
+        placeholders = ",".join("?" for _ in chunk)
         rows = await db.execute_fetchall(
-            "SELECT has_poc, is_kev FROM cves WHERE cve_id = ?",
-            (cve_id.upper(),),
+            f"SELECT cve_id, has_poc, is_kev FROM cves WHERE cve_id IN ({placeholders})",
+            [cid.upper() for cid in chunk],
         )
-        if rows and (rows[0]["has_poc"] or rows[0]["is_kev"]):
-            sploitus_ids.append(cve_id.upper())
+        for row in rows:
+            if row["has_poc"] or row["is_kev"]:
+                sploitus_ids.append(row["cve_id"].upper())
 
     for cve_id in sploitus_ids:
         try:
@@ -466,32 +469,29 @@ async def enrich_cves_extended(db, cve_ids: list[str], *, max_per_run: int = 40)
             logger.warning("Scheduler Sploitus failed for %s: %s", cve_id, exc)
 
     circl_ids = await get_cve_ids_missing_circl_capec(db, limit=max_per_run)
-    for cve_id in circl_ids:
-        try:
-            rows = await db.execute_fetchall(
-                "SELECT cve_id, source_urls, cwe_ids FROM cves WHERE cve_id = ?",
-                (cve_id.upper(),),
-            )
-            if not rows:
-                continue
-            row = rows[0]
-            import json
-
-            urls = row["source_urls"] or "[]"
-            if isinstance(urls, str):
-                urls = json.loads(urls)
-            cwe = row["cwe_ids"] or "[]"
-            if isinstance(cwe, str):
-                cwe = json.loads(cwe)
-            cve = {
-                "cve_id": row["cve_id"],
-                "source_urls": urls,
-                "cwe_ids": cwe,
-            }
-            await enrich_cve_circl(db, cve)
-            stats["circl"] += 1
-        except Exception as exc:
-            logger.warning("Scheduler CIRCL failed for %s: %s", cve_id, exc)
+    if circl_ids:
+        placeholders = ",".join("?" for _ in circl_ids)
+        cve_rows = await db.execute_fetchall(
+            f"SELECT cve_id, source_urls, cwe_ids FROM cves WHERE cve_id IN ({placeholders})",
+            [cid.upper() for cid in circl_ids],
+        )
+        for row in cve_rows:
+            try:
+                urls = row["source_urls"] or "[]"
+                if isinstance(urls, str):
+                    urls = json.loads(urls)
+                cwe = row["cwe_ids"] or "[]"
+                if isinstance(cwe, str):
+                    cwe = json.loads(cwe)
+                cve = {
+                    "cve_id": row["cve_id"],
+                    "source_urls": urls,
+                    "cwe_ids": cwe,
+                }
+                await enrich_cve_circl(db, cve)
+                stats["circl"] += 1
+            except Exception as exc:
+                logger.warning("Scheduler CIRCL failed for %s: %s", row["cve_id"], exc)
 
     return stats
 
