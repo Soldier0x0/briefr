@@ -834,23 +834,18 @@ async def get_cached_cve_exploits(
     cached = await get_feed_cache(db, f"sploitus:{cve_id.upper()}", max_age_hours)
     if cached is None:
         return None
-    exploits = cached.get("exploits", [])
-    # Empty results are not cached — allows retry after transient Sploitus failures.
-    if not exploits:
-        return None
-    return exploits
+    return cached.get("exploits", [])
 
 
 async def store_cve_exploits(
     db: aiosqlite.Connection, cve_id: str, exploits: list[dict]
 ) -> None:
     await replace_cve_exploits(db, cve_id, exploits)
-    if exploits:
-        await set_feed_cache(
-            db,
-            f"sploitus:{cve_id.upper()}",
-            {"exploits": exploits},
-        )
+    await set_feed_cache(
+        db,
+        f"sploitus:{cve_id.upper()}",
+        {"exploits": exploits},
+    )
 
 
 async def read_cve_exploits_from_db(

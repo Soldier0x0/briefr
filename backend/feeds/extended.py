@@ -92,7 +92,7 @@ def _sploitus_exploit_url(item: dict) -> str:
     return ""
 
 
-async def fetch_sploitus_exploits(cve_id: str, limit: int = 25) -> list[dict]:
+async def fetch_sploitus_exploits(cve_id: str, limit: int = 25) -> list[dict] | None:
     """Search Sploitus for public exploits linked to a CVE."""
     query = cve_id.upper()
     payload = {
@@ -121,13 +121,12 @@ async def fetch_sploitus_exploits(cve_id: str, limit: int = 25) -> list[dict]:
 
         if response.status_code in (422, 499, 429):
             logger.warning("Sploitus rate limit or rejection for %s: %s", query, response.status_code)
-            return []
+            return None
         if response.status_code != 200:
             logger.warning("Sploitus HTTP %s for %s", response.status_code, query)
-            return []
+            return None
 
         raw = response.json()
-        items: list = []
         if isinstance(raw, list):
             items = raw
         elif isinstance(raw, dict):
@@ -138,9 +137,13 @@ async def fetch_sploitus_exploits(cve_id: str, limit: int = 25) -> list[dict]:
                     raw.get("exploits_total"),
                     query,
                 )
+                return None
+        else:
+            logger.warning("Unexpected Sploitus root payload for %s: %s", query, type(raw).__name__)
+            return None
         if not isinstance(items, list):
             logger.warning("Unexpected Sploitus payload type for %s", query)
-            items = []
+            return None
 
         out: list[dict] = []
         for item in items[:limit]:
@@ -166,10 +169,10 @@ async def fetch_sploitus_exploits(cve_id: str, limit: int = 25) -> list[dict]:
         return out
     except httpx.HTTPError as exc:
         logger.error("Sploitus request failed for %s: %s", query, exc)
-        return []
+        return None
     except (json.JSONDecodeError, TypeError) as exc:
         logger.error("Sploitus parse failed for %s: %s", query, exc)
-        return []
+        return None
 
 
 async def fetch_greynoise_ip(ip: str, api_key: str) -> dict | None:
@@ -418,11 +421,11 @@ async def load_sploitus_exploits_for_cve(db, cve_id: str) -> list[dict]:
         return table_rows
 
     exploits = await fetch_sploitus_exploits(cve_id)
-    if exploits:
+    if exploits is not None:
         await store_cve_exploits(db, cve_id, exploits)
         return exploits
 
-    logger.info("Sploitus returned no exploits for %s", cve_id.upper())
+    logger.info("Sploitus request failed or returned no exploits for %s", cve_id.upper())
     return []
 
 
