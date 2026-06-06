@@ -20,3 +20,14 @@ def test_normalize_pulse_author_dict():
     assert pulse["author"] == "alice"
     assert pulse["pulse_id"] == "6231ee27e6834a707de700ae"
     assert pulse["pulse_name"] == "Log4j Campaign"
+
+
+def test_normalize_pulse_malware_family_objects():
+    raw = {
+        "id": "abc",
+        "name": "Test",
+        "author": "x",
+        "malware_families": [{"name": "Emotet"}, "trickbot"],
+    }
+    pulse = _normalize_pulse(raw)
+    assert pulse["malware_families"] == ["Emotet", "trickbot"]

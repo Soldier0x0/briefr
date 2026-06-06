@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Component, useEffect, useRef, useState } from 'react'
 import {
   fetchCVE,
   fetchCVEEpssHistory,
@@ -18,7 +18,36 @@ import {
   hasEnoughEpssHistory,
 } from '../utils/epssSparkline.js'
 import DrawerAtlasSection from './DrawerAtlasSection.jsx'
+import { displayText } from '../utils/displayText.js'
 import './DetailDrawer.css'
+
+
+class DrawerTabErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { error: null }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error }
+  }
+
+  componentDidCatch(error) {
+    console.error('Drawer tab render failed:', error)
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <p className="drawer-intel-empty mono">
+          // This tab failed to render. Close and reopen the CVE, or refresh the page.
+        </p>
+      )
+    }
+    return this.props.children
+  }
+}
+
 
 const TABS = [
   { id: 'overview', label: 'OVERVIEW' },
@@ -349,6 +378,7 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
   const exploits = Array.isArray(publicExploits) ? publicExploits : []
   const scans = Array.isArray(greynoiseScans) ? greynoiseScans : []
   const pulses = Array.isArray(otxPulses) ? otxPulses : []
+  const techList = Array.isArray(techniques) ? techniques : []
 
   return (
     <>
@@ -380,7 +410,7 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
                     <span className="drawer-exploit-date mono">{exp.published_date}</span>
                   )}
                 </div>
-                <p className="drawer-exploit-title">{exp.title}</p>
+                <p className="drawer-exploit-title">{displayText(exp.title) || "Untitled exploit"}</p>
                 {exp.url && (
                   <a
                     className="drawer-exploit-link mono"
@@ -464,17 +494,25 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
           <p className="drawer-intel-empty mono">// No community intelligence found for this CVE</p>
         ) : (
           <ul className="drawer-otx-list">
-            {pulses.map(pulse => (
-              <li key={pulse.pulse_id} className="drawer-otx-item">
-                <p className="drawer-otx-name">{pulse.pulse_name}</p>
+            {pulses.map((pulse, pulseIdx) => (
+              <li key={pulse.pulse_id || `pulse-${pulseIdx}`} className="drawer-otx-item">
+                <p className="drawer-otx-name">{displayText(pulse.pulse_name) || "Unnamed pulse"}</p>
                 <div className="drawer-otx-meta">
-                  {pulse.author && <span className="drawer-otx-author mono">{pulse.author}</span>}
+                  {displayText(pulse.author) && (
+                    <span className="drawer-otx-author mono">{displayText(pulse.author)}</span>
+                  )}
                   {pulse.created_date && <span className="drawer-otx-date mono">{String(pulse.created_date).slice(0, 10)}</span>}
                   {pulse.ioc_count > 0 && <span className="drawer-otx-ioc-count mono">{pulse.ioc_count} IOCs</span>}
                 </div>
                 <div className="drawer-otx-tags">
-                  {pulse.adversary && <span className="drawer-otx-adversary mono">{pulse.adversary}</span>}
-                  {(pulse.malware_families || []).slice(0, 4).map(fam => <span key={fam} className="drawer-otx-malware mono">{fam}</span>)}
+                  {displayText(pulse.adversary) && (
+                    <span className="drawer-otx-adversary mono">{displayText(pulse.adversary)}</span>
+                  )}
+                  {(pulse.malware_families || []).slice(0, 4).map((fam, famIdx) => {
+                    const label = displayText(fam)
+                    if (!label) return null
+                    return <span key={`${label}-${famIdx}`} className="drawer-otx-malware mono">{label}</span>
+                  })}
                 </div>
                 {onInvestigatePulse && pulse.pulse_id && (
                   <button type="button" className="drawer-investigate-btn" onClick={() => onInvestigatePulse(pulse, cve)}>→ Investigate IOCs</button>
@@ -487,11 +525,11 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
 
       <section className="drawer-section" aria-labelledby="mitre-heading">
         <h3 id="mitre-heading" className="drawer-section-label">MITRE ATT&CK</h3>
-        {techniques.length === 0 ? (
+        {techList.length === 0 ? (
           <p className="mitre-empty mono">// No ATT&CK mapping available</p>
         ) : (
           <div className="mitre-techniques" role="list" aria-label="Mapped ATT&CK techniques">
-            {techniques.map(tech => {
+            {techList.map(tech => {
               const tid = tech.id || tech.technique_id
               const href = techniqueLink(tech)
               return (
@@ -942,6 +980,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
             />
           )}
           {activeTab === 'intel' && (
+            <DrawerTabErrorBoundary>
             <TabIntel
               techniques={techniques}
               publicExploits={cve.public_exploits}
@@ -961,6 +1000,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
               }
               onInvestigatePulse={investigation?.pivotToOtxPulse ? (pulse, cveCtx) => investigation.pivotToOtxPulse(pulse, cveCtx) : undefined}
             />
+            </DrawerTabErrorBoundary>
           )}
           {activeTab === 'detect' && <TabDetect />}
           {activeTab === 'related' && (
