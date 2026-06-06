@@ -429,11 +429,7 @@ async def enrich_cve_circl(db, cve: dict) -> dict:
     if existing_capec:
         return cve
 
-    from database import get_feed_cache
-
-    cache_key = f"circl:{cve_id}"
-    cached = await get_feed_cache(db, cache_key, max_age_hours=CIRCL_CACHE_HOURS)
-    circl = cached if cached is not None else await load_circl_for_cve(db, cve_id)
+    circl = await load_circl_for_cve(db, cve_id)
     merged = merge_circl_into_cve(cve, circl)
 
     extra = (merged.get("circl") or {}).get("extra_reference_count", 0)

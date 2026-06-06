@@ -898,7 +898,6 @@ async def get_cve_ids_missing_circl_capec(
         LEFT JOIN feed_cache fc
           ON fc.cache_key = 'circl:' || c.cve_id
          AND fc.cached_at > datetime('now', '-168 hours')
-         AND json_array_length(json_extract(fc.result, '$.capec')) > 0
         WHERE fc.cache_key IS NULL
         ORDER BY c.is_kev DESC, c.has_poc DESC, c.published DESC
         LIMIT ?
