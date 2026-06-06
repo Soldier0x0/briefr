@@ -38,7 +38,7 @@ from database import (
 )
 from feeds.extended import (
     greynoise_scans_for_cve,
-    load_sploitus_exploits_for_cve,
+    load_public_exploits_for_cve,
 )
 from scheduler import run_weekly_mitre_refresh
 from enrichment.ioc import lookup_ioc
@@ -733,7 +733,12 @@ async def get_cve_sentences(cve_id: str):
             (cve_key,),
         )
 
-        sploitus_exploits = await load_sploitus_exploits_for_cve(db, cve_key)
+        sploitus_exploits = await load_public_exploits_for_cve(
+            db,
+            cve_key,
+            has_poc=bool(row.get("has_poc")),
+            source_urls=source_urls,
+        )
         await db.commit()
     finally:
         await db.close()
@@ -828,7 +833,12 @@ async def get_cve(cve_id: str):
         cve["techniques"] = await get_techniques_for_cve(db, cve_key)
 
         try:
-            cve["public_exploits"] = await load_sploitus_exploits_for_cve(db, cve_key)
+            cve["public_exploits"] = await load_public_exploits_for_cve(
+                db,
+                cve_key,
+                has_poc=bool(cve.get("has_poc")),
+                source_urls=cve.get("source_urls"),
+            )
             await db.commit()
         except Exception as exc:
             logger.error("Sploitus load failed for %s: %s", cve_id, exc)

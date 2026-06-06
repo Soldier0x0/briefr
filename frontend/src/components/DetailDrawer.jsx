@@ -361,7 +361,7 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, cve, onInvestiga
           </span>
         </div>
         {exploits.length === 0 ? (
-          <p className="drawer-intel-empty mono">// No public exploits indexed for this CVE</p>
+          <p className="drawer-intel-empty mono">// No public exploits from Sploitus or NVD references for this CVE</p>
         ) : (
           <ul className="drawer-exploit-list" aria-label="Public exploits from Sploitus">
             {exploits.map((exp, idx) => (

@@ -173,6 +173,74 @@ def epss_sentence_or_fallback(score: float | None, kev: bool) -> str:
     return epss_sentence(float(score), kev)
 
 
+
+def refs_to_exploit_cards(has_poc: bool, source_urls: list | None) -> list[dict]:
+    """Build Intel-tab exploit cards from NVD reference URLs when Sploitus has no hits."""
+    cards: list[dict] = []
+    seen: set[str] = set()
+    for url in source_urls or []:
+        if not isinstance(url, str) or not url.strip():
+            continue
+        lower = url.lower().strip()
+        if lower in seen:
+            continue
+        seen.add(lower)
+
+        exploit_type = "poc"
+        source = "Reference"
+        title = "Vendor or advisory reference"
+
+        if "metasploit" in lower:
+            exploit_type = "metasploit"
+            source = "Metasploit"
+            title = "Metasploit module"
+        elif "exploit-db" in lower or "exploitdb" in lower:
+            exploit_type = "weaponised"
+            source = "Exploit-DB"
+            title = "Exploit-DB entry"
+        elif "github.com" in lower and any(
+            k in lower for k in ("poc", "exploit", "cve-", "log4j", "payload")
+        ):
+            source = "GitHub"
+            title = "GitHub PoC / exploit code"
+        elif any(h in lower for h in WEAPONISED_URL_HINTS):
+            exploit_type = "weaponised"
+            source = "Advisory"
+            title = "Weaponised exploit reference"
+        elif "packetstorm" in lower:
+            source = "Packet Storm"
+            title = "Packet Storm exploit"
+        elif not any(
+            k in lower
+            for k in ("exploit", "poc", "github", "metasploit", "packetstorm", "weapon")
+        ):
+            continue
+
+        cards.append(
+            {
+                "title": title,
+                "type": exploit_type,
+                "source": source,
+                "url": url.strip(),
+                "published_date": "",
+                "from_reference": True,
+            }
+        )
+
+    if has_poc and not any(c.get("type") == "poc" for c in cards):
+        cards.append(
+            {
+                "title": "Proof-of-concept published",
+                "type": "poc",
+                "source": "NVD",
+                "url": "",
+                "published_date": "",
+                "from_reference": True,
+            }
+        )
+    return cards
+
+
 def greynoise_sentence(gn: dict | None) -> str:
     if not gn:
         return (

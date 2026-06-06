@@ -402,8 +402,36 @@ async def load_sploitus_exploits_for_cve(db, cve_id: str) -> list[dict]:
         return table_rows
 
     exploits = await fetch_sploitus_exploits(cve_id)
-    await store_cve_exploits(db, cve_id, exploits)
-    return exploits
+    if exploits:
+        await store_cve_exploits(db, cve_id, exploits)
+        return exploits
+
+    logger.info("Sploitus returned no exploits for %s", cve_id.upper())
+    return []
+
+
+async def load_public_exploits_for_cve(
+    db,
+    cve_id: str,
+    *,
+    has_poc: bool = False,
+    source_urls: list | None = None,
+) -> list[dict]:
+    """Sploitus first; fall back to exploit references from NVD source URLs."""
+    sploitus = await load_sploitus_exploits_for_cve(db, cve_id)
+    if sploitus:
+        return sploitus
+
+    from templates.intelligence import refs_to_exploit_cards
+
+    refs = refs_to_exploit_cards(has_poc, source_urls)
+    if refs:
+        logger.info(
+            "Using %d NVD reference exploit(s) for %s (Sploitus had no hits)",
+            len(refs),
+            cve_id.upper(),
+        )
+    return refs
 
 
 async def load_circl_for_cve(db, cve_id: str) -> dict | None:
