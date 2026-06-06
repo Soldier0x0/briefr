@@ -48,6 +48,44 @@ def _extract_affected_products(configurations: list) -> list:
     return list(products)
 
 
+def _extract_cpe_matches(configurations: list) -> list[dict[str, Any]]:
+    matches: list[dict[str, Any]] = []
+    seen: set[tuple] = set()
+    for config in configurations:
+        for node in config.get("nodes", []):
+            for match in node.get("cpeMatch", []):
+                cpe = match.get("criteria", "")
+                parts = cpe.split(":")
+                if len(parts) < 5:
+                    continue
+                vendor = parts[3]
+                product = parts[4]
+                if not vendor or not product or vendor in ("*", "-") or product in ("*", "-"):
+                    continue
+                key = (
+                    vendor,
+                    product,
+                    match.get("versionStartIncluding"),
+                    match.get("versionStartExcluding"),
+                    match.get("versionEndIncluding"),
+                    match.get("versionEndExcluding"),
+                )
+                if key in seen:
+                    continue
+                seen.add(key)
+                matches.append(
+                    {
+                        "vendor": vendor,
+                        "product": product,
+                        "version_start_including": match.get("versionStartIncluding"),
+                        "version_start_excluding": match.get("versionStartExcluding"),
+                        "version_end_including": match.get("versionEndIncluding"),
+                        "version_end_excluding": match.get("versionEndExcluding"),
+                    }
+                )
+    return matches
+
+
 def _extract_cwe_ids(weaknesses: list) -> list:
     cwes = set()
     for weakness in weaknesses:
@@ -102,6 +140,7 @@ def _parse_cve_item(item: dict) -> dict:
         "published": published,
         "modified": modified,
         "affected_products": affected_products,
+        "cpe_matches": cpe_matches,
         "mitre_technique": extract_mitre_technique(references),
         "summary": None,
         "is_kev": False,
