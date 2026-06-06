@@ -58,6 +58,20 @@ def _extract_cves_from_pulse(pulse: dict) -> list[str]:
     return sorted(found)
 
 
+
+def _author_name(raw: dict) -> str:
+    author = raw.get("author_name") or raw.get("author") or ""
+    if isinstance(author, dict):
+        return str(
+            author.get("username")
+            or author.get("name")
+            or author.get("id")
+            or ""
+        ).strip()
+    return str(author).strip()
+
+
+
 def _normalize_pulse(raw: dict) -> dict:
     malware = raw.get("malware_families") or raw.get("malware_family") or []
     if isinstance(malware, str):
@@ -76,7 +90,7 @@ def _normalize_pulse(raw: dict) -> dict:
     return {
         "pulse_id": str(raw.get("id") or raw.get("pulse_id") or ""),
         "pulse_name": (raw.get("name") or "Unnamed pulse").strip(),
-        "author": (raw.get("author_name") or raw.get("author") or "").strip(),
+        "author": _author_name(raw),
         "created_date": (raw.get("created") or raw.get("created_date") or "").strip(),
         "tags": tags,
         "targeted_countries": _parse_json_list(raw.get("targeted_countries")),
@@ -111,7 +125,15 @@ async def fetch_cve_pulses(cve_id: str, api_key: str) -> list[dict]:
 
     pulse_info = data.get("pulse_info") or {}
     raw_pulses = pulse_info.get("pulses") or []
-    return [_normalize_pulse(p) for p in raw_pulses if p]
+    pulses: list[dict] = []
+    for raw in raw_pulses:
+        if not isinstance(raw, dict):
+            continue
+        try:
+            pulses.append(_normalize_pulse(raw))
+        except Exception as exc:
+            logger.warning("OTX pulse normalize failed for %s: %s", cve_id, exc)
+    return pulses
 
 
 async def fetch_pulse_iocs(pulse_id: str, api_key: str) -> list[dict]:
