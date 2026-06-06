@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from typing import Optional
+from urllib.parse import unquote
+
+PACKETSTORM_FILE_RE = re.compile(r"/files/(\d+)/([^/?#]+)", re.I)
+MAX_REFERENCE_EXPLOIT_CARDS = 12
+MAX_PACKETSTORM_CARDS = 6
 
 
 def severity_sentence(severity: str, cvss: float) -> str:
@@ -174,21 +180,72 @@ def epss_sentence_or_fallback(score: float | None, kev: bool) -> str:
 
 
 
+def normalize_exploit_reference_url(url: str) -> str:
+    """Canonicalize exploit reference URLs for browser links."""
+    normalized = url.strip()
+    if "packetstorm" in normalized.lower():
+        normalized = re.sub(
+            r"^https?://(?:www\.)?packetstormsecurity\.com",
+            "https://packetstorm.news",
+            normalized,
+            flags=re.I,
+        )
+        normalized = re.sub(
+            r"^http://(?:www\.)?packetstorm\.news",
+            "https://packetstorm.news",
+            normalized,
+            flags=re.I,
+        )
+    return normalized
+
+
+def title_from_packetstorm_url(url: str) -> str:
+    match = PACKETSTORM_FILE_RE.search(url)
+    if not match:
+        return "Packet Storm entry"
+    slug = unquote(match.group(2))
+    if slug.lower().endswith(".html"):
+        slug = slug[:-5]
+    title = slug.replace("-", " ").replace("_", " ").strip()
+    return title or "Packet Storm entry"
+
+
+def packetstorm_file_id(url: str) -> str | None:
+    match = PACKETSTORM_FILE_RE.search(url)
+    return match.group(1) if match else None
+
+
+def _reference_card_priority(lower_url: str) -> int:
+    if "metasploit" in lower_url:
+        return 0
+    if "exploit-db" in lower_url or "exploitdb" in lower_url:
+        return 1
+    if "github.com" in lower_url:
+        return 2
+    if "packetstorm" in lower_url:
+        return 4
+    return 3
+
+
 def refs_to_exploit_cards(has_poc: bool, source_urls: list | None) -> list[dict]:
     """Build Intel-tab exploit cards from NVD reference URLs when Sploitus has no hits."""
-    cards: list[dict] = []
-    seen: set[str] = set()
+    candidates: list[tuple[int, dict]] = []
+    seen_urls: set[str] = set()
+    seen_packetstorm_ids: set[str] = set()
+
     for url in source_urls or []:
         if not isinstance(url, str) or not url.strip():
             continue
-        lower = url.lower().strip()
-        if lower in seen:
+        normalized_url = normalize_exploit_reference_url(url)
+        lower = normalized_url.lower().strip()
+        if lower in seen_urls:
             continue
-        seen.add(lower)
+        seen_urls.add(lower)
 
         exploit_type = "poc"
         source = "Reference"
         title = "Vendor or advisory reference"
+        requires_terms = False
 
         if "metasploit" in lower:
             exploit_type = "metasploit"
@@ -208,24 +265,39 @@ def refs_to_exploit_cards(has_poc: bool, source_urls: list | None) -> list[dict]
             source = "Advisory"
             title = "Weaponised exploit reference"
         elif "packetstorm" in lower:
+            file_id = packetstorm_file_id(normalized_url)
+            if file_id:
+                if file_id in seen_packetstorm_ids:
+                    continue
+                seen_packetstorm_ids.add(file_id)
             source = "Packet Storm"
-            title = "Packet Storm exploit"
+            title = title_from_packetstorm_url(normalized_url)
+            requires_terms = True
         elif not any(
             k in lower
             for k in ("exploit", "poc", "github", "metasploit", "packetstorm", "weapon")
         ):
             continue
 
-        cards.append(
-            {
-                "title": title,
-                "type": exploit_type,
-                "source": source,
-                "url": url.strip(),
-                "published_date": "",
-                "from_reference": True,
-            }
-        )
+        card = {
+            "title": title,
+            "type": exploit_type,
+            "source": source,
+            "url": normalized_url,
+            "published_date": "",
+            "from_reference": True,
+        }
+        if requires_terms:
+            card["requires_terms_acceptance"] = True
+        candidates.append((_reference_card_priority(lower), card))
+
+    candidates.sort(key=lambda item: item[0])
+    cards = [card for _, card in candidates]
+
+    packetstorm_cards = [card for card in cards if card.get("source") == "Packet Storm"]
+    other_cards = [card for card in cards if card.get("source") != "Packet Storm"]
+    cards = other_cards + packetstorm_cards[:MAX_PACKETSTORM_CARDS]
+    cards = cards[:MAX_REFERENCE_EXPLOIT_CARDS]
 
     if has_poc and not any(c.get("type") == "poc" for c in cards):
         cards.append(

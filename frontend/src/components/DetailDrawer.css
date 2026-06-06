@@ -582,6 +582,13 @@
   margin: 0;
 }
 
+.drawer-intel-hint {
+  font-size: 0.7rem;
+  color: var(--text3);
+  margin: 0.75rem 0 0;
+  line-height: 1.45;
+}
+
 .drawer-exploit-list,
 .drawer-gn-list {
   list-style: none;

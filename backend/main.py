@@ -879,7 +879,8 @@ async def get_cve(cve_id: str):
             logger.error("GreyNoise scan failed for %s: %s", cve_id, exc)
             cve["greynoise_scans"] = []
 
-        otx_key = os.environ.get("OTX_API_KEY", "")
+        otx_key = os.environ.get("OTX_API_KEY", "").strip()
+        cve["otx_configured"] = bool(otx_key)
         try:
             cve["otx_pulses"] = await load_otx_pulses_for_cve(db, cve_key, otx_key)
             await db.commit()
