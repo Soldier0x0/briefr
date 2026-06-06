@@ -85,6 +85,7 @@ def _parse_cve_item(item: dict) -> dict:
     cvss_score, severity = _extract_cvss_v3(metrics)
     configurations = cve_data.get("configurations", [])
     affected_products = _extract_affected_products(configurations)
+    cpe_matches = _extract_cpe_matches(configurations)
     weaknesses = cve_data.get("weaknesses", [])
     cwe_ids = _extract_cwe_ids(weaknesses)
     references = cve_data.get("references", [])
@@ -101,7 +102,6 @@ def _parse_cve_item(item: dict) -> dict:
         "published": published,
         "modified": modified,
         "affected_products": affected_products,
-        "cpe_matches": cpe_matches,
         "mitre_technique": extract_mitre_technique(references),
         "summary": None,
         "is_kev": False,
