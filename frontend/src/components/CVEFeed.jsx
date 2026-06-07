@@ -9,7 +9,6 @@ import CVECard from './CVECard.jsx'
 import ScrollToTop from './ScrollToTop.jsx'
 import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
 import { useAssetProfileOptional } from '../context/AssetProfileContext.jsx'
-import { calculateRiskScore } from '../scoring/riskScore.js'
 import './CVEFeed.css'
 
 const PAGE_LIMIT = 20
@@ -431,7 +430,6 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
                 : undefined
             }
             exposureScore={assetAware ? getMatchScore(cve.cve_id) : 0}
-            riskScore={calculateRiskScore(cve, assetCtx?.profile ?? null)}
           />
         ))}
       </div>
