@@ -8,11 +8,14 @@ from typing import Any
 _VERSION_PART = re.compile(r"(\d+|\D+)")
 
 
-def _version_tuple(version: str) -> tuple:
-    if not version or version in ("*", "-", ""):
+def _version_tuple(version: Any) -> tuple:
+    if not version:
+        return ()
+    v_str = str(version).strip().lower()
+    if v_str in ("*", "-", ""):
         return ()
     parts: list = []
-    for chunk in _VERSION_PART.findall(version.strip().lower()):
+    for chunk in _VERSION_PART.findall(v_str):
         if chunk.isdigit():
             parts.append(int(chunk))
         else:

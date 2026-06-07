@@ -1,6 +1,7 @@
 """CPE version range matching for asset profile scoring."""
 
 from matching.cpe import (
+    _version_tuple,
     product_keys_match,
     score_asset_against_cpe,
     score_cve_for_assets,
@@ -17,6 +18,13 @@ def test_version_in_range_end_excluding():
 def test_version_in_range_start_including():
     assert version_in_range("9.0", start_including="9.0", end_excluding="10.0") is True
     assert version_in_range("8.9", start_including="9.0") is False
+
+
+def test_version_tuple_accepts_non_string_input():
+    assert _version_tuple(120) == (120,)
+    assert _version_tuple(None) == ()
+    assert version_in_range("1.20.0", end_excluding=120) is True
+    assert version_in_range("200", end_excluding=120) is False
 
 
 def test_version_in_range_ignores_wildcard_bounds():
