@@ -979,6 +979,102 @@
 .atlas-case-summary { font-size: 0.8125rem; color: var(--text2); margin: 0 0 6px; line-height: 1.4; }
 .atlas-case-meta { font-size: 0.6875rem; color: var(--text3); margin: 0; }
 
+/* ── Correlation Findings (Intel tab) ────────────────────── */
+
+.corr-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.corr-group-label {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  margin: 0 0 6px;
+  font-weight: 400;
+}
+
+.corr-finding {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+}
+
+.corr-finding-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.corr-finding-text {
+  font-size: 0.8125rem;
+  color: var(--text2);
+  margin: 0;
+  line-height: 1.45;
+  flex: 1;
+}
+
+.corr-actor-name {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.corr-sector-match {
+  color: var(--amber);
+  font-weight: 500;
+}
+
+.corr-campaign-note {
+  color: var(--amber);
+}
+
+.corr-cve-link {
+  font-size: 0.8125rem;
+  color: var(--red);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: text-decoration-color 0.1s;
+}
+
+.corr-cve-link:hover {
+  text-decoration-color: var(--red);
+}
+
+/* Confidence badge */
+.corr-confidence-badge {
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  padding: 2px 6px;
+  border: 1px solid;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.corr-badge-high {
+  color: var(--red);
+  border-color: var(--red);
+  background: var(--red-dim);
+}
+
+.corr-badge-medium {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: var(--amber-dim);
+}
+
+.corr-badge-low {
+  color: var(--text3);
+  border-color: var(--border2);
+  background: transparent;
+}
+
 /* ── BRIEFR Risk Score breakdown (Overview tab) ──────────── */
 
 .drawer-risk-section {

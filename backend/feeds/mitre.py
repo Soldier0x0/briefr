@@ -155,6 +155,131 @@ def parse_enterprise_attack_stix(data: dict) -> list[dict]:
     return list(techniques.values())
 
 
+def _extract_sectors_from_text(text: str) -> list[str]:
+    """
+    Keyword-match known sectors from a MITRE ATT&CK group description.
+    Mirrors correlation.engine.extract_sectors_from_text to avoid circular imports.
+    """
+    _SECTOR_KEYWORDS: dict[str, list[str]] = {
+        "Technology": ["technology", "tech company", "software", "semiconductor", "internet", "cloud", "saas", "it services"],
+        "Finance": ["financial", "finance", "banking", "bank", "insurance", "investment", "trading", "cryptocurrency", "fintech"],
+        "Healthcare": ["healthcare", "health care", "medical", "hospital", "pharmaceutical", "pharma", "biotech"],
+        "Government": ["government", "government agency", "public sector", "defense", "military", "intelligence", "espionage", "nation-state"],
+        "Energy": ["energy", "oil", "gas", "electricity", "power grid", "utilities", "nuclear", "pipeline"],
+        "Manufacturing": ["manufacturing", "industrial", "ics", "scada", "critical infrastructure", "supply chain"],
+        "Retail": ["retail", "e-commerce", "consumer goods", "commerce", "hospitality"],
+        "Telecommunications": ["telecom", "telecommunications", "isp", "carrier", "mobile operator"],
+        "Education": ["education", "academic", "university", "research institution"],
+        "Transportation": ["transportation", "aviation", "airline", "shipping", "logistics", "maritime"],
+        "Media": ["media", "news", "journalism", "entertainment", "broadcast"],
+    }
+    lower = (text or "").lower()
+    return [s for s, kws in _SECTOR_KEYWORDS.items() if any(kw in lower for kw in kws)]
+
+
+def parse_attack_groups_stix(
+    data: dict,
+) -> tuple[list[dict], list[tuple[str, str]]]:
+    """
+    Parse ATT&CK intrusion-set objects (groups) and their technique-use links
+    from an Enterprise ATT&CK STIX bundle.
+
+    Returns:
+        groups: list of {group_id, name, aliases, description, sectors, url}
+        pairs:  list of (group_id, technique_id) links
+    """
+    # Map STIX internal IDs to ATT&CK external IDs
+    stix_to_group_id: dict[str, str] = {}    # stix_id → G0xxx
+    stix_to_tech_id: dict[str, str] = {}     # stix_id → Txxxx
+
+    groups: list[dict] = []
+
+    for obj in data.get("objects", []):
+        if obj.get("revoked") or obj.get("x_mitre_deprecated"):
+            continue
+
+        obj_type = obj.get("type", "")
+
+        if obj_type == "intrusion-set":
+            group_id = None
+            group_url = ""
+            for ref in obj.get("external_references", []):
+                if ref.get("source_name") == "mitre-attack":
+                    ext_id = ref.get("external_id", "")
+                    if ext_id.startswith("G"):
+                        group_id = ext_id
+                        group_url = ref.get(
+                            "url",
+                            f"https://attack.mitre.org/groups/{ext_id}/",
+                        )
+                        break
+            if not group_id:
+                continue
+
+            stix_to_group_id[obj["id"]] = group_id
+
+            aliases = obj.get("aliases") or obj.get("x_mitre_aliases") or []
+            if isinstance(aliases, str):
+                aliases = [aliases]
+            aliases = [a for a in aliases if isinstance(a, str) and a.strip()]
+
+            description = (obj.get("description") or "").strip()
+            sectors = _extract_sectors_from_text(description)
+
+            groups.append({
+                "group_id": group_id,
+                "name": (obj.get("name") or group_id).strip(),
+                "aliases": aliases,
+                "description": description[:1000],
+                "sectors": sectors,
+                "url": group_url,
+            })
+
+        elif obj_type == "attack-pattern":
+            for ref in obj.get("external_references", []):
+                if ref.get("source_name") == "mitre-attack":
+                    tid = _normalize_technique_id(ref.get("external_id", ""))
+                    if tid:
+                        stix_to_tech_id[obj["id"]] = tid
+                        break
+
+    # Second pass: relationship objects (group USES technique)
+    pairs: list[tuple[str, str]] = []
+    seen_pairs: set[tuple[str, str]] = set()
+
+    for obj in data.get("objects", []):
+        if (
+            obj.get("type") != "relationship"
+            or obj.get("relationship_type") != "uses"
+            or obj.get("revoked")
+        ):
+            continue
+
+        source_ref = obj.get("source_ref", "")
+        target_ref = obj.get("target_ref", "")
+
+        if not source_ref.startswith("intrusion-set--"):
+            continue
+        if not target_ref.startswith("attack-pattern--"):
+            continue
+
+        group_id = stix_to_group_id.get(source_ref)
+        tech_id = stix_to_tech_id.get(target_ref)
+
+        if group_id and tech_id:
+            pair = (group_id, tech_id)
+            if pair not in seen_pairs:
+                seen_pairs.add(pair)
+                pairs.append(pair)
+
+    logger.info(
+        "Parsed %d ATT&CK groups and %d group-technique links from STIX",
+        len(groups),
+        len(pairs),
+    )
+    return groups, pairs
+
+
 def parse_cve_mappings_json(data: Any) -> dict[str, list[str]]:
     """
     Parse CVE→ATT&CK JSON mapping file.
@@ -352,17 +477,28 @@ async def cve_technique_from_db_column(db) -> dict[str, list[str]]:
 
 async def refresh_mitre_data(db) -> dict[str, int]:
     """
-    Refresh mitre_techniques and cve_technique_map tables.
-    Returns counts: techniques, cve_mappings, cve_links_inserted.
+    Refresh mitre_techniques, cve_technique_map, mitre_groups, and group_technique_map.
+    Returns counts: techniques, cve_mappings, cve_links_inserted, groups, group_links.
     """
     from database import (
         clear_cve_technique_map,
         get_all_cve_ids_set,
         replace_mitre_techniques,
+        replace_mitre_groups,
         upsert_cve_technique_pairs,
+        upsert_group_technique_pairs,
     )
 
-    techniques = await download_enterprise_attack()
+    # Download full STIX bundle once; parse both techniques and groups from it
+    logger.info("Downloading MITRE Enterprise ATT&CK STIX (techniques + groups)")
+    raw_stix = await _fetch_bytes(ENTERPRISE_ATTACK_URL)
+    stix_data = json.loads(raw_stix)
+
+    techniques = parse_enterprise_attack_stix(stix_data)
+    logger.info("Parsed %d ATT&CK techniques from STIX", len(techniques))
+
+    groups, group_tech_pairs = parse_attack_groups_stix(stix_data)
+
     cve_map = await download_cve_technique_mappings()
     db_column_map = await cve_technique_from_db_column(db)
     if db_column_map:
@@ -404,7 +540,24 @@ async def refresh_mitre_data(db) -> dict[str, int]:
         )
 
     inserted = await upsert_cve_technique_pairs(db, pairs)
+
+    # Persist ATT&CK groups and group→technique links
+    group_count = await replace_mitre_groups(db, groups)
+    # Filter group-technique pairs to known technique IDs only
+    valid_group_pairs = [
+        (gid, tid)
+        for gid, tid in group_tech_pairs
+        if resolve_technique_id(tid, known_technique_ids)
+    ]
+    group_links = await upsert_group_technique_pairs(db, valid_group_pairs)
+
     await db.commit()
+
+    logger.info(
+        "ATT&CK groups: %d groups, %d group-technique links persisted",
+        group_count,
+        group_links,
+    )
 
     return {
         "techniques": len(techniques),
@@ -412,4 +565,6 @@ async def refresh_mitre_data(db) -> dict[str, int]:
         "cve_links": inserted,
         "skipped_unknown_techniques": skipped_unknown,
         "mapping_sources": "ctid_csv+kev_json+db_column",
+        "groups": group_count,
+        "group_links": group_links,
     }

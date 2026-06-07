@@ -218,6 +218,62 @@ async def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_pulse
                 ON otx_pulse_iocs(pulse_id);
+
+            CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_value
+                ON otx_pulse_iocs(ioc_value);
+
+            CREATE TABLE IF NOT EXISTS correlation_infrastructure (
+                cve_id_a TEXT NOT NULL,
+                cve_id_b TEXT NOT NULL,
+                shared_ip_count INTEGER DEFAULT 0,
+                confidence TEXT DEFAULT 'low',
+                detected_at TEXT DEFAULT (datetime('now')),
+                PRIMARY KEY (cve_id_a, cve_id_b)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_correlation_infra_a
+                ON correlation_infrastructure(cve_id_a);
+            CREATE INDEX IF NOT EXISTS idx_correlation_infra_b
+                ON correlation_infrastructure(cve_id_b);
+
+            CREATE TABLE IF NOT EXISTS correlation_actor (
+                cve_id TEXT NOT NULL,
+                actor_name TEXT NOT NULL,
+                actor_sectors TEXT DEFAULT '[]',
+                user_sector_match INTEGER DEFAULT 0,
+                confidence TEXT DEFAULT 'low',
+                detected_at TEXT DEFAULT (datetime('now')),
+                PRIMARY KEY (cve_id, actor_name)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_correlation_actor_cve
+                ON correlation_actor(cve_id);
+
+            CREATE TABLE IF NOT EXISTS correlation_temporal (
+                vendor TEXT PRIMARY KEY,
+                current_week_count INTEGER DEFAULT 0,
+                average_weekly_count REAL DEFAULT 0,
+                anomaly_score REAL DEFAULT 0,
+                detected_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS mitre_groups (
+                group_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                aliases TEXT DEFAULT '[]',
+                description TEXT DEFAULT '',
+                sectors TEXT DEFAULT '[]',
+                url TEXT DEFAULT ''
+            );
+
+            CREATE TABLE IF NOT EXISTS group_technique_map (
+                group_id TEXT NOT NULL,
+                technique_id TEXT NOT NULL,
+                PRIMARY KEY (group_id, technique_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_group_technique_map_technique
+                ON group_technique_map(technique_id);
         """)
         await db.commit()
 
@@ -229,6 +285,17 @@ async def init_db() -> None:
             "ALTER TABLE mitre_techniques ADD COLUMN detection TEXT DEFAULT ''",
             "CREATE TABLE IF NOT EXISTS cve_atlas_map (cve_id TEXT NOT NULL, technique_id TEXT NOT NULL, PRIMARY KEY (cve_id, technique_id), FOREIGN KEY (technique_id) REFERENCES atlas_techniques(technique_id))",
             "CREATE INDEX IF NOT EXISTS idx_cve_atlas_map_cve ON cve_atlas_map(cve_id)",
+            # Correlation engine tables (added in correlation session)
+            "CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_value ON otx_pulse_iocs(ioc_value)",
+            "CREATE TABLE IF NOT EXISTS correlation_infrastructure (cve_id_a TEXT NOT NULL, cve_id_b TEXT NOT NULL, shared_ip_count INTEGER DEFAULT 0, confidence TEXT DEFAULT 'low', detected_at TEXT DEFAULT (datetime('now')), PRIMARY KEY (cve_id_a, cve_id_b))",
+            "CREATE INDEX IF NOT EXISTS idx_correlation_infra_a ON correlation_infrastructure(cve_id_a)",
+            "CREATE INDEX IF NOT EXISTS idx_correlation_infra_b ON correlation_infrastructure(cve_id_b)",
+            "CREATE TABLE IF NOT EXISTS correlation_actor (cve_id TEXT NOT NULL, actor_name TEXT NOT NULL, actor_sectors TEXT DEFAULT '[]', user_sector_match INTEGER DEFAULT 0, confidence TEXT DEFAULT 'low', detected_at TEXT DEFAULT (datetime('now')), PRIMARY KEY (cve_id, actor_name))",
+            "CREATE INDEX IF NOT EXISTS idx_correlation_actor_cve ON correlation_actor(cve_id)",
+            "CREATE TABLE IF NOT EXISTS correlation_temporal (vendor TEXT PRIMARY KEY, current_week_count INTEGER DEFAULT 0, average_weekly_count REAL DEFAULT 0, anomaly_score REAL DEFAULT 0, detected_at TEXT DEFAULT (datetime('now')))",
+            "CREATE TABLE IF NOT EXISTS mitre_groups (group_id TEXT PRIMARY KEY, name TEXT NOT NULL, aliases TEXT DEFAULT '[]', description TEXT DEFAULT '', sectors TEXT DEFAULT '[]', url TEXT DEFAULT '')",
+            "CREATE TABLE IF NOT EXISTS group_technique_map (group_id TEXT NOT NULL, technique_id TEXT NOT NULL, PRIMARY KEY (group_id, technique_id))",
+            "CREATE INDEX IF NOT EXISTS idx_group_technique_map_technique ON group_technique_map(technique_id)",
         ):
             try:
                 await db.execute(migration)
@@ -1560,6 +1627,56 @@ async def refresh_all_cve_ai_context(db: aiosqlite.Connection) -> dict[str, int]
 
     await db.commit()
     return {"cves_flagged": flagged, "atlas_links": len(atlas_pairs)}
+
+
+async def replace_mitre_groups(
+    db: aiosqlite.Connection, groups: list[dict]
+) -> int:
+    """Upsert ATT&CK group rows parsed from STIX."""
+    if not groups:
+        return 0
+    await db.executemany(
+        """
+        INSERT INTO mitre_groups (group_id, name, aliases, description, sectors, url)
+        VALUES (:group_id, :name, :aliases, :description, :sectors, :url)
+        ON CONFLICT(group_id) DO UPDATE SET
+            name        = excluded.name,
+            aliases     = excluded.aliases,
+            description = excluded.description,
+            sectors     = excluded.sectors,
+            url         = excluded.url
+        """,
+        [
+            {
+                "group_id": g["group_id"],
+                "name": g["name"],
+                "aliases": json.dumps(g.get("aliases") or []),
+                "description": g.get("description") or "",
+                "sectors": json.dumps(g.get("sectors") or []),
+                "url": g.get("url") or "",
+            }
+            for g in groups
+        ],
+    )
+    return len(groups)
+
+
+async def upsert_group_technique_pairs(
+    db: aiosqlite.Connection, pairs: list[tuple[str, str]]
+) -> int:
+    """Insert (group_id, technique_id) links, ignoring duplicates."""
+    if not pairs:
+        return 0
+    await db.executemany(
+        "INSERT OR IGNORE INTO group_technique_map (group_id, technique_id) VALUES (?, ?)",
+        pairs,
+    )
+    return len(pairs)
+
+
+async def get_mitre_group_count(db: aiosqlite.Connection) -> int:
+    row = await db.execute_fetchall("SELECT COUNT(*) AS cnt FROM mitre_groups")
+    return int(row[0]["cnt"]) if row else 0
 
 
 async def match_cves_for_assets(
