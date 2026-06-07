@@ -33,6 +33,12 @@ def _compare_versions(left: str, right: str) -> int:
     return 0
 
 
+def _is_version_bound(value: str | None) -> bool:
+    if not value:
+        return False
+    return str(value).strip() not in ("", "*", "-")
+
+
 def version_in_range(
     version: str,
     *,
@@ -44,13 +50,13 @@ def version_in_range(
     if not version or not str(version).strip():
         return True
     v = str(version).strip()
-    if start_including and _compare_versions(v, start_including) < 0:
+    if _is_version_bound(start_including) and _compare_versions(v, start_including) < 0:
         return False
-    if start_excluding and _compare_versions(v, start_excluding) <= 0:
+    if _is_version_bound(start_excluding) and _compare_versions(v, start_excluding) <= 0:
         return False
-    if end_including and _compare_versions(v, end_including) > 0:
+    if _is_version_bound(end_including) and _compare_versions(v, end_including) > 0:
         return False
-    if end_excluding and _compare_versions(v, end_excluding) >= 0:
+    if _is_version_bound(end_excluding) and _compare_versions(v, end_excluding) >= 0:
         return False
     return True
 

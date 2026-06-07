@@ -19,6 +19,13 @@ def test_version_in_range_start_including():
     assert version_in_range("8.9", start_including="9.0") is False
 
 
+def test_version_in_range_ignores_wildcard_bounds():
+    assert version_in_range("2.14.1", end_excluding="*") is True
+    assert version_in_range("2.14.1", end_excluding="-") is True
+    assert version_in_range("2.14.1", start_including="*") is True
+    assert version_in_range("2.14.1", end_including="  *  ") is True
+
+
 def test_product_keys_match_vendor_product():
     assert product_keys_match("http_server", "apache", "apache", "http_server")
     assert product_keys_match("nginx", None, "nginx", "nginx")
