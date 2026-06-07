@@ -77,36 +77,25 @@ async def find_shared_infrastructure(db, cve_id: str) -> list[dict]:
     """
     cve_upper = cve_id.upper()
 
-    ip_rows = await db.execute_fetchall(
-        """
-        SELECT DISTINCT oi.ioc_value
-        FROM otx_cve_pulses ocp
-        JOIN otx_pulse_iocs oi ON oi.pulse_id = ocp.pulse_id
-        WHERE ocp.cve_id = ?
-          AND UPPER(oi.ioc_type) IN ('IPV4', 'IPV6', 'IP')
-        """,
-        (cve_upper,),
-    )
-
-    if not ip_rows:
-        return []
-
-    known_ips = [r["ioc_value"] for r in ip_rows]
-    placeholders = ",".join("?" * len(known_ips))
-
     shared_rows = await db.execute_fetchall(
-        f"""
+        """
         SELECT ocp2.cve_id, COUNT(DISTINCT oi2.ioc_value) AS shared_ip_count
         FROM otx_pulse_iocs oi2
         JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi2.pulse_id
-        WHERE oi2.ioc_value IN ({placeholders})
+        WHERE oi2.ioc_value IN (
+            SELECT DISTINCT oi.ioc_value
+            FROM otx_cve_pulses ocp
+            JOIN otx_pulse_iocs oi ON oi.pulse_id = ocp.pulse_id
+            WHERE ocp.cve_id = ?
+              AND UPPER(oi.ioc_type) IN ('IPV4', 'IPV6', 'IP')
+        )
           AND UPPER(oi2.ioc_type) IN ('IPV4', 'IPV6', 'IP')
           AND ocp2.cve_id != ?
         GROUP BY ocp2.cve_id
         ORDER BY shared_ip_count DESC
         LIMIT 20
         """,
-        (*known_ips, cve_upper),
+        (cve_upper, cve_upper),
     )
 
     results = []
@@ -121,6 +110,10 @@ async def find_shared_infrastructure(db, cve_id: str) -> list[dict]:
 
 
 async def _store_infrastructure_correlation(db, cve_id: str, findings: list[dict]) -> None:
+    await db.execute(
+        "DELETE FROM correlation_infrastructure WHERE cve_id_a = ?",
+        (cve_id.upper(),),
+    )
     for f in findings:
         await db.execute(
             """
@@ -221,6 +214,10 @@ async def find_actor_sector_correlation(
 async def _store_actor_correlation(
     db, cve_id: str, findings: list[dict]
 ) -> None:
+    await db.execute(
+        "DELETE FROM correlation_actor WHERE cve_id = ?",
+        (cve_id.upper(),),
+    )
     for f in findings:
         await db.execute(
             """
@@ -255,7 +252,7 @@ async def find_temporal_anomalies(db) -> list[dict]:
         """
         SELECT cve_id, affected_products, published
         FROM cves
-        WHERE published >= datetime('now', '-90 days')
+        WHERE datetime(published) >= datetime('now', '-90 days')
           AND affected_products IS NOT NULL
           AND affected_products != '[]'
         """,
@@ -390,10 +387,8 @@ async def get_correlation_for_cve(
         actor = await find_actor_sector_correlation(db, cve_upper, user_sector)
         temporal = await _get_temporal_for_cve(db, cve_upper)
 
-        if infrastructure:
-            await _store_infrastructure_correlation(db, cve_upper, infrastructure)
-        if actor:
-            await _store_actor_correlation(db, cve_upper, actor)
+        await _store_infrastructure_correlation(db, cve_upper, infrastructure)
+        await _store_actor_correlation(db, cve_upper, actor)
 
         result = {
             "cve_id": cve_upper,

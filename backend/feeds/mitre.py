@@ -155,26 +155,7 @@ def parse_enterprise_attack_stix(data: dict) -> list[dict]:
     return list(techniques.values())
 
 
-def _extract_sectors_from_text(text: str) -> list[str]:
-    """
-    Keyword-match known sectors from a MITRE ATT&CK group description.
-    Mirrors correlation.engine.extract_sectors_from_text to avoid circular imports.
-    """
-    _SECTOR_KEYWORDS: dict[str, list[str]] = {
-        "Technology": ["technology", "tech company", "software", "semiconductor", "internet", "cloud", "saas", "it services"],
-        "Finance": ["financial", "finance", "banking", "bank", "insurance", "investment", "trading", "cryptocurrency", "fintech"],
-        "Healthcare": ["healthcare", "health care", "medical", "hospital", "pharmaceutical", "pharma", "biotech"],
-        "Government": ["government", "government agency", "public sector", "defense", "military", "intelligence", "espionage", "nation-state"],
-        "Energy": ["energy", "oil", "gas", "electricity", "power grid", "utilities", "nuclear", "pipeline"],
-        "Manufacturing": ["manufacturing", "industrial", "ics", "scada", "critical infrastructure", "supply chain"],
-        "Retail": ["retail", "e-commerce", "consumer goods", "commerce", "hospitality"],
-        "Telecommunications": ["telecom", "telecommunications", "isp", "carrier", "mobile operator"],
-        "Education": ["education", "academic", "university", "research institution"],
-        "Transportation": ["transportation", "aviation", "airline", "shipping", "logistics", "maritime"],
-        "Media": ["media", "news", "journalism", "entertainment", "broadcast"],
-    }
-    lower = (text or "").lower()
-    return [s for s, kws in _SECTOR_KEYWORDS.items() if any(kw in lower for kw in kws)]
+from correlation.engine import extract_sectors_from_text as _extract_sectors_from_text
 
 
 def parse_attack_groups_stix(
@@ -544,11 +525,15 @@ async def refresh_mitre_data(db) -> dict[str, int]:
     # Persist ATT&CK groups and group→technique links
     group_count = await replace_mitre_groups(db, groups)
     # Filter group-technique pairs to known technique IDs only
-    valid_group_pairs = [
-        (gid, tid)
-        for gid, tid in group_tech_pairs
-        if resolve_technique_id(tid, known_technique_ids)
-    ]
+    valid_group_pairs = []
+    seen_group_pairs: set[tuple[str, str]] = set()
+    for gid, tid in group_tech_pairs:
+        resolved = resolve_technique_id(tid, known_technique_ids)
+        if resolved:
+            pair = (gid, resolved)
+            if pair not in seen_group_pairs:
+                seen_group_pairs.add(pair)
+                valid_group_pairs.append(pair)
     group_links = await upsert_group_technique_pairs(db, valid_group_pairs)
 
     await db.commit()

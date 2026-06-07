@@ -420,8 +420,8 @@ function CorrelationFindings({ correlation, loading, onSelectCve }) {
                     {item.vendor}
                   </strong>
                   {' '}{item.current_week_count} CVE{item.current_week_count !== 1 ? 's' : ''} published
-                  this week — {item.anomaly_score.toFixed(1)}× the weekly average
-                  ({item.average_weekly_count.toFixed(1)} normally).
+                  this week — {(item.anomaly_score ?? 0).toFixed(1)}× the weekly average
+                  ({(item.average_weekly_count ?? 0).toFixed(1)} normally).
                   Unusual volume may indicate coordinated research disclosure or active adversary focus.
                 </p>
               </div>
