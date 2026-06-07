@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { copyToClipboard } from '../utils/report.js'
 import { formatAbsolute } from '../utils/timezone.js'
 import { publishedAgeClass } from '../utils/cveAge.js'
+import { riskScoreColor } from '../scoring/riskScore.js'
 import './CVECard.css'
 
 function timeAgo(isoString) {
@@ -56,6 +57,7 @@ export default function CVECard({
   onInvestigate,
   onLookupIoc,
   exposureScore = 0,
+  riskScore = null,
 }) {
   const [shareCopied, setShareCopied] = useState(false)
   const sevClass = severityClass(cve.severity)
@@ -148,7 +150,31 @@ export default function CVECard({
         </span>
       )}
 
-      {/* Share button — top-right, hover-only */}
+      {/* Risk score — top-right, always visible */}
+      {riskScore != null && (
+        <div
+          className="card-risk-score"
+          title={!riskScore.hasProfile ? 'Load an asset profile for personalised scoring' : undefined}
+          aria-label={
+            !riskScore.hasProfile
+              ? `BRIEFR Risk Score: ${riskScore.total.toFixed(1)} (no asset profile loaded)`
+              : `BRIEFR Risk Score: ${riskScore.total.toFixed(1)}`
+          }
+        >
+          <div
+            className="card-risk-number"
+            style={{ color: riskScoreColor(riskScore.total) }}
+          >
+            {riskScore.total.toFixed(1)}
+            {!riskScore.hasProfile && (
+              <span className="card-risk-no-profile" aria-hidden="true">?</span>
+            )}
+          </div>
+          <div className="card-risk-label mono">BRIEFR RISK</div>
+        </div>
+      )}
+
+      {/* Share button — top-right, hover-only (overlays score) */}
       <div className="card-share-wrap">
         <button
           className="card-share-btn"

@@ -1,5 +1,5 @@
 .cve-card {
-  padding: 14px 40px 14px 36px; /* left: checkbox space, right: share btn space */
+  padding: 14px 60px 14px 36px; /* left: checkbox space, right: risk score + share btn space */
   border-bottom: 1px solid var(--border);
   border-left: 3px solid var(--border);
   background: var(--bg);
@@ -105,13 +105,48 @@
   transform: rotate(45deg);
 }
 
-/* ── Share button ─────────────────────────────────────────── */
+/* ── Risk score widget — always visible top-right ─────────── */
+.card-risk-score {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  text-align: right;
+  line-height: 1;
+  user-select: none;
+}
+
+.card-risk-number {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.card-risk-no-profile {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+  vertical-align: super;
+  margin-left: 1px;
+}
+
+.card-risk-label {
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+/* ── Share button — hover-only, overlays risk score ───────── */
 .card-share-wrap {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 8px;
+  right: 8px;
   opacity: 0;
   transition: opacity 0.12s;
+  z-index: 2;
 }
 
 .cve-card:hover .card-share-wrap {
@@ -326,11 +361,11 @@
 .meta-val.age-recent { color: var(--amber); }
 .meta-val.age-old { color: var(--text3); }
 
-/* NEW since last visit badge */
+/* Badges shifted left to clear the risk score widget (~56px wide) */
 .cve-thread-badge {
   position: absolute;
   top: 10px;
-  right: 88px;
+  right: 112px;
   font-family: var(--font-mono);
   font-size: 0.5rem;
   letter-spacing: 0.08em;
@@ -343,7 +378,7 @@
 .cve-new-badge {
   position: absolute;
   top: 10px;
-  right: 32px;
+  right: 64px;
   font-family: var(--font-mono);
   font-size: 8px;
   font-weight: 500;
@@ -354,11 +389,6 @@
   border-radius: 0;
   line-height: 1.2;
   pointer-events: none;
-}
-
-.cve-card:hover .cve-new-badge,
-.cve-card.cve-nav-selected .cve-new-badge {
-  right: 32px;
 }
 
 @media (min-width: 641px) and (max-width: 1024px) {
@@ -409,7 +439,7 @@
 
 @media (max-width: 640px) {
   .cve-card {
-    padding: 16px 16px 16px 30px;
+    padding: 16px 60px 16px 30px;
   }
 
   .card-checkbox-wrap {
@@ -420,7 +450,11 @@
     right: 8px;
   }
 
+  .card-risk-score {
+    right: 8px;
+  }
+
   .cve-new-badge {
-    right: 28px;
+    right: 64px;
   }
 }
