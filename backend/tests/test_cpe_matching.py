@@ -32,6 +32,15 @@ def test_product_keys_match_vendor_product():
     assert not product_keys_match("mysql", "oracle", "postgresql", "postgresql")
 
 
+def test_product_keys_match_rejects_vendor_mismatch_substring():
+    assert not product_keys_match("sql", "microsoft", "oracle", "mysql")
+    assert not product_keys_match("ab", "vendor", "vendor", "xabcd")
+
+
+def test_product_keys_match_allows_substring_with_min_length():
+    assert product_keys_match("tomcat", "apache", "apache", "apache_tomcat")
+
+
 def test_score_asset_exact_version_match():
     asset = {"product": "http_server", "version": "2.4.52", "vendor": "apache"}
     cpe = {

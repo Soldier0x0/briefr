@@ -70,12 +70,16 @@ def product_keys_match(asset_product: str, asset_vendor: str | None, cpe_vendor:
     asset_v = _normalize_key(asset_vendor or "")
     cpe_p = _normalize_key(cpe_product)
     cpe_v = _normalize_key(cpe_vendor)
+    if asset_v and cpe_v and asset_v != cpe_v and asset_v not in cpe_v and cpe_v not in asset_v:
+        return False
     if asset_v and asset_v == cpe_v and asset_p == cpe_p:
         return True
     if asset_p and asset_p == cpe_p:
         return True
-    if asset_p and (asset_p in cpe_p or cpe_p in asset_p):
-        return True
+    if asset_p and cpe_p:
+        shorter, longer = (asset_p, cpe_p) if len(asset_p) < len(cpe_p) else (cpe_p, asset_p)
+        if len(shorter) >= 3 and shorter in longer:
+            return True
     combined = _normalize_key(f"{asset_vendor or ''}{asset_product}")
     cpe_combined = _normalize_key(f"{cpe_vendor}{cpe_product}")
     return bool(combined and cpe_combined and (combined in cpe_combined or cpe_combined in combined))
