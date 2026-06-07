@@ -1,10 +1,10 @@
-/** CVE count → heatmap fill colour (matches product spec). */
+/** CVE count → heatmap fill colour (theme tokens in App.css). */
 export function heatmapColor(count) {
-  if (!count || count <= 0) return 'var(--bg3)'
-  if (count <= 5) return '#2d1a0e'
-  if (count <= 15) return '#7a3520'
-  if (count <= 30) return '#b84a28'
-  return 'var(--red)'
+  if (!count || count <= 0) return 'var(--heatmap-0)'
+  if (count <= 5) return 'var(--heatmap-1)'
+  if (count <= 15) return 'var(--heatmap-2)'
+  if (count <= 30) return 'var(--heatmap-3)'
+  return 'var(--heatmap-4)'
 }
 
 export const HEATMAP_LEGEND_COUNTS = [0, 3, 10, 22, 40]

@@ -1,9 +1,11 @@
-import { chromium } from 'playwright';
+import { createRequire } from 'module';
 import { mkdir } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const require = createRequire(path.join(__dirname, '../frontend/package.json'));
+const { chromium } = require('playwright');
 const outDir = path.join(__dirname, '..', 'screenshots');
 const baseUrl = 'http://localhost:5173';
 
@@ -36,10 +38,19 @@ async function main() {
   });
 
   await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 120000 });
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForSelector('.header .header-logo-btn', { timeout: 60000 });
 
-  // BRIEF tab (default feed)
+  // BRIEF tab (default feed) — require styled UI, not unstyled HTML
   await page.waitForSelector('.cve-card, .cve-feed-list, .content-grid', { timeout: 60000 });
-  await page.waitForTimeout(2000);
+  const styled = await page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement);
+    return root.getPropertyValue('--red').trim() === '#e85533';
+  });
+  if (!styled) {
+    throw new Error('CSS not applied (check CSP / Vite). --red token missing.');
+  }
+  await page.waitForTimeout(2500);
   await shot(page, 'brief.png');
 
   // IOC LOOKUP

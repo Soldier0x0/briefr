@@ -1,0 +1,159 @@
+/**
+ * BRIEFR light theme — component surfaces (layout unchanged).
+ * Tokens live in App.css; this file applies raised/sunken surfaces for hierarchy.
+ */
+
+[data-theme="light"] .header {
+  background: var(--surface-raised);
+  border-bottom-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .hero-stack-bar {
+  background: var(--surface-raised);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .stats-row {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .stat-cell {
+  border-right-color: var(--border);
+}
+
+[data-theme="light"] .stat-cell-interactive:hover {
+  background: var(--surface-sunken);
+}
+
+[data-theme="light"] .timeline-heatmap {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-strong);
+  padding-left: 12px;
+  padding-right: 12px;
+  margin-bottom: 0;
+}
+
+[data-theme="light"] .timeline-cell--empty {
+  background: var(--heatmap-0);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+[data-theme="light"] .timeline-tooltip {
+  background: var(--surface-raised);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="light"] .filter-bar {
+  background: var(--surface-raised);
+  border-bottom-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .filter-search {
+  background: var(--input-bg);
+  border-color: var(--border-strong);
+  box-shadow: inset 0 1px 2px rgba(26, 24, 20, 0.04);
+}
+
+[data-theme="light"] .filter-search:focus {
+  border-color: var(--red);
+  outline: 1px solid color-mix(in srgb, var(--red) 35%, transparent);
+}
+
+[data-theme="light"] .filter-btn {
+  background: var(--chip-bg);
+  border-color: var(--chip-border);
+  color: var(--text2);
+}
+
+[data-theme="light"] .filter-btn:hover {
+  background: var(--surface-sunken);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+[data-theme="light"] .filter-btn.active {
+  color: var(--on-red);
+  background: var(--red);
+  border-color: var(--red);
+}
+
+[data-theme="light"] .vendor-filter-block {
+  background: var(--surface-sunken);
+  border-top-color: var(--border-strong);
+  border-bottom-color: var(--border-strong);
+}
+
+[data-theme="light"] .vendor-btn {
+  background: var(--surface-raised);
+  border-color: var(--chip-border);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .vendor-btn:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-sunken);
+}
+
+[data-theme="light"] .vendor-btn.active {
+  background: var(--chip-active-bg);
+  border-color: var(--red);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--red) 25%, transparent);
+}
+
+[data-theme="light"] .digest-btn,
+[data-theme="light"] .export-btn {
+  background: var(--surface-raised);
+  border-color: var(--border-strong);
+}
+
+[data-theme="light"] .sidebar {
+  background: var(--surface-raised);
+  border-left: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .sidebar-section {
+  border-bottom-color: var(--border);
+}
+
+[data-theme="light"] .content-grid {
+  border-top-color: var(--border-strong);
+}
+
+[data-theme="light"] .cve-card {
+  background: var(--surface-raised);
+  border-bottom-color: var(--border);
+}
+
+[data-theme="light"] .cve-card:hover,
+[data-theme="light"] .cve-card.cve-nav-selected {
+  background: var(--surface-sunken);
+}
+
+[data-theme="light"] .cve-summary {
+  background: var(--surface-sunken);
+  border-left-color: var(--accent);
+}
+
+[data-theme="light"] .badge-cvss-medium {
+  background: color-mix(in srgb, var(--amber) 14%, var(--surface-raised));
+}
+
+[data-theme="light"] .about-overlay,
+[data-theme="light"] .digest-overlay {
+  background: rgba(26, 24, 20, 0.55);
+}
+
+[data-theme="light"] .about-box,
+[data-theme="light"] .digest-modal {
+  box-shadow: var(--shadow-md);
+}

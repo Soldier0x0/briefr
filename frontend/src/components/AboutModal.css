@@ -39,7 +39,7 @@
   font-family: var(--font-mono);
   font-size: 28px;
   font-weight: 600;
-  color: #e85533;
+  color: var(--red);
   letter-spacing: 0.06em;
   margin-bottom: 6px;
 }

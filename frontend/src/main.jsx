@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import { AssetProfileProvider } from './context/AssetProfileContext.jsx'
 import './App.css'
+import './theme/light-theme.css'
 
 try {
   if (localStorage.getItem('briefr_theme') === 'light') {
