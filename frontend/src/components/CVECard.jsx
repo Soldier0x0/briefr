@@ -155,7 +155,11 @@ export default function CVECard({
         <div
           className="card-risk-score"
           title={!riskScore.hasProfile ? 'Load an asset profile for personalised scoring' : undefined}
-          aria-label={`BRIEFR Risk Score: ${riskScore.total.toFixed(1)}`}
+          aria-label={
+            !riskScore.hasProfile
+              ? `BRIEFR Risk Score: ${riskScore.total.toFixed(1)} (no asset profile loaded)`
+              : `BRIEFR Risk Score: ${riskScore.total.toFixed(1)}`
+          }
         >
           <div
             className="card-risk-number"

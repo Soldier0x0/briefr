@@ -25,7 +25,7 @@ function parseDate(value) {
 function daysSince(value) {
   const d = parseDate(value)
   if (!d) return null
-  return Math.floor((Date.now() - d) / 86400000)
+  return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86400000))
 }
 
 // ── Asset Match (graduation table) ───────────────────────
@@ -230,7 +230,7 @@ export function calculateKevScore(cve) {
 // ── Exploit Score (Metasploit / weaponised / PoC graduation) ─
 
 export function calculateExploitScore(cve) {
-  const exploits = cve.public_exploits || []
+  const exploits = (cve.public_exploits || []).filter(Boolean)
   const types = exploits.map(e => (e.type || '').toLowerCase())
 
   const urlBlob = [
@@ -338,6 +338,7 @@ function buildSentences(cve, assetProfile, scores, assetMatchType) {
 // ── Main scoring function ─────────────────────────────────
 
 export function calculateRiskScore(cve, assetProfile) {
+  if (!cve) return null
   const { score: assetScore, matchType: assetMatchType } = assetMatchInfo(cve, assetProfile)
   const kevScore = calculateKevScore(cve)
   const epssScore = cve.epss_score || 0

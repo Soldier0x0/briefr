@@ -228,7 +228,11 @@ function RiskScoreBreakdown({ riskScore }) {
         <div
           className="drawer-risk-total"
           style={{ color: totalColor }}
-          aria-label={`Risk score: ${total.toFixed(1)} out of 100`}
+          aria-label={
+            !hasProfile
+              ? `Risk score: ${total.toFixed(1)} out of 100 (no asset profile loaded)`
+              : `Risk score: ${total.toFixed(1)} out of 100`
+          }
         >
           {total.toFixed(1)}
           {!hasProfile && (
