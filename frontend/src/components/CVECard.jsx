@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { copyToClipboard } from '../utils/report.js'
 import { formatAbsolute } from '../utils/timezone.js'
 import { publishedAgeClass } from '../utils/cveAge.js'
+import { useMomentumScore } from '../utils/momentumCache.js'
 import './CVECard.css'
 
 function timeAgo(isoString) {
@@ -58,6 +59,7 @@ export default function CVECard({
   exposureScore = 0,
 }) {
   const [shareCopied, setShareCopied] = useState(false)
+  const momentumScore = useMomentumScore(cve.cve_id)
   const sevClass = severityClass(cve.severity)
   const cvssClass = cvssBadgeClass(cve.cvss_score, cve.severity)
   const epss =
@@ -169,6 +171,15 @@ export default function CVECard({
       <div className="cve-top">
         <span className="cve-id" aria-label={`CVE ID: ${cve.cve_id}`}>
           {cve.cve_id}
+          {momentumScore > 0.5 && (
+            <span
+              className="cve-momentum-arrow"
+              title="Rising threat momentum — open CVE for details"
+              aria-label="Rising threat momentum"
+            >
+              ↑
+            </span>
+          )}
         </span>
         <div className="cve-badges" aria-label="CVE attributes">
           {cve.is_kev && (
