@@ -60,11 +60,13 @@ def _extract_cpe_matches(configurations: list) -> list[dict[str, Any]]:
                     continue
                 vendor = parts[3]
                 product = parts[4]
+                cpe_version = parts[5] if len(parts) > 5 else None
                 if not vendor or not product or vendor in ("*", "-") or product in ("*", "-"):
                     continue
                 key = (
                     vendor,
                     product,
+                    cpe_version,
                     match.get("versionStartIncluding"),
                     match.get("versionStartExcluding"),
                     match.get("versionEndIncluding"),
@@ -77,6 +79,7 @@ def _extract_cpe_matches(configurations: list) -> list[dict[str, Any]]:
                     {
                         "vendor": vendor,
                         "product": product,
+                        "version": cpe_version,
                         "version_start_including": match.get("versionStartIncluding"),
                         "version_start_excluding": match.get("versionStartExcluding"),
                         "version_end_including": match.get("versionEndIncluding"),

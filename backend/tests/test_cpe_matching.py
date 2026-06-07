@@ -52,6 +52,18 @@ def test_score_asset_exact_version_match():
     assert score_asset_against_cpe(asset, cpe) == 100
 
 
+def test_score_asset_rejects_mismatched_cpe_version():
+    asset = {"product": "nginx", "version": "1.21.0", "vendor": "nginx"}
+    cpe = {"vendor": "nginx", "product": "nginx", "version": "1.20.0"}
+    assert score_asset_against_cpe(asset, cpe) is None
+
+
+def test_score_asset_matches_specific_cpe_version():
+    asset = {"product": "nginx", "version": "1.20.0", "vendor": "nginx"}
+    cpe = {"vendor": "nginx", "product": "nginx", "version": "1.20.0"}
+    assert score_asset_against_cpe(asset, cpe) == 100
+
+
 def test_score_asset_without_version_partial():
     asset = {"product": "nginx", "version": "", "vendor": "nginx"}
     cpe = {"vendor": "nginx", "product": "nginx"}

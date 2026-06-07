@@ -100,6 +100,10 @@ def score_asset_against_cpe(
         return None
 
     version = (asset.get("version") or "").strip()
+    cpe_version = (cpe_match.get("version") or "").strip()
+    if _is_version_bound(cpe_version) and version and _compare_versions(version, cpe_version) != 0:
+        return None
+
     in_range = version_in_range(
         version,
         start_including=cpe_match.get("version_start_including"),
