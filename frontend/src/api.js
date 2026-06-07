@@ -150,18 +150,6 @@ export function fetchOTXPulseIocs(pulseId, limit = 10) {
   return request(`/otx/pulses/${encodeURIComponent(pulseId)}/iocs?limit=${limit}`)
 }
 
-export function triggerRefresh() {
-  return request('/refresh', { method: 'POST' })
-}
-
-export function fetchInvestigationSummary(items, durationMinutes) {
-  return request('/investigation/summary', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ items, duration_minutes: durationMinutes }),
-  })
-}
-
 /** AI executive summary — only call when analyst exports a PDF. */
 export function fetchAiSummary({
   cves = [],

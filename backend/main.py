@@ -60,7 +60,6 @@ from scheduler import (
     stop_scheduler,
 )
 from ai.summary import generate_executive_summary
-from investigation_summary import generate_investigation_summary
 from tracking import get_ioc_usage_stats, get_usage_stats
 from templates.intelligence import (
     epss_sentence_or_fallback,
