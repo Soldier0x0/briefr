@@ -1,5 +1,7 @@
 # BRIEFR Application Execution Map
 
+Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
+
 Runtime behaviour traced from source. File:function references match the codebase.
 
 ---

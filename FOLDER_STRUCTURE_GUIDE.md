@@ -1,5 +1,7 @@
 # BRIEFR Folder Structure Guide
 
+Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
+
 Every file in the repository with a one-line purpose. Tags:
 
 - **[DEPRECATED]** — dead or superseded code

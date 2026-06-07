@@ -85,6 +85,15 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="BRIEFR CVE Intelligence API",
     version="1.0.0",
+    description=(
+        "Proprietary CVE intelligence API. "
+        "Copyright © 2026 Sai Harsha Vardhan. All rights reserved."
+    ),
+    contact={"name": "BRIEFR", "url": "https://projectjupiter.in"},
+    license_info={
+        "name": "Proprietary — All Rights Reserved",
+        "url": "https://projectjupiter.in/terms",
+    },
     docs_url="/api/docs",
     redoc_url="/api/redoc",
     lifespan=lifespan,

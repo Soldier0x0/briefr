@@ -1,8 +1,8 @@
 
 # BRIEFR
-### Free CVE Intelligence & Threat Investigation for Security Analysts
+### CVE Intelligence & Threat Investigation for Security Analysts
 
-![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)
 ![React 18](https://img.shields.io/badge/React-18.3-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.136-green.svg)
@@ -94,6 +94,8 @@ Three main tabs:
 
 ## Data Sources
 
+BRIEFR incorporates publicly available intelligence from NVD, CISA KEV, FIRST EPSS, MITRE ATT&CK, MITRE ATLAS, OTX, VirusTotal, AbuseIPDB, GreyNoise, abuse.ch, and the additional feeds below. All trademarks, service marks, logos, and data rights remain the property of their respective owners.
+
 | Source | Data | Refresh | API / trigger |
 |--------|------|---------|---------------|
 | NVD (NIST) | CVE records, CVSS, CPE | Every `NVD_SYNC_INTERVAL_HOURS` (default 1h) | `POST /api/refresh/nvd` |
@@ -101,14 +103,14 @@ Three main tabs:
 | FIRST EPSS | Exploit probability scores | Every `EPSS_SYNC_INTERVAL_HOURS` (default 6h) | `POST /api/refresh/epss` |
 | MITRE ATT&CK | Techniques, groups, CVE mappings | Weekly (Sunday cron) | `POST /api/refresh/mitre` |
 | MITRE ATLAS | AI/ML techniques + case studies | Weekly (with MITRE job) | `POST /api/refresh/mitre` |
+| OTX (AlienVault) | Campaign pulses + IOCs | Nightly job + on demand | `OTX_API_KEY` |
+| VirusTotal | IOC reputation | On demand (6h cache) | `POST /api/ioc/lookup` |
+| AbuseIPDB | IP abuse score | On demand (6h cache) | `POST /api/ioc/lookup` |
+| GreyNoise | IP classification + CVE scan context | On demand | IOC + CVE detail |
+| abuse.ch (MalwareBazaar / URLhaus) | Hash / domain malware context | On demand | `ABUSECH_AUTH_KEY` |
 | OSV.dev | Affected packages | On CVE detail view | — |
 | Sploitus | Public exploits | On CVE detail / ingest enrichment | — |
 | CIRCL | Extended CVE references | On CVE detail / ingest | — |
-| GreyNoise | IP classification + CVE scan context | On demand | IOC + CVE detail |
-| AlienVault OTX | Campaign pulses + IOCs | Nightly job + on demand | `OTX_API_KEY` |
-| VirusTotal | IOC reputation | On demand (6h cache) | `POST /api/ioc/lookup` |
-| AbuseIPDB | IP abuse score | On demand (6h cache) | `POST /api/ioc/lookup` |
-| MalwareBazaar / URLhaus | Hash / domain malware context | On demand | `ABUSECH_AUTH_KEY` |
 | Groq / Anthropic | PDF executive summary | On PDF export only | `POST /api/ai/summary` |
 | GitHub | Sigma + Elastic rule search | On Detect tab open | `GITHUB_TOKEN` optional |
 | RSS × 6 | Security news cards | Every 4 hours | `GET /api/case-studies/news` |
@@ -287,7 +289,13 @@ BRIEFR collects no personal data, uses no cookies, and runs no analytics. Tech s
 
 ## License
 
-MIT License — free to self-host, fork, and modify. Attribution appreciated.
+BRIEFR is currently proprietary software.
+
+Copyright © 2026 Sai Harsha Vardhan.
+
+All rights reserved.
+
+Source code is not licensed for redistribution, modification, or commercial use. See [`LICENSE`](LICENSE).
 
 ---
 

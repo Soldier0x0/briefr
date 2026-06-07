@@ -1,5 +1,7 @@
 # BRIEFR Technical Inventory
 
+Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
+
 **Version:** 1.1 beta · **Date:** 2026-06-07
 
 ---

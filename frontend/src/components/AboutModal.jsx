@@ -3,11 +3,16 @@ import { Link } from 'react-router-dom'
 import './AboutModal.css'
 
 const SOURCES = [
-  'NVD/NIST',
+  'NVD',
   'CISA KEV',
-  'EPSS by FIRST.org',
-  'OSV.dev',
-  'GitHub Advisory',
+  'FIRST EPSS',
+  'MITRE ATT&CK',
+  'MITRE ATLAS',
+  'OTX',
+  'VirusTotal',
+  'AbuseIPDB',
+  'GreyNoise',
+  'abuse.ch',
 ]
 
 export default function AboutModal({ onClose }) {
@@ -34,7 +39,7 @@ export default function AboutModal({ onClose }) {
         </button>
 
         <div className="about-logo" id="about-title">BRIEFR</div>
-        <div className="about-subtitle">Free CVE Intelligence</div>
+        <div className="about-subtitle">CVE Intelligence &amp; Threat Investigation</div>
 
         <hr className="about-divider" />
 
@@ -42,7 +47,7 @@ export default function AboutModal({ onClose }) {
           BRIEFR aggregates vulnerability data from public government and
           open-source sources on a rolling schedule (NVD hourly, KEV every
           15 minutes, EPSS every 6 hours). No account required.
-          No cookies. No tracking. No cost.
+          No cookies. No tracking.
         </p>
 
         <div className="about-sources-section">
@@ -52,9 +57,16 @@ export default function AboutModal({ onClose }) {
               <span key={s} className="about-source-tag mono">{s}</span>
             ))}
           </div>
+          <p className="about-sources-note">
+            All trademarks, service marks, logos, and data rights remain the property of their respective owners.
+          </p>
         </div>
 
         <hr className="about-divider" />
+
+        <p className="about-copyright mono">
+          &copy; 2026 BRIEFR &middot; Proprietary Software &middot; All Rights Reserved
+        </p>
 
         <p className="about-built-by">
           Built by{' '}

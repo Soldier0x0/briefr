@@ -1,5 +1,7 @@
 # BRIEFR API Reference
 
+Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
+
 **Base URL:** `/api` (proxied from Vite dev server at `http://localhost:5173/api` → `http://localhost:8000/api`)  
 **Auth:** None on any endpoint (v1.1 beta)  
 **Interactive docs:** `GET /api/docs` (Swagger UI), `GET /api/redoc` (ReDoc) — **unprotected; disable in production**

@@ -78,7 +78,8 @@ export default function PrivacyPage() {
 
       <h2 className="legal-section-heading">7. Proprietary software</h2>
       <p className="legal-p">
-        BRIEFR is proprietary software operated at projectjupiter.in. The
+        BRIEFR is proprietary software operated at projectjupiter.in.
+        Copyright &copy; 2026 Sai Harsha Vardhan. All rights reserved. The
         application source code is not publicly distributed.
       </p>
     </LegalPage>
