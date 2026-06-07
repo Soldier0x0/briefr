@@ -1267,7 +1267,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
         if (!cancelled) {
           setMomentumData(data)
           // Publish to momentumCache so CVECard arrows update reactively
-          if (data?.momentum_score > 0) {
+          if (data && typeof data.momentum_score === 'number') {
             setMomentumScore(cve.cve_id, data.momentum_score)
           }
         }

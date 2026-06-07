@@ -404,7 +404,7 @@ async def calculate_momentum(cve_id: str, db: Any) -> dict[str, Any]:
             fetched_dt = datetime.fromisoformat(fetched_str.replace("Z", "+00:00"))
             if fetched_dt.tzinfo is None:
                 fetched_dt = fetched_dt.replace(tzinfo=timezone.utc)
-            hours_ago = (now - fetched_dt).total_seconds() / 3600
+            hours_ago = max(0.0, (now - fetched_dt).total_seconds() / 3600)
             if hours_ago <= 24:
                 signals.append({
                     "type": "otx_pulse",
@@ -444,7 +444,7 @@ async def calculate_momentum(cve_id: str, db: Any) -> dict[str, Any]:
                 kev_dt = datetime.fromisoformat(kev_str.replace("Z", "+00:00"))
                 if kev_dt.tzinfo is None:
                     kev_dt = kev_dt.replace(tzinfo=timezone.utc)
-                days_kev = (now - kev_dt).days
+                days_kev = max(0, (now - kev_dt).days)
                 if days_kev <= 7:
                     signals.append({
                         "type": "kev_recent",
