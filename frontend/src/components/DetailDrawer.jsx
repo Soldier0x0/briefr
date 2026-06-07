@@ -20,7 +20,13 @@ import {
 } from '../utils/epssSparkline.js'
 import DrawerAtlasSection from './DrawerAtlasSection.jsx'
 import { displayText } from '../utils/displayText.js'
-import { calculateRiskScore, riskScoreColor, componentBarColor } from '../scoring/riskScore.js'
+import {
+  buildRiskHeroSummary,
+  calculateRiskScore,
+  componentBarColor,
+  riskScoreColor,
+  RISK_COMPONENT_LABELS,
+} from '../scoring/riskScore.js'
 import './DetailDrawer.css'
 
 
@@ -204,19 +210,27 @@ function RiskScoreBar({ score }) {
   )
 }
 
-const COMPONENT_META = [
-  { key: 'asset',   label: 'Asset Match',   weightPct: 37 },
-  { key: 'kev',     label: 'KEV Status',    weightPct: 26 },
-  { key: 'epss',    label: 'EPSS',          weightPct: 16 },
-  { key: 'exploit', label: 'Exploit Avail', weightPct: 11 },
-  { key: 'cvss',    label: 'CVSS',          weightPct: 10 },
-]
+function RiskScoreBreakdown({ cve, riskScore, onOpenProfile }) {
+  const [expanded, setExpanded] = useState(false)
 
-function RiskScoreBreakdown({ riskScore }) {
-  if (!riskScore) return null
+  useEffect(() => {
+    setExpanded(false)
+  }, [cve?.cve_id])
+
+  if (!riskScore || !cve) return null
 
   const { total, components, hasProfile } = riskScore
   const totalColor = riskScoreColor(total)
+  const summary = buildRiskHeroSummary(cve, riskScore)
+
+  const breakdownRows = Object.entries(components)
+    .filter(([key]) => hasProfile || key !== 'asset')
+    .map(([key, comp]) => ({
+      key,
+      label: RISK_COMPONENT_LABELS[key] || key,
+      ...comp,
+    }))
+    .sort((a, b) => b.points - a.points)
 
   return (
     <section className="drawer-section drawer-risk-section" aria-labelledby="risk-score-heading">
@@ -230,62 +244,79 @@ function RiskScoreBreakdown({ riskScore }) {
           style={{ color: totalColor }}
           aria-label={
             !hasProfile
-              ? `Risk score: ${total.toFixed(1)} out of 100 (no asset profile loaded)`
+              ? `Risk score: ${total.toFixed(1)} out of 100. Asset exposure unknown until profile is loaded.`
               : `Risk score: ${total.toFixed(1)} out of 100`
           }
         >
           {total.toFixed(1)}
-          {!hasProfile && (
-            <span
-              className="drawer-risk-no-profile"
-              title="Load an asset profile for personalised scoring"
-              aria-label="No asset profile loaded"
-            >
-              ?
-            </span>
-          )}
         </div>
-        <div className="drawer-risk-hero-label mono">BRIEFR RISK SCORE</div>
+        {summary && (
+          <p className="drawer-risk-summary mono">{summary}</p>
+        )}
       </div>
 
-      <div className="drawer-risk-components">
-        {COMPONENT_META.map(({ key, label, weightPct }) => {
-          const comp = components[key]
-          if (!comp) return null
-          return (
-            <div key={key} className="drawer-risk-component">
-              <div className="drawer-risk-comp-header">
-                <span className="drawer-risk-comp-label mono">{label}</span>
-                <span className="drawer-risk-comp-weight mono">{weightPct}%</span>
-                <RiskScoreBar score={comp.score} />
-                <span className="drawer-risk-comp-points mono">
-                  {comp.points.toFixed(1)} pts
-                </span>
+      {!hasProfile && !cve.is_kev && onOpenProfile && (
+        <div className="drawer-risk-profile-cta">
+          <p className="drawer-risk-profile-cta-text mono">
+            Load asset profile for personalised scoring
+          </p>
+          <button
+            type="button"
+            className="drawer-risk-profile-cta-btn mono"
+            onClick={onOpenProfile}
+          >
+            Set up profile
+          </button>
+        </div>
+      )}
+
+      {!hasProfile && cve.is_kev && onOpenProfile && (
+        <button
+          type="button"
+          className="drawer-risk-profile-link mono"
+          onClick={onOpenProfile}
+        >
+          Personalise with asset profile
+        </button>
+      )}
+
+      <button
+        type="button"
+        className="drawer-risk-toggle mono"
+        onClick={() => setExpanded(v => !v)}
+        aria-expanded={expanded}
+      >
+        {expanded ? '▾ Hide breakdown' : '▸ Show breakdown'}
+      </button>
+
+      {expanded && (
+        <>
+          <div className="drawer-risk-components">
+            {breakdownRows.map(row => (
+              <div key={row.key} className="drawer-risk-component">
+                <div className="drawer-risk-comp-header">
+                  <span className="drawer-risk-comp-label mono">{row.label}</span>
+                  <RiskScoreBar score={row.score} />
+                  <span className="drawer-risk-comp-points mono">
+                    {row.points.toFixed(1)} pts
+                  </span>
+                </div>
               </div>
-              {comp.sentence && (
-                <p className="drawer-risk-comp-sentence">{comp.sentence}</p>
-              )}
-            </div>
-          )
-        })}
-
-        {/* Momentum — Session 16 */}
-        <div className="drawer-risk-component drawer-risk-momentum">
-          <div className="drawer-risk-comp-header">
-            <span className="drawer-risk-comp-label mono">Momentum</span>
-            <span className="drawer-risk-comp-weight mono">5%</span>
-            <span className="drawer-risk-momentum-label mono">Coming in next update</span>
+            ))}
           </div>
-        </div>
-      </div>
+          <p className="drawer-risk-weights mono">
+            Weights: Asset 37% · KEV 26% · EPSS 16% · Exploit 11% · CVSS 10%
+          </p>
+        </>
+      )}
     </section>
   )
 }
 
-function TabOverview({ cve, riskScore, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
+function TabOverview({ cve, riskScore, onOpenProfile, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
   return (
     <>
-      <RiskScoreBreakdown riskScore={riskScore} />
+      <RiskScoreBreakdown cve={cve} riskScore={riskScore} onOpenProfile={onOpenProfile} />
 
       <EpssTrendSection
         cve={cve}
@@ -1072,6 +1103,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
             <TabOverview
               cve={cve}
               riskScore={riskScore}
+              onOpenProfile={assetCtx?.openProfileFlow}
               products={products}
               cwes={cwes}
               urls={urls}

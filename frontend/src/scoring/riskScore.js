@@ -396,6 +396,61 @@ export function calculateRiskScore(cve, assetProfile) {
   }
 }
 
+
+// ── Hero summary (drawer collapsed state) ─────────────────
+
+const EXPLOIT_SUMMARY_PARTS = [
+  { min: 1.0, text: 'Metasploit module' },
+  { min: 0.88, text: 'Weaponised exploit' },
+  { min: 0.55, text: 'Public PoC' },
+  { min: 0.01, text: 'Exploit refs' },
+]
+
+export function buildRiskHeroSummary(cve, riskScore) {
+  if (!cve || !riskScore) return ''
+
+  const parts = []
+  const { hasProfile, assetMatchType, components } = riskScore
+
+  if (hasProfile) {
+    if (assetMatchType && assetMatchType !== 'No matching assets in your profile') {
+      parts.push('Matches your stack')
+    } else {
+      parts.push('No stack match')
+    }
+  }
+
+  if (cve.is_kev) parts.push('KEV listed')
+
+  const exploitScore = components?.exploit?.score ?? 0
+  for (const tier of EXPLOIT_SUMMARY_PARTS) {
+    if (exploitScore >= tier.min) {
+      parts.push(tier.text)
+      break
+    }
+  }
+
+  if (cve.cvss_score != null) {
+    parts.push(`CVSS ${cve.cvss_score.toFixed(1)}`)
+  } else if (cve.severity && cve.severity !== 'UNKNOWN') {
+    parts.push(cve.severity)
+  }
+
+  if (!parts.length && components?.epss?.score > 0) {
+    parts.push(`${(components.epss.score * 100).toFixed(1)}% EPSS`)
+  }
+
+  return parts.slice(0, 3).join(' · ')
+}
+
+export const RISK_COMPONENT_LABELS = {
+  asset: 'Asset Match',
+  kev: 'KEV Status',
+  epss: 'EPSS',
+  exploit: 'Exploit Avail',
+  cvss: 'CVSS',
+}
+
 // ── Colour helpers ────────────────────────────────────────
 
 /**
