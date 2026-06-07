@@ -16,6 +16,7 @@
 | Validation | Pydantic | 2.13.4 | Request/response models |
 | Config | python-dotenv | 1.2.2 | `.env` loading |
 | YAML | PyYAML | 6.0.2 | ATLAS feed parsing |
+| Spreadsheet generation | openpyxl | 3.1.5 | `TECHNICAL_INVENTORY.xlsx` generator script |
 | UI framework | React | 18.3.1 | Analyst SPA |
 | Build tool | Vite | 5.4.1 | Dev server and production bundle |
 | Routing | react-router-dom | 7.16.0 | `/privacy`, `/terms` routes |
