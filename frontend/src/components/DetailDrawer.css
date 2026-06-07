@@ -1245,3 +1245,266 @@
   color: var(--text3);
   margin: 0;
 }
+
+/* ── Detection Rule Engine (Detect tab) ──────────────── */
+
+.det-status-badge {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+.det-badge-stable {
+  color: var(--green);
+  border-color: var(--green);
+  background: var(--green-dim);
+}
+
+.det-badge-test {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: var(--amber-dim);
+}
+
+.det-badge-experimental {
+  color: var(--text3);
+  border-color: var(--border2);
+  background: transparent;
+}
+
+.det-rule-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.det-rule-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.det-rule-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.det-rule-source {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+}
+
+.det-rule-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.det-rule-title {
+  font-size: 0.8125rem;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.det-rule-link,
+.det-rule-download {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.det-rule-link:hover,
+.det-rule-download:hover {
+  color: var(--text);
+}
+
+.det-copy-btn {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  background: none;
+  border: 1px solid var(--border2);
+  padding: 3px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.det-copy-btn:hover {
+  color: var(--text);
+  border-color: var(--text3);
+}
+
+.det-generated-section {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.det-generated-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.det-confidence-badge {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--amber);
+  border: 1px solid var(--amber);
+  background: var(--amber-dim);
+  padding: 2px 6px;
+}
+
+.det-generated-warning {
+  font-size: 0.6875rem;
+  color: var(--amber);
+  margin: 0 0 10px;
+  letter-spacing: 0.02em;
+}
+
+.det-code-wrap {
+  background: var(--bg);
+  border: 1px solid var(--border2);
+}
+
+.det-code-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.det-code-block {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.6;
+  color: var(--text2);
+  background: transparent;
+  margin: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  white-space: pre;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.det-siem-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.det-siem-technique-label {
+  font-weight: 400;
+  color: var(--text3);
+  font-size: 9px;
+}
+
+.det-siem-block {
+  border: 1px solid var(--border);
+}
+
+.det-siem-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--bg3);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text2);
+  transition: background 0.1s, color 0.1s;
+}
+
+.det-siem-toggle:hover {
+  background: var(--bg2);
+  color: var(--text);
+}
+
+.det-siem-chevron {
+  font-size: 8px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.det-siem-body {
+  background: var(--bg);
+  padding: 0;
+}
+
+.det-siem-query-wrap {
+  position: relative;
+}
+
+.det-siem-query-wrap .det-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+}
+
+.det-siem-query {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.6;
+  color: var(--text2);
+  background: transparent;
+  margin: 0;
+  padding: 12px 70px 12px 14px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.det-siem-notes {
+  font-size: 0.625rem;
+  color: var(--text3);
+  letter-spacing: 0.02em;
+  margin: 0;
+  padding: 6px 12px 10px;
+  border-top: 1px solid var(--border);
+  line-height: 1.5;
+}
+
+.det-log-patterns {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.det-log-pattern {
+  font-size: 0.8125rem;
+  color: var(--text2);
+  line-height: 1.45;
+  padding-left: 14px;
+  position: relative;
+}
+
+.det-log-pattern::before {
+  content: '\00B7';
+  position: absolute;
+  left: 0;
+  color: var(--text3);
+  font-size: 1rem;
+  line-height: 1.2;
+}

@@ -1078,6 +1078,94 @@ async def ioc_lookup(body: IocLookupRequest):
     return result
 
 
+@app.get("/api/cves/{cve_id}/detection")
+async def cve_detection(
+    cve_id: str,
+    product: str = Query(default="", description="Affected product name for rule title generation"),
+):
+    """
+    Detection engineering resource for a CVE.
+    Returns:
+    - sigma_rules: community Sigma rules from SigmaHQ (cached 24h)
+    - elastic_rules: community Elastic detection rules (cached 24h)
+    - generated_sigma: template-based Sigma YAML (only when no community rules)
+    - siem_queries: 4-platform quick-search queries (Elastic/Splunk/Sentinel/QRadar)
+    - log_patterns: plain-English detection patterns from ATT&CK guidance
+    """
+    from detection.rule_sources import find_sigma_rules, find_elastic_rules
+    from detection.sigma_generator import generate_sigma_rule
+    from detection.siem_queries import get_siem_queries
+    import os
+
+    github_token = os.environ.get("GITHUB_TOKEN", "")
+    cve_upper = cve_id.upper()
+
+    db = await get_db()
+    try:
+        # Get CVE metadata for context
+        row = await db.execute_fetchall(
+            "SELECT description, mitre_technique FROM cves WHERE cve_id = ?",
+            (cve_upper,),
+        )
+        cve_desc = ""
+        primary_technique = ""
+        if row:
+            cve_desc = row[0]["description"] or ""
+            primary_technique = row[0]["mitre_technique"] or ""
+
+        # Get all linked techniques
+        tech_rows = await db.execute_fetchall(
+            "SELECT technique_id FROM cve_technique_map WHERE cve_id = ?",
+            (cve_upper,),
+        )
+        technique_ids = [r["technique_id"] for r in tech_rows]
+        if primary_technique and primary_technique not in technique_ids:
+            technique_ids.insert(0, primary_technique)
+
+        # Run community rule lookups concurrently
+        import asyncio
+        sigma_task = asyncio.create_task(
+            find_sigma_rules(db, cve_upper, technique_ids, github_token)
+        )
+        elastic_task = asyncio.create_task(
+            find_elastic_rules(db, technique_ids, github_token)
+        )
+        sigma_rules, elastic_rules = await asyncio.gather(sigma_task, elastic_task)
+        await db.commit()
+
+        # Generate Sigma rule if no community rules found
+        first_technique = technique_ids[0] if technique_ids else ""
+        has_community_rules = bool(sigma_rules or elastic_rules)
+        generated_sigma = None
+        if not has_community_rules:
+            generated_sigma = generate_sigma_rule(
+                cve_id=cve_upper,
+                technique_id=first_technique,
+                product=product.strip() or "Affected Product",
+                description=cve_desc[:200] if cve_desc else "",
+            )
+
+        # SIEM queries based on primary technique
+        siem_queries = get_siem_queries(
+            technique_id=first_technique,
+            cve_id=cve_upper,
+            product=product.strip(),
+        )
+
+    finally:
+        await db.close()
+
+    return {
+        "cve_id": cve_upper,
+        "technique_ids": technique_ids[:5],
+        "sigma_rules": sigma_rules,
+        "elastic_rules": elastic_rules,
+        "has_community_rules": has_community_rules,
+        "generated_sigma": generated_sigma,
+        "siem_queries": siem_queries,
+    }
+
+
 @app.get("/api/cves/{cve_id}/correlation")
 async def cve_correlation(
     cve_id: str,
