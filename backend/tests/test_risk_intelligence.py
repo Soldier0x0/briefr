@@ -50,7 +50,7 @@ def test_risk_score_bounds():
         cve, None, [{"type": "metasploit"}]
     )
     assert 0 <= result["score"] <= 100
-    assert len(result["breakdown"]) == 5
+    assert len(result["breakdown"]) == 6  # v1.1b: asset, kev, epss, exploit, cvss, momentum
     assert result["components"]["asset"] == 0.5
 
 
