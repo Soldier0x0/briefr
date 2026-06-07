@@ -34,14 +34,15 @@ export default function AssetWarning({ onAccept, onUpload, onSkip, onClose }) {
 
   async function handleFile(e) {
     const file = e.target.files?.[0]
-    if (file && onUpload) {
+    if (!file) return
+    e.target.value = ''
+    if (onUpload) {
       try {
         await onUpload(file)
       } catch {
         alert('Failed to load profile: Invalid or corrupted file.')
       }
     }
-    e.target.value = ''
   }
 
   return (

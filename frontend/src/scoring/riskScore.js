@@ -305,7 +305,7 @@ function buildSentences(cve, assetProfile, scores, assetMatchType) {
   }
 
   // EPSS sentence
-  const epssVal = cve.epss_score != null && cve.epss_score !== '' ? num(cve.epss_score, null) : null
+  const epssVal = num(cve.epss_score, null)
   const epssSentence =
     epssVal != null
       ? `${(epssVal * 100).toFixed(1)}% exploitation probability`
@@ -331,7 +331,7 @@ function buildSentences(cve, assetProfile, scores, assetMatchType) {
   }
 
   // CVSS sentence
-  const cvssVal = cve.cvss_score != null && cve.cvss_score !== '' ? num(cve.cvss_score, null) : null
+  const cvssVal = num(cve.cvss_score, null)
   const cvssSentence =
     cvssVal != null
       ? `${cvssVal.toFixed(1)} / 10.0`
