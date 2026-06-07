@@ -204,6 +204,14 @@ input:focus, textarea:focus {
   color: var(--red);
 }
 
+.footer-copyright {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.625rem;
+  letter-spacing: 0.02em;
+  color: var(--text3);
+}
+
 .footer-right {
   font-size: 0.75rem;
   color: var(--text3);

@@ -25,6 +25,9 @@ export default function LegalPage({ title, subtitle, children }) {
           <div className="legal-body">
             {children}
           </div>
+          <p className="legal-copyright mono">
+            &copy; 2026 BRIEFR &middot; Proprietary Software &middot; All Rights Reserved
+          </p>
         </div>
       </main>
     </div>

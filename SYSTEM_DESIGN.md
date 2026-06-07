@@ -1,5 +1,7 @@
 # BRIEFR System Design
 
+Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
+
 **Version:** 1.1 (beta)  
 **Last updated:** 2026-06-07  
 **Source of truth:** `/workspace` codebase at commit audited for v1.1

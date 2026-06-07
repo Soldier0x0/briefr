@@ -59,8 +59,11 @@ export default function TermsPage() {
 
       <h2 className="legal-section-heading">8. License</h2>
       <p className="legal-p">
-        BRIEFR is free to use at projectjupiter.in. The source code is proprietary.
-        Unauthorised copying or redistribution of the codebase is not permitted.
+        BRIEFR is free to use at projectjupiter.in. The application and source code
+        are proprietary software. Copyright &copy; 2026 Sai Harsha Vardhan. All rights
+        reserved. Unauthorised copying, modification, distribution, reverse
+        engineering, sublicensing, or commercial use of the codebase is not permitted
+        without prior written permission.
       </p>
 
       <h2 className="legal-section-heading">9. Contact</h2>

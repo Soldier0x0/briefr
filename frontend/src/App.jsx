@@ -433,6 +433,9 @@ function AppLayout({
               <footer className="app-footer" role="contentinfo">
                 <div className="footer-left">
                   <span>BRIEFR</span> // CVE intelligence platform
+                  <span className="footer-copyright mono">
+                    &copy; 2026 BRIEFR &middot; Proprietary &middot; All Rights Reserved
+                  </span>
                 </div>
                 <div className="footer-right" style={{ fontSize: '0.6875rem', color: 'var(--text3)' }}>
                   All times UTC &mdash; not a substitute for professional security advice
