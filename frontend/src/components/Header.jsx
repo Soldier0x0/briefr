@@ -125,10 +125,10 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
             <button
               className={`header-tab${activeTab === 'atlas' ? ' active' : ''}`}
               onClick={() => onTabChange('atlas')}
-              aria-label="Switch to case studies and attack narratives"
+              aria-label="Switch to incidents and news"
               aria-current={activeTab === 'atlas' ? 'page' : undefined}
             >
-              CASE STUDIES
+              INCIDENTS &amp; NEWS
             </button>
           </nav>
         )}

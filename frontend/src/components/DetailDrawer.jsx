@@ -850,11 +850,11 @@ function CopyButton({ text, label = 'Copy' }) {
   const [copied, setCopied] = useState(false)
   async function handleCopy(e) {
     e.stopPropagation()
-    try {
-      await navigator.clipboard.writeText(text)
+    const ok = await copyToClipboard(text)
+    if (ok) {
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
-    } catch {}
+    }
   }
   return (
     <button type="button" className="det-copy-btn mono" onClick={handleCopy}>

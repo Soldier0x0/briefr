@@ -59,13 +59,6 @@ function buildSparkline(stats) {
   return bars
 }
 
-const DATA_SOURCES = [
-  { name: 'NVD (NIST)', url: 'https://nvd.nist.gov/' },
-  { name: 'CISA KEV', url: 'https://www.cisa.gov/known-exploited-vulnerabilities-catalog' },
-  { name: 'FIRST EPSS', url: 'https://www.first.org/epss/' },
-  { name: 'OSV.dev', url: 'https://osv.dev/' },
-  { name: 'VirusTotal', url: 'https://www.virustotal.com/' },
-]
 
 const KEV_PREVIEW = 5
 
@@ -144,15 +137,6 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
             Enter your stack in the hero bar above, then enable this filter.
           </p>
         )}
-        <Toggle
-          id="toggle-plain-english"
-          label="Plain English only"
-          checked={!!filters.summary_only}
-          onChange={val => onFiltersChange({ summary_only: val })}
-        />
-        <p className="sidebar-filter-hint" id="plain-english-filter-hint">
-          Shows CVEs with a CISA or enriched summary block on the card — not NVD text alone.
-        </p>
         {filters.stack && (
           <div className="active-stack" aria-label={`Active stack filter: ${filters.stack}`}>
             <span className="stack-key">STACK</span>
@@ -284,18 +268,6 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
         </ul>
       </section>
 
-      {/* ── Section 5: Data Sources ── */}
-      <section className="sidebar-section" aria-labelledby="sources-heading">
-        <h2 id="sources-heading" className="sidebar-heading">DATA SOURCES</h2>
-        <ul className="sources-list" aria-label="Data sources used by BRIEFR">
-          {DATA_SOURCES.map(src => (
-            <li key={src.name} className="source-item">
-              <span className="source-bullet" aria-hidden="true">--</span>
-              <span>{src.name}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
 
     </aside>
   )

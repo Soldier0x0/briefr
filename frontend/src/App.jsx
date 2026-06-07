@@ -429,14 +429,16 @@ function AppLayout({
               )}
             </div>
 
-            <footer className="app-footer" role="contentinfo">
-              <div className="footer-left">
-                <span>BRIEFR</span> // CVE intelligence platform // data from NVD, CISA, FIRST, OSV
-              </div>
-              <div className="footer-right" style={{ fontSize: '0.6875rem', color: 'var(--text3)' }}>
-                All times UTC &mdash; not a substitute for professional security advice
-              </div>
-            </footer>
+            {activeTab !== 'feed' && (
+              <footer className="app-footer" role="contentinfo">
+                <div className="footer-left">
+                  <span>BRIEFR</span> // CVE intelligence platform
+                </div>
+                <div className="footer-right" style={{ fontSize: '0.6875rem', color: 'var(--text3)' }}>
+                  All times UTC &mdash; not a substitute for professional security advice
+                </div>
+              </footer>
+            )}
 
 
             <DetailDrawer

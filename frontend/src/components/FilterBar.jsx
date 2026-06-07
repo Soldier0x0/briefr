@@ -43,8 +43,7 @@ export function hasActiveFilters(filters) {
     filters.epss_min != null ||
     filters.severity ||
     filters.published_on ||
-    filters.my_stack_only ||
-    filters.summary_only
+    filters.my_stack_only
   )
 }
 
@@ -211,16 +210,6 @@ export default function FilterBar({
                 aria-label="Clear published date filter"
               >
                 × clear {filters.published_on}
-              </button>
-            )}
-            {filters.summary_only && (
-              <button
-                type="button"
-                className="filter-stack-clear mono"
-                onClick={() => onFiltersChange({ summary_only: false })}
-                aria-label="Clear plain English filter"
-              >
-                × plain English only
               </button>
             )}
           </span>

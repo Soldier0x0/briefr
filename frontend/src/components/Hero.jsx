@@ -71,10 +71,21 @@ export default function Hero({ activeStack, onBrief, onClearStack }) {
     if (trimmed) onBrief(trimmed)
   }
 
+  function handleClear() {
+    setStack('')
+    setMatchCount(null)
+    setSearching(false)
+    if (onClearStack) onClearStack()
+  }
+
   function handleKeyDown(e) {
     if (e.key === 'Enter') {
       e.preventDefault()
       applyBrief()
+    }
+    if (e.key === 'Escape' && stack) {
+      e.preventDefault()
+      handleClear()
     }
   }
 
@@ -103,6 +114,16 @@ export default function Hero({ activeStack, onBrief, onClearStack }) {
           autoComplete="off"
           spellCheck="false"
         />
+        {stack && (
+          <button
+            type="button"
+            className="stack-clear-btn"
+            onClick={handleClear}
+            aria-label="Clear stack filter"
+          >
+            ×
+          </button>
+        )}
         <button
           type="button"
           className="stack-brief-btn"
