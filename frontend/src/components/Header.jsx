@@ -123,10 +123,10 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
             <button
               className={`header-tab${activeTab === 'atlas' ? ' active' : ''}`}
               onClick={() => onTabChange('atlas')}
-              aria-label="Switch to case studies and attack narratives"
+              aria-label="Switch to AI threats (MITRE ATLAS)"
               aria-current={activeTab === 'atlas' ? 'page' : undefined}
             >
-              CASE STUDIES
+              AI THREATS
             </button>
           </nav>
         )}
@@ -134,6 +134,27 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
         {/* Right: theme toggle, legal, live dot, clock */}
         <div className="header-right">
           {showShortcuts && <ShortcutsPanel placement="header" />}
+
+          {assetCtx?.isLoaded && (
+            <button
+              type="button"
+              className="header-clear-session mono"
+              onClick={assetCtx.clearProfile}
+            >
+              Clear Session
+            </button>
+          )}
+
+          {assetCtx && (
+            <button
+              type="button"
+              className="header-profile-btn mono"
+              onClick={assetCtx.openProfileFlow}
+              aria-label="Open asset profile setup"
+            >
+              PROFILE
+            </button>
+          )}
 
           {/* Theme toggle */}
           <button
