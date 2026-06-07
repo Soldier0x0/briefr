@@ -459,6 +459,26 @@ async def maybe_run_on_startup() -> None:
     await maybe_run_mitre_on_startup()
 
 
+async def run_incident_news_refresh() -> bool:
+    """Proactively refresh the incident news RSS cache (runs every 4 hours)."""
+    from feeds.incident_news import fetch_all_incident_news
+
+    db = await get_db()
+    try:
+        cards, errors = await fetch_all_incident_news(db)
+        await db.commit()
+        logger.info(
+            "Incident news refresh complete: %d items, %d errors",
+            len(cards),
+            len(errors),
+        )
+    except Exception as exc:
+        logger.error("Incident news refresh failed: %s", exc)
+    finally:
+        await db.close()
+    return True
+
+
 async def run_nightly_correlation() -> bool:
     """Nightly correlation engine: infrastructure, actor, and temporal analysis."""
     if _correlation_lock.locked():
@@ -589,6 +609,16 @@ def start_scheduler() -> AsyncIOScheduler:
         ),
         id="otx_nightly_correlation",
         name="OTX Nightly Campaign Correlation",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+    )
+
+    scheduler.add_job(
+        run_incident_news_refresh,
+        trigger=IntervalTrigger(hours=4, timezone=sched_tz),
+        id="incident_news_refresh",
+        name="Incident News RSS Refresh",
         replace_existing=True,
         max_instances=1,
         coalesce=True,
