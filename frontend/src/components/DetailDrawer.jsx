@@ -1,4 +1,4 @@
-import { Component, useEffect, useRef, useState } from 'react'
+import { Component, useEffect, useMemo, useRef, useState } from 'react'
 import {
   fetchCVE,
   fetchCVEEpssHistory,
@@ -9,6 +9,7 @@ import { buildSingleReport, copyToClipboard } from '../utils/report.js'
 import { downloadSingleCvePdf } from '../utils/pdfReport.js'
 import PdfExportModal from './PdfExportModal.jsx'
 import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
+import { useAssetProfileOptional } from '../context/AssetProfileContext.jsx'
 import {
   buildEpssSparklinePoints,
   epssSparklinePolyline,
@@ -19,6 +20,7 @@ import {
 } from '../utils/epssSparkline.js'
 import DrawerAtlasSection from './DrawerAtlasSection.jsx'
 import { displayText } from '../utils/displayText.js'
+import { calculateRiskScore, riskScoreColor, componentBarColor } from '../scoring/riskScore.js'
 import './DetailDrawer.css'
 
 
@@ -188,9 +190,99 @@ function EpssTrendSection({ cve, history, loading, epssSparklineRef }) {
   )
 }
 
-function TabOverview({ cve, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
+// ── Risk Score Breakdown ──────────────────────────────────
+
+function RiskScoreBar({ score }) {
+  const pct = Math.min(Math.max(score, 0), 1) * 100
+  return (
+    <div className="risk-bar-track" role="presentation">
+      <div
+        className="risk-bar-fill"
+        style={{ width: `${pct}%`, background: componentBarColor(score) }}
+      />
+    </div>
+  )
+}
+
+const COMPONENT_META = [
+  { key: 'asset',   label: 'Asset Match',   weightPct: 37 },
+  { key: 'kev',     label: 'KEV Status',    weightPct: 26 },
+  { key: 'epss',    label: 'EPSS',          weightPct: 16 },
+  { key: 'exploit', label: 'Exploit Avail', weightPct: 11 },
+  { key: 'cvss',    label: 'CVSS',          weightPct: 10 },
+]
+
+function RiskScoreBreakdown({ riskScore }) {
+  if (!riskScore) return null
+
+  const { total, components, hasProfile } = riskScore
+  const totalColor = riskScoreColor(total)
+
+  return (
+    <section className="drawer-section drawer-risk-section" aria-labelledby="risk-score-heading">
+      <h3 id="risk-score-heading" className="drawer-risk-section-label mono">
+        // BRIEFR RISK SCORE
+      </h3>
+
+      <div className="drawer-risk-hero">
+        <div
+          className="drawer-risk-total"
+          style={{ color: totalColor }}
+          aria-label={`Risk score: ${total.toFixed(1)} out of 100`}
+        >
+          {total.toFixed(1)}
+          {!hasProfile && (
+            <span
+              className="drawer-risk-no-profile"
+              title="Load an asset profile for personalised scoring"
+              aria-label="No asset profile loaded"
+            >
+              ?
+            </span>
+          )}
+        </div>
+        <div className="drawer-risk-hero-label mono">BRIEFR RISK SCORE</div>
+      </div>
+
+      <div className="drawer-risk-components">
+        {COMPONENT_META.map(({ key, label, weightPct }) => {
+          const comp = components[key]
+          if (!comp) return null
+          return (
+            <div key={key} className="drawer-risk-component">
+              <div className="drawer-risk-comp-header">
+                <span className="drawer-risk-comp-label mono">{label}</span>
+                <span className="drawer-risk-comp-weight mono">{weightPct}%</span>
+                <RiskScoreBar score={comp.score} />
+                <span className="drawer-risk-comp-points mono">
+                  {comp.points.toFixed(1)} pts
+                </span>
+              </div>
+              {comp.sentence && (
+                <p className="drawer-risk-comp-sentence">{comp.sentence}</p>
+              )}
+            </div>
+          )
+        })}
+
+        {/* Momentum — Session 16 */}
+        <div className="drawer-risk-component drawer-risk-momentum">
+          <div className="drawer-risk-comp-header">
+            <span className="drawer-risk-comp-label mono">Momentum</span>
+            <span className="drawer-risk-comp-weight mono">5%</span>
+            <span className="drawer-risk-momentum-label mono">Coming in next update</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function TabOverview({ cve, riskScore, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
   return (
     <>
+      <RiskScoreBreakdown riskScore={riskScore} />
+
       <EpssTrendSection
         cve={cve}
         history={epssHistory}
@@ -658,6 +750,12 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const navigatingRef = useRef(false)
   const isOpen = !!cve
   const investigation = useInvestigationOptional()
+  const assetCtx = useAssetProfileOptional()
+
+  const riskScore = useMemo(
+    () => (cve ? calculateRiskScore(cve, assetCtx?.profile ?? null) : null),
+    [cve, assetCtx?.profile],
+  )
 
   useEffect(() => {
     if (!cve?.cve_id) {
@@ -969,6 +1067,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
           {activeTab === 'overview' && (
             <TabOverview
               cve={cve}
+              riskScore={riskScore}
               products={products}
               cwes={cwes}
               urls={urls}
