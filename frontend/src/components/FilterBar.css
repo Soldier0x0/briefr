@@ -118,7 +118,7 @@
 }
 
 .filter-btn.active {
-  color: var(--bg);
+  color: var(--on-red);
   background: var(--red);
   border-color: var(--red);
 }
