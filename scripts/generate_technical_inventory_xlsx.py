@@ -20,7 +20,7 @@ def autosize(ws):
         for cell in col:
             if cell.value is not None:
                 max_len = max(max_len, len(str(cell.value)))
-        ws.column_dimensions[letter].width = min(max_len + 2, 60)
+        ws.column_dimensions[letter].width = min(max(max_len + 2, 10), 60)
 
 
 def main():

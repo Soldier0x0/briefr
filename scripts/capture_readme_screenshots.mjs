@@ -38,19 +38,19 @@ async function main() {
   await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 120000 });
 
   // BRIEF tab (default feed)
-  await page.waitForSelector('.cve-card, .cve-feed-list, .content-grid', { timeout: 60000 }).catch(() => {});
+  await page.waitForSelector('.cve-card, .cve-feed-list, .content-grid', { timeout: 60000 });
   await page.waitForTimeout(2000);
   await shot(page, 'brief.png');
 
   // IOC LOOKUP
   await clickTab(page, 'IOC LOOKUP');
-  await page.waitForSelector('.ioc-lookup, .ioc-panel, [class*="ioc"]', { timeout: 30000 }).catch(() => {});
+  await page.waitForSelector('.ioc-lookup, .ioc-panel, [class*="ioc"]', { timeout: 30000 });
   await page.waitForTimeout(1500);
   await shot(page, 'ioc-lookup.png');
 
   // INCIDENTS & NEWS
   await clickTab(page, 'INCIDENTS');
-  await page.waitForSelector('.case-studies, .cs-card, .cs-hero', { timeout: 60000 }).catch(() => {});
+  await page.waitForSelector('.case-studies, .cs-card, .cs-hero', { timeout: 60000 });
   await page.waitForTimeout(2500);
   await shot(page, 'incidents-news.png');
 
