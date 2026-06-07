@@ -9,6 +9,17 @@
 
 const DEFAULT_ASSET_UNKNOWN = 0.5
 
+function num(value, fallback = 0) {
+  if (value == null || value === '') return fallback
+  const n = Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
+function boolish(value) {
+  return value === true || value === 1 || value === '1' || value === 'true'
+}
+
+
 // ── Date helpers ─────────────────────────────────────────
 
 function parseDate(value) {
@@ -216,7 +227,7 @@ export function getAssetMatchType(cve, assetProfile) {
 // ── KEV Score with recency weighting ─────────────────────
 
 export function calculateKevScore(cve) {
-  if (!cve.is_kev) return 0
+  if (!boolish(cve?.is_kev)) return 0
 
   const addedDays = daysSince(cve.kev_date_added)
 
@@ -270,7 +281,7 @@ function buildSentences(cve, assetProfile, scores, assetMatchType) {
 
   // KEV sentence
   let kevSentence
-  if (!cve.is_kev) {
+  if (!boolish(cve?.is_kev)) {
     kevSentence = 'Not listed in CISA Known Exploited Vulnerabilities catalogue'
   } else {
     const addedDays = daysSince(cve.kev_date_added)
@@ -294,7 +305,7 @@ function buildSentences(cve, assetProfile, scores, assetMatchType) {
   }
 
   // EPSS sentence
-  const epssVal = cve.epss_score
+  const epssVal = num(cve.epss_score, null)
   const epssSentence =
     epssVal != null
       ? `${(epssVal * 100).toFixed(1)}% exploitation probability`
@@ -320,7 +331,7 @@ function buildSentences(cve, assetProfile, scores, assetMatchType) {
   }
 
   // CVSS sentence
-  const cvssVal = cve.cvss_score
+  const cvssVal = num(cve.cvss_score, null)
   const cvssSentence =
     cvssVal != null
       ? `${cvssVal.toFixed(1)} / 10.0`
@@ -335,15 +346,55 @@ function buildSentences(cve, assetProfile, scores, assetMatchType) {
   }
 }
 
+function assetScoreFromBackend(matchScore) {
+  const score = num(matchScore, 0)
+  if (score >= 100) {
+    return {
+      score: 1,
+      matchType: 'Your asset directly affected (exact CPE version match)',
+    }
+  }
+  if (score >= 55) {
+    return {
+      score: 0.55,
+      matchType: 'Your asset found in affected products (CPE product match)',
+    }
+  }
+  if (score > 0) {
+    return {
+      score: score / 100,
+      matchType: 'Partial match to your asset profile',
+    }
+  }
+  return { score: 0, matchType: 'No matching assets in your profile' }
+}
+
 // ── Main scoring function ─────────────────────────────────
 
-export function calculateRiskScore(cve, assetProfile) {
+export function calculateRiskScore(cve, assetProfile, backendMatchScore = null) {
   if (!cve) return null
-  const { score: assetScore, matchType: assetMatchType } = assetMatchInfo(cve, assetProfile)
+
+  let assetScore
+  let assetMatchType
+  if (assetProfile) {
+    const backend = assetScoreFromBackend(backendMatchScore ?? 0)
+    assetScore = backend.score
+    assetMatchType = backend.matchType
+    if (backend.score === 0) {
+      const client = assetMatchInfo(cve, assetProfile)
+      if (client.score > assetScore) {
+        assetScore = client.score
+        assetMatchType = client.matchType
+      }
+    }
+  } else {
+    ({ score: assetScore, matchType: assetMatchType } = assetMatchInfo(cve, assetProfile))
+  }
+
   const kevScore = calculateKevScore(cve)
-  const epssScore = cve.epss_score || 0
+  const epssScore = num(cve.epss_score, 0)
   const exploitScore = calculateExploitScore(cve)
-  const cvssScore = (cve.cvss_score || 0) / 10
+  const cvssScore = num(cve.cvss_score, 0) / 10
 
   const raw =
     assetScore * 0.37 +
@@ -420,7 +471,7 @@ export function buildRiskHeroSummary(cve, riskScore) {
     }
   }
 
-  if (cve.is_kev) parts.push('KEV listed')
+  if (boolish(cve?.is_kev)) parts.push('KEV listed')
 
   const exploitScore = components?.exploit?.score ?? 0
   for (const tier of EXPLOIT_SUMMARY_PARTS) {

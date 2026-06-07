@@ -176,9 +176,17 @@ def _row_to_cve_dict(row) -> dict:
                 d[field] = json.loads(d[field])
             except (json.JSONDecodeError, TypeError):
                 d[field] = []
+    for num_field in ("cvss_score", "epss_score"):
+        if d.get(num_field) is not None:
+            try:
+                d[num_field] = float(d[num_field])
+            except (TypeError, ValueError):
+                d[num_field] = None
     d["is_kev"] = bool(d.get("is_kev", 0))
     d["has_poc"] = bool(d.get("has_poc", 0))
     d["patch_available"] = bool(d.get("patch_available", 0))
+    kev_date = d.get("kev_date_added")
+    d["kev_date_added"] = (kev_date or "").strip() or None
     return d
 
 
@@ -894,6 +902,12 @@ async def get_cve(cve_id: str):
             raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
 
         cve = _row_to_cve_dict(rows[0])
+        kev_rows = await db.execute_fetchall(
+            "SELECT date_added FROM kev_deadlines WHERE cve_id = ?",
+            (cve_key,),
+        )
+        if kev_rows and kev_rows[0]["date_added"]:
+            cve["kev_date_added"] = (kev_rows[0]["date_added"] or "").strip() or None
         cve["techniques"] = await get_techniques_for_cve(db, cve_key)
 
         try:

@@ -6,6 +6,7 @@ import {
   useState,
 } from 'react'
 import AssetWarning from '../components/AssetWarning.jsx'
+import AssetProfileManage from '../components/AssetProfileManage.jsx'
 import AssetWizard from '../components/AssetWizard.jsx'
 import SessionLockOverlay from '../components/SessionLockOverlay.jsx'
 import { fetchCveAssetMatch } from '../api.js'
@@ -19,6 +20,7 @@ export function AssetProfileProvider({ children }) {
   const [matchScores, setMatchScores] = useState({})
   const [isLocked, setIsLocked] = useState(false)
   const [flow, setFlow] = useState(null)
+  const [wizardProfile, setWizardProfile] = useState(null)
 
   const isLoaded = profile !== null && !isLocked
   const assetAware = isLoaded
@@ -28,6 +30,7 @@ export function AssetProfileProvider({ children }) {
     setMatchScores({})
     setIsLocked(false)
     setFlow(null)
+    setWizardProfile(null)
   }, [])
 
   const lockSession = useCallback(() => {
@@ -35,12 +38,14 @@ export function AssetProfileProvider({ children }) {
     setMatchScores({})
     setIsLocked(true)
     setFlow(null)
+    setWizardProfile(null)
   }, [])
 
   const applyProfile = useCallback(async (nextProfile) => {
     setProfile(nextProfile)
     setIsLocked(false)
     setFlow(null)
+    setWizardProfile(null)
     const assets = profileToMatchAssets(nextProfile)
     if (!assets.length) {
       setMatchScores({})
@@ -55,13 +60,23 @@ export function AssetProfileProvider({ children }) {
   }, [])
 
   const openProfileFlow = useCallback(() => {
+    if (profile && !isLocked) {
+      setFlow('manage')
+      return
+    }
+    setWizardProfile(null)
     setFlow('warning')
-  }, [])
+  }, [profile, isLocked])
 
   const loadProfileFromFile = useCallback(async (file) => {
     const parsed = await parseProfileFile(file)
     await applyProfile(parsed)
   }, [applyProfile])
+
+  const startWizard = useCallback((initial = null) => {
+    setWizardProfile(initial)
+    setFlow('wizard')
+  }, [])
 
   useInactivityTimeout({
     enabled: isLoaded,
@@ -97,13 +112,23 @@ export function AssetProfileProvider({ children }) {
       {children}
       {flow === 'warning' && (
         <AssetWarning
-          onAccept={() => setFlow('wizard')}
+          onAccept={() => startWizard(null)}
+          onUpload={loadProfileFromFile}
           onSkip={() => setFlow(null)}
+          onClose={() => setFlow(null)}
+        />
+      )}
+      {flow === 'manage' && (
+        <AssetProfileManage
+          onUpdate={() => startWizard(profile)}
+          onUpload={loadProfileFromFile}
+          onKeep={() => setFlow(null)}
           onClose={() => setFlow(null)}
         />
       )}
       {flow === 'wizard' && (
         <AssetWizard
+          initialProfile={wizardProfile}
           onComplete={applyProfile}
           onCancel={() => setFlow(null)}
         />

@@ -211,12 +211,6 @@ function RiskScoreBar({ score }) {
 }
 
 function RiskScoreBreakdown({ cve, riskScore, onOpenProfile }) {
-  const [expanded, setExpanded] = useState(false)
-
-  useEffect(() => {
-    setExpanded(false)
-  }, [cve?.cve_id])
-
   if (!riskScore || !cve) return null
 
   const { total, components, hasProfile } = riskScore
@@ -280,35 +274,25 @@ function RiskScoreBreakdown({ cve, riskScore, onOpenProfile }) {
         </button>
       )}
 
-      <button
-        type="button"
-        className="drawer-risk-toggle mono"
-        onClick={() => setExpanded(v => !v)}
-        aria-expanded={expanded}
-      >
-        {expanded ? '▾ Hide breakdown' : '▸ Show breakdown'}
-      </button>
-
-      {expanded && (
-        <>
-          <div className="drawer-risk-components">
-            {breakdownRows.map(row => (
-              <div key={row.key} className="drawer-risk-component">
-                <div className="drawer-risk-comp-header">
-                  <span className="drawer-risk-comp-label mono">{row.label}</span>
-                  <RiskScoreBar score={row.score} />
-                  <span className="drawer-risk-comp-points mono">
-                    {row.points.toFixed(1)} pts
-                  </span>
-                </div>
-              </div>
-            ))}
+      <div className="drawer-risk-components">
+        {breakdownRows.map(row => (
+          <div key={row.key} className="drawer-risk-component">
+            <div className="drawer-risk-comp-header">
+              <span className="drawer-risk-comp-label mono">{row.label}</span>
+              <RiskScoreBar score={row.score} />
+              <span className="drawer-risk-comp-points mono">
+                {row.points.toFixed(1)} pts
+              </span>
+            </div>
+            {row.sentence && (
+              <p className="drawer-risk-comp-sentence">{row.sentence}</p>
+            )}
           </div>
-          <p className="drawer-risk-weights mono">
-            Weights: Asset 37% · KEV 26% · EPSS 16% · Exploit 11% · CVSS 10%
-          </p>
-        </>
-      )}
+        ))}
+      </div>
+      <p className="drawer-risk-weights mono">
+        Weights: Asset 37% · KEV 26% · EPSS 16% · Exploit 11% · CVSS 10%
+      </p>
     </section>
   )
 }
@@ -787,10 +771,13 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const investigation = useInvestigationOptional()
   const assetCtx = useAssetProfileOptional()
 
-  const riskScore = useMemo(
-    () => (cve ? calculateRiskScore(cve, assetCtx?.profile ?? null) : null),
-    [cve, assetCtx?.profile],
-  )
+  const riskScore = useMemo(() => {
+    if (!cve) return null
+    const backendMatchScore = assetCtx?.isLoaded
+      ? assetCtx.getMatchScore(cve.cve_id)
+      : null
+    return calculateRiskScore(cve, assetCtx?.profile ?? null, backendMatchScore)
+  }, [cve, assetCtx?.profile, assetCtx?.isLoaded, assetCtx?.matchScores])
 
   useEffect(() => {
     if (!cve?.cve_id) {
