@@ -3,87 +3,117 @@
 ### Free CVE Intelligence & Threat Investigation for Security Analysts
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Status: Live](https://img.shields.io/badge/Status-Live-green.svg)
-![Made with: Python + React](https://img.shields.io/badge/Made%20with-Python%20%2B%20React-informational)
-![AI-Powered](https://img.shields.io/badge/AI%20Powered-Groq%20%26%20Anthropic-blueviolet)
+![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)
+![React 18](https://img.shields.io/badge/React-18.3-blue.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.136-green.svg)
 
-![BRIEFR Dashboard](screenshots/dashboard.png)
+BRIEFR is a self-hosted CVE intelligence dashboard for security analysts, small teams, and solo researchers. It aggregates NVD, CISA KEV, EPSS, MITRE ATT&CK, MITRE ATLAS, and optional threat-feed enrichment into one searchable UI — with IOC lookup, correlation, detection engineering helpers, and PDF export.
+
+**Live demo:** [projectjupiter.in](https://projectjupiter.in)
+
+---
+
+## Screenshots
+
+### BRIEF — CVE feed, heatmap, KEV sidebar
+
+![BRIEF tab — CVE intelligence feed](screenshots/brief.png)
+
+### IOC LOOKUP — multi-source indicator enrichment
+
+![IOC Lookup tab](screenshots/ioc-lookup.png)
+
+### INCIDENTS & NEWS — RSS security news + MITRE ATLAS case studies
+
+![Incidents and News tab](screenshots/incidents-news.png)
 
 ---
 
 ## What is BRIEFR?
 
-BRIEFR is a free, self-hosted CVE intelligence dashboard that aggregates NVD, CISA KEV, EPSS, OSV, MITRE ATT&CK, and threat intelligence data into one powerful searchable feed. It combines real-time vulnerability data with AI-powered threat investigation capabilities, built for security analysts and defenders who need fast intelligence without enterprise tooling or sign-up friction.
+Every morning, analysts check NVD, CISA KEV, VirusTotal, and exploit trackers to answer one question: *what broke overnight and does it affect us?* BRIEFR automates that aggregation into a single self-hosted app. No account, no cookies, no analytics — your SQLite database and API keys stay on your server.
 
-## Why I built this
+Three main tabs:
 
-Every morning, security analysts manually check NVD, CISA KEV, VirusTotal, and Exploit-DB just to answer one question — what broke overnight and does it affect us? Enterprise tools like Vulncheck solve this but cost thousands of dollars per year. BRIEFR does the same thing, free, with no account, no tracking, and no noise—plus adds AI-driven threat investigation and MITRE ATT&CK mapping.
+| Tab | What it does |
+|-----|----------------|
+| **BRIEF** | Paginated CVE feed with CVSS, EPSS, KEV flags, stack filtering, timeline heatmap, detail drawer |
+| **IOC LOOKUP** | IP / hash / domain enrichment via VirusTotal, AbuseIPDB, GreyNoise, OTX, MalwareBazaar, URLhaus |
+| **INCIDENTS & NEWS** | Security RSS feeds (6 sources) plus MITRE ATLAS incident narratives |
+
+---
 
 ## Features
 
-**Vulnerability Intelligence:**
-- Real-time CVE feed from NVD with CVSS v3.1 and EPSS scoring
-- CISA KEV integration with remediation deadline tracking
-- MITRE ATT&CK technique mapping and case study integration
-- Extended threat intelligence (GreyNoise scans, Sploitus exploits, CIRCL data)
-- Timeline heatmap for CVE publication trends
-- Risk scoring engine with asset-based contextualization
+**Vulnerability intelligence**
+- NVD incremental ingest with CVSS v3.1, EPSS, CISA KEV, and change tracking
+- CVE detail enrichment: Sploitus exploits, GreyNoise scans, OTX pulses, OSV packages, CIRCL references
+- MITRE ATT&CK technique mapping and top-technique sidebar
+- MITRE ATLAS AI/ML threat context (weekly refresh; per-CVE drawer wiring in progress)
+- 90-day publication timeline heatmap
+- Client-side **Risk Score v1.1b** (asset, KEV, EPSS, exploit, CVSS, momentum)
 
-**Threat Investigation:**
-- AI-powered threat analysis and executive summaries (Groq/Anthropic)
-- IOC enrichment with VirusTotal and AbuseIPDB lookups (IP, hash, domain)
-- Threat actor correlation and IOC tracking
-- Linked CVE investigation chains
-- PDF report generation with AI summaries
+**Threat investigation**
+- Investigation panel with cross-tab pivots (CVE → IOC → related CVE)
+- Three-level correlation engine (shared OTX IPs, actor/sector match, temporal vendor anomalies)
+- Detection tab: SigmaHQ + Elastic community rules, generated Sigma fallback, SIEM quick queries
+- Asset profile wizard with CPE-based exposure matching (`POST /api/cves/match` only — inventory never stored server-side)
 
-**Search & Filtering:**
-- Stack-based relevance filtering (match tech stack to affected products)
-- AI profile filtering (filter CVEs by affected AI frameworks)
-- Technique-based filtering by MITRE ATT&CK
-- EPSS score ranges, severity levels, KEV-only, PoC-only filters
-- Full-text CVE ID, vendor, and description search
+**IOC enrichment**
+- Cached lookups (6 hours; GreyNoise 1 hour)
+- Live API quota display per service
+- Optional GreyNoise opt-in per lookup (weekly free-tier limit)
 
-**Data Export & Reporting:**
-- Bulk select and copy CVEs as Markdown/JSON
-- CVE digest export for filtered views
-- PDF report generation with AI summaries
-- Excel and CSV export
-- Timezone-aware timestamps on all reports
+**Export & reporting**
+- CSV and Excel export from the feed
+- Single-CVE and bulk PDF reports (jsPDF + optional AI executive summary)
+- Markdown copy from the detail drawer
+- Timezone-aware timestamps
 
-**User Experience:**
-- Dark and light mode
-- Timezone selector with local timestamps
-- Keyboard shortcuts for navigation (/, F, Esc, arrows, Enter)
-- No account required. No cookies. No tracking.
-- Fully responsive design
+**User experience**
+- Dark mode default with light mode toggle
+- Timezone selector (stored in `localStorage`)
+- Keyboard shortcuts (`/`, `F`, `Esc`, `g d` digest, arrow keys in feed)
+- Session-only investigation thread; stack filter persisted locally
+
+---
 
 ## Tech Stack
 
 | Backend | Frontend |
 |---------|----------|
-| FastAPI 0.136+ | React 18.3+ |
-| Uvicorn | React Router 7+ |
-| httpx | Vite 5+ |
-| APScheduler | ExcelJS |
-| aiosqlite | jsPDF, html2canvas |
-| Pydantic 2+ | |
-| python-dotenv | |
-| PyYAML | |
+| FastAPI 0.136.3 | React 18.3.1 |
+| Uvicorn 0.48.0 | React Router 7.16.0 |
+| httpx 0.28.1 | Vite 5.4.1 |
+| APScheduler 3.11.2 | ExcelJS 4.4.0 |
+| aiosqlite 0.22.1 | jsPDF 4.2.1 + html2canvas |
+| Pydantic 2.13.4 | Plain JSX + CSS (no component library) |
+| python-dotenv, PyYAML | |
+
+---
 
 ## Data Sources
 
-| Source | Data | Refresh | Endpoints |
-|--------|------|---------|-----------|
-| NVD/NIST | CVE details + CVSS | Hourly incremental (`lastMod` watermark) | `/api/refresh/nvd` |
-| CISA KEV | Known exploited vulns | Every 15 minutes | `/api/refresh/kev` |
-| EPSS (FIRST.org) | Exploit probability | Every 6 hours | `/api/refresh/epss` |
-| MITRE ATT&CK | CVE→technique mappings + case studies | Weekly | `/api/refresh/mitre` |
-| OSV.dev | Open source package vulns | On CVE detail view | — |
-| VirusTotal | IOC enrichment (hash, domain, IP) | On demand (6h cache) | `/api/ioc/lookup` |
-| AbuseIPDB | IP reputation | On demand (6h cache) | `/api/ioc/lookup` |
-| GreyNoise | Scans for CVE | On demand | — |
-| Sploitus | Public exploits | On demand | — |
-| CIRCL CVE | Extended CVE data | On demand | — |
+| Source | Data | Refresh | API / trigger |
+|--------|------|---------|---------------|
+| NVD (NIST) | CVE records, CVSS, CPE | Every `NVD_SYNC_INTERVAL_HOURS` (default 1h) | `POST /api/refresh/nvd` |
+| CISA KEV | Known exploited vulns + deadlines | Every `KEV_SYNC_INTERVAL_MINUTES` (default 15m) | `POST /api/refresh/kev` |
+| FIRST EPSS | Exploit probability scores | Every `EPSS_SYNC_INTERVAL_HOURS` (default 6h) | `POST /api/refresh/epss` |
+| MITRE ATT&CK | Techniques, groups, CVE mappings | Weekly (Sunday cron) | `POST /api/refresh/mitre` |
+| MITRE ATLAS | AI/ML techniques + case studies | Weekly (with MITRE job) | `POST /api/refresh/mitre` |
+| OSV.dev | Affected packages | On CVE detail view | — |
+| Sploitus | Public exploits | On CVE detail / ingest enrichment | — |
+| CIRCL | Extended CVE references | On CVE detail / ingest | — |
+| GreyNoise | IP classification + CVE scan context | On demand | IOC + CVE detail |
+| AlienVault OTX | Campaign pulses + IOCs | Nightly job + on demand | `OTX_API_KEY` |
+| VirusTotal | IOC reputation | On demand (6h cache) | `POST /api/ioc/lookup` |
+| AbuseIPDB | IP abuse score | On demand (6h cache) | `POST /api/ioc/lookup` |
+| MalwareBazaar / URLhaus | Hash / domain malware context | On demand | `ABUSECH_AUTH_KEY` |
+| Groq / Anthropic | PDF executive summary | On PDF export only | `POST /api/ai/summary` |
+| GitHub | Sigma + Elastic rule search | On Detect tab open | `GITHUB_TOKEN` optional |
+| RSS × 6 | Security news cards | Every 4 hours | `GET /api/case-studies/news` |
+
+---
 
 ## Getting Started
 
@@ -91,166 +121,169 @@ Every morning, security analysts manually check NVD, CISA KEV, VirusTotal, and E
 
 - Python 3.11+
 - Node.js 18+
-- Free API keys: [NVD](https://nvd.nist.gov/developers/request-an-api-key), [VirusTotal](https://www.virustotal.com/gui/join-us), [AbuseIPDB](https://www.abuseipdb.com/register)
+- Recommended API keys: [NVD](https://nvd.nist.gov/developers/request-an-api-key), [VirusTotal](https://www.virustotal.com/gui/join-us), [AbuseIPDB](https://www.abuseipdb.com/register)
+- Optional: GreyNoise, OTX, Abuse.ch, Groq/Anthropic, GitHub token — see `backend/.env.example`
 
-### Installation
+### Development install
 
 ```bash
-git clone https://github.com/Soldier0x0/briefr.git /opt/briefr
-cd /opt/briefr/backend
-python3.11 -m venv ../venv
-../venv/bin/pip install -r requirements.txt
+git clone https://github.com/Soldier0x0/briefr.git
+cd briefr/backend
+python3 -m venv .venv && source .venv/bin/activate   # or use system Python 3.11+
+pip install -r requirements.txt
 cp .env.example .env   # add your API keys
 
-../venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
 ```bash
-cd /opt/briefr/frontend
+cd ../frontend
 npm install
-npm run dev    # http://localhost:5173 — proxies /api to :8000
+npm run dev    # http://localhost:5173 — proxies /api → :8000
 ```
 
-Production deploy: `npm run build`, then serve `frontend/dist` behind nginx. See `deploy/setup.sh` for systemd install on Debian.
+On first start with fewer than 10 CVEs, the backend automatically runs a full ingest (NVD → KEV → EPSS). With 10+ CVEs, incremental schedulers maintain freshness.
 
-### Update EPSS scores (database)
-
-After `git pull`, refresh EPSS from the FIRST daily feed without re-fetching all CVEs from NVD:
+### Production deploy
 
 ```bash
-bash /opt/briefr/deploy/refresh-epss.sh
+bash deploy/setup.sh          # initial Debian/systemd + nginx setup
+bash deploy/briefr-update.sh  # pull, build frontend, restart backend + nginx
 ```
 
-Or trigger a full ingest (NVD, then KEV, then EPSS — same as cold start):
+Set `ALLOWED_ORIGINS` in `backend/.env` to your public URL (not `:5173`). Production serves `frontend/dist` via nginx; the Vite dev server is not used.
+
+### Manual refresh
 
 ```bash
-curl -X POST http://127.0.0.1:8000/api/refresh
-journalctl -u briefr-backend -f
-```
-
-Individual pipelines (no full NVD+KEV+EPSS chain):
-
-```bash
+curl -X POST http://127.0.0.1:8000/api/refresh        # NVD + KEV + EPSS chain
 curl -X POST http://127.0.0.1:8000/api/refresh/nvd
 curl -X POST http://127.0.0.1:8000/api/refresh/kev
 curl -X POST http://127.0.0.1:8000/api/refresh/epss
+curl -X POST http://127.0.0.1:8000/api/refresh/mitre  # ATT&CK + ATLAS
 ```
 
-Recent CVSS / EPSS / KEV / PoC changes: `GET /api/changes?since_hours=24`
+Recent field changes: `GET /api/changes?since_hours=24`
 
 Check coverage:
 
 ```bash
-sqlite3 /opt/briefr/backend/briefr.db \
+sqlite3 backend/briefr.db \
   "SELECT COUNT(*) AS total, SUM(epss_score IS NOT NULL) AS with_epss FROM cves;"
 ```
 
-### Production deploy (nginx, not Vite)
+---
 
-After initial `deploy/setup.sh`, every update (frontend + backend) is one command as **root**:
+## Environment Variables
 
-```bash
-bash /opt/briefr/deploy/briefr-update.sh
-```
+See `backend/.env.example` for the full list. Key variables:
 
-This script:
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NVD_API_KEY` | NVD rate-limit key (recommended) | — |
+| `VIRUSTOTAL_API_KEY` | IOC lookups | — |
+| `ABUSEIPDB_API_KEY` | IP reputation | — |
+| `GREYNOISE_API_KEY` | IP context (50/week free) | — |
+| `ABUSECH_AUTH_KEY` | MalwareBazaar + URLhaus | — |
+| `OTX_API_KEY` | OTX pulses + correlation | — |
+| `GROQ_API_KEY` / `ANTHROPIC_API_KEY` | PDF AI summary | — |
+| `GITHUB_TOKEN` | Detection rule search rate limit | — |
+| `ALLOWED_ORIGINS` | CORS origins (comma-separated) | `http://localhost:3000` |
+| `DB_PATH` | SQLite file | `briefr.db` |
+| `NVD_SYNC_INTERVAL_HOURS` | NVD incremental cadence | `1` |
+| `KEV_SYNC_INTERVAL_MINUTES` | KEV sync cadence | `15` |
+| `EPSS_SYNC_INTERVAL_HOURS` | EPSS sync cadence | `6` |
+| `SCHEDULER_TIMEZONE` | APScheduler TZ | `Asia/Kolkata` |
+| `CORRELATION_HOUR` / `CORRELATION_TIMEZONE` | Nightly correlation job | `1` / `Asia/Kolkata` |
+| `OTX_CORRELATION_HOUR` / `OTX_CORRELATION_TIMEZONE` | OTX nightly job | `2` / `Asia/Kolkata` |
+| `MITRE_REFRESH_HOUR` | Weekly MITRE+ATLAS (Sunday) | `2` |
+| `MAX_CVES_PER_FETCH` | Cap per NVD sync | `2000` |
+| `DEFAULT_TIMEZONE` | Health/time display | `Asia/Kolkata` |
 
-- Pulls `main` from GitHub
-- Updates Python and npm dependencies
-- Runs `npm run build` → `/opt/briefr/frontend/dist`
-- Installs/refreshes the nginx site (`deploy/nginx-briefr-http.conf` or HTTPS if certbot certs exist)
-- **Stops and disables** `briefr-frontend` (Vite on 5173)
-- Restarts `briefr-backend` and reloads nginx
-
-Set `ALLOWED_ORIGINS` in `backend/.env` to your public URL (e.g. `http://192.168.1.50`, `https://projectjupiter.in`) — not `:5173`.
-
-Force HTTPS config: `USE_TLS=1 bash /opt/briefr/deploy/briefr-update.sh` (requires Let's Encrypt certs for `projectjupiter.in`).
-
-`setup-nginx-production.sh` is an alias for the same update script.
-
-### Environment Variables
-
-| Variable | Description | Where to get it |
-|----------|-------------|-----------------|
-| `NVD_API_KEY` | NVD API rate-limit key | [NVD API key request](https://nvd.nist.gov/developers/request-an-api-key) |
-| `VIRUSTOTAL_API_KEY` | IOC hash/domain lookups | [VirusTotal](https://www.virustotal.com/gui/join-us) |
-| `ABUSEIPDB_API_KEY` | IP reputation for IOC lookup | [AbuseIPDB](https://www.abuseipdb.com/register) |
-| `ALLOWED_ORIGINS` | CORS origins (comma-separated) | Your frontend URL(s) |
-| `NVD_SYNC_INTERVAL_HOURS` | NVD incremental sync interval | Default `1` |
-| `KEV_SYNC_INTERVAL_MINUTES` | CISA KEV metadata sync | Default `15` |
-| `EPSS_SYNC_INTERVAL_HOURS` | EPSS score sync | Default `6` |
-| `NVD_SYNC_OVERLAP_MINUTES` | Watermark overlap for NVD | Default `15` |
-| `CACHE_REFRESH_HOUR` | Weekly MITRE job hour (IST) | Default `6` |
-| `CACHE_REFRESH_MINUTE` | Legacy; see MITRE weekly cron | Default `0` |
-| `MAX_CVES_PER_FETCH` | Cap per NVD sync | Default `2000` |
-| `DEFAULT_TIMEZONE` | Server display timezone | Default `Asia/Kolkata` |
-| `DB_PATH` | SQLite database file | Default `briefr.db` in backend dir |
+---
 
 ## API Reference
 
-### CVE Data
+Full endpoint catalog: [`API_REFERENCE.md`](API_REFERENCE.md)  
+Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in production**)
+
+### Core endpoints
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/health` | Service health, CVE count, last refresh times |
-| `GET /api/time` | Server UTC and local time |
-| `GET /api/stats` | Severity and KEV summary counts |
-| `GET /api/cves` | Paginated, filterable CVE list (supports `?severity=`, `?stack=`, `?search=`, etc.) |
-| `GET /api/cves/{cve_id}` | Single CVE detail with OSV packages, techniques, and related CVEs |
-| `GET /api/changes` | Recent CVSS/EPSS/KEV/PoC changes |
+| `GET /api/health` | CVE count, ingest status, next refresh times |
+| `GET /api/stats` | Critical/high/KEV/patched/24h counts |
+| `GET /api/stats/timeline` | Daily CVE publication heatmap data |
+| `GET /api/cves` | Paginated CVE list (`page`, `limit` max **50**, filters) |
+| `GET /api/cves/{cve_id}` | CVE detail + live enrichment |
+| `GET /api/cves/{cve_id}/sentences` | Human-readable intel sentences |
+| `GET /api/cves/{cve_id}/epss-history` | EPSS sparkline data (30 days) |
+| `GET /api/cves/{cve_id}/momentum` | Momentum score + signals |
+| `GET /api/cves/{cve_id}/correlation` | Infrastructure / actor / temporal correlation |
+| `GET /api/cves/{cve_id}/detection` | Sigma, Elastic, SIEM queries |
+| `GET /api/cves/{cve_id}/related` | Same-product related CVEs |
+| `POST /api/cves/match` | Asset CPE exposure scores |
+| `POST /api/ioc/lookup` | IOC enrichment (ip, hash, domain) |
+| `GET /api/kev/deadlines` | KEV remediation deadlines |
+| `GET /api/techniques/top` | Top ATT&CK techniques by CVE count |
+| `GET /api/atlas/techniques` | ATLAS techniques grouped by tactic |
+| `GET /api/atlas/casestudies` | ATLAS case studies |
+| `GET /api/case-studies/news` | RSS news cards for Incidents tab |
+| `POST /api/ai/summary` | AI executive summary (PDF export only) |
+| `GET /api/usage` / `GET /api/usage/ioc` | API quota counters |
 
-### Risk Intelligence & Scoring
+**Known issue:** `POST /api/investigation/summary` is broken (undefined import in `main.py:1331`). Use `POST /api/ai/summary` instead.
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/cves/{cve_id}/score` | BRIEFR Risk Score v1.1a with optional `?assets=` JSON array |
-| `GET /api/cves/{cve_id}/sentences` | Humanized intelligence sentences (severity, epss, kev, exploit, patch, ai_context) |
-| `GET /api/kev/deadlines` | CISA KEV entries with remediation due dates |
+---
 
-### Threat Investigation
+## Documentation
 
-| Endpoint | Description |
-|----------|-------------|
-| `POST /api/ioc/lookup` | IOC enrichment (ip, hash, domain) via VirusTotal + AbuseIPDB |
-| `GET /api/ai-profiles/{ai_profile}/alerts` | AI ML profile alerts (frameworks like PyTorch, TensorFlow, etc.) |
-| `GET /api/investigation/related` | Get related CVEs and IOCs for an investigation |
+| Document | Contents |
+|----------|----------|
+| [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) | Architecture, data flows, design decisions, v1.2 roadmap |
+| [`API_REFERENCE.md`](API_REFERENCE.md) | Every endpoint with params and response shapes |
+| [`TECHNICAL_INVENTORY.md`](TECHNICAL_INVENTORY.md) | Schema, scheduler jobs, external APIs, feature matrix |
+| [`APPLICATION_EXECUTION_MAP.md`](APPLICATION_EXECUTION_MAP.md) | Startup sequence and request journeys |
+| [`FOLDER_STRUCTURE_GUIDE.md`](FOLDER_STRUCTURE_GUIDE.md) | File-by-file map with deprecation tags |
+| [`docs/diagrams/`](docs/diagrams/) | Mermaid architecture and flow diagrams |
 
-### MITRE ATT&CK Integration
+Regenerate screenshots (requires running backend + frontend):
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/techniques/top` | Top ATT&CK techniques by mapped CVE count |
-| `GET /api/cves/{cve_id}/techniques` | Techniques mapped to a single CVE |
-| `GET /api/atlas/techniques` | Grouped techniques with case studies |
-| `GET /api/atlas/case-studies` | MITRE ATT&CK case studies |
-| `GET /api/atlas/case-studies/{cve_id}` | Case studies for a specific CVE |
-| `POST /api/refresh/mitre` | Refresh MITRE ATT&CK Enterprise STIX + CVE mappings (weekly auto) |
+```bash
+cd frontend && npm install playwright --save-dev
+node ../scripts/capture_readme_screenshots.mjs
+```
 
-### Refresh & Admin
-
-| Endpoint | Description |
-|----------|-------------|
-| `POST /api/refresh` | Full ingest (NVD + KEV + EPSS + MITRE); runs automatically on scheduler |
-| `POST /api/refresh/nvd` | NVD incremental sync only |
-| `POST /api/refresh/kev` | CISA KEV metadata only |
-| `POST /api/refresh/epss` | EPSS scores only |
-| `GET /api/usage` | External API usage counters (NVD, VT, AbuseIPDB calls) |
-
-**Interactive API docs:** `/api/docs` (Swagger UI)
+---
 
 ## Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
-| `/` | Focus search |
+| `/` | Focus CVE search |
 | `F` | Cycle filters (KEV → Critical → PoC → all) |
+| `g` then `d` | Open digest for selected CVEs |
 | `Esc` | Close drawer, digest, or About modal |
 | `↑` `↓` | Navigate CVE cards |
 | `Enter` | Open highlighted CVE |
+| `C` | Copy CVE markdown (drawer open) |
+
+---
 
 ## Privacy
 
-BRIEFR collects no personal data, uses no cookies, and runs no analytics. IOC lookups are sent to VirusTotal and AbuseIPDB — results cached locally for 6 hours. See the full Privacy Policy at [projectjupiter.in/privacy](https://projectjupiter.in/privacy).
+BRIEFR collects no personal data, uses no cookies, and runs no analytics. Tech stack and timezone preferences are stored in your browser's `localStorage` only. IOC lookups are sent to configured third-party APIs; results are cached in your server's SQLite database (6 hours for IOC, various TTLs for feed cache). See [`frontend/src/pages/PrivacyPage.jsx`](frontend/src/pages/PrivacyPage.jsx) or `/privacy` in the app.
+
+---
+
+## Known limitations (v1.1 beta)
+
+- Single-user SQLite — not designed for concurrent multi-tenant writes
+- No API authentication
+- ATLAS per-CVE fields not yet returned by `GET /api/cves/{id}` (drawer section exists; API wiring pending)
+- Risk weights duplicated in Python (`backend/scoring/risk.py`) and JavaScript (`frontend/src/scoring/riskScore.js`)
+
+---
 
 ## License
 
