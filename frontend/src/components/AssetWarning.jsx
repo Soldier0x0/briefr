@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import './AssetWarning.css'
 
 const WARNING_TEXT = `// BEFORE YOU ENTER YOUR ENVIRONMENT
@@ -24,7 +25,25 @@ For maximum security:
 Recommended: Chrome Profile dedicated to
 security tooling, zero extensions.`
 
-export default function AssetWarning({ onAccept, onSkip, onClose }) {
+export default function AssetWarning({ onAccept, onUpload, onSkip, onClose }) {
+  const fileRef = useRef(null)
+
+  function handlePick() {
+    fileRef.current?.click()
+  }
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0]
+    if (file && onUpload) {
+      try {
+        await onUpload(file)
+      } catch {
+        alert('Failed to load profile: Invalid or corrupted file.')
+      }
+    }
+    e.target.value = ''
+  }
+
   return (
     <div className="asset-modal-overlay" role="presentation" onClick={onClose}>
       <div
@@ -39,10 +58,21 @@ export default function AssetWarning({ onAccept, onSkip, onClose }) {
           <button type="button" className="asset-btn asset-btn-primary mono" onClick={onAccept}>
             I understand — Set up my profile
           </button>
+          <button type="button" className="asset-btn asset-btn-primary mono" onClick={handlePick}>
+            Upload my profile
+          </button>
           <button type="button" className="asset-btn asset-btn-ghost mono" onClick={onSkip}>
             Skip — show all CVEs
           </button>
         </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="application/json,.json"
+          className="asset-file-input"
+          tabIndex={-1}
+          onChange={handleFile}
+        />
       </div>
     </div>
   )

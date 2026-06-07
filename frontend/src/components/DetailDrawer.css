@@ -1084,6 +1084,13 @@
   color: var(--text2);
 }
 
+.drawer-risk-comp-sentence {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text3);
+  margin: 4px 0 0;
+}
+
 .drawer-risk-components {
   display: flex;
   flex-direction: column;
