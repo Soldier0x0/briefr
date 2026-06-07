@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { useAssetProfileOptional } from '../context/AssetProfileContext.jsx'
 import ShortcutsPanel from './ShortcutsPanel.jsx'
 import {
   COMMON_TIMEZONES,
@@ -24,6 +25,7 @@ function applyTheme(theme) {
 }
 
 export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClick, onTimezoneChange, showShortcuts }) {
+  const assetCtx = useAssetProfileOptional()
   const [now, setNow]               = useState(new Date())
   const [theme, setTheme]           = useState(getCurrentTheme)
   const [tz, setTz]                 = useState(() => {
