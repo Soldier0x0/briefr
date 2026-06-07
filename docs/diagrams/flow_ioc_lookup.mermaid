@@ -1,0 +1,40 @@
+sequenceDiagram
+  participant User
+  participant UI as IOCLookup.jsx
+  participant API as POST /api/ioc/lookup
+  participant Cache as ioc_cache
+  participant IOC as enrichment/ioc.lookup_ioc
+  participant VT as VirusTotal
+  participant AIPDB as AbuseIPDB
+  participant GN as GreyNoise
+  participant MB as MalwareBazaar
+  participant UH as URLhaus
+  participant OTX as OTX
+
+  User->>UI: submit value + type
+  UI->>API: lookupIOC(value, type, greynoise)
+  API->>Cache: get_ioc_cache (6h TTL)
+  alt cache hit
+    Cache-->>API: cached result
+    API-->>UI: result with cached true
+  else cache miss
+    API->>IOC: lookup_ioc(...)
+    alt type ip
+      IOC->>VT: GET ip_addresses
+      IOC->>AIPDB: GET check
+      opt greynoise true
+        IOC->>GN: community lookup
+      end
+    else type hash
+      IOC->>VT: GET files
+      IOC->>MB: POST get_info
+    else type domain
+      IOC->>VT: GET domains
+      IOC->>UH: POST host lookup
+    end
+    IOC->>OTX: lookup_otx_for_ioc (if key set)
+    IOC-->>API: merged result
+    API->>Cache: set_ioc_cache ON CONFLICT UPDATE
+    API-->>UI: result with cached false
+  end
+  UI->>User: per-source panels + sentences

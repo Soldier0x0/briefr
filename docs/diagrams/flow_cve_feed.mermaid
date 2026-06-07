@@ -1,0 +1,19 @@
+sequenceDiagram
+  participant Sched as scheduler.run_nvd_incremental_sync
+  participant NVD as feeds/nvd.py
+  participant DB as database.upsert_cves
+  participant T as cves table
+  participant API as GET /api/cves
+  participant Feed as CVEFeed.jsx
+  participant Card as CVECard.jsx
+
+  Sched->>NVD: fetch_nvd_cve_updates(watermark)
+  NVD-->>Sched: parsed CVE dicts
+  Sched->>DB: upsert_cves + set_nvd_sync_watermark
+  DB->>T: ON CONFLICT DO UPDATE
+  Feed->>API: fetchCVEs(filters, page, limit)
+  API->>T: SELECT with filters + pagination
+  T-->>API: rows
+  API-->>Feed: total, page, data[]
+  Feed->>Card: render each CVE in list
+  Note over Card: Risk score uses list fields only;<br/>momentum defaults to 0 until drawer opens

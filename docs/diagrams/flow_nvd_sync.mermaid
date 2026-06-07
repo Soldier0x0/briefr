@@ -1,0 +1,20 @@
+sequenceDiagram
+  participant APS as APScheduler
+  participant Sched as scheduler._run_nvd_incremental_sync
+  participant Lock as _nvd_lock
+  participant NVD as feeds/nvd.fetch_nvd_cve_updates
+  participant DB as database.upsert_cves
+  participant Ext as feeds/extended.enrich_cves_extended
+  participant T as cves + sync_state
+
+  APS->>Sched: interval trigger (default every 1h)
+  Sched->>Lock: acquire (skip if locked)
+  Sched->>T: resolve_nvd_sync_watermark
+  Sched->>NVD: fetch with watermark or days_back window
+  NVD-->>Sched: CVE list + new watermark
+  Sched->>DB: upsert_cves (cap MAX_CVES_PER_FETCH)
+  DB->>T: ON CONFLICT UPDATE + change_history
+  Sched->>DB: set_nvd_sync_watermark
+  Sched->>Ext: enrich_cves_extended (Sploitus, CIRCL)
+  Sched->>T: commit
+  Note over Sched: On failure watermark not advanced;<br/>re-run is idempotent via upsert

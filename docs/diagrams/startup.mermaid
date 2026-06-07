@@ -1,0 +1,19 @@
+flowchart TD
+  A[uvicorn starts main:app] --> B[lifespan context enters]
+  B --> C[database.init_db]
+  C --> C1[CREATE TABLE IF NOT EXISTS x21 tables]
+  C1 --> C2[Inline ALTER migrations in init_db lines 280-304]
+  C2 --> C3[Normalize epss_score zeros]
+  D[scheduler.start_scheduler] --> D1[Register 7 APScheduler jobs]
+  D1 --> D2[scheduler.start]
+  E[scheduler.maybe_run_on_startup] --> E1{CVE count less than 10?}
+  E1 -->|yes| E2[asyncio.create_task run_full_ingest_sync]
+  E1 -->|no| E3[strip_auto_generated_summaries + enrich_kev_summaries]
+  E --> F[maybe_run_mitre_on_startup]
+  F --> F1{mitre or atlas count less than 10?}
+  F1 -->|yes| F2[create_task run_weekly_mitre_refresh]
+  F1 -->|no| G[FastAPI ready — /api endpoints live]
+  E2 --> G
+  E3 --> G
+  F2 --> G
+  H[On shutdown] --> H1[scheduler.stop_scheduler]

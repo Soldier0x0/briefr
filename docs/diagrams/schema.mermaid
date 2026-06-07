@@ -1,0 +1,64 @@
+erDiagram
+  cves ||--o{ cve_technique_map : maps
+  mitre_techniques ||--o{ cve_technique_map : referenced_by
+  cves ||--o{ cve_atlas_map : maps
+  atlas_techniques ||--o{ cve_atlas_map : referenced_by
+  cves ||--o{ kev_deadlines : may_have
+  cves ||--o{ epss_history : tracks
+  cves ||--o{ cve_exploits : has
+  cves ||--o{ cve_change_history : changes
+  cves ||--o{ otx_cve_pulses : has
+  otx_cve_pulses ||--o{ otx_pulse_iocs : contains
+  cves ||--o{ correlation_infrastructure : cve_id_a
+  cves ||--o{ correlation_actor : has
+  mitre_groups ||--o{ group_technique_map : uses
+  mitre_techniques ||--o{ group_technique_map : linked
+
+  cves {
+    TEXT cve_id PK
+    TEXT description
+    REAL cvss_score
+    TEXT severity
+    TEXT published
+    TEXT modified
+    TEXT affected_products
+    TEXT mitre_technique
+    TEXT summary
+    INTEGER is_kev
+    REAL epss_score
+    INTEGER has_poc
+    INTEGER patch_available
+    INTEGER has_ai_context
+    TEXT source_urls
+    TEXT cwe_ids
+    TEXT updated_at
+  }
+
+  kev_deadlines {
+    TEXT cve_id PK
+    TEXT product
+    TEXT short_description
+    TEXT required_action
+    TEXT due_date
+    TEXT date_added
+    TEXT updated_at
+  }
+
+  feed_cache {
+    TEXT cache_key PK
+    TEXT result
+    TEXT cached_at
+  }
+
+  ioc_cache {
+    TEXT value PK
+    TEXT ioc_type
+    TEXT result
+    TEXT cached_at
+  }
+
+  sync_state {
+    TEXT key PK
+    TEXT value
+    TEXT updated_at
+  }

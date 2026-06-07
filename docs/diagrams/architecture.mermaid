@@ -1,0 +1,94 @@
+flowchart TB
+  subgraph External["External Services"]
+    NVD[NVD API 2.0]
+    KEV[CISA KEV JSON]
+    EPSS[FIRST EPSS CSV/API]
+    MITRE[MITRE ATT&CK STIX]
+    ATLAS[MITRE ATLAS YAML]
+    SPL[Sploitus]
+    GN[GreyNoise]
+    VT[VirusTotal]
+    AIPDB[AbuseIPDB]
+    OTX[AlienVault OTX]
+    OSV[OSV.dev]
+    CIRCL[CIRCL CVE-Search]
+    MB[MalwareBazaar]
+    UH[URLhaus]
+    GROQ[Groq API]
+    ANTH[Anthropic API]
+    GH[GitHub API]
+    RSS[RSS Feeds x6]
+  end
+
+  subgraph Scheduler["APScheduler — scheduler.py"]
+    J1[NVD incremental<br/>every NVD_SYNC_INTERVAL_HOURS]
+    J2[KEV sync<br/>every KEV_SYNC_INTERVAL_MINUTES]
+    J3[EPSS sync<br/>every EPSS_SYNC_INTERVAL_HOURS]
+    J4[MITRE+ATLAS weekly Sun]
+    J5[OTX nightly cron]
+    J6[Incident RSS every 4h]
+    J7[Correlation nightly cron]
+  end
+
+  subgraph Backend["FastAPI — main.py"]
+    API[REST /api/*]
+  end
+
+  subgraph SQLite["SQLite — briefr.db"]
+    T_cves[(cves)]
+    T_kev[(kev_deadlines)]
+    T_epss[(epss_history)]
+    T_mitre[(mitre_techniques<br/>cve_technique_map<br/>mitre_groups)]
+    T_atlas[(atlas_techniques<br/>atlas_case_studies<br/>cve_atlas_map)]
+    T_otx[(otx_cve_pulses<br/>otx_pulse_iocs)]
+    T_corr[(correlation_*)]
+    T_cache[(feed_cache<br/>ioc_cache)]
+    T_other[(cve_exploits<br/>cve_change_history<br/>api_usage<br/>sync_state)]
+  end
+
+  subgraph Frontend["React — frontend/src"]
+    BRIEF[CVEFeed / CVECard]
+    DRAWER[DetailDrawer]
+    IOC[IOCLookup]
+    CASE[CaseStudies]
+    PDF[pdfReport.js]
+  end
+
+  J1 --> NVD --> T_cves
+  J2 --> KEV --> T_kev
+  J2 --> T_cves
+  J3 --> EPSS --> T_cves
+  J3 --> T_epss
+  J4 --> MITRE --> T_mitre
+  J4 --> ATLAS --> T_atlas
+  J4 --> T_cves
+  J5 --> OTX --> T_otx
+  J6 --> RSS --> T_cache
+  J7 --> T_corr
+  J7 --> T_otx
+
+  API --> T_cves
+  API --> T_kev
+  API --> T_mitre
+  API --> T_atlas
+  API --> T_otx
+  API --> T_corr
+  API --> T_cache
+  API --> SPL
+  API --> GN
+  API --> VT
+  API --> AIPDB
+  API --> OTX
+  API --> OSV
+  API --> CIRCL
+  API --> MB
+  API --> UH
+  API --> GROQ
+  API --> ANTH
+  API --> GH
+
+  BRIEF -->|GET /api/cves| API
+  DRAWER -->|GET /api/cves/id + sub-routes| API
+  IOC -->|POST /api/ioc/lookup| API
+  CASE -->|GET /api/case-studies/news<br/>fetchAtlas*| API
+  PDF -->|POST /api/ai/summary| API
