@@ -80,6 +80,11 @@ export function fetchCVECorrelation(cveId, sector = '') {
   return request(`/cves/${encodeURIComponent(cveId)}/correlation${qs}`)
 }
 
+export function fetchCVEDetection(cveId, product = '') {
+  const qs = product ? `?product=${encodeURIComponent(product)}` : ''
+  return request(`/cves/${encodeURIComponent(cveId)}/detection${qs}`)
+}
+
 export function fetchCVEsForExport(params = {}) {
   const qs = new URLSearchParams()
   if (params.severity)  qs.set('severity', params.severity)
