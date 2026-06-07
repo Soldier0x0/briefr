@@ -249,12 +249,23 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 | [`FOLDER_STRUCTURE_GUIDE.md`](FOLDER_STRUCTURE_GUIDE.md) | File-by-file map with deprecation tags |
 | [`docs/diagrams/`](docs/diagrams/) | Mermaid architecture and flow diagrams |
 
-Regenerate screenshots (requires running backend + frontend):
+Regenerate screenshots (backend on `:8000`, frontend on `:5173`):
 
 ```bash
 cd frontend && npm install playwright --save-dev
 node ../scripts/capture_readme_screenshots.mjs
 ```
+
+The script waits for each tab's content selectors and **exits with code 1** if a page fails to load (no silent blank captures).
+
+Regenerate the technical inventory spreadsheet:
+
+```bash
+pip install openpyxl
+python3 scripts/generate_technical_inventory_xlsx.py
+```
+
+Writes `TECHNICAL_INVENTORY.xlsx` with auto-sized columns (minimum width 10).
 
 ---
 

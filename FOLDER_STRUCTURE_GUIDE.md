@@ -252,7 +252,10 @@ Every file in the repository with a one-line purpose. Tags:
 | `APPLICATION_EXECUTION_MAP.md` | Startup sequence and request journeys |
 | `FOLDER_STRUCTURE_GUIDE.md` | This file |
 | `docs/diagrams/*.mermaid` | Mermaid diagrams (architecture, flows, schema, startup) |
-| `screenshots/dashboard.png` | README screenshot |
+| `screenshots/brief.png` | README screenshot — BRIEF tab CVE feed |
+| `screenshots/ioc-lookup.png` | README screenshot — IOC LOOKUP tab |
+| `screenshots/incidents-news.png` | README screenshot — INCIDENTS & NEWS tab |
+| `LICENSE` | Proprietary license (Sai Harsha Vardhan, all rights reserved) |
 
 ---
 
@@ -260,5 +263,7 @@ Every file in the repository with a one-line purpose. Tags:
 
 | Path | Description |
 |---|---|
+| `scripts/capture_readme_screenshots.mjs` | Playwright capture of README tab screenshots; exits non-zero if selectors time out |
+| `scripts/generate_technical_inventory_xlsx.py` | Regenerates `TECHNICAL_INVENTORY.xlsx` from structured data (min column width 10) |
 | `backend/scripts/backfill_poc.py` | Backfill `has_poc` from NVD references |
 | `deploy/*.sh` | Deployment and maintenance shell scripts |

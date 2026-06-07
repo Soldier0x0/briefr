@@ -370,3 +370,12 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | Structured logging | Not implemented | Plain text logs |
 
 Spreadsheet export: [`TECHNICAL_INVENTORY.xlsx`](TECHNICAL_INVENTORY.xlsx)
+
+### Regenerating the spreadsheet
+
+```bash
+pip install openpyxl
+python3 scripts/generate_technical_inventory_xlsx.py
+```
+
+The generator writes six sheets (Tech Stack, Database Schema, Scheduler Jobs, External APIs, Risk Scoring, Feature Completion) and auto-sizes columns with a minimum width of 10 and maximum of 60.
