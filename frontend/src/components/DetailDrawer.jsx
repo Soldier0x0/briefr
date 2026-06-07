@@ -4,6 +4,7 @@ import {
   fetchCVECorrelation,
   fetchCVEDetection,
   fetchCVEEpssHistory,
+  fetchCVEMomentum,
   fetchCVERelated,
   fetchCVESentences,
 } from '../api.js'
@@ -29,6 +30,7 @@ import {
   riskScoreColor,
   RISK_COMPONENT_LABELS,
 } from '../scoring/riskScore.js'
+import { setMomentumScore } from '../utils/momentumCache.js'
 import './DetailDrawer.css'
 
 
@@ -212,21 +214,22 @@ function RiskScoreBar({ score }) {
   )
 }
 
-function RiskScoreBreakdown({ cve, riskScore, onOpenProfile }) {
+function RiskScoreBreakdown({ cve, riskScore, onOpenProfile, momentumData }) {
   if (!riskScore || !cve) return null
 
   const { total, components, hasProfile } = riskScore
   const totalColor = riskScoreColor(total)
   const summary = buildRiskHeroSummary(cve, riskScore)
 
-  const breakdownRows = Object.entries(components)
-    .filter(([key]) => hasProfile || key !== 'asset')
-    .map(([key, comp]) => ({
+  // Fixed display order matching v1.1b weights
+  const ORDERED_KEYS = ['asset', 'kev', 'epss', 'exploit', 'cvss', 'momentum']
+  const breakdownRows = ORDERED_KEYS
+    .filter(key => components[key] != null)
+    .map(key => ({
       key,
       label: RISK_COMPONENT_LABELS[key] || key,
-      ...comp,
+      ...components[key],
     }))
-    .sort((a, b) => b.points - a.points)
 
   return (
     <section className="drawer-section drawer-risk-section" aria-labelledby="risk-score-heading">
@@ -245,6 +248,9 @@ function RiskScoreBreakdown({ cve, riskScore, onOpenProfile }) {
           }
         >
           {total.toFixed(1)}
+          {riskScore.momentumScore > 0.5 && (
+            <span className="drawer-risk-momentum-arrow" aria-label="Rising threat momentum">↑</span>
+          )}
         </div>
         {summary && (
           <p className="drawer-risk-summary mono">{summary}</p>
@@ -286,14 +292,25 @@ function RiskScoreBreakdown({ cve, riskScore, onOpenProfile }) {
                 {row.points.toFixed(1)} pts
               </span>
             </div>
-            {row.sentence && (
+            {row.key === 'momentum' && momentumData?.momentum_signals?.length > 0 ? (
+              <ul className="drawer-risk-momentum-signals" aria-label="Momentum signals">
+                {momentumData.momentum_signals.map((sig, i) => (
+                  <li key={i} className="drawer-risk-momentum-signal mono">
+                    {sig.description}
+                    <span className="drawer-risk-momentum-contrib">
+                      {sig.contribution > 0 ? ` (+${sig.contribution.toFixed(1)})` : ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : row.sentence ? (
               <p className="drawer-risk-comp-sentence">{row.sentence}</p>
-            )}
+            ) : null}
           </div>
         ))}
       </div>
       <p className="drawer-risk-weights mono">
-        Weights: Asset 37% · KEV 26% · EPSS 16% · Exploit 11% · CVSS 10%
+        v1.1b — Asset 35% · KEV 25% · EPSS 15% · Exploit 10% · CVSS 10% · Momentum 5%
       </p>
     </section>
   )
@@ -434,10 +451,10 @@ function CorrelationFindings({ correlation, loading, onSelectCve }) {
   )
 }
 
-function TabOverview({ cve, riskScore, onOpenProfile, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
+function TabOverview({ cve, riskScore, onOpenProfile, momentumData, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
   return (
     <>
-      <RiskScoreBreakdown cve={cve} riskScore={riskScore} onOpenProfile={onOpenProfile} />
+      <RiskScoreBreakdown cve={cve} riskScore={riskScore} onOpenProfile={onOpenProfile} momentumData={momentumData} />
 
       <EpssTrendSection
         cve={cve}
@@ -1137,6 +1154,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const [detection, setDetection] = useState(null)
   const [detectionLoading, setDetectionLoading] = useState(false)
   const detectionFetchedRef = useRef(false)
+  const [momentumData, setMomentumData] = useState(null)
   const [backStack, setBackStack] = useState([])
   const [pdfModalOpen, setPdfModalOpen] = useState(false)
   const [pdfBusy, setPdfBusy] = useState(false)
@@ -1152,8 +1170,9 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
     const backendMatchScore = assetCtx?.isLoaded
       ? assetCtx.getMatchScore(cve.cve_id)
       : null
-    return calculateRiskScore(cve, assetCtx?.profile ?? null, backendMatchScore)
-  }, [cve, assetCtx?.profile, assetCtx?.isLoaded, assetCtx?.matchScores])
+    const momScore = momentumData?.momentum_score ?? 0
+    return calculateRiskScore(cve, assetCtx?.profile ?? null, backendMatchScore, momScore)
+  }, [cve, assetCtx?.profile, assetCtx?.isLoaded, assetCtx?.matchScores, momentumData])
 
   useEffect(() => {
     if (!cve?.cve_id) {
@@ -1231,11 +1250,30 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
     setBackStack([])
   }, [cve?.cve_id, isOpen])
 
-  // Reset detection when CVE changes
+  // Reset detection + momentum when CVE changes
   useEffect(() => {
     setDetection(null)
     setDetectionLoading(false)
     detectionFetchedRef.current = false
+    setMomentumData(null)
+  }, [cve?.cve_id])
+
+  // Momentum: fetch on drawer open (lazy, not on card render)
+  useEffect(() => {
+    if (!cve?.cve_id) return
+    let cancelled = false
+    fetchCVEMomentum(cve.cve_id)
+      .then(data => {
+        if (!cancelled) {
+          setMomentumData(data)
+          // Publish to momentumCache so CVECard arrows update reactively
+          if (data && typeof data.momentum_score === 'number') {
+            setMomentumScore(cve.cve_id, data.momentum_score)
+          }
+        }
+      })
+      .catch(() => { /* non-critical — momentum is optional */ })
+    return () => { cancelled = true }
   }, [cve?.cve_id])
 
   // Detection: lazy-fetch when Detect tab first activated
@@ -1512,6 +1550,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
               cve={cve}
               riskScore={riskScore}
               onOpenProfile={assetCtx?.openProfileFlow}
+              momentumData={momentumData}
               products={products}
               cwes={cwes}
               urls={urls}

@@ -85,6 +85,10 @@ export function fetchCVEDetection(cveId, product = '') {
   return request(`/cves/${encodeURIComponent(cveId)}/detection${qs}`)
 }
 
+export function fetchCVEMomentum(cveId) {
+  return request(`/cves/${encodeURIComponent(cveId)}/momentum`)
+}
+
 export function fetchCVEsForExport(params = {}) {
   const qs = new URLSearchParams()
   if (params.severity)  qs.set('severity', params.severity)

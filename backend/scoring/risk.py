@@ -1,15 +1,17 @@
-"""BRIEFR Risk Score v1.1a — five weighted components (no momentum)."""
+"""BRIEFR Risk Score v1.1b — six weighted components including Momentum."""
 
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
 from typing import Any, Optional
 
-WEIGHT_ASSET = 0.37
-WEIGHT_KEV = 0.26
-WEIGHT_EPSS = 0.16
-WEIGHT_EXPLOIT = 0.11
-WEIGHT_CVSS = 0.10
+# v1.1b weights — sum = 1.00
+WEIGHT_ASSET   = 0.35
+WEIGHT_KEV     = 0.25
+WEIGHT_EPSS    = 0.15
+WEIGHT_EXPLOIT = 0.10
+WEIGHT_CVSS    = 0.10
+WEIGHT_MOMENTUM = 0.05
 
 DEFAULT_ASSET_UNKNOWN = 0.5
 
@@ -250,6 +252,7 @@ def calculate_risk_score(
     cve: dict,
     user_assets: Optional[list] = None,
     exploits: Optional[list] = None,
+    momentum_score: float = 0.0,
 ) -> dict[str, Any]:
     """
     Return BRIEFR Risk Score 0.0–100.0 and per-component breakdown.
@@ -274,12 +277,16 @@ def calculate_risk_score(
     if not user_assets:
         components["asset"] = DEFAULT_ASSET_UNKNOWN
 
+    momentum = max(0.0, min(1.0, float(momentum_score or 0)))
+    components["momentum"] = momentum
+
     weighted = (
-        components["asset"] * WEIGHT_ASSET
-        + components["kev"] * WEIGHT_KEV
-        + components["epss"] * WEIGHT_EPSS
+        components["asset"]   * WEIGHT_ASSET
+        + components["kev"]     * WEIGHT_KEV
+        + components["epss"]    * WEIGHT_EPSS
         + components["exploit"] * WEIGHT_EXPLOIT
-        + components["cvss"] * WEIGHT_CVSS
+        + components["cvss"]    * WEIGHT_CVSS
+        + momentum              * WEIGHT_MOMENTUM
     )
     score = round(max(0.0, min(100.0, weighted * 100.0)), 1)
 
@@ -290,27 +297,30 @@ def calculate_risk_score(
         "epss": "EPSS likelihood",
         "exploit": "Public exploits",
         "cvss": "CVSS severity",
+        "momentum": "Momentum",
     }
-    weights = {
-        "asset": WEIGHT_ASSET,
-        "kev": WEIGHT_KEV,
-        "epss": WEIGHT_EPSS,
-        "exploit": WEIGHT_EXPLOIT,
-        "cvss": WEIGHT_CVSS,
+    weights_map = {
+        "asset":    WEIGHT_ASSET,
+        "kev":      WEIGHT_KEV,
+        "epss":     WEIGHT_EPSS,
+        "exploit":  WEIGHT_EXPLOIT,
+        "cvss":     WEIGHT_CVSS,
+        "momentum": WEIGHT_MOMENTUM,
     }
 
     breakdown = []
-    for key in ("asset", "kev", "epss", "exploit", "cvss"):
+    for key in ("asset", "kev", "epss", "exploit", "cvss", "momentum"):
         value = components[key]
-        points = round(value * weights[key] * 100.0, 1)
+        w = weights_map[key]
+        points = round(value * w * 100.0, 1)
         breakdown.append(
             {
                 "id": key,
                 "label": labels[key],
-                "weight": weights[key],
+                "weight": w,
                 "value": round(value, 4),
                 "points": points,
-                "sentence": sentences[key],
+                "sentence": sentences.get(key, ""),
             }
         )
 
@@ -318,4 +328,151 @@ def calculate_risk_score(
         "score": score,
         "components": components,
         "breakdown": breakdown,
+    }
+
+
+# ── Momentum (v1.1b) ─────────────────────────────────────
+
+async def calculate_momentum(cve_id: str, db: Any) -> dict[str, Any]:
+    """
+    Compute momentum score (0–1) from EPSS trend history and OTX pulse recency.
+    Signals:
+      - EPSS rising: score increase over last 14 snapshots
+      - New OTX pulse: within 24h (+0.5), within 7 days (+0.3)
+      - Recently added to CISA KEV: within 7 days (+0.4)
+      - Rapid exploitation: KEV within 30 days of publication (+0.3)
+    """
+    cve_upper = cve_id.upper()
+    signals: list[dict] = []
+    total = 0.0
+    now = datetime.now(timezone.utc)
+
+    # ── Signal 1: EPSS trend ─────────────────────────────
+    epss_rows = await db.execute_fetchall(
+        """
+        SELECT score, recorded_date
+        FROM epss_history
+        WHERE cve_id = ?
+        ORDER BY recorded_date DESC
+        LIMIT 14
+        """,
+        (cve_upper,),
+    )
+    if len(epss_rows) >= 2:
+        latest = float(epss_rows[0]["score"] or 0)
+        oldest = float(epss_rows[-1]["score"] or 0)
+        delta = latest - oldest
+        n = len(epss_rows)
+        if delta >= 0.10:
+            contrib = round(min(0.50, 0.40 + delta), 2)
+            signals.append({
+                "type": "epss_rising",
+                "description": f"Rising EPSS +{delta * 100:.1f}% over {n} days",
+                "contribution": contrib,
+            })
+            total += contrib
+        elif delta >= 0.05:
+            contrib = round(min(0.35, delta * 4), 2)
+            signals.append({
+                "type": "epss_rising",
+                "description": f"Rising EPSS +{delta * 100:.1f}% recently",
+                "contribution": contrib,
+            })
+            total += contrib
+        elif delta >= 0.02:
+            signals.append({
+                "type": "epss_rising",
+                "description": f"Slight EPSS increase +{delta * 100:.1f}%",
+                "contribution": 0.10,
+            })
+            total += 0.10
+
+    # ── Signal 2: New OTX pulse ───────────────────────────
+    otx_rows = await db.execute_fetchall(
+        """
+        SELECT fetched_at
+        FROM otx_cve_pulses
+        WHERE cve_id = ?
+        ORDER BY fetched_at DESC
+        LIMIT 1
+        """,
+        (cve_upper,),
+    )
+    if otx_rows:
+        fetched_str = (otx_rows[0]["fetched_at"] or "").strip()
+        try:
+            fetched_dt = datetime.fromisoformat(fetched_str.replace("Z", "+00:00"))
+            if fetched_dt.tzinfo is None:
+                fetched_dt = fetched_dt.replace(tzinfo=timezone.utc)
+            hours_ago = max(0.0, (now - fetched_dt).total_seconds() / 3600)
+            if hours_ago <= 24:
+                signals.append({
+                    "type": "otx_pulse",
+                    "description": f"New OTX pulse {hours_ago:.0f}h ago",
+                    "contribution": 0.50,
+                })
+                total += 0.50
+            elif hours_ago <= 7 * 24:
+                days_ago = hours_ago / 24
+                signals.append({
+                    "type": "otx_pulse",
+                    "description": f"New OTX pulse {days_ago:.1f} days ago",
+                    "contribution": 0.30,
+                })
+                total += 0.30
+        except Exception:
+            pass
+
+    # ── Signal 3: Recent KEV addition + rapid exploitation ─
+    row_list = await db.execute_fetchall(
+        """
+        SELECT c.published, c.is_kev, k.date_added AS kev_date_added
+        FROM cves c
+        LEFT JOIN kev_deadlines k ON k.cve_id = c.cve_id
+        WHERE c.cve_id = ?
+        """,
+        (cve_upper,),
+    )
+    if row_list:
+        row = row_list[0]
+        is_kev = bool(row["is_kev"])
+        kev_str = (row["kev_date_added"] or "").strip()
+        pub_str = (row["published"] or "").strip()
+
+        if is_kev and kev_str:
+            try:
+                kev_dt = datetime.fromisoformat(kev_str.replace("Z", "+00:00"))
+                if kev_dt.tzinfo is None:
+                    kev_dt = kev_dt.replace(tzinfo=timezone.utc)
+                days_kev = max(0, (now - kev_dt).days)
+                if days_kev <= 7:
+                    signals.append({
+                        "type": "kev_recent",
+                        "description": f"Added to CISA KEV {days_kev} day{'s' if days_kev != 1 else ''} ago",
+                        "contribution": 0.40,
+                    })
+                    total += 0.40
+            except Exception:
+                pass
+
+        if is_kev and pub_str:
+            try:
+                pub_dt = datetime.fromisoformat(pub_str.replace("Z", "+00:00"))
+                if pub_dt.tzinfo is None:
+                    pub_dt = pub_dt.replace(tzinfo=timezone.utc)
+                days_pub = (now - pub_dt).days
+                if 0 <= days_pub <= 30:
+                    signals.append({
+                        "type": "rapid_exploitation",
+                        "description": f"Exploited within {days_pub} days of publication",
+                        "contribution": 0.30,
+                    })
+                    total += 0.30
+            except Exception:
+                pass
+
+    return {
+        "cve_id": cve_upper,
+        "momentum_score": round(min(1.0, total), 3),
+        "momentum_signals": signals,
     }

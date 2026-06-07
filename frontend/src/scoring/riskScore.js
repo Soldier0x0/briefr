@@ -1,10 +1,10 @@
 /**
- * BRIEFR Risk Score v1.1a
- * 5 components — momentum added in Session 16
+ * BRIEFR Risk Score v1.1b
+ * 6 components — momentum now active (v1.1b weights).
  *
- * calculateRiskScore(cve, assetProfile) is the primary export.
- * assetProfile is the full profile object from AssetProfileContext (or null).
- * All logic is client-side — no additional API calls.
+ * calculateRiskScore(cve, assetProfile, backendMatchScore, momentumScore)
+ * Momentum is fetched lazily from /api/cves/{id}/momentum on drawer open.
+ * For card renders, momentumScore defaults to 0 (no API call per card).
  */
 
 const DEFAULT_ASSET_UNKNOWN = 0.5
@@ -371,7 +371,12 @@ function assetScoreFromBackend(matchScore) {
 
 // ── Main scoring function ─────────────────────────────────
 
-export function calculateRiskScore(cve, assetProfile, backendMatchScore = null) {
+export function calculateRiskScore(
+  cve,
+  assetProfile,
+  backendMatchScore = null,
+  momentumScore = 0,
+) {
   if (!cve) return null
 
   let assetScore
@@ -391,21 +396,27 @@ export function calculateRiskScore(cve, assetProfile, backendMatchScore = null) 
     ({ score: assetScore, matchType: assetMatchType } = assetMatchInfo(cve, assetProfile))
   }
 
-  const kevScore = calculateKevScore(cve)
-  const epssScore = num(cve.epss_score, 0)
+  const kevScore    = calculateKevScore(cve)
+  const epssScore   = num(cve.epss_score, 0)
   const exploitScore = calculateExploitScore(cve)
-  const cvssScore = num(cve.cvss_score, 0) / 10
+  const cvssScore   = num(cve.cvss_score, 0) / 10
+  const momScore    = Math.min(1, Math.max(0, num(momentumScore, 0)))
 
+  // v1.1b weights: asset 0.35, kev 0.25, epss 0.15, exploit 0.10, cvss 0.10, momentum 0.05
   const raw =
-    assetScore * 0.37 +
-    kevScore * 0.26 +
-    epssScore * 0.16 +
-    exploitScore * 0.11 +
-    cvssScore * 0.10
+    assetScore   * 0.35 +
+    kevScore     * 0.25 +
+    epssScore    * 0.15 +
+    exploitScore * 0.10 +
+    cvssScore    * 0.10 +
+    momScore     * 0.05
 
   const total = Math.round(raw * 100 * 10) / 10
 
-  const scores = { asset: assetScore, kev: kevScore, epss: epssScore, exploit: exploitScore, cvss: cvssScore }
+  const scores = {
+    asset: assetScore, kev: kevScore, epss: epssScore,
+    exploit: exploitScore, cvss: cvssScore, momentum: momScore,
+  }
   const sentences = buildSentences(cve, assetProfile, scores, assetMatchType)
 
   return {
@@ -413,26 +424,26 @@ export function calculateRiskScore(cve, assetProfile, backendMatchScore = null) 
     components: {
       asset: {
         score: assetScore,
-        weight: 0.37,
-        points: Math.round(assetScore * 37 * 10) / 10,
+        weight: 0.35,
+        points: Math.round(assetScore * 35 * 10) / 10,
         sentence: sentences.asset,
       },
       kev: {
         score: kevScore,
-        weight: 0.26,
-        points: Math.round(kevScore * 26 * 10) / 10,
+        weight: 0.25,
+        points: Math.round(kevScore * 25 * 10) / 10,
         sentence: sentences.kev,
       },
       epss: {
         score: epssScore,
-        weight: 0.16,
-        points: Math.round(epssScore * 16 * 10) / 10,
+        weight: 0.15,
+        points: Math.round(epssScore * 15 * 10) / 10,
         sentence: sentences.epss,
       },
       exploit: {
         score: exploitScore,
-        weight: 0.11,
-        points: Math.round(exploitScore * 11 * 10) / 10,
+        weight: 0.10,
+        points: Math.round(exploitScore * 10 * 10) / 10,
         sentence: sentences.exploit,
       },
       cvss: {
@@ -441,9 +452,18 @@ export function calculateRiskScore(cve, assetProfile, backendMatchScore = null) 
         points: Math.round(cvssScore * 10 * 10) / 10,
         sentence: sentences.cvss,
       },
+      momentum: {
+        score: momScore,
+        weight: 0.05,
+        points: Math.round(momScore * 5 * 10) / 10,
+        sentence: momScore > 0
+          ? `Threat momentum active — score raised by active signals`
+          : 'No recent threat momentum signals detected',
+      },
     },
     assetMatchType,
     hasProfile: assetProfile != null,
+    momentumScore: momScore,
   }
 }
 
@@ -500,6 +520,7 @@ export const RISK_COMPONENT_LABELS = {
   epss: 'EPSS',
   exploit: 'Exploit Avail',
   cvss: 'CVSS',
+  momentum: 'Momentum',
 }
 
 // ── Colour helpers ────────────────────────────────────────

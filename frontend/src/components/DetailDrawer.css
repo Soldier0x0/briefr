@@ -1246,6 +1246,42 @@
   margin: 0;
 }
 
+/* Momentum arrow in drawer score hero */
+.drawer-risk-momentum-arrow {
+  font-size: 20px;
+  color: var(--red);
+  margin-left: 4px;
+  vertical-align: middle;
+  line-height: 1;
+  animation: pulse-up 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-up {
+  0%, 100% { opacity: 1; transform: translateY(0); }
+  50%       { opacity: 0.6; transform: translateY(-3px); }
+}
+
+/* Momentum signals list inside breakdown */
+.drawer-risk-momentum-signals {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.drawer-risk-momentum-signal {
+  font-size: 0.6875rem;
+  color: var(--text2);
+  letter-spacing: 0.02em;
+}
+
+.drawer-risk-momentum-contrib {
+  color: var(--red);
+  font-weight: 500;
+}
+
 /* ── Detection Rule Engine (Detect tab) ──────────────── */
 
 .det-status-badge {

@@ -170,6 +170,21 @@
   flex-shrink: 0;
 }
 
+.cve-momentum-arrow {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--red);
+  margin-left: 4px;
+  vertical-align: middle;
+  animation: momentum-pulse 1.8s ease-in-out infinite;
+  cursor: help;
+}
+
+@keyframes momentum-pulse {
+  0%, 100% { opacity: 1;   transform: translateY(0); }
+  50%       { opacity: 0.5; transform: translateY(-2px); }
+}
+
 /* Badges — always wrap, never overflow */
 .cve-badges {
   display: flex;

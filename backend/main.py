@@ -1078,6 +1078,21 @@ async def ioc_lookup(body: IocLookupRequest):
     return result
 
 
+@app.get("/api/cves/{cve_id}/momentum")
+async def cve_momentum(cve_id: str):
+    """
+    Compute momentum score (0–1) from EPSS trend and OTX pulse recency.
+    Returns momentum_score and momentum_signals list for drawer breakdown.
+    """
+    from scoring.risk import calculate_momentum
+    db = await get_db()
+    try:
+        result = await calculate_momentum(cve_id.upper(), db)
+    finally:
+        await db.close()
+    return result
+
+
 @app.get("/api/cves/{cve_id}/detection")
 async def cve_detection(
     cve_id: str,
