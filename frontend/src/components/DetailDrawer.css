@@ -356,12 +356,6 @@
   margin: 0;
 }
 
-.drawer-phase2 {
-  font-size: 0.75rem;
-  color: var(--text3);
-  margin: 0;
-}
-
 .drawer-description {
   font-size: 0.875rem;
   color: var(--text2);

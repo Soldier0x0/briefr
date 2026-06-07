@@ -432,28 +432,6 @@ def _append_upsert_change_rows(
             )
 
 
-async def record_cve_change(
-    db: aiosqlite.Connection,
-    cve_id: str,
-    field_name: str,
-    old_value: object,
-    new_value: object,
-) -> None:
-    if field_name not in TRACKED_CVE_FIELDS:
-        return
-    old_s = _change_value_str(old_value)
-    new_s = _change_value_str(new_value)
-    if old_s == new_s:
-        return
-    await db.execute(
-        """
-        INSERT INTO cve_change_history (cve_id, field_name, old_value, new_value, detected_at)
-        VALUES (?, ?, ?, ?, datetime('now'))
-        """,
-        (cve_id.upper(), field_name, old_s, new_s),
-    )
-
-
 async def _insert_cve_changes_batch(
     db: aiosqlite.Connection,
     rows: list[tuple[str, str, str, str]],

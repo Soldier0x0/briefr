@@ -22,8 +22,6 @@ logger = logging.getLogger(__name__)
 
 from database import (
     get_atlas_case_studies,
-    get_atlas_case_studies_for_cve,
-    get_atlas_techniques_for_cve,
     get_atlas_techniques_grouped,
     get_db,
     get_cve_count,
@@ -62,7 +60,6 @@ from scheduler import (
     stop_scheduler,
 )
 from ai.summary import generate_executive_summary
-from investigation_summary import generate_investigation_summary
 from tracking import get_ioc_usage_stats, get_usage_stats
 from templates.intelligence import (
     epss_sentence_or_fallback,
@@ -187,7 +184,6 @@ def _row_to_cve_dict(row) -> dict:
     d["is_kev"] = bool(d.get("is_kev", 0))
     d["has_poc"] = bool(d.get("has_poc", 0))
     d["patch_available"] = bool(d.get("patch_available", 0))
-    d["has_ai_context"] = bool(d.get("has_ai_context", 0))
     kev_date = d.get("kev_date_added")
     d["kev_date_added"] = (kev_date or "").strip() or None
     return d
@@ -895,8 +891,7 @@ async def get_cve(cve_id: str):
             """
             SELECT cve_id, description, cvss_score, severity, published, modified,
                    affected_products, mitre_technique, summary, is_kev, epss_score,
-                   has_poc, patch_available, has_ai_context, source_urls, cwe_ids,
-                   updated_at
+                   has_poc, patch_available, source_urls, cwe_ids, updated_at
             FROM cves
             WHERE cve_id = ?
             """,
@@ -913,8 +908,6 @@ async def get_cve(cve_id: str):
         if kev_rows and kev_rows[0]["date_added"]:
             cve["kev_date_added"] = (kev_rows[0]["date_added"] or "").strip() or None
         cve["techniques"] = await get_techniques_for_cve(db, cve_key)
-        cve["atlas_techniques"] = await get_atlas_techniques_for_cve(db, cve_key)
-        cve["atlas_case_studies"] = await get_atlas_case_studies_for_cve(db, cve_key)
 
         try:
             cve["public_exploits"] = await load_public_exploits_for_cve(
