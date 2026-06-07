@@ -115,7 +115,7 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
       const loaded = await parseProfileFile(file)
       setProfile(loaded)
     } catch {
-      /* invalid file */
+      alert('Failed to load profile: Invalid or corrupted file.')
     }
     e.target.value = ''
   }
