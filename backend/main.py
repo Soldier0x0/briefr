@@ -1078,6 +1078,32 @@ async def ioc_lookup(body: IocLookupRequest):
     return result
 
 
+@app.get("/api/cves/{cve_id}/correlation")
+async def cve_correlation(
+    cve_id: str,
+    sector: str = Query(default="", description="User's declared industry sector for actor matching"),
+):
+    """
+    On-demand correlation for a CVE.
+    Level 1: shared exploitation IPs with other CVEs (OTX pulse IOCs).
+    Level 2: ATT&CK groups linked to this CVE's techniques, matched against user sector.
+    Level 3: temporal vendor volume anomalies (pre-computed nightly).
+    Results are cached for 6 hours.
+    """
+    from correlation.engine import get_correlation_for_cve
+
+    db = await get_db()
+    try:
+        result = await get_correlation_for_cve(
+            db, cve_id.upper(), user_sector=sector.strip()
+        )
+        await db.commit()
+    finally:
+        await db.close()
+
+    return result
+
+
 @app.post("/api/refresh")
 async def manual_refresh():
     if refresh_in_progress():

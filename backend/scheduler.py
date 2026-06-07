@@ -43,6 +43,7 @@ _kev_lock = asyncio.Lock()
 _epss_lock = asyncio.Lock()
 _mitre_refresh_lock = asyncio.Lock()
 _otx_lock = asyncio.Lock()
+_correlation_lock = asyncio.Lock()
 
 
 def get_scheduler_timezone() -> str:
@@ -458,6 +459,43 @@ async def maybe_run_on_startup() -> None:
     await maybe_run_mitre_on_startup()
 
 
+async def run_nightly_correlation() -> bool:
+    """Nightly correlation engine: infrastructure, actor, and temporal analysis."""
+    if _correlation_lock.locked():
+        logger.warning("Correlation job already in progress — skipping")
+        return False
+
+    async with _correlation_lock:
+        from correlation.engine import (
+            prefetch_pulse_iocs_for_nightly,
+            run_nightly_correlation as _run_correlation,
+        )
+
+        api_key = os.environ.get("OTX_API_KEY", "")
+        db = await get_db()
+        try:
+            # Pre-warm IOC data for Level 1 before running correlation
+            if api_key:
+                ioc_count = await prefetch_pulse_iocs_for_nightly(db, api_key)
+                if ioc_count:
+                    await db.commit()
+                    logger.info("Pre-fetched IOCs for %d pulses", ioc_count)
+
+            stats = await _run_correlation(db)
+            logger.info(
+                "Nightly correlation: %d CVEs, %d infra pairs, %d actors, %d anomalies",
+                stats.get("cves_processed", 0),
+                stats.get("infrastructure_pairs", 0),
+                stats.get("actor_findings", 0),
+                stats.get("temporal_anomalies", 0),
+            )
+        except Exception as exc:
+            logger.error("Nightly correlation job failed: %s", exc)
+        finally:
+            await db.close()
+    return True
+
+
 async def run_otx_nightly_sync() -> bool:
     if _otx_lock.locked():
         logger.warning("OTX nightly correlation already in progress — skipping")
@@ -556,17 +594,36 @@ def start_scheduler() -> AsyncIOScheduler:
         coalesce=True,
     )
 
+    corr_hour = int(os.environ.get("CORRELATION_HOUR", "1"))
+    corr_minute = int(os.environ.get("CORRELATION_MINUTE", "0"))
+    corr_tz = ZoneInfo(os.environ.get("CORRELATION_TIMEZONE", "Asia/Kolkata"))
+    scheduler.add_job(
+        run_nightly_correlation,
+        trigger=CronTrigger(
+            hour=corr_hour,
+            minute=corr_minute,
+            timezone=corr_tz,
+        ),
+        id="nightly_correlation",
+        name="BRIEFR Nightly Correlation Engine",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+    )
+
     scheduler.start()
     _scheduler = scheduler
     logger.info(
         "Scheduler started (tz=%s). NVD every %dh; KEV every %dm; EPSS every %dh; "
-        "MITRE+ATLAS weekly Sunday %02d:%02d; OTX nightly %02d:%02d IST.",
+        "MITRE+ATLAS weekly Sunday %02d:%02d; Correlation nightly %02d:%02d IST; OTX nightly %02d:%02d IST.",
         tz_name,
         intervals["nvd_hours"],
         intervals["kev_minutes"],
         intervals["epss_hours"],
         mitre_hour,
         mitre_minute,
+        corr_hour,
+        corr_minute,
         otx_hour,
         otx_minute,
     )

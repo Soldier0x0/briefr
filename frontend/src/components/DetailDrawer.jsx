@@ -1,6 +1,7 @@
 import { Component, useEffect, useMemo, useRef, useState } from 'react'
 import {
   fetchCVE,
+  fetchCVECorrelation,
   fetchCVEEpssHistory,
   fetchCVERelated,
   fetchCVESentences,
@@ -297,6 +298,141 @@ function RiskScoreBreakdown({ cve, riskScore, onOpenProfile }) {
   )
 }
 
+// ── Correlation Findings (Intel tab) ─────────────────────
+
+function ConfidenceBadge({ confidence }) {
+  const cls =
+    confidence === 'high'
+      ? 'corr-badge-high'
+      : confidence === 'medium'
+        ? 'corr-badge-medium'
+        : 'corr-badge-low'
+  return (
+    <span className={`corr-confidence-badge mono ${cls}`}>
+      {(confidence || 'low').toUpperCase()}
+    </span>
+  )
+}
+
+function CorrelationFindings({ correlation, loading, onSelectCve }) {
+  if (loading) {
+    return (
+      <section className="drawer-section" aria-labelledby="corr-heading">
+        <h3 id="corr-heading" className="drawer-human-label mono">
+          // CORRELATION FINDINGS
+        </h3>
+        <p className="drawer-intel-empty mono">// Loading correlation analysis…</p>
+      </section>
+    )
+  }
+
+  const infra = correlation?.infrastructure || []
+  const actor = correlation?.actor || []
+  const temporal = correlation?.temporal || []
+  const hasFindings = infra.length > 0 || actor.length > 0 || temporal.length > 0
+
+  return (
+    <section className="drawer-section" aria-labelledby="corr-heading">
+      <h3 id="corr-heading" className="drawer-human-label mono">
+        // CORRELATION FINDINGS
+      </h3>
+
+      {!hasFindings && (
+        <p className="drawer-intel-empty mono">
+          // No correlation signals detected for this CVE
+        </p>
+      )}
+
+      {/* Level 1: Infrastructure */}
+      {infra.length > 0 && (
+        <div className="corr-group" aria-label="Infrastructure correlation">
+          <p className="corr-group-label mono">// SHARED INFRASTRUCTURE</p>
+          {infra.map(item => (
+            <div key={item.cve_id_b} className="corr-finding">
+              <div className="corr-finding-head">
+                <ConfidenceBadge confidence={item.confidence} />
+                <p className="corr-finding-text">
+                  This CVE shares exploitation infrastructure with{' '}
+                  <button
+                    type="button"
+                    className="corr-cve-link mono"
+                    onClick={() => onSelectCve?.(item.cve_id_b)}
+                    aria-label={`Open ${item.cve_id_b} in drawer`}
+                  >
+                    {item.cve_id_b}
+                  </button>
+                  {' '}({item.shared_ip_count} common IP
+                  {item.shared_ip_count !== 1 ? 's' : ''}).
+                  {item.shared_ip_count >= 2 && (
+                    <span className="corr-campaign-note"> Possible coordinated campaign.</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Level 2: Actor / Sector */}
+      {actor.length > 0 && (
+        <div className="corr-group" aria-label="Actor correlation">
+          <p className="corr-group-label mono">// ACTOR ATTRIBUTION</p>
+          {actor.map(item => (
+            <div key={item.actor_name} className="corr-finding">
+              <div className="corr-finding-head">
+                <ConfidenceBadge confidence={item.confidence} />
+                <p className="corr-finding-text">
+                  <strong className="corr-actor-name">{item.actor_name}</strong>
+                  {item.actor_sectors?.length > 0 && (
+                    <>
+                      {' '}exploits techniques used by this CVE.{' '}
+                      {item.actor_name} has historically targeted{' '}
+                      {item.actor_sectors.join(' and ')}.
+                    </>
+                  )}
+                  {item.actor_sectors?.length === 0 && (
+                    <> attributed to this CVE via threat intelligence.</>
+                  )}
+                  {item.user_sector_match && (
+                    <span className="corr-sector-match">
+                      {' '}Your declared sector — elevated risk.
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Level 3: Temporal */}
+      {temporal.length > 0 && (
+        <div className="corr-group" aria-label="Temporal anomaly">
+          <p className="corr-group-label mono">// TEMPORAL ANOMALY</p>
+          {temporal.map(item => (
+            <div key={item.vendor} className="corr-finding">
+              <div className="corr-finding-head">
+                <ConfidenceBadge
+                  confidence={item.anomaly_score >= 5 ? 'high' : item.anomaly_score >= 3 ? 'medium' : 'low'}
+                />
+                <p className="corr-finding-text">
+                  <strong className="corr-actor-name" style={{ textTransform: 'capitalize' }}>
+                    {item.vendor}
+                  </strong>
+                  {' '}{item.current_week_count} CVE{item.current_week_count !== 1 ? 's' : ''} published
+                  this week — {(item.anomaly_score ?? 0).toFixed(1)}× the weekly average
+                  ({(item.average_weekly_count ?? 0).toFixed(1)} normally).
+                  Unusual volume may indicate coordinated research disclosure or active adversary focus.
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
 function TabOverview({ cve, riskScore, onOpenProfile, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
   return (
     <>
@@ -485,7 +621,7 @@ function TabAtlas({ cve, atlasTechniques, atlasCaseStudies }) {
   )
 }
 
-function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxConfigured, cve, onInvestigateIp, onInvestigatePulse }) {
+function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxConfigured, cve, onInvestigateIp, onInvestigatePulse, correlation, correlationLoading, onSelectCorrelatedCve }) {
   const exploits = Array.isArray(publicExploits) ? publicExploits : []
   const scans = Array.isArray(greynoiseScans) ? greynoiseScans : []
   const pulses = Array.isArray(otxPulses) ? otxPulses : []
@@ -671,6 +807,12 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
       </section>
 
       <DrawerAtlasSection cve={cve} />
+
+      <CorrelationFindings
+        correlation={correlation}
+        loading={correlationLoading}
+        onSelectCve={onSelectCorrelatedCve}
+      />
     </>
   )
 }
@@ -761,6 +903,8 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const [epssLoading, setEpssLoading] = useState(false)
   const [related, setRelated] = useState([])
   const [relatedLoading, setRelatedLoading] = useState(false)
+  const [correlation, setCorrelation] = useState(null)
+  const [correlationLoading, setCorrelationLoading] = useState(false)
   const [backStack, setBackStack] = useState([])
   const [pdfModalOpen, setPdfModalOpen] = useState(false)
   const [pdfBusy, setPdfBusy] = useState(false)
@@ -854,6 +998,30 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
     }
     setBackStack([])
   }, [cve?.cve_id, isOpen])
+
+  // Correlation: fetch on drawer open (Level 1 + 2 on-demand, Level 3 pre-computed)
+  useEffect(() => {
+    if (!cve?.cve_id) {
+      setCorrelation(null)
+      setCorrelationLoading(false)
+      return
+    }
+    let cancelled = false
+    setCorrelation(null)
+    setCorrelationLoading(true)
+    const sector = assetCtx?.profile?.environment?.industry || ''
+    fetchCVECorrelation(cve.cve_id, sector)
+      .then(data => {
+        if (!cancelled) setCorrelation(data)
+      })
+      .catch(() => {
+        if (!cancelled) setCorrelation(null)
+      })
+      .finally(() => {
+        if (!cancelled) setCorrelationLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [cve?.cve_id, assetCtx?.profile?.environment?.industry])
 
   useEffect(() => {
     if (isOpen) {
@@ -1121,6 +1289,9 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
                   : undefined
               }
               onInvestigatePulse={investigation?.pivotToOtxPulse ? (pulse, cveCtx) => investigation.pivotToOtxPulse(pulse, cveCtx) : undefined}
+              correlation={correlation}
+              correlationLoading={correlationLoading}
+              onSelectCorrelatedCve={handleSelectRelated}
             />
             </DrawerTabErrorBoundary>
           )}
