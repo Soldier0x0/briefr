@@ -11,7 +11,11 @@ export default function SessionLockOverlay({ onLoadProfile }) {
   async function handleFile(e) {
     const file = e.target.files?.[0]
     if (file && onLoadProfile) {
-      await onLoadProfile(file)
+      try {
+        await onLoadProfile(file)
+      } catch {
+        alert('Failed to load profile: Invalid or corrupted file.')
+      }
     }
     e.target.value = ''
   }
