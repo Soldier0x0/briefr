@@ -13,7 +13,7 @@ fi
 
 id -u "${APP_USER}" &>/dev/null || useradd --system --no-create-home --shell /usr/sbin/nologin "${APP_USER}"
 
-mkdir -p "${APP_HOME}/.cache/pip" "${APP_HOME}/.npm"
+mkdir -p "${APP_HOME}/.cache/pip" "${APP_HOME}/.npm" "${APP_HOME}/backups/logs"
 chown -R "${APP_USER}:${APP_USER}" "${APP_HOME}"
 usermod -d "${APP_HOME}" "${APP_USER}" 2>/dev/null || true
 

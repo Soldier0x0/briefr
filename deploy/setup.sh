@@ -126,6 +126,8 @@ echo ""
 echo "==> [6/7] Creating system user '${APP_USER}' and setting permissions"
 id -u "${APP_USER}" &>/dev/null || \
     useradd --system --no-create-home --shell /usr/sbin/nologin "${APP_USER}"
+mkdir -p /var/lib/briefr/backups/logs
+chown -R "${APP_USER}:${APP_USER}" /var/lib/briefr
 chown -R "${APP_USER}:${APP_USER}" "${INSTALL_DIR}/backend"
 chmod 750 "${INSTALL_DIR}/backend"
 [ -f "${INSTALL_DIR}/backend/.env" ] && chmod 640 "${INSTALL_DIR}/backend/.env"
@@ -141,15 +143,19 @@ sed -i "s|WorkingDirectory=.*|WorkingDirectory=${INSTALL_DIR}/backend|" \
     "${INSTALL_DIR}/deploy/briefr-backend.service"
 sed -i "s|EnvironmentFile=.*|EnvironmentFile=${INSTALL_DIR}/backend/.env|" \
     "${INSTALL_DIR}/deploy/briefr-backend.service"
-sed -i "s|ReadWritePaths=.*|ReadWritePaths=${INSTALL_DIR}/backend|" \
+sed -i "s|ReadWritePaths=.*|ReadWritePaths=${INSTALL_DIR}/backend /var/lib/briefr/backups|" \
     "${INSTALL_DIR}/deploy/briefr-backend.service"
 sed -i "s|Environment=.*|Environment=PATH=${INSTALL_DIR}/venv/bin|" \
     "${INSTALL_DIR}/deploy/briefr-backend.service"
 
 cp "${INSTALL_DIR}/deploy/briefr-backend.service" /etc/systemd/system/briefr-backend.service
+sed "s|/opt/briefr|${INSTALL_DIR}|g" "${INSTALL_DIR}/deploy/briefr-backup.service" \
+  > /etc/systemd/system/briefr-backup.service
+cp "${INSTALL_DIR}/deploy/briefr-backup.timer" /etc/systemd/system/briefr-backup.timer
 systemctl daemon-reload
-systemctl enable briefr-backend
+systemctl enable briefr-backend briefr-backup.timer
 systemctl restart briefr-backend
+systemctl start briefr-backup.timer
 
 # Open port 8000 for LAN testing (no nginx yet)
 ufw allow OpenSSH

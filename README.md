@@ -155,6 +155,34 @@ bash deploy/briefr-update.sh  # pull, build frontend, restart backend + nginx
 
 Set `ALLOWED_ORIGINS` in `backend/.env` to your public URL (not `:5173`). Production serves `frontend/dist` via nginx; the Vite dev server is not used.
 
+### Backups and restore
+
+BRIEFR backs up the SQLite database and `.env` to **`/var/lib/briefr/backups`** (outside the git tree):
+
+| Mechanism | Schedule | Notes |
+|-----------|----------|-------|
+| `briefr-backup.timer` | Every **6 hours** | systemd oneshot; integrity-checked before write |
+| `briefr-update.sh` | Before each deploy | Labelled `pre-update` in the manifest |
+| Startup | On backend boot | If `briefr.db` fails `PRAGMA integrity_check`, restores the newest valid archive |
+
+Defaults: keep the **newest 100** archives; rotate `backups/logs/backup.log` at 5 MB (5 gzipped generations).
+
+```bash
+# Manual backup
+bash /opt/briefr/deploy/briefr-backup.sh manual
+
+# List archives
+bash /opt/briefr/deploy/briefr-restore.sh --list
+
+# Restore newest valid backup (stops backend, replaces DB + .env from archive)
+bash /opt/briefr/deploy/briefr-restore.sh
+
+# Restore a specific archive
+bash /opt/briefr/deploy/briefr-restore.sh /var/lib/briefr/backups/briefr-20260608T120000Z.tar.gz
+```
+
+Development (optional): set `BACKUP_DIR=./backups` in `backend/.env`, then `python -m backup run`.
+
 ### Manual refresh
 
 ```bash
@@ -192,6 +220,9 @@ See `backend/.env.example` for the full list. Key variables:
 | `GITHUB_TOKEN` | Detection rule search rate limit | — |
 | `ALLOWED_ORIGINS` | CORS origins (comma-separated) | `http://localhost:3000` |
 | `DB_PATH` | SQLite file | `briefr.db` |
+| `BACKUP_DIR` | Backup archive directory | `/var/lib/briefr/backups` |
+| `BACKUP_RETENTION_COUNT` | Max `briefr-*.tar.gz` archives kept | `100` |
+| `BACKUP_ENABLED` | Enable backups + startup auto-restore | `1` |
 | `NVD_SYNC_INTERVAL_HOURS` | NVD incremental cadence | `1` |
 | `KEV_SYNC_INTERVAL_MINUTES` | KEV sync cadence | `15` |
 | `EPSS_SYNC_INTERVAL_HOURS` | EPSS sync cadence | `6` |

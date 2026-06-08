@@ -40,7 +40,7 @@ ensure_app_user() {
 
 ensure_app_home() {
   ensure_app_user
-  mkdir -p "${APP_HOME}/.cache/pip" "${APP_HOME}/.npm"
+  mkdir -p "${APP_HOME}/.cache/pip" "${APP_HOME}/.npm" "${APP_HOME}/backups/logs"
   chown -R "${APP_USER}:${APP_USER}" "${APP_HOME}"
   usermod -d "${APP_HOME}" "${APP_USER}" 2>/dev/null || true
 }
@@ -101,8 +101,23 @@ install_systemd_units() {
   echo "==> Installing systemd units"
   sed "s|/opt/briefr|${INSTALL_DIR}|g" "${INSTALL_DIR}/deploy/briefr-backend.service" \
     > /etc/systemd/system/briefr-backend.service
+  sed "s|/opt/briefr|${INSTALL_DIR}|g" "${INSTALL_DIR}/deploy/briefr-backup.service" \
+    > /etc/systemd/system/briefr-backup.service
+  cp "${INSTALL_DIR}/deploy/briefr-backup.timer" /etc/systemd/system/briefr-backup.timer
   cp "${INSTALL_DIR}/deploy/briefr.target" /etc/systemd/system/briefr.target
   systemctl daemon-reload
+  systemctl enable briefr-backup.timer
+}
+
+run_pre_update_backup() {
+  if [ -f "${INSTALL_DIR}/backend/backup/manager.py" ]; then
+    echo "==> Pre-update backup (integrity-checked)"
+    if bash "${INSTALL_DIR}/deploy/briefr-backup.sh" pre-update; then
+      echo "    Backup OK"
+    else
+      echo "    Backup WARN — continuing update (check ${APP_HOME}/backups/logs/backup.log)"
+    fi
+  fi
 }
 
 disable_vite_dev() {
@@ -125,6 +140,9 @@ build_frontend() {
   fi
   echo "    Built: ${INSTALL_DIR}/frontend/dist"
 }
+
+ensure_app_home
+run_pre_update_backup
 
 echo "==> Stopping services"
 systemctl stop briefr.target briefr-frontend briefr-backend 2>/dev/null || true

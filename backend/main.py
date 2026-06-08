@@ -77,6 +77,14 @@ from templates.intelligence import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from backup.manager import ensure_db_or_restore
+
+    recovery = ensure_db_or_restore()
+    if recovery.get("status") == "restored":
+        logger.warning(
+            "Recovered corrupt database from backup: %s",
+            recovery.get("archive"),
+        )
     await init_db()
     start_scheduler()
     await maybe_run_on_startup()
