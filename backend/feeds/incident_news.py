@@ -34,6 +34,20 @@ ATOM_NS = {"atom": "http://www.w3.org/2005/Atom"}
 
 CACHE_HOURS = 0.5  # 30 minutes per source
 
+# Editorial/promotional RSS items that are not security news (matched against title).
+EXCLUDED_NEWS_TITLE_PATTERNS: list[re.Pattern[str]] = [
+    re.compile(r"name that toon", re.I),
+]
+
+
+def _is_relevant_news_item(item: dict) -> bool:
+    title = item.get("title") or ""
+    return not any(pattern.search(title) for pattern in EXCLUDED_NEWS_TITLE_PATTERNS)
+
+
+def _filter_news_items(items: list[dict]) -> list[dict]:
+    return [item for item in items if _is_relevant_news_item(item)]
+
 
 def _strip_html(text: str | None) -> str:
     if not text:
@@ -132,20 +146,20 @@ def parse_rss_xml(xml_text: str, source: dict) -> list[dict]:
                 break
         published_at = _parse_date(pub_raw)
         techniques, tags = _extract_meta(title, description)
-        cards.append(
-            {
-                "id": url,
-                "source": source["label"],
-                "sourceId": source["id"],
-                "title": title,
-                "description": _truncate(description),
-                "publishedAt": published_at,
-                "url": url,
-                "techniques": techniques,
-                "tags": tags,
-                "kind": "news",
-            }
-        )
+        card = {
+            "id": url,
+            "source": source["label"],
+            "sourceId": source["id"],
+            "title": title,
+            "description": _truncate(description),
+            "publishedAt": published_at,
+            "url": url,
+            "techniques": techniques,
+            "tags": tags,
+            "kind": "news",
+        }
+        if _is_relevant_news_item(card):
+            cards.append(card)
     return cards
 
 
@@ -168,7 +182,7 @@ async def fetch_rss_source(db, source: dict) -> list[dict]:
     cache_key = f"incident_rss:{source['id']}"
     cached = await get_feed_cache(db, cache_key, max_age_hours=CACHE_HOURS)
     if cached is not None and isinstance(cached.get("items"), list):
-        return cached["items"]
+        return _filter_news_items(cached["items"])
 
     raw = await _fetch_rss_bytes(source["url"])
     items = parse_rss_xml(raw.decode("utf-8", errors="replace"), source)
