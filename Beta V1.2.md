@@ -12,7 +12,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 
 This document captures what BRIEFR has **completed in v1.1 beta**, what ships in the **recent stabilization pass**, and what is **planned for Beta V1.2** and beyond. It is the single place for near-future product and engineering intent.
 
-For current architecture and data flows, see [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md).
+For current architecture and data flows, see [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md). New contributors should start with [`docs/ONBOARDING.md`](docs/ONBOARDING.md).
 
 ---
 

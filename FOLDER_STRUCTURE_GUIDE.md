@@ -245,6 +245,7 @@ Every file in the repository with a one-line purpose. Tags:
 | Path | Description |
 |---|---|
 | `README.md` | Project overview and quick start |
+| `docs/ONBOARDING.md` | Contributor entry point: reading order, local dev, tests, env vars, deploy overview, troubleshooting |
 | `SYSTEM_DESIGN.md` | Architecture, data flows, design decisions |
 | `SYSTEM_DESIGN.pdf` | PDF export of system design (generated) |
 | `API_REFERENCE.md` | Human-readable endpoint catalog |
