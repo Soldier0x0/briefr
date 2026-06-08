@@ -109,7 +109,10 @@ def check_db_integrity(db_path: Path) -> tuple[bool, str]:
         finally:
             conn.close()
     except sqlite3.Error as exc:
-        return False, str(exc)
+        msg = str(exc).lower()
+        if "malformed" in msg or "not a database" in msg or "corrupt" in msg:
+            return False, str(exc)
+        raise
 
 
 def _online_backup(source: Path, destination: Path) -> None:

@@ -55,6 +55,18 @@ def _cfg(tmp_path: Path, db_name: str = "briefr.db") -> BackupConfig:
     )
 
 
+def test_check_db_integrity_raises_on_transient_sqlite_error(tmp_path, monkeypatch):
+    db = tmp_path / "locked.db"
+    _make_db(db)
+
+    def fake_connect(*_args, **_kwargs):
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(sqlite3, "connect", fake_connect)
+    with pytest.raises(sqlite3.OperationalError, match="locked"):
+        check_db_integrity(db)
+
+
 def test_check_db_integrity_ok_and_corrupt(tmp_path):
     db = tmp_path / "ok.db"
     _make_db(db)
