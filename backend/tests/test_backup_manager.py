@@ -55,6 +55,34 @@ def _cfg(tmp_path: Path, db_name: str = "briefr.db") -> BackupConfig:
     )
 
 
+def test_from_env_loads_dotenv(tmp_path, monkeypatch):
+    backend_dir = tmp_path / "backend"
+    backend_dir.mkdir()
+    custom_db = "data/custom.db"
+    custom_backup = tmp_path / "custom-backups"
+    (backend_dir / ".env").write_text(
+        f"DB_PATH={custom_db}\nBACKUP_DIR={custom_backup}\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("DB_PATH", raising=False)
+    monkeypatch.delenv("BACKUP_DIR", raising=False)
+
+    cfg = BackupConfig.from_env(backend_dir=backend_dir)
+    assert cfg.db_path == (backend_dir / custom_db).resolve()
+    assert cfg.backup_dir == custom_backup.resolve()
+
+
+def test_from_env_respects_existing_env_over_dotenv(tmp_path, monkeypatch):
+    backend_dir = tmp_path / "backend"
+    backend_dir.mkdir()
+    (backend_dir / ".env").write_text("DB_PATH=from-dotenv.db\n", encoding="utf-8")
+    override_db = tmp_path / "from-env.db"
+    monkeypatch.setenv("DB_PATH", str(override_db))
+
+    cfg = BackupConfig.from_env(backend_dir=backend_dir)
+    assert cfg.db_path == override_db.resolve()
+
+
 def test_check_db_integrity_raises_on_transient_sqlite_error(tmp_path, monkeypatch):
     db = tmp_path / "locked.db"
     _make_db(db)

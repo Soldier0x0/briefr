@@ -46,6 +46,15 @@ class BackupConfig:
     @classmethod
     def from_env(cls, *, backend_dir: Path | None = None) -> BackupConfig:
         base = backend_dir or Path.cwd()
+        dotenv_path = base / ".env"
+        if dotenv_path.is_file():
+            try:
+                from dotenv import load_dotenv
+
+                load_dotenv(dotenv_path)
+            except ImportError:
+                pass
+
         db_path = Path(os.environ.get("DB_PATH", "briefr.db"))
         if not db_path.is_absolute():
             db_path = (base / db_path).resolve()
