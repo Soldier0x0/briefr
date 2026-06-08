@@ -83,3 +83,12 @@ def test_investigation_summary_rejects_invalid_duration(tmp_path, monkeypatch):
             },
         )
         assert res.status_code == 422
+
+        res = client.post(
+            "/api/investigation/summary",
+            json={
+                "items": [{"type": "cve", "id": "CVE-2024-0001", "description": "RCE"}],
+                "duration_minutes": 10080,
+            },
+        )
+        assert res.status_code == 200

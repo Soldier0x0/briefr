@@ -355,7 +355,8 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 
 **Description:** Legacy investigation PDF summary. Maps `items[]` to CVE/IOC/actor payloads and delegates to the same Groq → Anthropic → template pipeline as `POST /api/ai/summary`.
 
-**Request body:** `{ "items": [{ "type": "cve|ioc|actor|technique", "id": "...", "description": "...", "pivotFrom": null }], "duration_minutes": 1 }`
+**Request body:** `{ "items": [{ "type": "cve|ioc|actor|technique", "id": "...", "description": "...", "pivotFrom": null }], "duration_minutes": 1 }`  
+**Validation:** `duration_minutes` must be `1`–`10080` (same range as `POST /api/ai/summary` `investigation_duration`).
 
 **Response:** Same shape as `POST /api/ai/summary` (`executive_summary`, `key_findings`, `confidence`, `source`).
 
