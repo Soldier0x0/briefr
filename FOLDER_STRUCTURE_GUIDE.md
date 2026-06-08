@@ -194,7 +194,7 @@ Every file in the repository with a one-line purpose. Tags:
 | Path | Description |
 |---|---|
 | `frontend/src/utils/aiAssets.js` | AI/ML framework detection for alerts stat + drawer |
-| `backend/feeds/case_study_feed.py` | Parallel RSS + ATLAS loader for `/api/case-studies/feed` |
+| `backend/feeds/case_study_feed.py` | Combined RSS + ATLAS loader for `/api/case-studies/feed` (single DB connection) |
 | `backend/backup/` | SQLite backup manager CLI (`python -m backup`) |
 | `frontend/src/utils/cveFilters.js` | Stack localStorage key and filter param mapping |
 | `frontend/src/utils/cveAge.js` | CVE age display helpers |
@@ -264,7 +264,8 @@ Every file in the repository with a one-line purpose. Tags:
 
 | Path | Description |
 |---|---|
-| `scripts/capture_readme_screenshots.mjs` | Playwright capture of README tab screenshots; exits non-zero if selectors time out |
+| `scripts/seed_screenshot_data.py` | Seeds sample CVE rows + warms RSS cache before README screenshot capture |
+| `scripts/capture_readme_screenshots.mjs` | Playwright capture of README tab screenshots; preflights API health/feeds; exits non-zero on empty data or feed errors |
 | `deploy/briefr-backup.sh` | Integrity-checked SQLite + `.env` backup; retention pruning |
 | `deploy/briefr-restore.sh` | Restore newest or specified archive; stops/starts backend |
 | `deploy/briefr-backup.service` / `.timer` | systemd oneshot + 6h timer → `/var/lib/briefr/backups` |

@@ -39,7 +39,7 @@ These gaps were closed immediately before V1.2 planning:
 | Task | Delivery |
 |------|----------|
 | **AI/ML alerts stat chip** | `GET /api/stats?frameworks=` returns `ai_ml_alerts`; clicking the chip filters the CVE feed via `frameworks` + `ai_context_only` |
-| **Incidents tab performance** | `GET /api/case-studies/feed` loads RSS + ATLAS in parallel server-side; client session cache (5 min) |
+| **Incidents tab performance** | `GET /api/case-studies/feed` loads RSS + ATLAS server-side (single DB connection); client session cache (5 min) |
 | **Documentation sync** | README, API_REFERENCE, SYSTEM_DESIGN, TECHNICAL_INVENTORY, xlsx generator aligned with codebase |
 | **Dead code removal** | Removed `AIThreats.jsx`, `utils/riskScore.js` (v1.1a), unused `Phase2Block` |
 

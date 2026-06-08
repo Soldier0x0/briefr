@@ -265,7 +265,7 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 
 ### GET /api/case-studies/feed
 
-**Description:** Combined Incidents tab feed — RSS news and ATLAS case studies loaded **in parallel** on the server (preferred over separate news + atlas calls).
+**Description:** Combined Incidents tab feed — RSS news and ATLAS case studies loaded on the server via a **single SQLite connection** (avoids `database is locked` under concurrent writes).
 
 | Param | Type | Default | Description |
 |---|---|---|---|

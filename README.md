@@ -284,11 +284,18 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 Regenerate screenshots (backend on `:8000`, frontend on `:5173`):
 
 ```bash
+# 1) Seed sample CVE rows and warm RSS caches (skip CVE seed when 10+ rows exist)
+python3 scripts/seed_screenshot_data.py
+
+# 2) Start backend + frontend, then capture (requires network for live RSS)
 cd frontend && npm install playwright --save-dev
+npx playwright install chromium
 node ../scripts/capture_readme_screenshots.mjs
 ```
 
-The script captures the **viewport only** (1440×900) so the BRIEF feed’s infinite scroll does not produce an overly tall image. It waits for each tab’s content selectors (INCIDENTS waits for loaded cards plus 5s for RSS/ATLAS) and **exits with code 1** if a page fails to load (no silent blank captures).
+Screenshots use **live RSS headlines** and a **seeded CVE database** so tabs show realistic data (not empty placeholders). The capture script preflights `/api/health` and `/api/case-studies/feed`, rejects `database is locked` feed errors, and requires CVE cards plus RSS news badges before writing images.
+
+It captures the **viewport only** (1440×900) so the BRIEF feed’s infinite scroll does not produce an overly tall image. **Exits with code 1** on missing data, feed errors, or failed selectors (no silent blank captures).
 
 Regenerate the technical inventory spreadsheet:
 

@@ -67,8 +67,10 @@ Vite injects component CSS as inline `<style>` tags in development. The `Content
 Regenerate README (dark default):
 
 ```bash
-cd frontend && npm run dev   # :5173
+python3 scripts/seed_screenshot_data.py   # sample CVEs + warm RSS cache
+cd frontend && npm run dev                # :5173
 # backend on :8000
+npx playwright install chromium
 node ../scripts/capture_readme_screenshots.mjs
 ```
 
