@@ -144,6 +144,42 @@ def test_get_cve_endpoint_includes_atlas_fields(tmp_path, monkeypatch):
     assert body["atlas_case_studies"][0]["study_id"] == "study-1"
 
 
+def test_list_cves_includes_has_ai_context(tmp_path, monkeypatch):
+    """CVE_SELECT must include has_ai_context — list/export should not default to False."""
+    db_path = tmp_path / "list_atlas.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    async def _noop_async() -> None:
+        return None
+
+    monkeypatch.setattr("main.start_scheduler", lambda: None)
+    monkeypatch.setattr("main.stop_scheduler", lambda: None)
+    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
+
+    async def seed() -> None:
+        await init_db()
+        db = await aiosqlite.connect(db_path)
+        db.row_factory = aiosqlite.Row
+        await db.execute("PRAGMA foreign_keys=ON")
+        await _seed_atlas_cve(db)
+        await db.close()
+
+    asyncio.run(seed())
+
+    from fastapi.testclient import TestClient
+    from main import app
+
+    with TestClient(app) as client:
+        res = client.get("/api/cves?search=CVE-2024-ATLAS")
+
+    assert res.status_code == 200
+    data = res.json()["data"]
+    assert len(data) == 1
+    assert data[0]["cve_id"] == "CVE-2024-ATLAS"
+    assert data[0]["has_ai_context"] is True
+
+
 def test_investigation_summary_endpoint_returns_200(tmp_path, monkeypatch):
     db_path = tmp_path / "investigation.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
