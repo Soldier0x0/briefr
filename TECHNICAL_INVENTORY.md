@@ -365,7 +365,7 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | Case Studies / RSS | Complete | 6 feeds, 30min cache |
 | API usage quotas UI | Complete | `/api/usage/ioc` |
 | Authentication | Not implemented | By design v1.1 |
-| `POST /api/investigation/summary` | **Broken** | Undefined import |
+| `POST /api/investigation/summary` | Complete | Legacy alias → `generate_executive_summary` |
 | Repository / DI layer | Not implemented | v1.2 backlog |
 | Circuit breakers | Not implemented | Timeouts only |
 | Structured logging | Not implemented | Plain text logs |

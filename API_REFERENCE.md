@@ -137,7 +137,7 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 - `400` — invalid CVE ID format
 - `404` — CVE not found
 
-**Notes:** Does **not** include `atlas_techniques`, `atlas_case_studies`, or `has_ai_context` (known wiring gap). Enrichment failures return `200` with empty arrays.
+**Notes:** Includes `has_ai_context`, `atlas_techniques[]`, and `atlas_case_studies[]` when MITRE ATLAS data is present in the DB. Enrichment failures return `200` with empty arrays.
 
 ---
 
@@ -353,9 +353,13 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 
 ### POST /api/investigation/summary
 
-**Description:** Legacy investigation PDF summary.
+**Description:** Legacy investigation PDF summary. Maps `items[]` to CVE/IOC/actor payloads and delegates to the same Groq → Anthropic → template pipeline as `POST /api/ai/summary`.
 
-**Status:** **BROKEN** — calls undefined `generate_investigation_summary` (`main.py:1331`). Returns 500. Use `POST /api/ai/summary`.
+**Request body:** `{ "items": [{ "type": "cve|ioc|actor|technique", "id": "...", "description": "...", "pivotFrom": null }], "duration_minutes": 1 }`
+
+**Response:** Same shape as `POST /api/ai/summary` (`executive_summary`, `key_findings`, `confidence`, `source`).
+
+**Notes:** Prefer `POST /api/ai/summary` for new integrations; this route exists for backward compatibility.
 
 ---
 
