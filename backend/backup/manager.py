@@ -32,6 +32,23 @@ DB_ARCHIVE_NAME = "briefr.db"
 ENV_ARCHIVE_NAME = ".env"
 
 
+def _safe_tar_extractall(tar: tarfile.TarFile, dest: Path) -> None:
+    """Extract tar contents into dest, rejecting path traversal (tar slip)."""
+    dest_resolved = dest.resolve()
+    if hasattr(tarfile, "data_filter"):
+        tar.extractall(dest, filter="data")
+        return
+    for member in tar.getmembers():
+        member_path = (dest_resolved / member.name).resolve()
+        if os.path.commonpath([str(dest_resolved), str(member_path)]) != str(
+            dest_resolved
+        ):
+            raise PermissionError(
+                f"Attempted directory traversal in tar archive: {member.name!r}"
+            )
+    tar.extractall(dest)
+
+
 @dataclass(frozen=True)
 class BackupConfig:
     db_path: Path
@@ -333,7 +350,7 @@ def restore_backup(
     with tempfile.TemporaryDirectory(prefix="briefr-restore-") as tmp:
         tmp_path = Path(tmp)
         with tarfile.open(archive, "r:gz") as tar:
-            tar.extractall(tmp_path)
+            _safe_tar_extractall(tar, tmp_path)
 
         ok, msg = _verify_archive_contents(tmp_path)
         if not ok:
@@ -389,7 +406,7 @@ def find_latest_valid_backup(config: BackupConfig | None = None) -> Path | None:
             with tempfile.TemporaryDirectory(prefix="briefr-verify-") as tmp:
                 tmp_path = Path(tmp)
                 with tarfile.open(archive, "r:gz") as tar:
-                    tar.extractall(tmp_path)
+                    _safe_tar_extractall(tar, tmp_path)
                 ok, _ = _verify_archive_contents(tmp_path)
                 if ok:
                     return archive

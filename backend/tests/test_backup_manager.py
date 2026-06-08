@@ -1,9 +1,11 @@
 """Tests for backup manager integrity, retention, and restore."""
 
+import io
 import json
 import os
 import sqlite3
 import sys
+import tarfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -12,6 +14,7 @@ import pytest
 
 from backup.manager import (
     BackupConfig,
+    _safe_tar_extractall,
     check_db_integrity,
     ensure_db_or_restore,
     prune_backups,
@@ -79,8 +82,6 @@ def test_run_backup_creates_verified_archive(tmp_path):
     archive = Path(result["archive"])
     assert archive.is_file()
 
-    import tarfile
-
     with tarfile.open(archive, "r:gz") as tar:
         names = tar.getnames()
     assert "briefr.db" in names
@@ -137,6 +138,29 @@ def test_ensure_db_or_restore_auto_recovers(tmp_path, monkeypatch):
     assert result["status"] == "restored"
     ok, _ = check_db_integrity(cfg.db_path)
     assert ok is True
+
+
+def test_safe_tar_extractall_rejects_path_traversal(tmp_path):
+    malicious = tmp_path / "evil.tar.gz"
+    payload = tmp_path / "payload.txt"
+    payload.write_text("pwned", encoding="utf-8")
+
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        info = tarfile.TarInfo(name="../payload.txt")
+        info.size = payload.stat().st_size
+        with payload.open("rb") as handle:
+            tar.addfile(info, handle)
+    malicious.write_bytes(buf.getvalue())
+
+    extract_dir = tmp_path / "extract"
+    extract_dir.mkdir()
+    with tarfile.open(malicious, "r:gz") as tar:
+        with pytest.raises(
+            (PermissionError, tarfile.OutsideDestinationError),
+            match=r"directory traversal|outside the destination",
+        ):
+            _safe_tar_extractall(tar, extract_dir)
 
 
 def test_rotate_log_file(tmp_path):

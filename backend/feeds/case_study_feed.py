@@ -57,8 +57,9 @@ async def _load_atlas(*, limit: int = 80) -> tuple[list[dict], list[dict]]:
         await db.close()
 
     cards: list[dict] = []
-    for study in studies:
-        study["technique_details"] = [
+    for row in studies:
+        study = dict(row)
+        technique_details = [
             {
                 "technique_id": tid,
                 "name": tech_names.get(tid, tid),
@@ -66,7 +67,7 @@ async def _load_atlas(*, limit: int = 80) -> tuple[list[dict], list[dict]]:
             }
             for tid in study.get("techniques", [])
         ]
-        cards.append(_atlas_study_to_card(study))
+        cards.append(_atlas_study_to_card({**study, "technique_details": technique_details}))
     return cards, []
 
 
