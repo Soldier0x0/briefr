@@ -1,9 +1,11 @@
 """Tests for backup manager integrity, retention, and restore."""
 
+import io
 import json
 import os
 import sqlite3
 import sys
+import tarfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -147,6 +149,18 @@ def test_prune_backups_keeps_newest(tmp_path):
     removed = prune_backups(backup_dir, retention_count=3)
     assert len(removed) == 2
     assert len(list(backup_dir.glob("briefr-*.tar.gz"))) == 3
+
+
+def test_restore_rejects_unsafe_tar_paths(tmp_path):
+    cfg = _cfg(tmp_path)
+    archive = tmp_path / "evil.tar.gz"
+    with tarfile.open(archive, "w:gz") as tar:
+        info = tarfile.TarInfo(name="../../escape.txt")
+        info.size = 4
+        tar.addfile(info, io.BytesIO(b"evil"))
+
+    with pytest.raises(RuntimeError, match="Unsafe path in archive"):
+        restore_backup(archive, config=cfg, force=True)
 
 
 def test_restore_from_backup_replaces_corrupt_db(tmp_path):

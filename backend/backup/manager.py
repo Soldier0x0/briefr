@@ -333,6 +333,16 @@ def list_backups(config: BackupConfig | None = None) -> list[dict[str, Any]]:
     return rows
 
 
+def _safe_extract_tar(tar: tarfile.TarFile, destination: Path) -> None:
+    """Extract archive members only when paths stay inside destination."""
+    dest_root = destination.resolve()
+    for member in tar.getmembers():
+        target_path = (dest_root / member.name).resolve()
+        if not target_path.is_relative_to(dest_root):
+            raise RuntimeError(f"Unsafe path in archive: {member.name}")
+    tar.extractall(dest_root)
+
+
 def _verify_archive_contents(tmp_path: Path) -> tuple[bool, str]:
     db_file = tmp_path / DB_ARCHIVE_NAME
     if not db_file.is_file():
@@ -353,7 +363,7 @@ def restore_backup(
     with tempfile.TemporaryDirectory(prefix="briefr-restore-") as tmp:
         tmp_path = Path(tmp)
         with tarfile.open(archive, "r:gz") as tar:
-            tar.extractall(tmp_path)
+            _safe_extract_tar(tar, tmp_path)
 
         ok, msg = _verify_archive_contents(tmp_path)
         if not ok:
@@ -409,7 +419,7 @@ def find_latest_valid_backup(config: BackupConfig | None = None) -> Path | None:
             with tempfile.TemporaryDirectory(prefix="briefr-verify-") as tmp:
                 tmp_path = Path(tmp)
                 with tarfile.open(archive, "r:gz") as tar:
-                    tar.extractall(tmp_path)
+                    _safe_extract_tar(tar, tmp_path)
                 ok, _ = _verify_archive_contents(tmp_path)
                 if ok:
                     return archive
