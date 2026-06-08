@@ -6,6 +6,7 @@ import os
 import sqlite3
 import sys
 import tarfile
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -149,6 +150,22 @@ def test_prune_backups_keeps_newest(tmp_path):
     removed = prune_backups(backup_dir, retention_count=3)
     assert len(removed) == 2
     assert len(list(backup_dir.glob("briefr-*.tar.gz"))) == 3
+
+
+def test_prune_backups_uses_filename_not_mtime(tmp_path):
+    backup_dir = tmp_path / "backups"
+    backup_dir.mkdir()
+    older = backup_dir / "briefr-20260101T000000Z.tar.gz"
+    newer = backup_dir / "briefr-20260102T000000Z.tar.gz"
+    older.write_bytes(b"old")
+    newer.write_bytes(b"new")
+    now = time.time()
+    os.utime(older, (now + 100, now + 100))
+    os.utime(newer, (now, now))
+
+    removed = prune_backups(backup_dir, retention_count=1)
+    assert removed == [older]
+    assert newer.is_file()
 
 
 def test_restore_rejects_unsafe_tar_paths(tmp_path):

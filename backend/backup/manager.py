@@ -235,7 +235,7 @@ def prune_backups(backup_dir: Path, retention_count: int) -> list[Path]:
         return []
     archives = sorted(
         backup_dir.glob("briefr-*.tar.gz"),
-        key=lambda p: p.stat().st_mtime,
+        key=lambda p: p.name,
         reverse=True,
     )
     removed: list[Path] = []
@@ -317,7 +317,7 @@ def list_backups(config: BackupConfig | None = None) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for archive in sorted(
         cfg.backup_dir.glob("briefr-*.tar.gz"),
-        key=lambda p: p.stat().st_mtime,
+        key=lambda p: p.name,
         reverse=True,
     ):
         rows.append(
