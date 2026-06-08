@@ -32,6 +32,23 @@ DB_ARCHIVE_NAME = "briefr.db"
 ENV_ARCHIVE_NAME = ".env"
 
 
+def _safe_tar_extractall(tar: tarfile.TarFile, dest: Path) -> None:
+    """Extract tar contents into dest, rejecting path traversal (tar slip)."""
+    dest_resolved = dest.resolve()
+    if hasattr(tarfile, "data_filter"):
+        tar.extractall(dest, filter="data")
+        return
+    for member in tar.getmembers():
+        member_path = (dest_resolved / member.name).resolve()
+        if os.path.commonpath([str(dest_resolved), str(member_path)]) != str(
+            dest_resolved
+        ):
+            raise PermissionError(
+                f"Attempted directory traversal in tar archive: {member.name!r}"
+            )
+    tar.extractall(dest)
+
+
 @dataclass(frozen=True)
 class BackupConfig:
     db_path: Path

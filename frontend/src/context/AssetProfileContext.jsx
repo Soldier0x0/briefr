@@ -57,6 +57,9 @@ export function AssetProfileProvider({ children }) {
     } catch {
       setMatchScores({})
     }
+    try {
+      window.dispatchEvent(new CustomEvent('briefr-profile-change'))
+    } catch {}
   }, [])
 
   const openProfileFlow = useCallback(() => {

@@ -19,8 +19,12 @@ async function request(path, options = {}) {
   return res.json()
 }
 
-export function fetchStats() {
-  return request('/stats')
+export function fetchStats({ frameworks = [] } = {}) {
+  const qs = new URLSearchParams()
+  const fw = Array.isArray(frameworks) ? frameworks.filter(Boolean) : []
+  if (fw.length) qs.set('frameworks', fw.join(','))
+  const query = qs.toString()
+  return request(`/stats${query ? `?${query}` : ''}`)
 }
 
 export function fetchStatsTimeline(days = 90) {
@@ -44,6 +48,8 @@ export function fetchCVEs(params = {}) {
   if (params.technique) qs.set('technique', params.technique)
   if (params.published_on) qs.set('published_on', params.published_on)
   if (params.summary_only) qs.set('summary_only', 'true')
+  if (params.ai_context_only) qs.set('ai_context_only', 'true')
+  if (params.frameworks) qs.set('frameworks', params.frameworks)
   if (params.page)      qs.set('page', String(params.page))
   if (params.limit)     qs.set('limit', String(params.limit))
   const query = qs.toString()
@@ -101,6 +107,8 @@ export function fetchCVEsForExport(params = {}) {
   if (params.technique) qs.set('technique', params.technique)
   if (params.published_on) qs.set('published_on', params.published_on)
   if (params.summary_only) qs.set('summary_only', 'true')
+  if (params.ai_context_only) qs.set('ai_context_only', 'true')
+  if (params.frameworks) qs.set('frameworks', params.frameworks)
   qs.set('max_rows', '500')
   const query = qs.toString()
   return request(`/cves/export${query ? `?${query}` : ''}`)
@@ -120,6 +128,11 @@ export function fetchAtlasCaseStudies(limit = 50) {
 
 export function fetchIncidentNews() {
   return request('/case-studies/news')
+}
+
+/** Combined RSS + ATLAS cards for Incidents tab (single round-trip). */
+export function fetchCaseStudyFeed(atlasLimit = 80) {
+  return request(`/case-studies/feed?atlas_limit=${atlasLimit}`)
 }
 
 export function fetchKEVDeadlines(sort = 'recent') {

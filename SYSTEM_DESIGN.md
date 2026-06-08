@@ -3,8 +3,8 @@
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
 **Version:** 1.1 (beta)  
-**Last updated:** 2026-06-07  
-**Source of truth:** `/workspace` codebase at commit audited for v1.1
+**Last updated:** 2026-06-08  
+**Source of truth:** `/workspace` codebase — see [`Beta V1.2.md`](Beta%20V1.2.md) for near-future roadmap
 
 ---
 
@@ -65,7 +65,7 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
 ├──────────────────┬──────────────────┬──────────────────┬────────────────────┤
 │ BRIEF tab        │ IOC LOOKUP tab   │ INCIDENTS tab    │ DetailDrawer       │
 │ CVEFeed.jsx      │ IOCLookup.jsx    │ CaseStudies.jsx  │ (global overlay)   │
-│ → GET /cves      │ → POST /ioc      │ → news + atlas   │ → 6+ sub-routes    │
+│ → GET /cves      │ → POST /ioc      │ → combined feed  │ → 6+ sub-routes    │
 │ CVECard.jsx      │                  │                  │                    │
 │ StatsRow.jsx     │                  │                  │                    │
 │ TimelineHeatmap  │                  │                  │                    │
@@ -199,7 +199,7 @@ Sequence diagram: [`docs/diagrams/flow_ioc_lookup.mermaid`](docs/diagrams/flow_i
 | Single Responsibility | PARTIAL | Router split; `DetailDrawer.jsx` (1,516 lines) component extraction |
 | Repository Pattern | MISSING | `repositories/` from `database.py` |
 | Dependency Injection | MISSING | FastAPI `Depends()` for DB + `settings.py` |
-| Circuit Breaker | PARTIAL | `resilient_client.py` wrapper (NVD has retry only today) |
+| Circuit Breaker | MISSING | `resilient_client.py` planned Beta V1.2 (NVD has retry only today) |
 | Idempotency | PARTIAL | Upserts + scheduler locks; fix `cve_change_history` duplicate inserts |
 | Caching Strategy | PARTIAL | `feed_cache`/`ioc_cache` exist; add React Query + stats cache |
 | API Consistency | PARTIAL | v1.2 response envelope (`data` + `meta`) |
@@ -240,28 +240,22 @@ RSS sources defined in `feeds/incident_sources.py`: The Hacker News, Bleeping Co
 - **Single-user SQLite** — no concurrent write safety under heavy parallel writes.
 - **No authentication** on any `/api/*` endpoint.
 - **`POST /api/investigation/summary`** — legacy route; delegates to `generate_investigation_summary` → `generate_executive_summary`. Prefer `POST /api/ai/summary` for new clients.
-- **Risk weights duplicated** in `backend/scoring/risk.py` and `frontend/src/scoring/riskScore.js`.
+- **Risk weights duplicated** in `backend/scoring/risk.py` and `frontend/src/scoring/riskScore.js` — shared config planned for Beta V1.2.
 - **No circuit breakers** on external APIs (timeouts only).
-- **`DetailDrawer.jsx` — 1,516 lines** — maintenance risk; v1.2 split planned.
+- **`DetailDrawer.jsx` — ~1,500 lines** — maintenance risk; v1.2 split planned.
 - **No request ID tracking** across request lifecycle.
-- **Dead code:** `frontend/src/utils/riskScore.js` (v1.1a, unused), `Phase2Block` in DetailDrawer (defined, never rendered), `AIThreats.jsx` (not imported).
 
 ---
 
-## 8. v1.2 Refactor Roadmap
+## 8. Beta V1.2 roadmap
 
-| Phase | Scope |
-|---|---|
-| **1** | `settings.py` + `dependencies.py` + split `main.py` into `routers/` |
-| **2** | `services/cve_service.py`, `services/enrichment_service.py`, `services/ioc_service.py` |
-| **3** | `repositories/` extracted from `database.py` (1,681 lines) |
-| **4** | Frontend hooks (`useCVEFeed`, `useCveDrawerData`, `useIOCLookup`) + DetailDrawer component split |
-| **5** | Structured logging, request IDs, API response envelope, shared HTTP resilience |
+Near-future engineering and product intent lives in **[`Beta V1.2.md`](Beta%20V1.2.md)** — themes include router split, `services/` layer, `resilient_client.py`, shared risk config, frontend hooks, auth, and E2E CI. Update that document when V1.2 phases ship.
 
 ---
 
 ## Related documentation
 
+- [`Beta V1.2.md`](Beta%20V1.2.md) — roadmap and planned work
 - [`API_REFERENCE.md`](API_REFERENCE.md) — endpoint catalog
 - [`TECHNICAL_INVENTORY.md`](TECHNICAL_INVENTORY.md) — schema, scheduler, stack
 - [`APPLICATION_EXECUTION_MAP.md`](APPLICATION_EXECUTION_MAP.md) — startup and request journeys

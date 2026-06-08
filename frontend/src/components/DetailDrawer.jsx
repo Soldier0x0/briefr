@@ -91,16 +91,6 @@ function truncateText(text, maxLen) {
   return `${t.slice(0, maxLen - 1)}…`
 }
 
-function Phase2Block({ title }) {
-  const headingId = `phase2-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
-  return (
-    <section className="drawer-section" aria-labelledby={headingId}>
-      <h3 id={headingId} className="drawer-section-label">{title}</h3>
-      <p className="drawer-phase2 mono">// Coming in Phase 2</p>
-    </section>
-  )
-}
-
 function HumanSentence({ label, text }) {
   if (!text) return null
   const headingId = `human-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`

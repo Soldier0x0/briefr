@@ -270,15 +270,18 @@ def main():
         ("KEV sync", "Complete", "15m default"),
         ("EPSS sync", "Complete", "History snapshots"),
         ("CVE feed", "Complete", "Max 50/page"),
-        ("CVE detail ATLAS", "Partial", "API does not return atlas_techniques"),
+        ("CVE detail ATLAS", "Complete", "has_ai_context + atlas_techniques on GET /api/cves/{id}"),
+        ("AI/ML alerts stat", "Complete", "GET /api/stats?frameworks= + feed filter"),
+        ("Incidents combined feed", "Complete", "GET /api/case-studies/feed parallel load"),
         ("IOC lookup", "Complete", "6h cache"),
         ("Risk score v1.1b", "Complete", "Client-side"),
         ("Correlation", "Complete", "6h cache"),
         ("Detection tab", "Complete", "Sigma/Elastic"),
         ("PDF + AI summary", "Complete", "Groq/Anthropic/template"),
-        ("POST /api/investigation/summary", "Broken", "Undefined import main.py:1331"),
-        ("Authentication", "Not implemented", "v1.1 by design"),
-        ("Repository pattern", "Not implemented", "v1.2"),
+        ("Backups", "Complete", "6h timer, retention 100, auto-restore"),
+        ("POST /api/investigation/summary", "Complete", "Legacy alias to generate_executive_summary"),
+        ("Authentication", "Not implemented", "Planned v1.2"),
+        ("Repository pattern", "Not implemented", "Planned v1.2"),
     ]
     for row in features:
         ws6.append(row)

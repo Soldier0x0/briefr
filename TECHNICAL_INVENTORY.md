@@ -364,9 +364,9 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | PDF export + AI summary | Complete | Groq→Anthropic→template |
 | Case Studies / RSS | Complete | 6 feeds, 30min cache |
 | API usage quotas UI | Complete | `/api/usage/ioc` |
-| Authentication | Not implemented | By design v1.1 |
+| Authentication | Not implemented | Planned Beta V1.2 — see `Beta V1.2.md` |
 | `POST /api/investigation/summary` | Complete | Legacy alias → `generate_executive_summary` |
-| Repository / DI layer | Not implemented | v1.2 backlog |
+| Repository / DI layer | Not implemented | Planned Beta V1.2 |
 | Circuit breakers | Not implemented | Timeouts only |
 | Structured logging | Not implemented | Plain text logs |
 

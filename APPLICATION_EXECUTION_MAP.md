@@ -11,7 +11,8 @@ Runtime behaviour traced from source. File:function references match the codebas
 | Step | File | Function / action |
 |---|---|---|
 | 1 | `uvicorn` | Loads `main:app` |
-| 2 | `main.py` | `lifespan()` context manager enters (line 76) |
+| 2 | `main.py` | `lifespan()` context manager enters |
+| 2a | `backup/manager.py` | `ensure_db_or_restore()` — integrity check; auto-restore from latest backup if corrupt |
 | 3 | `database.py` | `init_db()` — `CREATE TABLE IF NOT EXISTS` for 21 tables (lines 20–277) |
 | 4 | `database.py` | Inline migrations in `init_db()` loop (lines 280–304): ALTER columns, correlation tables, indexes |
 | 5 | `database.py` | Normalize `epss_score = 0.0` → NULL (lines 314–317) |
@@ -38,7 +39,7 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid)
 | Hop | File | Function | API |
 |---|---|---|---|
 | 1 | `main.jsx` | `ReactDOM.createRoot().render()` | — |
-| 2 | `App.jsx` | `useEffect` → `fetchStats()` | `GET /api/stats` |
+| 2 | `App.jsx` | `useEffect` → `fetchStats({ frameworks })` when AI stack/profile declared | `GET /api/stats?frameworks=` |
 | 3 | `App.jsx` | `loadHealth()` + 60s interval | `GET /api/health?tz=` |
 | 4 | `App.jsx` | Renders `MainApp` when `activeTab === 'feed'` | — |
 | 5 | `StatsRow.jsx` | Displays stats prop | — |
@@ -62,9 +63,29 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid)
 | 9 | `DetailDrawer.jsx` | `useMemo` → `calculateRiskScore` with momentum | Client only |
 | 10 (lazy) | `DetailDrawer.jsx` | Related tab → `fetchCVERelated` | `GET /api/cves/{id}/related` |
 | 11 (lazy) | `DetailDrawer.jsx` | Detect tab → `fetchCVEDetection` | `GET /api/cves/{id}/detection` |
-| 12 | `DrawerAtlasSection.jsx` | Renders if `has_ai_context` — **usually empty** (API gap) | — |
+| 12 | `DrawerAtlasSection.jsx` | Renders ATLAS techniques + case studies when `has_ai_context` | Data from `GET /api/cves/{id}` |
 
 Sequence: [`docs/diagrams/flow_cve_detail.mermaid`](docs/diagrams/flow_cve_detail.mermaid)
+
+### B2. User clicks AI/ML alerts stat chip
+
+| Hop | File | Function | API |
+|---|---|---|---|
+| 1 | `StatsRow.jsx` | Fifth chip visible when `showAiAlerts` and `ai_ml_alerts > 0` | — |
+| 2 | `App.jsx` | `handleAiAlertsClick` → `setActiveTab('feed')` + filter state | — |
+| 3 | `App.jsx` | Sets `ai_context_only`, `ai_profile_match`, `ai_profile` from asset profile / stack | — |
+| 4 | `CVEFeed.jsx` | `loadPage(1)` on filter change | `GET /api/cves?frameworks=&ai_context_only=true` |
+| 5 | `cveFilters.js` | Maps `ai_profile_match` → `frameworks` query param | — |
+
+### F. User opens Incidents & News tab
+
+| Hop | File | Function | API |
+|---|---|---|---|
+| 1 | `App.jsx` | `activeTab === 'incidents'` → renders `CaseStudies` | — |
+| 2 | `CaseStudies.jsx` | `loadCaseStudyFeed()` on mount | `GET /api/case-studies/feed?atlas_limit=80` |
+| 3 | `case_study_feed.py` | `fetch_combined_case_study_feed` — `asyncio.gather` RSS + ATLAS | `feeds/incident_news.py`, `database.get_atlas_case_studies` |
+| 4 | `caseStudyFeed.js` | Session cache (5 min); `filterCaseStudyCards` for search | — |
+| 5 | `CaseStudies.jsx` | Renders news + ATLAS cards; per-source errors in banner | — |
 
 ### C. User submits IOC lookup
 
@@ -125,7 +146,9 @@ Sequence: [`docs/diagrams/flow_pdf_report.mermaid`](docs/diagrams/flow_pdf_repor
 | NVD sync | NVD 429 | Sync continues after backoff | `logger.warning` | Yes (5× in nvd.py) |
 | NVD sync | Exception mid-run | Prior data intact | `logger.error` | Next scheduler tick |
 | PDF AI summary | Groq+Anthropic fail | Template summary text | `logger.warning` | No (template fallback) |
-| Investigation summary | `generate_investigation_summary` missing | **HTTP 500** | FastAPI traceback | No |
+| Investigation summary | AI provider fail | Template fallback text | `logger.warning` | No (template fallback) |
+| Incidents feed | RSS or ATLAS partial fail | Cards from successful sources + `errors[]` | Per-source in response | Client retries on tab revisit |
+| AI/ML alerts | No frameworks in profile/stack | Chip hidden (`ai_ml_alerts` = 0) | — | No |
 
 ---
 
@@ -146,7 +169,8 @@ Sequence: [`docs/diagrams/flow_pdf_report.mermaid`](docs/diagrams/flow_pdf_repor
 | Timezone | `Header.jsx` + `timezone.js` | `localStorage` `briefr_timezone` |
 | Last visit marker | `CVEFeed.jsx` | `localStorage` `briefr_last_visit` |
 | Active tab | `App.jsx` `activeTab` | Session only |
-| Case study cards | `CaseStudies.jsx` | Fetched once per mount; server RSS cache 30min |
+| Case study cards | `caseStudyFeed.js` module cache | 5 min session cache; `GET /api/case-studies/feed` loads RSS + ATLAS in parallel |
+| AI/ML alert count | `App.jsx` `stats` | Refreshed on stack/profile change via `briefr-profile-change` event |
 
 ---
 
