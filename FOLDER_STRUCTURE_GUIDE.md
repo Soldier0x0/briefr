@@ -271,5 +271,6 @@ Every file in the repository with a one-line purpose. Tags:
 | `deploy/briefr-backup.service` / `.timer` | systemd oneshot + 6h timer → `/var/lib/briefr/backups` |
 | `backend/backup/manager.py` | Backup core: integrity_check, online backup, restore, log rotation |
 | `scripts/generate_technical_inventory_xlsx.py` | Regenerates `TECHNICAL_INVENTORY.xlsx` from structured data (min column width 10) |
+| `scripts/generate_system_design_pdf.mjs` | Renders `SYSTEM_DESIGN.pdf` from markdown with Playwright (tables + Mermaid diagrams) |
 | `backend/scripts/backfill_poc.py` | Backfill `has_poc` from NVD references |
 | `deploy/*.sh` | Deployment and maintenance shell scripts |

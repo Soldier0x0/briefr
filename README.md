@@ -280,6 +280,14 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 | [`APPLICATION_EXECUTION_MAP.md`](APPLICATION_EXECUTION_MAP.md) | Startup sequence and request journeys |
 | [`FOLDER_STRUCTURE_GUIDE.md`](FOLDER_STRUCTURE_GUIDE.md) | File-by-file map with deprecation tags |
 | [`docs/diagrams/`](docs/diagrams/) | Mermaid architecture and flow diagrams |
+| [`SYSTEM_DESIGN.pdf`](SYSTEM_DESIGN.pdf) | Printable system design (generated from markdown) |
+
+Regenerate `SYSTEM_DESIGN.pdf` (requires network for Mermaid CDN on first run):
+
+```bash
+cd frontend && npm install
+node ../scripts/generate_system_design_pdf.mjs
+```
 
 Regenerate screenshots (backend on `:8000`, frontend on `:5173`):
 
