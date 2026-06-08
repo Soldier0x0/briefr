@@ -118,6 +118,8 @@ def test_run_backup_creates_verified_archive(tmp_path):
     assert result["status"] == "ok"
     archive = Path(result["archive"])
     assert archive.is_file()
+    assert archive.stat().st_mode & 0o777 == 0o600
+    assert cfg.backup_dir.stat().st_mode & 0o777 == 0o750
 
     import tarfile
 

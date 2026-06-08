@@ -181,6 +181,10 @@ def _create_archive_bundle(
         )
 
     cfg.backup_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        cfg.backup_dir.chmod(0o750)
+    except OSError:
+        pass
     archive_name = f"briefr-{_utc_stamp()}.tar.gz"
     archive_path = cfg.backup_dir / archive_name
 
@@ -218,6 +222,10 @@ def _create_archive_bundle(
             if env_included:
                 tar.add(tmp_path / ENV_ARCHIVE_NAME, arcname=ENV_ARCHIVE_NAME)
 
+    try:
+        archive_path.chmod(0o600)
+    except OSError:
+        pass
     return archive_path
 
 
