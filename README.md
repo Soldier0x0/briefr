@@ -9,7 +9,7 @@
 
 BRIEFR is a self-hosted CVE intelligence dashboard for security analysts, small teams, and solo researchers. It aggregates NVD, CISA KEV, EPSS, MITRE ATT&CK, MITRE ATLAS, and optional threat-feed enrichment into one searchable UI — with IOC lookup, correlation, detection engineering helpers, and PDF export.
 
-**Live demo:** [projectjupiter.in](https://projectjupiter.in)
+**Live demo:** [projectjupiter.in](https://briefr.projectjupiter.in)
 
 ---
 
