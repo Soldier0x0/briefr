@@ -14,7 +14,7 @@ Every file in the repository with a one-line purpose. Tags:
 
 | Path | Description |
 |---|---|
-| `backend/main.py` | **[V1.2-SPLIT]** **[KNOWN-ISSUE:1331]** FastAPI app: all routes, middleware, CVE filter SQL, enrichment orchestration (1,344 lines) |
+| `backend/main.py` | **[V1.2-SPLIT]** FastAPI app: all routes, middleware, CVE filter SQL, enrichment orchestration (1,344 lines) |
 | `backend/database.py` | **[V1.2-SPLIT]** SQLite schema, migrations, upserts, cache, MITRE/ATLAS/OTX persistence (1,681 lines) |
 | `backend/scheduler.py` | APScheduler: 7 jobs, ingest locks, startup bootstrap, manual refresh entry points |
 | `backend/tracking.py` | `api_usage` counters and quota metadata for `/api/usage` endpoints |
@@ -245,6 +245,7 @@ Every file in the repository with a one-line purpose. Tags:
 | Path | Description |
 |---|---|
 | `README.md` | Project overview and quick start |
+| `docs/ONBOARDING.md` | Contributor entry point: reading order, local dev, tests, env vars, deploy overview, troubleshooting |
 | `SYSTEM_DESIGN.md` | Architecture, data flows, design decisions |
 | `SYSTEM_DESIGN.pdf` | PDF export of system design (generated) |
 | `API_REFERENCE.md` | Human-readable endpoint catalog |
@@ -271,5 +272,6 @@ Every file in the repository with a one-line purpose. Tags:
 | `deploy/briefr-backup.service` / `.timer` | systemd oneshot + 6h timer → `/var/lib/briefr/backups` |
 | `backend/backup/manager.py` | Backup core: integrity_check, online backup, restore, log rotation |
 | `scripts/generate_technical_inventory_xlsx.py` | Regenerates `TECHNICAL_INVENTORY.xlsx` from structured data (min column width 10) |
+| `scripts/generate_system_design_pdf.mjs` | Renders `SYSTEM_DESIGN.pdf` from markdown with Playwright (tables + Mermaid diagrams) |
 | `backend/scripts/backfill_poc.py` | Backfill `has_poc` from NVD references |
 | `deploy/*.sh` | Deployment and maintenance shell scripts |

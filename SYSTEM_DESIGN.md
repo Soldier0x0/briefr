@@ -155,6 +155,19 @@ Sequence diagram: [`docs/diagrams/flow_ioc_lookup.mermaid`](docs/diagrams/flow_i
 
 **Duplication debt:** same weights/logic mirrored in `backend/scoring/risk.py` (server momentum only today).
 
+### E. Incidents & News feed
+
+1. **UI:** `CaseStudies.jsx` calls `loadCaseStudyFeed()` → `GET /api/case-studies/feed?atlas_limit=80`.
+2. **Client cache:** `caseStudyFeed.js` holds a 5-minute session cache to avoid refetching on tab switches.
+3. **Server:** `case_study_feed.py:fetch_combined_case_study_feed` opens **one** SQLite connection, then sequentially:
+   - `fetch_all_incident_news(db)` — 6 RSS sources via `incident_news.py` (30 min `feed_cache` per source)
+   - `_load_atlas_cards(db)` — ATLAS case studies from `atlas_case_studies` table
+4. **Merge:** Cards sorted by `publishedAt` descending; per-source errors collected in `errors[]` without failing the whole feed.
+5. **Editorial filter:** `incident_news.py` excludes non-security RSS items by title pattern (e.g. Dark Reading **"Name That Toon"** contest). Filter applies on parse and when serving cached rows; malformed cache entries are skipped defensively.
+6. **Scheduler:** `run_incident_news_refresh` pre-warms RSS caches every 4 hours (`scheduler.py`).
+
+Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (scheduler registration) · Client journey: [`APPLICATION_EXECUTION_MAP.md`](APPLICATION_EXECUTION_MAP.md) §2.C
+
 ---
 
 ## 4. Design Decisions & Trade-offs
@@ -162,7 +175,8 @@ Sequence diagram: [`docs/diagrams/flow_ioc_lookup.mermaid`](docs/diagrams/flow_i
 ### SQLite over PostgreSQL
 
 - **Why:** Single-user beta, zero ops overhead, `aiosqlite` async support, `feed_cache` + `ioc_cache` adequate at current scale.
-- **Trade-off:** No concurrent write safety, no horizontal scaling — acceptable for v1.1.
+- **Mitigations (v1.1):** `PRAGMA journal_mode=WAL`, `busy_timeout=30000`, and `connect(timeout=30)` in `database.get_db()`. Combined Incidents feed loads RSS + ATLAS on a **single connection** (`case_study_feed.py`) to avoid `database is locked` under concurrent scheduler writes.
+- **Trade-off:** No horizontal scaling or multi-writer safety — acceptable for v1.1 single-server deploys.
 
 ### APScheduler over Celery/Redis
 
@@ -229,9 +243,9 @@ Sequence diagram: [`docs/diagrams/flow_ioc_lookup.mermaid`](docs/diagrams/flow_i
 | Groq | `ai/summary.py` | Executive summary | `GROQ_API_KEY` | Console quota | Falls back to Anthropic/template |
 | Anthropic | `ai/summary.py` | Executive summary | `ANTHROPIC_API_KEY` | Console quota | Falls back to template |
 | GitHub | `detection/rule_sources.py` | Sigma/Elastic rule search | `GITHUB_TOKEN` (optional) | 60/hr anon | `[]` rules |
-| RSS (6 sources) | `feeds/incident_news.py` | News cards | — | Per-feed | Per-source error in `errors[]` |
+| RSS (6 sources) | `feeds/incident_news.py` | News cards (editorial titles filtered) | — | Per-feed | Per-source error in `errors[]` |
 
-RSS sources defined in `feeds/incident_sources.py`: The Hacker News, Bleeping Computer, Krebs, Dark Reading, Schneier, CISA Advisories.
+RSS sources defined in `feeds/incident_sources.py`: The Hacker News, Bleeping Computer, Krebs, Dark Reading, Schneier, CISA Advisories. Non-security editorial items (e.g. Dark Reading cartoon contests) are excluded via `EXCLUDED_NEWS_TITLE_PATTERNS` in `incident_news.py`.
 
 ---
 
@@ -255,6 +269,7 @@ Near-future engineering and product intent lives in **[`Beta V1.2.md`](Beta%20V1
 
 ## Related documentation
 
+- [`docs/ONBOARDING.md`](docs/ONBOARDING.md) — contributor entry point, local dev, tests, troubleshooting
 - [`Beta V1.2.md`](Beta%20V1.2.md) — roadmap and planned work
 - [`API_REFERENCE.md`](API_REFERENCE.md) — endpoint catalog
 - [`TECHNICAL_INVENTORY.md`](TECHNICAL_INVENTORY.md) — schema, scheduler, stack

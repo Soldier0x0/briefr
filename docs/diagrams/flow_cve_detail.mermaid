@@ -1,32 +1,30 @@
 sequenceDiagram
   participant User
-  participant App as App.jsx
-  participant Drawer as DetailDrawer.jsx
-  participant API as FastAPI main.py
-  participant Ext as feeds/enrichment
+  participant App as "App.jsx"
+  participant Drawer as "DetailDrawer.jsx"
+  participant API as "FastAPI main.py"
+  participant Ext as "feeds/enrichment"
 
   User->>App: click CVECard
-  App->>API: GET /api/cves/{id}
+  App->>API: "GET /api/cves/{id}"
   API->>Ext: Sploitus, GreyNoise, OTX, OSV, CIRCL
   Ext-->>API: enrichment fields
-  API-->>App: full CVE object
+  API-->>App: full CVE object (incl. ATLAS fields)
   App->>Drawer: setSelectedCVE(full)
 
   par On drawer open
-    Drawer->>API: GET /api/cves/{id}/sentences
-    Drawer->>API: GET /api/cves/{id}/epss-history
-    Drawer->>API: GET /api/cves/{id}/momentum
-    Drawer->>API: GET /api/cves/{id}/correlation?sector=
+    Drawer->>API: "GET /api/cves/{id}/sentences"
+    Drawer->>API: "GET /api/cves/{id}/epss-history"
+    Drawer->>API: "GET /api/cves/{id}/momentum"
+    Drawer->>API: "GET /api/cves/{id}/correlation"
   end
 
-  Note over Drawer: ATLAS section expects atlas_techniques<br/>but GET /api/cves/{id} does not populate them (known issue)
-
   opt User opens Related tab
-    Drawer->>API: GET /api/cves/{id}/related
+    Drawer->>API: "GET /api/cves/{id}/related"
   end
 
   opt User opens Detect tab
-    Drawer->>API: GET /api/cves/{id}/detection
+    Drawer->>API: "GET /api/cves/{id}/detection"
   end
 
   Drawer->>User: tabs render as each response arrives

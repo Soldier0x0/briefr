@@ -49,7 +49,7 @@ Three main tabs:
 - NVD incremental ingest with CVSS v3.1, EPSS, CISA KEV, and change tracking
 - CVE detail enrichment: Sploitus exploits, GreyNoise scans, OTX pulses, OSV packages, CIRCL references
 - MITRE ATT&CK technique mapping and top-technique sidebar
-- MITRE ATLAS AI/ML threat context (weekly refresh; per-CVE drawer wiring in progress)
+- MITRE ATLAS AI/ML threat context (weekly refresh; per-CVE drawer + Incidents tab)
 - 90-day publication timeline heatmap
 - Client-side **Risk Score v1.1b** (asset, KEV, EPSS, exploit, CVSS, momentum)
 
@@ -261,7 +261,8 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 | `GET /api/techniques/top` | Top ATT&CK techniques by CVE count |
 | `GET /api/atlas/techniques` | ATLAS techniques grouped by tactic |
 | `GET /api/atlas/casestudies` | ATLAS case studies |
-| `GET /api/case-studies/news` | RSS news cards for Incidents tab |
+| `GET /api/case-studies/feed` | Combined RSS news + ATLAS case studies (Incidents tab) |
+| `GET /api/case-studies/news` | RSS news only |
 | `POST /api/ai/summary` | AI executive summary (PDF export only) |
 | `GET /api/usage` / `GET /api/usage/ioc` | API quota counters |
 
@@ -273,6 +274,7 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 
 | Document | Contents |
 |----------|----------|
+| [`docs/ONBOARDING.md`](docs/ONBOARDING.md) | **Start here** — reading order, local dev, tests, env vars, troubleshooting |
 | [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) | Architecture, data flows, design decisions |
 | [`Beta V1.2.md`](Beta%20V1.2.md) | Near-future roadmap (auth, refactor, resilience) |
 | [`API_REFERENCE.md`](API_REFERENCE.md) | Every endpoint with params and response shapes |
@@ -280,6 +282,14 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 | [`APPLICATION_EXECUTION_MAP.md`](APPLICATION_EXECUTION_MAP.md) | Startup sequence and request journeys |
 | [`FOLDER_STRUCTURE_GUIDE.md`](FOLDER_STRUCTURE_GUIDE.md) | File-by-file map with deprecation tags |
 | [`docs/diagrams/`](docs/diagrams/) | Mermaid architecture and flow diagrams |
+| [`SYSTEM_DESIGN.pdf`](SYSTEM_DESIGN.pdf) | Printable system design (generated from markdown) |
+
+Regenerate `SYSTEM_DESIGN.pdf` (requires network for Mermaid CDN on first run):
+
+```bash
+cd frontend && npm install
+node ../scripts/generate_system_design_pdf.mjs
+```
 
 Regenerate screenshots (backend on `:8000`, frontend on `:5173`):
 
