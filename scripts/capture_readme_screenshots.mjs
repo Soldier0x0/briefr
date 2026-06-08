@@ -11,9 +11,11 @@ const baseUrl = 'http://localhost:5173';
 
 const VIEWPORT = { width: 1440, height: 900 };
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function shot(page, name) {
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.waitForTimeout(300);
+  await sleep(300);
   const file = path.join(outDir, name);
   // Viewport only — BRIEF feed uses infinite scroll; fullPage would produce an unusably tall image.
   await page.screenshot({ path: file, fullPage: false });
@@ -22,7 +24,7 @@ async function shot(page, name) {
 
 async function clickTab(page, label) {
   await page.getByRole('button', { name: new RegExp(label, 'i') }).click();
-  await page.waitForTimeout(800);
+  await sleep(800);
 }
 
 async function waitForIncidentsContent(page) {
@@ -31,12 +33,26 @@ async function waitForIncidentsContent(page) {
     () => {
       const cards = document.querySelectorAll('.cs-card');
       const skeleton = document.querySelector('.cs-skeleton-list');
-      return cards.length > 0 && !skeleton;
+      const hasError = !!document.querySelector('.cs-source-error');
+      const isEmpty = !!document.querySelector('.cs-empty');
+      return (cards.length > 0 && !skeleton) || hasError || isEmpty;
     },
     { timeout: 120000 },
   );
+
+  const failureMessage = await page.evaluate(() => {
+    const error = document.querySelector('.cs-source-error');
+    const empty = document.querySelector('.cs-empty');
+    if (error) return `Feed error: ${error.textContent.trim()}`;
+    if (empty) return 'Feed is empty';
+    return null;
+  });
+  if (failureMessage) {
+    throw new Error(failureMessage);
+  }
+
   // RSS + ATLAS aggregation can take several seconds after the shell renders.
-  await page.waitForTimeout(5000);
+  await sleep(5000);
 }
 
 async function main() {
@@ -69,13 +85,13 @@ async function main() {
   if (!styled) {
     throw new Error('CSS not applied (check CSP / Vite). --red token missing.');
   }
-  await page.waitForTimeout(2500);
+  await sleep(2500);
   await shot(page, 'brief.png');
 
   // IOC LOOKUP
   await clickTab(page, 'IOC LOOKUP');
   await page.waitForSelector('.ioc-lookup, .ioc-panel, [class*="ioc"]', { timeout: 30000 });
-  await page.waitForTimeout(1500);
+  await sleep(1500);
   await shot(page, 'ioc-lookup.png');
 
   // INCIDENTS & NEWS — wait for loaded cards, then extra settle time for RSS/ATLAS feed
