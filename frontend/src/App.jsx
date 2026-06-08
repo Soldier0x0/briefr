@@ -16,6 +16,13 @@ import AboutModal from './components/AboutModal.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import { fetchStats, fetchHealth, fetchCVE } from './api.js'
+import { useAssetProfileOptional } from './context/AssetProfileContext.jsx'
+import {
+  aiFrameworksQueryParam,
+  getAiFrameworksForAlerts,
+  hasDeclaredAiAssets,
+} from './utils/aiAssets.js'
+import { STACK_STORAGE_KEY } from './utils/cveFilters.js'
 import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 import './components/InvestigationPanel.css'
@@ -32,6 +39,9 @@ const DEFAULT_FILTERS = {
   published_on: '',
   my_stack_only: false,
   summary_only: false,
+  ai_context_only: false,
+  ai_profile_match: false,
+  ai_profile: '',
 }
 
 // ── Last-refreshed helper ─────────────────────────────────
@@ -100,7 +110,7 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
                    digestOpen, setDigestOpen, digestCVEs, setDigestCVEs,
                    searchFocusTrigger, setSearchFocusTrigger, aboutOpen, setAboutOpen,
                    timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
-                   onDigestRequest }) {
+                   onDigestRequest, showAiAlerts, onAiAlertsClick }) {
 
   const handleBrief = useCallback((stack) => {
     setFilters(prev => ({ ...prev, stack: stack || '' }))
@@ -133,7 +143,11 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
         onBrief={handleBrief}
         onClearStack={handleClearStack}
       />
-      <StatsRow stats={stats} />
+      <StatsRow
+        stats={stats}
+        showAiAlerts={showAiAlerts}
+        onAiAlertsClick={onAiAlertsClick}
+      />
       <TimelineHeatmap filters={filters} onFiltersChange={handleFiltersChange} />
       <FeedRefreshStatus
         lastUpdated={lastUpdated}
@@ -178,6 +192,12 @@ export default function App() {
   const [iocPrefill, setIocPrefill]             = useState(null)
   const [iocSessionKey, setIocSessionKey]       = useState(0)
   const [atlasActorFilter, setAtlasActorFilter] = useState(null)
+  const assetCtx = useAssetProfileOptional()
+
+  const loadStats = useCallback(() => {
+    const frameworks = getAiFrameworksForAlerts(assetCtx?.profile)
+    fetchStats({ frameworks }).then(setStats).catch(() => {})
+  }, [assetCtx?.profile])
 
   useEffect(() => {
     if (activeTab === 'feed') {
@@ -197,8 +217,18 @@ export default function App() {
   }, [timezone])
 
   useEffect(() => {
-    fetchStats().then(setStats).catch(() => {})
-  }, [])
+    loadStats()
+  }, [loadStats])
+
+  useEffect(() => {
+    const onRefreshStats = () => loadStats()
+    window.addEventListener('briefr-stack-change', onRefreshStats)
+    window.addEventListener('briefr-profile-change', onRefreshStats)
+    return () => {
+      window.removeEventListener('briefr-stack-change', onRefreshStats)
+      window.removeEventListener('briefr-profile-change', onRefreshStats)
+    }
+  }, [loadStats])
 
   useEffect(() => {
     loadHealth()
@@ -222,6 +252,25 @@ export default function App() {
   const registerDigestHandler = useCallback((fn) => {
     generateDigestRef.current = fn
   }, [])
+
+  const showAiAlerts = hasDeclaredAiAssets(assetCtx?.profile)
+
+  const handleAiAlertsClick = useCallback(() => {
+    const fw = aiFrameworksQueryParam(assetCtx?.profile)
+    if (!fw) return
+    setActiveTab('feed')
+    setFilters(prev => ({
+      ...prev,
+      ai_context_only: true,
+      ai_profile_match: true,
+      ai_profile: fw,
+      kev_only: false,
+      poc_only: false,
+      severity: null,
+      search: '',
+      stack: '',
+    }))
+  }, [assetCtx?.profile])
 
   const openCveById = useCallback((cveId) => {
     fetchCVE(cveId)
@@ -336,6 +385,8 @@ export default function App() {
               refreshSchedule={refreshSchedule}
               onDigestRequest={registerDigestHandler}
               openCveById={openCveById}
+              showAiAlerts={showAiAlerts}
+              onAiAlertsClick={handleAiAlertsClick}
             />
           )}
         />
@@ -373,6 +424,8 @@ function AppLayout({
   refreshSchedule,
   onDigestRequest,
   openCveById,
+  showAiAlerts,
+  onAiAlertsClick,
 }) {
   const { showPanel, panelExpanded } = useInvestigation()
   const layoutClass = [
@@ -416,6 +469,8 @@ function AppLayout({
                   nextRefreshUtc={nextRefreshUtc}
                   refreshSchedule={refreshSchedule}
                   onDigestRequest={onDigestRequest}
+                  showAiAlerts={showAiAlerts}
+                  onAiAlertsClick={onAiAlertsClick}
                 />
               )}
               {activeTab === 'ioc' && (

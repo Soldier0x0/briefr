@@ -38,10 +38,12 @@ export function toApiCveParams(filters) {
   }
   delete params.ai_context_only
 
-  if (rest.ai_profile_match && params.ai_profile) {
-    /* ai_profile already set for API */
+  if (rest.ai_profile_match && rest.ai_profile) {
+    params.frameworks = rest.ai_profile
+    params.ai_context_only = true
   }
   delete params.ai_profile_match
+  delete params.ai_profile
 
   return params
 }

@@ -354,7 +354,10 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | MITRE ATT&CK mapping | Complete | Weekly Sunday job |
 | MITRE ATLAS feed | Complete | Weekly with MITRE job |
 | CVE feed + filters | Complete | Pagination max 50/page |
-| CVE detail enrichment | Partial | Sploitus/GN/OTX/OSV/CIRCL wired; **ATLAS per-CVE not in API** |
+| CVE detail enrichment | Complete | Sploitus/GN/OTX/OSV/CIRCL + ATLAS per-CVE on detail |
+| AI/ML alerts stat + filter | Complete | `GET /api/stats?frameworks=` + CVE feed `frameworks` param |
+| Incidents combined feed | Complete | `GET /api/case-studies/feed` (parallel RSS + ATLAS) |
+| Integrity-checked backups | Complete | 6h timer, retention 100, startup auto-restore |
 | IOC lookup multi-source | Complete | 6h cache |
 | Risk score v1.1b | Complete | Client-side; momentum lazy |
 | Correlation engine | Complete | 3 levels; 6h on-demand cache |
@@ -364,9 +367,9 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | PDF export + AI summary | Complete | Groq→Anthropic→template |
 | Case Studies / RSS | Complete | 6 feeds, 30min cache |
 | API usage quotas UI | Complete | `/api/usage/ioc` |
-| Authentication | Not implemented | By design v1.1 |
+| Authentication | Not implemented | Planned Beta V1.2 — see `Beta V1.2.md` |
 | `POST /api/investigation/summary` | Complete | Legacy alias → `generate_executive_summary` |
-| Repository / DI layer | Not implemented | v1.2 backlog |
+| Repository / DI layer | Not implemented | Planned Beta V1.2 |
 | Circuit breakers | Not implemented | Timeouts only |
 | Structured logging | Not implemented | Plain text logs |
 

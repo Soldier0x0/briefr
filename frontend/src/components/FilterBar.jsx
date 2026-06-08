@@ -43,7 +43,8 @@ export function hasActiveFilters(filters) {
     filters.epss_min != null ||
     filters.severity ||
     filters.published_on ||
-    filters.my_stack_only
+    filters.my_stack_only ||
+    filters.ai_profile_match
   )
 }
 

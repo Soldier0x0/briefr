@@ -273,7 +273,8 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 
 | Document | Contents |
 |----------|----------|
-| [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) | Architecture, data flows, design decisions, v1.2 roadmap |
+| [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) | Architecture, data flows, design decisions |
+| [`Beta V1.2.md`](Beta%20V1.2.md) | Near-future roadmap (auth, refactor, resilience) |
 | [`API_REFERENCE.md`](API_REFERENCE.md) | Every endpoint with params and response shapes |
 | [`TECHNICAL_INVENTORY.md`](TECHNICAL_INVENTORY.md) | Schema, scheduler jobs, external APIs, feature matrix |
 | [`APPLICATION_EXECUTION_MAP.md`](APPLICATION_EXECUTION_MAP.md) | Startup sequence and request journeys |
@@ -324,7 +325,8 @@ BRIEFR collects no personal data, uses no cookies, and runs no analytics. Tech s
 
 - Single-user SQLite — not designed for concurrent multi-tenant writes
 - No API authentication
-- Risk weights duplicated in Python (`backend/scoring/risk.py`) and JavaScript (`frontend/src/scoring/riskScore.js`)
+- Risk weights duplicated in Python (`backend/scoring/risk.py`) and JavaScript (`frontend/src/scoring/riskScore.js`) — shared config planned for Beta V1.2
+- AI/ML alerts chip requires AI/ML keywords in your saved stack or asset profile `aiSystems`
 
 ---
 

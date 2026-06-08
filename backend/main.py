@@ -35,6 +35,7 @@ from database import (
     get_related_cves,
     get_techniques_for_cve,
     get_top_techniques,
+    count_ai_ml_profile_alerts,
     init_db,
     match_cves_for_assets,
     set_ioc_cache,
@@ -323,7 +324,13 @@ async def server_time(
 
 
 @app.get("/api/stats")
-async def stats():
+async def stats(
+    frameworks: str | None = Query(
+        default=None,
+        max_length=500,
+        description="Comma-separated AI/ML framework tokens for ai_ml_alerts count",
+    ),
+):
     db = await get_db()
     try:
         rows_critical = await db.execute_fetchall(
@@ -341,6 +348,10 @@ async def stats():
         rows_24h = await db.execute_fetchall(
             "SELECT COUNT(*) as cnt FROM cves WHERE published >= datetime('now', '-1 day')"
         )
+        fw_list = _parse_framework_list(frameworks)
+        ai_ml_alerts = (
+            await count_ai_ml_profile_alerts(db, fw_list) if fw_list else 0
+        )
     finally:
         await db.close()
 
@@ -350,6 +361,7 @@ async def stats():
         "kev_count": rows_kev[0]["cnt"] if rows_kev else 0,
         "patched": rows_patched[0]["cnt"] if rows_patched else 0,
         "last_24h": rows_24h[0]["cnt"] if rows_24h else 0,
+        "ai_ml_alerts": ai_ml_alerts,
     }
 
 
@@ -475,7 +487,8 @@ CVE_ORDER_BY = """
 CVE_SELECT = """
     SELECT cve_id, description, cvss_score, severity, published, modified,
            affected_products, mitre_technique, summary, is_kev, epss_score,
-           has_poc, patch_available, source_urls, cwe_ids, updated_at
+           has_poc, patch_available, has_ai_context, source_urls, cwe_ids,
+           updated_at
     FROM cves
 """
 
@@ -489,6 +502,27 @@ def _validate_published_on(value: str) -> str:
     return value
 
 
+def _parse_framework_list(frameworks: str | None) -> list[str]:
+    if not frameworks:
+        return []
+    return [f.strip().lower() for f in frameworks.split(",") if f.strip()]
+
+
+def _framework_match_clause(frameworks: str | None) -> tuple[str, list]:
+    tokens = _parse_framework_list(frameworks)
+    if not tokens:
+        return "", []
+    parts: list[str] = []
+    params: list = []
+    for token in tokens:
+        parts.append(
+            "(LOWER(description) LIKE ? OR LOWER(affected_products) LIKE ? OR LOWER(summary) LIKE ?)"
+        )
+        like = f"%{token}%"
+        params.extend([like, like, like])
+    return "(" + " OR ".join(parts) + ")", params
+
+
 def _build_cve_filters(
     severity: str | None,
     kev_only: bool,
@@ -500,6 +534,8 @@ def _build_cve_filters(
     technique: str | None = None,
     published_on: str | None = None,
     summary_only: bool = False,
+    ai_context_only: bool = False,
+    frameworks: str | None = None,
 ) -> tuple[list[str], list, list[str]]:
     conditions: list[str] = []
     params: list = []
@@ -563,6 +599,14 @@ def _build_cve_filters(
             "summary IS NOT NULL AND TRIM(summary) != ''"
         )
 
+    if ai_context_only or _parse_framework_list(frameworks):
+        conditions.append("has_ai_context = 1")
+
+    fw_clause, fw_params = _framework_match_clause(frameworks)
+    if fw_clause:
+        conditions.append(fw_clause)
+        params.extend(fw_params)
+
     return conditions, params, stack_products
 
 
@@ -600,6 +644,8 @@ async def list_cves(
     technique: str | None = Query(default=None, max_length=32),
     published_on: str | None = Query(default=None, max_length=10),
     summary_only: bool = Query(default=False),
+    ai_context_only: bool = Query(default=False),
+    frameworks: str | None = Query(default=None, max_length=500),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=50),
 ):
@@ -614,6 +660,8 @@ async def list_cves(
         technique,
         published_on,
         summary_only,
+        ai_context_only,
+        frameworks,
     )
 
     where_clause = ""
@@ -676,6 +724,8 @@ async def export_cves(
     technique: str | None = Query(default=None, max_length=32),
     published_on: str | None = Query(default=None, max_length=10),
     summary_only: bool = Query(default=False),
+    ai_context_only: bool = Query(default=False),
+    frameworks: str | None = Query(default=None, max_length=500),
     max_rows: int = Query(default=500, ge=1, le=500),
 ):
     """Return up to 500 CVE rows matching filters (for CSV export)."""
@@ -690,6 +740,8 @@ async def export_cves(
         technique,
         published_on,
         summary_only,
+        ai_context_only,
+        frameworks,
     )
 
     where_clause = ""
@@ -743,6 +795,17 @@ async def case_studies_news():
         await db.commit()
     finally:
         await db.close()
+    return {"data": cards, "errors": errors}
+
+
+@app.get("/api/case-studies/feed")
+async def case_studies_feed(
+    atlas_limit: int = Query(default=80, ge=1, le=100),
+):
+    """Combined RSS news + ATLAS case studies (parallel server-side load)."""
+    from feeds.case_study_feed import fetch_combined_case_study_feed
+
+    cards, errors = await fetch_combined_case_study_feed(atlas_limit=atlas_limit)
     return {"data": cards, "errors": errors}
 
 

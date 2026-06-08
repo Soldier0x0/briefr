@@ -34,6 +34,8 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 | `technique` | str | null | ATT&CK technique ID e.g. `T1190` (max 32) |
 | `published_on` | str | null | `YYYY-MM-DD` calendar day filter |
 | `summary_only` | bool | false | Only CVEs with enriched plain-English summary |
+| `ai_context_only` | bool | false | Only CVEs with `has_ai_context = 1` |
+| `frameworks` | str | null | Comma-separated AI/ML tokens; implies `has_ai_context` and matches description/products |
 
 **Response:**
 
@@ -261,6 +263,18 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 
 ---
 
+### GET /api/case-studies/feed
+
+**Description:** Combined Incidents tab feed — RSS news and ATLAS case studies loaded **in parallel** on the server (preferred over separate news + atlas calls).
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `atlas_limit` | int | 80 | 1–100 ATLAS studies to include |
+
+**Response:** `{"data": [ merged news + atlas cards ], "errors": [ per-source errors ]}` — cards sorted by `publishedAt` descending.
+
+---
+
 ## Risk & Correlation
 
 ### GET /api/cves/{cve_id}/correlation
@@ -437,7 +451,11 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 
 ### GET /api/stats
 
-**Response:** Flat object: `critical`, `high`, `kev_count`, `patched`, `last_24h` (counts).
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `frameworks` | str | null | Comma-separated AI/ML tokens (e.g. `tensorflow,pytorch`) for `ai_ml_alerts` count |
+
+**Response:** `critical`, `high`, `kev_count`, `patched`, `last_24h`, `ai_ml_alerts` (0 when `frameworks` omitted).
 
 ---
 

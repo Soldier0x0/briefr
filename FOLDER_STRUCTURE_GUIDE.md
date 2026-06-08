@@ -139,11 +139,10 @@ Every file in the repository with a one-line purpose. Tags:
 | `frontend/src/components/CVECard.jsx` | Single CVE row with risk badge and EPSS sparkline |
 | `frontend/src/components/FilterBar.jsx` | Severity, KEV, PoC, EPSS, technique filters |
 | `frontend/src/components/Sidebar.jsx` | KEV deadlines and top ATT&CK techniques |
-| `frontend/src/components/DetailDrawer.jsx` | **[V1.2-SPLIT]** CVE detail drawer (1,516 lines); contains unused `Phase2Block` **[DEPRECATED]** |
-| `frontend/src/components/DrawerAtlasSection.jsx` | ATLAS techniques/case studies block (blocked by API wiring gap) |
+| `frontend/src/components/DetailDrawer.jsx` | **[V1.2-SPLIT]** CVE detail drawer (~1,500 lines) |
+| `frontend/src/components/DrawerAtlasSection.jsx` | ATLAS techniques/case studies block (fed by `GET /api/cves/{id}`) |
 | `frontend/src/components/IOCLookup.jsx` | **[V1.2-SPLIT]** IOC lookup UI (1,168 lines) |
 | `frontend/src/components/CaseStudies.jsx` | Incidents & News tab — RSS + ATLAS cards |
-| `frontend/src/components/AIThreats.jsx` | **[DEPRECATED]** Orphaned component; not imported by App |
 | `frontend/src/components/InvestigationPanel.jsx` | Investigation thread sidebar |
 | `frontend/src/components/DigestModal.jsx` | Multi-CVE digest modal |
 | `frontend/src/components/PdfExportModal.jsx` | Analyst name prompt for PDF export |
@@ -194,7 +193,9 @@ Every file in the repository with a one-line purpose. Tags:
 
 | Path | Description |
 |---|---|
-| `frontend/src/utils/riskScore.js` | **[DEPRECATED]** v1.1a scorer (no momentum); not imported anywhere |
+| `frontend/src/utils/aiAssets.js` | AI/ML framework detection for alerts stat + drawer |
+| `backend/feeds/case_study_feed.py` | Parallel RSS + ATLAS loader for `/api/case-studies/feed` |
+| `backend/backup/` | SQLite backup manager CLI (`python -m backup`) |
 | `frontend/src/utils/cveFilters.js` | Stack localStorage key and filter param mapping |
 | `frontend/src/utils/cveAge.js` | CVE age display helpers |
 | `frontend/src/utils/timezone.js` | Timezone list, formatting, localStorage persistence |

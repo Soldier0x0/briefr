@@ -35,12 +35,24 @@ export function getDeclaredAiFrameworks() {
   })
 }
 
-export function hasDeclaredAiAssets() {
-  return getDeclaredAiFrameworks().length > 0
+/** Framework tokens for AI/ML alert stats and CVE filtering (stack + session profile). */
+export function getAiFrameworksForAlerts(assetProfile = null) {
+  const tokens = new Set(getDeclaredAiFrameworks())
+  for (const name of assetProfile?.aiSystems || []) {
+    const lower = String(name).toLowerCase()
+    for (const kw of AI_ML_KEYWORDS) {
+      if (lower.includes(kw)) tokens.add(kw)
+    }
+  }
+  return [...tokens]
 }
 
-export function aiFrameworksQueryParam() {
-  const fw = getDeclaredAiFrameworks()
+export function hasDeclaredAiAssets(assetProfile = null) {
+  return getAiFrameworksForAlerts(assetProfile).length > 0
+}
+
+export function aiFrameworksQueryParam(assetProfile = null) {
+  const fw = getAiFrameworksForAlerts(assetProfile)
   return fw.length ? fw.join(',') : ''
 }
 
