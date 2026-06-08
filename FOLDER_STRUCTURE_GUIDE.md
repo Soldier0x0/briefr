@@ -264,6 +264,10 @@ Every file in the repository with a one-line purpose. Tags:
 | Path | Description |
 |---|---|
 | `scripts/capture_readme_screenshots.mjs` | Playwright capture of README tab screenshots; exits non-zero if selectors time out |
+| `deploy/briefr-backup.sh` | Integrity-checked SQLite + `.env` backup; retention pruning |
+| `deploy/briefr-restore.sh` | Restore newest or specified archive; stops/starts backend |
+| `deploy/briefr-backup.service` / `.timer` | systemd oneshot + 6h timer → `/var/lib/briefr/backups` |
+| `backend/backup/manager.py` | Backup core: integrity_check, online backup, restore, log rotation |
 | `scripts/generate_technical_inventory_xlsx.py` | Regenerates `TECHNICAL_INVENTORY.xlsx` from structured data (min column width 10) |
 | `backend/scripts/backfill_poc.py` | Backfill `has_poc` from NVD references |
 | `deploy/*.sh` | Deployment and maintenance shell scripts |
