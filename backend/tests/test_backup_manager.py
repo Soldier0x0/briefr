@@ -6,6 +6,7 @@ import os
 import sqlite3
 import sys
 import tarfile
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -58,6 +59,46 @@ def _cfg(tmp_path: Path, db_name: str = "briefr.db") -> BackupConfig:
     )
 
 
+def test_from_env_loads_dotenv(tmp_path, monkeypatch):
+    backend_dir = tmp_path / "backend"
+    backend_dir.mkdir()
+    custom_db = "data/custom.db"
+    custom_backup = tmp_path / "custom-backups"
+    (backend_dir / ".env").write_text(
+        f"DB_PATH={custom_db}\nBACKUP_DIR={custom_backup}\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("DB_PATH", raising=False)
+    monkeypatch.delenv("BACKUP_DIR", raising=False)
+
+    cfg = BackupConfig.from_env(backend_dir=backend_dir)
+    assert cfg.db_path == (backend_dir / custom_db).resolve()
+    assert cfg.backup_dir == custom_backup.resolve()
+
+
+def test_from_env_respects_existing_env_over_dotenv(tmp_path, monkeypatch):
+    backend_dir = tmp_path / "backend"
+    backend_dir.mkdir()
+    (backend_dir / ".env").write_text("DB_PATH=from-dotenv.db\n", encoding="utf-8")
+    override_db = tmp_path / "from-env.db"
+    monkeypatch.setenv("DB_PATH", str(override_db))
+
+    cfg = BackupConfig.from_env(backend_dir=backend_dir)
+    assert cfg.db_path == override_db.resolve()
+
+
+def test_check_db_integrity_raises_on_transient_sqlite_error(tmp_path, monkeypatch):
+    db = tmp_path / "locked.db"
+    _make_db(db)
+
+    def fake_connect(*_args, **_kwargs):
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(sqlite3, "connect", fake_connect)
+    with pytest.raises(sqlite3.OperationalError, match="locked"):
+        check_db_integrity(db)
+
+
 def test_check_db_integrity_ok_and_corrupt(tmp_path):
     db = tmp_path / "ok.db"
     _make_db(db)
@@ -81,6 +122,8 @@ def test_run_backup_creates_verified_archive(tmp_path):
     assert result["status"] == "ok"
     archive = Path(result["archive"])
     assert archive.is_file()
+    assert archive.stat().st_mode & 0o777 == 0o600
+    assert cfg.backup_dir.stat().st_mode & 0o777 == 0o750
 
     with tarfile.open(archive, "r:gz") as tar:
         names = tar.getnames()
@@ -106,6 +149,34 @@ def test_prune_backups_keeps_newest(tmp_path):
     removed = prune_backups(backup_dir, retention_count=3)
     assert len(removed) == 2
     assert len(list(backup_dir.glob("briefr-*.tar.gz"))) == 3
+
+
+def test_prune_backups_uses_filename_not_mtime(tmp_path):
+    backup_dir = tmp_path / "backups"
+    backup_dir.mkdir()
+    older = backup_dir / "briefr-20260101T000000Z.tar.gz"
+    newer = backup_dir / "briefr-20260102T000000Z.tar.gz"
+    older.write_bytes(b"old")
+    newer.write_bytes(b"new")
+    now = time.time()
+    os.utime(older, (now + 100, now + 100))
+    os.utime(newer, (now, now))
+
+    removed = prune_backups(backup_dir, retention_count=1)
+    assert removed == [older]
+    assert newer.is_file()
+
+
+def test_restore_rejects_unsafe_tar_paths(tmp_path):
+    cfg = _cfg(tmp_path)
+    archive = tmp_path / "evil.tar.gz"
+    with tarfile.open(archive, "w:gz") as tar:
+        info = tarfile.TarInfo(name="../../escape.txt")
+        info.size = 4
+        tar.addfile(info, io.BytesIO(b"evil"))
+
+    with pytest.raises(RuntimeError, match="Unsafe path in archive"):
+        restore_backup(archive, config=cfg, force=True)
 
 
 def test_restore_from_backup_replaces_corrupt_db(tmp_path):

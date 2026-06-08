@@ -63,6 +63,15 @@ class BackupConfig:
     @classmethod
     def from_env(cls, *, backend_dir: Path | None = None) -> BackupConfig:
         base = backend_dir or Path.cwd()
+        dotenv_path = base / ".env"
+        if dotenv_path.is_file():
+            try:
+                from dotenv import load_dotenv
+
+                load_dotenv(dotenv_path)
+            except ImportError:
+                pass
+
         db_path = Path(os.environ.get("DB_PATH", "briefr.db"))
         if not db_path.is_absolute():
             db_path = (base / db_path).resolve()
@@ -126,7 +135,10 @@ def check_db_integrity(db_path: Path) -> tuple[bool, str]:
         finally:
             conn.close()
     except sqlite3.Error as exc:
-        return False, str(exc)
+        msg = str(exc).lower()
+        if "malformed" in msg or "not a database" in msg or "corrupt" in msg:
+            return False, str(exc)
+        raise
 
 
 def _online_backup(source: Path, destination: Path) -> None:
@@ -186,6 +198,10 @@ def _create_archive_bundle(
         )
 
     cfg.backup_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        cfg.backup_dir.chmod(0o750)
+    except OSError:
+        pass
     archive_name = f"briefr-{_utc_stamp()}.tar.gz"
     archive_path = cfg.backup_dir / archive_name
 
@@ -223,6 +239,10 @@ def _create_archive_bundle(
             if env_included:
                 tar.add(tmp_path / ENV_ARCHIVE_NAME, arcname=ENV_ARCHIVE_NAME)
 
+    try:
+        archive_path.chmod(0o600)
+    except OSError:
+        pass
     return archive_path
 
 
@@ -232,7 +252,7 @@ def prune_backups(backup_dir: Path, retention_count: int) -> list[Path]:
         return []
     archives = sorted(
         backup_dir.glob("briefr-*.tar.gz"),
-        key=lambda p: p.stat().st_mtime,
+        key=lambda p: p.name,
         reverse=True,
     )
     removed: list[Path] = []
@@ -314,7 +334,7 @@ def list_backups(config: BackupConfig | None = None) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for archive in sorted(
         cfg.backup_dir.glob("briefr-*.tar.gz"),
-        key=lambda p: p.stat().st_mtime,
+        key=lambda p: p.name,
         reverse=True,
     ):
         rows.append(
@@ -328,6 +348,16 @@ def list_backups(config: BackupConfig | None = None) -> list[dict[str, Any]]:
             }
         )
     return rows
+
+
+def _safe_extract_tar(tar: tarfile.TarFile, destination: Path) -> None:
+    """Extract archive members only when paths stay inside destination."""
+    dest_root = destination.resolve()
+    for member in tar.getmembers():
+        target_path = (dest_root / member.name).resolve()
+        if not target_path.is_relative_to(dest_root):
+            raise RuntimeError(f"Unsafe path in archive: {member.name}")
+    tar.extractall(dest_root)
 
 
 def _verify_archive_contents(tmp_path: Path) -> tuple[bool, str]:
@@ -350,7 +380,7 @@ def restore_backup(
     with tempfile.TemporaryDirectory(prefix="briefr-restore-") as tmp:
         tmp_path = Path(tmp)
         with tarfile.open(archive, "r:gz") as tar:
-            _safe_tar_extractall(tar, tmp_path)
+            _safe_extract_tar(tar, tmp_path)
 
         ok, msg = _verify_archive_contents(tmp_path)
         if not ok:
@@ -406,7 +436,7 @@ def find_latest_valid_backup(config: BackupConfig | None = None) -> Path | None:
             with tempfile.TemporaryDirectory(prefix="briefr-verify-") as tmp:
                 tmp_path = Path(tmp)
                 with tarfile.open(archive, "r:gz") as tar:
-                    _safe_tar_extractall(tar, tmp_path)
+                    _safe_extract_tar(tar, tmp_path)
                 ok, _ = _verify_archive_contents(tmp_path)
                 if ok:
                     return archive

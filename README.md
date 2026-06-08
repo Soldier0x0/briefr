@@ -288,7 +288,7 @@ cd frontend && npm install playwright --save-dev
 node ../scripts/capture_readme_screenshots.mjs
 ```
 
-The script waits for each tab's content selectors and **exits with code 1** if a page fails to load (no silent blank captures).
+The script captures the **viewport only** (1440×900) so the BRIEF feed’s infinite scroll does not produce an overly tall image. It waits for each tab’s content selectors (INCIDENTS waits for loaded cards plus 5s for RSS/ATLAS) and **exits with code 1** if a page fails to load (no silent blank captures).
 
 Regenerate the technical inventory spreadsheet:
 
