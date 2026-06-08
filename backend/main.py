@@ -160,7 +160,7 @@ class InvestigationItemRef(BaseModel):
 
 class InvestigationSummaryRequest(BaseModel):
     items: list[InvestigationItemRef]
-    duration_minutes: int = 1
+    duration_minutes: int = Field(default=1, ge=1, le=10080)
 
 
 class AssetMatchItem(BaseModel):
