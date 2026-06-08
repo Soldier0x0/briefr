@@ -199,7 +199,11 @@ async function main() {
     console.log(`Wrote ${PDF_PATH}`);
   } finally {
     await browser.close();
-    await unlink(tmpHtml).catch(() => {});
+    if (process.env.KEEP_PDF_HTML) {
+      console.log(`Debug HTML: ${tmpHtml}`);
+    } else {
+      await unlink(tmpHtml).catch(() => {});
+    }
   }
 }
 

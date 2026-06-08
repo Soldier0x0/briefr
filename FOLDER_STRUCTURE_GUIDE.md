@@ -14,7 +14,7 @@ Every file in the repository with a one-line purpose. Tags:
 
 | Path | Description |
 |---|---|
-| `backend/main.py` | **[V1.2-SPLIT]** **[KNOWN-ISSUE:1331]** FastAPI app: all routes, middleware, CVE filter SQL, enrichment orchestration (1,344 lines) |
+| `backend/main.py` | **[V1.2-SPLIT]** FastAPI app: all routes, middleware, CVE filter SQL, enrichment orchestration (1,344 lines) |
 | `backend/database.py` | **[V1.2-SPLIT]** SQLite schema, migrations, upserts, cache, MITRE/ATLAS/OTX persistence (1,681 lines) |
 | `backend/scheduler.py` | APScheduler: 7 jobs, ingest locks, startup bootstrap, manual refresh entry points |
 | `backend/tracking.py` | `api_usage` counters and quota metadata for `/api/usage` endpoints |
