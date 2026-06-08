@@ -43,3 +43,22 @@ def test_filter_news_items_applies_to_cached_rows():
     filtered = _filter_news_items(items)
     assert len(filtered) == 1
     assert filtered[0]["title"] == "New ransomware campaign targets hospitals"
+
+
+def test_filter_news_items_handles_malformed_cache():
+    items = [
+        None,
+        "not a dict",
+        {"title": 123, "kind": "news"},
+        {"title": "Name That Toon Contest - June", "kind": "news"},
+        {"title": "New ransomware campaign targets hospitals", "kind": "news"},
+    ]
+    filtered = _filter_news_items(items)
+    assert len(filtered) == 2
+    assert filtered[0]["title"] == 123
+    assert filtered[1]["title"] == "New ransomware campaign targets hospitals"
+
+
+def test_filter_news_items_returns_empty_for_non_list():
+    assert _filter_news_items(None) == []
+    assert _filter_news_items("not a list") == []

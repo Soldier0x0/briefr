@@ -40,12 +40,18 @@ EXCLUDED_NEWS_TITLE_PATTERNS: list[re.Pattern[str]] = [
 ]
 
 
-def _is_relevant_news_item(item: dict) -> bool:
-    title = item.get("title") or ""
+def _is_relevant_news_item(item: dict | None) -> bool:
+    if not isinstance(item, dict):
+        return False
+    title = item.get("title")
+    if not isinstance(title, str):
+        title = ""
     return not any(pattern.search(title) for pattern in EXCLUDED_NEWS_TITLE_PATTERNS)
 
 
-def _filter_news_items(items: list[dict]) -> list[dict]:
+def _filter_news_items(items: list[dict] | None) -> list[dict]:
+    if not isinstance(items, list):
+        return []
     return [item for item in items if _is_relevant_news_item(item)]
 
 
