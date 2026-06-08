@@ -16,6 +16,9 @@ def test_split_investigation_items_maps_types():
         {"type": "actor", "id": "APT29", "description": "nation-state"},
         {"type": "technique", "id": "AML.T0051", "description": "prompt injection"},
         {"type": "cve", "id": "", "description": "skipped"},
+        None,
+        "not-a-dict",
+        42,
     ]
     cves, iocs, actors = split_investigation_items(items)
     assert cves == [{"cve_id": "CVE-2024-0001", "description": "RCE"}]
@@ -45,3 +48,38 @@ def test_generate_investigation_summary_returns_template_without_api_keys(monkey
     assert isinstance(result["key_findings"], list)
     assert result["source"] == "template"
     assert "CVE-2024-9999" in result["executive_summary"]
+
+
+def test_investigation_summary_rejects_invalid_duration(tmp_path, monkeypatch):
+    db_path = tmp_path / "inv.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    async def _noop_async() -> None:
+        return None
+
+    monkeypatch.setattr("main.start_scheduler", lambda: None)
+    monkeypatch.setattr("main.stop_scheduler", lambda: None)
+    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
+
+    from fastapi.testclient import TestClient
+    from main import app
+
+    with TestClient(app) as client:
+        res = client.post(
+            "/api/investigation/summary",
+            json={
+                "items": [{"type": "cve", "id": "CVE-2024-0001", "description": "RCE"}],
+                "duration_minutes": 0,
+            },
+        )
+        assert res.status_code == 422
+
+        res = client.post(
+            "/api/investigation/summary",
+            json={
+                "items": [{"type": "cve", "id": "CVE-2024-0001", "description": "RCE"}],
+                "duration_minutes": 10081,
+            },
+        )
+        assert res.status_code == 422

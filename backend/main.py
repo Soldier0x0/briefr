@@ -151,7 +151,7 @@ class InvestigationItemRef(BaseModel):
 
 class InvestigationSummaryRequest(BaseModel):
     items: list[InvestigationItemRef]
-    duration_minutes: int = 1
+    duration_minutes: int = Field(default=1, ge=1, le=10080)
 
 
 class AssetMatchItem(BaseModel):
@@ -467,7 +467,8 @@ CVE_ORDER_BY = """
 CVE_SELECT = """
     SELECT cve_id, description, cvss_score, severity, published, modified,
            affected_products, mitre_technique, summary, is_kev, epss_score,
-           has_poc, patch_available, source_urls, cwe_ids, updated_at
+           has_poc, patch_available, has_ai_context, source_urls, cwe_ids,
+           updated_at
     FROM cves
 """
 

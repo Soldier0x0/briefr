@@ -373,6 +373,8 @@ def split_investigation_items(
     actors: list[dict] = []
 
     for item in items:
+        if not isinstance(item, dict):
+            continue
         item_type = str(item.get("type") or "").lower()
         item_id = str(item.get("id") or "").strip()
         description = str(item.get("description") or "").strip()
