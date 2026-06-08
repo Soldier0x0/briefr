@@ -362,3 +362,42 @@ async def generate_executive_summary(
                 return result
 
     return template_result
+
+
+def split_investigation_items(
+    items: list[dict],
+) -> tuple[list[dict], list[dict], list[dict]]:
+    """Map legacy investigation thread items to AI summary CVE/IOC/actor payloads."""
+    cves: list[dict] = []
+    iocs: list[dict] = []
+    actors: list[dict] = []
+
+    for item in items:
+        item_type = str(item.get("type") or "").lower()
+        item_id = str(item.get("id") or "").strip()
+        description = str(item.get("description") or "").strip()
+        if not item_id:
+            continue
+
+        if item_type == "cve":
+            cves.append({"cve_id": item_id, "description": description})
+        elif item_type == "ioc":
+            iocs.append({"value": item_id, "description": description})
+        elif item_type in {"actor", "technique"}:
+            actors.append({"name": item_id, "description": description})
+
+    return cves, iocs, actors
+
+
+async def generate_investigation_summary(
+    items: list[dict],
+    duration_minutes: int = 1,
+) -> dict[str, Any]:
+    """Legacy investigation PDF summary — delegates to generate_executive_summary."""
+    cves, iocs, actors = split_investigation_items(items)
+    return await generate_executive_summary(
+        cves=cves,
+        iocs=iocs,
+        actors=actors,
+        investigation_duration=duration_minutes,
+    )

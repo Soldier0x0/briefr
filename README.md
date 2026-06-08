@@ -234,7 +234,7 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 | `POST /api/ai/summary` | AI executive summary (PDF export only) |
 | `GET /api/usage` / `GET /api/usage/ioc` | API quota counters |
 
-**Known issue:** `POST /api/investigation/summary` is broken (undefined import in `main.py:1331`). Use `POST /api/ai/summary` instead.
+**Note:** `POST /api/investigation/summary` is a legacy alias for the investigation PDF summary pipeline; prefer `POST /api/ai/summary` for new integrations.
 
 ---
 
@@ -293,7 +293,6 @@ BRIEFR collects no personal data, uses no cookies, and runs no analytics. Tech s
 
 - Single-user SQLite — not designed for concurrent multi-tenant writes
 - No API authentication
-- ATLAS per-CVE fields not yet returned by `GET /api/cves/{id}` (drawer section exists; API wiring pending)
 - Risk weights duplicated in Python (`backend/scoring/risk.py`) and JavaScript (`frontend/src/scoring/riskScore.js`)
 
 ---

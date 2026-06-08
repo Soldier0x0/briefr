@@ -83,7 +83,7 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 | `kev_deadlines` | `GET /api/kev/deadlines`, embedded in CVE detail | Sidebar, DetailDrawer sentences |
 | `epss_history` | `GET /api/cves/{id}/epss-history`, momentum | DetailDrawer EPSS sparkline |
 | `mitre_techniques`, `cve_technique_map` | `GET /api/techniques/top`, CVE `techniques` field | Sidebar, DetailDrawer Intel tab |
-| `atlas_*`, `cve_atlas_map` | `GET /api/atlas/*` (not wired into CVE detail — known issue) | DrawerAtlasSection (expects fields missing from API) |
+| `atlas_*`, `cve_atlas_map` | `GET /api/atlas/*`, `GET /api/cves/{id}` (per-CVE fields) | DrawerAtlasSection, CaseStudies (global list) |
 | `otx_*` | CVE detail, correlation, IOC lookup | DetailDrawer Intel tab, IOCLookup |
 | `feed_cache`, `ioc_cache` | Internal — speeds enrichment | Transparent to UI |
 | `correlation_*` | `GET /api/cves/{id}/correlation` | DetailDrawer correlation section |
@@ -119,7 +119,7 @@ Sequence diagram: [`docs/diagrams/flow_cve_feed.mermaid`](docs/diagrams/flow_cve
    - `GET /api/cves/{id}/detection` — only when **Detect** tab first opened
 5. **OTX pulse IOCs:** loaded via CVE detail `otx_pulses`; pulse IOC drill-down uses `GET /api/otx/pulses/{id}/iocs`.
 
-**Known gap:** `DrawerAtlasSection.jsx` expects `cve.atlas_techniques`, `cve.atlas_case_studies`, `cve.has_ai_context` but `GET /api/cves/{id}` does not call `database.get_atlas_techniques_for_cve` / `get_atlas_case_studies_for_cve` (functions exist at `database.py:1478–1528`).
+**ATLAS wiring:** `GET /api/cves/{id}` returns `has_ai_context`, `atlas_techniques`, and `atlas_case_studies` via `database.get_atlas_techniques_for_cve` / `get_atlas_case_studies_for_cve` for `DrawerAtlasSection.jsx`.
 
 Sequence diagram: [`docs/diagrams/flow_cve_detail.mermaid`](docs/diagrams/flow_cve_detail.mermaid)
 
@@ -239,8 +239,7 @@ RSS sources defined in `feeds/incident_sources.py`: The Hacker News, Bleeping Co
 
 - **Single-user SQLite** — no concurrent write safety under heavy parallel writes.
 - **No authentication** on any `/api/*` endpoint.
-- **`POST /api/investigation/summary` broken** — calls undefined `generate_investigation_summary` (`main.py:1331`); will 500 at runtime. Low priority; use `POST /api/ai/summary` instead.
-- **ATLAS per-CVE data missing from `GET /api/cves/{id}`** — `DrawerAtlasSection` never receives `atlas_techniques` / `has_ai_context` from API (P0 wiring fix in progress).
+- **`POST /api/investigation/summary`** — legacy route; delegates to `generate_investigation_summary` → `generate_executive_summary`. Prefer `POST /api/ai/summary` for new clients.
 - **Risk weights duplicated** in `backend/scoring/risk.py` and `frontend/src/scoring/riskScore.js`.
 - **No circuit breakers** on external APIs (timeouts only).
 - **`DetailDrawer.jsx` — 1,516 lines** — maintenance risk; v1.2 split planned.
