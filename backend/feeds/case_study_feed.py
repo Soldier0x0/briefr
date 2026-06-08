@@ -1,8 +1,7 @@
-"""Combined Incidents & News feed — RSS + ATLAS in parallel."""
+"""Combined Incidents & News feed — RSS + ATLAS on one DB connection."""
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
@@ -35,26 +34,14 @@ def _atlas_study_to_card(study: dict) -> dict:
     }
 
 
-async def _load_news() -> tuple[list[dict], list[dict]]:
-    db = await get_db()
-    try:
-        cards, errors = await fetch_all_incident_news(db)
-        await db.commit()
-        return cards, errors
-    finally:
-        await db.close()
-
-
-async def _load_atlas(*, limit: int = 80) -> tuple[list[dict], list[dict]]:
-    db = await get_db()
-    try:
-        studies = await get_atlas_case_studies(db, limit=limit)
-        tech_rows = await db.execute_fetchall(
-            "SELECT technique_id, name FROM atlas_techniques"
-        )
-        tech_names = {r["technique_id"]: r["name"] for r in tech_rows}
-    finally:
-        await db.close()
+async def _load_atlas_cards(
+    db, *, limit: int
+) -> tuple[list[dict], list[dict]]:
+    studies = await get_atlas_case_studies(db, limit=limit)
+    tech_rows = await db.execute_fetchall(
+        "SELECT technique_id, name FROM atlas_techniques"
+    )
+    tech_names = {r["technique_id"]: r["name"] for r in tech_rows}
 
     cards: list[dict] = []
     for row in studies:
@@ -74,31 +61,30 @@ async def _load_atlas(*, limit: int = 80) -> tuple[list[dict], list[dict]]:
 async def fetch_combined_case_study_feed(
     *, atlas_limit: int = 80
 ) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
-    """Load RSS news and ATLAS case studies concurrently (separate DB connections)."""
-    news_result, atlas_result = await asyncio.gather(
-        _load_news(),
-        _load_atlas(limit=atlas_limit),
-        return_exceptions=True,
-    )
-
+    """Load RSS news then ATLAS case studies on a single SQLite connection."""
+    db = await get_db()
     cards: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
+    try:
+        try:
+            news_cards, news_errors = await fetch_all_incident_news(db)
+            cards.extend(news_cards)
+            errors.extend(news_errors)
+        except Exception as exc:
+            logger.warning("News feed load failed: %s", exc)
+            errors.append({"source": "News feeds", "message": str(exc)})
 
-    if isinstance(news_result, BaseException):
-        logger.warning("News feed load failed: %s", news_result)
-        errors.append({"source": "News feeds", "message": str(news_result)})
-    else:
-        news_cards, news_errors = news_result
-        cards.extend(news_cards)
-        errors.extend(news_errors)
+        try:
+            atlas_cards, atlas_errors = await _load_atlas_cards(db, limit=atlas_limit)
+            cards.extend(atlas_cards)
+            errors.extend(atlas_errors)
+        except Exception as exc:
+            logger.warning("ATLAS feed load failed: %s", exc)
+            errors.append({"source": "MITRE ATLAS", "message": str(exc)})
 
-    if isinstance(atlas_result, BaseException):
-        logger.warning("ATLAS feed load failed: %s", atlas_result)
-        errors.append({"source": "MITRE ATLAS", "message": str(atlas_result)})
-    else:
-        atlas_cards, atlas_errors = atlas_result
-        cards.extend(atlas_cards)
-        errors.extend(atlas_errors)
+        await db.commit()
+    finally:
+        await db.close()
 
     cards.sort(key=lambda c: c.get("publishedAt") or "", reverse=True)
     return cards, errors

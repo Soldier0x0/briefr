@@ -802,7 +802,7 @@ async def case_studies_news():
 async def case_studies_feed(
     atlas_limit: int = Query(default=80, ge=1, le=100),
 ):
-    """Combined RSS news + ATLAS case studies (parallel server-side load)."""
+    """Combined RSS news + ATLAS case studies (single SQLite connection)."""
     from feeds.case_study_feed import fetch_combined_case_study_feed
 
     cards, errors = await fetch_combined_case_study_feed(atlas_limit=atlas_limit)

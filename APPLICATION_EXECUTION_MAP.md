@@ -83,7 +83,7 @@ Sequence: [`docs/diagrams/flow_cve_detail.mermaid`](docs/diagrams/flow_cve_detai
 |---|---|---|---|
 | 1 | `App.jsx` | `activeTab === 'incidents'` → renders `CaseStudies` | — |
 | 2 | `CaseStudies.jsx` | `loadCaseStudyFeed()` on mount | `GET /api/case-studies/feed?atlas_limit=80` |
-| 3 | `case_study_feed.py` | `fetch_combined_case_study_feed` — `asyncio.gather` RSS + ATLAS | `feeds/incident_news.py`, `database.get_atlas_case_studies` |
+| 3 | `case_study_feed.py` | `fetch_combined_case_study_feed` — RSS then ATLAS on one SQLite connection | `feeds/incident_news.py`, `database.get_atlas_case_studies` |
 | 4 | `caseStudyFeed.js` | Session cache (5 min); `filterCaseStudyCards` for search | — |
 | 5 | `CaseStudies.jsx` | Renders news + ATLAS cards; per-source errors in banner | — |
 
@@ -169,7 +169,7 @@ Sequence: [`docs/diagrams/flow_pdf_report.mermaid`](docs/diagrams/flow_pdf_repor
 | Timezone | `Header.jsx` + `timezone.js` | `localStorage` `briefr_timezone` |
 | Last visit marker | `CVEFeed.jsx` | `localStorage` `briefr_last_visit` |
 | Active tab | `App.jsx` `activeTab` | Session only |
-| Case study cards | `caseStudyFeed.js` module cache | 5 min session cache; `GET /api/case-studies/feed` loads RSS + ATLAS in parallel |
+| Case study cards | `caseStudyFeed.js` module cache | 5 min session cache; `GET /api/case-studies/feed` loads RSS then ATLAS (single DB connection) |
 | AI/ML alert count | `App.jsx` `stats` | Refreshed on stack/profile change via `briefr-profile-change` event |
 
 ---
