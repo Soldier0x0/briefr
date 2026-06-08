@@ -354,7 +354,7 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | MITRE ATT&CK mapping | Complete | Weekly Sunday job |
 | MITRE ATLAS feed | Complete | Weekly with MITRE job |
 | CVE feed + filters | Complete | Pagination max 50/page |
-| CVE detail enrichment | Partial | Sploitus/GN/OTX/OSV/CIRCL wired; **ATLAS per-CVE not in API** |
+| CVE detail enrichment | Complete | Sploitus/GN/OTX/OSV/CIRCL + ATLAS per-CVE fields on `GET /api/cves/{id}` |
 | IOC lookup multi-source | Complete | 6h cache |
 | Risk score v1.1b | Complete | Client-side; momentum lazy |
 | Correlation engine | Complete | 3 levels; 6h on-demand cache |

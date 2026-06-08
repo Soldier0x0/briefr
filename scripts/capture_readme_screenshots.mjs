@@ -9,9 +9,14 @@ const { chromium } = require('playwright');
 const outDir = path.join(__dirname, '..', 'screenshots');
 const baseUrl = 'http://localhost:5173';
 
+const VIEWPORT = { width: 1440, height: 900 };
+
 async function shot(page, name) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
   const file = path.join(outDir, name);
-  await page.screenshot({ path: file, fullPage: true });
+  // Viewport only — BRIEF feed uses infinite scroll; fullPage would produce an unusably tall image.
+  await page.screenshot({ path: file, fullPage: false });
   console.log('Wrote', file);
 }
 
@@ -20,11 +25,25 @@ async function clickTab(page, label) {
   await page.waitForTimeout(800);
 }
 
+async function waitForIncidentsContent(page) {
+  await page.waitForSelector('.cs-hero', { timeout: 60000 });
+  await page.waitForFunction(
+    () => {
+      const cards = document.querySelectorAll('.cs-card');
+      const skeleton = document.querySelector('.cs-skeleton-list');
+      return cards.length > 0 && !skeleton;
+    },
+    { timeout: 120000 },
+  );
+  // RSS + ATLAS aggregation can take several seconds after the shell renders.
+  await page.waitForTimeout(5000);
+}
+
 async function main() {
   await mkdir(outDir, { recursive: true });
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
-    viewport: { width: 1440, height: 900 },
+    viewport: VIEWPORT,
     colorScheme: 'dark',
   });
   const page = await context.newPage();
@@ -59,10 +78,9 @@ async function main() {
   await page.waitForTimeout(1500);
   await shot(page, 'ioc-lookup.png');
 
-  // INCIDENTS & NEWS
+  // INCIDENTS & NEWS — wait for loaded cards, then extra settle time for RSS/ATLAS feed
   await clickTab(page, 'INCIDENTS');
-  await page.waitForSelector('.case-studies, .cs-card, .cs-hero', { timeout: 60000 });
-  await page.waitForTimeout(2500);
+  await waitForIncidentsContent(page);
   await shot(page, 'incidents-news.png');
 
   await browser.close();
