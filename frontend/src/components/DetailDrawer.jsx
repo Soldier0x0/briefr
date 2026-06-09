@@ -533,7 +533,7 @@ function exploitTypeLabel(type) {
   return 'PoC'
 }
 
-function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxConfigured, cve, onInvestigateIp, onInvestigatePulse, correlation, correlationLoading, onSelectCorrelatedCve }) {
+function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxConfigured, cve, onInvestigateIp, onInvestigatePulse, pivotNotice, correlation, correlationLoading, onSelectCorrelatedCve }) {
   const exploits = Array.isArray(publicExploits) ? publicExploits : []
   const scans = Array.isArray(greynoiseScans) ? greynoiseScans : []
   const pulses = Array.isArray(otxPulses) ? otxPulses : []
@@ -648,7 +648,7 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
           <span className="drawer-count-badge mono">{pulses.length}</span>
         </div>
         {otxConfigured === false ? (
-          <p className="drawer-intel-empty mono">// OTX not configured — add OTX_API_KEY to backend .env and restart</p>
+          <p className="drawer-intel-empty mono">// Campaign intelligence unavailable — OTX not configured on this instance</p>
         ) : pulses.length === 0 ? (
           <p className="drawer-intel-empty mono">// No community intelligence found for this CVE</p>
         ) : (
@@ -679,6 +679,9 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
               </li>
             ))}
           </ul>
+        )}
+        {pivotNotice && (
+          <p className="drawer-intel-empty mono" role="status">{pivotNotice}</p>
         )}
       </section>
 
@@ -1052,6 +1055,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const [backStack, setBackStack] = useState([])
   const [pdfModalOpen, setPdfModalOpen] = useState(false)
   const [pdfBusy, setPdfBusy] = useState(false)
+  const [pdfError, setPdfError] = useState(null)
   const reportRef = useRef(null)
   const epssSparklineRef = useRef(null)
   const navigatingRef = useRef(false)
@@ -1067,6 +1071,10 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
     const momScore = momentumData?.momentum_score ?? 0
     return calculateRiskScore(cve, assetCtx?.profile ?? null, backendMatchScore, momScore)
   }, [cve, assetCtx?.profile, assetCtx?.isLoaded, assetCtx?.matchScores, momentumData])
+
+  useEffect(() => {
+    investigation?.clearPivotNotice?.()
+  }, [cve?.cve_id, investigation])
 
   useEffect(() => {
     if (!cve?.cve_id) {
@@ -1247,12 +1255,14 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
 
   function handleDownloadPdfClick() {
     setReportOpen(false)
+    setPdfError(null)
     setPdfModalOpen(true)
   }
 
   async function handlePdfConfirm({ analystName }) {
     if (!cve) return
     setPdfBusy(true)
+    setPdfError(null)
     try {
       await downloadSingleCvePdf(cve, {
         analystName,
@@ -1260,7 +1270,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
       })
       setPdfModalOpen(false)
     } catch (err) {
-      console.error('PDF generation failed:', err)
+      setPdfError(err?.message || 'PDF generation failed.')
     } finally {
       setPdfBusy(false)
     }
@@ -1475,6 +1485,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
                   : undefined
               }
               onInvestigatePulse={investigation?.pivotToOtxPulse ? (pulse, cveCtx) => investigation.pivotToOtxPulse(pulse, cveCtx) : undefined}
+              pivotNotice={investigation?.pivotNotice}
               correlation={correlation}
               correlationLoading={correlationLoading}
               onSelectCorrelatedCve={handleSelectRelated}
@@ -1498,8 +1509,14 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
         open={pdfModalOpen}
         title={`PDF report — ${cve.cve_id}`}
         busy={pdfBusy}
+        error={pdfError}
         onConfirm={handlePdfConfirm}
-        onCancel={() => !pdfBusy && setPdfModalOpen(false)}
+        onCancel={() => {
+          if (!pdfBusy) {
+            setPdfModalOpen(false)
+            setPdfError(null)
+          }
+        }}
       />
     </>
   )

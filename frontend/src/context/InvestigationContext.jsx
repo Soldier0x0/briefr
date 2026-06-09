@@ -55,6 +55,7 @@ export function InvestigationProvider({ children, navigation }) {
   const [startTime, setStartTime] = useState(null)
   const [panelExpanded, setPanelExpanded] = useState(true)
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false)
+  const [pivotNotice, setPivotNotice] = useState(null)
   const itemsRef = useRef(items)
   itemsRef.current = items
 
@@ -187,16 +188,19 @@ export function InvestigationProvider({ children, navigation }) {
 
   const pivotToOtxPulse = useCallback(async (pulse, cve) => {
     if (!pulse?.pulse_id) return
-    ensureCveInThread(cve, INV_SOURCES.DRAWER)
-    const fromCve = itemsRef.current.find(i => i.type === INV_TYPES.CVE && i.id === cve?.cve_id)
+    setPivotNotice(null)
+    const fromCve = ensureCveInThread(cve, INV_SOURCES.DRAWER)
     try {
       const res = await fetchOTXPulseIocs(pulse.pulse_id)
       const indicators = res?.data?.indicators || []
-      if (!indicators.length) return
+      if (!indicators.length) {
+        setPivotNotice('No IOCs found for this campaign pulse.')
+        return
+      }
       navigation?.setActiveTab?.('ioc')
       navigation?.setIocPrefill?.({ indicators: indicators.slice(0, 3), value: indicators[0]?.value, fromCveId: cve?.cve_id, pivotFrom: fromCve, trigger: Date.now() })
     } catch {
-      /* pulse IOC fetch failed */
+      setPivotNotice('Could not load IOCs for this campaign pulse.')
     }
   }, [ensureCveInThread, navigation])
 
@@ -267,6 +271,8 @@ export function InvestigationProvider({ children, navigation }) {
     pivotToCveFromAtlas,
     pivotToTechnique,
     pivotLabel,
+    pivotNotice,
+    clearPivotNotice: () => setPivotNotice(null),
   }), [
     items,
     startTime,
@@ -289,6 +295,7 @@ export function InvestigationProvider({ children, navigation }) {
     pivotToAtlasActor,
     pivotToCveFromAtlas,
     pivotToTechnique,
+    pivotNotice,
   ])
 
   return (

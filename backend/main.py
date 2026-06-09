@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import secrets
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -13,6 +14,10 @@ from pydantic import BaseModel, Field
 from typing import Any
 
 load_dotenv()
+
+BRIEFR_ENV = os.environ.get("BRIEFR_ENV", "development").strip().lower()
+BRIEFR_ADMIN_API_KEY = os.environ.get("BRIEFR_ADMIN_API_KEY", "").strip()
+_IS_PRODUCTION = BRIEFR_ENV == "production"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -105,8 +110,9 @@ app = FastAPI(
         "name": "Proprietary — All Rights Reserved",
         "url": "https://projectjupiter.in/terms",
     },
-    docs_url="/api/docs",
-    redoc_url="/api/redoc",
+    docs_url=None if _IS_PRODUCTION else "/api/docs",
+    redoc_url=None if _IS_PRODUCTION else "/api/redoc",
+    openapi_url=None if _IS_PRODUCTION else "/api/openapi.json",
     lifespan=lifespan,
 )
 
@@ -120,6 +126,15 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
+
+
+def _require_admin_key(request: Request) -> None:
+    """When BRIEFR_ADMIN_API_KEY is set, admin routes require X-BRIEFR-Admin-Key."""
+    if not BRIEFR_ADMIN_API_KEY:
+        return
+    provided = request.headers.get("X-BRIEFR-Admin-Key", "")
+    if not secrets.compare_digest(provided, BRIEFR_ADMIN_API_KEY):
+        raise HTTPException(status_code=401, detail="Admin API key required")
 
 
 @app.middleware("http")
@@ -838,7 +853,8 @@ async def atlas_case_studies(
 
 
 @app.post("/api/refresh/mitre")
-async def manual_mitre_refresh():
+async def manual_mitre_refresh(request: Request):
+    _require_admin_key(request)
     asyncio.create_task(run_weekly_mitre_refresh())
     return {
         "status": "ok",
@@ -1293,7 +1309,8 @@ async def cve_correlation(
 
 
 @app.post("/api/refresh")
-async def manual_refresh():
+async def manual_refresh(request: Request):
+    _require_admin_key(request)
     if refresh_in_progress():
         raise HTTPException(
             status_code=409,
@@ -1307,7 +1324,8 @@ async def manual_refresh():
 
 
 @app.post("/api/refresh/nvd")
-async def manual_nvd_refresh():
+async def manual_nvd_refresh(request: Request):
+    _require_admin_key(request)
     if refresh_in_progress():
         raise HTTPException(status_code=409, detail="An ingest job is already running.")
     asyncio.create_task(run_nvd_incremental_sync())
@@ -1315,7 +1333,8 @@ async def manual_nvd_refresh():
 
 
 @app.post("/api/refresh/kev")
-async def manual_kev_refresh():
+async def manual_kev_refresh(request: Request):
+    _require_admin_key(request)
     if refresh_in_progress():
         raise HTTPException(status_code=409, detail="An ingest job is already running.")
     asyncio.create_task(run_kev_sync())
@@ -1323,7 +1342,8 @@ async def manual_kev_refresh():
 
 
 @app.post("/api/refresh/epss")
-async def manual_epss_refresh():
+async def manual_epss_refresh(request: Request):
+    _require_admin_key(request)
     if refresh_in_progress():
         raise HTTPException(status_code=409, detail="An ingest job is already running.")
     asyncio.create_task(run_epss_sync())

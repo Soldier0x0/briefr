@@ -8,6 +8,7 @@ export default function PdfExportModal({
   onCancel,
   busy = false,
   busyLabel = 'Generating summary...',
+  error = null,
 }) {
   const [analystName, setAnalystName] = useState('')
   const dialogRef = useRef(null)
@@ -43,6 +44,12 @@ export default function PdfExportModal({
         <p className="pdf-modal-sub">
           Reports use publicly available intelligence only. Analyst name is optional and is not stored.
         </p>
+
+        {error && (
+          <p className="pdf-modal-error mono" role="alert">
+            {error}
+          </p>
+        )}
 
         <form onSubmit={handleSubmit}>
           <label className="pdf-modal-label mono" htmlFor="pdf-analyst-name">

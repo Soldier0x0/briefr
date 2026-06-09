@@ -119,16 +119,18 @@ export default function InvestigationPanel() {
 
   const [pdfModalOpen, setPdfModalOpen] = useState(false)
   const [pdfBusy, setPdfBusy] = useState(false)
+  const [pdfError, setPdfError] = useState(null)
 
   if (!showPanel || !startTime) return null
 
   async function handlePdfConfirm({ analystName }) {
     setPdfBusy(true)
+    setPdfError(null)
     try {
       await downloadInvestigationPdf(items, startTime, { analystName })
       setPdfModalOpen(false)
     } catch (err) {
-      console.error('Investigation PDF failed:', err)
+      setPdfError(err?.message || 'PDF generation failed.')
     } finally {
       setPdfBusy(false)
     }
@@ -145,7 +147,7 @@ export default function InvestigationPanel() {
         <PanelChrome
           expanded={panelExpanded}
           onToggle={() => setPanelExpanded(e => !e)}
-          onPdf={() => setPdfModalOpen(true)}
+          onPdf={() => { setPdfError(null); setPdfModalOpen(true) }}
           onClear={clearInvestigation}
           count={count}
         />
@@ -197,7 +199,7 @@ export default function InvestigationPanel() {
               </button>
             </div>
             <div className="inv-panel-actions inv-panel-actions--sheet">
-              <button type="button" className="inv-action-btn inv-action-pdf mono" onClick={() => setPdfModalOpen(true)}>
+              <button type="button" className="inv-action-btn inv-action-pdf mono" onClick={() => { setPdfError(null); setPdfModalOpen(true) }}>
                 ↓ PDF
               </button>
               <button type="button" className="inv-action-btn mono" onClick={clearInvestigation}>
@@ -219,8 +221,14 @@ export default function InvestigationPanel() {
         open={pdfModalOpen}
         title="Investigation PDF report"
         busy={pdfBusy}
+        error={pdfError}
         onConfirm={handlePdfConfirm}
-        onCancel={() => !pdfBusy && setPdfModalOpen(false)}
+        onCancel={() => {
+          if (!pdfBusy) {
+            setPdfModalOpen(false)
+            setPdfError(null)
+          }
+        }}
       />
     </>
   )

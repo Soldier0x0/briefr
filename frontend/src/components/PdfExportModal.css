@@ -32,6 +32,16 @@
   margin: 0 0 18px;
 }
 
+.pdf-modal-error {
+  font-size: 0.75rem;
+  color: var(--red);
+  line-height: 1.45;
+  margin: 0 0 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--red);
+  background: rgba(232, 85, 51, 0.08);
+}
+
 .pdf-modal-label {
   display: block;
   font-size: 0.625rem;

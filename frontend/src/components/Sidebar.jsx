@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { fetchKEVDeadlines, fetchTopTechniques } from '../api.js'
+import { fetchKEVDeadlines, fetchStatsTimeline, fetchTopTechniques } from '../api.js'
 import { getSavedStack } from '../utils/cveFilters.js'
 import './Sidebar.css'
 
@@ -44,21 +44,7 @@ function deadlineBadgeLabel(days) {
   return `${days}d left`
 }
 
-// Build a rough 14-day activity distribution from total + last_24h stats
-function buildSparkline(stats) {
-  const bars = Array(15).fill(0)
-  if (!stats) return bars
-  const total = (stats.critical || 0) + (stats.high || 0)
-  const daily = Math.max(1, Math.floor(total / 14))
-  const seed = stats.critical || 7
-  for (let i = 0; i < 15; i++) {
-    const noise = ((seed * (i + 3)) % 7) - 3
-    bars[i] = Math.max(1, daily + noise)
-  }
-  bars[14] = Math.max(1, stats.last_24h || daily)
-  return bars
-}
-
+const SPARKLINE_DAYS = 14
 
 const KEV_PREVIEW = 5
 
@@ -67,24 +53,51 @@ const TOP_TECHNIQUES_LIMIT = 5
 export default function Sidebar({ filters, onFiltersChange, stats }) {
   const [kevDeadlines, setKevDeadlines] = useState([])
   const [kevExpanded, setKevExpanded] = useState(false)
+  const [kevLoading, setKevLoading] = useState(true)
+  const [kevError, setKevError] = useState(false)
   const [topTechniques, setTopTechniques] = useState([])
+  const [techniquesLoading, setTechniquesLoading] = useState(true)
+  const [sparkBars, setSparkBars] = useState([])
+  const [sparkLoading, setSparkLoading] = useState(true)
   const savedStack = getSavedStack()
-  const sparkBars = buildSparkline(stats)
   const visibleKev = kevExpanded ? kevDeadlines : kevDeadlines.slice(0, KEV_PREVIEW)
   const hiddenKevCount = Math.max(0, kevDeadlines.length - KEV_PREVIEW)
   const sparkMax = Math.max(...sparkBars, 1)
 
   useEffect(() => {
-    // sort=recent returns entries sorted by dateAdded DESC (most recently added first)
-    fetchKEVDeadlines('recent')
-      .then(data => setKevDeadlines((data.data || []).slice(0, 10)))
-      .catch(() => {})
+    let cancelled = false
+    setSparkLoading(true)
+    fetchStatsTimeline(SPARKLINE_DAYS)
+      .then(data => {
+        if (cancelled) return
+        const bars = Array.isArray(data) ? data.map(d => d.count || 0) : []
+        setSparkBars(bars)
+      })
+      .catch(() => {
+        if (!cancelled) setSparkBars([])
+      })
+      .finally(() => {
+        if (!cancelled) setSparkLoading(false)
+      })
+    return () => { cancelled = true }
   }, [])
 
   useEffect(() => {
+    // sort=recent returns entries sorted by dateAdded DESC (most recently added first)
+    setKevLoading(true)
+    setKevError(false)
+    fetchKEVDeadlines('recent')
+      .then(data => setKevDeadlines((data.data || []).slice(0, 10)))
+      .catch(() => setKevError(true))
+      .finally(() => setKevLoading(false))
+  }, [])
+
+  useEffect(() => {
+    setTechniquesLoading(true)
     fetchTopTechniques(TOP_TECHNIQUES_LIMIT)
       .then(data => setTopTechniques(data.data || []))
-      .catch(() => {})
+      .catch(() => setTopTechniques([]))
+      .finally(() => setTechniquesLoading(false))
   }, [])
 
   function handleTechniqueClick(techniqueId) {
@@ -168,28 +181,42 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
       {/* ── Section 2: Sparkline ── */}
       <section className="sidebar-section" aria-labelledby="sparkline-heading">
         <h2 id="sparkline-heading" className="sidebar-heading">14-DAY ACTIVITY</h2>
-        <div className="sparkline" aria-label="14-day CVE activity chart">
-          {sparkBars.map((val, i) => (
-            <div
-              key={i}
-              className={`spark-bar${i === 14 ? ' spark-today' : ''}`}
-              style={{ height: `${Math.round((val / sparkMax) * 100)}%` }}
-              title={i === 14 ? `Today: ${val}` : `Day ${i + 1}: ~${val}`}
-              aria-label={i === 14 ? `Today: ${val} CVEs` : `${val} CVEs`}
-            />
-          ))}
-        </div>
-        <div className="sparkline-labels" aria-hidden="true">
-          <span>14d ago</span>
-          <span>today</span>
-        </div>
+        {sparkLoading ? (
+          <p className="sidebar-empty">Loading activity…</p>
+        ) : sparkBars.length === 0 ? (
+          <p className="sidebar-empty">No publication data yet.</p>
+        ) : (
+          <>
+            <div className="sparkline" aria-label="14-day CVE publication counts">
+              {sparkBars.map((val, i) => (
+                <div
+                  key={i}
+                  className={`spark-bar${i === sparkBars.length - 1 ? ' spark-today' : ''}`}
+                  style={{ height: `${Math.round((val / sparkMax) * 100)}%` }}
+                  title={i === sparkBars.length - 1 ? `Today: ${val}` : `Day ${i + 1}: ${val}`}
+                  aria-label={i === sparkBars.length - 1 ? `Today: ${val} CVEs` : `${val} CVEs`}
+                />
+              ))}
+            </div>
+            <div className="sparkline-labels" aria-hidden="true">
+              <span>14d ago</span>
+              <span>today</span>
+            </div>
+          </>
+        )}
       </section>
 
       {/* ── Section 3: KEV Deadlines ── */}
       <section className="sidebar-section" aria-labelledby="kev-heading">
         <h2 id="kev-heading" className="sidebar-heading">KEV DEADLINES</h2>
-        {kevDeadlines.length === 0 && (
-          <p className="sidebar-empty">Loading deadlines...</p>
+        {kevLoading && (
+          <p className="sidebar-empty">Loading deadlines…</p>
+        )}
+        {!kevLoading && kevError && (
+          <p className="sidebar-empty">Unable to load deadlines.</p>
+        )}
+        {!kevLoading && !kevError && kevDeadlines.length === 0 && (
+          <p className="sidebar-empty">No KEV deadlines in database.</p>
         )}
         <ul className="kev-list" aria-label="Upcoming KEV remediation deadlines">
           {visibleKev.map(entry => {
@@ -243,7 +270,10 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
       {/* ── Section 4: Top Techniques ── */}
       <section className="sidebar-section" aria-labelledby="techniques-heading">
         <h2 id="techniques-heading" className="sidebar-heading">// TOP TECHNIQUES THIS WEEK</h2>
-        {topTechniques.length === 0 && (
+        {techniquesLoading && (
+          <p className="sidebar-empty">Loading techniques…</p>
+        )}
+        {!techniquesLoading && topTechniques.length === 0 && (
           <p className="sidebar-empty">No technique data yet.</p>
         )}
         <ul className="technique-list" aria-label="Most frequent ATT&CK techniques in database">
