@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import secrets
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -132,7 +133,7 @@ def _require_admin_key(request: Request) -> None:
     if not BRIEFR_ADMIN_API_KEY:
         return
     provided = request.headers.get("X-BRIEFR-Admin-Key", "")
-    if provided != BRIEFR_ADMIN_API_KEY:
+    if not secrets.compare_digest(provided, BRIEFR_ADMIN_API_KEY):
         raise HTTPException(status_code=401, detail="Admin API key required")
 
 

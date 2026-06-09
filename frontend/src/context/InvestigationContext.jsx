@@ -189,8 +189,7 @@ export function InvestigationProvider({ children, navigation }) {
   const pivotToOtxPulse = useCallback(async (pulse, cve) => {
     if (!pulse?.pulse_id) return
     setPivotNotice(null)
-    ensureCveInThread(cve, INV_SOURCES.DRAWER)
-    const fromCve = itemsRef.current.find(i => i.type === INV_TYPES.CVE && i.id === cve?.cve_id)
+    const fromCve = ensureCveInThread(cve, INV_SOURCES.DRAWER)
     try {
       const res = await fetchOTXPulseIocs(pulse.pulse_id)
       const indicators = res?.data?.indicators || []
