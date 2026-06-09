@@ -3,7 +3,7 @@
  */
 import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
-import { fetchCVE, fetchCVESentences } from '../api.js'
+import { fetchCVE, fetchCVECorrelation, fetchCVESentences } from '../api.js'
 import {
   aiFooterNoteForSource,
   formatExecutiveSummaryBody,
@@ -227,6 +227,19 @@ function recommendedActions(cve, sentences) {
   return items
 }
 
+function formatActorIntel(correlation) {
+  const actors = correlation?.actor || []
+  if (!actors.length) {
+    return 'Actor attribution: None identified in BRIEFR correlation data.'
+  }
+  return actors
+    .map(a => {
+      const sectors = a.actor_sectors?.length ? ` — sectors: ${a.actor_sectors.join(', ')}` : ''
+      return `• ${a.actor_name}${sectors} (${(a.confidence || 'low')} confidence)`
+    })
+    .join('\n')
+}
+
 function sourcesForCve(cve) {
   const urls = new Set(DATA_SOURCES.map(s => s.url))
   const list = [...DATA_SOURCES]
@@ -306,7 +319,7 @@ function renderSingleCvePages(doc, ctx, cve, meta, sparklineDataUrl, { newPage =
     scans.length
       ? scans.map(s => `• ${s.ip}: ${s.classification || 'unknown'}${s.sentence ? ` — ${s.sentence}` : ''}`).join('\n')
       : '',
-    'APT groups: None identified in BRIEFR data.',
+    formatActorIntel(cve.correlation),
   ].filter(Boolean)
   drawSection(ctx, 'THREAT INTELLIGENCE', intelParts.join('\n\n'), border)
 
@@ -355,7 +368,14 @@ export async function enrichCveForPdf(cve) {
     sentences = null
   }
 
-  return { ...full, sentences: sentences || {} }
+  let correlation = null
+  try {
+    correlation = await fetchCVECorrelation(id)
+  } catch {
+    correlation = null
+  }
+
+  return { ...full, sentences: sentences || {}, correlation: correlation || {} }
 }
 
 export async function downloadSingleCvePdf(cve, options = {}) {

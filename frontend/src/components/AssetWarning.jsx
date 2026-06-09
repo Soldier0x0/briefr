@@ -4,9 +4,13 @@ import './AssetWarning.css'
 const WARNING_TEXT = `// BEFORE YOU ENTER YOUR ENVIRONMENT
 
 Your asset profile is sensitive data.
-BRIEFR processes it in this browser session
-only. It is never sent to our servers and
-never saved to your browser storage.
+BRIEFR keeps it in this browser session only
+and does not save it to browser storage.
+
+To score CVE exposure, product and version
+data is sent to POST /api/cves/match when
+you apply a profile. It is not stored on
+the server after matching.
 
 When you close this tab your profile is gone.
 Use the export option to save it as a local

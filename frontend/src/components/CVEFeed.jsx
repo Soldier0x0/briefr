@@ -54,6 +54,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   const [bulkMenuOpen, setBulkMenuOpen] = useState(false)
   const [bulkPdfModalOpen, setBulkPdfModalOpen] = useState(false)
   const [bulkPdfBusy, setBulkPdfBusy] = useState(false)
+  const [bulkPdfError, setBulkPdfError] = useState(null)
   const bulkMenuRef = useRef(null)
   const [selectedIndex, setSelectedIndex] = useState(null)
   const [lastVisit, setLastVisit] = useState(null)
@@ -332,6 +333,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
 
   function handleBulkPdfClick() {
     setBulkMenuOpen(false)
+    setBulkPdfError(null)
     setBulkPdfModalOpen(true)
   }
 
@@ -339,11 +341,12 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     const selected = Object.values(selectedMap)
     if (!selected.length) return
     setBulkPdfBusy(true)
+    setBulkPdfError(null)
     try {
       await downloadBulkCvePdf(selected, { analystName })
       setBulkPdfModalOpen(false)
     } catch (err) {
-      console.error('Bulk PDF failed:', err)
+      setBulkPdfError(err?.message || 'PDF generation failed.')
     } finally {
       setBulkPdfBusy(false)
     }
@@ -508,8 +511,14 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
         open={bulkPdfModalOpen}
         title={`Bulk PDF — ${selectedCount} CVE${selectedCount === 1 ? '' : 's'}`}
         busy={bulkPdfBusy}
+        error={bulkPdfError}
         onConfirm={handleBulkPdfConfirm}
-        onCancel={() => !bulkPdfBusy && setBulkPdfModalOpen(false)}
+        onCancel={() => {
+          if (!bulkPdfBusy) {
+            setBulkPdfModalOpen(false)
+            setBulkPdfError(null)
+          }
+        }}
       />
     </div>
   )
