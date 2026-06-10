@@ -5,6 +5,7 @@ import os
 import secrets
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from dotenv import load_dotenv
@@ -18,6 +19,7 @@ load_dotenv()
 BRIEFR_ENV = os.environ.get("BRIEFR_ENV", "development").strip().lower()
 BRIEFR_ADMIN_API_KEY = os.environ.get("BRIEFR_ADMIN_API_KEY", "").strip()
 _IS_PRODUCTION = BRIEFR_ENV == "production"
+BUILD_INFO_PATH = Path(__file__).resolve().parent / ".build-info.json"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -310,6 +312,21 @@ async def cve_changes(
         await db.close()
 
     return {"data": changes, "count": len(changes)}
+
+
+@app.get("/api/version")
+async def app_version():
+    """Deployed version — commit and build time stamped by deploy/briefr-update.sh."""
+    info: dict = {"version": app.version, "commit": None, "built_at": None}
+    try:
+        stamped = json.loads(BUILD_INFO_PATH.read_text())
+        info["commit"] = stamped.get("commit")
+        info["built_at"] = stamped.get("built_at")
+    except FileNotFoundError:
+        pass
+    except (json.JSONDecodeError, OSError) as exc:
+        logger.warning("Could not read build info: %s", exc)
+    return info
 
 
 @app.get("/api/time")

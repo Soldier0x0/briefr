@@ -418,6 +418,14 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 
 ---
 
+### GET /api/version
+
+**Description:** Deployed application version. `commit` and `built_at` are stamped into `backend/.build-info.json` by `deploy/briefr-update.sh` at deploy time (both `null` in dev).
+
+**Response:** `{"version": "1.0.0", "commit": "abc1234", "built_at": "2026-06-10T19:00:00Z"}`
+
+---
+
 ### GET /api/usage
 
 **Description:** API quota counters for ingest/enrichment services.

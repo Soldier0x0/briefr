@@ -3,6 +3,7 @@ __pycache__/
 *.pyo
 *.pyd
 .env
+.build-info.json
 *.db
 *.db-wal
 *.db-shm
