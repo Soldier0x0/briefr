@@ -174,6 +174,17 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (sch
 
 ## 4. Design Decisions & Trade-offs
 
+### Resilient outbound HTTP (`resilient_client.py`)
+
+All scheduler-driven intel sources (NVD, KEV, EPSS, MITRE, ATLAS, OSV, 6× RSS) share one pooled `httpx.AsyncClient` with:
+
+- **Retries:** transport errors and retryable statuses (5xx, 429 with `Retry-After` respect) retried with exponential backoff.
+- **Circuit breaker per source:** `CIRCUIT_FAILURE_THRESHOLD` consecutive failures (default 3) open the circuit for `CIRCUIT_COOLDOWN_SECONDS` (default 60); calls fail fast with `CircuitOpenError` so one dead source cannot stall a sync cycle. Plain 4xx responses do not trip the circuit (the source is reachable).
+- **Health registry:** `/api/health` → `feeds.sources` exposes `last_success`, `last_failure`, `last_error`, `consecutive_failures`, `circuit_open` per source.
+- **NVD exception:** keeps its bespoke 429/key-rejection retry logic but uses the pooled client and reports into the same health registry.
+
+On-demand enrichment modules (`enrichment/ioc.py`, `feeds/extended.py`, `feeds/otx.py`) migrate in a follow-up phase.
+
 ### SQLite over PostgreSQL
 
 - **Why:** Single-user beta, zero ops overhead, `aiosqlite` async support, `feed_cache` + `ioc_cache` adequate at current scale.

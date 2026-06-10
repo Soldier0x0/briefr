@@ -6,6 +6,11 @@ from typing import Any
 import httpx
 
 from enrichment.cve import extract_mitre_technique, has_public_poc
+from resilient_client import (
+    get_pooled_client,
+    record_source_failure,
+    record_source_success,
+)
 from tracking import record_api_call
 
 logger = logging.getLogger(__name__)
@@ -205,6 +210,7 @@ async def _fetch_page(
                 )
                 return await _fetch_page(client, params, api_key, _key_rejected=True)
             response.raise_for_status()
+            record_source_success("nvd")
             return response.json()
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 429:
@@ -213,14 +219,17 @@ async def _fetch_page(
                 await asyncio.sleep(wait_time)
                 continue
             logger.error("NVD HTTP error: %s", exc)
+            record_source_failure("nvd", f"HTTP {exc.response.status_code}")
             raise
         except httpx.RequestError as exc:
             logger.error("NVD request error: %s", exc)
             if attempt < 4:
                 await asyncio.sleep(2 ** attempt)
                 continue
+            record_source_failure("nvd", f"{type(exc).__name__}: {exc}")
             raise
 
+    record_source_failure("nvd", "max retries exceeded")
     raise RuntimeError("NVD API failed after maximum retries")
 
 
@@ -320,14 +329,14 @@ async def fetch_cves_by_last_modified(
         "startIndex": 0,
     }
 
-    async with httpx.AsyncClient() as client:
-        logger.info("Fetching NVD CVEs modified from %s to %s", mod_start_str, mod_end_str)
-        return await _fetch_cves_paginated(
-            client,
-            base_params,
-            api_key,
-            log_label="incremental",
-        )
+    client = get_pooled_client()
+    logger.info("Fetching NVD CVEs modified from %s to %s", mod_start_str, mod_end_str)
+    return await _fetch_cves_paginated(
+        client,
+        base_params,
+        api_key,
+        log_label="incremental",
+    )
 
 
 async def fetch_recent_cves(api_key: str | None = None, days_back: int = 7) -> list[dict]:
@@ -344,14 +353,14 @@ async def fetch_recent_cves(api_key: str | None = None, days_back: int = 7) -> l
         "startIndex": 0,
     }
 
-    async with httpx.AsyncClient() as client:
-        logger.info("Fetching NVD CVEs published from %s to %s", pub_start, pub_end)
-        return await _fetch_cves_paginated(
-            client,
-            base_params,
-            api_key,
-            log_label="bootstrap",
-        )
+    client = get_pooled_client()
+    logger.info("Fetching NVD CVEs published from %s to %s", pub_start, pub_end)
+    return await _fetch_cves_paginated(
+        client,
+        base_params,
+        api_key,
+        log_label="bootstrap",
+    )
 
 
 async def fetch_nvd_cve_updates(
@@ -392,43 +401,43 @@ async def fetch_cve_by_id(cve_id: str, api_key: str | None = None) -> dict | Non
     params: dict = {"cveId": cve_id}
     key_rejected = False
 
-    async with httpx.AsyncClient() as client:
-        for attempt in range(3):
-            headers = _nvd_request_headers(api_key, key_rejected=key_rejected)
-            try:
-                response = await client.get(
-                    NVD_BASE_URL,
-                    params=params,
-                    headers=headers,
-                    timeout=30.0,
+    client = get_pooled_client()
+    for attempt in range(3):
+        headers = _nvd_request_headers(api_key, key_rejected=key_rejected)
+        try:
+            response = await client.get(
+                NVD_BASE_URL,
+                params=params,
+                headers=headers,
+                timeout=30.0,
+            )
+            if response.status_code == 429:
+                await asyncio.sleep(RATE_LIMIT_WAIT)
+                continue
+            if response.status_code == 404 and headers:
+                nvd_msg = response.headers.get("message", "")
+                logger.warning(
+                    "NVD 404 for %s with API key (%s) — retrying anonymously",
+                    cve_id,
+                    nvd_msg or "no message header",
                 )
-                if response.status_code == 429:
-                    await asyncio.sleep(RATE_LIMIT_WAIT)
-                    continue
-                if response.status_code == 404 and headers:
-                    nvd_msg = response.headers.get("message", "")
-                    logger.warning(
-                        "NVD 404 for %s with API key (%s) — retrying anonymously",
-                        cve_id,
-                        nvd_msg or "no message header",
-                    )
-                    key_rejected = True
-                    continue
-                if response.status_code == 404:
-                    return None
-                response.raise_for_status()
-                data = response.json()
-                vulns = data.get("vulnerabilities", [])
-                if not vulns:
-                    return None
-                await record_api_call("nvd", 1)
-                return _parse_cve_item(vulns[0])
-            except httpx.RequestError as exc:
-                logger.error("NVD request error fetching %s: %s", cve_id, exc)
-                if attempt < 2:
-                    await asyncio.sleep(2 ** attempt)
-                    continue
-            except Exception as exc:
-                logger.error("Unexpected error fetching %s: %s", cve_id, exc)
+                key_rejected = True
+                continue
+            if response.status_code == 404:
                 return None
+            response.raise_for_status()
+            data = response.json()
+            vulns = data.get("vulnerabilities", [])
+            if not vulns:
+                return None
+            await record_api_call("nvd", 1)
+            return _parse_cve_item(vulns[0])
+        except httpx.RequestError as exc:
+            logger.error("NVD request error fetching %s: %s", cve_id, exc)
+            if attempt < 2:
+                await asyncio.sleep(2 ** attempt)
+                continue
+        except Exception as exc:
+            logger.error("Unexpected error fetching %s: %s", cve_id, exc)
+            return None
     return None

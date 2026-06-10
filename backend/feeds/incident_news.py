@@ -12,10 +12,9 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from xml.etree import ElementTree as ET
 
-import httpx
-
 from database import get_feed_cache, set_feed_cache
 from feeds.incident_sources import INCIDENT_RSS_SOURCES
+from resilient_client import resilient_get
 
 logger = logging.getLogger(__name__)
 
@@ -170,19 +169,17 @@ def parse_rss_xml(xml_text: str, source: dict) -> list[dict]:
     return cards
 
 
-async def _fetch_rss_bytes(url: str) -> bytes:
+async def _fetch_rss_bytes(url: str, source_id: str = "rss") -> bytes:
     # SOURCE: direct RSS/Atom feed URL (server-side; avoids browser CSP limits)
-    async with httpx.AsyncClient(
-        follow_redirects=True,
+    response = await resilient_get(
+        f"rss:{source_id}",
+        url,
         timeout=30.0,
         headers={
-            "User-Agent": "BRIEFR/1.0 (+https://github.com/Soldier0x0/briefr)",
             "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
         },
-    ) as client:
-        response = await client.get(url)
-        response.raise_for_status()
-        return response.content
+    )
+    return response.content
 
 
 async def fetch_rss_source(db, source: dict) -> list[dict]:
@@ -191,7 +188,7 @@ async def fetch_rss_source(db, source: dict) -> list[dict]:
     if cached is not None and isinstance(cached.get("items"), list):
         return _filter_news_items(cached["items"])
 
-    raw = await _fetch_rss_bytes(source["url"])
+    raw = await _fetch_rss_bytes(source["url"], source["id"])
     items = parse_rss_xml(raw.decode("utf-8", errors="replace"), source)
     await set_feed_cache(db, cache_key, {"items": items})
     return items
@@ -235,7 +232,7 @@ async def fetch_all_incident_news_parallel(db) -> tuple[list[dict], list[dict]]:
             to_fetch.append(source)
 
     results = await asyncio.gather(
-        *(_fetch_rss_bytes(source["url"]) for source in to_fetch),
+        *(_fetch_rss_bytes(source["url"], source["id"]) for source in to_fetch),
         return_exceptions=True,
     )
 
