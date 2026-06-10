@@ -1017,10 +1017,11 @@ async def get_cve(cve_id: str):
                 kev_row.get("vulnerability_name") or ""
             ).strip() or None
             cve["kev_ransomware_use"] = (
-                (kev_row.get("known_ransomware") or "").strip().lower() == "known"
+                str(kev_row.get("known_ransomware") or "").strip().lower() == "known"
             )
             try:
-                cve["kev_cwes"] = json.loads(kev_row.get("cwes") or "[]")
+                parsed_cwes = json.loads(kev_row.get("cwes") or "[]")
+                cve["kev_cwes"] = parsed_cwes if isinstance(parsed_cwes, list) else []
             except (json.JSONDecodeError, TypeError):
                 cve["kev_cwes"] = []
         cve["techniques"] = await get_techniques_for_cve(db, cve_key)
@@ -1393,11 +1394,12 @@ async def kev_deadlines(
     for row in rows:
         entry = dict(row)
         try:
-            entry["cwes"] = json.loads(entry.get("cwes") or "[]")
+            parsed_cwes = json.loads(entry.get("cwes") or "[]")
+            entry["cwes"] = parsed_cwes if isinstance(parsed_cwes, list) else []
         except (json.JSONDecodeError, TypeError):
             entry["cwes"] = []
         entry["ransomware_use"] = (
-            (entry.get("known_ransomware") or "").strip().lower() == "known"
+            str(entry.get("known_ransomware") or "").strip().lower() == "known"
         )
         entries.append(entry)
 

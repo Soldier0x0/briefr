@@ -87,6 +87,32 @@ def test_parse_kev_catalog_keeps_enrichment_fields():
     assert citrix["cwes"] == ["CWE-119"]
 
 
+def test_parse_kev_catalog_rejects_malformed_payload():
+    assert parse_kev_catalog(None) == []
+    assert parse_kev_catalog([]) == []
+    assert parse_kev_catalog({"vulnerabilities": "not-a-list"}) == []
+    assert parse_kev_catalog({"vulnerabilities": [None, "bad", 42]}) == []
+
+
+def test_parse_kev_catalog_coerces_non_list_cwes():
+    catalog = {
+        "vulnerabilities": [
+            {
+                "cveID": "CVE-2020-0001",
+                "product": "Widget",
+                "shortDescription": "Test",
+                "requiredAction": "Patch",
+                "dueDate": "2020-01-01",
+                "dateAdded": "2020-01-01",
+                "cwes": "CWE-79",
+            }
+        ]
+    }
+    entries = parse_kev_catalog(catalog)
+    assert len(entries) == 1
+    assert entries[0]["cwes"] == []
+
+
 def test_parse_kev_catalog_tolerates_missing_fields():
     entries = parse_kev_catalog(SAMPLE_CATALOG)
     log4j = entries[2]

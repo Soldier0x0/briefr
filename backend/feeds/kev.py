@@ -11,8 +11,15 @@ KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulner
 
 def parse_kev_catalog(data: dict) -> list[dict]:
     """Normalize CISA KEV catalog entries, keeping triage-relevant fields."""
+    if not isinstance(data, dict):
+        return []
+    vulnerabilities = data.get("vulnerabilities", [])
+    if not isinstance(vulnerabilities, list):
+        return []
     results = []
-    for entry in data.get("vulnerabilities", []):
+    for entry in vulnerabilities:
+        if not isinstance(entry, dict):
+            continue
         cwes = entry.get("cwes") or []
         if not isinstance(cwes, list):
             cwes = []
