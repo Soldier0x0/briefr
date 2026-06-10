@@ -28,6 +28,18 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 
 ---
 
+## Strategy statement (2026-06-10)
+
+> BRIEFR is a **single, complete, self-hosted threat intel aggregator today** — private, behind a Cloudflare Access policy, in closed beta (3 testers). It is deliberately built with clean seams (API envelope, webhook/event engine, STIX export, repository boundary) so it can later become the **intel module of a self-hosted SIEM** for analysts, enthusiasts, and researchers — without committing to that future now.
+
+Consequences:
+
+- **Intel storage stays SQLite inside BRIEFR.** No NiFi / external Postgres / ClickHouse for intel ingest — volumes do not justify it, and it would break the single-tool deploy + backup contract. ClickHouse is the **telemetry sidecar** store only.
+- **The module seams are the webhook engine, STIX 2.1 export, the `{data, meta}` API envelope, and the repository boundary** — these are what a future SIEM shell consumes.
+- **ML rules:** env-gated, CPU-only, scheduler-side, deterministic fallback; intel ML (embeddings, extraction) in BRIEFR; log ML in the future `jupiter-detection` worker; EPSS is consumed, never re-derived; the explainable risk score is never replaced by a black box.
+
+---
+
 ## BRIEFR — three pillars (beast identity)
 
 | Pillar | Question | Examples |

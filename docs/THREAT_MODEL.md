@@ -23,6 +23,8 @@ This document models threats to the **BRIEFR application** (not environment thre
               (SQLite)         backups/                           NVD, VT, etc.
 ```
 
+**Deployment posture (2026-06-10):** the production instance is **private** — a Cloudflare Access policy gates all routes to a closed beta (3 testers). Edge authentication therefore exists today; app-level controls below assume it can also be absent (LAN path, misconfiguration).
+
 **Trust boundaries:**
 
 1. Internet → Cloudflare edge  
@@ -51,7 +53,7 @@ This document models threats to the **BRIEFR application** (not environment thre
 
 | Threat | Example | Mitigations (planned / existing) |
 |--------|---------|--------------------------------|
-| **Spoofing** | Fake admin session | `BRIEFR_ADMIN_API_KEY`; V1.2 auth; Cloudflare Access optional |
+| **Spoofing** | Fake admin session | `BRIEFR_ADMIN_API_KEY` (**must fail closed in production when unset** — V1.2); Cloudflare Access identity trust (V1.2) |
 | **Tampering** | Restore malicious DB | Integrity check before write; admin-only restore; audit log |
 | **Repudiation** | Deny config change | Audit log (V1.4); structured logging |
 | **Information disclosure** | Leak VT key in logs | Log redaction; mask secrets in admin UI; `.env` 640 |
@@ -105,7 +107,8 @@ BRIEFR calls external APIs (NVD, GitHub, VT, etc.). Threats:
 
 | Threat | Mitigation |
 |--------|------------|
-| Unencrypted off-site backup stolen | Optional GPG/age encryption |
+| Archive contains `.env` (all API keys) in plaintext | **Raised priority (V1.2):** `age` encryption, key outside `BACKUP_DIR` |
+| Unencrypted off-site backup stolen | Same `age` encryption covers off-site copies |
 | Restore of tampered archive | Integrity check in `backup/manager.py` |
 | Ransomware on host | Off-site second copy; immutable object storage optional |
 

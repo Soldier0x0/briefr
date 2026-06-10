@@ -28,7 +28,7 @@ Optional integration with **ClickStack** (HyperDX API) for provisioning dashboar
 | **CVE as evidence** | Map techniques to open CVEs on stack |
 | **Coverage integration** | Forge gaps highlighted in threat view |
 | **Mitigation queue** | Patch / hunt pack / accept risk |
-| **STRIDE-lite worksheet** | Optional per-asset scores (stored in DB) |
+| ~~**STRIDE-lite worksheet**~~ | **Deferred (2026-06-10)** — speculative until modular-SIEM future is real |
 
 **Not:** full IriusRisk / enterprise GRC data-flow modeling.
 
@@ -58,13 +58,25 @@ Optional integration with **ClickStack** (HyperDX API) for provisioning dashboar
 
 ---
 
-## Theme 4 — Forge v2
+## Theme 4 — Forge v2 & interop
 
 | Item | Goal |
 |------|------|
-| **HyperDX provisioning script** | Optional `scripts/provision_hyperdx.py` via API v2 |
-| **Enriched alerts API** | `GET /api/alerts/enriched` — stub until CH worker exists |
-| **Export formats** | Sigma pack zip, STIX-lite JSON |
+| **STIX 2.1 export** | **Raised priority (2026-06-10)** — bundle export (CVE + indicator + relationship objects); the interop seam for MISP / OpenCTI / future modular SIEM |
+| **Export formats** | Sigma pack zip alongside STIX |
+| ~~**HyperDX provisioning script**~~ | **Deferred (2026-06-10)** — until ClickStack sidecar exists |
+| ~~**Enriched alerts API**~~ | **Deferred** — stub had no consumer until CH worker exists |
+
+---
+
+## Theme 4b — IOC aggregator depth (amendment 2026-06-10)
+
+| Item | Goal |
+|------|------|
+| **Persistent IOC watchlist** | Analyst-saved IOCs (keyed by `user_email`) |
+| **ThreatFox feed** | Bulk IOC ingest via existing `ABUSECH_AUTH_KEY` |
+| **Retro-matching** | Nightly job matches watchlist against `otx_pulse_iocs` + ThreatFox locally — zero extra API quota; hits feed the webhook engine |
+| **VulnCheck KEV tier** | Free community catalog (~2–3x CISA KEV) as an "exploited, not yet CISA" scoring tier |
 
 ---
 
@@ -96,8 +108,8 @@ Optional: learn weights from analyst dismiss/promote actions later.
 Phase 1  Threat model UI (stack → techniques → CVEs)
 Phase 2  Rule proof bench (file-based)
 Phase 3  KEV delta backlog job + UI
-Phase 4  Forge export + detection card templates
-Phase 5  Optional HyperDX provisioner + CH proof path
+Phase 4  Forge export (STIX 2.1 + Sigma pack) + detection card templates
+Phase 5  IOC watchlist + ThreatFox + retro-match + VulnCheck KEV tier
 ```
 
 ---

@@ -26,8 +26,9 @@ V1.3 makes BRIEFR the **best self-hosted analyst intelligence pane** — actiona
 | **Morning brief view** | Single screen: new/changed for *my stack* since last visit |
 | **Action queue** | Ranked worklist (KEV on stack, EPSS jumps, material CVSS changes) |
 | **Explainable risk** | Score breakdown UI (KEV + EPSS + stack match + momentum components) |
-| **Change intelligence** | Surface `cve_change_history` deltas filtered by asset profile |
-| **Pin / snooze / watchlist** | Analyst controls on CVE rows (stored in DB) |
+| **Change intelligence** | Surface `cve_change_history` deltas filtered by asset profile (`GET /api/changes` UI — data already collected) |
+| **KEV due-date countdown** | "Due in N days" chip on cards + sorted deadline list (`kev_deadlines` already populated) |
+| **Pin / snooze / watchlist** | Analyst controls on CVE rows (stored in DB, keyed by Cloudflare Access `user_email` from V1.2) |
 
 **API sketch:**
 
@@ -91,6 +92,50 @@ If not fully completed in V1.2, finish here:
 | **Incidents hook** | `useCaseStudyFeed` with persistent cache |
 | **Investigation pivots** | Incidents ATLAS cards → CVE drawer |
 | **Operator changes UI** | Surface `GET /api/changes` if not done in V1.2 |
+
+---
+
+## Theme 6 — Data depth (amendment 2026-06-10)
+
+New free intel sources feeding stack matching and the exploit score component:
+
+| Source | Feeds | Pattern |
+|--------|-------|---------|
+| **CISA Vulnrichment** (`cisagov/vulnrichment`) | SSVC / CVSS / CWE / CPE for CVEs NVD has not analyzed yet | Repo pull; superseded by NVD data when it arrives |
+| **cvelistV5** (`CVEProject/cvelistV5`) | CVE records hours before NVD, ADP containers | Repo pull deltas |
+| **PoC-in-GitHub** (`nomi-sec/PoC-in-GitHub`) | CVE → public PoC index (~daily) | Repo pull; exploit + momentum signal |
+| **ExploitDB CSV** | Public exploits with CVE mapping | Full-snapshot upsert |
+| **Metasploit module metadata** | "Weaponized in MSF" flag | Full-snapshot upsert |
+| **Nuclei templates index** | CVE → template existence | Full-snapshot upsert; ties into Forge |
+
+All ride the V1.2 `resilient_client` feed framework; snapshot sources need no watermark.
+
+---
+
+## Theme 7 — ML assist (amendment 2026-06-10)
+
+Env-gated, CPU-only, scheduler-side, deterministic fallback — see ML placement rules in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+| Item | Goal |
+|------|------|
+| **Embeddings at ingest** | Small local model (e.g. bge-small via ONNX/fastembed), vectors in `sqlite-vec` |
+| **Similar CVEs** | Semantic relatedness beyond same-product matching |
+| **News ↔ CVE linking + RSS dedup** | Cluster multi-source coverage of one incident into one card |
+| **Semantic search** | Across CVE descriptions, ATLAS studies, news |
+| **LLM product extraction** | `{vendor, product, version_range}` from description text for NVD-unanalyzed CVEs (existing Groq/Anthropic integration); superseded by official CPE |
+| **Action logging** | Pin/snooze/dismiss events retained as future re-ranker training data — no model training in V1.3 |
+
+---
+
+## Theme 8 — Push notifications (pulled forward from V1.4)
+
+| Item | Goal |
+|------|------|
+| **One webhook channel** | Telegram or Discord, env-configured (no admin UI yet) |
+| **KEV-on-stack rule** | Alert when a KEV entry matches the asset profile |
+| **Backup dead-man ping** | `briefr-backup.sh` pings healthchecks-style URL on success; silence = alert |
+
+The full webhook engine (channels UI, rules, delivery log, SSRF protection) stays in [`Beta V1.4.md`](Beta%20V1.4.md).
 
 ---
 

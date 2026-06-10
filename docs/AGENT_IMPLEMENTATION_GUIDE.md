@@ -27,11 +27,13 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 
 | Release | Build | Do not build yet |
 |---------|-------|------------------|
-| **V1.2** | Refactor, auth, resilient feeds, incident snapshot | Admin UI, Forge, webhooks, wallboard |
-| **V1.3** | Morning brief, Chart.js, Forge MVP | Full admin pane |
-| **V1.4** | Admin, webhooks, logs viewer, wallboard | Postgres, Docker official |
-| **V1.5** | Threat model UI, rule proof | ML on logs in core app |
-| **V2.0** | Docker compose, optional Postgres | Multi-tenant SaaS |
+| **V1.2** | Refactor, CF Access identity + audit_log, resilient feeds, incident snapshot, KEV extra fields, EPSS backfill | Admin UI, Forge, webhooks engine, wallboard |
+| **V1.3** | Morning brief, Chart.js, Forge MVP, new intel sources, embeddings/extraction, first webhook channel | Full admin pane, webhook config UI |
+| **V1.4** | Lean admin, webhook engine, logs viewer, wallboard | Postgres, Docker official |
+| **V1.5** | Threat model UI, rule proof, STIX export, IOC watchlist | ML on logs in core app |
+| **V2.0** | **Parked** (Docker compose, optional Postgres) | Multi-tenant SaaS |
+
+Approved scope and cross-release amendments: see [`ROADMAP.md`](ROADMAP.md) § Approved execution scope.
 
 One phase per PR where possible. Update `SYSTEM_DESIGN.md` when behavior changes.
 
