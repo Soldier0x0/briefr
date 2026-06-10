@@ -431,13 +431,16 @@ async def fetch_cve_by_id(cve_id: str, api_key: str | None = None) -> dict | Non
             if not vulns:
                 return None
             await record_api_call("nvd", 1)
+            record_source_success("nvd")
             return _parse_cve_item(vulns[0])
         except httpx.RequestError as exc:
             logger.error("NVD request error fetching %s: %s", cve_id, exc)
             if attempt < 2:
                 await asyncio.sleep(2 ** attempt)
                 continue
+            record_source_failure("nvd", f"{type(exc).__name__}: {exc}")
         except Exception as exc:
             logger.error("Unexpected error fetching %s: %s", cve_id, exc)
+            record_source_failure("nvd", f"Unexpected: {exc}")
             return None
     return None

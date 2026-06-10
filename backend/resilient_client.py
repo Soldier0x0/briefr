@@ -82,20 +82,23 @@ def _record_success(source: str) -> None:
     state["last_error"] = None
 
 
-def _record_failure(source: str, error: str) -> None:
+def _record_failure(source: str, error: str, *, trip_circuit: bool = True) -> None:
     state = _state(source)
     state["last_failure"] = time.time()
     state["last_error"] = error[:300]
-    state["consecutive_failures"] += 1
-    if state["consecutive_failures"] >= CIRCUIT_FAILURE_THRESHOLD:
-        state["circuit_open_until"] = time.time() + CIRCUIT_COOLDOWN_SECONDS
-        logger.warning(
-            "Circuit opened for %s after %d consecutive failures (cooldown %ss): %s",
-            source,
-            state["consecutive_failures"],
-            CIRCUIT_COOLDOWN_SECONDS,
-            error,
-        )
+    if trip_circuit:
+        state["consecutive_failures"] += 1
+        if state["consecutive_failures"] >= CIRCUIT_FAILURE_THRESHOLD:
+            state["circuit_open_until"] = time.time() + CIRCUIT_COOLDOWN_SECONDS
+            logger.warning(
+                "Circuit opened for %s after %d consecutive failures (cooldown %ss): %s",
+                source,
+                state["consecutive_failures"],
+                CIRCUIT_COOLDOWN_SECONDS,
+                error,
+            )
+    else:
+        state["consecutive_failures"] = 0
 
 
 def _check_circuit(source: str) -> None:
@@ -163,10 +166,14 @@ async def resilient_request(
             _record_failure(source, f"HTTP {response.status_code}")
             response.raise_for_status()
 
-        if response.is_client_error or response.is_server_error:
-            # Non-retryable HTTP error (4xx other than 429): the source is
+        if response.is_server_error:
+            _record_failure(source, f"HTTP {response.status_code}", trip_circuit=True)
+            response.raise_for_status()
+
+        if response.is_client_error:
+            # Non-retryable client error (4xx other than 429): the source is
             # reachable, so do not trip the circuit — record and raise.
-            _state(source)["last_error"] = f"HTTP {response.status_code}"
+            _record_failure(source, f"HTTP {response.status_code}", trip_circuit=False)
             response.raise_for_status()
 
         _record_success(source)
@@ -190,9 +197,9 @@ def record_source_success(source: str) -> None:
     _record_success(source)
 
 
-def record_source_failure(source: str, error: str) -> None:
+def record_source_failure(source: str, error: str, *, trip_circuit: bool = True) -> None:
     """Health hook for modules that manage their own request logic."""
-    _record_failure(source, error)
+    _record_failure(source, error, trip_circuit=trip_circuit)
 
 
 def get_feed_health() -> dict[str, dict[str, Any]]:

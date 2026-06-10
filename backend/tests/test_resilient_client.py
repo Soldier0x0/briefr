@@ -88,11 +88,29 @@ def test_non_retryable_4xx_raises_without_tripping_circuit(monkeypatch):
             await resilient_get("missing", "https://example.com/api", retries=2)
 
     asyncio.run(run())
-    # No retries for plain 4xx, and the circuit must stay closed.
+    # No retries for plain 4xx; server is reachable so circuit stays closed.
     assert calls["n"] == 1
     health = get_feed_health()["missing"]
     assert health["circuit_open"] is False
     assert health["last_error"] == "HTTP 404"
+    assert health["last_failure"] is not None
+    assert health["consecutive_failures"] == 0
+
+
+def test_non_retryable_5xx_trips_circuit(monkeypatch):
+    def handler(request):
+        return httpx.Response(501)
+
+    _install_transport(monkeypatch, handler)
+
+    async def run():
+        with pytest.raises(httpx.HTTPStatusError):
+            await resilient_get("broken", "https://example.com/api", retries=0)
+
+    asyncio.run(run())
+    health = get_feed_health()["broken"]
+    assert health["consecutive_failures"] == 1
+    assert health["last_failure"] is not None
 
 
 def test_circuit_opens_after_threshold_and_fails_fast(monkeypatch):

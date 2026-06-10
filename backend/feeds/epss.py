@@ -25,9 +25,6 @@ async def _fetch_batch_api(cve_ids: list) -> dict[str, float]:
             timeout=30.0,
         )
         data = response.json()
-    except CircuitOpenError:
-        logger.warning("EPSS circuit open — skipping batch of %d CVEs", len(cve_ids))
-        return {}
     except httpx.HTTPStatusError as exc:
         logger.error(
             "EPSS HTTP error %s for batch of %d CVEs",
@@ -110,11 +107,14 @@ async def fetch_epss_api(cve_ids: list) -> dict[str, float]:
     all_scores: dict[str, float] = {}
     batches = [cve_ids[i : i + BATCH_SIZE] for i in range(0, len(cve_ids), BATCH_SIZE)]
 
-    for idx, batch in enumerate(batches):
-        batch_scores = await _fetch_batch_api(batch)
-        all_scores.update(batch_scores)
-        if idx < len(batches) - 1:
-            await asyncio.sleep(1)
+    try:
+        for idx, batch in enumerate(batches):
+            batch_scores = await _fetch_batch_api(batch)
+            all_scores.update(batch_scores)
+            if idx < len(batches) - 1:
+                await asyncio.sleep(1)
+    except CircuitOpenError:
+        logger.warning("EPSS circuit open — aborting remaining API batch fetches")
 
     await record_api_call("epss", len(batches))
     logger.info(
