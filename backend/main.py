@@ -319,7 +319,8 @@ async def app_version():
     """Deployed version — commit and build time stamped by deploy/briefr-update.sh."""
     info: dict = {"version": app.version, "commit": None, "built_at": None}
     try:
-        stamped = json.loads(BUILD_INFO_PATH.read_text())
+        content = await asyncio.to_thread(BUILD_INFO_PATH.read_text)
+        stamped = json.loads(content)
         info["commit"] = stamped.get("commit")
         info["built_at"] = stamped.get("built_at")
     except FileNotFoundError:
