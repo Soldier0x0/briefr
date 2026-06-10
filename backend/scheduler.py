@@ -27,6 +27,10 @@ from database import (
     upsert_cves,
     upsert_kev,
 )
+from feeds.case_study_feed import (
+    build_incident_feed_snapshot,
+    get_incident_feed_refresh_minutes,
+)
 from feeds.nvd import fetch_cve_by_id, fetch_nvd_cve_updates
 from feeds.kev import fetch_kev
 from feeds.epss import fetch_epss
@@ -459,23 +463,18 @@ async def maybe_run_on_startup() -> None:
     await maybe_run_mitre_on_startup()
 
 
-async def run_incident_news_refresh() -> bool:
-    """Proactively refresh the incident news RSS cache (runs every 4 hours)."""
-    from feeds.incident_news import fetch_all_incident_news
-
-    db = await get_db()
+async def run_incident_feed_refresh() -> bool:
+    """Rebuild the combined Incidents & News snapshot (RSS in parallel + ATLAS)."""
     try:
-        cards, errors = await fetch_all_incident_news(db)
-        await db.commit()
+        snapshot = await build_incident_feed_snapshot()
         logger.info(
-            "Incident news refresh complete: %d items, %d errors",
-            len(cards),
-            len(errors),
+            "Incident feed snapshot refresh complete: %d news, %d ATLAS, %d errors",
+            len(snapshot.get("news") or []),
+            len(snapshot.get("atlas") or []),
+            len(snapshot.get("errors") or []),
         )
     except Exception as exc:
-        logger.error("Incident news refresh failed: %s", exc)
-    finally:
-        await db.close()
+        logger.error("Incident feed snapshot refresh failed: %s", exc)
     return True
 
 
@@ -614,14 +613,17 @@ def start_scheduler() -> AsyncIOScheduler:
         coalesce=True,
     )
 
+    incident_minutes = get_incident_feed_refresh_minutes()
     scheduler.add_job(
-        run_incident_news_refresh,
-        trigger=IntervalTrigger(hours=4, timezone=sched_tz),
-        id="incident_news_refresh",
-        name="Incident News RSS Refresh",
+        run_incident_feed_refresh,
+        trigger=IntervalTrigger(minutes=incident_minutes, timezone=sched_tz),
+        id="incident_feed_refresh",
+        name="Incident Feed Snapshot Refresh",
         replace_existing=True,
         max_instances=1,
         coalesce=True,
+        # Warm the snapshot shortly after boot instead of waiting one interval.
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=20),
     )
 
     corr_hour = int(os.environ.get("CORRELATION_HOUR", "1"))

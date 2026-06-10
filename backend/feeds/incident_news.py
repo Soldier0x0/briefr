@@ -4,6 +4,7 @@ Fetch and normalize cybersecurity news RSS feeds for the Case Studies tab.
 
 from __future__ import annotations
 
+import asyncio
 import html
 import logging
 import re
@@ -212,6 +213,60 @@ async def fetch_all_incident_news(db) -> tuple[list[dict], list[dict]]:
                     "message": str(exc) or "Failed to load feed",
                 }
             )
+
+    cards.sort(key=lambda c: c.get("publishedAt") or "", reverse=True)
+    return cards, errors
+
+
+async def fetch_all_incident_news_parallel(db) -> tuple[list[dict], list[dict]]:
+    """Scheduler-job variant: network fetches run concurrently via
+    asyncio.gather while cache reads/writes stay sequential on the single
+    SQLite connection. Never use on the request path."""
+    cards: list[dict] = []
+    errors: list[dict] = []
+    to_fetch: list[dict] = []
+
+    for source in INCIDENT_RSS_SOURCES:
+        cache_key = f"incident_rss:{source['id']}"
+        cached = await get_feed_cache(db, cache_key, max_age_hours=CACHE_HOURS)
+        if cached is not None and isinstance(cached.get("items"), list):
+            cards.extend(_filter_news_items(cached["items"]))
+        else:
+            to_fetch.append(source)
+
+    results = await asyncio.gather(
+        *(_fetch_rss_bytes(source["url"]) for source in to_fetch),
+        return_exceptions=True,
+    )
+
+    for source, result in zip(to_fetch, results):
+        if isinstance(result, BaseException):
+            logger.warning("RSS fetch failed for %s: %s", source["label"], result)
+            errors.append(
+                {
+                    "source": source["label"],
+                    "message": str(result) or "Failed to load feed",
+                }
+            )
+            continue
+        try:
+            items = parse_rss_xml(result.decode("utf-8", errors="replace"), source)
+        except Exception as exc:
+            logger.warning("RSS parse failed for %s: %s", source["label"], exc)
+            errors.append(
+                {
+                    "source": source["label"],
+                    "message": str(exc) or "Failed to parse feed",
+                }
+            )
+            continue
+        cards.extend(items)
+        try:
+            await set_feed_cache(db, f"incident_rss:{source['id']}", {"items": items})
+        except Exception as exc:
+            # Cache write contention (e.g. bootstrap ingest) must not drop
+            # successfully parsed items; the next cycle will persist them.
+            logger.warning("RSS cache write failed for %s: %s", source["label"], exc)
 
     cards.sort(key=lambda c: c.get("publishedAt") or "", reverse=True)
     return cards, errors

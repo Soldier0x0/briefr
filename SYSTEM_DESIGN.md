@@ -155,16 +155,18 @@ Sequence diagram: [`docs/diagrams/flow_ioc_lookup.mermaid`](docs/diagrams/flow_i
 
 **Duplication debt:** same weights/logic mirrored in `backend/scoring/risk.py` (server momentum only today).
 
-### E. Incidents & News feed
+### E. Incidents & News feed (snapshot-served)
 
 1. **UI:** `CaseStudies.jsx` calls `loadCaseStudyFeed()` → `GET /api/case-studies/feed?atlas_limit=80`.
-2. **Client cache:** `caseStudyFeed.js` holds a 5-minute session cache to avoid refetching on tab switches.
-3. **Server:** `case_study_feed.py:fetch_combined_case_study_feed` opens **one** SQLite connection, then sequentially:
-   - `fetch_all_incident_news(db)` — 6 RSS sources via `incident_news.py` (30 min `feed_cache` per source)
+2. **Client cache:** `caseStudyFeed.js` holds a 5-minute session cache; a `meta.warming` response (snapshot still being built) is never pinned in that cache.
+3. **Scheduler builds, API reads:** `run_incident_feed_refresh` (every `INCIDENT_FEED_REFRESH_MINUTES`, default 30; first run ~20s after boot) calls `case_study_feed.build_incident_feed_snapshot()`:
+   - `fetch_all_incident_news_parallel(db)` — 6 RSS sources fetched concurrently via `asyncio.gather` (network only); cache reads/writes stay sequential on **one** SQLite connection (30 min `feed_cache` per source)
    - `_load_atlas_cards(db)` — ATLAS case studies from `atlas_case_studies` table
-4. **Merge:** Cards sorted by `publishedAt` descending; per-source errors collected in `errors[]` without failing the whole feed.
-5. **Editorial filter:** `incident_news.py` excludes non-security RSS items by title pattern (e.g. Dark Reading **"Name That Toon"** contest). Filter applies on parse and when serving cached rows; malformed cache entries are skipped defensively.
-6. **Scheduler:** `run_incident_news_refresh` pre-warms RSS caches every 4 hours (`scheduler.py`).
+   - Combined result persisted to `feed_cache` under `incident_feed:snapshot` with `generated_at`
+4. **Request path:** `get_incident_feed()` is a pure snapshot read (<50ms warm). A cold miss never blocks — it schedules a background build and returns `meta.warming=true` with empty data.
+5. **Meta:** responses include `meta.refreshed_at`, `meta.stale` (older than 2× refresh interval), `meta.warming`. `/api/health` exposes `feeds.incidents.last_refresh` + `stale`.
+6. **Merge:** Cards sorted by `publishedAt` descending; per-source errors collected in `errors[]` without failing the whole feed. Cache-write contention (e.g. during bootstrap ingest) degrades gracefully — parsed items are kept in the snapshot and persisted on the next cycle.
+7. **Editorial filter:** `incident_news.py` excludes non-security RSS items by title pattern (e.g. Dark Reading **"Name That Toon"** contest). Filter applies on parse and when serving cached rows; malformed cache entries are skipped defensively.
 
 Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (scheduler registration) · Client journey: [`APPLICATION_EXECUTION_MAP.md`](APPLICATION_EXECUTION_MAP.md) §2.C
 

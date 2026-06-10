@@ -169,7 +169,7 @@ Sequence: [`docs/diagrams/flow_pdf_report.mermaid`](docs/diagrams/flow_pdf_repor
 | Timezone | `Header.jsx` + `timezone.js` | `localStorage` `briefr_timezone` |
 | Last visit marker | `CVEFeed.jsx` | `localStorage` `briefr_last_visit` |
 | Active tab | `App.jsx` `activeTab` | Session only |
-| Case study cards | `caseStudyFeed.js` module cache | 5 min session cache; `GET /api/case-studies/feed` loads RSS then ATLAS (single DB connection) |
+| Case study cards | `caseStudyFeed.js` module cache | 5 min session cache (skipped while `meta.warming`); `GET /api/case-studies/feed` reads the scheduler-built snapshot (`incident_feed:snapshot`) |
 | AI/ML alert count | `App.jsx` `stats` | Refreshed on stack/profile change via `briefr-profile-change` event |
 
 ---

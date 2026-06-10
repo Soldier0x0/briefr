@@ -113,7 +113,7 @@ BRIEFR incorporates publicly available intelligence from NVD, CISA KEV, FIRST EP
 | CIRCL | Extended CVE references | On CVE detail / ingest | — |
 | Groq / Anthropic | PDF executive summary | On PDF export only | `POST /api/ai/summary` |
 | GitHub | Sigma + Elastic rule search | On Detect tab open | `GITHUB_TOKEN` optional |
-| RSS × 6 | Security news cards | Every 4 hours | `GET /api/case-studies/news` |
+| RSS × 6 | Security news cards | Snapshot every 30 min (`INCIDENT_FEED_REFRESH_MINUTES`) | `GET /api/case-studies/feed` |
 
 ---
 
@@ -226,6 +226,7 @@ See `backend/.env.example` for the full list. Key variables:
 | `NVD_SYNC_INTERVAL_HOURS` | NVD incremental cadence | `1` |
 | `KEV_SYNC_INTERVAL_MINUTES` | KEV sync cadence | `15` |
 | `EPSS_SYNC_INTERVAL_HOURS` | EPSS sync cadence | `6` |
+| `INCIDENT_FEED_REFRESH_MINUTES` | Incidents & News snapshot rebuild cadence | `30` |
 | `SCHEDULER_TIMEZONE` | APScheduler TZ | `Asia/Kolkata` |
 | `CORRELATION_HOUR` / `CORRELATION_TIMEZONE` | Nightly correlation job | `1` / `Asia/Kolkata` |
 | `OTX_CORRELATION_HOUR` / `OTX_CORRELATION_TIMEZONE` | OTX nightly job | `2` / `Asia/Kolkata` |

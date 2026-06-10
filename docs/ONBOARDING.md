@@ -141,6 +141,7 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 | `NVD_SYNC_INTERVAL_HOURS` | `1` | NVD incremental cadence |
 | `KEV_SYNC_INTERVAL_MINUTES` | `15` | CISA KEV sync |
 | `EPSS_SYNC_INTERVAL_HOURS` | `6` | EPSS score refresh |
+| `INCIDENT_FEED_REFRESH_MINUTES` | `30` | Incidents & News snapshot rebuild |
 | `NVD_SYNC_OVERLAP_MINUTES` | `15` | Watermark overlap window |
 | `SCHEDULER_TIMEZONE` | `Asia/Kolkata` | APScheduler timezone |
 | `MITRE_REFRESH_HOUR` / `MITRE_REFRESH_MINUTE` | `2` / `0` | Weekly MITRE + ATLAS (Sunday) |

@@ -15,9 +15,14 @@ export async function loadCaseStudyFeed({ force = false } = {}) {
   const result = {
     cards: res?.data || [],
     errors: res?.errors || [],
+    meta: res?.meta || null,
   }
-  feedCache = result
-  feedCacheAt = Date.now()
+  // A warming response means the server snapshot is still being built —
+  // do not pin the empty result for FEED_CACHE_MS.
+  if (!res?.meta?.warming) {
+    feedCache = result
+    feedCacheAt = Date.now()
+  }
   return result
 }
 
