@@ -440,7 +440,7 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 |---|---|---|---|
 | `tz` | str | `DEFAULT_TIMEZONE` env | IANA timezone for display |
 
-**Response:** `status`, `cve_count`, `last_updated`, `nvd_sync_watermark`, `refresh_in_progress`, `ingest`, `feeds.incidents` (`last_refresh`, `stale` — Incidents snapshot freshness), schedule hints, server time.
+**Response:** `status`, `cve_count`, `last_updated`, `nvd_sync_watermark`, `refresh_in_progress`, `ingest`, `feeds.incidents` (`last_refresh`, `stale` — Incidents snapshot freshness), `feeds.sources` (per outbound source: `last_success`, `last_failure`, `last_error`, `consecutive_failures`, `circuit_open`), schedule hints, server time.
 
 ---
 
