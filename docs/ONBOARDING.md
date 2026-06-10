@@ -19,8 +19,10 @@ Read in this sequence the first time through. Skim what you already know; stop a
 | 5 | [`API_REFERENCE.md`](../API_REFERENCE.md) | Endpoint params and response shapes |
 | 6 | [`FOLDER_STRUCTURE_GUIDE.md`](../FOLDER_STRUCTURE_GUIDE.md) | File-by-file map — use when you need the exact module to edit |
 | 7 | [`TECHNICAL_INVENTORY.md`](../TECHNICAL_INVENTORY.md) | Schema (21 tables), scheduler jobs, feature matrix |
-| 8 | [`Beta V1.2.md`](../Beta%20V1.2.md) | Planned refactors and near-future intent |
-| 9 | Source + tests | `backend/tests/` and the files named in the execution map |
+| 8 | [`docs/ROADMAP.md`](ROADMAP.md) | Release index (V1.2–V2.0) and product positioning |
+| 9 | [`Beta V1.2.md`](../Beta%20V1.2.md) | Current release — foundation and hardening |
+| 10 | [`docs/JUPITER_VISION.md`](JUPITER_VISION.md) | Jupiter ecosystem and beast identity (optional sidecars) |
+| 11 | Source + tests | `backend/tests/` and the files named in the execution map |
 
 **Printable architecture:** [`SYSTEM_DESIGN.pdf`](../SYSTEM_DESIGN.pdf) — regenerate with `node scripts/generate_system_design_pdf.mjs` after editing `SYSTEM_DESIGN.md`.
 

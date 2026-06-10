@@ -2,8 +2,8 @@
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
-**Document version:** 1.0  
-**Last updated:** 2026-06-08  
+**Document version:** 1.1  
+**Last updated:** 2026-06-10  
 **Status:** Planning document for work after v1.1 beta stabilization
 
 ---
@@ -13,6 +13,8 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 This document captures what BRIEFR has **completed in v1.1 beta**, what ships in the **recent stabilization pass**, and what is **planned for Beta V1.2** and beyond. It is the single place for near-future product and engineering intent.
 
 For current architecture and data flows, see [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md). New contributors should start with [`docs/ONBOARDING.md`](docs/ONBOARDING.md).
+
+**Roadmap index:** [`docs/ROADMAP.md`](docs/ROADMAP.md) — V1.3+ (analyst beast, admin, platform) are **out of scope** for V1.2 except items listed in [Allowed V1.2 additions](#allowed-v12-additions-from-planning-2026-06-10) below.
 
 ---
 
@@ -112,10 +114,31 @@ V1.2 is a **maintainability and production-hardening** release, not a feature ex
 
 | Non-goal | Reason |
 |----------|--------|
-| PostgreSQL migration | SQLite adequate for single-node beta; revisit for multi-tenant |
+| PostgreSQL migration | SQLite adequate for single-node beta; revisit in [`Beta V2.0.md`](Beta%20V2.0.md) |
 | Multi-tenant SaaS | Requires auth, row-level security, horizontal scaling |
 | Commercial SIEM replacement | BRIEFR remains an analyst workbench, not a full SOC platform |
 | Real-time WebSocket feed | Incremental polling + scheduler sufficient today |
+| Chart.js dashboards | [`Beta V1.3.md`](Beta%20V1.3.md) |
+| Admin pane / webhooks UI / wallboard | [`Beta V1.4.md`](Beta%20V1.4.md) |
+| Forge / threat model UI | [`Beta V1.3.md`](Beta%20V1.3.md) / [`Beta V1.5.md`](Beta%20V1.5.md) |
+| Official Docker compose | [`Beta V2.0.md`](Beta%20V2.0.md) |
+
+---
+
+## Allowed V1.2 additions (from planning 2026-06-10)
+
+These user-visible or ops items are **approved exceptions** to “no feature explosion” because they improve resilience without expanding product category:
+
+| Item | Rationale |
+|------|-----------|
+| **Incident feed snapshot + scheduler job** | Fixes >7s Incidents tab; serve precomputed RSS+ATLAS |
+| **Parallel RSS fetch inside job** | `asyncio.gather` — not on request path |
+| **Health: incidents `last_refresh`, `stale`** | Monitoring hooks backlog |
+| **Structured log fields for scheduler/feeds** | Prep for V1.4 admin logs viewer |
+| **`DATABASE_URL` / path settings only** | Container-ready config; SQLite default unchanged |
+| **`docs/THREAT_MODEL.md`, `docs/OPERATIONS.md`** | Documentation only |
+
+Do **not** add Forge, admin UI, webhooks configuration, or wallboard under V1.2.
 
 ---
 
@@ -150,6 +173,11 @@ Each phase should ship independently with tests; no big-bang rewrite.
 
 | Document | Role |
 |----------|------|
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Master release index |
+| [`docs/JUPITER_VISION.md`](docs/JUPITER_VISION.md) | Jupiter / BRIEFR north star |
+| [`docs/OPERATIONS.md`](docs/OPERATIONS.md) | Backup, logs, deploy compatibility |
+| [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) | Application security model |
+| [`Beta V1.3.md`](Beta%20V1.3.md) | Next — analyst beast |
 | [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) | Current architecture (update when V1.2 phases land) |
 | [`API_REFERENCE.md`](API_REFERENCE.md) | Endpoint catalog |
 | [`TECHNICAL_INVENTORY.md`](TECHNICAL_INVENTORY.md) | Schema, scheduler, feature matrix |

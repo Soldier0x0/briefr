@@ -275,8 +275,16 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 | Document | Contents |
 |----------|----------|
 | [`docs/ONBOARDING.md`](docs/ONBOARDING.md) | **Start here** — reading order, local dev, tests, env vars, troubleshooting |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | **Release index** — V1.2 foundation through V2.0 platform |
+| [`docs/JUPITER_VISION.md`](docs/JUPITER_VISION.md) | Jupiter project vision, beast pillars, optional ClickStack |
 | [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) | Architecture, data flows, design decisions |
-| [`Beta V1.2.md`](Beta%20V1.2.md) | Near-future roadmap (auth, refactor, resilience) |
+| [`Beta V1.2.md`](Beta%20V1.2.md) | Current release — refactor, auth, resilience |
+| [`Beta V1.3.md`](Beta%20V1.3.md) | Analyst beast — brief, charts, Forge MVP |
+| [`Beta V1.4.md`](Beta%20V1.4.md) | Operator beast — admin pane, webhooks, wallboard |
+| [`Beta V1.5.md`](Beta%20V1.5.md) | Threat model UI, rule proof, KEV backlog |
+| [`Beta V2.0.md`](Beta%20V2.0.md) | Docker, optional Postgres, multi-user readiness |
+| [`docs/OPERATIONS.md`](docs/OPERATIONS.md) | Backup, logs, container seams, deploy compatibility |
+| [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) | Application threat model (security design) |
 | [`API_REFERENCE.md`](API_REFERENCE.md) | Every endpoint with params and response shapes |
 | [`TECHNICAL_INVENTORY.md`](TECHNICAL_INVENTORY.md) | Schema, scheduler jobs, external APIs, feature matrix |
 | [`APPLICATION_EXECUTION_MAP.md`](APPLICATION_EXECUTION_MAP.md) | Startup sequence and request journeys |
