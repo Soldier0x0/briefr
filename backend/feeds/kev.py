@@ -9,6 +9,32 @@ logger = logging.getLogger(__name__)
 KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 
 
+def parse_kev_catalog(data: dict) -> list[dict]:
+    """Normalize CISA KEV catalog entries, keeping triage-relevant fields."""
+    results = []
+    for entry in data.get("vulnerabilities", []):
+        cwes = entry.get("cwes") or []
+        if not isinstance(cwes, list):
+            cwes = []
+        results.append(
+            {
+                "cveID": entry.get("cveID", ""),
+                "vendorProject": entry.get("vendorProject", ""),
+                "product": entry.get("product", ""),
+                "vulnerabilityName": entry.get("vulnerabilityName", ""),
+                "shortDescription": entry.get("shortDescription", ""),
+                "requiredAction": entry.get("requiredAction", ""),
+                "dueDate": entry.get("dueDate", ""),
+                "dateAdded": entry.get("dateAdded", ""),
+                "knownRansomwareCampaignUse": entry.get(
+                    "knownRansomwareCampaignUse", ""
+                ),
+                "cwes": [str(c).strip() for c in cwes if str(c).strip()],
+            }
+        )
+    return results
+
+
 async def fetch_kev() -> list[dict]:
     async with httpx.AsyncClient() as client:
         try:
@@ -26,21 +52,7 @@ async def fetch_kev() -> list[dict]:
             logger.error("KEV unexpected error: %s", exc)
             return []
 
-    vulnerabilities = data.get("vulnerabilities", [])
-    results = []
-
-    for entry in vulnerabilities:
-        results.append(
-            {
-                "cveID": entry.get("cveID", ""),
-                "product": entry.get("product", ""),
-                "shortDescription": entry.get("shortDescription", ""),
-                "requiredAction": entry.get("requiredAction", ""),
-                "dueDate": entry.get("dueDate", ""),
-                "dateAdded": entry.get("dateAdded", ""),
-            }
-        )
-
+    results = parse_kev_catalog(data)
     await record_api_call("kev", 1)
     logger.info("KEV fetch complete: %d entries retrieved", len(results))
     return results

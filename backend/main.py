@@ -1002,11 +1002,27 @@ async def get_cve(cve_id: str):
 
         cve = _row_to_cve_dict(rows[0])
         kev_rows = await db.execute_fetchall(
-            "SELECT date_added FROM kev_deadlines WHERE cve_id = ?",
+            """
+            SELECT date_added, vendor_project, vulnerability_name,
+                   known_ransomware, cwes
+            FROM kev_deadlines WHERE cve_id = ?
+            """,
             (cve_key,),
         )
-        if kev_rows and kev_rows[0]["date_added"]:
-            cve["kev_date_added"] = (kev_rows[0]["date_added"] or "").strip() or None
+        if kev_rows:
+            kev_row = dict(kev_rows[0])
+            cve["kev_date_added"] = (kev_row.get("date_added") or "").strip() or None
+            cve["kev_vendor_project"] = (kev_row.get("vendor_project") or "").strip() or None
+            cve["kev_vulnerability_name"] = (
+                kev_row.get("vulnerability_name") or ""
+            ).strip() or None
+            cve["kev_ransomware_use"] = (
+                (kev_row.get("known_ransomware") or "").strip().lower() == "known"
+            )
+            try:
+                cve["kev_cwes"] = json.loads(kev_row.get("cwes") or "[]")
+            except (json.JSONDecodeError, TypeError):
+                cve["kev_cwes"] = []
         cve["techniques"] = await get_techniques_for_cve(db, cve_key)
         cve["atlas_techniques"] = await get_atlas_techniques_for_cve(db, cve_key)
         cve["atlas_case_studies"] = await get_atlas_case_studies_for_cve(db, cve_key)
@@ -1363,7 +1379,9 @@ async def kev_deadlines(
     try:
         rows = await db.execute_fetchall(
             f"""
-            SELECT cve_id, product, short_description, required_action, due_date, date_added, updated_at
+            SELECT cve_id, product, short_description, required_action, due_date,
+                   date_added, vendor_project, vulnerability_name,
+                   known_ransomware, cwes, updated_at
             FROM kev_deadlines
             {order_clause}
             """
@@ -1371,7 +1389,19 @@ async def kev_deadlines(
     finally:
         await db.close()
 
-    return {"data": [dict(row) for row in rows]}
+    entries = []
+    for row in rows:
+        entry = dict(row)
+        try:
+            entry["cwes"] = json.loads(entry.get("cwes") or "[]")
+        except (json.JSONDecodeError, TypeError):
+            entry["cwes"] = []
+        entry["ransomware_use"] = (
+            (entry.get("known_ransomware") or "").strip().lower() == "known"
+        )
+        entries.append(entry)
+
+    return {"data": entries}
 
 
 @app.get("/api/usage")

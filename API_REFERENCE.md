@@ -132,7 +132,7 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 **Response:** Bare CVE object (no `data` wrapper), including:
 
 - Core fields from `cves` table
-- `kev_date_added`, `techniques[]`, `public_exploits[]`, `greynoise_scans[]`, `otx_pulses[]`, `otx_configured`, `osv_packages[]`
+- `kev_date_added`, `kev_vendor_project`, `kev_vulnerability_name`, `kev_ransomware_use` (boolean), `kev_cwes[]`, `techniques[]`, `public_exploits[]`, `greynoise_scans[]`, `otx_pulses[]`, `otx_configured`, `osv_packages[]`
 
 **Error responses:**
 
@@ -414,7 +414,7 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 |---|---|---|---|
 | `sort` | str | `recent` | `recent` (date_added DESC) or `urgent` (due_date ASC) |
 
-**Response:** `{"data": [ kev_deadlines rows ]}`
+**Response:** `{"data": [ kev_deadlines rows ]}` — each row includes `vendor_project`, `vulnerability_name`, `known_ransomware` (`Known` / `Unknown` / empty), `ransomware_use` (boolean convenience flag), and `cwes` (array of CWE IDs).
 
 ---
 

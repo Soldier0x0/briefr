@@ -60,6 +60,10 @@ async def init_db() -> None:
                 required_action TEXT,
                 due_date TEXT,
                 date_added TEXT,
+                vendor_project TEXT DEFAULT '',
+                vulnerability_name TEXT DEFAULT '',
+                known_ransomware TEXT DEFAULT '',
+                cwes TEXT DEFAULT '[]',
                 updated_at TEXT DEFAULT (datetime('now'))
             );
 
@@ -280,6 +284,10 @@ async def init_db() -> None:
 
         for migration in (
             "ALTER TABLE kev_deadlines ADD COLUMN date_added TEXT DEFAULT ''",
+            "ALTER TABLE kev_deadlines ADD COLUMN vendor_project TEXT DEFAULT ''",
+            "ALTER TABLE kev_deadlines ADD COLUMN vulnerability_name TEXT DEFAULT ''",
+            "ALTER TABLE kev_deadlines ADD COLUMN known_ransomware TEXT DEFAULT ''",
+            "ALTER TABLE kev_deadlines ADD COLUMN cwes TEXT DEFAULT '[]'",
             "ALTER TABLE cves ADD COLUMN has_poc INTEGER DEFAULT 0",
             "ALTER TABLE cves ADD COLUMN cpe_matches TEXT DEFAULT '[]'",
             "ALTER TABLE cves ADD COLUMN has_ai_context INTEGER DEFAULT 0",
@@ -828,16 +836,31 @@ async def enrich_kev_summaries(db: aiosqlite.Connection) -> int:
 
 
 async def upsert_kev(db: aiosqlite.Connection, entry: dict) -> None:
+    cwes = entry.get("cwes") or []
+    if not isinstance(cwes, list):
+        cwes = []
     await db.execute(
         """
-        INSERT INTO kev_deadlines (cve_id, product, short_description, required_action, due_date, date_added, updated_at)
-        VALUES (:cve_id, :product, :short_description, :required_action, :due_date, :date_added, datetime('now'))
+        INSERT INTO kev_deadlines (
+            cve_id, product, short_description, required_action, due_date,
+            date_added, vendor_project, vulnerability_name, known_ransomware,
+            cwes, updated_at
+        )
+        VALUES (
+            :cve_id, :product, :short_description, :required_action, :due_date,
+            :date_added, :vendor_project, :vulnerability_name, :known_ransomware,
+            :cwes, datetime('now')
+        )
         ON CONFLICT(cve_id) DO UPDATE SET
             product = excluded.product,
             short_description = excluded.short_description,
             required_action = excluded.required_action,
             due_date = excluded.due_date,
             date_added = excluded.date_added,
+            vendor_project = excluded.vendor_project,
+            vulnerability_name = excluded.vulnerability_name,
+            known_ransomware = excluded.known_ransomware,
+            cwes = excluded.cwes,
             updated_at = datetime('now')
         """,
         {
@@ -847,6 +870,10 @@ async def upsert_kev(db: aiosqlite.Connection, entry: dict) -> None:
             "required_action": entry.get("requiredAction", ""),
             "due_date": entry.get("dueDate", ""),
             "date_added": entry.get("dateAdded", ""),
+            "vendor_project": entry.get("vendorProject", ""),
+            "vulnerability_name": entry.get("vulnerabilityName", ""),
+            "known_ransomware": entry.get("knownRansomwareCampaignUse", ""),
+            "cwes": json.dumps(cwes),
         },
     )
 

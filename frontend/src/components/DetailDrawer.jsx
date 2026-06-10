@@ -1361,6 +1361,15 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
                   {cve.severity}
                 </span>
               )}
+              {cve.kev_ransomware_use && (
+                <span
+                  className="drawer-ransomware-badge mono"
+                  title="Known ransomware campaign use (CISA KEV)"
+                  aria-label="Known ransomware campaign use"
+                >
+                  RANSOMWARE
+                </span>
+              )}
             </div>
             <div className="drawer-header-actions">
               {investigation && (

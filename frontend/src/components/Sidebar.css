@@ -273,6 +273,7 @@
 .badge-soon    { color: var(--amber); background: var(--amber-dim); border-color: var(--amber); }
 .badge-ok      { color: var(--green); background: var(--green-dim); border-color: var(--green); }
 .badge-neutral { color: var(--text3); background: var(--bg3); border-color: var(--border); }
+.badge-ransomware { color: var(--red); background: var(--red-dim); border-color: var(--red); font-weight: 700; }
 
 /* ── Top Techniques ── */
 .technique-list {
