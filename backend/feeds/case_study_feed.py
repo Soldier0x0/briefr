@@ -88,6 +88,7 @@ async def _load_atlas_cards(
 
 
 _build_lock = asyncio.Lock()
+_background_tasks: set[asyncio.Task[None]] = set()
 
 
 async def build_incident_feed_snapshot() -> dict[str, Any]:
@@ -168,7 +169,9 @@ def _schedule_background_build() -> None:
         except Exception as exc:
             logger.error("Background incident snapshot build failed: %s", exc)
 
-    asyncio.create_task(_runner())
+    task = asyncio.create_task(_runner())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
 
 async def get_incident_feed(
