@@ -8,6 +8,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 
 ## Start here
 
+0. Read [`HANDOVER.md`](HANDOVER.md) — **live execution state**, PR ledger, remaining V1.2 work, mandatory per-PR workflow and post-merge testing methodology.  
 1. Read [`ROADMAP.md`](ROADMAP.md) — release you are implementing.  
 2. Read the matching `Beta V1.x.md` at repo root.  
 3. Read [`ONBOARDING.md`](ONBOARDING.md) for codebase layout and tests.  
