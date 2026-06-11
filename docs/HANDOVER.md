@@ -48,6 +48,8 @@ Read in this order before writing any code:
 | #92 | enrichment-resilience | CIRCL migrated to vulnerability.circl.lu (+`CIRCL_API_KEY`, negative caching), OSV alias-follow fix (was silently broken with HTTP 400), resilient client adoption completed for ALL outbound modules (VT/AbuseIPDB/GreyNoise at `retries=0` — never burn quota) | ✅ Merged |
 | #91 | v12-status-handover | Doc sync + this handover | ✅ Merged |
 | #93 | cf-access-identity-audit-log | §5.1 reworked after operator decision (2026-06-11): **CF Access middleware and fail-closed admin key removed** — auth will be a **built-in app login** before public release. PR now ships only the `audit_log` table + writes (refreshes, backups, restores) | 🔲 Open |
+| #94 | settings-and-refresh-router | §5.2 phase 1: `settings.py` (BaseSettings), `dependencies.py` (`require_admin_key`, `audit`), `routers/refresh.py` | ✅ Merged |
+| #95 | router-split-ioc-atlas-health | §5.2 phase 2: `routers/health.py`, `routers/atlas.py`, `routers/ioc.py` moved out of `main.py` verbatim; OpenAPI route list byte-identical (snapshot test `tests/test_router_split.py`). +1 review fix: cached IOC hit now commits on-demand GreyNoise/OTX feed_cache writes (were rolled back on close — pre-existing in main.py) | 🔲 Open |
 
 Each merged PR's description contains its own **post-merge verification
 checklist** — that is the house style; keep it (see §7).
@@ -93,11 +95,18 @@ Ordered; each is one PR unless noted. File pointers are current as of this doc.
 - Pydantic `BaseSettings` for env config; `routers/` (cves, ioc, atlas,
   health, refresh, meta) + `dependencies.py`. **Pure mechanical moves, no
   behavior change.** Do it in 2–3 PRs, one router group each.
-- **Phase 1 shipped:** `settings.py` (import-time vars: `BRIEFR_ENV`,
+- **Phase 1 shipped (#94):** `settings.py` (import-time vars: `BRIEFR_ENV`,
   `BRIEFR_ADMIN_API_KEY`, `ALLOWED_ORIGINS`), `dependencies.py`
   (`require_admin_key`, `audit`), `routers/refresh.py` (all
   `POST /api/refresh*`). Per-request `os.environ.get` reads stay as-is and
-  migrate with their router groups. Remaining: cves, ioc, atlas, health, meta.
+  migrate with their router groups.
+- **Phase 2 shipped (#95):** `routers/health.py` (`GET /api/health` +
+  `format_time_in_tz`, imported by `/api/time` until the meta group moves),
+  `routers/atlas.py` (`/api/atlas/*`, `/api/case-studies/*`),
+  `routers/ioc.py` (`POST /api/ioc/lookup`, `GET /api/otx/pulses/{id}/iocs`).
+  Routers are included mid-module in `main.py` to keep OpenAPI route order
+  identical; `tests/test_router_split.py` snapshots the route list.
+  Remaining: cves, meta.
 - Post-merge tests: full pytest suite; `diff` of `/api/openapi.json` route
   list before/after (must be identical); smoke `deploy/smoke-intel.sh`.
 
