@@ -10,6 +10,9 @@ async function request(path, options = {}) {
   try {
     res = await fetch(`${BASE}${path}`, options)
   } catch (e) {
+    if (e?.name === 'AbortError') {
+      throw e
+    }
     const timedOut = e?.name === 'TimeoutError'
     const err = new Error(
       timedOut
