@@ -23,6 +23,10 @@ Single user today (admin = analyst); routes and audit model ready for future rol
 
 Separate surface from analyst UI. **All destructive actions admin-gated.**
 
+**Lean-first scope (amendment 2026-06-10):** ship the four high-value sections first — **System health**, **Backup & restore (list + manual trigger + integrity badge)**, **Ingest & scheduler**, **per-feed health** — plus the **audit log viewer** (table exists since V1.2). Defer to later phases: configuration editor, integrations UI, users stub, restore *wizard* (CLI restore remains the supported path), support-pack export.
+
+**Admin gating:** separate Cloudflare Access policy on `/admin/*` (operator email only) + app derives identity from the **validated `Cf-Access-Jwt-Assertion` JWT** (V1.2 middleware) for audit; admin routes fail closed in production when no valid assertion is present.
+
 ### Sections
 
 | Section | Features |
@@ -41,6 +45,8 @@ Separate surface from analyst UI. **All destructive actions admin-gated.**
 ---
 
 ## Theme 2 — Webhooks & notifications
+
+**Note:** the first channel + KEV-on-stack rule + backup dead-man ping ship early in [`Beta V1.3.md`](Beta%20V1.3.md) Theme 8. V1.4 builds the full engine around them.
 
 | Item | Goal |
 |------|------|

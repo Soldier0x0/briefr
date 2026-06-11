@@ -66,9 +66,9 @@ V1.2 is a **maintainability and production-hardening** release, not a feature ex
 
 | Item | Goal |
 |------|------|
-| `repositories/` | Extract table access from `database.py` (cves, feeds, correlation, atlas) |
+| `repositories/` | Extract table access from `database.py` **pay-as-you-go** — per table, only where a service needs it; full layer waits for V2.0 Postgres |
 | Idempotent change history | Deduplicate `cve_change_history` inserts on repeated syncs |
-| Shared risk config | One source of truth for v1.1b weights (API config or YAML) |
+| Shared risk config | One source of truth for v1.1b weights (`GET /api/config/risk`; frontend consumes) |
 
 **Why:** Risk weights today exist in both Python and JavaScript; drift is possible.
 
@@ -100,8 +100,11 @@ V1.2 is a **maintainability and production-hardening** release, not a feature ex
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| **API authentication** | High | API keys or OAuth for multi-user / exposed deployments |
+| **Cloudflare Access identity trust** | High | Middleware **validates the `Cf-Access-Jwt-Assertion` JWT** (signature against the team-domain JWKS, `aud` tag, issuer, expiry) and only then derives the user identity — never trust the plain `Cf-Access-Authenticated-User-Email` header alone, since the LAN → nginx path bypasses the Cloudflare edge and headers are spoofable there (pulled forward from V2.0); per-tester identity for watchlists + audit; requests without a valid assertion get no identity; admin gate fail-closed in production |
+| **`audit_log` table** | High | Actor email, action, target, timestamp — populated by backups, restores, manual refreshes from day one (admin UI reads it in V1.4) |
+| **API authentication** | Medium | Edge auth exists via Cloudflare Access policy today; app-level keys/OAuth only if exposure model changes |
 | **Rate limiting** | Medium | Protect `/api/ioc/lookup` and refresh endpoints |
+| **Backup encryption** | High | Archives include `.env` (all API keys) in plaintext; encrypt with `age`, key stored outside `BACKUP_DIR` |
 | **Operator “changes” UI** | Low | Surface `GET /api/changes` in the analyst UI |
 | **Investigation pivots from Incidents** | Low | CVE links in ATLAS cards → open drawer / investigation thread |
 | **IOC lookup history persistence** | Low | Optional `localStorage` history (privacy-reviewed) |
@@ -137,6 +140,10 @@ These user-visible or ops items are **approved exceptions** to “no feature exp
 | **Structured log fields for scheduler/feeds** | Prep for V1.4 admin logs viewer |
 | **`DATABASE_URL` / path settings only** | Container-ready config; SQLite default unchanged |
 | **`docs/THREAT_MODEL.md`, `docs/OPERATIONS.md`** | Documentation only |
+| **KEV extra fields** | Keep `knownRansomwareCampaignUse`, `cwes`, `vendorProject`, `vulnerabilityName` from the catalog already fetched every 15 min |
+| **EPSS 30-day history backfill** | One-shot resumable job via FIRST API `scope=time-series` (batched CVE IDs, throttled, `sync_state` marker); warm-starts sparklines and momentum |
+| **CI dependency audits + `/api/version`** | `pip-audit` + `npm audit` jobs; version endpoint stamped at deploy for beta-tester bug reports |
+| **Playwright smoke in CI (early)** | Safety net before V1.2 Phase 4+ frontend refactors |
 
 Do **not** add Forge, admin UI, webhooks configuration, or wallboard under V1.2.
 
