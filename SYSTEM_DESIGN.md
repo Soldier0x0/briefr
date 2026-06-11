@@ -57,7 +57,7 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
 └──────────────────────────────────┬──────────────────────────────────────────┘
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ FastAPI (main.py) — /api/* — 1,344 lines, ~30 endpoints                     │
+│ FastAPI (main.py + routers/) — /api/* — ~30 endpoints                       │
 └──────────────────────────────────┬──────────────────────────────────────────┘
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -217,7 +217,7 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 ### Monolithic `main.py` (intentional v1.1)
 
 - **Why:** Single-developer velocity; no premature abstraction.
-- **Trade-off:** 1,344 lines, ~10 responsibilities — v1.2 router + service split planned.
+- **Trade-off:** ~1,430 lines, ~10 responsibilities — v1.2 router + service split underway (`settings.py`, `dependencies.py`, `routers/refresh.py` extracted; remaining groups follow).
 
 ### Monolithic `database.py` (intentional v1.1)
 

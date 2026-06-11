@@ -55,9 +55,9 @@ V1.2 is a **maintainability and production-hardening** release, not a feature ex
 
 | Item | Goal |
 |------|------|
-| `settings.py` | Single typed config (Pydantic `BaseSettings`) for env vars, TTLs, weights |
-| Router split | `routers/cves.py`, `ioc.py`, `atlas.py`, `health.py`, `refresh.py` |
-| `dependencies.py` | FastAPI `Depends()` for DB sessions and settings |
+| `settings.py` | Single typed config (Pydantic `BaseSettings`) for env vars, TTLs, weights — 🔶 Phase 1 shipped (`BRIEFR_ENV`, `BRIEFR_ADMIN_API_KEY`, `ALLOWED_ORIGINS`; remaining vars migrate with their router groups) |
+| Router split | `routers/cves.py`, `ioc.py`, `atlas.py`, `health.py`, `refresh.py` — 🔶 `refresh.py` shipped; other groups follow, one PR each |
+| `dependencies.py` | FastAPI `Depends()` for DB sessions and settings — 🔶 Shipped with admin-key gate + audit writer |
 | `services/` layer | `cve_service`, `enrichment_service`, `ioc_service` between routers and DB |
 
 **Why:** `main.py` (~1,400 lines) and `database.py` (~1,680 lines) are hard to test and review in isolation.

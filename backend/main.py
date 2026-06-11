@@ -2,8 +2,6 @@ import asyncio
 import json
 import logging
 import os
-import secrets
-import sqlite3
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -17,9 +15,8 @@ from typing import Any
 
 load_dotenv()
 
-BRIEFR_ENV = os.environ.get("BRIEFR_ENV", "development").strip().lower()
-BRIEFR_ADMIN_API_KEY = os.environ.get("BRIEFR_ADMIN_API_KEY", "").strip()
-_IS_PRODUCTION = BRIEFR_ENV == "production"
+from settings import settings
+
 BUILD_INFO_PATH = Path(__file__).resolve().parent / ".build-info.json"
 
 logging.basicConfig(
@@ -47,7 +44,6 @@ from database import (
     init_db,
     match_cves_for_assets,
     set_ioc_cache,
-    write_audit_log,
 )
 from feeds.extended import (
     greynoise_scans_for_cve,
@@ -56,9 +52,9 @@ from feeds.extended import (
 from feeds.case_study_feed import get_incident_feed, get_incident_feed_status
 from resilient_client import close_client, get_feed_health
 from feeds.otx import load_otx_pulses_for_cve, load_pulse_iocs, top_pulse_ipv4s
-from scheduler import run_weekly_mitre_refresh
 from enrichment.ioc import lookup_ioc
 from feeds.osv import fetch_osv_by_cve
+from routers import refresh as refresh_router
 from scheduler import (
     get_ingest_status,
     get_ingest_intervals,
@@ -66,10 +62,6 @@ from scheduler import (
     get_refresh_schedule,
     maybe_run_on_startup,
     refresh_in_progress,
-    run_daily_refresh,
-    run_epss_sync,
-    run_kev_sync,
-    run_nvd_incremental_sync,
     start_scheduler,
     stop_scheduler,
 )
@@ -117,50 +109,21 @@ app = FastAPI(
         "name": "Proprietary — All Rights Reserved",
         "url": "https://projectjupiter.in/terms",
     },
-    docs_url=None if _IS_PRODUCTION else "/api/docs",
-    redoc_url=None if _IS_PRODUCTION else "/api/redoc",
-    openapi_url=None if _IS_PRODUCTION else "/api/openapi.json",
+    docs_url=None if settings.is_production else "/api/docs",
+    redoc_url=None if settings.is_production else "/api/redoc",
+    openapi_url=None if settings.is_production else "/api/openapi.json",
     lifespan=lifespan,
 )
 
-_raw_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000")
-allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=settings.allowed_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
-
-def _require_admin_key(request: Request) -> None:
-    """When BRIEFR_ADMIN_API_KEY is set, admin routes require X-BRIEFR-Admin-Key."""
-    if not BRIEFR_ADMIN_API_KEY:
-        return
-    provided = request.headers.get("X-BRIEFR-Admin-Key", "")
-    if not secrets.compare_digest(provided, BRIEFR_ADMIN_API_KEY):
-        raise HTTPException(status_code=401, detail="Admin API key required")
-
-
-async def _audit(request: Request, action: str, target: str = "") -> None:
-    """Record an audited action. Actor stays empty until built-in app login
-    ships (decision 2026-06-11); request.state.user_email is the future hook.
-
-    Best-effort: write contention (e.g. bootstrap ingest holding the DB)
-    must not turn an otherwise valid admin action into a 500.
-    """
-    actor = getattr(request.state, "user_email", None)
-    try:
-        db = await get_db()
-        try:
-            await write_audit_log(db, actor, action, target)
-            await db.commit()
-        finally:
-            await db.close()
-    except sqlite3.OperationalError as exc:
-        logger.error("Audit log write failed (%s): %s", action, exc)
+app.include_router(refresh_router.router)
 
 
 @app.middleware("http")
@@ -894,17 +857,6 @@ async def atlas_case_studies(
     return {"data": studies, "source": "MITRE ATLAS"}
 
 
-@app.post("/api/refresh/mitre")
-async def manual_mitre_refresh(request: Request):
-    _require_admin_key(request)
-    await _audit(request, "refresh.mitre", "attack+atlas")
-    asyncio.create_task(run_weekly_mitre_refresh())
-    return {
-        "status": "ok",
-        "message": "MITRE ATT&CK + ATLAS refresh started in background",
-    }
-
-
 @app.get("/api/cves/{cve_id}/sentences")
 async def get_cve_sentences(cve_id: str):
     if not cve_id.upper().startswith("CVE-"):
@@ -1366,52 +1318,6 @@ async def cve_correlation(
         await db.close()
 
     return result
-
-
-@app.post("/api/refresh")
-async def manual_refresh(request: Request):
-    _require_admin_key(request)
-    if refresh_in_progress():
-        raise HTTPException(
-            status_code=409,
-            detail="An ingest job is already running. Wait for it to finish before starting another.",
-        )
-    await _audit(request, "refresh.full", "nvd+kev+epss")
-    asyncio.create_task(run_daily_refresh())
-    return {
-        "status": "ok",
-        "message": "Full ingest started (NVD, then KEV, then EPSS) in background",
-    }
-
-
-@app.post("/api/refresh/nvd")
-async def manual_nvd_refresh(request: Request):
-    _require_admin_key(request)
-    if refresh_in_progress():
-        raise HTTPException(status_code=409, detail="An ingest job is already running.")
-    await _audit(request, "refresh.nvd", "nvd")
-    asyncio.create_task(run_nvd_incremental_sync())
-    return {"status": "ok", "message": "NVD incremental sync started in background"}
-
-
-@app.post("/api/refresh/kev")
-async def manual_kev_refresh(request: Request):
-    _require_admin_key(request)
-    if refresh_in_progress():
-        raise HTTPException(status_code=409, detail="An ingest job is already running.")
-    await _audit(request, "refresh.kev", "kev")
-    asyncio.create_task(run_kev_sync())
-    return {"status": "ok", "message": "KEV metadata sync started in background"}
-
-
-@app.post("/api/refresh/epss")
-async def manual_epss_refresh(request: Request):
-    _require_admin_key(request)
-    if refresh_in_progress():
-        raise HTTPException(status_code=409, detail="An ingest job is already running.")
-    await _audit(request, "refresh.epss", "epss")
-    asyncio.create_task(run_epss_sync())
-    return {"status": "ok", "message": "EPSS score sync started in background"}
 
 
 @app.get("/api/kev/deadlines")
