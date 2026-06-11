@@ -142,6 +142,8 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 | `KEV_SYNC_INTERVAL_MINUTES` | `15` | CISA KEV sync |
 | `EPSS_SYNC_INTERVAL_HOURS` | `6` | EPSS score refresh |
 | `INCIDENT_FEED_REFRESH_MINUTES` | `30` | Incidents & News snapshot rebuild |
+| `CIRCUIT_FAILURE_THRESHOLD` | `3` | Consecutive failures before a source circuit opens |
+| `CIRCUIT_COOLDOWN_SECONDS` | `60` | Circuit-open cooldown before retrying a source |
 | `NVD_SYNC_OVERLAP_MINUTES` | `15` | Watermark overlap window |
 | `SCHEDULER_TIMEZONE` | `Asia/Kolkata` | APScheduler timezone |
 | `MITRE_REFRESH_HOUR` / `MITRE_REFRESH_MINUTE` | `2` / `0` | Weekly MITRE + ATLAS (Sunday) |

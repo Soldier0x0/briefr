@@ -9,6 +9,9 @@
     "preview": "vite preview --port 3000"
   },
   "dependencies": {
+    "@fontsource/dm-sans": "^5.2.8",
+    "@fontsource/dm-serif-display": "^5.2.8",
+    "@fontsource/ibm-plex-mono": "^5.2.7",
     "exceljs": "^4.4.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",

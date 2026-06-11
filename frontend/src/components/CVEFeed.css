@@ -14,6 +14,14 @@
 .cve-list {
   display: flex;
   flex-direction: column;
+  transition: opacity 0.15s ease;
+}
+
+/* Stale-while-revalidate: previous results stay visible, dimmed, while the
+   next filter result set loads — no skeleton flash on every filter click. */
+.cve-list.feed-refreshing {
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 /* States */

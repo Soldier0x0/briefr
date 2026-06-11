@@ -31,6 +31,7 @@ import {
   RISK_COMPONENT_LABELS,
 } from '../scoring/riskScore.js'
 import { setMomentumScore } from '../utils/momentumCache.js'
+import useModalLayer from '../hooks/useModalLayer.js'
 import './DetailDrawer.css'
 
 
@@ -1058,8 +1059,13 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const [pdfError, setPdfError] = useState(null)
   const reportRef = useRef(null)
   const epssSparklineRef = useRef(null)
+  const sheetRef = useRef(null)
   const navigatingRef = useRef(false)
   const isOpen = !!cve
+
+  // Trap Tab inside the drawer while open; restore focus to the originating
+  // card on close. Escape stays owned by the global App handler.
+  useModalLayer(isOpen, sheetRef)
   const investigation = useInvestigationOptional()
   const assetCtx = useAssetProfileOptional()
 
@@ -1336,6 +1342,8 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
         role="dialog"
         aria-modal="true"
         aria-label={`CVE detail: ${cve.cve_id}`}
+        ref={sheetRef}
+        tabIndex={-1}
       >
         <div className="drawer-sheet-handle" aria-hidden="true" />
 

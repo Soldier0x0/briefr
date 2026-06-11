@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import useModalLayer from '../hooks/useModalLayer.js'
 import './AboutModal.css'
 
 const SOURCES = [
@@ -16,6 +17,10 @@ const SOURCES = [
 ]
 
 export default function AboutModal({ onClose }) {
+  const boxRef = useRef(null)
+
+  useModalLayer(true, boxRef)
+
   useEffect(() => {
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
@@ -33,7 +38,7 @@ export default function AboutModal({ onClose }) {
       aria-modal="true"
       aria-labelledby="about-title"
     >
-      <div className="about-box">
+      <div className="about-box" ref={boxRef} tabIndex={-1}>
         <button className="about-close" onClick={onClose} aria-label="Close (Escape)">
           &#x2715;
         </button>

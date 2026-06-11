@@ -5,6 +5,7 @@ import logging
 
 import httpx
 
+from resilient_client import CircuitOpenError, resilient_get
 from tracking import record_api_call
 
 logger = logging.getLogger(__name__)
@@ -14,16 +15,19 @@ EPSS_CSV_URL = "https://epss.empiricalsecurity.com/epss_scores-current.csv.gz"
 BATCH_SIZE = 100
 
 
-async def _fetch_batch_api(client: httpx.AsyncClient, cve_ids: list) -> dict[str, float]:
+async def _fetch_batch_api(cve_ids: list) -> dict[str, float]:
     cve_param = ",".join(cve_ids)
     try:
-        response = await client.get(
+        response = await resilient_get(
+            "epss",
             EPSS_API_URL,
             params={"cve": cve_param},
             timeout=30.0,
         )
-        response.raise_for_status()
         data = response.json()
+    except CircuitOpenError:
+        logger.warning("EPSS circuit open — skipping batch of %d CVEs", len(cve_ids))
+        return {}
     except httpx.HTTPStatusError as exc:
         logger.error(
             "EPSS HTTP error %s for batch of %d CVEs",
@@ -31,7 +35,7 @@ async def _fetch_batch_api(client: httpx.AsyncClient, cve_ids: list) -> dict[str
             len(cve_ids),
         )
         return {}
-    except httpx.RequestError as exc:
+    except httpx.HTTPError as exc:
         logger.error("EPSS request error for batch of %d CVEs: %s", len(cve_ids), exc)
         return {}
     except Exception as exc:
@@ -59,10 +63,11 @@ async def fetch_epss_bulk(cve_ids: set[str]) -> dict[str, float]:
     scores: dict[str, float] = {}
 
     try:
-        async with httpx.AsyncClient(follow_redirects=True) as client:
-            response = await client.get(EPSS_CSV_URL, timeout=120.0)
-            response.raise_for_status()
-            raw = gzip.decompress(response.content)
+        response = await resilient_get("epss_bulk", EPSS_CSV_URL, timeout=120.0)
+        raw = gzip.decompress(response.content)
+    except CircuitOpenError:
+        logger.warning("EPSS bulk circuit open — skipping CSV download")
+        return {}
     except httpx.HTTPError as exc:
         logger.error("EPSS bulk CSV download failed: %s", exc)
         return {}
@@ -105,12 +110,11 @@ async def fetch_epss_api(cve_ids: list) -> dict[str, float]:
     all_scores: dict[str, float] = {}
     batches = [cve_ids[i : i + BATCH_SIZE] for i in range(0, len(cve_ids), BATCH_SIZE)]
 
-    async with httpx.AsyncClient(follow_redirects=True) as client:
-        for idx, batch in enumerate(batches):
-            batch_scores = await _fetch_batch_api(client, batch)
-            all_scores.update(batch_scores)
-            if idx < len(batches) - 1:
-                await asyncio.sleep(1)
+    for idx, batch in enumerate(batches):
+        batch_scores = await _fetch_batch_api(batch)
+        all_scores.update(batch_scores)
+        if idx < len(batches) - 1:
+            await asyncio.sleep(1)
 
     await record_api_call("epss", len(batches))
     logger.info(

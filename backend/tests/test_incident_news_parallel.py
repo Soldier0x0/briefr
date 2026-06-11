@@ -36,7 +36,7 @@ def test_parallel_fetch_collects_items_and_isolates_failures(tmp_path, monkeypat
     ]
     monkeypatch.setattr(incident_news, "INCIDENT_RSS_SOURCES", sources)
 
-    async def fake_fetch(url: str) -> bytes:
+    async def fake_fetch(url: str, source_id: str = "rss") -> bytes:
         if "broken" in url:
             raise RuntimeError("connection refused")
         slug = "alpha" if "alpha" in url else "beta"
@@ -68,7 +68,7 @@ def test_parallel_fetch_collects_items_and_isolates_failures(tmp_path, monkeypat
             assert cached["items"][0]["title"] == "alpha headline"
 
             # Second call serves from cache without network.
-            async def must_not_fetch(url: str) -> bytes:
+            async def must_not_fetch(url: str, source_id: str = "rss") -> bytes:
                 raise AssertionError("network fetch on warm cache")
 
             monkeypatch.setattr(incident_news, "_fetch_rss_bytes", must_not_fetch)

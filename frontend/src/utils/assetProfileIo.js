@@ -56,7 +56,12 @@ export function downloadProfileJson(profile) {
 
 export async function parseProfileFile(file) {
   const text = await file.text()
-  const data = JSON.parse(text)
+  let data
+  try {
+    data = JSON.parse(text)
+  } catch {
+    throw new Error('Invalid profile file — not valid JSON')
+  }
   if (!data || typeof data !== 'object') {
     throw new Error('Invalid profile file')
   }
