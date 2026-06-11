@@ -100,7 +100,7 @@ V1.2 is a **maintainability and production-hardening** release, not a feature ex
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| **Cloudflare Access identity trust** | High | Middleware trusts `Cf-Access-Authenticated-User-Email` behind the tunnel (pulled forward from V2.0); per-tester identity for watchlists + audit; admin gate fail-closed in production |
+| **Cloudflare Access identity trust** | High | Middleware **validates the `Cf-Access-Jwt-Assertion` JWT** (signature against the team-domain JWKS, `aud` tag, issuer, expiry) and only then derives the user identity — never trust the plain `Cf-Access-Authenticated-User-Email` header alone, since the LAN → nginx path bypasses the Cloudflare edge and headers are spoofable there (pulled forward from V2.0); per-tester identity for watchlists + audit; requests without a valid assertion get no identity; admin gate fail-closed in production |
 | **`audit_log` table** | High | Actor email, action, target, timestamp — populated by backups, restores, manual refreshes from day one (admin UI reads it in V1.4) |
 | **API authentication** | Medium | Edge auth exists via Cloudflare Access policy today; app-level keys/OAuth only if exposure model changes |
 | **Rate limiting** | Medium | Protect `/api/ioc/lookup` and refresh endpoints |

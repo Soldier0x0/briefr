@@ -73,9 +73,9 @@ Optional integration with **ClickStack** (HyperDX API) for provisioning dashboar
 
 | Item | Goal |
 |------|------|
-| **Persistent IOC watchlist** | Analyst-saved IOCs (keyed by `user_email`) |
+| **Persistent IOC watchlist** | Analyst-saved IOCs (keyed by `user_email`); `ioc_watchlist` table **indexed on the IOC value column** so retro-match joins stay index-backed as feeds grow |
 | **ThreatFox feed** | Bulk IOC ingest via existing `ABUSECH_AUTH_KEY` |
-| **Retro-matching** | Nightly job matches watchlist against `otx_pulse_iocs` + ThreatFox locally — zero extra API quota; hits feed the webhook engine |
+| **Retro-matching** | Nightly job matches watchlist against `otx_pulse_iocs` (already indexed via `idx_otx_pulse_iocs_value`) + ThreatFox locally — zero extra API quota; hits feed the webhook engine |
 | **VulnCheck KEV tier** | Free community catalog (~2–3x CISA KEV) as an "exploited, not yet CISA" scoring tier |
 
 ---

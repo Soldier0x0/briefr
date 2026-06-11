@@ -118,7 +118,7 @@ Env-gated, CPU-only, scheduler-side, deterministic fallback — see ML placement
 
 | Item | Goal |
 |------|------|
-| **Embeddings at ingest** | Small local model (e.g. bge-small via ONNX/fastembed), vectors in `sqlite-vec` |
+| **Embeddings at ingest** | Small local model (e.g. bge-small via ONNX/fastembed); vectors stored as BLOBs in SQLite. **Default search: exact brute-force cosine (NumPy)** — adequate at BRIEFR scale (tens of thousands of embedded rows) and keeps the single-tool deploy contract. `sqlite-vec` is an optional accelerator only where its loadable extension is available (Python build must support `enable_load_extension`; document the Debian toolchain if adopted) |
 | **Similar CVEs** | Semantic relatedness beyond same-product matching |
 | **News ↔ CVE linking + RSS dedup** | Cluster multi-source coverage of one incident into one card |
 | **Semantic search** | Across CVE descriptions, ATLAS studies, news |

@@ -50,7 +50,7 @@ Cross-release amendments approved in planning (details in each release doc):
 
 | Amendment | Lands in | Rationale |
 |-----------|----------|-----------|
-| Cloudflare Access identity trust (`Cf-Access-Authenticated-User-Email`) + `audit_log` table | **V1.2** (pulled from V2.0) | Edge already authenticates; per-tester state and audit are nearly free |
+| Cloudflare Access identity trust (validated `Cf-Access-Jwt-Assertion` JWT — never the plain email header, which is spoofable on the LAN path) + `audit_log` table | **V1.2** (pulled from V2.0) | Edge already authenticates; per-tester state and audit are nearly free |
 | One webhook channel (KEV-on-stack) + backup dead-man ping | **V1.3** (pulled from V1.4) | Highest daily value; webhook engine doubles as future module interface |
 | KEV extra fields (`knownRansomwareCampaignUse`, `cwes`, `vendorProject`, `vulnerabilityName`) | **V1.2** | Already downloaded every 15 min; currently discarded |
 | EPSS 30-day history backfill via FIRST API (`scope=time-series`) | **V1.2** | Warm-start sparklines/momentum; idempotent one-shot job |

@@ -64,7 +64,7 @@ These env vars must remain supported across releases (defaults preserved):
 **Archive contents:**
 
 - `briefr.db` (integrity-checked)  
-- `.env` — **V1.2: encrypt archives with `age`** (key outside `BACKUP_DIR`); archives currently carry all API keys in plaintext  
+- `.env` — **V1.2: encrypt archives with `age`** (key outside `BACKUP_DIR`, readable by the `briefr` user so startup auto-restore keeps working); archives currently carry all API keys in plaintext. Encryption protects off-site / at-rest copies — not a compromised host, which can read the key  
 - **Manifest (planned):** schema version, app version, CVE count, timestamp  
 
 **Dead-man monitoring (V1.3):** `briefr-backup.sh` pings a healthchecks-style URL on success — silence becomes the alert, covering both backup failures and a dead timer.
