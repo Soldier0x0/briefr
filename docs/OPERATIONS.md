@@ -43,7 +43,7 @@ These env vars must remain supported across releases (defaults preserved):
 | `BACKUP_DIR` | Archive directory |
 | `BACKUP_RETENTION_COUNT` | Max archives |
 | `BRIEFR_ENV` | `production` / `development` |
-| `BRIEFR_ADMIN_API_KEY` | Admin route protection |
+| `BRIEFR_ADMIN_API_KEY` | Optional admin route protection (interim until app login) |
 | `ALLOWED_ORIGINS` | CORS |
 | `GITHUB_TOKEN`, IOC keys | Optional enrichment |
 

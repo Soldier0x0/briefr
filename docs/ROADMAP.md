@@ -52,7 +52,8 @@ Cross-release amendments approved in planning (details in each release doc):
 
 | Amendment | Lands in | Rationale |
 |-----------|----------|-----------|
-| Cloudflare Access identity trust (validated `Cf-Access-Jwt-Assertion` JWT — never the plain email header, which is spoofable on the LAN path) + `audit_log` table | **V1.2** (pulled from V2.0) | Edge already authenticates; per-tester state and audit are nearly free |
+| `audit_log` table (actor, action, target, timestamp) | **V1.2** | Populated by backups, restores, manual refreshes; admin pane reads it in V1.4 |
+| ~~Cloudflare Access identity trust (validated JWT)~~ — **dropped 2026-06-11**: BRIEFR targets public self-hosting, so identity comes from a **built-in app login** (lands with/before public release; replaces edge-auth identity everywhere it was referenced — V1.3 watchlist keying, V1.4 admin gating). `audit_log.actor` stays empty until then | — | Self-hosted users won't run Cloudflare Access; app-owned auth is portable |
 | One webhook channel (KEV-on-stack) + backup dead-man ping | **V1.3** (pulled from V1.4) | Highest daily value; webhook engine doubles as future module interface |
 | KEV extra fields (`knownRansomwareCampaignUse`, `cwes`, `vendorProject`, `vulnerabilityName`) | **V1.2** | Already downloaded every 15 min; currently discarded |
 | EPSS 30-day history backfill via FIRST API (`scope=time-series`) | **V1.2** | Warm-start sparklines/momentum; idempotent one-shot job |

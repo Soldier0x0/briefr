@@ -279,6 +279,19 @@ async def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_group_technique_map_technique
                 ON group_technique_map(technique_id);
+
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                actor TEXT NOT NULL DEFAULT '',
+                action TEXT NOT NULL,
+                target TEXT NOT NULL DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_audit_log_created
+                ON audit_log(created_at);
+            CREATE INDEX IF NOT EXISTS idx_audit_log_action
+                ON audit_log(action);
         """)
         await db.commit()
 
@@ -326,6 +339,19 @@ async def init_db() -> None:
         await db.commit()
     finally:
         await db.close()
+
+
+async def write_audit_log(
+    db: aiosqlite.Connection,
+    actor: str | None,
+    action: str,
+    target: str = "",
+) -> None:
+    """Append one audit row (caller commits). Actor is '' when no identity."""
+    await db.execute(
+        "INSERT INTO audit_log (actor, action, target) VALUES (?, ?, ?)",
+        ((actor or "").strip(), action, target or ""),
+    )
 
 
 TRACKED_CVE_FIELDS = frozenset({"cvss_score", "epss_score", "is_kev", "has_poc"})

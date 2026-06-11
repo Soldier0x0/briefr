@@ -168,6 +168,8 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 |----------|---------|---------|
 | `ALLOWED_ORIGINS` | localhost dev URLs | CORS origins (comma-separated) |
 | `DEFAULT_TIMEZONE` | `Asia/Kolkata` | Health / time display default |
+| `BRIEFR_ENV` | `development` | `production` disables Swagger/OpenAPI docs |
+| `BRIEFR_ADMIN_API_KEY` | — | Optional `X-BRIEFR-Admin-Key` gate for `POST /api/refresh*` (interim until built-in app login ships) |
 
 ---
 

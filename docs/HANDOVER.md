@@ -45,8 +45,9 @@ Read in this order before writing any code:
 | #88 | ci-audits-version | `/api/version` + deploy stamping + `pip-audit`/`npm audit` CI jobs | ✅ Merged |
 | #89 | restore-resilient-client | Clean cherry-pick of #87's content onto `main` | 🔲 Open — **merge first** |
 | #90 | ui-ux-fixes | UI/UX correctness pass: feed scroll/filter fixes, stale-while-revalidate, overlay layering/focus traps, self-hosted fonts, reduced-motion, request timeouts, sidebar cache | 🔲 Open |
-| #92 | enrichment-resilience | CIRCL migrated to vulnerability.circl.lu (+`CIRCL_API_KEY`, negative caching), OSV alias-follow fix (was silently broken with HTTP 400), resilient client adoption completed for ALL outbound modules (VT/AbuseIPDB/GreyNoise at `retries=0` — never burn quota) | 🔲 Open |
-| this | v12-status-handover | Doc sync + this handover | 🔲 Open |
+| #92 | enrichment-resilience | CIRCL migrated to vulnerability.circl.lu (+`CIRCL_API_KEY`, negative caching), OSV alias-follow fix (was silently broken with HTTP 400), resilient client adoption completed for ALL outbound modules (VT/AbuseIPDB/GreyNoise at `retries=0` — never burn quota) | ✅ Merged |
+| #91 | v12-status-handover | Doc sync + this handover | ✅ Merged |
+| #93 | cf-access-identity-audit-log | §5.1 reworked after operator decision (2026-06-11): **CF Access middleware and fail-closed admin key removed** — auth will be a **built-in app login** before public release. PR now ships only the `audit_log` table + writes (refreshes, backups, restores) | 🔲 Open |
 
 Each merged PR's description contains its own **post-merge verification
 checklist** — that is the house style; keep it (see §7).
@@ -74,19 +75,19 @@ its code never reached `main`. #89 fixes this by cherry-pick.
 
 Ordered; each is one PR unless noted. File pointers are current as of this doc.
 
-### 5.1 Cloudflare Access identity middleware + `audit_log` table
-- Middleware in backend validating the **`Cf-Access-Jwt-Assertion` JWT**
-  (JWKS from the team domain, `aud` tag, issuer, expiry). **Never trust the
-  plain `Cf-Access-Authenticated-User-Email` header** — the LAN → nginx path
-  bypasses the edge (see `THREAT_MODEL.md`). Env: `CF_ACCESS_TEAM_DOMAIN`,
-  `CF_ACCESS_AUD`; when unset (dev/LAN), identity is simply `None`.
-- `audit_log` table (actor email, action, target, timestamp) + writes from:
-  backup runs, restores, manual `/api/refresh*` calls.
-- Make `_require_admin_key` (in `backend/main.py`) **fail closed when
-  `BRIEFR_ENV=production` and no key is configured**.
-- Post-merge tests: request via Cloudflare → identity logged in audit rows;
-  request via LAN with a forged email header → no identity; admin route
-  without key in production → 401.
+### 5.1 ~~Cloudflare Access identity middleware~~ + `audit_log` table — ✅ done (PR #93 open)
+- **Scope amended by operator decision (2026-06-11):** BRIEFR targets public
+  self-hosting, so identity will come from a **built-in app login** (lands
+  with/before public release), NOT Cloudflare Access. The CF JWT middleware
+  and the production fail-closed admin key were implemented, then removed
+  from the PR. Do not rebuild them.
+- What ships in #93: `audit_log` table (actor, action, target, timestamp) +
+  writes from backup runs, restores, manual `/api/refresh*` calls. Actor is
+  `system` for backups/restores and empty for request-driven actions until
+  app login lands (`request.state.user_email` is the wiring hook in
+  `main.py:_audit`).
+- Post-merge tests: `PRAGMA table_info(audit_log)` shows columns; manual
+  refresh and a backup run each add a row; pytest green.
 
 ### 5.2 `settings.py` + router split (`main.py` is ~1,500 lines)
 - Pydantic `BaseSettings` for env config; `routers/` (cves, ioc, atlas,
@@ -133,9 +134,10 @@ Ordered; each is one PR unless noted. File pointers are current as of this doc.
   drawer opens/closes with focus restore; IOC tab accepts input; Incidents
   renders cards. Wire into `.github/workflows/backend-tests.yml` as a third job.
 
-**V1.2 exit criteria** (from `Beta V1.2.md`): `main.py` under ~300 lines;
-no duplicated risk weights; circuit breaker behavior verified; auth required
-for write/refresh in production; CI green including smoke.
+**V1.2 exit criteria** (from `Beta V1.2.md`, amended 2026-06-11): `main.py`
+under ~300 lines; no duplicated risk weights; circuit breaker behavior
+verified; CI green including smoke. (Auth criterion moved out: built-in app
+login ships before public release, not in V1.2.)
 
 ---
 
@@ -144,8 +146,8 @@ for write/refresh in production; CI green including smoke.
 **Tranche 2 (V1.3):** "what changed" UI + KEV due-date countdown (data
 already in DB — cheapest analyst value, do these first) → morning brief API +
 explainable risk UI → Chart.js brief dashboard → Forge MVP (coverage map,
-hunt-packs API, CVE→pack) → watchlist/pin/snooze keyed by CF Access
-`user_email` → new intel sources (Vulnrichment, cvelistV5, PoC-in-GitHub,
+hunt-packs API, CVE→pack) → watchlist/pin/snooze (single-user now; keyed by
+app-login user once built-in auth ships) → new intel sources (Vulnrichment, cvelistV5, PoC-in-GitHub,
 ExploitDB, Metasploit metadata, Nuclei index — all as `resilient_client` feed
 modules; snapshot-type sources need no watermark) → embeddings (BLOBs +
 NumPy brute-force default; `sqlite-vec` optional) + LLM product extraction for
@@ -239,8 +241,8 @@ spare port with `DB_PATH=/tmp/test.db`.
 
 1. Morning brief as landing view? (§6)
 2. Webhook channel preference: Telegram or Discord first?
-3. `CF_ACCESS_TEAM_DOMAIN` / `AUD` values needed for 5.1 (secrets — request
-   via Cursor dashboard secrets, never in repo).
+3. ~~CF Access secrets for 5.1~~ — moot: CF identity dropped (2026-06-11);
+   auth = built-in app login before public release.
 4. When V1.2 exit criteria are met: bump version, regenerate
    `SYSTEM_DESIGN.pdf` + `TECHNICAL_INVENTORY.xlsx` (commands in
    `ONBOARDING.md` §8), and update this document or retire it.

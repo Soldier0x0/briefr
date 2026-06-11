@@ -90,6 +90,7 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 | `cve_exploits` | Via Sploitus loader in CVE detail | DetailDrawer Intel tab |
 | `cve_change_history` | `GET /api/changes` | — (API only) |
 | `api_usage` | `GET /api/usage`, `GET /api/usage/ioc` | IOCLookup quota display |
+| `audit_log` | Written by `POST /api/refresh*` and backup/restore (admin UI reads in V1.4) | — (not exposed yet) |
 
 ---
 
@@ -187,6 +188,11 @@ All scheduler-driven intel sources (NVD, KEV, EPSS, MITRE, ATLAS, OSV, 6× RSS) 
 
 All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS, RSS) and on-demand enrichment (`enrichment/ioc.py`, `feeds/extended.py` — Sploitus/GreyNoise/MalwareBazaar/URLhaus/CIRCL, `feeds/otx.py`, `feeds/osv.py`).
 
+### Audit log + auth direction (V1.2 decision, 2026-06-11)
+
+- **Audit:** `audit_log` table (actor, action, target, timestamp) written by manual `POST /api/refresh*` calls and by backup runs/restores (`backup/manager.py`, actor = `system`, sync + best-effort so a locked DB never fails a backup or admin action). Admin pane reads it in V1.4.
+- **Auth direction:** BRIEFR ships as a self-hosted platform with a **built-in app login** before public release (not enterprise SSO / edge-auth based). Until then the beta runs on a trusted private network; `BRIEFR_ADMIN_API_KEY` optionally gates refresh routes. `audit_log.actor` stays empty for request-driven actions until login lands (`request.state.user_email` is the wiring hook). A Cloudflare-Access JWT middleware was prototyped and dropped — see `docs/ROADMAP.md` amendments.
+
 ### SQLite over PostgreSQL
 
 - **Why:** Single-user beta, zero ops overhead, `aiosqlite` async support, `feed_cache` + `ioc_cache` adequate at current scale.
@@ -267,7 +273,7 @@ RSS sources defined in `feeds/incident_sources.py`: The Hacker News, Bleeping Co
 ## 7. Known Limitations — v1.1 Beta
 
 - **Single-user SQLite** — no concurrent write safety under heavy parallel writes.
-- **No authentication** on any `/api/*` endpoint.
+- **No app-level authentication yet** — built-in app login ships before the public self-hosted release; the beta instance runs on a trusted private network with an optional `X-BRIEFR-Admin-Key` gate on `POST /api/refresh*`.
 - **`POST /api/investigation/summary`** — legacy route; delegates to `generate_investigation_summary` → `generate_executive_summary`. Prefer `POST /api/ai/summary` for new clients.
 - **Risk weights duplicated** in `backend/scoring/risk.py` and `frontend/src/scoring/riskScore.js` — shared config planned for Beta V1.2.
 - **No circuit breakers** on external APIs (timeouts only).

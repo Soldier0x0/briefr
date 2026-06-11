@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import secrets
+import sqlite3
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -46,6 +47,7 @@ from database import (
     init_db,
     match_cves_for_assets,
     set_ioc_cache,
+    write_audit_log,
 )
 from feeds.extended import (
     greynoise_scans_for_cve,
@@ -140,6 +142,25 @@ def _require_admin_key(request: Request) -> None:
     provided = request.headers.get("X-BRIEFR-Admin-Key", "")
     if not secrets.compare_digest(provided, BRIEFR_ADMIN_API_KEY):
         raise HTTPException(status_code=401, detail="Admin API key required")
+
+
+async def _audit(request: Request, action: str, target: str = "") -> None:
+    """Record an audited action. Actor stays empty until built-in app login
+    ships (decision 2026-06-11); request.state.user_email is the future hook.
+
+    Best-effort: write contention (e.g. bootstrap ingest holding the DB)
+    must not turn an otherwise valid admin action into a 500.
+    """
+    actor = getattr(request.state, "user_email", None)
+    try:
+        db = await get_db()
+        try:
+            await write_audit_log(db, actor, action, target)
+            await db.commit()
+        finally:
+            await db.close()
+    except sqlite3.OperationalError as exc:
+        logger.error("Audit log write failed (%s): %s", action, exc)
 
 
 @app.middleware("http")
@@ -876,6 +897,7 @@ async def atlas_case_studies(
 @app.post("/api/refresh/mitre")
 async def manual_mitre_refresh(request: Request):
     _require_admin_key(request)
+    await _audit(request, "refresh.mitre", "attack+atlas")
     asyncio.create_task(run_weekly_mitre_refresh())
     return {
         "status": "ok",
@@ -1354,6 +1376,7 @@ async def manual_refresh(request: Request):
             status_code=409,
             detail="An ingest job is already running. Wait for it to finish before starting another.",
         )
+    await _audit(request, "refresh.full", "nvd+kev+epss")
     asyncio.create_task(run_daily_refresh())
     return {
         "status": "ok",
@@ -1366,6 +1389,7 @@ async def manual_nvd_refresh(request: Request):
     _require_admin_key(request)
     if refresh_in_progress():
         raise HTTPException(status_code=409, detail="An ingest job is already running.")
+    await _audit(request, "refresh.nvd", "nvd")
     asyncio.create_task(run_nvd_incremental_sync())
     return {"status": "ok", "message": "NVD incremental sync started in background"}
 
@@ -1375,6 +1399,7 @@ async def manual_kev_refresh(request: Request):
     _require_admin_key(request)
     if refresh_in_progress():
         raise HTTPException(status_code=409, detail="An ingest job is already running.")
+    await _audit(request, "refresh.kev", "kev")
     asyncio.create_task(run_kev_sync())
     return {"status": "ok", "message": "KEV metadata sync started in background"}
 
@@ -1384,6 +1409,7 @@ async def manual_epss_refresh(request: Request):
     _require_admin_key(request)
     if refresh_in_progress():
         raise HTTPException(status_code=409, detail="An ingest job is already running.")
+    await _audit(request, "refresh.epss", "epss")
     asyncio.create_task(run_epss_sync())
     return {"status": "ok", "message": "EPSS score sync started in background"}
 
