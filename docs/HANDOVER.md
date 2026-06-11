@@ -180,7 +180,7 @@ operator; default recommendation is yes.
 4. **Docs in the same PR**: update `SYSTEM_DESIGN.md` when runtime behavior
    changes; `API_REFERENCE.md` for endpoint changes; `TECHNICAL_INVENTORY.md`
    for schema/scheduler changes; `.env.example` + `README.md` +
-   `docs/ONBOARDING.md` for new env vars; mark shipped items in the
+   `ONBOARDING.md` for new env vars; mark shipped items in the
    `Beta V1.x.md` doc.
 5. **PR description must contain a "Post-merge verification" section** with
    copy-pasteable commands for the operator's production box
