@@ -168,6 +168,10 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 |----------|---------|---------|
 | `ALLOWED_ORIGINS` | localhost dev URLs | CORS origins (comma-separated) |
 | `DEFAULT_TIMEZONE` | `Asia/Kolkata` | Health / time display default |
+| `BRIEFR_ENV` | `development` | `production` disables Swagger and makes admin routes fail closed |
+| `BRIEFR_ADMIN_API_KEY` | — | `X-BRIEFR-Admin-Key` for `POST /api/refresh*`; **required when `BRIEFR_ENV=production`** (admin routes 401 without it) |
+| `CF_ACCESS_TEAM_DOMAIN` | — | Cloudflare Access team domain (`<team>.cloudflareaccess.com`); enables JWT identity validation |
+| `CF_ACCESS_AUD` | — | Application Audience tag; with team domain set, the `Cf-Access-Jwt-Assertion` JWT is validated (JWKS signature, aud, issuer, expiry) and the email claim becomes the audit identity. Unset on dev/LAN → identity is `None` |
 
 ---
 

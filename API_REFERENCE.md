@@ -380,13 +380,17 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 
 ## Scheduler & Admin
 
+**Authentication:** when `BRIEFR_ADMIN_API_KEY` is set, all `POST /api/refresh*` routes require the `X-BRIEFR-Admin-Key` header. With `BRIEFR_ENV=production` and **no** key configured, these routes fail closed (`401`).
+
+**Audit:** each accepted refresh writes an `audit_log` row (`actor` = email from the validated Cloudflare Access JWT, or empty when no identity; `action` = `refresh.full|nvd|kev|epss|mitre`).
+
 ### POST /api/refresh
 
 **Description:** Full ingest (NVD → KEV → EPSS) in background.
 
 **Response:** `{"status": "ok", "message": "..."}`
 
-**Error responses:** `409` — ingest already running
+**Error responses:** `401` — missing/invalid admin key; `409` — ingest already running
 
 ---
 
@@ -396,7 +400,7 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 
 ### POST /api/refresh/epss
 
-**Error responses:** `409` — ingest already running
+**Error responses:** `401` — missing/invalid admin key; `409` — ingest already running
 
 ---
 
@@ -405,6 +409,8 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 **Description:** Background MITRE ATT&CK + ATLAS refresh.
 
 **Response:** `{"status": "ok", "message": "MITRE ATT&CK + ATLAS refresh started in background"}`
+
+**Error responses:** `401` — missing/invalid admin key
 
 ---
 

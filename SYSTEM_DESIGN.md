@@ -90,6 +90,7 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 | `cve_exploits` | Via Sploitus loader in CVE detail | DetailDrawer Intel tab |
 | `cve_change_history` | `GET /api/changes` | — (API only) |
 | `api_usage` | `GET /api/usage`, `GET /api/usage/ioc` | IOCLookup quota display |
+| `audit_log` | Written by `POST /api/refresh*` and backup/restore (admin UI reads in V1.4) | — (not exposed yet) |
 
 ---
 
@@ -187,6 +188,12 @@ All scheduler-driven intel sources (NVD, KEV, EPSS, MITRE, ATLAS, OSV, 6× RSS) 
 
 All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS, RSS) and on-demand enrichment (`enrichment/ioc.py`, `feeds/extended.py` — Sploitus/GreyNoise/MalwareBazaar/URLhaus/CIRCL, `feeds/otx.py`, `feeds/osv.py`).
 
+### Cloudflare Access identity + audit log (V1.2)
+
+- **Identity:** middleware (`cf_access.py`) validates the `Cf-Access-Jwt-Assertion` JWT on every request — signature against the team-domain JWKS (cached 6h, refetched once on unknown `kid`), `aud` tag, issuer, expiry — and sets `request.state.user_email`. The plain `Cf-Access-Authenticated-User-Email` header is **never** trusted: the LAN → nginx path bypasses the edge (see `docs/THREAT_MODEL.md`). With `CF_ACCESS_TEAM_DOMAIN`/`CF_ACCESS_AUD` unset (dev/LAN) or on any validation failure, identity is `None`; requests are never blocked by this middleware (the edge policy gates access).
+- **Audit:** `audit_log` table (actor, action, target, timestamp) written by manual `POST /api/refresh*` calls (actor = validated email or empty) and by backup runs/restores (`backup/manager.py`, actor = `system`, sync + best-effort so a locked DB never fails a backup or admin action).
+- **Admin fail-closed:** with `BRIEFR_ENV=production` and no `BRIEFR_ADMIN_API_KEY`, admin routes return `401` instead of being left open.
+
 ### SQLite over PostgreSQL
 
 - **Why:** Single-user beta, zero ops overhead, `aiosqlite` async support, `feed_cache` + `ioc_cache` adequate at current scale.
@@ -267,7 +274,7 @@ RSS sources defined in `feeds/incident_sources.py`: The Hacker News, Bleeping Co
 ## 7. Known Limitations — v1.1 Beta
 
 - **Single-user SQLite** — no concurrent write safety under heavy parallel writes.
-- **No authentication** on any `/api/*` endpoint.
+- **No app-level authentication on read endpoints** — a Cloudflare Access policy gates the production instance at the edge; admin `POST /api/refresh*` routes require `X-BRIEFR-Admin-Key` and fail closed when `BRIEFR_ENV=production`.
 - **`POST /api/investigation/summary`** — legacy route; delegates to `generate_investigation_summary` → `generate_executive_summary`. Prefer `POST /api/ai/summary` for new clients.
 - **Risk weights duplicated** in `backend/scoring/risk.py` and `frontend/src/scoring/riskScore.js` — shared config planned for Beta V1.2.
 - **No circuit breakers** on external APIs (timeouts only).

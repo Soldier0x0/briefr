@@ -53,7 +53,7 @@ This document models threats to the **BRIEFR application** (not environment thre
 
 | Threat | Example | Mitigations (planned / existing) |
 |--------|---------|--------------------------------|
-| **Spoofing** | Fake admin session; spoofed identity header via LAN path | `BRIEFR_ADMIN_API_KEY` (**must fail closed in production when unset** — V1.2); Cloudflare Access identity from **validated `Cf-Access-Jwt-Assertion` JWT** (JWKS signature, `aud`, issuer, expiry — V1.2); plain `Cf-Access-Authenticated-User-Email` is never trusted alone because LAN → nginx bypasses the edge |
+| **Spoofing** | Fake admin session; spoofed identity header via LAN path | `BRIEFR_ADMIN_API_KEY` (**fails closed in production when unset** — ✅ shipped V1.2); Cloudflare Access identity from **validated `Cf-Access-Jwt-Assertion` JWT** (JWKS signature, `aud`, issuer, expiry — ✅ shipped V1.2, `cf_access.py`); plain `Cf-Access-Authenticated-User-Email` is never trusted alone because LAN → nginx bypasses the edge |
 | **Tampering** | Restore malicious DB | Integrity check before write; admin-only restore; audit log |
 | **Repudiation** | Deny config change | Audit log (V1.4); structured logging |
 | **Information disclosure** | Leak VT key in logs | Log redaction; mask secrets in admin UI; `.env` 640 |
@@ -68,7 +68,7 @@ This document models threats to the **BRIEFR application** (not environment thre
 |---------|------|----------|
 | Public `/api/*` read | Low–medium | Rate limit; CORS; optional auth tightening |
 | `/api/ioc/lookup` | Medium — API quota burn | Rate limit; keys server-side only |
-| `/api/refresh` POST | Medium | Admin auth required (V1.2) |
+| `/api/refresh` POST | Medium | Admin auth required, fail-closed in production (✅ shipped V1.2) + audit row per call |
 | Admin backup/restore | **Critical** | Strong auth; confirm phrase; audit |
 | Webhook generic URL | **SSRF** | Block private IP ranges; allowlist schemes |
 | Swagger `/api/docs` | Info leak | Disable in production |

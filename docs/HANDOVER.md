@@ -45,8 +45,9 @@ Read in this order before writing any code:
 | #88 | ci-audits-version | `/api/version` + deploy stamping + `pip-audit`/`npm audit` CI jobs | ✅ Merged |
 | #89 | restore-resilient-client | Clean cherry-pick of #87's content onto `main` | 🔲 Open — **merge first** |
 | #90 | ui-ux-fixes | UI/UX correctness pass: feed scroll/filter fixes, stale-while-revalidate, overlay layering/focus traps, self-hosted fonts, reduced-motion, request timeouts, sidebar cache | 🔲 Open |
-| #92 | enrichment-resilience | CIRCL migrated to vulnerability.circl.lu (+`CIRCL_API_KEY`, negative caching), OSV alias-follow fix (was silently broken with HTTP 400), resilient client adoption completed for ALL outbound modules (VT/AbuseIPDB/GreyNoise at `retries=0` — never burn quota) | 🔲 Open |
-| this | v12-status-handover | Doc sync + this handover | 🔲 Open |
+| #92 | enrichment-resilience | CIRCL migrated to vulnerability.circl.lu (+`CIRCL_API_KEY`, negative caching), OSV alias-follow fix (was silently broken with HTTP 400), resilient client adoption completed for ALL outbound modules (VT/AbuseIPDB/GreyNoise at `retries=0` — never burn quota) | ✅ Merged |
+| #91 | v12-status-handover | Doc sync + this handover | ✅ Merged |
+| next | cf-access-identity-audit-log | §5.1 — CF Access JWT identity middleware (`cf_access.py`), `audit_log` table + writes (refreshes, backups, restores), admin key fail-closed in production, `PyJWT[crypto]` dependency | 🔲 Open |
 
 Each merged PR's description contains its own **post-merge verification
 checklist** — that is the house style; keep it (see §7).
@@ -74,7 +75,7 @@ its code never reached `main`. #89 fixes this by cherry-pick.
 
 Ordered; each is one PR unless noted. File pointers are current as of this doc.
 
-### 5.1 Cloudflare Access identity middleware + `audit_log` table
+### 5.1 Cloudflare Access identity middleware + `audit_log` table — ✅ done (PR open)
 - Middleware in backend validating the **`Cf-Access-Jwt-Assertion` JWT**
   (JWKS from the team domain, `aud` tag, issuer, expiry). **Never trust the
   plain `Cf-Access-Authenticated-User-Email` header** — the LAN → nginx path

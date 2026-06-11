@@ -277,6 +277,18 @@ Indexes: `severity`, `published`, `is_kev`, `epss_score`, `has_poc`
 | technique_id | TEXT | NOT NULL | |
 | | | PRIMARY KEY (group_id, technique_id) | |
 
+### audit_log
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | INTEGER | PRIMARY KEY AUTOINCREMENT | |
+| actor | TEXT | NOT NULL DEFAULT '' | Email from validated CF Access JWT; `system` for backups/restores; empty when no identity |
+| action | TEXT | NOT NULL | `refresh.full|nvd|kev|epss|mitre`, `backup.run`, `backup.restore` |
+| target | TEXT | NOT NULL DEFAULT '' | Action object (feed names, archive name) |
+| created_at | TEXT | DEFAULT datetime('now') | |
+
+Indexes: `idx_audit_log_created(created_at)`, `idx_audit_log_action(action)`. Written by manual refresh endpoints (`main.py`) and `backup/manager.py` (sync, best-effort). Admin UI reads it in V1.4.
+
 ---
 
 ## 3. Scheduler Jobs
