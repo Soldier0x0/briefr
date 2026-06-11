@@ -229,6 +229,15 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
                   <span className="kev-cve-id" aria-label={`CVE ID: ${entry.cve_id}`}>
                     {entry.cve_id}
                   </span>
+                  {entry.ransomware_use && (
+                    <span
+                      className="kev-badge badge-ransomware"
+                      title="Known ransomware campaign use (CISA KEV)"
+                      aria-label="Known ransomware campaign use"
+                    >
+                      RANSOMWARE
+                    </span>
+                  )}
                   <span className={`kev-badge ${badgeClass}`} aria-label={`Status: ${badgeLabel}`}>
                     {badgeLabel}
                   </span>

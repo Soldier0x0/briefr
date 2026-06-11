@@ -80,6 +80,10 @@ Indexes: `severity`, `published`, `is_kev`, `epss_score`, `has_poc`
 | required_action | TEXT | | Remediation action |
 | due_date | TEXT | | Federal due date |
 | date_added | TEXT | | KEV catalog add date |
+| vendor_project | TEXT | DEFAULT '' | KEV vendor/project name |
+| vulnerability_name | TEXT | DEFAULT '' | CISA vulnerability name |
+| known_ransomware | TEXT | DEFAULT '' | `Known` / `Unknown` ransomware campaign use |
+| cwes | TEXT | DEFAULT '[]' | JSON array of CWE IDs from KEV |
 | updated_at | TEXT | DEFAULT datetime('now') | Sync timestamp |
 
 ### api_usage
