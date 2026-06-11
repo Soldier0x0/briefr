@@ -219,9 +219,8 @@ See `backend/.env.example` for the full list. Key variables:
 | `GROQ_API_KEY` / `ANTHROPIC_API_KEY` | PDF AI summary | — |
 | `GITHUB_TOKEN` | Detection rule search rate limit | — |
 | `CIRCL_API_KEY` | vulnerability.circl.lu authenticated rate limits | — |
-| `BRIEFR_ENV` | `production` disables Swagger and makes admin routes fail closed | `development` |
-| `BRIEFR_ADMIN_API_KEY` | `X-BRIEFR-Admin-Key` for `POST /api/refresh*` (required in production) | — |
-| `CF_ACCESS_TEAM_DOMAIN` / `CF_ACCESS_AUD` | Validate the Cloudflare Access `Cf-Access-Jwt-Assertion` JWT for audit identity | — |
+| `BRIEFR_ENV` | `production` disables Swagger/OpenAPI docs | `development` |
+| `BRIEFR_ADMIN_API_KEY` | Optional `X-BRIEFR-Admin-Key` gate for `POST /api/refresh*` | — |
 | `ALLOWED_ORIGINS` | CORS origins (comma-separated) | `http://localhost:3000` |
 | `DB_PATH` | SQLite file | `briefr.db` |
 | `BACKUP_DIR` | Backup archive directory | `/var/lib/briefr/backups` |
@@ -355,7 +354,7 @@ BRIEFR collects no personal data, uses no cookies, and runs no analytics. Tech s
 ## Known limitations (v1.1 beta)
 
 - Single-user SQLite — not designed for concurrent multi-tenant writes
-- Read endpoints have no app-level authentication (edge access policy assumed); admin `POST /api/refresh*` routes require `X-BRIEFR-Admin-Key` and fail closed in production
+- No app-level authentication yet — built-in app login ships before the public self-hosted release; until then `BRIEFR_ADMIN_API_KEY` optionally gates `POST /api/refresh*`
 - Risk weights duplicated in Python (`backend/scoring/risk.py`) and JavaScript (`frontend/src/scoring/riskScore.js`) — shared config planned for Beta V1.2
 - AI/ML alerts chip requires AI/ML keywords in your saved stack or asset profile `aiSystems`
 

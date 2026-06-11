@@ -7,4 +7,3 @@ pydantic==2.13.4
 aiosqlite==0.22.1
 PyYAML==6.0.2
 openpyxl==3.1.5
-PyJWT[crypto]==2.10.1

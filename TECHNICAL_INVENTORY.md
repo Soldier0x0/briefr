@@ -282,7 +282,7 @@ Indexes: `severity`, `published`, `is_kev`, `epss_score`, `has_poc`
 | Column | Type | Constraints | Description |
 |---|---|---|---|
 | id | INTEGER | PRIMARY KEY AUTOINCREMENT | |
-| actor | TEXT | NOT NULL DEFAULT '' | Email from validated CF Access JWT; `system` for backups/restores; empty when no identity |
+| actor | TEXT | NOT NULL DEFAULT '' | User identity (empty until built-in app login ships); `system` for backups/restores |
 | action | TEXT | NOT NULL | `refresh.full|nvd|kev|epss|mitre`, `backup.run`, `backup.restore` |
 | target | TEXT | NOT NULL DEFAULT '' | Action object (feed names, archive name) |
 | created_at | TEXT | DEFAULT datetime('now') | |

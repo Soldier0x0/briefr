@@ -53,7 +53,7 @@ See [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 |------|------|
 | **Local users table** | 2–5 users realistic |
 | **Roles** | `analyst`, `admin` |
-| **Cloudflare Access** | Optional JWT trust header |
+| ~~Cloudflare Access~~ | Dropped (2026-06-11) — built-in app login is the auth mechanism |
 | **Row ownership** | Nullable `user_id` on watchlists, notes |
 
 **Non-goal:** multi-tenant SaaS billing.

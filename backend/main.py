@@ -49,7 +49,6 @@ from database import (
     set_ioc_cache,
     write_audit_log,
 )
-from cf_access import identity_from_request
 from feeds.extended import (
     greynoise_scans_for_cve,
     load_public_exploits_for_cve,
@@ -137,17 +136,8 @@ app.add_middleware(
 
 
 def _require_admin_key(request: Request) -> None:
-    """When BRIEFR_ADMIN_API_KEY is set, admin routes require X-BRIEFR-Admin-Key.
-
-    Fails closed in production: with BRIEFR_ENV=production and no key
-    configured, admin routes are disabled instead of left open.
-    """
+    """When BRIEFR_ADMIN_API_KEY is set, admin routes require X-BRIEFR-Admin-Key."""
     if not BRIEFR_ADMIN_API_KEY:
-        if _IS_PRODUCTION:
-            raise HTTPException(
-                status_code=401,
-                detail="Admin routes disabled: BRIEFR_ADMIN_API_KEY not configured",
-            )
         return
     provided = request.headers.get("X-BRIEFR-Admin-Key", "")
     if not secrets.compare_digest(provided, BRIEFR_ADMIN_API_KEY):
@@ -155,7 +145,8 @@ def _require_admin_key(request: Request) -> None:
 
 
 async def _audit(request: Request, action: str, target: str = "") -> None:
-    """Record an audited action with the request's validated identity.
+    """Record an audited action. Actor stays empty until built-in app login
+    ships (decision 2026-06-11); request.state.user_email is the future hook.
 
     Best-effort: write contention (e.g. bootstrap ingest holding the DB)
     must not turn an otherwise valid admin action into a 500.
@@ -170,22 +161,6 @@ async def _audit(request: Request, action: str, target: str = "") -> None:
             await db.close()
     except sqlite3.OperationalError as exc:
         logger.error("Audit log write failed (%s): %s", action, exc)
-
-
-@app.middleware("http")
-async def cloudflare_access_identity(request: Request, call_next):
-    """Derive request.state.user_email from the validated CF Access JWT.
-
-    Identity is None when CF Access env is unset (dev/LAN), the assertion
-    header is absent, or validation fails — requests are never blocked here
-    (the edge policy gates access; this identity feeds audit + watchlists).
-    """
-    try:
-        request.state.user_email = await identity_from_request(request)
-    except Exception as exc:
-        logger.warning("CF Access identity resolution failed: %s", exc)
-        request.state.user_email = None
-    return await call_next(request)
 
 
 @app.middleware("http")

@@ -42,9 +42,8 @@ These env vars must remain supported across releases (defaults preserved):
 | `DB_PATH` | SQLite file location |
 | `BACKUP_DIR` | Archive directory |
 | `BACKUP_RETENTION_COUNT` | Max archives |
-| `BRIEFR_ENV` | `production` / `development` (admin routes fail closed in production without a key) |
-| `BRIEFR_ADMIN_API_KEY` | Admin route protection — required in production |
-| `CF_ACCESS_TEAM_DOMAIN`, `CF_ACCESS_AUD` | Cloudflare Access JWT validation → audit identity |
+| `BRIEFR_ENV` | `production` / `development` |
+| `BRIEFR_ADMIN_API_KEY` | Optional admin route protection (interim until app login) |
 | `ALLOWED_ORIGINS` | CORS |
 | `GITHUB_TOKEN`, IOC keys | Optional enrichment |
 

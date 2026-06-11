@@ -28,7 +28,7 @@ V1.3 makes BRIEFR the **best self-hosted analyst intelligence pane** — actiona
 | **Explainable risk** | Score breakdown UI (KEV + EPSS + stack match + momentum components) |
 | **Change intelligence** | Surface `cve_change_history` deltas filtered by asset profile (`GET /api/changes` UI — data already collected) |
 | **KEV due-date countdown** | "Due in N days" chip on cards + sorted deadline list (`kev_deadlines` already populated) |
-| **Pin / snooze / watchlist** | Analyst controls on CVE rows (stored in DB, keyed by Cloudflare Access `user_email` from V1.2) |
+| **Pin / snooze / watchlist** | Analyst controls on CVE rows (stored in DB; single-user default now, keyed by app-login user once built-in auth ships — decision 2026-06-11) |
 
 **API sketch:**
 
