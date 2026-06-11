@@ -5,7 +5,6 @@ import os
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, Request, Response
@@ -26,16 +25,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 from database import (
-    get_atlas_case_studies,
     get_atlas_case_studies_for_cve,
     get_atlas_techniques_for_cve,
-    get_atlas_techniques_grouped,
     get_db,
-    get_cve_count,
     get_epss_history,
-    get_ioc_cache,
-    get_last_updated,
-    get_nvd_sync_watermark,
     get_recent_cve_changes,
     get_related_cves,
     get_techniques_for_cve,
@@ -43,25 +36,21 @@ from database import (
     count_ai_ml_profile_alerts,
     init_db,
     match_cves_for_assets,
-    set_ioc_cache,
 )
 from feeds.extended import (
     greynoise_scans_for_cve,
     load_public_exploits_for_cve,
 )
-from feeds.case_study_feed import get_incident_feed, get_incident_feed_status
-from resilient_client import close_client, get_feed_health
-from feeds.otx import load_otx_pulses_for_cve, load_pulse_iocs, top_pulse_ipv4s
-from enrichment.ioc import lookup_ioc
+from resilient_client import close_client
+from feeds.otx import load_otx_pulses_for_cve
 from feeds.osv import fetch_osv_by_cve
+from routers import atlas as atlas_router
+from routers import health as health_router
+from routers import ioc as ioc_router
 from routers import refresh as refresh_router
+from routers.health import format_time_in_tz
 from scheduler import (
-    get_ingest_status,
-    get_ingest_intervals,
-    get_next_scheduled_refresh_utc,
-    get_refresh_schedule,
     maybe_run_on_startup,
-    refresh_in_progress,
     start_scheduler,
     stop_scheduler,
 )
@@ -71,8 +60,6 @@ from templates.intelligence import (
     epss_sentence_or_fallback,
     exploit_sentence,
     exploits_from_cve,
-    greynoise_sentence,
-    otx_sentence,
     kev_sentence,
     patch_sentence,
     severity_sentence,
@@ -150,6 +137,11 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 
+# Registered here (not next to the refresh router above) to keep the OpenAPI
+# route order identical to the pre-split main.py.
+app.include_router(health_router.router)
+
+
 class InvestigationPivotRef(BaseModel):
     type: str | None = None
     id: str | None = None
@@ -185,12 +177,6 @@ class AiSummaryRequest(BaseModel):
     investigation_duration: int = Field(default=1, ge=1, le=10080)
 
 
-class IocLookupRequest(BaseModel):
-    value: str
-    type: str
-    greynoise: bool = False
-
-
 def _row_to_cve_dict(row) -> dict:
     d = dict(row)
     for field in ("affected_products", "source_urls", "cwe_ids"):
@@ -212,67 +198,6 @@ def _row_to_cve_dict(row) -> dict:
     kev_date = d.get("kev_date_added")
     d["kev_date_added"] = (kev_date or "").strip() or None
     return d
-
-
-def _format_time_in_tz(dt: datetime, tz_name: str) -> dict:
-    try:
-        tz = ZoneInfo(tz_name)
-        local = dt.astimezone(tz)
-        return {
-            "iso": local.isoformat(),
-            "display": local.strftime("%Y-%m-%d %H:%M:%S %Z"),
-            "timezone": tz_name,
-            "utc_offset": local.strftime("%z"),
-        }
-    except (ZoneInfoNotFoundError, Exception):
-        return {"error": f"Unknown timezone: {tz_name}"}
-
-
-@app.get("/api/health")
-async def health(
-    tz: str | None = Query(
-        default=None,
-        description="IANA timezone name for local time display (e.g. Asia/Kolkata, America/New_York)",
-    ),
-):
-    db = await get_db()
-    try:
-        cve_count = await get_cve_count(db)
-        last_updated = await get_last_updated(db)
-        nvd_sync_watermark = await get_nvd_sync_watermark(db)
-    finally:
-        await db.close()
-
-    now_utc = datetime.now(timezone.utc)
-    default_tz = os.environ.get("DEFAULT_TIMEZONE", "UTC")
-    display_tz = tz or default_tz
-
-    next_refresh_utc = get_next_scheduled_refresh_utc()
-    refresh_schedule = get_refresh_schedule()
-    ingest = get_ingest_status()
-    incidents_status = await get_incident_feed_status()
-
-    response: dict = {
-        "status": "ok",
-        "cve_count": cve_count,
-        "feeds": {"incidents": incidents_status, "sources": get_feed_health()},
-        "last_updated": last_updated,
-        "nvd_sync_watermark": nvd_sync_watermark,
-        "refresh_in_progress": refresh_in_progress(),
-        "ingest": ingest,
-        "next_nvd_sync_at_utc": next_refresh_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "next_nvd_sync_in_user_tz": _format_time_in_tz(next_refresh_utc, display_tz),
-        "ingest_intervals": get_ingest_intervals(),
-        "next_refresh_at_utc": next_refresh_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "next_refresh_in_user_tz": _format_time_in_tz(next_refresh_utc, display_tz),
-        "next_refresh_in_scheduler_tz": _format_time_in_tz(
-            next_refresh_utc, refresh_schedule["timezone"]
-        ),
-        "refresh_schedule": refresh_schedule,
-        "server_time_utc": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "server_time_local": _format_time_in_tz(now_utc, display_tz),
-    }
-    return response
 
 
 @app.get("/api/changes")
@@ -336,11 +261,11 @@ async def server_time(
             "display": now_utc.strftime("%Y-%m-%d %H:%M:%S UTC"),
             "epoch": int(now_utc.timestamp()),
         },
-        "local": _format_time_in_tz(now_utc, display_tz),
+        "local": format_time_in_tz(now_utc, display_tz),
     }
 
     if tz and tz != default_tz:
-        result["default_tz"] = _format_time_in_tz(now_utc, default_tz)
+        result["default_tz"] = format_time_in_tz(now_utc, default_tz)
 
     return result
 
@@ -795,66 +720,10 @@ async def top_techniques(
     return {"data": data}
 
 
-@app.get("/api/atlas/techniques")
-async def atlas_techniques_grouped():
-    """MITRE ATLAS techniques grouped by tactic (AI/ML threats — not Enterprise ATT&CK)."""
-    db = await get_db()
-    try:
-        groups = await get_atlas_techniques_grouped(db)
-    finally:
-        await db.close()
-    return {"data": groups, "source": "MITRE ATLAS"}
-
-
-@app.get("/api/case-studies/news")
-async def case_studies_news():
-    """Cybersecurity news RSS feeds for the Case Studies tab (server-side fetch)."""
-    from feeds.incident_news import fetch_all_incident_news
-
-    db = await get_db()
-    try:
-        cards, errors = await fetch_all_incident_news(db)
-        await db.commit()
-    finally:
-        await db.close()
-    return {"data": cards, "errors": errors}
-
-
-@app.get("/api/case-studies/feed")
-async def case_studies_feed(
-    atlas_limit: int = Query(default=80, ge=1, le=100),
-):
-    """Combined RSS news + ATLAS case studies, served from the precomputed snapshot."""
-    cards, errors, meta = await get_incident_feed(atlas_limit=atlas_limit)
-    return {"data": cards, "errors": errors, "meta": meta}
-
-
-@app.get("/api/atlas/casestudies")
-async def atlas_case_studies(
-    limit: int = Query(default=50, ge=1, le=100),
-):
-    """Recent ATLAS case studies with technique and CVE references."""
-    db = await get_db()
-    try:
-        studies = await get_atlas_case_studies(db, limit=limit)
-        tech_rows = await db.execute_fetchall(
-            "SELECT technique_id, name FROM atlas_techniques"
-        )
-        tech_names = {r["technique_id"]: r["name"] for r in tech_rows}
-    finally:
-        await db.close()
-
-    for study in studies:
-        study["technique_details"] = [
-            {
-                "technique_id": tid,
-                "name": tech_names.get(tid, tid),
-                "url": f"https://atlas.mitre.org/techniques/{tid}",
-            }
-            for tid in study.get("techniques", [])
-        ]
-
-    return {"data": studies, "source": "MITRE ATLAS"}
+# Mid-module include keeps the OpenAPI route order identical to the
+# pre-split main.py (ATLAS routes sat between /api/techniques/top and
+# /api/cves/{cve_id}/sentences).
+app.include_router(atlas_router.router)
 
 
 @app.get("/api/cves/{cve_id}/sentences")
@@ -1088,107 +957,10 @@ async def get_cve(cve_id: str):
 
 
 
-@app.get("/api/otx/pulses/{pulse_id}/iocs")
-async def get_otx_pulse_iocs(
-    pulse_id: str,
-    limit: int = Query(default=10, ge=1, le=50),
-):
-    otx_key = os.environ.get("OTX_API_KEY", "")
-    if not otx_key:
-        raise HTTPException(status_code=503, detail="OTX_API_KEY not configured")
-
-    db = await get_db()
-    try:
-        iocs = await load_pulse_iocs(db, pulse_id, otx_key)
-        ips = await top_pulse_ipv4s(db, pulse_id, otx_key, limit=3)
-        await db.commit()
-    finally:
-        await db.close()
-
-    indicators: list[dict[str, str]] = []
-    for ip in ips:
-        indicators.append({"type": "ip", "value": ip})
-    for row in iocs:
-        ioc_t = (row.get("ioc_type") or "").upper()
-        val = row.get("ioc_value") or ""
-        if not val:
-            continue
-        if ioc_t in ("IPV4", "IPV6"):
-            mapped = "ip"
-        elif ioc_t in ("DOMAIN", "HOSTNAME"):
-            mapped = "domain"
-        elif ioc_t.startswith("FILE_HASH") or ioc_t == "FILE":
-            mapped = "hash"
-        else:
-            continue
-        entry = {"type": mapped, "value": val}
-        if entry not in indicators:
-            indicators.append(entry)
-        if len(indicators) >= limit:
-            break
-
-    return {"data": {"iocs": iocs, "ips": ips, "indicators": indicators[:limit]}}
-
-
-@app.post("/api/ioc/lookup")
-async def ioc_lookup(body: IocLookupRequest):
-    value = body.value.strip()
-    ioc_type = body.type.strip().lower()
-
-    if not value:
-        raise HTTPException(status_code=400, detail="value is required")
-    if ioc_type not in ("ip", "hash", "domain"):
-        raise HTTPException(status_code=400, detail="type must be ip, hash, or domain")
-    if len(value) > 512:
-        raise HTTPException(status_code=400, detail="value too long")
-
-    vt_key = os.environ.get("VIRUSTOTAL_API_KEY", "")
-    abuse_key = os.environ.get("ABUSEIPDB_API_KEY", "")
-    greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
-    abusech_key = os.environ.get("ABUSECH_AUTH_KEY", "")
-    otx_key = os.environ.get("OTX_API_KEY", "")
-
-    db = await get_db()
-    try:
-        cached = await get_ioc_cache(db, value)
-        if cached is not None:
-            cached["cached"] = True
-            if ioc_type == "ip" and body.greynoise and greynoise_key:
-                from feeds.extended import greynoise_for_ip
-
-                gn = await greynoise_for_ip(db, value, greynoise_key)
-                cached["greynoise"] = gn
-                cached["greynoise_sentence"] = greynoise_sentence(gn)
-            elif ioc_type == "ip":
-                cached["greynoise"] = None
-                cached["greynoise_sentence"] = None
-            if otx_key:
-                from feeds.otx import lookup_otx_for_ioc
-
-                otx = await lookup_otx_for_ioc(db, value, ioc_type, otx_key)
-                cached["otx"] = otx
-                cached["otx_sentence"] = otx_sentence(otx)
-            return cached
-
-        result = await lookup_ioc(
-            value,
-            ioc_type,
-            vt_key,
-            abuse_key,
-            greynoise_key,
-            abusech_key,
-            db=db,
-            include_greynoise=body.greynoise,
-            otx_key=otx_key,
-        )
-        result["cached"] = False
-
-        await set_ioc_cache(db, value, ioc_type, result)
-        await db.commit()
-    finally:
-        await db.close()
-
-    return result
+# Mid-module include keeps the OpenAPI route order identical to the
+# pre-split main.py (IOC routes sat between /api/cves/{cve_id} and
+# /api/cves/{cve_id}/momentum).
+app.include_router(ioc_router.router)
 
 
 @app.get("/api/cves/{cve_id}/momentum")
