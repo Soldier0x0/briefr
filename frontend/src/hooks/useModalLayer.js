@@ -15,7 +15,7 @@ const FOCUSABLE =
 
 function focusableIn(container) {
   return Array.from(container.querySelectorAll(FOCUSABLE)).filter(
-    el => el.offsetParent !== null || el === document.activeElement,
+    el => el.offsetWidth > 0 || el.offsetHeight > 0 || el === document.activeElement,
   )
 }
 
