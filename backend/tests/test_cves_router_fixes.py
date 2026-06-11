@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import aiosqlite
 
 from database import init_db
-from routers.cves import _sort_by_stack_relevance
+from routers.cves import _row_to_cve_dict, _sort_by_stack_relevance
 
 
 def test_sort_by_stack_relevance_handles_null_affected_products():
@@ -26,6 +26,35 @@ def test_sort_by_stack_relevance_handles_null_affected_products():
     ]
     ranked = _sort_by_stack_relevance(cves, ["nginx"])
     assert [c["cve_id"] for c in ranked] == ["CVE-2024-0002", "CVE-2024-0001"]
+
+
+def test_row_to_cve_dict_normalizes_list_fields():
+    """NULL/'' list columns must surface as [] — API_REFERENCE.md documents
+    affected_products/source_urls/cwe_ids as arrays, never null."""
+    row = {
+        "cve_id": "CVE-2024-0001",
+        "affected_products": None,
+        "source_urls": "",
+        "cwe_ids": '["CWE-79"]',
+    }
+    d = _row_to_cve_dict(row)
+    assert d["affected_products"] == []
+    assert d["source_urls"] == []
+    assert d["cwe_ids"] == ["CWE-79"]
+
+
+def test_row_to_cve_dict_unparseable_strings_still_become_empty_lists():
+    """Pre-existing behavior kept: garbage/whitespace JSON strings -> []."""
+    row = {
+        "cve_id": "CVE-2024-0002",
+        "affected_products": "{not json",
+        "source_urls": "   ",
+        "cwe_ids": None,
+    }
+    d = _row_to_cve_dict(row)
+    assert d["affected_products"] == []
+    assert d["source_urls"] == []
+    assert d["cwe_ids"] == []
 
 
 def test_sort_by_stack_relevance_noop_without_stack():

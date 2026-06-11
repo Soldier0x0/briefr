@@ -20,7 +20,7 @@ Inline imports were hoisted to module top per house convention
 feeds.extended.enrich_cve_circl). The unused `_parse_stack_terms` helper was
 dropped during the move.
 
-Three review fixes on top of the verbatim move (PR #96 review):
+Four review fixes on top of the verbatim move (PR #96 review):
 - `_sort_by_stack_relevance` no longer crashes on a NULL `affected_products`
   column (was `cve.get(..., [])`, which returns the explicit None value).
 - momentum/detection/correlation validate the `CVE-` prefix like their
@@ -28,6 +28,10 @@ Three review fixes on top of the verbatim move (PR #96 review):
   malformed IDs).
 - `/api/stats` runs one conditional-aggregation scan instead of five
   COUNT(*) scans (same response, verified on empty/NULL/edge data).
+- `_row_to_cve_dict` normalizes NULL/'' list columns (affected_products,
+  source_urls, cwe_ids) to [] — matches the arrays documented in
+  API_REFERENCE.md; only legacy rows ever hit this path (ingest always
+  writes JSON, column default is '[]').
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
@@ -96,11 +100,16 @@ class AssetMatchRequest(BaseModel):
 def _row_to_cve_dict(row) -> dict:
     d = dict(row)
     for field in ("affected_products", "source_urls", "cwe_ids"):
-        if d.get(field) and isinstance(d[field], str):
+        val = d.get(field)
+        if val and isinstance(val, str):
             try:
-                d[field] = json.loads(d[field])
+                d[field] = json.loads(val)
             except (json.JSONDecodeError, TypeError):
                 d[field] = []
+        elif not val:
+            # NULL/'' columns surface as a stable [] — API_REFERENCE.md
+            # documents these fields as arrays, never null.
+            d[field] = []
     for num_field in ("cvss_score", "epss_score"):
         if d.get(num_field) is not None:
             try:
