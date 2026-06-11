@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import useModalLayer from '../hooks/useModalLayer.js'
 import './PdfExportModal.css'
 
 export default function PdfExportModal({
@@ -12,6 +13,10 @@ export default function PdfExportModal({
 }) {
   const [analystName, setAnalystName] = useState('')
   const dialogRef = useRef(null)
+
+  // Owns its Escape handling → registers depth so the global handler stands
+  // down; traps Tab inside the dialog and restores focus on close.
+  useModalLayer(open, dialogRef, { trackDepth: true })
 
   useEffect(() => {
     if (!open) return

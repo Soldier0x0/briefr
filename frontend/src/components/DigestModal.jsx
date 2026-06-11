@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { getReportTimestamp } from '../utils/timezone.js'
+import useModalLayer from '../hooks/useModalLayer.js'
 import './DigestModal.css'
 
 function severityTag(sev) {
@@ -56,24 +57,36 @@ function buildDigest(cves, filters) {
 export default function DigestModal({ cves, filters, onClose }) {
   const [copied, setCopied] = useState(false)
   const textRef = useRef(null)
+  const panelRef = useRef(null)
+  const copiedTimerRef = useRef(null)
   const digest = buildDigest(cves, filters)
+
+  useModalLayer(true, panelRef)
 
   // Scroll page to top so modal is visible (required since overlay is absolute, not fixed)
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [])
 
+  useEffect(() => () => {
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+  }, [])
+
+  function flashCopied() {
+    setCopied(true)
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+    copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)
+  }
+
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(digest)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      flashCopied()
     } catch {
       if (textRef.current) {
         textRef.current.select()
         document.execCommand('copy')
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
+        flashCopied()
       }
     }
   }
@@ -81,7 +94,7 @@ export default function DigestModal({ cves, filters, onClose }) {
   return (
     /* Full-height wrapper — no position:fixed per spec */
     <div className="digest-overlay" role="dialog" aria-modal="true" aria-labelledby="digest-title">
-      <div className="digest-panel">
+      <div className="digest-panel" ref={panelRef}>
         <div className="digest-header">
           <div className="digest-header-left">
             <h2 id="digest-title" className="digest-title mono">BRIEFR DIGEST</h2>

@@ -1,11 +1,21 @@
 const BASE = '/api'
+const REQUEST_TIMEOUT_MS = 20000
 
 async function request(path, options = {}) {
+  // Bounded failure: a hung backend must not leave spinners forever.
+  if (!options.signal && typeof AbortSignal?.timeout === 'function') {
+    options = { ...options, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) }
+  }
   let res
   try {
     res = await fetch(`${BASE}${path}`, options)
-  } catch {
-    const err = new Error('Network error — is the backend running?')
+  } catch (e) {
+    const timedOut = e?.name === 'TimeoutError'
+    const err = new Error(
+      timedOut
+        ? 'Request timed out — the backend may be overloaded.'
+        : 'Network error — is the backend running?',
+    )
     err.status = 0
     throw err
   }

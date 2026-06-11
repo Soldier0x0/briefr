@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { InvestigationProvider } from './context/InvestigationContext.jsx'
+import { overlayDepth } from './hooks/useModalLayer.js'
 import InvestigationPanel from './components/InvestigationPanel.jsx'
 import Header from './components/Header.jsx'
 import Hero from './components/Hero.jsx'
@@ -121,7 +122,13 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
   }, [setFilters])
 
   const handleFiltersChange = useCallback((next) => {
-    setFilters(prev => ({ ...prev, ...next }))
+    setFilters(prev => {
+      // No-op guard: clicking the already-active filter must not produce a
+      // new object identity (which would reset + refetch + scroll the feed).
+      const merged = { ...prev, ...next }
+      const changed = Object.keys(merged).some(k => merged[k] !== prev[k])
+      return changed ? merged : prev
+    })
   }, [setFilters])
 
   const handleGenerateDigest = useCallback((cves) => {
@@ -164,6 +171,7 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
           onDigestRequest={onDigestRequest}
           searchFocusTrigger={searchFocusTrigger}
           timezone={timezone}
+          overlayOpen={!!selectedCVE || digestOpen || aboutOpen}
         />
         <Sidebar filters={filters} onFiltersChange={handleFiltersChange} stats={stats} />
       </div>
@@ -308,13 +316,20 @@ export default function App() {
 
     function handleKey(e) {
       if (e.key === 'Escape') {
+        // Close the topmost layer only; one keypress never closes two layers.
+        // PDF modal / shortcuts panel own their Escape — stand down for them.
+        if (overlayDepth() > 0) return
+        if (digestOpen)   { setDigestOpen(false); return }
         if (aboutOpen)    { setAboutOpen(false);  return }
         if (selectedCVE)  { setSelectedCVE(null); return }
-        if (digestOpen)   { setDigestOpen(false); return }
         return
       }
       const tag = document.activeElement?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
+      // Feed shortcuts must not act behind an open overlay (drawer / digest /
+      // about / PDF modal) — F used to silently change filters under the drawer.
+      if (selectedCVE || digestOpen || aboutOpen || overlayDepth() > 0) return
 
       if (e.key === '/') { e.preventDefault(); setSearchFocusTrigger(n => n + 1) }
       if (e.key === 'f' || e.key === 'F') setFilters(cycleFilter)

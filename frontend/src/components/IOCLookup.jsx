@@ -744,6 +744,11 @@ export default function IOCLookup({ prefill }) {
   const [includeGreynoise, setIncludeGreynoise] = useState(false)
 
   const detectDebounce = useRef(null)
+  const copiedTimerRef = useRef(null)
+
+  useEffect(() => () => {
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+  }, [])
   const prefillHandled = useRef(null)
   const [indicatorQueue, setIndicatorQueue] = useState([])
   const [fromCveId, setFromCveId] = useState(null)
@@ -914,7 +919,8 @@ export default function IOCLookup({ prefill }) {
     try {
       await navigator.clipboard.writeText(lines)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)
     } catch {
       // Clipboard may be unavailable in some browser contexts
     }

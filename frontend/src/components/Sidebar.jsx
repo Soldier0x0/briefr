@@ -50,6 +50,32 @@ const KEV_PREVIEW = 5
 
 const TOP_TECHNIQUES_LIMIT = 5
 
+// Module-level session cache (5 min) so returning to the BRIEF tab does not
+// refetch and flash-load the sidebar every time (same pattern as the
+// Incidents feed cache).
+const SIDEBAR_CACHE_MS = 5 * 60 * 1000
+const sidebarCache = new Map()
+
+function getCached(key) {
+  const hit = sidebarCache.get(key)
+  if (hit && Date.now() - hit.at < SIDEBAR_CACHE_MS) return hit.value
+  return undefined
+}
+
+function setCached(key, value) {
+  sidebarCache.set(key, { value, at: Date.now() })
+}
+
+function SidebarSkeleton({ rows = 3, tall = false }) {
+  return (
+    <div className="sidebar-skeleton" aria-hidden="true">
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className={`sidebar-skeleton-row${tall ? ' sidebar-skeleton-tall' : ''}`} />
+      ))}
+    </div>
+  )
+}
+
 export default function Sidebar({ filters, onFiltersChange, stats }) {
   const [kevDeadlines, setKevDeadlines] = useState([])
   const [kevExpanded, setKevExpanded] = useState(false)
@@ -65,12 +91,19 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
   const sparkMax = Math.max(...sparkBars, 1)
 
   useEffect(() => {
+    const hit = getCached('spark')
+    if (hit !== undefined) {
+      setSparkBars(hit)
+      setSparkLoading(false)
+      return
+    }
     let cancelled = false
     setSparkLoading(true)
     fetchStatsTimeline(SPARKLINE_DAYS)
       .then(data => {
         if (cancelled) return
         const bars = Array.isArray(data) ? data.map(d => d.count || 0) : []
+        setCached('spark', bars)
         setSparkBars(bars)
       })
       .catch(() => {
@@ -83,21 +116,55 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
   }, [])
 
   useEffect(() => {
+    const hit = getCached('kev')
+    if (hit !== undefined) {
+      setKevDeadlines(hit)
+      setKevLoading(false)
+      return
+    }
+    let cancelled = false
     // sort=recent returns entries sorted by dateAdded DESC (most recently added first)
     setKevLoading(true)
     setKevError(false)
     fetchKEVDeadlines('recent')
-      .then(data => setKevDeadlines((data.data || []).slice(0, 10)))
-      .catch(() => setKevError(true))
-      .finally(() => setKevLoading(false))
+      .then(data => {
+        if (cancelled) return
+        const rows = (data.data || []).slice(0, 10)
+        setCached('kev', rows)
+        setKevDeadlines(rows)
+      })
+      .catch(() => {
+        if (!cancelled) setKevError(true)
+      })
+      .finally(() => {
+        if (!cancelled) setKevLoading(false)
+      })
+    return () => { cancelled = true }
   }, [])
 
   useEffect(() => {
+    const hit = getCached('tech')
+    if (hit !== undefined) {
+      setTopTechniques(hit)
+      setTechniquesLoading(false)
+      return
+    }
+    let cancelled = false
     setTechniquesLoading(true)
     fetchTopTechniques(TOP_TECHNIQUES_LIMIT)
-      .then(data => setTopTechniques(data.data || []))
-      .catch(() => setTopTechniques([]))
-      .finally(() => setTechniquesLoading(false))
+      .then(data => {
+        if (cancelled) return
+        const rows = data.data || []
+        setCached('tech', rows)
+        setTopTechniques(rows)
+      })
+      .catch(() => {
+        if (!cancelled) setTopTechniques([])
+      })
+      .finally(() => {
+        if (!cancelled) setTechniquesLoading(false)
+      })
+    return () => { cancelled = true }
   }, [])
 
   function handleTechniqueClick(techniqueId) {
@@ -182,7 +249,7 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
       <section className="sidebar-section" aria-labelledby="sparkline-heading">
         <h2 id="sparkline-heading" className="sidebar-heading">14-DAY ACTIVITY</h2>
         {sparkLoading ? (
-          <p className="sidebar-empty">Loading activity…</p>
+          <SidebarSkeleton rows={1} tall />
         ) : sparkBars.length === 0 ? (
           <p className="sidebar-empty">No publication data yet.</p>
         ) : (
@@ -209,9 +276,7 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
       {/* ── Section 3: KEV Deadlines ── */}
       <section className="sidebar-section" aria-labelledby="kev-heading">
         <h2 id="kev-heading" className="sidebar-heading">KEV DEADLINES</h2>
-        {kevLoading && (
-          <p className="sidebar-empty">Loading deadlines…</p>
-        )}
+        {kevLoading && <SidebarSkeleton rows={3} />}
         {!kevLoading && kevError && (
           <p className="sidebar-empty">Unable to load deadlines.</p>
         )}
@@ -279,9 +344,7 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
       {/* ── Section 4: Top Techniques ── */}
       <section className="sidebar-section" aria-labelledby="techniques-heading">
         <h2 id="techniques-heading" className="sidebar-heading">// TOP TECHNIQUES THIS WEEK</h2>
-        {techniquesLoading && (
-          <p className="sidebar-empty">Loading techniques…</p>
-        )}
+        {techniquesLoading && <SidebarSkeleton rows={3} />}
         {!techniquesLoading && topTechniques.length === 0 && (
           <p className="sidebar-empty">No technique data yet.</p>
         )}

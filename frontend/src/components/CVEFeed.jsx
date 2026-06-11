@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { fetchCVEs } from '../api.js'
 import { toApiCveParams } from '../utils/cveFilters.js'
+import { scrollBehavior } from '../utils/motion.js'
 import { buildCombinedReport, copyToClipboard } from '../utils/report.js'
 import { downloadBulkCvePdf } from '../utils/pdfReport.js'
 import PdfExportModal from './PdfExportModal.jsx'
@@ -33,7 +34,7 @@ function sortByExposure(cves, getMatchScore) {
   })
 }
 
-export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGenerateDigest, onDigestRequest, searchFocusTrigger, timezone }) {
+export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGenerateDigest, onDigestRequest, searchFocusTrigger, timezone, overlayOpen = false }) {
   const investigation = useInvestigationOptional()
   const assetCtx = useAssetProfileOptional()
   const assetAware = Boolean(assetCtx?.isLoaded)
@@ -64,6 +65,8 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   const abortRef = useRef(null)
   const cardRefs = useRef([])
   const pageRef = useRef(1)
+  const feedRootRef = useRef(null)
+  const prevFiltersRef = useRef(null)
   const filtersRef = useRef(filters)
   const loadingRef = useRef(false)
   const isLoadingMoreRef = useRef(false)
@@ -213,7 +216,17 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
   }, [cves, updateShowingRange])
 
   function scrollFeedToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    // Anchor to the top of the feed (filter bar stays visible) — never the
+    // page top, which would yank the user past the hero. Skip entirely when
+    // the feed top is already in view.
+    const el = feedRootRef.current
+    if (!el) return
+    const top = el.getBoundingClientRect().top
+    if (top >= 0) return
+    window.scrollTo({
+      top: window.scrollY + top - 8,
+      behavior: scrollBehavior(),
+    })
   }
 
   useEffect(() => {
@@ -221,11 +234,21 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     setCves(prev => sortByExposure(prev, getMatchScore))
   }, [assetCtx?.matchScores, assetAware])
 
-  // Reset and reload when filters change; scroll to page top (keeps Hero/stack visible)
+  // Reset and reload when filters change. Stale-while-revalidate: the
+  // previous list stays rendered (dimmed via .feed-refreshing) until the new
+  // page arrives — no skeleton flash. Scroll anchors to the feed top, except
+  // for search refinement where the user should stay put.
   useEffect(() => {
+    const prev = prevFiltersRef.current
+    prevFiltersRef.current = filters
+    const changedKeys = prev
+      ? Object.keys({ ...prev, ...filters }).filter(k => prev[k] !== filters[k])
+      : []
+    const searchOnlyChange =
+      changedKeys.length > 0 && changedKeys.every(k => k === 'search')
+
     pageRef.current = 1
     setPage(1)
-    setCves([])
     setHasMore(true)
     hasMoreRef.current = true
     setSelectedMap({})
@@ -236,15 +259,18 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
 
     if (filtersInitialMountRef.current) {
       filtersInitialMountRef.current = false
-    } else {
+    } else if (!searchOnlyChange) {
       scrollFeedToTop()
     }
 
     loadPage(1, false)
   }, [filters, loadPage])
 
-  // Arrow-key card navigation (inactive while search is focused)
+  // Arrow-key card navigation (inactive while search is focused or any
+  // overlay — drawer / digest / about — is open). Keyboard nav snaps
+  // ('auto') so held keys never outrun the scroll animation.
   useEffect(() => {
+    if (overlayOpen) return
     function handleNav(e) {
       const tag = document.activeElement?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
@@ -254,14 +280,14 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
         e.preventDefault()
         setSelectedIndex(prev => {
           const next = prev === null ? 0 : Math.min(prev + 1, cves.length - 1)
-          cardRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+          cardRefs.current[next]?.scrollIntoView({ behavior: 'auto', block: 'nearest' })
           return next
         })
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
         setSelectedIndex(prev => {
           const next = prev === null ? 0 : Math.max(prev - 1, 0)
-          cardRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+          cardRefs.current[next]?.scrollIntoView({ behavior: 'auto', block: 'nearest' })
           return next
         })
       } else if (e.key === 'Enter' && selectedIndex !== null && cves[selectedIndex]) {
@@ -272,7 +298,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     }
     document.addEventListener('keydown', handleNav)
     return () => document.removeEventListener('keydown', handleNav)
-  }, [cves, selectedIndex, onSelectCVE])
+  }, [cves, selectedIndex, onSelectCVE, overlayOpen])
 
   // Infinite scroll: stable observer (refs only — do not depend on loading state)
   useEffect(() => {
@@ -357,10 +383,11 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
 
   const showSkeleton = loading && cves.length === 0
   const showEmpty = !loading && !error && cves.length === 0
-  const showError = !!error && cves.length === 0
+  const showError = !!error
+  const isRefreshing = loading && cves.length > 0
 
   return (
-    <div className="cve-feed" role="region" aria-label="CVE feed">
+    <div className="cve-feed" role="region" aria-label="CVE feed" ref={feedRootRef}>
       <FilterBar
         filters={filters}
         onFiltersChange={onFiltersChange}
@@ -409,7 +436,12 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
         </div>
       )}
 
-      <div aria-live="polite" aria-atomic="false" className="cve-list">
+      <div
+        aria-live="polite"
+        aria-atomic="false"
+        className={`cve-list${isRefreshing ? ' feed-refreshing' : ''}`}
+        aria-busy={isRefreshing || undefined}
+      >
         {cves.map((cve, idx) => (
           <CVECard
             key={cve.cve_id}
