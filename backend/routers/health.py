@@ -1,7 +1,7 @@
 """Health endpoint, moved verbatim from main.py (V1.2 §5.2 router split,
 phase 2). No behavior change. `format_time_in_tz` lives here because
-`/api/health` is its primary consumer; `/api/time` (still in main.py until
-the meta router lands) imports it from this module.
+`/api/health` is its primary consumer; `/api/time` (routers/meta.py)
+imports it from this module.
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """

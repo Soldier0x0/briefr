@@ -14,7 +14,7 @@ Every file in the repository with a one-line purpose. Tags:
 
 | Path | Description |
 |---|---|
-| `backend/main.py` | **[V1.2-SPLIT]** FastAPI app: CVE/meta routes, middleware, CVE filter SQL, enrichment orchestration (~1,200 lines; router split in progress) |
+| `backend/main.py` | FastAPI app wiring only: lifespan, CORS + security-header middleware, router includes (~130 lines; V1.2 router split complete) |
 | `backend/settings.py` | Pydantic `BaseSettings` env config (phase 1: `BRIEFR_ENV`, `BRIEFR_ADMIN_API_KEY`, `ALLOWED_ORIGINS`) |
 | `backend/dependencies.py` | Shared route dependencies: admin-key gate, audit-log writer |
 | `backend/database.py` | **[V1.2-SPLIT]** SQLite schema, migrations, upserts, cache, MITRE/ATLAS/OTX persistence (1,681 lines) |
@@ -31,9 +31,11 @@ Every file in the repository with a one-line purpose. Tags:
 |---|---|
 | `backend/routers/__init__.py` | Package marker |
 | `backend/routers/refresh.py` | Manual refresh endpoints (`POST /api/refresh*`), admin-gated + audited |
-| `backend/routers/health.py` | `GET /api/health` + `format_time_in_tz` helper (also used by `/api/time` in `main.py`) |
+| `backend/routers/health.py` | `GET /api/health` + `format_time_in_tz` helper (also used by `/api/time` in `routers/meta.py`) |
 | `backend/routers/atlas.py` | MITRE ATLAS + Case Studies endpoints (`/api/atlas/*`, `/api/case-studies/*`) |
 | `backend/routers/ioc.py` | IOC lookup + OTX pulse IOCs (`POST /api/ioc/lookup`, `GET /api/otx/pulses/{id}/iocs`) |
+| `backend/routers/cves.py` | CVE group: changes/stats/list/export/detail/momentum/detection/correlation + KEV deadlines, CVE filter SQL, enrichment orchestration |
+| `backend/routers/meta.py` | Meta group: `/api/version`, `/api/time`, `/api/usage*`, AI/investigation summaries |
 
 ### backend/ai/
 

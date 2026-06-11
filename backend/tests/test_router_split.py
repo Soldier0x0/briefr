@@ -62,7 +62,7 @@ def test_route_list_identical_to_pre_split_snapshot():
 
 
 def test_moved_endpoints_live_in_routers():
-    """Health, ATLAS, and IOC handlers come from routers/, not main."""
+    """All endpoint handlers come from routers/, none remain in main."""
     by_path = {
         route.path: route.endpoint.__module__
         for route in app.routes
@@ -75,3 +75,29 @@ def test_moved_endpoints_live_in_routers():
     assert by_path["/api/case-studies/news"] == "routers.atlas"
     assert by_path["/api/ioc/lookup"] == "routers.ioc"
     assert by_path["/api/otx/pulses/{pulse_id}/iocs"] == "routers.ioc"
+    # Phase 3: cves + meta groups
+    assert by_path["/api/changes"] == "routers.cves"
+    assert by_path["/api/cves"] == "routers.cves"
+    assert by_path["/api/cves/export"] == "routers.cves"
+    assert by_path["/api/cves/{cve_id}"] == "routers.cves"
+    assert by_path["/api/cves/{cve_id}/detection"] == "routers.cves"
+    assert by_path["/api/kev/deadlines"] == "routers.cves"
+    assert by_path["/api/version"] == "routers.meta"
+    assert by_path["/api/time"] == "routers.meta"
+    assert by_path["/api/usage"] == "routers.meta"
+    assert by_path["/api/investigation/summary"] == "routers.meta"
+    assert by_path["/api/refresh"] == "routers.refresh"
+    # main.py owns only app wiring now (V1.2 exit criterion: <300 lines)
+    assert not any(module == "main" for module in by_path.values())
+
+
+def test_cve_path_param_route_registered_after_literal_siblings():
+    """/api/cves/{cve_id} must not shadow GET /api/cves/export."""
+    get_paths = [
+        route.path
+        for route in app.routes
+        if hasattr(route, "methods") and "GET" in route.methods
+    ]
+    assert get_paths.index("/api/cves/export") < get_paths.index(
+        "/api/cves/{cve_id}"
+    )

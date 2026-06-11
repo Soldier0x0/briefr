@@ -49,7 +49,8 @@ Read in this order before writing any code:
 | #91 | v12-status-handover | Doc sync + this handover | ✅ Merged |
 | #93 | cf-access-identity-audit-log | §5.1 reworked after operator decision (2026-06-11): **CF Access middleware and fail-closed admin key removed** — auth will be a **built-in app login** before public release. PR now ships only the `audit_log` table + writes (refreshes, backups, restores) | 🔲 Open |
 | #94 | settings-and-refresh-router | §5.2 phase 1: `settings.py` (BaseSettings), `dependencies.py` (`require_admin_key`, `audit`), `routers/refresh.py` | ✅ Merged |
-| #95 | router-split-ioc-atlas-health | §5.2 phase 2: `routers/health.py`, `routers/atlas.py`, `routers/ioc.py` moved out of `main.py` verbatim; OpenAPI route list byte-identical (snapshot test `tests/test_router_split.py`). +1 review fix: cached IOC hit now commits on-demand GreyNoise/OTX feed_cache writes (were rolled back on close — pre-existing in main.py) | 🔲 Open |
+| #95 | router-split-ioc-atlas-health | §5.2 phase 2: `routers/health.py`, `routers/atlas.py`, `routers/ioc.py` moved out of `main.py` verbatim; OpenAPI route list byte-identical (snapshot test `tests/test_router_split.py`). +1 review fix: cached IOC hit now commits on-demand GreyNoise/OTX feed_cache writes (were rolled back on close — pre-existing in main.py) | ✅ Merged |
+| #96 | router-split-cves-meta-final | §5.2 phase 3 (final): `routers/cves.py` (changes/stats/list/export/detail/momentum/detection/correlation/KEV + CVE filter SQL) + `routers/meta.py` (version/time/usage/AI summaries) moved out of `main.py` verbatim; full OpenAPI JSON diffed byte-identical against pre-split main; `main.py` now app wiring only (~130 lines — V1.2 exit criterion met) | 🔲 Open |
 
 Each merged PR's description contains its own **post-merge verification
 checklist** — that is the house style; keep it (see §7).
@@ -91,22 +92,28 @@ Ordered; each is one PR unless noted. File pointers are current as of this doc.
 - Post-merge tests: `PRAGMA table_info(audit_log)` shows columns; manual
   refresh and a backup run each add a row; pytest green.
 
-### 5.2 `settings.py` + router split (`main.py` is ~1,500 lines)
+### 5.2 `settings.py` + router split — ✅ done (PR #96 open)
 - Pydantic `BaseSettings` for env config; `routers/` (cves, ioc, atlas,
   health, refresh, meta) + `dependencies.py`. **Pure mechanical moves, no
-  behavior change.** Do it in 2–3 PRs, one router group each.
+  behavior change.** Done in 3 PRs, one router group each.
 - **Phase 1 shipped (#94):** `settings.py` (import-time vars: `BRIEFR_ENV`,
   `BRIEFR_ADMIN_API_KEY`, `ALLOWED_ORIGINS`), `dependencies.py`
   (`require_admin_key`, `audit`), `routers/refresh.py` (all
   `POST /api/refresh*`). Per-request `os.environ.get` reads stay as-is and
-  migrate with their router groups.
+  migrated with their router groups.
 - **Phase 2 shipped (#95):** `routers/health.py` (`GET /api/health` +
-  `format_time_in_tz`, imported by `/api/time` until the meta group moves),
-  `routers/atlas.py` (`/api/atlas/*`, `/api/case-studies/*`),
-  `routers/ioc.py` (`POST /api/ioc/lookup`, `GET /api/otx/pulses/{id}/iocs`).
-  Routers are included mid-module in `main.py` to keep OpenAPI route order
-  identical; `tests/test_router_split.py` snapshots the route list.
-  Remaining: cves, meta.
+  `format_time_in_tz`), `routers/atlas.py` (`/api/atlas/*`,
+  `/api/case-studies/*`), `routers/ioc.py` (`POST /api/ioc/lookup`,
+  `GET /api/otx/pulses/{id}/iocs`). Routers are included mid-module in
+  `main.py` to keep OpenAPI route order identical;
+  `tests/test_router_split.py` snapshots the route list.
+- **Phase 3 shipped (#96):** `routers/cves.py` (4 sub-routers because CVE
+  routes were interleaved with ATLAS/IOC groups: changes, list/stats/export,
+  detail, momentum/detection/correlation/KEV) + `routers/meta.py`
+  (2 sub-routers: version/time, usage/AI summaries). `main.py` is app wiring
+  only (~130 lines). `/api/cves/{cve_id}` still registers after literal
+  siblings (`/api/cves/export` etc.) — regression-tested. Full OpenAPI JSON
+  verified byte-identical against pre-split `main`.
 - Post-merge tests: full pytest suite; `diff` of `/api/openapi.json` route
   list before/after (must be identical); smoke `deploy/smoke-intel.sh`.
 
