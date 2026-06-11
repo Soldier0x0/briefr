@@ -110,7 +110,7 @@ BRIEFR incorporates publicly available intelligence from NVD, CISA KEV, FIRST EP
 | abuse.ch (MalwareBazaar / URLhaus) | Hash / domain malware context | On demand | `ABUSECH_AUTH_KEY` |
 | OSV.dev | Affected packages | On CVE detail view | — |
 | Sploitus | Public exploits | On CVE detail / ingest enrichment | — |
-| CIRCL | Extended CVE references | On CVE detail / ingest | — |
+| CIRCL (vulnerability.circl.lu) | Extended CVE references + CAPEC | On CVE detail / ingest (7d cache, 24h negative cache) | `CIRCL_API_KEY` optional |
 | Groq / Anthropic | PDF executive summary | On PDF export only | `POST /api/ai/summary` |
 | GitHub | Sigma + Elastic rule search | On Detect tab open | `GITHUB_TOKEN` optional |
 | RSS × 6 | Security news cards | Snapshot every 30 min (`INCIDENT_FEED_REFRESH_MINUTES`) | `GET /api/case-studies/feed` |
@@ -218,6 +218,7 @@ See `backend/.env.example` for the full list. Key variables:
 | `OTX_API_KEY` | OTX pulses + correlation | — |
 | `GROQ_API_KEY` / `ANTHROPIC_API_KEY` | PDF AI summary | — |
 | `GITHUB_TOKEN` | Detection rule search rate limit | — |
+| `CIRCL_API_KEY` | vulnerability.circl.lu authenticated rate limits | — |
 | `ALLOWED_ORIGINS` | CORS origins (comma-separated) | `http://localhost:3000` |
 | `DB_PATH` | SQLite file | `briefr.db` |
 | `BACKUP_DIR` | Backup archive directory | `/var/lib/briefr/backups` |

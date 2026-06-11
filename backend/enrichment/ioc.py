@@ -7,12 +7,14 @@
 # to reduce API calls. This cache is local to your server only.
 # Users are informed of this in the UI and in the Privacy Policy.
 
+import json
 import logging
 from urllib.parse import urlparse
 
 import httpx
 
 from enrichment.domain_validation import is_valid_domain
+from resilient_client import CircuitOpenError, resilient_get
 from tracking import record_api_call
 
 logger = logging.getLogger(__name__)
@@ -69,105 +71,81 @@ def _error_result(value: str, ioc_type: str, error_msg: str) -> dict:
     return result
 
 
-async def _lookup_vt_ip(client: httpx.AsyncClient, ip: str, api_key: str) -> dict:
+async def _quota_safe_get(
+    source: str,
+    url: str,
+    *,
+    headers: dict,
+    params: dict | None = None,
+    label: str = "",
+    not_found_status: tuple[int, ...] = (404,),
+) -> dict:
+    """GET through the resilient client with retries=0 — IOC enrichment APIs
+    are quota-billed (VT 500/day, AbuseIPDB 1000/day), so a failed call must
+    never be retried automatically. Circuit breaker still applies."""
     try:
-        response = await client.get(
-            f"{VT_BASE_URL}/ip_addresses/{ip}",
-            headers={"x-apikey": api_key},
-            timeout=30.0,
+        response = await resilient_get(
+            source, url, headers=headers, params=params, timeout=30.0, retries=0
         )
-        if response.status_code == 404:
-            return {}
-        if response.status_code in (403, 401):
-            logger.warning("VirusTotal auth error for IP %s: %d", ip, response.status_code)
-            return {}
-        if response.status_code == 429:
-            logger.warning("VirusTotal rate limit for IP lookup")
-            return {}
-        response.raise_for_status()
         return response.json()
+    except CircuitOpenError:
+        logger.warning("%s circuit open — skipping lookup %s", source, label)
+        return {}
     except httpx.HTTPStatusError as exc:
-        logger.error("VT IP lookup HTTP error for %s: %s", ip, exc)
-        return {}
-    except httpx.RequestError as exc:
-        logger.error("VT IP lookup request error for %s: %s", ip, exc)
-        return {}
-
-
-async def _lookup_abuseipdb(client: httpx.AsyncClient, ip: str, api_key: str) -> dict:
-    try:
-        response = await client.get(
-            ABUSEIPDB_URL,
-            params={"ipAddress": ip, "maxAgeInDays": 90},
-            headers={"Key": api_key, "Accept": "application/json"},
-            timeout=30.0,
-        )
-        if response.status_code in (404, 422):
+        status = exc.response.status_code
+        if status in not_found_status:
             return {}
-        if response.status_code in (403, 401):
-            logger.warning("AbuseIPDB auth error: %d", response.status_code)
-            return {}
-        if response.status_code == 429:
-            logger.warning("AbuseIPDB rate limit hit")
-            return {}
-        response.raise_for_status()
-        return response.json()
-    except httpx.HTTPStatusError as exc:
-        logger.error("AbuseIPDB HTTP error for %s: %s", ip, exc)
+        if status in (401, 403):
+            logger.warning("%s auth error for %s: %d", source, label, status)
+        elif status == 429:
+            logger.warning("%s rate limit hit (%s)", source, label)
+        else:
+            logger.error("%s HTTP %d for %s", source, status, label)
         return {}
-    except httpx.RequestError as exc:
-        logger.error("AbuseIPDB request error for %s: %s", ip, exc)
+    except httpx.HTTPError as exc:
+        logger.error("%s request error for %s: %s", source, label, exc)
+        return {}
+    except (json.JSONDecodeError, ValueError) as exc:
+        logger.error("%s parse error for %s: %s", source, label, exc)
         return {}
 
 
-async def _lookup_vt_hash(client: httpx.AsyncClient, file_hash: str, api_key: str) -> dict:
-    try:
-        response = await client.get(
-            f"{VT_BASE_URL}/files/{file_hash}",
-            headers={"x-apikey": api_key},
-            timeout=30.0,
-        )
-        if response.status_code == 404:
-            return {}
-        if response.status_code in (403, 401):
-            logger.warning("VirusTotal auth error for hash %s: %d", file_hash, response.status_code)
-            return {}
-        if response.status_code == 429:
-            logger.warning("VirusTotal rate limit for hash lookup")
-            return {}
-        response.raise_for_status()
-        return response.json()
-    except httpx.HTTPStatusError as exc:
-        logger.error("VT hash lookup HTTP error for %s: %s", file_hash, exc)
-        return {}
-    except httpx.RequestError as exc:
-        logger.error("VT hash lookup request error for %s: %s", file_hash, exc)
-        return {}
+async def _lookup_vt_ip(ip: str, api_key: str) -> dict:
+    return await _quota_safe_get(
+        "virustotal",
+        f"{VT_BASE_URL}/ip_addresses/{ip}",
+        headers={"x-apikey": api_key},
+        label=f"ip {ip}",
+    )
 
 
-async def _lookup_vt_domain(client: httpx.AsyncClient, domain: str, api_key: str) -> dict:
-    try:
-        response = await client.get(
-            f"{VT_BASE_URL}/domains/{domain}",
-            headers={"x-apikey": api_key},
-            timeout=30.0,
-        )
-        if response.status_code == 404:
-            return {}
-        if response.status_code in (403, 401):
-            logger.warning("VirusTotal auth error for domain %s: %d", domain, response.status_code)
-            return {}
-        if response.status_code == 429:
-            logger.warning("VirusTotal rate limit for domain lookup")
-            return {}
-        response.raise_for_status()
-        return response.json()
-    except httpx.HTTPStatusError as exc:
-        logger.error("VT domain lookup HTTP error for %s: %s", domain, exc)
-        return {}
-    except httpx.RequestError as exc:
-        logger.error("VT domain lookup request error for %s: %s", domain, exc)
-        return {}
+async def _lookup_abuseipdb(ip: str, api_key: str) -> dict:
+    return await _quota_safe_get(
+        "abuseipdb",
+        ABUSEIPDB_URL,
+        params={"ipAddress": ip, "maxAgeInDays": 90},
+        headers={"Key": api_key, "Accept": "application/json"},
+        label=f"ip {ip}",
+        not_found_status=(404, 422),
+    )
+
+
+async def _lookup_vt_hash(file_hash: str, api_key: str) -> dict:
+    return await _quota_safe_get(
+        "virustotal",
+        f"{VT_BASE_URL}/files/{file_hash}",
+        headers={"x-apikey": api_key},
+        label=f"hash {file_hash}",
+    )
+
+
+async def _lookup_vt_domain(domain: str, api_key: str) -> dict:
+    return await _quota_safe_get(
+        "virustotal",
+        f"{VT_BASE_URL}/domains/{domain}",
+        headers={"x-apikey": api_key},
+        label=f"domain {domain}",
+    )
 
 
 def _parse_vt_stats(vt_data: dict) -> tuple[int, int, list, str | None]:
@@ -276,128 +254,127 @@ async def lookup_ioc(
         "sources_missing": [],
     }
 
-    async with httpx.AsyncClient() as client:
-        if ioc_type == "ip":
-            vt_data = {}
-            abuse_data = {}
-            missing: list[str] = []
+    if ioc_type == "ip":
+        vt_data = {}
+        abuse_data = {}
+        missing: list[str] = []
 
-            if vt_key:
-                vt_data = await _lookup_vt_ip(client, value, vt_key)
-                await record_api_call("virustotal", 1)
-            else:
-                missing.append("virustotal")
-            if abuse_key:
-                abuse_data = await _lookup_abuseipdb(client, value, abuse_key)
-                await record_api_call("abuseipdb", 1)
-            else:
-                missing.append("abuseipdb")
+        if vt_key:
+            vt_data = await _lookup_vt_ip(value, vt_key)
+            await record_api_call("virustotal", 1)
+        else:
+            missing.append("virustotal")
+        if abuse_key:
+            abuse_data = await _lookup_abuseipdb(value, abuse_key)
+            await record_api_call("abuseipdb", 1)
+        else:
+            missing.append("abuseipdb")
 
-            result["sources_missing"] = missing
-            result["abuseipdb_link"] = f"https://www.abuseipdb.com/check/{value}"
+        result["sources_missing"] = missing
+        result["abuseipdb_link"] = f"https://www.abuseipdb.com/check/{value}"
 
-            if vt_data:
-                malicious, total, tags, last_seen = _parse_vt_stats(vt_data)
-                attrs = vt_data.get("data", {}).get("attributes", {})
-                result["malicious_votes"] = malicious
-                result["total_votes"] = total
-                result["tags"] = tags
-                result["last_seen"] = last_seen
-                result["country"] = attrs.get("country")
-                result["vt_link"] = f"https://www.virustotal.com/gui/ip-address/{value}"
-                result["vt_engines"] = _parse_vt_engines(vt_data)
-                result["vt_stats"] = attrs.get("last_analysis_stats") or {}
-                result["vt_network"] = _parse_vt_network(vt_data)
-            elif vt_key:
-                result["vt_link"] = f"https://www.virustotal.com/gui/ip-address/{value}"
+        if vt_data:
+            malicious, total, tags, last_seen = _parse_vt_stats(vt_data)
+            attrs = vt_data.get("data", {}).get("attributes", {})
+            result["malicious_votes"] = malicious
+            result["total_votes"] = total
+            result["tags"] = tags
+            result["last_seen"] = last_seen
+            result["country"] = attrs.get("country")
+            result["vt_link"] = f"https://www.virustotal.com/gui/ip-address/{value}"
+            result["vt_engines"] = _parse_vt_engines(vt_data)
+            result["vt_stats"] = attrs.get("last_analysis_stats") or {}
+            result["vt_network"] = _parse_vt_network(vt_data)
+        elif vt_key:
+            result["vt_link"] = f"https://www.virustotal.com/gui/ip-address/{value}"
 
-            if abuse_data:
-                parsed = _parse_abuseipdb(abuse_data)
-                result["abuseipdb"] = parsed
-                result["abuse_score"] = parsed.get("abuse_score")
-                if not result["country"]:
-                    result["country"] = parsed.get("country_code")
+        if abuse_data:
+            parsed = _parse_abuseipdb(abuse_data)
+            result["abuseipdb"] = parsed
+            result["abuse_score"] = parsed.get("abuse_score")
+            if not result["country"]:
+                result["country"] = parsed.get("country_code")
 
-            if include_greynoise and greynoise_key and db is not None:
-                from feeds.extended import greynoise_for_ip
-                from templates.intelligence import greynoise_sentence
+        if include_greynoise and greynoise_key and db is not None:
+            from feeds.extended import greynoise_for_ip
+            from templates.intelligence import greynoise_sentence
 
-                gn = await greynoise_for_ip(db, value, greynoise_key)
-                result["greynoise"] = gn
-                result["greynoise_sentence"] = greynoise_sentence(gn)
+            gn = await greynoise_for_ip(db, value, greynoise_key)
+            result["greynoise"] = gn
+            result["greynoise_sentence"] = greynoise_sentence(gn)
 
-        elif ioc_type == "hash":
-            vt_data = {}
-            if vt_key:
-                vt_data = await _lookup_vt_hash(client, value, vt_key)
-                await record_api_call("virustotal", 1)
+    elif ioc_type == "hash":
+        vt_data = {}
+        if vt_key:
+            vt_data = await _lookup_vt_hash(value, vt_key)
+            await record_api_call("virustotal", 1)
 
-            if vt_data:
-                malicious, total, tags, last_seen = _parse_vt_stats(vt_data)
-                result["malicious_votes"] = malicious
-                result["total_votes"] = total
-                result["tags"] = tags
-                result["last_seen"] = last_seen
-                result["vt_link"] = f"https://www.virustotal.com/gui/file/{value}"
-            else:
-                result["error"] = "Hash not found in VirusTotal"
+        if vt_data:
+            malicious, total, tags, last_seen = _parse_vt_stats(vt_data)
+            result["malicious_votes"] = malicious
+            result["total_votes"] = total
+            result["tags"] = tags
+            result["last_seen"] = last_seen
+            result["vt_link"] = f"https://www.virustotal.com/gui/file/{value}"
+        else:
+            result["error"] = "Hash not found in VirusTotal"
 
-            from feeds.extended import lookup_malwarebazaar
-            from templates.intelligence import malwarebazaar_sentence
+        from feeds.extended import lookup_malwarebazaar
+        from templates.intelligence import malwarebazaar_sentence
+
+        if db is not None:
+            mb = await lookup_malwarebazaar(db, value, abusech_key or None)
+        else:
+            from feeds.extended import fetch_malwarebazaar_hash
+
+            mb = await fetch_malwarebazaar_hash(value, abusech_key or None)
+        result["malwarebazaar"] = mb
+        result["malwarebazaar_sentence"] = malwarebazaar_sentence(mb)
+
+    elif ioc_type == "domain":
+        vt_data = {}
+        if vt_key:
+            vt_data = await _lookup_vt_domain(value, vt_key)
+            await record_api_call("virustotal", 1)
+
+        if vt_data:
+            malicious, total, tags, last_seen = _parse_vt_stats(vt_data)
+            result["malicious_votes"] = malicious
+            result["total_votes"] = total
+            result["tags"] = tags
+            result["last_seen"] = last_seen
+            attrs = vt_data.get("data", {}).get("attributes", {})
+            result["country"] = attrs.get("country")
+            result["vt_link"] = f"https://www.virustotal.com/gui/domain/{value}"
+            result["vt_engines"] = _parse_vt_engines(vt_data)
+            result["vt_stats"] = attrs.get("last_analysis_stats") or {}
+        elif vt_key:
+            result["vt_link"] = f"https://www.virustotal.com/gui/domain/{value}"
+
+        uh = None
+        try:
+            from feeds.extended import lookup_urlhaus
+            from templates.intelligence import urlhaus_sentence
 
             if db is not None:
-                mb = await lookup_malwarebazaar(db, value, abusech_key or None)
+                uh = await lookup_urlhaus(db, value, "domain", abusech_key or None)
             else:
-                from feeds.extended import fetch_malwarebazaar_hash
+                from feeds.extended import fetch_urlhaus_indicator
 
-                mb = await fetch_malwarebazaar_hash(value, abusech_key or None)
-            result["malwarebazaar"] = mb
-            result["malwarebazaar_sentence"] = malwarebazaar_sentence(mb)
+                uh = await fetch_urlhaus_indicator(value, "domain", abusech_key or None)
+            result["urlhaus"] = uh
+            result["urlhaus_sentence"] = urlhaus_sentence(uh)
+        except Exception as exc:
+            logger.error("URLhaus enrichment failed for domain %s: %s", value, exc)
+            result["urlhaus_sentence"] = (
+                "URLhaus lookup failed — other sources may still be available."
+            )
 
-        elif ioc_type == "domain":
-            vt_data = {}
-            if vt_key:
-                vt_data = await _lookup_vt_domain(client, value, vt_key)
-                await record_api_call("virustotal", 1)
-
-            if vt_data:
-                malicious, total, tags, last_seen = _parse_vt_stats(vt_data)
-                result["malicious_votes"] = malicious
-                result["total_votes"] = total
-                result["tags"] = tags
-                result["last_seen"] = last_seen
-                attrs = vt_data.get("data", {}).get("attributes", {})
-                result["country"] = attrs.get("country")
-                result["vt_link"] = f"https://www.virustotal.com/gui/domain/{value}"
-                result["vt_engines"] = _parse_vt_engines(vt_data)
-                result["vt_stats"] = attrs.get("last_analysis_stats") or {}
-            elif vt_key:
-                result["vt_link"] = f"https://www.virustotal.com/gui/domain/{value}"
-
-            uh = None
-            try:
-                from feeds.extended import lookup_urlhaus
-                from templates.intelligence import urlhaus_sentence
-
-                if db is not None:
-                    uh = await lookup_urlhaus(db, value, "domain", abusech_key or None)
-                else:
-                    from feeds.extended import fetch_urlhaus_indicator
-
-                    uh = await fetch_urlhaus_indicator(value, "domain", abusech_key or None)
-                result["urlhaus"] = uh
-                result["urlhaus_sentence"] = urlhaus_sentence(uh)
-            except Exception as exc:
-                logger.error("URLhaus enrichment failed for domain %s: %s", value, exc)
-                result["urlhaus_sentence"] = (
-                    "URLhaus lookup failed — other sources may still be available."
-                )
-
-            if not vt_data and not (uh and uh.get("threat_type")):
-                if not vt_key:
-                    result["error"] = "VirusTotal API key not configured"
-                else:
-                    result["error"] = "Domain not found in VirusTotal or URLhaus"
+        if not vt_data and not (uh and uh.get("threat_type")):
+            if not vt_key:
+                result["error"] = "VirusTotal API key not configured"
+            else:
+                result["error"] = "Domain not found in VirusTotal or URLhaus"
 
     if otx_key and db is not None:
         from feeds.otx import lookup_otx_for_ioc
