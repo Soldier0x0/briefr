@@ -275,6 +275,28 @@
 .badge-neutral { color: var(--text3); background: var(--bg3); border-color: var(--border); }
 .badge-ransomware { color: var(--red); background: var(--red-dim); border-color: var(--red); font-weight: 700; }
 
+/* Loading skeletons — unified with feed/drawer skeleton language */
+.sidebar-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-skeleton-row {
+  height: 14px;
+  background: var(--bg3);
+  animation: sidebar-skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+.sidebar-skeleton-tall {
+  height: 48px;
+}
+
+@keyframes sidebar-skeleton-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
 /* ── Top Techniques ── */
 .technique-list {
   list-style: none;

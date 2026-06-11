@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import useModalLayer from '../hooks/useModalLayer.js'
 import './ShortcutsPanel.css'
 
 const SHORTCUTS = [
@@ -14,6 +15,10 @@ const SHORTCUTS = [
 export default function ShortcutsPanel({ placement = 'header' }) {
   const [open, setOpen] = useState(false)
   const wrapRef = useRef(null)
+
+  // Owns its Escape — register depth so the global handler stands down while
+  // the panel is open (popover, so no focus trap).
+  useModalLayer(open, wrapRef, { trackDepth: true, trapFocus: false })
 
   useEffect(() => {
     if (!open) return

@@ -59,8 +59,11 @@ export default function PrivacyPage() {
         <li>abuse.ch (MalwareBazaar + URLhaus) — one Auth-Key — IOC Lookup for hashes and domains</li>
         <li>Sploitus — public exploit search per CVE — server-side when you open CVE detail (Intel tab)</li>
         <li>CIRCL CVE-Search — supplemental CVE references — server-side on CVE detail load</li>
-        <li>Google Fonts — typography — every page load from your browser</li>
       </ul>
+      <p className="legal-p">
+        Fonts are self-hosted — your browser makes no requests to Google Fonts
+        or any other typography CDN.
+      </p>
 
       <h2 className="legal-section-heading">5. Your rights</h2>
       <p className="legal-p">
