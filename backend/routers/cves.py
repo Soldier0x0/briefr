@@ -20,6 +20,13 @@ Inline imports were hoisted to module top per house convention
 feeds.extended.enrich_cve_circl). The unused `_parse_stack_terms` helper was
 dropped during the move.
 
+Two review fixes on top of the verbatim move (PR #96 review):
+- `_sort_by_stack_relevance` no longer crashes on a NULL `affected_products`
+  column (was `cve.get(..., [])`, which returns the explicit None value).
+- momentum/detection/correlation validate the `CVE-` prefix like their
+  sibling detail endpoints (detection previously spent GitHub API quota on
+  malformed IDs).
+
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
 
@@ -418,7 +425,9 @@ def _sort_by_stack_relevance(cve_list: list[dict], stack_products: list[str]) ->
         return cve_list
 
     def relevance_score(cve: dict) -> int:
-        products = [p.lower() for p in cve.get("affected_products", [])]
+        # `or []`, not a .get default: a NULL DB column survives
+        # _row_to_cve_dict as an explicit None value under the key.
+        products = [p.lower() for p in (cve.get("affected_products") or [])]
         desc = (cve.get("description") or "").lower()
         summary = (cve.get("summary") or "").lower()
         score = 0
@@ -810,6 +819,9 @@ async def cve_momentum(cve_id: str):
     Compute momentum score (0–1) from EPSS trend and OTX pulse recency.
     Returns momentum_score and momentum_signals list for drawer breakdown.
     """
+    if not cve_id.upper().startswith("CVE-"):
+        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+
     db = await get_db()
     try:
         result = await calculate_momentum(cve_id.upper(), db)
@@ -832,6 +844,9 @@ async def cve_detection(
     - siem_queries: 4-platform quick-search queries (Elastic/Splunk/Sentinel/QRadar)
     - log_patterns: plain-English detection patterns from ATT&CK guidance
     """
+    if not cve_id.upper().startswith("CVE-"):
+        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+
     github_token = os.environ.get("GITHUB_TOKEN", "")
     cve_upper = cve_id.upper()
 
@@ -912,6 +927,9 @@ async def cve_correlation(
     Level 3: temporal vendor volume anomalies (pre-computed nightly).
     Results are cached for 6 hours.
     """
+    if not cve_id.upper().startswith("CVE-"):
+        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+
     db = await get_db()
     try:
         result = await get_correlation_for_cve(
