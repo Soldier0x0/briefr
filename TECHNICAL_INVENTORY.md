@@ -290,7 +290,7 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | `epss_score_sync` | Every `EPSS_SYNC_INTERVAL_HOURS` (default 6h) | EPSS CSV/API | `cves.epss_score`, `epss_history` | Log error | Yes — upsert history |
 | `weekly_mitre_refresh` | Cron Sun `MITRE_REFRESH_HOUR:MINUTE` (default 02:00 sched TZ) | MITRE STIX, CTID CSV, ATLAS YAML | `mitre_*`, `atlas_*`, `cve_*_map`, `has_ai_context` | Log error; partial commit possible | Mostly — replace atlas tables |
 | `otx_nightly_correlation` | Cron `OTX_CORRELATION_HOUR:MINUTE` in `OTX_CORRELATION_TIMEZONE` (default 02:00 IST) | OTX API | `otx_*`, `feed_cache` | Skipped if no key; log on error | Yes — replace per CVE |
-| `incident_news_refresh` | Every 4 hours | 6 RSS feeds | `feed_cache` (`incident_rss:*`) | Per-source errors logged | Yes — cache overwrite |
+| `incident_feed_refresh` | Every `INCIDENT_FEED_REFRESH_MINUTES` (default 30m; first run ~20s after boot) | 6 RSS feeds (parallel) + ATLAS | `feed_cache` (`incident_rss:*`, `incident_feed:snapshot`) | Per-source errors stored in snapshot; cache-write contention degrades gracefully | Yes — snapshot overwrite |
 | `nightly_correlation` | Cron `CORRELATION_HOUR:MINUTE` in `CORRELATION_TIMEZONE` (default 01:00 IST) | OTX IOCs + local DB | `correlation_*`, `feed_cache` | Log error; lock skip | Yes — upsert/delete patterns |
 
 ---

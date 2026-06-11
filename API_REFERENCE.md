@@ -265,13 +265,13 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 
 ### GET /api/case-studies/feed
 
-**Description:** Combined Incidents tab feed — RSS news and ATLAS case studies loaded on the server via a **single SQLite connection** (avoids `database is locked` under concurrent writes).
+**Description:** Combined Incidents tab feed — served from a **precomputed snapshot** rebuilt by the scheduler every `INCIDENT_FEED_REFRESH_MINUTES` (default 30). The request path is a pure read; a cold cache miss returns immediately with `meta.warming=true` and triggers a background build.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `atlas_limit` | int | 80 | 1–100 ATLAS studies to include |
 
-**Response:** `{"data": [ merged news + atlas cards ], "errors": [ per-source errors ]}` — cards sorted by `publishedAt` descending.
+**Response:** `{"data": [ merged news + atlas cards ], "errors": [ per-source errors ], "meta": {...}}` — cards sorted by `publishedAt` descending. `meta` carries `refreshed_at` (snapshot build time), `stale` (older than 2× refresh interval), `warming` (snapshot being built), and `refresh_interval_minutes`.
 
 ---
 
@@ -440,7 +440,7 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 |---|---|---|---|
 | `tz` | str | `DEFAULT_TIMEZONE` env | IANA timezone for display |
 
-**Response:** `status`, `cve_count`, `last_updated`, `nvd_sync_watermark`, `refresh_in_progress`, `ingest`, schedule hints, server time.
+**Response:** `status`, `cve_count`, `last_updated`, `nvd_sync_watermark`, `refresh_in_progress`, `ingest`, `feeds.incidents` (`last_refresh`, `stale` — Incidents snapshot freshness), schedule hints, server time.
 
 ---
 

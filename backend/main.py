@@ -49,6 +49,7 @@ from feeds.extended import (
     greynoise_scans_for_cve,
     load_public_exploits_for_cve,
 )
+from feeds.case_study_feed import get_incident_feed, get_incident_feed_status
 from feeds.otx import load_otx_pulses_for_cve, load_pulse_iocs, top_pulse_ipv4s
 from scheduler import run_weekly_mitre_refresh
 from enrichment.ioc import lookup_ioc
@@ -261,10 +262,12 @@ async def health(
     next_refresh_utc = get_next_scheduled_refresh_utc()
     refresh_schedule = get_refresh_schedule()
     ingest = get_ingest_status()
+    incidents_status = await get_incident_feed_status()
 
     response: dict = {
         "status": "ok",
         "cve_count": cve_count,
+        "feeds": {"incidents": incidents_status},
         "last_updated": last_updated,
         "nvd_sync_watermark": nvd_sync_watermark,
         "refresh_in_progress": refresh_in_progress(),
@@ -817,11 +820,9 @@ async def case_studies_news():
 async def case_studies_feed(
     atlas_limit: int = Query(default=80, ge=1, le=100),
 ):
-    """Combined RSS news + ATLAS case studies (single SQLite connection)."""
-    from feeds.case_study_feed import fetch_combined_case_study_feed
-
-    cards, errors = await fetch_combined_case_study_feed(atlas_limit=atlas_limit)
-    return {"data": cards, "errors": errors}
+    """Combined RSS news + ATLAS case studies, served from the precomputed snapshot."""
+    cards, errors, meta = await get_incident_feed(atlas_limit=atlas_limit)
+    return {"data": cards, "errors": errors, "meta": meta}
 
 
 @app.get("/api/atlas/casestudies")
