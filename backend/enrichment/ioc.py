@@ -87,7 +87,8 @@ async def _quota_safe_get(
         response = await resilient_get(
             source, url, headers=headers, params=params, timeout=30.0, retries=0
         )
-        return response.json()
+        data = response.json()
+        return data if isinstance(data, dict) else {}
     except CircuitOpenError:
         logger.warning("%s circuit open — skipping lookup %s", source, label)
         return {}

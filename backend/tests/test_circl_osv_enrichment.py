@@ -45,6 +45,14 @@ OSV_RECORD = {
 }
 
 
+def test_normalize_circl_record_handles_malformed_payload():
+    assert extended._normalize_circl_record([]) == {"references": [], "capec": []}
+    assert extended._normalize_circl_record({"containers": "bad"}) == {
+        "references": [],
+        "capec": [],
+    }
+
+
 def test_normalize_circl_record_extracts_refs_and_capec():
     norm = extended._normalize_circl_record(CVE5_RECORD)
     assert "https://logging.apache.org/log4j/2.x/security.html" in norm["references"]
@@ -119,6 +127,11 @@ def test_circl_success_and_empty_results_are_cached(tmp_path, monkeypatch):
     asyncio.run(run())
 
 
+def test_osv_parse_rejects_malformed_record():
+    assert osv._parse_osv_record([]) is None
+    assert osv._parse_osv_record({"id": "CVE-1", "affected": "bad"}) is None
+
+
 def test_osv_parses_single_vuln_record(monkeypatch):
     class FakeResponse:
         def json(self):
@@ -153,3 +166,17 @@ def test_osv_follows_alias_when_cve_record_has_no_packages(monkeypatch):
     assert len(results) == 1
     assert results[0]["osv_id"] == "GHSA-jfh8-c2jp-5v3q"
     assert results[0]["ecosystems"][0]["ecosystem"] == "Maven"
+
+
+def test_osv_ignores_non_list_aliases(monkeypatch):
+    async def fake_fetch(vuln_id):
+        return {
+            "id": vuln_id,
+            "aliases": "GHSA-not-a-list",
+            "affected": [{"ranges": [{"type": "GIT", "events": []}]}],
+        }
+
+    monkeypatch.setattr(osv, "_fetch_osv_record", fake_fetch)
+
+    results = asyncio.run(osv.fetch_osv_by_cve("CVE-2021-44228"))
+    assert results == []

@@ -370,26 +370,39 @@ def _normalize_circl_record(record: dict) -> dict:
     """CVE 5.x record from vulnerability.circl.lu → legacy {references, capec} shape."""
     references: list[str] = []
     capec: list[str] = []
-    containers = record.get("containers") or {}
-    sources = [containers.get("cna") or {}]
+    if not isinstance(record, dict):
+        return {"references": references, "capec": capec}
+
+    containers = record.get("containers")
+    if not isinstance(containers, dict):
+        return {"references": references, "capec": capec}
+
+    sources: list[dict] = []
+    cna = containers.get("cna")
+    if isinstance(cna, dict):
+        sources.append(cna)
     adp = containers.get("adp")
     if isinstance(adp, list):
         sources.extend(c for c in adp if isinstance(c, dict))
 
     for container in sources:
-        for ref in container.get("references") or []:
-            if isinstance(ref, dict):
-                url = (ref.get("url") or "").strip()
-            else:
-                url = str(ref).strip()
-            if url:
-                references.append(url)
-        for impact in container.get("impacts") or []:
-            if not isinstance(impact, dict):
-                continue
-            cid = str(impact.get("capecId") or "").strip().upper()
-            if cid.startswith("CAPEC-"):
-                capec.append(cid)
+        refs = container.get("references")
+        if isinstance(refs, list):
+            for ref in refs:
+                if isinstance(ref, dict):
+                    url = (ref.get("url") or "").strip()
+                else:
+                    url = str(ref).strip()
+                if url:
+                    references.append(url)
+        impacts = container.get("impacts")
+        if isinstance(impacts, list):
+            for impact in impacts:
+                if not isinstance(impact, dict):
+                    continue
+                cid = str(impact.get("capecId") or "").strip().upper()
+                if cid.startswith("CAPEC-"):
+                    capec.append(cid)
 
     return {"references": references, "capec": capec}
 

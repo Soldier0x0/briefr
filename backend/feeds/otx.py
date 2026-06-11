@@ -28,7 +28,8 @@ async def _otx_get(url: str, api_key: str) -> dict | None:
             "otx", url, headers=_otx_headers(api_key), timeout=30.0
         )
         await record_api_call("otx", 1)
-        return response.json()
+        data = response.json()
+        return data if isinstance(data, dict) else None
     except CircuitOpenError:
         logger.warning("OTX circuit open — skipping %s", url)
         return None

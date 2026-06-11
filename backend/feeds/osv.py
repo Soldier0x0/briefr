@@ -47,24 +47,42 @@ async def _fetch_osv_record(vuln_id: str) -> dict | None:
 
 
 def _parse_osv_record(vuln: dict) -> dict | None:
+    if not isinstance(vuln, dict):
+        return None
+
     osv_id = vuln.get("id", "")
-    affected = vuln.get("affected", [])
+    affected = vuln.get("affected")
+    if not isinstance(affected, list):
+        return None
 
     ecosystems = {}
     for affected_entry in affected:
+        if not isinstance(affected_entry, dict):
+            continue
         pkg = affected_entry.get("package") or {}
+        if not isinstance(pkg, dict):
+            pkg = {}
         ecosystem = pkg.get("ecosystem", "")
         name = pkg.get("name", "")
 
         versions = []
-        for version_range in affected_entry.get("ranges", []):
-            for event in version_range.get("events", []):
-                introduced = event.get("introduced")
-                fixed = event.get("fixed")
-                if introduced:
-                    versions.append({"introduced": introduced})
-                if fixed:
-                    versions.append({"fixed": fixed})
+        ranges = affected_entry.get("ranges")
+        if isinstance(ranges, list):
+            for version_range in ranges:
+                if not isinstance(version_range, dict):
+                    continue
+                events = version_range.get("events")
+                if not isinstance(events, list):
+                    continue
+                for event in events:
+                    if not isinstance(event, dict):
+                        continue
+                    introduced = event.get("introduced")
+                    fixed = event.get("fixed")
+                    if introduced:
+                        versions.append({"introduced": introduced})
+                    if fixed:
+                        versions.append({"fixed": fixed})
 
         if ecosystem:
             if ecosystem not in ecosystems:
@@ -97,13 +115,15 @@ async def fetch_osv_by_cve(cve_id: str) -> list[dict]:
         results.append(parsed)
         return results
 
-    for alias in (record.get("aliases") or [])[:MAX_ALIAS_FOLLOWS]:
-        alias_record = await _fetch_osv_record(str(alias))
-        if not alias_record:
-            continue
-        parsed = _parse_osv_record(alias_record)
-        if parsed:
-            results.append(parsed)
-            break
+    aliases = record.get("aliases")
+    if isinstance(aliases, list):
+        for alias in aliases[:MAX_ALIAS_FOLLOWS]:
+            alias_record = await _fetch_osv_record(str(alias))
+            if not alias_record:
+                continue
+            parsed = _parse_osv_record(alias_record)
+            if parsed:
+                results.append(parsed)
+                break
 
     return results
