@@ -125,9 +125,8 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
     setFilters(prev => {
       // No-op guard: clicking the already-active filter must not produce a
       // new object identity (which would reset + refetch + scroll the feed).
-      const merged = { ...prev, ...next }
-      const changed = Object.keys(merged).some(k => merged[k] !== prev[k])
-      return changed ? merged : prev
+      const changed = Object.keys(next).some(k => next[k] !== prev[k])
+      return changed ? { ...prev, ...next } : prev
     })
   }, [setFilters])
 
