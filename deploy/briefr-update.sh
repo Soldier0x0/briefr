@@ -149,6 +149,13 @@ systemctl stop briefr.target briefr-frontend briefr-backend 2>/dev/null || true
 
 fix_tree_permissions
 
+echo "==> Stamping build info"
+GIT_COMMIT="$(git -C "${INSTALL_DIR}" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+printf '{"commit": "%s", "built_at": "%s"}\n' \
+  "${GIT_COMMIT}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  > "${INSTALL_DIR}/backend/.build-info.json"
+chown "${APP_USER}:${APP_USER}" "${INSTALL_DIR}/backend/.build-info.json"
+
 echo "==> Updating Python dependencies"
 as_app_user "${INSTALL_DIR}/venv/bin/pip" install -r "${INSTALL_DIR}/backend/requirements.txt"
 

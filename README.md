@@ -266,6 +266,7 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 | `GET /api/case-studies/news` | RSS news only |
 | `POST /api/ai/summary` | AI executive summary (PDF export only) |
 | `GET /api/usage` / `GET /api/usage/ioc` | API quota counters |
+| `GET /api/version` | Deployed version + commit (stamped at deploy) |
 
 **Note:** `POST /api/investigation/summary` is a legacy alias for the investigation PDF summary pipeline; prefer `POST /api/ai/summary` for new integrations.
 
