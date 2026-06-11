@@ -426,18 +426,25 @@ async def fetch_cve_by_id(cve_id: str, api_key: str | None = None) -> dict | Non
             if response.status_code == 404:
                 return None
             response.raise_for_status()
+            record_source_success("nvd")
             data = response.json()
             vulns = data.get("vulnerabilities", [])
             if not vulns:
                 return None
             await record_api_call("nvd", 1)
             return _parse_cve_item(vulns[0])
+        except httpx.HTTPStatusError as exc:
+            logger.error("NVD HTTP error fetching %s: %s", cve_id, exc)
+            record_source_failure("nvd", f"HTTP {exc.response.status_code}")
+            return None
         except httpx.RequestError as exc:
             logger.error("NVD request error fetching %s: %s", cve_id, exc)
             if attempt < 2:
                 await asyncio.sleep(2 ** attempt)
                 continue
+            record_source_failure("nvd", f"{type(exc).__name__}: {exc}")
         except Exception as exc:
             logger.error("Unexpected error fetching %s: %s", cve_id, exc)
+            record_source_failure("nvd", f"{type(exc).__name__}: {exc}")
             return None
     return None

@@ -74,6 +74,27 @@ def test_retries_5xx_then_succeeds(monkeypatch):
     assert get_feed_health()["flaky"]["consecutive_failures"] == 0
 
 
+def test_non_retryable_5xx_records_failure_and_trips_circuit(monkeypatch):
+    calls = {"n": 0}
+
+    def handler(request):
+        calls["n"] += 1
+        return httpx.Response(501)
+
+    _install_transport(monkeypatch, handler)
+
+    async def run():
+        with pytest.raises(httpx.HTTPStatusError):
+            await resilient_get("broken", "https://example.com/api", retries=0)
+
+    asyncio.run(run())
+    assert calls["n"] == 1
+    health = get_feed_health()["broken"]
+    assert health["consecutive_failures"] == 1
+    assert health["last_error"] == "HTTP 501"
+    assert health["last_failure"] is not None
+
+
 def test_non_retryable_4xx_raises_without_tripping_circuit(monkeypatch):
     calls = {"n": 0}
 

@@ -163,7 +163,11 @@ async def resilient_request(
             _record_failure(source, f"HTTP {response.status_code}")
             response.raise_for_status()
 
-        if response.is_client_error or response.is_server_error:
+        if response.is_server_error:
+            _record_failure(source, f"HTTP {response.status_code}")
+            response.raise_for_status()
+
+        if response.is_client_error:
             # Non-retryable HTTP error (4xx other than 429): the source is
             # reachable, so do not trip the circuit — record and raise.
             _state(source)["last_error"] = f"HTTP {response.status_code}"
