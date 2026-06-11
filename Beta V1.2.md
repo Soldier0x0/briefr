@@ -76,7 +76,7 @@ V1.2 is a **maintainability and production-hardening** release, not a feature ex
 
 | Item | Goal |
 |------|------|
-| `resilient_client.py` | Shared httpx wrapper: timeouts, retries, circuit breakers |
+| `resilient_client.py` | ✅ Shipped — shared pooled httpx client: timeouts, retries, per-source circuit breakers, `/api/health` `feeds.sources`. Initial adoption: NVD, KEV, EPSS, MITRE, ATLAS, OSV, RSS. Follow-up: `enrichment/ioc.py`, `feeds/extended.py`, `feeds/otx.py` |
 | Structured logging | JSON logs with request IDs across the request lifecycle |
 | API response envelope | Consistent `{ data, meta }` shape on list endpoints |
 | Production Swagger lockdown | Env flag to disable `/api/docs` in production |

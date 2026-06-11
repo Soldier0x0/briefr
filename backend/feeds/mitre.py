@@ -12,7 +12,7 @@ import os
 import re
 from typing import Any
 
-import httpx
+from resilient_client import resilient_get
 
 logger = logging.getLogger(__name__)
 
@@ -106,10 +106,8 @@ def _split_technique_field(value: str) -> list[str]:
 
 
 async def _fetch_bytes(url: str, timeout: float = 180.0) -> bytes:
-    async with httpx.AsyncClient(follow_redirects=True) as client:
-        response = await client.get(url, timeout=timeout)
-        response.raise_for_status()
-        return response.content
+    response = await resilient_get("mitre", url, timeout=timeout)
+    return response.content
 
 
 def parse_enterprise_attack_stix(data: dict) -> list[dict]:
