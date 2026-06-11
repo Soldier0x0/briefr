@@ -20,12 +20,14 @@ Inline imports were hoisted to module top per house convention
 feeds.extended.enrich_cve_circl). The unused `_parse_stack_terms` helper was
 dropped during the move.
 
-Two review fixes on top of the verbatim move (PR #96 review):
+Three review fixes on top of the verbatim move (PR #96 review):
 - `_sort_by_stack_relevance` no longer crashes on a NULL `affected_products`
   column (was `cve.get(..., [])`, which returns the explicit None value).
 - momentum/detection/correlation validate the `CVE-` prefix like their
   sibling detail endpoints (detection previously spent GitHub API quota on
   malformed IDs).
+- `/api/stats` runs one conditional-aggregation scan instead of five
+  COUNT(*) scans (same response, verified on empty/NULL/edge data).
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
@@ -152,21 +154,21 @@ async def stats(
 ):
     db = await get_db()
     try:
-        rows_critical = await db.execute_fetchall(
-            "SELECT COUNT(*) as cnt FROM cves WHERE severity = 'CRITICAL'"
+        # Single conditional-aggregation scan instead of five COUNT(*) scans
+        # (PR #96 review). SUM(CASE ...) is NULL on an empty table, hence
+        # the `or 0` below.
+        rows = await db.execute_fetchall(
+            """
+            SELECT
+                SUM(CASE WHEN severity = 'CRITICAL' THEN 1 ELSE 0 END) AS critical,
+                SUM(CASE WHEN severity = 'HIGH' THEN 1 ELSE 0 END) AS high,
+                SUM(CASE WHEN is_kev = 1 THEN 1 ELSE 0 END) AS kev_count,
+                SUM(CASE WHEN patch_available = 1 THEN 1 ELSE 0 END) AS patched,
+                SUM(CASE WHEN published >= datetime('now', '-1 day') THEN 1 ELSE 0 END) AS last_24h
+            FROM cves
+            """
         )
-        rows_high = await db.execute_fetchall(
-            "SELECT COUNT(*) as cnt FROM cves WHERE severity = 'HIGH'"
-        )
-        rows_kev = await db.execute_fetchall(
-            "SELECT COUNT(*) as cnt FROM cves WHERE is_kev = 1"
-        )
-        rows_patched = await db.execute_fetchall(
-            "SELECT COUNT(*) as cnt FROM cves WHERE patch_available = 1"
-        )
-        rows_24h = await db.execute_fetchall(
-            "SELECT COUNT(*) as cnt FROM cves WHERE published >= datetime('now', '-1 day')"
-        )
+        stats_row = dict(rows[0]) if rows else {}
         fw_list = _parse_framework_list(frameworks)
         ai_ml_alerts = (
             await count_ai_ml_profile_alerts(db, fw_list) if fw_list else 0
@@ -175,11 +177,11 @@ async def stats(
         await db.close()
 
     return {
-        "critical": rows_critical[0]["cnt"] if rows_critical else 0,
-        "high": rows_high[0]["cnt"] if rows_high else 0,
-        "kev_count": rows_kev[0]["cnt"] if rows_kev else 0,
-        "patched": rows_patched[0]["cnt"] if rows_patched else 0,
-        "last_24h": rows_24h[0]["cnt"] if rows_24h else 0,
+        "critical": stats_row.get("critical") or 0,
+        "high": stats_row.get("high") or 0,
+        "kev_count": stats_row.get("kev_count") or 0,
+        "patched": stats_row.get("patched") or 0,
+        "last_24h": stats_row.get("last_24h") or 0,
         "ai_ml_alerts": ai_ml_alerts,
     }
 

@@ -33,6 +33,67 @@ def test_sort_by_stack_relevance_noop_without_stack():
     assert _sort_by_stack_relevance(cves, []) is cves
 
 
+def test_stats_single_query_matches_legacy_counts(tmp_path, monkeypatch):
+    """/api/stats was rewritten from five COUNT(*) scans to one conditional
+    aggregation — counts must match, including empty-table and NULL columns
+    (SUM(CASE ...) is NULL on an empty table and must surface as 0)."""
+    db_path = tmp_path / "stats.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    async def _noop_async() -> None:
+        return None
+
+    monkeypatch.setattr("main.start_scheduler", lambda: None)
+    monkeypatch.setattr("main.stop_scheduler", lambda: None)
+    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
+
+    asyncio.run(init_db())
+
+    from fastapi.testclient import TestClient
+    from main import app
+
+    with TestClient(app) as client:
+        body = client.get("/api/stats").json()
+        assert body == {
+            "critical": 0,
+            "high": 0,
+            "kev_count": 0,
+            "patched": 0,
+            "last_24h": 0,
+            "ai_ml_alerts": 0,
+        }
+
+    async def seed() -> None:
+        db = await aiosqlite.connect(db_path)
+        try:
+            await db.executemany(
+                """
+                INSERT INTO cves (
+                    cve_id, description, severity, is_kev, patch_available, published
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    ("CVE-2024-0001", "a", "CRITICAL", 1, 0, "2099-01-01T00:00:00"),
+                    ("CVE-2024-0002", "b", "HIGH", 0, 1, "2020-01-01T00:00:00"),
+                    ("CVE-2024-0003", "c", None, None, None, None),
+                ],
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    asyncio.run(seed())
+
+    with TestClient(app) as client:
+        body = client.get("/api/stats").json()
+        assert body["critical"] == 1
+        assert body["high"] == 1
+        assert body["kev_count"] == 1
+        assert body["patched"] == 1
+        assert body["last_24h"] == 1
+
+
 def test_intel_endpoints_reject_malformed_cve_id(tmp_path, monkeypatch):
     """momentum/detection/correlation validate the CVE- prefix like their
     sibling detail endpoints (detection used to spend GitHub quota on junk)."""
