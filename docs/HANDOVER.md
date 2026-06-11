@@ -85,7 +85,7 @@ Ordered; each is one PR unless noted. File pointers are current as of this doc.
   writes from backup runs, restores, manual `/api/refresh*` calls. Actor is
   `system` for backups/restores and empty for request-driven actions until
   app login lands (`request.state.user_email` is the wiring hook in
-  `main.py:_audit`).
+  `dependencies.py:audit` — moved out of `main.py` by the §5.2 split).
 - Post-merge tests: `PRAGMA table_info(audit_log)` shows columns; manual
   refresh and a backup run each add a row; pytest green.
 
@@ -93,6 +93,11 @@ Ordered; each is one PR unless noted. File pointers are current as of this doc.
 - Pydantic `BaseSettings` for env config; `routers/` (cves, ioc, atlas,
   health, refresh, meta) + `dependencies.py`. **Pure mechanical moves, no
   behavior change.** Do it in 2–3 PRs, one router group each.
+- **Phase 1 shipped:** `settings.py` (import-time vars: `BRIEFR_ENV`,
+  `BRIEFR_ADMIN_API_KEY`, `ALLOWED_ORIGINS`), `dependencies.py`
+  (`require_admin_key`, `audit`), `routers/refresh.py` (all
+  `POST /api/refresh*`). Per-request `os.environ.get` reads stay as-is and
+  migrate with their router groups. Remaining: cves, ioc, atlas, health, meta.
 - Post-merge tests: full pytest suite; `diff` of `/api/openapi.json` route
   list before/after (must be identical); smoke `deploy/smoke-intel.sh`.
 

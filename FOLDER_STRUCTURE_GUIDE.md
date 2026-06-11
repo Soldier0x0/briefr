@@ -14,7 +14,9 @@ Every file in the repository with a one-line purpose. Tags:
 
 | Path | Description |
 |---|---|
-| `backend/main.py` | **[V1.2-SPLIT]** FastAPI app: all routes, middleware, CVE filter SQL, enrichment orchestration (1,344 lines) |
+| `backend/main.py` | **[V1.2-SPLIT]** FastAPI app: most routes, middleware, CVE filter SQL, enrichment orchestration (~1,430 lines; router split in progress) |
+| `backend/settings.py` | Pydantic `BaseSettings` env config (phase 1: `BRIEFR_ENV`, `BRIEFR_ADMIN_API_KEY`, `ALLOWED_ORIGINS`) |
+| `backend/dependencies.py` | Shared route dependencies: admin-key gate, audit-log writer |
 | `backend/database.py` | **[V1.2-SPLIT]** SQLite schema, migrations, upserts, cache, MITRE/ATLAS/OTX persistence (1,681 lines) |
 | `backend/scheduler.py` | APScheduler: 7 jobs, ingest locks, startup bootstrap, manual refresh entry points |
 | `backend/tracking.py` | `api_usage` counters and quota metadata for `/api/usage` endpoints |
@@ -22,6 +24,13 @@ Every file in the repository with a one-line purpose. Tags:
 | `backend/.env.example` | Environment variable template for API keys and scheduler tuning |
 | `backend/.python-version` | Python version pin for local/pyenv |
 | `backend/.gitignore` | Ignores `briefr.db`, `.env`, `__pycache__` |
+
+### backend/routers/
+
+| Path | Description |
+|---|---|
+| `backend/routers/__init__.py` | Package marker |
+| `backend/routers/refresh.py` | Manual refresh endpoints (`POST /api/refresh*`), admin-gated + audited |
 
 ### backend/ai/
 
