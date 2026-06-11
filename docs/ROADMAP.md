@@ -44,6 +44,8 @@ Each release ships as **small, independent phases** with tests. Do not merge rel
 
 Decision: implement **V1.2 → V1.5**; **V2.0 stays parked** while the deployment is private.
 
+**Live execution state, PR ledger, and the mandatory per-PR workflow for implementing agents: [`HANDOVER.md`](HANDOVER.md).**
+
 **Deployment reality:** private instance behind a **Cloudflare Access policy** (closed beta, 3 testers). Edge authentication exists today; this informs priorities below.
 
 Cross-release amendments approved in planning (details in each release doc):

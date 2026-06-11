@@ -2,9 +2,9 @@
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
-**Document version:** 1.1  
-**Last updated:** 2026-06-10  
-**Status:** Planning document for work after v1.1 beta stabilization
+**Document version:** 1.2  
+**Last updated:** 2026-06-11  
+**Status:** In progress — shipped items marked ✅; live execution state in [`docs/HANDOVER.md`](docs/HANDOVER.md)
 
 ---
 
@@ -76,10 +76,10 @@ V1.2 is a **maintainability and production-hardening** release, not a feature ex
 
 | Item | Goal |
 |------|------|
-| `resilient_client.py` | Shared httpx wrapper: timeouts, retries, circuit breakers |
+| `resilient_client.py` | ✅ Shipped (PR #87/#89) — pooled httpx client, retries, per-source circuit breakers, `/api/health` `feeds.sources`. Initial adoption: NVD, KEV, EPSS, MITRE, ATLAS, OSV, RSS. Follow-up: `enrichment/ioc.py`, `feeds/extended.py`, `feeds/otx.py` |
 | Structured logging | JSON logs with request IDs across the request lifecycle |
-| API response envelope | Consistent `{ data, meta }` shape on list endpoints |
-| Production Swagger lockdown | Env flag to disable `/api/docs` in production |
+| API response envelope | Consistent `{ data, meta }` shape on list endpoints (`/api/case-studies/feed` already ships `meta`) |
+| Production Swagger lockdown | ✅ Shipped — `docs_url=None` when `BRIEFR_ENV=production` (`main.py`) |
 
 **Why:** ~15 external APIs with per-file error handling; outages should fail fast and recover gracefully.
 
@@ -134,16 +134,17 @@ These user-visible or ops items are **approved exceptions** to “no feature exp
 
 | Item | Rationale |
 |------|-----------|
-| **Incident feed snapshot + scheduler job** | Fixes >7s Incidents tab; serve precomputed RSS+ATLAS |
-| **Parallel RSS fetch inside job** | `asyncio.gather` — not on request path |
-| **Health: incidents `last_refresh`, `stale`** | Monitoring hooks backlog |
+| **Incident feed snapshot + scheduler job** | ✅ Shipped (PR #86) — 7s tab → ~20ms snapshot reads |
+| **Parallel RSS fetch inside job** | ✅ Shipped (PR #86) — `asyncio.gather`, job-side only |
+| **Health: incidents `last_refresh`, `stale`** | ✅ Shipped (PR #86) |
 | **Structured log fields for scheduler/feeds** | Prep for V1.4 admin logs viewer |
 | **`DATABASE_URL` / path settings only** | Container-ready config; SQLite default unchanged |
-| **`docs/THREAT_MODEL.md`, `docs/OPERATIONS.md`** | Documentation only |
-| **KEV extra fields** | Keep `knownRansomwareCampaignUse`, `cwes`, `vendorProject`, `vulnerabilityName` from the catalog already fetched every 15 min |
+| **`docs/THREAT_MODEL.md`, `docs/OPERATIONS.md`** | ✅ Shipped (PR #84) |
+| **KEV extra fields** | ✅ Shipped (PR #85) — ransomware flag, CWEs, vendor, name + UI badges |
 | **EPSS 30-day history backfill** | One-shot resumable job via FIRST API `scope=time-series` (batched CVE IDs, throttled, `sync_state` marker); warm-starts sparklines and momentum |
-| **CI dependency audits + `/api/version`** | `pip-audit` + `npm audit` jobs; version endpoint stamped at deploy for beta-tester bug reports |
+| **CI dependency audits + `/api/version`** | ✅ Shipped (PR #88) |
 | **Playwright smoke in CI (early)** | Safety net before V1.2 Phase 4+ frontend refactors |
+| **UI/UX correctness pass** | ✅ Shipped (PR #90) — feed scroll/filter fixes, overlay layering + focus traps, self-hosted fonts, reduced-motion, request timeouts |
 
 Do **not** add Forge, admin UI, webhooks configuration, or wallboard under V1.2.
 
