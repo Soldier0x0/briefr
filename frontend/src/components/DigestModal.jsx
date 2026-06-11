@@ -94,7 +94,7 @@ export default function DigestModal({ cves, filters, onClose }) {
   return (
     /* Full-height wrapper — no position:fixed per spec */
     <div className="digest-overlay" role="dialog" aria-modal="true" aria-labelledby="digest-title">
-      <div className="digest-panel" ref={panelRef}>
+      <div className="digest-panel" ref={panelRef} tabIndex={-1}>
         <div className="digest-header">
           <div className="digest-header-left">
             <h2 id="digest-title" className="digest-title mono">BRIEFR DIGEST</h2>
