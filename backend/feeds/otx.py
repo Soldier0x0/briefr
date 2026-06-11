@@ -15,9 +15,35 @@ from typing import Any
 
 import httpx
 
+from resilient_client import CircuitOpenError, resilient_get
 from tracking import record_api_call
 
 logger = logging.getLogger(__name__)
+
+
+async def _otx_get(url: str, api_key: str) -> dict | None:
+    """GET via the resilient client; returns None on 404, circuit-open or failure."""
+    try:
+        response = await resilient_get(
+            "otx", url, headers=_otx_headers(api_key), timeout=30.0
+        )
+        await record_api_call("otx", 1)
+        data = response.json()
+        return data if isinstance(data, dict) else None
+    except CircuitOpenError:
+        logger.warning("OTX circuit open — skipping %s", url)
+        return None
+    except httpx.HTTPStatusError as exc:
+        await record_api_call("otx", 1)
+        if exc.response.status_code != 404:
+            logger.warning("OTX HTTP %s for %s", exc.response.status_code, url)
+        return None
+    except httpx.HTTPError as exc:
+        logger.warning("OTX request failed for %s: %s", url, exc)
+        return None
+    except (json.JSONDecodeError, ValueError) as exc:
+        logger.warning("OTX parse failed for %s: %s", url, exc)
+        return None
 
 OTX_BASE = "https://otx.alienvault.com/api/v1"
 CACHE_HOURS = 6
@@ -135,16 +161,8 @@ async def fetch_cve_pulses(cve_id: str, api_key: str) -> list[dict]:
         return []
 
     url = f"{OTX_BASE}/indicators/cve/{cve_id.upper()}/general"
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url, headers=_otx_headers(api_key))
-        await record_api_call("otx", 1)
-        if response.status_code == 404:
-            return []
-        response.raise_for_status()
-        data = response.json()
-    except Exception as exc:
-        logger.warning("OTX CVE pulse fetch failed for %s: %s", cve_id, exc)
+    data = await _otx_get(url, api_key)
+    if data is None:
         return []
 
     pulse_info = data.get("pulse_info") or {}
@@ -173,16 +191,8 @@ async def fetch_pulse_iocs(pulse_id: str, api_key: str) -> list[dict]:
         return []
 
     url = f"{OTX_BASE}/pulses/{pulse_id}/indicators"
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url, headers=_otx_headers(api_key))
-        await record_api_call("otx", 1)
-        if response.status_code == 404:
-            return []
-        response.raise_for_status()
-        data = response.json()
-    except Exception as exc:
-        logger.warning("OTX pulse IOC fetch failed for %s: %s", pulse_id, exc)
+    data = await _otx_get(url, api_key)
+    if data is None:
         return []
 
     rows = data.get("results") or data.get("indicators") or []
@@ -230,16 +240,8 @@ async def lookup_ioc_in_otx(ioc_value: str, ioc_type: str, api_key: str) -> dict
         return empty
 
     url = f"{OTX_BASE}/indicators/{path}/general"
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url, headers=_otx_headers(api_key))
-        await record_api_call("otx", 1)
-        if response.status_code == 404:
-            return empty
-        response.raise_for_status()
-        data = response.json()
-    except Exception as exc:
-        logger.warning("OTX IOC lookup failed for %s: %s", ioc_value, exc)
+    data = await _otx_get(url, api_key)
+    if data is None:
         return empty
 
     pulse_info = data.get("pulse_info") or {}

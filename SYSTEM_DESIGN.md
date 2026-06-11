@@ -182,8 +182,10 @@ All scheduler-driven intel sources (NVD, KEV, EPSS, MITRE, ATLAS, OSV, 6× RSS) 
 - **Circuit breaker per source:** `CIRCUIT_FAILURE_THRESHOLD` consecutive failures (default 3) open the circuit for `CIRCUIT_COOLDOWN_SECONDS` (default 60); calls fail fast with `CircuitOpenError` so one dead source cannot stall a sync cycle. Plain 4xx responses do not trip the circuit (the source is reachable).
 - **Health registry:** `/api/health` → `feeds.sources` exposes `last_success`, `last_failure`, `last_error`, `consecutive_failures`, `circuit_open` per source.
 - **NVD exception:** keeps its bespoke 429/key-rejection retry logic but uses the pooled client and reports into the same health registry.
+- **Quota-billed sources** (VirusTotal, AbuseIPDB, GreyNoise) use `retries=0` — a failed call is never retried automatically, so quota cannot be burned by the retry loop. Circuit breakers still apply.
+- **CIRCL negative caching:** failed/missing lookups are cached for 24h (`circl_miss:*` keys) so a rate-limited upstream is not re-hammered with the same IDs on every sync cycle.
 
-On-demand enrichment modules (`enrichment/ioc.py`, `feeds/extended.py`, `feeds/otx.py`) migrate in a follow-up phase.
+All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS, RSS) and on-demand enrichment (`enrichment/ioc.py`, `feeds/extended.py` — Sploitus/GreyNoise/MalwareBazaar/URLhaus/CIRCL, `feeds/otx.py`, `feeds/osv.py`).
 
 ### SQLite over PostgreSQL
 
@@ -250,7 +252,7 @@ On-demand enrichment modules (`enrichment/ioc.py`, `feeds/extended.py`, `feeds/o
 | AbuseIPDB | `enrichment/ioc.py` | IP abuse score | `ABUSEIPDB_API_KEY` | 1000/day | Skipped if no key |
 | OTX | `feeds/otx.py` | Pulses, IOCs | `OTX_API_KEY` | 10k/month | `[]`; nightly skipped if unset |
 | OSV.dev | `feeds/osv.py` | Package affected versions | — | Unrestricted | `[]` |
-| CIRCL | `feeds/extended.py` | Extra refs, CAPEC | — | Unrestricted | No merge |
+| CIRCL (vulnerability.circl.lu) | `feeds/extended.py` | Extra refs, CAPEC (CVE 5.x records) | `CIRCL_API_KEY` optional (`X-API-KEY`) | Rate-limited; 7d hit cache + 24h negative cache | No merge |
 | MalwareBazaar | `feeds/extended.py` | Hash metadata | `ABUSECH_AUTH_KEY` | Fair use | `None` |
 | URLhaus | `feeds/extended.py` | Domain malware URLs | `ABUSECH_AUTH_KEY` | Fair use | `None` |
 | Groq | `ai/summary.py` | Executive summary | `GROQ_API_KEY` | Console quota | Falls back to Anthropic/template |

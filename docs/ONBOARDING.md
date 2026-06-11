@@ -122,6 +122,7 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 | `GROQ_API_KEY` | Optional | PDF executive summary (primary) |
 | `ANTHROPIC_API_KEY` | Optional | PDF executive summary (fallback) |
 | `GITHUB_TOKEN` | Optional | Detection rule search rate limit (5000/hr vs 60/hr) |
+| `CIRCL_API_KEY` | Optional | vulnerability.circl.lu authenticated rate limits (free signup) |
 
 ### Database and backups
 

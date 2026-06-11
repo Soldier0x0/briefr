@@ -120,6 +120,7 @@ async def resilient_request(
     headers: dict | None = None,
     params: dict | None = None,
     json: Any = None,
+    data: Any = None,
     timeout: float = DEFAULT_TIMEOUT,
     retries: int = DEFAULT_RETRIES,
 ) -> httpx.Response:
@@ -141,6 +142,7 @@ async def resilient_request(
                 headers=headers,
                 params=params,
                 json=json,
+                data=data,
                 timeout=timeout,
             )
         except httpx.HTTPError as exc:

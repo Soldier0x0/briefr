@@ -12,12 +12,14 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 from typing import Any
 from urllib.parse import quote, urljoin
 
 import httpx
 
+from resilient_client import CircuitOpenError, resilient_get, resilient_request
 from tracking import record_api_call
 
 logger = logging.getLogger(__name__)
@@ -27,8 +29,11 @@ GREYNOISE_COMMUNITY_URL = "https://api.greynoise.io/v3/community"
 MALWAREBazaar_URL = "https://mb-api.abuse.ch/api/v1/"
 URLHAUS_URL_API = "https://urlhaus-api.abuse.ch/v1/url/"
 URLHAUS_HOST_API = "https://urlhaus-api.abuse.ch/v1/host/"
-CIRCL_CVE_URL = "https://cve.circl.lu/api/cve"
-CIRCL_CACHE_HOURS = 168  # 7 days
+# vulnerability.circl.lu replaced the legacy cve.circl.lu API, which now
+# answers 429 to almost everything. Optional CIRCL_API_KEY raises rate limits.
+CIRCL_VULN_URL = "https://vulnerability.circl.lu/api/vulnerability"
+CIRCL_CACHE_HOURS = 168  # 7 days for successful lookups
+CIRCL_MISS_CACHE_HOURS = 24  # failed/404 lookups are not retried for a day
 
 CHROME_UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -111,20 +116,15 @@ async def fetch_sploitus_exploits(cve_id: str, limit: int = 25) -> list[dict] | 
     }
 
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                SPLOITUS_SEARCH_URL,
-                json=payload,
-                headers=headers,
-            )
+        response = await resilient_request(
+            "sploitus",
+            "POST",
+            SPLOITUS_SEARCH_URL,
+            json=payload,
+            headers=headers,
+            timeout=30.0,
+        )
         await record_api_call("sploitus", 1)
-
-        if response.status_code in (422, 499, 429):
-            logger.warning("Sploitus rate limit or rejection for %s: %s", query, response.status_code)
-            return None
-        if response.status_code != 200:
-            logger.warning("Sploitus HTTP %s for %s", response.status_code, query)
-            return None
 
         raw = response.json()
         if isinstance(raw, list):
@@ -167,6 +167,13 @@ async def fetch_sploitus_exploits(cve_id: str, limit: int = 25) -> list[dict] | 
                 }
             )
         return out
+    except CircuitOpenError:
+        logger.warning("Sploitus circuit open — skipping lookup for %s", query)
+        return None
+    except httpx.HTTPStatusError as exc:
+        await record_api_call("sploitus", 1)
+        logger.warning("Sploitus HTTP %s for %s", exc.response.status_code, query)
+        return None
     except httpx.HTTPError as exc:
         logger.error("Sploitus request failed for %s: %s", query, exc)
         return None
@@ -179,31 +186,18 @@ async def fetch_greynoise_ip(ip: str, api_key: str) -> dict | None:
     if not api_key:
         return None
     try:
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            response = await client.get(
-                f"{GREYNOISE_COMMUNITY_URL}/{ip}",
-                headers={
-                    "key": api_key,
-                    "Accept": "application/json",
-                },
-            )
+        response = await resilient_get(
+            "greynoise",
+            f"{GREYNOISE_COMMUNITY_URL}/{ip}",
+            headers={
+                "key": api_key,
+                "Accept": "application/json",
+            },
+            timeout=20.0,
+            # GreyNoise free tier is 50/week — never burn quota on retries.
+            retries=0,
+        )
         await record_api_call("greynoise", 1)
-
-        if response.status_code == 404:
-            return {
-                "ip": ip,
-                "classification": "unknown",
-                "name": "No GreyNoise record",
-                "link": f"https://viz.greynoise.io/ip/{ip}",
-                "noise": False,
-            }
-        if response.status_code in (401, 403):
-            logger.warning("GreyNoise auth error for %s", ip)
-            return None
-        if response.status_code == 429:
-            logger.warning("GreyNoise rate limit")
-            return None
-        response.raise_for_status()
         data = response.json()
         return {
             "ip": data.get("ip", ip),
@@ -213,6 +207,26 @@ async def fetch_greynoise_ip(ip: str, api_key: str) -> dict | None:
             "noise": bool(data.get("noise")),
             "riot": bool(data.get("riot")),
         }
+    except CircuitOpenError:
+        logger.warning("GreyNoise circuit open — skipping lookup for %s", ip)
+        return None
+    except httpx.HTTPStatusError as exc:
+        await record_api_call("greynoise", 1)
+        if exc.response.status_code == 404:
+            return {
+                "ip": ip,
+                "classification": "unknown",
+                "name": "No GreyNoise record",
+                "link": f"https://viz.greynoise.io/ip/{ip}",
+                "noise": False,
+            }
+        if exc.response.status_code in (401, 403):
+            logger.warning("GreyNoise auth error for %s", ip)
+        elif exc.response.status_code == 429:
+            logger.warning("GreyNoise rate limit")
+        else:
+            logger.warning("GreyNoise HTTP %s for %s", exc.response.status_code, ip)
+        return None
     except httpx.HTTPError as exc:
         logger.error("GreyNoise lookup failed for %s: %s", ip, exc)
         return None
@@ -222,19 +236,15 @@ async def fetch_malwarebazaar_hash(
     file_hash: str, abusech_auth_key: str | None = None
 ) -> dict | None:
     try:
-        async with httpx.AsyncClient(timeout=25.0) as client:
-            response = await client.post(
-                MALWAREBazaar_URL,
-                data={"query": "get_info", "hash": file_hash.lower()},
-                headers=abusech_headers(abusech_auth_key),
-            )
+        response = await resilient_request(
+            "malwarebazaar",
+            "POST",
+            MALWAREBazaar_URL,
+            data={"query": "get_info", "hash": file_hash.lower()},
+            headers=abusech_headers(abusech_auth_key),
+            timeout=25.0,
+        )
         await record_api_call("malwarebazaar", 1)
-
-        if response.status_code in (401, 403):
-            logger.warning("MalwareBazaar auth rejected — check ABUSECH_AUTH_KEY")
-            return None
-        if response.status_code != 200:
-            return None
         data = response.json()
         status = (data.get("query_status") or "").lower()
         if status in ("unknown_auth_key", "no_auth_key"):
@@ -265,6 +275,14 @@ async def fetch_malwarebazaar_hash(
             "yara_rules": [str(y) for y in yara][:10] if yara else [],
             "file_name": entry.get("file_name") or "",
         }
+    except CircuitOpenError:
+        logger.warning("MalwareBazaar circuit open — skipping lookup")
+        return None
+    except httpx.HTTPStatusError as exc:
+        await record_api_call("malwarebazaar", 1)
+        if exc.response.status_code in (401, 403):
+            logger.warning("MalwareBazaar auth rejected — check ABUSECH_AUTH_KEY")
+        return None
     except httpx.HTTPError as exc:
         logger.error("MalwareBazaar lookup failed: %s", exc)
         return None
@@ -278,33 +296,33 @@ async def fetch_urlhaus_indicator(
     """Lookup URLhaus for a URL or domain/host."""
     headers = abusech_headers(abusech_auth_key)
     try:
-        async with httpx.AsyncClient(timeout=25.0) as client:
-            if ioc_type == "domain":
-                payload = {"host": value.lower()}
-                if abusech_auth_key:
-                    payload["auth_key"] = abusech_auth_key.strip()
-                response = await client.post(
-                    URLHAUS_HOST_API,
-                    json=payload,
-                    headers=headers,
-                )
-            else:
-                url = value if value.startswith(("http://", "https://")) else f"http://{value}"
-                form = {"url": url}
-                if abusech_auth_key:
-                    form["auth_key"] = abusech_auth_key.strip()
-                response = await client.post(
-                    URLHAUS_URL_API,
-                    data=form,
-                    headers=headers,
-                )
+        if ioc_type == "domain":
+            payload = {"host": value.lower()}
+            if abusech_auth_key:
+                payload["auth_key"] = abusech_auth_key.strip()
+            response = await resilient_request(
+                "urlhaus",
+                "POST",
+                URLHAUS_HOST_API,
+                json=payload,
+                headers=headers,
+                timeout=25.0,
+            )
+        else:
+            url = value if value.startswith(("http://", "https://")) else f"http://{value}"
+            form = {"url": url}
+            if abusech_auth_key:
+                form["auth_key"] = abusech_auth_key.strip()
+            response = await resilient_request(
+                "urlhaus",
+                "POST",
+                URLHAUS_URL_API,
+                data=form,
+                headers=headers,
+                timeout=25.0,
+            )
         await record_api_call("urlhaus", 1)
 
-        if response.status_code in (401, 403):
-            logger.warning("URLhaus auth rejected — check ABUSECH_AUTH_KEY")
-            return None
-        if response.status_code != 200:
-            return None
         try:
             data = response.json()
         except (ValueError, TypeError) as exc:
@@ -335,28 +353,97 @@ async def fetch_urlhaus_indicator(
             "url_status": data.get("url_status") or data.get("blacklists", ""),
             "reference": data.get("urlhaus_reference") or data.get("urlhaus_link") or "",
         }
+    except CircuitOpenError:
+        logger.warning("URLhaus circuit open — skipping lookup")
+        return None
+    except httpx.HTTPStatusError as exc:
+        await record_api_call("urlhaus", 1)
+        if exc.response.status_code in (401, 403):
+            logger.warning("URLhaus auth rejected — check ABUSECH_AUTH_KEY")
+        return None
     except httpx.HTTPError as exc:
         logger.error("URLhaus lookup failed: %s", exc)
         return None
 
 
-async def fetch_circl_cve(cve_id: str) -> dict | None:
-    try:
-        async with httpx.AsyncClient(timeout=25.0) as client:
-            response = await client.get(
-                f"{CIRCL_CVE_URL}/{cve_id.upper()}",
-                headers={"Accept": "application/json"},
-            )
-        await record_api_call("circl", 1)
+def _normalize_circl_record(record: dict) -> dict:
+    """CVE 5.x record from vulnerability.circl.lu → legacy {references, capec} shape."""
+    references: list[str] = []
+    capec: list[str] = []
+    if not isinstance(record, dict):
+        return {"references": references, "capec": capec}
 
-        if response.status_code == 404:
-            return None
-        if response.status_code != 200:
-            logger.warning("CIRCL HTTP %s for %s", response.status_code, cve_id)
-            return None
-        return response.json()
+    containers = record.get("containers")
+    if not isinstance(containers, dict):
+        return {"references": references, "capec": capec}
+
+    sources: list[dict] = []
+    cna = containers.get("cna")
+    if isinstance(cna, dict):
+        sources.append(cna)
+    adp = containers.get("adp")
+    if isinstance(adp, list):
+        sources.extend(c for c in adp if isinstance(c, dict))
+
+    for container in sources:
+        refs = container.get("references")
+        if isinstance(refs, list):
+            for ref in refs:
+                if isinstance(ref, dict):
+                    url = (ref.get("url") or "").strip()
+                else:
+                    url = str(ref).strip()
+                if url:
+                    references.append(url)
+        impacts = container.get("impacts")
+        if isinstance(impacts, list):
+            for impact in impacts:
+                if not isinstance(impact, dict):
+                    continue
+                cid = str(impact.get("capecId") or "").strip().upper()
+                if cid.startswith("CAPEC-"):
+                    capec.append(cid)
+
+    return {"references": references, "capec": capec}
+
+
+def _circl_headers() -> dict[str, str]:
+    headers = {"Accept": "application/json"}
+    api_key = os.environ.get("CIRCL_API_KEY", "").strip()
+    if api_key:
+        headers["X-API-KEY"] = api_key
+    return headers
+
+
+async def fetch_circl_cve(cve_id: str) -> dict | None:
+    """Returns the normalized record, {} when CIRCL has nothing (cacheable),
+    or None on transient failure (eligible for retry after miss-cache TTL)."""
+    try:
+        response = await resilient_get(
+            "circl",
+            f"{CIRCL_VULN_URL}/{cve_id.upper()}",
+            headers=_circl_headers(),
+            timeout=25.0,
+        )
+        await record_api_call("circl", 1)
+        record = response.json()
+        if not isinstance(record, dict) or not record:
+            return {}
+        return _normalize_circl_record(record)
+    except CircuitOpenError:
+        logger.warning("CIRCL circuit open — skipping lookup for %s", cve_id)
+        return None
+    except httpx.HTTPStatusError as exc:
+        await record_api_call("circl", 1)
+        if exc.response.status_code == 404:
+            return {}
+        logger.warning("CIRCL HTTP %s for %s", exc.response.status_code, cve_id)
+        return None
     except httpx.HTTPError as exc:
         logger.error("CIRCL lookup failed for %s: %s", cve_id, exc)
+        return None
+    except (json.JSONDecodeError, ValueError) as exc:
+        logger.error("CIRCL parse failed for %s: %s", cve_id, exc)
         return None
 
 
@@ -456,14 +543,26 @@ async def load_public_exploits_for_cve(
 async def load_circl_for_cve(db, cve_id: str) -> dict | None:
     from database import get_feed_cache, set_feed_cache
 
-    cache_key = f"circl:{cve_id.upper()}"
-    cached = await get_feed_cache(db, cache_key, max_age_hours=CIRCL_CACHE_HOURS)
+    key = cve_id.upper()
+    cached = await get_feed_cache(db, f"circl:{key}", max_age_hours=CIRCL_CACHE_HOURS)
     if cached is not None:
-        return cached
+        return cached or None
+
+    # Negative cache: a failed lookup is not retried for CIRCL_MISS_CACHE_HOURS,
+    # so a rate-limited or down API cannot be hammered with the same IDs on
+    # every sync cycle.
+    miss = await get_feed_cache(
+        db, f"circl_miss:{key}", max_age_hours=CIRCL_MISS_CACHE_HOURS
+    )
+    if miss is not None:
+        return None
+
     result = await fetch_circl_cve(cve_id)
     if result is not None:
-        await set_feed_cache(db, cache_key, result)
-    return result
+        await set_feed_cache(db, f"circl:{key}", result)
+        return result or None
+    await set_feed_cache(db, f"circl_miss:{key}", {"miss": True})
+    return None
 
 
 async def enrich_cve_circl(db, cve: dict) -> dict:
