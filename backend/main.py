@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import secrets
+import sqlite3
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -46,7 +47,9 @@ from database import (
     init_db,
     match_cves_for_assets,
     set_ioc_cache,
+    write_audit_log,
 )
+from cf_access import identity_from_request
 from feeds.extended import (
     greynoise_scans_for_cve,
     load_public_exploits_for_cve,
@@ -134,12 +137,55 @@ app.add_middleware(
 
 
 def _require_admin_key(request: Request) -> None:
-    """When BRIEFR_ADMIN_API_KEY is set, admin routes require X-BRIEFR-Admin-Key."""
+    """When BRIEFR_ADMIN_API_KEY is set, admin routes require X-BRIEFR-Admin-Key.
+
+    Fails closed in production: with BRIEFR_ENV=production and no key
+    configured, admin routes are disabled instead of left open.
+    """
     if not BRIEFR_ADMIN_API_KEY:
+        if _IS_PRODUCTION:
+            raise HTTPException(
+                status_code=401,
+                detail="Admin routes disabled: BRIEFR_ADMIN_API_KEY not configured",
+            )
         return
     provided = request.headers.get("X-BRIEFR-Admin-Key", "")
     if not secrets.compare_digest(provided, BRIEFR_ADMIN_API_KEY):
         raise HTTPException(status_code=401, detail="Admin API key required")
+
+
+async def _audit(request: Request, action: str, target: str = "") -> None:
+    """Record an audited action with the request's validated identity.
+
+    Best-effort: write contention (e.g. bootstrap ingest holding the DB)
+    must not turn an otherwise valid admin action into a 500.
+    """
+    actor = getattr(request.state, "user_email", None)
+    try:
+        db = await get_db()
+        try:
+            await write_audit_log(db, actor, action, target)
+            await db.commit()
+        finally:
+            await db.close()
+    except sqlite3.OperationalError as exc:
+        logger.error("Audit log write failed (%s): %s", action, exc)
+
+
+@app.middleware("http")
+async def cloudflare_access_identity(request: Request, call_next):
+    """Derive request.state.user_email from the validated CF Access JWT.
+
+    Identity is None when CF Access env is unset (dev/LAN), the assertion
+    header is absent, or validation fails — requests are never blocked here
+    (the edge policy gates access; this identity feeds audit + watchlists).
+    """
+    try:
+        request.state.user_email = await identity_from_request(request)
+    except Exception as exc:
+        logger.warning("CF Access identity resolution failed: %s", exc)
+        request.state.user_email = None
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -876,6 +922,7 @@ async def atlas_case_studies(
 @app.post("/api/refresh/mitre")
 async def manual_mitre_refresh(request: Request):
     _require_admin_key(request)
+    await _audit(request, "refresh.mitre", "attack+atlas")
     asyncio.create_task(run_weekly_mitre_refresh())
     return {
         "status": "ok",
@@ -1354,6 +1401,7 @@ async def manual_refresh(request: Request):
             status_code=409,
             detail="An ingest job is already running. Wait for it to finish before starting another.",
         )
+    await _audit(request, "refresh.full", "nvd+kev+epss")
     asyncio.create_task(run_daily_refresh())
     return {
         "status": "ok",
@@ -1366,6 +1414,7 @@ async def manual_nvd_refresh(request: Request):
     _require_admin_key(request)
     if refresh_in_progress():
         raise HTTPException(status_code=409, detail="An ingest job is already running.")
+    await _audit(request, "refresh.nvd", "nvd")
     asyncio.create_task(run_nvd_incremental_sync())
     return {"status": "ok", "message": "NVD incremental sync started in background"}
 
@@ -1375,6 +1424,7 @@ async def manual_kev_refresh(request: Request):
     _require_admin_key(request)
     if refresh_in_progress():
         raise HTTPException(status_code=409, detail="An ingest job is already running.")
+    await _audit(request, "refresh.kev", "kev")
     asyncio.create_task(run_kev_sync())
     return {"status": "ok", "message": "KEV metadata sync started in background"}
 
@@ -1384,6 +1434,7 @@ async def manual_epss_refresh(request: Request):
     _require_admin_key(request)
     if refresh_in_progress():
         raise HTTPException(status_code=409, detail="An ingest job is already running.")
+    await _audit(request, "refresh.epss", "epss")
     asyncio.create_task(run_epss_sync())
     return {"status": "ok", "message": "EPSS score sync started in background"}
 

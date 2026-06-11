@@ -32,6 +32,38 @@ DB_ARCHIVE_NAME = "briefr.db"
 ENV_ARCHIVE_NAME = ".env"
 
 
+def _write_audit_sync(db_path: Path, actor: str, action: str, target: str) -> None:
+    """Best-effort audit row from sync backup code (never fails the backup).
+
+    Creates audit_log if missing: restores and pre-init backups can run
+    before database.init_db() has seen the (restored) database file.
+    """
+    try:
+        conn = sqlite3.connect(db_path, timeout=30.0)
+        try:
+            conn.execute("PRAGMA busy_timeout=30000")
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS audit_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    actor TEXT NOT NULL DEFAULT '',
+                    action TEXT NOT NULL,
+                    target TEXT NOT NULL DEFAULT '',
+                    created_at TEXT DEFAULT (datetime('now'))
+                )
+                """
+            )
+            conn.execute(
+                "INSERT INTO audit_log (actor, action, target) VALUES (?, ?, ?)",
+                (actor, action, target),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+    except sqlite3.Error as exc:
+        logger.warning("Audit log write failed (%s %s): %s", action, target, exc)
+
+
 def _safe_tar_extractall(tar: tarfile.TarFile, dest: Path) -> None:
     """Extract tar contents into dest, rejecting path traversal (tar slip)."""
     dest_resolved = dest.resolve()
@@ -319,6 +351,9 @@ def run_backup(*, reason: str = "scheduled", config: BackupConfig | None = None)
             "retention": cfg.retention_count,
         }
         _append_log(cfg, f"OK reason={reason} archive={archive.name} pruned={len(removed)}")
+        _write_audit_sync(
+            cfg.db_path, "system", "backup.run", f"{archive.name} reason={reason}"
+        )
         logger.info("Backup created: %s", archive)
         return result
     except Exception as exc:
@@ -424,6 +459,7 @@ def restore_backup(
         "integrity": restored_msg,
     }
     _append_log(cfg, f"RESTORE archive={archive.name} db={cfg.db_path}")
+    _write_audit_sync(cfg.db_path, "system", "backup.restore", archive.name)
     logger.warning("Database restored from %s", archive)
     return result
 
