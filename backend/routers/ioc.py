@@ -1,7 +1,10 @@
 """IOC lookup + OTX pulse IOC endpoints, moved verbatim from main.py
-(V1.2 §5.2 router split, phase 2). No behavior change; the two inline
-imports (`greynoise_for_ip`, `lookup_otx_for_ioc`) were hoisted to module
-top per house convention.
+(V1.2 §5.2 router split, phase 2). The two inline imports
+(`greynoise_for_ip`, `lookup_otx_for_ioc`) were hoisted to module top per
+house convention. One robustness fix on top of the verbatim move (review
+finding on PR #95): the cached-hit path now commits, so the feed_cache
+writes made by on-demand GreyNoise/OTX enrichment are no longer rolled
+back on connection close.
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
@@ -102,6 +105,10 @@ async def ioc_lookup(body: IocLookupRequest):
                 otx = await lookup_otx_for_ioc(db, value, ioc_type, otx_key)
                 cached["otx"] = otx
                 cached["otx_sentence"] = otx_sentence(otx)
+            # Persist the feed_cache rows written by the enrichment calls
+            # above; without this they roll back on close and every cached
+            # hit re-spends GreyNoise/OTX quota.
+            await db.commit()
             return cached
 
         result = await lookup_ioc(
