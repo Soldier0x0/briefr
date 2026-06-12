@@ -27,7 +27,7 @@ const FIELD_LABELS = {
 function timeAgo(isoString) {
   if (!isoString) return ''
   const raw = isoString.includes('T') ? isoString : isoString.replace(' ', 'T') + 'Z'
-  const diff = Date.now() - new Date(raw).getTime()
+  const diff = Math.max(0, Date.now() - new Date(raw).getTime())
   const minutes = Math.floor(diff / 60000)
   if (minutes < 60) return `${minutes}m ago`
   const hours = Math.floor(minutes / 60)
