@@ -540,3 +540,9 @@ To export:
 The `/api/docs` endpoint (Swagger UI) is available at `http://localhost:8000/api/docs` when running locally.
 
 **NOTE:** `/api/docs` and `/api/redoc` are unprotected — disable or restrict in production (`docs_url=None` in FastAPI constructor).
+
+---
+
+## Frontend smoke (CI — no new endpoints)
+
+Beta V1.2 adds Chromium Playwright coverage in GitHub Actions (`playwright-smoke` job). The suite seeds SQLite via `scripts/seed_screenshot_data.py`, serves the built SPA, and exercises existing routes only — for example `GET /api/cves`, `GET /api/stats`, `GET /api/case-studies/feed`, and drawer detail fetches. No request/response shapes change; see `backend/tests/test_playwright_smoke.py`.
