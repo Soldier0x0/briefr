@@ -201,7 +201,7 @@ Both features follow the ML placement rules (`docs/ROADMAP.md`): env-gated, CPU-
 1. `llm_product_extraction` (every `LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS`, default 6h) selects CVEs with **no CPE data and empty `affected_products`** (NVD-unanalyzed), up to `LLM_PRODUCT_EXTRACTION_MAX_PER_RUN` per run.
 2. Groq calls go through `resilient_client` (source `groq`, `retries=0` — quota is never burned by retry loops; circuit-open aborts the run). Extracted `{vendor, product, version_range}` entries are normalized to the existing `vendor:product` format.
 3. **Write guard + provenance:** products are written only while the field is still empty, and the row is marked `affected_products_source='llm'`. A later NVD sync with official CPE data supersedes the LLM products and clears the marker; an NVD sync that still carries no CPE data does **not** wipe them (upsert CASE rules in `database.py`).
-4. **Negative caching:** every attempt (including empty extractions and errors) is recorded in `feed_cache` (`llm_products:<id>`, 7-day window) so the same CVE never costs quota twice.
+4. **Negative caching:** every completed extraction (including ones that found no products) is recorded in `feed_cache` (`llm_products:<id>`, 7-day window) so the same CVE never costs quota twice. Errors (timeouts, 5xx, rate limits) are **not** cached — the CVE is retried on the next run; repeated provider failures trip the Groq circuit breaker, which aborts the run.
 
 ---
 

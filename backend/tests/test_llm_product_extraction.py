@@ -72,6 +72,36 @@ def test_parse_products_payload_strips_fences_and_survives_garbage():
     assert parse_products_payload('{"products": "nope"}') == []
 
 
+def test_parse_products_payload_handles_conversational_wrapping():
+    """PR #110 review: prefixes/suffixes around the JSON (with or without
+    fences) must not poison the result with a 7-day negative cache."""
+    prefixed_fence = (
+        "Here is the JSON you asked for:\n"
+        "```json\n"
+        '{"products": [{"vendor": "nginx", "product": "nginx", "version_range": "< 1.25"}]}\n'
+        "```\n"
+        "Let me know if you need anything else."
+    )
+    out = parse_products_payload(prefixed_fence)
+    assert out == [{"vendor": "nginx", "product": "nginx", "version_range": "< 1.25"}]
+
+    bare_prefix = (
+        'Sure! {"products": [{"vendor": "acme", "product": "widget"}]} Hope this helps.'
+    )
+    assert parse_products_payload(bare_prefix)[0]["product"] == "widget"
+
+    # Nested braces inside the object must survive the outermost-span extraction.
+    nested = (
+        "Result: {\"products\": [{\"vendor\": \"a\", \"product\": \"b\", "
+        "\"version_range\": \"{1.0}\"}]}"
+    )
+    assert parse_products_payload(nested)[0]["version_range"] == "{1.0}"
+
+    # Top-level JSON arrays keep working through the bracket-span fallback.
+    array_prefix = 'Answer: [{"vendor": "x", "product": "y"}]'
+    assert parse_products_payload(array_prefix)[0]["product"] == "y"
+
+
 def test_products_to_affected_keys_matches_existing_format():
     products = [{"vendor": "google", "product": "tensorflow", "version_range": "all"}]
     assert products_to_affected_keys(products) == ["google:tensorflow"]
@@ -262,6 +292,57 @@ def test_run_extraction_writes_products_and_negative_caches(tmp_path, monkeypatc
     assert cached["products"][0]["version_range"] == "< 2.0"
     assert stats_second == {"candidates": 0, "extracted": 0, "written": 0, "errors": 0}
     assert len(calls) == 2  # one Groq call per CVE, never re-called
+
+
+def test_run_extraction_errors_are_not_negative_cached(tmp_path, monkeypatch):
+    """PR #110 review: transient Groq/network failures must NOT be cached for
+    7 days — the CVE stays a candidate and is retried on the next run."""
+    monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "errs.db"))
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
+    monkeypatch.setattr(pex, "THROTTLE_SECONDS", 0.0)
+
+    attempts = {"n": 0}
+
+    async def flaky_extract(description: str, api_key: str) -> list[dict]:
+        attempts["n"] += 1
+        if attempts["n"] == 1:
+            raise RuntimeError("simulated timeout")  # first run fails
+        return [{"vendor": "acme", "product": "widget", "version_range": ""}]
+
+    monkeypatch.setattr(pex, "extract_products_via_groq", flaky_extract)
+
+    async def run():
+        await init_db()
+        db = await database.get_db()
+        try:
+            await db.execute(
+                "INSERT INTO cves (cve_id, description, published, affected_products, cpe_matches) "
+                "VALUES ('CVE-2024-0001', 'RCE in acme widget', ?, '[]', '[]')",
+                (date.today().isoformat(),),
+            )
+            await db.commit()
+
+            stats_first = await run_llm_product_extraction(db)
+            cache_after_error = await db.execute_fetchall(
+                "SELECT cache_key FROM feed_cache WHERE cache_key LIKE 'llm_products:%'"
+            )
+            stats_second = await run_llm_product_extraction(db)  # retry succeeds
+            row = dict(
+                (await db.execute_fetchall(
+                    "SELECT affected_products, affected_products_source FROM cves "
+                    "WHERE cve_id = 'CVE-2024-0001'"
+                ))[0]
+            )
+            return stats_first, len(cache_after_error), stats_second, row
+        finally:
+            await db.close()
+
+    stats_first, cache_count, stats_second, row = asyncio.run(run())
+    assert stats_first == {"candidates": 1, "extracted": 0, "written": 0, "errors": 1}
+    assert cache_count == 0  # error not negative-cached
+    assert stats_second == {"candidates": 1, "extracted": 1, "written": 1, "errors": 0}
+    assert json.loads(row["affected_products"]) == ["acme:widget"]
+    assert row["affected_products_source"] == "llm"
 
 
 def test_scheduler_llm_job_noop_when_disabled(monkeypatch):

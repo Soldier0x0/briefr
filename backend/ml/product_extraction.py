@@ -9,9 +9,10 @@ Official CPE data supersedes LLM output on the next NVD upsert (the upsert
 SQL clears the marker whenever a non-empty official product list arrives).
 
 Scheduler-side only, never on the request path. Disabled by default; the
-tool is fully functional without it. Attempts (including empty extractions)
-are negative-cached in ``feed_cache`` so quota is never burned twice on the
-same CVE within the retry window.
+tool is fully functional without it. Completed extractions (including empty
+ones) are negative-cached in ``feed_cache`` so quota is never burned twice
+on the same CVE within the retry window; errors are not cached and retry on
+the next run.
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
@@ -38,9 +39,10 @@ logger = logging.getLogger(__name__)
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "llama-3.3-70b-versatile"
 
-# Negative-cache window: a CVE attempted (even unsuccessfully) is not retried
-# for this long. Successful writes leave the candidate pool permanently
-# because affected_products is no longer empty.
+# Negative-cache window: a CVE whose extraction completed (even with zero
+# products) is not retried for this long. Successful writes leave the
+# candidate pool permanently because affected_products is no longer empty.
+# Errored attempts are not cached at all and retry on the next run.
 RETRY_HOURS = 168.0
 THROTTLE_SECONDS = 2.0
 MAX_PRODUCTS_PER_CVE = 10
@@ -84,22 +86,48 @@ def _normalize_token(value: str) -> str:
     return re.sub(r"[^a-z0-9._:\-]", "", token)
 
 
+def _json_candidates(text: str):
+    """Yield progressively more forgiving JSON extraction candidates.
+
+    LLMs occasionally wrap the payload in markdown fences or prepend
+    conversational text ("Here is the JSON: ..."). Try the raw text first,
+    then the content of a fenced block anywhere in the response, then the
+    outermost {...} / [...] span. A non-greedy fence-with-braces regex would
+    truncate nested JSON at the first '}', so spans are located by index.
+    """
+    yield text
+    fence = re.search(r"```(?:json)?\s*(.+?)\s*```", text, re.DOTALL | re.IGNORECASE)
+    if fence:
+        yield fence.group(1)
+    for open_char, close_char in (("{", "}"), ("[", "]")):
+        start = text.find(open_char)
+        end = text.rfind(close_char)
+        if start != -1 and end > start:
+            yield text[start : end + 1]
+
+
+def _extract_items(text: str) -> list:
+    """First candidate that parses AND carries a products list wins — a
+    candidate that merely parses (e.g. a sub-object grabbed by the brace-span
+    fallback) must not stop the search."""
+    for candidate in _json_candidates(text):
+        try:
+            data = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        items = data.get("products") if isinstance(data, dict) else data
+        if isinstance(items, list):
+            return items
+    return []
+
+
 def parse_products_payload(content: str) -> list[dict]:
     """Parse the model response into validated {vendor, product, version_range}
     dicts. Returns [] for anything malformed — never raises."""
     text = (content or "").strip()
     if not text:
         return []
-    if text.startswith("```"):
-        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
-        text = re.sub(r"\s*```\s*$", "", text)
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
-        return []
-    items = data.get("products") if isinstance(data, dict) else data
-    if not isinstance(items, list):
-        return []
+    items = _extract_items(text)
 
     products: list[dict] = []
     seen: set[str] = set()
@@ -170,9 +198,11 @@ async def run_llm_product_extraction(db: aiosqlite.Connection) -> dict:
     """Scheduler job body: extract products for NVD-unanalyzed CVEs.
 
     Caller is responsible for the enabled() gate and the job lock. Every
-    attempt is recorded in feed_cache (key ``llm_products:<cve_id>``) so the
-    candidate query skips it for RETRY_HOURS; successful writes set
-    affected_products_source='llm'.
+    *completed* extraction (including ones that found no products) is
+    recorded in feed_cache (key ``llm_products:<cve_id>``) so the candidate
+    query skips it for RETRY_HOURS; successful writes set
+    affected_products_source='llm'. Errors are never cached — transient
+    failures retry on the next run.
     """
     api_key = os.environ.get("GROQ_API_KEY", "").strip()
     stats = {"candidates": 0, "extracted": 0, "written": 0, "errors": 0}
@@ -201,12 +231,10 @@ async def run_llm_product_extraction(db: aiosqlite.Connection) -> dict:
         except Exception as exc:
             stats["errors"] += 1
             logger.error("LLM product extraction failed for %s: %s", cve_id, exc)
-            await set_feed_cache(
-                db,
-                f"llm_products:{cve_id.upper()}",
-                {"products": [], "model": GROQ_MODEL, "written": False, "error": str(exc)[:200]},
-            )
-            await db.commit()
+            # Transient failures (timeouts, 5xx, rate limits) are NOT
+            # negative-cached — the CVE stays a candidate and is retried on
+            # the next run. Repeated provider failures trip the Groq circuit
+            # breaker, which aborts the whole run above.
             continue
 
         written = False

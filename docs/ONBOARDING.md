@@ -187,7 +187,7 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 | `EMBEDDINGS_MAX_PER_RUN` | `2000` | CVEs embedded per backfill run (bounds CPU per cycle) |
 | `LLM_PRODUCT_EXTRACTION_ENABLED` | `0` | Fill empty `affected_products` for NVD-unanalyzed CVEs from description text via Groq. Requires `GROQ_API_KEY`. Writes only while the field is empty, marks `affected_products_source='llm'`; official CPE supersedes |
 | `LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS` | `6` | Extraction job cadence |
-| `LLM_PRODUCT_EXTRACTION_MAX_PER_RUN` | `25` | Groq calls per run (2s throttle; attempts negative-cached for 7 days) |
+| `LLM_PRODUCT_EXTRACTION_MAX_PER_RUN` | `25` | Groq calls per run (2s throttle; completed extractions negative-cached for 7 days, errors retried next run) |
 
 ---
 
