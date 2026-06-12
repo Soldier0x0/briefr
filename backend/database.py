@@ -544,6 +544,95 @@ async def upsert_cve(db: aiosqlite.Connection, cve: dict) -> None:
     await upsert_cves(db, [cve])
 
 
+async def get_cves_needing_intel_enrichment(
+    db: aiosqlite.Connection,
+    *,
+    limit: int = 5000,
+) -> list[str]:
+    """CVE IDs that may still benefit from vulnrichment / cvelist enrichment."""
+    rows = await db.execute_fetchall(
+        """
+        SELECT cve_id FROM cves
+        WHERE cvss_score IS NULL
+           OR severity IS NULL
+           OR severity = 'UNKNOWN'
+           OR cwe_ids IS NULL
+           OR cwe_ids = '[]'
+           OR cwe_ids = ''
+        ORDER BY published DESC, cve_id DESC
+        LIMIT ?
+        """,
+        (limit,),
+    )
+    return [row["cve_id"] for row in rows]
+
+
+async def apply_additive_cve_enrichments(
+    db: aiosqlite.Connection,
+    enrichments: list[dict],
+) -> int:
+    """Merge scheduler intel into cves without downgrading richer NVD fields."""
+    from feeds.cve_record_v5 import merge_additive_cve_fields
+
+    if not enrichments:
+        return 0
+
+    updated = 0
+    for incoming in enrichments:
+        cve_id = (incoming.get("cve_id") or "").upper()
+        if not cve_id:
+            continue
+
+        rows = await db.execute_fetchall(
+            """
+            SELECT cve_id, description, cvss_score, severity, published, modified,
+                   affected_products, cwe_ids
+            FROM cves WHERE cve_id = ?
+            """,
+            (cve_id,),
+        )
+
+        if rows:
+            existing = dict(rows[0])
+            changes = merge_additive_cve_fields(existing, incoming)
+            if not changes:
+                continue
+            params = {"cve_id": cve_id}
+            set_parts: list[str] = []
+            if "cvss_score" in changes:
+                set_parts.append("cvss_score = :cvss_score")
+                params["cvss_score"] = changes["cvss_score"]
+            if "severity" in changes:
+                set_parts.append("severity = :severity")
+                params["severity"] = changes["severity"]
+            if "description" in changes:
+                set_parts.append("description = :description")
+                params["description"] = changes["description"]
+            if "published" in changes:
+                set_parts.append("published = :published")
+                params["published"] = changes["published"]
+            if "modified" in changes:
+                set_parts.append("modified = :modified")
+                params["modified"] = changes["modified"]
+            if "cwe_ids" in changes:
+                set_parts.append("cwe_ids = :cwe_ids")
+                params["cwe_ids"] = json.dumps(changes["cwe_ids"])
+            if "affected_products" in changes:
+                set_parts.append("affected_products = :affected_products")
+                params["affected_products"] = json.dumps(changes["affected_products"])
+            set_parts.append("updated_at = datetime('now')")
+            await db.execute(
+                f"UPDATE cves SET {', '.join(set_parts)} WHERE cve_id = :cve_id",
+                params,
+            )
+            updated += 1
+        else:
+            await upsert_cve(db, incoming)
+            updated += 1
+
+    return updated
+
+
 async def mark_cves_as_kev(db: aiosqlite.Connection, cve_ids: list) -> None:
     if not cve_ids:
         return
