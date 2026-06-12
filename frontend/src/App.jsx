@@ -11,6 +11,7 @@ import CVEFeed from './components/CVEFeed.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import IOCLookup from './components/IOCLookup.jsx'
 import CaseStudies from './components/CaseStudies.jsx'
+import Forge from './components/Forge.jsx'
 import DetailDrawer from './components/DetailDrawer.jsx'
 import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
@@ -496,6 +497,7 @@ function AppLayout({
                   onClearFilter={onClearAtlasFilter}
                 />
               )}
+              {activeTab === 'forge' && <Forge />}
             </div>
 
             {activeTab !== 'feed' && (
