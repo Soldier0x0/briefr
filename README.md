@@ -174,6 +174,8 @@ BRIEFR backs up the SQLite database and `.env` to **`/var/lib/briefr/backups`** 
 
 Defaults: keep the **newest 100** archives; rotate `backups/logs/backup.log` at 5 MB (5 gzipped generations).
 
+Archives are **age-encrypted** (`briefr-*.tar.gz.age`) when a key exists at `/var/lib/briefr/keys/backup-age.key` — `deploy/briefr-backup.sh` generates it on first run (key lives outside `BACKUP_DIR`; restore and startup auto-restore decrypt transparently). Set `BACKUP_AGE_KEY_FILE` to use another path, or `BACKUP_AGE_KEY_FILE=""` for plaintext archives. **Copy the key somewhere safe — off-site archive copies are useless without it.**
+
 ```bash
 # Manual backup
 bash /opt/briefr/deploy/briefr-backup.sh manual
@@ -184,8 +186,8 @@ bash /opt/briefr/deploy/briefr-restore.sh --list
 # Restore newest valid backup (stops backend, replaces DB + .env from archive)
 bash /opt/briefr/deploy/briefr-restore.sh
 
-# Restore a specific archive
-bash /opt/briefr/deploy/briefr-restore.sh /var/lib/briefr/backups/briefr-20260608T120000Z.tar.gz
+# Restore a specific archive (plaintext or encrypted)
+bash /opt/briefr/deploy/briefr-restore.sh /var/lib/briefr/backups/briefr-20260608T120000Z.tar.gz.age
 ```
 
 Development (optional): set `BACKUP_DIR=./backups` in `backend/.env`, then `python -m backup run`.
@@ -231,8 +233,9 @@ See `backend/.env.example` for the full list. Key variables:
 | `ALLOWED_ORIGINS` | CORS origins (comma-separated) | `http://localhost:3000` |
 | `DB_PATH` | SQLite file | `briefr.db` |
 | `BACKUP_DIR` | Backup archive directory | `/var/lib/briefr/backups` |
-| `BACKUP_RETENTION_COUNT` | Max `briefr-*.tar.gz` archives kept | `100` |
+| `BACKUP_RETENTION_COUNT` | Max `briefr-*.tar.gz[.age]` archives kept | `100` |
 | `BACKUP_ENABLED` | Enable backups + startup auto-restore | `1` |
+| `BACKUP_AGE_KEY_FILE` | age identity for archive encryption (outside `BACKUP_DIR`; `""` disables) | `/var/lib/briefr/keys/backup-age.key` if present |
 | `NVD_SYNC_INTERVAL_HOURS` | NVD incremental cadence | `1` |
 | `KEV_SYNC_INTERVAL_MINUTES` | KEV sync cadence | `15` |
 | `EPSS_SYNC_INTERVAL_HOURS` | EPSS sync cadence | `6` |

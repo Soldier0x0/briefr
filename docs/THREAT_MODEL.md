@@ -107,8 +107,8 @@ BRIEFR calls external APIs (NVD, GitHub, VT, etc.). Threats:
 
 | Threat | Mitigation |
 |--------|------------|
-| Archive contains `.env` (all API keys) in plaintext | **Raised priority (V1.2):** `age` encryption, key outside `BACKUP_DIR` |
-| Unencrypted off-site backup stolen | Same `age` encryption covers off-site copies |
+| Archive contains `.env` (all API keys) in plaintext | ✅ **Shipped (V1.2):** archives age-encrypted (`briefr-*.tar.gz.age`); key `BACKUP_AGE_KEY_FILE` enforced outside `BACKUP_DIR` by `backup/manager.py` |
+| Unencrypted off-site backup stolen | Same `age` encryption covers off-site copies (key never travels with archives) |
 
 **Scope of backup encryption:** startup auto-restore (`ensure_db_or_restore`) requires the decryption key to be readable by the `briefr` service user on the host. Archive encryption therefore mitigates **off-site / at-rest archive exposure** (rclone/S3 copies, stolen disks, archive directory leaks) — it does **not** protect against a compromise of the application host or service user, who can read the key. Host compromise remains covered by the OS-hardening rows above.
 | Restore of tampered archive | Integrity check in `backup/manager.py` |
