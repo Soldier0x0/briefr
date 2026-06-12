@@ -169,6 +169,8 @@ async def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_cve_exploits_cve
                 ON cve_exploits(cve_id);
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_cve_exploits_cve_url
+                ON cve_exploits(cve_id, url);
 
             CREATE TABLE IF NOT EXISTS feed_cache (
                 cache_key TEXT PRIMARY KEY,
@@ -342,6 +344,14 @@ async def init_db() -> None:
             "CREATE TABLE IF NOT EXISTS hunt_packs (id INTEGER PRIMARY KEY AUTOINCREMENT, technique_id TEXT NOT NULL, cve_id TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', priority TEXT NOT NULL DEFAULT 'medium', sigma_yaml TEXT NOT NULL DEFAULT '', siem_queries TEXT NOT NULL DEFAULT '{}', log_patterns TEXT NOT NULL DEFAULT '[]', notes TEXT NOT NULL DEFAULT '', created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')), UNIQUE (technique_id, cve_id))",
             "CREATE INDEX IF NOT EXISTS idx_hunt_packs_technique ON hunt_packs(technique_id)",
             "CREATE INDEX IF NOT EXISTS idx_hunt_packs_cve ON hunt_packs(cve_id)",
+            # Exploit feeds: dedupe then enforce (cve_id, url) uniqueness
+            """
+            DELETE FROM cve_exploits
+            WHERE id NOT IN (
+                SELECT MIN(id) FROM cve_exploits GROUP BY cve_id, url
+            )
+            """,
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_cve_exploits_cve_url ON cve_exploits(cve_id, url)",
         ):
             try:
                 await db.execute(migration)
@@ -1137,11 +1147,12 @@ async def get_cached_cve_exploits(
 async def store_cve_exploits(
     db: aiosqlite.Connection, cve_id: str, exploits: list[dict]
 ) -> None:
-    await replace_cve_exploits(db, cve_id, exploits)
+    await merge_cve_exploits(db, cve_id, exploits)
+    merged = await read_cve_exploits_from_db(db, cve_id, max_age_hours=24 * 365)
     await set_feed_cache(
         db,
         f"sploitus:{cve_id.upper()}",
-        {"exploits": exploits},
+        {"exploits": merged or exploits},
     )
 
 
@@ -1228,6 +1239,125 @@ async def replace_cve_exploits(
                 for exp in exploits
             ],
         )
+
+
+async def _sqlite_changes(db: aiosqlite.Connection) -> int:
+    """Rows changed by the last statement — reliable when rowcount is -1/0."""
+    row = await db.execute_fetchall("SELECT changes() AS n")
+    return int(row[0]["n"] or 0)
+
+
+async def merge_cve_exploits(
+    db: aiosqlite.Connection, cve_id: str, exploits: list[dict]
+) -> int:
+    """Insert exploit rows for a CVE; skip duplicates by (cve_id, url)."""
+    key = cve_id.upper()
+    inserted = 0
+    for exp in exploits:
+        url = (exp.get("url") or "").strip()
+        if not url:
+            continue
+        cursor = await db.execute(
+            """
+            INSERT OR IGNORE INTO cve_exploits (
+                cve_id, title, type, source, url, published_date, fetched_at
+            ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+            """,
+            (
+                key,
+                exp.get("title") or "",
+                exp.get("type") or "poc",
+                exp.get("source") or "",
+                url,
+                exp.get("published_date") or "",
+            ),
+        )
+        rc = cursor.rowcount
+        if rc is None or rc < 0:
+            inserted += await _sqlite_changes(db)
+        elif rc > 0:
+            inserted += rc
+    return inserted
+
+
+async def replace_cve_exploits_by_source(
+    db: aiosqlite.Connection, source: str, cve_exploits: dict[str, list[dict]]
+) -> tuple[int, int]:
+    """Replace all rows for a feed source; returns (rows_inserted, cves_touched)."""
+    await db.execute("DELETE FROM cve_exploits WHERE source = ?", (source,))
+    rows: list[tuple] = []
+    seen: set[tuple[str, str]] = set()
+    for cve_id, exploits in cve_exploits.items():
+        key = cve_id.upper()
+        for exp in exploits:
+            url = (exp.get("url") or "").strip()
+            if not url:
+                continue
+            dedupe_key = (key, url)
+            if dedupe_key in seen:
+                continue
+            seen.add(dedupe_key)
+            rows.append(
+                (
+                    key,
+                    exp.get("title") or "",
+                    exp.get("type") or "poc",
+                    source,
+                    url,
+                    exp.get("published_date") or "",
+                )
+            )
+    if rows:
+        await db.executemany(
+            """
+            INSERT OR IGNORE INTO cve_exploits (
+                cve_id, title, type, source, url, published_date, fetched_at
+            ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+            """,
+            rows,
+        )
+    return len(rows), len(cve_exploits)
+
+
+async def mark_has_poc_additive(
+    db: aiosqlite.Connection, cve_ids: list[str] | set[str]
+) -> int:
+    """Set has_poc=1 for the given CVE IDs; never downgrade from 1."""
+    ids = sorted({str(c).upper() for c in cve_ids if c})
+    if not ids:
+        return 0
+    rows: list = []
+    for offset in range(0, len(ids), _SQLITE_IN_CHUNK):
+        chunk = ids[offset : offset + _SQLITE_IN_CHUNK]
+        placeholders = ",".join("?" for _ in chunk)
+        chunk_rows = await db.execute_fetchall(
+            f"""
+            SELECT cve_id FROM cves
+            WHERE cve_id IN ({placeholders}) AND COALESCE(has_poc, 0) = 0
+            """,
+            chunk,
+        )
+        rows.extend(chunk_rows)
+    if not rows:
+        return 0
+    history = [(row["cve_id"], "has_poc", "0", "1") for row in rows]
+    await _insert_cve_changes_batch(db, history)
+    updated = 0
+    for row in rows:
+        cve_key = row["cve_id"]
+        cursor = await db.execute(
+            """
+            UPDATE cves SET has_poc = 1
+            WHERE cve_id = ? AND COALESCE(has_poc, 0) = 0
+            """,
+            (cve_key,),
+        )
+        rc = cursor.rowcount
+        if rc is None or rc < 0:
+            updated += await _sqlite_changes(db)
+        elif rc > 0:
+            updated += rc
+    return updated
 
 
 

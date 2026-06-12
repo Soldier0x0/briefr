@@ -100,6 +100,7 @@ CI runs `pytest tests/ -q` via [`.github/workflows/backend-tests.yml`](../.githu
 | `test_backup_manager.py` | Backup integrity and restore |
 | `test_backup_encryption.py` | age-encrypted archives: keygen, round-trip, auto-restore |
 | `test_investigation_summary.py` | Investigation / AI summary endpoints |
+| `test_exploit_sources.py` | PoC-in-GitHub, ExploitDB, Metasploit, Nuclei parsers + DB merge |
 | Others | OTX, EPSS, MITRE feeds, domain validation, exploit refs |
 
 There is no frontend unit test suite today; UI changes are validated manually or via Playwright scripts in `scripts/`.
@@ -122,7 +123,7 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 | `OTX_API_KEY` | Optional | OTX pulses + nightly correlation (10k/month) |
 | `GROQ_API_KEY` | Optional | PDF executive summary (primary) |
 | `ANTHROPIC_API_KEY` | Optional | PDF executive summary (fallback) |
-| `GITHUB_TOKEN` | Optional | Detection rule search rate limit (5000/hr vs 60/hr) |
+| `GITHUB_TOKEN` | Optional | Detection rule search + PoC-in-GitHub sync rate limit (5000/hr vs 60/hr) |
 | `CIRCL_API_KEY` | Optional | vulnerability.circl.lu authenticated rate limits (free signup) |
 
 ### Database and backups

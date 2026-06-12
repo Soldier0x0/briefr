@@ -182,6 +182,7 @@ Known keys: `nvd_last_mod_end` (NVD incremental watermark), `epss_backfill_done`
 | url | TEXT | NOT NULL DEFAULT '' | |
 | published_date | TEXT | DEFAULT '' | |
 | fetched_at | TEXT | DEFAULT datetime('now') | |
+| | | UNIQUE (cve_id, url) via `idx_cve_exploits_cve_url` | Dedup across feeds |
 
 ### feed_cache
 
@@ -345,6 +346,10 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | MITRE STIX | `enterprise-attack.json` + CTID CSV | — | Unlimited | Job fails |
 | ATLAS | GitHub raw YAML + case-studies API | `ATLAS_YAML_URL` | Unlimited | Job fails |
 | Sploitus | `sploitus.com` search API | — | Unpublished | `None`/`[]` |
+| PoC-in-GitHub | GitHub API + raw JSON (`nomi-sec/PoC-in-GitHub`) | `GITHUB_TOKEN` optional | GitHub rate limits | Skip source |
+| ExploitDB | GitLab raw `files_exploits.csv` | — | Unrestricted | Skip source |
+| Metasploit | GitHub raw `modules_metadata_base.json` | — | Unrestricted | Skip source |
+| Nuclei | GitHub raw `cves.json` (JSONL) | — | Unrestricted | Skip source |
 | GreyNoise | `api.greynoise.io/v3/community` | `GREYNOISE_API_KEY` | 50/week | Unknown classification |
 | VirusTotal | `virustotal.com/api/v3` | `VIRUSTOTAL_API_KEY` | 500/day | Empty fields |
 | AbuseIPDB | `api.abuseipdb.com/api/v2/check` | `ABUSEIPDB_API_KEY` | 1000/day | Skipped |

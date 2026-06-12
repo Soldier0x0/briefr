@@ -48,6 +48,11 @@ from feeds.kev import fetch_kev
 from feeds.epss import fetch_epss
 from feeds.atlas import refresh_atlas_data
 from feeds.mitre import refresh_mitre_data
+from feeds.exploit_sync import (
+    exploit_sources_enabled,
+    get_exploit_sources_interval_hours,
+    sync_all_exploit_sources,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -577,6 +582,45 @@ async def maybe_run_on_startup() -> None:
 
     await maybe_run_mitre_on_startup()
     asyncio.create_task(run_epss_backfill())
+    if count >= 10 and exploit_sources_enabled():
+        asyncio.create_task(run_exploit_sources_sync())
+
+
+async def run_exploit_sources_sync() -> bool:
+    """Daily exploit-availability feeds: PoC-in-GitHub, ExploitDB, Metasploit, Nuclei."""
+    if not exploit_sources_enabled():
+        logger.info("Exploit sources sync disabled (EXPLOIT_SOURCES_SYNC_ENABLED=0)")
+        return False
+
+    if _exploit_sources_lock.locked():
+        logger.warning("Exploit sources sync already in progress — skipping")
+        return False
+
+    async with _exploit_sources_lock:
+        start = datetime.now(timezone.utc)
+        logger.info("Exploit sources sync started at %s", start.isoformat())
+        try:
+            db = await get_db()
+            try:
+                stats = await sync_all_exploit_sources(db)
+                await db.commit()
+            finally:
+                await db.close()
+            if stats:
+                logger.info(
+                    "Exploit sources sync complete: PoC-GitHub %s, ExploitDB %s, "
+                    "Metasploit %s, Nuclei %s (has_poc marked: %s)",
+                    stats.get("poc_github", {}),
+                    stats.get("exploitdb", {}),
+                    stats.get("metasploit", {}),
+                    stats.get("nuclei", {}),
+                    (stats.get("has_poc_marked") or {}).get("count", 0),
+                )
+        except Exception as exc:
+            logger.error("Exploit sources sync failed: %s", exc)
+        duration = (datetime.now(timezone.utc) - start).total_seconds()
+        logger.info("Exploit sources sync finished in %.1fs", duration)
+    return True
 
 
 async def run_vulnrichment_sync() -> bool:
@@ -823,6 +867,19 @@ def start_scheduler() -> AsyncIOScheduler:
         next_run_time=datetime.now(sched_tz) + timedelta(seconds=20),
     )
 
+    exploit_hours = get_exploit_sources_interval_hours()
+    if exploit_sources_enabled():
+        scheduler.add_job(
+            run_exploit_sources_sync,
+            trigger=IntervalTrigger(hours=exploit_hours, timezone=sched_tz),
+            id="exploit_sources_sync",
+            name="Exploit Availability Sources Sync",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            next_run_time=datetime.now(sched_tz) + timedelta(minutes=30),
+        )
+
     corr_hour = int(os.environ.get("CORRELATION_HOUR", "1"))
     corr_minute = int(os.environ.get("CORRELATION_MINUTE", "0"))
     corr_tz = ZoneInfo(os.environ.get("CORRELATION_TIMEZONE", "Asia/Kolkata"))
@@ -876,6 +933,7 @@ def start_scheduler() -> AsyncIOScheduler:
         intervals["epss_hours"],
         mitre_hour,
         mitre_minute,
+        exploit_hours if exploit_sources_enabled() else 0,
         corr_hour,
         corr_minute,
         otx_hour,

@@ -138,7 +138,7 @@ Each CVE object may include `kev_due_date` (`YYYY-MM-DD` from `kev_deadlines.due
 
 ### GET /api/cves/{cve_id}
 
-**Description:** Full CVE detail with live enrichment (Sploitus, GreyNoise, OTX, OSV, CIRCL).
+**Description:** Full CVE detail with live enrichment (scheduler-fed exploits, Sploitus fallback, GreyNoise, OTX, OSV, CIRCL).
 
 **Response:** Bare CVE object (no `data` wrapper), including:
 

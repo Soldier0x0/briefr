@@ -1,0 +1,15 @@
+{
+  "exploit_linux_http_log4shell": {
+    "name": "Log4Shell HTTP RCE",
+    "fullname": "exploit/linux/http/log4shell_example",
+    "type": "exploit",
+    "disclosure_date": "2021-12-09",
+    "references": ["CVE-2021-44228", "URL-https://example.com"]
+  },
+  "auxiliary_scanner_http": {
+    "name": "HTTP scanner",
+    "fullname": "auxiliary/scanner/http/example",
+    "type": "auxiliary",
+    "references": ["CVE-2021-44228"]
+  }
+}
