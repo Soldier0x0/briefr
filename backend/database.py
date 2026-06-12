@@ -1101,12 +1101,17 @@ async def replace_cve_exploits_by_source(
     """Replace all rows for a feed source; returns (rows_inserted, cves_touched)."""
     await db.execute("DELETE FROM cve_exploits WHERE source = ?", (source,))
     rows: list[tuple] = []
+    seen: set[tuple[str, str]] = set()
     for cve_id, exploits in cve_exploits.items():
         key = cve_id.upper()
         for exp in exploits:
             url = (exp.get("url") or "").strip()
             if not url:
                 continue
+            dedupe_key = (key, url)
+            if dedupe_key in seen:
+                continue
+            seen.add(dedupe_key)
             rows.append(
                 (
                     key,
@@ -1120,7 +1125,7 @@ async def replace_cve_exploits_by_source(
     if rows:
         await db.executemany(
             """
-            INSERT INTO cve_exploits (
+            INSERT OR IGNORE INTO cve_exploits (
                 cve_id, title, type, source, url, published_date, fetched_at
             ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
             """,
@@ -1136,14 +1141,18 @@ async def mark_has_poc_additive(
     ids = sorted({str(c).upper() for c in cve_ids if c})
     if not ids:
         return 0
-    placeholders = ",".join("?" for _ in ids)
-    rows = await db.execute_fetchall(
-        f"""
-        SELECT cve_id FROM cves
-        WHERE cve_id IN ({placeholders}) AND has_poc = 0
-        """,
-        ids,
-    )
+    rows: list = []
+    for offset in range(0, len(ids), 500):
+        chunk = ids[offset : offset + 500]
+        placeholders = ",".join("?" for _ in chunk)
+        chunk_rows = await db.execute_fetchall(
+            f"""
+            SELECT cve_id FROM cves
+            WHERE cve_id IN ({placeholders}) AND has_poc = 0
+            """,
+            chunk,
+        )
+        rows.extend(chunk_rows)
     if not rows:
         return 0
     history = [(row["cve_id"], "has_poc", "0", "1") for row in rows]

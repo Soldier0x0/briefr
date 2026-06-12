@@ -116,21 +116,27 @@ async def _latest_commit_sha() -> str | None:
     return None
 
 
+def parse_github_compare_files(data: dict) -> list[str]:
+    """Extract CVE JSON paths from a GitHub compare API response.
+
+    Changed files are listed at the response root in ``files``, not inside
+    individual ``commits`` entries.
+    """
+    paths: list[str] = []
+    for entry in data.get("files") or []:
+        if not isinstance(entry, dict):
+            continue
+        filename = str(entry.get("filename") or "")
+        if _cve_from_repo_path(filename):
+            paths.append(filename)
+    return sorted(set(paths))
+
+
 async def _changed_cve_paths(old_sha: str, new_sha: str) -> list[str]:
     data = await _fetch_json(f"{POC_GITHUB_API}/compare/{old_sha}...{new_sha}")
     if not isinstance(data, dict):
         return []
-    paths: list[str] = []
-    for commit in data.get("commits") or []:
-        if not isinstance(commit, dict):
-            continue
-        for entry in commit.get("files") or []:
-            if not isinstance(entry, dict):
-                continue
-            filename = str(entry.get("filename") or "")
-            if _cve_from_repo_path(filename):
-                paths.append(filename)
-    return sorted(set(paths))
+    return parse_github_compare_files(data)
 
 
 async def _list_year_cve_paths(year: str, needed: set[str]) -> list[str]:
