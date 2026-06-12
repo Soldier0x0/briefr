@@ -298,8 +298,9 @@ amendment row (retro-match = zero extra API quota: match new feed IOCs
 against the local watchlist table, no per-IOC enrichment calls). Implement:
 ioc_watchlist table INDEXED ON IOC VALUE (idempotent migration), CRUD API +
 UI in the IOC tab, ThreatFox feed module (resilient_client, scheduler-side,
-abuse.ch auth key reused), retro-match job flagging watchlist hits on new
-ThreatFox data, VulnCheck KEV tier per spec (env-gated API key).
+abuse.ch auth key reused), retro-match job matching the watchlist locally
+against both otx_pulse_iocs and ThreatFox data (zero extra API quota),
+VulnCheck KEV tier per spec (env-gated API key).
 ```
 
 ---
