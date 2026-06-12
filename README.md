@@ -255,6 +255,11 @@ See `backend/.env.example` for the full list. Key variables:
 | `MITRE_REFRESH_HOUR` | Weekly MITRE+ATLAS (Sunday) | `2` |
 | `MAX_CVES_PER_FETCH` | Cap per NVD sync | `2000` |
 | `DEFAULT_TIMEZONE` | Health/time display | `Asia/Kolkata` |
+| `EMBEDDINGS_ENABLED` | Semantic "similar CVEs" via local embeddings (needs `pip install fastembed`; off = shared-product heuristic) | `0` |
+| `EMBEDDINGS_MODEL` | Local CPU embedding model (ONNX) | `BAAI/bge-small-en-v1.5` |
+| `EMBEDDINGS_SYNC_INTERVAL_HOURS` / `EMBEDDINGS_MAX_PER_RUN` | Embeddings backfill cadence / per-run cap | `6` / `2000` |
+| `LLM_PRODUCT_EXTRACTION_ENABLED` | Fill empty `affected_products` for NVD-unanalyzed CVEs via Groq (requires `GROQ_API_KEY`; provenance-marked, superseded by official CPE) | `0` |
+| `LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS` / `LLM_PRODUCT_EXTRACTION_MAX_PER_RUN` | Extraction job cadence / Groq calls per run | `6` / `25` |
 
 ---
 
@@ -277,7 +282,7 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 | `GET /api/cves/{cve_id}/momentum` | Momentum score + signals |
 | `GET /api/cves/{cve_id}/correlation` | Infrastructure / actor / temporal correlation |
 | `GET /api/cves/{cve_id}/detection` | Sigma, Elastic, SIEM queries |
-| `GET /api/cves/{cve_id}/related` | Same-product related CVEs |
+| `GET /api/cves/{cve_id}/related` | Related CVEs (same-product heuristic; semantic similarity when `EMBEDDINGS_ENABLED=1`) |
 | `POST /api/cves/match` | Asset CPE exposure scores |
 | `POST /api/ioc/lookup` | IOC enrichment (ip, hash, domain) |
 | `GET /api/kev/deadlines` | KEV remediation deadlines |

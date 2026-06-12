@@ -971,7 +971,8 @@ function TabDetect({ detection, loading }) {
   )
 }
 
-function TabRelated({ related, loading, onSelectRelated }) {
+function TabRelated({ related, relatedMethod, loading, onSelectRelated }) {
+  const semantic = relatedMethod === 'embeddings'
   if (loading) {
     return (
       <section className="drawer-section drawer-related-loading" aria-busy="true">
@@ -996,7 +997,9 @@ function TabRelated({ related, loading, onSelectRelated }) {
 
   return (
     <section className="drawer-section" aria-labelledby="related-heading">
-      <h3 id="related-heading" className="drawer-human-label mono">SAME PRODUCT (30 DAYS)</h3>
+      <h3 id="related-heading" className="drawer-human-label mono">
+        {semantic ? 'SEMANTICALLY SIMILAR' : 'SAME PRODUCT (30 DAYS)'}
+      </h3>
       <ul className="drawer-related-list" aria-label="Related CVEs">
         {related.map(item => {
           const sev = (item.severity || '').toUpperCase()
@@ -1024,6 +1027,11 @@ function TabRelated({ related, loading, onSelectRelated }) {
                       CVSS {Number(item.cvss_score).toFixed(1)}
                     </span>
                   )}
+                  {semantic && item.similarity != null && (
+                    <span className="drawer-related-sim mono">
+                      {Math.round(Number(item.similarity) * 100)}% MATCH
+                    </span>
+                  )}
                 </div>
                 <p className="drawer-related-desc">
                   {truncateText(item.description, 90)}
@@ -1046,6 +1054,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const [epssHistory, setEpssHistory] = useState([])
   const [epssLoading, setEpssLoading] = useState(false)
   const [related, setRelated] = useState([])
+  const [relatedMethod, setRelatedMethod] = useState('')
   const [relatedLoading, setRelatedLoading] = useState(false)
   const [correlation, setCorrelation] = useState(null)
   const [correlationLoading, setCorrelationLoading] = useState(false)
@@ -1089,6 +1098,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
       setEpssHistory([])
       setEpssLoading(false)
       setRelated([])
+      setRelatedMethod('')
       setRelatedLoading(false)
       return
     }
@@ -1135,10 +1145,16 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
     setRelatedLoading(true)
     fetchCVERelated(cve.cve_id, 5)
       .then(data => {
-        if (!cancelled) setRelated(data.data || [])
+        if (!cancelled) {
+          setRelated(data.data || [])
+          setRelatedMethod(data.meta?.method || '')
+        }
       })
       .catch(() => {
-        if (!cancelled) setRelated([])
+        if (!cancelled) {
+          setRelated([])
+          setRelatedMethod('')
+        }
       })
       .finally(() => {
         if (!cancelled) setRelatedLoading(false)
@@ -1515,6 +1531,7 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
           {activeTab === 'related' && (
             <TabRelated
               related={related}
+              relatedMethod={relatedMethod}
               loading={relatedLoading}
               onSelectRelated={handleSelectRelated}
             />

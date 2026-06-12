@@ -183,6 +183,18 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 | `RATE_LIMIT_REFRESH_PER_MINUTE` | `10` | Per-client-IP budget shared by all `POST /api/refresh*` routes |
 | `LOG_FORMAT` | `json` | `json` = structured lines with `request_id`; `plain` = legacy human-readable format |
 
+### ML assist (V1.3 — disabled by default, CPU-only, scheduler-side)
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `EMBEDDINGS_ENABLED` | `0` | Semantic "similar CVEs" on `GET /api/cves/{id}/related`. Requires the optional `fastembed` package (`pip install fastembed`). Off → shared-product heuristic; the tool is fully functional without it |
+| `EMBEDDINGS_MODEL` | `BAAI/bge-small-en-v1.5` | Local ONNX embedding model (downloaded on first scheduler run) |
+| `EMBEDDINGS_SYNC_INTERVAL_HOURS` | `6` | Embeddings backfill job cadence |
+| `EMBEDDINGS_MAX_PER_RUN` | `2000` | CVEs embedded per backfill run (bounds CPU per cycle) |
+| `LLM_PRODUCT_EXTRACTION_ENABLED` | `0` | Fill empty `affected_products` for NVD-unanalyzed CVEs from description text via Groq. Requires `GROQ_API_KEY`. Writes only while the field is empty, marks `affected_products_source='llm'`; official CPE supersedes |
+| `LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS` | `6` | Extraction job cadence |
+| `LLM_PRODUCT_EXTRACTION_MAX_PER_RUN` | `25` | Groq calls per run (2s throttle; completed extractions negative-cached for 7 days, errors retried next run) |
+
 ---
 
 ## 5. Production deploy (overview)

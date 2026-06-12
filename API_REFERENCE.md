@@ -152,6 +152,8 @@ Each CVE object may include `kev_due_date` (`YYYY-MM-DD` from `kev_deadlines.due
 
 **Notes:** Includes `has_ai_context`, `atlas_techniques[]`, and `atlas_case_studies[]` when MITRE ATLAS data is present in the DB. Enrichment failures return `200` with empty arrays.
 
+**Provenance (additive — added in V1.3):** `affected_products_source` is `""` for official CPE-derived (or unset) product lists and `"llm"` when `affected_products` was filled by the env-gated LLM product extraction job for an NVD-unanalyzed CVE. Official CPE data supersedes LLM output on the next NVD sync and clears the marker. The field also appears on items returned by `GET /api/cves` and `GET /api/cves/export`.
+
 ---
 
 ### GET /api/cves/{cve_id}/sentences
@@ -183,11 +185,18 @@ Each CVE object may include `kev_due_date` (`YYYY-MM-DD` from `kev_deadlines.due
 
 ### GET /api/cves/{cve_id}/related
 
+**Description:** Related CVEs. Default: shared-product heuristic (last 30 days). When `EMBEDDINGS_ENABLED=1` and both the target and candidates have stored vectors, returns semantically similar CVEs instead (NumPy brute-force cosine over `cve_embeddings` BLOBs; `sqlite-vec` accelerates the same query when importable).
+
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `limit` | int | 5 | 1–20 |
 
-**Response:** `{"data": [ related CVE summaries ]}`
+**Response:** `{"data": [ related CVE summaries ], "meta": {"method": "product_heuristic" | "embeddings"}}`
+
+**Notes (additive — added in V1.3):**
+
+- `meta.method` reports which path produced the results. Embeddings disabled/absent, target CVE not yet embedded, or zero semantic hits → automatic fallback to `product_heuristic` (the pre-V1.3 response shape, plus `meta`).
+- When `meta.method` is `"embeddings"`, each item additionally carries `similarity` (cosine, 0–1, higher = closer). Heuristic items have no `similarity` field.
 
 ---
 

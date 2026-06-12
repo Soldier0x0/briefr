@@ -543,6 +543,15 @@
   margin-left: auto;
 }
 
+/* Cosine-similarity chip — shown only when embeddings served the results */
+.drawer-related-sim {
+  font-size: 0.5625rem;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
 .drawer-related-desc {
   font-family: var(--font-body);
   font-size: 12px;

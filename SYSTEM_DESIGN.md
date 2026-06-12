@@ -41,7 +41,7 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
        │              │              │              │                │
        ▼              ▼              ▼              ▼                ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ APScheduler (scheduler.py) — 7 recurring jobs + 1 one-shot startup job      │
+│ APScheduler (scheduler.py) — 11 recurring jobs (+1 opt-in) + 1 one-shot     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ 1. NVD incremental      → cves, sync_state, cve_change_history, feed_cache  │
 │ 2. KEV metadata         → kev_deadlines, cves.is_kev, summaries             │
@@ -50,11 +50,16 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
 │ 5. OTX nightly          → otx_cve_pulses, otx_pulse_iocs, feed_cache        │
 │ 6. Incident RSS (4h)    → feed_cache (incident_rss:*)                       │
 │ 7. Correlation nightly  → correlation_*, feed_cache, otx_pulse_iocs         │
-│ 8. EPSS history backfill (one-shot) → epss_history, sync_state marker       │
+│ 8. Vulnrichment (6h)    → cves (additive CVSS/CWE/CPE)                      │
+│ 9. cvelistV5 delta (30m)→ cves, sync_state.cvelistv5_head_sha               │
+│ 10. Embeddings backfill → cve_embeddings (no-op unless EMBEDDINGS_ENABLED)  │
+│ 11. LLM product extract → cves.affected_products(+_source), feed_cache      │
+│ 12. Exploit sources (opt-in) → cve_exploits, cves.has_poc                   │
+│ 13. EPSS history backfill (one-shot) → epss_history, sync_state marker      │
 └──────────────────────────────────┬──────────────────────────────────────────┘
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ SQLite (briefr.db) — 21 tables — see TECHNICAL_INVENTORY.md                │
+│ SQLite (briefr.db) — 24 tables — see TECHNICAL_INVENTORY.md                │
 └──────────────────────────────────┬──────────────────────────────────────────┘
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -208,6 +213,23 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (sch
    `GET /api/cves/{cve_id}/detection` (drawer Detect tab). Rule proof on live
    logs and HyperDX provisioning are out of scope until V1.5/V1.4.
 
+### G. ML assist — embeddings + LLM product extraction (V1.3, env-gated)
+
+Both features follow the ML placement rules (`docs/ROADMAP.md`): env-gated, CPU-only, scheduler-side only, deterministic fallback, tool fully functional with ML disabled. **Both are off by default.**
+
+**Similar CVEs via embeddings (`EMBEDDINGS_ENABLED=1`):**
+
+1. **Scheduler writes:** `embeddings_backfill` (every `EMBEDDINGS_SYNC_INTERVAL_HOURS`, default 6h) embeds CVE descriptions with a local ONNX model (`ml/embeddings.py`, fastembed, `EMBEDDINGS_MODEL=BAAI/bge-small-en-v1.5`) and stores L2-normalized float32 vectors as BLOBs in `cve_embeddings`. Capped at `EMBEDDINGS_MAX_PER_RUN` per cycle; inference runs in a worker thread so the event loop stays responsive. The `fastembed` package is an optional install — if missing, the job logs one warning and skips.
+2. **Request path reads only:** `GET /api/cves/{id}/related` does **no model inference** — it scans stored vectors. Default path is exact brute-force cosine with NumPy (vectors normalized at write time, so cosine = dot product); `sqlite-vec` is used as an accelerator only when importable and the Python build supports loadable extensions (never a hard dependency; identical rankings).
+3. **Deterministic fallback:** embeddings disabled, target CVE not embedded yet, or zero hits → the endpoint serves the pre-V1.3 shared-product heuristic. `meta.method` reports which path responded; embedding hits carry an additive `similarity` field.
+
+**LLM product extraction (`LLM_PRODUCT_EXTRACTION_ENABLED=1` + `GROQ_API_KEY`):**
+
+1. `llm_product_extraction` (every `LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS`, default 6h) selects CVEs with **no CPE data and empty `affected_products`** (NVD-unanalyzed), up to `LLM_PRODUCT_EXTRACTION_MAX_PER_RUN` per run.
+2. Groq calls go through `resilient_client` (source `groq`, `retries=0` — quota is never burned by retry loops; circuit-open aborts the run). Extracted `{vendor, product, version_range}` entries are normalized to the existing `vendor:product` format.
+3. **Write guard + provenance:** products are written only while the field is still empty, and the row is marked `affected_products_source='llm'`. A later NVD sync with official CPE data supersedes the LLM products and clears the marker; an NVD sync that still carries no CPE data does **not** wipe them (upsert CASE rules in `database.py`).
+4. **Negative caching:** every completed extraction (including ones that found no products) is recorded in `feed_cache` (`llm_products:<id>`, 7-day window) so the same CVE never costs quota twice. Errors (timeouts, 5xx, rate limits) are **not** cached — the CVE is retried on the next run; repeated provider failures trip the Groq circuit breaker, which aborts the run.
+
 ---
 
 ## 4. Design Decisions & Trade-offs
@@ -251,7 +273,7 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 
 ### APScheduler over Celery/Redis
 
-- **Why:** No message broker; embedded in FastAPI process; sufficient for 7 recurring jobs + 1 one-shot startup backfill (`scheduler.py:start_scheduler`).
+- **Why:** No message broker; embedded in FastAPI process; sufficient for ~12 recurring jobs + 1 one-shot startup backfill (`scheduler.py:start_scheduler`).
 - **Trade-off:** Jobs lost on process restart (mitigated by `maybe_run_on_startup` bootstrap when CVE count &lt; 10); no distributed workers.
 
 ### Plain JSX + CSS over component library
