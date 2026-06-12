@@ -446,6 +446,39 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 
 ---
 
+## Config
+
+### GET /api/config/risk
+
+**Description:** Returns the v1.1b risk score component weights. The frontend
+fetches this once at startup to keep weights single-sourced from
+`backend/scoring/risk.py`; it falls back to its bundled constants if the
+request fails.
+
+**Auth:** None
+
+**Response:**
+
+```json
+{
+  "version": "1.1b",
+  "weights": {
+    "asset":    0.35,
+    "kev":      0.25,
+    "epss":     0.15,
+    "exploit":  0.10,
+    "cvss":     0.10,
+    "momentum": 0.05
+  }
+}
+```
+
+**Invariant:** `sum(weights.values()) == 1.0`. The backend validates this at
+the source (`scoring/risk.py`); the frontend rejects any payload where the
+sum deviates by more than 1 × 10⁻⁶.
+
+---
+
 ## Health & Stats
 
 ### GET /api/health

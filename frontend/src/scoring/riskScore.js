@@ -5,9 +5,63 @@
  * calculateRiskScore(cve, assetProfile, backendMatchScore, momentumScore)
  * Momentum is fetched lazily from /api/cves/{id}/momentum on drawer open.
  * For card renders, momentumScore defaults to 0 (no API call per card).
+ *
+ * Weights are fetched once at startup from GET /api/config/risk and cached
+ * in _weights. The hardcoded values below are the fallback used when the
+ * fetch fails or has not yet completed.
  */
 
+import { fetchRiskWeights } from '../api.js'
+
 const DEFAULT_ASSET_UNKNOWN = 0.5
+
+// v1.1b fallback constants — kept in sync with backend/scoring/risk.py.
+// fetchAndCacheRiskWeights() overwrites this at startup from /api/config/risk.
+let _weights = {
+  asset:    0.35,
+  kev:      0.25,
+  epss:     0.15,
+  exploit:  0.10,
+  cvss:     0.10,
+  momentum: 0.05,
+}
+
+/**
+ * Fetch v1.1b weights from GET /api/config/risk and update the module cache.
+ * Silently ignored on failure — the hardcoded fallback remains active.
+ * Call once at app startup (fire-and-forget).
+ *
+ * Validation rules (all must pass, otherwise fallback is kept):
+ *  1. Response has a `weights` object.
+ *  2. Received object contains exactly the expected keys — no more, no fewer.
+ *  3. Every value is a finite number.
+ *  4. Values sum to 1.0 (tolerance 1e-6).
+ * On success _weights is replaced wholesale, not merged, to avoid partial-key
+ * corruption (e.g. a single-key response with sum == 1.0 would otherwise
+ * produce a total weight of 1.65 via spread).
+ */
+export async function fetchAndCacheRiskWeights() {
+  try {
+    const data = await fetchRiskWeights()
+    if (data && data.weights && typeof data.weights === 'object') {
+      const w = data.weights
+      const expectedKeys = Object.keys(_weights)
+      const receivedKeys = Object.keys(w)
+      const keysMatch =
+        receivedKeys.length === expectedKeys.length &&
+        expectedKeys.every(k => Object.prototype.hasOwnProperty.call(w, k))
+      const allFinite = expectedKeys.every(k => typeof w[k] === 'number' && Number.isFinite(w[k]))
+      if (keysMatch && allFinite) {
+        const total = expectedKeys.reduce((s, k) => s + w[k], 0)
+        if (Math.abs(total - 1.0) < 1e-6) {
+          _weights = w
+        }
+      }
+    }
+  } catch {
+    // network error or backend unavailable — fallback constants stay active
+  }
+}
 
 function num(value, fallback = 0) {
   if (value == null || value === '') return fallback
@@ -402,14 +456,14 @@ export function calculateRiskScore(
   const cvssScore   = num(cve.cvss_score, 0) / 10
   const momScore    = Math.min(1, Math.max(0, num(momentumScore, 0)))
 
-  // v1.1b weights: asset 0.35, kev 0.25, epss 0.15, exploit 0.10, cvss 0.10, momentum 0.05
+  const w = _weights
   const raw =
-    assetScore   * 0.35 +
-    kevScore     * 0.25 +
-    epssScore    * 0.15 +
-    exploitScore * 0.10 +
-    cvssScore    * 0.10 +
-    momScore     * 0.05
+    assetScore   * w.asset +
+    kevScore     * w.kev +
+    epssScore    * w.epss +
+    exploitScore * w.exploit +
+    cvssScore    * w.cvss +
+    momScore     * w.momentum
 
   const total = Math.round(raw * 100 * 10) / 10
 
@@ -424,38 +478,38 @@ export function calculateRiskScore(
     components: {
       asset: {
         score: assetScore,
-        weight: 0.35,
-        points: Math.round(assetScore * 35 * 10) / 10,
+        weight: w.asset,
+        points: Math.round(assetScore * w.asset * 100 * 10) / 10,
         sentence: sentences.asset,
       },
       kev: {
         score: kevScore,
-        weight: 0.25,
-        points: Math.round(kevScore * 25 * 10) / 10,
+        weight: w.kev,
+        points: Math.round(kevScore * w.kev * 100 * 10) / 10,
         sentence: sentences.kev,
       },
       epss: {
         score: epssScore,
-        weight: 0.15,
-        points: Math.round(epssScore * 15 * 10) / 10,
+        weight: w.epss,
+        points: Math.round(epssScore * w.epss * 100 * 10) / 10,
         sentence: sentences.epss,
       },
       exploit: {
         score: exploitScore,
-        weight: 0.10,
-        points: Math.round(exploitScore * 10 * 10) / 10,
+        weight: w.exploit,
+        points: Math.round(exploitScore * w.exploit * 100 * 10) / 10,
         sentence: sentences.exploit,
       },
       cvss: {
         score: cvssScore,
-        weight: 0.10,
-        points: Math.round(cvssScore * 10 * 10) / 10,
+        weight: w.cvss,
+        points: Math.round(cvssScore * w.cvss * 100 * 10) / 10,
         sentence: sentences.cvss,
       },
       momentum: {
         score: momScore,
-        weight: 0.05,
-        points: Math.round(momScore * 5 * 10) / 10,
+        weight: w.momentum,
+        points: Math.round(momScore * w.momentum * 100 * 10) / 10,
         sentence: momScore > 0
           ? `Threat momentum active — score raised by active signals`
           : 'No recent threat momentum signals detected',

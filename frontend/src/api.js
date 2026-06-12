@@ -152,6 +152,10 @@ export function fetchKEVDeadlines(sort = 'recent') {
   return request(`/kev/deadlines?sort=${sort}`)
 }
 
+export function fetchRiskWeights() {
+  return request('/config/risk')
+}
+
 export function fetchUsage() {
   return request('/usage')
 }

@@ -45,6 +45,7 @@ EXPECTED_ROUTES = [
     ("GET", "/api/ai/summary"),
     ("POST", "/api/ai/summary"),
     ("POST", "/api/investigation/summary"),
+    ("GET", "/api/config/risk"),
 ]
 
 
@@ -87,6 +88,7 @@ def test_moved_endpoints_live_in_routers():
     assert by_path["/api/usage"] == "routers.meta"
     assert by_path["/api/investigation/summary"] == "routers.meta"
     assert by_path["/api/refresh"] == "routers.refresh"
+    assert by_path["/api/config/risk"] == "routers.config"
     # main.py owns only app wiring now (V1.2 exit criterion: <300 lines)
     assert not any(module == "main" for module in by_path.values())
 
