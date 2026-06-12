@@ -77,13 +77,16 @@ spec marks for later phases.
 Read docs/HANDOVER.md §6 Tranche 2 (new intel sources) and the matching rows
 in Beta V1.3.md. First read one existing feed module end-to-end as the
 pattern (backend/feeds/osv.py) plus scheduler.py job registration.
-Implement TWO feed modules: CISA Vulnrichment and cvelistV5. Both are
-snapshot-type sources — no watermark needed. Each: backend/feeds/<name>.py
-using resilient_client (source name must appear in /api/health
-feeds.sources), scheduler job with env-configurable interval, data merged
-additively into existing cves columns (severity/CWE enrichment per spec) —
-never overwrite richer data with poorer data. Scheduler-side only — nothing
-on the request path. Tests with fixture JSON files under tests/fixtures.
+Implement TWO feed modules: CISA Vulnrichment and cvelistV5. CISA
+Vulnrichment is a snapshot-type source (no watermark needed), but cvelistV5
+MUST use repo pull deltas with incremental sync/watermark tracking per
+Beta V1.3.md to avoid downloading the full repository on every run. Each:
+backend/feeds/<name>.py using resilient_client (source name must appear in
+/api/health feeds.sources), scheduler job with env-configurable interval,
+data merged additively into existing cves columns (severity/CWE enrichment
+per spec) — never overwrite richer data with poorer data. Scheduler-side
+only — nothing on the request path. Tests with fixture JSON files under
+tests/fixtures.
 ```
 
 ### T2-S4 — New intel sources, batch 2: PoC-in-GitHub + ExploitDB + Metasploit + Nuclei (Composer)
