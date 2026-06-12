@@ -148,8 +148,39 @@ export function fetchCaseStudyFeed(atlasLimit = 80) {
   return request(`/case-studies/feed?atlas_limit=${atlasLimit}`)
 }
 
+/** Forge: MITRE coverage map (stack × techniques × rule status). */
+export function fetchForgeCoverage(stack = '') {
+  const qs = stack ? `?stack=${encodeURIComponent(stack)}` : ''
+  return request(`/forge/coverage${qs}`)
+}
+
+/** Forge: hunt pack content for one ATT&CK technique. */
+export function fetchHuntPack(techniqueId) {
+  return request(`/hunt-packs/${encodeURIComponent(techniqueId)}`)
+}
+
+/** Forge: generate + persist a detection pack for a CVE (CVE→pack link). */
+export function generateHuntPack(cveId, techniqueId = '') {
+  const body = techniqueId
+    ? { cve_id: cveId, technique_id: techniqueId }
+    : { cve_id: cveId }
+  return request('/hunt-packs/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
 export function fetchKEVDeadlines(sort = 'recent') {
   return request(`/kev/deadlines?sort=${sort}`)
+}
+
+export function fetchChanges({ field = null, sinceHours = 24, limit = 50 } = {}) {
+  const qs = new URLSearchParams()
+  qs.set('since_hours', String(sinceHours))
+  qs.set('limit', String(limit))
+  if (field) qs.set('field', field)
+  return request(`/changes?${qs}`)
 }
 
 export function fetchRiskWeights() {

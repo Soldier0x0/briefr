@@ -1,0 +1,25 @@
+{
+  "sha": "tree123",
+  "url": "https://api.github.com/repos/cisagov/vulnrichment/git/trees/develop",
+  "tree": [
+    {
+      "path": "2024/0xxx/CVE-2024-0043.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob1"
+    },
+    {
+      "path": "2024/0xxx/CVE-2024-9999.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob2"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob3"
+    }
+  ],
+  "truncated": false
+}

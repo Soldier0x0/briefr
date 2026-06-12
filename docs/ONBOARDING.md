@@ -100,6 +100,7 @@ CI runs `pytest tests/ -q` via [`.github/workflows/backend-tests.yml`](../.githu
 | `test_backup_manager.py` | Backup integrity and restore |
 | `test_backup_encryption.py` | age-encrypted archives: keygen, round-trip, auto-restore |
 | `test_investigation_summary.py` | Investigation / AI summary endpoints |
+| `test_exploit_sources.py` | PoC-in-GitHub, ExploitDB, Metasploit, Nuclei parsers + DB merge |
 | Others | OTX, EPSS, MITRE feeds, domain validation, exploit refs |
 
 There is no frontend unit test suite today; UI changes are validated manually or via Playwright scripts in `scripts/`.
@@ -122,7 +123,7 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 | `OTX_API_KEY` | Optional | OTX pulses + nightly correlation (10k/month) |
 | `GROQ_API_KEY` | Optional | PDF executive summary (primary) |
 | `ANTHROPIC_API_KEY` | Optional | PDF executive summary (fallback) |
-| `GITHUB_TOKEN` | Optional | Detection rule search rate limit (5000/hr vs 60/hr) |
+| `GITHUB_TOKEN` | Optional | Detection rule search + PoC-in-GitHub sync rate limit (5000/hr vs 60/hr) |
 | `CIRCL_API_KEY` | Optional | vulnerability.circl.lu authenticated rate limits (free signup) |
 
 ### Database and backups
@@ -145,6 +146,11 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 | `KEV_SYNC_INTERVAL_MINUTES` | `15` | CISA KEV sync |
 | `EPSS_SYNC_INTERVAL_HOURS` | `6` | EPSS score refresh |
 | `INCIDENT_FEED_REFRESH_MINUTES` | `30` | Incidents & News snapshot rebuild |
+| `VULNRICHMENT_SYNC_INTERVAL_HOURS` | `6` | CISA Vulnrichment snapshot (gap-fill CVSS/CWE/CPE) |
+| `VULNRICHMENT_BRANCH` | `develop` | cisagov/vulnrichment git branch |
+| `CVELISTV5_SYNC_INTERVAL_MINUTES` | `30` | cvelistV5 incremental sync (GitHub compare deltas) |
+| `CVELISTV5_BRANCH` | `main` | CVEProject/cvelistV5 git branch |
+| `CVELISTV5_INITIAL_SINCE_DAYS` | `7` | First-run bootstrap window when no `cvelistv5_head_sha` watermark |
 | `CIRCUIT_FAILURE_THRESHOLD` | `3` | Consecutive failures before a source circuit opens |
 | `CIRCUIT_COOLDOWN_SECONDS` | `60` | Circuit-open cooldown before retrying a source |
 | `NVD_SYNC_OVERLAP_MINUTES` | `15` | Watermark overlap window |

@@ -127,6 +127,8 @@ def _row_to_cve_dict(row) -> dict:
     d["has_ai_context"] = bool(d.get("has_ai_context", 0))
     kev_date = d.get("kev_date_added")
     d["kev_date_added"] = (kev_date or "").strip() or None
+    kev_due = d.get("kev_due_date")
+    d["kev_due_date"] = (kev_due or "").strip() or None
     return d
 
 
@@ -314,9 +316,10 @@ CVE_ORDER_BY = """
 
 CVE_SELECT = """
     SELECT cve_id, description, cvss_score, severity, published, modified,
-           affected_products, affected_products_source, mitre_technique,
-           summary, is_kev, epss_score, has_poc, patch_available,
-           has_ai_context, source_urls, cwe_ids, updated_at
+           affected_products, mitre_technique, summary, is_kev, epss_score,
+           has_poc, patch_available, has_ai_context, source_urls, cwe_ids,
+           updated_at,
+           (SELECT due_date FROM kev_deadlines k WHERE k.cve_id = cves.cve_id) AS kev_due_date
     FROM cves
 """
 
@@ -770,7 +773,7 @@ async def get_cve(cve_id: str):
         cve = _row_to_cve_dict(rows[0])
         kev_rows = await db.execute_fetchall(
             """
-            SELECT date_added, vendor_project, vulnerability_name,
+            SELECT date_added, due_date, vendor_project, vulnerability_name,
                    known_ransomware, cwes
             FROM kev_deadlines WHERE cve_id = ?
             """,
@@ -779,6 +782,7 @@ async def get_cve(cve_id: str):
         if kev_rows:
             kev_row = dict(kev_rows[0])
             cve["kev_date_added"] = (kev_row.get("date_added") or "").strip() or None
+            cve["kev_due_date"] = (kev_row.get("due_date") or "").strip() or None
             cve["kev_vendor_project"] = (kev_row.get("vendor_project") or "").strip() or None
             cve["kev_vulnerability_name"] = (
                 kev_row.get("vulnerability_name") or ""

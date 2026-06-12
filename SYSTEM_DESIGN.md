@@ -83,7 +83,7 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 | Table(s) | Primary endpoints | Frontend consumers |
 |---|---|---|
 | `cves` | `GET /api/cves`, `GET /api/cves/{id}`, `GET /api/stats` | CVEFeed, CVECard, DetailDrawer, StatsRow, TimelineHeatmap |
-| `kev_deadlines` | `GET /api/kev/deadlines`, embedded in CVE detail | Sidebar, DetailDrawer sentences |
+| `kev_deadlines` | `GET /api/kev/deadlines`, `kev_due_date` on list/export/detail | Sidebar (urgent sort), CVECard due chip, DetailDrawer sentences |
 | `epss_history` | `GET /api/cves/{id}/epss-history`, momentum | DetailDrawer EPSS sparkline |
 | `mitre_techniques`, `cve_technique_map` | `GET /api/techniques/top`, CVE `techniques` field | Sidebar, DetailDrawer Intel tab |
 | `atlas_*`, `cve_atlas_map` | `GET /api/atlas/*`, `GET /api/cves/{id}` (per-CVE fields) | DrawerAtlasSection, CaseStudies (global list) |
@@ -91,9 +91,10 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 | `feed_cache`, `ioc_cache` | Internal — speeds enrichment | Transparent to UI |
 | `correlation_*` | `GET /api/cves/{id}/correlation` | DetailDrawer correlation section |
 | `cve_exploits` | Via Sploitus loader in CVE detail | DetailDrawer Intel tab |
-| `cve_change_history` | `GET /api/changes` | — (API only) |
+| `cve_change_history` | `GET /api/changes` | WhatChangedPanel (BRIEF tab) |
 | `api_usage` | `GET /api/usage`, `GET /api/usage/ioc` | IOCLookup quota display |
 | `audit_log` | Written by `POST /api/refresh*` and backup/restore (admin UI reads in V1.4) | — (not exposed yet) |
+| `hunt_packs` (+ `mitre_techniques`, `cve_technique_map`) | `GET /api/forge/coverage`, `GET /api/hunt-packs/{technique_id}`, `POST /api/hunt-packs/generate` | Forge tab (coverage map + hunt pack panel) |
 | `scoring/risk.py` constants | `GET /api/config/risk` — v1.1b weights, no DB | `riskScore.js` fetchAndCacheRiskWeights (startup) |
 
 ---
@@ -124,7 +125,7 @@ Sequence diagram: [`docs/diagrams/flow_cve_feed.mermaid`](docs/diagrams/flow_cve
 ### B. CVE detail drill-down
 
 1. **Card click:** `App.jsx:handleSelectCVE` sets list CVE, then `fetchCVE(cve_id)` → `GET /api/cves/{id}`.
-2. **Server enrichment (serial awaits in handler):** Sploitus exploits, GreyNoise scans, OTX pulses, OSV packages, CIRCL merge (`routers/cves.py:get_cve`).
+2. **Server enrichment (serial awaits in handler):** `cve_exploits` rows (scheduler-fed sources first), on-demand Sploitus fallback, GreyNoise scans, OTX pulses, OSV packages, CIRCL merge (`routers/cves.py:get_cve`).
 3. **Drawer opens** with enriched CVE; parallel client fetches on `cve_id` change:
    - `GET /api/cves/{id}/sentences` (immediate)
    - `GET /api/cves/{id}/epss-history` (immediate)
@@ -186,22 +187,28 @@ Sequence diagram: [`docs/diagrams/flow_ioc_lookup.mermaid`](docs/diagrams/flow_i
 
 Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (scheduler registration) · Client journey: [`APPLICATION_EXECUTION_MAP.md`](APPLICATION_EXECUTION_MAP.md) §2.C
 
-### F. ML assist — embeddings + LLM product extraction (V1.3, env-gated)
+### F. Forge — detection coverage + hunt packs (V1.3 MVP)
 
-Both features follow the ML placement rules (`docs/ROADMAP.md`): env-gated, CPU-only, scheduler-side only, deterministic fallback, tool fully functional with ML disabled. **Both are off by default.**
-
-**Similar CVEs via embeddings (`EMBEDDINGS_ENABLED=1`):**
-
-1. **Scheduler writes:** `embeddings_backfill` (every `EMBEDDINGS_SYNC_INTERVAL_HOURS`, default 6h) embeds CVE descriptions with a local ONNX model (`ml/embeddings.py`, fastembed, `EMBEDDINGS_MODEL=BAAI/bge-small-en-v1.5`) and stores L2-normalized float32 vectors as BLOBs in `cve_embeddings`. Capped at `EMBEDDINGS_MAX_PER_RUN` per cycle; inference runs in a worker thread so the event loop stays responsive. The `fastembed` package is an optional install — if missing, the job logs one warning and skips.
-2. **Request path reads only:** `GET /api/cves/{id}/related` does **no model inference** — it scans stored vectors. Default path is exact brute-force cosine with NumPy (vectors normalized at write time, so cosine = dot product); `sqlite-vec` is used as an accelerator only when importable and the Python build supports loadable extensions (never a hard dependency; identical rankings).
-3. **Deterministic fallback:** embeddings disabled, target CVE not embedded yet, or zero hits → the endpoint serves the pre-V1.3 shared-product heuristic. `meta.method` reports which path responded; embedding hits carry an additive `similarity` field.
-
-**LLM product extraction (`LLM_PRODUCT_EXTRACTION_ENABLED=1` + `GROQ_API_KEY`):**
-
-1. `llm_product_extraction` (every `LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS`, default 6h) selects CVEs with **no CPE data and empty `affected_products`** (NVD-unanalyzed), up to `LLM_PRODUCT_EXTRACTION_MAX_PER_RUN` per run.
-2. Groq calls go through `resilient_client` (source `groq`, `retries=0` — quota is never burned by retry loops; circuit-open aborts the run). Extracted `{vendor, product, version_range}` entries are normalized to the existing `vendor:product` format.
-3. **Write guard + provenance:** products are written only while the field is still empty, and the row is marked `affected_products_source='llm'`. A later NVD sync with official CPE data supersedes the LLM products and clears the marker; an NVD sync that still carries no CPE data does **not** wipe them (upsert CASE rules in `database.py`).
-4. **Negative caching:** every completed extraction (including ones that found no products) is recorded in `feed_cache` (`llm_products:<id>`, 7-day window) so the same CVE never costs quota twice. Errors (timeouts, 5xx, rate limits) are **not** cached — the CVE is retried on the next run; repeated provider failures trip the Groq circuit breaker, which aborts the run.
+1. **UI:** `Forge.jsx` (FORGE tab) loads `GET /api/forge/coverage` on mount; the
+   optional "MY STACK ONLY" toggle re-fetches with the saved stack from
+   localStorage (`briefr_stack` — same terms as the BRIEF stack filter).
+2. **Coverage map (`routers/forge.py`):** one grouped query over
+   `cve_technique_map ⋈ cves` (stack filter as a subselect on `cves`) +
+   `hunt_packs` counts + `mitre_techniques` metadata. Status per technique:
+   `yours` (saved pack exists) → `community` (bundled template library covers
+   the technique — `detection/sigma_generator.py` + `detection/siem_queries.py`)
+   → `gap`. Entirely local: no outbound HTTP, no caching layer needed.
+3. **Technique click:** `GET /api/hunt-packs/{technique_id}` returns technique
+   metadata, saved packs, the template SIEM baseline, log patterns, and up to
+   20 linked CVEs (KEV first, then EPSS, then recency).
+4. **Generate pack:** "GENERATE PACK" on a linked CVE → `POST
+   /api/hunt-packs/generate` builds the Sigma rule + SIEM queries from the
+   template library, derives priority from KEV/CVSS/EPSS, and upserts into
+   `hunt_packs` (`UNIQUE(technique_id, cve_id)` — idempotent regeneration).
+   The UI refetches coverage so the technique flips to `yours`.
+5. **Boundary:** community-rule *search* (SigmaHQ/Elastic over GitHub) stays on
+   `GET /api/cves/{cve_id}/detection` (drawer Detect tab). Rule proof on live
+   logs and HyperDX provisioning are out of scope until V1.5/V1.4.
 
 ---
 
@@ -297,7 +304,11 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 | EPSS | `feeds/epss.py` | Exploit prediction scores | — | Unrestricted | Returns `{}` |
 | MITRE STIX | `feeds/mitre.py` | Techniques, groups, CVE maps | — | Unrestricted | Weekly job fails; logs |
 | ATLAS YAML | `feeds/atlas.py` | AI/ML techniques, case studies | `ATLAS_YAML_URL` | Unrestricted | Weekly job fails; logs |
-| Sploitus | `feeds/extended.py` | Public exploits | — | Unpublished | `[]` / `None` |
+| Sploitus | `feeds/extended.py` | Public exploits (on-demand) | — | Unpublished | `[]` / `None` |
+| PoC-in-GitHub | `feeds/poc_github.py`, scheduler | GitHub PoC index | `GITHUB_TOKEN` optional | GitHub API limits | Skip; prior rows retained |
+| ExploitDB | `feeds/exploitdb.py`, scheduler | Public exploits CSV | — | Unrestricted | Skip; prior snapshot retained |
+| Metasploit | `feeds/metasploit_modules.py`, scheduler | MSF exploit modules | — | Unrestricted | Skip; prior snapshot retained |
+| Nuclei | `feeds/nuclei_index.py`, scheduler | CVE template index | — | Unrestricted | Skip; prior snapshot retained |
 | GreyNoise | `feeds/extended.py`, IOC | IP classification | `GREYNOISE_API_KEY` | 50/week | `[]` or unknown record |
 | VirusTotal | `enrichment/ioc.py` | IP/hash/domain reputation | `VIRUSTOTAL_API_KEY` | 500/day | Empty VT fields |
 | AbuseIPDB | `enrichment/ioc.py` | IP abuse score | `ABUSEIPDB_API_KEY` | 1000/day | Skipped if no key |
@@ -310,6 +321,19 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 | Anthropic | `ai/summary.py` | Executive summary | `ANTHROPIC_API_KEY` | Console quota | Falls back to template |
 | GitHub | `detection/rule_sources.py` | Sigma/Elastic rule search | `GITHUB_TOKEN` (optional) | 60/hr anon | `[]` rules |
 | RSS (6 sources) | `feeds/incident_news.py` | News cards (editorial titles filtered) | — | Per-feed | Per-source error in `errors[]` |
+| CISA Vulnrichment | `feeds/vulnrichment.py` | CISA ADP CVSS / CWE / CPE gap-fill | `GITHUB_TOKEN` (optional) | 60/hr anon GitHub API | Log error; skip run |
+| cvelistV5 | `feeds/cvelistv5.py` | CVE JSON 5.x + ADP (pre-NVD) | `GITHUB_TOKEN` (optional) | 60/hr anon GitHub API | Log error; watermark retained |
+
+### Scheduler intel enrichment (V1.3)
+
+Two repo-based feeds run **only on the scheduler** (never on the request path):
+
+1. **Vulnrichment** (`vulnrichment_snapshot_sync`) — lists `cisagov/vulnrichment` tree each run (snapshot, no watermark), fetches JSON for CVE rows still missing NVD analysis fields (`cvss_score`, `severity`, `cwe_ids`), and merges additively. Official NVD ingest later supersedes CISA ADP values because NVD upserts overwrite `cvss_score` / `severity` / `cwe_ids`.
+2. **cvelistV5** (`cvelistv5_incremental_sync`) — compares `sync_state.cvelistv5_head_sha` against `main` via GitHub compare API, fetches only changed `cves/**/CVE-*.json` paths, parses CNA-first CVE 5.x records, and merges additively (or inserts new CVE rows). First boot seeds the watermark from commits in the last `CVELISTV5_INITIAL_SINCE_DAYS` (default 7).
+
+Health for both appears under `GET /api/health` → `feeds.sources.vulnrichment` and `feeds.sources.cvelistv5`.
+
+**Rejected CVEs:** NVD `vulnStatus: Rejected` and cvelistV5 `cveMetadata.state: REJECTED` records are **not upserted**. Each NVD sync also runs `purge_legacy_rejected_cves` (rows whose description starts with `Rejected reason:`) and deletes any reject IDs seen in the current feed batch. cvelistV5 deltas delete matching rows when a file flips to `REJECTED`.
 
 RSS sources defined in `feeds/incident_sources.py`: The Hacker News, Bleeping Computer, Krebs, Dark Reading, Schneier, CISA Advisories. Non-security editorial items (e.g. Dark Reading cartoon contests) are excluded via `EXCLUDED_NEWS_TITLE_PATTERNS` in `incident_news.py`.
 
