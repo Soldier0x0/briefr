@@ -1059,7 +1059,7 @@ function TabRelated({ related, relatedMethod, loading, onSelectRelated }) {
   )
 }
 
-export default function DetailDrawer({ cve, onClose, onCveReplace }) {
+export default function DetailDrawer({ cve, onClose, onCveReplace, watchlistState = null, onWatchlistChange }) {
   const [activeTab, setActiveTab] = useState('overview')
   const [reportOpen, setReportOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -1358,6 +1358,8 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
   const sevColor = severityColor(cve.severity)
   const techniques = Array.isArray(cve.techniques) ? cve.techniques : []
   const canGoBack = backStack.length > 0
+  const isPinned = watchlistState === 'pin'
+  const isSnoozed = watchlistState === 'snooze'
 
   return (
     <>
@@ -1410,6 +1412,28 @@ export default function DetailDrawer({ cve, onClose, onCveReplace }) {
               )}
             </div>
             <div className="drawer-header-actions">
+              {onWatchlistChange && (
+                <>
+                  <button
+                    type="button"
+                    className={`drawer-inv-btn mono${isPinned ? ' drawer-inv-btn-active' : ''}`}
+                    onClick={() => onWatchlistChange(cve.cve_id, 'pin')}
+                    aria-pressed={isPinned}
+                    aria-label={isPinned ? `Unpin ${cve.cve_id}` : `Pin ${cve.cve_id}`}
+                  >
+                    {isPinned ? 'Unpin' : 'Pin'}
+                  </button>
+                  <button
+                    type="button"
+                    className={`drawer-inv-btn drawer-inv-btn-secondary mono${isSnoozed ? ' drawer-inv-btn-active' : ''}`}
+                    onClick={() => onWatchlistChange(cve.cve_id, 'snooze')}
+                    aria-pressed={isSnoozed}
+                    aria-label={isSnoozed ? `Unsnooze ${cve.cve_id}` : `Snooze ${cve.cve_id} for 7 days`}
+                  >
+                    {isSnoozed ? 'Unsnooze' : 'Snooze 7d'}
+                  </button>
+                </>
+              )}
               {investigation && (
                 <>
                   <button

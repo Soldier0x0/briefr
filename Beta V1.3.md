@@ -28,7 +28,7 @@ V1.3 makes BRIEFR the **best self-hosted analyst intelligence pane** — actiona
 | **Explainable risk** | ✅ Shipped — drawer shows `score × weight × 100` per component; momentum signals from `/api/cves/{id}/momentum`; weights from `/api/config/risk` |
 | **Change intelligence** | ✅ Surface `cve_change_history` deltas (`GET /api/changes` UI — What changed panel with field/window filters) |
 | **KEV due-date countdown** | ✅ "Due in N days" chip on cards + sidebar deadline list sorted by `GET /api/kev/deadlines?sort=urgent` |
-| **Pin / snooze / watchlist** | Analyst controls on CVE rows (stored in DB; single-user default now, keyed by app-login user once built-in auth ships — decision 2026-06-11) |
+| **Pin / snooze / watchlist** | ✅ Analyst controls on CVE rows (stored in DB; single-user default now, keyed by app-login user once built-in auth ships — decision 2026-06-11) |
 
 **API sketch:**
 
@@ -164,7 +164,7 @@ Phase 2  Morning brief API + explainable risk UI  ✅ Shipped
 Phase 3  Chart.js Analyst Brief panel  ✅ Shipped (PR #116)
 Phase 4  Forge: coverage map + hunt-packs API
 Phase 5  CVE → detection pack generation + detection cards (docs/)
-Phase 6  Watchlist / pin / snooze + React Query cleanup
+Phase 6  Watchlist / pin / snooze + React Query cleanup  ✅ watchlist shipped (React Query cleanup still open)
 ```
 
 ---

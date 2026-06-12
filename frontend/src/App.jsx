@@ -20,6 +20,7 @@ import AboutModal from './components/AboutModal.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import { fetchStats, fetchHealth, fetchCVE } from './api.js'
+import { useWatchlist } from './hooks/useWatchlist.js'
 import { useAssetProfileOptional } from './context/AssetProfileContext.jsx'
 import {
   aiFrameworksQueryParam,
@@ -47,6 +48,7 @@ const DEFAULT_FILTERS = {
   ai_context_only: false,
   ai_profile_match: false,
   ai_profile: '',
+  watchlist_only: false,
 }
 
 // ── Last-refreshed helper ─────────────────────────────────
@@ -175,7 +177,8 @@ function FeedView({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
                    digestOpen, setDigestOpen, digestCVEs, setDigestCVEs,
                    searchFocusTrigger, setSearchFocusTrigger, aboutOpen, setAboutOpen,
                    timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
-                   onDigestRequest, showAiAlerts, onAiAlertsClick }) {
+                   onDigestRequest, showAiAlerts, onAiAlertsClick, watchlist,
+                   onWatchlistChange }) {
 
   const handleBrief = useCallback((stack) => {
     setFilters(prev => ({ ...prev, stack: stack || '' }))
@@ -235,6 +238,9 @@ function FeedView({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
           searchFocusTrigger={searchFocusTrigger}
           timezone={timezone}
           overlayOpen={!!selectedCVE || digestOpen || aboutOpen}
+          watchlistVersion={watchlist?.version ?? 0}
+          watchlist={watchlist}
+          onWatchlistChange={onWatchlistChange}
         />
         <Sidebar filters={filters} onFiltersChange={handleFiltersChange} stats={stats} />
       </div>
@@ -264,6 +270,7 @@ export default function App() {
   const [iocSessionKey, setIocSessionKey]       = useState(0)
   const [atlasActorFilter, setAtlasActorFilter] = useState(null)
   const assetCtx = useAssetProfileOptional()
+  const watchlist = useWatchlist()
 
   const loadStats = useCallback(() => {
     const frameworks = getAiFrameworksForAlerts(assetCtx?.profile)
@@ -436,6 +443,25 @@ export default function App() {
       .catch(() => {})
   }, [])
 
+  const handleWatchlistChange = useCallback(async (cveId, action) => {
+    try {
+      const current =
+        watchlist.getState(cveId) ||
+        (selectedCVE?.cve_id === cveId ? selectedCVE.watchlist_state : null)
+      if (action === 'pin') {
+        await watchlist.togglePin(cveId, current)
+      } else if (action === 'snooze') {
+        await watchlist.toggleSnooze(cveId, current)
+      }
+      if (selectedCVE?.cve_id === cveId) {
+        const full = await fetchCVE(cveId)
+        setSelectedCVE(full)
+      }
+    } catch {
+      // Controls are best-effort; feed refetch follows version bump.
+    }
+  }, [watchlist, selectedCVE, setSelectedCVE])
+
   return (
     <InvestigationProvider navigation={investigationNav}>
       <Routes>
@@ -476,6 +502,8 @@ export default function App() {
               showAiAlerts={showAiAlerts}
               onAiAlertsClick={handleAiAlertsClick}
               onSelectCVE={handleSelectCVE}
+              watchlist={watchlist}
+              onWatchlistChange={handleWatchlistChange}
             />
           )}
         />
@@ -516,6 +544,8 @@ function AppLayout({
   showAiAlerts,
   onAiAlertsClick,
   onSelectCVE,
+  watchlist,
+  onWatchlistChange,
 }) {
   const { showPanel, panelExpanded } = useInvestigation()
   const layoutClass = [
@@ -576,6 +606,8 @@ function AppLayout({
                   onDigestRequest={onDigestRequest}
                   showAiAlerts={showAiAlerts}
                   onAiAlertsClick={onAiAlertsClick}
+                  watchlist={watchlist}
+                  onWatchlistChange={onWatchlistChange}
                 />
               )}
               {activeTab === 'ioc' && (
@@ -609,6 +641,12 @@ function AppLayout({
               cve={selectedCVE}
               onClose={() => setSelectedCVE(null)}
               onCveReplace={setSelectedCVE}
+              watchlistState={
+                selectedCVE
+                  ? (watchlist?.getState(selectedCVE.cve_id) || selectedCVE.watchlist_state)
+                  : null
+              }
+              onWatchlistChange={onWatchlistChange}
             />
 
             {digestOpen && (

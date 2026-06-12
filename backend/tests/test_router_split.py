@@ -57,6 +57,10 @@ EXPECTED_ROUTES = [
     ("GET", "/api/hunt-packs/{technique_id}"),
     # V1.3 Theme 1: morning brief (additive, appended after Forge routes).
     ("GET", "/api/brief"),
+    # Watchlist (V1.3): pin/snooze — additive, appended after brief routes.
+    ("GET", "/api/watchlist"),
+    ("POST", "/api/watchlist"),
+    ("DELETE", "/api/watchlist/{cve_id}"),
 ]
 
 
@@ -125,6 +129,7 @@ def test_moved_endpoints_live_in_routers():
     assert by_path["/api/refresh"] == "routers.refresh"
     assert by_path["/api/config/risk"] == "routers.config"
     assert by_path["/api/brief"] == "routers.brief"
+    assert by_path["/api/watchlist"] == "routers.watchlist"
     # main.py owns only app wiring now (V1.2 exit criterion: <300 lines)
     assert not any(module == "main" for module in by_path.values())
 

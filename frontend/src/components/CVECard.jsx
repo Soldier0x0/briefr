@@ -58,6 +58,9 @@ export default function CVECard({
   onInvestigate,
   onLookupIoc,
   exposureScore = 0,
+  watchlistState = null,
+  onWatchlistPin,
+  onWatchlistSnooze,
 }) {
   const [shareCopied, setShareCopied] = useState(false)
   const momentumScore = useMomentumScore(cve.cve_id)
@@ -114,10 +117,23 @@ export default function CVECard({
     }
   }
 
+  function handleWatchlistPin(e) {
+    e.stopPropagation()
+    onWatchlistPin?.()
+  }
+
+  function handleWatchlistSnooze(e) {
+    e.stopPropagation()
+    onWatchlistSnooze?.()
+  }
+
+  const isPinned = watchlistState === 'pin'
+  const isSnoozed = watchlistState === 'snooze'
+
   return (
     <article
       ref={cardRef}
-      className={`cve-card sev-${sevClass}${selected ? ' cve-selected' : ''}${navSelected ? ' cve-nav-selected' : ''}${inThread ? ' cve-card-in-thread' : ''}`}
+      className={`cve-card sev-${sevClass}${selected ? ' cve-selected' : ''}${navSelected ? ' cve-nav-selected' : ''}${inThread ? ' cve-card-in-thread' : ''}${isPinned ? ' cve-card-pinned' : ''}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}
@@ -188,6 +204,16 @@ export default function CVECard({
           {cve.is_kev && (
             <span className="badge badge-kev" title="Listed in CISA Known Exploited Vulnerabilities">
               KEV
+            </span>
+          )}
+          {isPinned && (
+            <span className="badge badge-pin" title="Pinned to watchlist">
+              PIN
+            </span>
+          )}
+          {isSnoozed && (
+            <span className="badge badge-snooze" title="Snoozed — hidden from feed until expiry">
+              SNOOZE
             </span>
           )}
           {kevDueText && (
@@ -287,8 +313,30 @@ export default function CVECard({
         </span>
       </div>
 
-      {(onInvestigate || onLookupIoc) && (
+      {(onInvestigate || onLookupIoc || onWatchlistPin || onWatchlistSnooze) && (
         <div className="cve-card-actions" role="group" aria-label="Investigation actions">
+          {onWatchlistPin && (
+            <button
+              type="button"
+              className={`cve-action-btn mono${isPinned ? ' cve-action-btn-active' : ''}`}
+              onClick={handleWatchlistPin}
+              aria-pressed={isPinned}
+              aria-label={isPinned ? `Unpin ${cve.cve_id}` : `Pin ${cve.cve_id} to watchlist`}
+            >
+              {isPinned ? 'Unpin' : 'Pin'}
+            </button>
+          )}
+          {onWatchlistSnooze && (
+            <button
+              type="button"
+              className={`cve-action-btn cve-action-btn-secondary mono${isSnoozed ? ' cve-action-btn-active' : ''}`}
+              onClick={handleWatchlistSnooze}
+              aria-pressed={isSnoozed}
+              aria-label={isSnoozed ? `Unsnooze ${cve.cve_id}` : `Snooze ${cve.cve_id} for 7 days`}
+            >
+              {isSnoozed ? 'Unsnooze' : 'Snooze 7d'}
+            </button>
+          )}
           {onInvestigate && (
             <button
               type="button"
