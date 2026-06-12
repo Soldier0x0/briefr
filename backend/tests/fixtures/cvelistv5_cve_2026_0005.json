@@ -1,0 +1,63 @@
+{
+  "dataType": "CVE_RECORD",
+  "dataVersion": "5.1",
+  "cveMetadata": {
+    "cveId": "CVE-2026-0005",
+    "state": "PUBLISHED",
+    "datePublished": "2026-01-10T10:00:00.000Z",
+    "dateUpdated": "2026-01-12T14:30:00.000Z"
+  },
+  "containers": {
+    "cna": {
+      "descriptions": [
+        {
+          "lang": "en",
+          "value": "Authenticated arbitrary file read in Abacus ERP before 24.210.16036."
+        }
+      ],
+      "metrics": [
+        {
+          "cvssV3_1": {
+            "version": "3.1",
+            "baseScore": 6.5,
+            "baseSeverity": "MEDIUM",
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N"
+          }
+        }
+      ],
+      "problemTypes": [
+        {
+          "descriptions": [
+            {
+              "lang": "en",
+              "type": "CWE",
+              "cweId": "CWE-200",
+              "description": "CWE-200 Exposure of Sensitive Information"
+            }
+          ]
+        }
+      ],
+      "affected": [
+        {
+          "vendor": "abacus",
+          "product": "erp"
+        }
+      ]
+    },
+    "adp": [
+      {
+        "title": "CISA ADP Vulnrichment",
+        "metrics": [
+          {
+            "cvssV3_1": {
+              "version": "3.1",
+              "baseScore": 6.2,
+              "baseSeverity": "MEDIUM",
+              "vectorString": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

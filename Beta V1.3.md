@@ -99,10 +99,10 @@ If not fully completed in V1.2, finish here:
 
 New free intel sources feeding stack matching and the exploit score component:
 
-| Source | Feeds | Pattern |
-|--------|-------|---------|
-| **CISA Vulnrichment** (`cisagov/vulnrichment`) | SSVC / CVSS / CWE / CPE for CVEs NVD has not analyzed yet | Repo pull; superseded by NVD data when it arrives |
-| **cvelistV5** (`CVEProject/cvelistV5`) | CVE records hours before NVD, ADP containers | Repo pull deltas |
+| Source | Feeds | Pattern | Status |
+|--------|-------|---------|--------|
+| **CISA Vulnrichment** (`cisagov/vulnrichment`) | SSVC / CVSS / CWE / CPE for CVEs NVD has not analyzed yet | Repo pull; superseded by NVD data when it arrives | ✅ Shipped (`feeds/vulnrichment.py`, snapshot job) |
+| **cvelistV5** (`CVEProject/cvelistV5`) | CVE records hours before NVD, ADP containers | Repo pull deltas | ✅ Shipped (`feeds/cvelistv5.py`, `sync_state.cvelistv5_head_sha`) |
 | **PoC-in-GitHub** (`nomi-sec/PoC-in-GitHub`) | CVE → public PoC index (~daily) | Repo pull; exploit + momentum signal |
 | **ExploitDB CSV** | Public exploits with CVE mapping | Full-snapshot upsert |
 | **Metasploit module metadata** | "Weaponized in MSF" flag | Full-snapshot upsert |
