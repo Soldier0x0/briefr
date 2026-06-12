@@ -19,6 +19,7 @@ from urllib.parse import quote, urljoin
 
 import httpx
 
+from feeds.exploit_common import SOURCE_SPLOITUS
 from resilient_client import CircuitOpenError, resilient_get, resilient_request
 from tracking import record_api_call
 
@@ -161,7 +162,7 @@ async def fetch_sploitus_exploits(cve_id: str, limit: int = 25) -> list[dict] | 
                 {
                     "title": title,
                     "type": exploit_type,
-                    "source": source,
+                    "source": SOURCE_SPLOITUS,
                     "url": url,
                     "published_date": (item.get("published") or "").strip(),
                 }
@@ -523,7 +524,13 @@ async def load_public_exploits_for_cve(
     has_poc: bool = False,
     source_urls: list | None = None,
 ) -> list[dict]:
-    """Sploitus first; fall back to exploit references from NVD source URLs."""
+    """Scheduler-fed DB rows first; then Sploitus; then NVD reference tags."""
+    from database import read_cve_exploits_from_db
+
+    table_rows = await read_cve_exploits_from_db(db, cve_id, max_age_hours=24 * 30)
+    if table_rows:
+        return table_rows
+
     sploitus = await load_sploitus_exploits_for_cve(db, cve_id)
     if sploitus:
         return sploitus
@@ -533,7 +540,7 @@ async def load_public_exploits_for_cve(
     refs = refs_to_exploit_cards(has_poc, source_urls)
     if refs:
         logger.info(
-            "Using %d NVD reference exploit(s) for %s (Sploitus had no hits)",
+            "Using %d NVD reference exploit(s) for %s (no cached exploit rows)",
             len(refs),
             cve_id.upper(),
         )

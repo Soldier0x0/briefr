@@ -318,6 +318,7 @@ async def init_db() -> None:
             "CREATE TABLE IF NOT EXISTS mitre_groups (group_id TEXT PRIMARY KEY, name TEXT NOT NULL, aliases TEXT DEFAULT '[]', description TEXT DEFAULT '', sectors TEXT DEFAULT '[]', url TEXT DEFAULT '')",
             "CREATE TABLE IF NOT EXISTS group_technique_map (group_id TEXT NOT NULL, technique_id TEXT NOT NULL, PRIMARY KEY (group_id, technique_id))",
             "CREATE INDEX IF NOT EXISTS idx_group_technique_map_technique ON group_technique_map(technique_id)",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_cve_exploits_cve_url ON cve_exploits(cve_id, url)",
         ):
             try:
                 await db.execute(migration)
@@ -971,11 +972,12 @@ async def get_cached_cve_exploits(
 async def store_cve_exploits(
     db: aiosqlite.Connection, cve_id: str, exploits: list[dict]
 ) -> None:
-    await replace_cve_exploits(db, cve_id, exploits)
+    await merge_cve_exploits(db, cve_id, exploits)
+    merged = await read_cve_exploits_from_db(db, cve_id, max_age_hours=24 * 365)
     await set_feed_cache(
         db,
         f"sploitus:{cve_id.upper()}",
-        {"exploits": exploits},
+        {"exploits": merged or exploits},
     )
 
 
@@ -1062,6 +1064,95 @@ async def replace_cve_exploits(
                 for exp in exploits
             ],
         )
+
+
+async def merge_cve_exploits(
+    db: aiosqlite.Connection, cve_id: str, exploits: list[dict]
+) -> int:
+    """Insert exploit rows for a CVE; skip duplicates by (cve_id, url)."""
+    key = cve_id.upper()
+    inserted = 0
+    for exp in exploits:
+        url = (exp.get("url") or "").strip()
+        if not url:
+            continue
+        cursor = await db.execute(
+            """
+            INSERT OR IGNORE INTO cve_exploits (
+                cve_id, title, type, source, url, published_date, fetched_at
+            ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+            """,
+            (
+                key,
+                exp.get("title") or "",
+                exp.get("type") or "poc",
+                exp.get("source") or "",
+                url,
+                exp.get("published_date") or "",
+            ),
+        )
+        inserted += cursor.rowcount or 0
+    return inserted
+
+
+async def replace_cve_exploits_by_source(
+    db: aiosqlite.Connection, source: str, cve_exploits: dict[str, list[dict]]
+) -> tuple[int, int]:
+    """Replace all rows for a feed source; returns (rows_inserted, cves_touched)."""
+    await db.execute("DELETE FROM cve_exploits WHERE source = ?", (source,))
+    rows: list[tuple] = []
+    for cve_id, exploits in cve_exploits.items():
+        key = cve_id.upper()
+        for exp in exploits:
+            url = (exp.get("url") or "").strip()
+            if not url:
+                continue
+            rows.append(
+                (
+                    key,
+                    exp.get("title") or "",
+                    exp.get("type") or "poc",
+                    source,
+                    url,
+                    exp.get("published_date") or "",
+                )
+            )
+    if rows:
+        await db.executemany(
+            """
+            INSERT INTO cve_exploits (
+                cve_id, title, type, source, url, published_date, fetched_at
+            ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+            """,
+            rows,
+        )
+    return len(rows), len(cve_exploits)
+
+
+async def mark_has_poc_additive(
+    db: aiosqlite.Connection, cve_ids: list[str] | set[str]
+) -> int:
+    """Set has_poc=1 for CVEs that have exploit rows; never downgrade from 1."""
+    ids = sorted({str(c).upper() for c in cve_ids if c})
+    if not ids:
+        return 0
+    placeholders = ",".join("?" for _ in ids)
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT cve_id FROM cves
+        WHERE cve_id IN ({placeholders}) AND has_poc = 0
+        """,
+        ids,
+    )
+    if not rows:
+        return 0
+    history = [(row["cve_id"], "has_poc", "0", "1") for row in rows]
+    await _insert_cve_changes_batch(db, history)
+    await db.executemany(
+        "UPDATE cves SET has_poc = 1 WHERE cve_id = ?",
+        [(row["cve_id"],) for row in rows],
+    )
+    return len(rows)
 
 
 

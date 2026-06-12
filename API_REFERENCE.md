@@ -131,12 +131,12 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 
 ### GET /api/cves/{cve_id}
 
-**Description:** Full CVE detail with live enrichment (Sploitus, GreyNoise, OTX, OSV, CIRCL).
+**Description:** Full CVE detail with live enrichment (scheduler-fed exploits, Sploitus fallback, GreyNoise, OTX, OSV, CIRCL).
 
 **Response:** Bare CVE object (no `data` wrapper), including:
 
 - Core fields from `cves` table
-- `kev_date_added`, `kev_vendor_project`, `kev_vulnerability_name`, `kev_ransomware_use` (boolean), `kev_cwes[]`, `techniques[]`, `public_exploits[]`, `greynoise_scans[]`, `otx_pulses[]`, `otx_configured`, `osv_packages[]`
+- `kev_date_added`, `kev_vendor_project`, `kev_vulnerability_name`, `kev_ransomware_use` (boolean), `kev_cwes[]`, `techniques[]`, `public_exploits[]` (objects with `title`, `type`, `source`, `url`, `published_date` — sources include PoC-in-GitHub, ExploitDB, Metasploit, Nuclei, Sploitus), `greynoise_scans[]`, `otx_pulses[]`, `otx_configured`, `osv_packages[]`
 
 **Error responses:**
 
