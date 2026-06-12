@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { fetchKEVDeadlines, fetchStatsTimeline, fetchTopTechniques } from '../api.js'
 import { getSavedStack } from '../utils/cveFilters.js'
+import { daysUntilDue, kevDueUrgencyClass, kevDueLabel } from '../utils/kevDeadline.js'
 import './Sidebar.css'
 
 function Toggle({ label, checked, onChange, id }) {
@@ -21,27 +22,6 @@ function Toggle({ label, checked, onChange, id }) {
       </label>
     </div>
   )
-}
-
-function daysUntil(dateStr) {
-  if (!dateStr) return null
-  const diff = new Date(dateStr).getTime() - Date.now()
-  return Math.ceil(diff / 86400000)
-}
-
-function deadlineBadgeClass(days) {
-  if (days === null) return 'badge-neutral'
-  if (days < 0)  return 'badge-overdue'
-  if (days < 5)  return 'badge-urgent'
-  if (days < 14) return 'badge-soon'
-  return 'badge-ok'
-}
-
-function deadlineBadgeLabel(days) {
-  if (days === null) return 'unknown'
-  if (days < 0)  return 'OVERDUE'
-  if (days === 0) return 'today'
-  return `${days}d left`
 }
 
 const SPARKLINE_DAYS = 14
@@ -123,10 +103,10 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
       return
     }
     let cancelled = false
-    // sort=recent returns entries sorted by dateAdded DESC (most recently added first)
+    // sort=urgent returns entries sorted by due_date ASC (soonest first)
     setKevLoading(true)
     setKevError(false)
-    fetchKEVDeadlines('recent')
+    fetchKEVDeadlines('urgent')
       .then(data => {
         if (cancelled) return
         const rows = (data.data || []).slice(0, 10)
@@ -275,7 +255,7 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
 
       {/* ── Section 3: KEV Deadlines ── */}
       <section className="sidebar-section" aria-labelledby="kev-heading">
-        <h2 id="kev-heading" className="sidebar-heading">KEV DEADLINES</h2>
+        <h2 id="kev-heading" className="sidebar-heading">KEV DEADLINES (BY DUE DATE)</h2>
         {kevLoading && <SidebarSkeleton rows={3} />}
         {!kevLoading && kevError && (
           <p className="sidebar-empty">Unable to load deadlines.</p>
@@ -285,9 +265,9 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
         )}
         <ul className="kev-list" aria-label="Upcoming KEV remediation deadlines">
           {visibleKev.map(entry => {
-            const days = daysUntil(entry.due_date)
-            const badgeClass = deadlineBadgeClass(days)
-            const badgeLabel = deadlineBadgeLabel(days)
+            const days = daysUntilDue(entry.due_date)
+            const badgeClass = kevDueUrgencyClass(days)
+            const badgeLabel = kevDueLabel(days) || 'unknown'
             return (
               <li key={entry.cve_id} className="kev-item">
                 <div className="kev-item-top">

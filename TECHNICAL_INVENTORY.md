@@ -80,7 +80,7 @@ Indexes: `severity`, `published`, `is_kev`, `epss_score`, `has_poc`
 | product | TEXT | | KEV product name |
 | short_description | TEXT | | CISA short text |
 | required_action | TEXT | | Remediation action |
-| due_date | TEXT | | Federal due date |
+| due_date | TEXT | | Federal due date — surfaced as `kev_due_date` on `GET /api/cves` list/export/detail |
 | date_added | TEXT | | KEV catalog add date |
 | vendor_project | TEXT | DEFAULT '' | KEV vendor/project name |
 | vulnerability_name | TEXT | DEFAULT '' | CISA vulnerability name |
@@ -202,6 +202,8 @@ Known keys: `nvd_last_mod_end` (NVD incremental watermark), `epss_backfill_done`
 | new_value | TEXT | NOT NULL DEFAULT '' | |
 | detected_at | TEXT | DEFAULT datetime('now') | |
 
+**Frontend:** `WhatChangedPanel.jsx` on the BRIEF tab (`GET /api/changes`).
+
 ### otx_cve_pulses
 
 | Column | Type | Constraints | Description |
@@ -280,6 +282,25 @@ Known keys: `nvd_last_mod_end` (NVD incremental watermark), `epss_backfill_done`
 | group_id | TEXT | NOT NULL | |
 | technique_id | TEXT | NOT NULL | |
 | | | PRIMARY KEY (group_id, technique_id) | |
+
+### hunt_packs
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | INTEGER | PRIMARY KEY AUTOINCREMENT | |
+| technique_id | TEXT | NOT NULL | ATT&CK technique (`T####` or `T####.###`) |
+| cve_id | TEXT | NOT NULL DEFAULT '' | CVE→pack linkage; '' reserved for technique-only packs |
+| title | TEXT | NOT NULL DEFAULT '' | `{cve_id} — {technique name} hunt pack` |
+| priority | TEXT | NOT NULL DEFAULT 'medium' | `critical|high|medium|low`, derived from KEV/CVSS/EPSS at generation |
+| sigma_yaml | TEXT | NOT NULL DEFAULT '' | Generated Sigma rule (experimental, template-based) |
+| siem_queries | TEXT | NOT NULL DEFAULT '{}' | JSON: per-platform `{query, notes}` (Elastic/Splunk/Sentinel/QRadar) |
+| log_patterns | TEXT | NOT NULL DEFAULT '[]' | JSON array of plain-English hunt patterns |
+| notes | TEXT | NOT NULL DEFAULT '' | Analyst notes (reserved; not written by MVP) |
+| created_at | TEXT | DEFAULT datetime('now') | |
+| updated_at | TEXT | DEFAULT datetime('now') | Bumped on regeneration |
+| | | UNIQUE (technique_id, cve_id) | Upsert target for idempotent regeneration |
+
+Indexes: `idx_hunt_packs_technique(technique_id)`, `idx_hunt_packs_cve(cve_id)`. Written only by `POST /api/hunt-packs/generate` (Forge MVP, V1.3); read by `GET /api/forge/coverage` (status = "yours") and `GET /api/hunt-packs/{technique_id}`.
 
 ### audit_log
 
@@ -385,6 +406,7 @@ Weights are read by the frontend from `GET /api/config/risk` on every app load (
 | Risk score v1.1b | Complete | Client-side; momentum lazy |
 | Correlation engine | Complete | 3 levels; 6h on-demand cache |
 | Detection engineering tab | Complete | Sigma/Elastic search + generator |
+| Forge MVP (V1.3) | Complete | Coverage map + hunt-packs API + CVE→pack linkage; local template library, no outbound HTTP |
 | Asset profile CPE match | Complete | POST-only; no server storage |
 | Investigation panel | Complete | Cross-tab pivots |
 | PDF export + AI summary | Complete | Groq→Anthropic→template |
