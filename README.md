@@ -257,6 +257,7 @@ See `backend/.env.example` for the full list. Key variables:
 | `DEFAULT_TIMEZONE` | Health/time display | `Asia/Kolkata` |
 | `EMBEDDINGS_ENABLED` | Semantic "similar CVEs" via local embeddings (needs `pip install fastembed`; off = shared-product heuristic) | `0` |
 | `EMBEDDINGS_MODEL` | Local CPU embedding model (ONNX) | `BAAI/bge-small-en-v1.5` |
+| `EMBEDDINGS_CACHE_DIR` | Writable model cache dir (systemd unit sets `/var/lib/briefr/models`; home-dir HF cache is read-only under `ProtectSystem=strict`) | fastembed default |
 | `EMBEDDINGS_SYNC_INTERVAL_HOURS` / `EMBEDDINGS_MAX_PER_RUN` | Embeddings backfill cadence / per-run cap | `6` / `2000` |
 | `LLM_PRODUCT_EXTRACTION_ENABLED` | Fill empty `affected_products` for NVD-unanalyzed CVEs via Groq (requires `GROQ_API_KEY`; provenance-marked, superseded by official CPE) | `0` |
 | `LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS` / `LLM_PRODUCT_EXTRACTION_MAX_PER_RUN` | Extraction job cadence / Groq calls per run | `6` / `25` |

@@ -74,6 +74,14 @@ def get_embeddings_max_per_run() -> int:
     return int(os.environ.get("EMBEDDINGS_MAX_PER_RUN", "2000"))
 
 
+def get_embeddings_cache_dir() -> str:
+    """Model download/cache directory. Must be writable by the service user —
+    production runs under systemd ProtectSystem=strict, where the home-dir
+    HuggingFace cache is read-only (deploy unit sets this to
+    /var/lib/briefr/models). Empty = fastembed's default (fine for dev)."""
+    return os.environ.get("EMBEDDINGS_CACHE_DIR", "").strip()
+
+
 def vector_to_blob(vector) -> bytes:
     """float32 little-endian bytes — also the layout sqlite-vec expects."""
     return np.asarray(vector, dtype="<f4").tobytes()
@@ -99,8 +107,21 @@ def _get_model(model_name: str):
             "— run: pip install fastembed"
         )
     if _model is None or _model_name != model_name:
-        logger.info("Loading embeddings model %s (CPU, ONNX)", model_name)
-        _model = TextEmbedding(model_name=model_name)
+        cache_dir = get_embeddings_cache_dir()
+        logger.info(
+            "Loading embeddings model %s (CPU, ONNX%s)",
+            model_name,
+            f", cache={cache_dir}" if cache_dir else "",
+        )
+        kwargs = {}
+        if cache_dir:
+            os.makedirs(cache_dir, exist_ok=True)
+            kwargs["cache_dir"] = cache_dir
+            # hf-xet keeps its chunk cache under HF_HOME regardless of
+            # cache_dir — point it at the writable directory too, or the
+            # download fails with EROFS under ProtectSystem=strict.
+            os.environ.setdefault("HF_HOME", os.path.join(cache_dir, "hf-home"))
+        _model = TextEmbedding(model_name=model_name, **kwargs)
         _model_name = model_name
     return _model
 

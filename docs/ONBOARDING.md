@@ -189,6 +189,7 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 |----------|---------|---------|
 | `EMBEDDINGS_ENABLED` | `0` | Semantic "similar CVEs" on `GET /api/cves/{id}/related`. Requires the optional `fastembed` package (`pip install fastembed`). Off → shared-product heuristic; the tool is fully functional without it |
 | `EMBEDDINGS_MODEL` | `BAAI/bge-small-en-v1.5` | Local ONNX embedding model (downloaded on first scheduler run) |
+| `EMBEDDINGS_CACHE_DIR` | fastembed default | Model download/cache directory — must be writable by the service user. The production systemd unit sets `/var/lib/briefr/models` and adds it to `ReadWritePaths` (the default home-dir HuggingFace cache fails with EROFS under `ProtectSystem=strict`) |
 | `EMBEDDINGS_SYNC_INTERVAL_HOURS` | `6` | Embeddings backfill job cadence |
 | `EMBEDDINGS_MAX_PER_RUN` | `2000` | CVEs embedded per backfill run (bounds CPU per cycle) |
 | `LLM_PRODUCT_EXTRACTION_ENABLED` | `0` | Fill empty `affected_products` for NVD-unanalyzed CVEs from description text via Groq. Requires `GROQ_API_KEY`. Writes only while the field is empty, marks `affected_products_source='llm'`; official CPE supersedes |
