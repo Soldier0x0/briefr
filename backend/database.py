@@ -1231,6 +1231,12 @@ async def replace_cve_exploits(
         )
 
 
+async def _sqlite_changes(db: aiosqlite.Connection) -> int:
+    """Rows changed by the last statement — reliable when rowcount is -1/0."""
+    row = await db.execute_fetchall("SELECT changes() AS n")
+    return int(row[0]["n"] or 0)
+
+
 async def merge_cve_exploits(
     db: aiosqlite.Connection, cve_id: str, exploits: list[dict]
 ) -> int:
@@ -1256,7 +1262,11 @@ async def merge_cve_exploits(
                 exp.get("published_date") or "",
             ),
         )
-        inserted += cursor.rowcount or 0
+        rc = cursor.rowcount
+        if rc is not None and rc > 0:
+            inserted += rc
+        else:
+            inserted += await _sqlite_changes(db)
     return inserted
 
 
@@ -1302,18 +1312,18 @@ async def replace_cve_exploits_by_source(
 async def mark_has_poc_additive(
     db: aiosqlite.Connection, cve_ids: list[str] | set[str]
 ) -> int:
-    """Set has_poc=1 for CVEs that have exploit rows; never downgrade from 1."""
+    """Set has_poc=1 for the given CVE IDs; never downgrade from 1."""
     ids = sorted({str(c).upper() for c in cve_ids if c})
     if not ids:
         return 0
     rows: list = []
-    for offset in range(0, len(ids), 500):
-        chunk = ids[offset : offset + 500]
+    for offset in range(0, len(ids), _SQLITE_IN_CHUNK):
+        chunk = ids[offset : offset + _SQLITE_IN_CHUNK]
         placeholders = ",".join("?" for _ in chunk)
         chunk_rows = await db.execute_fetchall(
             f"""
             SELECT cve_id FROM cves
-            WHERE cve_id IN ({placeholders}) AND has_poc = 0
+            WHERE cve_id IN ({placeholders}) AND COALESCE(has_poc, 0) = 0
             """,
             chunk,
         )
@@ -1322,11 +1332,22 @@ async def mark_has_poc_additive(
         return 0
     history = [(row["cve_id"], "has_poc", "0", "1") for row in rows]
     await _insert_cve_changes_batch(db, history)
-    await db.executemany(
-        "UPDATE cves SET has_poc = 1 WHERE cve_id = ?",
-        [(row["cve_id"],) for row in rows],
-    )
-    return len(rows)
+    updated = 0
+    for row in rows:
+        cve_key = row["cve_id"]
+        cursor = await db.execute(
+            """
+            UPDATE cves SET has_poc = 1
+            WHERE cve_id = ? AND COALESCE(has_poc, 0) = 0
+            """,
+            (cve_key,),
+        )
+        rc = cursor.rowcount
+        if rc is not None and rc > 0:
+            updated += rc
+        else:
+            updated += await _sqlite_changes(db)
+    return updated
 
 
 
