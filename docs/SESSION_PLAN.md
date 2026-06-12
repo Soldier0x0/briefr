@@ -204,13 +204,16 @@ per-destination enable/disable, dedupe.
 MANDATORY SSRF protections — implement ALL, exactly:
 - resolve the destination hostname and BLOCK private/reserved ranges:
   RFC1918, 127.0.0.0/8, ::1, link-local 169.254.0.0/16 (cloud metadata),
-  0.0.0.0, unique-local IPv6;
+  0.0.0.0, unique-local IPv6. To prevent DNS rebinding, ensure the HTTP
+  client requests the resolved IP directly with the original Host header set,
+  or uses a custom socket resolver that validates the IP at connection time;
 - disable redirect following on webhook requests (a redirect could point
   to an internal address after the check);
 - https scheme only;
 - never attach internal API keys/secrets to outbound webhook headers;
 - 10s timeout; failures recorded via resilient_client health.
-Unit tests MUST cover every blocked address class and the redirect case.
+Unit tests MUST cover every blocked address class, DNS rebinding protection,
+and the redirect case.
 ```
 
 ### T3-S2 — Lean admin pane (Composer)
