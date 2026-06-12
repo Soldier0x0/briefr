@@ -19,6 +19,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 | Config | python-dotenv | 1.2.2 | `.env` loading |
 | YAML | PyYAML | 6.0.2 | ATLAS feed parsing |
 | Spreadsheet generation | openpyxl | 3.1.5 | `TECHNICAL_INVENTORY.xlsx` generator script |
+| Backup encryption | pyrage | 1.3.0 | age (X25519) archive encryption in `backup/manager.py`; interoperable with the `age` CLI |
 | UI framework | React | 18.3.1 | Analyst SPA |
 | Build tool | Vite | 5.4.1 | Dev server and production bundle |
 | Routing | react-router-dom | 7.16.0 | `/privacy`, `/terms` routes |
@@ -384,6 +385,7 @@ Weights are read by the frontend from `GET /api/config/risk` on every app load (
 | PDF export + AI summary | Complete | Groq→Anthropic→template |
 | Case Studies / RSS | Complete | 6 feeds, 30min cache |
 | API usage quotas UI | Complete | `/api/usage/ioc` |
+| Backup encryption (age) | Complete | `briefr-*.tar.gz.age`; key `BACKUP_AGE_KEY_FILE` outside `BACKUP_DIR` (enforced); restore + startup auto-restore decrypt transparently |
 | Authentication | Not implemented | Planned Beta V1.2 — see `Beta V1.2.md` |
 | `POST /api/investigation/summary` | Complete | Legacy alias → `generate_executive_summary` |
 | Repository / DI layer | Not implemented | Planned Beta V1.2 |

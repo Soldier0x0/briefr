@@ -4,9 +4,13 @@ SQLite backup manager for BRIEFR.
 - Online backup via sqlite3.Connection.backup() (WAL-safe)
 - PRAGMA integrity_check before and after each backup
 - Tar archives with DB, optional .env, and manifest JSON
+- Optional age (X25519) archive encryption via BACKUP_AGE_KEY_FILE —
+  the identity file must live OUTSIDE BACKUP_DIR (enforced) so stolen
+  archive copies cannot be decrypted with what sits next to them
 - Retention pruning (default: keep latest 100)
 - Rotating backup logs
 - Automatic restore on startup when the live DB fails integrity check
+  (works for both plaintext .tar.gz and encrypted .tar.gz.age archives)
 """
 
 from __future__ import annotations
@@ -25,11 +29,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import pyrage
+from pyrage import x25519
+
 logger = logging.getLogger(__name__)
 
 MANIFEST_NAME = "manifest.json"
 DB_ARCHIVE_NAME = "briefr.db"
 ENV_ARCHIVE_NAME = ".env"
+ENCRYPTED_ARCHIVE_SUFFIX = ".age"
+ARCHIVE_GLOBS = ("briefr-*.tar.gz", "briefr-*.tar.gz.age")
+# Production default written by deploy/briefr-backup.sh on first run.
+# Deliberately outside BACKUP_DIR (/var/lib/briefr/backups).
+DEFAULT_AGE_KEY_FILE = "/var/lib/briefr/keys/backup-age.key"
 
 
 def _write_audit_sync(db_path: Path, actor: str, action: str, target: str) -> None:
@@ -81,6 +93,67 @@ def _safe_tar_extractall(tar: tarfile.TarFile, dest: Path) -> None:
     tar.extractall(dest)
 
 
+def load_age_identity(key_path: Path) -> x25519.Identity:
+    """Parse an age identity file (age-keygen format: # comments + secret key)."""
+    if not key_path.is_file():
+        raise FileNotFoundError(f"Backup age key file not found: {key_path}")
+    for line in key_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            return x25519.Identity.from_str(line)
+    raise RuntimeError(f"No AGE-SECRET-KEY found in {key_path}")
+
+
+def generate_age_key(key_path: Path) -> str:
+    """Create a new age identity file (mode 0600) and return its public key."""
+    key_path = key_path.expanduser().resolve()
+    if key_path.exists():
+        raise FileExistsError(f"Refusing to overwrite existing key: {key_path}")
+    # Tighten permissions only on a directory we created ourselves — never
+    # chmod a pre-existing parent (or the cwd for relative paths).
+    parent_existed = key_path.parent.exists()
+    key_path.parent.mkdir(parents=True, exist_ok=True)
+    if not parent_existed:
+        try:
+            key_path.parent.chmod(0o700)
+        except OSError:
+            pass
+    identity = x25519.Identity.generate()
+    public_key = str(identity.to_public())
+    body = (
+        f"# created: {datetime.now(timezone.utc).isoformat()}\n"
+        f"# public key: {public_key}\n"
+        f"{identity}\n"
+    )
+    fd = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(body)
+    return public_key
+
+
+def _resolve_age_key_path(base: Path) -> Path | None:
+    """
+    Resolve the age identity file from BACKUP_AGE_KEY_FILE.
+
+    - Unset: use the production default path only when the file exists
+      (dev machines keep writing plaintext archives, unchanged behavior).
+    - Set to a path: keep it even when the file is missing so backups fail
+      loudly instead of silently falling back to plaintext.
+    - Set to empty string: encryption explicitly disabled.
+    """
+    raw = os.environ.get("BACKUP_AGE_KEY_FILE")
+    if raw is None:
+        default_key = Path(DEFAULT_AGE_KEY_FILE)
+        return default_key if default_key.is_file() else None
+    raw = raw.strip()
+    if not raw:
+        return None
+    key_path = Path(raw).expanduser()
+    if not key_path.is_absolute():
+        key_path = (base / key_path).resolve()
+    return key_path
+
+
 @dataclass(frozen=True)
 class BackupConfig:
     db_path: Path
@@ -91,6 +164,7 @@ class BackupConfig:
     log_max_bytes: int = 5 * 1024 * 1024
     log_backup_count: int = 5
     enabled: bool = True
+    age_key_path: Path | None = None
 
     @classmethod
     def from_env(cls, *, backend_dir: Path | None = None) -> BackupConfig:
@@ -139,6 +213,7 @@ class BackupConfig:
             log_max_bytes=max(1024, log_max),
             log_backup_count=max(1, log_keep),
             enabled=enabled,
+            age_key_path=_resolve_age_key_path(base),
         )
 
 
@@ -200,6 +275,8 @@ def _write_manifest(
     source_integrity: str,
     backup_integrity: str,
     reason: str,
+    encrypted: bool = False,
+    age_public_key: str | None = None,
 ) -> None:
     payload = {
         "version": 1,
@@ -211,8 +288,23 @@ def _write_manifest(
         "db_sha256": db_sha256,
         "env_included": env_included,
         "env_sha256": env_sha256,
+        "encrypted": encrypted,
+        "age_public_key": age_public_key,
     }
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
+def _check_age_key_location(cfg: BackupConfig) -> None:
+    """The decryption key must never travel with (or inside) the archives."""
+    if cfg.age_key_path is None:
+        return
+    key = cfg.age_key_path.resolve()
+    backups = cfg.backup_dir.resolve()
+    if key.is_relative_to(backups):
+        raise RuntimeError(
+            f"BACKUP_AGE_KEY_FILE must live outside BACKUP_DIR "
+            f"(key={key}, backups={backups})"
+        )
 
 
 def _create_archive_bundle(
@@ -234,7 +326,17 @@ def _create_archive_bundle(
         cfg.backup_dir.chmod(0o750)
     except OSError:
         pass
+
+    recipient: x25519.Recipient | None = None
+    age_public_key: str | None = None
+    if cfg.age_key_path is not None:
+        _check_age_key_location(cfg)
+        recipient = load_age_identity(cfg.age_key_path).to_public()
+        age_public_key = str(recipient)
+
     archive_name = f"briefr-{_utc_stamp()}.tar.gz"
+    if recipient is not None:
+        archive_name += ENCRYPTED_ARCHIVE_SUFFIX
     archive_path = cfg.backup_dir / archive_name
 
     with tempfile.TemporaryDirectory(prefix="briefr-backup-") as tmp:
@@ -263,13 +365,19 @@ def _create_archive_bundle(
             source_integrity=source_msg,
             backup_integrity=backup_msg,
             reason=reason,
+            encrypted=recipient is not None,
+            age_public_key=age_public_key,
         )
 
-        with tarfile.open(archive_path, "w:gz") as tar:
+        tar_target = tmp_path / "bundle.tar.gz" if recipient is not None else archive_path
+        with tarfile.open(tar_target, "w:gz") as tar:
             tar.add(staged_db, arcname=DB_ARCHIVE_NAME)
             tar.add(tmp_path / MANIFEST_NAME, arcname=MANIFEST_NAME)
             if env_included:
                 tar.add(tmp_path / ENV_ARCHIVE_NAME, arcname=ENV_ARCHIVE_NAME)
+
+        if recipient is not None:
+            pyrage.encrypt_file(str(tar_target), str(archive_path), [recipient])
 
     try:
         archive_path.chmod(0o600)
@@ -278,15 +386,19 @@ def _create_archive_bundle(
     return archive_path
 
 
+def _iter_archives(backup_dir: Path) -> list[Path]:
+    """All backup archives (plaintext and encrypted), newest first by name."""
+    archives: list[Path] = []
+    for pattern in ARCHIVE_GLOBS:
+        archives.extend(backup_dir.glob(pattern))
+    return sorted(archives, key=lambda p: p.name, reverse=True)
+
+
 def prune_backups(backup_dir: Path, retention_count: int) -> list[Path]:
     """Delete oldest archives beyond retention_count; return removed paths."""
     if not backup_dir.is_dir():
         return []
-    archives = sorted(
-        backup_dir.glob("briefr-*.tar.gz"),
-        key=lambda p: p.name,
-        reverse=True,
-    )
+    archives = _iter_archives(backup_dir)
     removed: list[Path] = []
     for old in archives[retention_count:]:
         old.unlink(missing_ok=True)
@@ -346,6 +458,7 @@ def run_backup(*, reason: str = "scheduled", config: BackupConfig | None = None)
         result = {
             "status": "ok",
             "archive": str(archive),
+            "encrypted": archive.name.endswith(ENCRYPTED_ARCHIVE_SUFFIX),
             "reason": reason,
             "pruned": [str(p) for p in removed],
             "retention": cfg.retention_count,
@@ -367,11 +480,7 @@ def list_backups(config: BackupConfig | None = None) -> list[dict[str, Any]]:
     if not cfg.backup_dir.is_dir():
         return []
     rows: list[dict[str, Any]] = []
-    for archive in sorted(
-        cfg.backup_dir.glob("briefr-*.tar.gz"),
-        key=lambda p: p.name,
-        reverse=True,
-    ):
+    for archive in _iter_archives(cfg.backup_dir):
         rows.append(
             {
                 "archive": str(archive),
@@ -380,6 +489,7 @@ def list_backups(config: BackupConfig | None = None) -> list[dict[str, Any]]:
                 "mtime_utc": datetime.fromtimestamp(
                     archive.stat().st_mtime, tz=timezone.utc
                 ).isoformat(),
+                "encrypted": archive.name.endswith(ENCRYPTED_ARCHIVE_SUFFIX),
             }
         )
     return rows
@@ -402,6 +512,24 @@ def _verify_archive_contents(tmp_path: Path) -> tuple[bool, str]:
     return check_db_integrity(db_file)
 
 
+def _extract_archive(archive: Path, cfg: BackupConfig, tmp_path: Path) -> None:
+    """Decrypt (when *.age) and safely extract an archive into tmp_path."""
+    tar_path = archive
+    if archive.name.endswith(ENCRYPTED_ARCHIVE_SUFFIX):
+        if cfg.age_key_path is None:
+            raise RuntimeError(
+                "Archive is age-encrypted but no key is configured "
+                f"(set BACKUP_AGE_KEY_FILE): {archive.name}"
+            )
+        identity = load_age_identity(cfg.age_key_path)
+        tar_path = tmp_path / "decrypted.tar.gz"
+        pyrage.decrypt_file(str(archive), str(tar_path), [identity])
+    with tarfile.open(tar_path, "r:gz") as tar:
+        _safe_extract_tar(tar, tmp_path)
+    if tar_path != archive:
+        tar_path.unlink()
+
+
 def restore_backup(
     archive: Path,
     *,
@@ -414,8 +542,7 @@ def restore_backup(
 
     with tempfile.TemporaryDirectory(prefix="briefr-restore-") as tmp:
         tmp_path = Path(tmp)
-        with tarfile.open(archive, "r:gz") as tar:
-            _safe_extract_tar(tar, tmp_path)
+        _extract_archive(archive, cfg, tmp_path)
 
         ok, msg = _verify_archive_contents(tmp_path)
         if not ok:
@@ -454,6 +581,7 @@ def restore_backup(
     result = {
         "status": "ok",
         "archive": str(archive),
+        "encrypted": archive.name.endswith(ENCRYPTED_ARCHIVE_SUFFIX),
         "db_path": str(cfg.db_path),
         "env_restored": env_restored,
         "integrity": restored_msg,
@@ -471,12 +599,17 @@ def find_latest_valid_backup(config: BackupConfig | None = None) -> Path | None:
         try:
             with tempfile.TemporaryDirectory(prefix="briefr-verify-") as tmp:
                 tmp_path = Path(tmp)
-                with tarfile.open(archive, "r:gz") as tar:
-                    _safe_extract_tar(tar, tmp_path)
+                _extract_archive(archive, cfg, tmp_path)
                 ok, _ = _verify_archive_contents(tmp_path)
                 if ok:
                     return archive
-        except (OSError, tarfile.TarError, RuntimeError):
+        except (
+            OSError,
+            tarfile.TarError,
+            RuntimeError,
+            pyrage.DecryptError,
+            pyrage.IdentityError,
+        ):
             continue
     return None
 

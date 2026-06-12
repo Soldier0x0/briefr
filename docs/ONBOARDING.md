@@ -98,6 +98,7 @@ CI runs `pytest tests/ -q` via [`.github/workflows/backend-tests.yml`](../.githu
 | `test_intelligence.py` | Template sentences |
 | `test_risk_intelligence.py` | Momentum / risk scoring |
 | `test_backup_manager.py` | Backup integrity and restore |
+| `test_backup_encryption.py` | age-encrypted archives: keygen, round-trip, auto-restore |
 | `test_investigation_summary.py` | Investigation / AI summary endpoints |
 | Others | OTX, EPSS, MITRE feeds, domain validation, exploit refs |
 
@@ -132,6 +133,7 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 | `BACKUP_DIR` | `/var/lib/briefr/backups` | Integrity-checked archive directory |
 | `BACKUP_RETENTION_COUNT` | `100` | Max archives kept (~25 days at 6h intervals) |
 | `BACKUP_ENABLED` | `1` | Set `0` to disable backups and startup auto-restore |
+| `BACKUP_AGE_KEY_FILE` | `/var/lib/briefr/keys/backup-age.key` (when present) | age identity for archive encryption; must live outside `BACKUP_DIR`; `""` disables |
 | `BACKUP_LOG_MAX_BYTES` | `5242880` | Rotating backup log size |
 | `BACKUP_LOG_BACKUP_COUNT` | `5` | Gzipped backup log generations |
 

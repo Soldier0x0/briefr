@@ -151,11 +151,15 @@ Ordered; each is one PR unless noted. File pointers are current as of this doc.
 - Post-merge tests: burst the IOC endpoint → 429 with Retry-After; journal
   shows JSON lines with request_id.
 
-### 5.6 Backup encryption (`age`)
-- Encrypt archives in `backend/backup/manager.py` + `deploy/briefr-backup.sh`;
-  key outside `BACKUP_DIR`, readable by the `briefr` user (auto-restore must
-  keep working). Scope honesty: protects off-site/at-rest copies only — see
-  `THREAT_MODEL.md` § Scope of backup encryption.
+### 5.6 Backup encryption (`age`) — ✅ done (PR open)
+- Shipped: archives age-encrypted in `backend/backup/manager.py` (X25519 via
+  `pyrage`, interoperable with the `age` CLI) + `deploy/briefr-backup.sh`
+  generates the key on first run at `/var/lib/briefr/keys/backup-age.key`
+  (`BACKUP_AGE_KEY_FILE`); manager **refuses** a key inside `BACKUP_DIR`;
+  key readable by the `briefr` user so restore and startup auto-restore keep
+  working for both `.tar.gz` and `.tar.gz.age`. Scope honesty: protects
+  off-site/at-rest copies only — see `THREAT_MODEL.md` § Scope of backup
+  encryption.
 - Post-merge tests: new archive is age-encrypted; `briefr-restore.sh` round-trips;
   startup auto-restore from an encrypted archive works on a copy of prod DB.
 
