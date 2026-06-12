@@ -1,0 +1,119 @@
+.brief-charts {
+  border-bottom: 1px solid var(--border);
+  padding: 12px 0 14px;
+}
+
+.brief-charts-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.brief-charts-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.brief-charts-toggle:hover {
+  color: var(--text2);
+}
+
+.brief-charts-chevron {
+  display: inline-block;
+  font-size: 0.625rem;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.brief-charts-chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+.brief-charts-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+  font-weight: 400;
+}
+
+.brief-charts--collapsed .brief-charts-header {
+  margin-bottom: 0;
+}
+
+.brief-charts-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.brief-charts-loading,
+.brief-charts-empty {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  color: var(--text3);
+  letter-spacing: 0.04em;
+}
+
+.brief-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.brief-chart-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 10px 10px 8px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.brief-chart-card-title {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: var(--text3);
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  font-weight: 400;
+}
+
+.brief-chart-canvas-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 160px;
+}
+
+.brief-chart-canvas-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+@media (max-width: 1100px) {
+  .brief-charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .brief-chart-card {
+    min-height: 180px;
+  }
+}
+
+@media (max-width: 640px) {
+  .brief-chart-card {
+    min-height: 160px;
+  }
+
+  .brief-chart-canvas-wrap {
+    min-height: 140px;
+  }
+}

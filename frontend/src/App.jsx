@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { InvestigationProvider } from './context/InvestigationContext.jsx'
 import { overlayDepth } from './hooks/useModalLayer.js'
@@ -7,6 +7,8 @@ import Header from './components/Header.jsx'
 import Hero from './components/Hero.jsx'
 import StatsRow from './components/StatsRow.jsx'
 import TimelineHeatmap from './components/TimelineHeatmap.jsx'
+
+const BriefCharts = lazy(() => import('./components/BriefCharts.jsx'))
 import WhatChangedPanel from './components/WhatChangedPanel.jsx'
 import MorningBrief from './components/MorningBrief.jsx'
 import CVEFeed from './components/CVEFeed.jsx'
@@ -139,6 +141,15 @@ function BriefView({ stats, filters, setFilters,
         onOpenFullFeed={onOpenFullFeed}
         timezone={timezone}
       />
+      <Suspense
+        fallback={
+          <p className="brief-charts-loading mono" aria-live="polite">
+            Loading charts…
+          </p>
+        }
+      >
+        <BriefCharts />
+      </Suspense>
       <WhatChangedPanel onSelectCVE={onSelectCVE} />
       <FeedRefreshStatus
         lastUpdated={lastUpdated}

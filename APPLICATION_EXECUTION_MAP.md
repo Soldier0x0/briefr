@@ -44,6 +44,7 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid)
 | 4 | `App.jsx` | Renders `MainApp` when `activeTab === 'feed'` | — |
 | 5 | `StatsRow.jsx` | Displays stats prop | — |
 | 6 | `TimelineHeatmap.jsx` | `fetchStatsTimeline(90)` | `GET /api/stats/timeline?days=90` |
+| 6b | `BriefCharts.jsx` (lazy) | `fetchStatsTimeline(30)`, `fetchKEVDeadlines`, `fetchChanges` | `GET /api/stats/timeline`, `GET /api/kev/deadlines`, `GET /api/changes` |
 | 7 | `CVEFeed.jsx` | `loadPage(1)` on mount / filter change | `GET /api/cves?...` |
 | 8 | `Sidebar.jsx` | `fetchKEVDeadlines`, `fetchTopTechniques` | `GET /api/kev/deadlines`, `GET /api/techniques/top` |
 | 9 | `CVECard.jsx` | Renders each CVE; `calculateRiskScore` with momentum 0 | — |

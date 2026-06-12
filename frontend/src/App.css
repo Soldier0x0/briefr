@@ -288,6 +288,15 @@ kbd {
   background: var(--text3);
 }
 
+/* Brief charts lazy-load fallback (full styles in BriefCharts.css). */
+.brief-charts-loading {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  color: var(--text3);
+  letter-spacing: 0.04em;
+  padding: 8px 0;
+}
+
 /* Honor the OS-level reduced-motion preference everywhere. */
 @media (prefers-reduced-motion: reduce) {
   *,
