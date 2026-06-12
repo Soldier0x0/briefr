@@ -41,7 +41,7 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
        │              │              │              │                │
        ▼              ▼              ▼              ▼                ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ APScheduler (scheduler.py) — 7 jobs                                         │
+│ APScheduler (scheduler.py) — 7 recurring jobs + 1 one-shot startup job      │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ 1. NVD incremental      → cves, sync_state, cve_change_history, feed_cache  │
 │ 2. KEV metadata         → kev_deadlines, cves.is_kev, summaries             │
@@ -50,6 +50,7 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
 │ 5. OTX nightly          → otx_cve_pulses, otx_pulse_iocs, feed_cache        │
 │ 6. Incident RSS (4h)    → feed_cache (incident_rss:*)                       │
 │ 7. Correlation nightly  → correlation_*, feed_cache, otx_pulse_iocs         │
+│ 8. EPSS history backfill (one-shot) → epss_history, sync_state marker       │
 └──────────────────────────────────┬──────────────────────────────────────────┘
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -220,7 +221,7 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 
 ### APScheduler over Celery/Redis
 
-- **Why:** No message broker; embedded in FastAPI process; sufficient for 7 jobs (`scheduler.py:start_scheduler`).
+- **Why:** No message broker; embedded in FastAPI process; sufficient for 7 recurring jobs + 1 one-shot startup backfill (`scheduler.py:start_scheduler`).
 - **Trade-off:** Jobs lost on process restart (mitigated by `maybe_run_on_startup` bootstrap when CVE count &lt; 10); no distributed workers.
 
 ### Plain JSX + CSS over component library
