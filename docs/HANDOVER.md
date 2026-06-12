@@ -51,6 +51,7 @@ Read in this order before writing any code:
 | #94 | settings-and-refresh-router | §5.2 phase 1: `settings.py` (BaseSettings), `dependencies.py` (`require_admin_key`, `audit`), `routers/refresh.py` | ✅ Merged |
 | #95 | router-split-ioc-atlas-health | §5.2 phase 2: `routers/health.py`, `routers/atlas.py`, `routers/ioc.py` moved out of `main.py` verbatim; OpenAPI route list byte-identical (snapshot test `tests/test_router_split.py`). +1 review fix: cached IOC hit now commits on-demand GreyNoise/OTX feed_cache writes (were rolled back on close — pre-existing in main.py) | ✅ Merged |
 | #96 | router-split-cves-meta-final | §5.2 phase 3 (final): `routers/cves.py` (changes/stats/list/export/detail/momentum/detection/correlation/KEV + CVE filter SQL) + `routers/meta.py` (version/time/usage/AI summaries) moved out of `main.py` verbatim; full OpenAPI JSON diffed byte-identical against pre-split main; `main.py` now app wiring only (~130 lines — V1.2 exit criterion met). +4 review fixes: stack-relevance sort no longer crashes on NULL `affected_products` (pre-existing in main.py); momentum/detection/correlation now validate the `CVE-` prefix like their siblings; `/api/stats` is one conditional-aggregation scan instead of five COUNT(*) scans (same response); `_row_to_cve_dict` normalizes NULL/'' list columns to `[]` per the API_REFERENCE contract | 🔲 Open |
+| #101 | playwright-ci-smoke | §5.7: Chromium-only Playwright smoke in `backend-tests.yml` (third job) against `scripts/seed_screenshot_data.py` — BRIEF cards, filter→feed anchor, drawer focus restore, IOC input, Incidents cards (`tests/test_playwright_smoke.py`, skipped unless `PLAYWRIGHT_SMOKE=1`) | 🔲 Open |
 | TBD | risk-weights-api | §5.3: `GET /api/config/risk` in `routers/config.py` reads weights from `scoring/risk.py`; `riskScore.js` fetches at startup and caches, hardcoded constants as fallback. Weights sum to 1.0 invariant tested. Removes drift risk (README § Known limitations). | 🔲 Open |
 | #102 | epss-backfill | §5.4: one-shot EPSS history backfill via FIRST API `scope=time-series`; `epss_backfill_done` sync_state marker; batched (100/req) + throttled (2 s/batch ≈ 30 req/min); `INSERT OR IGNORE` idempotency; new DB helpers `get_sync_state_value`, `set_sync_state_value`, `insert_epss_history_rows`; wired into `maybe_run_on_startup` as background task. | 🔲 Open |
 
@@ -163,11 +164,16 @@ Ordered; each is one PR unless noted. File pointers are current as of this doc.
 - Post-merge tests: new archive is age-encrypted; `briefr-restore.sh` round-trips;
   startup auto-restore from an encrypted archive works on a copy of prod DB.
 
-### 5.7 Playwright smoke in CI
+### 5.7 Playwright smoke in CI — ✅ done (PR #101 open)
 - Chromium-only, against seeded data (`scripts/seed_screenshot_data.py`):
   BRIEF renders cards; filter click anchors to feed (regression for #90);
   drawer opens/closes with focus restore; IOC tab accepts input; Incidents
-  renders cards. Wire into `.github/workflows/backend-tests.yml` as a third job.
+  renders cards. Wired into `.github/workflows/backend-tests.yml` as the
+  `playwright-smoke` job; pytest module `tests/test_playwright_smoke.py`
+  (skipped in the default `pytest tests/ -q` run unless `PLAYWRIGHT_SMOKE=1`).
+- Post-merge tests: GitHub Actions `playwright-smoke` job green; locally
+  `cd frontend && npm ci && npm run build && cd ../backend &&
+  PLAYWRIGHT_SMOKE=1 pytest tests/test_playwright_smoke.py -q`.
 
 **V1.2 exit criteria** (from `Beta V1.2.md`, amended 2026-06-11): `main.py`
 under ~300 lines; no duplicated risk weights; circuit breaker behavior

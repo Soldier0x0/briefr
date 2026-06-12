@@ -108,7 +108,7 @@ V1.2 is a **maintainability and production-hardening** release, not a feature ex
 | **Operator “changes” UI** | Low | Surface `GET /api/changes` in the analyst UI |
 | **Investigation pivots from Incidents** | Low | CVE links in ATLAS cards → open drawer / investigation thread |
 | **IOC lookup history persistence** | Low | Optional `localStorage` history (privacy-reviewed) |
-| **Frontend E2E in CI** | Medium | Playwright smoke for BRIEF / IOC / Incidents tabs |
+| **Frontend E2E in CI** | Medium | ✅ Shipped — Chromium Playwright smoke in `backend-tests.yml` (`playwright-smoke` job); `tests/test_playwright_smoke.py` against seeded data |
 | **Monitoring hooks** | Medium | Health + backup failure alerts (webhook or email) |
 
 ---
@@ -143,7 +143,7 @@ These user-visible or ops items are **approved exceptions** to “no feature exp
 | **KEV extra fields** | ✅ Shipped (PR #85) — ransomware flag, CWEs, vendor, name + UI badges |
 | **EPSS 30-day history backfill** | ✅ Shipped — one-shot resumable job (`epss_backfill_done` marker); FIRST API `scope=time-series`; 100 CVEs/batch, 2 s throttle (≈30 req/min); `INSERT OR IGNORE` idempotency; wired into `maybe_run_on_startup` |
 | **CI dependency audits + `/api/version`** | ✅ Shipped (PR #88) |
-| **Playwright smoke in CI (early)** | Safety net before V1.2 Phase 4+ frontend refactors |
+| **Playwright smoke in CI (early)** | ✅ Shipped — `playwright-smoke` job in `backend-tests.yml`; BRIEF / filter anchor / drawer focus / IOC input / Incidents cards |
 | **UI/UX correctness pass** | ✅ Shipped (PR #90) — feed scroll/filter fixes, overlay layering + focus traps, self-hosted fonts, reduced-motion, request timeouts |
 
 Do **not** add Forge, admin UI, webhooks configuration, or wallboard under V1.2.

@@ -300,6 +300,10 @@ RSS sources defined in `feeds/incident_sources.py`: The Hacker News, Bleeping Co
 - **`DetailDrawer.jsx` — ~1,500 lines** — maintenance risk; v1.2 split planned.
 - **No request ID tracking** across request lifecycle.
 
+### CI — frontend smoke (V1.2)
+
+GitHub Actions job **`playwright-smoke`** in `.github/workflows/backend-tests.yml` runs `tests/test_playwright_smoke.py` with `PLAYWRIGHT_SMOKE=1`: seeds SQLite via `scripts/seed_screenshot_data.py`, builds the incident-feed snapshot, serves the production Vite bundle (`vite preview` with `/api` proxy), and asserts five Chromium interactions — BRIEF CVE cards render, quick-filter click scroll-anchors to the feed (regression for feed UX), CVE drawer open/close restores focus, IOC tab accepts input, Incidents tab renders cards. The default PR pytest job skips these tests (no browser required).
+
 ---
 
 ## 8. Beta V1.2 roadmap
