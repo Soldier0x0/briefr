@@ -138,6 +138,26 @@ async def request_context(request: Request, call_next):
             },
         )
         return response
+    except Exception:
+        # Log here, while the request_id contextvar is still set — uvicorn's
+        # own traceback is emitted after the finally below has reset it.
+        duration_ms = round((time.perf_counter() - start) * 1000, 1)
+        access_logger.error(
+            "%s %s unhandled exception after %.1fms",
+            request.method,
+            request.url.path,
+            duration_ms,
+            exc_info=True,
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "status": 500,
+                "duration_ms": duration_ms,
+                "client": request.client.host if request.client else "",
+            },
+        )
+        raise
     finally:
         request_id_var.reset(token)
 

@@ -77,21 +77,84 @@ def test_bucket_never_exceeds_capacity_after_long_idle():
     assert bucket.acquire("k", now=later) > 0
 
 
-def test_client_key_prefers_first_xff_hop():
+def test_bucket_hard_cap_bounds_memory_under_key_floods():
+    """Distinct spoofed keys inside one refill window must not grow the
+    dict without bound (review finding: remotely triggerable OOM)."""
+    bucket = TokenBucket(60)
+    now = 1000.0
+    # All keys active within the window — the idle prune frees nothing.
+    for i in range(rate_limit._MAX_BUCKETS + 100):
+        bucket.acquire(f"10.0.{i // 256}.{i % 256}", now=now + i * 0.001)
+    assert len(bucket._buckets) <= rate_limit._MAX_BUCKETS
+
+
+def _fake_request(peer: str, headers: dict[str, str] | None = None):
     class FakeClient:
-        host = "127.0.0.1"
+        def __init__(self, host):
+            self.host = host
 
     class FakeRequest:
-        headers = {"x-forwarded-for": "203.0.113.7, 10.0.0.1"}
-        client = FakeClient()
+        def __init__(self):
+            self.headers = headers or {}
+            self.client = FakeClient(peer)
 
-    assert rate_limit.client_key(FakeRequest()) == "203.0.113.7"
+    return FakeRequest()
 
-    class NoXff:
-        headers = {}
-        client = FakeClient()
 
-    assert rate_limit.client_key(NoXff()) == "127.0.0.1"
+def test_client_key_ignores_forwarded_headers_from_untrusted_peers():
+    """A direct connection cannot mint fresh buckets via spoofed headers."""
+    request = _fake_request(
+        "192.168.1.99",
+        {
+            "x-forwarded-for": "203.0.113.7",
+            "cf-connecting-ip": "203.0.113.8",
+            "x-real-ip": "203.0.113.9",
+        },
+    )
+    assert rate_limit.client_key(request) == "192.168.1.99"
+
+
+def test_client_key_prefers_cf_connecting_ip_behind_loopback_proxy():
+    request = _fake_request(
+        "127.0.0.1",
+        {
+            "cf-connecting-ip": "203.0.113.8",
+            "x-forwarded-for": "198.51.100.1, 203.0.113.8, 127.0.0.1",
+        },
+    )
+    assert rate_limit.client_key(request) == "203.0.113.8"
+
+
+def test_client_key_uses_rightmost_untrusted_xff_hop():
+    """The leftmost XFF hops are client-controlled; nginx appends the real
+    peer on the right, so the rightmost non-loopback hop is proxy-attested."""
+    request = _fake_request(
+        "127.0.0.1",
+        {"x-forwarded-for": "6.6.6.6, 203.0.113.7, 127.0.0.1"},
+    )
+    assert rate_limit.client_key(request) == "203.0.113.7"
+
+
+def test_client_key_falls_back_to_x_real_ip_then_peer():
+    request = _fake_request("127.0.0.1", {"x-real-ip": "203.0.113.9"})
+    assert rate_limit.client_key(request) == "203.0.113.9"
+    assert rate_limit.client_key(_fake_request("127.0.0.1")) == "127.0.0.1"
+
+
+def test_spoofed_xff_does_not_bypass_endpoint_rate_limit():
+    """TestClient's peer is not a loopback proxy, so the spoofed header is
+    ignored and the drained bucket still answers 429."""
+    client = TestClient(app)
+    _drain(rate_limit.ioc_bucket)
+    try:
+        resp = client.post(
+            "/api/ioc/lookup",
+            json={"value": "1.2.3.4", "type": "ip"},
+            headers={"X-Forwarded-For": "203.0.113.77"},
+        )
+        assert resp.status_code == 429
+    finally:
+        _reset(rate_limit.ioc_bucket)
 
 
 # ------------------------------------------------------------ endpoint tests

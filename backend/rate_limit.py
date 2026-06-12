@@ -5,10 +5,16 @@ API quota per miss) and `POST /api/refresh*` (kicks off heavy ingest jobs).
 SQLite pins the deployment to a single uvicorn worker, so process-local
 buckets are sufficient; no shared store needed.
 
-Buckets are keyed per client IP. Behind nginx/cloudflared every connection
-arrives from 127.0.0.1, so the first `X-Forwarded-For` hop is preferred when
-present (spoofable only with direct network access — acceptable for the
-Cloudflare-Access-gated private beta; revisit with built-in app login).
+Buckets are keyed per client IP. Forwarded headers are honoured **only when
+the socket peer is a loopback proxy** (nginx/cloudflared run on the same
+box — `deploy/nginx-briefr*.conf` proxy_pass to 127.0.0.1:8000); any direct
+connection is keyed by its socket address, so spoofed headers cannot mint
+fresh buckets. Behind the tunnel, `CF-Connecting-IP` wins (Cloudflare
+overwrites it at the edge), then the rightmost non-loopback
+`X-Forwarded-For` hop (the entry appended by our own nginx/Cloudflare —
+the leftmost hops are client-controlled), then `X-Real-IP`. Residual risk:
+a host on the LAN talking to nginx directly can still forge these headers —
+acceptable for the Access-gated private beta; revisit with built-in login.
 
 Limits exceeded → HTTP 429 with a `Retry-After` header (whole seconds).
 
@@ -24,6 +30,13 @@ from settings import settings
 
 # Idle buckets are pruned once the dict grows past this many client keys.
 _PRUNE_THRESHOLD = 1024
+# Hard cap: a flood of distinct keys inside one refill window defeats the
+# idle prune, so least-recently-seen buckets are evicted past this size.
+_MAX_BUCKETS = 2 * _PRUNE_THRESHOLD
+
+# Loopback peers are our own reverse proxies (nginx/cloudflared on the same
+# box); only they may speak for the client via forwarded headers.
+_TRUSTED_PROXY_PEERS = frozenset({"127.0.0.1", "::1", "localhost"})
 
 
 class TokenBucket:
@@ -71,6 +84,16 @@ class TokenBucket:
             for key, state in self._buckets.items()
             if now - state[1] < full_after
         }
+        if len(self._buckets) <= _MAX_BUCKETS:
+            return
+        # Flood of distinct keys inside one refill window: nothing is idle,
+        # so bound memory by evicting the least-recently-seen buckets. An
+        # evicted bucket restarts full — a flooder can reset limits this
+        # way, but bounded memory beats a remotely triggerable OOM.
+        by_recency = sorted(
+            self._buckets.items(), key=lambda item: item[1][1], reverse=True
+        )
+        self._buckets = dict(by_recency[:_PRUNE_THRESHOLD])
 
 
 ioc_bucket = TokenBucket(settings.rate_limit_ioc_per_minute, name="ioc")
@@ -78,12 +101,33 @@ refresh_bucket = TokenBucket(settings.rate_limit_refresh_per_minute, name="refre
 
 
 def client_key(request: Request) -> str:
+    peer = request.client.host if request.client else ""
+    if peer not in _TRUSTED_PROXY_PEERS:
+        # Direct connection (LAN dev, or someone bypassing nginx): the
+        # socket address is the only trustworthy identity — forwarded
+        # headers here would be attacker-controlled bucket keys.
+        return peer or "unknown"
+
+    # Set by the Cloudflare edge and overwritten there, so it cannot be
+    # forged by clients coming through the tunnel.
+    cf_ip = request.headers.get("cf-connecting-ip", "").strip()
+    if cf_ip:
+        return cf_ip
+
+    # nginx appends $remote_addr as the rightmost X-Forwarded-For hop; the
+    # rightmost non-loopback hop is therefore proxy-attested, while the
+    # leftmost hops are whatever the client sent.
     forwarded = request.headers.get("x-forwarded-for", "")
-    if forwarded:
-        first_hop = forwarded.split(",")[0].strip()
-        if first_hop:
-            return first_hop
-    return request.client.host if request.client else "unknown"
+    hops = [hop.strip() for hop in forwarded.split(",") if hop.strip()]
+    for hop in reversed(hops):
+        if hop not in _TRUSTED_PROXY_PEERS:
+            return hop
+
+    real_ip = request.headers.get("x-real-ip", "").strip()
+    if real_ip and real_ip not in _TRUSTED_PROXY_PEERS:
+        return real_ip
+
+    return peer
 
 
 def _enforce(bucket: TokenBucket, request: Request) -> None:

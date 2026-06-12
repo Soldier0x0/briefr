@@ -1,6 +1,7 @@
 """V1.2 §5.5 — JSON structured logging with request IDs: formatter output,
 X-Request-ID propagation, and the briefr.access per-request log line."""
 
+import asyncio
 import json
 import logging
 import sys
@@ -9,10 +10,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import pytest
+from fastapi import Request
 from fastapi.testclient import TestClient
 
 import rate_limit
-from main import app
+from main import app, request_context
 from structured_logging import JsonFormatter, request_id_var
 
 # ----------------------------------------------------------- formatter tests
@@ -121,6 +124,44 @@ def test_access_log_line_carries_request_metadata(caplog):
     entry = json.loads(JsonFormatter().format(record))
     assert entry["request_id"] == resp.headers["X-Request-ID"]
     assert entry["status"] == 200
+
+
+def test_unhandled_exception_logged_with_request_id(caplog):
+    """Review finding: uvicorn logs tracebacks after the contextvar reset,
+    so the middleware itself must emit an error line while the ID is set."""
+    scope = {
+        "type": "http",
+        "http_version": "1.1",
+        "method": "GET",
+        "path": "/api/boom",
+        "raw_path": b"/api/boom",
+        "query_string": b"",
+        "scheme": "http",
+        "server": ("testserver", 80),
+        "client": ("203.0.113.5", 1234),
+        "headers": [(b"x-request-id", b"crash-trace-1")],
+    }
+    request = Request(scope)
+
+    async def failing_call_next(_request):
+        raise ValueError("boom")
+
+    with caplog.at_level(logging.ERROR, logger="briefr.access"):
+        with pytest.raises(ValueError):
+            asyncio.run(request_context(request, failing_call_next))
+
+    records = [r for r in caplog.records if r.name == "briefr.access"]
+    assert records, "expected an error record for the unhandled exception"
+    record = records[-1]
+    assert record.request_id == "crash-trace-1"
+    assert record.path == "/api/boom"
+    assert record.status == 500
+    assert record.exc_info is not None
+    entry = json.loads(JsonFormatter().format(record))
+    assert entry["request_id"] == "crash-trace-1"
+    assert "ValueError: boom" in entry["exc_info"]
+    # The contextvar must still have been reset after the failure.
+    assert request_id_var.get() == ""
 
 
 def test_429_responses_also_carry_request_id():
