@@ -8,6 +8,8 @@ fastembed is never required for the test suite).
 
 import asyncio
 import json
+import os
+import subprocess
 import sys
 from datetime import date
 from pathlib import Path
@@ -129,13 +131,75 @@ def test_find_similar_returns_none_without_target_vector(monkeypatch):
 class _FakeTextEmbedding:
     """Deterministic stand-in for fastembed — no ONNX download in CI."""
 
-    def __init__(self, model_name: str):
+    def __init__(self, model_name: str, **kwargs):
         self.model_name = model_name
+        self.kwargs = kwargs
 
     def embed(self, texts):
         for text in texts:
             seed = float(len(text) % 7 + 1)
             yield np.array([seed, 1.0, 0.5], dtype="<f4")
+
+
+def test_import_defaults_hf_home_before_fastembed(tmp_path):
+    """HF_HOME must be present before fastembed imports huggingface_hub."""
+    cache = tmp_path / "models"
+    backend_dir = Path(__file__).resolve().parents[1]
+    env = os.environ.copy()
+    env["EMBEDDINGS_CACHE_DIR"] = str(cache)
+    env.pop("HF_HOME", None)
+    env["PYTHONPATH"] = (
+        str(backend_dir)
+        if not env.get("PYTHONPATH")
+        else f"{backend_dir}{os.pathsep}{env['PYTHONPATH']}"
+    )
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import os\n"
+                "import ml.embeddings\n"
+                "expected = os.path.join(os.environ['EMBEDDINGS_CACHE_DIR'], 'hf-home')\n"
+                "assert os.environ['HF_HOME'] == expected\n"
+                "try:\n"
+                "    from huggingface_hub import constants\n"
+                "except ModuleNotFoundError:\n"
+                "    pass\n"
+                "else:\n"
+                "    assert constants.HF_HOME == expected\n"
+            ),
+        ],
+        check=True,
+        env=env,
+    )
+
+
+def test_get_model_passes_writable_cache_dir(tmp_path, monkeypatch):
+    """Production runs under systemd ProtectSystem=strict: the home-dir
+    HuggingFace cache is read-only (EROFS). EMBEDDINGS_CACHE_DIR must reach
+    fastembed as cache_dir and steer the hf-xet chunk cache via HF_HOME."""
+    cache = tmp_path / "models"
+    monkeypatch.setenv("EMBEDDINGS_CACHE_DIR", str(cache))
+    monkeypatch.delenv("HF_HOME", raising=False)
+    monkeypatch.setattr(emb, "TextEmbedding", _FakeTextEmbedding)
+    monkeypatch.setattr(emb, "_model", None)
+    monkeypatch.setattr(emb, "_model_name", None)
+
+    model = emb._get_model(MODEL)
+    assert model.kwargs.get("cache_dir") == str(cache)
+    assert cache.is_dir()  # created if missing
+    assert os.environ["HF_HOME"] == str(cache / "hf-home")
+
+
+def test_get_model_default_has_no_cache_kwargs(monkeypatch):
+    monkeypatch.delenv("EMBEDDINGS_CACHE_DIR", raising=False)
+    monkeypatch.setattr(emb, "TextEmbedding", _FakeTextEmbedding)
+    monkeypatch.setattr(emb, "_model", None)
+    monkeypatch.setattr(emb, "_model_name", None)
+
+    model = emb._get_model(MODEL)
+    assert "cache_dir" not in model.kwargs
 
 
 def test_backfill_embeds_missing_cves_with_fake_model(tmp_path, monkeypatch):

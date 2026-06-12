@@ -41,7 +41,7 @@ ensure_app_user() {
 
 ensure_app_home() {
   ensure_app_user
-  mkdir -p "${APP_HOME}/.cache/pip" "${APP_HOME}/.npm" "${APP_HOME}/backups/logs"
+  mkdir -p "${APP_HOME}/.cache/pip" "${APP_HOME}/.npm" "${APP_HOME}/backups/logs" "${APP_HOME}/models"
   chown -R "${APP_USER}:${APP_USER}" "${APP_HOME}"
   usermod -d "${APP_HOME}" "${APP_USER}" 2>/dev/null || true
 }
