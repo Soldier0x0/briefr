@@ -32,6 +32,10 @@ def _wait_url(url: str, *, timeout: float = 120.0) -> None:
             with urllib.request.urlopen(url, timeout=3) as resp:
                 if resp.status < 500:
                     return
+        except urllib.error.HTTPError as exc:
+            if exc.code < 500:
+                return
+            last_err = exc
         except Exception as exc:  # noqa: BLE001 — poll until deadline
             last_err = exc
         time.sleep(0.5)
@@ -95,38 +99,40 @@ def playwright_smoke_stack(tmp_path_factory):
     )
     _build_incident_snapshot(env)
 
-    backend = subprocess.Popen(
-        [
-            sys.executable,
-            "-m",
-            "uvicorn",
-            "main:app",
-            "--host",
-            "127.0.0.1",
-            "--port",
-            str(BACKEND_PORT),
-            "--log-level",
-            "warning",
-        ],
-        cwd=str(BACKEND_DIR),
-        env=env,
-    )
-    frontend = subprocess.Popen(
-        [
-            "npm",
-            "run",
-            "preview",
-            "--",
-            "--host",
-            "127.0.0.1",
-            "--port",
-            str(FRONTEND_PORT),
-        ],
-        cwd=str(FRONTEND_DIR),
-        env=env,
-    )
-
+    backend: subprocess.Popen[bytes] | None = None
+    frontend: subprocess.Popen[bytes] | None = None
     try:
+        backend = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "main:app",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(BACKEND_PORT),
+                "--log-level",
+                "warning",
+            ],
+            cwd=str(BACKEND_DIR),
+            env=env,
+        )
+        frontend = subprocess.Popen(
+            [
+                "npm",
+                "run",
+                "preview",
+                "--",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(FRONTEND_PORT),
+            ],
+            cwd=str(FRONTEND_DIR),
+            env=env,
+        )
+
         _wait_url(f"{BACKEND_URL}/api/health")
         _wait_url(FRONTEND_URL)
         health = urllib.request.urlopen(f"{BACKEND_URL}/api/health", timeout=10)
@@ -135,8 +141,10 @@ def playwright_smoke_stack(tmp_path_factory):
             raise RuntimeError("Backend health missing cve_count")
         yield FRONTEND_URL
     finally:
-        _terminate(frontend)
-        _terminate(backend)
+        if frontend is not None:
+            _terminate(frontend)
+        if backend is not None:
+            _terminate(backend)
 
 
 @pytest.fixture

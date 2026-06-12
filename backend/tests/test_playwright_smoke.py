@@ -16,8 +16,11 @@ def _poll(page, js: str, *, timeout: float = 120.0, interval: float = 0.25) -> N
     """Poll page.evaluate until a truthy result (avoids CSP-blocked wait_for_function)."""
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        if page.evaluate(js):
-            return
+        try:
+            if page.evaluate(js):
+                return
+        except Exception:  # noqa: BLE001 — transient navigation/context errors
+            pass
         time.sleep(interval)
     raise TimeoutError(f"Timed out polling: {js[:80]}...")
 
