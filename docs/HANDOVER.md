@@ -54,7 +54,7 @@ Read in this order before writing any code:
 | #101 | playwright-ci-smoke | §5.7: Chromium-only Playwright smoke in `backend-tests.yml` (third job) against `scripts/seed_screenshot_data.py` — BRIEF cards, filter→feed anchor, drawer focus restore, IOC input, Incidents cards (`tests/test_playwright_smoke.py`, skipped unless `PLAYWRIGHT_SMOKE=1`) | 🔲 Open |
 | TBD | risk-weights-api | §5.3: `GET /api/config/risk` in `routers/config.py` reads weights from `scoring/risk.py`; `riskScore.js` fetches at startup and caches, hardcoded constants as fallback. Weights sum to 1.0 invariant tested. Removes drift risk (README § Known limitations). | 🔲 Open |
 | #102 | epss-backfill | §5.4: one-shot EPSS history backfill via FIRST API `scope=time-series`; `epss_backfill_done` sync_state marker; batched (100/req) + throttled (2 s/batch ≈ 30 req/min); `INSERT OR IGNORE` idempotency; new DB helpers `get_sync_state_value`, `set_sync_state_value`, `insert_epss_history_rows`; wired into `maybe_run_on_startup` as background task. | 🔲 Open |
-| TBD | rate-limit-structured-logging | §5.5: in-memory token bucket (`rate_limit.py`) on `POST /api/ioc/lookup` (30/min) + all `POST /api/refresh*` (10/min shared, consumed before admin-key check), per client IP (first XFF hop), 429 + `Retry-After`; JSON structured logging (`structured_logging.py`) with `request_id` contextvar, `X-Request-ID` response header, `briefr.access` per-request line, uvicorn loggers unified; env: `RATE_LIMIT_ENABLED/IOC_PER_MINUTE/REFRESH_PER_MINUTE`, `LOG_FORMAT` | 🔲 Open |
+| #104 | rate-limit-structured-logging | §5.5: in-memory token bucket (`rate_limit.py`) on `POST /api/ioc/lookup` (30/min) + all `POST /api/refresh*` (10/min shared, consumed before admin-key check), per client IP (first XFF hop), 429 + `Retry-After`; JSON structured logging (`structured_logging.py`) with `request_id` contextvar, `X-Request-ID` response header, `briefr.access` per-request line, uvicorn loggers unified; env: `RATE_LIMIT_ENABLED/IOC_PER_MINUTE/REFRESH_PER_MINUTE`, `LOG_FORMAT` | 🔲 Open |
 
 Each merged PR's description contains its own **post-merge verification
 checklist** — that is the house style; keep it (see §7).
@@ -146,7 +146,7 @@ Ordered; each is one PR unless noted. File pointers are current as of this doc.
 - New DB helpers: `get_sync_state_value`, `set_sync_state_value`,
   `insert_epss_history_rows` (all in `database.py`).
 
-### 5.5 Rate limiting + structured logging — ✅ done (PR open)
+### 5.5 Rate limiting + structured logging — ✅ done (PR #104 open)
 - Shipped: simple in-memory token bucket (`rate_limit.py`, no slowapi dep)
   keyed per client IP (first `X-Forwarded-For` hop behind nginx/cloudflared);
   `POST /api/ioc/lookup` at `RATE_LIMIT_IOC_PER_MINUTE` (30) and all
