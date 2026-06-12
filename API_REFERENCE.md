@@ -8,6 +8,10 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 
 Default error shape (FastAPI): `{"detail": "<message>"}`
 
+**Request IDs:** every response carries an `X-Request-ID` header (echoed from the request when a well-formed `X-Request-ID` is supplied, generated otherwise). The same ID appears as `request_id` in the backend's JSON log lines.
+
+**Rate limiting:** `POST /api/ioc/lookup` and all `POST /api/refresh*` routes are token-bucket rate limited per client IP (defaults: 30/min and 10/min — `RATE_LIMIT_IOC_PER_MINUTE`, `RATE_LIMIT_REFRESH_PER_MINUTE`; `RATE_LIMIT_ENABLED=0` disables). Over the limit → `429` with a `Retry-After` header (whole seconds).
+
 ---
 
 ## CVE Feed
@@ -234,6 +238,7 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 
 - `400` — missing/invalid value or type
 - `422` — body validation
+- `429` — rate limit exceeded (`RATE_LIMIT_IOC_PER_MINUTE`, default 30/min per client IP); `Retry-After` header gives seconds until the next allowed request
 
 ---
 
@@ -384,13 +389,15 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 
 **Audit:** each accepted refresh writes an `audit_log` row (`action` = `refresh.full|nvd|kev|epss|mitre`; `actor` stays empty until built-in app login ships).
 
+**Rate limiting:** all `POST /api/refresh*` routes share one token bucket per client IP (`RATE_LIMIT_REFRESH_PER_MINUTE`, default 10/min). Over the limit → `429` with `Retry-After` (seconds). The bucket is consumed before the admin-key check, so unauthenticated bursts cannot bypass it.
+
 ### POST /api/refresh
 
 **Description:** Full ingest (NVD → KEV → EPSS) in background.
 
 **Response:** `{"status": "ok", "message": "..."}`
 
-**Error responses:** `401` — invalid admin key (when configured); `409` — ingest already running
+**Error responses:** `401` — invalid admin key (when configured); `409` — ingest already running; `429` — rate limit exceeded (`Retry-After` header)
 
 ---
 
@@ -400,7 +407,7 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 
 ### POST /api/refresh/epss
 
-**Error responses:** `401` — invalid admin key (when configured); `409` — ingest already running
+**Error responses:** `401` — invalid admin key (when configured); `409` — ingest already running; `429` — rate limit exceeded (`Retry-After` header)
 
 ---
 
@@ -410,7 +417,7 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 
 **Response:** `{"status": "ok", "message": "MITRE ATT&CK + ATLAS refresh started in background"}`
 
-**Error responses:** `401` — invalid admin key (when configured)
+**Error responses:** `401` — invalid admin key (when configured); `429` — rate limit exceeded (`Retry-After` header)
 
 ---
 
