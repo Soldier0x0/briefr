@@ -51,6 +51,7 @@ from database import (
     count_ai_ml_profile_alerts,
     get_atlas_case_studies_for_cve,
     get_atlas_techniques_for_cve,
+    get_cve_summaries_by_ids,
     get_db,
     get_epss_history,
     get_recent_cve_changes,
@@ -69,6 +70,7 @@ from feeds.extended import (
 )
 from feeds.osv import fetch_osv_by_cve
 from feeds.otx import load_otx_pulses_for_cve
+from ml.embeddings import embeddings_enabled, find_similar_cves
 from scoring.risk import calculate_momentum
 from templates.intelligence import (
     epss_sentence_or_fallback,
@@ -118,6 +120,9 @@ def _row_to_cve_dict(row) -> dict:
                 d[num_field] = None
     d["is_kev"] = bool(d.get("is_kev", 0))
     d["has_poc"] = bool(d.get("has_poc", 0))
+    if "affected_products_source" in d:
+        # '' = official CPE / unset; 'llm' = LLM-extracted (provenance marker)
+        d["affected_products_source"] = d.get("affected_products_source") or ""
     d["patch_available"] = bool(d.get("patch_available", 0))
     d["has_ai_context"] = bool(d.get("has_ai_context", 0))
     kev_date = d.get("kev_date_added")
@@ -309,9 +314,9 @@ CVE_ORDER_BY = """
 
 CVE_SELECT = """
     SELECT cve_id, description, cvss_score, severity, published, modified,
-           affected_products, mitre_technique, summary, is_kev, epss_score,
-           has_poc, patch_available, has_ai_context, source_urls, cwe_ids,
-           updated_at
+           affected_products, affected_products_source, mitre_technique,
+           summary, is_kev, epss_score, has_poc, patch_available,
+           has_ai_context, source_urls, cwe_ids, updated_at
     FROM cves
 """
 
@@ -694,6 +699,10 @@ async def get_cve_related(
     cve_id: str,
     limit: int = Query(default=5, ge=1, le=20),
 ):
+    """Related CVEs — semantic (embeddings) when enabled and vectors exist,
+    otherwise the deterministic shared-product heuristic. Additive response:
+    `data` keeps its shape; embedding results add a `similarity` field and
+    `meta.method` reports which path produced them."""
     if not cve_id.upper().startswith("CVE-"):
         raise HTTPException(status_code=400, detail="Invalid CVE ID format")
 
@@ -705,11 +714,35 @@ async def get_cve_related(
         )
         if not exists:
             raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
-        related = await get_related_cves(db, cve_key, limit=limit)
+
+        related: list[dict] = []
+        method = "product_heuristic"
+        if embeddings_enabled():
+            try:
+                # Pure BLOB scan over scheduler-computed vectors — no model
+                # inference in the request path (ROADMAP ML placement rules).
+                similar = await find_similar_cves(db, cve_key, limit=limit)
+            except Exception as exc:
+                logger.error("Embedding similarity failed for %s: %s", cve_key, exc)
+                similar = None
+            if similar:
+                summaries = await get_cve_summaries_by_ids(
+                    db, [s["cve_id"] for s in similar]
+                )
+                for s in similar:
+                    base = summaries.get(s["cve_id"])
+                    if base:
+                        related.append({**base, "similarity": s["similarity"]})
+                if related:
+                    method = "embeddings"
+
+        if not related:
+            related = await get_related_cves(db, cve_key, limit=limit)
+            method = "product_heuristic"
     finally:
         await db.close()
 
-    return {"data": related}
+    return {"data": related, "meta": {"method": method}}
 
 
 @detail_router.get("/api/cves/{cve_id}")
@@ -723,9 +756,9 @@ async def get_cve(cve_id: str):
         rows = await db.execute_fetchall(
             """
             SELECT cve_id, description, cvss_score, severity, published, modified,
-                   affected_products, mitre_technique, summary, is_kev, epss_score,
-                   has_poc, patch_available, has_ai_context, source_urls, cwe_ids,
-                   updated_at
+                   affected_products, affected_products_source, mitre_technique,
+                   summary, is_kev, epss_score, has_poc, patch_available,
+                   has_ai_context, source_urls, cwe_ids, updated_at
             FROM cves
             WHERE cve_id = ?
             """,

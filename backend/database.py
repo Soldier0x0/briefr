@@ -27,6 +27,7 @@ async def init_db() -> None:
                 published TEXT,
                 modified TEXT,
                 affected_products TEXT DEFAULT '[]',
+                affected_products_source TEXT DEFAULT '',
                 mitre_technique TEXT,
                 summary TEXT,
                 is_kev INTEGER DEFAULT 0,
@@ -280,6 +281,17 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_group_technique_map_technique
                 ON group_technique_map(technique_id);
 
+            CREATE TABLE IF NOT EXISTS cve_embeddings (
+                cve_id TEXT PRIMARY KEY,
+                model TEXT NOT NULL,
+                dim INTEGER NOT NULL,
+                vector BLOB NOT NULL,
+                updated_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_cve_embeddings_model
+                ON cve_embeddings(model);
+
             CREATE TABLE IF NOT EXISTS audit_log (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 actor TEXT NOT NULL DEFAULT '',
@@ -304,6 +316,7 @@ async def init_db() -> None:
             "ALTER TABLE cves ADD COLUMN has_poc INTEGER DEFAULT 0",
             "ALTER TABLE cves ADD COLUMN cpe_matches TEXT DEFAULT '[]'",
             "ALTER TABLE cves ADD COLUMN has_ai_context INTEGER DEFAULT 0",
+            "ALTER TABLE cves ADD COLUMN affected_products_source TEXT DEFAULT ''",
             "ALTER TABLE mitre_techniques ADD COLUMN detection TEXT DEFAULT ''",
             "CREATE TABLE IF NOT EXISTS cve_atlas_map (cve_id TEXT NOT NULL, technique_id TEXT NOT NULL, PRIMARY KEY (cve_id, technique_id), FOREIGN KEY (technique_id) REFERENCES atlas_techniques(technique_id))",
             "CREATE INDEX IF NOT EXISTS idx_cve_atlas_map_cve ON cve_atlas_map(cve_id)",
@@ -398,7 +411,23 @@ _UPSERT_CVE_SQL = """
         severity = excluded.severity,
         published = excluded.published,
         modified = excluded.modified,
-        affected_products = excluded.affected_products,
+        -- LLM-derived products survive feed upserts that carry no CPE data;
+        -- any non-empty official product list supersedes them (and clears
+        -- the 'llm' provenance marker).
+        affected_products = CASE
+            WHEN cves.affected_products_source = 'llm'
+                 AND (excluded.affected_products IS NULL
+                      OR excluded.affected_products IN ('', '[]'))
+            THEN cves.affected_products
+            ELSE excluded.affected_products
+        END,
+        affected_products_source = CASE
+            WHEN cves.affected_products_source = 'llm'
+                 AND (excluded.affected_products IS NULL
+                      OR excluded.affected_products IN ('', '[]'))
+            THEN 'llm'
+            ELSE ''
+        END,
         cpe_matches = excluded.cpe_matches,
         mitre_technique = COALESCE(excluded.mitre_technique, cves.mitre_technique),
         summary = COALESCE(excluded.summary, cves.summary),
@@ -711,6 +740,163 @@ async def get_related_cves(
     return out
 
 
+
+
+# --- CVE description embeddings (V1.3 Theme 7 — env-gated, scheduler-side) ---
+
+
+async def upsert_cve_embedding(
+    db: aiosqlite.Connection, cve_id: str, model: str, dim: int, vector: bytes
+) -> None:
+    """Store one embedding BLOB (float32 little-endian). One row per CVE;
+    a model change replaces the old vector on the next backfill pass."""
+    await db.execute(
+        """
+        INSERT INTO cve_embeddings (cve_id, model, dim, vector, updated_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(cve_id) DO UPDATE SET
+            model = excluded.model,
+            dim = excluded.dim,
+            vector = excluded.vector,
+            updated_at = datetime('now')
+        """,
+        (cve_id.upper(), model, dim, vector),
+    )
+
+
+async def get_cve_embedding(
+    db: aiosqlite.Connection, cve_id: str, model: str
+) -> bytes | None:
+    rows = await db.execute_fetchall(
+        "SELECT vector FROM cve_embeddings WHERE cve_id = ? AND model = ?",
+        (cve_id.upper(), model),
+    )
+    return rows[0]["vector"] if rows else None
+
+
+async def get_all_cve_embeddings(
+    db: aiosqlite.Connection, model: str, exclude_cve_id: str | None = None
+) -> list[tuple[str, bytes]]:
+    """All stored vectors for one model — input to the brute-force cosine scan."""
+    if exclude_cve_id:
+        rows = await db.execute_fetchall(
+            "SELECT cve_id, vector FROM cve_embeddings WHERE model = ? AND cve_id != ?",
+            (model, exclude_cve_id.upper()),
+        )
+    else:
+        rows = await db.execute_fetchall(
+            "SELECT cve_id, vector FROM cve_embeddings WHERE model = ?",
+            (model,),
+        )
+    return [(row["cve_id"], row["vector"]) for row in rows]
+
+
+async def count_cve_embeddings(db: aiosqlite.Connection, model: str) -> int:
+    rows = await db.execute_fetchall(
+        "SELECT COUNT(*) AS n FROM cve_embeddings WHERE model = ?", (model,)
+    )
+    return int(rows[0]["n"]) if rows else 0
+
+
+async def get_cves_missing_embeddings(
+    db: aiosqlite.Connection, model: str, limit: int = 500
+) -> list[dict]:
+    """CVEs with a description but no vector for the active model (newest first)."""
+    rows = await db.execute_fetchall(
+        """
+        SELECT c.cve_id, c.description
+        FROM cves c
+        LEFT JOIN cve_embeddings e
+          ON e.cve_id = c.cve_id AND e.model = ?
+        WHERE e.cve_id IS NULL
+          AND c.description IS NOT NULL
+          AND c.description != ''
+        ORDER BY c.published DESC
+        LIMIT ?
+        """,
+        (model, limit),
+    )
+    return [{"cve_id": row["cve_id"], "description": row["description"]} for row in rows]
+
+
+async def get_cve_summaries_by_ids(
+    db: aiosqlite.Connection, cve_ids: list[str]
+) -> dict[str, dict]:
+    """Hydrate related-CVE cards (same fields the product heuristic returns)."""
+    result: dict[str, dict] = {}
+    normalized = [c.upper() for c in cve_ids if c]
+    for i in range(0, len(normalized), _SQLITE_IN_CHUNK):
+        chunk = normalized[i : i + _SQLITE_IN_CHUNK]
+        placeholders = ",".join("?" * len(chunk))
+        rows = await db.execute_fetchall(
+            f"""
+            SELECT cve_id, description, cvss_score, severity, published, epss_score
+            FROM cves WHERE cve_id IN ({placeholders})
+            """,
+            chunk,
+        )
+        for row in rows:
+            result[row["cve_id"]] = {
+                "cve_id": row["cve_id"],
+                "description": row["description"] or "",
+                "cvss_score": row["cvss_score"],
+                "severity": row["severity"],
+                "published": row["published"],
+                "epss_score": row["epss_score"],
+            }
+    return result
+
+
+# --- LLM product extraction for NVD-unanalyzed CVEs (V1.3 Theme 7) ---
+
+
+async def get_cves_for_llm_product_extraction(
+    db: aiosqlite.Connection, limit: int = 25, retry_hours: float = 168
+) -> list[dict]:
+    """CVEs with no CPE data and no affected products yet (NVD-unanalyzed).
+
+    Skips CVEs attempted within the negative-cache window
+    (feed_cache key ``llm_products:<cve_id>``).
+    """
+    rows = await db.execute_fetchall(
+        """
+        SELECT c.cve_id, c.description
+        FROM cves c
+        LEFT JOIN feed_cache fc
+          ON fc.cache_key = 'llm_products:' || c.cve_id
+         AND fc.cached_at > datetime('now', ?)
+        WHERE fc.cache_key IS NULL
+          AND (c.affected_products IS NULL OR c.affected_products IN ('', '[]'))
+          AND (c.cpe_matches IS NULL OR c.cpe_matches IN ('', '[]'))
+          AND c.description IS NOT NULL
+          AND c.description != ''
+        ORDER BY c.published DESC
+        LIMIT ?
+        """,
+        (f"-{retry_hours} hours", limit),
+    )
+    return [{"cve_id": row["cve_id"], "description": row["description"]} for row in rows]
+
+
+async def set_llm_affected_products(
+    db: aiosqlite.Connection, cve_id: str, products: list[str]
+) -> bool:
+    """Write LLM-derived products ONLY if the field is still empty; mark
+    provenance so the data stays distinguishable from official CPE."""
+    if not products:
+        return False
+    cursor = await db.execute(
+        """
+        UPDATE cves
+        SET affected_products = ?,
+            affected_products_source = 'llm',
+            updated_at = datetime('now')
+        WHERE cve_id = ?
+          AND (affected_products IS NULL OR affected_products IN ('', '[]'))
+        """,
+        (json.dumps(products), cve_id.upper()),
+    )
+    return cursor.rowcount > 0
 
 
 async def backfill_display_fields(

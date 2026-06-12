@@ -41,6 +41,11 @@ from feeds.kev import fetch_kev
 from feeds.epss import fetch_epss
 from feeds.atlas import refresh_atlas_data
 from feeds.mitre import refresh_mitre_data
+from ml.embeddings import embeddings_enabled, run_embeddings_backfill
+from ml.product_extraction import (
+    llm_product_extraction_enabled,
+    run_llm_product_extraction,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +59,8 @@ _epss_backfill_lock = asyncio.Lock()
 _mitre_refresh_lock = asyncio.Lock()
 _otx_lock = asyncio.Lock()
 _correlation_lock = asyncio.Lock()
+_embeddings_lock = asyncio.Lock()
+_llm_extraction_lock = asyncio.Lock()
 
 
 def get_scheduler_timezone() -> str:
@@ -641,6 +648,73 @@ async def run_otx_nightly_sync() -> bool:
     return True
 
 
+async def run_embeddings_sync() -> bool:
+    """Embed CVE descriptions missing vectors (V1.3 Theme 7).
+
+    No-op unless EMBEDDINGS_ENABLED=1 — the env gate is checked at run time
+    so the operator can toggle without re-registering jobs. CPU-only model
+    inference happens here (scheduler-side), never on the request path.
+    """
+    if not embeddings_enabled():
+        return False
+    if _embeddings_lock.locked():
+        logger.info("Embeddings backfill already in progress — skipping")
+        return False
+
+    async with _embeddings_lock:
+        start = datetime.now(timezone.utc)
+        logger.info("Embeddings backfill started at %s", start.isoformat())
+        try:
+            db = await get_db()
+            try:
+                stats = await run_embeddings_backfill(db)
+            finally:
+                await db.close()
+            logger.info(
+                "Embeddings backfill complete: %d CVEs embedded (model=%s) in %.1fs",
+                stats.get("embedded", 0),
+                stats.get("model", ""),
+                (datetime.now(timezone.utc) - start).total_seconds(),
+            )
+        except Exception as exc:
+            logger.error("Embeddings backfill failed: %s", exc)
+    return True
+
+
+async def run_llm_extraction_sync() -> bool:
+    """LLM product extraction for NVD-unanalyzed CVEs (V1.3 Theme 7).
+
+    No-op unless LLM_PRODUCT_EXTRACTION_ENABLED=1 AND GROQ_API_KEY is set.
+    """
+    if not llm_product_extraction_enabled():
+        return False
+    if _llm_extraction_lock.locked():
+        logger.info("LLM product extraction already in progress — skipping")
+        return False
+
+    async with _llm_extraction_lock:
+        start = datetime.now(timezone.utc)
+        logger.info("LLM product extraction started at %s", start.isoformat())
+        try:
+            db = await get_db()
+            try:
+                stats = await run_llm_product_extraction(db)
+            finally:
+                await db.close()
+            logger.info(
+                "LLM product extraction complete: %d candidates, %d extracted, "
+                "%d written, %d errors in %.1fs",
+                stats.get("candidates", 0),
+                stats.get("extracted", 0),
+                stats.get("written", 0),
+                stats.get("errors", 0),
+                (datetime.now(timezone.utc) - start).total_seconds(),
+            )
+        except Exception as exc:
+            logger.error("LLM product extraction failed: %s", exc)
+    return True
+
+
 def start_scheduler() -> AsyncIOScheduler:
     global _scheduler
 
@@ -722,6 +796,34 @@ def start_scheduler() -> AsyncIOScheduler:
         coalesce=True,
         # Warm the snapshot shortly after boot instead of waiting one interval.
         next_run_time=datetime.now(sched_tz) + timedelta(seconds=20),
+    )
+
+    embeddings_hours = int(os.environ.get("EMBEDDINGS_SYNC_INTERVAL_HOURS", "6"))
+    scheduler.add_job(
+        run_embeddings_sync,
+        trigger=IntervalTrigger(hours=embeddings_hours, timezone=sched_tz),
+        id="embeddings_backfill",
+        name="CVE Description Embeddings Backfill",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        # First pass shortly after boot when enabled; the run-time env gate
+        # makes this a no-op while EMBEDDINGS_ENABLED=0 (the default).
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=90),
+    )
+
+    llm_extraction_hours = int(
+        os.environ.get("LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS", "6")
+    )
+    scheduler.add_job(
+        run_llm_extraction_sync,
+        trigger=IntervalTrigger(hours=llm_extraction_hours, timezone=sched_tz),
+        id="llm_product_extraction",
+        name="LLM Product Extraction (NVD-unanalyzed CVEs)",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=150),
     )
 
     corr_hour = int(os.environ.get("CORRELATION_HOUR", "1"))
