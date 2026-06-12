@@ -169,6 +169,8 @@ async def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_cve_exploits_cve
                 ON cve_exploits(cve_id);
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_cve_exploits_cve_url
+                ON cve_exploits(cve_id, url);
 
             CREATE TABLE IF NOT EXISTS feed_cache (
                 cache_key TEXT PRIMARY KEY,
@@ -342,6 +344,14 @@ async def init_db() -> None:
             "CREATE TABLE IF NOT EXISTS hunt_packs (id INTEGER PRIMARY KEY AUTOINCREMENT, technique_id TEXT NOT NULL, cve_id TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', priority TEXT NOT NULL DEFAULT 'medium', sigma_yaml TEXT NOT NULL DEFAULT '', siem_queries TEXT NOT NULL DEFAULT '{}', log_patterns TEXT NOT NULL DEFAULT '[]', notes TEXT NOT NULL DEFAULT '', created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')), UNIQUE (technique_id, cve_id))",
             "CREATE INDEX IF NOT EXISTS idx_hunt_packs_technique ON hunt_packs(technique_id)",
             "CREATE INDEX IF NOT EXISTS idx_hunt_packs_cve ON hunt_packs(cve_id)",
+            # Exploit feeds: dedupe then enforce (cve_id, url) uniqueness
+            """
+            DELETE FROM cve_exploits
+            WHERE id NOT IN (
+                SELECT MIN(id) FROM cve_exploits GROUP BY cve_id, url
+            )
+            """,
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_cve_exploits_cve_url ON cve_exploits(cve_id, url)",
         ):
             try:
                 await db.execute(migration)
@@ -1263,10 +1273,10 @@ async def merge_cve_exploits(
             ),
         )
         rc = cursor.rowcount
-        if rc is not None and rc > 0:
-            inserted += rc
-        else:
+        if rc is None or rc < 0:
             inserted += await _sqlite_changes(db)
+        elif rc > 0:
+            inserted += rc
     return inserted
 
 
@@ -1343,10 +1353,10 @@ async def mark_has_poc_additive(
             (cve_key,),
         )
         rc = cursor.rowcount
-        if rc is not None and rc > 0:
-            updated += rc
-        else:
+        if rc is None or rc < 0:
             updated += await _sqlite_changes(db)
+        elif rc > 0:
+            updated += rc
     return updated
 
 
