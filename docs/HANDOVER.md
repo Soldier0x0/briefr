@@ -61,6 +61,7 @@ Read in this order before writing any code:
 | #106 | change-intel-kev-countdown | V1.3 tranche 2: What changed panel (`GET /api/changes`, field + 24h/48h/7d filters, row → drawer); KEV **Due in N days** chip on cards (`kev_due_date` additive on list/export/detail); sidebar deadlines `sort=urgent` | ✅ Merged |
 | #111 | epss-change-noise-fix | Follow-up: EPSS change history uses 0.1% display precision (stops `0.0% → 0.0%` noise); frontend hides legacy identical rows | 🔲 Open |
 | TBD | filter-rejected-cves | Skip NVD `vulnStatus: Rejected` + cvelistV5 `state: REJECTED` on ingest; `purge_legacy_rejected_cves` + `delete_cves_by_ids` each scheduler sync | 🔲 Open |
+| TBD | webhook-alerts-c999 | V1.3 Theme 8: Telegram + Discord webhook sender (`webhooks/sender.py`, resilient_client retries=2); KEV-on-stack after KEV sync (`BRIEFR_STACK_TERMS`, `webhook_alert_log` dedupe); backup dead-man scheduler check (2× `BACKUP_INTERVAL_HOURS`) | 🔲 Open |
 
 Each merged PR's description contains its own **post-merge verification
 checklist** — that is the house style; keep it (see §7).

@@ -265,6 +265,14 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 - **Scope honesty:** this protects **off-site / at-rest archive copies only** (rclone/S3, stolen disks, leaked archive directories). A compromised host or service user can read the key — see `docs/THREAT_MODEL.md` § Scope of backup encryption.
 - **Opt-out:** `BACKUP_AGE_KEY_FILE=""` forces plaintext archives; dev machines without the default key file are unchanged.
 
+### Push notifications (V1.3 Theme 8)
+
+- **Channels:** `webhooks/sender.py` delivers plain-text alerts to **Discord** (`DISCORD_WEBHOOK_URL`) and/or **Telegram** (`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`). Channels are independent — configure one or both. Disabled when no channel env vars are set.
+- **Transport:** all outbound delivery uses `resilient_client` (`retries=2`); health keys `webhook.discord` / `webhook.telegram` appear in `feeds.sources` after the first attempt.
+- **KEV-on-stack:** after each `kev_metadata_sync`, newly flagged KEV CVEs (`mark_cves_as_kev` return value) are matched against `BRIEFR_STACK_TERMS` (comma-separated server-side stack — same matching rules as `GET /api/cves?stack=`). One alert per CVE, deduped in `webhook_alert_log`.
+- **Backup dead-man:** `backup_deadman_check` scheduler job (every `max(1, BACKUP_INTERVAL_HOURS // 2)`) warns when the newest archive in `BACKUP_DIR` is older than `2 × BACKUP_INTERVAL_HOURS` (default 12h). Skipped when `BACKUP_ENABLED=0` or no webhook channel is configured. Clears its dedupe marker when a fresh backup appears.
+- **V1.4:** full webhook engine (rules UI, delivery log viewer, SSRF protection) — see `Beta V1.4.md`.
+
 ### SQLite over PostgreSQL
 
 - **Why:** Single-user beta, zero ops overhead, `aiosqlite` async support, `feed_cache` + `ioc_cache` adequate at current scale.

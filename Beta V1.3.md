@@ -131,9 +131,11 @@ Env-gated, CPU-only, scheduler-side, deterministic fallback — see ML placement
 
 | Item | Goal |
 |------|------|
-| **One webhook channel** | Telegram or Discord, env-configured (no admin UI yet) |
-| **KEV-on-stack rule** | Alert when a KEV entry matches the asset profile |
-| **Backup dead-man ping** | `briefr-backup.sh` pings healthchecks-style URL on success; silence = alert |
+| **One webhook channel** | Telegram and/or Discord, env-configured (no admin UI yet) |
+| **KEV-on-stack rule** | Alert when a KEV entry matches `BRIEFR_STACK_TERMS` |
+| **Backup dead-man ping** | Scheduler warns when no successful backup within 2× `BACKUP_INTERVAL_HOURS` |
+
+✅ **Shipped** — `webhooks/sender.py` + `webhooks/alerts.py`; `webhook_alert_log` dedupe table; `backup_deadman_check` scheduler job; KEV hook after `kev_metadata_sync`.
 
 The full webhook engine (channels UI, rules, delivery log, SSRF protection) stays in [`Beta V1.4.md`](Beta%20V1.4.md).
 
