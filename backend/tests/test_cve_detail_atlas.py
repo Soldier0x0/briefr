@@ -183,8 +183,8 @@ def test_list_cves_includes_has_ai_context(tmp_path, monkeypatch):
 def test_investigation_summary_endpoint_returns_200(tmp_path, monkeypatch):
     db_path = tmp_path / "investigation.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.delenv("GROQ_API_KEY", raising=False)
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("GROQ_API_KEY", "")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "")
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
     async def _noop_async() -> None:
