@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Restore BRIEFR database (and .env when present in archive) from a backup.
+# Handles both plaintext (.tar.gz) and age-encrypted (.tar.gz.age) archives;
+# decryption uses BACKUP_AGE_KEY_FILE (default: ${APP_HOME}/keys/backup-age.key).
 # Usage:
 #   bash briefr-restore.sh                 # newest valid archive
 #   bash briefr-restore.sh --list
-#   bash briefr-restore.sh /path/to/briefr-YYYYMMDDTHHMMSSZ.tar.gz
+#   bash briefr-restore.sh /path/to/briefr-YYYYMMDDTHHMMSSZ.tar.gz[.age]
 #   bash briefr-restore.sh --force         # overwrite healthy DB
 set -euo pipefail
 
@@ -25,7 +27,7 @@ while [ $# -gt 0 ]; do
     --list) LIST=1 ;;
     --force) FORCE=1 ;;
     -h|--help)
-      echo "Usage: bash $0 [--list] [--force] [archive.tar.gz]"
+      echo "Usage: bash $0 [--list] [--force] [archive.tar.gz[.age]]"
       exit 0
       ;;
     *)
@@ -36,9 +38,12 @@ while [ $# -gt 0 ]; do
 done
 
 export BACKUP_DIR="${BACKUP_DIR:-${APP_HOME}/backups}"
+# ${VAR-default} (not :-) so an explicit empty value disables decryption.
+export BACKUP_AGE_KEY_FILE="${BACKUP_AGE_KEY_FILE-${APP_HOME}/keys/backup-age.key}"
 
 if [ "${LIST}" -eq 1 ]; then
   runuser -u "${APP_USER}" -- env HOME="${APP_HOME}" BACKUP_DIR="${BACKUP_DIR}" \
+    BACKUP_AGE_KEY_FILE="${BACKUP_AGE_KEY_FILE}" \
     bash -c "cd '${INSTALL_DIR}/backend' && '${INSTALL_DIR}/venv/bin/python' -m backup list"
   exit 0
 fi
@@ -51,9 +56,11 @@ FORCE_FLAG=""
 
 if [ -n "${ARCHIVE}" ]; then
   runuser -u "${APP_USER}" -- env HOME="${APP_HOME}" BACKUP_DIR="${BACKUP_DIR}" \
+    BACKUP_AGE_KEY_FILE="${BACKUP_AGE_KEY_FILE}" \
     bash -c "cd '${INSTALL_DIR}/backend' && '${INSTALL_DIR}/venv/bin/python' -m backup restore ${FORCE_FLAG} '${ARCHIVE}'"
 else
   runuser -u "${APP_USER}" -- env HOME="${APP_HOME}" BACKUP_DIR="${BACKUP_DIR}" \
+    BACKUP_AGE_KEY_FILE="${BACKUP_AGE_KEY_FILE}" \
     bash -c "cd '${INSTALL_DIR}/backend' && '${INSTALL_DIR}/venv/bin/python' -m backup restore ${FORCE_FLAG}"
 fi
 

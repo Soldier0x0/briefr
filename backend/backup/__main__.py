@@ -1,4 +1,4 @@
-"""CLI: python -m backup [run|list|restore|verify]"""
+"""CLI: python -m backup [run|list|restore|verify|ensure|keygen]"""
 
 from __future__ import annotations
 
@@ -12,7 +12,9 @@ from backup.manager import (
     check_db_integrity,
     ensure_db_or_restore,
     find_latest_valid_backup,
+    generate_age_key,
     list_backups,
+    load_age_identity,
     restore_backup,
     run_backup,
 )
@@ -55,6 +57,30 @@ def _cmd_ensure(_: argparse.Namespace) -> int:
     return 0 if result.get("status") in {"healthy", "no_db", "restored", "skipped"} else 1
 
 
+def _cmd_keygen(args: argparse.Namespace) -> int:
+    """Idempotent: create the age key when missing, print its public key."""
+    key_path = Path(args.key_file) if args.key_file else BackupConfig.from_env().age_key_path
+    if key_path is None:
+        print(
+            "No key path configured: pass --key-file or set BACKUP_AGE_KEY_FILE",
+            file=sys.stderr,
+        )
+        return 1
+    if key_path.is_file():
+        public_key = str(load_age_identity(key_path).to_public())
+        created = False
+    else:
+        public_key = generate_age_key(key_path)
+        created = True
+    print(
+        json.dumps(
+            {"key_file": str(key_path), "public_key": public_key, "created": created},
+            indent=2,
+        )
+    )
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="BRIEFR backup manager")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -75,7 +101,7 @@ def main() -> int:
     restore_p.add_argument(
         "archive",
         nargs="?",
-        help="Path to briefr-*.tar.gz (default: newest valid)",
+        help="Path to briefr-*.tar.gz[.age] (default: newest valid)",
     )
     restore_p.add_argument(
         "--force",
@@ -92,6 +118,16 @@ def main() -> int:
         "ensure",
         help="Verify live DB; restore from latest valid backup if corrupt",
     ).set_defaults(func=_cmd_ensure)
+
+    keygen_p = sub.add_parser(
+        "keygen",
+        help="Create the age backup key if missing and print its public key",
+    )
+    keygen_p.add_argument(
+        "--key-file",
+        help="Identity file path (default: BACKUP_AGE_KEY_FILE)",
+    )
+    keygen_p.set_defaults(func=_cmd_keygen)
 
     args = parser.parse_args()
     return args.func(args)
