@@ -66,11 +66,14 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
       "patch_available": true,
       "source_urls": ["https://..."],
       "cwe_ids": ["CWE-79"],
-      "updated_at": "2024-01-02 12:00:00"
+      "updated_at": "2024-01-02 12:00:00",
+      "kev_due_date": null
     }
   ]
 }
 ```
+
+Each CVE object may include `kev_due_date` (`YYYY-MM-DD` from `kev_deadlines.due_date`, or `null` when not on the KEV catalog). Additive field — present on list and export responses.
 
 **Error responses:**
 
@@ -121,7 +124,11 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 | `field` | str | null | Filter to one tracked field |
 | `since_hours` | int | 24 | 1–168 |
 
-**Response:** `{"data": [...], "count": N}`
+**Response:** `{"data": [...], "count": N}` — each change row: `id`, `cve_id`, `field_name`, `old_value`, `new_value`, `detected_at`.
+
+**EPSS noise:** `update_epss_scores` only writes history when the score would display differently at **0.1%** precision (matching the What changed panel). Sub-threshold float jitter (e.g. `0.0001` → `0.0002`, both shown as `0.0%`) is ignored.
+
+**Frontend:** BRIEF tab **What changed** panel (`WhatChangedPanel.jsx`) — field + time-window filter chips; row click opens the CVE drawer; rows with identical formatted old/new values are hidden (legacy noise).
 
 **Error responses:** `400` — invalid `field`
 
@@ -136,7 +143,7 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 **Response:** Bare CVE object (no `data` wrapper), including:
 
 - Core fields from `cves` table
-- `kev_date_added`, `kev_vendor_project`, `kev_vulnerability_name`, `kev_ransomware_use` (boolean), `kev_cwes[]`, `techniques[]`, `public_exploits[]` (objects with `title`, `type`, `source`, `url`, `published_date` — sources include PoC-in-GitHub, ExploitDB, Metasploit, Nuclei, Sploitus), `greynoise_scans[]`, `otx_pulses[]`, `otx_configured`, `osv_packages[]`
+- `kev_date_added`, `kev_due_date`, `kev_vendor_project`, `kev_vulnerability_name`, `kev_ransomware_use` (boolean), `kev_cwes[]`, `techniques[]`, `public_exploits[]`, `greynoise_scans[]`, `otx_pulses[]`, `otx_configured`, `osv_packages[]`
 
 **Error responses:**
 
@@ -330,6 +337,104 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 
 ---
 
+## Forge (V1.3 MVP)
+
+All Forge endpoints are local and deterministic — content comes from the bundled
+template library (`backend/detection/`), no outbound HTTP, no API quota.
+
+### GET /api/forge/coverage
+
+**Description:** MITRE coverage map — techniques linked to CVEs in the database,
+each with exposure counts and a rule status.
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `stack` | str | — | Comma-separated stack terms (same matching as `/api/cves` `stack`); filters CVE exposure to the analyst's stack |
+
+**Response:**
+
+```json
+{
+  "techniques": [
+    {
+      "technique_id": "T1190",
+      "name": "Exploit Public-Facing Application",
+      "tactic": "Initial Access",
+      "url": "https://attack.mitre.org/techniques/T1190/",
+      "cve_count": 12,
+      "kev_count": 3,
+      "max_epss": 0.97,
+      "pack_count": 1,
+      "status": "yours"
+    }
+  ],
+  "meta": {
+    "generated_at": "2026-06-12T12:00:00Z",
+    "stack_terms": ["log4j"],
+    "counts": { "yours": 1, "community": 4, "gap": 7 },
+    "technique_total": 12
+  }
+}
+```
+
+Status semantics: `yours` = at least one saved hunt pack for the technique;
+`community` = the bundled template library covers the technique (sub-techniques
+inherit the parent's coverage); `gap` = neither. Techniques with saved packs stay
+on the map even when the stack filter matches none of their CVEs. Sorted by
+tactic, gaps first within each tactic.
+
+### GET /api/hunt-packs/{technique_id}
+
+**Description:** Hunt pack content for one ATT&CK technique.
+
+**Validation:** `technique_id` must match `T####` or `T####.###` → else 400.
+404 when the technique is unknown (no `mitre_techniques` row, no packs, no CVE links).
+
+**Response:**
+
+```json
+{
+  "technique": { "technique_id": "T1190", "name": "...", "description": "...",
+                 "tactic": "...", "url": "...", "platforms": [], "detection": "..." },
+  "status": "community",
+  "packs": [ { "id": 1, "technique_id": "T1190", "cve_id": "CVE-2021-44228",
+               "title": "...", "priority": "critical", "sigma_yaml": "...",
+               "siem_queries": {}, "log_patterns": [], "notes": "",
+               "created_at": "...", "updated_at": "..." } ],
+  "siem_queries": { "elastic_kql": {"query": "...", "notes": "..."}, "splunk_spl": {},
+                    "sentinel_kql": {}, "qradar_aql": {} },
+  "log_patterns": ["..."],
+  "linked_cves": [ { "cve_id": "CVE-2021-44228", "severity": "CRITICAL",
+                     "cvss_score": 10.0, "epss_score": 0.97, "is_kev": true,
+                     "published": "..." } ]
+}
+```
+
+`linked_cves` is capped at 20, ordered KEV first, then EPSS, then recency.
+
+### POST /api/hunt-packs/generate
+
+**Description:** Generate a detection pack for a CVE and persist the CVE→pack
+link in `hunt_packs`. Idempotent — regenerating the same (technique, CVE) pair
+updates the row in place.
+
+**Body:**
+
+```json
+{ "cve_id": "CVE-2021-44228", "technique_id": "T1190" }
+```
+
+`technique_id` is optional — defaults to the CVE's primary technique, then the
+first `cve_technique_map` entry; 400 when the CVE has no technique link and none
+is supplied. 400 on malformed CVE ID, 404 when the CVE is not in the database.
+
+**Response:** `{ "pack": { ...same shape as packs[] above... }, "created": true }`
+
+Pack priority is derived from the CVE: KEV → `critical`; CVSS ≥ 9.0 or
+EPSS ≥ 0.5 → `high`; CVSS ≥ 7.0 or EPSS ≥ 0.1 → `medium`; else `low`.
+
+---
+
 ## AI Summary
 
 ### POST /api/ai/summary
@@ -429,6 +534,8 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 
 **Response:** `{"data": [ kev_deadlines rows ]}` — each row includes `vendor_project`, `vulnerability_name`, `known_ransomware` (`Known` / `Unknown` / empty), `ransomware_use` (boolean convenience flag), and `cwes` (array of CWE IDs).
 
+**Frontend:** Sidebar KEV deadline list uses `sort=urgent` (soonest `due_date` first). CVE cards show a **Due in N days** chip when `kev_due_date` is present on the list payload (`<7` days red, `<14` amber, else neutral).
+
 ---
 
 ### GET /api/version
@@ -494,7 +601,7 @@ sum deviates by more than 1 × 10⁻⁶.
 |---|---|---|---|
 | `tz` | str | `DEFAULT_TIMEZONE` env | IANA timezone for display |
 
-**Response:** `status`, `cve_count`, `last_updated`, `nvd_sync_watermark`, `refresh_in_progress`, `ingest`, `feeds.incidents` (`last_refresh`, `stale` — Incidents snapshot freshness), `feeds.sources` (per outbound source: `last_success`, `last_failure`, `last_error`, `consecutive_failures`, `circuit_open`), schedule hints, server time.
+**Response:** `status`, `cve_count`, `last_updated`, `nvd_sync_watermark`, `refresh_in_progress`, `ingest`, `feeds.incidents` (`last_refresh`, `stale` — Incidents snapshot freshness), `feeds.sources` (per outbound source: `last_success`, `last_failure`, `last_error`, `consecutive_failures`, `circuit_open` — includes scheduler intel keys `vulnrichment` and `cvelistv5` after their first run), schedule hints, server time.
 
 ---
 

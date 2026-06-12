@@ -146,14 +146,11 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 | `KEV_SYNC_INTERVAL_MINUTES` | `15` | CISA KEV sync |
 | `EPSS_SYNC_INTERVAL_HOURS` | `6` | EPSS score refresh |
 | `INCIDENT_FEED_REFRESH_MINUTES` | `30` | Incidents & News snapshot rebuild |
-| `EXPLOIT_SOURCES_SYNC_ENABLED` | `1` | Combined PoC-in-GitHub / ExploitDB / Metasploit / Nuclei job |
-| `EXPLOIT_SOURCES_SYNC_INTERVAL_HOURS` | `24` | Exploit-availability feed cadence |
-| `EXPLOIT_SOURCES_THROTTLE_SECONDS` | `2` | Pause between snapshot sources in one run |
-| `POC_GITHUB_SYNC_ENABLED` | `1` | PoC-in-GitHub index (per-source disable) |
-| `POC_GITHUB_THROTTLE_SECONDS` | `0.5` | Pause between PoC JSON fetches |
-| `EXPLOITDB_SYNC_ENABLED` | `1` | ExploitDB CSV snapshot |
-| `METASPLOIT_SYNC_ENABLED` | `1` | Metasploit module metadata snapshot |
-| `NUCLEI_SYNC_ENABLED` | `1` | Nuclei `cves.json` snapshot |
+| `VULNRICHMENT_SYNC_INTERVAL_HOURS` | `6` | CISA Vulnrichment snapshot (gap-fill CVSS/CWE/CPE) |
+| `VULNRICHMENT_BRANCH` | `develop` | cisagov/vulnrichment git branch |
+| `CVELISTV5_SYNC_INTERVAL_MINUTES` | `30` | cvelistV5 incremental sync (GitHub compare deltas) |
+| `CVELISTV5_BRANCH` | `main` | CVEProject/cvelistV5 git branch |
+| `CVELISTV5_INITIAL_SINCE_DAYS` | `7` | First-run bootstrap window when no `cvelistv5_head_sha` watermark |
 | `CIRCUIT_FAILURE_THRESHOLD` | `3` | Consecutive failures before a source circuit opens |
 | `CIRCUIT_COOLDOWN_SECONDS` | `60` | Circuit-open cooldown before retrying a source |
 | `NVD_SYNC_OVERLAP_MINUTES` | `15` | Watermark overlap window |

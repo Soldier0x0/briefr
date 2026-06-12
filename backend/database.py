@@ -280,6 +280,26 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_group_technique_map_technique
                 ON group_technique_map(technique_id);
 
+            CREATE TABLE IF NOT EXISTS hunt_packs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                technique_id TEXT NOT NULL,
+                cve_id TEXT NOT NULL DEFAULT '',
+                title TEXT NOT NULL DEFAULT '',
+                priority TEXT NOT NULL DEFAULT 'medium',
+                sigma_yaml TEXT NOT NULL DEFAULT '',
+                siem_queries TEXT NOT NULL DEFAULT '{}',
+                log_patterns TEXT NOT NULL DEFAULT '[]',
+                notes TEXT NOT NULL DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now')),
+                UNIQUE (technique_id, cve_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_hunt_packs_technique
+                ON hunt_packs(technique_id);
+            CREATE INDEX IF NOT EXISTS idx_hunt_packs_cve
+                ON hunt_packs(cve_id);
+
             CREATE TABLE IF NOT EXISTS audit_log (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 actor TEXT NOT NULL DEFAULT '',
@@ -318,7 +338,10 @@ async def init_db() -> None:
             "CREATE TABLE IF NOT EXISTS mitre_groups (group_id TEXT PRIMARY KEY, name TEXT NOT NULL, aliases TEXT DEFAULT '[]', description TEXT DEFAULT '', sectors TEXT DEFAULT '[]', url TEXT DEFAULT '')",
             "CREATE TABLE IF NOT EXISTS group_technique_map (group_id TEXT NOT NULL, technique_id TEXT NOT NULL, PRIMARY KEY (group_id, technique_id))",
             "CREATE INDEX IF NOT EXISTS idx_group_technique_map_technique ON group_technique_map(technique_id)",
-            "CREATE UNIQUE INDEX IF NOT EXISTS idx_cve_exploits_cve_url ON cve_exploits(cve_id, url)",
+            # Forge MVP (V1.3): saved hunt packs + CVE→pack linkage
+            "CREATE TABLE IF NOT EXISTS hunt_packs (id INTEGER PRIMARY KEY AUTOINCREMENT, technique_id TEXT NOT NULL, cve_id TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', priority TEXT NOT NULL DEFAULT 'medium', sigma_yaml TEXT NOT NULL DEFAULT '', siem_queries TEXT NOT NULL DEFAULT '{}', log_patterns TEXT NOT NULL DEFAULT '[]', notes TEXT NOT NULL DEFAULT '', created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')), UNIQUE (technique_id, cve_id))",
+            "CREATE INDEX IF NOT EXISTS idx_hunt_packs_technique ON hunt_packs(technique_id)",
+            "CREATE INDEX IF NOT EXISTS idx_hunt_packs_cve ON hunt_packs(cve_id)",
         ):
             try:
                 await db.execute(migration)
@@ -379,6 +402,33 @@ def _values_differ(old: object, new: object) -> bool:
     if isinstance(old, float) and isinstance(new, float):
         return abs(old - new) > 1e-9
     return old != new
+
+
+def _normalize_epss_score(value: object) -> float | None:
+    """NULL and ~0 are equivalent — matches init_db epss_score NULL normalization."""
+    if value is None:
+        return None
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        return None
+    if abs(score) < 1e-9:
+        return None
+    return score
+
+
+def _epss_display_percent(score: float | None) -> float:
+    """One decimal place in percent — matches WhatChangedPanel EPSS formatting."""
+    if score is None:
+        return 0.0
+    return round(score * 100, 1)
+
+
+def _epss_scores_differ(old: object, new: object) -> bool:
+    """True only when EPSS would display differently to an analyst (0.1% precision)."""
+    return _epss_display_percent(_normalize_epss_score(old)) != _epss_display_percent(
+        _normalize_epss_score(new)
+    )
 
 
 _SQLITE_IN_CHUNK = 500
@@ -545,6 +595,121 @@ async def upsert_cve(db: aiosqlite.Connection, cve: dict) -> None:
     await upsert_cves(db, [cve])
 
 
+async def get_cves_needing_intel_enrichment(
+    db: aiosqlite.Connection,
+    *,
+    limit: int = 5000,
+) -> list[str]:
+    """CVE IDs that may still benefit from vulnrichment / cvelist enrichment."""
+    rows = await db.execute_fetchall(
+        """
+        SELECT cve_id FROM cves
+        WHERE cvss_score IS NULL
+           OR severity IS NULL
+           OR severity = 'UNKNOWN'
+           OR cwe_ids IS NULL
+           OR cwe_ids = '[]'
+           OR cwe_ids = ''
+        ORDER BY published DESC, cve_id DESC
+        LIMIT ?
+        """,
+        (limit,),
+    )
+    return [row["cve_id"] for row in rows]
+
+
+async def apply_additive_cve_enrichments(
+    db: aiosqlite.Connection,
+    enrichments: list[dict],
+) -> int:
+    """Merge scheduler intel into cves without downgrading richer NVD fields."""
+    from feeds.cve_record_v5 import merge_additive_cve_fields
+
+    if not enrichments:
+        return 0
+
+    updated = 0
+    for incoming in enrichments:
+        cve_id = (incoming.get("cve_id") or "").upper()
+        if not cve_id:
+            continue
+
+        rows = await db.execute_fetchall(
+            """
+            SELECT cve_id, description, cvss_score, severity, published, modified,
+                   affected_products, cwe_ids
+            FROM cves WHERE cve_id = ?
+            """,
+            (cve_id,),
+        )
+
+        if rows:
+            existing = dict(rows[0])
+            changes = merge_additive_cve_fields(existing, incoming)
+            if not changes:
+                continue
+            params = {"cve_id": cve_id}
+            set_parts: list[str] = []
+            if "cvss_score" in changes:
+                set_parts.append("cvss_score = :cvss_score")
+                params["cvss_score"] = changes["cvss_score"]
+            if "severity" in changes:
+                set_parts.append("severity = :severity")
+                params["severity"] = changes["severity"]
+            if "description" in changes:
+                set_parts.append("description = :description")
+                params["description"] = changes["description"]
+            if "published" in changes:
+                set_parts.append("published = :published")
+                params["published"] = changes["published"]
+            if "modified" in changes:
+                set_parts.append("modified = :modified")
+                params["modified"] = changes["modified"]
+            if "cwe_ids" in changes:
+                set_parts.append("cwe_ids = :cwe_ids")
+                params["cwe_ids"] = json.dumps(changes["cwe_ids"])
+            if "affected_products" in changes:
+                set_parts.append("affected_products = :affected_products")
+                params["affected_products"] = json.dumps(changes["affected_products"])
+            set_parts.append("updated_at = datetime('now')")
+            await db.execute(
+                f"UPDATE cves SET {', '.join(set_parts)} WHERE cve_id = :cve_id",
+                params,
+            )
+            updated += 1
+        else:
+            await upsert_cve(db, incoming)
+            updated += 1
+
+    return updated
+
+
+async def delete_cves_by_ids(db: aiosqlite.Connection, cve_ids: list[str]) -> int:
+    """Remove CVE rows (and purge legacy rejected-description rows). Caller commits."""
+    normalized = sorted({c.strip().upper() for c in cve_ids if c and str(c).strip()})
+    deleted = 0
+    for i in range(0, len(normalized), _SQLITE_IN_CHUNK):
+        chunk = normalized[i : i + _SQLITE_IN_CHUNK]
+        placeholders = ",".join("?" * len(chunk))
+        cursor = await db.execute(
+            f"DELETE FROM cves WHERE cve_id IN ({placeholders})",
+            chunk,
+        )
+        deleted += cursor.rowcount
+    return deleted
+
+
+async def purge_legacy_rejected_cves(db: aiosqlite.Connection) -> int:
+    """Delete rows ingested before reject-filtering (NVD 'Rejected reason:' text)."""
+    cursor = await db.execute(
+        """
+        DELETE FROM cves
+        WHERE LOWER(description) LIKE 'rejected reason:%'
+        """
+    )
+    return cursor.rowcount
+
+
 async def mark_cves_as_kev(db: aiosqlite.Connection, cve_ids: list) -> None:
     if not cve_ids:
         return
@@ -605,7 +770,7 @@ async def update_epss_scores(db: aiosqlite.Connection, scores: dict) -> None:
         if key not in existing:
             continue
         old = existing[key]
-        if not _values_differ(old, score):
+        if not _epss_scores_differ(old, score):
             continue
         history.append(
             (

@@ -80,7 +80,7 @@ Indexes: `severity`, `published`, `is_kev`, `epss_score`, `has_poc`
 | product | TEXT | | KEV product name |
 | short_description | TEXT | | CISA short text |
 | required_action | TEXT | | Remediation action |
-| due_date | TEXT | | Federal due date |
+| due_date | TEXT | | Federal due date — surfaced as `kev_due_date` on `GET /api/cves` list/export/detail |
 | date_added | TEXT | | KEV catalog add date |
 | vendor_project | TEXT | DEFAULT '' | KEV vendor/project name |
 | vulnerability_name | TEXT | DEFAULT '' | CISA vulnerability name |
@@ -203,6 +203,8 @@ Known keys: `nvd_last_mod_end` (NVD incremental watermark), `epss_backfill_done`
 | new_value | TEXT | NOT NULL DEFAULT '' | |
 | detected_at | TEXT | DEFAULT datetime('now') | |
 
+**Frontend:** `WhatChangedPanel.jsx` on the BRIEF tab (`GET /api/changes`).
+
 ### otx_cve_pulses
 
 | Column | Type | Constraints | Description |
@@ -282,6 +284,25 @@ Known keys: `nvd_last_mod_end` (NVD incremental watermark), `epss_backfill_done`
 | technique_id | TEXT | NOT NULL | |
 | | | PRIMARY KEY (group_id, technique_id) | |
 
+### hunt_packs
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | INTEGER | PRIMARY KEY AUTOINCREMENT | |
+| technique_id | TEXT | NOT NULL | ATT&CK technique (`T####` or `T####.###`) |
+| cve_id | TEXT | NOT NULL DEFAULT '' | CVE→pack linkage; '' reserved for technique-only packs |
+| title | TEXT | NOT NULL DEFAULT '' | `{cve_id} — {technique name} hunt pack` |
+| priority | TEXT | NOT NULL DEFAULT 'medium' | `critical|high|medium|low`, derived from KEV/CVSS/EPSS at generation |
+| sigma_yaml | TEXT | NOT NULL DEFAULT '' | Generated Sigma rule (experimental, template-based) |
+| siem_queries | TEXT | NOT NULL DEFAULT '{}' | JSON: per-platform `{query, notes}` (Elastic/Splunk/Sentinel/QRadar) |
+| log_patterns | TEXT | NOT NULL DEFAULT '[]' | JSON array of plain-English hunt patterns |
+| notes | TEXT | NOT NULL DEFAULT '' | Analyst notes (reserved; not written by MVP) |
+| created_at | TEXT | DEFAULT datetime('now') | |
+| updated_at | TEXT | DEFAULT datetime('now') | Bumped on regeneration |
+| | | UNIQUE (technique_id, cve_id) | Upsert target for idempotent regeneration |
+
+Indexes: `idx_hunt_packs_technique(technique_id)`, `idx_hunt_packs_cve(cve_id)`. Written only by `POST /api/hunt-packs/generate` (Forge MVP, V1.3); read by `GET /api/forge/coverage` (status = "yours") and `GET /api/hunt-packs/{technique_id}`.
+
 ### audit_log
 
 | Column | Type | Constraints | Description |
@@ -310,7 +331,8 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | `incident_feed_refresh` | Every `INCIDENT_FEED_REFRESH_MINUTES` (default 30m; first run ~20s after boot) | 6 RSS feeds (parallel) + ATLAS | `feed_cache` (`incident_rss:*`, `incident_feed:snapshot`) | Per-source errors stored in snapshot; cache-write contention degrades gracefully | Yes — snapshot overwrite |
 | `nightly_correlation` | Cron `CORRELATION_HOUR:MINUTE` in `CORRELATION_TIMEZONE` (default 01:00 IST) | OTX IOCs + local DB | `correlation_*`, `feed_cache` | Log error; lock skip | Yes — upsert/delete patterns |
 | _(one-shot)_ `epss_backfill` | Startup task (fires once; skipped if `sync_state.epss_backfill_done = 1`) | FIRST API `scope=time-series` | `epss_history`, `sync_state` | Log error; retries on next restart; INSERT OR IGNORE prevents duplicates | Yes — INSERT OR IGNORE + marker |
-| `exploit_sources_sync` | Every `EXPLOIT_SOURCES_SYNC_INTERVAL_HOURS` (default 24h; first run ~30m after boot when CVE count ≥ 10) | PoC-in-GitHub, ExploitDB CSV, Metasploit metadata, Nuclei `cves.json` | `cve_exploits`, `cves.has_poc`, `sync_state.poc_github_commit` | Per-source circuit open → skip; log error | Yes — merge/snapshot replace by `source`; `has_poc` forward-only |
+| `vulnrichment_snapshot_sync` | Every `VULNRICHMENT_SYNC_INTERVAL_HOURS` (default 6h; first run ~45s after boot) | cisagov/vulnrichment GitHub tree + raw JSON | `cves` (additive CVSS/CWE/CPE) | Log error; prior data retained | Yes — additive merge only |
+| `cvelistv5_incremental_sync` | Every `CVELISTV5_SYNC_INTERVAL_MINUTES` (default 30m; first run ~60s after boot) | CVEProject/cvelistV5 GitHub compare + raw JSON | `cves`, `sync_state.cvelistv5_head_sha` | Log error; watermark not advanced on failure | Yes — delta + additive merge |
 
 ---
 
@@ -339,6 +361,8 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | Groq | `api.groq.com/openai/v1/chat/completions` | `GROQ_API_KEY` | Console quota | Anthropic/template |
 | Anthropic | `api.anthropic.com/v1/messages` | `ANTHROPIC_API_KEY` | Console quota | Template |
 | GitHub | `api.github.com/search/code` | `GITHUB_TOKEN` | 60/hr without token | `[]` rules |
+| CISA Vulnrichment | `api.github.com` + `raw.githubusercontent.com/cisagov/vulnrichment` | `GITHUB_TOKEN` optional | 60/hr anon API | Skip run; circuit opens |
+| cvelistV5 | `api.github.com` + `raw.githubusercontent.com/CVEProject/cvelistV5` | `GITHUB_TOKEN` optional | 60/hr anon API | Skip run; watermark retained |
 
 ---
 
@@ -387,6 +411,7 @@ Weights are read by the frontend from `GET /api/config/risk` on every app load (
 | Risk score v1.1b | Complete | Client-side; momentum lazy |
 | Correlation engine | Complete | 3 levels; 6h on-demand cache |
 | Detection engineering tab | Complete | Sigma/Elastic search + generator |
+| Forge MVP (V1.3) | Complete | Coverage map + hunt-packs API + CVE→pack linkage; local template library, no outbound HTTP |
 | Asset profile CPE match | Complete | POST-only; no server storage |
 | Investigation panel | Complete | Cross-tab pivots |
 | PDF export + AI summary | Complete | Groq→Anthropic→template |

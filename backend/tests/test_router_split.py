@@ -46,6 +46,11 @@ EXPECTED_ROUTES = [
     ("POST", "/api/ai/summary"),
     ("POST", "/api/investigation/summary"),
     ("GET", "/api/config/risk"),
+    # Forge MVP (V1.3): coverage map + hunt packs, appended after the
+    # pre-split snapshot — additive only, original order untouched.
+    ("GET", "/api/forge/coverage"),
+    ("POST", "/api/hunt-packs/generate"),
+    ("GET", "/api/hunt-packs/{technique_id}"),
 ]
 
 

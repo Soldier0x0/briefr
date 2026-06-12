@@ -118,6 +118,8 @@ BRIEFR incorporates publicly available intelligence from NVD, CISA KEV, FIRST EP
 | Groq / Anthropic | PDF executive summary | On PDF export only | `POST /api/ai/summary` |
 | GitHub | Sigma + Elastic rule search | On Detect tab open | `GITHUB_TOKEN` optional |
 | RSS × 6 | Security news cards | Snapshot every 30 min (`INCIDENT_FEED_REFRESH_MINUTES`) | `GET /api/case-studies/feed` |
+| CISA Vulnrichment | SSVC / CVSS / CWE / CPE gap-fill before NVD analysis | Every `VULNRICHMENT_SYNC_INTERVAL_HOURS` (default 6h) | Scheduler only |
+| cvelistV5 | CVE JSON 5.x records + ADP containers (hours before NVD) | Every `CVELISTV5_SYNC_INTERVAL_MINUTES` (default 30m) | Scheduler only (`sync_state.cvelistv5_head_sha`) |
 
 ---
 
@@ -206,7 +208,7 @@ curl -X POST http://127.0.0.1:8000/api/refresh/epss
 curl -X POST http://127.0.0.1:8000/api/refresh/mitre  # ATT&CK + ATLAS
 ```
 
-Recent field changes: `GET /api/changes?since_hours=24`
+Recent field changes: `GET /api/changes?since_hours=24` (BRIEF tab **What changed** panel — CVSS/EPSS/KEV/PoC deltas with 24h/48h/7d filters)
 
 Check coverage:
 

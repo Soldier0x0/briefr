@@ -122,8 +122,25 @@ def _has_patch(references: list) -> bool:
     return False
 
 
-def _parse_cve_item(item: dict) -> dict:
+def _is_nvd_cve_rejected(cve_data: dict) -> bool:
+    status = cve_data.get("vulnStatus")
+    return isinstance(status, str) and status.strip().upper() == "REJECTED"
+
+
+def _nvd_rejected_cve_id(item: dict) -> str | None:
     cve_data = item.get("cve", {})
+    if not isinstance(cve_data, dict) or not _is_nvd_cve_rejected(cve_data):
+        return None
+    cve_id = cve_data.get("id")
+    if isinstance(cve_id, str) and cve_id.strip():
+        return cve_id.strip().upper()
+    return None
+
+
+def _parse_cve_item(item: dict) -> dict | None:
+    cve_data = item.get("cve", {})
+    if not isinstance(cve_data, dict) or _is_nvd_cve_rejected(cve_data):
+        return None
     cve_id = cve_data.get("id", "")
     descriptions = cve_data.get("descriptions", [])
     description = _extract_english_description(descriptions)
@@ -264,17 +281,27 @@ async def _fetch_cves_paginated(
     api_key: str | None,
     *,
     log_label: str,
-) -> list[dict]:
+) -> tuple[list[dict], list[str]]:
     all_cves: list[dict] = []
+    rejected_ids: list[str] = []
     pages_fetched = 0
+
+    def _consume_page(vulnerabilities: list) -> None:
+        for item in vulnerabilities:
+            rejected = _nvd_rejected_cve_id(item)
+            if rejected:
+                rejected_ids.append(rejected)
+                continue
+            parsed = _parse_cve_item(item)
+            if parsed:
+                all_cves.append(parsed)
 
     first_page = await _fetch_page(client, base_params, api_key)
     pages_fetched += 1
     total_results = first_page.get("totalResults", 0)
     vulnerabilities = first_page.get("vulnerabilities", [])
 
-    for item in vulnerabilities:
-        all_cves.append(_parse_cve_item(item))
+    _consume_page(vulnerabilities)
 
     logger.info("NVD %s: fetched %d/%d CVEs (page 1)", log_label, len(all_cves), total_results)
 
@@ -292,8 +319,7 @@ async def _fetch_cves_paginated(
         if not page_vulns:
             break
 
-        for item in page_vulns:
-            all_cves.append(_parse_cve_item(item))
+        _consume_page(page_vulns)
 
         logger.info(
             "NVD %s: fetched %d/%d CVEs (startIndex=%d)",
@@ -306,13 +332,19 @@ async def _fetch_cves_paginated(
         start_index += RESULTS_PER_PAGE
 
     await record_api_call("nvd", pages_fetched)
+    if rejected_ids:
+        logger.info(
+            "NVD %s: skipped %d Rejected CVE(s)",
+            log_label,
+            len(rejected_ids),
+        )
     logger.info(
         "NVD %s complete: %d CVEs retrieved (%d API requests)",
         log_label,
         len(all_cves),
         pages_fetched,
     )
-    return all_cves
+    return all_cves, rejected_ids
 
 
 async def fetch_cves_by_last_modified(
@@ -369,11 +401,11 @@ async def fetch_nvd_cve_updates(
     watermark: str | None,
     days_back: int = 14,
     overlap_minutes: int = 15,
-) -> tuple[list[dict], str, bool]:
+) -> tuple[list[dict], str, bool, list[str]]:
     """
     Fetch CVEs for a refresh cycle.
 
-    Returns (cves, mod_end_iso_for_watermark, used_incremental).
+    Returns (cves, mod_end_iso_for_watermark, used_incremental, rejected_cve_ids).
     """
     now = datetime.now(timezone.utc)
     mod_end_iso = _format_nvd_datetime(now)
@@ -387,12 +419,12 @@ async def fetch_nvd_cve_updates(
             if (now - mod_start) > timedelta(days=120):
                 mod_start = now - timedelta(days=120)
                 logger.warning("NVD watermark older than 120 days — clamping start to %s", mod_start.isoformat())
-            cves = await fetch_cves_by_last_modified(api_key, mod_start, now)
-            return cves, mod_end_iso, True
+            cves, rejected = await fetch_cves_by_last_modified(api_key, mod_start, now)
+            return cves, mod_end_iso, True, rejected
 
     logger.info("No NVD watermark — full sync for CVEs published in the last %d days", days_back)
-    cves = await fetch_recent_cves(api_key=api_key, days_back=days_back)
-    return cves, mod_end_iso, False
+    cves, rejected = await fetch_recent_cves(api_key=api_key, days_back=days_back)
+    return cves, mod_end_iso, False, rejected
 
 
 

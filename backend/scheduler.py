@@ -10,12 +10,16 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 from database import (
     EPSS_BACKFILL_DONE_KEY,
+    apply_additive_cve_enrichments,
+    delete_cves_by_ids,
+    purge_legacy_rejected_cves,
     refresh_all_cve_ai_context,
     backfill_display_fields,
     backfill_has_poc,
     enrich_kev_summaries,
     get_all_cve_ids,
     get_cve_count,
+    get_cves_needing_intel_enrichment,
     get_db,
     get_nvd_sync_watermark,
     get_sync_state_value,
@@ -31,6 +35,9 @@ from database import (
     upsert_cves,
     upsert_kev,
 )
+from feeds.cvelistv5 import SYNC_STATE_KEY as CVELISTV5_SYNC_STATE_KEY
+from feeds.cvelistv5 import fetch_cvelistv5_delta, get_cvelistv5_sync_interval_minutes
+from feeds.vulnrichment import fetch_vulnrichment_enrichments, get_vulnrichment_sync_interval_hours
 from feeds.epss import BACKFILL_BATCH_SIZE, BACKFILL_THROTTLE_SECONDS, fetch_epss_time_series_batch
 from feeds.case_study_feed import (
     build_incident_feed_snapshot,
@@ -59,7 +66,8 @@ _epss_backfill_lock = asyncio.Lock()
 _mitre_refresh_lock = asyncio.Lock()
 _otx_lock = asyncio.Lock()
 _correlation_lock = asyncio.Lock()
-_exploit_sources_lock = asyncio.Lock()
+_vulnrichment_lock = asyncio.Lock()
+_cvelistv5_lock = asyncio.Lock()
 
 
 def get_scheduler_timezone() -> str:
@@ -161,7 +169,7 @@ async def _run_nvd_incremental_sync() -> None:
         finally:
             await db.close()
 
-        cves, mod_end_iso, used_incremental = await fetch_nvd_cve_updates(
+        cves, mod_end_iso, used_incremental, rejected_ids = await fetch_nvd_cve_updates(
             nvd_api_key,
             watermark=watermark,
             days_back=days_back,
@@ -186,6 +194,15 @@ async def _run_nvd_incremental_sync() -> None:
 
         db = await get_db()
         try:
+            legacy_purged = await purge_legacy_rejected_cves(db)
+            rejected_purged = await delete_cves_by_ids(db, rejected_ids)
+            if legacy_purged or rejected_purged:
+                logger.info(
+                    "NVD sync purged %d rejected CVE row(s) (%d legacy, %d from feed)",
+                    legacy_purged + rejected_purged,
+                    legacy_purged,
+                    rejected_purged,
+                )
             await upsert_cves(db, cves)
             new_or_updated = len(cves)
             await set_nvd_sync_watermark(db, new_watermark)
@@ -606,6 +623,87 @@ async def run_exploit_sources_sync() -> bool:
     return True
 
 
+async def run_vulnrichment_sync() -> bool:
+    if _vulnrichment_lock.locked():
+        logger.warning("Vulnrichment sync already in progress — skipping")
+        return False
+
+    async with _vulnrichment_lock:
+        start = datetime.now(timezone.utc)
+        logger.info("Vulnrichment snapshot sync started at %s", start.isoformat())
+        try:
+            db = await get_db()
+            try:
+                gap_ids = await get_cves_needing_intel_enrichment(db, limit=1000)
+            finally:
+                await db.close()
+
+            target = set(gap_ids) if gap_ids else None
+            enrichments = await fetch_vulnrichment_enrichments(target)
+            if not enrichments:
+                logger.info("Vulnrichment sync: no enrichments to apply")
+                return True
+
+            db = await get_db()
+            try:
+                applied = await apply_additive_cve_enrichments(db, enrichments)
+                await db.commit()
+            finally:
+                await db.close()
+
+            logger.info("Vulnrichment sync complete: %d CVE rows updated", applied)
+        except Exception as exc:
+            logger.error("Vulnrichment sync failed: %s", exc)
+        duration = (datetime.now(timezone.utc) - start).total_seconds()
+        logger.info("Vulnrichment snapshot sync finished in %.1fs", duration)
+    return True
+
+
+async def run_cvelistv5_sync() -> bool:
+    if _cvelistv5_lock.locked():
+        logger.warning("cvelistV5 sync already in progress — skipping")
+        return False
+
+    async with _cvelistv5_lock:
+        start = datetime.now(timezone.utc)
+        logger.info("cvelistV5 incremental sync started at %s", start.isoformat())
+        try:
+            db = await get_db()
+            try:
+                watermark = await get_sync_state_value(db, CVELISTV5_SYNC_STATE_KEY)
+            finally:
+                await db.close()
+
+            records, rejected_ids, new_head, advance = await fetch_cvelistv5_delta(watermark)
+            if not advance or not new_head:
+                return True
+
+            applied = 0
+            purged = 0
+            db = await get_db()
+            try:
+                if records:
+                    applied = await apply_additive_cve_enrichments(db, records)
+                if rejected_ids:
+                    purged = await delete_cves_by_ids(db, rejected_ids)
+                await set_sync_state_value(db, CVELISTV5_SYNC_STATE_KEY, new_head)
+                await db.commit()
+            finally:
+                await db.close()
+
+            logger.info(
+                "cvelistV5 sync complete: %d CVE rows updated, %d rejected purged, watermark=%s",
+                applied,
+                purged,
+                new_head[:12],
+            )
+        except Exception as exc:
+            logger.error("cvelistV5 sync failed: %s", exc)
+        duration = (datetime.now(timezone.utc) - start).total_seconds()
+        logger.info("cvelistV5 incremental sync finished in %.1fs", duration)
+    return True
+
+
 async def run_incident_feed_refresh() -> bool:
     """Rebuild the combined Incidents & News snapshot (RSS in parallel + ATLAS)."""
     try:
@@ -799,12 +897,36 @@ def start_scheduler() -> AsyncIOScheduler:
         coalesce=True,
     )
 
+    vulnrichment_hours = get_vulnrichment_sync_interval_hours()
+    scheduler.add_job(
+        run_vulnrichment_sync,
+        trigger=IntervalTrigger(hours=vulnrichment_hours, timezone=sched_tz),
+        id="vulnrichment_snapshot_sync",
+        name="CISA Vulnrichment Snapshot Sync",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=45),
+    )
+
+    cvelist_minutes = get_cvelistv5_sync_interval_minutes()
+    scheduler.add_job(
+        run_cvelistv5_sync,
+        trigger=IntervalTrigger(minutes=cvelist_minutes, timezone=sched_tz),
+        id="cvelistv5_incremental_sync",
+        name="cvelistV5 Incremental Sync",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=60),
+    )
+
     scheduler.start()
     _scheduler = scheduler
     logger.info(
         "Scheduler started (tz=%s). NVD every %dh; KEV every %dm; EPSS every %dh; "
-        "MITRE+ATLAS weekly Sunday %02d:%02d; Exploit sources every %dh; "
-        "Correlation nightly %02d:%02d IST; OTX nightly %02d:%02d IST.",
+        "MITRE+ATLAS weekly Sunday %02d:%02d; Correlation nightly %02d:%02d IST; OTX nightly %02d:%02d IST; "
+        "Vulnrichment every %dh; cvelistV5 every %dm.",
         tz_name,
         intervals["nvd_hours"],
         intervals["kev_minutes"],
@@ -816,6 +938,8 @@ def start_scheduler() -> AsyncIOScheduler:
         corr_minute,
         otx_hour,
         otx_minute,
+        vulnrichment_hours,
+        cvelist_minutes,
     )
     return scheduler
 
