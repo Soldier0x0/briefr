@@ -80,7 +80,7 @@ Indexes: `severity`, `published`, `is_kev`, `epss_score`, `has_poc`
 | product | TEXT | | KEV product name |
 | short_description | TEXT | | CISA short text |
 | required_action | TEXT | | Remediation action |
-| due_date | TEXT | | Federal due date |
+| due_date | TEXT | | Federal due date — surfaced as `kev_due_date` on `GET /api/cves` list/export/detail |
 | date_added | TEXT | | KEV catalog add date |
 | vendor_project | TEXT | DEFAULT '' | KEV vendor/project name |
 | vulnerability_name | TEXT | DEFAULT '' | CISA vulnerability name |
@@ -201,6 +201,8 @@ Known keys: `nvd_last_mod_end` (NVD incremental watermark), `epss_backfill_done`
 | old_value | TEXT | NOT NULL DEFAULT '' | |
 | new_value | TEXT | NOT NULL DEFAULT '' | |
 | detected_at | TEXT | DEFAULT datetime('now') | |
+
+**Frontend:** `WhatChangedPanel.jsx` on the BRIEF tab (`GET /api/changes`).
 
 ### otx_cve_pulses
 

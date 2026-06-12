@@ -81,7 +81,7 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 | Table(s) | Primary endpoints | Frontend consumers |
 |---|---|---|
 | `cves` | `GET /api/cves`, `GET /api/cves/{id}`, `GET /api/stats` | CVEFeed, CVECard, DetailDrawer, StatsRow, TimelineHeatmap |
-| `kev_deadlines` | `GET /api/kev/deadlines`, embedded in CVE detail | Sidebar, DetailDrawer sentences |
+| `kev_deadlines` | `GET /api/kev/deadlines`, `kev_due_date` on list/export/detail | Sidebar (urgent sort), CVECard due chip, DetailDrawer sentences |
 | `epss_history` | `GET /api/cves/{id}/epss-history`, momentum | DetailDrawer EPSS sparkline |
 | `mitre_techniques`, `cve_technique_map` | `GET /api/techniques/top`, CVE `techniques` field | Sidebar, DetailDrawer Intel tab |
 | `atlas_*`, `cve_atlas_map` | `GET /api/atlas/*`, `GET /api/cves/{id}` (per-CVE fields) | DrawerAtlasSection, CaseStudies (global list) |
@@ -89,7 +89,7 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 | `feed_cache`, `ioc_cache` | Internal — speeds enrichment | Transparent to UI |
 | `correlation_*` | `GET /api/cves/{id}/correlation` | DetailDrawer correlation section |
 | `cve_exploits` | Via Sploitus loader in CVE detail | DetailDrawer Intel tab |
-| `cve_change_history` | `GET /api/changes` | — (API only) |
+| `cve_change_history` | `GET /api/changes` | WhatChangedPanel (BRIEF tab) |
 | `api_usage` | `GET /api/usage`, `GET /api/usage/ioc` | IOCLookup quota display |
 | `audit_log` | Written by `POST /api/refresh*` and backup/restore (admin UI reads in V1.4) | — (not exposed yet) |
 | `scoring/risk.py` constants | `GET /api/config/risk` — v1.1b weights, no DB | `riskScore.js` fetchAndCacheRiskWeights (startup) |

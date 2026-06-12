@@ -7,6 +7,7 @@ import Header from './components/Header.jsx'
 import Hero from './components/Hero.jsx'
 import StatsRow from './components/StatsRow.jsx'
 import TimelineHeatmap from './components/TimelineHeatmap.jsx'
+import WhatChangedPanel from './components/WhatChangedPanel.jsx'
 import CVEFeed from './components/CVEFeed.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import IOCLookup from './components/IOCLookup.jsx'
@@ -155,6 +156,7 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
         onAiAlertsClick={onAiAlertsClick}
       />
       <TimelineHeatmap filters={filters} onFiltersChange={handleFiltersChange} />
+      <WhatChangedPanel onSelectCVE={handleSelectCVE} />
       <FeedRefreshStatus
         lastUpdated={lastUpdated}
         nextRefreshUtc={nextRefreshUtc}
