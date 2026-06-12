@@ -383,55 +383,41 @@ async def _run_epss_backfill() -> None:
     start = datetime.now(timezone.utc)
     logger.info("EPSS history backfill started at %s", start.isoformat())
 
+    total_rows = 0
+    batch_num = 0
+    total_batches = 0
+    all_cve_ids: list[str] = []
+
     db = await get_db()
     try:
         done = await get_sync_state_value(db, EPSS_BACKFILL_DONE_KEY)
-    finally:
-        await db.close()
+        if done:
+            logger.info("EPSS backfill: marker %r already set — skipping", EPSS_BACKFILL_DONE_KEY)
+            return
 
-    if done:
-        logger.info("EPSS backfill: marker %r already set — skipping", EPSS_BACKFILL_DONE_KEY)
-        return
-
-    db = await get_db()
-    try:
         all_cve_ids = await get_all_cve_ids(db)
-    finally:
-        await db.close()
-
-    if not all_cve_ids:
-        logger.info("EPSS backfill: DB has no CVEs — marking done immediately")
-        db = await get_db()
-        try:
+        if not all_cve_ids:
+            logger.info("EPSS backfill: DB has no CVEs — marking done immediately")
             await set_sync_state_value(db, EPSS_BACKFILL_DONE_KEY, "1")
             await db.commit()
-        finally:
-            await db.close()
-        return
+            return
 
-    total_batches = (len(all_cve_ids) + BACKFILL_BATCH_SIZE - 1) // BACKFILL_BATCH_SIZE
-    logger.info(
-        "EPSS backfill: %d CVEs → %d batches (size=%d, throttle=%.1fs)",
-        len(all_cve_ids),
-        total_batches,
-        BACKFILL_BATCH_SIZE,
-        BACKFILL_THROTTLE_SECONDS,
-    )
+        total_batches = (len(all_cve_ids) + BACKFILL_BATCH_SIZE - 1) // BACKFILL_BATCH_SIZE
+        logger.info(
+            "EPSS backfill: %d CVEs → %d batches (size=%d, throttle=%.1fs)",
+            len(all_cve_ids),
+            total_batches,
+            BACKFILL_BATCH_SIZE,
+            BACKFILL_THROTTLE_SECONDS,
+        )
 
-    total_rows = 0
-    batch_num = 0
-    try:
         for offset in range(0, len(all_cve_ids), BACKFILL_BATCH_SIZE):
             batch = all_cve_ids[offset : offset + BACKFILL_BATCH_SIZE]
             rows = await fetch_epss_time_series_batch(batch)
             if rows:
-                db = await get_db()
-                try:
-                    inserted = await insert_epss_history_rows(db, rows)
-                    await db.commit()
-                    total_rows += inserted
-                finally:
-                    await db.close()
+                inserted = await insert_epss_history_rows(db, rows)
+                await db.commit()
+                total_rows += inserted
 
             batch_num += 1
             if batch_num % 10 == 0 or batch_num == total_batches:
@@ -445,6 +431,16 @@ async def _run_epss_backfill() -> None:
             if offset + BACKFILL_BATCH_SIZE < len(all_cve_ids):
                 await asyncio.sleep(BACKFILL_THROTTLE_SECONDS)
 
+        await set_sync_state_value(db, EPSS_BACKFILL_DONE_KEY, "1")
+        await db.commit()
+
+        duration = (datetime.now(timezone.utc) - start).total_seconds()
+        logger.info(
+            "EPSS backfill complete: %d CVEs, %d history rows inserted in %.1fs",
+            len(all_cve_ids),
+            total_rows,
+            duration,
+        )
     except Exception as exc:
         logger.error(
             "EPSS backfill aborted at batch %d/%d: %s — will retry on next startup",
@@ -452,22 +448,8 @@ async def _run_epss_backfill() -> None:
             total_batches,
             exc,
         )
-        return
-
-    db = await get_db()
-    try:
-        await set_sync_state_value(db, EPSS_BACKFILL_DONE_KEY, "1")
-        await db.commit()
     finally:
         await db.close()
-
-    duration = (datetime.now(timezone.utc) - start).total_seconds()
-    logger.info(
-        "EPSS backfill complete: %d CVEs, %d history rows inserted in %.1fs",
-        len(all_cve_ids),
-        total_rows,
-        duration,
-    )
 
 
 async def run_full_ingest_sync() -> bool:

@@ -152,6 +152,21 @@ def test_time_series_batch_returns_empty_on_http_error(monkeypatch):
     asyncio.run(run())
 
 
+def test_time_series_batch_returns_empty_on_non_dict_json(monkeypatch):
+    """API returns a list or other non-dict JSON — should not raise AttributeError."""
+    def handler(request):
+        return httpx.Response(200, json=[{"cve": "CVE-2021-44228", "epss": "0.5"}])
+
+    _install_transport(monkeypatch, handler)
+    resilient_client.reset_feed_health()
+
+    async def run():
+        rows = await fetch_epss_time_series_batch(["CVE-2021-44228"])
+        assert rows == []
+
+    asyncio.run(run())
+
+
 # ---------------------------------------------------------------------------
 # insert_epss_history_rows — DB unit tests
 # ---------------------------------------------------------------------------

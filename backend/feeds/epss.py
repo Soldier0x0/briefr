@@ -186,6 +186,10 @@ async def fetch_epss_time_series_batch(cve_ids: list[str]) -> list[dict]:
         logger.error("EPSS time-series unexpected error: %s", exc)
         return []
 
+    if not isinstance(data, dict):
+        logger.error("EPSS time-series API returned non-dict JSON; skipping batch of %d CVEs", len(cve_ids))
+        return []
+
     rows: list[dict] = []
     for item in data.get("data", []):
         cve_id = (item.get("cve") or "").upper()
