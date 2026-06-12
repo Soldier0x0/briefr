@@ -90,7 +90,7 @@ export default function WhatChangedPanel({ onSelectCVE }) {
     fetchChanges({ field: fieldFilter, sinceHours, limit: 50 })
       .then(data => {
         if (cancelled) return
-        setChanges(Array.isArray(data.data) ? data.data : [])
+        setChanges(Array.isArray(data?.data) ? data.data : [])
       })
       .catch(() => {
         if (!cancelled) {
@@ -110,13 +110,6 @@ export default function WhatChangedPanel({ onSelectCVE }) {
   function handleRowClick(cveId) {
     if (!cveId || !onSelectCVE) return
     onSelectCVE({ cve_id: cveId })
-  }
-
-  function handleRowKeyDown(e, cveId) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      handleRowClick(cveId)
-    }
   }
 
   return (
@@ -195,7 +188,6 @@ export default function WhatChangedPanel({ onSelectCVE }) {
                       type="button"
                       className="what-changed-row"
                       onClick={() => handleRowClick(row.cve_id)}
-                      onKeyDown={e => handleRowKeyDown(e, row.cve_id)}
                       aria-label={`${row.cve_id}: ${fieldLabel} changed from ${oldVal} to ${newVal}. Open CVE details.`}
                     >
                       <span className="what-changed-cve mono">{row.cve_id}</span>
