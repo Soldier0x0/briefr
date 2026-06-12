@@ -26,8 +26,8 @@ V1.3 makes BRIEFR the **best self-hosted analyst intelligence pane** — actiona
 | **Morning brief view** | Single screen: new/changed for *my stack* since last visit |
 | **Action queue** | Ranked worklist (KEV on stack, EPSS jumps, material CVSS changes) |
 | **Explainable risk** | Score breakdown UI (KEV + EPSS + stack match + momentum components) |
-| **Change intelligence** | Surface `cve_change_history` deltas filtered by asset profile (`GET /api/changes` UI — data already collected) |
-| **KEV due-date countdown** | "Due in N days" chip on cards + sorted deadline list (`kev_deadlines` already populated) |
+| **Change intelligence** | ✅ Surface `cve_change_history` deltas (`GET /api/changes` UI — What changed panel with field/window filters) |
+| **KEV due-date countdown** | ✅ "Due in N days" chip on cards + sidebar deadline list sorted by `GET /api/kev/deadlines?sort=urgent` |
 | **Pin / snooze / watchlist** | Analyst controls on CVE rows (stored in DB; single-user default now, keyed by app-login user once built-in auth ships — decision 2026-06-11) |
 
 **API sketch:**
@@ -91,7 +91,7 @@ If not fully completed in V1.2, finish here:
 | **React Query** | Complete rollout from V1.2 start — brief, feed, drawer |
 | **Incidents hook** | `useCaseStudyFeed` with persistent cache |
 | **Investigation pivots** | Incidents ATLAS cards → CVE drawer |
-| **Operator changes UI** | Surface `GET /api/changes` if not done in V1.2 |
+| **Operator changes UI** | ✅ Surface `GET /api/changes` (What changed panel on BRIEF tab) |
 
 ---
 

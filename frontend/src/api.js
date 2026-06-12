@@ -152,6 +152,14 @@ export function fetchKEVDeadlines(sort = 'recent') {
   return request(`/kev/deadlines?sort=${sort}`)
 }
 
+export function fetchChanges({ field = null, sinceHours = 24, limit = 50 } = {}) {
+  const qs = new URLSearchParams()
+  qs.set('since_hours', String(sinceHours))
+  qs.set('limit', String(limit))
+  if (field) qs.set('field', field)
+  return request(`/changes?${qs}`)
+}
+
 export function fetchRiskWeights() {
   return request('/config/risk')
 }

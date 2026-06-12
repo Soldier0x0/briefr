@@ -66,11 +66,14 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
       "patch_available": true,
       "source_urls": ["https://..."],
       "cwe_ids": ["CWE-79"],
-      "updated_at": "2024-01-02 12:00:00"
+      "updated_at": "2024-01-02 12:00:00",
+      "kev_due_date": null
     }
   ]
 }
 ```
+
+Each CVE object may include `kev_due_date` (`YYYY-MM-DD` from `kev_deadlines.due_date`, or `null` when not on the KEV catalog). Additive field — present on list and export responses.
 
 **Error responses:**
 
@@ -121,7 +124,9 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 | `field` | str | null | Filter to one tracked field |
 | `since_hours` | int | 24 | 1–168 |
 
-**Response:** `{"data": [...], "count": N}`
+**Response:** `{"data": [...], "count": N}` — each change row: `id`, `cve_id`, `field_name`, `old_value`, `new_value`, `detected_at`.
+
+**Frontend:** BRIEF tab **What changed** panel (`WhatChangedPanel.jsx`) — field + time-window filter chips; row click opens the CVE drawer.
 
 **Error responses:** `400` — invalid `field`
 
@@ -136,7 +141,7 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 **Response:** Bare CVE object (no `data` wrapper), including:
 
 - Core fields from `cves` table
-- `kev_date_added`, `kev_vendor_project`, `kev_vulnerability_name`, `kev_ransomware_use` (boolean), `kev_cwes[]`, `techniques[]`, `public_exploits[]`, `greynoise_scans[]`, `otx_pulses[]`, `otx_configured`, `osv_packages[]`
+- `kev_date_added`, `kev_due_date`, `kev_vendor_project`, `kev_vulnerability_name`, `kev_ransomware_use` (boolean), `kev_cwes[]`, `techniques[]`, `public_exploits[]`, `greynoise_scans[]`, `otx_pulses[]`, `otx_configured`, `osv_packages[]`
 
 **Error responses:**
 
@@ -428,6 +433,8 @@ Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules f
 | `sort` | str | `recent` | `recent` (date_added DESC) or `urgent` (due_date ASC) |
 
 **Response:** `{"data": [ kev_deadlines rows ]}` — each row includes `vendor_project`, `vulnerability_name`, `known_ransomware` (`Known` / `Unknown` / empty), `ransomware_use` (boolean convenience flag), and `cwes` (array of CWE IDs).
+
+**Frontend:** Sidebar KEV deadline list uses `sort=urgent` (soonest `due_date` first). CVE cards show a **Due in N days** chip when `kev_due_date` is present on the list payload (`<7` days red, `<14` amber, else neutral).
 
 ---
 

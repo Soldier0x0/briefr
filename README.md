@@ -202,7 +202,7 @@ curl -X POST http://127.0.0.1:8000/api/refresh/epss
 curl -X POST http://127.0.0.1:8000/api/refresh/mitre  # ATT&CK + ATLAS
 ```
 
-Recent field changes: `GET /api/changes?since_hours=24`
+Recent field changes: `GET /api/changes?since_hours=24` (BRIEF tab **What changed** panel — CVSS/EPSS/KEV/PoC deltas with 24h/48h/7d filters)
 
 Check coverage:
 

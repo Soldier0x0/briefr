@@ -207,6 +207,25 @@
   border-color: var(--red);
 }
 
+.badge-kev-due.badge-urgent,
+.badge-kev-due.badge-overdue {
+  color: var(--red);
+  background: var(--red-dim);
+  border-color: var(--red);
+}
+
+.badge-kev-due.badge-soon {
+  color: var(--amber);
+  background: var(--amber-dim);
+  border-color: var(--amber);
+}
+
+.badge-kev-due.badge-neutral {
+  color: var(--text2);
+  background: var(--bg3);
+  border-color: var(--border);
+}
+
 .badge-poc {
   color: var(--amber);
   background: var(--amber-dim);
