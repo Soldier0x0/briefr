@@ -51,6 +51,7 @@ Read in this order before writing any code:
 | #94 | settings-and-refresh-router | §5.2 phase 1: `settings.py` (BaseSettings), `dependencies.py` (`require_admin_key`, `audit`), `routers/refresh.py` | ✅ Merged |
 | #95 | router-split-ioc-atlas-health | §5.2 phase 2: `routers/health.py`, `routers/atlas.py`, `routers/ioc.py` moved out of `main.py` verbatim; OpenAPI route list byte-identical (snapshot test `tests/test_router_split.py`). +1 review fix: cached IOC hit now commits on-demand GreyNoise/OTX feed_cache writes (were rolled back on close — pre-existing in main.py) | ✅ Merged |
 | #96 | router-split-cves-meta-final | §5.2 phase 3 (final): `routers/cves.py` (changes/stats/list/export/detail/momentum/detection/correlation/KEV + CVE filter SQL) + `routers/meta.py` (version/time/usage/AI summaries) moved out of `main.py` verbatim; full OpenAPI JSON diffed byte-identical against pre-split main; `main.py` now app wiring only (~130 lines — V1.2 exit criterion met). +4 review fixes: stack-relevance sort no longer crashes on NULL `affected_products` (pre-existing in main.py); momentum/detection/correlation now validate the `CVE-` prefix like their siblings; `/api/stats` is one conditional-aggregation scan instead of five COUNT(*) scans (same response); `_row_to_cve_dict` normalizes NULL/'' list columns to `[]` per the API_REFERENCE contract | 🔲 Open |
+| TBD | risk-weights-api | §5.3: `GET /api/config/risk` in `routers/config.py` reads weights from `scoring/risk.py`; `riskScore.js` fetches at startup and caches, hardcoded constants as fallback. Weights sum to 1.0 invariant tested. Removes drift risk (README § Known limitations). | 🔲 Open |
 
 Each merged PR's description contains its own **post-merge verification
 checklist** — that is the house style; keep it (see §7).
@@ -117,13 +118,18 @@ Ordered; each is one PR unless noted. File pointers are current as of this doc.
 - Post-merge tests: full pytest suite; `diff` of `/api/openapi.json` route
   list before/after (must be identical); smoke `deploy/smoke-intel.sh`.
 
-### 5.3 Single-source risk weights
-- Serve v1.1b weights from `GET /api/config/risk` (source:
-  `backend/scoring/risk.py`); `frontend/src/scoring/riskScore.js` consumes
-  them with the current constants as fallback. Removes the documented drift
-  risk (README § Known limitations).
+### 5.3 Single-source risk weights — ✅ done (PR TBD open)
+- `GET /api/config/risk` in `routers/config.py` reads the six v1.1b weights
+  directly from `scoring/risk.py` constants and returns `{version, weights}`.
+- `frontend/src/scoring/riskScore.js` imports `fetchRiskWeights` from `api.js`,
+  calls `fetchAndCacheRiskWeights()` at startup (fire-and-forget via `main.jsx`),
+  and uses the module-level `_weights` cache in `calculateRiskScore`. Falls
+  back to bundled constants on any network/parse error.
+- Weights-sum-to-1.0 validated client-side (tolerance 1e-6) and tested by
+  `tests/test_config_risk_endpoint.py`. Removes drift risk documented in
+  README § Known limitations.
 - Post-merge tests: drawer risk breakdown unchanged for a known CVE;
-  endpoint returns weights summing to 1.0.
+  `curl http://127.0.0.1:8000/api/config/risk` returns weights summing to 1.0.
 
 ### 5.4 EPSS 30-day history backfill
 - One-shot resumable job (marker in `sync_state`, e.g. `epss_backfill_done`)

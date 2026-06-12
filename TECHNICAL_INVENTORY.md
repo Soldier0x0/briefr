@@ -333,17 +333,20 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 
 ## 5. Risk Scoring — v1.1b
 
-**Active client implementation:** `frontend/src/scoring/riskScore.js`  
-**Server momentum only:** `backend/scoring/risk.py`
+**Weight authority:** `backend/scoring/risk.py` constants → `GET /api/config/risk`  
+**Client scoring:** `frontend/src/scoring/riskScore.js` (fetches weights at startup; falls back to bundled constants)  
+**Server momentum:** `backend/scoring/risk.py:calculate_momentum`
 
-| Component | Weight |
-|---|---|
-| Asset profile match | 0.35 |
-| KEV status | 0.25 |
-| EPSS score | 0.15 |
-| Exploit availability | 0.10 |
-| CVSS score | 0.10 |
-| Momentum | 0.05 |
+| Component | Weight | Env var (future) |
+|---|---|---|
+| Asset profile match | 0.35 | — |
+| KEV status | 0.25 | — |
+| EPSS score | 0.15 | — |
+| Exploit availability | 0.10 | — |
+| CVSS score | 0.10 | — |
+| Momentum | 0.05 | — |
+
+Weights are read by the frontend from `GET /api/config/risk` on every app load (fire-and-forget). Any server-side weight change is immediately reflected without a frontend deploy.
 
 ### Momentum signals (`calculate_momentum`)
 
@@ -353,8 +356,6 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | New OTX pulse | `otx_cve_pulses.fetched_at` | +0.50 if ≤24h; +0.30 if ≤7d |
 | Recent KEV addition | `kev_deadlines.date_added` | +0.40 if ≤7 days |
 | Rapid exploitation | `published` vs KEV date | +0.30 if exploited within 30 days of publish |
-
-**Note:** Weights duplicated in Python and JavaScript — v1.2 will serve from single config endpoint.
 
 **Deprecated:** `frontend/src/utils/riskScore.js` (v1.1a weights, no momentum, unused).
 

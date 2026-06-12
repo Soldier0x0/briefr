@@ -68,7 +68,7 @@ V1.2 is a **maintainability and production-hardening** release, not a feature ex
 |------|------|
 | `repositories/` | Extract table access from `database.py` **pay-as-you-go** — per table, only where a service needs it; full layer waits for V2.0 Postgres |
 | Idempotent change history | Deduplicate `cve_change_history` inserts on repeated syncs |
-| Shared risk config | One source of truth for v1.1b weights (`GET /api/config/risk`; frontend consumes) |
+| Shared risk config | ✅ Shipped — `GET /api/config/risk` reads weights from `scoring/risk.py`; `riskScore.js` fetches at startup with bundled-constant fallback |
 
 **Why:** Risk weights today exist in both Python and JavaScript; drift is possible.
 

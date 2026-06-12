@@ -91,6 +91,18 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 | `cve_change_history` | `GET /api/changes` | — (API only) |
 | `api_usage` | `GET /api/usage`, `GET /api/usage/ioc` | IOCLookup quota display |
 | `audit_log` | Written by `POST /api/refresh*` and backup/restore (admin UI reads in V1.4) | — (not exposed yet) |
+| `scoring/risk.py` constants | `GET /api/config/risk` — v1.1b weights, no DB | `riskScore.js` fetchAndCacheRiskWeights (startup) |
+
+---
+
+### Risk score weight single-sourcing (v1.1b)
+
+`GET /api/config/risk` reads the six component weights directly from
+`backend/scoring/risk.py` and returns them as JSON. `frontend/src/scoring/riskScore.js`
+fetches this once at startup (fire-and-forget) and caches the result in a
+module-level variable. If the request fails, the hardcoded fallback constants
+(identical to the backend values) are used unchanged. This eliminates the
+drift risk documented in README § Known limitations.
 
 ---
 

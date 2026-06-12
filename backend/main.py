@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 from database import init_db
 from resilient_client import close_client
 from routers import atlas as atlas_router
+from routers import config as config_router
 from routers import cves as cves_router
 from routers import health as health_router
 from routers import ioc as ioc_router
@@ -114,6 +115,7 @@ app.include_router(cves_router.detail_router)
 app.include_router(ioc_router.router)
 app.include_router(cves_router.intel_router)
 app.include_router(meta_router.router)
+app.include_router(config_router.router)
 
 
 if __name__ == "__main__":
