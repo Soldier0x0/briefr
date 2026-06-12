@@ -13,7 +13,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 | API framework | FastAPI | 0.136.3 | REST API, OpenAPI, validation |
 | ASGI server | uvicorn | 0.48.0 | Production HTTP server |
 | HTTP client | httpx | 0.28.1 | Async external API calls |
-| Scheduler | APScheduler | 3.11.2 | 9 background ingest/correlation/ML jobs |
+| Scheduler | APScheduler | 3.11.2 | 11 background ingest/correlation/ML jobs (+ opt-in exploit sources) |
 | Database | SQLite + aiosqlite | 0.22.1 | Local persistence (`briefr.db`) |
 | Validation | Pydantic | 2.13.4 | Request/response models |
 | Config | python-dotenv | 1.2.2 | `.env` loading |
@@ -84,7 +84,7 @@ Indexes: `severity`, `published`, `is_kev`, `epss_score`, `has_poc`
 | product | TEXT | | KEV product name |
 | short_description | TEXT | | CISA short text |
 | required_action | TEXT | | Remediation action |
-| due_date | TEXT | | Federal due date |
+| due_date | TEXT | | Federal due date — surfaced as `kev_due_date` on `GET /api/cves` list/export/detail |
 | date_added | TEXT | | KEV catalog add date |
 | vendor_project | TEXT | DEFAULT '' | KEV vendor/project name |
 | vulnerability_name | TEXT | DEFAULT '' | CISA vulnerability name |
@@ -186,6 +186,7 @@ Known keys: `nvd_last_mod_end` (NVD incremental watermark), `epss_backfill_done`
 | url | TEXT | NOT NULL DEFAULT '' | |
 | published_date | TEXT | DEFAULT '' | |
 | fetched_at | TEXT | DEFAULT datetime('now') | |
+| | | UNIQUE (cve_id, url) via `idx_cve_exploits_cve_url` | Dedup across feeds |
 
 ### feed_cache
 
@@ -205,6 +206,8 @@ Known keys: `nvd_last_mod_end` (NVD incremental watermark), `epss_backfill_done`
 | old_value | TEXT | NOT NULL DEFAULT '' | |
 | new_value | TEXT | NOT NULL DEFAULT '' | |
 | detected_at | TEXT | DEFAULT datetime('now') | |
+
+**Frontend:** `WhatChangedPanel.jsx` on the BRIEF tab (`GET /api/changes`).
 
 ### otx_cve_pulses
 
@@ -297,6 +300,25 @@ Known keys: `nvd_last_mod_end` (NVD incremental watermark), `epss_backfill_done`
 
 Index: `idx_cve_embeddings_model(model)`. Written only by the `embeddings_backfill` scheduler job (V1.3, `EMBEDDINGS_ENABLED=1`); read by `GET /api/cves/{id}/related` as a pure BLOB scan (NumPy cosine; sqlite-vec when importable). Empty table when embeddings are disabled — the endpoint then uses the shared-product heuristic.
 
+### hunt_packs
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | INTEGER | PRIMARY KEY AUTOINCREMENT | |
+| technique_id | TEXT | NOT NULL | ATT&CK technique (`T####` or `T####.###`) |
+| cve_id | TEXT | NOT NULL DEFAULT '' | CVE→pack linkage; '' reserved for technique-only packs |
+| title | TEXT | NOT NULL DEFAULT '' | `{cve_id} — {technique name} hunt pack` |
+| priority | TEXT | NOT NULL DEFAULT 'medium' | `critical|high|medium|low`, derived from KEV/CVSS/EPSS at generation |
+| sigma_yaml | TEXT | NOT NULL DEFAULT '' | Generated Sigma rule (experimental, template-based) |
+| siem_queries | TEXT | NOT NULL DEFAULT '{}' | JSON: per-platform `{query, notes}` (Elastic/Splunk/Sentinel/QRadar) |
+| log_patterns | TEXT | NOT NULL DEFAULT '[]' | JSON array of plain-English hunt patterns |
+| notes | TEXT | NOT NULL DEFAULT '' | Analyst notes (reserved; not written by MVP) |
+| created_at | TEXT | DEFAULT datetime('now') | |
+| updated_at | TEXT | DEFAULT datetime('now') | Bumped on regeneration |
+| | | UNIQUE (technique_id, cve_id) | Upsert target for idempotent regeneration |
+
+Indexes: `idx_hunt_packs_technique(technique_id)`, `idx_hunt_packs_cve(cve_id)`. Written only by `POST /api/hunt-packs/generate` (Forge MVP, V1.3); read by `GET /api/forge/coverage` (status = "yours") and `GET /api/hunt-packs/{technique_id}`.
+
 ### audit_log
 
 | Column | Type | Constraints | Description |
@@ -325,6 +347,8 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | `incident_feed_refresh` | Every `INCIDENT_FEED_REFRESH_MINUTES` (default 30m; first run ~20s after boot) | 6 RSS feeds (parallel) + ATLAS | `feed_cache` (`incident_rss:*`, `incident_feed:snapshot`) | Per-source errors stored in snapshot; cache-write contention degrades gracefully | Yes — snapshot overwrite |
 | `nightly_correlation` | Cron `CORRELATION_HOUR:MINUTE` in `CORRELATION_TIMEZONE` (default 01:00 IST) | OTX IOCs + local DB | `correlation_*`, `feed_cache` | Log error; lock skip | Yes — upsert/delete patterns |
 | _(one-shot)_ `epss_backfill` | Startup task (fires once; skipped if `sync_state.epss_backfill_done = 1`) | FIRST API `scope=time-series` | `epss_history`, `sync_state` | Log error; retries on next restart; INSERT OR IGNORE prevents duplicates | Yes — INSERT OR IGNORE + marker |
+| `vulnrichment_snapshot_sync` | Every `VULNRICHMENT_SYNC_INTERVAL_HOURS` (default 6h; first run ~45s after boot) | cisagov/vulnrichment GitHub tree + raw JSON | `cves` (additive CVSS/CWE/CPE) | Log error; prior data retained | Yes — additive merge only |
+| `cvelistv5_incremental_sync` | Every `CVELISTV5_SYNC_INTERVAL_MINUTES` (default 30m; first run ~60s after boot) | CVEProject/cvelistV5 GitHub compare + raw JSON | `cves`, `sync_state.cvelistv5_head_sha` | Log error; watermark not advanced on failure | Yes — delta + additive merge |
 | `embeddings_backfill` | Every `EMBEDDINGS_SYNC_INTERVAL_HOURS` (default 6h; first run ~90s after boot) | Local CPU model (fastembed/ONNX) — no network after model download | `cve_embeddings` | **No-op unless `EMBEDDINGS_ENABLED=1`**; clear warning if `fastembed` missing; log error otherwise | Yes — only missing vectors embedded, commit per batch |
 | `llm_product_extraction` | Every `LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS` (default 6h; first run ~150s after boot) | Groq API (via `resilient_client`, `retries=0`) | `cves.affected_products` (only while empty) + `affected_products_source='llm'`, `feed_cache` (`llm_products:*`) | **No-op unless `LLM_PRODUCT_EXTRACTION_ENABLED=1` AND `GROQ_API_KEY` set**; circuit-open aborts run; per-CVE errors retried next run (not cached) | Yes — completed extractions negative-cached 7d; write guarded on empty field |
 
@@ -340,6 +364,10 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | MITRE STIX | `enterprise-attack.json` + CTID CSV | — | Unlimited | Job fails |
 | ATLAS | GitHub raw YAML + case-studies API | `ATLAS_YAML_URL` | Unlimited | Job fails |
 | Sploitus | `sploitus.com` search API | — | Unpublished | `None`/`[]` |
+| PoC-in-GitHub | GitHub API + raw JSON (`nomi-sec/PoC-in-GitHub`) | `GITHUB_TOKEN` optional | GitHub rate limits | Skip source |
+| ExploitDB | GitLab raw `files_exploits.csv` | — | Unrestricted | Skip source |
+| Metasploit | GitHub raw `modules_metadata_base.json` | — | Unrestricted | Skip source |
+| Nuclei | GitHub raw `cves.json` (JSONL) | — | Unrestricted | Skip source |
 | GreyNoise | `api.greynoise.io/v3/community` | `GREYNOISE_API_KEY` | 50/week | Unknown classification |
 | VirusTotal | `virustotal.com/api/v3` | `VIRUSTOTAL_API_KEY` | 500/day | Empty fields |
 | AbuseIPDB | `api.abuseipdb.com/api/v2/check` | `ABUSEIPDB_API_KEY` | 1000/day | Skipped |
@@ -351,6 +379,8 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | Groq | `api.groq.com/openai/v1/chat/completions` | `GROQ_API_KEY` | Console quota | PDF summary: Anthropic/template. Product extraction (V1.3): skipped — `affected_products` stays empty until official CPE arrives |
 | Anthropic | `api.anthropic.com/v1/messages` | `ANTHROPIC_API_KEY` | Console quota | Template |
 | GitHub | `api.github.com/search/code` | `GITHUB_TOKEN` | 60/hr without token | `[]` rules |
+| CISA Vulnrichment | `api.github.com` + `raw.githubusercontent.com/cisagov/vulnrichment` | `GITHUB_TOKEN` optional | 60/hr anon API | Skip run; circuit opens |
+| cvelistV5 | `api.github.com` + `raw.githubusercontent.com/CVEProject/cvelistV5` | `GITHUB_TOKEN` optional | 60/hr anon API | Skip run; watermark retained |
 
 ---
 
@@ -399,6 +429,7 @@ Weights are read by the frontend from `GET /api/config/risk` on every app load (
 | Risk score v1.1b | Complete | Client-side; momentum lazy |
 | Correlation engine | Complete | 3 levels; 6h on-demand cache |
 | Detection engineering tab | Complete | Sigma/Elastic search + generator |
+| Forge MVP (V1.3) | Complete | Coverage map + hunt-packs API + CVE→pack linkage; local template library, no outbound HTTP |
 | Asset profile CPE match | Complete | POST-only; no server storage |
 | Investigation panel | Complete | Cross-tab pivots |
 | PDF export + AI summary | Complete | Groq→Anthropic→template |

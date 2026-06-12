@@ -3,6 +3,7 @@ import { copyToClipboard } from '../utils/report.js'
 import { formatAbsolute } from '../utils/timezone.js'
 import { publishedAgeClass } from '../utils/cveAge.js'
 import { useMomentumScore } from '../utils/momentumCache.js'
+import { daysUntilDue, kevDueUrgencyClass, kevDueLabel } from '../utils/kevDeadline.js'
 import './CVECard.css'
 
 function timeAgo(isoString) {
@@ -68,6 +69,8 @@ export default function CVECard({
       : null
   const products = Array.isArray(cve.affected_products) ? cve.affected_products : []
   const cwes = Array.isArray(cve.cwe_ids) ? cve.cwe_ids : []
+  const kevDueDays = cve.is_kev ? daysUntilDue(cve.kev_due_date) : null
+  const kevDueText = kevDueLabel(kevDueDays)
 
   function handleClick() {
     if (onSelect) onSelect(cve)
@@ -185,6 +188,14 @@ export default function CVECard({
           {cve.is_kev && (
             <span className="badge badge-kev" title="Listed in CISA Known Exploited Vulnerabilities">
               KEV
+            </span>
+          )}
+          {kevDueText && (
+            <span
+              className={`badge badge-kev-due ${kevDueUrgencyClass(kevDueDays)}`}
+              title={`Federal remediation deadline: ${cve.kev_due_date}`}
+            >
+              {kevDueText}
             </span>
           )}
           {cve.has_poc && (

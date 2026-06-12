@@ -170,6 +170,8 @@ async def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_cve_exploits_cve
                 ON cve_exploits(cve_id);
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_cve_exploits_cve_url
+                ON cve_exploits(cve_id, url);
 
             CREATE TABLE IF NOT EXISTS feed_cache (
                 cache_key TEXT PRIMARY KEY,
@@ -292,6 +294,26 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_cve_embeddings_model
                 ON cve_embeddings(model);
 
+            CREATE TABLE IF NOT EXISTS hunt_packs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                technique_id TEXT NOT NULL,
+                cve_id TEXT NOT NULL DEFAULT '',
+                title TEXT NOT NULL DEFAULT '',
+                priority TEXT NOT NULL DEFAULT 'medium',
+                sigma_yaml TEXT NOT NULL DEFAULT '',
+                siem_queries TEXT NOT NULL DEFAULT '{}',
+                log_patterns TEXT NOT NULL DEFAULT '[]',
+                notes TEXT NOT NULL DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now')),
+                UNIQUE (technique_id, cve_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_hunt_packs_technique
+                ON hunt_packs(technique_id);
+            CREATE INDEX IF NOT EXISTS idx_hunt_packs_cve
+                ON hunt_packs(cve_id);
+
             CREATE TABLE IF NOT EXISTS audit_log (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 actor TEXT NOT NULL DEFAULT '',
@@ -331,6 +353,18 @@ async def init_db() -> None:
             "CREATE TABLE IF NOT EXISTS mitre_groups (group_id TEXT PRIMARY KEY, name TEXT NOT NULL, aliases TEXT DEFAULT '[]', description TEXT DEFAULT '', sectors TEXT DEFAULT '[]', url TEXT DEFAULT '')",
             "CREATE TABLE IF NOT EXISTS group_technique_map (group_id TEXT NOT NULL, technique_id TEXT NOT NULL, PRIMARY KEY (group_id, technique_id))",
             "CREATE INDEX IF NOT EXISTS idx_group_technique_map_technique ON group_technique_map(technique_id)",
+            # Forge MVP (V1.3): saved hunt packs + CVE→pack linkage
+            "CREATE TABLE IF NOT EXISTS hunt_packs (id INTEGER PRIMARY KEY AUTOINCREMENT, technique_id TEXT NOT NULL, cve_id TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', priority TEXT NOT NULL DEFAULT 'medium', sigma_yaml TEXT NOT NULL DEFAULT '', siem_queries TEXT NOT NULL DEFAULT '{}', log_patterns TEXT NOT NULL DEFAULT '[]', notes TEXT NOT NULL DEFAULT '', created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')), UNIQUE (technique_id, cve_id))",
+            "CREATE INDEX IF NOT EXISTS idx_hunt_packs_technique ON hunt_packs(technique_id)",
+            "CREATE INDEX IF NOT EXISTS idx_hunt_packs_cve ON hunt_packs(cve_id)",
+            # Exploit feeds: dedupe then enforce (cve_id, url) uniqueness
+            """
+            DELETE FROM cve_exploits
+            WHERE id NOT IN (
+                SELECT MIN(id) FROM cve_exploits GROUP BY cve_id, url
+            )
+            """,
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_cve_exploits_cve_url ON cve_exploits(cve_id, url)",
         ):
             try:
                 await db.execute(migration)
@@ -391,6 +425,33 @@ def _values_differ(old: object, new: object) -> bool:
     if isinstance(old, float) and isinstance(new, float):
         return abs(old - new) > 1e-9
     return old != new
+
+
+def _normalize_epss_score(value: object) -> float | None:
+    """NULL and ~0 are equivalent — matches init_db epss_score NULL normalization."""
+    if value is None:
+        return None
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        return None
+    if abs(score) < 1e-9:
+        return None
+    return score
+
+
+def _epss_display_percent(score: float | None) -> float:
+    """One decimal place in percent — matches WhatChangedPanel EPSS formatting."""
+    if score is None:
+        return 0.0
+    return round(score * 100, 1)
+
+
+def _epss_scores_differ(old: object, new: object) -> bool:
+    """True only when EPSS would display differently to an analyst (0.1% precision)."""
+    return _epss_display_percent(_normalize_epss_score(old)) != _epss_display_percent(
+        _normalize_epss_score(new)
+    )
 
 
 _SQLITE_IN_CHUNK = 500
@@ -573,6 +634,121 @@ async def upsert_cve(db: aiosqlite.Connection, cve: dict) -> None:
     await upsert_cves(db, [cve])
 
 
+async def get_cves_needing_intel_enrichment(
+    db: aiosqlite.Connection,
+    *,
+    limit: int = 5000,
+) -> list[str]:
+    """CVE IDs that may still benefit from vulnrichment / cvelist enrichment."""
+    rows = await db.execute_fetchall(
+        """
+        SELECT cve_id FROM cves
+        WHERE cvss_score IS NULL
+           OR severity IS NULL
+           OR severity = 'UNKNOWN'
+           OR cwe_ids IS NULL
+           OR cwe_ids = '[]'
+           OR cwe_ids = ''
+        ORDER BY published DESC, cve_id DESC
+        LIMIT ?
+        """,
+        (limit,),
+    )
+    return [row["cve_id"] for row in rows]
+
+
+async def apply_additive_cve_enrichments(
+    db: aiosqlite.Connection,
+    enrichments: list[dict],
+) -> int:
+    """Merge scheduler intel into cves without downgrading richer NVD fields."""
+    from feeds.cve_record_v5 import merge_additive_cve_fields
+
+    if not enrichments:
+        return 0
+
+    updated = 0
+    for incoming in enrichments:
+        cve_id = (incoming.get("cve_id") or "").upper()
+        if not cve_id:
+            continue
+
+        rows = await db.execute_fetchall(
+            """
+            SELECT cve_id, description, cvss_score, severity, published, modified,
+                   affected_products, cwe_ids
+            FROM cves WHERE cve_id = ?
+            """,
+            (cve_id,),
+        )
+
+        if rows:
+            existing = dict(rows[0])
+            changes = merge_additive_cve_fields(existing, incoming)
+            if not changes:
+                continue
+            params = {"cve_id": cve_id}
+            set_parts: list[str] = []
+            if "cvss_score" in changes:
+                set_parts.append("cvss_score = :cvss_score")
+                params["cvss_score"] = changes["cvss_score"]
+            if "severity" in changes:
+                set_parts.append("severity = :severity")
+                params["severity"] = changes["severity"]
+            if "description" in changes:
+                set_parts.append("description = :description")
+                params["description"] = changes["description"]
+            if "published" in changes:
+                set_parts.append("published = :published")
+                params["published"] = changes["published"]
+            if "modified" in changes:
+                set_parts.append("modified = :modified")
+                params["modified"] = changes["modified"]
+            if "cwe_ids" in changes:
+                set_parts.append("cwe_ids = :cwe_ids")
+                params["cwe_ids"] = json.dumps(changes["cwe_ids"])
+            if "affected_products" in changes:
+                set_parts.append("affected_products = :affected_products")
+                params["affected_products"] = json.dumps(changes["affected_products"])
+            set_parts.append("updated_at = datetime('now')")
+            await db.execute(
+                f"UPDATE cves SET {', '.join(set_parts)} WHERE cve_id = :cve_id",
+                params,
+            )
+            updated += 1
+        else:
+            await upsert_cve(db, incoming)
+            updated += 1
+
+    return updated
+
+
+async def delete_cves_by_ids(db: aiosqlite.Connection, cve_ids: list[str]) -> int:
+    """Remove CVE rows (and purge legacy rejected-description rows). Caller commits."""
+    normalized = sorted({c.strip().upper() for c in cve_ids if c and str(c).strip()})
+    deleted = 0
+    for i in range(0, len(normalized), _SQLITE_IN_CHUNK):
+        chunk = normalized[i : i + _SQLITE_IN_CHUNK]
+        placeholders = ",".join("?" * len(chunk))
+        cursor = await db.execute(
+            f"DELETE FROM cves WHERE cve_id IN ({placeholders})",
+            chunk,
+        )
+        deleted += cursor.rowcount
+    return deleted
+
+
+async def purge_legacy_rejected_cves(db: aiosqlite.Connection) -> int:
+    """Delete rows ingested before reject-filtering (NVD 'Rejected reason:' text)."""
+    cursor = await db.execute(
+        """
+        DELETE FROM cves
+        WHERE LOWER(description) LIKE 'rejected reason:%'
+        """
+    )
+    return cursor.rowcount
+
+
 async def mark_cves_as_kev(db: aiosqlite.Connection, cve_ids: list) -> None:
     if not cve_ids:
         return
@@ -633,7 +809,7 @@ async def update_epss_scores(db: aiosqlite.Connection, scores: dict) -> None:
         if key not in existing:
             continue
         old = existing[key]
-        if not _values_differ(old, score):
+        if not _epss_scores_differ(old, score):
             continue
         history.append(
             (
@@ -1157,11 +1333,12 @@ async def get_cached_cve_exploits(
 async def store_cve_exploits(
     db: aiosqlite.Connection, cve_id: str, exploits: list[dict]
 ) -> None:
-    await replace_cve_exploits(db, cve_id, exploits)
+    await merge_cve_exploits(db, cve_id, exploits)
+    merged = await read_cve_exploits_from_db(db, cve_id, max_age_hours=24 * 365)
     await set_feed_cache(
         db,
         f"sploitus:{cve_id.upper()}",
-        {"exploits": exploits},
+        {"exploits": merged or exploits},
     )
 
 
@@ -1248,6 +1425,125 @@ async def replace_cve_exploits(
                 for exp in exploits
             ],
         )
+
+
+async def _sqlite_changes(db: aiosqlite.Connection) -> int:
+    """Rows changed by the last statement — reliable when rowcount is -1/0."""
+    row = await db.execute_fetchall("SELECT changes() AS n")
+    return int(row[0]["n"] or 0)
+
+
+async def merge_cve_exploits(
+    db: aiosqlite.Connection, cve_id: str, exploits: list[dict]
+) -> int:
+    """Insert exploit rows for a CVE; skip duplicates by (cve_id, url)."""
+    key = cve_id.upper()
+    inserted = 0
+    for exp in exploits:
+        url = (exp.get("url") or "").strip()
+        if not url:
+            continue
+        cursor = await db.execute(
+            """
+            INSERT OR IGNORE INTO cve_exploits (
+                cve_id, title, type, source, url, published_date, fetched_at
+            ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+            """,
+            (
+                key,
+                exp.get("title") or "",
+                exp.get("type") or "poc",
+                exp.get("source") or "",
+                url,
+                exp.get("published_date") or "",
+            ),
+        )
+        rc = cursor.rowcount
+        if rc is None or rc < 0:
+            inserted += await _sqlite_changes(db)
+        elif rc > 0:
+            inserted += rc
+    return inserted
+
+
+async def replace_cve_exploits_by_source(
+    db: aiosqlite.Connection, source: str, cve_exploits: dict[str, list[dict]]
+) -> tuple[int, int]:
+    """Replace all rows for a feed source; returns (rows_inserted, cves_touched)."""
+    await db.execute("DELETE FROM cve_exploits WHERE source = ?", (source,))
+    rows: list[tuple] = []
+    seen: set[tuple[str, str]] = set()
+    for cve_id, exploits in cve_exploits.items():
+        key = cve_id.upper()
+        for exp in exploits:
+            url = (exp.get("url") or "").strip()
+            if not url:
+                continue
+            dedupe_key = (key, url)
+            if dedupe_key in seen:
+                continue
+            seen.add(dedupe_key)
+            rows.append(
+                (
+                    key,
+                    exp.get("title") or "",
+                    exp.get("type") or "poc",
+                    source,
+                    url,
+                    exp.get("published_date") or "",
+                )
+            )
+    if rows:
+        await db.executemany(
+            """
+            INSERT OR IGNORE INTO cve_exploits (
+                cve_id, title, type, source, url, published_date, fetched_at
+            ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+            """,
+            rows,
+        )
+    return len(rows), len(cve_exploits)
+
+
+async def mark_has_poc_additive(
+    db: aiosqlite.Connection, cve_ids: list[str] | set[str]
+) -> int:
+    """Set has_poc=1 for the given CVE IDs; never downgrade from 1."""
+    ids = sorted({str(c).upper() for c in cve_ids if c})
+    if not ids:
+        return 0
+    rows: list = []
+    for offset in range(0, len(ids), _SQLITE_IN_CHUNK):
+        chunk = ids[offset : offset + _SQLITE_IN_CHUNK]
+        placeholders = ",".join("?" for _ in chunk)
+        chunk_rows = await db.execute_fetchall(
+            f"""
+            SELECT cve_id FROM cves
+            WHERE cve_id IN ({placeholders}) AND COALESCE(has_poc, 0) = 0
+            """,
+            chunk,
+        )
+        rows.extend(chunk_rows)
+    if not rows:
+        return 0
+    history = [(row["cve_id"], "has_poc", "0", "1") for row in rows]
+    await _insert_cve_changes_batch(db, history)
+    updated = 0
+    for row in rows:
+        cve_key = row["cve_id"]
+        cursor = await db.execute(
+            """
+            UPDATE cves SET has_poc = 1
+            WHERE cve_id = ? AND COALESCE(has_poc, 0) = 0
+            """,
+            (cve_key,),
+        )
+        rc = cursor.rowcount
+        if rc is None or rc < 0:
+            updated += await _sqlite_changes(db)
+        elif rc > 0:
+            updated += rc
+    return updated
 
 
 
