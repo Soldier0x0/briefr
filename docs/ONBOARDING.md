@@ -43,7 +43,7 @@ Recommended API keys for full functionality: NVD, VirusTotal, AbuseIPDB. See [En
 ```bash
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 cp .env.example .env    # add keys as needed
 
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
@@ -82,7 +82,7 @@ Backend tests use **pytest** (same as CI).
 
 ```bash
 cd backend
-pip install -r requirements.txt pytest
+pip install -r requirements-dev.txt
 pytest tests/ -v
 ```
 
