@@ -23,9 +23,9 @@ V1.3 makes BRIEFR the **best self-hosted analyst intelligence pane** — actiona
 
 | Item | Goal |
 |------|------|
-| **Morning brief view** | Single screen: new/changed for *my stack* since last visit |
-| **Action queue** | Ranked worklist (KEV on stack, EPSS jumps, material CVSS changes) |
-| **Explainable risk** | Score breakdown UI (KEV + EPSS + stack match + momentum components) |
+| **Morning brief view** | ✅ Shipped — `GET /api/brief` + BRIEF tab landing (`MorningBrief.jsx`); full CVE feed on FEED tab |
+| **Action queue** | ✅ Shipped — ranked `action_queue` + section breakdown (EPSS movers, new KEV, KEV due soon, stack activity) |
+| **Explainable risk** | ✅ Shipped — drawer shows `score × weight × 100` per component; momentum signals from `/api/cves/{id}/momentum`; weights from `/api/config/risk` |
 | **Change intelligence** | ✅ Surface `cve_change_history` deltas (`GET /api/changes` UI — What changed panel with field/window filters) |
 | **KEV due-date countdown** | ✅ "Due in N days" chip on cards + sidebar deadline list sorted by `GET /api/kev/deadlines?sort=urgent` |
 | **Pin / snooze / watchlist** | Analyst controls on CVE rows (stored in DB; single-user default now, keyed by app-login user once built-in auth ships — decision 2026-06-11) |
@@ -159,7 +159,7 @@ The full webhook engine (channels UI, rules, delivery log, SSRF protection) stay
 
 ```
 Phase 1  Incident feed snapshot + scheduler (if not in V1.2)
-Phase 2  Morning brief API + explainable risk UI
+Phase 2  Morning brief API + explainable risk UI  ✅ Shipped
 Phase 3  Chart.js Analyst Brief panel
 Phase 4  Forge: coverage map + hunt-packs API
 Phase 5  CVE → detection pack generation + detection cards (docs/)

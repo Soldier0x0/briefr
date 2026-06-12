@@ -26,9 +26,20 @@ def _poll(page, js: str, *, timeout: float = 120.0, interval: float = 0.25) -> N
 
 
 def _wait_for_brief_cards(page) -> int:
-    page.wait_for_selector(".stats-row, .cve-feed-list", timeout=60_000)
-    _poll(page, "document.querySelectorAll('.cve-card').length > 0")
-    return page.evaluate("document.querySelectorAll('.cve-card').length")
+    page.wait_for_selector(".morning-brief, .stats-row, .cve-feed-list", timeout=60_000)
+    _poll(
+        page,
+        """
+        () => {
+          const briefCards = document.querySelectorAll('.morning-brief .cve-card').length;
+          const feedCards = document.querySelectorAll('.cve-feed-list .cve-card').length;
+          return briefCards > 0 || feedCards > 0;
+        }
+        """,
+    )
+    return page.evaluate(
+        "document.querySelectorAll('.morning-brief .cve-card, .cve-feed-list .cve-card').length"
+    )
 
 
 def _wait_for_incidents_cards(page) -> int:
@@ -79,6 +90,8 @@ def test_brief_renders_cve_cards(smoke_page):
 def test_filter_click_anchors_to_feed(smoke_page):
     """Quick-filter scroll anchor regression (PR #90 feed UX)."""
     _wait_for_brief_cards(smoke_page)
+    smoke_page.get_by_role("button", name="Switch to full CVE feed").click()
+    smoke_page.wait_for_selector(".cve-feed", timeout=30_000)
     smoke_page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
     smoke_page.wait_for_timeout(300)
 

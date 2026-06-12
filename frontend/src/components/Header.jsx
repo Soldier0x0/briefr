@@ -94,8 +94,8 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
         <div className="header-left">
           <button
             className="header-logo-btn"
-            onClick={onLogoClick || (() => onTabChange?.('feed'))}
-            aria-label="Go to CVE brief feed"
+            onClick={onLogoClick || (() => onTabChange?.('brief'))}
+            aria-label="Go to morning brief"
           >
             BRIEFR
           </button>
@@ -107,12 +107,20 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
         {activeTab !== null && (
           <nav className="header-nav" aria-label="Main navigation">
             <button
-              className={`header-tab${activeTab === 'feed' ? ' active' : ''}`}
-              onClick={() => onTabChange('feed')}
-              aria-label="Switch to CVE brief feed"
-              aria-current={activeTab === 'feed' ? 'page' : undefined}
+              className={`header-tab${activeTab === 'brief' ? ' active' : ''}`}
+              onClick={() => onTabChange('brief')}
+              aria-label="Switch to morning brief"
+              aria-current={activeTab === 'brief' ? 'page' : undefined}
             >
               BRIEF
+            </button>
+            <button
+              className={`header-tab${activeTab === 'feed' ? ' active' : ''}`}
+              onClick={() => onTabChange('feed')}
+              aria-label="Switch to full CVE feed"
+              aria-current={activeTab === 'feed' ? 'page' : undefined}
+            >
+              FEED
             </button>
             <button
               className={`header-tab${activeTab === 'ioc' ? ' active' : ''}`}

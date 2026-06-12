@@ -40,6 +40,10 @@ let _weights = {
  * corruption (e.g. a single-key response with sum == 1.0 would otherwise
  * produce a total weight of 1.65 via spread).
  */
+export function getRiskWeights() {
+  return { ..._weights }
+}
+
 export async function fetchAndCacheRiskWeights() {
   try {
     const data = await fetchRiskWeights()
