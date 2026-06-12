@@ -61,14 +61,18 @@ def _extract_description(container: dict | None) -> str:
         return ""
     for item in descriptions:
         if isinstance(item, dict) and item.get("lang") == "en":
-            value = (item.get("value") or "").strip()
-            if value:
-                return value
+            value = item.get("value")
+            if isinstance(value, str):
+                value = value.strip()
+                if value:
+                    return value
     for item in descriptions:
         if isinstance(item, dict):
-            value = (item.get("value") or "").strip()
-            if value:
-                return value
+            value = item.get("value")
+            if isinstance(value, str):
+                value = value.strip()
+                if value:
+                    return value
     return ""
 
 
@@ -83,7 +87,8 @@ def _extract_cvss(metrics: Any) -> tuple[float | None, str]:
             if not isinstance(data, dict):
                 continue
             score = data.get("baseScore")
-            severity = (data.get("baseSeverity") or "UNKNOWN").upper()
+            severity_raw = data.get("baseSeverity")
+            severity = severity_raw.upper() if isinstance(severity_raw, str) else "UNKNOWN"
             if score is not None:
                 try:
                     return float(score), severity
@@ -108,15 +113,19 @@ def _extract_cwes(container: dict | None) -> list[str]:
         for desc in descriptions:
             if not isinstance(desc, dict):
                 continue
-            cwe_id = (desc.get("cweId") or "").strip().upper()
-            if cwe_id.startswith("CWE-"):
-                cwes.add(cwe_id)
+            cwe_id = desc.get("cweId")
+            if isinstance(cwe_id, str):
+                cwe_id = cwe_id.strip().upper()
+                if cwe_id.startswith("CWE-"):
+                    cwes.add(cwe_id)
             else:
-                value = (desc.get("description") or "").strip()
-                if value.upper().startswith("CWE-"):
-                    token = value.split()[0].upper()
-                    if token.startswith("CWE-"):
-                        cwes.add(token)
+                value = desc.get("description")
+                if isinstance(value, str):
+                    value = value.strip()
+                    if value.upper().startswith("CWE-"):
+                        token = value.split()[0].upper()
+                        if token.startswith("CWE-"):
+                            cwes.add(token)
     return sorted(cwes)
 
 
@@ -135,10 +144,13 @@ def _extract_affected_products(*containers: dict | None) -> list[str]:
         for item in affected:
             if not isinstance(item, dict):
                 continue
-            vendor = (item.get("vendor") or "").strip()
-            product = (item.get("product") or "").strip()
-            if vendor and product:
-                products.add(_vendor_product_key(vendor, product))
+            vendor = item.get("vendor")
+            product = item.get("product")
+            if isinstance(vendor, str) and isinstance(product, str):
+                vendor = vendor.strip()
+                product = product.strip()
+                if vendor and product:
+                    products.add(_vendor_product_key(vendor, product))
             cpes = item.get("cpes")
             if isinstance(cpes, list):
                 for cpe in cpes:

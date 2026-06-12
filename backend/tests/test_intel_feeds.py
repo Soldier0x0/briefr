@@ -86,6 +86,41 @@ def test_merge_additive_does_not_downgrade_cvss():
     assert set(changes["affected_products"]) == {"vendor:product", "other:thing"}
 
 
+def test_parse_cvelistv5_tolerates_malformed_field_types():
+    record = {
+        "cveMetadata": {"cveId": "CVE-2024-9999", "datePublished": "", "dateUpdated": ""},
+        "containers": {
+            "cna": {
+                "descriptions": [{"lang": "en", "value": 12345}],
+                "metrics": [
+                    {
+                        "cvssV3_1": {
+                            "baseScore": 5.0,
+                            "baseSeverity": ["HIGH"],
+                        }
+                    }
+                ],
+                "problemTypes": [
+                    {
+                        "descriptions": [
+                            {"cweId": 863, "description": ["CWE-863 Incorrect Authorization"]},
+                            {"description": "CWE-200 Exposure"},
+                        ]
+                    }
+                ],
+                "affected": [{"vendor": 1, "product": 2}, {"vendor": "acme", "product": "widget"}],
+            }
+        },
+    }
+    parsed = parse_cvelistv5_record(record)
+    assert parsed is not None
+    assert parsed["cve_id"] == "CVE-2024-9999"
+    assert parsed["description"] == ""
+    assert parsed["severity"] == "UNKNOWN"
+    assert parsed["cwe_ids"] == ["CWE-200"]
+    assert parsed["affected_products"] == ["acme:widget"]
+
+
 def test_merge_additive_fills_gaps():
     existing = {
         "cve_id": "CVE-2024-0002",

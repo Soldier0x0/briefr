@@ -579,7 +579,7 @@ async def run_vulnrichment_sync() -> bool:
         try:
             db = await get_db()
             try:
-                gap_ids = await get_cves_needing_intel_enrichment(db)
+                gap_ids = await get_cves_needing_intel_enrichment(db, limit=1000)
             finally:
                 await db.close()
 
@@ -624,21 +624,14 @@ async def run_cvelistv5_sync() -> bool:
                 return True
 
             applied = 0
-            if records:
-                db = await get_db()
-                try:
+            db = await get_db()
+            try:
+                if records:
                     applied = await apply_additive_cve_enrichments(db, records)
-                    await set_sync_state_value(db, CVELISTV5_SYNC_STATE_KEY, new_head)
-                    await db.commit()
-                finally:
-                    await db.close()
-            else:
-                db = await get_db()
-                try:
-                    await set_sync_state_value(db, CVELISTV5_SYNC_STATE_KEY, new_head)
-                    await db.commit()
-                finally:
-                    await db.close()
+                await set_sync_state_value(db, CVELISTV5_SYNC_STATE_KEY, new_head)
+                await db.commit()
+            finally:
+                await db.close()
 
             logger.info(
                 "cvelistV5 sync complete: %d CVE rows updated, watermark=%s",

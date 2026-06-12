@@ -136,7 +136,14 @@ async def _compare_commits(base_sha: str, head_sha: str) -> list[str]:
     await record_api_call("cvelistv5", 1)
     if data.get("status") == "identical":
         return []
-    return _filter_cve_paths(data.get("files") or [])
+    files = data.get("files") or []
+    if len(files) >= 300:
+        logger.warning(
+            "cvelistV5 compare returned %d files (possibly truncated). "
+            "Some changes may be missed.",
+            len(files),
+        )
+    return _filter_cve_paths(files)
 
 
 async def _fetch_record(path: str, branch: str) -> dict | None:
