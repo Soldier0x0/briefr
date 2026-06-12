@@ -684,6 +684,32 @@ async def apply_additive_cve_enrichments(
     return updated
 
 
+async def delete_cves_by_ids(db: aiosqlite.Connection, cve_ids: list[str]) -> int:
+    """Remove CVE rows (and purge legacy rejected-description rows). Caller commits."""
+    normalized = sorted({c.strip().upper() for c in cve_ids if c and str(c).strip()})
+    deleted = 0
+    for i in range(0, len(normalized), _SQLITE_IN_CHUNK):
+        chunk = normalized[i : i + _SQLITE_IN_CHUNK]
+        placeholders = ",".join("?" * len(chunk))
+        cursor = await db.execute(
+            f"DELETE FROM cves WHERE cve_id IN ({placeholders})",
+            chunk,
+        )
+        deleted += cursor.rowcount
+    return deleted
+
+
+async def purge_legacy_rejected_cves(db: aiosqlite.Connection) -> int:
+    """Delete rows ingested before reject-filtering (NVD 'Rejected reason:' text)."""
+    cursor = await db.execute(
+        """
+        DELETE FROM cves
+        WHERE LOWER(description) LIKE 'rejected reason:%'
+        """
+    )
+    return cursor.rowcount
+
+
 async def mark_cves_as_kev(db: aiosqlite.Connection, cve_ids: list) -> None:
     if not cve_ids:
         return

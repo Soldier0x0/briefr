@@ -8,6 +8,7 @@ from typing import Any
 
 CVE_ID_RE = re.compile(r"^CVE-\d{4}-\d{4,7}$", re.IGNORECASE)
 CISA_VULNRICHMENT_TITLE = "CISA ADP Vulnrichment"
+CVE_RECORD_STATE_REJECTED = "REJECTED"
 
 SEVERITY_RANK = {
     "CRITICAL": 5,
@@ -165,6 +166,25 @@ def _extract_affected_products(*containers: dict | None) -> list[str]:
     return sorted(products)
 
 
+def is_cve_record_rejected(record: dict) -> str | None:
+    """Return CVE ID when the CVE JSON 5.x record is REJECTED, else None."""
+    if not isinstance(record, dict):
+        return None
+    meta = record.get("cveMetadata")
+    if not isinstance(meta, dict):
+        return None
+    state = meta.get("state")
+    if not isinstance(state, str) or state.strip().upper() != CVE_RECORD_STATE_REJECTED:
+        return None
+    cve_id = meta.get("cveId")
+    if not isinstance(cve_id, str):
+        return None
+    cve_id = cve_id.strip().upper()
+    if CVE_ID_RE.match(cve_id):
+        return cve_id
+    return None
+
+
 def _find_cisa_adp(adp_list: list) -> dict | None:
     for item in adp_list:
         if isinstance(item, dict) and item.get("title") == CISA_VULNRICHMENT_TITLE:
@@ -181,6 +201,8 @@ def parse_vulnrichment_record(record: dict) -> dict | None:
         return None
     cve_id = (meta.get("cveId") or "").upper()
     if not CVE_ID_RE.match(cve_id):
+        return None
+    if is_cve_record_rejected(record):
         return None
 
     containers = record.get("containers")
@@ -218,6 +240,8 @@ def parse_cvelistv5_record(record: dict) -> dict | None:
         return None
     cve_id = (meta.get("cveId") or "").upper()
     if not CVE_ID_RE.match(cve_id):
+        return None
+    if is_cve_record_rejected(record):
         return None
 
     containers = record.get("containers")

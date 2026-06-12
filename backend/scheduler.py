@@ -11,6 +11,8 @@ from apscheduler.triggers.interval import IntervalTrigger
 from database import (
     EPSS_BACKFILL_DONE_KEY,
     apply_additive_cve_enrichments,
+    delete_cves_by_ids,
+    purge_legacy_rejected_cves,
     refresh_all_cve_ai_context,
     backfill_display_fields,
     backfill_has_poc,
@@ -162,7 +164,7 @@ async def _run_nvd_incremental_sync() -> None:
         finally:
             await db.close()
 
-        cves, mod_end_iso, used_incremental = await fetch_nvd_cve_updates(
+        cves, mod_end_iso, used_incremental, rejected_ids = await fetch_nvd_cve_updates(
             nvd_api_key,
             watermark=watermark,
             days_back=days_back,
@@ -187,6 +189,15 @@ async def _run_nvd_incremental_sync() -> None:
 
         db = await get_db()
         try:
+            legacy_purged = await purge_legacy_rejected_cves(db)
+            rejected_purged = await delete_cves_by_ids(db, rejected_ids)
+            if legacy_purged or rejected_purged:
+                logger.info(
+                    "NVD sync purged %d rejected CVE row(s) (%d legacy, %d from feed)",
+                    legacy_purged + rejected_purged,
+                    legacy_purged,
+                    rejected_purged,
+                )
             await upsert_cves(db, cves)
             new_or_updated = len(cves)
             await set_nvd_sync_watermark(db, new_watermark)
@@ -619,23 +630,27 @@ async def run_cvelistv5_sync() -> bool:
             finally:
                 await db.close()
 
-            records, new_head, advance = await fetch_cvelistv5_delta(watermark)
+            records, rejected_ids, new_head, advance = await fetch_cvelistv5_delta(watermark)
             if not advance or not new_head:
                 return True
 
             applied = 0
+            purged = 0
             db = await get_db()
             try:
                 if records:
                     applied = await apply_additive_cve_enrichments(db, records)
+                if rejected_ids:
+                    purged = await delete_cves_by_ids(db, rejected_ids)
                 await set_sync_state_value(db, CVELISTV5_SYNC_STATE_KEY, new_head)
                 await db.commit()
             finally:
                 await db.close()
 
             logger.info(
-                "cvelistV5 sync complete: %d CVE rows updated, watermark=%s",
+                "cvelistV5 sync complete: %d CVE rows updated, %d rejected purged, watermark=%s",
                 applied,
+                purged,
                 new_head[:12],
             )
         except Exception as exc:
