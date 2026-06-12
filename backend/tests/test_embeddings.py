@@ -9,6 +9,7 @@ fastembed is never required for the test suite).
 import asyncio
 import json
 import os
+import subprocess
 import sys
 from datetime import date
 from pathlib import Path
@@ -138,6 +139,40 @@ class _FakeTextEmbedding:
         for text in texts:
             seed = float(len(text) % 7 + 1)
             yield np.array([seed, 1.0, 0.5], dtype="<f4")
+
+
+def test_import_defaults_hf_home_before_fastembed(tmp_path):
+    """HF_HOME must be present before fastembed imports huggingface_hub."""
+    cache = tmp_path / "models"
+    backend_dir = Path(__file__).resolve().parents[1]
+    env = os.environ.copy()
+    env["EMBEDDINGS_CACHE_DIR"] = str(cache)
+    env.pop("HF_HOME", None)
+    env["PYTHONPATH"] = (
+        str(backend_dir)
+        if not env.get("PYTHONPATH")
+        else f"{backend_dir}{os.pathsep}{env['PYTHONPATH']}"
+    )
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import os\n"
+                "import ml.embeddings\n"
+                "expected = os.path.join(os.environ['EMBEDDINGS_CACHE_DIR'], 'hf-home')\n"
+                "assert os.environ['HF_HOME'] == expected\n"
+                "try:\n"
+                "    from huggingface_hub import constants\n"
+                "except ModuleNotFoundError:\n"
+                "    pass\n"
+                "else:\n"
+                "    assert constants.HF_HOME == expected\n"
+            ),
+        ],
+        check=True,
+        env=env,
+    )
 
 
 def test_get_model_passes_writable_cache_dir(tmp_path, monkeypatch):

@@ -22,6 +22,16 @@ import asyncio
 import logging
 import os
 
+def _default_hf_home_for_cache(cache_dir: str) -> None:
+    # huggingface_hub freezes HF_HOME-derived constants at import time; fastembed
+    # imports it underneath, so default HF_HOME before importing fastembed.
+    os.environ.setdefault("HF_HOME", os.path.join(cache_dir, "hf-home"))
+
+
+_embeddings_cache_dir = os.environ.get("EMBEDDINGS_CACHE_DIR", "").strip()
+if _embeddings_cache_dir:
+    _default_hf_home_for_cache(_embeddings_cache_dir)
+
 import aiosqlite
 import numpy as np
 
@@ -117,10 +127,7 @@ def _get_model(model_name: str):
         if cache_dir:
             os.makedirs(cache_dir, exist_ok=True)
             kwargs["cache_dir"] = cache_dir
-            # hf-xet keeps its chunk cache under HF_HOME regardless of
-            # cache_dir — point it at the writable directory too, or the
-            # download fails with EROFS under ProtectSystem=strict.
-            os.environ.setdefault("HF_HOME", os.path.join(cache_dir, "hf-home"))
+            _default_hf_home_for_cache(cache_dir)
         _model = TextEmbedding(model_name=model_name, **kwargs)
         _model_name = model_name
     return _model
