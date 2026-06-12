@@ -11,10 +11,11 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 
 import os
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from database import get_db, get_ioc_cache, set_ioc_cache
+from rate_limit import rate_limit_ioc
 from enrichment.ioc import lookup_ioc
 from feeds.extended import greynoise_for_ip
 from feeds.otx import load_pulse_iocs, lookup_otx_for_ioc, top_pulse_ipv4s
@@ -71,7 +72,7 @@ async def get_otx_pulse_iocs(
     return {"data": {"iocs": iocs, "ips": ips, "indicators": indicators[:limit]}}
 
 
-@router.post("/api/ioc/lookup")
+@router.post("/api/ioc/lookup", dependencies=[Depends(rate_limit_ioc)])
 async def ioc_lookup(body: IocLookupRequest):
     value = body.value.strip()
     ioc_type = body.type.strip().lower()

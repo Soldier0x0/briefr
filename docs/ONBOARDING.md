@@ -172,6 +172,10 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 | `DEFAULT_TIMEZONE` | `Asia/Kolkata` | Health / time display default |
 | `BRIEFR_ENV` | `development` | `production` disables Swagger/OpenAPI docs |
 | `BRIEFR_ADMIN_API_KEY` | — | Optional `X-BRIEFR-Admin-Key` gate for `POST /api/refresh*` (interim until built-in app login ships) |
+| `RATE_LIMIT_ENABLED` | `1` | Token-bucket rate limiting on `/api/ioc/lookup` + `/api/refresh*` (429 + `Retry-After`) |
+| `RATE_LIMIT_IOC_PER_MINUTE` | `30` | Per-client-IP budget for `POST /api/ioc/lookup` |
+| `RATE_LIMIT_REFRESH_PER_MINUTE` | `10` | Per-client-IP budget shared by all `POST /api/refresh*` routes |
+| `LOG_FORMAT` | `json` | `json` = structured lines with `request_id`; `plain` = legacy human-readable format |
 
 ---
 

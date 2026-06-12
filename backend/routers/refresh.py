@@ -7,9 +7,10 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 
 import asyncio
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from dependencies import audit, require_admin_key
+from rate_limit import rate_limit_refresh
 from scheduler import (
     refresh_in_progress,
     run_daily_refresh,
@@ -19,7 +20,8 @@ from scheduler import (
     run_weekly_mitre_refresh,
 )
 
-router = APIRouter()
+# §5.5: every /api/refresh* route shares one token bucket (per client IP).
+router = APIRouter(dependencies=[Depends(rate_limit_refresh)])
 
 # The event loop only holds weak references to tasks; keep strong references
 # so a fire-and-forget ingest can't be garbage collected mid-run.
