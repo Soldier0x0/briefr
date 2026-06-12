@@ -380,6 +380,33 @@ def _values_differ(old: object, new: object) -> bool:
     return old != new
 
 
+def _normalize_epss_score(value: object) -> float | None:
+    """NULL and ~0 are equivalent — matches init_db epss_score NULL normalization."""
+    if value is None:
+        return None
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        return None
+    if abs(score) < 1e-9:
+        return None
+    return score
+
+
+def _epss_display_percent(score: float | None) -> float:
+    """One decimal place in percent — matches WhatChangedPanel EPSS formatting."""
+    if score is None:
+        return 0.0
+    return round(score * 100, 1)
+
+
+def _epss_scores_differ(old: object, new: object) -> bool:
+    """True only when EPSS would display differently to an analyst (0.1% precision)."""
+    return _epss_display_percent(_normalize_epss_score(old)) != _epss_display_percent(
+        _normalize_epss_score(new)
+    )
+
+
 _SQLITE_IN_CHUNK = 500
 
 _UPSERT_CVE_SQL = """
@@ -604,7 +631,7 @@ async def update_epss_scores(db: aiosqlite.Connection, scores: dict) -> None:
         if key not in existing:
             continue
         old = existing[key]
-        if not _values_differ(old, score):
+        if not _epss_scores_differ(old, score):
             continue
         history.append(
             (
