@@ -106,13 +106,18 @@ def load_age_identity(key_path: Path) -> x25519.Identity:
 
 def generate_age_key(key_path: Path) -> str:
     """Create a new age identity file (mode 0600) and return its public key."""
+    key_path = key_path.expanduser().resolve()
     if key_path.exists():
         raise FileExistsError(f"Refusing to overwrite existing key: {key_path}")
+    # Tighten permissions only on a directory we created ourselves — never
+    # chmod a pre-existing parent (or the cwd for relative paths).
+    parent_existed = key_path.parent.exists()
     key_path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        key_path.parent.chmod(0o700)
-    except OSError:
-        pass
+    if not parent_existed:
+        try:
+            key_path.parent.chmod(0o700)
+        except OSError:
+            pass
     identity = x25519.Identity.generate()
     public_key = str(identity.to_public())
     body = (

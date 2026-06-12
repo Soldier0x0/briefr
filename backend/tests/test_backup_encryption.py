@@ -93,6 +93,20 @@ def test_generate_age_key_permissions_and_format(tmp_path):
         generate_age_key(key_path)
 
 
+def test_generate_age_key_leaves_existing_parent_mode_alone(tmp_path, monkeypatch):
+    existing = tmp_path / "shared"
+    existing.mkdir(mode=0o755)
+    generate_age_key(existing / "backup-age.key")
+    assert existing.stat().st_mode & 0o777 == 0o755
+
+    # Relative path: must never chmod the current working directory
+    monkeypatch.chdir(existing)
+    cwd_mode_before = existing.stat().st_mode & 0o777
+    generate_age_key(Path("relative-age.key"))
+    assert existing.stat().st_mode & 0o777 == cwd_mode_before
+    assert (existing / "relative-age.key").stat().st_mode & 0o777 == 0o600
+
+
 def test_load_age_identity_rejects_missing_or_empty(tmp_path):
     with pytest.raises(FileNotFoundError):
         load_age_identity(tmp_path / "nope.key")
