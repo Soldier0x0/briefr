@@ -72,6 +72,10 @@ def _coverage_status(pack_count: int, technique_id: str) -> str:
 def _loads_or(value, fallback):
     if not value:
         return fallback
+    # Pass through already-deserialized values (mock data, auto-deserializing
+    # drivers) — json.loads would raise TypeError and mask them as fallback.
+    if isinstance(value, (dict, list)):
+        return value
     try:
         return json.loads(value)
     except (TypeError, ValueError):

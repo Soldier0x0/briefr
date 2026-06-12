@@ -119,6 +119,31 @@ function LinkedCveRow({ cve, pack, generating, onGenerate }) {
   )
 }
 
+function SavedPack({ pack, defaultOpen }) {
+  // Freeze the initial open state: <details> stays uncontrolled, so a later
+  // re-render (second pack saved flips defaultOpen) never force-toggles a
+  // panel the user opened or closed. React has no defaultOpen DOM prop —
+  // passing a changing `open` would re-assert it on prop diffs.
+  const [initialOpen] = useState(defaultOpen)
+  return (
+    <details className="fg-pack" open={initialOpen || undefined}>
+      <summary className="fg-pack-summary">
+        <span className="fg-pack-title">{pack.title}</span>
+        <span className={`fg-priority fg-priority-${pack.priority} mono`}>
+          {pack.priority.toUpperCase()}
+        </span>
+      </summary>
+      <div className="fg-pack-body">
+        <div className="fg-siem-head">
+          <span className="fg-siem-label mono">SIGMA RULE (experimental)</span>
+          <CopyButton text={pack.sigma_yaml} />
+        </div>
+        <pre className="fg-code mono">{pack.sigma_yaml}</pre>
+      </div>
+    </details>
+  )
+}
+
 function HuntPackPanel({ techniqueId, onPackSaved }) {
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -221,21 +246,7 @@ function HuntPackPanel({ techniqueId, onPackSaved }) {
         <section className="fg-section" aria-label="Saved hunt packs">
           <h4 className="fg-section-label mono">YOUR PACKS ({packs.length})</h4>
           {packs.map(pack => (
-            <details key={pack.id} className="fg-pack" open={packs.length === 1}>
-              <summary className="fg-pack-summary">
-                <span className="fg-pack-title">{pack.title}</span>
-                <span className={`fg-priority fg-priority-${pack.priority} mono`}>
-                  {pack.priority.toUpperCase()}
-                </span>
-              </summary>
-              <div className="fg-pack-body">
-                <div className="fg-siem-head">
-                  <span className="fg-siem-label mono">SIGMA RULE (experimental)</span>
-                  <CopyButton text={pack.sigma_yaml} />
-                </div>
-                <pre className="fg-code mono">{pack.sigma_yaml}</pre>
-              </div>
-            </details>
+            <SavedPack key={pack.id} pack={pack} defaultOpen={packs.length === 1} />
           ))}
         </section>
       )}
