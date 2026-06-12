@@ -141,7 +141,7 @@ These user-visible or ops items are **approved exceptions** to “no feature exp
 | **`DATABASE_URL` / path settings only** | Container-ready config; SQLite default unchanged |
 | **`docs/THREAT_MODEL.md`, `docs/OPERATIONS.md`** | ✅ Shipped (PR #84) |
 | **KEV extra fields** | ✅ Shipped (PR #85) — ransomware flag, CWEs, vendor, name + UI badges |
-| **EPSS 30-day history backfill** | One-shot resumable job via FIRST API `scope=time-series` (batched CVE IDs, throttled, `sync_state` marker); warm-starts sparklines and momentum |
+| **EPSS 30-day history backfill** | ✅ Shipped — one-shot resumable job (`epss_backfill_done` marker); FIRST API `scope=time-series`; 100 CVEs/batch, 2 s throttle (≈30 req/min); `INSERT OR IGNORE` idempotency; wired into `maybe_run_on_startup` |
 | **CI dependency audits + `/api/version`** | ✅ Shipped (PR #88) |
 | **Playwright smoke in CI (early)** | Safety net before V1.2 Phase 4+ frontend refactors |
 | **UI/UX correctness pass** | ✅ Shipped (PR #90) — feed scroll/filter fixes, overlay layering + focus traps, self-hosted fonts, reduced-motion, request timeouts |

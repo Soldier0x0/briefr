@@ -14,6 +14,10 @@ EPSS_API_URL = "https://api.first.org/data/v1/epss"
 EPSS_CSV_URL = "https://epss.empiricalsecurity.com/epss_scores-current.csv.gz"
 BATCH_SIZE = 100
 
+# Backfill constants — 100 CVEs per request, 2 s between batches ≈ 30 req/min
+BACKFILL_BATCH_SIZE = 100
+BACKFILL_THROTTLE_SECONDS = 2.0
+
 
 async def _fetch_batch_api(cve_ids: list) -> dict[str, float]:
     cve_param = ",".join(cve_ids)
@@ -140,3 +144,60 @@ async def fetch_epss(cve_ids: list) -> dict[str, float]:
         scores.update(api_scores)
 
     return scores
+
+
+async def fetch_epss_time_series_batch(cve_ids: list[str]) -> list[dict]:
+    """Fetch EPSS daily history for up to BACKFILL_BATCH_SIZE CVEs via FIRST API.
+
+    Uses ``scope=time-series`` which returns one entry per (CVE, date) pair for
+    all available dates (≤30 days).  Returns a list of
+    ``{"cve_id": str, "score": float, "date": str}`` dicts.
+    """
+    if not cve_ids:
+        return []
+
+    cve_param = ",".join(cve_ids)
+    try:
+        response = await resilient_get(
+            "epss",
+            EPSS_API_URL,
+            params={"cve": cve_param, "scope": "time-series"},
+            timeout=30.0,
+        )
+        data = response.json()
+    except CircuitOpenError:
+        logger.warning(
+            "EPSS circuit open — skipping time-series batch of %d CVEs", len(cve_ids)
+        )
+        return []
+    except httpx.HTTPStatusError as exc:
+        logger.error(
+            "EPSS time-series HTTP %s for batch of %d CVEs",
+            exc.response.status_code,
+            len(cve_ids),
+        )
+        return []
+    except httpx.HTTPError as exc:
+        logger.error(
+            "EPSS time-series request error for batch of %d CVEs: %s", len(cve_ids), exc
+        )
+        return []
+    except Exception as exc:
+        logger.error("EPSS time-series unexpected error: %s", exc)
+        return []
+
+    rows: list[dict] = []
+    for item in data.get("data", []):
+        cve_id = (item.get("cve") or "").upper()
+        epss_val = item.get("epss")
+        date_str = item.get("date") or ""
+        if not cve_id or epss_val is None or not date_str:
+            continue
+        try:
+            score = float(epss_val)
+        except (ValueError, TypeError):
+            continue
+        rows.append({"cve_id": cve_id, "score": score, "date": date_str})
+
+    await record_api_call("epss", 1)
+    return rows
