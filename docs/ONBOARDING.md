@@ -203,8 +203,8 @@ See [README.md § Backups and restore](../README.md) for restore commands.
 
 | If you are working on… | Start here |
 |----------------------|------------|
-| CVE list / filters | `backend/main.py` (`_build_cve_filters`), `frontend/src/components/CVEFeed.jsx` |
-| CVE detail drawer | `frontend/src/components/DetailDrawer.jsx`, `GET /api/cves/{id}` in `main.py` |
+| CVE list / filters | `backend/routers/cves.py` (`_build_cve_filters`), `frontend/src/components/CVEFeed.jsx` |
+| CVE detail drawer | `frontend/src/components/DetailDrawer.jsx`, `GET /api/cves/{id}` in `routers/cves.py` |
 | IOC lookup | `backend/enrichment/ioc.py`, `frontend/src/components/IOCLookup.jsx` |
 | Incidents & News tab | `backend/feeds/case_study_feed.py`, `incident_news.py`, `CaseStudies.jsx` |
 | Risk score | `frontend/src/scoring/riskScore.js`, `backend/scoring/risk.py` |

@@ -54,7 +54,7 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid)
 |---|---|---|---|
 | 1 | `App.jsx` | `handleSelectCVE` → `setSelectedCVE(cve)` | — |
 | 2 | `App.jsx` | `fetchCVE(cve_id)` | `GET /api/cves/{id}` |
-| 3 | `main.py` | `get_cve` — DB read + Sploitus/GN/OTX/OSV/CIRCL | External feeds |
+| 3 | `routers/cves.py` | `get_cve` — DB read + Sploitus/GN/OTX/OSV/CIRCL | External feeds |
 | 4 | `DetailDrawer.jsx` | Opens (`cve` prop set) | — |
 | 5 | `DetailDrawer.jsx` | `useEffect` → `fetchCVESentences` | `GET /api/cves/{id}/sentences` |
 | 6 | `DetailDrawer.jsx` | `useEffect` → `fetchCVEEpssHistory` | `GET /api/cves/{id}/epss-history` |
@@ -93,7 +93,7 @@ Sequence: [`docs/diagrams/flow_cve_detail.mermaid`](docs/diagrams/flow_cve_detai
 |---|---|---|---|
 | 1 | `IOCLookup.jsx` | Form submit handler | — |
 | 2 | `api.js` | `lookupIOC(value, type, {greynoise})` | `POST /api/ioc/lookup` |
-| 3 | `main.py` | `ioc_lookup` | — |
+| 3 | `routers/ioc.py` | `ioc_lookup` | — |
 | 4 | `database.py` | `get_ioc_cache` (6h) | `ioc_cache` |
 | 5 | `enrichment/ioc.py` | `lookup_ioc` | VT, AbuseIPDB, GN, MB, UH, OTX |
 | 6 | `database.py` | `set_ioc_cache` | `ioc_cache` |
@@ -137,7 +137,7 @@ Sequence: [`docs/diagrams/flow_pdf_report.mermaid`](docs/diagrams/flow_pdf_repor
 |---|---|---|---|---|
 | BRIEF feed load | `GET /api/cves` network/5xx | CVEFeed error banner | Browser console | User refresh |
 | BRIEF feed load | Empty DB | Empty list | — | Startup ingest if &lt;10 CVEs |
-| CVE detail | Sploitus/GN/OTX/OSV/CIRCL fail | Empty section in drawer | `logger.error` in `main.py` | No |
+| CVE detail | Sploitus/GN/OTX/OSV/CIRCL fail | Empty section in drawer | `logger.error` in `routers/cves.py` | No |
 | CVE detail | `fetchCVE` 404 | Drawer with minimal CVE id | — | No |
 | Drawer sentences | `/sentences` fail | Section empty | — | No |
 | Drawer momentum | `/momentum` fail | Score without momentum (silent) | — | No |

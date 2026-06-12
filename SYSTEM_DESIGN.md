@@ -109,7 +109,7 @@ Sequence diagram: [`docs/diagrams/flow_cve_feed.mermaid`](docs/diagrams/flow_cve
 ### B. CVE detail drill-down
 
 1. **Card click:** `App.jsx:handleSelectCVE` sets list CVE, then `fetchCVE(cve_id)` → `GET /api/cves/{id}`.
-2. **Server enrichment (serial awaits in handler):** Sploitus exploits, GreyNoise scans, OTX pulses, OSV packages, CIRCL merge (`main.py:get_cve`).
+2. **Server enrichment (serial awaits in handler):** Sploitus exploits, GreyNoise scans, OTX pulses, OSV packages, CIRCL merge (`routers/cves.py:get_cve`).
 3. **Drawer opens** with enriched CVE; parallel client fetches on `cve_id` change:
    - `GET /api/cves/{id}/sentences` (immediate)
    - `GET /api/cves/{id}/epss-history` (immediate)
@@ -217,7 +217,7 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 ### Monolithic `main.py` (intentional v1.1)
 
 - **Why:** Single-developer velocity; no premature abstraction.
-- **Trade-off:** ~1,200 lines — v1.2 router + service split underway (`settings.py`, `dependencies.py`, `routers/refresh.py`, `routers/health.py`, `routers/atlas.py`, `routers/ioc.py` extracted; cves + meta groups follow).
+- **Trade-off:** Resolved in v1.2 — router split complete: `main.py` is app wiring only (~130 lines); endpoints live in `routers/` (refresh, health, atlas, ioc, cves, meta) with `settings.py` + `dependencies.py`. Routers are included in the pre-split registration order (snapshot-tested) so the OpenAPI spec is unchanged.
 
 ### Monolithic `database.py` (intentional v1.1)
 
