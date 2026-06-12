@@ -7,7 +7,6 @@ Verifies:
 - Weights sum exactly to 1.0
 """
 
-import asyncio
 import sys
 from pathlib import Path
 
@@ -27,7 +26,7 @@ _EXPECTED_KEYS = ("asset", "kev", "epss", "exploit", "cvss", "momentum")
 
 
 def _call() -> dict:
-    return asyncio.run(get_risk_config())
+    return get_risk_config()
 
 
 def test_config_risk_response_has_version_and_weights():

@@ -24,7 +24,7 @@ router = APIRouter()
 
 
 @router.get("/api/config/risk")
-async def get_risk_config() -> dict:
+def get_risk_config() -> dict:
     """Return v1.1b risk score weights sourced from scoring/risk.py.
 
     Weights sum to 1.0. The frontend consumes this endpoint at startup and

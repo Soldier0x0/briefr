@@ -30,15 +30,32 @@ let _weights = {
  * Fetch v1.1b weights from GET /api/config/risk and update the module cache.
  * Silently ignored on failure — the hardcoded fallback remains active.
  * Call once at app startup (fire-and-forget).
+ *
+ * Validation rules (all must pass, otherwise fallback is kept):
+ *  1. Response has a `weights` object.
+ *  2. Received object contains exactly the expected keys — no more, no fewer.
+ *  3. Every value is a finite number.
+ *  4. Values sum to 1.0 (tolerance 1e-6).
+ * On success _weights is replaced wholesale, not merged, to avoid partial-key
+ * corruption (e.g. a single-key response with sum == 1.0 would otherwise
+ * produce a total weight of 1.65 via spread).
  */
 export async function fetchAndCacheRiskWeights() {
   try {
     const data = await fetchRiskWeights()
     if (data && data.weights && typeof data.weights === 'object') {
       const w = data.weights
-      const total = Object.values(w).reduce((s, v) => s + v, 0)
-      if (Math.abs(total - 1.0) < 1e-6) {
-        _weights = { ..._weights, ...w }
+      const expectedKeys = Object.keys(_weights)
+      const receivedKeys = Object.keys(w)
+      const keysMatch =
+        receivedKeys.length === expectedKeys.length &&
+        expectedKeys.every(k => Object.prototype.hasOwnProperty.call(w, k))
+      const allFinite = expectedKeys.every(k => typeof w[k] === 'number' && Number.isFinite(w[k]))
+      if (keysMatch && allFinite) {
+        const total = expectedKeys.reduce((s, k) => s + w[k], 0)
+        if (Math.abs(total - 1.0) < 1e-6) {
+          _weights = w
+        }
       }
     }
   } catch {
