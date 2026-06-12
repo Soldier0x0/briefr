@@ -33,8 +33,10 @@ dependencies, and ensures `backend/.env` exists (copied from `backend/.env.examp
   are added to `backend/.env`.
 - **Empty feed on first boot:** if the `cves` table has fewer than 10 rows, the backend kicks off a
   full NVD→KEV→EPSS ingest on startup (needs network and is slow). To get realistic data instantly,
-  run `python scripts/seed_screenshot_data.py` from an activated backend venv — it seeds 15 sample
-  CVEs and warms the RSS incident feed. Re-running is safe (skips CVE seeding once 10+ rows exist).
+  run the seed script with an activated backend venv — `python ../scripts/seed_screenshot_data.py`
+  from `backend/`, or `python scripts/seed_screenshot_data.py` from the repository root (the script
+  `chdir`s into `backend/` itself). It seeds 15 sample CVEs and warms the RSS incident feed.
+  Re-running is safe (skips CVE seeding once 10+ rows exist).
 - The SQLite DB lives at `backend/briefr.db` (gitignored). Deleting it resets state; the next backend
   start re-triggers the bootstrap ingest.
 - `backend/.python-version` pins `3.13`, but CI and this environment use **Python 3.12**, which is
