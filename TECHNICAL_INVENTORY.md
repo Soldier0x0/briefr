@@ -100,9 +100,11 @@ Indexes: `severity`, `published`, `is_kev`, `epss_score`, `has_poc`
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
-| key | TEXT | PRIMARY KEY | e.g. `nvd_last_mod_end` |
-| value | TEXT | NOT NULL | Watermark value |
+| key | TEXT | PRIMARY KEY | e.g. `nvd_last_mod_end`, `epss_backfill_done` |
+| value | TEXT | NOT NULL | Watermark value or completion flag |
 | updated_at | TEXT | DEFAULT datetime('now') | |
+
+Known keys: `nvd_last_mod_end` (NVD incremental watermark), `epss_backfill_done` (set to `"1"` once the one-shot EPSS history backfill completes).
 
 ### mitre_techniques
 
@@ -304,6 +306,7 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | `otx_nightly_correlation` | Cron `OTX_CORRELATION_HOUR:MINUTE` in `OTX_CORRELATION_TIMEZONE` (default 02:00 IST) | OTX API | `otx_*`, `feed_cache` | Skipped if no key; log on error | Yes — replace per CVE |
 | `incident_feed_refresh` | Every `INCIDENT_FEED_REFRESH_MINUTES` (default 30m; first run ~20s after boot) | 6 RSS feeds (parallel) + ATLAS | `feed_cache` (`incident_rss:*`, `incident_feed:snapshot`) | Per-source errors stored in snapshot; cache-write contention degrades gracefully | Yes — snapshot overwrite |
 | `nightly_correlation` | Cron `CORRELATION_HOUR:MINUTE` in `CORRELATION_TIMEZONE` (default 01:00 IST) | OTX IOCs + local DB | `correlation_*`, `feed_cache` | Log error; lock skip | Yes — upsert/delete patterns |
+| _(one-shot)_ `epss_backfill` | Startup task (fires once; skipped if `sync_state.epss_backfill_done = 1`) | FIRST API `scope=time-series` | `epss_history`, `sync_state` | Log error; retries on next restart; INSERT OR IGNORE prevents duplicates | Yes — INSERT OR IGNORE + marker |
 
 ---
 
