@@ -55,6 +55,13 @@ function formatValue(field, value) {
   return String(value)
 }
 
+function isVisibleChange(row) {
+  return (
+    formatValue(row.field_name, row.old_value)
+    !== formatValue(row.field_name, row.new_value)
+  )
+}
+
 export default function WhatChangedPanel({ onSelectCVE }) {
   const [fieldFilter, setFieldFilter] = useState(null)
   const [sinceHours, setSinceHours] = useState(24)
@@ -90,7 +97,8 @@ export default function WhatChangedPanel({ onSelectCVE }) {
     fetchChanges({ field: fieldFilter, sinceHours, limit: 50 })
       .then(data => {
         if (cancelled) return
-        setChanges(Array.isArray(data?.data) ? data.data : [])
+        const rows = Array.isArray(data?.data) ? data.data : []
+        setChanges(rows.filter(isVisibleChange))
       })
       .catch(() => {
         if (!cancelled) {
