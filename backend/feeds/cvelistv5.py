@@ -14,7 +14,12 @@ from datetime import datetime, timedelta, timezone
 
 import httpx
 
-from feeds.cve_record_v5 import cve_id_from_repo_path, cvelistv5_repo_path, parse_cvelistv5_record
+from feeds.cve_record_v5 import (
+    cve_id_from_repo_path,
+    cvelistv5_repo_path,
+    is_cve_record_rejected,
+    parse_cvelistv5_record,
+)
 from feeds.github_helpers import GITHUB_API, github_headers, raw_repo_url
 from resilient_client import CircuitOpenError, resilient_get
 from tracking import record_api_call
@@ -146,7 +151,7 @@ async def _compare_commits(base_sha: str, head_sha: str) -> list[str]:
     return _filter_cve_paths(files)
 
 
-async def _fetch_record(path: str, branch: str) -> dict | None:
+async def _fetch_record(path: str, branch: str) -> tuple[dict | None, str | None]:
     url = raw_repo_url(REPO_OWNER, REPO_NAME, branch, path)
     try:
         response = await resilient_get(
@@ -157,26 +162,29 @@ async def _fetch_record(path: str, branch: str) -> dict | None:
         )
         record = response.json()
     except CircuitOpenError:
-        return None
+        return None, None
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code != 404:
             logger.debug("cvelistV5 HTTP %s for %s", exc.response.status_code, path)
-        return None
+        return None, None
     except httpx.HTTPError:
-        return None
+        return None, None
     except (json.JSONDecodeError, ValueError):
-        return None
+        return None, None
 
     await record_api_call("cvelistv5", 1)
     if not isinstance(record, dict):
-        return None
-    return parse_cvelistv5_record(record)
+        return None, None
+    rejected_id = is_cve_record_rejected(record)
+    if rejected_id:
+        return None, rejected_id
+    return parse_cvelistv5_record(record), None
 
 
 async def fetch_cvelistv5_delta(
     watermark_sha: str | None,
-) -> tuple[list[dict], str | None, bool]:
-    """Return (parsed records, new_head_sha, watermark_advanced).
+) -> tuple[list[dict], list[str], str | None, bool]:
+    """Return (parsed records, rejected_ids, new_head_sha, watermark_advanced).
 
     When ``watermark_advanced`` is False the caller must not persist a new SHA
     (transient failure or nothing to do).
@@ -184,11 +192,11 @@ async def fetch_cvelistv5_delta(
     branch = get_cvelistv5_branch()
     head_sha = await _fetch_head_sha(branch)
     if not head_sha:
-        return [], watermark_sha, False
+        return [], [], watermark_sha, False
 
     if watermark_sha and watermark_sha == head_sha:
         logger.info("cvelistV5 up to date at %s", head_sha[:12])
-        return [], head_sha, True
+        return [], [], head_sha, True
 
     base_sha = watermark_sha
     if not base_sha:
@@ -199,36 +207,41 @@ async def fetch_cvelistv5_delta(
                 get_cvelistv5_initial_since_days(),
                 head_sha[:12],
             )
-            return [], head_sha, True
+            return [], [], head_sha, True
 
     changed_paths = await _compare_commits(base_sha, head_sha)
     if not changed_paths:
         logger.info("cvelistV5 compare %s...%s: no CVE JSON changes", base_sha[:8], head_sha[:8])
-        return [], head_sha, True
+        return [], [], head_sha, True
 
     semaphore = asyncio.Semaphore(FETCH_CONCURRENCY)
     records: list[dict] = []
+    rejected_ids: list[str] = []
 
     async def _one(path: str) -> None:
         async with semaphore:
-            parsed = await _fetch_record(path, branch)
+            parsed, rejected = await _fetch_record(path, branch)
             if parsed:
                 records.append(parsed)
+            elif rejected:
+                rejected_ids.append(rejected)
             await asyncio.sleep(FETCH_DELAY_SECONDS)
 
     await asyncio.gather(*(_one(path) for path in changed_paths))
     logger.info(
-        "cvelistV5 delta: %d records from %d changed paths (%s...%s)",
+        "cvelistV5 delta: %d records, %d rejected from %d changed paths (%s...%s)",
         len(records),
+        len(rejected_ids),
         len(changed_paths),
         base_sha[:8],
         head_sha[:8],
     )
-    return records, head_sha, True
+    return records, rejected_ids, head_sha, True
 
 
 async def fetch_cvelistv5_for_cve(cve_id: str) -> dict | None:
     path = cvelistv5_repo_path(cve_id)
     if not path:
         return None
-    return await _fetch_record(path, get_cvelistv5_branch())
+    parsed, _rejected = await _fetch_record(path, get_cvelistv5_branch())
+    return parsed

@@ -1,0 +1,21 @@
+{
+  "dataType": "CVE_RECORD",
+  "dataVersion": "5.2",
+  "cveMetadata": {
+    "cveId": "CVE-2026-54102",
+    "state": "REJECTED",
+    "dateReserved": "2026-06-11T19:04:36.313Z",
+    "dateUpdated": "2026-06-12T12:49:46.414Z",
+    "dateRejected": "2026-06-12T12:49:46.414Z"
+  },
+  "containers": {
+    "cna": {
+      "rejectedReasons": [
+        {
+          "lang": "en",
+          "value": "Reserved but no longer needed."
+        }
+      ]
+    }
+  }
+}

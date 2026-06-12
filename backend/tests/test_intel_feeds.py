@@ -193,9 +193,10 @@ def test_fetch_vulnrichment_enrichments_targeted():
 
 def test_fetch_cvelistv5_delta_advances_watermark():
     async def run():
-        records, head, advance = await fetch_cvelistv5_delta("basesha000000")
+        records, rejected, head, advance = await fetch_cvelistv5_delta("basesha000000")
         assert advance is True
         assert head == "headsha111111"
+        assert rejected == []
         assert len(records) == 1
         assert records[0]["cve_id"] == "CVE-2026-0005"
         health = resilient_client.get_feed_health()
