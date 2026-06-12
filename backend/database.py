@@ -1452,6 +1452,55 @@ async def get_atlas_case_studies(
     ]
 
 NVD_SYNC_WATERMARK_KEY = "nvd_last_mod_end"
+EPSS_BACKFILL_DONE_KEY = "epss_backfill_done"
+
+
+async def get_sync_state_value(db: aiosqlite.Connection, key: str) -> str | None:
+    """Read any sync_state key; returns None when absent."""
+    rows = await db.execute_fetchall(
+        "SELECT value FROM sync_state WHERE key = ?",
+        (key,),
+    )
+    return rows[0]["value"] if rows else None
+
+
+async def set_sync_state_value(db: aiosqlite.Connection, key: str, value: str) -> None:
+    """Upsert any sync_state key (caller commits)."""
+    await db.execute(
+        """
+        INSERT INTO sync_state (key, value, updated_at)
+        VALUES (?, ?, datetime('now'))
+        ON CONFLICT(key) DO UPDATE SET
+            value = excluded.value,
+            updated_at = datetime('now')
+        """,
+        (key, value),
+    )
+
+
+async def insert_epss_history_rows(
+    db: aiosqlite.Connection,
+    rows: list[dict],
+) -> int:
+    """Bulk-insert EPSS history rows, skipping already-present (cve_id, date) pairs.
+
+    Each dict must have keys ``cve_id`` (str), ``score`` (float), ``date`` (str).
+    Returns the number of rows actually written.
+    """
+    if not rows:
+        return 0
+    tuples = [
+        (r["cve_id"].upper(), r["score"], r["date"])
+        for r in rows
+        if r.get("cve_id") and r.get("date") and r.get("score") is not None
+    ]
+    if not tuples:
+        return 0
+    cursor = await db.executemany(
+        "INSERT OR IGNORE INTO epss_history (cve_id, score, recorded_date) VALUES (?, ?, ?)",
+        tuples,
+    )
+    return cursor.rowcount
 
 
 async def get_nvd_sync_watermark(db: aiosqlite.Connection) -> str | None:
