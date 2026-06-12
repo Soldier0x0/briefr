@@ -132,7 +132,7 @@ BRIEFR incorporates publicly available intelligence from NVD, CISA KEV, FIRST EP
 git clone https://github.com/Soldier0x0/briefr.git
 cd briefr/backend
 python3 -m venv .venv && source .venv/bin/activate   # or use system Python 3.11+
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 cp .env.example .env   # add your API keys
 
 uvicorn main:app --host 0.0.0.0 --port 8000
@@ -154,6 +154,13 @@ bash deploy/briefr-update.sh  # pull, build frontend, restart backend + nginx
 ```
 
 Set `ALLOWED_ORIGINS` in `backend/.env` to your public URL (not `:5173`). Production serves `frontend/dist` via nginx; the Vite dev server is not used.
+
+If the same server is also used for post-deploy test verification, opt in to dev/test dependencies during the update:
+
+```bash
+BRIEFR_INSTALL_DEV_DEPS=1 bash deploy/briefr-update.sh
+cd /opt/briefr/backend && /opt/briefr/venv/bin/pytest tests/ -q
+```
 
 ### Backups and restore
 

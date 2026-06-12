@@ -5,8 +5,9 @@
 # Serves the UI from /opt/briefr/frontend/dist via nginx (not Vite on 5173).
 # Optional: USE_TLS=1 to force HTTPS nginx config (default: auto if certbot cert exists).
 # Optional env:
-#   BRIEFR_SKIP_SMOKE=1    — skip OTX Intel smoke after deploy
-#   BRIEFR_STRICT_SMOKE=1  — fail update if Intel smoke fails (default: warn only)
+#   BRIEFR_INSTALL_DEV_DEPS=1 — install backend dev/test deps for on-box verification
+#   BRIEFR_SKIP_SMOKE=1       — skip OTX Intel smoke after deploy
+#   BRIEFR_STRICT_SMOKE=1     — fail update if Intel smoke fails (default: warn only)
 set -euo pipefail
 
 INSTALL_DIR="/opt/briefr"
@@ -158,6 +159,10 @@ chown "${APP_USER}:${APP_USER}" "${INSTALL_DIR}/backend/.build-info.json"
 
 echo "==> Updating Python dependencies"
 as_app_user "${INSTALL_DIR}/venv/bin/pip" install -r "${INSTALL_DIR}/backend/requirements.txt"
+if [ "${BRIEFR_INSTALL_DEV_DEPS:-}" = "1" ]; then
+  echo "==> Updating Python dev/test dependencies"
+  as_app_user "${INSTALL_DIR}/venv/bin/pip" install -r "${INSTALL_DIR}/backend/requirements-dev.txt"
+fi
 
 echo "==> Verifying backend imports"
 as_app_user bash -c "cd '${INSTALL_DIR}/backend' && '${INSTALL_DIR}/venv/bin/python' -c 'import main; print(\"import ok\")'"

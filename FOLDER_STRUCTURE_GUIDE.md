@@ -20,7 +20,8 @@ Every file in the repository with a one-line purpose. Tags:
 | `backend/database.py` | **[V1.2-SPLIT]** SQLite schema, migrations, upserts, cache, MITRE/ATLAS/OTX persistence (1,681 lines) |
 | `backend/scheduler.py` | APScheduler: 7 jobs, ingest locks, startup bootstrap, manual refresh entry points |
 | `backend/tracking.py` | `api_usage` counters and quota metadata for `/api/usage` endpoints |
-| `backend/requirements.txt` | Python dependencies (FastAPI, httpx, aiosqlite, APScheduler, PyYAML) |
+| `backend/requirements.txt` | Runtime Python dependencies (FastAPI, httpx, aiosqlite, APScheduler, PyYAML) |
+| `backend/requirements-dev.txt` | Development/test Python dependencies, including `requirements.txt` plus pytest |
 | `backend/.env.example` | Environment variable template for API keys and scheduler tuning |
 | `backend/.python-version` | Python version pin for local/pyenv |
 | `backend/.gitignore` | Ignores `briefr.db`, `.env`, `__pycache__` |
