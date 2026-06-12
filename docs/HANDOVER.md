@@ -156,7 +156,7 @@ Ordered; each is one PR unless noted. File pointers are current as of this doc.
 - Post-merge tests: new archive is age-encrypted; `briefr-restore.sh` round-trips;
   startup auto-restore from an encrypted archive works on a copy of prod DB.
 
-### 5.7 Playwright smoke in CI — 🔲 open (PR TBD)
+### 5.7 Playwright smoke in CI — ✅ done (PR #101 open)
 - Chromium-only, against seeded data (`scripts/seed_screenshot_data.py`):
   BRIEF renders cards; filter click anchors to feed (regression for #90);
   drawer opens/closes with focus restore; IOC tab accepts input; Incidents
