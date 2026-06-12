@@ -116,14 +116,14 @@ All ride the V1.2 `resilient_client` feed framework; snapshot sources need no wa
 
 Env-gated, CPU-only, scheduler-side, deterministic fallback — see ML placement rules in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
-| Item | Goal |
-|------|------|
-| **Embeddings at ingest** | Small local model (e.g. bge-small via ONNX/fastembed); vectors stored as BLOBs in SQLite. **Default search: exact brute-force cosine (NumPy)** — adequate at BRIEFR scale (tens of thousands of embedded rows) and keeps the single-tool deploy contract. `sqlite-vec` is an optional accelerator only where its loadable extension is available (Python build must support `enable_load_extension`; document the Debian toolchain if adopted) |
-| **Similar CVEs** | Semantic relatedness beyond same-product matching |
-| **News ↔ CVE linking + RSS dedup** | Cluster multi-source coverage of one incident into one card |
-| **Semantic search** | Across CVE descriptions, ATLAS studies, news |
-| **LLM product extraction** | `{vendor, product, version_range}` from description text for NVD-unanalyzed CVEs (existing Groq/Anthropic integration); superseded by official CPE |
-| **Action logging** | Pin/snooze/dismiss events retained as future re-ranker training data — no model training in V1.3 |
+| Item | Goal | Status |
+|------|------|--------|
+| **Embeddings at ingest** | Small local model (e.g. bge-small via ONNX/fastembed); vectors stored as BLOBs in SQLite. **Default search: exact brute-force cosine (NumPy)** — adequate at BRIEFR scale (tens of thousands of embedded rows) and keeps the single-tool deploy contract. `sqlite-vec` is an optional accelerator only where its loadable extension is available (Python build must support `enable_load_extension`; document the Debian toolchain if adopted) | ✅ Shipped — `ml/embeddings.py` + `embeddings_backfill` scheduler job; `EMBEDDINGS_ENABLED=0` default; `fastembed` optional install; sqlite-vec importable-only |
+| **Similar CVEs** | Semantic relatedness beyond same-product matching | ✅ Shipped — `GET /api/cves/{id}/related` extended additively (`meta.method`, per-item `similarity`); shared-product heuristic remains the deterministic fallback |
+| **News ↔ CVE linking + RSS dedup** | Cluster multi-source coverage of one incident into one card | 🔲 Open |
+| **Semantic search** | Across CVE descriptions, ATLAS studies, news | 🔲 Open |
+| **LLM product extraction** | `{vendor, product, version_range}` from description text for NVD-unanalyzed CVEs (existing Groq/Anthropic integration); superseded by official CPE | ✅ Shipped — `ml/product_extraction.py` + `llm_product_extraction` scheduler job; gated on `LLM_PRODUCT_EXTRACTION_ENABLED=1` + `GROQ_API_KEY`; writes only empty `affected_products`, provenance `affected_products_source='llm'`, official CPE supersedes |
+| **Action logging** | Pin/snooze/dismiss events retained as future re-ranker training data — no model training in V1.3 | 🔲 Open |
 
 ---
 

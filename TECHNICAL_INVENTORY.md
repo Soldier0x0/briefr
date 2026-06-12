@@ -13,13 +13,16 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 | API framework | FastAPI | 0.136.3 | REST API, OpenAPI, validation |
 | ASGI server | uvicorn | 0.48.0 | Production HTTP server |
 | HTTP client | httpx | 0.28.1 | Async external API calls |
-| Scheduler | APScheduler | 3.11.2 | 7 background ingest/correlation jobs |
+| Scheduler | APScheduler | 3.11.2 | 9 background ingest/correlation/ML jobs |
 | Database | SQLite + aiosqlite | 0.22.1 | Local persistence (`briefr.db`) |
 | Validation | Pydantic | 2.13.4 | Request/response models |
 | Config | python-dotenv | 1.2.2 | `.env` loading |
 | YAML | PyYAML | 6.0.2 | ATLAS feed parsing |
 | Spreadsheet generation | openpyxl | 3.1.5 | `TECHNICAL_INVENTORY.xlsx` generator script |
 | Backup encryption | pyrage | 1.3.0 | age (X25519) archive encryption in `backup/manager.py`; interoperable with the `age` CLI |
+| Vector math | NumPy | 2.4.4 | Brute-force cosine similarity over `cve_embeddings` BLOBs (default path) |
+| Embeddings (optional) | fastembed | not pinned — install only when `EMBEDDINGS_ENABLED=1` | Local CPU ONNX embedding model (`BAAI/bge-small-en-v1.5`); never imported on the request path |
+| Vector accelerator (optional) | sqlite-vec | never a hard dependency | Used only if importable AND the Python build supports loadable extensions; NumPy path gives identical rankings |
 | UI framework | React | 18.3.1 | Analyst SPA |
 | Build tool | Vite | 5.4.1 | Dev server and production bundle |
 | Routing | react-router-dom | 7.16.0 | `/privacy`, `/terms` routes |
@@ -49,6 +52,7 @@ ERD: [`docs/diagrams/schema.mermaid`](docs/diagrams/schema.mermaid)
 | published | TEXT | | ISO publish timestamp |
 | modified | TEXT | | ISO last-modified |
 | affected_products | TEXT | DEFAULT `'[]'` | JSON array vendor:product |
+| affected_products_source | TEXT | DEFAULT '' | Provenance (migration, V1.3): `''` = official CPE/unset, `'llm'` = LLM-extracted; cleared when official CPE supersedes |
 | mitre_technique | TEXT | | Primary ATT&CK ID from refs |
 | summary | TEXT | | Plain-English summary (KEV/OSV) |
 | is_kev | INTEGER | DEFAULT 0 | CISA KEV flag |
@@ -281,6 +285,18 @@ Known keys: `nvd_last_mod_end` (NVD incremental watermark), `epss_backfill_done`
 | technique_id | TEXT | NOT NULL | |
 | | | PRIMARY KEY (group_id, technique_id) | |
 
+### cve_embeddings
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| cve_id | TEXT | PRIMARY KEY | CVE ID |
+| model | TEXT | NOT NULL | Embedding model name (e.g. `BAAI/bge-small-en-v1.5`) |
+| dim | INTEGER | NOT NULL | Vector dimension |
+| vector | BLOB | NOT NULL | float32 little-endian, L2-normalized (sqlite-vec compatible layout) |
+| updated_at | TEXT | DEFAULT datetime('now') | |
+
+Index: `idx_cve_embeddings_model(model)`. Written only by the `embeddings_backfill` scheduler job (V1.3, `EMBEDDINGS_ENABLED=1`); read by `GET /api/cves/{id}/related` as a pure BLOB scan (NumPy cosine; sqlite-vec when importable). Empty table when embeddings are disabled — the endpoint then uses the shared-product heuristic.
+
 ### audit_log
 
 | Column | Type | Constraints | Description |
@@ -309,6 +325,8 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | `incident_feed_refresh` | Every `INCIDENT_FEED_REFRESH_MINUTES` (default 30m; first run ~20s after boot) | 6 RSS feeds (parallel) + ATLAS | `feed_cache` (`incident_rss:*`, `incident_feed:snapshot`) | Per-source errors stored in snapshot; cache-write contention degrades gracefully | Yes — snapshot overwrite |
 | `nightly_correlation` | Cron `CORRELATION_HOUR:MINUTE` in `CORRELATION_TIMEZONE` (default 01:00 IST) | OTX IOCs + local DB | `correlation_*`, `feed_cache` | Log error; lock skip | Yes — upsert/delete patterns |
 | _(one-shot)_ `epss_backfill` | Startup task (fires once; skipped if `sync_state.epss_backfill_done = 1`) | FIRST API `scope=time-series` | `epss_history`, `sync_state` | Log error; retries on next restart; INSERT OR IGNORE prevents duplicates | Yes — INSERT OR IGNORE + marker |
+| `embeddings_backfill` | Every `EMBEDDINGS_SYNC_INTERVAL_HOURS` (default 6h; first run ~90s after boot) | Local CPU model (fastembed/ONNX) — no network after model download | `cve_embeddings` | **No-op unless `EMBEDDINGS_ENABLED=1`**; clear warning if `fastembed` missing; log error otherwise | Yes — only missing vectors embedded, commit per batch |
+| `llm_product_extraction` | Every `LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS` (default 6h; first run ~150s after boot) | Groq API (via `resilient_client`, `retries=0`) | `cves.affected_products` (only while empty) + `affected_products_source='llm'`, `feed_cache` (`llm_products:*`) | **No-op unless `LLM_PRODUCT_EXTRACTION_ENABLED=1` AND `GROQ_API_KEY` set**; circuit-open aborts run; per-CVE errors negative-cached | Yes — attempts negative-cached 7d; write guarded on empty field |
 
 ---
 
@@ -330,7 +348,7 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | CIRCL | `cve.circl.lu/api/cve` | — | Unlimited | No merge |
 | MalwareBazaar | `bazaar.abuse.ch/api` | `ABUSECH_AUTH_KEY` | Fair use | `None` |
 | URLhaus | `urlhaus-api.abuse.ch` | `ABUSECH_AUTH_KEY` | Fair use | `None` |
-| Groq | `api.groq.com/openai/v1/chat/completions` | `GROQ_API_KEY` | Console quota | Anthropic/template |
+| Groq | `api.groq.com/openai/v1/chat/completions` | `GROQ_API_KEY` | Console quota | PDF summary: Anthropic/template. Product extraction (V1.3): skipped — `affected_products` stays empty until official CPE arrives |
 | Anthropic | `api.anthropic.com/v1/messages` | `ANTHROPIC_API_KEY` | Console quota | Template |
 | GitHub | `api.github.com/search/code` | `GITHUB_TOKEN` | 60/hr without token | `[]` rules |
 
