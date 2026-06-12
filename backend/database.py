@@ -280,6 +280,26 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_group_technique_map_technique
                 ON group_technique_map(technique_id);
 
+            CREATE TABLE IF NOT EXISTS hunt_packs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                technique_id TEXT NOT NULL,
+                cve_id TEXT NOT NULL DEFAULT '',
+                title TEXT NOT NULL DEFAULT '',
+                priority TEXT NOT NULL DEFAULT 'medium',
+                sigma_yaml TEXT NOT NULL DEFAULT '',
+                siem_queries TEXT NOT NULL DEFAULT '{}',
+                log_patterns TEXT NOT NULL DEFAULT '[]',
+                notes TEXT NOT NULL DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now')),
+                UNIQUE (technique_id, cve_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_hunt_packs_technique
+                ON hunt_packs(technique_id);
+            CREATE INDEX IF NOT EXISTS idx_hunt_packs_cve
+                ON hunt_packs(cve_id);
+
             CREATE TABLE IF NOT EXISTS audit_log (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 actor TEXT NOT NULL DEFAULT '',
@@ -318,6 +338,10 @@ async def init_db() -> None:
             "CREATE TABLE IF NOT EXISTS mitre_groups (group_id TEXT PRIMARY KEY, name TEXT NOT NULL, aliases TEXT DEFAULT '[]', description TEXT DEFAULT '', sectors TEXT DEFAULT '[]', url TEXT DEFAULT '')",
             "CREATE TABLE IF NOT EXISTS group_technique_map (group_id TEXT NOT NULL, technique_id TEXT NOT NULL, PRIMARY KEY (group_id, technique_id))",
             "CREATE INDEX IF NOT EXISTS idx_group_technique_map_technique ON group_technique_map(technique_id)",
+            # Forge MVP (V1.3): saved hunt packs + CVE→pack linkage
+            "CREATE TABLE IF NOT EXISTS hunt_packs (id INTEGER PRIMARY KEY AUTOINCREMENT, technique_id TEXT NOT NULL, cve_id TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', priority TEXT NOT NULL DEFAULT 'medium', sigma_yaml TEXT NOT NULL DEFAULT '', siem_queries TEXT NOT NULL DEFAULT '{}', log_patterns TEXT NOT NULL DEFAULT '[]', notes TEXT NOT NULL DEFAULT '', created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')), UNIQUE (technique_id, cve_id))",
+            "CREATE INDEX IF NOT EXISTS idx_hunt_packs_technique ON hunt_packs(technique_id)",
+            "CREATE INDEX IF NOT EXISTS idx_hunt_packs_cve ON hunt_packs(cve_id)",
         ):
             try:
                 await db.execute(migration)

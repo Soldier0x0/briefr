@@ -92,6 +92,7 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 | `cve_change_history` | `GET /api/changes` | WhatChangedPanel (BRIEF tab) |
 | `api_usage` | `GET /api/usage`, `GET /api/usage/ioc` | IOCLookup quota display |
 | `audit_log` | Written by `POST /api/refresh*` and backup/restore (admin UI reads in V1.4) | — (not exposed yet) |
+| `hunt_packs` (+ `mitre_techniques`, `cve_technique_map`) | `GET /api/forge/coverage`, `GET /api/hunt-packs/{technique_id}`, `POST /api/hunt-packs/generate` | Forge tab (coverage map + hunt pack panel) |
 | `scoring/risk.py` constants | `GET /api/config/risk` — v1.1b weights, no DB | `riskScore.js` fetchAndCacheRiskWeights (startup) |
 
 ---
@@ -183,6 +184,29 @@ Sequence diagram: [`docs/diagrams/flow_ioc_lookup.mermaid`](docs/diagrams/flow_i
 7. **Editorial filter:** `incident_news.py` excludes non-security RSS items by title pattern (e.g. Dark Reading **"Name That Toon"** contest). Filter applies on parse and when serving cached rows; malformed cache entries are skipped defensively.
 
 Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (scheduler registration) · Client journey: [`APPLICATION_EXECUTION_MAP.md`](APPLICATION_EXECUTION_MAP.md) §2.C
+
+### F. Forge — detection coverage + hunt packs (V1.3 MVP)
+
+1. **UI:** `Forge.jsx` (FORGE tab) loads `GET /api/forge/coverage` on mount; the
+   optional "MY STACK ONLY" toggle re-fetches with the saved stack from
+   localStorage (`briefr_stack` — same terms as the BRIEF stack filter).
+2. **Coverage map (`routers/forge.py`):** one grouped query over
+   `cve_technique_map ⋈ cves` (stack filter as a subselect on `cves`) +
+   `hunt_packs` counts + `mitre_techniques` metadata. Status per technique:
+   `yours` (saved pack exists) → `community` (bundled template library covers
+   the technique — `detection/sigma_generator.py` + `detection/siem_queries.py`)
+   → `gap`. Entirely local: no outbound HTTP, no caching layer needed.
+3. **Technique click:** `GET /api/hunt-packs/{technique_id}` returns technique
+   metadata, saved packs, the template SIEM baseline, log patterns, and up to
+   20 linked CVEs (KEV first, then EPSS, then recency).
+4. **Generate pack:** "GENERATE PACK" on a linked CVE → `POST
+   /api/hunt-packs/generate` builds the Sigma rule + SIEM queries from the
+   template library, derives priority from KEV/CVSS/EPSS, and upserts into
+   `hunt_packs` (`UNIQUE(technique_id, cve_id)` — idempotent regeneration).
+   The UI refetches coverage so the technique flips to `yours`.
+5. **Boundary:** community-rule *search* (SigmaHQ/Elastic over GitHub) stays on
+   `GET /api/cves/{cve_id}/detection` (drawer Detect tab). Rule proof on live
+   logs and HyperDX provisioning are out of scope until V1.5/V1.4.
 
 ---
 

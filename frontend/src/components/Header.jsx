@@ -130,6 +130,14 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
             >
               INCIDENTS &amp; NEWS
             </button>
+            <button
+              className={`header-tab${activeTab === 'forge' ? ' active' : ''}`}
+              onClick={() => onTabChange('forge')}
+              aria-label="Switch to Forge detection engineering"
+              aria-current={activeTab === 'forge' ? 'page' : undefined}
+            >
+              FORGE
+            </button>
           </nav>
         )}
 

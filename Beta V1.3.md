@@ -54,13 +54,13 @@ V1.3 makes BRIEFR the **best self-hosted analyst intelligence pane** — actiona
 
 Detection engineering inside the intel pane — **not** log execution.
 
-| Item | Goal |
-|------|------|
-| **MITRE coverage map** | Stack profile × techniques × rule status (community / yours / gap) |
-| **CVE → detection pack** | Sigma + SIEM snippets + optional ClickHouse SQL + ATT&CK + priority |
-| **Detection cards** | Markdown docs per pack: hypothesis, logsource, FP notes, test method |
-| **Hunt pack API** | `GET /api/hunt-packs/{technique_id}` |
-| **Extend Detect tab** | “Generate pack” + link to coverage gap |
+| Item | Goal | Status |
+|------|------|--------|
+| **MITRE coverage map** | Stack profile × techniques × rule status (community / yours / gap) | ✅ Shipped (`GET /api/forge/coverage` + Forge tab) |
+| **CVE → detection pack** | Sigma + SIEM snippets + optional ClickHouse SQL + ATT&CK + priority | ✅ Shipped (`POST /api/hunt-packs/generate` → `hunt_packs` table; Sigma + 4 SIEM platforms + priority; ClickHouse SQL deferred) |
+| **Detection cards** | Markdown docs per pack: hypothesis, logsource, FP notes, test method | 🔲 Later phase (V1.3 Phase 5) |
+| **Hunt pack API** | `GET /api/hunt-packs/{technique_id}` | ✅ Shipped |
+| **Extend Detect tab** | “Generate pack” + link to coverage gap | 🔲 Later phase (generate lives on the Forge tab for now) |
 
 Build on existing: `backend/detection/` (`sigma_generator`, `siem_queries`, `rule_sources`).
 
