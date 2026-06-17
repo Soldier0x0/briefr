@@ -123,6 +123,13 @@ function BriefView({ stats, filters, setFilters,
     setFilters(prev => ({ ...prev, stack: '' }))
   }, [setFilters])
 
+  const handleFiltersChange = useCallback((next) => {
+    setFilters(prev => {
+      const changed = Object.keys(next).some(k => next[k] !== prev[k])
+      return changed ? { ...prev, ...next } : prev
+    })
+  }, [setFilters])
+
   return (
     <>
       <Hero
@@ -150,7 +157,10 @@ function BriefView({ stats, filters, setFilters,
       >
         <BriefCharts />
       </Suspense>
-      <WhatChangedPanel onSelectCVE={onSelectCVE} />
+      <div className="brief-intel-row">
+        <TimelineHeatmap filters={filters} onFiltersChange={handleFiltersChange} />
+        <WhatChangedPanel onSelectCVE={onSelectCVE} />
+      </div>
       <FeedRefreshStatus
         lastUpdated={lastUpdated}
         nextRefreshUtc={nextRefreshUtc}

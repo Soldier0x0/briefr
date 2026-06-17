@@ -92,6 +92,7 @@ If not fully completed in V1.2, finish here:
 | **Incidents hook** | `useCaseStudyFeed` with persistent cache |
 | **Investigation pivots** | Incidents ATLAS cards → CVE drawer |
 | **Operator changes UI** | ✅ Surface `GET /api/changes` (What changed panel on BRIEF tab) |
+| **Brief intel row layout** | ✅ 90-day heatmap + What changed side-by-side at ≥901px; stacked below 900px; alternating row shading |
 
 ---
 

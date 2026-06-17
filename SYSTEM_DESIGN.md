@@ -72,9 +72,14 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
 │ BRIEF tab        │ FEED tab         │ IOC LOOKUP tab   │ INCIDENTS tab    │ DetailDrawer       │
 │ MorningBrief.jsx │ CVEFeed.jsx      │ IOCLookup.jsx    │ CaseStudies.jsx  │ (global overlay)   │
 │ → GET /brief     │ → GET /cves      │ → POST /ioc      │ → combined feed  │ → 6+ sub-routes    │
-│ WhatChangedPanel │ CVECard.jsx      │                  │                  │ explainable risk   │
-│ StatsRow.jsx     │ TimelineHeatmap  │                  │                  │ breakdown (math)   │
-│ Hero stack bar   │ Sidebar.jsx      │                  │                  │                    │
+│ BriefCharts.jsx  │ CVECard.jsx      │                  │                  │ explainable risk   │
+│ WhatChangedPanel │ TimelineHeatmap  │                  │                  │ breakdown (math)   │
+│ TimelineHeatmap  │ Sidebar.jsx      │                  │                  │                    │
+│ (side-by-side    │                  │                  │                  │                    │
+│  with What       │                  │                  │                  │                    │
+│  changed ≥901px) │                  │                  │                  │                    │
+│ StatsRow.jsx     │                  │                  │                  │                    │
+│ Hero stack bar   │                  │                  │                  │                    │
 └──────────────────┴──────────────────┴──────────────────┴────────────────────┘
 ```
 

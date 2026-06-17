@@ -166,7 +166,7 @@ Each item includes core card fields (`cve_id`, `severity`, `cvss_score`, `epss_s
 
 **EPSS noise:** `update_epss_scores` only writes history when the score would display differently at **0.1%** precision (matching the What changed panel). Sub-threshold float jitter (e.g. `0.0001` → `0.0002`, both shown as `0.0%`) is ignored.
 
-**Frontend:** BRIEF tab **What changed** panel (`WhatChangedPanel.jsx`) — field + time-window filter chips; row click opens the CVE drawer; rows with identical formatted old/new values are hidden (legacy noise). `BriefCharts.jsx` uses `field=epss_score&since_hours=168` for the **Top EPSS movers** horizontal bar chart (top 10 positive deltas).
+**Frontend:** BRIEF tab **What changed** panel (`WhatChangedPanel.jsx`) — field + time-window filter chips; row click opens the CVE drawer; rows with identical formatted old/new values are hidden (legacy noise). `BriefCharts.jsx` uses `field=epss_score&since_hours=168` for the **Top EPSS movers** horizontal bar chart (top 10 positive deltas). On viewports **≥901px** wide, the panel sits beside the 90-day activity heatmap in a flex row (`brief-intel-row` in `App.jsx`); below 900px they stack full-width (heatmap above). Alternating row shading uses `--surface-sunken`.
 
 **Error responses:** `400` — invalid `field`
 
