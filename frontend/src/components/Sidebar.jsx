@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { fetchKEVDeadlines, fetchStatsTimeline, fetchTopTechniques } from '../api.js'
 import { getSavedStack } from '../utils/cveFilters.js'
-import { daysUntilDue, kevDueUrgencyClass, kevDueLabel } from '../utils/kevDeadline.js'
+import { daysUntilDue, kevAccentBarClass, kevDueUrgencyClass, kevDueLabel } from '../utils/kevDeadline.js'
 import './Sidebar.css'
 
 function Toggle({ label, checked, onChange, id }) {
@@ -268,8 +268,9 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
             const days = daysUntilDue(entry.due_date)
             const badgeClass = kevDueUrgencyClass(days)
             const badgeLabel = kevDueLabel(days) || 'unknown'
+            const accentClass = kevAccentBarClass(days)
             return (
-              <li key={entry.cve_id} className="kev-item">
+              <li key={entry.cve_id} className={`kev-item ${accentClass}`}>
                 <div className="kev-item-top">
                   <span className="kev-cve-id" aria-label={`CVE ID: ${entry.cve_id}`}>
                     {entry.cve_id}

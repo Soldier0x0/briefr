@@ -28,7 +28,8 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 | Routing | react-router-dom | 7.16.0 | `/privacy`, `/terms` routes |
 | PDF export | jsPDF + html2canvas | 4.2.1 / 1.4.1 | Client-side CVE PDF reports |
 | Spreadsheet export | exceljs | 4.4.0 | CVE XLSX export from feed |
-| Charts | chart.js | 4.4.x | Analyst Brief dashboard (`BriefCharts.jsx`); lazy-loaded Vite chunk |
+| Charts | chart.js | 4.4.x | Analyst Brief KEV histogram (`BriefCharts.jsx`); lazy-loaded Vite chunk; EPSS movers use inline SVG sparklines (`epssSparkline.js`) |
+| Shared UI | `CveDescriptionClamp.jsx` | — | Line-clamped CVE description (used by `CVECard.jsx`) |
 | Reverse proxy | nginx | (deploy configs) | TLS termination, static + API proxy |
 | CI | GitHub Actions | — | `backend-tests.yml`: pytest, dependency audit, Playwright smoke (`PLAYWRIGHT_SMOKE=1`) |
 | E2E smoke | Playwright (Chromium) | 1.52.0 | `tests/test_playwright_smoke.py` — seeded stack via `scripts/seed_screenshot_data.py` |

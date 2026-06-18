@@ -5,11 +5,26 @@ export function daysUntilDue(dateStr) {
   return Math.ceil(diff / 86400000)
 }
 
-/** Card/sidebar chip class: <7 red, <14 amber, else neutral. */
+/** Full-saturation red only for overdue / due today / due tomorrow. */
+export function kevDueIsImmediate(days) {
+  return days !== null && days <= 1
+}
+
+/** Left accent bar on CVE cards and sidebar KEV rows. */
+export function kevAccentBarClass(days) {
+  if (days === null) return 'accent-neutral'
+  if (days < 0 || days <= 1) return 'accent-urgent'
+  if (days <= 7) return 'accent-red-dim'
+  if (days <= 14) return 'accent-amber-dim'
+  return 'accent-neutral'
+}
+
+/** Card/sidebar chip class — immediate urgency uses full red; metadata stays dim. */
 export function kevDueUrgencyClass(days) {
   if (days === null) return 'badge-neutral'
   if (days < 0) return 'badge-overdue'
-  if (days < 7) return 'badge-urgent'
+  if (days <= 1) return 'badge-urgent'
+  if (days < 7) return 'badge-urgent-dim'
   if (days < 14) return 'badge-soon'
   return 'badge-neutral'
 }
@@ -21,4 +36,35 @@ export function kevDueLabel(days) {
   if (days === 0) return 'Due today'
   if (days === 1) return 'Due in 1 day'
   return `Due in ${days} days`
+}
+
+/** Inclusive UTC due-date range for a KEV histogram bucket (for onBucketClick). */
+export function kevBucketDateRange(bucketKey) {
+  const today = new Date()
+  today.setUTCHours(12, 0, 0, 0)
+  const fmt = (d) => {
+    const x = new Date(d)
+    return x.toISOString().slice(0, 10)
+  }
+  const addDays = (n) => {
+    const d = new Date(today)
+    d.setUTCDate(d.getUTCDate() + n)
+    return fmt(d)
+  }
+  const todayStr = fmt(today)
+
+  switch (bucketKey) {
+    case 'overdue':
+      return { bucket: bucketKey, start: null, end: addDays(-1) }
+    case '0-7':
+      return { bucket: bucketKey, start: todayStr, end: addDays(7) }
+    case '8-14':
+      return { bucket: bucketKey, start: addDays(8), end: addDays(14) }
+    case '15-30':
+      return { bucket: bucketKey, start: addDays(15), end: addDays(30) }
+    case '31+':
+      return { bucket: bucketKey, start: addDays(31), end: null }
+    default:
+      return { bucket: bucketKey, start: null, end: null }
+  }
 }

@@ -3,7 +3,13 @@ import { copyToClipboard } from '../utils/report.js'
 import { formatAbsolute } from '../utils/timezone.js'
 import { publishedAgeClass } from '../utils/cveAge.js'
 import { useMomentumScore } from '../utils/momentumCache.js'
-import { daysUntilDue, kevDueUrgencyClass, kevDueLabel } from '../utils/kevDeadline.js'
+import {
+  daysUntilDue,
+  kevAccentBarClass,
+  kevDueUrgencyClass,
+  kevDueLabel,
+} from '../utils/kevDeadline.js'
+import CveDescriptionClamp from './CveDescriptionClamp.jsx'
 import './CVECard.css'
 
 function timeAgo(isoString) {
@@ -28,21 +34,10 @@ function severityClass(sev) {
   return 'unknown'
 }
 
-function cvssBadgeClass(score, severity) {
-  const fromSev = severityClass(severity)
-  if (fromSev !== 'unknown') return fromSev
-  if (score == null) return 'unknown'
-  if (score >= 9.0) return 'critical'
-  if (score >= 7.0) return 'high'
-  if (score >= 4.0) return 'medium'
-  if (score > 0) return 'low'
-  return 'unknown'
-}
-
-function epssColor(score) {
-  if (score >= 0.7) return 'var(--red)'
-  if (score >= 0.3) return 'var(--amber)'
-  return 'var(--green)'
+function severityDotClass(sev) {
+  const s = severityClass(sev)
+  if (s === 'unknown') return 'sev-dot-neutral'
+  return `sev-dot-${s}`
 }
 
 export default function CVECard({
@@ -64,8 +59,6 @@ export default function CVECard({
 }) {
   const [shareCopied, setShareCopied] = useState(false)
   const momentumScore = useMomentumScore(cve.cve_id)
-  const sevClass = severityClass(cve.severity)
-  const cvssClass = cvssBadgeClass(cve.cvss_score, cve.severity)
   const epss =
     typeof cve.epss_score === 'number' && cve.epss_score >= 0
       ? cve.epss_score
@@ -74,6 +67,7 @@ export default function CVECard({
   const cwes = Array.isArray(cve.cwe_ids) ? cve.cwe_ids : []
   const kevDueDays = cve.is_kev ? daysUntilDue(cve.kev_due_date) : null
   const kevDueText = kevDueLabel(kevDueDays)
+  const accentClass = cve.is_kev ? kevAccentBarClass(kevDueDays) : 'accent-neutral'
 
   function handleClick() {
     if (onSelect) onSelect(cve)
@@ -133,7 +127,7 @@ export default function CVECard({
   return (
     <article
       ref={cardRef}
-      className={`cve-card sev-${sevClass}${selected ? ' cve-selected' : ''}${navSelected ? ' cve-nav-selected' : ''}${inThread ? ' cve-card-in-thread' : ''}${isPinned ? ' cve-card-pinned' : ''}`}
+      className={`cve-card ${accentClass}${selected ? ' cve-selected' : ''}${navSelected ? ' cve-nav-selected' : ''}${inThread ? ' cve-card-in-thread' : ''}${isPinned ? ' cve-card-pinned' : ''}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}
@@ -231,9 +225,10 @@ export default function CVECard({
           )}
           {cve.cvss_score != null && (
             <span
-              className={`badge badge-cvss badge-cvss-${cvssClass}`}
-              title={`CVSS score: ${cve.cvss_score} (${cve.severity})`}
+              className="badge badge-cvss badge-cvss-meta"
+              title={`CVSS score: ${cve.cvss_score} (${cve.severity || 'unknown'})`}
             >
+              <span className={`sev-dot ${severityDotClass(cve.severity)}`} aria-hidden="true" />
               CVSS {cve.cvss_score.toFixed(1)}
             </span>
           )}
@@ -252,11 +247,7 @@ export default function CVECard({
 
       {/* Description */}
       {cve.description && (
-        <p className="cve-description">
-          {cve.description.length > 280
-            ? cve.description.slice(0, 280) + '...'
-            : cve.description}
-        </p>
+        <CveDescriptionClamp text={cve.description} maxLines={2} />
       )}
 
       {/* Plain English summary */}
@@ -272,7 +263,7 @@ export default function CVECard({
           <div className="epss-track" role="progressbar" aria-valuenow={Math.round(epss * 100)} aria-valuemin={0} aria-valuemax={100}>
             <div
               className="epss-fill"
-              style={{ width: `${Math.min(epss * 100, 100)}%`, background: epssColor(epss) }}
+              style={{ width: `${Math.min(epss * 100, 100)}%` }}
             />
           </div>
           <span className="epss-label">EPSS {(epss * 100).toFixed(1)}%</span>
@@ -305,7 +296,7 @@ export default function CVECard({
         <span className="meta-item meta-time" aria-label={`Published: ${cve.published}`}>
           <span className="meta-key">published</span>
           <span
-            className={`meta-val time-tooltip-wrap ${publishedAgeClass(cve.published)}`}
+            className={`meta-val time-tooltip-wrap ${publishedAgeClass()}`}
             title={formatAbsolute(cve.published, timezone)}
           >
             {timeAgo(cve.published)}

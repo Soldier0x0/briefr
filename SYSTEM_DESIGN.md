@@ -198,14 +198,14 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (sch
 
 ### F2. Analyst Brief charts (Chart.js, V1.3)
 
-1. **UI:** `BriefCharts.jsx` on the BRIEF tab (below the SVG activity heatmap). The component is `React.lazy`-loaded; `chart.js` is dynamically imported into a separate Vite chunk (`chart-*.js`) so the main bundle stays lean and CSP `script-src 'self'` is satisfied without a CDN.
-2. **Charts (3):**
-   - **Severity / volume timeline** — `GET /api/stats/timeline?days=30` → line chart (total + critical counts per UTC day).
-   - **KEV due-date histogram** — `GET /api/kev/deadlines?sort=urgent` → bar chart bucketed Overdue / 0–7d / 8–14d / 15–30d / 31d+.
-   - **Top EPSS movers** — `GET /api/changes?field=epss_score&since_hours=168&limit=50` → horizontal bar chart of the top 10 positive EPSS deltas (same display-precision filter as What changed).
-3. **Refresh:** parallel fetch on mount + 5-minute poll (`POLL_MS`); cancellation guards on unmount/filter change per house convention.
-4. **Motion:** `prefers-reduced-motion: reduce` disables Chart.js animation (`duration: 0`); global CSS from PR #90 still zeroes transitions site-wide.
-5. **Layout:** three-column grid at ≥1100px; stacks to one column on narrower viewports (1080p-safe).
+1. **UI:** `BriefCharts.jsx` on the BRIEF tab (below the morning brief, above the heatmap / What changed row). The component is `React.lazy`-loaded; `chart.js` is dynamically imported into a separate Vite chunk (`chart-*.js`) so the main bundle stays lean and CSP `script-src 'self'` is satisfied without a CDN.
+2. **Panels (2):**
+   - **KEV due-date histogram** — `GET /api/kev/deadlines?sort=urgent` → Chart.js bar chart bucketed Overdue / 0–7d / 8–14d / 15–30d / 31d+ with escalating colours (`--red` → `--amber` → neutral). Bars are clickable; `onBucketClick` receives `{ bucket, start, end }` UTC date range (callback prop only — filter wiring deferred).
+   - **Top EPSS movers** — `GET /api/changes?field=epss_score&since_hours=168&limit=50` → compact table (CVE ID, dim severity dot, 7-day EPSS sparkline from `GET /api/cves/{id}/epss-history`, delta badge). Row click opens the CVE drawer via `onSelectCVE`.
+3. **Refresh:** parallel fetch on mount + 5-minute poll (`POLL_MS`); per-CVE EPSS history fetched when movers list changes; cancellation guards on unmount.
+4. **Theming:** Chart.js fonts/colours read from CSS variables (`readChartTheme()` in `chartLoader.js`); `prefers-reduced-motion: reduce` disables animation (`duration: 0`).
+5. **Layout:** two-column grid at ≥1100px; stacks to one column on narrower viewports.
+6. **Severity hierarchy (feed + sidebar):** CVE cards and sidebar KEV rows use left accent bars driven by KEV due-date urgency (full `--red` only for overdue / due today / due tomorrow). CVSS, EPSS%, PoC, and published-age metadata use neutral/dim chip styling so they do not compete with real urgency signals. Shared description truncation: `CveDescriptionClamp.jsx` (used by `CVECard`; brief cards adopt in a follow-up).
 
 ### F. Forge — detection coverage + hunt packs (V1.3 MVP)
 
