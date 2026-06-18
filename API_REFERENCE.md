@@ -610,7 +610,9 @@ sum deviates by more than 1 × 10⁻⁶.
 |---|---|---|---|
 | `tz` | str | `DEFAULT_TIMEZONE` env | IANA timezone for display |
 
-**Response:** `status`, `cve_count`, `last_updated`, `nvd_sync_watermark`, `refresh_in_progress`, `ingest`, `feeds.incidents` (`last_refresh`, `stale` — Incidents snapshot freshness), `feeds.sources` (per outbound source: `last_success`, `last_failure`, `last_error`, `consecutive_failures`, `circuit_open` — includes scheduler intel keys `vulnrichment` and `cvelistv5` after their first run), schedule hints, server time.
+**Response:** `status`, `cve_count`, `last_updated`, `nvd_sync_watermark`, `refresh_in_progress`, `ingest`, `feeds.incidents` (`last_refresh`, `stale` — Incidents snapshot freshness), `feeds.sources` (per outbound source: `last_success`, `last_failure`, `last_error`, `consecutive_failures`, `circuit_open` — includes scheduler intel keys `vulnrichment` and `cvelistv5` after their first run; webhook delivery keys `webhook.discord` / `webhook.telegram` after the first alert attempt), schedule hints, server time.
+
+**Note:** webhook alert configuration is env-only (V1.3) — no `/api` endpoint exposes channel URLs or tokens.
 
 ---
 

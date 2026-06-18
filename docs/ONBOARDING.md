@@ -137,6 +137,18 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 | `BACKUP_AGE_KEY_FILE` | `/var/lib/briefr/keys/backup-age.key` (when present) | age identity for archive encryption; must live outside `BACKUP_DIR`; `""` disables |
 | `BACKUP_LOG_MAX_BYTES` | `5242880` | Rotating backup log size |
 | `BACKUP_LOG_BACKUP_COUNT` | `5` | Gzipped backup log generations |
+| `BACKUP_INTERVAL_HOURS` | `6` | Expected backup cadence; dead-man alert fires after 2× with no successful archive |
+
+### Webhook alerts (V1.3)
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `DISCORD_WEBHOOK_URL` | — | Discord incoming webhook URL (optional) |
+| `TELEGRAM_BOT_TOKEN` | — | Telegram bot token (optional; requires `TELEGRAM_CHAT_ID`) |
+| `TELEGRAM_CHAT_ID` | — | Telegram destination chat/channel ID |
+| `BRIEFR_STACK_TERMS` | — | Comma-separated products/CVE IDs for KEV-on-stack server matching |
+
+Configure **one or both** channels. Alerts are scheduler-side only (KEV-on-stack after each KEV sync; backup dead-man check). No admin UI until V1.4.
 
 ### Scheduler intervals
 

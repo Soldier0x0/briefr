@@ -58,6 +58,7 @@ from ml.product_extraction import (
     llm_product_extraction_enabled,
     run_llm_product_extraction,
 )
+from webhooks.alerts import check_backup_deadman, get_backup_interval_hours, process_kev_stack_alerts
 
 logger = logging.getLogger(__name__)
 
@@ -269,6 +270,7 @@ async def _run_kev_sync() -> None:
 
     nvd_api_key = os.environ.get("NVD_API_KEY")
     kev_count = 0
+    newly_kev: list[str] = []
 
     try:
         kev_entries = await fetch_kev()
@@ -282,13 +284,21 @@ async def _run_kev_sync() -> None:
                 if cve_id:
                     kev_ids.append(cve_id)
                     kev_count += 1
-            await mark_cves_as_kev(db, kev_ids)
+            newly_kev = await mark_cves_as_kev(db, kev_ids)
             kev_summaries = await enrich_kev_summaries(db)
             await db.commit()
             if kev_summaries:
                 logger.info("Enriched %d KEV summaries from CISA descriptions", kev_summaries)
         finally:
             await db.close()
+
+        if newly_kev:
+            try:
+                alerted = await process_kev_stack_alerts(newly_kev)
+                if alerted:
+                    logger.info("KEV-on-stack alerts sent: %d", alerted)
+            except Exception as exc:
+                logger.error("KEV-on-stack alert processing failed: %s", exc)
 
         logger.info("KEV sync complete: %d catalog entries processed", kev_count)
 
@@ -858,6 +868,15 @@ async def run_llm_extraction_sync() -> bool:
     return True
 
 
+async def run_backup_deadman_check() -> bool:
+    """Scheduler hook: warn when backups are overdue (2× interval)."""
+    try:
+        return await check_backup_deadman()
+    except Exception as exc:
+        logger.error("Backup dead-man check failed: %s", exc)
+        return False
+
+
 def start_scheduler() -> AsyncIOScheduler:
     global _scheduler
 
@@ -1023,12 +1042,24 @@ def start_scheduler() -> AsyncIOScheduler:
         next_run_time=datetime.now(sched_tz) + timedelta(seconds=60),
     )
 
+    backup_hours = get_backup_interval_hours()
+    scheduler.add_job(
+        run_backup_deadman_check,
+        trigger=IntervalTrigger(hours=max(1, backup_hours // 2), timezone=sched_tz),
+        id="backup_deadman_check",
+        name="Backup Dead-Man Check",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(minutes=5),
+    )
+
     scheduler.start()
     _scheduler = scheduler
     logger.info(
         "Scheduler started (tz=%s). NVD every %dh; KEV every %dm; EPSS every %dh; "
         "MITRE+ATLAS weekly Sunday %02d:%02d; Correlation nightly %02d:%02d IST; OTX nightly %02d:%02d IST; "
-        "Vulnrichment every %dh; cvelistV5 every %dm.",
+        "Vulnrichment every %dh; cvelistV5 every %dm; backup dead-man every %dh.",
         tz_name,
         intervals["nvd_hours"],
         intervals["kev_minutes"],
@@ -1042,6 +1073,7 @@ def start_scheduler() -> AsyncIOScheduler:
         otx_minute,
         vulnrichment_hours,
         cvelist_minutes,
+        max(1, backup_hours // 2),
     )
     return scheduler
 

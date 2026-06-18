@@ -365,6 +365,8 @@ async def init_db() -> None:
             )
             """,
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_cve_exploits_cve_url ON cve_exploits(cve_id, url)",
+            "CREATE TABLE IF NOT EXISTS webhook_alert_log (alert_type TEXT NOT NULL, target TEXT NOT NULL, alerted_at TEXT DEFAULT (datetime('now')), PRIMARY KEY (alert_type, target))",
+            "CREATE INDEX IF NOT EXISTS idx_webhook_alert_log_type ON webhook_alert_log(alert_type)",
         ):
             try:
                 await db.execute(migration)
@@ -749,10 +751,13 @@ async def purge_legacy_rejected_cves(db: aiosqlite.Connection) -> int:
     return cursor.rowcount
 
 
-async def mark_cves_as_kev(db: aiosqlite.Connection, cve_ids: list) -> None:
+async def mark_cves_as_kev(db: aiosqlite.Connection, cve_ids: list) -> list[str]:
+    """Mark CVEs as KEV; return IDs that transitioned from is_kev=0 to 1."""
     if not cve_ids:
-        return
+        return []
     normalized = [c.upper() for c in cve_ids if c]
+    if not normalized:
+        return []
     placeholders = ",".join("?" * len(normalized))
     rows = await db.execute_fetchall(
         f"""
@@ -761,12 +766,14 @@ async def mark_cves_as_kev(db: aiosqlite.Connection, cve_ids: list) -> None:
         """,
         normalized,
     )
+    newly_kev = [row["cve_id"] for row in rows]
     history = [(row["cve_id"], "is_kev", "0", "1") for row in rows]
     await _insert_cve_changes_batch(db, history)
     await db.execute(
         f"UPDATE cves SET is_kev = 1 WHERE cve_id IN ({placeholders})",
         normalized,
     )
+    return newly_kev
 
 
 async def snapshot_epss_scores(db: aiosqlite.Connection, recorded_date: str | None = None) -> int:
@@ -1958,6 +1965,70 @@ async def set_sync_state_value(db: aiosqlite.Connection, key: str, value: str) -
         """,
         (key, value),
     )
+
+
+def get_stack_terms() -> str:
+    """Operator stack profile for server-side matching (BRIEFR_STACK_TERMS)."""
+    return os.environ.get("BRIEFR_STACK_TERMS", "").strip()
+
+
+async def was_webhook_alert_sent(
+    db: aiosqlite.Connection, alert_type: str, target: str
+) -> bool:
+    rows = await db.execute_fetchall(
+        """
+        SELECT 1 FROM webhook_alert_log
+        WHERE alert_type = ? AND target = ?
+        """,
+        (alert_type, target),
+    )
+    return bool(rows)
+
+
+async def record_webhook_alert(
+    db: aiosqlite.Connection, alert_type: str, target: str
+) -> None:
+    await db.execute(
+        """
+        INSERT OR IGNORE INTO webhook_alert_log (alert_type, target)
+        VALUES (?, ?)
+        """,
+        (alert_type, target),
+    )
+
+
+async def clear_webhook_alert(
+    db: aiosqlite.Connection, alert_type: str, target: str
+) -> None:
+    await db.execute(
+        "DELETE FROM webhook_alert_log WHERE alert_type = ? AND target = ?",
+        (alert_type, target),
+    )
+
+
+async def filter_cves_matching_stack(
+    db: aiosqlite.Connection, cve_ids: list[str], stack: str
+) -> list[dict]:
+    """Return CVE rows from cve_ids that match the comma-separated stack terms."""
+    from routers.cves import _stack_match_clause
+
+    normalized = [c.upper() for c in cve_ids if c]
+    if not normalized or not stack.strip():
+        return []
+    clause, params, _terms = _stack_match_clause(stack)
+    if not clause:
+        return []
+    placeholders = ",".join("?" * len(normalized))
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT c.cve_id, c.description, c.severity, c.summary,
+               (SELECT due_date FROM kev_deadlines k WHERE k.cve_id = c.cve_id) AS kev_due_date
+        FROM cves c
+        WHERE c.cve_id IN ({placeholders}) AND {clause}
+        """,
+        normalized + params,
+    )
+    return [dict(row) for row in rows]
 
 
 async def insert_epss_history_rows(

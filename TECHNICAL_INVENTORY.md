@@ -340,7 +340,7 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | Job ID | Schedule | Fetches from | Writes to | Failure behaviour | Idempotent? |
 |---|---|---|---|---|---|
 | `nvd_incremental_sync` | Every `NVD_SYNC_INTERVAL_HOURS` (default 1h) | NVD API | `cves`, `sync_state`, `cve_change_history`, `feed_cache`, `cve_exploits` | Log error; watermark not advanced if commit fails | Yes — upsert + lock skip |
-| `kev_metadata_sync` | Every `KEV_SYNC_INTERVAL_MINUTES` (default 15m) | CISA KEV JSON | `kev_deadlines`, `cves.is_kev` | Log error; prior data retained | Yes — upsert |
+| `kev_metadata_sync` | Every `KEV_SYNC_INTERVAL_MINUTES` (default 15m) | CISA KEV JSON | `kev_deadlines`, `cves.is_kev`, `webhook_alert_log` (KEV-on-stack) | Log error; prior data retained | Yes — upsert |
 | `epss_score_sync` | Every `EPSS_SYNC_INTERVAL_HOURS` (default 6h) | EPSS CSV/API | `cves.epss_score`, `epss_history` | Log error | Yes — upsert history |
 | `weekly_mitre_refresh` | Cron Sun `MITRE_REFRESH_HOUR:MINUTE` (default 02:00 sched TZ) | MITRE STIX, CTID CSV, ATLAS YAML | `mitre_*`, `atlas_*`, `cve_*_map`, `has_ai_context` | Log error; partial commit possible | Mostly — replace atlas tables |
 | `otx_nightly_correlation` | Cron `OTX_CORRELATION_HOUR:MINUTE` in `OTX_CORRELATION_TIMEZONE` (default 02:00 IST) | OTX API | `otx_*`, `feed_cache` | Skipped if no key; log on error | Yes — replace per CVE |
@@ -351,6 +351,19 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | `cvelistv5_incremental_sync` | Every `CVELISTV5_SYNC_INTERVAL_MINUTES` (default 30m; first run ~60s after boot) | CVEProject/cvelistV5 GitHub compare + raw JSON | `cves`, `sync_state.cvelistv5_head_sha` | Log error; watermark not advanced on failure | Yes — delta + additive merge |
 | `embeddings_backfill` | Every `EMBEDDINGS_SYNC_INTERVAL_HOURS` (default 6h; first run ~90s after boot) | Local CPU model (fastembed/ONNX) — no network after model download | `cve_embeddings` | **No-op unless `EMBEDDINGS_ENABLED=1`**; clear warning if `fastembed` missing; log error otherwise | Yes — only missing vectors embedded, commit per batch |
 | `llm_product_extraction` | Every `LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS` (default 6h; first run ~150s after boot) | Groq API (via `resilient_client`, `retries=0`) | `cves.affected_products` (only while empty) + `affected_products_source='llm'`, `feed_cache` (`llm_products:*`) | **No-op unless `LLM_PRODUCT_EXTRACTION_ENABLED=1` AND `GROQ_API_KEY` set**; circuit-open aborts run; per-CVE errors retried next run (not cached) | Yes — completed extractions negative-cached 7d; write guarded on empty field |
+| `backup_deadman_check` | Every `max(1, BACKUP_INTERVAL_HOURS // 2)` (default 3h; first run ~5m after boot) | Local backup archive mtimes | `webhook_alert_log`, `sync_state.backup_deadman_baseline_utc` | **No-op unless `BACKUP_ENABLED=1` and a webhook channel is configured**; log on delivery failure | Yes — one alert per stale period |
+
+---
+
+### webhook_alert_log (V1.3)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `alert_type` | TEXT | `kev_stack` or `backup_deadman` |
+| `target` | TEXT | CVE ID or `stale` |
+| `alerted_at` | TEXT | UTC timestamp |
+
+Primary key `(alert_type, target)` — dedupes KEV-on-stack (one alert per CVE) and backup dead-man (one alert per stale period until a fresh backup clears it).
 
 ---
 
@@ -381,6 +394,8 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | GitHub | `api.github.com/search/code` | `GITHUB_TOKEN` | 60/hr without token | `[]` rules |
 | CISA Vulnrichment | `api.github.com` + `raw.githubusercontent.com/cisagov/vulnrichment` | `GITHUB_TOKEN` optional | 60/hr anon API | Skip run; circuit opens |
 | cvelistV5 | `api.github.com` + `raw.githubusercontent.com/CVEProject/cvelistV5` | `GITHUB_TOKEN` optional | 60/hr anon API | Skip run; watermark retained |
+| Discord webhook | Operator-configured `DISCORD_WEBHOOK_URL` | — | Discord limits | Log error; circuit opens |
+| Telegram Bot API | `api.telegram.org/bot…/sendMessage` | `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` | Bot API limits | Log error; circuit opens |
 
 ---
 

@@ -245,6 +245,10 @@ See `backend/.env.example` for the full list. Key variables:
 | `BACKUP_RETENTION_COUNT` | Max `briefr-*.tar.gz[.age]` archives kept | `100` |
 | `BACKUP_ENABLED` | Enable backups + startup auto-restore | `1` |
 | `BACKUP_AGE_KEY_FILE` | age identity for archive encryption (outside `BACKUP_DIR`; `""` disables) | `/var/lib/briefr/keys/backup-age.key` if present |
+| `BACKUP_INTERVAL_HOURS` | Expected backup cadence (dead-man alert threshold = 2× this) | `6` |
+| `DISCORD_WEBHOOK_URL` | Discord incoming webhook for scheduler alerts | — |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Telegram bot alerts (both required to enable) | — |
+| `BRIEFR_STACK_TERMS` | Comma-separated stack for server-side KEV-on-stack matching | — |
 | `NVD_SYNC_INTERVAL_HOURS` | NVD incremental cadence | `1` |
 | `KEV_SYNC_INTERVAL_MINUTES` | KEV sync cadence | `15` |
 | `EPSS_SYNC_INTERVAL_HOURS` | EPSS sync cadence | `6` |

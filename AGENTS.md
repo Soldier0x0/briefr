@@ -21,6 +21,7 @@ dependencies, and ensures `backend/.env` exists (copied from `backend/.env.examp
 - Backend tests: from `backend/`, `pytest tests/ -q` (matches CI in
   `.github/workflows/backend-tests.yml`). Run from `backend/` — tests prepend the parent to `sys.path`.
 - Frontend build: from `frontend/`, `npm run build`.
+- Frontend dependency audit (matches CI): from `frontend/`, `npm run audit:ci` after `npm ci`.
 - There is **no lint config** (no ESLint/ruff/flake8) and **no frontend unit test suite**; UI is
   validated manually or via the Playwright scripts in `scripts/` / `backend/tests/test_playwright_smoke.py`
   (gated behind `PLAYWRIGHT_SMOKE=1`).
