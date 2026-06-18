@@ -27,6 +27,7 @@ import re
 
 import aiosqlite
 
+from ai.groq_config import GROQ_MODEL, GROQ_URL
 from database import (
     get_cves_for_llm_product_extraction,
     set_feed_cache,
@@ -35,9 +36,6 @@ from database import (
 from resilient_client import CircuitOpenError, resilient_request
 
 logger = logging.getLogger(__name__)
-
-GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama-3.3-70b-versatile"
 
 # Negative-cache window: a CVE whose extraction completed (even with zero
 # products) is not retried for this long. Successful writes leave the

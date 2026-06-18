@@ -13,12 +13,10 @@ from typing import Any
 
 import httpx
 
+from ai.groq_config import GROQ_MODEL, GROQ_URL
 from templates.intelligence import kev_sentence, severity_sentence
 
 logger = logging.getLogger(__name__)
-
-GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama-3.3-70b-versatile"
 
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_MODEL = "claude-haiku-4-5"

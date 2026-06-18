@@ -230,7 +230,7 @@ def main():
         ("CIRCL", "cve.circl.lu/api/cve", "", "Unlimited", "No merge"),
         ("MalwareBazaar", "bazaar.abuse.ch/api", "ABUSECH_AUTH_KEY", "Fair use", "None"),
         ("URLhaus", "urlhaus-api.abuse.ch", "ABUSECH_AUTH_KEY", "Fair use", "None"),
-        ("Groq", "api.groq.com/openai/v1/chat/completions", "GROQ_API_KEY", "Console quota", "Anthropic/template"),
+        ("Groq", "api.groq.com/openai/v1/chat/completions", "GROQ_API_KEY", "Console quota", "llama-3.1-8b-instant; Anthropic/template fallback"),
         ("Anthropic", "api.anthropic.com/v1/messages", "ANTHROPIC_API_KEY", "Console quota", "Template"),
         ("GitHub", "api.github.com/search/code", "GITHUB_TOKEN", "60/hr without token", "[] rules"),
     ]

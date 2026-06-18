@@ -949,17 +949,18 @@ def start_scheduler() -> AsyncIOScheduler:
     )
 
     incident_minutes = get_incident_feed_refresh_minutes()
-    scheduler.add_job(
-        run_incident_feed_refresh,
-        trigger=IntervalTrigger(minutes=incident_minutes, timezone=sched_tz),
-        id="incident_feed_refresh",
-        name="Incident Feed Snapshot Refresh",
-        replace_existing=True,
-        max_instances=1,
-        coalesce=True,
-        # Warm the snapshot shortly after boot instead of waiting one interval.
-        next_run_time=datetime.now(sched_tz) + timedelta(seconds=20),
-    )
+    if os.environ.get("PLAYWRIGHT_SMOKE") != "1":
+        scheduler.add_job(
+            run_incident_feed_refresh,
+            trigger=IntervalTrigger(minutes=incident_minutes, timezone=sched_tz),
+            id="incident_feed_refresh",
+            name="Incident Feed Snapshot Refresh",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            # Warm the snapshot shortly after boot instead of waiting one interval.
+            next_run_time=datetime.now(sched_tz) + timedelta(seconds=20),
+        )
 
     exploit_hours = get_exploit_sources_interval_hours()
     if exploit_sources_enabled():
