@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react'
+import { parseDatetimeLocalToIso, toDatetimeLocalValue } from './timeWindowDateUtils.js'
 import './TimeWindowPicker.css'
 
 export const TIME_PRESETS = [
@@ -28,13 +29,6 @@ export function hoursFromWindow(value) {
 export function defaultPresetWindow(presetId = '7d') {
   const preset = TIME_PRESETS.find(p => p.id === presetId) || TIME_PRESETS.find(p => p.id === '7d')
   return { mode: 'preset', presetId: preset.id, hours: preset.hours }
-}
-
-function toDatetimeLocalValue(isoOrDate) {
-  const d = isoOrDate instanceof Date ? isoOrDate : new Date(isoOrDate)
-  if (Number.isNaN(d.getTime())) return ''
-  const pad = n => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 function defaultCustomSince() {
@@ -82,8 +76,8 @@ export default function TimeWindowPicker({
   }
 
   function emitCustom(sinceLocal, untilLocal) {
-    const since = sinceLocal ? new Date(sinceLocal).toISOString() : null
-    const until = untilLocal ? new Date(untilLocal).toISOString() : new Date().toISOString()
+    const since = parseDatetimeLocalToIso(sinceLocal)
+    const until = parseDatetimeLocalToIso(untilLocal) || new Date().toISOString()
     onChange?.({ mode: 'custom', since, until })
   }
 
