@@ -19,8 +19,6 @@ import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
-
-const BriefCharts = lazy(() => import('./components/BriefCharts.jsx'))
 import { fetchStats, fetchHealth, fetchCVE } from './api.js'
 import { useAssetProfileOptional } from './context/AssetProfileContext.jsx'
 import {
@@ -31,6 +29,8 @@ import {
 import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 import './components/InvestigationPanel.css'
+
+const BriefCharts = lazy(() => import('./components/BriefCharts.jsx'))
 
 const DEFAULT_FILTERS = {
   severity: null,
