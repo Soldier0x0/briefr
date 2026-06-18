@@ -76,6 +76,7 @@ _vulnrichment_lock = asyncio.Lock()
 _cvelistv5_lock = asyncio.Lock()
 _embeddings_lock = asyncio.Lock()
 _llm_extraction_lock = asyncio.Lock()
+_exploit_sources_lock = asyncio.Lock()
 
 
 def get_scheduler_timezone() -> str:
@@ -1058,7 +1059,8 @@ def start_scheduler() -> AsyncIOScheduler:
     _scheduler = scheduler
     logger.info(
         "Scheduler started (tz=%s). NVD every %dh; KEV every %dm; EPSS every %dh; "
-        "MITRE+ATLAS weekly Sunday %02d:%02d; Correlation nightly %02d:%02d IST; OTX nightly %02d:%02d IST; "
+        "MITRE+ATLAS weekly Sunday %02d:%02d; Exploit sources every %dh; "
+        "Correlation nightly %02d:%02d IST; OTX nightly %02d:%02d IST; "
         "Vulnrichment every %dh; cvelistV5 every %dm; backup dead-man every %dh.",
         tz_name,
         intervals["nvd_hours"],
