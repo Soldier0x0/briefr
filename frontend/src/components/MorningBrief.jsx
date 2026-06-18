@@ -112,6 +112,12 @@ export default function MorningBrief({
     return () => { cancelled = true }
   }, [stack, sinceHours])
 
+  useEffect(() => {
+    if (reasonFilter === 'stack_match' && !stack?.trim()) {
+      onReasonFilterChange?.('all')
+    }
+  }, [reasonFilter, stack, onReasonFilterChange])
+
   const queue = brief?.action_queue || []
   const visibleFilters = useMemo(
     () => REASON_FILTERS.filter(f => f.id !== 'stack_match' || stack?.trim()),
@@ -195,7 +201,7 @@ export default function MorningBrief({
             <ul className="morning-brief-list" aria-label="Ranked action queue">
               {filteredQueue.map(item => {
                 const metric = inlineMetric(item)
-                const description = item.summary || ''
+                const description = item.summary || item.description || ''
                 return (
                   <li key={item.cve_id} className={`morning-brief-row ${rowAccentClass(item)}`}>
                     <button

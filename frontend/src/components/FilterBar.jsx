@@ -70,6 +70,7 @@ export default function FilterBar({
   const [exportSuccess, setExportSuccess] = useState(null)
   const debounceRef  = useRef(null)
   const stackDebounceRef = useRef(null)
+  const exportSuccessTimeoutRef = useRef(null)
   const searchRef    = useRef(null)
 
   useEffect(() => {
@@ -79,6 +80,14 @@ export default function FilterBar({
   useEffect(() => {
     setLocalStack(filters.stack || '')
   }, [filters.stack])
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      if (stackDebounceRef.current) clearTimeout(stackDebounceRef.current)
+      if (exportSuccessTimeoutRef.current) clearTimeout(exportSuccessTimeoutRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     if (searchFocusTrigger > 0 && searchRef.current) {
@@ -154,6 +163,15 @@ export default function FilterBar({
     return rows
   }
 
+  function showExportSuccess(message) {
+    if (exportSuccessTimeoutRef.current) clearTimeout(exportSuccessTimeoutRef.current)
+    setExportSuccess(message)
+    exportSuccessTimeoutRef.current = window.setTimeout(() => {
+      setExportSuccess(null)
+      exportSuccessTimeoutRef.current = null
+    }, 4000)
+  }
+
   async function handleExportCsv() {
     if (exporting) return
     setExporting('csv')
@@ -163,8 +181,7 @@ export default function FilterBar({
       const rows = await fetchExportRows()
       const csv = cvesToCsvRows(rows)
       downloadCsv(csv, exportFilename())
-      setExportSuccess(`Downloaded ${rows.length.toLocaleString()} CVEs as CSV.`)
-      window.setTimeout(() => setExportSuccess(null), 4000)
+      showExportSuccess(`Downloaded ${rows.length.toLocaleString()} CVEs as CSV.`)
     } catch (err) {
       setExportError(err.message || 'Export failed. Restart the backend and try again.')
     } finally {
@@ -181,8 +198,7 @@ export default function FilterBar({
       const rows = await fetchExportRows()
       const { downloadCvesXlsx, exportXlsxFilename } = await import('../utils/exportXlsx.js')
       await downloadCvesXlsx(rows, exportXlsxFilename())
-      setExportSuccess(`Downloaded ${rows.length.toLocaleString()} CVEs as Excel (.xlsx).`)
-      window.setTimeout(() => setExportSuccess(null), 4000)
+      showExportSuccess(`Downloaded ${rows.length.toLocaleString()} CVEs as Excel (.xlsx).`)
     } catch (err) {
       setExportError(err.message || 'Excel export failed. Restart the backend and try again.')
     } finally {
