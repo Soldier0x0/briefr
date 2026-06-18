@@ -175,9 +175,9 @@ export function fetchKEVDeadlines(sort = 'recent') {
   return request(`/kev/deadlines?sort=${sort}`)
 }
 
-export function fetchChanges({ field = null, sinceHours = 24, limit = 50 } = {}) {
+export function fetchChanges({ field = null, sinceHours = null, since_hours = null, limit = 50 } = {}) {
   const qs = new URLSearchParams()
-  qs.set('since_hours', String(sinceHours))
+  qs.set('since_hours', String(since_hours ?? sinceHours ?? 24))
   qs.set('limit', String(limit))
   if (field) qs.set('field', field)
   return request(`/changes?${qs}`)

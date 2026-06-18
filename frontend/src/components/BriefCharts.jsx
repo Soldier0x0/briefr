@@ -18,7 +18,9 @@ const KEV_BUCKETS = [
 ]
 
 function shortDateLabel(isoDate) {
+  if (!isoDate) return ''
   const d = new Date(`${isoDate}T12:00:00Z`)
+  if (Number.isNaN(d.getTime())) return ''
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
@@ -146,7 +148,7 @@ export default function BriefCharts() {
     const [timelineRes, kevRes, changesRes] = await Promise.allSettled([
       fetchStatsTimeline(TIMELINE_DAYS),
       fetchKEVDeadlines('urgent'),
-      fetchChanges({ field: 'epss_score', sinceHours: EPSS_WINDOW_HOURS, limit: 50 }),
+      fetchChanges({ field: 'epss_score', since_hours: EPSS_WINDOW_HOURS, limit: 50 }),
     ])
     if (signal?.aborted) return
     if (timelineRes.status === 'fulfilled') {

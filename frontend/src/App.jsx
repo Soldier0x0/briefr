@@ -7,8 +7,6 @@ import Header from './components/Header.jsx'
 import Hero from './components/Hero.jsx'
 import StatsRow from './components/StatsRow.jsx'
 import TimelineHeatmap from './components/TimelineHeatmap.jsx'
-
-const BriefCharts = lazy(() => import('./components/BriefCharts.jsx'))
 import WhatChangedPanel from './components/WhatChangedPanel.jsx'
 import MorningBrief from './components/MorningBrief.jsx'
 import CVEFeed from './components/CVEFeed.jsx'
@@ -21,6 +19,8 @@ import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
+
+const BriefCharts = lazy(() => import('./components/BriefCharts.jsx'))
 import { fetchStats, fetchHealth, fetchCVE } from './api.js'
 import { useAssetProfileOptional } from './context/AssetProfileContext.jsx'
 import {
