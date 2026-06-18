@@ -260,6 +260,7 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
   const kevRef = useRef(null)
   const chartsRef = useRef({ kev: null })
   const onBucketClickRef = useRef(onBucketClick)
+  const lastFetchedIdsRef = useRef('')
   onBucketClickRef.current = onBucketClick
 
   const kevHistogram = useMemo(() => buildKevHistogram(kevEntries), [kevEntries])
@@ -299,11 +300,19 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
   }, [loadData])
 
   useEffect(() => {
+    const currentIds = epssMovers.map(m => m.cve_id).join(',')
+
     if (!epssMovers.length) {
+      lastFetchedIdsRef.current = ''
       setEpssHistories({})
       setEpssHistoryLoading(false)
       return undefined
     }
+
+    if (currentIds === lastFetchedIdsRef.current) {
+      return undefined
+    }
+    lastFetchedIdsRef.current = currentIds
 
     let cancelled = false
     setEpssHistoryLoading(true)
