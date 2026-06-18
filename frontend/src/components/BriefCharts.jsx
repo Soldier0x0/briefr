@@ -9,23 +9,14 @@ import {
   EPSS_SPARKLINE_WIDTH,
   EPSS_SPARKLINE_HEIGHT,
 } from '../utils/epssSparkline.js'
+import TimeWindowPicker, {
+  defaultPresetWindow,
+  hoursFromWindow,
+} from './TimeWindowPicker.jsx'
 import './BriefCharts.css'
 
 const POLL_MS = 5 * 60 * 1000
 const EPSS_MOVERS_LIMIT = 10
-
-const KEV_DATE_WINDOWS = [
-  { id: '30d', label: '30D', overdueCutoffDays: 30, futureDays: 30 },
-  { id: '90d', label: '90D', overdueCutoffDays: 90, futureDays: 90 },
-  { id: '180d', label: '180D', overdueCutoffDays: 180, futureDays: 180 },
-  { id: 'all', label: 'ALL' },
-]
-
-const EPSS_WINDOWS = [
-  { id: '24h', label: '24H', hours: 24 },
-  { id: '7d', label: '7D', hours: 168 },
-  { id: '30d', label: '30D', hours: 720 },
-]
 
 const KEV_BUCKETS = [
   { key: 'overdue', label: 'Overdue' },
@@ -42,16 +33,26 @@ function parseDueDate(dueDate) {
   return Number.isNaN(due.getTime()) ? null : due
 }
 
-function filterKevByDateWindow(entries, windowId) {
-  if (windowId === 'all') return entries
-  const config = KEV_DATE_WINDOWS.find(w => w.id === windowId)
-  if (!config) return entries
+function filterKevByTimeWindow(entries, window) {
+  if (!window) return entries
+  if (window.mode === 'custom') {
+    const since = window.since ? new Date(window.since) : null
+    const until = window.until ? new Date(window.until) : new Date()
+    return entries.filter(row => {
+      const due = parseDueDate(row.due_date)
+      if (!due) return false
+      if (since && due < since) return false
+      if (until && due > until) return false
+      return true
+    })
+  }
+  const days = Math.max(1, Math.ceil((window.hours || 168) / 24))
   const today = new Date()
   today.setUTCHours(12, 0, 0, 0)
   const minDue = new Date(today)
-  minDue.setUTCDate(minDue.getUTCDate() - config.overdueCutoffDays)
+  minDue.setUTCDate(minDue.getUTCDate() - days)
   const maxDue = new Date(today)
-  maxDue.setUTCDate(maxDue.getUTCDate() + config.futureDays)
+  maxDue.setUTCDate(maxDue.getUTCDate() + days)
   return entries.filter(row => {
     const due = parseDueDate(row.due_date)
     if (!due) return false
@@ -59,14 +60,21 @@ function filterKevByDateWindow(entries, windowId) {
   })
 }
 
-function kevWindowLabel(windowId) {
-  const match = KEV_DATE_WINDOWS.find(w => w.id === windowId)
-  return match?.label || windowId.toUpperCase()
+function windowSummaryLabel(window) {
+  if (!window) return ''
+  if (window.mode === 'custom') {
+    const since = window.since ? shortDateLabel(window.since.slice(0, 10)) : 'any'
+    const until = window.until ? shortDateLabel(window.until.slice(0, 10)) : 'now'
+    return `Due dates from ${since} through ${until}`
+  }
+  const preset = window.presetId || `${window.hours}h`
+  return `Due dates ±${preset} from today`
 }
 
-function epssWindowLabel(windowId) {
-  const match = EPSS_WINDOWS.find(w => w.id === windowId)
-  return match?.label || windowId.toUpperCase()
+function epssDeltaClass(delta) {
+  if (delta >= 0.2) return 'badge-epss-delta--high'
+  if (delta >= 0.05) return 'badge-epss-delta--medium'
+  return 'badge-epss-delta--low'
 }
 
 function shortDateLabel(isoDate) {
@@ -281,7 +289,7 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel 
                         <EpssSparklineCell history={history} currentScore={row.new_score} />
                       )}
                     </span>
-                    <span className="brief-epss-delta badge badge-epss-delta mono">
+                    <span className={`brief-epss-delta badge badge-epss-delta mono ${epssDeltaClass(row.delta)}`}>
                       +{(row.delta * 100).toFixed(1)}%
                     </span>
                   </button>
@@ -302,8 +310,8 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
   const [epssChanges, setEpssChanges] = useState([])
   const [epssHistories, setEpssHistories] = useState({})
   const [epssHistoryLoading, setEpssHistoryLoading] = useState(false)
-  const [kevDateWindow, setKevDateWindow] = useState('90d')
-  const [epssWindow, setEpssWindow] = useState('7d')
+  const [kevWindow, setKevWindow] = useState(() => defaultPresetWindow('30d'))
+  const [epssWindow, setEpssWindow] = useState(() => defaultPresetWindow('7d'))
 
   const kevRef = useRef(null)
   const chartsRef = useRef({ kev: null })
@@ -312,12 +320,12 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
   onBucketClickRef.current = onBucketClick
 
   const filteredKevEntries = useMemo(
-    () => filterKevByDateWindow(kevEntries, kevDateWindow),
-    [kevEntries, kevDateWindow]
+    () => filterKevByTimeWindow(kevEntries, kevWindow),
+    [kevEntries, kevWindow]
   )
   const kevHistogram = useMemo(() => buildKevHistogram(filteredKevEntries), [filteredKevEntries])
   const epssMovers = useMemo(() => buildEpssMovers(epssChanges), [epssChanges])
-  const epssHours = EPSS_WINDOWS.find(w => w.id === epssWindow)?.hours ?? 168
+  const epssHours = hoursFromWindow(epssWindow)
 
   const loadData = useCallback(async (signal) => {
     const [kevRes, changesRes] = await Promise.allSettled([
@@ -502,25 +510,14 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
               <article className="brief-chart-card" aria-label="KEV due-date histogram">
                 <div className="brief-chart-card-head">
                   <h3 className="brief-chart-card-title">KEV DUE DATES</h3>
-                  <div className="brief-chart-filters" role="group" aria-label="KEV due date window">
-                    {KEV_DATE_WINDOWS.map(w => (
-                      <button
-                        key={w.id}
-                        type="button"
-                        className={`brief-chart-filter-chip mono${kevDateWindow === w.id ? ' brief-chart-filter-chip--active' : ''}`}
-                        onClick={() => setKevDateWindow(w.id)}
-                        aria-pressed={kevDateWindow === w.id}
-                      >
-                        {w.label}
-                      </button>
-                    ))}
-                  </div>
+                  <TimeWindowPicker
+                    value={kevWindow}
+                    onChange={setKevWindow}
+                    ariaLabel="KEV due date window"
+                    presetIds={['6h', '12h', '24h', '2d', '7d', '30d', '90d']}
+                  />
                 </div>
-                <p className="brief-chart-card-hint mono">
-                  {kevDateWindow === 'all'
-                    ? 'Showing all KEV due dates in the database'
-                    : `Due dates from ${kevWindowLabel(kevDateWindow)} ago through ${kevWindowLabel(kevDateWindow)} ahead`}
-                </p>
+                <p className="brief-chart-card-hint mono">{windowSummaryLabel(kevWindow)}</p>
                 <div className="brief-chart-canvas-wrap brief-chart-canvas-wrap--kev">
                   <canvas ref={kevRef} role="img" aria-label="KEV remediation deadline histogram" />
                 </div>
@@ -528,26 +525,20 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
               <article className="brief-chart-card brief-chart-card--table" aria-label="Top EPSS movers">
                 <div className="brief-chart-card-head">
                   <h3 className="brief-chart-card-title">TOP EPSS MOVERS</h3>
-                  <div className="brief-chart-filters" role="group" aria-label="EPSS change window">
-                    {EPSS_WINDOWS.map(w => (
-                      <button
-                        key={w.id}
-                        type="button"
-                        className={`brief-chart-filter-chip mono${epssWindow === w.id ? ' brief-chart-filter-chip--active' : ''}`}
-                        onClick={() => setEpssWindow(w.id)}
-                        aria-pressed={epssWindow === w.id}
-                      >
-                        {w.label}
-                      </button>
-                    ))}
-                  </div>
+                  <TimeWindowPicker
+                    value={epssWindow}
+                    onChange={setEpssWindow}
+                    ariaLabel="EPSS change window"
+                  />
                 </div>
                 <EpssMoversTable
                   movers={epssMovers}
                   histories={epssHistories}
                   loading={epssHistoryLoading}
                   onSelectCVE={onSelectCVE}
-                  windowLabel={epssWindowLabel(epssWindow)}
+                  windowLabel={epssWindow.mode === 'custom'
+                    ? 'selected range'
+                    : (epssWindow.presetId || `${epssHours}h`)}
                 />
               </article>
             </div>

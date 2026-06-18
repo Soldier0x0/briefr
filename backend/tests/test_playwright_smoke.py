@@ -25,6 +25,20 @@ def _poll(page, js: str, *, timeout: float = 120.0, interval: float = 0.25) -> N
     raise TimeoutError(f"Timed out polling: {js[:80]}...")
 
 
+def _feed_tab_visible(page) -> bool:
+    """True when the FEED tab panel is shown (not merely mounted with hidden)."""
+    return page.evaluate(
+        """
+        () => {
+          const feed = document.querySelector('.cve-feed');
+          if (!feed) return false;
+          const panel = feed.closest('.app-tab-panel');
+          return panel ? !panel.hidden : feed.offsetParent !== null;
+        }
+        """
+    )
+
+
 def _open_full_feed(page) -> None:
     """BRIEF tab is default — switch to the CVE feed when cards are only on FEED."""
     link = page.get_by_role("button", name="Open full feed →")
@@ -33,6 +47,16 @@ def _open_full_feed(page) -> None:
     else:
         page.get_by_role("button", name="Switch to full CVE feed").click()
     page.wait_for_selector(".cve-feed", timeout=30_000)
+    _poll(
+        page,
+        """
+        () => {
+          const feed = document.querySelector('.cve-feed');
+          const panel = feed?.closest('.app-tab-panel');
+          return feed && panel && !panel.hidden;
+        }
+        """,
+    )
 
 
 def _wait_for_brief_cards(page) -> int:
@@ -108,7 +132,7 @@ def test_brief_renders_cve_cards(smoke_page):
 def test_filter_click_anchors_to_feed(smoke_page):
     """Quick-filter scroll anchor regression (PR #90 feed UX)."""
     _wait_for_brief_cards(smoke_page)
-    if not smoke_page.locator(".cve-feed").count():
+    if not _feed_tab_visible(smoke_page):
         _open_full_feed(smoke_page)
     smoke_page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
     smoke_page.wait_for_timeout(300)

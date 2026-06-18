@@ -195,13 +195,29 @@ Single-user for now — no `user_id` column. Built-in app login will add per-use
 
 ### DELETE /api/watchlist/{cve_id}
 
-**Description:** Remove a CVE from the watchlist (unpin / unsnooze).
+**Description:** Remove a CVE from the watchlist (unpin).
 
 **Response:** `{"ok": true, "cve_id": "CVE-..."}`
 
 **Error responses:** `400` — invalid CVE ID; `404` — no watchlist row
 
-**Frontend:** Pin / Snooze controls on `CVECard` and `DetailDrawer`; **WATCHLIST** quick-filter chip on the feed (`watchlist_only=true`). State is server-backed (`watchlist` table), not `localStorage`.
+---
+
+### DELETE /api/watchlist/snoozes
+
+**Description:** Remove all snoozed CVE rows from the watchlist (restores them to the default feed). Called once on app load after snooze was removed from the UI.
+
+**Response:** `{"ok": true, "deleted": N}`
+
+---
+
+**Frontend:** Pin control on `CVECard` and `DetailDrawer`; **WATCHLIST** quick-filter chip on the feed (`watchlist_only=true`). Snooze controls were removed from the UI — legacy snooze rows are cleared via `DELETE /api/watchlist/snoozes` on startup. State is server-backed (`watchlist` table), not `localStorage`.
+
+**Feed layout:** Stack filter bar (prominent) → CVE keyword search → quick filter chips (ALL, WATCHLIST, KEV, …) → common vendor chips (scrolls with the list, not sticky).
+
+**Analyst charts:** `TimeWindowPicker` dropdown on the BRIEF tab — presets (6h–90d) plus custom datetime range for KEV due dates and EPSS movers.
+
+**Morning brief:** `action_queue` items include `description` and `summary`; rows use severity color coding on reason chips and metrics.
 
 ---
 

@@ -209,6 +209,7 @@ export default function FilterBar({
   }
 
   return (
+    <>
     <div className="filter-toolbar">
       <div className="filter-bar" role="toolbar" aria-label="CVE feed filters">
         <div className="filter-bar-top">
@@ -306,7 +307,48 @@ export default function FilterBar({
           </div>
         </div>
 
-        <div className="filter-bar-bottom">
+        <div className="filter-bar-stack">
+          <label htmlFor="feed-stack-input" className="filter-stack-label mono">
+            STACK //
+          </label>
+          <input
+            id="feed-stack-input"
+            type="text"
+            className="filter-stack-input"
+            value={localStack}
+            onChange={handleStackChange}
+            placeholder="nginx, python, linux kernel..."
+            aria-label="Enter stack terms to filter the CVE feed"
+            autoComplete="off"
+            spellCheck="false"
+          />
+          {localStack && (
+            <button
+              type="button"
+              className="filter-stack-clear-btn mono"
+              onClick={handleStackClear}
+              aria-label="Clear stack filter"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        <div className="filter-bar-search-row">
+          <input
+            ref={searchRef}
+            type="search"
+            className="filter-search"
+            value={localSearch}
+            onChange={handleSearchChange}
+            placeholder="search CVE-ID or keyword..."
+            aria-label="Search CVEs by ID or keyword (press / to focus)"
+            autoComplete="off"
+            spellCheck="false"
+          />
+        </div>
+
+        <div className="filter-bar-filters">
           <div className="filter-buttons" role="group" aria-label="Quick filters">
             {QUICK_FILTERS.map(f => (
               <button
@@ -320,46 +362,7 @@ export default function FilterBar({
               </button>
             ))}
           </div>
-
-          <input
-            ref={searchRef}
-            type="search"
-            className="filter-search"
-            value={localSearch}
-            onChange={handleSearchChange}
-            placeholder="search CVE-ID or keyword..."
-            aria-label="Search CVEs by ID or keyword (press / to focus)"
-            autoComplete="off"
-            spellCheck="false"
-          />
         </div>
-      </div>
-
-      <div className="filter-stack-row" role="search" aria-label="Filter CVEs by technology stack">
-        <label htmlFor="feed-stack-input" className="filter-stack-label mono">
-          STACK //
-        </label>
-        <input
-          id="feed-stack-input"
-          type="text"
-          className="filter-stack-input"
-          value={localStack}
-          onChange={handleStackChange}
-          placeholder="nginx, python, linux kernel..."
-          aria-label="Enter stack terms to filter the CVE feed"
-          autoComplete="off"
-          spellCheck="false"
-        />
-        {localStack && (
-          <button
-            type="button"
-            className="filter-stack-clear-btn mono"
-            onClick={handleStackClear}
-            aria-label="Clear stack filter"
-          >
-            ×
-          </button>
-        )}
       </div>
 
       {exportError && (
@@ -372,6 +375,7 @@ export default function FilterBar({
           {exportSuccess}
         </p>
       )}
+    </div>
 
       {active === 'all' && (
         <div className="vendor-filter-block">
@@ -407,6 +411,6 @@ export default function FilterBar({
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }

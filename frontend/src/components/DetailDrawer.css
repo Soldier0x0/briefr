@@ -1,3 +1,53 @@
+.drawer-body-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: color-mix(in srgb, var(--bg2) 82%, transparent);
+  pointer-events: none;
+}
+
+.drawer-loading-bar {
+  width: min(240px, 70%);
+  height: 3px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  overflow: hidden;
+  position: relative;
+}
+
+.drawer-loading-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: var(--accent);
+  animation: drawer-loading-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes drawer-loading-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(260%); }
+}
+
+.drawer-loading-text {
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--text2);
+}
+
 /* ── Overlay ─────────────────────────────────────────────── */
 .drawer-overlay {
   position: fixed;

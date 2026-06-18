@@ -6,6 +6,7 @@ per-user keying later (ROADMAP amendment 2026-06-11).
 Endpoints:
 - GET    /api/watchlist              — active entries (pins + unexpired snoozes)
 - POST   /api/watchlist              — pin or snooze a CVE
+- DELETE /api/watchlist/snoozes     — clear all snoozed rows (UI migration)
 - DELETE /api/watchlist/{cve_id}     — remove from watchlist
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
@@ -21,6 +22,7 @@ from pydantic import BaseModel, Field
 
 from database import (
     cve_exists,
+    delete_all_snooze_entries,
     delete_watchlist_entry,
     get_db,
     list_watchlist_entries,
@@ -92,6 +94,19 @@ async def set_watchlist_entry(body: WatchlistUpsertBody):
         await db.close()
 
     return {"data": row}
+
+
+@router.delete("/api/watchlist/snoozes")
+async def clear_all_snoozes():
+    """Remove all snoozed CVEs from the watchlist (restore them to the default feed)."""
+    db = await get_db()
+    try:
+        deleted = await delete_all_snooze_entries(db)
+        if deleted:
+            await db.commit()
+    finally:
+        await db.close()
+    return {"ok": True, "deleted": deleted}
 
 
 @router.delete("/api/watchlist/{cve_id}")

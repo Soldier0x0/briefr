@@ -165,6 +165,10 @@ input:focus, textarea:focus {
   overflow-x: hidden;
 }
 
+.app-tab-panel[hidden] {
+  display: none !important;
+}
+
 /* BRIEF tab: 90-day heatmap + What changed — side-by-side on wide viewports */
 @media (min-width: 901px) {
   .brief-intel-row {

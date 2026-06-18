@@ -261,3 +261,7 @@ export function setWatchlistEntry(cveId, state, snoozeDays = null) {
 export function removeWatchlistEntry(cveId) {
   return request(`/watchlist/${encodeURIComponent(cveId)}`, { method: 'DELETE' })
 }
+
+export function clearAllSnoozes() {
+  return request('/watchlist/snoozes', { method: 'DELETE' })
+}

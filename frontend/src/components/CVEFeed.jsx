@@ -482,7 +482,6 @@ export default function CVEFeed({
               watchlist?.getState(cve.cve_id) || cve.watchlist_state || null
             }
             onWatchlistPin={onWatchlistChange ? () => onWatchlistChange(cve.cve_id, 'pin') : undefined}
-            onWatchlistSnooze={onWatchlistChange ? () => onWatchlistChange(cve.cve_id, 'snooze') : undefined}
           />
         ))}
       </div>

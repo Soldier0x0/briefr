@@ -74,6 +74,20 @@ python3 scripts/seed_screenshot_data.py
 
 Useful when testing the Incidents tab, README screenshots, or an empty local database.
 
+### Frontend UI conventions (2026-06)
+
+| Area | Behaviour |
+|------|-----------|
+| **Theme** | Dark mode only — no light toggle |
+| **Tabs** | BRIEF / FEED / IOC / Forge panels stay mounted (`hidden` attribute) so scroll and filter state persist when switching tabs |
+| **Feed filters** | Sticky toolbar: title + exports → stack bar → CVE search → quick chips. **Common vendors** scroll below the sticky block (not inside it) |
+| **CVE drawer** | Slides over full-width content; `createCveDrawerController` ignores stale fetches after close; loading overlay shows “Calculating latest metrics…” |
+| **Watchlist** | Pin only in UI; legacy snoozes cleared on load via `DELETE /api/watchlist/snoozes` |
+| **Analyst charts** | `TimeWindowPicker` — preset windows (6h–90d) or custom datetime range |
+| **Morning brief** | `action_queue` includes `description`; reason chips and metrics are color-coded |
+
+Key files: `FilterBar.jsx`, `MorningBrief.jsx`, `BriefCharts.jsx`, `TimeWindowPicker.jsx`, `utils/openCveDrawer.js`.
+
 ---
 
 ## 3. Running tests

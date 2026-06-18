@@ -493,6 +493,12 @@ async def delete_watchlist_entry(db: aiosqlite.Connection, cve_id: str) -> bool:
     return cursor.rowcount > 0
 
 
+async def delete_all_snooze_entries(db: aiosqlite.Connection) -> int:
+    """Remove every snoozed watchlist row. Returns rows deleted."""
+    cursor = await db.execute("DELETE FROM watchlist WHERE state = 'snooze'")
+    return cursor.rowcount
+
+
 async def cve_exists(db: aiosqlite.Connection, cve_id: str) -> bool:
     rows = await db.execute_fetchall(
         "SELECT 1 FROM cves WHERE cve_id = ? LIMIT 1",

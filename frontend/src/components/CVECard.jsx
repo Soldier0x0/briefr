@@ -60,7 +60,6 @@ export default function CVECard({
   exposureScore = 0,
   watchlistState = null,
   onWatchlistPin,
-  onWatchlistSnooze,
 }) {
   const [shareCopied, setShareCopied] = useState(false)
   const momentumScore = useMomentumScore(cve.cve_id)
@@ -122,13 +121,7 @@ export default function CVECard({
     onWatchlistPin?.()
   }
 
-  function handleWatchlistSnooze(e) {
-    e.stopPropagation()
-    onWatchlistSnooze?.()
-  }
-
   const isPinned = watchlistState === 'pin'
-  const isSnoozed = watchlistState === 'snooze'
 
   return (
     <article
@@ -209,11 +202,6 @@ export default function CVECard({
           {isPinned && (
             <span className="badge badge-pin" title="Pinned to watchlist">
               PIN
-            </span>
-          )}
-          {isSnoozed && (
-            <span className="badge badge-snooze" title="Snoozed — hidden from feed until expiry">
-              SNOOZE
             </span>
           )}
           {kevDueText && (
@@ -309,7 +297,7 @@ export default function CVECard({
         </span>
       </div>
 
-      {(onInvestigate || onLookupIoc || onWatchlistPin || onWatchlistSnooze) && (
+      {(onInvestigate || onLookupIoc || onWatchlistPin) && (
         <div className="cve-card-actions" role="group" aria-label="Investigation actions">
           {onWatchlistPin && (
             <button
@@ -320,17 +308,6 @@ export default function CVECard({
               aria-label={isPinned ? `Unpin ${cve.cve_id}` : `Pin ${cve.cve_id} to watchlist`}
             >
               {isPinned ? 'Unpin' : 'Pin'}
-            </button>
-          )}
-          {onWatchlistSnooze && (
-            <button
-              type="button"
-              className={`cve-action-btn cve-action-btn-secondary mono${isSnoozed ? ' cve-action-btn-active' : ''}`}
-              onClick={handleWatchlistSnooze}
-              aria-pressed={isSnoozed}
-              aria-label={isSnoozed ? `Unsnooze ${cve.cve_id}` : `Snooze ${cve.cve_id} for 7 days`}
-            >
-              {isSnoozed ? 'Unsnooze' : 'Snooze 7d'}
             </button>
           )}
           {onInvestigate && (
