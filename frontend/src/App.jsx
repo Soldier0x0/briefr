@@ -120,14 +120,6 @@ function BriefView({ stats, filters, setFilters,
   const [queueReasonFilter, setQueueReasonFilter] = useState('all')
   const [queueDueWindow, setQueueDueWindow] = useState(null)
 
-  const handleBrief = useCallback((stack) => {
-    setFilters(prev => ({ ...prev, stack: stack || '' }))
-  }, [setFilters])
-
-  const handleClearStack = useCallback(() => {
-    setFilters(prev => ({ ...prev, stack: '' }))
-  }, [setFilters])
-
   const handleFiltersChange = useCallback((next) => {
     setFilters(prev => {
       const changed = Object.keys(next).some(k => next[k] !== prev[k])
@@ -153,11 +145,7 @@ function BriefView({ stats, filters, setFilters,
 
   return (
     <>
-      <Hero
-        activeStack={filters.stack}
-        onBrief={handleBrief}
-        onClearStack={handleClearStack}
-      />
+      <Hero />
       <StatsRow
         stats={stats}
         showAiAlerts={showAiAlerts}

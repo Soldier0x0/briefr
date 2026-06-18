@@ -34,10 +34,15 @@ function severityClass(sev) {
   return 'unknown'
 }
 
-function severityDotClass(sev) {
-  const s = severityClass(sev)
-  if (s === 'unknown') return 'sev-dot-neutral'
-  return `sev-dot-${s}`
+function cvssBadgeClass(score, severity) {
+  const fromSev = severityClass(severity)
+  if (fromSev !== 'unknown') return fromSev
+  if (score == null) return 'unknown'
+  if (score >= 9.0) return 'critical'
+  if (score >= 7.0) return 'high'
+  if (score >= 4.0) return 'medium'
+  if (score > 0) return 'low'
+  return 'unknown'
 }
 
 export default function CVECard({
@@ -68,6 +73,7 @@ export default function CVECard({
   const kevDueDays = cve.is_kev ? daysUntilDue(cve.kev_due_date) : null
   const kevDueText = kevDueLabel(kevDueDays)
   const accentClass = cve.is_kev ? kevAccentBarClass(kevDueDays) : 'accent-neutral'
+  const cvssClass = cvssBadgeClass(cve.cvss_score, cve.severity)
 
   function handleClick() {
     if (onSelect) onSelect(cve)
@@ -225,10 +231,9 @@ export default function CVECard({
           )}
           {cve.cvss_score != null && (
             <span
-              className="badge badge-cvss badge-cvss-meta"
+              className={`badge badge-cvss badge-cvss-${cvssClass}`}
               title={`CVSS score: ${cve.cvss_score} (${cve.severity || 'unknown'})`}
             >
-              <span className={`sev-dot ${severityDotClass(cve.severity)}`} aria-hidden="true" />
               CVSS {cve.cvss_score.toFixed(1)}
             </span>
           )}
@@ -296,7 +301,7 @@ export default function CVECard({
         <span className="meta-item meta-time" aria-label={`Published: ${cve.published}`}>
           <span className="meta-key">published</span>
           <span
-            className={`meta-val time-tooltip-wrap ${publishedAgeClass()}`}
+            className={`meta-val time-tooltip-wrap ${publishedAgeClass(cve.published)}`}
             title={formatAbsolute(cve.published, timezone)}
           >
             {timeAgo(cve.published)}

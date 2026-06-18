@@ -277,13 +277,34 @@
   font-variant-numeric: tabular-nums;
 }
 
-.badge-cvss-meta {
-  color: var(--text2);
+.badge-cvss-critical {
+  color: var(--red);
+  background: var(--red-dim);
+  border-color: var(--red);
+}
+
+.badge-cvss-high {
+  color: var(--amber);
+  background: var(--amber-dim);
+  border-color: var(--amber);
+}
+
+.badge-cvss-medium {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  border-color: var(--accent);
+}
+
+.badge-cvss-low {
+  color: var(--green);
+  background: var(--green-dim);
+  border-color: var(--green);
+}
+
+.badge-cvss-unknown {
+  color: var(--text3);
   background: var(--bg3);
   border-color: var(--border2);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .sev-dot {
@@ -375,7 +396,8 @@
   font-size: 0.6875rem;
 }
 
-.meta-val.age-neutral,
+.meta-val.age-fresh { color: var(--green); }
+.meta-val.age-recent { color: var(--amber); }
 .meta-val.age-old { color: var(--text3); }
 
 /* Badges shifted left to clear the risk score widget (~56px wide) */

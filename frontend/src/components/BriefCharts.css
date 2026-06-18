@@ -82,6 +82,42 @@
   min-height: 200px;
 }
 
+.brief-chart-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.brief-chart-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.brief-chart-filter-chip {
+  font-size: 7px;
+  letter-spacing: 0.06em;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text3);
+  cursor: pointer;
+}
+
+.brief-chart-filter-chip:hover {
+  border-color: var(--border2);
+  color: var(--text2);
+}
+
+.brief-chart-filter-chip--active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+}
+
 .brief-chart-card-title {
   font-family: var(--font-mono);
   font-size: 8px;
