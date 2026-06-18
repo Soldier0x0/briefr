@@ -48,12 +48,26 @@ fix_tree_permissions() {
 }
 
 ensure_node() {
-  if command -v npm &>/dev/null; then
-    return
+  if command -v node &>/dev/null; then
+    local node_ver
+    node_ver="$(node -v | cut -d'v' -f2 | cut -d'.' -f1)"
+    if [ "${node_ver}" -ge 18 ]; then
+      return
+    fi
+    echo "==> Upgrading Node.js (found v${node_ver}, v18+ required for Vite)"
   fi
+
   echo "==> Installing Node.js (required for frontend build)"
-  apt-get update -qq
-  apt-get install -y -qq nodejs npm
+  . /etc/os-release
+  if [ "${VERSION_ID:-0}" = "11" ]; then
+    echo "    Debian 11 (Bullseye): using NodeSource for Node.js 18"
+    apt-get install -y -qq curl ca-certificates
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt-get install -y -qq nodejs
+  else
+    apt-get update -qq
+    apt-get install -y -qq nodejs npm
+  fi
 }
 
 ensure_nginx() {
@@ -111,6 +125,7 @@ build_frontend() {
   ensure_node
   echo "==> Building frontend production bundle"
   as_app_user bash -c "
+    set -euo pipefail
     cd '${INSTALL_DIR}/frontend'
     npm install --cache '${APP_HOME}/.npm'
     npm run build
