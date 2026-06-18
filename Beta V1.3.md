@@ -39,12 +39,12 @@ V1.3 makes BRIEFR the **best self-hosted analyst intelligence pane** — actiona
 
 ## Theme 2 — Visual intelligence (Chart.js)
 
-| Item | Goal |
-|------|------|
-| **Chart.js dependency** | Dashboard-grade charts; keep SVG sparklines on CVE cards |
-| **Analyst Brief dashboard** | 4–6 charts: EPSS movers, KEV-on-stack, new/changed per day, stack exposure |
-| **Live = polled** | 60s–5m refresh via React Query; no WebSocket requirement |
-| **Chart export in PDF** | Optional Phase 2 within V1.3 |
+| Item | Goal | Status |
+|------|------|--------|
+| **Chart.js dependency** | Dashboard-grade charts; keep SVG sparklines on CVE cards | ✅ Shipped (`chart.js` npm dep, Vite code-split chunk — no CDN) |
+| **Analyst Brief dashboard** | Severity/volume timeline, KEV due-date histogram, top EPSS movers (`BriefCharts.jsx` on BRIEF tab) | ✅ Shipped (3 charts; KEV-on-stack / stack-exposure deferred) |
+| **Live = polled** | 60s–5m refresh; no WebSocket requirement | ✅ Shipped (`BriefCharts` polls every 5 min) |
+| **Chart export in PDF** | Optional Phase 2 within V1.3 | 🔲 Later phase |
 
 **Do not:** chart every CVE card; avoid bundle bloat.
 
@@ -160,7 +160,7 @@ The full webhook engine (channels UI, rules, delivery log, SSRF protection) stay
 ```
 Phase 1  Incident feed snapshot + scheduler (if not in V1.2)
 Phase 2  Morning brief API + explainable risk UI  ✅ Shipped
-Phase 3  Chart.js Analyst Brief panel
+Phase 3  Chart.js Analyst Brief panel  ✅ Shipped (PR #116)
 Phase 4  Forge: coverage map + hunt-packs API
 Phase 5  CVE → detection pack generation + detection cards (docs/)
 Phase 6  Watchlist / pin / snooze + React Query cleanup
@@ -176,7 +176,7 @@ Phase 6  Watchlist / pin / snooze + React Query cleanup
 | Morning brief | Shows stack-filtered queue in one screen |
 | Forge | Coverage map shows ≥1 real gap for demo stack |
 | Detection packs | 3 authored end-to-end packs with ATT&CK IDs |
-| Charts | Brief dashboard renders without layout break on 1080p |
+| Charts | Brief dashboard renders without layout break on 1080p | ✅ Shipped |
 | No regression | V1.2 auth, tests, deploy scripts still pass |
 
 ---

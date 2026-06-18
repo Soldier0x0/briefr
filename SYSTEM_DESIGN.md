@@ -190,6 +190,17 @@ Sequence diagram: [`docs/diagrams/flow_ioc_lookup.mermaid`](docs/diagrams/flow_i
 
 Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (scheduler registration) · Client journey: [`APPLICATION_EXECUTION_MAP.md`](APPLICATION_EXECUTION_MAP.md) §2.C
 
+### F2. Analyst Brief charts (Chart.js, V1.3)
+
+1. **UI:** `BriefCharts.jsx` on the BRIEF tab (below the SVG activity heatmap). The component is `React.lazy`-loaded; `chart.js` is dynamically imported into a separate Vite chunk (`chart-*.js`) so the main bundle stays lean and CSP `script-src 'self'` is satisfied without a CDN.
+2. **Charts (3):**
+   - **Severity / volume timeline** — `GET /api/stats/timeline?days=30` → line chart (total + critical counts per UTC day).
+   - **KEV due-date histogram** — `GET /api/kev/deadlines?sort=urgent` → bar chart bucketed Overdue / 0–7d / 8–14d / 15–30d / 31d+.
+   - **Top EPSS movers** — `GET /api/changes?field=epss_score&since_hours=168&limit=50` → horizontal bar chart of the top 10 positive EPSS deltas (same display-precision filter as What changed).
+3. **Refresh:** parallel fetch on mount + 5-minute poll (`POLL_MS`); cancellation guards on unmount/filter change per house convention.
+4. **Motion:** `prefers-reduced-motion: reduce` disables Chart.js animation (`duration: 0`); global CSS from PR #90 still zeroes transitions site-wide.
+5. **Layout:** three-column grid at ≥1100px; stacks to one column on narrower viewports (1080p-safe).
+
 ### F. Forge — detection coverage + hunt packs (V1.3 MVP)
 
 1. **UI:** `Forge.jsx` (FORGE tab) loads `GET /api/forge/coverage` on mount; the

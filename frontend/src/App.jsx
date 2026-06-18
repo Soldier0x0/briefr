@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { InvestigationProvider } from './context/InvestigationContext.jsx'
 import { overlayDepth } from './hooks/useModalLayer.js'
@@ -29,6 +29,8 @@ import {
 import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 import './components/InvestigationPanel.css'
+
+const BriefCharts = lazy(() => import('./components/BriefCharts.jsx'))
 
 const DEFAULT_FILTERS = {
   severity: null,
@@ -139,6 +141,15 @@ function BriefView({ stats, filters, setFilters,
         onOpenFullFeed={onOpenFullFeed}
         timezone={timezone}
       />
+      <Suspense
+        fallback={
+          <p className="brief-charts-loading mono" aria-live="polite">
+            Loading charts…
+          </p>
+        }
+      >
+        <BriefCharts />
+      </Suspense>
       <WhatChangedPanel onSelectCVE={onSelectCVE} />
       <FeedRefreshStatus
         lastUpdated={lastUpdated}

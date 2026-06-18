@@ -249,6 +249,7 @@ See [README.md § Backups and restore](../README.md) for restore commands.
 | Scheduled ingest | `backend/scheduler.py`, `backend/feeds/` |
 | Database schema | `backend/database.py` (`init_db`), `TECHNICAL_INVENTORY.md` §2 |
 | PDF export | `frontend/src/utils/pdfReport.js`, `backend/ai/summary.py` |
+| Analyst charts | `frontend/src/components/BriefCharts.jsx`, `chart.js` (lazy chunk) |
 | Backups | `backend/backup/manager.py`, `deploy/briefr-backup.sh` |
 
 ---
