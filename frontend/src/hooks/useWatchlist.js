@@ -3,6 +3,10 @@ import { fetchWatchlist, removeWatchlistEntry, setWatchlistEntry } from '../api.
 
 const DEFAULT_SNOOZE_DAYS = 7
 
+function normalizeCveId(cveId) {
+  return cveId ? cveId.toUpperCase() : cveId
+}
+
 /**
  * Server-backed CVE watchlist (pin / snooze). Single-user — no localStorage.
  * `version` bumps after mutations so the feed can refetch ordering/filters.
@@ -15,7 +19,7 @@ export function useWatchlist() {
   const applyEntries = useCallback((entries) => {
     const next = {}
     for (const row of entries || []) {
-      if (row?.cve_id) next[row.cve_id] = row
+      if (row?.cve_id) next[normalizeCveId(row.cve_id)] = row
     }
     setByCveId(next)
   }, [])
@@ -43,27 +47,30 @@ export function useWatchlist() {
   }, [])
 
   const pin = useCallback(async (cveId) => {
+    const key = normalizeCveId(cveId)
     const data = await setWatchlistEntry(cveId, 'pin')
     if (!mountedRef.current) return data
-    setByCveId(prev => ({ ...prev, [cveId]: data.data }))
+    setByCveId(prev => ({ ...prev, [key]: data.data }))
     bump()
     return data
   }, [bump])
 
   const snooze = useCallback(async (cveId, days = DEFAULT_SNOOZE_DAYS) => {
+    const key = normalizeCveId(cveId)
     const data = await setWatchlistEntry(cveId, 'snooze', days)
     if (!mountedRef.current) return data
-    setByCveId(prev => ({ ...prev, [cveId]: data.data }))
+    setByCveId(prev => ({ ...prev, [key]: data.data }))
     bump()
     return data
   }, [bump])
 
   const remove = useCallback(async (cveId) => {
+    const key = normalizeCveId(cveId)
     await removeWatchlistEntry(cveId)
     if (!mountedRef.current) return
     setByCveId(prev => {
       const next = { ...prev }
-      delete next[cveId]
+      delete next[key]
       return next
     })
     bump()
