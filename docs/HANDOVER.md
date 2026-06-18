@@ -68,22 +68,21 @@ Read in this order before writing any code:
 | #114 | setup-dev-environment | AGENTS.md cloud-agent bootstrap + seed script path clarity | ✅ Merged |
 | #115 | webhook-alerts-c999 | V1.3 Theme 8: Telegram + Discord webhook sender (`webhooks/sender.py`, resilient_client retries=2); KEV-on-stack after KEV sync (`BRIEFR_STACK_TERMS`, `webhook_alert_log` dedupe); backup dead-man scheduler check (2× `BACKUP_INTERVAL_HOURS`) | ✅ Merged |
 | #121–#131 | dependabot + deploy fixes | Backend: FastAPI 0.137.2, uvicorn 0.49.0, numpy 2.4.6, PyYAML 6.0.3, pytest 9.1.0. Frontend: React 19.2.7, Vite 8, lockfile sync. Deploy: `briefr-update.sh` cleanup, git-drift fix, FastAPI 0.137 router-split test fix | ✅ Merged |
+| #132 | groq-llama-8b-instant | Pin Groq model to `llama-3.1-8b-instant`; playwright-smoke incident-feed flake fix | ✅ Merged |
 | #117 | morning-brief-explainable-risk | V1.3 Phase 2: `GET /api/brief` (`backend/brief/service.py`, read-path only) — EPSS movers, new KEV, KEV due soon, stack activity + ranked `action_queue`; BRIEF tab landing (`MorningBrief.jsx`), full feed demoted to FEED tab; drawer explainable risk math (`score × weight × 100`, momentum signals, weights from `/api/config/risk`) | 🔲 Open — **merge first** |
 | #116 | chartjs-brief-dashboard | V1.3 Theme 2: Chart.js analyst brief dashboard (lazy-loaded, bundled — no CDN) | 🔲 Open |
 | #119 | brief-heatmap-layout | Side-by-side BRIEF heatmap + What changed panel layout | 🔲 Open |
 | #118 | watchlist-pin-snooze | V1.3 Theme 1: CVE watchlist pin/snooze (`watchlist` table, `GET/POST/DELETE /api/watchlist`) | 🔲 Open |
-| TBD | groq-llama-8b-instant | Pin Groq model to `llama-3.1-8b-instant` across all LLM call sites (`backend/ai/groq_config.py`) | 🔲 Open — independent; can merge anytime |
 
 Each merged PR's description contains its own **post-merge verification
 checklist** — that is the house style; keep it (see §7).
 
 ### Open PR merge order (2026-06-18)
 
-Rebased onto current `main` (includes FastAPI 0.137.2, pytest 9.1.0, React 19.2.7, Vite 8, deploy fixes #121–#131). **Merge one at a time**; run post-merge verification after each.
+Rebased onto current `main` (includes merged #132 playwright-smoke fix + Groq model pin). **Merge one at a time**.
 
 | Order | PR | Branch | Notes |
 |-------|-----|--------|-------|
-| 0 (optional, parallel) | groq-llama-8b-instant | `cursor/groq-llama-8b-instant-50b5` | Independent; no UI deps |
 | 1 | #117 | `cursor/morning-brief-explainable-risk-df48` | Foundation: `GET /api/brief`, BRIEF landing tab |
 | 2 | #116 | `cursor/chartjs-brief-dashboard-9662` | Rebased on #117; Chart.js in BriefView |
 | 3 | #119 | `cursor/brief-heatmap-layout-adcb` | Rebased on #116; heatmap + What changed side-by-side |
