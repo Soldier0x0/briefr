@@ -115,7 +115,7 @@ async def build_morning_brief(
         FROM kev_deadlines k
         JOIN cves c ON c.cve_id = k.cve_id
         WHERE k.date_added IS NOT NULL AND k.date_added != ''
-          AND k.date_added >= datetime('now', ?)
+          AND k.date_added >= date('now', ?)
           {stack_sql}
         ORDER BY k.date_added DESC
         LIMIT ?
@@ -228,7 +228,7 @@ def _priority_score(item: dict) -> float:
         due = item.get("kev_due_date") or ""
         if due:
             try:
-                due_date = datetime.fromisoformat(due[:10]).date()
+                due_date = datetime.strptime(due[:10], "%Y-%m-%d").date()
                 days_left = (due_date - datetime.now(timezone.utc).date()).days
                 score += max(0, 14 - days_left)
             except ValueError:
