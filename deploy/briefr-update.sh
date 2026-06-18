@@ -23,16 +23,18 @@ fi
 # Pull first, then re-exec so we always run the latest script body (bash does not
 # re-read the file after git pull while a run is in progress).
 restore_deploy_mode_drift() {
-  local rel diff
+  local rel
   for rel in deploy/setup.sh deploy/lib.sh; do
-    diff="$(git -C "${INSTALL_DIR}" diff -- "${rel}" 2>/dev/null || true)"
-    [ -n "${diff}" ] || continue
-    if echo "${diff}" | grep -q 'old mode\|new mode' \
-      && ! echo "${diff}" | grep -qvE '^(diff --git |index |--- |\\+\\+\\+ |old mode |new mode )'; then
-      echo "    Resetting permission-only drift on ${rel} (from a prior deploy run)"
-      git -C "${INSTALL_DIR}" restore -- "${rel}" 2>/dev/null \
-        || git -C "${INSTALL_DIR}" checkout -- "${rel}" 2>/dev/null \
-        || true
+    if ! git -C "${INSTALL_DIR}" diff --no-color --quiet -- "${rel}" 2>/dev/null; then
+      # Permission-only drift has no +/- content lines (only ---/+++ headers at most).
+      # --no-color avoids ANSI sequences when color.diff/color.ui is always on.
+      if ! git -C "${INSTALL_DIR}" diff --no-color -- "${rel}" 2>/dev/null \
+        | grep -vE '^[+-]{3}' | grep -qE '^[+-]'; then
+        echo "    Resetting permission-only drift on ${rel} (from a prior deploy run)"
+        git -C "${INSTALL_DIR}" restore -- "${rel}" 2>/dev/null \
+          || git -C "${INSTALL_DIR}" checkout -- "${rel}" 2>/dev/null \
+          || true
+      fi
     fi
   done
 }
