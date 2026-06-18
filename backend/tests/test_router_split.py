@@ -2,9 +2,13 @@
 must be byte-identical to the pre-split monolithic main.py."""
 
 import sys
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from fastapi.routing import APIRoute
 
 from main import app
 
@@ -63,17 +67,41 @@ def _openapi_route_list() -> list[tuple[str, str]]:
     ]
 
 
+def _iter_route_contexts(routes: list[Any]) -> Iterator[Any]:
+    """Flatten FastAPI 0.137+ nested included-router trees for introspection."""
+    for route in routes:
+        effective_route_contexts = getattr(route, "effective_route_contexts", None)
+        if callable(effective_route_contexts):
+            yield from effective_route_contexts()
+        elif isinstance(route, APIRoute):
+            yield route
+        elif hasattr(route, "endpoint"):
+            yield route
+
+
+def _routes_by_path() -> dict[str, str]:
+    return {
+        ctx.path: ctx.endpoint.__module__
+        for ctx in _iter_route_contexts(app.routes)
+        if hasattr(ctx, "endpoint")
+    }
+
+
+def _get_paths() -> list[str]:
+    return [
+        ctx.path
+        for ctx in _iter_route_contexts(app.routes)
+        if "GET" in getattr(ctx, "methods", set())
+    ]
+
+
 def test_route_list_identical_to_pre_split_snapshot():
     assert _openapi_route_list() == EXPECTED_ROUTES
 
 
 def test_moved_endpoints_live_in_routers():
     """All endpoint handlers come from routers/, none remain in main."""
-    by_path = {
-        route.path: route.endpoint.__module__
-        for route in app.routes
-        if hasattr(route, "endpoint")
-    }
+    by_path = _routes_by_path()
     assert by_path["/api/health"] == "routers.health"
     assert by_path["/api/atlas/techniques"] == "routers.atlas"
     assert by_path["/api/case-studies/feed"] == "routers.atlas"
@@ -100,11 +128,7 @@ def test_moved_endpoints_live_in_routers():
 
 def test_cve_path_param_route_registered_after_literal_siblings():
     """/api/cves/{cve_id} must not shadow GET /api/cves/export."""
-    get_paths = [
-        route.path
-        for route in app.routes
-        if hasattr(route, "methods") and "GET" in route.methods
-    ]
+    get_paths = _get_paths()
     assert get_paths.index("/api/cves/export") < get_paths.index(
         "/api/cves/{cve_id}"
     )
