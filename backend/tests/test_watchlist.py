@@ -182,3 +182,23 @@ def test_detail_includes_watchlist_state(watchlist_client):
 
     plain = client.get(f"/api/cves/{CVE_B}")
     assert "watchlist_state" not in plain.json()
+
+
+def test_clear_all_snoozes(watchlist_client):
+    client, _db_path = watchlist_client
+
+    client.post("/api/watchlist", json={"cve_id": CVE_A, "state": "pin"})
+    client.post("/api/watchlist", json={"cve_id": CVE_B, "state": "snooze", "snooze_days": 7})
+
+    cleared = client.delete("/api/watchlist/snoozes")
+    assert cleared.status_code == 200
+    assert cleared.json()["deleted"] == 1
+
+    listed = client.get("/api/watchlist")
+    assert listed.json()["count"] == 1
+    assert listed.json()["data"][0]["cve_id"] == CVE_A
+    assert listed.json()["data"][0]["state"] == "pin"
+
+    feed = client.get("/api/cves?limit=50")
+    ids = [row["cve_id"] for row in feed.json()["data"]]
+    assert CVE_B in ids

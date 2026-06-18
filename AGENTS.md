@@ -23,8 +23,11 @@ dependencies, and ensures `backend/.env` exists (copied from `backend/.env.examp
 - Frontend build: from `frontend/`, `npm run build`.
 - Frontend dependency audit (matches CI): from `frontend/`, `npm run audit:ci` after `npm ci`.
 - There is **no lint config** (no ESLint/ruff/flake8) and **no frontend unit test suite**; UI is
-  validated manually or via the Playwright scripts in `scripts/` / `backend/tests/test_playwright_smoke.py`
-  (gated behind `PLAYWRIGHT_SMOKE=1`).
+ validated manually or via the Playwright scripts in `scripts/` / `backend/tests/test_playwright_smoke.py`
+ (gated behind `PLAYWRIGHT_SMOKE=1`).
+- **Dark mode only** — light theme CSS exists under `frontend/src/theme/light-theme.css` but is not imported.
+- **Tab state** — main nav tabs use `hidden` panels instead of unmounting so FEED scroll/filters survive tab switches.
+- **Snooze removed from UI** — pin/watchlist remains; app clears legacy snooze rows on startup.
 
 ### Non-obvious caveats
 

@@ -102,7 +102,7 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 | `api_usage` | `GET /api/usage`, `GET /api/usage/ioc` | IOCLookup quota display |
 | `audit_log` | Written by `POST /api/refresh*` and backup/restore (admin UI reads in V1.4) | — (not exposed yet) |
 | `hunt_packs` (+ `mitre_techniques`, `cve_technique_map`) | `GET /api/forge/coverage`, `GET /api/hunt-packs/{technique_id}`, `POST /api/hunt-packs/generate` | Forge tab (coverage map + hunt pack panel) |
-| `watchlist` | `GET/POST/DELETE /api/watchlist`; join on `GET /api/cves` for sort/filter | CVECard + DetailDrawer pin/snooze; WATCHLIST feed filter |
+| `watchlist` | `GET/POST/DELETE /api/watchlist`, `DELETE /api/watchlist/snoozes`; join on `GET /api/cves` for sort/filter | CVECard + DetailDrawer pin; WATCHLIST feed filter |
 | `scoring/risk.py` constants | `GET /api/config/risk` — v1.1b weights, no DB | `riskScore.js` fetchAndCacheRiskWeights (startup) |
 
 ---
@@ -243,7 +243,7 @@ Single-user instance: `watchlist` rows are not keyed by identity until built-in 
 1. **Persistence:** `watchlist` table (`cve_id` PRIMARY KEY, `state` `pin`|`snooze`, `snooze_until`, `created_at`). Idempotent forward migration in `database.py:init_db`.
 2. **API:** `GET/POST/DELETE /api/watchlist` (`routers/watchlist.py`). POST validates the CVE exists; snooze default is 7 days (`snooze_days` 1–365).
 3. **Feed behaviour (`GET /api/cves`):** `LEFT JOIN` active watchlist rows. Pinned CVEs sort first. Active snoozes (`datetime(snooze_until) > datetime('now')`) are excluded from the default feed. `watchlist_only=true` returns only watchlist rows (pins + active snoozes) so analysts can review snoozed items.
-4. **UI:** `useWatchlist` hook loads state on mount; Pin / Snooze 7d on `CVECard` and `DetailDrawer`; **WATCHLIST** quick-filter chip. Mutations bump a version counter so `CVEFeed` refetches without a full page reload. No `localStorage`.
+4. **UI:** `useWatchlist` hook loads pins on mount and clears legacy snoozes via `DELETE /api/watchlist/snoozes`. Pin on `CVECard` and `DetailDrawer`; **WATCHLIST** quick-filter chip. Mutations bump a version counter so `CVEFeed` refetches without a full page reload. No `localStorage`. Snooze controls were removed from the UI (API retained for migration).
 
 ### G. ML assist — embeddings + LLM product extraction (V1.3, env-gated)
 

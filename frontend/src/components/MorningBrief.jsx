@@ -33,10 +33,6 @@ const EMPTY_HINTS = {
   stack_match: 'No recent CVE activity matching your stack terms.',
 }
 
-function reasonChips(reasons = []) {
-  return reasons.map(r => REASON_LABELS[r] || r)
-}
-
 function inlineMetric(item) {
   if (item.kev_due_date && (item.reasons || []).includes('kev_due_soon')) {
     const label = kevDueLabel(daysUntilDue(item.kev_due_date))
@@ -50,6 +46,26 @@ function inlineMetric(item) {
     return `+${(item.epss_delta * 100).toFixed(1)}% EPSS`
   }
   return null
+}
+
+function reasonChipClass(reason) {
+  if (reason === 'kev_due_soon' || reason === 'new_kev') return 'morning-brief-reason-chip--kev'
+  if (reason === 'epss_mover') return 'morning-brief-reason-chip--epss'
+  if (reason === 'stack_match') return 'morning-brief-reason-chip--stack'
+  return ''
+}
+
+function metricClass(item, metric) {
+  if (!metric) return ''
+  if (metric.includes('EPSS')) {
+    const delta = item.epss_delta ?? 0
+    if (delta >= 0.2) return 'morning-brief-row-metric--epss-high'
+    if (delta >= 0.05) return 'morning-brief-row-metric--epss'
+    return 'morning-brief-row-metric--epss-low'
+  }
+  if (metric === 'Overdue') return 'morning-brief-row-metric--overdue'
+  if (metric.startsWith('Due')) return 'morning-brief-row-metric--due'
+  return ''
 }
 
 function rowAccentClass(item) {
@@ -201,7 +217,7 @@ export default function MorningBrief({
             <ul className="morning-brief-list" aria-label="Ranked action queue">
               {filteredQueue.map(item => {
                 const metric = inlineMetric(item)
-                const description = item.summary || item.description || ''
+                const description = item.description || item.summary || ''
                 return (
                   <li key={item.cve_id} className={`morning-brief-row ${rowAccentClass(item)}`}>
                     <button
@@ -213,22 +229,32 @@ export default function MorningBrief({
                       <div className="morning-brief-row-head">
                         <span className="morning-brief-row-id mono">{item.cve_id}</span>
                         <div className="morning-brief-row-chips" aria-label="Brief reasons">
-                          {reasonChips(item.reasons).map(label => (
-                            <span key={label} className="morning-brief-reason-chip mono">
-                              {label}
-                            </span>
-                          ))}
+                          {(item.reasons || []).map(reason => {
+                            const label = REASON_LABELS[reason] || reason
+                            return (
+                              <span
+                                key={label}
+                                className={`morning-brief-reason-chip mono ${reasonChipClass(reason)}`}
+                              >
+                                {label}
+                              </span>
+                            )
+                          })}
                         </div>
                         {metric && (
-                          <span className="morning-brief-row-metric mono">{metric}</span>
+                          <span className={`morning-brief-row-metric mono ${metricClass(item, metric)}`}>
+                            {metric}
+                          </span>
                         )}
                       </div>
-                      {description && (
+                      {description ? (
                         <CveDescriptionClamp
                           text={description}
                           maxLines={2}
-                          className="morning-brief-row-desc"
+                          className="morning-brief-row-desc morning-brief-row-desc--highlight"
                         />
+                      ) : (
+                        <p className="morning-brief-row-desc-fallback mono">No description available.</p>
                       )}
                     </button>
                   </li>

@@ -72,10 +72,13 @@ Three main tabs:
 - Timezone-aware timestamps
 
 **User experience**
-- Dark mode default with light mode toggle
+- Dark mode only (terminal aesthetic)
 - Timezone selector (stored in `localStorage`)
 - Keyboard shortcuts (`/`, `F`, `Esc`, `g d` digest, arrow keys in feed)
+- Tab panels stay mounted when switching BRIEF / FEED / IOC / Forge (scroll and filter state preserved)
+- CVE detail drawer slides over content; closing during load does not reopen when fetch completes
 - Session-only investigation thread; stack filter persisted locally
+- Feed: prominent stack bar, CVE keyword search, quick filters below search, common vendor chips (non-sticky)
 
 ---
 

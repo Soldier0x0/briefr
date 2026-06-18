@@ -34,6 +34,7 @@ def _brief_cve_item(
         "is_kev": cve.get("is_kev"),
         "has_poc": cve.get("has_poc"),
         "summary": cve.get("summary") or "",
+        "description": cve.get("description") or "",
         "published": cve.get("published"),
         "kev_due_date": cve.get("kev_due_date"),
         "reasons": reasons,

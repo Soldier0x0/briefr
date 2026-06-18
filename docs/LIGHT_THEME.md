@@ -1,8 +1,10 @@
 # BRIEFR Light Theme Design System
 
+> **Deprecated (2026-06):** Light mode was removed from the product UI. BRIEFR ships **dark mode only**. This document is kept for historical reference if light theme is reintroduced.
+
 **Version:** 1.1 · **Date:** 2026-06-07
 
-Light mode uses a **newsprint terminal** palette: warm page ground (`#f0ece4`), white raised panels, ink-like text, and unchanged brand orange (`#e85533`). It is not a dark-theme invert.
+Light mode used a **newsprint terminal** palette: warm page ground (`#f0ece4`), white raised panels, ink-like text, and unchanged brand orange (`#e85533`). It was not a dark-theme invert.
 
 ## Token changes (dark → light)
 
@@ -28,55 +30,12 @@ Light mode uses a **newsprint terminal** palette: warm page ground (`#f0ece4`), 
 | `--surface-page` | `var(--bg)` | `#f0ece4` | Page layer |
 | `--surface-raised` | `var(--bg2)` | `#ffffff` | KPI band, header, cards |
 | `--surface-sunken` | `var(--bg3)` | `#ebe7df` | Vendor strip, hover |
-| `--input-bg` | `var(--bg2)` | `#ffffff` | Search fields |
-| `--chip-bg` | `var(--bg2)` | `#ffffff` | Filter chips |
-| `--chip-border` | `var(--border)` | `#b8b2a8` | Chip outline |
-| `--chip-active-bg` | `var(--red-dim)` | `#fdeae5` | Active vendor chip |
-| `--shadow-sm` | `none` | `0 1px 2px rgba(26,24,20,.06)` | Panel lift |
-| `--shadow-md` | `none` | `0 2px 10px rgba(26,24,20,.1)` | Tooltips / modals |
-| `--heatmap-0` | `#1a1a17` | `#ebe7df` | Empty cells |
-| `--heatmap-1` | `#2d1a0e` | `#f5d0c4` | Low activity |
-| `--heatmap-2` | `#7a3520` | `#e8a088` | Medium |
-| `--heatmap-3` | `#b84a28` | `#e85533` | High |
-| `--heatmap-4` | `#e85533` | `#c93d1a` | Peak |
 
-## Component treatment (light only)
+## Files (archived)
 
-| Area | Treatment |
-|------|-----------|
-| KPI row (`stats-row`) | White band, strong border, subtle shadow |
-| Filter bar | White sticky bar, inset search field |
-| Filter chips | White fill; active = orange + white label |
-| Vendor chips | White + shadow; active = rose tint + orange border |
-| Heatmap | Theme tokens via `heatmapGrid.js`; empty cells bordered |
-| Sidebar | White panel, left rule + shadow |
-| CVE cards | White rows on newsprint page |
+- `frontend/src/theme/light-theme.css` — surface overrides (no longer imported)
+- Toggle lived in `Header.jsx` (removed)
 
-## Files
+## Current default
 
-- `frontend/src/App.css` — token definitions
-- `frontend/src/theme/light-theme.css` — surface overrides
-- `frontend/src/utils/heatmapGrid.js` — heatmap scale tokens
-
-## CSP note
-
-Vite injects component CSS as inline `<style>` tags in development. The `Content-Security-Policy` in `frontend/index.html` must include `'unsafe-inline'` in `style-src` or the app renders as unstyled HTML (Times New Roman, default buttons, empty heatmap). Production builds use external `/assets/*.css` files and are unaffected, but README screenshots are captured from the dev server.
-
-## Screenshots
-
-Regenerate README (dark default):
-
-```bash
-python3 scripts/seed_screenshot_data.py   # sample CVEs + warm RSS cache
-cd frontend && npm run dev                # :5173
-# backend on :8000
-npx playwright install chromium
-node ../scripts/capture_readme_screenshots.mjs
-```
-
-Theme audit (dark + light viewport):
-
-```bash
-node scripts/capture_theme_screenshots.mjs
-# → screenshots/theme-audit/brief-dark.png, brief-light.png
-```
+Dark tokens are defined in `frontend/src/App.css` under `:root`. No `data-theme` attribute is set on `<html>`.

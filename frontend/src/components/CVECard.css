@@ -277,6 +277,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+.badge-cvss {
+  font-weight: 500;
+}
+
 .badge-cvss-critical {
   color: var(--red);
   background: var(--red-dim);
@@ -319,12 +323,6 @@
 .sev-dot-medium   { background: var(--border2); }
 .sev-dot-low      { background: var(--text3); }
 .sev-dot-neutral  { background: var(--border); }
-
-.badge-cvss {
-  color: var(--text2);
-  background: var(--bg3);
-  border-color: var(--border2);
-}
 
 /* Plain English summary block */
 .cve-summary {

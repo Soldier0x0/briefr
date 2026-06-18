@@ -178,10 +178,57 @@
   text-align: right;
 }
 
-.morning-brief-row-desc.cve-description-clamp {
+.morning-brief-reason-chip--kev {
+  border-color: var(--red);
+  color: var(--red);
+  background: var(--red-dim);
+}
+
+.morning-brief-reason-chip--epss {
+  border-color: var(--amber);
+  color: var(--amber);
+  background: var(--amber-dim);
+}
+
+.morning-brief-reason-chip--stack {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg));
+}
+
+.morning-brief-row-metric--overdue,
+.morning-brief-row-metric--due {
+  color: var(--red);
+}
+
+.morning-brief-row-metric--epss-high {
+  color: var(--red);
+}
+
+.morning-brief-row-metric--epss {
+  color: var(--amber);
+}
+
+.morning-brief-row-metric--epss-low {
+  color: var(--green);
+}
+
+.morning-brief-row-desc.cve-description-clamp,
+.morning-brief-row-desc--highlight.cve-description-clamp {
   margin-bottom: 0;
   font-size: 0.8125rem;
+  color: var(--text);
+  background: color-mix(in srgb, var(--bg3) 70%, var(--bg2));
+  border-left: 2px solid var(--border2);
+  padding: 6px 8px;
+  line-height: 1.45;
+}
+
+.morning-brief-row-desc-fallback {
+  margin: 0;
+  font-size: 0.75rem;
   color: var(--text3);
+  font-style: italic;
 }
 
 .morning-brief-empty {

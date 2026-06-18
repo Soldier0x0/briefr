@@ -120,19 +120,36 @@
 
 .brief-chart-card-title {
   font-family: var(--font-mono);
-  font-size: 8px;
-  color: var(--text3);
+  font-size: 0.6875rem;
+  color: var(--text2);
   letter-spacing: 0.05em;
-  margin-bottom: 4px;
-  font-weight: 400;
+  margin-bottom: 0;
+  font-weight: 500;
+}
+
+.badge-epss-delta--high {
+  color: var(--red);
+  border-color: var(--red);
+  background: var(--red-dim);
+}
+
+.badge-epss-delta--medium {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: var(--amber-dim);
+}
+
+.badge-epss-delta--low {
+  color: var(--green);
+  border-color: var(--green);
+  background: var(--green-dim);
 }
 
 .brief-chart-card-hint {
-  font-size: 7px;
+  font-size: 0.625rem;
   color: var(--text3);
   letter-spacing: 0.04em;
   margin: 0 0 8px;
-  opacity: 0.85;
 }
 
 .brief-chart-canvas-wrap {

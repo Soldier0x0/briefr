@@ -60,6 +60,7 @@ EXPECTED_ROUTES = [
     # Watchlist (V1.3): pin/snooze — additive, appended after brief routes.
     ("GET", "/api/watchlist"),
     ("POST", "/api/watchlist"),
+    ("DELETE", "/api/watchlist/snoozes"),
     ("DELETE", "/api/watchlist/{cve_id}"),
 ]
 

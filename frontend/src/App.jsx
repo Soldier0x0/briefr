@@ -28,6 +28,7 @@ import {
   hasDeclaredAiAssets,
 } from './utils/aiAssets.js'
 import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
+import { createCveDrawerController } from './utils/openCveDrawer.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 import './components/InvestigationPanel.css'
 
@@ -187,7 +188,7 @@ function FeedView({ filters, setFilters, selectedCVE, setSelectedCVE,
                    digestOpen, setDigestOpen, digestCVEs, setDigestCVEs,
                    searchFocusTrigger, setSearchFocusTrigger, aboutOpen, setAboutOpen,
                    timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
-                   onDigestRequest, watchlist, onWatchlistChange }) {
+                   onDigestRequest, watchlist, onWatchlistChange, onSelectCVE }) {
 
   const handleFiltersChange = useCallback((next) => {
     setFilters(prev => {
@@ -202,13 +203,6 @@ function FeedView({ filters, setFilters, selectedCVE, setSelectedCVE,
     setDigestCVEs(cves)
     setDigestOpen(true)
   }, [setDigestCVEs, setDigestOpen])
-
-  const handleSelectCVE = useCallback((cve) => {
-    setSelectedCVE(cve)
-    fetchCVE(cve.cve_id)
-      .then(full => setSelectedCVE(full))
-      .catch(() => {})
-  }, [setSelectedCVE])
 
   return (
     <>
@@ -246,6 +240,8 @@ export default function App() {
   const [filters, setFilters]                   = useState(DEFAULT_FILTERS)
   const [stats, setStats]                       = useState(null)
   const [selectedCVE, setSelectedCVE]           = useState(null)
+  const [drawerLoading, setDrawerLoading]       = useState(false)
+  const drawerControllerRef = useRef(null)
   const [digestOpen, setDigestOpen]             = useState(false)
   const [digestCVEs, setDigestCVEs]             = useState([])
   const [searchFocusTrigger, setSearchFocusTrigger] = useState(0)
@@ -283,6 +279,26 @@ export default function App() {
       })
       .catch(() => {})
   }, [timezone])
+
+  useEffect(() => {
+    drawerControllerRef.current = createCveDrawerController({
+      fetchCVE,
+      setSelectedCVE,
+      setDrawerLoading,
+    })
+  }, [])
+
+  const handleOpenCVE = useCallback((cve) => {
+    drawerControllerRef.current?.open(cve)
+  }, [])
+
+  const handleCloseCVE = useCallback(() => {
+    drawerControllerRef.current?.close()
+  }, [])
+
+  const handleReplaceCVE = useCallback((full) => {
+    drawerControllerRef.current?.replace(full)
+  }, [])
 
   useEffect(() => {
     loadStats()
@@ -341,10 +357,8 @@ export default function App() {
   }, [assetCtx?.profile])
 
   const openCveById = useCallback((cveId) => {
-    fetchCVE(cveId)
-      .then(full => setSelectedCVE(full))
-      .catch(() => setSelectedCVE({ cve_id: cveId }))
-  }, [])
+    handleOpenCVE({ cve_id: cveId })
+  }, [handleOpenCVE])
 
   const investigationNav = useMemo(() => ({
     setActiveTab,
@@ -381,7 +395,7 @@ export default function App() {
         if (overlayDepth() > 0) return
         if (digestOpen)   { setDigestOpen(false); return }
         if (aboutOpen)    { setAboutOpen(false);  return }
-        if (selectedCVE)  { setSelectedCVE(null); return }
+        if (selectedCVE)  { handleCloseCVE(); return }
         return
       }
       const tag = document.activeElement?.tagName
@@ -419,38 +433,30 @@ export default function App() {
       document.removeEventListener('keydown', handleKey)
       if (gTimer) clearTimeout(gTimer)
     }
-  }, [aboutOpen, selectedCVE, digestOpen, handleGenerateDigest, activeTab])
+  }, [aboutOpen, selectedCVE, digestOpen, handleGenerateDigest, activeTab, handleCloseCVE])
 
   const showFeedShortcuts =
     location.pathname !== '/privacy' &&
     location.pathname !== '/terms' &&
     activeTab === 'feed'
 
-  const handleSelectCVE = useCallback((cve) => {
-    setSelectedCVE(cve)
-    fetchCVE(cve.cve_id)
-      .then(full => setSelectedCVE(full))
-      .catch(() => {})
-  }, [])
+  const handleSelectCVE = handleOpenCVE
 
   const handleWatchlistChange = useCallback(async (cveId, action) => {
+    if (action !== 'pin') return
     try {
       const current =
         watchlist.getState(cveId) ||
         (selectedCVE?.cve_id === cveId ? selectedCVE.watchlist_state : null)
-      if (action === 'pin') {
-        await watchlist.togglePin(cveId, current)
-      } else if (action === 'snooze') {
-        await watchlist.toggleSnooze(cveId, current)
-      }
+      await watchlist.togglePin(cveId, current)
       if (selectedCVE?.cve_id === cveId) {
         const full = await fetchCVE(cveId)
-        setSelectedCVE(full)
+        handleReplaceCVE(full)
       }
     } catch {
       // Controls are best-effort; feed refetch follows version bump.
     }
-  }, [watchlist, selectedCVE, setSelectedCVE])
+  }, [watchlist, selectedCVE, handleReplaceCVE])
 
   return (
     <InvestigationProvider navigation={investigationNav}>
@@ -492,6 +498,9 @@ export default function App() {
               showAiAlerts={showAiAlerts}
               onAiAlertsClick={handleAiAlertsClick}
               onSelectCVE={handleSelectCVE}
+              onCloseCVE={handleCloseCVE}
+              onCveReplace={handleReplaceCVE}
+              drawerLoading={drawerLoading}
               watchlist={watchlist}
               onWatchlistChange={handleWatchlistChange}
             />
@@ -534,6 +543,9 @@ function AppLayout({
   showAiAlerts,
   onAiAlertsClick,
   onSelectCVE,
+  onCloseCVE,
+  onCveReplace,
+  drawerLoading,
   watchlist,
   onWatchlistChange,
 }) {
@@ -559,7 +571,7 @@ function AppLayout({
         />
 
         <div className="app-main">
-          {activeTab === 'brief' && (
+          <div className="app-tab-panel" hidden={activeTab !== 'brief'} aria-hidden={activeTab !== 'brief'}>
             <BriefView
               stats={stats}
               filters={filters}
@@ -573,41 +585,44 @@ function AppLayout({
               onOpenFullFeed={() => setActiveTab('feed')}
               onSelectCVE={onSelectCVE}
             />
-          )}
-          {activeTab === 'feed' && (
+          </div>
+          <div className="app-tab-panel" hidden={activeTab !== 'feed'} aria-hidden={activeTab !== 'feed'}>
             <FeedView
-                  filters={filters}
-                  setFilters={setFilters}
-                  selectedCVE={selectedCVE}
-                  setSelectedCVE={setSelectedCVE}
-                  digestOpen={digestOpen}
-                  setDigestOpen={setDigestOpen}
-                  digestCVEs={digestCVEs}
-                  setDigestCVEs={setDigestCVEs}
-                  searchFocusTrigger={searchFocusTrigger}
-                  setSearchFocusTrigger={setSearchFocusTrigger}
-                  aboutOpen={aboutOpen}
-                  setAboutOpen={setAboutOpen}
-                  timezone={timezone}
-                  lastUpdated={lastUpdated}
-                  nextRefreshUtc={nextRefreshUtc}
-                  refreshSchedule={refreshSchedule}
-                  onDigestRequest={onDigestRequest}
-                  watchlist={watchlist}
-                  onWatchlistChange={onWatchlistChange}
-                />
-              )}
-              {activeTab === 'ioc' && (
-                <IOCLookup key={iocSessionKey} prefill={iocPrefill} />
-              )}
-              {activeTab === 'atlas' && (
-                <CaseStudies
-                  initialSearch={atlasActorFilter || ''}
-                  onClearFilter={onClearAtlasFilter}
-                />
-              )}
-              {activeTab === 'forge' && <Forge />}
-            </div>
+              filters={filters}
+              setFilters={setFilters}
+              selectedCVE={selectedCVE}
+              setSelectedCVE={setSelectedCVE}
+              digestOpen={digestOpen}
+              setDigestOpen={setDigestOpen}
+              digestCVEs={digestCVEs}
+              setDigestCVEs={setDigestCVEs}
+              searchFocusTrigger={searchFocusTrigger}
+              setSearchFocusTrigger={setSearchFocusTrigger}
+              aboutOpen={aboutOpen}
+              setAboutOpen={setAboutOpen}
+              timezone={timezone}
+              lastUpdated={lastUpdated}
+              nextRefreshUtc={nextRefreshUtc}
+              refreshSchedule={refreshSchedule}
+              onDigestRequest={onDigestRequest}
+              onSelectCVE={onSelectCVE}
+              watchlist={watchlist}
+              onWatchlistChange={onWatchlistChange}
+            />
+          </div>
+          <div className="app-tab-panel" hidden={activeTab !== 'ioc'} aria-hidden={activeTab !== 'ioc'}>
+            <IOCLookup key={iocSessionKey} prefill={iocPrefill} />
+          </div>
+          <div className="app-tab-panel" hidden={activeTab !== 'atlas'} aria-hidden={activeTab !== 'atlas'}>
+            <CaseStudies
+              initialSearch={atlasActorFilter || ''}
+              onClearFilter={onClearAtlasFilter}
+            />
+          </div>
+          <div className="app-tab-panel" hidden={activeTab !== 'forge'} aria-hidden={activeTab !== 'forge'}>
+            <Forge />
+          </div>
+        </div>
 
             {activeTab !== 'feed' && activeTab !== 'brief' && (
               <footer className="app-footer" role="contentinfo">
@@ -626,8 +641,9 @@ function AppLayout({
 
             <DetailDrawer
               cve={selectedCVE}
-              onClose={() => setSelectedCVE(null)}
-              onCveReplace={setSelectedCVE}
+              loading={drawerLoading}
+              onClose={onCloseCVE}
+              onCveReplace={onCveReplace}
               watchlistState={
                 selectedCVE
                   ? (watchlist?.getState(selectedCVE.cve_id) || selectedCVE.watchlist_state)
