@@ -43,6 +43,7 @@ Every file in the repository with a one-line purpose. Tags:
 | Path | Description |
 |---|---|
 | `backend/ai/__init__.py` | Package marker |
+| `backend/ai/groq_config.py` | Shared Groq API URL and model (`llama-3.1-8b-instant`) |
 | `backend/ai/summary.py` | Groq → Anthropic → template executive summary for PDF export |
 
 ### backend/correlation/

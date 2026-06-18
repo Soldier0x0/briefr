@@ -121,7 +121,7 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 | `GREYNOISE_API_KEY` | Optional | IP classification (50/week free; opt-in per lookup) |
 | `ABUSECH_AUTH_KEY` | Optional | MalwareBazaar + URLhaus |
 | `OTX_API_KEY` | Optional | OTX pulses + nightly correlation (10k/month) |
-| `GROQ_API_KEY` | Optional | PDF executive summary (primary) |
+| `GROQ_API_KEY` | Optional | PDF executive summary (primary; Groq model `llama-3.1-8b-instant`) |
 | `ANTHROPIC_API_KEY` | Optional | PDF executive summary (fallback) |
 | `GITHUB_TOKEN` | Optional | Detection rule search + PoC-in-GitHub sync rate limit (5000/hr vs 60/hr) |
 | `CIRCL_API_KEY` | Optional | vulnerability.circl.lu authenticated rate limits (free signup) |

@@ -389,7 +389,7 @@ Primary key `(alert_type, target)` — dedupes KEV-on-stack (one alert per CVE) 
 | CIRCL | `cve.circl.lu/api/cve` | — | Unlimited | No merge |
 | MalwareBazaar | `bazaar.abuse.ch/api` | `ABUSECH_AUTH_KEY` | Fair use | `None` |
 | URLhaus | `urlhaus-api.abuse.ch` | `ABUSECH_AUTH_KEY` | Fair use | `None` |
-| Groq | `api.groq.com/openai/v1/chat/completions` | `GROQ_API_KEY` | Console quota | PDF summary: Anthropic/template. Product extraction (V1.3): skipped — `affected_products` stays empty until official CPE arrives |
+| Groq | `api.groq.com/openai/v1/chat/completions` | `GROQ_API_KEY` | Console quota | Model `llama-3.1-8b-instant`; PDF summary: Anthropic/template fallback |
 | Anthropic | `api.anthropic.com/v1/messages` | `ANTHROPIC_API_KEY` | Console quota | Template |
 | GitHub | `api.github.com/search/code` | `GITHUB_TOKEN` | 60/hr without token | `[]` rules |
 | CISA Vulnrichment | `api.github.com` + `raw.githubusercontent.com/cisagov/vulnrichment` | `GITHUB_TOKEN` optional | 60/hr anon API | Skip run; circuit opens |

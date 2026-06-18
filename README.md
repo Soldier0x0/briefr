@@ -231,7 +231,7 @@ See `backend/.env.example` for the full list. Key variables:
 | `GREYNOISE_API_KEY` | IP context (50/week free) | — |
 | `ABUSECH_AUTH_KEY` | MalwareBazaar + URLhaus | — |
 | `OTX_API_KEY` | OTX pulses + correlation | — |
-| `GROQ_API_KEY` / `ANTHROPIC_API_KEY` | PDF AI summary | — |
+| `GROQ_API_KEY` / `ANTHROPIC_API_KEY` | PDF AI summary (Groq uses `llama-3.1-8b-instant`) | — |
 | `GITHUB_TOKEN` | Detection rule search rate limit | — |
 | `CIRCL_API_KEY` | vulnerability.circl.lu authenticated rate limits | — |
 | `BRIEFR_ENV` | `production` disables Swagger/OpenAPI docs | `development` |
