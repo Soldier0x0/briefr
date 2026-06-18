@@ -194,7 +194,7 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
         />
         {!savedStack && (
           <p className="sidebar-filter-hint">
-            Enter your stack in the hero bar above, then enable this filter.
+            Enter your stack in the Feed tab filter bar, then enable this filter.
           </p>
         )}
         {filters.stack && (

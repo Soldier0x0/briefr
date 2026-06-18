@@ -12,8 +12,20 @@ import {
 import './BriefCharts.css'
 
 const POLL_MS = 5 * 60 * 1000
-const EPSS_WINDOW_HOURS = 168
 const EPSS_MOVERS_LIMIT = 10
+
+const KEV_DATE_WINDOWS = [
+  { id: '30d', label: '30D', overdueCutoffDays: 30, futureDays: 30 },
+  { id: '90d', label: '90D', overdueCutoffDays: 90, futureDays: 90 },
+  { id: '180d', label: '180D', overdueCutoffDays: 180, futureDays: 180 },
+  { id: 'all', label: 'ALL' },
+]
+
+const EPSS_WINDOWS = [
+  { id: '24h', label: '24H', hours: 24 },
+  { id: '7d', label: '7D', hours: 168 },
+  { id: '30d', label: '30D', hours: 720 },
+]
 
 const KEV_BUCKETS = [
   { key: 'overdue', label: 'Overdue' },
@@ -22,6 +34,40 @@ const KEV_BUCKETS = [
   { key: '15-30', label: '15–30d' },
   { key: '31+', label: '31d+' },
 ]
+
+function parseDueDate(dueDate) {
+  if (!dueDate) return null
+  const raw = dueDate.includes('T') ? dueDate : `${dueDate}T12:00:00Z`
+  const due = new Date(raw)
+  return Number.isNaN(due.getTime()) ? null : due
+}
+
+function filterKevByDateWindow(entries, windowId) {
+  if (windowId === 'all') return entries
+  const config = KEV_DATE_WINDOWS.find(w => w.id === windowId)
+  if (!config) return entries
+  const today = new Date()
+  today.setUTCHours(12, 0, 0, 0)
+  const minDue = new Date(today)
+  minDue.setUTCDate(minDue.getUTCDate() - config.overdueCutoffDays)
+  const maxDue = new Date(today)
+  maxDue.setUTCDate(maxDue.getUTCDate() + config.futureDays)
+  return entries.filter(row => {
+    const due = parseDueDate(row.due_date)
+    if (!due) return false
+    return due >= minDue && due <= maxDue
+  })
+}
+
+function kevWindowLabel(windowId) {
+  const match = KEV_DATE_WINDOWS.find(w => w.id === windowId)
+  return match?.label || windowId.toUpperCase()
+}
+
+function epssWindowLabel(windowId) {
+  const match = EPSS_WINDOWS.find(w => w.id === windowId)
+  return match?.label || windowId.toUpperCase()
+}
 
 function shortDateLabel(isoDate) {
   if (!isoDate) return ''
@@ -192,14 +238,14 @@ function EpssSparklineCell({ history, currentScore }) {
   )
 }
 
-function EpssMoversTable({ movers, histories, loading, onSelectCVE }) {
+function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel }) {
   if (!movers.length && !loading) {
-    return <p className="brief-charts-empty mono">No EPSS increases in the last 7 days.</p>
+    return <p className="brief-charts-empty mono">No EPSS increases in the last {windowLabel}.</p>
   }
 
   return (
     <div className="brief-epss-table-wrap">
-      <table className="brief-epss-table" aria-label="Top EPSS movers in the last seven days">
+      <table className="brief-epss-table" aria-label={`Top EPSS movers in the last ${windowLabel}`}>
         <thead>
           <tr>
             <th scope="col" className="mono">CVE</th>
@@ -256,6 +302,8 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
   const [epssChanges, setEpssChanges] = useState([])
   const [epssHistories, setEpssHistories] = useState({})
   const [epssHistoryLoading, setEpssHistoryLoading] = useState(false)
+  const [kevDateWindow, setKevDateWindow] = useState('90d')
+  const [epssWindow, setEpssWindow] = useState('7d')
 
   const kevRef = useRef(null)
   const chartsRef = useRef({ kev: null })
@@ -263,13 +311,18 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
   const lastFetchedIdsRef = useRef('')
   onBucketClickRef.current = onBucketClick
 
-  const kevHistogram = useMemo(() => buildKevHistogram(kevEntries), [kevEntries])
+  const filteredKevEntries = useMemo(
+    () => filterKevByDateWindow(kevEntries, kevDateWindow),
+    [kevEntries, kevDateWindow]
+  )
+  const kevHistogram = useMemo(() => buildKevHistogram(filteredKevEntries), [filteredKevEntries])
   const epssMovers = useMemo(() => buildEpssMovers(epssChanges), [epssChanges])
+  const epssHours = EPSS_WINDOWS.find(w => w.id === epssWindow)?.hours ?? 168
 
   const loadData = useCallback(async (signal) => {
     const [kevRes, changesRes] = await Promise.allSettled([
       fetchKEVDeadlines('urgent'),
-      fetchChanges({ field: 'epss_score', since_hours: EPSS_WINDOW_HOURS, limit: 50 }),
+      fetchChanges({ field: 'epss_score', since_hours: epssHours, limit: 50 }),
     ])
     if (signal?.aborted) return
     if (kevRes.status === 'fulfilled') {
@@ -278,7 +331,7 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
     if (changesRes.status === 'fulfilled') {
       setEpssChanges(Array.isArray(changesRes.value?.data) ? changesRes.value.data : [])
     }
-  }, [])
+  }, [epssHours])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -413,7 +466,7 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
     }
   }, [collapsed, loading, kevHistogram])
 
-  const hasData = kevEntries.length > 0 || epssMovers.length > 0
+  const hasData = filteredKevEntries.length > 0 || epssMovers.length > 0
 
   return (
     <section
@@ -447,18 +500,54 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
           ) : (
             <div className="brief-charts-grid">
               <article className="brief-chart-card" aria-label="KEV due-date histogram">
-                <h3 className="brief-chart-card-title">KEV DUE DATES</h3>
+                <div className="brief-chart-card-head">
+                  <h3 className="brief-chart-card-title">KEV DUE DATES</h3>
+                  <div className="brief-chart-filters" role="group" aria-label="KEV due date window">
+                    {KEV_DATE_WINDOWS.map(w => (
+                      <button
+                        key={w.id}
+                        type="button"
+                        className={`brief-chart-filter-chip mono${kevDateWindow === w.id ? ' brief-chart-filter-chip--active' : ''}`}
+                        onClick={() => setKevDateWindow(w.id)}
+                        aria-pressed={kevDateWindow === w.id}
+                      >
+                        {w.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <p className="brief-chart-card-hint mono">
+                  {kevDateWindow === 'all'
+                    ? 'Showing all KEV due dates in the database'
+                    : `Due dates from ${kevWindowLabel(kevDateWindow)} ago through ${kevWindowLabel(kevDateWindow)} ahead`}
+                </p>
                 <div className="brief-chart-canvas-wrap brief-chart-canvas-wrap--kev">
                   <canvas ref={kevRef} role="img" aria-label="KEV remediation deadline histogram" />
                 </div>
               </article>
               <article className="brief-chart-card brief-chart-card--table" aria-label="Top EPSS movers">
-                <h3 className="brief-chart-card-title">TOP EPSS MOVERS (7D)</h3>
+                <div className="brief-chart-card-head">
+                  <h3 className="brief-chart-card-title">TOP EPSS MOVERS</h3>
+                  <div className="brief-chart-filters" role="group" aria-label="EPSS change window">
+                    {EPSS_WINDOWS.map(w => (
+                      <button
+                        key={w.id}
+                        type="button"
+                        className={`brief-chart-filter-chip mono${epssWindow === w.id ? ' brief-chart-filter-chip--active' : ''}`}
+                        onClick={() => setEpssWindow(w.id)}
+                        aria-pressed={epssWindow === w.id}
+                      >
+                        {w.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <EpssMoversTable
                   movers={epssMovers}
                   histories={epssHistories}
                   loading={epssHistoryLoading}
                   onSelectCVE={onSelectCVE}
+                  windowLabel={epssWindowLabel(epssWindow)}
                 />
               </article>
             </div>

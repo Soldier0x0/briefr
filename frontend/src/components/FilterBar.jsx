@@ -17,8 +17,10 @@ const QUICK_FILTERS = [
 ]
 
 export const VENDORS = [
-  'Microsoft', 'Apache', 'Cisco', 'Google', 'Adobe', 'Linux',
-  'Fortinet', 'Ivanti', 'VMware', 'Palo Alto', 'Oracle', 'Apple',
+  'Microsoft', 'Apache', 'Cisco', 'Google', 'Adobe', 'Linux', 'Apple', 'Oracle',
+  'Fortinet', 'Ivanti', 'VMware', 'Palo Alto', 'Amazon', 'IBM', 'Dell', 'HP',
+  'Juniper', 'Citrix', 'F5', 'Check Point', 'SAP', 'Siemens', 'MongoDB', 'Atlassian',
+  'GitLab', 'Jenkins', 'Docker', 'Kubernetes', 'WordPress', 'PHP', 'Python', 'Node.js',
 ]
 
 function deriveActive(filters) {
@@ -207,70 +209,70 @@ export default function FilterBar({
   }
 
   return (
-    <>
+    <div className="filter-toolbar">
       <div className="filter-bar" role="toolbar" aria-label="CVE feed filters">
-        <div className="filter-bar-left">
-          <span className="filter-title mono">
-            CVE FEED
-            {total != null && (
-              <>
-                <span className="filter-count" aria-label={`${total} results`}>
-                  &nbsp;//{' '}
-                  {hasActiveFilters(filters)
-                    ? `${total.toLocaleString()} matches`
-                    : total.toLocaleString()}
-                </span>
-                {showingRange && showingRange.end > 0 && (
-                  <>
-                    <span className="filter-meta-sep" aria-hidden="true">
-                      {' '}
-                      ·
-                      {' '}
-                    </span>
-                    <span
-                      className="filter-showing"
-                      aria-label={`Showing ${showingRange.start} through ${showingRange.end}`}
-                    >
-                      Showing {showingRange.start}-{showingRange.end}
-                    </span>
-                  </>
-                )}
-              </>
-            )}
-            {filters.stack && (
-              <button
-                type="button"
-                className="filter-stack-clear mono"
-                onClick={() => onFiltersChange({ stack: '' })}
-                aria-label="Clear stack filter and show all CVEs"
-              >
-                × clear stack
-              </button>
-            )}
-            {filters.technique && (
-              <button
-                type="button"
-                className="filter-stack-clear mono"
-                onClick={() => onFiltersChange({ technique: '' })}
-                aria-label="Clear ATT&CK technique filter"
-              >
-                × clear technique
-              </button>
-            )}
-            {filters.published_on && (
-              <button
-                type="button"
-                className="filter-stack-clear mono"
-                onClick={() => onFiltersChange({ published_on: '' })}
-                aria-label="Clear published date filter"
-              >
-                × clear {filters.published_on}
-              </button>
-            )}
-          </span>
-        </div>
+        <div className="filter-bar-top">
+          <div className="filter-bar-left">
+            <span className="filter-title mono">
+              CVE FEED
+              {total != null && (
+                <>
+                  <span className="filter-count" aria-label={`${total} results`}>
+                    &nbsp;//{' '}
+                    {hasActiveFilters(filters)
+                      ? `${total.toLocaleString()} matches`
+                      : total.toLocaleString()}
+                  </span>
+                  {showingRange && showingRange.end > 0 && (
+                    <>
+                      <span className="filter-meta-sep" aria-hidden="true">
+                        {' '}
+                        ·
+                        {' '}
+                      </span>
+                      <span
+                        className="filter-showing"
+                        aria-label={`Showing ${showingRange.start} through ${showingRange.end}`}
+                      >
+                        Showing {showingRange.start}-{showingRange.end}
+                      </span>
+                    </>
+                  )}
+                </>
+              )}
+              {filters.stack && (
+                <button
+                  type="button"
+                  className="filter-stack-clear mono"
+                  onClick={() => onFiltersChange({ stack: '' })}
+                  aria-label="Clear stack filter and show all CVEs"
+                >
+                  × clear stack
+                </button>
+              )}
+              {filters.technique && (
+                <button
+                  type="button"
+                  className="filter-stack-clear mono"
+                  onClick={() => onFiltersChange({ technique: '' })}
+                  aria-label="Clear ATT&CK technique filter"
+                >
+                  × clear technique
+                </button>
+              )}
+              {filters.published_on && (
+                <button
+                  type="button"
+                  className="filter-stack-clear mono"
+                  onClick={() => onFiltersChange({ published_on: '' })}
+                  aria-label="Clear published date filter"
+                >
+                  × clear {filters.published_on}
+                </button>
+              )}
+            </span>
+          </div>
 
-        <div className="filter-bar-right">
           <div className="filter-action-btns">
             <button
               type="button"
@@ -302,7 +304,9 @@ export default function FilterBar({
               {exporting === 'xlsx' ? 'EXPORTING...' : 'EXPORT XLSX'}
             </button>
           </div>
+        </div>
 
+        <div className="filter-bar-bottom">
           <div className="filter-buttons" role="group" aria-label="Quick filters">
             {QUICK_FILTERS.map(f => (
               <button
@@ -372,7 +376,7 @@ export default function FilterBar({
       {active === 'all' && (
         <div className="vendor-filter-block">
           <div className="vendor-filter-header">
-            <span className="vendor-filter-label mono">// VENDORS</span>
+            <span className="vendor-filter-label mono">// COMMON VENDORS</span>
             {selectedVendors.length > 0 && (
               <button
                 type="button"
@@ -403,6 +407,6 @@ export default function FilterBar({
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

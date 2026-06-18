@@ -10,24 +10,9 @@ import {
 } from '../utils/timezone.js'
 import './Header.css'
 
-// ── Theme helpers ─────────────────────────────────────────
-function getCurrentTheme() {
-  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'
-}
-
-function applyTheme(theme) {
-  if (theme === 'light') {
-    document.documentElement.setAttribute('data-theme', 'light')
-  } else {
-    document.documentElement.removeAttribute('data-theme')
-  }
-  try { localStorage.setItem('briefr_theme', theme) } catch {}
-}
-
 export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClick, onTimezoneChange, showShortcuts }) {
   const assetCtx = useAssetProfileOptional()
   const [now, setNow]               = useState(new Date())
-  const [theme, setTheme]           = useState(getCurrentTheme)
   const [tz, setTz]                 = useState(() => {
     try { return localStorage.getItem('briefr_timezone') || 'UTC' } catch { return 'UTC' }
   })
@@ -57,12 +42,6 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
     document.addEventListener('mousedown', onDown)
     return () => document.removeEventListener('mousedown', onDown)
   }, [popoverOpen, mobileMenuOpen])
-
-  function toggleTheme() {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    applyTheme(next)
-    setTheme(next)
-  }
 
   function selectTz(newTz) {
     setTz(newTz)
@@ -149,7 +128,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
           </nav>
         )}
 
-        {/* Right: theme toggle, legal, live dot, clock */}
+        {/* Right: legal, live dot, clock */}
         <div className="header-right">
           {showShortcuts && <ShortcutsPanel placement="header" />}
 
@@ -173,21 +152,6 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
               PROFILE
             </button>
           )}
-
-          {/* Theme toggle */}
-          <button
-            className="theme-toggle"
-            onClick={toggleTheme}
-            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-          >
-            <span className="theme-toggle-icon" aria-hidden="true">
-              {theme === 'dark' ? '☀' : '☾'}
-            </span>
-            <span className="theme-toggle-label mono">
-              {theme === 'dark' ? 'LIGHT' : 'DARK'}
-            </span>
-          </button>
 
           {/* Legal links — hidden on mobile, shown inline on desktop */}
           <nav className="header-legal header-legal-desktop" aria-label="Legal links">

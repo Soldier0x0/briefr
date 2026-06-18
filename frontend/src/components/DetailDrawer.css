@@ -1,18 +1,3 @@
-/* ── Feed layout when drawer open (scoped from drawer, no other components) ── */
-@media (min-width: 1280px) {
-  body.briefr-drawer-open .content-grid {
-    width: 35vw;
-    max-width: 35vw;
-  }
-}
-
-@media (min-width: 1024px) and (max-width: 1279px) {
-  body.briefr-drawer-open .content-grid {
-    width: 25vw;
-    max-width: 25vw;
-  }
-}
-
 /* ── Overlay ─────────────────────────────────────────────── */
 .drawer-overlay {
   position: fixed;
@@ -965,8 +950,9 @@
 .refs-link {
   font-size: 0.6875rem;
   letter-spacing: 0.02em;
-  color: var(--text3);
-  text-decoration: none;
+  color: var(--link);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--link) 45%, transparent);
   word-break: break-all;
   display: block;
   line-height: 1.4;
@@ -974,7 +960,8 @@
 }
 
 .refs-link:hover {
-  color: var(--accent);
+  color: #9ecbff;
+  text-decoration-color: currentColor;
 }
 
 /* MITRE ATLAS (Intel tab) */

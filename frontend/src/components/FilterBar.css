@@ -1,29 +1,61 @@
-.filter-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
+.filter-toolbar {
   position: sticky;
   top: 52px;
   z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-bar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-bar-bottom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 @media (max-width: 640px) {
-  .filter-bar {
+  .filter-toolbar {
     top: 0;
+  }
+
+  .filter-bar {
+    padding: 10px 12px;
+  }
+
+  .filter-bar-bottom {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .filter-search {
     width: 100%;
   }
 
-  .filter-bar-right {
+  .filter-buttons {
     width: 100%;
-    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    flex: 1 1 calc(33.333% - 2px);
+    min-width: 0;
+    text-align: center;
+    padding: 4px 6px;
   }
 }
 
@@ -86,7 +118,7 @@
 .filter-stack-input {
   flex: 1;
   min-width: 0;
-  max-width: 420px;
+  max-width: 520px;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   letter-spacing: 0.02em;
@@ -119,12 +151,6 @@
   color: var(--red);
 }
 
-.filter-bar-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .digest-btn {
   font-family: var(--font-mono);
   font-size: 0.625rem;
@@ -150,6 +176,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .filter-btn {
@@ -182,7 +210,9 @@
   background: var(--bg2);
   border: 1px solid var(--border);
   padding: 4px 10px;
-  width: 220px;
+  width: 240px;
+  flex: 0 1 240px;
+  min-width: 180px;
 }
 
 .filter-search::placeholder {
@@ -198,6 +228,7 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .export-btn {
@@ -251,7 +282,6 @@
   border-bottom: 1px solid var(--border);
   background: var(--bg3);
   padding: 12px 20px 14px;
-  border-top: 1px solid var(--border2);
 }
 
 .vendor-filter-header {
@@ -315,20 +345,8 @@
 }
 
 @media (max-width: 640px) {
-  .filter-bar {
-    padding: 10px 12px;
-  }
-
-  .filter-buttons {
-    flex: 1 1 100%;
-    max-width: 100%;
-  }
-
-  .filter-btn {
-    flex: 1 1 calc(33.333% - 2px);
-    min-width: 0;
-    text-align: center;
-    padding: 4px 6px;
+  .filter-stack-row {
+    padding: 8px 12px 10px;
   }
 
   .vendor-filter-block {
