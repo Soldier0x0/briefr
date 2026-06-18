@@ -9,9 +9,13 @@ import {
 import './TimelineHeatmap.css'
 
 const ROW_LABELS = [
+  { row: 0, label: 'S' },
   { row: 1, label: 'M' },
+  { row: 2, label: 'T' },
   { row: 3, label: 'W' },
+  { row: 4, label: 'T' },
   { row: 5, label: 'F' },
+  { row: 6, label: 'S' },
 ]
 
 const DESKTOP_DAYS = 90

@@ -222,9 +222,15 @@
 }
 
 .kev-item {
-  padding-bottom: 10px;
+  padding: 8px 8px 10px 10px;
   border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--border);
 }
+
+.kev-item.accent-urgent     { border-left-color: var(--red); }
+.kev-item.accent-red-dim    { border-left-color: color-mix(in srgb, var(--red) 45%, var(--border)); }
+.kev-item.accent-amber-dim  { border-left-color: color-mix(in srgb, var(--amber) 45%, var(--border)); }
+.kev-item.accent-neutral    { border-left-color: var(--border); }
 
 .kev-item:last-child {
   border-bottom: none;
@@ -268,9 +274,24 @@
   flex-shrink: 0;
 }
 
-.badge-urgent  { color: var(--red);   background: var(--red-dim);   border-color: var(--red); }
-.badge-overdue { color: var(--red);   background: var(--red-dim);   border-color: var(--red); }
-.badge-soon    { color: var(--amber); background: var(--amber-dim); border-color: var(--amber); }
+.badge-urgent,
+.badge-overdue {
+  color: var(--red);
+  background: var(--red-dim);
+  border-color: var(--red);
+}
+
+.badge-urgent-dim {
+  color: var(--text2);
+  background: var(--red-dim);
+  border-color: color-mix(in srgb, var(--red) 35%, var(--border));
+}
+
+.badge-soon {
+  color: var(--text2);
+  background: var(--amber-dim);
+  border-color: color-mix(in srgb, var(--amber) 35%, var(--border));
+}
 .badge-ok      { color: var(--green); background: var(--green-dim); border-color: var(--green); }
 .badge-neutral { color: var(--text3); background: var(--bg3); border-color: var(--border); }
 .badge-ransomware { color: var(--red); background: var(--red-dim); border-color: var(--red); font-weight: 700; }

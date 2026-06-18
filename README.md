@@ -279,8 +279,8 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 |----------|-------------|
 | `GET /api/health` | CVE count, ingest status, next refresh times |
 | `GET /api/stats` | Critical/high/KEV/patched/24h counts |
-| `GET /api/stats/timeline` | Daily CVE publication heatmap + Chart.js brief timeline |
-| `GET /api/changes` | Recent CVE field deltas (What changed panel + EPSS movers chart) |
+| `GET /api/stats/timeline` | Daily CVE publication heatmap (90-day `TimelineHeatmap.jsx`) |
+| `GET /api/changes` | Recent CVE field deltas (What changed panel + EPSS movers table) |
 | `GET /api/cves` | Paginated CVE list (`page`, `limit` max **50**, filters) |
 | `GET /api/cves/{cve_id}` | CVE detail + live enrichment |
 | `GET /api/cves/{cve_id}/sentences` | Human-readable intel sentences |

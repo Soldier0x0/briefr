@@ -10,12 +10,8 @@ export function loadChartJs() {
         mod.LinearScale,
         mod.BarController,
         mod.BarElement,
-        mod.LineController,
-        mod.LineElement,
-        mod.PointElement,
         mod.Legend,
         mod.Tooltip,
-        mod.Filler,
       )
       return mod.Chart
     })
@@ -28,13 +24,19 @@ export function readChartTheme() {
   const style = getComputedStyle(root)
   const pick = (name) => style.getPropertyValue(name).trim()
   return {
-    text: pick('--text2'),
+    text: pick('--text'),
+    textSecondary: pick('--text2'),
     textMuted: pick('--text3'),
     grid: pick('--border'),
+    panel: pick('--bg2'),
     red: pick('--red'),
+    redDim: pick('--red-dim'),
     amber: pick('--amber'),
+    amberDim: pick('--amber-dim'),
     accent: pick('--accent'),
     green: pick('--green'),
+    greenDim: pick('--green-dim'),
     mono: pick('--font-mono') || "'IBM Plex Mono', monospace",
+    sans: pick('--font-sans') || "'IBM Plex Sans', system-ui, sans-serif",
   }
 }

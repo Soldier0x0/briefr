@@ -20,7 +20,13 @@
   outline-offset: -1px;
 }
 
-/* Severity border variants */
+/* Urgency accent bar — KEV due-date driven; non-KEV rows stay neutral */
+.cve-card.accent-urgent     { border-left-color: var(--red); }
+.cve-card.accent-red-dim    { border-left-color: color-mix(in srgb, var(--red) 45%, var(--border)); }
+.cve-card.accent-amber-dim  { border-left-color: color-mix(in srgb, var(--amber) 45%, var(--border)); }
+.cve-card.accent-neutral    { border-left-color: var(--border); }
+
+/* Legacy severity border variants (unused on feed cards; kept for reference) */
 .cve-card.sev-critical { border-left-color: var(--red); }
 .cve-card.sev-high     { border-left-color: var(--amber); }
 .cve-card.sev-medium   { border-left-color: var(--border2); }
@@ -234,10 +240,16 @@
   border-color: var(--red);
 }
 
+.badge-kev-due.badge-urgent-dim {
+  color: var(--text2);
+  background: var(--red-dim);
+  border-color: color-mix(in srgb, var(--red) 35%, var(--border));
+}
+
 .badge-kev-due.badge-soon {
-  color: var(--amber);
+  color: var(--text2);
   background: var(--amber-dim);
-  border-color: var(--amber);
+  border-color: color-mix(in srgb, var(--amber) 35%, var(--border));
 }
 
 .badge-kev-due.badge-neutral {
@@ -247,9 +259,9 @@
 }
 
 .badge-poc {
-  color: var(--amber);
-  background: var(--amber-dim);
-  border-color: var(--amber);
+  color: var(--text2);
+  background: var(--bg3);
+  border-color: var(--border);
 }
 
 .badge-patch {
@@ -265,48 +277,32 @@
   font-variant-numeric: tabular-nums;
 }
 
+.badge-cvss-meta {
+  color: var(--text2);
+  background: var(--bg3);
+  border-color: var(--border2);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sev-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sev-dot-critical { background: color-mix(in srgb, var(--red) 40%, var(--border2)); }
+.sev-dot-high     { background: color-mix(in srgb, var(--amber) 40%, var(--border2)); }
+.sev-dot-medium   { background: var(--border2); }
+.sev-dot-low      { background: var(--text3); }
+.sev-dot-neutral  { background: var(--border); }
+
 .badge-cvss {
   color: var(--text2);
   background: var(--bg3);
   border-color: var(--border2);
-}
-
-.badge-cvss-critical {
-  color: var(--red);
-  background: var(--red-dim);
-  border-color: var(--red);
-}
-
-.badge-cvss-high {
-  color: var(--amber);
-  background: var(--amber-dim);
-  border-color: var(--amber);
-}
-
-.badge-cvss-medium {
-  color: var(--accent);
-  background: rgba(255, 140, 50, 0.12);
-  border-color: var(--accent);
-}
-
-.badge-cvss-low {
-  color: var(--green);
-  background: var(--green-dim);
-  border-color: var(--green);
-}
-
-.badge-cvss-unknown {
-  color: var(--text3);
-  background: var(--bg3);
-  border-color: var(--border2);
-}
-
-/* Description */
-.cve-description {
-  font-size: 0.875rem;
-  color: var(--text2);
-  line-height: 1.55;
-  margin-bottom: 10px;
 }
 
 /* Plain English summary block */
@@ -339,6 +335,7 @@
 
 .epss-fill {
   height: 100%;
+  background: var(--border2);
   transition: width 0.4s ease;
 }
 
@@ -378,8 +375,7 @@
   font-size: 0.6875rem;
 }
 
-.meta-val.age-fresh { color: var(--green); }
-.meta-val.age-recent { color: var(--amber); }
+.meta-val.age-neutral,
 .meta-val.age-old { color: var(--text3); }
 
 /* Badges shifted left to clear the risk score widget (~56px wide) */

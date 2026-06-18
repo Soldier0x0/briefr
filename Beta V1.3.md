@@ -42,7 +42,7 @@ V1.3 makes BRIEFR the **best self-hosted analyst intelligence pane** — actiona
 | Item | Goal | Status |
 |------|------|--------|
 | **Chart.js dependency** | Dashboard-grade charts; keep SVG sparklines on CVE cards | ✅ Shipped (`chart.js` npm dep, Vite code-split chunk — no CDN) |
-| **Analyst Brief dashboard** | Severity/volume timeline, KEV due-date histogram, top EPSS movers (`BriefCharts.jsx` on BRIEF tab) | ✅ Shipped (3 charts; KEV-on-stack / stack-exposure deferred) |
+| **Analyst Brief dashboard** | KEV due-date histogram (clickable buckets), top EPSS movers table with sparklines (`BriefCharts.jsx` on BRIEF tab) | ✅ Shipped (severity/volume line chart removed — heatmap covers volume) |
 | **Live = polled** | 60s–5m refresh; no WebSocket requirement | ✅ Shipped (`BriefCharts` polls every 5 min) |
 | **Chart export in PDF** | Optional Phase 2 within V1.3 | 🔲 Later phase |
 

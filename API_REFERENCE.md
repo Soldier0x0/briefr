@@ -219,7 +219,7 @@ Single-user for now — no `user_id` column. Built-in app login will add per-use
 
 **EPSS noise:** `update_epss_scores` only writes history when the score would display differently at **0.1%** precision (matching the What changed panel). Sub-threshold float jitter (e.g. `0.0001` → `0.0002`, both shown as `0.0%`) is ignored.
 
-**Frontend:** BRIEF tab **What changed** panel (`WhatChangedPanel.jsx`) — field + time-window filter chips; row click opens the CVE drawer; rows with identical formatted old/new values are hidden (legacy noise). `BriefCharts.jsx` uses `field=epss_score&since_hours=168` for the **Top EPSS movers** horizontal bar chart (top 10 positive deltas). On viewports **≥901px** wide, the panel sits beside the 90-day activity heatmap in a flex row (`brief-intel-row` in `App.jsx`); below 900px they stack full-width (heatmap above). Alternating row shading uses `--surface-sunken`.
+**Frontend:** BRIEF tab **What changed** panel (`WhatChangedPanel.jsx`) — field + time-window filter chips; row click opens the CVE drawer; rows with identical formatted old/new values are hidden (legacy noise). `BriefCharts.jsx` uses `field=epss_score&since_hours=168` for the **Top EPSS movers** compact table (top 10 positive deltas, 7-day sparklines per row via `GET /api/cves/{id}/epss-history`, row click opens the drawer). On viewports **≥901px** wide, the panel sits beside the 90-day activity heatmap in a flex row (`brief-intel-row` in `App.jsx`); below 900px they stack full-width (heatmap above). Alternating row shading uses `--surface-sunken`.
 
 **Error responses:** `400` — invalid `field`
 
@@ -635,7 +635,7 @@ EPSS ≥ 0.5 → `high`; CVSS ≥ 7.0 or EPSS ≥ 0.1 → `medium`; else `low`.
 
 **Response:** `{"data": [ kev_deadlines rows ]}` — each row includes `vendor_project`, `vulnerability_name`, `known_ransomware` (`Known` / `Unknown` / empty), `ransomware_use` (boolean convenience flag), and `cwes` (array of CWE IDs).
 
-**Frontend:** Sidebar KEV deadline list uses `sort=urgent` (soonest `due_date` first). CVE cards show a **Due in N days** chip when `kev_due_date` is present on the list payload (`<7` days red, `<14` amber, else neutral). `BriefCharts.jsx` builds a due-date histogram (Overdue / 0–7d / 8–14d / 15–30d / 31d+) from the same endpoint.
+**Frontend:** Sidebar KEV deadline list uses `sort=urgent` (soonest `due_date` first) with left accent bars matching feed cards (full `--red` only for overdue / due today / due tomorrow; dim red/amber for later buckets). CVE cards show a **Due in N days** chip when `kev_due_date` is present on the list payload (same urgency tiers). `BriefCharts.jsx` builds a clickable due-date histogram (Overdue / 0–7d / 8–14d / 15–30d / 31d+) from the same endpoint; bar clicks emit `onBucketClick({ bucket, start, end })` (date range in UTC, not wired to filters yet).
 
 ---
 
@@ -732,7 +732,7 @@ sum deviates by more than 1 × 10⁻⁶.
 
 **Response:** Raw array of `{date, count, critical, kev}` per calendar day (UTC).
 
-**Frontend:** `TimelineHeatmap.jsx` (90-day SVG heatmap) and `BriefCharts.jsx` (30-day Chart.js severity/volume line chart) both consume this endpoint. The chart panel lazy-loads `chart.js` as a separate Vite chunk (CSP `script-src 'self'` — no CDN).
+**Frontend:** `TimelineHeatmap.jsx` (90-day SVG heatmap; all seven weekday row labels S–S). Chart.js is used only in `BriefCharts.jsx` for the KEV histogram (lazy-loaded Vite chunk; CSP `script-src 'self'` — no CDN).
 
 ---
 

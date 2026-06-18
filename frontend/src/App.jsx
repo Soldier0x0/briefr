@@ -157,7 +157,7 @@ function BriefView({ stats, filters, setFilters,
           </p>
         }
       >
-        <BriefCharts />
+        <BriefCharts onSelectCVE={onSelectCVE} />
       </Suspense>
       <div className="brief-intel-row">
         <TimelineHeatmap filters={filters} onFiltersChange={handleFiltersChange} />

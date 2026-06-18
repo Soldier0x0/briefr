@@ -1,0 +1,9 @@
+.cve-description-clamp {
+  font-size: 0.875rem;
+  color: var(--text2);
+  line-height: 1.55;
+  margin-bottom: 10px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

@@ -1,10 +1,16 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { fetchStatsTimeline, fetchKEVDeadlines, fetchChanges } from '../api.js'
+import { fetchKEVDeadlines, fetchChanges, fetchCVEEpssHistory } from '../api.js'
 import { loadChartJs, readChartTheme } from '../utils/chartLoader.js'
 import { prefersReducedMotion } from '../utils/motion.js'
+import { kevBucketDateRange } from '../utils/kevDeadline.js'
+import {
+  buildEpssSparklinePoints,
+  epssSparklinePolyline,
+  EPSS_SPARKLINE_WIDTH,
+  EPSS_SPARKLINE_HEIGHT,
+} from '../utils/epssSparkline.js'
 import './BriefCharts.css'
 
-const TIMELINE_DAYS = 30
 const POLL_MS = 5 * 60 * 1000
 const EPSS_WINDOW_HOURS = 168
 const EPSS_MOVERS_LIMIT = 10
@@ -52,6 +58,16 @@ function buildKevHistogram(entries) {
   return KEV_BUCKETS.map(b => counts[b.key] || 0)
 }
 
+function kevBucketColors(theme) {
+  return [
+    theme.red,
+    theme.red,
+    theme.amber,
+    theme.textMuted,
+    theme.textMuted,
+  ]
+}
+
 function epssDelta(row) {
   const oldN = Number(row.old_value)
   const newN = Number(row.new_value)
@@ -76,10 +92,20 @@ function buildEpssMovers(changes) {
       cve_id: row.cve_id,
       delta,
       new_score: newN,
+      severity: row.severity || null,
     })
   }
   movers.sort((a, b) => b.delta - a.delta || a.cve_id.localeCompare(b.cve_id))
   return movers.slice(0, EPSS_MOVERS_LIMIT)
+}
+
+function severityDotClass(severity) {
+  const s = (severity || '').toLowerCase()
+  if (s === 'critical') return 'sev-dot-critical'
+  if (s === 'high') return 'sev-dot-high'
+  if (s === 'medium') return 'sev-dot-medium'
+  if (s === 'low') return 'sev-dot-low'
+  return 'sev-dot-neutral'
 }
 
 function chartAnimationOptions() {
@@ -94,27 +120,43 @@ function baseOptions(theme) {
     responsive: true,
     maintainAspectRatio: false,
     animation: chartAnimationOptions(),
+    layout: {
+      padding: { left: 4, right: 8, top: 4, bottom: 4 },
+    },
     plugins: {
       legend: {
         labels: {
-          color: theme.text,
+          color: theme.textSecondary,
           font: { family: theme.mono, size: 10 },
           boxWidth: 10,
         },
       },
       tooltip: {
+        backgroundColor: theme.panel,
+        titleColor: theme.text,
+        bodyColor: theme.textSecondary,
+        borderColor: theme.grid,
+        borderWidth: 1,
         titleFont: { family: theme.mono, size: 11 },
         bodyFont: { family: theme.mono, size: 11 },
       },
     },
     scales: {
       x: {
-        ticks: { color: theme.textMuted, font: { family: theme.mono, size: 9 }, maxRotation: 0 },
+        ticks: {
+          color: theme.textMuted,
+          font: { family: theme.mono, size: 9 },
+          maxRotation: 0,
+        },
         grid: { color: theme.grid },
         border: { color: theme.grid },
       },
       y: {
-        ticks: { color: theme.textMuted, font: { family: theme.mono, size: 9 } },
+        ticks: {
+          color: theme.textMuted,
+          font: { family: theme.mono, size: 9 },
+          precision: 0,
+        },
         grid: { color: theme.grid },
         border: { color: theme.grid },
         beginAtZero: true,
@@ -123,37 +165,112 @@ function baseOptions(theme) {
   }
 }
 
-export default function BriefCharts() {
+function EpssSparklineCell({ history, currentScore }) {
+  const points = buildEpssSparklinePoints(history, currentScore)
+  const polyline = epssSparklinePolyline(points)
+  if (!polyline) {
+    return <span className="brief-epss-sparkline brief-epss-sparkline--empty" aria-hidden="true" />
+  }
+  return (
+    <svg
+      className="brief-epss-sparkline"
+      width={EPSS_SPARKLINE_WIDTH}
+      height={EPSS_SPARKLINE_HEIGHT}
+      viewBox={`0 0 ${EPSS_SPARKLINE_WIDTH} ${EPSS_SPARKLINE_HEIGHT}`}
+      role="img"
+      aria-label={`EPSS trend, ${points.length} days`}
+    >
+      <polyline
+        points={polyline}
+        fill="none"
+        stroke="var(--text3)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function EpssMoversTable({ movers, histories, loading, onSelectCVE }) {
+  if (!movers.length && !loading) {
+    return <p className="brief-charts-empty mono">No EPSS increases in the last 7 days.</p>
+  }
+
+  return (
+    <div className="brief-epss-table-wrap">
+      <table className="brief-epss-table" aria-label="Top EPSS movers in the last seven days">
+        <thead>
+          <tr>
+            <th scope="col" className="mono">CVE</th>
+            <th scope="col" className="mono brief-epss-col-sev" aria-label="Severity" />
+            <th scope="col" className="mono">7d trend</th>
+            <th scope="col" className="mono brief-epss-col-delta">Δ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {movers.map(row => {
+            const history = histories[row.cve_id] || []
+            return (
+              <tr key={row.cve_id}>
+                <td colSpan={4} className="brief-epss-row-cell">
+                  <button
+                    type="button"
+                    className="brief-epss-row-btn"
+                    onClick={() => onSelectCVE?.({ cve_id: row.cve_id })}
+                    aria-label={`Open ${row.cve_id} details, EPSS increased ${(row.delta * 100).toFixed(1)} percentage points`}
+                  >
+                    <span className="brief-epss-id mono">{row.cve_id}</span>
+                    <span className="brief-epss-sev">
+                      <span
+                        className={`sev-dot ${severityDotClass(row.severity)}`}
+                        title={row.severity || 'Unknown severity'}
+                        aria-hidden="true"
+                      />
+                    </span>
+                    <span className="brief-epss-sparkline-cell">
+                      {loading && !history.length ? (
+                        <span className="brief-epss-sparkline brief-epss-sparkline--loading" aria-hidden="true" />
+                      ) : (
+                        <EpssSparklineCell history={history} currentScore={row.new_score} />
+                      )}
+                    </span>
+                    <span className="brief-epss-delta badge badge-epss-delta mono">
+                      +{(row.delta * 100).toFixed(1)}%
+                    </span>
+                  </button>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+export default function BriefCharts({ onSelectCVE, onBucketClick }) {
   const [collapsed, setCollapsed] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [timeline, setTimeline] = useState([])
   const [kevEntries, setKevEntries] = useState([])
   const [epssChanges, setEpssChanges] = useState([])
+  const [epssHistories, setEpssHistories] = useState({})
+  const [epssHistoryLoading, setEpssHistoryLoading] = useState(false)
 
-  const timelineRef = useRef(null)
   const kevRef = useRef(null)
-  const epssRef = useRef(null)
-  const chartsRef = useRef({ timeline: null, kev: null, epss: null })
-
-  const slicedTimeline = useMemo(() => {
-    if (!timeline.length) return []
-    if (timeline.length <= TIMELINE_DAYS) return timeline
-    return timeline.slice(-TIMELINE_DAYS)
-  }, [timeline])
+  const chartsRef = useRef({ kev: null })
+  const onBucketClickRef = useRef(onBucketClick)
+  onBucketClickRef.current = onBucketClick
 
   const kevHistogram = useMemo(() => buildKevHistogram(kevEntries), [kevEntries])
   const epssMovers = useMemo(() => buildEpssMovers(epssChanges), [epssChanges])
 
   const loadData = useCallback(async (signal) => {
-    const [timelineRes, kevRes, changesRes] = await Promise.allSettled([
-      fetchStatsTimeline(TIMELINE_DAYS),
+    const [kevRes, changesRes] = await Promise.allSettled([
       fetchKEVDeadlines('urgent'),
       fetchChanges({ field: 'epss_score', since_hours: EPSS_WINDOW_HOURS, limit: 50 }),
     ])
     if (signal?.aborted) return
-    if (timelineRes.status === 'fulfilled') {
-      setTimeline(Array.isArray(timelineRes.value) ? timelineRes.value : [])
-    }
     if (kevRes.status === 'fulfilled') {
       setKevEntries(Array.isArray(kevRes.value?.data) ? kevRes.value.data : [])
     }
@@ -182,157 +299,112 @@ export default function BriefCharts() {
   }, [loadData])
 
   useEffect(() => {
+    if (!epssMovers.length) {
+      setEpssHistories({})
+      setEpssHistoryLoading(false)
+      return undefined
+    }
+
+    let cancelled = false
+    setEpssHistoryLoading(true)
+    Promise.allSettled(
+      epssMovers.map(row =>
+        fetchCVEEpssHistory(row.cve_id).then(data => ({
+          cve_id: row.cve_id,
+          history: Array.isArray(data) ? data : [],
+        }))
+      )
+    )
+      .then(results => {
+        if (cancelled) return
+        const next = {}
+        for (const res of results) {
+          if (res.status === 'fulfilled') {
+            next[res.value.cve_id] = res.value.history
+          }
+        }
+        setEpssHistories(next)
+      })
+      .finally(() => {
+        if (!cancelled) setEpssHistoryLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [epssMovers])
+
+  useEffect(() => {
     if (collapsed || loading) return undefined
 
     let cancelled = false
     let Chart = null
 
-    async function renderCharts() {
+    async function renderKevChart() {
       Chart = await loadChartJs()
-      if (cancelled) return
+      if (cancelled || !kevRef.current) return
 
       const theme = readChartTheme()
       const shared = baseOptions(theme)
 
-      if (timelineRef.current) {
-        chartsRef.current.timeline?.destroy()
-        const labels = slicedTimeline.map(row => shortDateLabel(row.date))
-        chartsRef.current.timeline = new Chart(timelineRef.current, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [
-              {
-                label: 'Total',
-                data: slicedTimeline.map(row => row.count || 0),
-                borderColor: theme.accent,
-                backgroundColor: `${theme.accent}33`,
-                fill: true,
-                tension: 0.25,
-                pointRadius: 0,
-                borderWidth: 1.5,
-              },
-              {
-                label: 'Critical',
-                data: slicedTimeline.map(row => row.critical || 0),
-                borderColor: theme.red,
-                backgroundColor: 'transparent',
-                tension: 0.25,
-                pointRadius: 0,
-                borderWidth: 1.5,
-              },
-            ],
-          },
-          options: {
-            ...shared,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-              ...shared.plugins,
-              legend: { ...shared.plugins.legend, position: 'top' },
+      chartsRef.current.kev?.destroy()
+      chartsRef.current.kev = new Chart(kevRef.current, {
+        type: 'bar',
+        data: {
+          labels: KEV_BUCKETS.map(b => b.label),
+          datasets: [
+            {
+              label: 'KEV entries',
+              data: kevHistogram,
+              backgroundColor: kevBucketColors(theme),
+              borderWidth: 0,
+              borderRadius: 0,
             },
-          },
-        })
-      }
-
-      if (kevRef.current) {
-        chartsRef.current.kev?.destroy()
-        chartsRef.current.kev = new Chart(kevRef.current, {
-          type: 'bar',
-          data: {
-            labels: KEV_BUCKETS.map(b => b.label),
-            datasets: [
-              {
-                label: 'KEV entries',
-                data: kevHistogram,
-                backgroundColor: [
-                  theme.red,
-                  theme.amber,
-                  theme.amber,
-                  theme.accent,
-                  theme.textMuted,
-                ],
-                borderWidth: 0,
-              },
-            ],
-          },
-          options: {
-            ...shared,
-            plugins: {
-              ...shared.plugins,
-              legend: { display: false },
-            },
-          },
-        })
-      }
-
-      if (epssRef.current) {
-        chartsRef.current.epss?.destroy()
-        const labels = epssMovers.map(row => row.cve_id.replace('CVE-', ''))
-        chartsRef.current.epss = new Chart(epssRef.current, {
-          type: 'bar',
-          data: {
-            labels,
-            datasets: [
-              {
-                label: 'EPSS Δ (7d)',
-                data: epssMovers.map(row => Math.round(row.delta * 1000) / 10),
-                backgroundColor: theme.green,
-                borderWidth: 0,
-              },
-            ],
-          },
-          options: {
-            ...shared,
-            indexAxis: 'y',
-            plugins: {
-              ...shared.plugins,
-              legend: { display: false },
-              tooltip: {
-                ...shared.plugins.tooltip,
-                callbacks: {
-                  label(ctx) {
-                    const mover = epssMovers[ctx.dataIndex]
-                    if (!mover) return ''
-                    return `+${(mover.delta * 100).toFixed(1)} pp → ${formatEpssPct(mover.new_score)}`
-                  },
-                },
-              },
-            },
-            scales: {
-              x: {
-                ...shared.scales.x,
-                title: {
-                  display: true,
-                  text: 'Δ percentage points',
-                  color: theme.textMuted,
-                  font: { family: theme.mono, size: 9 },
-                },
-              },
-              y: {
-                ...shared.scales.y,
-                ticks: {
-                  ...shared.scales.y.ticks,
-                  autoSkip: false,
+          ],
+        },
+        options: {
+          ...shared,
+          plugins: {
+            ...shared.plugins,
+            legend: { display: false },
+            tooltip: {
+              ...shared.plugins.tooltip,
+              callbacks: {
+                afterLabel(ctx) {
+                  const bucket = KEV_BUCKETS[ctx.dataIndex]
+                  if (!bucket) return ''
+                  const range = kevBucketDateRange(bucket.key)
+                  const start = range.start ? shortDateLabel(range.start) : 'any'
+                  const end = range.end ? shortDateLabel(range.end) : 'any'
+                  return `Due ${start} – ${end}`
                 },
               },
             },
           },
-        })
-      }
+          onClick(_event, elements) {
+            if (!elements.length) return
+            const bucket = KEV_BUCKETS[elements[0].index]
+            if (!bucket) return
+            onBucketClickRef.current?.(kevBucketDateRange(bucket.key))
+          },
+          onHover(event, elements) {
+            const target = event.native?.target
+            if (target) {
+              target.style.cursor = elements.length ? 'pointer' : 'default'
+            }
+          },
+        },
+      })
     }
 
-    renderCharts().catch(() => {})
+    renderKevChart().catch(() => {})
 
     return () => {
       cancelled = true
-      for (const key of Object.keys(chartsRef.current)) {
-        chartsRef.current[key]?.destroy()
-        chartsRef.current[key] = null
-      }
+      chartsRef.current.kev?.destroy()
+      chartsRef.current.kev = null
     }
-  }, [collapsed, loading, slicedTimeline, kevHistogram, epssMovers])
+  }, [collapsed, loading, kevHistogram])
 
-  const hasData = slicedTimeline.length > 0 || kevEntries.length > 0 || epssMovers.length > 0
+  const hasData = kevEntries.length > 0 || epssMovers.length > 0
 
   return (
     <section
@@ -365,27 +437,20 @@ export default function BriefCharts() {
             <p className="brief-charts-empty mono">No chart data yet — wait for ingest.</p>
           ) : (
             <div className="brief-charts-grid">
-              <article className="brief-chart-card" aria-label="Severity and volume timeline">
-                <h3 className="brief-chart-card-title">SEVERITY / VOLUME ({TIMELINE_DAYS}D)</h3>
-                <div className="brief-chart-canvas-wrap">
-                  <canvas ref={timelineRef} role="img" aria-label="CVE publication timeline" />
-                </div>
-              </article>
               <article className="brief-chart-card" aria-label="KEV due-date histogram">
                 <h3 className="brief-chart-card-title">KEV DUE DATES</h3>
-                <div className="brief-chart-canvas-wrap">
+                <div className="brief-chart-canvas-wrap brief-chart-canvas-wrap--kev">
                   <canvas ref={kevRef} role="img" aria-label="KEV remediation deadline histogram" />
                 </div>
               </article>
-              <article className="brief-chart-card" aria-label="Top EPSS movers">
+              <article className="brief-chart-card brief-chart-card--table" aria-label="Top EPSS movers">
                 <h3 className="brief-chart-card-title">TOP EPSS MOVERS (7D)</h3>
-                <div className="brief-chart-canvas-wrap">
-                  <canvas
-                    ref={epssRef}
-                    role="img"
-                    aria-label="Largest EPSS score increases in the last seven days"
-                  />
-                </div>
+                <EpssMoversTable
+                  movers={epssMovers}
+                  histories={epssHistories}
+                  loading={epssHistoryLoading}
+                  onSelectCVE={onSelectCVE}
+                />
               </article>
             </div>
           )}
