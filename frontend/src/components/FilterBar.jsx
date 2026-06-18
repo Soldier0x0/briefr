@@ -209,7 +209,7 @@ export default function FilterBar({
   }
 
   return (
-    <>
+    <div className="feed-controls">
     <div className="filter-toolbar">
       <div className="filter-bar" role="toolbar" aria-label="CVE feed filters">
         <div className="filter-bar-top">
@@ -411,6 +411,6 @@ export default function FilterBar({
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

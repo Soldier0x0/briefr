@@ -9,6 +9,8 @@
   width: 100%;
   text-align: left;
   position: relative;
+  isolation: isolate;
+  scroll-margin-top: 240px;
 }
 
 .cve-card:hover {

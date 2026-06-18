@@ -1506,7 +1506,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
           {loading && (
             <div className="drawer-loading-overlay" aria-live="polite" aria-busy="true">
               <div className="drawer-loading-bar" role="progressbar" aria-label="Loading CVE details" />
-              <p className="drawer-loading-text mono">Calculating latest metrics…</p>
+              <p className="drawer-loading-text mono">Loading CVE details…</p>
             </div>
           )}
 

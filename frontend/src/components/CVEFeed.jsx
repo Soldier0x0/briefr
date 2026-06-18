@@ -78,6 +78,7 @@ export default function CVEFeed({
   const cardRefs = useRef([])
   const pageRef = useRef(1)
   const feedRootRef = useRef(null)
+  const listAnchorRef = useRef(null)
   const prevFiltersRef = useRef(null)
   const filtersRef = useRef(filters)
   const loadingRef = useRef(false)
@@ -228,15 +229,18 @@ export default function CVEFeed({
   }, [cves, updateShowingRange])
 
   function scrollFeedToTop() {
-    // Anchor to the top of the feed (filter bar stays visible) — never the
-    // page top, which would yank the user past the hero. Skip entirely when
-    // the feed top is already in view.
-    const el = feedRootRef.current
-    if (!el) return
-    const top = el.getBoundingClientRect().top
-    if (top >= 0) return
+    // Scroll so the list starts below the sticky header + filter toolbar — never
+    // under the toolbar (which caused CVE cards to overlap filter chips).
+    const anchor = listAnchorRef.current
+    if (!anchor) return
+    const headerOffset = 52
+    const toolbar = feedRootRef.current?.querySelector('.filter-toolbar')
+    const toolbarHeight = toolbar?.getBoundingClientRect().height ?? 0
+    const targetTop = headerOffset + toolbarHeight + 8
+    const top = anchor.getBoundingClientRect().top
+    if (top >= targetTop) return
     window.scrollTo({
-      top: window.scrollY + top - 8,
+      top: window.scrollY + top - targetTop,
       behavior: scrollBehavior(),
     })
   }
@@ -448,6 +452,8 @@ export default function CVEFeed({
           <SkeletonCard />
         </div>
       )}
+
+      <div ref={listAnchorRef} className="cve-list-anchor" aria-hidden="true" />
 
       <div
         aria-live="polite"
