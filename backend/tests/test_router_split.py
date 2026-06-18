@@ -70,8 +70,9 @@ def _openapi_route_list() -> list[tuple[str, str]]:
 def _iter_route_contexts(routes: list[Any]) -> Iterator[Any]:
     """Flatten FastAPI 0.137+ nested included-router trees for introspection."""
     for route in routes:
-        if hasattr(route, "effective_route_contexts"):
-            yield from route.effective_route_contexts()
+        effective_route_contexts = getattr(route, "effective_route_contexts", None)
+        if callable(effective_route_contexts):
+            yield from effective_route_contexts()
         elif isinstance(route, APIRoute):
             yield route
         elif hasattr(route, "endpoint"):
