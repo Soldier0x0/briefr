@@ -216,7 +216,7 @@ function FeedView({ filters, setFilters, selectedCVE, setSelectedCVE,
         <CVEFeed
           filters={filters}
           onFiltersChange={handleFiltersChange}
-          onSelectCVE={handleSelectCVE}
+          onSelectCVE={onSelectCVE}
           onGenerateDigest={handleGenerateDigest}
           onDigestRequest={onDigestRequest}
           searchFocusTrigger={searchFocusTrigger}
