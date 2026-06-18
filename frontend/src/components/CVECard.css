@@ -485,6 +485,7 @@
 @media (max-width: 640px) {
   .cve-card {
     padding: 16px 60px 16px 30px;
+    scroll-margin-top: 180px;
   }
 
   .card-checkbox-wrap {

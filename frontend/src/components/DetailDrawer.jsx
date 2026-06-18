@@ -548,7 +548,7 @@ function exploitTypeLabel(type) {
   return 'PoC'
 }
 
-function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxConfigured, cve, onInvestigateIp, onInvestigatePulse, pivotNotice, correlation, correlationLoading, onSelectCorrelatedCve }) {
+function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxConfigured, cve, loading, onInvestigateIp, onInvestigatePulse, pivotNotice, correlation, correlationLoading, onSelectCorrelatedCve }) {
   const exploits = Array.isArray(publicExploits) ? publicExploits : []
   const scans = Array.isArray(greynoiseScans) ? greynoiseScans : []
   const pulses = Array.isArray(otxPulses) ? otxPulses : []
@@ -565,7 +565,9 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
             {exploits.length}
           </span>
         </div>
-        {exploits.length === 0 ? (
+        {loading && exploits.length === 0 ? (
+          <p className="drawer-intel-empty mono">// Loading public exploit intelligence…</p>
+        ) : exploits.length === 0 ? (
           <p className="drawer-intel-empty mono">// No public exploits from Sploitus or NVD references for this CVE</p>
         ) : (
           <ul className="drawer-exploit-list" aria-label="Public exploits from Sploitus">
@@ -608,7 +610,9 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
 
       <section className="drawer-section" aria-labelledby="scanning-heading">
         <h3 id="scanning-heading" className="drawer-human-label mono">// ACTIVE SCANNING</h3>
-        {scans.length === 0 ? (
+        {loading && scans.length === 0 ? (
+          <p className="drawer-intel-empty mono">// Loading active scanning context…</p>
+        ) : scans.length === 0 ? (
           <p className="drawer-intel-empty mono">
             // No exploitation-related IPs found in this CVE record
           </p>
@@ -664,6 +668,8 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
         </div>
         {otxConfigured === false ? (
           <p className="drawer-intel-empty mono">// Campaign intelligence unavailable — OTX not configured on this instance</p>
+        ) : loading && pulses.length === 0 ? (
+          <p className="drawer-intel-empty mono">// Loading campaign intelligence…</p>
         ) : pulses.length === 0 ? (
           <p className="drawer-intel-empty mono">// No community intelligence found for this CVE</p>
         ) : (
@@ -702,7 +708,9 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
 
       <section className="drawer-section" aria-labelledby="mitre-heading">
         <h3 id="mitre-heading" className="drawer-section-label">MITRE ATT&CK</h3>
-        {techList.length === 0 ? (
+        {loading && techList.length === 0 ? (
+          <p className="mitre-empty mono">// Loading ATT&CK mapping…</p>
+        ) : techList.length === 0 ? (
           <p className="mitre-empty mono">// No ATT&CK mapping available</p>
         ) : (
           <div className="mitre-techniques" role="list" aria-label="Mapped ATT&CK techniques">
@@ -1359,6 +1367,8 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
   const techniques = Array.isArray(cve.techniques) ? cve.techniques : []
   const canGoBack = backStack.length > 0
   const isPinned = watchlistState === 'pin'
+  const hasPreviewContent = Boolean(cve.description || cve.summary)
+  const showBlockingLoadingOverlay = loading && !hasPreviewContent
 
   return (
     <>
@@ -1503,7 +1513,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
         </div>
 
         <div className="drawer-body-wrap">
-          {loading && (
+          {showBlockingLoadingOverlay && (
             <div className="drawer-loading-overlay" aria-live="polite" aria-busy="true">
               <div className="drawer-loading-bar" role="progressbar" aria-label="Loading CVE details" />
               <p className="drawer-loading-text mono">Loading CVE details…</p>
@@ -1541,6 +1551,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
               otxPulses={cve.otx_pulses}
               otxConfigured={cve.otx_configured}
               cve={cve}
+              loading={loading}
               onInvestigateIp={
                 investigation
                   ? (ip, cveCtx) => investigation.pivotToIoc(ip, {

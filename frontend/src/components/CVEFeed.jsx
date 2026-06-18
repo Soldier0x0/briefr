@@ -233,8 +233,9 @@ export default function CVEFeed({
     // under the toolbar (which caused CVE cards to overlap filter chips).
     const anchor = listAnchorRef.current
     if (!anchor) return
-    const headerOffset = 52
     const toolbar = feedRootRef.current?.querySelector('.filter-toolbar')
+    const toolbarTop = toolbar ? Number.parseFloat(window.getComputedStyle(toolbar).top) : 52
+    const headerOffset = Number.isFinite(toolbarTop) ? toolbarTop : 52
     const toolbarHeight = toolbar?.getBoundingClientRect().height ?? 0
     const targetTop = headerOffset + toolbarHeight + 8
     const top = anchor.getBoundingClientRect().top

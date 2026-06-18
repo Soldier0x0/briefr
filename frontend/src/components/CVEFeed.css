@@ -14,6 +14,12 @@
   scroll-margin-top: 240px;
 }
 
+@media (max-width: 640px) {
+  .cve-list-anchor {
+    scroll-margin-top: 180px;
+  }
+}
+
 .cve-list {
   display: flex;
   flex-direction: column;
