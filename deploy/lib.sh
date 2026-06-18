@@ -49,6 +49,8 @@ fix_tree_permissions() {
     done
   fi
   [ -d "${INSTALL_DIR}/venv/bin" ] && chmod 755 "${INSTALL_DIR}/venv/bin/"* 2>/dev/null || true
+  # Playwright driver/node loses +x after the blanket chmod 644 above.
+  find "${INSTALL_DIR}/venv/lib" -path '*/playwright/driver/node' -exec chmod 755 {} + 2>/dev/null || true
   if [ -d "${INSTALL_DIR}/frontend/node_modules/.bin" ]; then
     chmod 755 "${INSTALL_DIR}/frontend/node_modules/.bin/"* 2>/dev/null || true
   fi
