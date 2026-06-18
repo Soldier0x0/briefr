@@ -22,10 +22,38 @@ fi
 
 # Pull first, then re-exec so we always run the latest script body (bash does not
 # re-read the file after git pull while a run is in progress).
+restore_deploy_mode_drift() {
+  local rel
+  for rel in deploy/setup.sh deploy/lib.sh; do
+    if ! git -C "${INSTALL_DIR}" diff --no-color --quiet -- "${rel}" 2>/dev/null; then
+      # Permission-only drift has no +/- content lines (only ---/+++ headers at most).
+      # --no-color avoids ANSI sequences when color.diff/color.ui is always on.
+      if ! git -C "${INSTALL_DIR}" diff --no-color -- "${rel}" 2>/dev/null \
+        | grep -vE '^[+-]{3}' | grep -qE '^[+-]'; then
+        echo "    Resetting permission-only drift on ${rel} (from a prior deploy run)"
+        git -C "${INSTALL_DIR}" restore -- "${rel}" 2>/dev/null \
+          || git -C "${INSTALL_DIR}" checkout -- "${rel}" 2>/dev/null \
+          || true
+      fi
+    fi
+  done
+}
+
 if [ "${BRIEFR_UPDATE_REEXECED:-}" != "1" ]; then
   echo "==> Pulling latest from main"
   git config --global --add safe.directory "${INSTALL_DIR}" 2>/dev/null || true
   git -C "${INSTALL_DIR}" remote set-url origin https://github.com/Soldier0x0/briefr.git 2>/dev/null || true
+  restore_deploy_mode_drift
+  if ! git -C "${INSTALL_DIR}" diff --quiet; then
+    echo "ERROR: Local changes would block git pull:"
+    git -C "${INSTALL_DIR}" diff --stat
+    echo ""
+    echo "Permission-only drift on deploy/setup.sh or deploy/lib.sh is reset automatically."
+    echo "For other tracked files, restore upstream copies (keeps .env and briefr.db untouched):"
+    echo "  git -C ${INSTALL_DIR} restore <path>"
+    echo "Then re-run: bash ${SCRIPT_PATH}"
+    exit 1
+  fi
   git -C "${INSTALL_DIR}" pull origin main
   export BRIEFR_UPDATE_REEXECED=1
   exec bash "${SCRIPT_PATH}" "$@"

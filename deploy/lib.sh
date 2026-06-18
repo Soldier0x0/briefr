@@ -40,7 +40,14 @@ fix_tree_permissions() {
   find "${INSTALL_DIR}" -type f -exec chmod 644 {} +
   chmod 750 "${INSTALL_DIR}/backend"
   [ -f "${INSTALL_DIR}/backend/.env" ] && chmod 640 "${INSTALL_DIR}/backend/.env"
-  [ -d "${INSTALL_DIR}/deploy" ] && chmod 755 "${INSTALL_DIR}/deploy" && chmod 755 "${INSTALL_DIR}/deploy/"*.sh 2>/dev/null || true
+  if [ -d "${INSTALL_DIR}/deploy" ]; then
+    chmod 755 "${INSTALL_DIR}/deploy"
+    # Only +x scripts that git tracks as executable — setup.sh and lib.sh stay 644
+    # so a prior deploy does not dirty the tree and block the next git pull.
+    for script in briefr-update.sh briefr-backup.sh briefr-restore.sh check-backend.sh smoke-intel.sh; do
+      [ -f "${INSTALL_DIR}/deploy/${script}" ] && chmod 755 "${INSTALL_DIR}/deploy/${script}"
+    done
+  fi
   [ -d "${INSTALL_DIR}/venv/bin" ] && chmod 755 "${INSTALL_DIR}/venv/bin/"* 2>/dev/null || true
   if [ -d "${INSTALL_DIR}/frontend/node_modules/.bin" ]; then
     chmod 755 "${INSTALL_DIR}/frontend/node_modules/.bin/"* 2>/dev/null || true
