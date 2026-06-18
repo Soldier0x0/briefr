@@ -24,7 +24,8 @@ fi
 # re-read the file after git pull while a run is in progress).
 restore_deploy_mode_drift() {
   local rel
-  for rel in deploy/setup.sh deploy/lib.sh; do
+  shopt -s nullglob
+  for rel in deploy/*.sh; do
     if ! git -C "${INSTALL_DIR}" diff --no-color --quiet -- "${rel}" 2>/dev/null; then
       # Permission-only drift has no +/- content lines (only ---/+++ headers at most).
       # --no-color avoids ANSI sequences when color.diff/color.ui is always on.
@@ -37,6 +38,7 @@ restore_deploy_mode_drift() {
       fi
     fi
   done
+  shopt -u nullglob
 }
 
 if [ "${BRIEFR_UPDATE_REEXECED:-}" != "1" ]; then
@@ -48,7 +50,7 @@ if [ "${BRIEFR_UPDATE_REEXECED:-}" != "1" ]; then
     echo "ERROR: Local changes would block git pull:"
     git -C "${INSTALL_DIR}" diff --stat
     echo ""
-    echo "Permission-only drift on deploy/setup.sh or deploy/lib.sh is reset automatically."
+    echo "Permission-only drift under deploy/*.sh is reset automatically."
     echo "For other tracked files, restore upstream copies (keeps .env and briefr.db untouched):"
     echo "  git -C ${INSTALL_DIR} restore <path>"
     echo "Then re-run: bash ${SCRIPT_PATH}"
