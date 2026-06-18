@@ -77,6 +77,20 @@ Read in this order before writing any code:
 Each merged PR's description contains its own **post-merge verification
 checklist** — that is the house style; keep it (see §7).
 
+### Open PR merge order (2026-06-18)
+
+Rebased onto current `main` (includes FastAPI 0.137.2, pytest 9.1.0, React 19.2.7, Vite 8, deploy fixes #121–#131). **Merge one at a time**; run post-merge verification after each.
+
+| Order | PR | Branch | Notes |
+|-------|-----|--------|-------|
+| 0 (optional, parallel) | groq-llama-8b-instant | `cursor/groq-llama-8b-instant-50b5` | Independent; no UI deps |
+| 1 | #117 | `cursor/morning-brief-explainable-risk-df48` | Foundation: `GET /api/brief`, BRIEF landing tab |
+| 2 | #116 | `cursor/chartjs-brief-dashboard-9662` | Rebased on #117; Chart.js in BriefView |
+| 3 | #119 | `cursor/brief-heatmap-layout-adcb` | Rebased on #116; heatmap + What changed side-by-side |
+| 4 | #118 | `cursor/watchlist-pin-snooze-8656` | Rebased on #119; pin/snooze API + feed controls |
+
+Gemini Code Assist review fixes are already incorporated on #116–#118 (date SQL, chart guards, watchlist key normalization).
+
 ---
 
 ## 4. ⚠️ Process lesson: the stacked-PR mishap
@@ -96,7 +110,9 @@ its code never reached `main`. #89 fixes this by cherry-pick.
 
 ---
 
-## 5. Remaining V1.2 work (do these before V1.3)
+## 5. V1.2 work — ✅ complete (2026-06-18)
+
+All V1.2 exit criteria met on `main` (PRs #89–#104, #101, #103). Section retained for reference.
 
 Ordered; each is one PR unless noted. File pointers are current as of this doc.
 
