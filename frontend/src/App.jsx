@@ -8,6 +8,7 @@ import Hero from './components/Hero.jsx'
 import StatsRow from './components/StatsRow.jsx'
 import TimelineHeatmap from './components/TimelineHeatmap.jsx'
 import WhatChangedPanel from './components/WhatChangedPanel.jsx'
+import MorningBrief from './components/MorningBrief.jsx'
 import CVEFeed from './components/CVEFeed.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import IOCLookup from './components/IOCLookup.jsx'
@@ -25,7 +26,6 @@ import {
   getAiFrameworksForAlerts,
   hasDeclaredAiAssets,
 } from './utils/aiAssets.js'
-import { STACK_STORAGE_KEY } from './utils/cveFilters.js'
 import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 import './components/InvestigationPanel.css'
@@ -109,7 +109,48 @@ function cycleFilter(filters) {
   return { ...filters, kev_only: false, poc_only: false, severity: null }
 }
 
-function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
+function BriefView({ stats, filters, setFilters,
+                    timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
+                    showAiAlerts, onAiAlertsClick, onOpenFullFeed, onSelectCVE }) {
+
+  const handleBrief = useCallback((stack) => {
+    setFilters(prev => ({ ...prev, stack: stack || '' }))
+  }, [setFilters])
+
+  const handleClearStack = useCallback(() => {
+    setFilters(prev => ({ ...prev, stack: '' }))
+  }, [setFilters])
+
+  return (
+    <>
+      <Hero
+        activeStack={filters.stack}
+        onBrief={handleBrief}
+        onClearStack={handleClearStack}
+      />
+      <StatsRow
+        stats={stats}
+        showAiAlerts={showAiAlerts}
+        onAiAlertsClick={onAiAlertsClick}
+      />
+      <MorningBrief
+        stack={filters.stack}
+        onSelectCVE={onSelectCVE}
+        onOpenFullFeed={onOpenFullFeed}
+        timezone={timezone}
+      />
+      <WhatChangedPanel onSelectCVE={onSelectCVE} />
+      <FeedRefreshStatus
+        lastUpdated={lastUpdated}
+        nextRefreshUtc={nextRefreshUtc}
+        timezone={timezone}
+        refreshSchedule={refreshSchedule}
+      />
+    </>
+  )
+}
+
+function FeedView({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
                    digestOpen, setDigestOpen, digestCVEs, setDigestCVEs,
                    searchFocusTrigger, setSearchFocusTrigger, aboutOpen, setAboutOpen,
                    timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
@@ -157,7 +198,6 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
         onAiAlertsClick={onAiAlertsClick}
       />
       <TimelineHeatmap filters={filters} onFiltersChange={handleFiltersChange} />
-      <WhatChangedPanel onSelectCVE={handleSelectCVE} />
       <FeedRefreshStatus
         lastUpdated={lastUpdated}
         nextRefreshUtc={nextRefreshUtc}
@@ -183,7 +223,7 @@ function MainApp({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
 
 export default function App() {
   const location = useLocation()
-  const [activeTab, setActiveTab]               = useState('feed')
+  const [activeTab, setActiveTab]               = useState('brief')
   const digestCVEsRef = useRef([])
   const generateDigestRef = useRef(null)
   const [filters, setFilters]                   = useState(DEFAULT_FILTERS)
@@ -306,7 +346,7 @@ export default function App() {
     setAtlasActorFilter,
     clearAtlasFilter: () => setAtlasActorFilter(null),
     openCve: (cveId) => {
-      setActiveTab('feed')
+      setActiveTab('brief')
       openCveById(cveId)
     },
   }), [openCveById])
@@ -333,6 +373,9 @@ export default function App() {
       // about / PDF modal) — F used to silently change filters under the drawer.
       if (selectedCVE || digestOpen || aboutOpen || overlayDepth() > 0) return
 
+      // Feed-only shortcuts (/, F, g+d digest).
+      if (activeTab !== 'feed') return
+
       if (e.key === '/') { e.preventDefault(); setSearchFocusTrigger(n => n + 1) }
       if (e.key === 'f' || e.key === 'F') setFilters(cycleFilter)
 
@@ -358,12 +401,19 @@ export default function App() {
       document.removeEventListener('keydown', handleKey)
       if (gTimer) clearTimeout(gTimer)
     }
-  }, [aboutOpen, selectedCVE, digestOpen, handleGenerateDigest])
+  }, [aboutOpen, selectedCVE, digestOpen, handleGenerateDigest, activeTab])
 
   const showFeedShortcuts =
     location.pathname !== '/privacy' &&
     location.pathname !== '/terms' &&
     activeTab === 'feed'
+
+  const handleSelectCVE = useCallback((cve) => {
+    setSelectedCVE(cve)
+    fetchCVE(cve.cve_id)
+      .then(full => setSelectedCVE(full))
+      .catch(() => {})
+  }, [])
 
   return (
     <InvestigationProvider navigation={investigationNav}>
@@ -404,6 +454,7 @@ export default function App() {
               openCveById={openCveById}
               showAiAlerts={showAiAlerts}
               onAiAlertsClick={handleAiAlertsClick}
+              onSelectCVE={handleSelectCVE}
             />
           )}
         />
@@ -443,6 +494,7 @@ function AppLayout({
   openCveById,
   showAiAlerts,
   onAiAlertsClick,
+  onSelectCVE,
 }) {
   const { showPanel, panelExpanded } = useInvestigation()
   const layoutClass = [
@@ -460,14 +512,29 @@ function AppLayout({
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onAboutOpen={onAboutOpen}
-          onLogoClick={() => setActiveTab('feed')}
+          onLogoClick={() => setActiveTab('brief')}
           onTimezoneChange={onTimezoneChange}
           showShortcuts={showFeedShortcuts}
         />
 
         <div className="app-main">
+          {activeTab === 'brief' && (
+            <BriefView
+              stats={stats}
+              filters={filters}
+              setFilters={setFilters}
+              timezone={timezone}
+              lastUpdated={lastUpdated}
+              nextRefreshUtc={nextRefreshUtc}
+              refreshSchedule={refreshSchedule}
+              showAiAlerts={showAiAlerts}
+              onAiAlertsClick={onAiAlertsClick}
+              onOpenFullFeed={() => setActiveTab('feed')}
+              onSelectCVE={onSelectCVE}
+            />
+          )}
           {activeTab === 'feed' && (
-                <MainApp
+            <FeedView
                   stats={stats}
                   filters={filters}
                   setFilters={setFilters}
@@ -502,7 +569,7 @@ function AppLayout({
               {activeTab === 'forge' && <Forge />}
             </div>
 
-            {activeTab !== 'feed' && (
+            {activeTab !== 'feed' && activeTab !== 'brief' && (
               <footer className="app-footer" role="contentinfo">
                 <div className="footer-left">
                   <span>BRIEFR</span> // CVE intelligence platform

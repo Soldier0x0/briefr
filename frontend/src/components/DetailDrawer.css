@@ -1194,6 +1194,28 @@
   color: var(--text2);
 }
 
+.drawer-risk-comp-formula {
+  margin: 0.15rem 0 0.35rem;
+  font-size: 0.625rem;
+  color: var(--text3);
+  letter-spacing: 0.02em;
+}
+
+.drawer-risk-total-formula {
+  margin: 0.75rem 0 0.35rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border);
+  font-size: 0.6875rem;
+  color: var(--text2);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.drawer-risk-momentum-total {
+  margin-top: 0.25rem;
+  color: var(--text2);
+}
+
 .drawer-risk-comp-sentence {
   font-size: 11px;
   line-height: 1.45;

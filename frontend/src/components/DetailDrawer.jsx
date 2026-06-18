@@ -27,6 +27,7 @@ import {
   buildRiskHeroSummary,
   calculateRiskScore,
   componentBarColor,
+  getRiskWeights,
   riskScoreColor,
   RISK_COMPONENT_LABELS,
 } from '../scoring/riskScore.js'
@@ -222,6 +223,10 @@ function RiskScoreBreakdown({ cve, riskScore, onOpenProfile, momentumData }) {
       ...components[key],
     }))
 
+  const weights = getRiskWeights()
+  const pointsSum = breakdownRows.reduce((sum, row) => sum + (row.points || 0), 0)
+  const formulaParts = breakdownRows.map(row => row.points.toFixed(1))
+
   return (
     <section className="drawer-section drawer-risk-section" aria-labelledby="risk-score-heading">
       <h3 id="risk-score-heading" className="drawer-risk-section-label mono">
@@ -283,16 +288,22 @@ function RiskScoreBreakdown({ cve, riskScore, onOpenProfile, momentumData }) {
                 {row.points.toFixed(1)} pts
               </span>
             </div>
+            <p className="drawer-risk-comp-formula mono" aria-label={`${row.label} calculation`}>
+              {row.score.toFixed(3)} × {(row.weight * 100).toFixed(0)}% × 100 = {row.points.toFixed(1)} pts
+            </p>
             {row.key === 'momentum' && momentumData?.momentum_signals?.length > 0 ? (
               <ul className="drawer-risk-momentum-signals" aria-label="Momentum signals">
                 {momentumData.momentum_signals.map((sig, i) => (
                   <li key={i} className="drawer-risk-momentum-signal mono">
                     {sig.description}
                     <span className="drawer-risk-momentum-contrib">
-                      {sig.contribution > 0 ? ` (+${sig.contribution.toFixed(1)})` : ''}
+                      {sig.contribution > 0 ? ` (+${sig.contribution.toFixed(2)})` : ''}
                     </span>
                   </li>
                 ))}
+                <li className="drawer-risk-momentum-signal mono drawer-risk-momentum-total">
+                  Momentum score = min(1.0, Σ signals) = {(momentumData.momentum_score ?? 0).toFixed(3)}
+                </li>
               </ul>
             ) : row.sentence ? (
               <p className="drawer-risk-comp-sentence">{row.sentence}</p>
@@ -300,8 +311,11 @@ function RiskScoreBreakdown({ cve, riskScore, onOpenProfile, momentumData }) {
           </div>
         ))}
       </div>
+      <p className="drawer-risk-total-formula mono" aria-label="Risk score total calculation">
+        {formulaParts.join(' + ')} = {pointsSum.toFixed(1)} → score {total.toFixed(1)} / 100
+      </p>
       <p className="drawer-risk-weights mono">
-        v1.1b — Asset 35% · KEV 25% · EPSS 15% · Exploit 10% · CVSS 10% · Momentum 5%
+        v1.1b weights from server — Asset {(weights.asset * 100).toFixed(0)}% · KEV {(weights.kev * 100).toFixed(0)}% · EPSS {(weights.epss * 100).toFixed(0)}% · Exploit {(weights.exploit * 100).toFixed(0)}% · CVSS {(weights.cvss * 100).toFixed(0)}% · Momentum {(weights.momentum * 100).toFixed(0)}%
       </p>
     </section>
   )

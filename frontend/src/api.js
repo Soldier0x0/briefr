@@ -187,6 +187,15 @@ export function fetchRiskWeights() {
   return request('/config/risk')
 }
 
+export function fetchBrief({ stack = '', sinceHours = 24, limit = 10, kevDueDays = 14 } = {}) {
+  const qs = new URLSearchParams()
+  qs.set('since_hours', String(sinceHours))
+  qs.set('limit', String(limit))
+  qs.set('kev_due_days', String(kevDueDays))
+  if (stack?.trim()) qs.set('stack', stack.trim())
+  return request(`/brief?${qs}`)
+}
+
 export function fetchUsage() {
   return request('/usage')
 }

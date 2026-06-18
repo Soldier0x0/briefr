@@ -114,6 +114,44 @@ Each CVE object may include `kev_due_date` (`YYYY-MM-DD` from `kev_deadlines.due
 
 ---
 
+### GET /api/brief
+
+**Description:** Server-computed morning brief — ranked analyst action queue from existing DB state (read-path only; no ingest).
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `stack` | str | null | Comma-separated stack terms (same matching as `/api/cves` `stack`) |
+| `since_hours` | int | 24 | Lookback window for movers / new KEV / stack activity (1–168) |
+| `limit` | int | 10 | Max items per section (1–50) |
+| `kev_due_days` | int | 14 | KEV remediation horizon for the due-soon section (1–90) |
+
+**Response:**
+
+```json
+{
+  "meta": {
+    "generated_at": "2026-06-12T21:00:00Z",
+    "stack_profile_id": "stack:a1b2c3d4e5f6",
+    "stack_terms": ["log4j"],
+    "since_hours": 24,
+    "kev_due_days": 14
+  },
+  "sections": {
+    "epss_movers": { "title": "EPSS movers", "count": 2, "items": [...] },
+    "new_kev": { "title": "New KEV entries", "count": 1, "items": [...] },
+    "kev_due_soon": { "title": "KEV due within 14 days", "count": 3, "items": [...] },
+    "stack_matches": { "title": "Stack activity", "count": 5, "items": [...] }
+  },
+  "action_queue": [ { "cve_id": "...", "reasons": ["kev_due_soon", "stack_match"], ... } ]
+}
+```
+
+Each item includes core card fields (`cve_id`, `severity`, `cvss_score`, `epss_score`, `is_kev`, `has_poc`, `summary`, `published`, `kev_due_date`, `reasons`) plus section-specific extras (`epss_delta`, `kev_date_added`, etc.).
+
+**Frontend:** BRIEF tab landing view (`MorningBrief.jsx`) — default tab on load; full paginated CVE list lives on the FEED tab.
+
+---
+
 ### GET /api/changes
 
 **Description:** Recent tracked field changes (`cvss_score`, `epss_score`, `is_kev`, `has_poc`).

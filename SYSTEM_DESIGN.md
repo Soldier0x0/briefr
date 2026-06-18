@@ -69,13 +69,12 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ React + Vite (frontend/src)                                                 │
 ├──────────────────┬──────────────────┬──────────────────┬────────────────────┤
-│ BRIEF tab        │ IOC LOOKUP tab   │ INCIDENTS tab    │ DetailDrawer       │
-│ CVEFeed.jsx      │ IOCLookup.jsx    │ CaseStudies.jsx  │ (global overlay)   │
-│ → GET /cves      │ → POST /ioc      │ → combined feed  │ → 6+ sub-routes    │
-│ CVECard.jsx      │                  │                  │                    │
-│ StatsRow.jsx     │                  │                  │                    │
-│ TimelineHeatmap  │                  │                  │                    │
-│ Sidebar.jsx      │                  │                  │                    │
+│ BRIEF tab        │ FEED tab         │ IOC LOOKUP tab   │ INCIDENTS tab    │ DetailDrawer       │
+│ MorningBrief.jsx │ CVEFeed.jsx      │ IOCLookup.jsx    │ CaseStudies.jsx  │ (global overlay)   │
+│ → GET /brief     │ → GET /cves      │ → POST /ioc      │ → combined feed  │ → 6+ sub-routes    │
+│ WhatChangedPanel │ CVECard.jsx      │                  │                  │ explainable risk   │
+│ StatsRow.jsx     │ TimelineHeatmap  │                  │                  │ breakdown (math)   │
+│ Hero stack bar   │ Sidebar.jsx      │                  │                  │                    │
 └──────────────────┴──────────────────┴──────────────────┴────────────────────┘
 ```
 
@@ -85,8 +84,8 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 
 | Table(s) | Primary endpoints | Frontend consumers |
 |---|---|---|
-| `cves` | `GET /api/cves`, `GET /api/cves/{id}`, `GET /api/stats` | CVEFeed, CVECard, DetailDrawer, StatsRow, TimelineHeatmap |
-| `kev_deadlines` | `GET /api/kev/deadlines`, `kev_due_date` on list/export/detail | Sidebar (urgent sort), CVECard due chip, DetailDrawer sentences |
+| `cves` | `GET /api/cves`, `GET /api/cves/{id}`, `GET /api/stats`, `GET /api/brief` | CVEFeed, CVECard, DetailDrawer, StatsRow, TimelineHeatmap, MorningBrief |
+| `kev_deadlines` | `GET /api/kev/deadlines`, `kev_due_date` on list/export/detail, `GET /api/brief` | Sidebar (urgent sort), CVECard due chip, DetailDrawer sentences, MorningBrief |
 | `epss_history` | `GET /api/cves/{id}/epss-history`, momentum | DetailDrawer EPSS sparkline |
 | `mitre_techniques`, `cve_technique_map` | `GET /api/techniques/top`, CVE `techniques` field | Sidebar, DetailDrawer Intel tab |
 | `atlas_*`, `cve_atlas_map` | `GET /api/atlas/*`, `GET /api/cves/{id}` (per-CVE fields) | DrawerAtlasSection, CaseStudies (global list) |
@@ -94,7 +93,7 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 | `feed_cache`, `ioc_cache` | Internal — speeds enrichment | Transparent to UI |
 | `correlation_*` | `GET /api/cves/{id}/correlation` | DetailDrawer correlation section |
 | `cve_exploits` | Via Sploitus loader in CVE detail | DetailDrawer Intel tab |
-| `cve_change_history` | `GET /api/changes` | WhatChangedPanel (BRIEF tab) |
+| `cve_change_history` | `GET /api/changes`, `GET /api/brief` (EPSS movers) | WhatChangedPanel (BRIEF tab), MorningBrief |
 | `api_usage` | `GET /api/usage`, `GET /api/usage/ioc` | IOCLookup quota display |
 | `audit_log` | Written by `POST /api/refresh*` and backup/restore (admin UI reads in V1.4) | — (not exposed yet) |
 | `hunt_packs` (+ `mitre_techniques`, `cve_technique_map`) | `GET /api/forge/coverage`, `GET /api/hunt-packs/{technique_id}`, `POST /api/hunt-packs/generate` | Forge tab (coverage map + hunt pack panel) |
@@ -108,8 +107,9 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 `backend/scoring/risk.py` and returns them as JSON. `frontend/src/scoring/riskScore.js`
 fetches this once at startup (fire-and-forget) and caches the result in a
 module-level variable. If the request fails, the hardcoded fallback constants
-(identical to the backend values) are used unchanged. This eliminates the
-drift risk documented in README § Known limitations.
+(identical to the backend values) are used unchanged. The drawer risk breakdown
+shows per-component math (`score × weight × 100 = points`) using these weights
+plus `GET /api/cves/{id}/momentum` signals for the momentum component.
 
 ---
 

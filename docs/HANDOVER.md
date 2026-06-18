@@ -2,7 +2,7 @@
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
-**Last updated:** 2026-06-12
+**Last updated:** 2026-06-18
 **Status:** Temporary working document — delete or archive when V1.5 ships.
 **Audience:** the next AI agent (or human) continuing the Beta V1.2–V1.5 programme.
 
@@ -43,28 +43,52 @@ Read in this order before writing any code:
 | #86 | incident-feed-snapshot | Incidents & News served from scheduler-built snapshot (7s → ~20ms), parallel RSS, `feeds.incidents` health, `meta.{refreshed_at,stale,warming}` | ✅ Merged + verified in prod |
 | #87 | resilient-http-client | Resilient client (retries, circuit breakers, `feeds.sources` health) | ⚠️ Merged **into the wrong branch** — see §4 |
 | #88 | ci-audits-version | `/api/version` + deploy stamping + `pip-audit`/`npm audit` CI jobs | ✅ Merged |
-| #89 | restore-resilient-client | Clean cherry-pick of #87's content onto `main` | 🔲 Open — **merge first** |
-| #90 | ui-ux-fixes | UI/UX correctness pass: feed scroll/filter fixes, stale-while-revalidate, overlay layering/focus traps, self-hosted fonts, reduced-motion, request timeouts, sidebar cache | 🔲 Open |
+| #89 | restore-resilient-client | Clean cherry-pick of #87's content onto `main` | ✅ Merged |
+| #90 | ui-ux-fixes | UI/UX correctness pass: feed scroll/filter fixes, stale-while-revalidate, overlay layering/focus traps, self-hosted fonts, reduced-motion, request timeouts, sidebar cache | ✅ Merged |
 | #92 | enrichment-resilience | CIRCL migrated to vulnerability.circl.lu (+`CIRCL_API_KEY`, negative caching), OSV alias-follow fix (was silently broken with HTTP 400), resilient client adoption completed for ALL outbound modules (VT/AbuseIPDB/GreyNoise at `retries=0` — never burn quota) | ✅ Merged |
 | #91 | v12-status-handover | Doc sync + this handover | ✅ Merged |
-| #93 | cf-access-identity-audit-log | §5.1 reworked after operator decision (2026-06-11): **CF Access middleware and fail-closed admin key removed** — auth will be a **built-in app login** before public release. PR now ships only the `audit_log` table + writes (refreshes, backups, restores) | 🔲 Open |
+| #93 | cf-access-identity-audit-log | §5.1 reworked after operator decision (2026-06-11): **CF Access middleware and fail-closed admin key removed** — auth will be a **built-in app login** before public release. PR now ships only the `audit_log` table + writes (refreshes, backups, restores) | ✅ Merged |
 | #94 | settings-and-refresh-router | §5.2 phase 1: `settings.py` (BaseSettings), `dependencies.py` (`require_admin_key`, `audit`), `routers/refresh.py` | ✅ Merged |
 | #95 | router-split-ioc-atlas-health | §5.2 phase 2: `routers/health.py`, `routers/atlas.py`, `routers/ioc.py` moved out of `main.py` verbatim; OpenAPI route list byte-identical (snapshot test `tests/test_router_split.py`). +1 review fix: cached IOC hit now commits on-demand GreyNoise/OTX feed_cache writes (were rolled back on close — pre-existing in main.py) | ✅ Merged |
-| #96 | router-split-cves-meta-final | §5.2 phase 3 (final): `routers/cves.py` (changes/stats/list/export/detail/momentum/detection/correlation/KEV + CVE filter SQL) + `routers/meta.py` (version/time/usage/AI summaries) moved out of `main.py` verbatim; full OpenAPI JSON diffed byte-identical against pre-split main; `main.py` now app wiring only (~130 lines — V1.2 exit criterion met). +4 review fixes: stack-relevance sort no longer crashes on NULL `affected_products` (pre-existing in main.py); momentum/detection/correlation now validate the `CVE-` prefix like their siblings; `/api/stats` is one conditional-aggregation scan instead of five COUNT(*) scans (same response); `_row_to_cve_dict` normalizes NULL/'' list columns to `[]` per the API_REFERENCE contract | 🔲 Open |
-| #101 | playwright-ci-smoke | §5.7: Chromium-only Playwright smoke in `backend-tests.yml` (third job) against `scripts/seed_screenshot_data.py` — BRIEF cards, filter→feed anchor, drawer focus restore, IOC input, Incidents cards (`tests/test_playwright_smoke.py`, skipped unless `PLAYWRIGHT_SMOKE=1`) | 🔲 Open |
-| TBD | risk-weights-api | §5.3: `GET /api/config/risk` in `routers/config.py` reads weights from `scoring/risk.py`; `riskScore.js` fetches at startup and caches, hardcoded constants as fallback. Weights sum to 1.0 invariant tested. Removes drift risk (README § Known limitations). | 🔲 Open |
-| #102 | epss-backfill | §5.4: one-shot EPSS history backfill via FIRST API `scope=time-series`; `epss_backfill_done` sync_state marker; batched (100/req) + throttled (2 s/batch ≈ 30 req/min); `INSERT OR IGNORE` idempotency; new DB helpers `get_sync_state_value`, `set_sync_state_value`, `insert_epss_history_rows`; wired into `maybe_run_on_startup` as background task. | 🔲 Open |
-| #110 | embeddings-llm-product-extraction | V1.3 Theme 7 (partial): CVE description embeddings (`cve_embeddings` BLOBs, NumPy brute-force cosine default, `sqlite-vec` importable-only accelerator, `fastembed` optional install) powering semantic `GET /api/cves/{id}/related` (additive: `meta.method` + per-item `similarity`; product heuristic stays the fallback) + LLM product extraction for NVD-unanalyzed CVEs (Groq via `resilient_client` `retries=0`, writes only empty `affected_products`, provenance `affected_products_source='llm'`, official CPE supersedes, completed extractions negative-cached 7 days, errors retried next run). Both scheduler jobs env-gated, off by default (`EMBEDDINGS_ENABLED=0`, `LLM_PRODUCT_EXTRACTION_ENABLED=0`) | 🔲 Open |
-| #113 | embeddings-cache-dir-erofs-fix | Follow-up to #110 (merged before the fix landed on its branch): embeddings model download failed in prod with EROFS — fastembed/hf-xet wrote to the service user's home cache, read-only under the unit's `ProtectSystem=strict`. New `EMBEDDINGS_CACHE_DIR` env (unit sets `/var/lib/briefr/models` + `HF_HOME`, added to `ReadWritePaths` with `-` prefix); `briefr-update.sh` creates the dir | 🔲 Open |
-| #108 | forge-mvp-coverage-hunt-packs | V1.3 Forge MVP: `hunt_packs` table (idempotent migration), `routers/forge.py` (`GET /api/forge/coverage` coverage map with yours/community/gap statuses, `GET /api/hunt-packs/{technique_id}`, `POST /api/hunt-packs/generate` CVE→pack upsert), FORGE tab (coverage map grouped by tactic + hunt pack panel with Sigma/SIEM copy + generate). All local/deterministic — no outbound HTTP, no new env vars. Community-rule GitHub search stays on `/api/cves/{id}/detection` | 🔲 Open |
-| #104 | rate-limit-structured-logging | §5.5: in-memory token bucket (`rate_limit.py`) on `POST /api/ioc/lookup` (30/min) + all `POST /api/refresh*` (10/min shared, consumed before admin-key check), per client IP, 429 + `Retry-After`; JSON structured logging (`structured_logging.py`) with `request_id` contextvar, `X-Request-ID` response header, `briefr.access` per-request line, uvicorn loggers unified; env: `RATE_LIMIT_ENABLED/IOC_PER_MINUTE/REFRESH_PER_MINUTE`, `LOG_FORMAT`. +3 review fixes: forwarded headers trusted only from loopback proxy peers (`CF-Connecting-IP` → rightmost non-loopback XFF hop → `X-Real-IP`; direct connections keyed by socket — spoofed XFF can no longer mint buckets); hard cap with LRU eviction on bucket storage (key-flood OOM); unhandled exceptions logged with `request_id` before contextvar reset | 🔲 Open |
+| #96 | router-split-cves-meta-final | §5.2 phase 3 (final): `routers/cves.py` (changes/stats/list/export/detail/momentum/detection/correlation/KEV + CVE filter SQL) + `routers/meta.py` (version/time/usage/AI summaries) moved out of `main.py` verbatim; full OpenAPI JSON diffed byte-identical against pre-split main; `main.py` now app wiring only (~130 lines — V1.2 exit criterion met). +4 review fixes: stack-relevance sort no longer crashes on NULL `affected_products` (pre-existing in main.py); momentum/detection/correlation now validate the `CVE-` prefix like their siblings; `/api/stats` is one conditional-aggregation scan instead of five COUNT(*) scans (same response); `_row_to_cve_dict` normalizes NULL/'' list columns to `[]` per the API_REFERENCE contract | ✅ Merged |
+| #97 | risk-weights-api | §5.3: `GET /api/config/risk` in `routers/config.py` reads weights from `scoring/risk.py`; `riskScore.js` fetches at startup and caches, hardcoded constants as fallback. Weights sum to 1.0 invariant tested. | ✅ Merged |
+| #100 | add-pytest-to-requirements | `pytest` in `requirements.txt` so deploy venv has it | ✅ Merged |
+| #101 | playwright-ci-smoke | §5.7: Chromium-only Playwright smoke in `backend-tests.yml` (third job) against `scripts/seed_screenshot_data.py` — BRIEF cards, filter→feed anchor, drawer focus restore, IOC input, Incidents cards (`tests/test_playwright_smoke.py`, skipped unless `PLAYWRIGHT_SMOKE=1`) | ✅ Merged |
+| #102 | epss-backfill | §5.4: one-shot EPSS history backfill via FIRST API `scope=time-series`; `epss_backfill_done` sync_state marker; batched (100/req) + throttled (2 s/batch ≈ 30 req/min); `INSERT OR IGNORE` idempotency; new DB helpers `get_sync_state_value`, `set_sync_state_value`, `insert_epss_history_rows`; wired into `maybe_run_on_startup` as background task. | ✅ Merged |
+| #103 | backup-age-encryption | §5.6: age-encrypted backups (`pyrage`), key at `/var/lib/briefr/keys/backup-age.key` | ✅ Merged |
+| #104 | rate-limit-structured-logging | §5.5: in-memory token bucket (`rate_limit.py`) on `POST /api/ioc/lookup` (30/min) + all `POST /api/refresh*` (10/min shared, consumed before admin-key check), per client IP, 429 + `Retry-After`; JSON structured logging (`structured_logging.py`) with `request_id` contextvar, `X-Request-ID` response header, `briefr.access` per-request line, uvicorn loggers unified; env: `RATE_LIMIT_ENABLED/IOC_PER_MINUTE/REFRESH_PER_MINUTE`, `LOG_FORMAT`. +3 review fixes: forwarded headers trusted only from loopback proxy peers (`CF-Connecting-IP` → rightmost non-loopback XFF hop → `X-Real-IP`; direct connections keyed by socket — spoofed XFF can no longer mint buckets); hard cap with LRU eviction on bucket storage (key-flood OOM); unhandled exceptions logged with `request_id` before contextvar reset | ✅ Merged |
 | #106 | change-intel-kev-countdown | V1.3 tranche 2: What changed panel (`GET /api/changes`, field + 24h/48h/7d filters, row → drawer); KEV **Due in N days** chip on cards (`kev_due_date` additive on list/export/detail); sidebar deadlines `sort=urgent` | ✅ Merged |
-| #111 | epss-change-noise-fix | Follow-up: EPSS change history uses 0.1% display precision (stops `0.0% → 0.0%` noise); frontend hides legacy identical rows | 🔲 Open |
-| TBD | filter-rejected-cves | Skip NVD `vulnStatus: Rejected` + cvelistV5 `state: REJECTED` on ingest; `purge_legacy_rejected_cves` + `delete_cves_by_ids` each scheduler sync | 🔲 Open |
-| TBD | webhook-alerts-c999 | V1.3 Theme 8: Telegram + Discord webhook sender (`webhooks/sender.py`, resilient_client retries=2); KEV-on-stack after KEV sync (`BRIEFR_STACK_TERMS`, `webhook_alert_log` dedupe); backup dead-man scheduler check (2× `BACKUP_INTERVAL_HOURS`) | 🔲 Open |
+| #107 | vulnrichment-cvelistv5-feeds | Vulnrichment snapshot + cvelistV5 incremental sync | ✅ Merged |
+| #108 | forge-mvp-coverage-hunt-packs | V1.3 Forge MVP: `hunt_packs` table (idempotent migration), `routers/forge.py` (`GET /api/forge/coverage` coverage map with yours/community/gap statuses, `GET /api/hunt-packs/{technique_id}`, `POST /api/hunt-packs/generate` CVE→pack upsert), FORGE tab (coverage map grouped by tactic + hunt pack panel with Sigma/SIEM copy + generate). All local/deterministic — no outbound HTTP, no new env vars. Community-rule GitHub search stays on `/api/cves/{id}/detection` | ✅ Merged |
+| #109 | exploit-sources-batch2 | PoC-in-GitHub, ExploitDB, Metasploit, Nuclei exploit sources | ✅ Merged |
+| #110 | embeddings-llm-product-extraction | V1.3 Theme 7 (partial): CVE description embeddings (`cve_embeddings` BLOBs, NumPy brute-force cosine default, `sqlite-vec` importable-only accelerator, `fastembed` optional install) powering semantic `GET /api/cves/{id}/related` (additive: `meta.method` + per-item `similarity`; product heuristic stays the fallback) + LLM product extraction for NVD-unanalyzed CVEs (Groq via `resilient_client` `retries=0`, writes only empty `affected_products`, provenance `affected_products_source='llm'`, official CPE supersedes, completed extractions negative-cached 7 days, errors retried next run). Both scheduler jobs env-gated, off by default (`EMBEDDINGS_ENABLED=0`, `LLM_PRODUCT_EXTRACTION_ENABLED=0`) | ✅ Merged |
+| #111 | epss-change-noise-fix | Follow-up: EPSS change history uses 0.1% display precision (stops `0.0% → 0.0%` noise); frontend hides legacy identical rows | ✅ Merged |
+| #112 | filter-rejected-cves | Skip NVD `vulnStatus: Rejected` + cvelistV5 `state: REJECTED` on ingest; `purge_legacy_rejected_cves` + `delete_cves_by_ids` each scheduler sync | ✅ Merged |
+| #113 | embeddings-cache-dir-erofs-fix | Follow-up to #110: embeddings model download failed in prod with EROFS — `EMBEDDINGS_CACHE_DIR` env (unit sets `/var/lib/briefr/models` + `HF_HOME`) | ✅ Merged |
+| #114 | setup-dev-environment | AGENTS.md cloud-agent bootstrap + seed script path clarity | ✅ Merged |
+| #115 | webhook-alerts-c999 | V1.3 Theme 8: Telegram + Discord webhook sender (`webhooks/sender.py`, resilient_client retries=2); KEV-on-stack after KEV sync (`BRIEFR_STACK_TERMS`, `webhook_alert_log` dedupe); backup dead-man scheduler check (2× `BACKUP_INTERVAL_HOURS`) | ✅ Merged |
+| #121–#131 | dependabot + deploy fixes | Backend: FastAPI 0.137.2, uvicorn 0.49.0, numpy 2.4.6, PyYAML 6.0.3, pytest 9.1.0. Frontend: React 19.2.7, Vite 8, lockfile sync. Deploy: `briefr-update.sh` cleanup, git-drift fix, FastAPI 0.137 router-split test fix | ✅ Merged |
+| #132 | groq-llama-8b-instant | Pin Groq model to `llama-3.1-8b-instant`; playwright-smoke incident-feed flake fix | ✅ Merged |
+| #117 | morning-brief-explainable-risk | V1.3 Phase 2: `GET /api/brief` (`backend/brief/service.py`, read-path only) — EPSS movers, new KEV, KEV due soon, stack activity + ranked `action_queue`; BRIEF tab landing (`MorningBrief.jsx`), full feed demoted to FEED tab; drawer explainable risk math (`score × weight × 100`, momentum signals, weights from `/api/config/risk`) | 🔲 Open — **merge first** |
+| #116 | chartjs-brief-dashboard | V1.3 Theme 2: Chart.js analyst brief dashboard (lazy-loaded, bundled — no CDN) | 🔲 Open |
+| #119 | brief-heatmap-layout | Side-by-side BRIEF heatmap + What changed panel layout | 🔲 Open |
+| #118 | watchlist-pin-snooze | V1.3 Theme 1: CVE watchlist pin/snooze (`watchlist` table, `GET/POST/DELETE /api/watchlist`) | 🔲 Open |
 
 Each merged PR's description contains its own **post-merge verification
 checklist** — that is the house style; keep it (see §7).
+
+### Open PR merge order (2026-06-18)
+
+Rebased onto current `main` (includes merged #132 playwright-smoke fix + Groq model pin). **Merge one at a time**.
+
+| Order | PR | Branch | Notes |
+|-------|-----|--------|-------|
+| 1 | #117 | `cursor/morning-brief-explainable-risk-df48` | Foundation: `GET /api/brief`, BRIEF landing tab |
+| 2 | #116 | `cursor/chartjs-brief-dashboard-9662` | Rebased on #117; Chart.js in BriefView |
+| 3 | #119 | `cursor/brief-heatmap-layout-adcb` | Rebased on #116; heatmap + What changed side-by-side |
+| 4 | #118 | `cursor/watchlist-pin-snooze-8656` | Rebased on #119; pin/snooze API + feed controls |
+
+Gemini Code Assist review fixes are already incorporated on #116–#118 (date SQL, chart guards, watchlist key normalization).
 
 ---
 
@@ -85,7 +109,9 @@ its code never reached `main`. #89 fixes this by cherry-pick.
 
 ---
 
-## 5. Remaining V1.2 work (do these before V1.3)
+## 5. V1.2 work — ✅ complete (2026-06-18)
+
+All V1.2 exit criteria met on `main` (PRs #89–#104, #101, #103). Section retained for reference.
 
 Ordered; each is one PR unless noted. File pointers are current as of this doc.
 
@@ -299,7 +325,7 @@ spare port with `DB_PATH=/tmp/test.db`.
 
 ## 9. Open questions for the operator (ask before assuming)
 
-1. Morning brief as landing view? (§6)
+1. ~~Morning brief as landing view?~~ — **Yes** (operator confirmed 2026-06-12); BRIEF tab is the landing view, FEED tab holds the full paginated list.
 2. Webhook channel preference: Telegram or Discord first?
 3. ~~CF Access secrets for 5.1~~ — moot: CF identity dropped (2026-06-11);
    auth = built-in app login before public release.

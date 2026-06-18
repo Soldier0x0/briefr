@@ -23,6 +23,7 @@ _REQUEST_ID_RE = re.compile(r"[A-Za-z0-9._-]{1,64}")
 from database import init_db
 from resilient_client import close_client
 from routers import atlas as atlas_router
+from routers import brief as brief_router
 from routers import config as config_router
 from routers import cves as cves_router
 from routers import forge as forge_router
@@ -178,6 +179,7 @@ app.include_router(cves_router.intel_router)
 app.include_router(meta_router.router)
 app.include_router(config_router.router)
 app.include_router(forge_router.router)
+app.include_router(brief_router.router)
 
 
 if __name__ == "__main__":

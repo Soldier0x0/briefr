@@ -207,7 +207,9 @@ Known keys: `nvd_last_mod_end` (NVD incremental watermark), `epss_backfill_done`
 | new_value | TEXT | NOT NULL DEFAULT '' | |
 | detected_at | TEXT | DEFAULT datetime('now') | |
 
-**Frontend:** `WhatChangedPanel.jsx` on the BRIEF tab (`GET /api/changes`).
+**Frontend:** `WhatChangedPanel.jsx` on the BRIEF tab (`GET /api/changes`). `MorningBrief.jsx` reads `GET /api/brief` (EPSS movers section).
+
+**Runtime:** `backend/brief/service.py` — read-path aggregation only; no scheduler job or schema change.
 
 ### otx_cve_pulses
 
