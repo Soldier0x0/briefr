@@ -1,9 +1,15 @@
+.feed-controls {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
 .filter-toolbar {
   position: sticky;
   top: 52px;
   z-index: 10;
   background: var(--bg);
-  border-bottom: 1px solid var(--border);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--bg) 55%, transparent);
 }
 
 .filter-bar {
@@ -111,6 +117,8 @@
 .filter-bar-filters {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  width: 100%;
   padding-top: 4px;
 }
 
@@ -186,7 +194,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 2px;
-  flex: 1 1 auto;
+  justify-content: flex-end;
+  flex: 0 1 auto;
   min-width: 0;
 }
 
@@ -288,24 +297,25 @@
 }
 
 .vendor-filter-block {
-  border-bottom: 1px solid var(--border);
   background: var(--bg3);
-  padding: 14px 20px 18px;
-  margin-bottom: 12px;
+  padding: 16px 20px 18px;
+  border-top: 1px solid var(--border);
 }
 
 .vendor-filter-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   gap: 8px;
+  min-height: 18px;
 }
 
 .vendor-filter-label {
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  color: var(--text2);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  font-weight: 500;
 }
 
 .vendor-clear-btn {

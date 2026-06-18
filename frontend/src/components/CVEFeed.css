@@ -3,11 +3,20 @@
   min-height: 80vh;
   min-width: 0;
   max-width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-@media (max-width: 1024px) {
-  .cve-feed {
-    border-right: none;
+.cve-list-anchor {
+  height: 0;
+  width: 100%;
+  flex-shrink: 0;
+  scroll-margin-top: 240px;
+}
+
+@media (max-width: 640px) {
+  .cve-list-anchor {
+    scroll-margin-top: 180px;
   }
 }
 
@@ -15,6 +24,15 @@
   display: flex;
   flex-direction: column;
   transition: opacity 0.15s ease;
+  position: relative;
+  z-index: 0;
+  flex: 1;
+}
+
+@media (max-width: 1024px) {
+  .cve-feed {
+    border-right: none;
+  }
 }
 
 /* Stale-while-revalidate: previous results stay visible, dimmed, while the

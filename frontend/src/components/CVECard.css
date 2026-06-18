@@ -9,6 +9,8 @@
   width: 100%;
   text-align: left;
   position: relative;
+  isolation: isolate;
+  scroll-margin-top: 240px;
 }
 
 .cve-card:hover {
@@ -483,6 +485,7 @@
 @media (max-width: 640px) {
   .cve-card {
     padding: 16px 60px 16px 30px;
+    scroll-margin-top: 180px;
   }
 
   .card-checkbox-wrap {
