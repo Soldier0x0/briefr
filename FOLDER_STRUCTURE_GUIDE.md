@@ -243,14 +243,11 @@ Every file in the repository with a one-line purpose. Tags:
 | `deploy/briefr-backend.service` | systemd unit for uvicorn |
 | `deploy/briefr-frontend.service` | systemd unit for Vite preview/static |
 | `deploy/briefr.target` | systemd target grouping both services |
+| `deploy/lib.sh` | Shared deploy helpers (sourced by setup/update scripts) |
 | `deploy/setup.sh` | Initial server setup script |
-| `deploy/setup-nginx-production.sh` | nginx + TLS setup |
-| `deploy/briefr-update.sh` | Pull and restart services |
+| `deploy/briefr-update.sh` | Pull, build frontend, restart services |
 | `deploy/check-backend.sh` | Health check script |
 | `deploy/smoke-intel.sh` | Smoke test intel endpoints |
-| `deploy/refresh-*.sh` | Manual MITRE/EPSS/ATLAS refresh helpers |
-| `deploy/backfill-poc.sh` | Runs `backfill_poc.py` |
-| `deploy/fix-permissions.sh` | File permission fix for deploy user |
 | `.github/workflows/backend-tests.yml` | CI: pytest on push |
 
 ---

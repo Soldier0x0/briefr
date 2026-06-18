@@ -34,9 +34,8 @@ def _reexec_with_venv_python() -> None:
             os.execv(str(py), [str(py), *sys.argv])
 
     print(
-        "Could not import aiosqlite. Run with the app venv, for example:\n"
-        "  /opt/briefr/venv/bin/python3 /opt/briefr/backend/scripts/backfill_poc.py\n"
-        "Or: /opt/briefr/deploy/backfill-poc.sh",
+        "Could not import aiosqlite. Run with the app venv:\n"
+        "  /opt/briefr/venv/bin/python3 /opt/briefr/backend/scripts/backfill_poc.py",
         file=sys.stderr,
     )
     sys.exit(1)

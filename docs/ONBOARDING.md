@@ -216,15 +216,14 @@ BRIEFR targets a single Debian server with **systemd + nginx**. Install path: `/
 
 | Script | Purpose |
 |--------|---------|
-| [`deploy/setup.sh`](../deploy/setup.sh) | Initial install: Python, clone repo, venv, systemd units, nginx |
+| [`deploy/setup.sh`](../deploy/setup.sh) | Initial install: Python, clone repo, venv, then production deploy |
 | [`deploy/briefr-update.sh`](../deploy/briefr-update.sh) | Pull, build frontend, restart backend + nginx |
-| [`deploy/setup-nginx-production.sh`](../deploy/setup-nginx-production.sh) | TLS + reverse proxy for API and static `dist/` |
 | [`deploy/briefr-backup.sh`](../deploy/briefr-backup.sh) | Manual or scheduled integrity-checked backup |
 | [`deploy/briefr-restore.sh`](../deploy/briefr-restore.sh) | List or restore archives |
 | [`deploy/check-backend.sh`](../deploy/check-backend.sh) | Health probe for monitoring |
 | [`deploy/smoke-intel.sh`](../deploy/smoke-intel.sh) | Post-deploy smoke checks |
 
-**systemd units:** `briefr-backend.service`, `briefr-frontend.service` (production static), `briefr-backup.timer` (every 6h).
+**systemd units:** `briefr-backend.service`, `briefr-backup.timer` (every 6h). Scheduled ingest (NVD, KEV, EPSS, MITRE+ATLAS, exploit sources, backup dead-man) runs inside the backend — no separate refresh scripts needed.
 
 **Production notes:**
 - Set `ALLOWED_ORIGINS` to your public URL (not `:5173`).

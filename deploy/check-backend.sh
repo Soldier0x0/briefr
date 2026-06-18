@@ -11,8 +11,8 @@ journalctl -u briefr-backend -n 40 --no-pager || true
 echo ""
 echo "=== import test as ${APP_USER} ==="
 cd "${INSTALL_DIR}/backend"
-sudo -u "${APP_USER}" "${INSTALL_DIR}/venv/bin/python" -c "import main; print('OK: main imported')" || {
-  echo "FAILED — run: chown -R ${APP_USER}:${APP_USER} ${INSTALL_DIR}"
+runuser -u "${APP_USER}" -- "${INSTALL_DIR}/venv/bin/python" -c "import main; print('OK: main imported')" || {
+  echo "FAILED — run: bash ${INSTALL_DIR}/deploy/briefr-update.sh"
   exit 1
 }
 
