@@ -31,7 +31,15 @@ dependencies, and ensures `backend/.env` exists (copied from `backend/.env.examp
 - **No API keys are required to run the app.** `backend/.env` is seeded from `.env.example` with
   placeholder keys; the CVE feed, detail drawer, search, and Incidents/News (RSS) work without real
   keys. IOC lookups (VirusTotal/AbuseIPDB/GreyNoise) and AI PDF summaries stay empty until real keys
-  are added to `backend/.env`.
+  are added.
+- **API keys: env vars win over `backend/.env`.** Keys are read from the process environment first
+  (Cursor injected Secrets — e.g. `NVD_API_KEY`, `VIRUSTOTAL_API_KEY`, `ABUSEIPDB_API_KEY`,
+  `GITHUB_TOKEN`); `main.py` calls `load_dotenv()` without `override`, so real env vars take
+  precedence over the `.env` placeholders. If you add/change secrets mid-session, **restart the
+  backend process** so it inherits them (a long-lived process — or a stale `tmux` server started
+  before the secrets existed — will not pick them up).
+- `NVD` (`services.nvd.nist.gov`) frequently returns transient `503`s independent of your key; the
+  resilient client has a per-source circuit breaker, so retry later rather than assuming a bad key.
 - **Empty feed on first boot:** if the `cves` table has fewer than 10 rows, the backend kicks off a
   full NVD→KEV→EPSS ingest on startup (needs network and is slow). To get realistic data instantly,
   run the seed script with an activated backend venv — `python ../scripts/seed_screenshot_data.py`
