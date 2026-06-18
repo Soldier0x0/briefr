@@ -73,7 +73,8 @@ Read in this order before writing any code:
 | #116 | chartjs-brief-dashboard | V1.3 Theme 2: Chart.js analyst brief dashboard (lazy-loaded, bundled — no CDN) | 🔲 Open |
 | #119 | brief-heatmap-layout | Side-by-side BRIEF heatmap + What changed panel layout | 🔲 Open |
 | #118 | watchlist-pin-snooze | V1.3 Theme 1: CVE watchlist pin/snooze (`watchlist` table, `GET/POST/DELETE /api/watchlist`) | 🔲 Open |
-| #134 | brief-charts-ux-polish | V1.3 Theme 2 follow-up: urgency hierarchy (KEV accent bars, dim metadata), heatmap day labels, Chart.js theme tokens, remove 30d line chart, clickable KEV histogram (`onBucketClick`), EPSS movers table + sparklines, `CveDescriptionClamp` | 🔲 Open |
+| #134 | brief-charts-ux-polish | V1.3 Theme 2 follow-up: urgency hierarchy, heatmap labels, Chart.js restyle, EPSS table, KEV bucket clicks | ✅ Merged |
+| #TBD | morning-brief-unified-queue | V1.3 Theme 1 follow-up: BRIEF-only Hero/StatsRow/heatmap; FEED compact FilterBar stack; unified action_queue list + filters; histogram → due-window | 🔲 Open |
 
 Each merged PR's description contains its own **post-merge verification
 checklist** — that is the house style; keep it (see §7).

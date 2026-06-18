@@ -15,9 +15,9 @@ BRIEFR is a self-hosted CVE intelligence dashboard for security analysts, small 
 
 ## Screenshots
 
-### BRIEF — CVE feed, heatmap, KEV sidebar
+### BRIEF — morning brief, charts, heatmap
 
-![BRIEF tab — CVE intelligence feed](screenshots/brief.png)
+![BRIEF tab — morning brief action queue](screenshots/brief.png)
 
 ### IOC LOOKUP — multi-source indicator enrichment
 
@@ -37,7 +37,8 @@ Three main tabs:
 
 | Tab | What it does |
 |-----|----------------|
-| **BRIEF** | Paginated CVE feed with CVSS, EPSS, KEV flags, stack filtering, timeline heatmap, detail drawer |
+| **BRIEF** | Morning brief action queue, analyst charts, 90-day heatmap, Hero + KPI stats |
+| **FEED** | Full paginated CVE list with FilterBar stack field, sidebar KEV deadlines |
 | **IOC LOOKUP** | IP / hash / domain enrichment via VirusTotal, AbuseIPDB, GreyNoise, OTX, MalwareBazaar, URLhaus |
 | **INCIDENTS & NEWS** | Security RSS feeds (6 sources) plus MITRE ATLAS incident narratives |
 

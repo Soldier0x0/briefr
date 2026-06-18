@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { fetchCVEsForExport } from '../api.js'
-import { toApiCveParams } from '../utils/cveFilters.js'
+import { STACK_STORAGE_KEY, toApiCveParams } from '../utils/cveFilters.js'
 import { cvesToCsvRows, downloadCsv, exportFilename } from '../utils/exportCsv.js'
 import './FilterBar.css'
+
+const STACK_DEBOUNCE_MS = 400
 
 const QUICK_FILTERS = [
   { id: 'all',      label: 'ALL' },
@@ -62,15 +64,21 @@ export default function FilterBar({
   searchFocusTrigger,
 }) {
   const [localSearch, setLocalSearch] = useState(filters.search || '')
+  const [localStack, setLocalStack] = useState(() => filters.stack || '')
   const [exporting, setExporting] = useState(null)
   const [exportError, setExportError] = useState(null)
   const [exportSuccess, setExportSuccess] = useState(null)
   const debounceRef  = useRef(null)
+  const stackDebounceRef = useRef(null)
   const searchRef    = useRef(null)
 
   useEffect(() => {
     setLocalSearch(filters.search || '')
   }, [filters.search])
+
+  useEffect(() => {
+    setLocalStack(filters.stack || '')
+  }, [filters.stack])
 
   useEffect(() => {
     if (searchFocusTrigger > 0 && searchRef.current) {
@@ -100,6 +108,30 @@ export default function FilterBar({
     debounceRef.current = setTimeout(() => {
       onFiltersChange({ search: val })
     }, 320)
+  }
+
+  function handleStackChange(e) {
+    const val = e.target.value
+    setLocalStack(val)
+    if (stackDebounceRef.current) clearTimeout(stackDebounceRef.current)
+    stackDebounceRef.current = setTimeout(() => {
+      const trimmed = val.trim()
+      try {
+        localStorage.setItem(STACK_STORAGE_KEY, trimmed)
+      } catch { /* ignore */ }
+      window.dispatchEvent(new CustomEvent('briefr-stack-change'))
+      onFiltersChange({ stack: trimmed })
+    }, STACK_DEBOUNCE_MS)
+  }
+
+  function handleStackClear() {
+    setLocalStack('')
+    if (stackDebounceRef.current) clearTimeout(stackDebounceRef.current)
+    try {
+      localStorage.removeItem(STACK_STORAGE_KEY)
+    } catch { /* ignore */ }
+    window.dispatchEvent(new CustomEvent('briefr-stack-change'))
+    onFiltersChange({ stack: '' })
   }
 
   function handleVendorClick(vendor) {
@@ -281,6 +313,33 @@ export default function FilterBar({
             spellCheck="false"
           />
         </div>
+      </div>
+
+      <div className="filter-stack-row" role="search" aria-label="Filter CVEs by technology stack">
+        <label htmlFor="feed-stack-input" className="filter-stack-label mono">
+          STACK //
+        </label>
+        <input
+          id="feed-stack-input"
+          type="text"
+          className="filter-stack-input"
+          value={localStack}
+          onChange={handleStackChange}
+          placeholder="nginx, python, linux kernel..."
+          aria-label="Enter stack terms to filter the CVE feed"
+          autoComplete="off"
+          spellCheck="false"
+        />
+        {localStack && (
+          <button
+            type="button"
+            className="filter-stack-clear-btn mono"
+            onClick={handleStackClear}
+            aria-label="Clear stack filter"
+          >
+            ×
+          </button>
+        )}
       </div>
 
       {exportError && (

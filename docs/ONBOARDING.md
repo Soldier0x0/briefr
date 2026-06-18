@@ -249,7 +249,9 @@ See [README.md § Backups and restore](../README.md) for restore commands.
 | Scheduled ingest | `backend/scheduler.py`, `backend/feeds/` |
 | Database schema | `backend/database.py` (`init_db`), `TECHNICAL_INVENTORY.md` §2 |
 | PDF export | `frontend/src/utils/pdfReport.js`, `backend/ai/summary.py` |
+| Morning brief | `frontend/src/components/MorningBrief.jsx` (unified `action_queue` list + filter chips) |
 | Analyst charts | `frontend/src/components/BriefCharts.jsx` (KEV histogram + EPSS movers table), `CveDescriptionClamp.jsx`, `chart.js` (lazy chunk for histogram only) |
+| FEED stack filter | `frontend/src/components/FilterBar.jsx` (`STACK //` row — replaces Hero stack on FEED tab) |
 | Backups | `backend/backup/manager.py`, `deploy/briefr-backup.sh` |
 
 ---

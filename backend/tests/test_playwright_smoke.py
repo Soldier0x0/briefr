@@ -48,7 +48,7 @@ def _wait_for_brief_cards(page) -> int:
         """,
     )
     count = page.evaluate(
-        "document.querySelectorAll('.morning-brief .cve-card, .cve-feed .cve-card').length"
+        "document.querySelectorAll('.morning-brief-row, .cve-feed .cve-card').length"
     )
     if count < 1:
         _open_full_feed(page)
@@ -143,11 +143,11 @@ def test_filter_click_anchors_to_feed(smoke_page):
 
 def test_drawer_opens_closes_with_focus_restore(smoke_page):
     _wait_for_brief_cards(smoke_page)
-    card = smoke_page.locator(".cve-card").first
-    card_label = card.get_attribute("aria-label")
-    assert card_label
+    row = smoke_page.locator(".morning-brief-row-btn, .cve-card").first
+    row_label = row.get_attribute("aria-label")
+    assert row_label
 
-    card.click()
+    row.click()
     smoke_page.wait_for_selector(".drawer-panel-open", timeout=30_000)
 
     smoke_page.get_by_role("button", name="Close drawer (Escape)").click()
@@ -156,7 +156,7 @@ def test_drawer_opens_closes_with_focus_restore(smoke_page):
     focused_label = smoke_page.evaluate(
         "() => document.activeElement?.getAttribute('aria-label') || ''"
     )
-    assert focused_label == card_label
+    assert focused_label == row_label
 
 
 def test_ioc_tab_accepts_input(smoke_page):

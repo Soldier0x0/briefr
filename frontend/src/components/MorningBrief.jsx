@@ -1,7 +1,13 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { fetchBrief } from '../api.js'
-import CVECard from './CVECard.jsx'
-import { daysUntilDue, kevDueLabel } from '../utils/kevDeadline.js'
+import CveDescriptionClamp from './CveDescriptionClamp.jsx'
+import {
+  daysUntilDue,
+  kevAccentBarClass,
+  kevDueLabel,
+  kevDueDateInWindow,
+  kevBucketFilterLabel,
+} from '../utils/kevDeadline.js'
 import './MorningBrief.css'
 
 const REASON_LABELS = {
@@ -11,75 +17,60 @@ const REASON_LABELS = {
   stack_match: 'Stack match',
 }
 
+const REASON_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'kev_due_soon', label: 'KEV due soon' },
+  { id: 'epss_mover', label: 'EPSS movers' },
+  { id: 'new_kev', label: 'New KEV' },
+  { id: 'stack_match', label: 'Stack match' },
+]
+
+const EMPTY_HINTS = {
+  all: 'No actionable CVEs in this window — check back after the next ingest.',
+  kev_due_soon: 'No KEV remediation deadlines in the next window.',
+  epss_mover: 'No material EPSS increases tracked in this window.',
+  new_kev: 'No new CISA KEV catalogue entries in this window.',
+  stack_match: 'No recent CVE activity matching your stack terms.',
+}
+
 function reasonChips(reasons = []) {
   return reasons.map(r => REASON_LABELS[r] || r)
 }
 
-function BriefSection({ id, title, count, items, onSelectCVE, timezone, emptyHint }) {
-  const [collapsed, setCollapsed] = useState(false)
-  if (!count && !items?.length) {
-    return (
-      <section className="morning-brief-section" aria-labelledby={`brief-section-${id}`}>
-        <header className="morning-brief-section-head">
-          <h3 id={`brief-section-${id}`} className="morning-brief-section-title mono">
-            {title}
-          </h3>
-          <span className="morning-brief-section-count mono">0</span>
-        </header>
-        {emptyHint && <p className="morning-brief-empty mono">{emptyHint}</p>}
-      </section>
-    )
+function inlineMetric(item) {
+  if (item.kev_due_date && (item.reasons || []).includes('kev_due_soon')) {
+    const label = kevDueLabel(daysUntilDue(item.kev_due_date))
+    if (label) return label
   }
+  if (item.kev_due_date && item.is_kev) {
+    const label = kevDueLabel(daysUntilDue(item.kev_due_date))
+    if (label) return label
+  }
+  if (item.epss_delta != null && item.epss_delta > 0) {
+    return `+${(item.epss_delta * 100).toFixed(1)}% EPSS`
+  }
+  return null
+}
 
-  return (
-    <section className="morning-brief-section" aria-labelledby={`brief-section-${id}`}>
-      <header className="morning-brief-section-head">
-        <button
-          type="button"
-          className="morning-brief-section-toggle"
-          onClick={() => setCollapsed(v => !v)}
-          aria-expanded={!collapsed}
-          aria-controls={`brief-section-body-${id}`}
-        >
-          <h3 id={`brief-section-${id}`} className="morning-brief-section-title mono">
-            {title}
-          </h3>
-          <span className="morning-brief-section-count mono">{count}</span>
-        </button>
-      </header>
-      {!collapsed && (
-        <div id={`brief-section-body-${id}`} className="morning-brief-section-body">
-          {items.map(item => (
-            <div key={item.cve_id} className="morning-brief-card-wrap">
-              <div className="morning-brief-reasons" aria-label="Brief reasons">
-                {reasonChips(item.reasons).map(label => (
-                  <span key={label} className="morning-brief-reason-chip mono">{label}</span>
-                ))}
-                {item.epss_delta != null && (
-                  <span className="morning-brief-reason-chip mono morning-brief-reason-epss">
-                    EPSS +{(item.epss_delta * 100).toFixed(1)}%
-                  </span>
-                )}
-                {item.kev_due_date && (
-                  <span className="morning-brief-reason-chip mono morning-brief-reason-due">
-                    {kevDueLabel(daysUntilDue(item.kev_due_date))}
-                  </span>
-                )}
-              </div>
-              <CVECard
-                cve={{
-                  ...item,
-                  description: item.summary || item.cve_id,
-                }}
-                onSelect={() => onSelectCVE(item)}
-                timezone={timezone}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  )
+function rowAccentClass(item) {
+  if (item.is_kev && item.kev_due_date) {
+    return kevAccentBarClass(daysUntilDue(item.kev_due_date))
+  }
+  return 'accent-neutral'
+}
+
+function filterQueue(queue, reasonFilter, dueWindow, stack) {
+  let rows = queue
+  if (reasonFilter && reasonFilter !== 'all') {
+    rows = rows.filter(item => (item.reasons || []).includes(reasonFilter))
+  }
+  if (dueWindow) {
+    rows = rows.filter(item => kevDueDateInWindow(item.kev_due_date, dueWindow))
+  }
+  if (reasonFilter === 'stack_match' && !stack?.trim()) {
+    return []
+  }
+  return rows
 }
 
 export default function MorningBrief({
@@ -87,7 +78,10 @@ export default function MorningBrief({
   sinceHours = 24,
   onSelectCVE,
   onOpenFullFeed,
-  timezone = 'UTC',
+  reasonFilter = 'all',
+  onReasonFilterChange,
+  dueWindow = null,
+  onDueWindowClear,
 }) {
   const [brief, setBrief] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -119,7 +113,17 @@ export default function MorningBrief({
   }, [stack, sinceHours])
 
   const queue = brief?.action_queue || []
-  const sections = brief?.sections || {}
+  const visibleFilters = useMemo(
+    () => REASON_FILTERS.filter(f => f.id !== 'stack_match' || stack?.trim()),
+    [stack]
+  )
+
+  const filteredQueue = useMemo(
+    () => filterQueue(queue, reasonFilter, dueWindow, stack),
+    [queue, reasonFilter, dueWindow, stack]
+  )
+
+  const emptyHint = EMPTY_HINTS[reasonFilter] || EMPTY_HINTS.all
 
   return (
     <section className="morning-brief" aria-label="Morning brief action queue">
@@ -157,73 +161,75 @@ export default function MorningBrief({
 
       {!loading && !error && brief && (
         <>
-          {queue.length > 0 && (
-            <div className="morning-brief-queue">
-              <h3 className="morning-brief-queue-title mono">Priority queue</h3>
-              <ul className="morning-brief-queue-list">
-                {queue.map(item => (
-                  <li key={item.cve_id}>
+          <div
+            className="morning-brief-filters"
+            role="toolbar"
+            aria-label="Filter action queue"
+          >
+            {visibleFilters.map(f => (
+              <button
+                key={f.id}
+                type="button"
+                className={`morning-brief-filter-chip mono${reasonFilter === f.id ? ' morning-brief-filter-chip--active' : ''}`}
+                onClick={() => onReasonFilterChange?.(f.id)}
+                aria-pressed={reasonFilter === f.id}
+              >
+                {f.label}
+              </button>
+            ))}
+            {dueWindow?.bucket && (
+              <button
+                type="button"
+                className="morning-brief-filter-chip morning-brief-filter-chip--due mono"
+                onClick={() => onDueWindowClear?.()}
+                aria-label={`Clear due-date filter ${kevBucketFilterLabel(dueWindow.bucket)}`}
+              >
+                Due {kevBucketFilterLabel(dueWindow.bucket)} ×
+              </button>
+            )}
+          </div>
+
+          {filteredQueue.length === 0 ? (
+            <p className="morning-brief-empty mono">{emptyHint}</p>
+          ) : (
+            <ul className="morning-brief-list" aria-label="Ranked action queue">
+              {filteredQueue.map(item => {
+                const metric = inlineMetric(item)
+                const description = item.summary || ''
+                return (
+                  <li key={item.cve_id} className={`morning-brief-row ${rowAccentClass(item)}`}>
                     <button
                       type="button"
-                      className="morning-brief-queue-row"
-                      onClick={() => onSelectCVE(item)}
+                      className="morning-brief-row-btn"
+                      onClick={() => onSelectCVE?.(item)}
+                      aria-label={`CVE ${item.cve_id}. Click to view details.`}
                     >
-                      <span className="morning-brief-queue-id mono">{item.cve_id}</span>
-                      <span className="morning-brief-queue-reasons">
-                        {reasonChips(item.reasons).join(' · ')}
-                      </span>
-                      {item.severity && (
-                        <span className={`morning-brief-queue-sev sev-${(item.severity || '').toLowerCase()}`}>
-                          {item.severity}
-                        </span>
+                      <div className="morning-brief-row-head">
+                        <span className="morning-brief-row-id mono">{item.cve_id}</span>
+                        <div className="morning-brief-row-chips" aria-label="Brief reasons">
+                          {reasonChips(item.reasons).map(label => (
+                            <span key={label} className="morning-brief-reason-chip mono">
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+                        {metric && (
+                          <span className="morning-brief-row-metric mono">{metric}</span>
+                        )}
+                      </div>
+                      {description && (
+                        <CveDescriptionClamp
+                          text={description}
+                          maxLines={2}
+                          className="morning-brief-row-desc"
+                        />
                       )}
                     </button>
                   </li>
-                ))}
-              </ul>
-            </div>
+                )
+              })}
+            </ul>
           )}
-
-          <div className="morning-brief-sections">
-            <BriefSection
-              id="kev-due"
-              title={sections.kev_due_soon?.title || 'KEV due soon'}
-              count={sections.kev_due_soon?.count || 0}
-              items={sections.kev_due_soon?.items || []}
-              onSelectCVE={onSelectCVE}
-              timezone={timezone}
-              emptyHint="No KEV remediation deadlines in the next window."
-            />
-            <BriefSection
-              id="new-kev"
-              title={sections.new_kev?.title || 'New KEV entries'}
-              count={sections.new_kev?.count || 0}
-              items={sections.new_kev?.items || []}
-              onSelectCVE={onSelectCVE}
-              timezone={timezone}
-              emptyHint="No new CISA KEV catalogue entries in this window."
-            />
-            <BriefSection
-              id="epss"
-              title={sections.epss_movers?.title || 'EPSS movers'}
-              count={sections.epss_movers?.count || 0}
-              items={sections.epss_movers?.items || []}
-              onSelectCVE={onSelectCVE}
-              timezone={timezone}
-              emptyHint="No material EPSS increases tracked in this window."
-            />
-            {stack?.trim() && (
-              <BriefSection
-                id="stack"
-                title={sections.stack_matches?.title || 'Stack activity'}
-                count={sections.stack_matches?.count || 0}
-                items={sections.stack_matches?.items || []}
-                onSelectCVE={onSelectCVE}
-                timezone={timezone}
-                emptyHint="No recent CVE activity matching your stack terms."
-              />
-            )}
-          </div>
         </>
       )}
     </section>

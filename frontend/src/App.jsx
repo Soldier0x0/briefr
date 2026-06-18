@@ -117,6 +117,9 @@ function BriefView({ stats, filters, setFilters,
                     timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
                     showAiAlerts, onAiAlertsClick, onOpenFullFeed, onSelectCVE }) {
 
+  const [queueReasonFilter, setQueueReasonFilter] = useState('all')
+  const [queueDueWindow, setQueueDueWindow] = useState(null)
+
   const handleBrief = useCallback((stack) => {
     setFilters(prev => ({ ...prev, stack: stack || '' }))
   }, [setFilters])
@@ -131,6 +134,22 @@ function BriefView({ stats, filters, setFilters,
       return changed ? { ...prev, ...next } : prev
     })
   }, [setFilters])
+
+  const handleReasonFilterChange = useCallback((id) => {
+    setQueueReasonFilter(id)
+    if (id !== 'kev_due_soon') {
+      setQueueDueWindow(null)
+    }
+  }, [])
+
+  const handleBucketClick = useCallback((range) => {
+    setQueueDueWindow(range)
+    setQueueReasonFilter('kev_due_soon')
+  }, [])
+
+  const handleDueWindowClear = useCallback(() => {
+    setQueueDueWindow(null)
+  }, [])
 
   return (
     <>
@@ -148,7 +167,10 @@ function BriefView({ stats, filters, setFilters,
         stack={filters.stack}
         onSelectCVE={onSelectCVE}
         onOpenFullFeed={onOpenFullFeed}
-        timezone={timezone}
+        reasonFilter={queueReasonFilter}
+        onReasonFilterChange={handleReasonFilterChange}
+        dueWindow={queueDueWindow}
+        onDueWindowClear={handleDueWindowClear}
       />
       <Suspense
         fallback={
@@ -157,7 +179,7 @@ function BriefView({ stats, filters, setFilters,
           </p>
         }
       >
-        <BriefCharts onSelectCVE={onSelectCVE} />
+        <BriefCharts onSelectCVE={onSelectCVE} onBucketClick={handleBucketClick} />
       </Suspense>
       <div className="brief-intel-row">
         <TimelineHeatmap filters={filters} onFiltersChange={handleFiltersChange} />
@@ -173,20 +195,11 @@ function BriefView({ stats, filters, setFilters,
   )
 }
 
-function FeedView({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
+function FeedView({ filters, setFilters, selectedCVE, setSelectedCVE,
                    digestOpen, setDigestOpen, digestCVEs, setDigestCVEs,
                    searchFocusTrigger, setSearchFocusTrigger, aboutOpen, setAboutOpen,
                    timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
-                   onDigestRequest, showAiAlerts, onAiAlertsClick, watchlist,
-                   onWatchlistChange }) {
-
-  const handleBrief = useCallback((stack) => {
-    setFilters(prev => ({ ...prev, stack: stack || '' }))
-  }, [setFilters])
-
-  const handleClearStack = useCallback(() => {
-    setFilters(prev => ({ ...prev, stack: '' }))
-  }, [setFilters])
+                   onDigestRequest, watchlist, onWatchlistChange }) {
 
   const handleFiltersChange = useCallback((next) => {
     setFilters(prev => {
@@ -211,17 +224,6 @@ function FeedView({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
 
   return (
     <>
-      <Hero
-        activeStack={filters.stack}
-        onBrief={handleBrief}
-        onClearStack={handleClearStack}
-      />
-      <StatsRow
-        stats={stats}
-        showAiAlerts={showAiAlerts}
-        onAiAlertsClick={onAiAlertsClick}
-      />
-      <TimelineHeatmap filters={filters} onFiltersChange={handleFiltersChange} />
       <FeedRefreshStatus
         lastUpdated={lastUpdated}
         nextRefreshUtc={nextRefreshUtc}
@@ -242,7 +244,7 @@ function FeedView({ stats, filters, setFilters, selectedCVE, setSelectedCVE,
           watchlist={watchlist}
           onWatchlistChange={onWatchlistChange}
         />
-        <Sidebar filters={filters} onFiltersChange={handleFiltersChange} stats={stats} />
+        <Sidebar filters={filters} onFiltersChange={handleFiltersChange} />
       </div>
     </>
   )
@@ -586,7 +588,6 @@ function AppLayout({
           )}
           {activeTab === 'feed' && (
             <FeedView
-                  stats={stats}
                   filters={filters}
                   setFilters={setFilters}
                   selectedCVE={selectedCVE}
@@ -604,8 +605,6 @@ function AppLayout({
                   nextRefreshUtc={nextRefreshUtc}
                   refreshSchedule={refreshSchedule}
                   onDigestRequest={onDigestRequest}
-                  showAiAlerts={showAiAlerts}
-                  onAiAlertsClick={onAiAlertsClick}
                   watchlist={watchlist}
                   onWatchlistChange={onWatchlistChange}
                 />

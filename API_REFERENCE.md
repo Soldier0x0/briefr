@@ -152,7 +152,7 @@ Each CVE object may include `kev_due_date` (`YYYY-MM-DD` from `kev_deadlines.due
 
 Each item includes core card fields (`cve_id`, `severity`, `cvss_score`, `epss_score`, `is_kev`, `has_poc`, `summary`, `published`, `kev_due_date`, `reasons`) plus section-specific extras (`epss_delta`, `kev_date_added`, etc.).
 
-**Frontend:** BRIEF tab landing view (`MorningBrief.jsx`) — default tab on load; full paginated CVE list lives on the FEED tab.
+**Frontend:** BRIEF tab landing view (`MorningBrief.jsx`) — default tab on load; renders a **single unified list** from `action_queue` (reason filter chips + optional KEV due-window from histogram click; `CveDescriptionClamp` per row). Full paginated CVE list lives on the FEED tab (`FilterBar` stack field + `CVEFeed`; no Hero/StatsRow/heatmap on FEED).
 
 ---
 
