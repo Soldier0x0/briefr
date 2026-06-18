@@ -63,6 +63,7 @@ export function fetchCVEs(params = {}) {
   if (params.summary_only) qs.set('summary_only', 'true')
   if (params.ai_context_only) qs.set('ai_context_only', 'true')
   if (params.frameworks) qs.set('frameworks', params.frameworks)
+  if (params.watchlist_only) qs.set('watchlist_only', 'true')
   if (params.page)      qs.set('page', String(params.page))
   if (params.limit)     qs.set('limit', String(params.limit))
   const query = qs.toString()
@@ -122,6 +123,7 @@ export function fetchCVEsForExport(params = {}) {
   if (params.summary_only) qs.set('summary_only', 'true')
   if (params.ai_context_only) qs.set('ai_context_only', 'true')
   if (params.frameworks) qs.set('frameworks', params.frameworks)
+  if (params.watchlist_only) qs.set('watchlist_only', 'true')
   qs.set('max_rows', '500')
   const query = qs.toString()
   return request(`/cves/export${query ? `?${query}` : ''}`)
@@ -237,4 +239,25 @@ export function fetchAiSummary({
       investigation_duration: investigationDuration,
     }),
   })
+}
+
+/** CVE watchlist — pin / snooze (server-backed, single-user). */
+export function fetchWatchlist() {
+  return request('/watchlist')
+}
+
+export function setWatchlistEntry(cveId, state, snoozeDays = null) {
+  const body = { cve_id: cveId, state }
+  if (state === 'snooze' && snoozeDays != null) {
+    body.snooze_days = snoozeDays
+  }
+  return request('/watchlist', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+export function removeWatchlistEntry(cveId) {
+  return request(`/watchlist/${encodeURIComponent(cveId)}`, { method: 'DELETE' })
 }

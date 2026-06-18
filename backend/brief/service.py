@@ -173,7 +173,7 @@ async def build_morning_brief(
                 OR modified >= datetime('now', ?)
                 OR EXISTS (
                   SELECT 1 FROM cve_change_history ch
-                  WHERE ch.cve_id = cves.cve_id
+                  WHERE ch.cve_id = c.cve_id
                     AND ch.detected_at >= datetime('now', ?)
                 )
               )

@@ -34,7 +34,19 @@ function sortByExposure(cves, getMatchScore) {
   })
 }
 
-export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGenerateDigest, onDigestRequest, searchFocusTrigger, timezone, overlayOpen = false }) {
+export default function CVEFeed({
+  filters,
+  onFiltersChange,
+  onSelectCVE,
+  onGenerateDigest,
+  onDigestRequest,
+  searchFocusTrigger,
+  timezone,
+  overlayOpen = false,
+  watchlistVersion = 0,
+  watchlist,
+  onWatchlistChange,
+}) {
   const investigation = useInvestigationOptional()
   const assetCtx = useAssetProfileOptional()
   const assetAware = Boolean(assetCtx?.isLoaded)
@@ -264,7 +276,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
     }
 
     loadPage(1, false)
-  }, [filters, loadPage])
+  }, [filters, watchlistVersion, loadPage])
 
   // Arrow-key card navigation (inactive while search is focused or any
   // overlay — drawer / digest / about — is open). Keyboard nav snaps
@@ -420,6 +432,7 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
               vendors: '',
               my_stack_only: false,
               summary_only: false,
+              watchlist_only: false,
             })}
             aria-label="Clear all filters"
           >
@@ -465,6 +478,11 @@ export default function CVEFeed({ filters, onFiltersChange, onSelectCVE, onGener
                 : undefined
             }
             exposureScore={assetAware ? getMatchScore(cve.cve_id) : 0}
+            watchlistState={
+              watchlist?.getState(cve.cve_id) || cve.watchlist_state || null
+            }
+            onWatchlistPin={onWatchlistChange ? () => onWatchlistChange(cve.cve_id, 'pin') : undefined}
+            onWatchlistSnooze={onWatchlistChange ? () => onWatchlistChange(cve.cve_id, 'snooze') : undefined}
           />
         ))}
       </div>

@@ -164,6 +164,28 @@ input:focus, textarea:focus {
   overflow-x: hidden;
 }
 
+/* BRIEF tab: 90-day heatmap + What changed — side-by-side on wide viewports */
+@media (min-width: 901px) {
+  .brief-intel-row {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brief-intel-row > .timeline-heatmap {
+    flex: 0 0 212px; /* row labels 12px + gap 6px + 14 week cols × 12px + 13 gaps × 2px */
+    border-bottom: none;
+  }
+
+  .brief-intel-row > .what-changed {
+    flex: 1;
+    min-width: 0;
+    border-bottom: none;
+  }
+}
+
 .content-grid {
   display: grid;
   grid-template-columns: 1fr 280px;

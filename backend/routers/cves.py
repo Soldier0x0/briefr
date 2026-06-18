@@ -58,6 +58,7 @@ from database import (
     get_related_cves,
     get_techniques_for_cve,
     get_top_techniques,
+    get_watchlist_entry,
     match_cves_for_assets,
 )
 from detection.rule_sources import find_elastic_rules, find_sigma_rules
@@ -129,6 +130,11 @@ def _row_to_cve_dict(row) -> dict:
     d["kev_date_added"] = (kev_date or "").strip() or None
     kev_due = d.get("kev_due_date")
     d["kev_due_date"] = (kev_due or "").strip() or None
+    wl_state = d.pop("watchlist_state", None)
+    wl_snooze = d.pop("watchlist_snooze_until", None)
+    if wl_state:
+        d["watchlist_state"] = wl_state
+        d["watchlist_snooze_until"] = (wl_snooze or "").strip() or None
     return d
 
 
@@ -264,8 +270,8 @@ def _text_match_or_clause(terms: list[str]) -> tuple[str, list]:
     for term in terms:
         like = f"%{term.lower()}%"
         parts.append(
-            "(LOWER(cve_id) LIKE ? OR LOWER(description) LIKE ? "
-            "OR LOWER(summary) LIKE ? OR LOWER(affected_products) LIKE ?)"
+            "(LOWER(c.cve_id) LIKE ? OR LOWER(c.description) LIKE ? "
+            "OR LOWER(c.summary) LIKE ? OR LOWER(c.affected_products) LIKE ?)"
         )
         bind.extend([like, like, like, like])
     return "(" + " OR ".join(parts) + ")", bind
@@ -290,11 +296,11 @@ def _stack_match_clause(stack: str | None) -> tuple[str, list, list[str]]:
     for raw in raw_terms:
         terms.append(raw.lower())
         if _is_cve_id(raw):
-            parts.append("cve_id = ?")
+            parts.append("c.cve_id = ?")
             params.append(raw.strip().upper())
         else:
             term = raw.lower()
-            parts.append("(LOWER(description) LIKE ? OR LOWER(affected_products) LIKE ?)")
+            parts.append("(LOWER(c.description) LIKE ? OR LOWER(c.affected_products) LIKE ?)")
             like = f"%{term}%"
             params.extend([like, like])
 
@@ -303,24 +309,53 @@ def _stack_match_clause(stack: str | None) -> tuple[str, list, list[str]]:
 
 CVE_ORDER_BY = """
     ORDER BY
-        published DESC,
-        CASE severity
+        CASE WHEN w.state = 'pin' THEN 0 ELSE 1 END,
+        c.published DESC,
+        CASE c.severity
             WHEN 'CRITICAL' THEN 1
             WHEN 'HIGH' THEN 2
             WHEN 'MEDIUM' THEN 3
             WHEN 'LOW' THEN 4
             ELSE 5
         END,
-        CASE WHEN epss_score IS NOT NULL THEN epss_score ELSE -1 END DESC
+        CASE WHEN c.epss_score IS NOT NULL THEN c.epss_score ELSE -1 END DESC
 """
 
 CVE_SELECT = """
-    SELECT cve_id, description, cvss_score, severity, published, modified,
-           affected_products, affected_products_source, mitre_technique,
-           summary, is_kev, epss_score, has_poc, patch_available,
-           has_ai_context, source_urls, cwe_ids, updated_at,
-           (SELECT due_date FROM kev_deadlines k WHERE k.cve_id = cves.cve_id) AS kev_due_date
-    FROM cves
+    SELECT c.cve_id, c.description, c.cvss_score, c.severity, c.published, c.modified,
+           c.affected_products, c.affected_products_source, c.mitre_technique,
+           c.summary, c.is_kev, c.epss_score, c.has_poc, c.patch_available,
+           c.has_ai_context, c.source_urls, c.cwe_ids, c.updated_at,
+           (SELECT due_date FROM kev_deadlines k WHERE k.cve_id = c.cve_id) AS kev_due_date,
+           w.state AS watchlist_state,
+           w.snooze_until AS watchlist_snooze_until
+    FROM cves c
+    LEFT JOIN watchlist w ON w.cve_id = c.cve_id
+        AND (
+            w.state = 'pin'
+            OR (w.state = 'snooze'
+                AND w.snooze_until IS NOT NULL
+                AND datetime(w.snooze_until) > datetime('now'))
+        )
+"""
+
+_WATCHLIST_ACTIVE_IN = """
+    c.cve_id IN (
+        SELECT cve_id FROM watchlist
+        WHERE state = 'pin'
+           OR (state = 'snooze'
+               AND snooze_until IS NOT NULL
+               AND datetime(snooze_until) > datetime('now'))
+    )
+"""
+
+_ACTIVE_SNOOZE_EXCLUDE = """
+    c.cve_id NOT IN (
+        SELECT cve_id FROM watchlist
+        WHERE state = 'snooze'
+          AND snooze_until IS NOT NULL
+          AND datetime(snooze_until) > datetime('now')
+    )
 """
 
 
@@ -345,7 +380,7 @@ def _framework_match_clause(frameworks: str | None) -> tuple[str, list]:
     params: list = []
     for token in tokens:
         parts.append(
-            "(LOWER(description) LIKE ? OR LOWER(affected_products) LIKE ? OR LOWER(summary) LIKE ?)"
+            "(LOWER(c.description) LIKE ? OR LOWER(c.affected_products) LIKE ? OR LOWER(c.summary) LIKE ?)"
         )
         like = f"%{token}%"
         params.extend([like, like, like])
@@ -365,6 +400,8 @@ def _build_cve_filters(
     summary_only: bool = False,
     ai_context_only: bool = False,
     frameworks: str | None = None,
+    watchlist_only: bool = False,
+    hide_snoozed: bool = True,
 ) -> tuple[list[str], list, list[str]]:
     conditions: list[str] = []
     params: list = []
@@ -373,26 +410,26 @@ def _build_cve_filters(
         severity_upper = severity.upper()
         if severity_upper not in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
             raise HTTPException(status_code=400, detail="Invalid severity value")
-        conditions.append("severity = ?")
+        conditions.append("c.severity = ?")
         params.append(severity_upper)
 
     if kev_only:
-        conditions.append("is_kev = 1")
+        conditions.append("c.is_kev = 1")
 
     if poc_only:
-        conditions.append("has_poc = 1")
+        conditions.append("c.has_poc = 1")
 
     if epss_min is not None:
-        conditions.append("epss_score IS NOT NULL AND epss_score >= ?")
+        conditions.append("c.epss_score IS NOT NULL AND c.epss_score >= ?")
         params.append(epss_min)
 
     if search:
         search_stripped = search.strip()
         if _is_cve_id(search_stripped):
-            conditions.append("cve_id = ?")
+            conditions.append("c.cve_id = ?")
             params.append(search_stripped.upper())
         else:
-            conditions.append("(cve_id LIKE ? OR description LIKE ? OR summary LIKE ?)")
+            conditions.append("(c.cve_id LIKE ? OR c.description LIKE ? OR c.summary LIKE ?)")
             search_term = f"%{search_stripped}%"
             params.extend([search_term, search_term, search_term])
 
@@ -413,28 +450,33 @@ def _build_cve_filters(
         if not tid.startswith("T"):
             raise HTTPException(status_code=400, detail="Invalid ATT&CK technique ID")
         conditions.append(
-            "cve_id IN (SELECT cve_id FROM cve_technique_map WHERE technique_id = ?)"
+            "c.cve_id IN (SELECT cve_id FROM cve_technique_map WHERE technique_id = ?)"
         )
         params.append(tid)
 
     if published_on:
         day = _validate_published_on(published_on.strip())
-        conditions.append("DATE(published) = ?")
+        conditions.append("DATE(c.published) = ?")
         params.append(day)
 
     if summary_only:
         # Enriched plain-English only (CISA KEV short text, OSV, etc.) — not NVD auto-truncate
         conditions.append(
-            "summary IS NOT NULL AND TRIM(summary) != ''"
+            "c.summary IS NOT NULL AND TRIM(c.summary) != ''"
         )
 
     if ai_context_only or _parse_framework_list(frameworks):
-        conditions.append("has_ai_context = 1")
+        conditions.append("c.has_ai_context = 1")
 
     fw_clause, fw_params = _framework_match_clause(frameworks)
     if fw_clause:
         conditions.append(fw_clause)
         params.extend(fw_params)
+
+    if watchlist_only:
+        conditions.append(_WATCHLIST_ACTIVE_IN)
+    elif hide_snoozed:
+        conditions.append(_ACTIVE_SNOOZE_EXCLUDE)
 
     return conditions, params, stack_products
 
@@ -477,6 +519,7 @@ async def list_cves(
     summary_only: bool = Query(default=False),
     ai_context_only: bool = Query(default=False),
     frameworks: str | None = Query(default=None, max_length=500),
+    watchlist_only: bool = Query(default=False),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=50),
 ):
@@ -493,6 +536,8 @@ async def list_cves(
         summary_only,
         ai_context_only,
         frameworks,
+        watchlist_only=watchlist_only,
+        hide_snoozed=not watchlist_only,
     )
 
     where_clause = ""
@@ -504,7 +549,7 @@ async def list_cves(
     db = await get_db()
     try:
         count_rows = await db.execute_fetchall(
-            f"SELECT COUNT(*) as cnt FROM cves {where_clause}",
+            f"SELECT COUNT(*) as cnt FROM cves c {where_clause}",
             params,
         )
         total = count_rows[0]["cnt"] if count_rows else 0
@@ -557,6 +602,7 @@ async def export_cves(
     summary_only: bool = Query(default=False),
     ai_context_only: bool = Query(default=False),
     frameworks: str | None = Query(default=None, max_length=500),
+    watchlist_only: bool = Query(default=False),
     max_rows: int = Query(default=500, ge=1, le=500),
 ):
     """Return up to 500 CVE rows matching filters (for CSV export)."""
@@ -573,6 +619,8 @@ async def export_cves(
         summary_only,
         ai_context_only,
         frameworks,
+        watchlist_only=watchlist_only,
+        hide_snoozed=not watchlist_only,
     )
 
     where_clause = ""
@@ -771,6 +819,10 @@ async def get_cve(cve_id: str):
             raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
 
         cve = _row_to_cve_dict(rows[0])
+        wl = await get_watchlist_entry(db, cve_key)
+        if wl:
+            cve["watchlist_state"] = wl["state"]
+            cve["watchlist_snooze_until"] = (wl.get("snooze_until") or "").strip() or None
         kev_rows = await db.execute_fetchall(
             """
             SELECT date_added, due_date, vendor_project, vulnerability_name,

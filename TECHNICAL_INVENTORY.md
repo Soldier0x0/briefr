@@ -208,7 +208,7 @@ Known keys: `nvd_last_mod_end` (NVD incremental watermark), `epss_backfill_done`
 | new_value | TEXT | NOT NULL DEFAULT '' | |
 | detected_at | TEXT | DEFAULT datetime('now') | |
 
-**Frontend:** `WhatChangedPanel.jsx` on the BRIEF tab (`GET /api/changes`). `MorningBrief.jsx` reads `GET /api/brief` (EPSS movers section).
+**Frontend:** `WhatChangedPanel.jsx` on the BRIEF tab (`GET /api/changes`). `MorningBrief.jsx` reads `GET /api/brief` (EPSS movers section). Layout: side-by-side with `TimelineHeatmap` at ≥901px viewport width (`brief-intel-row` wrapper in `App.jsx`); stacked below 900px.
 
 **Runtime:** `backend/brief/service.py` — read-path aggregation only; no scheduler job or schema change.
 
@@ -333,6 +333,17 @@ Indexes: `idx_hunt_packs_technique(technique_id)`, `idx_hunt_packs_cve(cve_id)`.
 | created_at | TEXT | DEFAULT datetime('now') | |
 
 Indexes: `idx_audit_log_created(created_at)`, `idx_audit_log_action(action)`. Written by manual refresh endpoints (`routers/refresh.py` via `dependencies.py:audit`) and `backup/manager.py` (sync, best-effort). Admin UI reads it in V1.4.
+
+### watchlist
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| cve_id | TEXT | PRIMARY KEY | CVE identifier (one row per CVE) |
+| state | TEXT | NOT NULL CHECK IN ('pin','snooze') | Analyst intent |
+| snooze_until | TEXT | nullable | UTC `YYYY-MM-DD HH:MM:SS`; set when `state='snooze'` |
+| created_at | TEXT | DEFAULT datetime('now') | Last pin/snooze action |
+
+Indexes: `idx_watchlist_state(state)`, `idx_watchlist_snooze_until(snooze_until)`. Written by `POST /api/watchlist`; removed by `DELETE /api/watchlist/{cve_id}`. Read by watchlist API, `GET /api/cves` (join for sort/filter), and `GET /api/cves/{id}` (detail enrichment). Single-user now — nullable `user_id` deferred to app login / V2.0.
 
 ---
 

@@ -6,6 +6,7 @@ import './FilterBar.css'
 
 const QUICK_FILTERS = [
   { id: 'all',      label: 'ALL' },
+  { id: 'watchlist', label: 'WATCHLIST' },
   { id: 'kev',      label: 'KEV' },
   { id: 'critical', label: 'CRITICAL' },
   { id: 'high',     label: 'HIGH' },
@@ -19,6 +20,9 @@ export const VENDORS = [
 ]
 
 function deriveActive(filters) {
+  if (filters.watchlist_only && !filters.kev_only && !filters.poc_only && !filters.severity) {
+    return 'watchlist'
+  }
   if (filters.kev_only && !filters.poc_only && !filters.severity) return 'kev'
   if (filters.severity === 'CRITICAL' && !filters.kev_only && !filters.poc_only) return 'critical'
   if (filters.severity === 'HIGH'     && !filters.kev_only && !filters.poc_only) return 'high'
@@ -44,7 +48,8 @@ export function hasActiveFilters(filters) {
     filters.severity ||
     filters.published_on ||
     filters.my_stack_only ||
-    filters.ai_profile_match
+    filters.ai_profile_match ||
+    filters.watchlist_only
   )
 }
 
@@ -78,8 +83,9 @@ export default function FilterBar({
   const selectedVendors = parseVendors(filters.vendors)
 
   function handleQuickFilter(id) {
-    const base = { severity: null, kev_only: false, poc_only: false }
-    if (id === 'kev')           onFiltersChange({ ...base, kev_only: true })
+    const base = { severity: null, kev_only: false, poc_only: false, watchlist_only: false }
+    if (id === 'watchlist')     onFiltersChange({ ...base, watchlist_only: true })
+    else if (id === 'kev')           onFiltersChange({ ...base, kev_only: true })
     else if (id === 'critical') onFiltersChange({ ...base, severity: 'CRITICAL' })
     else if (id === 'high')     onFiltersChange({ ...base, severity: 'HIGH' })
     else if (id === 'medium')   onFiltersChange({ ...base, severity: 'MEDIUM' })

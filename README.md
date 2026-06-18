@@ -50,7 +50,7 @@ Three main tabs:
 - CVE detail enrichment: Sploitus exploits, GreyNoise scans, OTX pulses, OSV packages, CIRCL references
 - MITRE ATT&CK technique mapping and top-technique sidebar
 - MITRE ATLAS AI/ML threat context (weekly refresh; per-CVE drawer + Incidents tab)
-- 90-day publication timeline heatmap
+- 90-day publication timeline heatmap beside the **What changed** panel on wide screens (≥901px); stacked on narrower viewports
 - Client-side **Risk Score v1.1b** (asset, KEV, EPSS, exploit, CVSS, momentum)
 
 **Threat investigation**

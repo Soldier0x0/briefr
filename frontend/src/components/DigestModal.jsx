@@ -24,6 +24,7 @@ function buildDigest(cves, filters) {
   if (filters.epss_min) activeFilters.push(`EPSS>${filters.epss_min * 100}%`)
   if (filters.search)   activeFilters.push(`search:"${filters.search}"`)
   if (filters.my_stack_only) activeFilters.push('my-stack')
+  if (filters.watchlist_only) activeFilters.push('watchlist')
   if (filters.summary_only) activeFilters.push('plain-english')
   if (filters.stack)    activeFilters.push(`stack:"${filters.stack}"`)
   if (filters.vendors)  activeFilters.push(`vendors:${filters.vendors}`)

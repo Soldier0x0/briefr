@@ -3,6 +3,17 @@
   padding: 12px 0 14px;
 }
 
+@media (min-width: 901px) {
+  .brief-intel-row .timeline-heatmap-body {
+    min-height: 132px;
+  }
+
+  .brief-intel-row .timeline-heatmap-chart {
+    width: fit-content;
+    max-width: 100%;
+  }
+}
+
 .timeline-heatmap-header {
   display: flex;
   align-items: center;

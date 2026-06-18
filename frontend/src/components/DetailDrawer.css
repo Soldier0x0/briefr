@@ -206,6 +206,12 @@
   background: var(--bg3);
 }
 
+.drawer-inv-btn-active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+}
+
 .drawer-report-wrap {
   position: relative;
 }

@@ -326,6 +326,18 @@ async def init_db() -> None:
                 ON audit_log(created_at);
             CREATE INDEX IF NOT EXISTS idx_audit_log_action
                 ON audit_log(action);
+
+            CREATE TABLE IF NOT EXISTS watchlist (
+                cve_id TEXT PRIMARY KEY,
+                state TEXT NOT NULL CHECK(state IN ('pin', 'snooze')),
+                snooze_until TEXT,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_watchlist_state
+                ON watchlist(state);
+            CREATE INDEX IF NOT EXISTS idx_watchlist_snooze_until
+                ON watchlist(snooze_until);
         """)
         await db.commit()
 
@@ -357,6 +369,10 @@ async def init_db() -> None:
             "CREATE TABLE IF NOT EXISTS hunt_packs (id INTEGER PRIMARY KEY AUTOINCREMENT, technique_id TEXT NOT NULL, cve_id TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', priority TEXT NOT NULL DEFAULT 'medium', sigma_yaml TEXT NOT NULL DEFAULT '', siem_queries TEXT NOT NULL DEFAULT '{}', log_patterns TEXT NOT NULL DEFAULT '[]', notes TEXT NOT NULL DEFAULT '', created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')), UNIQUE (technique_id, cve_id))",
             "CREATE INDEX IF NOT EXISTS idx_hunt_packs_technique ON hunt_packs(technique_id)",
             "CREATE INDEX IF NOT EXISTS idx_hunt_packs_cve ON hunt_packs(cve_id)",
+            # Watchlist (V1.3): single-user pin/snooze — user_id added with app login
+            "CREATE TABLE IF NOT EXISTS watchlist (cve_id TEXT PRIMARY KEY, state TEXT NOT NULL CHECK(state IN ('pin', 'snooze')), snooze_until TEXT, created_at TEXT DEFAULT (datetime('now')))",
+            "CREATE INDEX IF NOT EXISTS idx_watchlist_state ON watchlist(state)",
+            "CREATE INDEX IF NOT EXISTS idx_watchlist_snooze_until ON watchlist(snooze_until)",
             # Exploit feeds: dedupe then enforce (cve_id, url) uniqueness
             """
             DELETE FROM cve_exploits
@@ -401,6 +417,88 @@ async def write_audit_log(
         "INSERT INTO audit_log (actor, action, target) VALUES (?, ?, ?)",
         ((actor or "").strip(), action, target or ""),
     )
+
+
+# Active watchlist rows: pins, or snoozes whose deadline has not passed.
+_WATCHLIST_ACTIVE_SQL = """
+    state = 'pin'
+    OR (state = 'snooze'
+        AND snooze_until IS NOT NULL
+        AND datetime(snooze_until) > datetime('now'))
+"""
+
+
+async def list_watchlist_entries(db: aiosqlite.Connection) -> list[dict]:
+    """Return active watchlist rows (pins + unexpired snoozes)."""
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT cve_id, state, snooze_until, created_at
+        FROM watchlist
+        WHERE {_WATCHLIST_ACTIVE_SQL}
+        ORDER BY
+            CASE state WHEN 'pin' THEN 0 ELSE 1 END,
+            created_at DESC
+        """
+    )
+    return [dict(row) for row in rows]
+
+
+async def get_watchlist_entry(
+    db: aiosqlite.Connection, cve_id: str
+) -> dict | None:
+    """Return one active watchlist row, or None."""
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT cve_id, state, snooze_until, created_at
+        FROM watchlist
+        WHERE cve_id = ? AND ({_WATCHLIST_ACTIVE_SQL})
+        """,
+        (cve_id.upper(),),
+    )
+    return dict(rows[0]) if rows else None
+
+
+async def upsert_watchlist_entry(
+    db: aiosqlite.Connection,
+    cve_id: str,
+    state: str,
+    snooze_until: str | None = None,
+) -> dict:
+    """Insert or replace a watchlist row (caller commits)."""
+    key = cve_id.upper()
+    await db.execute(
+        """
+        INSERT INTO watchlist (cve_id, state, snooze_until, created_at)
+        VALUES (?, ?, ?, datetime('now'))
+        ON CONFLICT(cve_id) DO UPDATE SET
+            state = excluded.state,
+            snooze_until = excluded.snooze_until,
+            created_at = datetime('now')
+        """,
+        (key, state, snooze_until),
+    )
+    rows = await db.execute_fetchall(
+        "SELECT cve_id, state, snooze_until, created_at FROM watchlist WHERE cve_id = ?",
+        (key,),
+    )
+    return dict(rows[0])
+
+
+async def delete_watchlist_entry(db: aiosqlite.Connection, cve_id: str) -> bool:
+    """Remove a watchlist row. Returns True when a row was deleted."""
+    cursor = await db.execute(
+        "DELETE FROM watchlist WHERE cve_id = ?",
+        (cve_id.upper(),),
+    )
+    return cursor.rowcount > 0
+
+
+async def cve_exists(db: aiosqlite.Connection, cve_id: str) -> bool:
+    rows = await db.execute_fetchall(
+        "SELECT 1 FROM cves WHERE cve_id = ? LIMIT 1",
+        (cve_id.upper(),),
+    )
+    return bool(rows)
 
 
 TRACKED_CVE_FIELDS = frozenset({"cvss_score", "epss_score", "is_kev", "has_poc"})

@@ -40,6 +40,7 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 | `summary_only` | bool | false | Only CVEs with enriched plain-English summary |
 | `ai_context_only` | bool | false | Only CVEs with `has_ai_context = 1` |
 | `frameworks` | str | null | Comma-separated AI/ML tokens; implies `has_ai_context` and matches description/products |
+| `watchlist_only` | bool | false | Only CVEs on the active watchlist (pinned + unexpired snoozes) |
 
 **Response:**
 
@@ -73,14 +74,17 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 }
 ```
 
-Each CVE object may include `kev_due_date` (`YYYY-MM-DD` from `kev_deadlines.due_date`, or `null` when not on the KEV catalog). Additive field — present on list and export responses.
+Each CVE object may include `kev_due_date` (`YYYY-MM-DD` from `kev_deadlines.due_date`, or `null` when not on the KEV catalog). Additive fields — present on list and export responses when applicable:
+
+- `watchlist_state` — `"pin"`, `"snooze"`, or omitted when not on the watchlist
+- `watchlist_snooze_until` — UTC `YYYY-MM-DD HH:MM:SS` when `watchlist_state` is `"snooze"`, otherwise omitted
 
 **Error responses:**
 
 - `400` — invalid `severity`, `technique`, or `published_on`
 - `422` — invalid query param types (FastAPI validation)
 
-**Notes:** Sorted by `published DESC`, severity, EPSS. Stack filter re-sorts page by relevance.
+**Notes:** Pinned CVEs sort first (`watchlist.state = 'pin'`), then `published DESC`, severity, EPSS. Active snoozes (`state = 'snooze'` with `snooze_until > now`) are excluded from the default feed; `watchlist_only=true` shows the watchlist including snoozed rows. Stack filter re-sorts page by relevance.
 
 ---
 
@@ -152,6 +156,55 @@ Each item includes core card fields (`cve_id`, `severity`, `cvss_score`, `epss_s
 
 ---
 
+## Watchlist (pin / snooze)
+
+Single-user for now — no `user_id` column. Built-in app login will add per-user keying (ROADMAP amendment 2026-06-11).
+
+### GET /api/watchlist
+
+**Description:** List active watchlist entries (pins and snoozes whose `snooze_until` has not passed).
+
+**Response:** `{"data": [{"cve_id": "CVE-...", "state": "pin"|"snooze", "snooze_until": null|"YYYY-MM-DD HH:MM:SS", "created_at": "..."}], "count": N}`
+
+---
+
+### POST /api/watchlist
+
+**Description:** Pin or snooze a CVE. Upserts by `cve_id` (one row per CVE).
+
+**Body:**
+
+```json
+{ "cve_id": "CVE-2024-0001", "state": "pin" }
+```
+
+```json
+{ "cve_id": "CVE-2024-0001", "state": "snooze", "snooze_days": 7 }
+```
+
+`snooze_days` is optional when `state` is `"snooze"` (default **7**, range 1–365).
+
+**Response:** `{"data": { watchlist row }}`
+
+**Error responses:**
+
+- `400` — invalid CVE ID format or `state`
+- `404` — CVE not in `cves` table
+
+---
+
+### DELETE /api/watchlist/{cve_id}
+
+**Description:** Remove a CVE from the watchlist (unpin / unsnooze).
+
+**Response:** `{"ok": true, "cve_id": "CVE-..."}`
+
+**Error responses:** `400` — invalid CVE ID; `404` — no watchlist row
+
+**Frontend:** Pin / Snooze controls on `CVECard` and `DetailDrawer`; **WATCHLIST** quick-filter chip on the feed (`watchlist_only=true`). State is server-backed (`watchlist` table), not `localStorage`.
+
+---
+
 ### GET /api/changes
 
 **Description:** Recent tracked field changes (`cvss_score`, `epss_score`, `is_kev`, `has_poc`).
@@ -166,7 +219,7 @@ Each item includes core card fields (`cve_id`, `severity`, `cvss_score`, `epss_s
 
 **EPSS noise:** `update_epss_scores` only writes history when the score would display differently at **0.1%** precision (matching the What changed panel). Sub-threshold float jitter (e.g. `0.0001` → `0.0002`, both shown as `0.0%`) is ignored.
 
-**Frontend:** BRIEF tab **What changed** panel (`WhatChangedPanel.jsx`) — field + time-window filter chips; row click opens the CVE drawer; rows with identical formatted old/new values are hidden (legacy noise). `BriefCharts.jsx` uses `field=epss_score&since_hours=168` for the **Top EPSS movers** horizontal bar chart (top 10 positive deltas).
+**Frontend:** BRIEF tab **What changed** panel (`WhatChangedPanel.jsx`) — field + time-window filter chips; row click opens the CVE drawer; rows with identical formatted old/new values are hidden (legacy noise). `BriefCharts.jsx` uses `field=epss_score&since_hours=168` for the **Top EPSS movers** horizontal bar chart (top 10 positive deltas). On viewports **≥901px** wide, the panel sits beside the 90-day activity heatmap in a flex row (`brief-intel-row` in `App.jsx`); below 900px they stack full-width (heatmap above). Alternating row shading uses `--surface-sunken`.
 
 **Error responses:** `400` — invalid `field`
 
@@ -181,6 +234,7 @@ Each item includes core card fields (`cve_id`, `severity`, `cvss_score`, `epss_s
 **Response:** Bare CVE object (no `data` wrapper), including:
 
 - Core fields from `cves` table
+- `watchlist_state`, `watchlist_snooze_until` when the CVE is on the active watchlist (same semantics as list feed)
 - `kev_date_added`, `kev_due_date`, `kev_vendor_project`, `kev_vulnerability_name`, `kev_ransomware_use` (boolean), `kev_cwes[]`, `techniques[]`, `public_exploits[]`, `greynoise_scans[]`, `otx_pulses[]`, `otx_configured`, `osv_packages[]`
 
 **Error responses:**

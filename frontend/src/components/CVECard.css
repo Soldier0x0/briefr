@@ -207,6 +207,26 @@
   border-color: var(--red);
 }
 
+.badge-pin {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, var(--bg));
+  border-color: var(--accent);
+}
+
+.badge-snooze {
+  color: var(--text2);
+  background: var(--bg3);
+  border-color: var(--border2);
+}
+
+.cve-card-pinned {
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg));
+}
+
+.cve-card-pinned:hover {
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg2));
+}
+
 .badge-kev-due.badge-urgent,
 .badge-kev-due.badge-overdue {
   color: var(--red);
@@ -436,6 +456,12 @@
   border-color: var(--text3);
   color: var(--text);
   background: var(--bg2);
+}
+
+.cve-action-btn-active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
 }
 
 @media (max-width: 640px) {
