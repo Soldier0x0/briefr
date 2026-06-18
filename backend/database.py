@@ -756,6 +756,8 @@ async def mark_cves_as_kev(db: aiosqlite.Connection, cve_ids: list) -> list[str]
     if not cve_ids:
         return []
     normalized = [c.upper() for c in cve_ids if c]
+    if not normalized:
+        return []
     placeholders = ",".join("?" * len(normalized))
     rows = await db.execute_fetchall(
         f"""
@@ -2010,12 +2012,12 @@ async def filter_cves_matching_stack(
     """Return CVE rows from cve_ids that match the comma-separated stack terms."""
     from routers.cves import _stack_match_clause
 
-    if not cve_ids or not stack.strip():
+    normalized = [c.upper() for c in cve_ids if c]
+    if not normalized or not stack.strip():
         return []
     clause, params, _terms = _stack_match_clause(stack)
     if not clause:
         return []
-    normalized = [c.upper() for c in cve_ids if c]
     placeholders = ",".join("?" * len(normalized))
     rows = await db.execute_fetchall(
         f"""

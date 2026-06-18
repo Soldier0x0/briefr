@@ -99,26 +99,35 @@ async def process_kev_stack_alerts(newly_kev_ids: list[str]) -> int:
         return 0
 
     db = await get_db()
-    sent = 0
+    candidates = []
     try:
         matches = await filter_cves_matching_stack(db, newly_kev_ids, stack)
         for cve in matches:
             cve_id = cve["cve_id"]
-            if await was_webhook_alert_sent(db, ALERT_KEV_STACK, cve_id):
-                continue
-            cve["matched_terms"] = terms
-            result = await send_alert(_format_kev_alert(cve))
-            if not result.get("sent"):
-                logger.warning(
-                    "KEV stack alert not delivered for %s: %s", cve_id, result
-                )
-                continue
+            if not await was_webhook_alert_sent(db, ALERT_KEV_STACK, cve_id):
+                cve["matched_terms"] = terms
+                candidates.append(cve)
+    finally:
+        await db.close()
+
+    sent = 0
+    for cve in candidates:
+        cve_id = cve["cve_id"]
+        result = await send_alert(_format_kev_alert(cve))
+        if not result.get("sent"):
+            logger.warning(
+                "KEV stack alert not delivered for %s: %s", cve_id, result
+            )
+            continue
+
+        db = await get_db()
+        try:
             await record_webhook_alert(db, ALERT_KEV_STACK, cve_id)
             await db.commit()
             sent += 1
             logger.info("KEV stack alert sent for %s", cve_id)
-    finally:
-        await db.close()
+        finally:
+            await db.close()
     return sent
 
 
@@ -157,19 +166,24 @@ async def check_backup_deadman() -> bool:
 
         if await was_webhook_alert_sent(db, ALERT_BACKUP_DEADMAN, BACKUP_DEADMAN_TARGET):
             return False
+    finally:
+        await db.close()
 
-        hours = int(stale_for.total_seconds() // 3600)
-        interval = get_backup_interval_hours()
-        message = (
-            "BRIEFR backup dead-man alert: no successful backup within "
-            f"{interval * 2}h (last success ~{hours}h ago). "
-            "Check `systemctl status briefr-backup.timer`, "
-            "`journalctl -u briefr-backup`, and `/var/lib/briefr/backups`."
-        )
-        result = await send_alert(message)
-        if not result.get("sent"):
-            logger.warning("Backup dead-man alert not delivered: %s", result)
-            return False
+    hours = int(stale_for.total_seconds() // 3600)
+    interval = get_backup_interval_hours()
+    message = (
+        "BRIEFR backup dead-man alert: no successful backup within "
+        f"{interval * 2}h (last success ~{hours}h ago). "
+        "Check `systemctl status briefr-backup.timer`, "
+        "`journalctl -u briefr-backup`, and `/var/lib/briefr/backups`."
+    )
+    result = await send_alert(message)
+    if not result.get("sent"):
+        logger.warning("Backup dead-man alert not delivered: %s", result)
+        return False
+
+    db = await get_db()
+    try:
         await record_webhook_alert(db, ALERT_BACKUP_DEADMAN, BACKUP_DEADMAN_TARGET)
         await db.commit()
         logger.warning("Backup dead-man alert sent (stale_for=%sh)", hours)

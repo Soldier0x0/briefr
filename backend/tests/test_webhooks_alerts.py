@@ -171,15 +171,19 @@ def test_backup_deadman_clears_after_fresh_backup(tmp_path, monkeypatch):
         await check_backup_deadman()
         fresh = datetime.now(timezone.utc) - timedelta(hours=1)
         os.utime(archive, (fresh.timestamp(), fresh.timestamp()))
+        res = await check_backup_deadman()
         db = await get_db()
         try:
-            await clear_webhook_alert(db, ALERT_BACKUP_DEADMAN, BACKUP_DEADMAN_TARGET)
-            await db.commit()
+            was_sent = await was_webhook_alert_sent(
+                db, ALERT_BACKUP_DEADMAN, BACKUP_DEADMAN_TARGET
+            )
         finally:
             await db.close()
-        return await check_backup_deadman()
+        return res, was_sent
 
-    assert asyncio.run(run()) is False
+    res, was_sent = asyncio.run(run())
+    assert res is False
+    assert was_sent is False
     assert len(calls) == 1
 
 
