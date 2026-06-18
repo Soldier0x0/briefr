@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { fetchCVEsForExport } from '../api.js'
-import { toApiCveParams } from '../utils/cveFilters.js'
+import { STACK_STORAGE_KEY, toApiCveParams } from '../utils/cveFilters.js'
 import { cvesToCsvRows, downloadCsv, exportFilename } from '../utils/exportCsv.js'
 import './FilterBar.css'
+
+const STACK_DEBOUNCE_MS = 400
 
 const QUICK_FILTERS = [
   { id: 'all',      label: 'ALL' },
@@ -62,15 +64,30 @@ export default function FilterBar({
   searchFocusTrigger,
 }) {
   const [localSearch, setLocalSearch] = useState(filters.search || '')
+  const [localStack, setLocalStack] = useState(() => filters.stack || '')
   const [exporting, setExporting] = useState(null)
   const [exportError, setExportError] = useState(null)
   const [exportSuccess, setExportSuccess] = useState(null)
   const debounceRef  = useRef(null)
+  const stackDebounceRef = useRef(null)
+  const exportSuccessTimeoutRef = useRef(null)
   const searchRef    = useRef(null)
 
   useEffect(() => {
     setLocalSearch(filters.search || '')
   }, [filters.search])
+
+  useEffect(() => {
+    setLocalStack(filters.stack || '')
+  }, [filters.stack])
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      if (stackDebounceRef.current) clearTimeout(stackDebounceRef.current)
+      if (exportSuccessTimeoutRef.current) clearTimeout(exportSuccessTimeoutRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     if (searchFocusTrigger > 0 && searchRef.current) {
@@ -102,6 +119,30 @@ export default function FilterBar({
     }, 320)
   }
 
+  function handleStackChange(e) {
+    const val = e.target.value
+    setLocalStack(val)
+    if (stackDebounceRef.current) clearTimeout(stackDebounceRef.current)
+    stackDebounceRef.current = setTimeout(() => {
+      const trimmed = val.trim()
+      try {
+        localStorage.setItem(STACK_STORAGE_KEY, trimmed)
+      } catch { /* ignore */ }
+      window.dispatchEvent(new CustomEvent('briefr-stack-change'))
+      onFiltersChange({ stack: trimmed })
+    }, STACK_DEBOUNCE_MS)
+  }
+
+  function handleStackClear() {
+    setLocalStack('')
+    if (stackDebounceRef.current) clearTimeout(stackDebounceRef.current)
+    try {
+      localStorage.removeItem(STACK_STORAGE_KEY)
+    } catch { /* ignore */ }
+    window.dispatchEvent(new CustomEvent('briefr-stack-change'))
+    onFiltersChange({ stack: '' })
+  }
+
   function handleVendorClick(vendor) {
     const next = selectedVendors.includes(vendor)
       ? selectedVendors.filter(v => v !== vendor)
@@ -122,6 +163,15 @@ export default function FilterBar({
     return rows
   }
 
+  function showExportSuccess(message) {
+    if (exportSuccessTimeoutRef.current) clearTimeout(exportSuccessTimeoutRef.current)
+    setExportSuccess(message)
+    exportSuccessTimeoutRef.current = window.setTimeout(() => {
+      setExportSuccess(null)
+      exportSuccessTimeoutRef.current = null
+    }, 4000)
+  }
+
   async function handleExportCsv() {
     if (exporting) return
     setExporting('csv')
@@ -131,8 +181,7 @@ export default function FilterBar({
       const rows = await fetchExportRows()
       const csv = cvesToCsvRows(rows)
       downloadCsv(csv, exportFilename())
-      setExportSuccess(`Downloaded ${rows.length.toLocaleString()} CVEs as CSV.`)
-      window.setTimeout(() => setExportSuccess(null), 4000)
+      showExportSuccess(`Downloaded ${rows.length.toLocaleString()} CVEs as CSV.`)
     } catch (err) {
       setExportError(err.message || 'Export failed. Restart the backend and try again.')
     } finally {
@@ -149,8 +198,7 @@ export default function FilterBar({
       const rows = await fetchExportRows()
       const { downloadCvesXlsx, exportXlsxFilename } = await import('../utils/exportXlsx.js')
       await downloadCvesXlsx(rows, exportXlsxFilename())
-      setExportSuccess(`Downloaded ${rows.length.toLocaleString()} CVEs as Excel (.xlsx).`)
-      window.setTimeout(() => setExportSuccess(null), 4000)
+      showExportSuccess(`Downloaded ${rows.length.toLocaleString()} CVEs as Excel (.xlsx).`)
     } catch (err) {
       setExportError(err.message || 'Excel export failed. Restart the backend and try again.')
     } finally {
@@ -281,6 +329,33 @@ export default function FilterBar({
             spellCheck="false"
           />
         </div>
+      </div>
+
+      <div className="filter-stack-row" role="search" aria-label="Filter CVEs by technology stack">
+        <label htmlFor="feed-stack-input" className="filter-stack-label mono">
+          STACK //
+        </label>
+        <input
+          id="feed-stack-input"
+          type="text"
+          className="filter-stack-input"
+          value={localStack}
+          onChange={handleStackChange}
+          placeholder="nginx, python, linux kernel..."
+          aria-label="Enter stack terms to filter the CVE feed"
+          autoComplete="off"
+          spellCheck="false"
+        />
+        {localStack && (
+          <button
+            type="button"
+            className="filter-stack-clear-btn mono"
+            onClick={handleStackClear}
+            aria-label="Clear stack filter"
+          >
+            ×
+          </button>
+        )}
       </div>
 
       {exportError && (

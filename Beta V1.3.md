@@ -24,7 +24,7 @@ V1.3 makes BRIEFR the **best self-hosted analyst intelligence pane** — actiona
 | Item | Goal |
 |------|------|
 | **Morning brief view** | ✅ Shipped — `GET /api/brief` + BRIEF tab landing (`MorningBrief.jsx`); full CVE feed on FEED tab |
-| **Action queue** | ✅ Shipped — ranked `action_queue` + section breakdown (EPSS movers, new KEV, KEV due soon, stack activity) |
+| **Action queue** | ✅ Shipped — unified `action_queue` list with client-side reason/due-window filters; separate section cards removed |
 | **Explainable risk** | ✅ Shipped — drawer shows `score × weight × 100` per component; momentum signals from `/api/cves/{id}/momentum`; weights from `/api/config/risk` |
 | **Change intelligence** | ✅ Surface `cve_change_history` deltas (`GET /api/changes` UI — What changed panel with field/window filters) |
 | **KEV due-date countdown** | ✅ "Due in N days" chip on cards + sidebar deadline list sorted by `GET /api/kev/deadlines?sort=urgent` |

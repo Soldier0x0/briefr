@@ -73,10 +73,10 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
 │ MorningBrief.jsx │ CVEFeed.jsx      │ IOCLookup.jsx    │ CaseStudies.jsx  │ (global overlay)   │
 │ → GET /brief     │ → GET /cves      │ → POST /ioc      │ → combined feed  │ → 6+ sub-routes    │
 │ BriefCharts.jsx  │ CVECard.jsx      │                  │                  │ explainable risk   │
-│ WhatChangedPanel │ TimelineHeatmap  │                  │                  │ breakdown (math)   │
-│ TimelineHeatmap  │ Sidebar.jsx      │                  │                  │                    │
-│ (side-by-side    │                  │                  │                  │                    │
-│  with What       │                  │                  │                  │                    │
+│ WhatChangedPanel │ FilterBar stack  │                  │                  │ breakdown (math)   │
+│ TimelineHeatmap  │ + Sidebar.jsx    │                  │                  │                    │
+│ (side-by-side    │ (no Hero/stats/  │                  │                  │                    │
+│  with What       │  heatmap)        │                  │                  │                    │
 │  changed ≥901px) │                  │                  │                  │                    │
 │ StatsRow.jsx     │                  │                  │                  │                    │
 │ Hero stack bar   │                  │                  │                  │                    │
@@ -89,7 +89,7 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 
 | Table(s) | Primary endpoints | Frontend consumers |
 |---|---|---|
-| `cves` | `GET /api/cves`, `GET /api/cves/{id}`, `GET /api/stats`, `GET /api/brief` | CVEFeed, CVECard, DetailDrawer, StatsRow, TimelineHeatmap, MorningBrief |
+| `cves` | `GET /api/cves`, `GET /api/cves/{id}`, `GET /api/stats`, `GET /api/brief` | CVEFeed, CVECard, DetailDrawer, StatsRow (BRIEF tab), TimelineHeatmap (BRIEF tab), MorningBrief |
 | `kev_deadlines` | `GET /api/kev/deadlines`, `kev_due_date` on list/export/detail, `GET /api/brief` | Sidebar (urgent sort), CVECard due chip, DetailDrawer sentences, MorningBrief |
 | `epss_history` | `GET /api/cves/{id}/epss-history`, momentum | DetailDrawer EPSS sparkline |
 | `mitre_techniques`, `cve_technique_map` | `GET /api/techniques/top`, CVE `techniques` field | Sidebar, DetailDrawer Intel tab |
@@ -205,7 +205,13 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (sch
 3. **Refresh:** parallel fetch on mount + 5-minute poll (`POLL_MS`); per-CVE EPSS history fetched when movers list changes; cancellation guards on unmount.
 4. **Theming:** Chart.js fonts/colours read from CSS variables (`readChartTheme()` in `chartLoader.js`); `prefers-reduced-motion: reduce` disables animation (`duration: 0`).
 5. **Layout:** two-column grid at ≥1100px; stacks to one column on narrower viewports.
-6. **Severity hierarchy (feed + sidebar):** CVE cards and sidebar KEV rows use left accent bars driven by KEV due-date urgency (full `--red` only for overdue / due today / due tomorrow). CVSS, EPSS%, PoC, and published-age metadata use neutral/dim chip styling so they do not compete with real urgency signals. Shared description truncation: `CveDescriptionClamp.jsx` (used by `CVECard`; brief cards adopt in a follow-up).
+6. **Severity hierarchy (feed + sidebar):** CVE cards and sidebar KEV rows use left accent bars driven by KEV due-date urgency (full `--red` only for overdue / due today / due tomorrow). CVSS, EPSS%, PoC, and published-age metadata use neutral/dim chip styling so they do not compete with real urgency signals. Shared description truncation: `CveDescriptionClamp.jsx` (used by `CVECard` and `MorningBrief` action-queue rows).
+
+### F2b. BRIEF vs FEED tab layout (V1.3)
+
+1. **BRIEF tab (landing):** `Hero.jsx` (serif headline + stack bar + BRIEF apply), `StatsRow.jsx` (four KPI tiles + optional AI/ML alerts), unified `MorningBrief.jsx` action queue (single list from `action_queue` with reason/due-window filter chips; `CveDescriptionClamp` per row; KEV histogram bucket clicks set client-side due-window filter), `BriefCharts.jsx`, then side-by-side `TimelineHeatmap.jsx` + `WhatChangedPanel.jsx` (≥901px).
+2. **FEED tab:** Compact utility chrome only — `FilterBar.jsx` (`CVE FEED // {total}` line + stack input row + quick filters/search) and paginated `CVEFeed.jsx` with `Sidebar.jsx` (KEV deadlines + top techniques unchanged). No Hero, StatsRow, or TimelineHeatmap on FEED.
+3. **Action queue filters:** Client-side only — chips filter `reasons[]` on the already-fetched `action_queue`; KEV histogram `onBucketClick` applies a UTC `kev_due_date` window on the same list (no extra API call).
 
 ### F. Forge — detection coverage + hunt packs (V1.3 MVP)
 

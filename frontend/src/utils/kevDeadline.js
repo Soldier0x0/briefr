@@ -68,3 +68,25 @@ export function kevBucketDateRange(bucketKey) {
       return { bucket: bucketKey, start: null, end: null }
   }
 }
+
+/** Client-side due-date filter for action_queue rows (histogram bucket / due window). */
+export function kevDueDateInWindow(dueDateStr, window) {
+  if (!window) return true
+  if (!dueDateStr) return false
+  const dueStr = String(dueDateStr).slice(0, 10)
+  if (window.start && dueStr < window.start) return false
+  if (window.end && dueStr > window.end) return false
+  return true
+}
+
+/** Human label for an active KEV histogram bucket filter. */
+export function kevBucketFilterLabel(bucketKey) {
+  switch (bucketKey) {
+    case 'overdue': return 'Overdue'
+    case '0-7': return '0–7d'
+    case '8-14': return '8–14d'
+    case '15-30': return '15–30d'
+    case '31+': return '31d+'
+    default: return bucketKey
+  }
+}
