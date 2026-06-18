@@ -12,7 +12,7 @@ import asyncio
 import json
 import os
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 BACKEND_DIR = Path(__file__).resolve().parents[1] / "backend"
@@ -25,6 +25,16 @@ from feeds.incident_news import fetch_all_incident_news  # noqa: E402
 
 def _days_ago(days: int) -> str:
     return (date.today() - timedelta(days=days)).isoformat()
+
+
+def _days_from_now(days: int) -> str:
+    return (date.today() + timedelta(days=days)).isoformat()
+
+
+def _recent_timestamp(hours_ago: int = 6) -> str:
+    return (datetime.now(timezone.utc) - timedelta(hours=hours_ago)).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
 
 
 CVE_ROWS = [
@@ -210,11 +220,45 @@ CVE_ROWS = [
     },
 ]
 
+# (cve_id, product, short_description, required_action, due_date, date_added)
 KEV_ROWS = [
-    ("CVE-2025-24813", "Apache Tomcat", "RCE in partial PUT handling", "Apply vendor patch", "2025-03-20"),
-    ("CVE-2024-3400", "Palo Alto PAN-OS", "Command injection in GlobalProtect", "Apply vendor patch", "2024-04-18"),
-    ("CVE-2024-21762", "Fortinet FortiOS", "Out-of-bounds write in SSL VPN", "Apply vendor patch", "2024-02-12"),
-    ("CVE-2025-21333", "Microsoft Windows", "Hyper-V EoP", "Apply vendor patch", "2025-01-14"),
+    (
+        "CVE-2025-24813",
+        "Apache Tomcat",
+        "RCE in partial PUT handling",
+        "Apply vendor patch",
+        _days_from_now(5),
+        date.today().isoformat(),
+    ),
+    (
+        "CVE-2024-3400",
+        "Palo Alto PAN-OS",
+        "Command injection in GlobalProtect",
+        "Apply vendor patch",
+        _days_from_now(10),
+        _days_ago(30),
+    ),
+    (
+        "CVE-2024-21762",
+        "Fortinet FortiOS",
+        "Out-of-bounds write in SSL VPN",
+        "Apply vendor patch",
+        _days_ago(90),
+        _days_ago(90),
+    ),
+    (
+        "CVE-2025-21333",
+        "Microsoft Windows",
+        "Hyper-V EoP",
+        "Apply vendor patch",
+        _days_from_now(3),
+        date.today().isoformat(),
+    ),
+]
+
+# EPSS mover for morning-brief section (detected_at within default 24h window).
+BRIEF_EPSS_CHANGES = [
+    ("CVE-2024-6387", "0.20", "0.34", _recent_timestamp(6)),
 ]
 
 
@@ -244,7 +288,7 @@ async def _seed_cves(db) -> int:
         )
         inserted += 1
 
-    for cve_id, product, desc, action, due in KEV_ROWS:
+    for cve_id, product, desc, action, due, added in KEV_ROWS:
         await db.execute(
             """
             INSERT INTO kev_deadlines (
@@ -252,7 +296,17 @@ async def _seed_cves(db) -> int:
             ) VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(cve_id) DO NOTHING
             """,
-            (cve_id, product, desc, action, due, due),
+            (cve_id, product, desc, action, due, added),
+        )
+
+    for cve_id, old_val, new_val, detected_at in BRIEF_EPSS_CHANGES:
+        await db.execute(
+            """
+            INSERT INTO cve_change_history (
+                cve_id, field_name, old_value, new_value, detected_at
+            ) VALUES (?, 'epss_score', ?, ?, ?)
+            """,
+            (cve_id, old_val, new_val, detected_at),
         )
     return inserted
 

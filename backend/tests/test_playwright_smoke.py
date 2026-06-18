@@ -25,21 +25,39 @@ def _poll(page, js: str, *, timeout: float = 120.0, interval: float = 0.25) -> N
     raise TimeoutError(f"Timed out polling: {js[:80]}...")
 
 
+def _open_full_feed(page) -> None:
+    """BRIEF tab is default — switch to the CVE feed when cards are only on FEED."""
+    link = page.get_by_role("button", name="Open full feed →")
+    if link.count() > 0:
+        link.first.click()
+    else:
+        page.get_by_role("button", name="Switch to full CVE feed").click()
+    page.wait_for_selector(".cve-feed", timeout=30_000)
+
+
 def _wait_for_brief_cards(page) -> int:
-    page.wait_for_selector(".morning-brief, .stats-row, .cve-feed-list", timeout=60_000)
+    page.wait_for_selector(".morning-brief, .stats-row, .cve-feed", timeout=60_000)
     _poll(
         page,
         """
         () => {
-          const briefCards = document.querySelectorAll('.morning-brief .cve-card').length;
-          const feedCards = document.querySelectorAll('.cve-feed-list .cve-card').length;
-          return briefCards > 0 || feedCards > 0;
+          const brief = document.querySelector('.morning-brief');
+          if (!brief) return !!document.querySelector('.cve-feed .cve-card');
+          return !document.querySelector('.morning-brief-loading');
         }
         """,
     )
-    return page.evaluate(
-        "document.querySelectorAll('.morning-brief .cve-card, .cve-feed-list .cve-card').length"
+    count = page.evaluate(
+        "document.querySelectorAll('.morning-brief .cve-card, .cve-feed .cve-card').length"
     )
+    if count < 1:
+        _open_full_feed(page)
+        _poll(
+            page,
+            "() => document.querySelectorAll('.cve-feed .cve-card').length > 0",
+        )
+        count = page.evaluate("document.querySelectorAll('.cve-feed .cve-card').length")
+    return count
 
 
 def _wait_for_incidents_cards(page) -> int:
@@ -90,8 +108,8 @@ def test_brief_renders_cve_cards(smoke_page):
 def test_filter_click_anchors_to_feed(smoke_page):
     """Quick-filter scroll anchor regression (PR #90 feed UX)."""
     _wait_for_brief_cards(smoke_page)
-    smoke_page.get_by_role("button", name="Switch to full CVE feed").click()
-    smoke_page.wait_for_selector(".cve-feed", timeout=30_000)
+    if not smoke_page.locator(".cve-feed").count():
+        _open_full_feed(smoke_page)
     smoke_page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
     smoke_page.wait_for_timeout(300)
 
