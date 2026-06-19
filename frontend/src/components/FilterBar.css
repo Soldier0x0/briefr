@@ -311,6 +311,7 @@
 
 .vendor-filter-label {
   font-size: 0.6875rem;
+  line-height: 1.4;
   letter-spacing: 0.1em;
   color: var(--accent);
   font-weight: 500;

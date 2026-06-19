@@ -375,7 +375,6 @@ export default function FilterBar({
           {exportSuccess}
         </p>
       )}
-    </div>
 
       {active === 'all' && (
         <div className="vendor-filter-block">
@@ -411,6 +410,7 @@ export default function FilterBar({
           </div>
         </div>
       )}
+    </div>
     </div>
   )
 }
