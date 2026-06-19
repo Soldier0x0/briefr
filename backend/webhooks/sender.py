@@ -87,6 +87,35 @@ async def _send_telegram(message: str) -> None:
     response.raise_for_status()
 
 
+async def send_test_message(channel: str, message: str) -> dict:
+    """Send a test message to a single channel. Returns delivery result."""
+    from datetime import datetime as _dt, timezone as _tz
+
+    delivered_at = None
+    error = None
+    try:
+        if channel == "discord":
+            await _send_discord(message)
+        elif channel == "telegram":
+            await _send_telegram(message)
+        else:
+            return {
+                "ok": False,
+                "channel": channel,
+                "delivered_at": None,
+                "error": "unknown channel",
+            }
+        delivered_at = _dt.now(_tz.utc).isoformat(timespec="seconds")
+    except Exception as exc:
+        error = str(exc)[:300]
+    return {
+        "ok": error is None,
+        "channel": channel,
+        "delivered_at": delivered_at,
+        "error": error,
+    }
+
+
 async def send_alert(message: str) -> dict[str, Any]:
     """Deliver message to every configured channel; skip when none are set."""
     if not webhooks_enabled():

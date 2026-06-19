@@ -53,6 +53,7 @@ class TokenBucket:
         self.capacity = float(self.rate_per_minute)
         self.refill_per_second = self.rate_per_minute / 60.0
         self.name = name
+        self.hit_count: int = 0
         # key -> (tokens_remaining, last_update_monotonic)
         self._buckets: dict[str, tuple[float, float]] = {}
 
@@ -62,6 +63,7 @@ class TokenBucket:
         Returns 0.0 when granted, otherwise the number of seconds until the
         next token becomes available (the Retry-After hint).
         """
+        self.hit_count += 1
         if now is None:
             now = time.monotonic()
         tokens, last = self._buckets.get(key, (self.capacity, now))
@@ -153,3 +155,15 @@ def rate_limit_ioc(request: Request) -> None:
 def rate_limit_refresh(request: Request) -> None:
     """Route dependency: token bucket for all POST /api/refresh* routes."""
     _enforce(refresh_bucket, request)
+
+
+def get_top_consumers(n: int = 5) -> list[dict]:
+    """Aggregate hits across ioc_bucket and refresh_bucket, return top-n by hit count."""
+    counts: dict[str, int] = {}
+    for bucket in (ioc_bucket, refresh_bucket):
+        for key in bucket._buckets:
+            counts[key] = counts.get(key, 0) + 1
+    return [
+        {"key": k, "hits": v}
+        for k, v in sorted(counts.items(), key=lambda x: x[1], reverse=True)[:n]
+    ]

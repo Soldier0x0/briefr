@@ -222,6 +222,18 @@ def reset_feed_health() -> None:
     _health.clear()
 
 
+def reset_circuit(source_id: str) -> None:
+    """Admin action: immediately close an open circuit for a named source.
+    Raises KeyError if source_id is not in the health registry.
+    """
+    if source_id not in _health:
+        raise KeyError(source_id)
+    state = _health[source_id]
+    state["circuit_open_until"] = 0.0
+    state["consecutive_failures"] = 0
+    logger.info("Circuit reset by admin for source: %s", source_id)
+
+
 def _iso(ts: float | None) -> str | None:
     if not ts:
         return None

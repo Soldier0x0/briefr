@@ -19,6 +19,7 @@ import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
+import AdminPage from './pages/AdminPage.jsx'
 import { fetchStats, fetchHealth, fetchCVE } from './api.js'
 import { useWatchlist } from './hooks/useWatchlist.js'
 import { useAssetProfileOptional } from './context/AssetProfileContext.jsx'
@@ -463,6 +464,7 @@ export default function App() {
       <Routes>
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
+        <Route path="/admin/*" element={<AdminPage />} />
         <Route
           path="*"
           element={(

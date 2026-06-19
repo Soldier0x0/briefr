@@ -63,6 +63,33 @@ EXPECTED_ROUTES = [
     ("POST", "/api/watchlist"),
     ("DELETE", "/api/watchlist/snoozes"),
     ("DELETE", "/api/watchlist/{cve_id}"),
+    # Admin dashboard (V1.4): appended after watchlist routes.
+    ("GET", "/api/admin/system"),
+    ("GET", "/api/admin/backups"),
+    ("POST", "/api/admin/backups/verify/{filename}"),
+    ("POST", "/api/admin/backups/run"),
+    ("POST", "/api/admin/backups/upload"),
+    ("GET", "/api/admin/storage"),
+    ("POST", "/api/admin/storage/purge"),
+    ("GET", "/api/admin/watchlist"),
+    ("DELETE", "/api/admin/watchlist/{cve_id}"),
+    ("POST", "/api/admin/watchlist/clear-snoozes"),
+    ("GET", "/api/admin/hunt-packs"),
+    ("DELETE", "/api/admin/hunt-packs/{pack_id}"),
+    ("GET", "/api/admin/ioc-cache"),
+    ("DELETE", "/api/admin/ioc-cache/{value}"),
+    ("GET", "/api/admin/config"),
+    ("POST", "/api/admin/config"),
+    ("POST", "/api/admin/config/webhook-test"),
+    ("GET", "/api/admin/scheduler"),
+    ("POST", "/api/admin/scheduler/pause"),
+    ("POST", "/api/admin/scheduler/resume"),
+    ("GET", "/api/admin/scheduler/history"),
+    ("POST", "/api/admin/feeds/{source_id}/reset-circuit"),
+    ("GET", "/api/admin/logs"),
+    ("GET", "/api/admin/security"),
+    ("POST", "/api/admin/restart"),
+    ("GET", "/api/admin/audit-log"),
 ]
 
 
@@ -132,6 +159,7 @@ def test_moved_endpoints_live_in_routers():
     assert by_path["/api/config/risk"] == "routers.config"
     assert by_path["/api/brief"] == "routers.brief"
     assert by_path["/api/watchlist"] == "routers.watchlist"
+    assert by_path["/api/admin/system"] == "routers.admin"
     # main.py owns only app wiring now (V1.2 exit criterion: <300 lines)
     assert not any(module == "main" for module in by_path.values())
 

@@ -11,11 +11,13 @@ a well-formed `X-Request-ID` arrives on the request.
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
 
+import collections
 import json
 import logging
 import sys
 from contextvars import ContextVar
 from datetime import datetime, timezone
+from typing import Any
 
 from settings import settings
 
@@ -56,6 +58,60 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(entry, default=str, ensure_ascii=False)
 
 
+_RING_BUFFER_SIZE = 500
+
+
+class _RingBufferHandler(logging.Handler):
+    """Fixed-size in-process log ring buffer for the admin log viewer."""
+
+    def __init__(self, maxlen: int = _RING_BUFFER_SIZE):
+        super().__init__()
+        self._buf: collections.deque[dict[str, Any]] = collections.deque(maxlen=maxlen)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        entry = {
+            "ts": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(
+                timespec="milliseconds"
+            ),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "request_id": getattr(record, "request_id", "") or request_id_var.get(),
+        }
+        for key, val in record.__dict__.items():
+            if key not in _STANDARD_ATTRS and key not in entry:
+                entry[key] = val
+        self._buf.appendleft(entry)
+
+    def get_logs(
+        self,
+        limit: int = 100,
+        level: str | None = None,
+        request_id: str | None = None,
+    ) -> list[dict[str, Any]]:
+        results = []
+        for entry in self._buf:
+            if level and entry["level"] != level.upper():
+                continue
+            if request_id and entry.get("request_id") != request_id:
+                continue
+            results.append(entry)
+            if len(results) >= limit:
+                break
+        return results
+
+
+_ring_handler = _RingBufferHandler()
+
+
+def get_log_buffer(
+    limit: int = 100,
+    level: str | None = None,
+    request_id: str | None = None,
+) -> list[dict[str, Any]]:
+    return _ring_handler.get_logs(limit=limit, level=level, request_id=request_id)
+
+
 def configure_logging() -> None:
     """Install the root handler and unify uvicorn's loggers under it.
 
@@ -87,3 +143,6 @@ def configure_logging() -> None:
         access_logger = logging.getLogger("uvicorn.access")
         access_logger.handlers = []
         access_logger.propagate = False
+
+    _ring_handler.setLevel(logging.INFO)
+    root.addHandler(_ring_handler)
