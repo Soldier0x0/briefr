@@ -18,7 +18,8 @@ Read in this sequence the first time through. Skim what you already know; stop a
 | 4 | [`APPLICATION_EXECUTION_MAP.md`](../APPLICATION_EXECUTION_MAP.md) | Startup order and per-tab request journeys |
 | 5 | [`API_REFERENCE.md`](../API_REFERENCE.md) | Endpoint params and response shapes |
 | 6 | [`FOLDER_STRUCTURE_GUIDE.md`](../FOLDER_STRUCTURE_GUIDE.md) | File-by-file map — use when you need the exact module to edit |
-| 7 | [`TECHNICAL_INVENTORY.md`](../TECHNICAL_INVENTORY.md) | Schema (21 tables), scheduler jobs, feature matrix |
+| 6b | [`CODEBASE_CONTEXT.md`](../CODEBASE_CONTEXT.md) | Consolidated codebase reference (WHAT/WHERE/WHY/HOW/WHEN + AI guardrails) |
+| 7 | [`TECHNICAL_INVENTORY.md`](../TECHNICAL_INVENTORY.md) | Schema (26 tables), scheduler jobs, feature matrix |
 | 8 | [`docs/ROADMAP.md`](ROADMAP.md) | Release index (V1.2–V2.0) and product positioning |
 | 9 | [`Beta V1.2.md`](../Beta%20V1.2.md) | Current release — foundation and hardening |
 | 10 | [`docs/JUPITER_VISION.md`](JUPITER_VISION.md) | Jupiter ecosystem and beast identity (optional sidecars) |
@@ -318,8 +319,8 @@ Update the source markdown in the same PR when you change behaviour those artifa
 
 ## Related documentation
 
+- [`CODEBASE_CONTEXT.md`](../CODEBASE_CONTEXT.md) — consolidated codebase reference (architecture, flows, AI guardrails)
 - [`SYSTEM_DESIGN.md`](../SYSTEM_DESIGN.md) — architecture deep dive
 - [`API_REFERENCE.md`](../API_REFERENCE.md) — endpoint catalog
 - [`APPLICATION_EXECUTION_MAP.md`](../APPLICATION_EXECUTION_MAP.md) — runtime traces
 - [`FOLDER_STRUCTURE_GUIDE.md`](../FOLDER_STRUCTURE_GUIDE.md) — every file in the repo
-- [`docs/LIGHT_THEME.md`](LIGHT_THEME.md) — theme tokens and screenshot notes

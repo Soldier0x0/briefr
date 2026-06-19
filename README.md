@@ -4,8 +4,8 @@
 
 ![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)
-![React 18](https://img.shields.io/badge/React-18.3-blue.svg)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.136-green.svg)
+![React 19](https://img.shields.io/badge/React-19.2-blue.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.137-green.svg)
 
 BRIEFR is a self-hosted CVE intelligence dashboard for security analysts, small teams, and solo researchers. It aggregates NVD, CISA KEV, EPSS, MITRE ATT&CK, MITRE ATLAS, and optional threat-feed enrichment into one searchable UI — with IOC lookup, correlation, detection engineering helpers, and PDF export.
 
@@ -86,9 +86,9 @@ Three main tabs:
 
 | Backend | Frontend |
 |---------|----------|
-| FastAPI 0.136.3 | React 18.3.1 |
-| Uvicorn 0.48.0 | React Router 7.16.0 |
-| httpx 0.28.1 | Vite 5.4.1 |
+| FastAPI 0.137.2 | React 19.2.7 |
+| Uvicorn 0.49.0 | React Router 7.18.0 |
+| httpx 0.28.1 | Vite 8.0.16 |
 | APScheduler 3.11.2 | ExcelJS 4.4.0 |
 | aiosqlite 0.22.1 | jsPDF 4.2.1 + html2canvas |
 | Pydantic 2.13.4 | Plain JSX + CSS (no component library) |
@@ -314,6 +314,7 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 | Document | Contents |
 |----------|----------|
 | [`docs/ONBOARDING.md`](docs/ONBOARDING.md) | **Start here** — reading order, local dev, tests, env vars, troubleshooting |
+| [`CODEBASE_CONTEXT.md`](CODEBASE_CONTEXT.md) | Single dense reference for AI assistants and contributors (architecture, flows, guardrails) |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | **Release index** — V1.2 foundation through V2.0 platform |
 | [`docs/JUPITER_VISION.md`](docs/JUPITER_VISION.md) | Jupiter project vision, beast pillars, optional ClickStack |
 | [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) | Architecture, data flows, design decisions |
@@ -389,7 +390,7 @@ BRIEFR collects no personal data, uses no cookies, and runs no analytics. Tech s
 
 - Single-user SQLite — not designed for concurrent multi-tenant writes
 - No app-level authentication yet — built-in app login ships before the public self-hosted release; until then `BRIEFR_ADMIN_API_KEY` optionally gates `POST /api/refresh*`
-- Risk weights duplicated in Python (`backend/scoring/risk.py`) and JavaScript (`frontend/src/scoring/riskScore.js`) — shared config planned for Beta V1.2
+- Risk score weights are authoritative in `backend/scoring/risk.py` and fetched at frontend startup via `GET /api/config/risk` (`frontend/src/scoring/riskScore.js` keeps identical fallback constants if the request fails)
 - AI/ML alerts chip requires AI/ML keywords in your saved stack or asset profile `aiSystems`
 
 ---

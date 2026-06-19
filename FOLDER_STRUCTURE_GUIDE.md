@@ -14,13 +14,16 @@ Every file in the repository with a one-line purpose. Tags:
 
 | Path | Description |
 |---|---|
-| `backend/main.py` | FastAPI app wiring only: lifespan, CORS + security-header middleware, router includes (~130 lines; V1.2 router split complete) |
-| `backend/settings.py` | Pydantic `BaseSettings` env config (phase 1: `BRIEFR_ENV`, `BRIEFR_ADMIN_API_KEY`, `ALLOWED_ORIGINS`) |
+| `backend/main.py` | FastAPI app wiring only: lifespan, CORS + security-header middleware, router includes (~200 lines; V1.2 router split complete) |
+| `backend/settings.py` | Pydantic `BaseSettings` env config (phase 1: `BRIEFR_ENV`, `BRIEFR_ADMIN_API_KEY`, `ALLOWED_ORIGINS`, rate limit + log format) |
 | `backend/dependencies.py` | Shared route dependencies: admin-key gate, audit-log writer |
-| `backend/database.py` | **[V1.2-SPLIT]** SQLite schema, migrations, upserts, cache, MITRE/ATLAS/OTX persistence (1,681 lines) |
-| `backend/scheduler.py` | APScheduler: 7 jobs, ingest locks, startup bootstrap, manual refresh entry points |
+| `backend/database.py` | **[V1.2-SPLIT]** SQLite schema, migrations, upserts, cache, MITRE/ATLAS/OTX persistence (~2,440 lines) |
+| `backend/scheduler.py` | APScheduler: 13 scheduled jobs + startup one-shots, ingest locks, manual refresh entry points |
+| `backend/resilient_client.py` | Shared pooled httpx client: retries, per-source circuit breakers, health registry |
+| `backend/rate_limit.py` | Token-bucket rate limiting for `POST /api/ioc/lookup` and `POST /api/refresh*` |
+| `backend/structured_logging.py` | JSON/plain logging with `request_id` contextvar |
 | `backend/tracking.py` | `api_usage` counters and quota metadata for `/api/usage` endpoints |
-| `backend/requirements.txt` | Runtime Python dependencies (FastAPI, httpx, aiosqlite, APScheduler, PyYAML) |
+| `backend/requirements.txt` | Runtime Python dependencies (FastAPI, httpx, aiosqlite, APScheduler, PyYAML, pyrage) |
 | `backend/requirements-dev.txt` | Development/test Python dependencies, including `requirements.txt` plus pytest |
 | `backend/.env.example` | Environment variable template for API keys and scheduler tuning |
 | `backend/.python-version` | Python version pin for local/pyenv |
@@ -37,6 +40,41 @@ Every file in the repository with a one-line purpose. Tags:
 | `backend/routers/ioc.py` | IOC lookup + OTX pulse IOCs (`POST /api/ioc/lookup`, `GET /api/otx/pulses/{id}/iocs`) |
 | `backend/routers/cves.py` | CVE group: changes/stats/list/export/detail/momentum/detection/correlation + KEV deadlines, CVE filter SQL, enrichment orchestration |
 | `backend/routers/meta.py` | Meta group: `/api/version`, `/api/time`, `/api/usage*`, AI/investigation summaries |
+| `backend/routers/brief.py` | `GET /api/brief` — server-computed morning brief action queue |
+| `backend/routers/config.py` | `GET /api/config/risk` — risk score v1.1b weight constants |
+| `backend/routers/forge.py` | Forge tab: `/api/forge/coverage`, `/api/hunt-packs/*` |
+| `backend/routers/watchlist.py` | Watchlist pin API (`GET/POST/DELETE /api/watchlist*`); legacy snooze cleanup |
+
+### backend/brief/
+
+| Path | Description |
+|---|---|
+| `backend/brief/__init__.py` | Package marker |
+| `backend/brief/service.py` | `build_morning_brief()` — aggregates action queue from DB state |
+
+### backend/backup/
+
+| Path | Description |
+|---|---|
+| `backend/backup/__init__.py` | Package marker |
+| `backend/backup/manager.py` | SQLite backup/restore, age encryption, startup auto-restore |
+| `backend/backup/__main__.py` | CLI entry: `python -m backup run` |
+
+### backend/ml/
+
+| Path | Description |
+|---|---|
+| `backend/ml/__init__.py` | Package marker |
+| `backend/ml/embeddings.py` | Optional semantic similar-CVE embeddings backfill (`EMBEDDINGS_ENABLED`) |
+| `backend/ml/product_extraction.py` | Optional Groq product extraction for NVD-unanalyzed CVEs |
+
+### backend/webhooks/
+
+| Path | Description |
+|---|---|
+| `backend/webhooks/__init__.py` | Package marker |
+| `backend/webhooks/alerts.py` | KEV-on-stack + backup dead-man alert logic |
+| `backend/webhooks/sender.py` | Discord/Telegram webhook delivery |
 
 ### backend/ai/
 
@@ -86,7 +124,18 @@ Every file in the repository with a one-line purpose. Tags:
 | `backend/feeds/extended.py` | Sploitus, GreyNoise, MalwareBazaar, URLhaus, CIRCL |
 | `backend/feeds/ai_context.py` | AI/ML keyword detection and ATLAS link heuristics |
 | `backend/feeds/incident_sources.py` | RSS source config (6 feeds) |
-| `backend/feeds/incident_news.py` | RSS fetch, parse, 30min feed_cache per source |
+| `backend/feeds/incident_news.py` | RSS fetch, parse, per-source feed_cache |
+| `backend/feeds/case_study_feed.py` | Combined RSS + ATLAS snapshot for `/api/case-studies/feed` (single DB connection) |
+| `backend/feeds/cvelistv5.py` | cvelistV5 GitHub delta sync (CVE JSON 5.x before NVD) |
+| `backend/feeds/vulnrichment.py` | CISA Vulnrichment snapshot — additive CVSS/CWE/CPE gap-fill |
+| `backend/feeds/exploit_sync.py` | Orchestrates PoC-in-GitHub, ExploitDB, Metasploit, Nuclei sync |
+| `backend/feeds/exploitdb.py` | ExploitDB CSV parser |
+| `backend/feeds/poc_github.py` | PoC-in-GitHub index fetch |
+| `backend/feeds/metasploit_modules.py` | Metasploit modules metadata |
+| `backend/feeds/nuclei_index.py` | Nuclei CVE template index |
+| `backend/feeds/cve_record_v5.py` | CVE JSON 5.x record parser (cvelistV5 / vulnrichment) |
+| `backend/feeds/github_helpers.py` | Shared GitHub API helpers for feed modules |
+| `backend/feeds/exploit_common.py` | Shared exploit-source merge helpers |
 
 ### backend/matching/
 
@@ -129,7 +178,7 @@ Every file in the repository with a one-line purpose. Tags:
 | Path | Description |
 |---|---|
 | `frontend/index.html` | Vite HTML shell |
-| `frontend/package.json` | React 18, Vite 5, jsPDF, exceljs dependencies |
+| `frontend/package.json` | React 19, Vite 8, jsPDF, exceljs dependencies |
 | `frontend/package-lock.json` | Locked npm dependency tree |
 | `frontend/vite.config.js` | Dev server port 5173, `/api` proxy to :8000 |
 | `frontend/.gitignore` | Ignores `node_modules`, `dist` |
@@ -138,7 +187,7 @@ Every file in the repository with a one-line purpose. Tags:
 
 | Path | Description |
 |---|---|
-| `frontend/src/main.jsx` | React root; applies `briefr_theme` from localStorage |
+| `frontend/src/main.jsx` | React root; self-hosted fonts; prefetches risk weights via `GET /api/config/risk` |
 | `frontend/src/App.jsx` | App shell, tabs, global state, DetailDrawer host |
 | `frontend/src/App.css` | Layout and grid styles |
 | `frontend/src/api.js` | Central `fetch` wrapper and all API client functions |
@@ -147,13 +196,19 @@ Every file in the repository with a one-line purpose. Tags:
 
 | Path | Description |
 |---|---|
-| `frontend/src/components/Header.jsx` | Logo, BRIEF/IOC/INCIDENTS tabs, theme, timezone, profile |
+| `frontend/src/components/Header.jsx` | Logo, BRIEF/FEED/IOC/INCIDENTS/Forge tabs, timezone, profile (dark mode only) |
 | `frontend/src/components/Hero.jsx` | Tech stack input; persists to localStorage |
 | `frontend/src/components/StatsRow.jsx` | Severity/KEV stat chips from `GET /api/stats` |
 | `frontend/src/components/TimelineHeatmap.jsx` | 90-day CVE publication heatmap |
 | `frontend/src/components/CVEFeed.jsx` | Infinite-scroll CVE list, bulk export |
 | `frontend/src/components/CVECard.jsx` | Single CVE row with risk badge and EPSS sparkline |
-| `frontend/src/components/FilterBar.jsx` | Severity, KEV, PoC, EPSS, technique filters |
+| `frontend/src/components/FilterBar.jsx` | Stack bar, CVE search, quick filters, vendor chips, watchlist filter |
+| `frontend/src/components/MorningBrief.jsx` | Morning brief action queue from `GET /api/brief` |
+| `frontend/src/components/BriefCharts.jsx` | KEV histogram + EPSS movers (lazy-loaded Chart.js) |
+| `frontend/src/components/WhatChangedPanel.jsx` | CVE field deltas from `GET /api/changes` |
+| `frontend/src/components/TimeWindowPicker.jsx` | Preset/custom time windows for analyst charts |
+| `frontend/src/components/CveDescriptionClamp.jsx` | Expandable CVE description text |
+| `frontend/src/components/Forge.jsx` | Detection engineering — ATT&CK coverage map + hunt packs |
 | `frontend/src/components/Sidebar.jsx` | KEV deadlines and top ATT&CK techniques |
 | `frontend/src/components/DetailDrawer.jsx` | **[V1.2-SPLIT]** CVE detail drawer (~1,500 lines) |
 | `frontend/src/components/DrawerAtlasSection.jsx` | ATLAS techniques/case studies block (fed by `GET /api/cves/{id}`) |
@@ -182,6 +237,8 @@ Every file in the repository with a one-line purpose. Tags:
 
 | Path | Description |
 |---|---|
+| `frontend/src/hooks/useWatchlist.js` | Pin state synced with `/api/watchlist` |
+| `frontend/src/hooks/useModalLayer.js` | Overlay depth tracking for keyboard shortcuts |
 | `frontend/src/hooks/useInactivityTimeout.js` | Session inactivity detection |
 
 ### frontend/src/pages/
@@ -203,17 +260,19 @@ Every file in the repository with a one-line purpose. Tags:
 
 | Path | Description |
 |---|---|
-| `frontend/src/scoring/riskScore.js` | **Active** client-side risk score v1.1b (6 components) |
+| `frontend/src/scoring/riskScore.js` | Client-side risk score v1.1b; weights from `GET /api/config/risk` |
+| `frontend/src/theme/light-theme.css` | **[DEPRECATED]** Light theme tokens — not imported (dark mode only) |
 
 ### frontend/src/utils/
 
 | Path | Description |
 |---|---|
-| `frontend/src/utils/aiAssets.js` | AI/ML framework detection for alerts stat + drawer |
-| `backend/feeds/case_study_feed.py` | Combined RSS + ATLAS loader for `/api/case-studies/feed` (single DB connection) |
-| `backend/backup/` | SQLite backup manager CLI (`python -m backup`) |
+| `frontend/src/utils/openCveDrawer.js` | `createCveDrawerController()` — stale-fetch guard on drawer close |
+| `frontend/src/utils/chartLoader.js` | Lazy Chart.js loader for BriefCharts histogram |
+| `frontend/src/utils/motion.js` | Reduced-motion preference helpers |
 | `frontend/src/utils/cveFilters.js` | Stack localStorage key and filter param mapping |
 | `frontend/src/utils/cveAge.js` | CVE age display helpers |
+| `frontend/src/utils/aiAssets.js` | AI/ML framework detection for alerts stat + drawer |
 | `frontend/src/utils/timezone.js` | Timezone list, formatting, localStorage persistence |
 | `frontend/src/utils/epssSparkline.js` | EPSS mini-chart data for CVECard |
 | `frontend/src/utils/momentumCache.js` | Module-level momentum score cache for cards |
@@ -227,7 +286,6 @@ Every file in the repository with a one-line purpose. Tags:
 | `frontend/src/utils/heatmapGrid.js` | Timeline heatmap grid layout |
 | `frontend/src/utils/displayText.js` | Text truncation/display helpers |
 | `frontend/src/utils/domainValidation.js` | Client-side domain validation (mirrors backend) |
-| `frontend/src/utils/aiAssets.js` | AI/ML asset profile matching helpers |
 | `frontend/src/utils/assetProfileIo.js` | Import/export asset profile JSON files |
 | `frontend/src/utils/extractIndicatorsFromCve.js` | Pull IOCs from CVE OTX/GreyNoise fields |
 | `frontend/src/utils/investigationActors.js` | Actor extraction for investigation PDF |
@@ -265,6 +323,7 @@ Every file in the repository with a one-line purpose. Tags:
 | `TECHNICAL_INVENTORY.md` | Stack, schema, scheduler, feature matrix |
 | `TECHNICAL_INVENTORY.xlsx` | Spreadsheet export of inventory tables |
 | `APPLICATION_EXECUTION_MAP.md` | Startup sequence and request journeys |
+| `CODEBASE_CONTEXT.md` | Consolidated codebase reference for AI assistants and contributors |
 | `FOLDER_STRUCTURE_GUIDE.md` | This file |
 | `docs/diagrams/*.mermaid` | Mermaid diagrams (architecture, flows, schema, startup) |
 | `screenshots/brief.png` | README screenshot — BRIEF tab CVE feed |

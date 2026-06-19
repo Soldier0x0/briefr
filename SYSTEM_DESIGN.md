@@ -3,8 +3,8 @@
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
 **Version:** 1.1 (beta)  
-**Last updated:** 2026-06-08  
-**Source of truth:** `/workspace` codebase — see [`Beta V1.2.md`](Beta%20V1.2.md) for near-future roadmap
+**Last updated:** 2026-06-19  
+**Source of truth:** `/workspace` codebase — see [`CODEBASE_CONTEXT.md`](CODEBASE_CONTEXT.md) for a consolidated reference and [`Beta V1.2.md`](Beta%20V1.2.md) for near-future roadmap
 
 ---
 
@@ -41,46 +41,43 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
        │              │              │              │                │
        ▼              ▼              ▼              ▼                ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ APScheduler (scheduler.py) — 11 recurring jobs (+1 opt-in) + 1 one-shot     │
+│ APScheduler (scheduler.py) — 13 recurring jobs (+ opt-in gates) + startup one-shots │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ 1. NVD incremental      → cves, sync_state, cve_change_history, feed_cache  │
-│ 2. KEV metadata         → kev_deadlines, cves.is_kev, summaries             │
+│ 2. KEV metadata         → kev_deadlines, cves.is_kev, webhook_alert_log       │
 │ 3. EPSS scores          → cves.epss_score, epss_history                     │
 │ 4. MITRE+ATLAS weekly   → mitre_*, atlas_*, cve_*_map, has_ai_context       │
 │ 5. OTX nightly          → otx_cve_pulses, otx_pulse_iocs, feed_cache        │
-│ 6. Incident RSS (4h)    → feed_cache (incident_rss:*)                       │
+│ 6. Incident feed (30m)  → feed_cache (incident_rss:*, incident_feed:snapshot)│
 │ 7. Correlation nightly  → correlation_*, feed_cache, otx_pulse_iocs         │
 │ 8. Vulnrichment (6h)    → cves (additive CVSS/CWE/CPE)                      │
 │ 9. cvelistV5 delta (30m)→ cves, sync_state.cvelistv5_head_sha               │
 │ 10. Embeddings backfill → cve_embeddings (no-op unless EMBEDDINGS_ENABLED)  │
 │ 11. LLM product extract → cves.affected_products(+_source), feed_cache      │
 │ 12. Exploit sources (opt-in) → cve_exploits, cves.has_poc                   │
-│ 13. EPSS history backfill (one-shot) → epss_history, sync_state marker      │
+│ 13. Backup dead-man     → webhook_alert_log (when webhooks configured)      │
+│ (startup one-shot) EPSS history backfill → epss_history, sync_state marker  │
 └──────────────────────────────────┬──────────────────────────────────────────┘
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ SQLite (briefr.db) — 24 tables — see TECHNICAL_INVENTORY.md                │
+│ SQLite (briefr.db) — 26 tables — see TECHNICAL_INVENTORY.md                │
 └──────────────────────────────────┬──────────────────────────────────────────┘
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ FastAPI (main.py + routers/) — /api/* — ~30 endpoints                       │
+│ FastAPI (main.py + routers/) — /api/* — ~43 route handlers                  │
 └──────────────────────────────────┬──────────────────────────────────────────┘
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ React + Vite (frontend/src)                                                 │
-├──────────────────┬──────────────────┬──────────────────┬────────────────────┤
-│ BRIEF tab        │ FEED tab         │ IOC LOOKUP tab   │ INCIDENTS tab    │ DetailDrawer       │
-│ MorningBrief.jsx │ CVEFeed.jsx      │ IOCLookup.jsx    │ CaseStudies.jsx  │ (global overlay)   │
-│ → GET /brief     │ → GET /cves      │ → POST /ioc      │ → combined feed  │ → 6+ sub-routes    │
-│ BriefCharts.jsx  │ CVECard.jsx      │                  │                  │ explainable risk   │
-│ WhatChangedPanel │ FilterBar stack  │                  │                  │ breakdown (math)   │
-│ TimelineHeatmap  │ + Sidebar.jsx    │                  │                  │                    │
-│ (side-by-side    │ (no Hero/stats/  │                  │                  │                    │
-│  with What       │  heatmap)        │                  │                  │                    │
-│  changed ≥901px) │                  │                  │                  │                    │
-│ StatsRow.jsx     │                  │                  │                  │                    │
-│ Hero stack bar   │                  │                  │                  │                    │
-└──────────────────┴──────────────────┴──────────────────┴────────────────────┘
+├──────────────┬──────────────┬──────────────┬──────────────┬───────────────┤
+│ BRIEF tab    │ FEED tab     │ IOC LOOKUP   │ INCIDENTS    │ Forge tab     │ DetailDrawer  │
+│ MorningBrief │ CVEFeed.jsx  │ IOCLookup    │ CaseStudies  │ Forge.jsx     │ (overlay)     │
+│ BriefCharts  │ CVECard.jsx  │              │              │               │               │
+│ WhatChanged  │ FilterBar    │              │              │               │               │
+│ TimelineHeat │ + Sidebar    │              │              │               │               │
+│ StatsRow     │              │              │              │               │               │
+│ Hero stack   │              │              │              │               │               │
+└──────────────┴──────────────┴──────────────┴──────────────┴───────────────┘
 ```
 
 Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architecture.mermaid)
