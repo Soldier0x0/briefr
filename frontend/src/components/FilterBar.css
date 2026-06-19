@@ -4,6 +4,10 @@
   background: var(--bg);
 }
 
+.filter-toolbar-anchor {
+  display: flow-root;
+}
+
 .filter-toolbar {
   position: sticky;
   top: 52px;
