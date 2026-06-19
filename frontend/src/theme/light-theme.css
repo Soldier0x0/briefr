@@ -87,8 +87,6 @@
 
 [data-theme="light"] .vendor-filter-block {
   background: var(--surface-sunken);
-  border-top-color: var(--border-strong);
-  border-bottom-color: var(--border-strong);
 }
 
 [data-theme="light"] .vendor-btn {
