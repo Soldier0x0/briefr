@@ -1,9 +1,9 @@
+import asyncio
 import logging
+import sqlite3
 from datetime import datetime, timedelta, timezone
 
-import aiosqlite
-
-from database import DB_PATH
+from database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +123,19 @@ IOC_QUOTA_SERVICES: list[tuple[str, list[str] | None]] = [
     ("urlhaus", None),
 ]
 
+_API_USAGE_FLUSH_DELAY_SECONDS = 0.5
+_API_USAGE_LOCK = asyncio.Lock()
+_api_usage_pending: dict[tuple[str, str, str], int] = {}
+_api_usage_flush_task: asyncio.Task | None = None
+
+_API_USAGE_UPSERT_SQL = """
+    INSERT INTO api_usage (service, date_utc, month_utc, count)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(service, date_utc) DO UPDATE SET
+        count = count + excluded.count,
+        month_utc = excluded.month_utc
+"""
+
 
 def _usage_bucket(used: int, limit: int | None) -> dict:
     remaining = (limit - used) if limit is not None else None
@@ -204,6 +217,48 @@ def _build_service_stat(
     return stat
 
 
+async def _schedule_api_usage_flush() -> None:
+    await asyncio.sleep(_API_USAGE_FLUSH_DELAY_SECONDS)
+    await flush_api_usage_pending()
+
+
+async def flush_api_usage_pending() -> None:
+    """Persist buffered api_usage counters in one transaction (test hook)."""
+    global _api_usage_flush_task
+
+    async with _API_USAGE_LOCK:
+        batch = dict(_api_usage_pending)
+        _api_usage_pending.clear()
+        _api_usage_flush_task = None
+
+    if not batch:
+        return
+
+    try:
+        db = await get_db()
+        try:
+            for (service, today, month), count in batch.items():
+                await db.execute(
+                    _API_USAGE_UPSERT_SQL,
+                    (service, today, month, count),
+                )
+            await db.commit()
+        finally:
+            await db.close()
+    except sqlite3.OperationalError as exc:
+        if "locked" not in str(exc).lower():
+            logger.error("Failed to record API usage batch: %s", exc)
+            return
+        logger.warning("API usage batch deferred (database is locked)")
+        async with _API_USAGE_LOCK:
+            for key, count in batch.items():
+                _api_usage_pending[key] = _api_usage_pending.get(key, 0) + count
+            if _api_usage_flush_task is None or _api_usage_flush_task.done():
+                _api_usage_flush_task = asyncio.create_task(_schedule_api_usage_flush())
+    except Exception as exc:
+        logger.error("Failed to record API usage batch: %s", exc)
+
+
 async def get_ioc_usage_stats() -> list[dict]:
     """Usage stats for APIs used by IOC Lookup (counts BRIEFR outbound calls on this server)."""
     now = datetime.now(timezone.utc)
@@ -216,8 +271,8 @@ async def get_ioc_usage_stats() -> list[dict]:
     week_map: dict[str, int] = {}
 
     try:
-        async with aiosqlite.connect(DB_PATH) as db:
-            db.row_factory = aiosqlite.Row
+        db = await get_db()
+        try:
             today_rows = await db.execute_fetchall(
                 "SELECT service, SUM(count) as total FROM api_usage WHERE date_utc = ? GROUP BY service",
                 (today,),
@@ -237,6 +292,8 @@ async def get_ioc_usage_stats() -> list[dict]:
                 (week_start,),
             )
             week_map = {r["service"]: r["total"] for r in week_rows}
+        finally:
+            await db.close()
     except Exception as exc:
         logger.error("Failed to read IOC API usage: %s", exc)
 
@@ -260,21 +317,13 @@ async def record_api_call(service: str, count: int = 1) -> None:
     now = datetime.now(timezone.utc)
     today = now.strftime("%Y-%m-%d")
     month = now.strftime("%Y-%m")
-    try:
-        async with aiosqlite.connect(DB_PATH) as db:
-            await db.execute(
-                """
-                INSERT INTO api_usage (service, date_utc, month_utc, count)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(service, date_utc) DO UPDATE SET
-                    count = count + excluded.count,
-                    month_utc = excluded.month_utc
-                """,
-                (service, today, month, count),
-            )
-            await db.commit()
-    except Exception as exc:
-        logger.error("Failed to record API usage for %s: %s", service, exc)
+    key = (service, today, month)
+
+    global _api_usage_flush_task
+    async with _API_USAGE_LOCK:
+        _api_usage_pending[key] = _api_usage_pending.get(key, 0) + count
+        if _api_usage_flush_task is None or _api_usage_flush_task.done():
+            _api_usage_flush_task = asyncio.create_task(_schedule_api_usage_flush())
 
 
 async def get_usage_stats() -> list[dict]:
@@ -286,9 +335,8 @@ async def get_usage_stats() -> list[dict]:
     month_map: dict[str, int] = {}
 
     try:
-        async with aiosqlite.connect(DB_PATH) as db:
-            db.row_factory = aiosqlite.Row
-
+        db = await get_db()
+        try:
             today_rows = await db.execute_fetchall(
                 "SELECT service, SUM(count) as total FROM api_usage WHERE date_utc = ? GROUP BY service",
                 (today,),
@@ -300,6 +348,8 @@ async def get_usage_stats() -> list[dict]:
                 (month,),
             )
             month_map = {r["service"]: r["total"] for r in month_rows}
+        finally:
+            await db.close()
     except Exception as exc:
         logger.error("Failed to read API usage stats: %s", exc)
 
