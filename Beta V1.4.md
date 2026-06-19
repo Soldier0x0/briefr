@@ -4,7 +4,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 
 **Document version:** 1.1  
 **Last updated:** 2026-06-19  
-**Status:** Theme 1 (Admin pane) **shipped** in PR cursor/admin-overhaul-17e8. Themes 2–4 remain planned.
+**Status:** Theme 1 (Admin pane) **shipped** in PR cursor/admin-overhaul-17e8. Theme 4 (Wallboard) **shipped** in PR cursor/wallboard-readonly-display-b10c. Themes 2–3 and 5–6 remain planned.
 
 **Prerequisite:** [`Beta V1.3.md`](Beta%20V1.3.md)  
 **Index:** [`docs/ROADMAP.md`](docs/ROADMAP.md)
@@ -75,7 +75,7 @@ Analyst benefits from pushes; **configuration lives in admin**.
 
 ---
 
-## Theme 4 — Wallboard (`/wallboard`)
+## Theme 4 — Wallboard (`/wallboard`) — ✅ SHIPPED (PR cursor/wallboard-readonly-display-b10c, 2026-06-19)
 
 Read-only **intel posture** display for kiosk / TV — **not** a SOC log wall.
 
@@ -94,6 +94,8 @@ Read-only **intel posture** display for kiosk / TV — **not** a SOC log wall.
 | **API** | `GET /api/wallboard` aggregated cached payload |
 | **Auth** | Optional `WALLBOARD_TOKEN` read-only scope |
 | **Security** | No secrets, no write actions; rate limit |
+
+**Shipped scope:** `GET /api/wallboard` aggregates six tiles from DB + cached snapshots (`feed_cache`, ~45s TTL). Optional `WALLBOARD_TOKEN` gate via `X-BRIEFR-Wallboard-Token` or `?token=`. Token-bucket rate limit (`RATE_LIMIT_WALLBOARD_PER_MINUTE`, default 60/min). Frontend `/wallboard` route — chromeless 3×2 grid, rotating tile focus, scrolling headline ticker, 90s poll.
 
 ---
 

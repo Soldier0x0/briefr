@@ -811,6 +811,66 @@ Params: `limit`, `offset`, `action`, `action_prefix`, `actor`. Use `action_prefi
 
 ---
 
+## Wallboard (read-only kiosk — V1.4 Theme 4)
+
+### GET /api/wallboard
+
+Aggregated intel posture payload for the `/wallboard` kiosk view. Built from existing DB state and cached snapshots (`feed_cache` key `wallboard:snapshot`, ~45s TTL). No outbound HTTP on the request path; no admin data or secrets in the response.
+
+**Auth:** when `WALLBOARD_TOKEN` is set, require header `X-BRIEFR-Wallboard-Token` or query param `token` (read-only scope). When unset, the endpoint is open (same optional-gate pattern as `BRIEFR_ADMIN_API_KEY`).
+
+**Rate limit:** token bucket (`rate_limit_wallboard`) — default `RATE_LIMIT_WALLBOARD_PER_MINUTE=60` per client IP; 429 + `Retry-After` over the limit.
+
+**Response (additive):**
+
+```json
+{
+  "meta": {
+    "generated_at": "2026-06-19T12:00:00Z",
+    "timezone": "Asia/Kolkata",
+    "stack_terms": ["log4j"],
+    "cached": false
+  },
+  "kev_on_stack": {
+    "count": 3,
+    "stack_configured": true,
+    "stack_terms": ["log4j"]
+  },
+  "changes_24h": {
+    "since_hours": 24,
+    "section_counts": {"epss_movers": 2, "new_kev": 1, "kev_due_soon": 0, "stack_matches": 4},
+    "action_queue_count": 6,
+    "highlights": [{"cve_id": "CVE-…", "severity": "HIGH", "summary": "…", "reasons": ["epss_mover"], "is_kev": false}]
+  },
+  "top_risk": {
+    "items": [{"cve_id": "CVE-…", "risk_score": 87.4, "severity": "CRITICAL", "summary": "…", "is_kev": true, "epss_score": 0.91}]
+  },
+  "ingest_health": {
+    "status": "ok",
+    "cve_count": 15234,
+    "last_updated": "…",
+    "refresh_in_progress": false,
+    "open_circuit_count": 0,
+    "never_synced_source_count": 1,
+    "feeds": {"incidents": {"last_refresh": "…", "stale": false}, "sources": {}},
+    "ingest": {}
+  },
+  "coverage_gaps": {
+    "counts": {"yours": 2, "community": 40, "gap": 12},
+    "gap_count": 12,
+    "top_gaps": [{"technique_id": "T1190", "name": "…", "tactic": "Initial Access", "cve_count": 5, "kev_count": 1}],
+    "stack_terms": ["log4j"]
+  },
+  "headlines": {
+    "items": [{"title": "…", "source": "BleepingComputer", "published_at": "…"}],
+    "meta": {"refreshed_at": "…", "stale": false, "warming": false, "refresh_interval_minutes": 30},
+    "error_count": 0
+  }
+}
+```
+
+---
+
 ## OpenAPI / Swagger
 
 FastAPI auto-generates OpenAPI spec at runtime.

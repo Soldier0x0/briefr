@@ -1,0 +1,1 @@
+"""Wallboard aggregated read-path."""

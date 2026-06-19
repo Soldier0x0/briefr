@@ -242,6 +242,8 @@ See `backend/.env.example` for the full list. Key variables:
 | `BRIEFR_ADMIN_API_KEY` | Optional `X-BRIEFR-Admin-Key` gate for `POST /api/refresh*` | — |
 | `RATE_LIMIT_ENABLED` | Token-bucket rate limiting on `/api/ioc/lookup` + `/api/refresh*` | `1` |
 | `RATE_LIMIT_IOC_PER_MINUTE` / `RATE_LIMIT_REFRESH_PER_MINUTE` | Per-client-IP budgets (429 + `Retry-After` over the limit) | `30` / `10` |
+| `RATE_LIMIT_WALLBOARD_PER_MINUTE` | Per-client-IP budget for `GET /api/wallboard` | `60` |
+| `WALLBOARD_TOKEN` | Optional read-only gate for `GET /api/wallboard` + `/wallboard` UI (`X-BRIEFR-Wallboard-Token`) | — |
 | `LOG_FORMAT` | `json` structured logs with `request_id`, or `plain` | `json` |
 | `ALLOWED_ORIGINS` | CORS origins (comma-separated) | `http://localhost:3000` |
 | `DB_PATH` | SQLite file | `briefr.db` |

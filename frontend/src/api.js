@@ -278,6 +278,27 @@ export function clearAllSnoozes() {
   return request('/watchlist/snoozes', { method: 'DELETE' })
 }
 
+// ── Wallboard (read-only kiosk) ────────────────────────────────────────────
+
+export function getWallboardToken() {
+  return sessionStorage.getItem('briefr-wallboard-token') || ''
+}
+
+export function setWallboardToken(token) {
+  sessionStorage.setItem('briefr-wallboard-token', token)
+}
+
+export function clearWallboardToken() {
+  sessionStorage.removeItem('briefr-wallboard-token')
+}
+
+export function fetchWallboard() {
+  const token = getWallboardToken()
+  const headers = {}
+  if (token) headers['X-BRIEFR-Wallboard-Token'] = token
+  return request('/wallboard', { headers })
+}
+
 // ── Admin API ──────────────────────────────────────────────────────────────
 
 export function getAdminKey() {

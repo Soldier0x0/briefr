@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     rate_limit_enabled: bool = True
     rate_limit_ioc_per_minute: int = 30
     rate_limit_refresh_per_minute: int = 10
+    rate_limit_wallboard_per_minute: int = 60
+
+    # V1.4 Theme 4 — optional read-only kiosk token (X-BRIEFR-Wallboard-Token).
+    wallboard_token: str = ""
 
     @field_validator("briefr_env")
     @classmethod
@@ -36,6 +40,11 @@ class Settings(BaseSettings):
     @field_validator("briefr_admin_api_key")
     @classmethod
     def _strip_admin_key(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("wallboard_token")
+    @classmethod
+    def _strip_wallboard_token(cls, value: str) -> str:
         return value.strip()
 
     @field_validator("log_format")
