@@ -1154,17 +1154,23 @@ export default function AdminPage() {
   async function loadSystem() {
     try {
       const res = await adminApi.get('/system')
-      if (!res.ok) throw Object.assign(new Error('Failed'), { status: res.status })
+      if (res.status === 401) {
+        setAuthed(false)
+        setKeyModalOpen(true)
+        return
+      }
+      if (!res.ok) return  // Ignore 429 and other transient errors silently
       const data = await res.json()
       setSystem(data)
       setAuthed(true)
       setKeyModalOpen(false)
       setModalError('')
     } catch (e) {
-      if (e.status === 401) {
+      if (e && e.status === 401) {
         setAuthed(false)
         setKeyModalOpen(true)
       }
+      // Ignore network errors and rate limit errors silently
     }
   }
 
@@ -1173,6 +1179,11 @@ export default function AdminPage() {
       const res = await adminApi.get('/security')
       if (res.status === 401) {
         setKeyModalOpen(true)
+        return
+      }
+      if (!res.ok) {
+        // 429 or other error — just try loading system directly
+        await loadSystem()
         return
       }
       const data = await res.json()
@@ -1185,7 +1196,7 @@ export default function AdminPage() {
         await loadSystem()
       }
     } catch (e) {
-      if (e.status === 401) {
+      if (e && e.status === 401) {
         setKeyModalOpen(true)
       } else {
         await loadSystem()
