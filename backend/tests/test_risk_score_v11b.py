@@ -12,7 +12,7 @@ from scoring.asset_match import (
     profile_to_match_assets,
     resolve_asset_component,
 )
-from scoring.risk import calculate_risk_score, get_risk_weights
+from scoring.risk import _exploit_score_v11b, calculate_risk_score, get_risk_weights
 
 
 SAMPLE_CVE = {
@@ -79,7 +79,29 @@ def test_profile_to_match_assets_flattens():
     assert assets[1]["product"] == "log4j"
 
 
-def test_resolve_asset_uses_fuzzy_when_cpe_zero():
+def test_profile_to_match_assets_tolerates_non_string_products():
+    profile = {
+        "operatingSystems": [{"product": 12345}],
+        "applications": [{"cpeProduct": "log4j", "vendor": "apache"}],
+        "aiSystems": [999, {"product": "TensorFlow"}],
+    }
+    assets = profile_to_match_assets(profile)
+    assert {"product": "12345", "version": "", "vendor": ""} in assets
+    assert {"product": "log4j", "version": "", "vendor": "apache"} in assets
+    assert {"product": "TensorFlow", "version": "", "vendor": ""} in assets
+
+
+def test_exploit_score_ignores_none_exploit_fields():
+    cve = {
+        **SAMPLE_CVE,
+        "public_exploits": [{"type": "poc", "title": None, "source": None, "url": None}],
+        "source_urls": [],
+    }
+    score = _exploit_score_v11b(cve)
+    assert score == 0.55
+
+
+def test_fuzzy_asset_match_when_cpe_score_zero():
     profile = {
         "applications": [
             {"product": "Log4j", "cpeProduct": "log4j", "vendor": "apache", "version": ""}

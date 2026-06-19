@@ -286,7 +286,7 @@ def _exploit_score_v11b(cve: dict) -> float:
         [
             *(str(u) for u in (cve.get("source_urls") or [])),
             *(
-                f"{e.get('title', '')} {e.get('source', '')} {e.get('url', '')}"
+                f"{e.get('title') or ''} {e.get('source') or ''} {e.get('url') or ''}"
                 for e in exploits
                 if isinstance(e, dict)
             ),

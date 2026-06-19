@@ -7,13 +7,22 @@ from typing import Any, Optional
 DEFAULT_ASSET_UNKNOWN = 0.5
 
 
+def _profile_product_name(item: Any) -> str:
+    """Safe string for profile product fields (guards non-str / None)."""
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, dict):
+        return str(item.get("product") or item.get("cpeProduct") or "").strip()
+    return ""
+
+
 def profile_to_match_assets(profile: Optional[dict]) -> list[dict[str, str]]:
     """Flatten an asset profile to CPE-match asset rows."""
     if not profile:
         return []
     assets: list[dict[str, str]] = []
     for os_item in profile.get("operatingSystems") or []:
-        if not isinstance(os_item, dict) or not (os_item.get("product") or "").strip():
+        if not isinstance(os_item, dict) or not str(os_item.get("product") or "").strip():
             continue
         assets.append(
             {
@@ -23,7 +32,9 @@ def profile_to_match_assets(profile: Optional[dict]) -> list[dict[str, str]]:
             }
         )
     for app in profile.get("applications") or []:
-        if not isinstance(app, dict) or not (app.get("product") or "").strip():
+        if not isinstance(app, dict) or not str(
+            app.get("product") or app.get("cpeProduct") or ""
+        ).strip():
             continue
         assets.append(
             {
@@ -33,10 +44,10 @@ def profile_to_match_assets(profile: Optional[dict]) -> list[dict[str, str]]:
             }
         )
     for ai in profile.get("aiSystems") or []:
-        name = ai if isinstance(ai, str) else (ai or {}).get("product")
+        name = _profile_product_name(ai)
         if not name:
             continue
-        assets.append({"product": str(name).strip(), "version": "", "vendor": ""})
+        assets.append({"product": name, "version": "", "vendor": ""})
     return assets
 
 
@@ -157,10 +168,9 @@ def asset_match_info(cve: dict, profile: Optional[dict]) -> tuple[float, str]:
             best_label = os_display
 
     for ai in ais:
-        ai_name = ai if isinstance(ai, str) else (ai or {}).get("product")
+        ai_name = _profile_product_name(ai)
         if not ai_name:
             continue
-        ai_name = str(ai_name).strip()
         ai_lower = ai_name.lower()
 
         for prod in affected:
