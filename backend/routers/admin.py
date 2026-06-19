@@ -22,11 +22,13 @@ from pathlib import Path
 from typing import Any
 
 import aiosqlite
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, Response, UploadFile, File
+from fastapi.responses import FileResponse, StreamingResponse
 
 from database import (
     DB_PATH,
     EPSS_BACKFILL_DONE_KEY,
+    NVD_SYNC_WATERMARK_KEY,
     delete_all_snooze_entries,
     get_db,
     get_nvd_sync_watermark,
@@ -38,7 +40,7 @@ from dependencies import audit, require_admin_key
 from rate_limit import get_top_consumers, rate_limit_refresh
 from resilient_client import get_feed_health, reset_circuit
 from settings import settings
-from structured_logging import get_log_buffer
+from structured_logging import get_log_buffer, get_known_loggers
 
 router = APIRouter(
     prefix="/api/admin",
@@ -82,13 +84,23 @@ WRITABLE_CONFIG_KEYS = {
     "MAX_CVES_PER_FETCH", "NVD_DAYS_BACK", "KEV_CROSS_FETCH_NVD",
     "ATLAS_YAML_URL", "MITRE_CVE_MAPPINGS_JSON_URL",
     "EMBEDDINGS_ENABLED", "EMBEDDINGS_SYNC_INTERVAL_HOURS", "EMBEDDINGS_MAX_PER_RUN",
+    "EMBEDDINGS_MODEL", "EMBEDDINGS_CACHE_DIR",
     "LLM_PRODUCT_EXTRACTION_ENABLED", "LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS",
     "LLM_PRODUCT_EXTRACTION_MAX_PER_RUN",
     "BACKUP_ENABLED", "BACKUP_RETENTION_COUNT", "BACKUP_INTERVAL_HOURS",
+    "BACKUP_DIR", "BACKUP_AGE_KEY_FILE",
     "BRIEFR_STACK_TERMS", "LOG_FORMAT", "RATE_LIMIT_ENABLED",
     "RATE_LIMIT_IOC_PER_MINUTE", "RATE_LIMIT_REFRESH_PER_MINUTE",
     "DISCORD_WEBHOOK_URL", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID",
+    "ALLOWED_ORIGINS", "DEFAULT_TIMEZONE", "BRIEFR_ENV",
+    # API keys — writable so operator can set them without SSH
+    "NVD_API_KEY", "VIRUSTOTAL_API_KEY", "ABUSEIPDB_API_KEY", "GREYNOISE_API_KEY",
+    "GITHUB_TOKEN", "GROQ_API_KEY", "ANTHROPIC_API_KEY", "OTX_API_KEY",
+    "CIRCL_API_KEY", "ABUSECH_AUTH_KEY",
 }
+
+# Keys that are also writable via apply-all (includes BRIEFR_ADMIN_API_KEY for rotation)
+APPLY_ALL_EXTRA_KEYS = {"BRIEFR_ADMIN_API_KEY"}
 
 INTEGER_KEYS = {
     "NVD_SYNC_INTERVAL_HOURS", "KEV_SYNC_INTERVAL_MINUTES", "EPSS_SYNC_INTERVAL_HOURS",
@@ -170,37 +182,77 @@ def _job_lock_held(job_id: str) -> bool:
     return lock.locked() if lock else False
 
 
-async def _get_job_last_run(db: aiosqlite.Connection, job_id: str) -> dict[str, Any] | None:
+_OPT_IN_DISABLED_JOBS = {
+    "embeddings_backfill": ("EMBEDDINGS_ENABLED", "0"),
+    "llm_product_extraction": ("LLM_PRODUCT_EXTRACTION_ENABLED", "0"),
+    "exploit_sources_sync": ("EXPLOIT_SOURCES_SYNC_ENABLED", "1"),  # enabled=1 means NOT disabled
+}
+
+
+def _job_is_disabled(job_id: str) -> bool:
+    """Return True if the job is env-gated and its gate is off."""
+    gate = _OPT_IN_DISABLED_JOBS.get(job_id)
+    if not gate:
+        return False
+    env_key, default_value = gate
+    current = os.environ.get(env_key, default_value)
+    return current.lower() in ("0", "false", "no", "off")
+
+
+async def _get_job_last_run(db: aiosqlite.Connection, job_id: str) -> list[dict[str, Any]]:
+    """Return history array (newest first), or empty list if none."""
     try:
         rows = await db.execute_fetchall(
             "SELECT value FROM sync_state WHERE key = ?",
             (f"scheduler.last_run.{job_id}",),
         )
         if not rows:
-            return None
-        return json.loads(rows[0]["value"])
+            return []
+        raw = json.loads(rows[0]["value"])
+        if isinstance(raw, list):
+            return raw
+        if isinstance(raw, dict):
+            # Migrate old single-dict format
+            return [raw]
+        return []
     except Exception:
-        return None
+        return []
 
 
-def _build_job_info(job: Any, last_run: dict | None) -> dict[str, Any]:
+def _build_job_info(job: Any, history: list[dict]) -> dict[str, Any]:
     paused = job.next_run_time is None
+    lock_held = _job_lock_held(job.id)
+    disabled = _job_is_disabled(job.id)
     next_run = None
     if job.next_run_time is not None:
         try:
             next_run = job.next_run_time.astimezone(timezone.utc).isoformat()
         except Exception:
             next_run = str(job.next_run_time)
+
+    if disabled:
+        status = "DISABLED"
+    elif lock_held:
+        status = "LOCKED"
+    elif paused:
+        status = "PAUSED"
+    else:
+        status = "ACTIVE"
+
+    latest = history[0] if history else {}
     return {
         "id": job.id,
         "name": job.name,
         "next_run_time": next_run,
         "paused": paused,
-        "lock_held": _job_lock_held(job.id),
-        "last_run_utc": last_run.get("last_run_utc") if last_run else None,
-        "last_run_duration_seconds": last_run.get("duration_seconds") if last_run else None,
-        "last_run_records_upserted": last_run.get("records_upserted") if last_run else None,
-        "last_run_had_error": last_run.get("had_error") if last_run else None,
+        "lock_held": lock_held,
+        "status": status,
+        "last_run_utc": latest.get("last_run_utc") or latest.get("started_at"),
+        "last_run_duration_seconds": latest.get("duration_seconds"),
+        "last_run_records_upserted": latest.get("records_upserted"),
+        "last_run_had_error": latest.get("had_error"),
+        "last_error_message": (latest.get("error_message") or "")[:500],
+        "run_history": history,
     }
 
 
@@ -214,11 +266,22 @@ async def _get_all_scheduler_jobs() -> list[dict[str, Any]]:
     try:
         result = []
         for job in jobs:
-            last_run = await _get_job_last_run(db, job.id)
-            result.append(_build_job_info(job, last_run))
+            history = await _get_job_last_run(db, job.id)
+            result.append(_build_job_info(job, history))
         return result
     finally:
         await db.close()
+
+
+def _get_active_locks() -> list[dict[str, Any]]:
+    """Return info on jobs whose lock is currently held."""
+    sched = _get_scheduler_module()
+    result = []
+    for job_id, lock_name in _JOB_LOCK_MAP.items():
+        lock = getattr(sched, lock_name, None)
+        if lock and lock.locked():
+            result.append({"job_id": job_id, "lock_name": lock_name})
+    return result
 
 
 # ── System endpoint ────────────────────────────────────────────────────────
@@ -293,8 +356,9 @@ async def get_system(request: Request):
     backup_interval_hours = int(os.environ.get("BACKUP_INTERVAL_HOURS", "6"))
     backup_threshold_seconds = 2 * backup_interval_hours * 3600
 
-    # Disk usage for DB
-    db_dir = os.path.dirname(os.path.abspath(DB_PATH)) or "."
+    # Disk usage for DB (read at call time so test monkeypatches apply)
+    import database as _database
+    db_dir = os.path.dirname(os.path.abspath(_database.DB_PATH)) or "."
     du = shutil.disk_usage(db_dir)
     disk_free_bytes = du.free
     disk_total_bytes = du.total
@@ -310,6 +374,9 @@ async def get_system(request: Request):
 
     # Version
     version_info = _read_build_info()
+
+    active_locks = _get_active_locks()
+    jobs_with_errors = [j for j in scheduler_jobs if j.get("last_run_had_error")]
 
     return {
         "cve_count": cve_count,
@@ -327,6 +394,16 @@ async def get_system(request: Request):
             "incidents": incidents,
         },
         "open_circuit_count": open_circuit_count,
+        "jobs_with_errors_count": len(jobs_with_errors),
+        "active_locks": active_locks,
+        "recent_errors": [
+            {
+                "job_id": j["id"],
+                "error": (j.get("last_error_message") or "")[:80],
+                "last_run_utc": j.get("last_run_utc"),
+            }
+            for j in jobs_with_errors
+        ],
         "refresh_in_progress": any_ingest_lock_held(),
         "epss_backfill_done": epss_backfill_done,
         "version": version_info,
@@ -466,10 +543,45 @@ async def get_storage(request: Request):
     finally:
         await db.close()
 
-    db_path = os.path.abspath(DB_PATH)
+    import database as _database
+    db_path = os.path.abspath(_database.DB_PATH)
     db_size_bytes = 0
     try:
         db_size_bytes = os.path.getsize(db_path)
+    except Exception:
+        pass
+
+    # DB partition disk usage
+    db_dir = os.path.dirname(db_path) or "."
+    db_partition: dict[str, Any] = {"free": 0, "total": 0, "used": 0}
+    try:
+        du = shutil.disk_usage(db_dir)
+        db_partition = {"free": du.free, "total": du.total, "used": du.used}
+    except Exception:
+        pass
+
+    # Backup partition disk usage
+    backup_dir = os.environ.get("BACKUP_DIR", "/var/lib/briefr/backups")
+    backup_partition: dict[str, Any] = {"free": 0, "total": 0, "used": 0}
+    try:
+        if pathlib.Path(backup_dir).exists():
+            du2 = shutil.disk_usage(backup_dir)
+            backup_partition = {"free": du2.free, "total": du2.total, "used": du2.used}
+        else:
+            # Fall back to the same partition as the DB
+            backup_partition = db_partition.copy()
+    except Exception:
+        backup_partition = db_partition.copy()
+
+    # Archive count
+    archive_count = 0
+    try:
+        bdir = pathlib.Path(backup_dir)
+        if bdir.is_dir():
+            archive_count = sum(
+                1 for f in bdir.iterdir()
+                if f.name.endswith(".tar.gz") or f.name.endswith(".tar.gz.age")
+            )
     except Exception:
         pass
 
@@ -477,19 +589,40 @@ async def get_storage(request: Request):
         "tables": counts,
         "db_size_bytes": db_size_bytes,
         "db_path": db_path,
+        # legacy flat fields for backward compat
+        "disk_free_bytes": db_partition["free"],
+        "disk_total_bytes": db_partition["total"],
+        # structured partition objects (new)
+        "db_partition": db_partition,
+        "backup_partition": backup_partition,
+        "archive_count": archive_count,
+        "backup_dir": backup_dir,
     }
+
+
+_PURGE_CONFIRM_MAP = {
+    "ioc_cache": "clear",
+    "feed_cache": "clear",
+    "epss_history_old": "prune",
+    "change_history_old": "prune",
+    "rejected_cves": "purge",
+    "nvd_watermark": "backfill",
+    "epss_backfill_reset": None,  # no confirm required
+}
 
 
 @router.post("/storage/purge")
 async def purge_storage(request: Request, body: dict):
     target = body.get("target", "")
-    confirm = body.get("confirm", "")
-    if confirm != "delete":
-        raise HTTPException(400, "confirm must be 'delete'")
+    confirm_text = body.get("confirm_text", body.get("confirm", ""))
+    days_back = body.get("days_back")
 
-    valid_targets = {"ioc_cache", "feed_cache", "epss_history_old", "change_history_old", "rejected_cves"}
-    if target not in valid_targets:
-        raise HTTPException(400, f"Unknown target '{target}'. Valid: {sorted(valid_targets)}")
+    if target not in _PURGE_CONFIRM_MAP:
+        raise HTTPException(400, f"Unknown target '{target}'. Valid: {sorted(_PURGE_CONFIRM_MAP.keys())}")
+
+    required_confirm = _PURGE_CONFIRM_MAP[target]
+    if required_confirm is not None and confirm_text != required_confirm:
+        raise HTTPException(400, f"confirm_text must be '{required_confirm}' for target '{target}'")
 
     db = await get_db()
     try:
@@ -501,7 +634,9 @@ async def purge_storage(request: Request, body: dict):
             cursor = await db.execute("DELETE FROM feed_cache")
             rows_deleted = cursor.rowcount
         elif target == "epss_history_old":
-            cursor = await db.execute("DELETE FROM epss_history WHERE date < date('now', '-90 days')")
+            cursor = await db.execute(
+                "DELETE FROM epss_history WHERE recorded_date < date('now', '-90 days')"
+            )
             rows_deleted = cursor.rowcount
         elif target == "change_history_old":
             cursor = await db.execute(
@@ -510,12 +645,70 @@ async def purge_storage(request: Request, body: dict):
             rows_deleted = cursor.rowcount
         elif target == "rejected_cves":
             rows_deleted = await purge_legacy_rejected_cves(db)
+        elif target == "nvd_watermark":
+            # Clear NVD watermark so next sync re-fetches from NVD_DAYS_BACK
+            await db.execute("DELETE FROM sync_state WHERE key = ?", (NVD_SYNC_WATERMARK_KEY,))
+            rows_deleted = 1
+            # Also update NVD_DAYS_BACK if provided
+            if days_back is not None:
+                try:
+                    days_back_int = int(days_back)
+                    if 1 <= days_back_int <= 3650:
+                        os.environ["NVD_DAYS_BACK"] = str(days_back_int)
+                except (ValueError, TypeError):
+                    pass
+        elif target == "epss_backfill_reset":
+            await db.execute("DELETE FROM sync_state WHERE key = ?", (EPSS_BACKFILL_DONE_KEY,))
+            rows_deleted = 1
         await db.commit()
     finally:
         await db.close()
 
     await audit(request, f"storage.purge.{target}", str(rows_deleted))
-    return {"ok": True, "rows_deleted": rows_deleted}
+    return {"ok": True, "rows_deleted": rows_deleted, "target": target}
+
+
+# ── Storage export ─────────────────────────────────────────────────────────
+
+
+@router.get("/storage/export")
+async def export_db(request: Request, background_tasks: BackgroundTasks):
+    """Stream a consistent briefr.db snapshot using VACUUM INTO.
+
+    Direct file streaming in WAL mode can yield a torn read — WAL frames
+    may not be fully checkpointed to the main .db file.  VACUUM INTO writes a
+    fully-checkpointed, defragmented copy to a temp file which is then served.
+    The temp file is cleaned up after the response is sent.
+    """
+    import tempfile as _tempfile
+    import database as _database
+
+    # Read DB_PATH at call time so test monkeypatches on database.DB_PATH apply.
+    db_path = os.path.abspath(_database.DB_PATH)
+    if not os.path.exists(db_path):
+        raise HTTPException(404, "Database file not found")
+
+    date_str = datetime.now(timezone.utc).strftime("%Y%m%d")
+    filename = f"briefr-{date_str}.db"
+
+    tmp_dir = _tempfile.gettempdir()
+    tmp_path = os.path.join(tmp_dir, f"briefr-export-{int(time.time())}.db")
+
+    db = await get_db()
+    try:
+        await db.execute(f"VACUUM INTO '{tmp_path}'")
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to create database export: {exc}")
+    finally:
+        await db.close()
+
+    await audit(request, "storage.db_export", filename)
+    background_tasks.add_task(os.remove, tmp_path)
+    return FileResponse(
+        tmp_path,
+        media_type="application/octet-stream",
+        filename=filename,
+    )
 
 
 # ── Watchlist ──────────────────────────────────────────────────────────────
@@ -852,6 +1045,80 @@ async def set_config(request: Request, body: dict):
     }
 
 
+@router.post("/config/apply-all")
+async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
+    """Write multiple config keys to .env and trigger a restart."""
+    from dotenv import set_key as dotenv_set_key
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(400, "Body must be a JSON array of {key, value} objects")
+
+    if not isinstance(body, list):
+        raise HTTPException(400, "Body must be a JSON array of {key, value} objects")
+
+    dotenv_path = str(_DOTENV_PATH.resolve())
+    allowed = WRITABLE_CONFIG_KEYS | APPLY_ALL_EXTRA_KEYS
+    errors: list[str] = []
+    validated: list[tuple[str, str]] = []
+
+    # Pass 1: validate all items before writing anything
+    for item in body:
+        if not isinstance(item, dict):
+            errors.append(f"Invalid item: {item!r}")
+            continue
+        key = str(item.get("key", "")).strip()
+        value = str(item.get("value", ""))
+
+        if not key:
+            errors.append("Empty key in item")
+            continue
+        if key not in allowed:
+            errors.append(f"Key '{key}' is not in the writable allowlist")
+            continue
+        if key in INTEGER_KEYS:
+            try:
+                int(value)
+            except (ValueError, TypeError):
+                errors.append(f"Key '{key}' requires an integer value")
+                continue
+        validated.append((key, value))
+
+    if errors:
+        raise HTTPException(400, {"errors": errors, "partial_keys": []})
+
+    # Pass 2: write only after full validation passes
+    changed_keys: list[str] = []
+    for key, value in validated:
+        dotenv_set_key(dotenv_path, key, value)
+        os.environ[key] = value
+        changed_keys.append(key)
+
+    if not changed_keys:
+        return {"ok": True, "changed_keys": [], "message": "No changes to apply"}
+
+    changed_summary = ", ".join(changed_keys[:10])
+    await audit(request, "config.apply", changed_summary)
+
+    async def _do_restart():
+        from scheduler import stop_scheduler
+        from resilient_client import close_client
+        import asyncio as _asyncio
+
+        stop_scheduler()
+        await close_client()
+        await _asyncio.sleep(2)
+        os._exit(0)
+
+    background_tasks.add_task(_do_restart)
+    return {
+        "ok": True,
+        "changed_keys": changed_keys,
+        "message": f"Applied {len(changed_keys)} key(s); restarting backend",
+    }
+
+
 @router.post("/config/webhook-test")
 async def test_webhook(request: Request, body: dict):
     from webhooks.sender import send_test_message
@@ -929,19 +1196,70 @@ async def get_scheduler_history(request: Request):
     for row in rows:
         job_id = row["key"].replace("scheduler.last_run.", "")
         try:
-            data = json.loads(row["value"])
+            raw = json.loads(row["value"])
+            if isinstance(raw, list):
+                history = raw
+            elif isinstance(raw, dict):
+                history = [raw]
+            else:
+                history = []
         except Exception:
-            data = {}
+            history = []
+
+        latest = history[0] if history else {}
         result.append({
             "job_id": job_id,
-            "last_run_utc": data.get("last_run_utc"),
-            "duration_seconds": data.get("duration_seconds"),
-            "records_upserted": data.get("records_upserted"),
-            "had_error": data.get("had_error"),
+            "last_run_utc": latest.get("last_run_utc") or latest.get("started_at"),
+            "duration_seconds": latest.get("duration_seconds"),
+            "records_upserted": latest.get("records_upserted"),
+            "had_error": latest.get("had_error"),
+            "error_message": latest.get("error_message", ""),
+            "run_history": history,
         })
 
     result.sort(key=lambda x: x.get("last_run_utc") or "", reverse=True)
     return result
+
+
+# Job-to-coroutine map for POST /api/admin/scheduler/run
+_JOB_RUN_MAP: dict[str, str] = {
+    "nvd_incremental_sync": "run_nvd_incremental_sync",
+    "kev_metadata_sync": "run_kev_sync",
+    "epss_score_sync": "run_epss_sync",
+    "weekly_mitre_refresh": "run_weekly_mitre_refresh",
+    "otx_nightly_correlation": "run_otx_nightly_sync",
+    "incident_feed_refresh": "run_incident_feed_refresh",
+    "nightly_correlation": "run_nightly_correlation",
+    "vulnrichment_snapshot_sync": "run_vulnrichment_sync",
+    "cvelistv5_incremental_sync": "run_cvelistv5_sync",
+    "embeddings_backfill": "run_embeddings_sync",
+    "llm_product_extraction": "run_llm_extraction_sync",
+    "exploit_sources_sync": "run_exploit_sources_sync",
+    "backup_deadman_check": "run_backup_deadman_check",
+}
+
+
+@router.post("/scheduler/run")
+async def run_scheduler_job(request: Request, body: dict):
+    """Trigger a scheduler job immediately."""
+    job_id = body.get("job_id", "")
+    if not job_id:
+        raise HTTPException(400, "job_id is required")
+    if job_id not in _JOB_RUN_MAP:
+        raise HTTPException(400, f"Unknown job_id '{job_id}'. Valid: {sorted(_JOB_RUN_MAP.keys())}")
+
+    if _job_lock_held(job_id):
+        raise HTTPException(409, f"Job '{job_id}' is already running (lock held)")
+
+    sched = _get_scheduler_module()
+    fn_name = _JOB_RUN_MAP[job_id]
+    fn = getattr(sched, fn_name, None)
+    if fn is None:
+        raise HTTPException(500, f"Coroutine '{fn_name}' not found in scheduler module")
+
+    asyncio.create_task(fn())
+    await audit(request, f"scheduler.run.{job_id}", job_id)
+    return {"ok": True, "job_id": job_id, "message": f"Job '{job_id}' started in background"}
 
 
 # ── Feed circuit breaker ───────────────────────────────────────────────────
@@ -957,6 +1275,49 @@ async def reset_feed_circuit(source_id: str, request: Request):
     return {"ok": True, "source_id": source_id}
 
 
+# ── Webhooks log ───────────────────────────────────────────────────────────
+
+
+@router.get("/webhooks/log")
+async def get_webhooks_log(
+    request: Request,
+    event_type: str | None = Query(None),
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+):
+    db = await get_db()
+    try:
+        conditions: list[str] = []
+        params: list[Any] = []
+        if event_type:
+            conditions.append("alert_type = ?")
+            params.append(event_type)
+        where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+
+        count_row = await db.execute_fetchall(
+            f"SELECT COUNT(*) as cnt FROM webhook_alert_log {where}", params
+        )
+        total = count_row[0]["cnt"] if count_row else 0
+
+        rows = await db.execute_fetchall(
+            f"""
+            SELECT alert_type, target, alerted_at
+            FROM webhook_alert_log
+            {where}
+            ORDER BY alerted_at DESC
+            LIMIT ? OFFSET ?
+            """,
+            params + [limit, offset],
+        )
+    finally:
+        await db.close()
+
+    return {
+        "rows": [dict(r) for r in rows],
+        "total": total,
+    }
+
+
 # ── Logs ───────────────────────────────────────────────────────────────────
 
 
@@ -965,9 +1326,12 @@ async def get_logs(
     request: Request,
     limit: int = Query(100, ge=1, le=500),
     level: str | None = Query(None),
+    logger_name: str | None = Query(None, alias="logger"),
     request_id: str | None = Query(None),
 ):
-    return get_log_buffer(limit=limit, level=level, request_id=request_id)
+    logs = get_log_buffer(limit=limit, level=level, logger_name=logger_name, request_id=request_id)
+    known = get_known_loggers()
+    return {"logs": logs, "known_loggers": known}
 
 
 # ── Security ───────────────────────────────────────────────────────────────
@@ -999,19 +1363,26 @@ async def get_security(request: Request):
 
 
 @router.post("/restart", status_code=202)
-async def restart_backend(request: Request, background_tasks: BackgroundTasks):
-    await audit(request, "system.restart", "")
+async def restart_backend(request: Request, background_tasks: BackgroundTasks, body: dict | None = None):
+    drain = bool(body.get("drain", False)) if body else False
+    await audit(request, "system.restart", "drain" if drain else "immediate")
 
-    async def _do_restart():
-        from scheduler import stop_scheduler
+    async def _do_restart(with_drain: bool = False):
+        from scheduler import stop_scheduler, any_ingest_lock_held
         from resilient_client import close_client
+
+        if with_drain:
+            deadline = time.time() + 120
+            while any_ingest_lock_held() and time.time() < deadline:
+                await asyncio.sleep(2)
 
         stop_scheduler()
         await close_client()
+        await asyncio.sleep(1)
         os._exit(0)
 
-    background_tasks.add_task(_do_restart)
-    return {"status": "restarting"}
+    background_tasks.add_task(_do_restart, drain)
+    return {"status": "draining" if drain else "restarting"}
 
 
 # ── Audit log ──────────────────────────────────────────────────────────────
@@ -1023,6 +1394,7 @@ async def get_audit_log(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     action: str | None = Query(None),
+    action_prefix: str | None = Query(None),
     actor: str | None = Query(None),
 ):
     db = await get_db()
@@ -1032,6 +1404,9 @@ async def get_audit_log(
         if action:
             conditions.append("action = ?")
             params.append(action)
+        elif action_prefix:
+            conditions.append("action LIKE ?")
+            params.append(f"{action_prefix}%")
         if actor:
             conditions.append("actor = ?")
             params.append(actor)
@@ -1059,3 +1434,79 @@ async def get_audit_log(
         await db.close()
 
     return {"rows": [dict(row) for row in rows], "total": total}
+
+
+# ── Diagnostics ────────────────────────────────────────────────────────────
+
+
+@router.post("/diagnostics/smoke")
+async def run_smoke_test(request: Request):
+    """Run in-process smoke checks and return a checklist result."""
+    import time as _time
+
+    start_ms = _time.time() * 1000
+    checks: list[dict[str, Any]] = []
+
+    # 1. API health check (via in-process DB)
+    try:
+        db = await get_db()
+        try:
+            cve_row = await db.execute_fetchall("SELECT COUNT(*) as cnt FROM cves")
+            cve_count = cve_row[0]["cnt"] if cve_row else 0
+            kev_row = await db.execute_fetchall("SELECT COUNT(*) as cnt FROM kev_deadlines")
+            kev_count = kev_row[0]["cnt"] if kev_row else 0
+            ic_rows = await db.execute_fetchall("PRAGMA integrity_check")
+            integrity_ok = len(ic_rows) == 1 and ic_rows[0][0].lower() == "ok"
+        finally:
+            await db.close()
+        checks.append({"name": "cves > 0", "passed": cve_count > 0, "detail": f"{cve_count} CVEs"})
+        checks.append({"name": "kev_deadlines > 0", "passed": kev_count > 0, "detail": f"{kev_count} KEV entries"})
+        checks.append({"name": "db integrity_check", "passed": integrity_ok, "detail": ic_rows[0][0] if ic_rows else "?"})
+    except Exception as exc:
+        checks.append({"name": "db checks", "passed": False, "detail": str(exc)[:200]})
+
+    # 2. At least one feed source healthy
+    feed_health = get_feed_health()
+    healthy_sources = [k for k, v in feed_health.items() if not v.get("circuit_open")]
+    checks.append({
+        "name": "feed sources healthy",
+        "passed": len(healthy_sources) > 0,
+        "detail": f"{len(healthy_sources)}/{len(feed_health)} sources healthy",
+    })
+
+    # 3. Backup dir exists and writable
+    backup_dir = os.environ.get("BACKUP_DIR", "/var/lib/briefr/backups")
+    try:
+        bdir = pathlib.Path(backup_dir)
+        backup_ok = bdir.exists() and os.access(backup_dir, os.W_OK)
+        checks.append({"name": "backup dir writable", "passed": backup_ok, "detail": backup_dir})
+    except Exception as exc:
+        checks.append({"name": "backup dir writable", "passed": False, "detail": str(exc)[:100]})
+
+    duration_ms = round(_time.time() * 1000 - start_ms)
+    all_passed = all(c["passed"] for c in checks)
+    await audit(request, "diagnostics.smoke", "pass" if all_passed else "fail")
+    return {"ok": all_passed, "checks": checks, "duration_ms": duration_ms}
+
+
+@router.post("/diagnostics/integrity")
+async def check_integrity(request: Request):
+    """Run PRAGMA integrity_check and foreign_key_check."""
+    db = await get_db()
+    try:
+        ic_rows = await db.execute_fetchall("PRAGMA integrity_check")
+        fk_rows = await db.execute_fetchall("PRAGMA foreign_key_check")
+    finally:
+        await db.close()
+
+    integrity_ok = len(ic_rows) == 1 and ic_rows[0][0].lower() == "ok"
+    foreign_keys_ok = len(fk_rows) == 0
+    msg = ic_rows[0][0] if ic_rows else "unknown"
+    await audit(request, "diagnostics.integrity", "pass" if integrity_ok and foreign_keys_ok else "fail")
+    return {
+        "ok": integrity_ok and foreign_keys_ok,
+        "integrity_ok": integrity_ok,
+        "foreign_keys_ok": foreign_keys_ok,
+        "message": msg,
+        "foreign_key_violations": len(fk_rows),
+    }

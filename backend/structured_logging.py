@@ -32,6 +32,9 @@ _STANDARD_ATTRS = frozenset(vars(logging.makeLogRecord({})).keys()) | {
     "taskName",
 }
 
+# Extra field keys whose values must be redacted before storage.
+_REDACT_SUFFIXES = ("_KEY", "_TOKEN", "_SECRET", "_PASSWORD")
+
 
 class JsonFormatter(logging.Formatter):
     """One JSON object per log line; `extra={...}` kwargs become JSON keys."""
@@ -50,7 +53,11 @@ class JsonFormatter(logging.Formatter):
         }
         for key, value in record.__dict__.items():
             if key not in _STANDARD_ATTRS and key not in entry:
-                entry[key] = value
+                key_upper = key.upper()
+                if any(key_upper.endswith(suffix) for suffix in _REDACT_SUFFIXES):
+                    entry[key] = "[REDACTED]"
+                else:
+                    entry[key] = value
         if record.exc_info:
             entry["exc_info"] = self.formatException(record.exc_info)
         if record.stack_info:
@@ -69,7 +76,7 @@ class _RingBufferHandler(logging.Handler):
         self._buf: collections.deque[dict[str, Any]] = collections.deque(maxlen=maxlen)
 
     def emit(self, record: logging.LogRecord) -> None:
-        entry = {
+        entry: dict[str, Any] = {
             "ts": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(
                 timespec="milliseconds"
             ),
@@ -80,18 +87,25 @@ class _RingBufferHandler(logging.Handler):
         }
         for key, val in record.__dict__.items():
             if key not in _STANDARD_ATTRS and key not in entry:
-                entry[key] = val
+                key_upper = key.upper()
+                if any(key_upper.endswith(suffix) for suffix in _REDACT_SUFFIXES):
+                    entry[key] = "[REDACTED]"
+                else:
+                    entry[key] = val
         self._buf.appendleft(entry)
 
     def get_logs(
         self,
         limit: int = 100,
         level: str | None = None,
+        logger_name: str | None = None,
         request_id: str | None = None,
     ) -> list[dict[str, Any]]:
         results = []
         for entry in self._buf:
             if level and entry["level"] != level.upper():
+                continue
+            if logger_name and entry.get("logger") != logger_name:
                 continue
             if request_id and entry.get("request_id") != request_id:
                 continue
@@ -107,9 +121,25 @@ _ring_handler = _RingBufferHandler()
 def get_log_buffer(
     limit: int = 100,
     level: str | None = None,
+    logger_name: str | None = None,
     request_id: str | None = None,
 ) -> list[dict[str, Any]]:
-    return _ring_handler.get_logs(limit=limit, level=level, request_id=request_id)
+    return _ring_handler.get_logs(
+        limit=limit,
+        level=level,
+        logger_name=logger_name,
+        request_id=request_id,
+    )
+
+
+def get_known_loggers() -> list[str]:
+    """Return sorted list of distinct logger names seen in the ring buffer."""
+    seen: set[str] = set()
+    for entry in _ring_handler._buf:
+        name = entry.get("logger", "")
+        if name:
+            seen.add(name)
+    return sorted(seen)
 
 
 def configure_logging() -> None:

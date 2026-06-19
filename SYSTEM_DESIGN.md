@@ -97,7 +97,7 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 | `cve_exploits` | Via Sploitus loader in CVE detail | DetailDrawer Intel tab |
 | `cve_change_history` | `GET /api/changes`, `GET /api/brief` (EPSS movers) | WhatChangedPanel (BRIEF tab), MorningBrief |
 | `api_usage` | `GET /api/usage`, `GET /api/usage/ioc` | IOCLookup quota display |
-| `audit_log` | Written by `POST /api/refresh*` and backup/restore (admin UI reads in V1.4) | — (not exposed yet) |
+| `audit_log` | Written by `POST /api/refresh*`, backup/restore, all admin actions | `GET /api/admin/audit-log` |
 | `hunt_packs` (+ `mitre_techniques`, `cve_technique_map`) | `GET /api/forge/coverage`, `GET /api/hunt-packs/{technique_id}`, `POST /api/hunt-packs/generate` | Forge tab (coverage map + hunt pack panel) |
 | `watchlist` | `GET/POST/DELETE /api/watchlist`, `DELETE /api/watchlist/snoozes`; join on `GET /api/cves` for sort/filter | CVECard + DetailDrawer pin; WATCHLIST feed filter |
 | `scoring/risk.py` + `POST /api/cves/{id}/risk` | Canonical Risk Score v1.1b | `DetailDrawer.jsx` via `fetchCVERisk()` |
@@ -282,7 +282,7 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 
 ### Audit log + auth direction (V1.2 decision, 2026-06-11)
 
-- **Audit:** `audit_log` table (actor, action, target, timestamp) written by manual `POST /api/refresh*` calls and by backup runs/restores (`backup/manager.py`, actor = `system`, sync + best-effort so a locked DB never fails a backup or admin action). Admin pane reads it in V1.4.
+- **Audit:** `audit_log` table (actor, action, target, timestamp) written by manual `POST /api/refresh*` calls, backup/restore, and all admin actions (`routers/admin.py`). Actor is `system` for backups/restores; empty for request-driven actions until app login lands. Admin pane exposes it at `GET /api/admin/audit-log` with prefix filter (V1.4 shipped).
 - **Auth direction:** BRIEFR ships as a self-hosted platform with a **built-in app login** before public release (not enterprise SSO / edge-auth based). Until then the beta runs on a trusted private network; `BRIEFR_ADMIN_API_KEY` optionally gates refresh routes. `audit_log.actor` stays empty for request-driven actions until login lands (`request.state.user_email` is the wiring hook). A Cloudflare-Access JWT middleware was prototyped and dropped — see `docs/ROADMAP.md` amendments.
 
 ### Rate limiting + structured logging (V1.2 §5.5)
