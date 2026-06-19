@@ -242,12 +242,12 @@ def main():
     ws5 = wb.create_sheet("Risk Scoring")
     ws5.append(["Component", "Weight", "Source file"])
     for row in [
-        ("Asset profile", 0.35, "frontend/src/scoring/riskScore.js"),
-        ("KEV status", 0.25, "frontend/src/scoring/riskScore.js"),
-        ("EPSS", 0.15, "frontend/src/scoring/riskScore.js"),
-        ("Exploit availability", 0.10, "frontend/src/scoring/riskScore.js"),
-        ("CVSS", 0.10, "frontend/src/scoring/riskScore.js"),
-        ("Momentum", 0.05, "backend/scoring/risk.py calculate_momentum"),
+        ("Asset profile", 0.35, "backend/scoring/risk.py"),
+        ("KEV status", 0.25, "backend/scoring/risk.py"),
+        ("EPSS", 0.15, "backend/scoring/risk.py"),
+        ("Exploit availability", 0.10, "backend/scoring/risk.py"),
+        ("CVSS", 0.10, "backend/scoring/risk.py"),
+        ("Momentum", 0.05, "backend/scoring/risk.py (calculate_momentum)"),
     ]:
         ws5.append(row)
     ws5.append([])

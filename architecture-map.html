@@ -1357,14 +1357,13 @@ const nodes = [
     "w": 240,
     "h": 36,
     "color": "route",
-    "role": "Serves momentum weight constants to frontend.",
+    "role": "Serves v1.1b weight constants for UI formula display.",
     "plain": "Risk score weight configuration endpoint.",
     "path": "backend/routers/config.py:26",
     "notes": [
-      "line:26 \u2014 single source for riskScore.js prefetch"
+      "line:26 \u2014 weights from scoring/risk.py constants"
     ],
     "tag": [
-      "overview",
       "asset-match",
       "all"
     ]
@@ -1566,20 +1565,43 @@ const nodes = [
     "id": "svc-scoring",
     "cluster": "fastapi",
     "label": "scoring/risk.py",
-    "sub": "calculate_momentum()",
+    "sub": "calculate_risk_score()",
     "x": 710,
     "y": 932,
     "w": 240,
     "h": 36,
     "color": "service",
-    "role": "Server momentum scoring; calculate_risk_score is dead.",
-    "plain": "Backend momentum for drawer sparkline endpoint.",
-    "path": "backend/scoring/risk.py:336",
+    "role": "Canonical Risk Score v1.1b + calculate_momentum().",
+    "plain": "Server-side explainable priority score.",
+    "path": "backend/scoring/risk.py:405",
     "notes": [
-      "line:251 \u2014 calculate_risk_score DEAD (tests only)",
-      "line:336 \u2014 live calculate_momentum"
+      "line:405 \u2014 calculate_risk_score() canonical",
+      "line:473 \u2014 calculate_momentum()"
     ],
     "tag": [
+      "cve-detail",
+      "asset-match",
+      "all"
+    ]
+  },
+  {
+    "id": "svc-asset-match",
+    "cluster": "fastapi",
+    "label": "scoring/asset_match.py",
+    "sub": "resolve_asset_component()",
+    "x": 710,
+    "y": 976,
+    "w": 240,
+    "h": 36,
+    "color": "service",
+    "role": "CPE match + fuzzy graduation for asset component.",
+    "plain": "Maps analyst profile to asset exposure tier.",
+    "path": "backend/scoring/asset_match.py:203",
+    "notes": [
+      "line:203 \u2014 CPE first, fuzzy fallback"
+    ],
+    "tag": [
+      "asset-match",
       "cve-detail",
       "all"
     ]
@@ -1590,7 +1612,7 @@ const nodes = [
     "label": "feeds/nvd.py",
     "sub": "fetch_nvd_cve_updates()",
     "x": 710,
-    "y": 976,
+    "y": 1020,
     "w": 240,
     "h": 36,
     "color": "service",
@@ -1614,7 +1636,7 @@ const nodes = [
     "label": "database.py",
     "sub": "upsert_cves()",
     "x": 710,
-    "y": 1020,
+    "y": 1064,
     "w": 240,
     "h": 36,
     "color": "service",
@@ -1637,7 +1659,7 @@ const nodes = [
     "label": "webhooks/alerts.py",
     "sub": "Discord/Telegram alerts",
     "x": 710,
-    "y": 1064,
+    "y": 1108,
     "w": 240,
     "h": 36,
     "color": "service",
@@ -1659,7 +1681,7 @@ const nodes = [
     "label": "feeds/case_study_feed.py",
     "sub": "incident snapshot",
     "x": 710,
-    "y": 1108,
+    "y": 1152,
     "w": 240,
     "h": 36,
     "color": "service",
@@ -1680,7 +1702,7 @@ const nodes = [
     "label": "build_plain_summary",
     "sub": "DEAD \u2014 zero callers confirmed",
     "x": 710,
-    "y": 1152,
+    "y": 1196,
     "w": 240,
     "h": 36,
     "color": "service",
@@ -1701,7 +1723,7 @@ const nodes = [
     "label": "fetch_vulnrichment_for_cve",
     "sub": "DEAD \u2014 zero callers confirmed \u00b7 DEAD \u2014 zero callers confirmed",
     "x": 710,
-    "y": 1196,
+    "y": 1240,
     "w": 240,
     "h": 36,
     "color": "service",
@@ -1722,7 +1744,7 @@ const nodes = [
     "label": "lookup_greynoise",
     "sub": "DEAD \u2014 zero callers confirmed \u00b7 DEAD \u2014 zero callers confirmed",
     "x": 710,
-    "y": 1240,
+    "y": 1284,
     "w": 240,
     "h": 36,
     "color": "service",
@@ -1734,27 +1756,6 @@ const nodes = [
     ],
     "tag": [
       "cve-detail",
-      "all"
-    ]
-  },
-  {
-    "id": "dead-risk-calc",
-    "cluster": "fastapi",
-    "label": "calculate_risk_score",
-    "sub": "DEAD \u2014 zero callers confirmed \u00b7 DEAD \u2014 zero callers confirmed",
-    "x": 710,
-    "y": 1284,
-    "w": 240,
-    "h": 36,
-    "color": "service",
-    "role": "Backend risk score duplicate \u2014 frontend owns v1.1b.",
-    "plain": "Dead server-side risk score (tests only).",
-    "path": "backend/scoring/risk.py:251",
-    "notes": [
-      "line:432 \u2014 frontend riskScore.js is canonical"
-    ],
-    "tag": [
-      "asset-match",
       "all"
     ]
   },
@@ -1917,21 +1918,20 @@ const nodes = [
     "id": "fe-risk",
     "cluster": "react-shell",
     "label": "riskScore.js",
-    "sub": "Risk Score v1.1b",
+    "sub": "UI helpers \u00b7 weights",
     "x": 994,
     "y": 272,
     "w": 188,
     "h": 36,
     "color": "client",
-    "role": "calculateRiskScore() client-side explainable score.",
-    "plain": "Browser-side priority score shown on cards.",
-    "path": "frontend/src/scoring/riskScore.js:432",
+    "role": "riskScoreColor(), buildRiskHeroSummary(); fetchAndCacheRiskWeights for formula display.",
+    "plain": "Presentation helpers for server-computed scores.",
+    "path": "frontend/src/scoring/riskScore.js:47",
     "notes": [
       "line:47 \u2014 fetchAndCacheRiskWeights from /api/config/risk",
-      "line:432 \u2014 calculateRiskScore canonical"
+      "line:61 \u2014 buildRiskHeroSummary only; no score math"
     ],
     "tag": [
-      "overview",
       "asset-match",
       "cve-detail",
       "all"
@@ -2204,12 +2204,12 @@ const nodes = [
     "w": 188,
     "h": 36,
     "color": "service",
-    "role": "CVE detail drawer: enrichment tabs, PDF, risk breakdown.",
+    "role": "CVE detail drawer; fetchCVERisk() for canonical score.",
     "plain": "Full vulnerability detail panel.",
     "path": "frontend/src/components/DetailDrawer.jsx:1070",
     "notes": [
       "line:1070 \u2014 export default DetailDrawer",
-      "line:12 \u2014 downloadSingleCvePdf import"
+      "line:1100 \u2014 fetchCVERisk on profile/cve change"
     ],
     "tag": [
       "cve-detail",
@@ -2394,7 +2394,7 @@ const edges = [
   {
     "from": "ext-nvd",
     "to": "job-nvd-sync",
-    "kind": "api",
+    "kind": "critical",
     "label": "NVD REST delta",
     "tag": [
       "overview",
@@ -2911,8 +2911,30 @@ const edges = [
     "from": "router-cves",
     "to": "svc-scoring",
     "kind": "normal",
+    "label": "POST /api/cves/{id}/risk",
+    "tag": [
+      "cve-detail",
+      "asset-match",
+      "all"
+    ]
+  },
+  {
+    "from": "router-cves",
+    "to": "svc-scoring",
+    "kind": "normal",
     "label": "GET \u2026/momentum",
     "tag": [
+      "cve-detail",
+      "all"
+    ]
+  },
+  {
+    "from": "svc-scoring",
+    "to": "svc-asset-match",
+    "kind": "normal",
+    "label": "resolve_asset_component()",
+    "tag": [
+      "asset-match",
       "cve-detail",
       "all"
     ]
@@ -2925,6 +2947,28 @@ const edges = [
     "tag": [
       "correlation",
       "cve-detail",
+      "all"
+    ]
+  },
+  {
+    "from": "ui-drawer",
+    "to": "fe-api",
+    "kind": "normal",
+    "label": "fetchCVERisk()",
+    "tag": [
+      "cve-detail",
+      "asset-match",
+      "all"
+    ]
+  },
+  {
+    "from": "fe-api",
+    "to": "router-cves",
+    "kind": "mount",
+    "label": "POST /api/cves/{id}/risk",
+    "tag": [
+      "cve-detail",
+      "asset-match",
       "all"
     ]
   },
@@ -3636,9 +3680,9 @@ function defaultSidebar() {
     <div class="finding"><strong>Dead code (zero production callers):</strong>
       <span class="dead">build_plain_summary</span> (enrichment/cve.py:93),
       <span class="dead">fetch_vulnrichment_for_cve</span> + <span class="dead">preview_merge</span> (vulnrichment.py:141/149),
-      <span class="dead">lookup_greynoise</span> alias (extended.py:685),
-      <span class="dead">calculate_risk_score</span> backend duplicate (scoring/risk.py:251 — frontend owns v1.1b).
+      <span class="dead">lookup_greynoise</span> alias (extended.py:685).
     </div>
+    <div class="finding"><strong>Risk score canonical on backend:</strong> <code>POST /api/cves/{id}/risk</code> → <code>scoring/risk.py:calculate_risk_score()</code>; frontend <code>riskScore.js</code> is UI helpers only.</div>
     <div class="finding"><strong>database.py maintenance seam:</strong> ~2441 lines with all 26 tables and inline <code>init_db()</code> migrations — no Alembic; single file is the DB access bottleneck.</div>
     <div class="finding"><strong>Env-var wins over .env:</strong> <code>main.py:11</code> calls <code>load_dotenv()</code> without <code>override=True</code> — process environment (Cursor Secrets) always beats <code>backend/.env</code>; restart required after secret changes.</div>
     <div class="finding"><strong>light-theme.css never imported:</strong> <code>frontend/src/theme/light-theme.css</code> exists but no import in <code>main.jsx</code> — app is dark-mode only.</div>

@@ -10,7 +10,7 @@ Live demo: [briefr.projectjupiter.in](https://briefr.projectjupiter.in)
 
 ## Core problem it solves
 
-Analysts normally bounce between NVD, CISA KEV, VirusTotal, exploit trackers, ATT&CK, and RSS news to triage overnight CVE activity. BRIEFR automates that aggregation into one fast workflow on a single server. Asset inventory is **never stored server-side** — only `POST /api/cves/match` receives CPE profiles for ephemeral scoring.
+Analysts normally bounce between NVD, CISA KEV, VirusTotal, exploit trackers, ATT&CK, and RSS news to triage overnight CVE activity. BRIEFR automates that aggregation into one fast workflow on a single server. Asset inventory is **never stored server-side** — only `POST /api/cves/match` and `POST /api/cves/{id}/risk` receive ephemeral asset profiles for scoring.
 
 ## Key features and capabilities
 
@@ -23,7 +23,7 @@ Analysts normally bounce between NVD, CISA KEV, VirusTotal, exploit trackers, AT
 | **Forge tab** | Detection engineering MVP — ATT&CK coverage map, hunt pack generation (`/api/forge/*`, `/api/hunt-packs/*`) |
 | **CVE detail drawer** | Live enrichment (Sploitus, GreyNoise, OTX, OSV, CIRCL), EPSS sparkline, momentum, correlation, detection rules, related CVEs, PDF export |
 | **Investigation panel** | Session-only cross-tab pivots (CVE → IOC → related CVE) |
-| **Risk scoring** | Client-side Risk Score v1.1b + server momentum; weights from `GET /api/config/risk` |
+| **Risk scoring** | Server-side Risk Score v1.1b via `POST /api/cves/{id}/risk`; weights from `GET /api/config/risk`; UI helpers in `riskScore.js` |
 | **Correlation** | Three-level engine: shared OTX IPs, actor/sector match, temporal vendor anomalies |
 | **Ops** | Integrity-checked SQLite backups (age-encrypted), webhook alerts (Discord/Telegram), rate limiting, circuit breakers |
 
@@ -99,7 +99,7 @@ Analysts normally bounce between NVD, CISA KEV, VirusTotal, exploit trackers, AT
 │   ├── matching/               # CPE-based asset exposure matching
 │   ├── ml/                     # Optional embeddings + LLM product extraction
 │   ├── routers/                # FastAPI route modules (split from main.py in V1.2)
-│   ├── scoring/                # Server-side momentum calculation
+│   ├── scoring/                # Canonical Risk Score v1.1b + momentum (`risk.py`, `asset_match.py`)
 │   ├── templates/              # Plain-English intel sentence templates
 │   ├── webhooks/               # Discord/Telegram alert sender + KEV-on-stack alerts
 │   ├── scripts/                # One-off CLI tools (e.g. backfill_poc.py)
@@ -118,7 +118,7 @@ Analysts normally bounce between NVD, CISA KEV, VirusTotal, exploit trackers, AT
 │       ├── context/            # InvestigationContext, AssetProfileContext
 │       ├── hooks/              # useWatchlist, useModalLayer, useInactivityTimeout
 │       ├── pages/              # PrivacyPage, TermsPage, LegalPage
-│       ├── scoring/            # riskScore.js — client risk calculation
+│       ├── scoring/            # riskScore.js — UI helpers + weight display cache
 │       ├── utils/              # PDF export, drawer controller, filters, timezone, …
 │       ├── config/             # assetCatalog.js, caseStudySources.js
 │       └── theme/              # light-theme.css (NOT imported — dark mode only)
@@ -180,12 +180,13 @@ Analysts normally bounce between NVD, CISA KEV, VirusTotal, exploit trackers, AT
 | `backend/enrichment/ioc.py` | Multi-source IOC lookup orchestration |
 | `backend/feeds/nvd.py` | NVD API 2.0 fetch, parse, watermark-based incremental sync |
 | `backend/correlation/engine.py` | Nightly + on-demand three-level correlation |
-| `backend/scoring/risk.py` | `calculate_momentum()` + weight constants (authority for risk config) |
+| `backend/scoring/risk.py` | `calculate_risk_score()` (canonical v1.1b) + `calculate_momentum()` + weight constants |
+| `backend/scoring/asset_match.py` | CPE + fuzzy graduation asset component for risk scoring |
 | `backend/brief/service.py` | `build_morning_brief()` — server-computed action queue |
 | `backend/backup/manager.py` | WAL-safe backup, age encryption, startup auto-restore |
 | `frontend/src/App.jsx` | Tab panels (`brief`, `feed`, `ioc`, `atlas`, `forge`), filters, drawer, shortcuts |
 | `frontend/src/api.js` | All `fetch*` functions; 20s timeout via `AbortSignal.timeout` |
-| `frontend/src/scoring/riskScore.js` | `calculateRiskScore()`, `fetchAndCacheRiskWeights()` |
+| `frontend/src/scoring/riskScore.js` | UI helpers (`riskScoreColor`, `buildRiskHeroSummary`); `fetchAndCacheRiskWeights()` for formula display |
 | `frontend/src/utils/openCveDrawer.js` | `createCveDrawerController()` — stale-fetch guard on drawer close |
 
 ## Where to find things
@@ -226,7 +227,7 @@ Trade-off documented in README: **not designed for concurrent multi-tenant write
 | **Tab panels stay mounted** | `App.jsx` uses `hidden` attribute | Preserves FEED scroll position and filter state across tab switches |
 | **Drawer stale-fetch guard** | `createCveDrawerController()` | Closing drawer during load must not reopen when fetch completes |
 | **Asset profile client-only** | `AssetProfileContext.jsx` + `localStorage` | Privacy: inventory never persisted server-side; only sent to `POST /api/cves/match` |
-| **Risk weight single-sourcing** | `GET /api/config/risk` → `riskScore.js` | Backend `scoring/risk.py` is authority; frontend fetches once at startup with bundled fallback |
+| **Risk scoring** | `POST /api/cves/{id}/risk` → `scoring/risk.py` | Weights via `GET /api/config/risk`; frontend `riskScore.js` caches weights for formula display only |
 | **Token-bucket rate limiting** | `rate_limit.py` | In-memory per-IP buckets — sufficient because SQLite implies single uvicorn worker |
 | **Structured logging** | `structured_logging.py` | JSON lines with `request_id`; `briefr.access` logger for every HTTP request |
 
@@ -253,7 +254,7 @@ From `Beta V1.2.md`, `README.md`, `SYSTEM_DESIGN.md`:
 - **`database.py` monolith** — planned pay-as-you-go extraction to `repositories/` (V1.2/V2.0); full layer waits for Postgres.
 - **`services/` layer** — planned between routers and DB (`cve_service`, `enrichment_service`, `ioc_service`).
 - **`settings.py` phase 1 only** — most env vars still read via `os.environ.get` at call time; migration in progress.
-- **Risk weights** — ✅ partially solved via `GET /api/config/risk`; momentum signals still computed separately in Python and JS.
+- **Risk scoring** — ✅ canonical on backend via `POST /api/cves/{id}/risk`; frontend renders breakdown only.
 - **Single-user SQLite** — concurrent writes not supported; V2.0 targets optional Postgres.
 - **No frontend unit tests** — UI validated manually or via Playwright scripts in `scripts/` and `test_playwright_smoke.py`.
 - **No ESLint/ruff** — no lint config in repo.
@@ -302,7 +303,8 @@ Browser → Vite proxy /api/cves/{id}
        feeds.osv.fetch_osv_by_cve
        greynoise_scans_for_cve
   → JSON response → DetailDrawer.jsx
-  → Lazy sub-fetches: /sentences, /epss-history, /momentum, /correlation, /related, /detection
+  → Parallel sub-fetches: /sentences, /epss-history, /momentum, /correlation, /related, /detection
+  → POST /api/cves/{id}/risk (canonical Risk Score v1.1b; optional profile in body)
 ```
 
 ### Write/ingest path (scheduled NVD sync)
@@ -413,9 +415,9 @@ Primary CVE detail endpoint. Reads DB row, orchestrates parallel live enrichment
 
 Server-computed morning brief. Aggregates action queue sections from existing DB state only (no ingest): EPSS movers, new KEV entries, critical/high CVEs, stack matches, AI/ML alerts. Uses `_stack_match_clause` from cves router for stack filtering. Returns unified `action_queue` list consumed by `MorningBrief.jsx`.
 
-### 5. `calculateRiskScore()` — `frontend/src/scoring/riskScore.js`
+### 5. `calculate_risk_score()` — `backend/scoring/risk.py`
 
-Client-side Risk Score v1.1b. Combines six weighted components (asset 0.35, KEV 0.25, EPSS 0.15, exploit 0.10, CVSS 0.10, momentum 0.05) using weights from `fetchAndCacheRiskWeights()` (cached at startup from `GET /api/config/risk`). Used in `CVECard.jsx` (momentum=0) and `DetailDrawer.jsx` (with live momentum from `GET /api/cves/{id}/momentum`).
+Canonical BRIEFR Risk Score v1.1b (0–100). Combines six weighted components (asset 0.35, KEV 0.25, EPSS 0.15, exploit 0.10, CVSS 0.10, momentum 0.05) using constants from `scoring/risk.py`. Asset component uses CPE match (`matching/cpe.py`) plus fuzzy graduation fallback (`scoring/asset_match.py`). Exposed as `POST /api/cves/{cve_id}/risk` with optional `profile` / `assets` in the body; momentum computed server-side via `calculate_momentum()`. `DetailDrawer.jsx` fetches via `fetchCVERisk()`; `riskScore.js` only renders colors/summary text.
 
 ---
 
@@ -523,7 +525,7 @@ Install path: `/opt/briefr`. Backend venv: `/opt/briefr/venv`. Backups: `/var/li
 
 7. **Snooze is legacy.** UI only exposes pin. App clears snoozes via `DELETE /api/watchlist/snoozes` on load.
 
-8. **Risk weights: backend is authority.** Change weights in `backend/scoring/risk.py`; frontend fetches via `GET /api/config/risk`. Keep bundled fallback constants in `riskScore.js` in sync.
+8. **Risk score: backend is canonical.** Change weights in `backend/scoring/risk.py`; scoring runs via `POST /api/cves/{id}/risk`. Frontend fetches weights via `GET /api/config/risk` for formula display only (`riskScore.js`).
 
 9. **Single SQLite writer.** Do not run multiple uvicorn workers — rate limit buckets and SQLite writes assume one process.
 
@@ -671,6 +673,7 @@ async def get_example(item_id: str):
 | GET | `/api/cves`, `/api/cves/export` | `cves.py` |
 | POST | `/api/cves/match` | `cves.py` |
 | GET | `/api/cves/{id}`, `/api/cves/{id}/sentences`, `/epss-history`, `/related` | `cves.py` |
+| POST | `/api/cves/{id}/risk` | `cves.py` |
 | GET | `/api/cves/{id}/momentum`, `/detection`, `/correlation` | `cves.py` |
 | GET | `/api/kev/deadlines`, `/api/techniques/top` | `cves.py` |
 | POST | `/api/ioc/lookup` | `ioc.py` |

@@ -59,7 +59,7 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid)
 | 1 | `App.jsx` | `activeTab === 'feed'` — panel unhidden (stays mounted) | — |
 | 2 | `CVEFeed.jsx` | `loadPage(1)` on mount / filter change | `GET /api/cves?...` |
 | 3 | `Sidebar.jsx` | `fetchKEVDeadlines`, `fetchTopTechniques` | `GET /api/kev/deadlines`, `GET /api/techniques/top` |
-| 4 | `CVECard.jsx` | Renders each CVE; `calculateRiskScore` with momentum 0 | — |
+| 4 | `CVECard.jsx` | Renders each CVE; momentum arrow via `momentumCache` (no full risk score on cards) | — |
 | 5 | `useWatchlist.js` | Loads pins; clears legacy snoozes on startup | `GET /api/watchlist`, `DELETE /api/watchlist/snoozes` |
 
 ### B. User clicks CVE card — drawer data loads
@@ -73,8 +73,8 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid)
 | 5 | `DetailDrawer.jsx` | `useEffect` → `fetchCVESentences` | `GET /api/cves/{id}/sentences` |
 | 6 | `DetailDrawer.jsx` | `useEffect` → `fetchCVEEpssHistory` | `GET /api/cves/{id}/epss-history` |
 | 7 | `DetailDrawer.jsx` | `useEffect` → `fetchCVEMomentum` | `GET /api/cves/{id}/momentum` |
-| 8 | `DetailDrawer.jsx` | `useEffect` → `fetchCVECorrelation` | `GET /api/cves/{id}/correlation` |
-| 9 | `DetailDrawer.jsx` | `useMemo` → `calculateRiskScore` with momentum | Client only |
+| 8 | `DetailDrawer.jsx` | `useEffect` → `fetchCVERisk` (optional profile body) | `POST /api/cves/{id}/risk` |
+| 9 | `DetailDrawer.jsx` | `useEffect` → `fetchCVECorrelation` | `GET /api/cves/{id}/correlation` |
 | 10 (lazy) | `DetailDrawer.jsx` | Related tab → `fetchCVERelated` | `GET /api/cves/{id}/related` |
 | 11 (lazy) | `DetailDrawer.jsx` | Detect tab → `fetchCVEDetection` | `GET /api/cves/{id}/detection` |
 | 12 | `DrawerAtlasSection.jsx` | Renders ATLAS techniques + case studies when `has_ai_context` | Data from `GET /api/cves/{id}` |

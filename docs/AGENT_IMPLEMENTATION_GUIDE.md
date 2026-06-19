@@ -85,7 +85,7 @@ Avoid: fork HyperDX, full SIEM UI, monolithic “beast in one PR”.
 | Detection / Forge | `backend/detection/` |
 | Backups | `backend/backup/manager.py`, `deploy/briefr-backup.sh` |
 | Incidents feed | `backend/feeds/case_study_feed.py`, `incident_news.py` |
-| Risk score | `backend/scoring/risk.py`, `frontend/src/scoring/riskScore.js` |
+| Risk score | `backend/scoring/risk.py`, `backend/scoring/asset_match.py`, `POST /api/cves/{id}/risk`; UI helpers in `frontend/src/scoring/riskScore.js` |
 | Deploy | `deploy/` |
 
 ---

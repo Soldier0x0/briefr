@@ -156,18 +156,15 @@ Ordered; each is one PR unless noted. File pointers are current as of this doc.
 - Post-merge tests: full pytest suite; `diff` of `/api/openapi.json` route
   list before/after (must be identical); smoke `deploy/smoke-intel.sh`.
 
-### 5.3 Single-source risk weights — ✅ done (PR TBD open)
-- `GET /api/config/risk` in `routers/config.py` reads the six v1.1b weights
-  directly from `scoring/risk.py` constants and returns `{version, weights}`.
-- `frontend/src/scoring/riskScore.js` imports `fetchRiskWeights` from `api.js`,
-  calls `fetchAndCacheRiskWeights()` at startup (fire-and-forget via `main.jsx`),
-  and uses the module-level `_weights` cache in `calculateRiskScore`. Falls
-  back to bundled constants on any network/parse error.
-- Weights-sum-to-1.0 validated client-side (tolerance 1e-6) and tested by
-  `tests/test_config_risk_endpoint.py`. Removes drift risk documented in
-  README § Known limitations.
-- Post-merge tests: drawer risk breakdown unchanged for a known CVE;
-  `curl http://127.0.0.1:8000/api/config/risk` returns weights summing to 1.0.
+### 5.3 Risk score — backend canonical (PR #146)
+- `POST /api/cves/{cve_id}/risk` in `routers/cves.py` computes the full v1.1b
+  score via `scoring/risk.py:calculate_risk_score()` (momentum included).
+  Optional `profile` / `assets` in the POST body personalise the asset component
+  (`scoring/asset_match.py` + `matching/cpe.py`).
+- `GET /api/config/risk` still exposes weight constants for drawer formula display.
+- `frontend/src/scoring/riskScore.js` prefetches weights at startup and provides
+  UI helpers only (`riskScoreColor`, `buildRiskHeroSummary`) — no score math.
+- Tests: `tests/test_risk_score_v11b.py`, `tests/test_risk_score_endpoint.py`.
 
 ### 5.4 EPSS 30-day history backfill — ✅ done (PR #102 open)
 - One-shot resumable job (marker `epss_backfill_done` in `sync_state`).

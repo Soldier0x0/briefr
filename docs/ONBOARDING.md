@@ -258,7 +258,7 @@ See [README.md § Backups and restore](../README.md) for restore commands.
 | CVE detail drawer | `frontend/src/components/DetailDrawer.jsx`, `GET /api/cves/{id}` in `routers/cves.py` |
 | IOC lookup | `backend/enrichment/ioc.py`, `frontend/src/components/IOCLookup.jsx` |
 | Incidents & News tab | `backend/feeds/case_study_feed.py`, `incident_news.py`, `CaseStudies.jsx` |
-| Risk score | `frontend/src/scoring/riskScore.js`, `backend/scoring/risk.py` |
+| Risk score | `backend/scoring/risk.py`, `backend/scoring/asset_match.py`, `POST /api/cves/{id}/risk`; UI in `frontend/src/scoring/riskScore.js` |
 | Correlation | `backend/correlation/engine.py` |
 | Detection rules | `backend/detection/` |
 | Scheduled ingest | `backend/scheduler.py`, `backend/feeds/` |

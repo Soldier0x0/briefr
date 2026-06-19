@@ -236,7 +236,7 @@ api_node("router-atlas", "routers/atlas.py", "ATLAS + case studies", "backend/ro
 api_node("router-health", "routers/health.py", "GET /api/health", "backend/routers/health.py:48", "Health + circuit breaker status from resilient_client.", "Backend health and upstream source status.", ["line:48 — exposes per-source circuit state"], ["all"])
 api_node("router-stats", "stats (cves.py)", "GET /api/stats*", "backend/routers/cves.py:169", "stats + stats_timeline for dashboard counters.", "Aggregate CVE statistics for Brief charts.", ["line:169 — GET /api/stats", "line:211 — GET /api/stats/timeline"], ["brief"])
 api_node("router-ai", "ai (meta.py)", "POST /api/ai/summary", "backend/routers/meta.py:133", "ai_summary() → generate_executive_summary chain.", "PDF executive summary generation API.", ["line:133 — POST body AiSummaryRequest"], ["pdf"])
-api_node("router-config", "routers/config.py", "GET /api/config/risk", "backend/routers/config.py:26", "Serves momentum weight constants to frontend.", "Risk score weight configuration endpoint.", ["line:26 — single source for riskScore.js prefetch"], ["overview", "asset-match"])
+api_node("router-config", "routers/config.py", "GET /api/config/risk", "backend/routers/config.py:26", "Serves v1.1b weight constants for UI formula display.", "Risk score weight configuration endpoint.", ["line:26 — weights from scoring/risk.py constants"], ["asset-match"])
 api_node("router-meta", "routers/meta.py", "version · usage · watchlist", "backend/routers/meta.py:66", "Version, IOC usage quota, investigation summary routes.", "Misc metadata and usage endpoints.", ["line:108 — GET /api/usage/ioc quota header"], ["ioc"])
 api_node("router-watchlist", "routers/watchlist.py", "GET/POST /api/watchlist", "backend/routers/watchlist.py:63", "Pin/snooze watchlist CRUD (UI pin-only).", "Persist analyst watchlist state.", ["line:99 — DELETE snoozes legacy cleanup"], ["overview"])
 api_node("svc-resilient", "resilient_client.py", "httpx pool · circuits", "backend/resilient_client.py:45", "Shared httpx.AsyncClient with per-source circuit breakers.", "Central outbound HTTP with failure protection.", ["line:27 — CIRCUIT_COOLDOWN_SECONDS default 60", "line:45 — singleton AsyncClient pool"], ["scheduler", "all"])
@@ -246,7 +246,8 @@ api_node("svc-brief", "brief/service.py", "build_morning_brief()", "backend/brie
 api_node("svc-enrich-ioc", "enrichment/ioc.py", "lookup_ioc()", "backend/enrichment/ioc.py:212", "Multi-source IOC orchestration with ioc_cache.", "Parallel VT/AbuseIPDB/GN/MB/URLhaus/OTX lookup.", ["line:212 — cache via get_ioc_cache 6 h"], ["ioc"])
 api_node("svc-ai", "ai/summary.py", "Groq→Anthropic→template", "backend/ai/summary.py:311", "generate_executive_summary() LLM chain for PDF export.", "Optional AI-written executive summary paragraph.", ["line:311 — explicit PDF export only"], ["pdf"])
 api_node("svc-backup", "backup/manager.py", "WAL-safe · age encrypt", "backend/backup/manager.py:1", "run_backup() sqlite backup + optional age encryption.", "Encrypted database archive and restore on boot.", ["line:4 — sqlite3.Connection.backup() WAL-safe", "line:44 — DEFAULT_AGE_KEY_FILE outside BACKUP_DIR"], ["backup"])
-api_node("svc-scoring", "scoring/risk.py", "calculate_momentum()", "backend/scoring/risk.py:336", "Server momentum scoring; calculate_risk_score is dead.", "Backend momentum for drawer sparkline endpoint.", ["line:251 — calculate_risk_score DEAD (tests only)", "line:336 — live calculate_momentum"], ["cve-detail"], dead=False)
+api_node("svc-scoring", "scoring/risk.py", "calculate_risk_score()", "backend/scoring/risk.py:405", "Canonical Risk Score v1.1b + calculate_momentum().", "Server-side explainable priority score.", ["line:405 — calculate_risk_score() canonical", "line:473 — calculate_momentum()"], ["cve-detail", "asset-match"])
+api_node("svc-asset-match", "scoring/asset_match.py", "resolve_asset_component()", "backend/scoring/asset_match.py:203", "CPE match + fuzzy graduation for asset component.", "Maps analyst profile to asset exposure tier.", ["line:203 — CPE first, fuzzy fallback"], ["asset-match", "cve-detail"])
 api_node("svc-nvd-feed", "feeds/nvd.py", "fetch_nvd_cve_updates()", "backend/feeds/nvd.py:398", "Incremental NVD delta fetch with watermark overlap.", "Core NVD ingest function for scheduler job.", ["line:398 — watermark + overlap_minutes", "line:198 — 429 retry in _fetch_page"], ["overview", "scheduler"], crit=True)
 api_node("svc-upsert", "database.py", "upsert_cves()", "backend/database.py:716", "Bulk merge CVE dicts into cves table.", "Writes ingested CVE records to SQLite.", ["line:716 — ON CONFLICT DO UPDATE merge"], ["overview", "scheduler"], crit=True)
 api_node("svc-webhooks", "webhooks/alerts.py", "Discord/Telegram alerts", "backend/webhooks/alerts.py:92", "KEV stack + backup dead-man webhook dispatch.", "Outbound alert notifications (no HTTP router).", ["line:92 — check_new_kev_alerts after KEV sync", "line:136 — backup dead-man alert"], ["backup"])
@@ -254,7 +255,6 @@ api_node("svc-case-feed", "feeds/case_study_feed.py", "incident snapshot", "back
 api_node("dead-plain-summary", "build_plain_summary", DEAD_SUB, "backend/enrichment/cve.py:93", "build_plain_summary() — zero production callers.", "Orphaned plain-English summary helper.", ["line:93 — only defined, never imported"], ["cve-detail"])
 api_node("dead-vulnrichment", "fetch_vulnrichment_for_cve", DEAD_SUB, "backend/feeds/vulnrichment.py:141", "Per-CVE vulnrichment fetch — unused; bulk sync used.", "Dead on-demand vulnrichment helper.", ["line:104 — fetch_vulnrichment_enrichments is live path"], ["scheduler"], dead=True)
 api_node("dead-gn-alias", "lookup_greynoise", DEAD_SUB, "backend/feeds/extended.py:685", "Alias wrapper — greynoise_for_ip is canonical.", "Unused GreyNoise lookup alias.", ["line:689 — greynoise_for_ip used by get_cve"], ["cve-detail"], dead=True)
-api_node("dead-risk-calc", "calculate_risk_score", DEAD_SUB, "backend/scoring/risk.py:251", "Backend risk score duplicate — frontend owns v1.1b.", "Dead server-side risk score (tests only).", ["line:432 — frontend riskScore.js is canonical"], ["asset-match"], dead=True)
 api_node("svc-matching", "matching/cpe.py", "score_cve_for_assets()", "backend/matching/cpe.py:124", "CPE version-range matching for POST /api/cves/match.", "Matches asset inventory to CVE affected products.", ["line:124 — score_cve_for_assets best match"], ["asset-match"])
 api_node("ml-embeddings", "ml/embeddings.py", "GATED (EMBEDDINGS_ENABLED)", "backend/ml/embeddings.py:69", "fastembed CPU embeddings when EMBEDDINGS_ENABLED=1.", "Optional semantic embedding pipeline.", ["line:69 — embeddings_enabled() env gate", "line:805 — scheduler job no-op by default"], ["scheduler"])
 
@@ -265,7 +265,7 @@ shell = [
     ("fe-api", "api.js", "fetch* · 20 s timeout", "frontend/src/api.js:52", "fetchCVEs() and all /api client wrappers with AbortSignal.timeout.", "Frontend HTTP client for the backend API.", ["line:2 — REQUEST_TIMEOUT_MS = 20000", "line:6 — AbortSignal.timeout on every request"], ["overview", "all"], True),
     ("fe-asset-ctx", "AssetProfileContext.jsx", "profile · inactivity lock", "frontend/src/context/AssetProfileContext.jsx:18", "Asset profile state; useInactivityTimeout for session lock.", "Local asset inventory for stack matching.", ["line:13 — useInactivityTimeout imported (live)", "line:78 — fetchCveAssetMatch on profile save"], ["asset-match"]),
     ("fe-inv-ctx", "InvestigationContext.jsx", "investigation thread", "frontend/src/context/InvestigationContext.jsx:53", "Cross-tab investigation pivot state.", "Tracks analyst investigation pivots across tabs.", ["line:53 — InvestigationProvider"], ["pdf", "ioc"]),
-    ("fe-risk", "riskScore.js", "Risk Score v1.1b", "frontend/src/scoring/riskScore.js:432", "calculateRiskScore() client-side explainable score.", "Browser-side priority score shown on cards.", ["line:47 — fetchAndCacheRiskWeights from /api/config/risk", "line:432 — calculateRiskScore canonical"], ["overview", "asset-match", "cve-detail"]),
+    ("fe-risk", "riskScore.js", "UI helpers · weights", "frontend/src/scoring/riskScore.js:47", "riskScoreColor(), buildRiskHeroSummary(); fetchAndCacheRiskWeights for formula display.", "Presentation helpers for server-computed scores.", ["line:47 — fetchAndCacheRiskWeights from /api/config/risk", "line:61 — buildRiskHeroSummary only; no score math"], ["asset-match", "cve-detail"]),
     ("fe-drawer-ctrl", "openCveDrawer.js", "createCveDrawerController", "frontend/src/utils/openCveDrawer.js:5", "Drawer open flow: fetchCVE + loading state.", "Opens CVE detail drawer from card click.", ["line:5 — fetchCVE then setSelectedCVE"], ["overview", "cve-detail"]),
 ]
 for i, row in enumerate(shell):
@@ -324,7 +324,7 @@ for i, row in enumerate(feed_ui):
 
 # ── Detail / Tools UI ──────────────────────────────────────
 detail_ui = [
-    ("ui-drawer", "DetailDrawer.jsx", "detail · PDF export", "frontend/src/components/DetailDrawer.jsx:1070", "CVE detail drawer: enrichment tabs, PDF, risk breakdown.", "Full vulnerability detail panel.", ["line:1070 — export default DetailDrawer", "line:12 — downloadSingleCvePdf import"], ["cve-detail", "pdf"]),
+    ("ui-drawer", "DetailDrawer.jsx", "detail · PDF export", "frontend/src/components/DetailDrawer.jsx:1070", "CVE detail drawer; fetchCVERisk() for canonical score.", "Full vulnerability detail panel.", ["line:1070 — export default DetailDrawer", "line:1100 — fetchCVERisk on profile/cve change"], ["cve-detail", "pdf"]),
     ("ui-atlas-sect", "DrawerAtlasSection.jsx", "ATLAS in drawer", "frontend/src/components/DrawerAtlasSection.jsx:10", "ATLAS techniques/case studies section in drawer.", "AI threat context inside CVE detail.", ["line:10 — export default DrawerAtlasSection"], ["cve-detail"]),
     ("ui-ioc", "IOCLookup.jsx", "POST /api/ioc/lookup", "frontend/src/components/IOCLookup.jsx:734", "IOC lookup tab with quota header.", "Indicator lookup tool for analysts.", ["line:734 — export default IOCLookup"], ["ioc"]),
     ("ui-forge", "Forge.jsx", "Forge tab", "frontend/src/components/Forge.jsx:280", "fetchForgeCoverage + fetchHuntPack UI.", "Detection engineering coverage workspace.", ["line:280 — export default Forge"], ["forge"]),
@@ -415,8 +415,12 @@ edges = [
     E("router-cves", "ext-osv", "api", "fetch_osv_by_cve (serial)", ["cve-detail"]),
     E("router-cves", "ext-circl", "api", "enrich_cve_circl (serial)", ["cve-detail"]),
     E("router-cves", "db-cache", "db", "feed_cache read/write", ["cve-detail"]),
+    E("router-cves", "svc-scoring", "normal", "POST /api/cves/{id}/risk", ["cve-detail", "asset-match"]),
     E("router-cves", "svc-scoring", "normal", "GET …/momentum", ["cve-detail"]),
+    E("svc-scoring", "svc-asset-match", "normal", "resolve_asset_component()", ["asset-match", "cve-detail"]),
     E("router-cves", "svc-correlation", "normal", "GET …/correlation", ["correlation", "cve-detail"]),
+    E("ui-drawer", "fe-api", "normal", "fetchCVERisk()", ["cve-detail", "asset-match"]),
+    E("fe-api", "router-cves", "mount", "POST /api/cves/{id}/risk", ["cve-detail", "asset-match"]),
     E("ui-drawer", "fe-api", "normal", "fetchCVESentences/Epss/…", ["cve-detail"]),
 
     # IOC
@@ -772,9 +776,9 @@ function defaultSidebar() {
     <div class="finding"><strong>Dead code (zero production callers):</strong>
       <span class="dead">build_plain_summary</span> (enrichment/cve.py:93),
       <span class="dead">fetch_vulnrichment_for_cve</span> + <span class="dead">preview_merge</span> (vulnrichment.py:141/149),
-      <span class="dead">lookup_greynoise</span> alias (extended.py:685),
-      <span class="dead">calculate_risk_score</span> backend duplicate (scoring/risk.py:251 — frontend owns v1.1b).
+      <span class="dead">lookup_greynoise</span> alias (extended.py:685).
     </div>
+    <div class="finding"><strong>Risk score canonical on backend:</strong> <code>POST /api/cves/{id}/risk</code> → <code>scoring/risk.py:calculate_risk_score()</code>; frontend <code>riskScore.js</code> is UI helpers only.</div>
     <div class="finding"><strong>database.py maintenance seam:</strong> ~2441 lines with all 26 tables and inline <code>init_db()</code> migrations — no Alembic; single file is the DB access bottleneck.</div>
     <div class="finding"><strong>Env-var wins over .env:</strong> <code>main.py:11</code> calls <code>load_dotenv()</code> without <code>override=True</code> — process environment (Cursor Secrets) always beats <code>backend/.env</code>; restart required after secret changes.</div>
     <div class="finding"><strong>light-theme.css never imported:</strong> <code>frontend/src/theme/light-theme.css</code> exists but no import in <code>main.jsx</code> — app is dark-mode only.</div>

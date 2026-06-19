@@ -149,7 +149,8 @@ Every file in the repository with a one-line purpose. Tags:
 | Path | Description |
 |---|---|
 | `backend/scoring/__init__.py` | Package marker |
-| `backend/scoring/risk.py` | Server-side momentum calculation (`calculate_momentum`) |
+| `backend/scoring/risk.py` | Canonical Risk Score v1.1b (`calculate_risk_score`) + momentum (`calculate_momentum`) |
+| `backend/scoring/asset_match.py` | Asset graduation table + CPE match for risk scoring |
 
 ### backend/templates/
 
@@ -260,7 +261,7 @@ Every file in the repository with a one-line purpose. Tags:
 
 | Path | Description |
 |---|---|
-| `frontend/src/scoring/riskScore.js` | Client-side risk score v1.1b; weights from `GET /api/config/risk` |
+| `frontend/src/scoring/riskScore.js` | Risk score UI helpers + weight display cache (`GET /api/config/risk`) |
 | `frontend/src/theme/light-theme.css` | **[DEPRECATED]** Light theme tokens — not imported (dark mode only) |
 
 ### frontend/src/utils/
