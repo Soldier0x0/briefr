@@ -9,7 +9,6 @@
   top: 52px;
   z-index: 10;
   background: var(--bg);
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--bg) 55%, transparent);
 }
 
 .filter-bar {
@@ -299,7 +298,6 @@
 .vendor-filter-block {
   background: var(--bg3);
   padding: 16px 20px 18px;
-  border-top: 1px solid var(--border);
 }
 
 .vendor-filter-header {
