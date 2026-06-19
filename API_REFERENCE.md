@@ -718,9 +718,9 @@ sum deviates by more than 1 × 10⁻⁶.
 |---|---|---|---|
 | `tz` | str | `DEFAULT_TIMEZONE` env | IANA timezone for display |
 
-**Response:** `status`, `cve_count`, `last_updated`, `nvd_sync_watermark`, `refresh_in_progress`, `ingest`, `feeds.incidents` (`last_refresh`, `stale` — Incidents snapshot freshness), `feeds.sources` (per outbound source: `last_success`, `last_failure`, `last_error`, `consecutive_failures`, `circuit_open` — includes scheduler intel keys `vulnrichment` and `cvelistv5` after their first run; webhook delivery keys `webhook.discord` / `webhook.telegram` after the first alert attempt), schedule hints, server time.
+**Response:** `status`, `cve_count`, `last_updated`, `nvd_sync_watermark`, `refresh_in_progress`, `ingest`, `feeds.incidents` (`last_refresh`, `stale` — Incidents snapshot freshness), `feeds.sources` (per outbound source: `last_success`, `last_failure`, `last_error`, `consecutive_failures`, `circuit_open` — includes scheduler intel keys `vulnrichment` and `cvelistv5` after their first run; webhook delivery keys `webhook.discord` / `webhook.telegram` / `webhook.generic` after the first alert attempt), schedule hints, server time.
 
-**Note:** webhook alert configuration is env-only (V1.3) — no `/api` endpoint exposes channel URLs or tokens.
+**Note:** webhook destination URLs/tokens are env-configured; admin config masks secrets. Use `GET /api/admin/webhooks/destinations` for enable/event-type state.
 
 ---
 
@@ -787,7 +787,19 @@ Audit: `scheduler.run.{job_id}`.
 Body `[{key, value}, ...]`. Writes all keys to `.env` and triggers a restart. Returns `400` if any key is not in the allowlist. Audit: `config.apply`.
 
 ### GET /api/admin/webhooks/log
-Params: `event_type`, `limit`, `offset`. Returns `{rows: [{alert_type, target, alerted_at}], total}`.
+Params: `event_type`, `limit`, `offset`. Returns dedupe log `{rows: [{alert_type, target, alerted_at}], total}`. `event_type` accepts canonical names (`kev_alert`, `backup_failure`) and legacy aliases.
+
+### GET /api/admin/webhooks/destinations
+Returns `{destinations: [{id, kind, label, enabled, event_types, source, health_source}]}` — merged env + DB config (secrets not included).
+
+### PATCH /api/admin/webhooks/destinations/{destination_id}
+Body `{enabled?: bool, event_types?: string[], label?: string}`. Updates per-destination enable flag and event subscriptions. Audit: `webhook.destination.update.{id}`.
+
+### GET /api/admin/webhooks/delivery-log
+Params: `destination_id`, `event_type`, `limit`, `offset`. Returns `{rows: [{id, destination_id, event_type, dedupe_key, status, error, attempted_at}], total}`.
+
+### POST /api/admin/config/webhook-test
+Body `{destination_id}` or legacy `{channel}` (`discord` / `telegram` / `generic`). Sends a test message via the SSRF-safe webhook client. Audit: `webhook.test.{destination_id}`.
 
 ### POST /api/admin/diagnostics/smoke
 Runs in-process smoke checks: CVE count > 0, KEV count > 0, DB integrity, feed health, backup dir writable.

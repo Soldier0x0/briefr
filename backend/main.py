@@ -22,6 +22,8 @@ _REQUEST_ID_RE = re.compile(r"[A-Za-z0-9._-]{1,64}")
 
 from database import init_db
 from resilient_client import close_client
+from webhooks.ssrf import close_webhook_client
+from webhooks.destinations import sync_env_destinations_to_db
 from routers import admin as admin_router
 from routers import atlas as atlas_router
 from routers import brief as brief_router
@@ -51,11 +53,13 @@ async def lifespan(app: FastAPI):
             recovery.get("archive"),
         )
     await init_db()
+    await sync_env_destinations_to_db()
     start_scheduler()
     await maybe_run_on_startup()
     yield
     stop_scheduler()
     await close_client()
+    await close_webhook_client()
 
 
 app = FastAPI(
