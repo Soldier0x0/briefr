@@ -762,6 +762,55 @@ sum deviates by more than 1 × 10⁻⁶.
 
 ---
 
+## Admin Dashboard — `/api/admin/*`
+
+All admin endpoints require the `X-BRIEFR-Admin-Key` header when `BRIEFR_ADMIN_API_KEY` is configured. All are rate-limited by the refresh bucket.
+
+### GET /api/admin/system
+Returns system health: CVE count, NVD sync age, backup age, DB integrity, scheduler jobs (with `status`, `last_error_message`, `run_history`), feed sources, active locks, recent errors, open circuit count.
+
+### GET /api/admin/storage
+Returns disk partition info (`db_partition`, `backup_partition` with free/total/used bytes), DB file size, table row counts, archive count. **Fixes the NaN% bug from V1.3.**
+
+### POST /api/admin/storage/purge
+Body `{target, confirm_text, days_back?}`. Targets: `ioc_cache` (confirm `"clear"`), `feed_cache` (confirm `"clear"`), `epss_history_old` (confirm `"prune"`), `change_history_old` (confirm `"prune"`), `rejected_cves` (confirm `"purge"`), `nvd_watermark` (confirm `"backfill"`), `epss_backfill_reset` (no confirm).
+Response: `{ok, rows_deleted, target}`.
+
+### GET /api/admin/storage/export
+Streams `briefr.db` as `application/octet-stream` download. Audit: `storage.db_export`.
+
+### POST /api/admin/scheduler/run
+Body `{job_id}`. Triggers a scheduler job immediately. Returns `409` if job lock is held, `400` if job_id unknown.
+Audit: `scheduler.run.{job_id}`.
+
+### POST /api/admin/config/apply-all
+Body `[{key, value}, ...]`. Writes all keys to `.env` and triggers a restart. Returns `400` if any key is not in the allowlist. Audit: `config.apply`.
+
+### GET /api/admin/webhooks/log
+Params: `event_type`, `limit`, `offset`. Returns `{rows: [{alert_type, target, alerted_at}], total}`.
+
+### POST /api/admin/diagnostics/smoke
+Runs in-process smoke checks: CVE count > 0, KEV count > 0, DB integrity, feed health, backup dir writable.
+Response: `{ok, checks: [{name, passed, detail}], duration_ms}`.
+
+### POST /api/admin/diagnostics/integrity
+Runs `PRAGMA integrity_check` and `PRAGMA foreign_key_check`.
+Response: `{ok, integrity_ok, foreign_keys_ok, message, foreign_key_violations}`.
+
+### POST /api/admin/restart
+Body `{drain?: bool}`. When `drain=true`: waits up to 120s for all job locks to clear before restarting. Returns `{status: "draining"|"restarting"}`.
+
+### GET /api/admin/logs
+Params: `limit`, `level`, `logger` (filter by logger name), `request_id`.
+Response: `{logs: [...], known_loggers: [...]}`.
+
+### GET /api/admin/audit-log
+Params: `limit`, `offset`, `action`, `action_prefix`, `actor`. Use `action_prefix=backup.` for category filters.
+
+**All other admin endpoints** (`GET/DELETE /api/admin/watchlist*`, `GET/DELETE /api/admin/ioc-cache*`, `GET/DELETE /api/admin/hunt-packs*`, `GET/POST /api/admin/config`, `POST /api/admin/config/webhook-test`, `GET/POST /api/admin/scheduler/*`, `GET/POST /api/admin/feeds/*`, `POST /api/admin/backups/*`, `GET /api/admin/backups`, `GET /api/admin/security`) remain as documented in V1.3; scheduler jobs now include `status` field (ACTIVE/PAUSED/LOCKED/DISABLED), `last_error_message`, and `run_history` (array of last 5 runs).
+
+---
+
 ## OpenAPI / Swagger
 
 FastAPI auto-generates OpenAPI spec at runtime.

@@ -164,6 +164,19 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
             <Link to="/terms" className="header-legal-link">Terms</Link>
           </nav>
 
+          {/* Admin link — only visible to operator (localhost or authed session) */}
+          {(window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1' ||
+            (() => { try { return !!sessionStorage.getItem('briefr-admin-key') } catch { return false } })()
+          ) && (
+            <>
+              <span className="header-legal-sep" style={{ margin: '0 0.25rem' }} aria-hidden="true" />
+              <Link to="/admin" className="header-admin-link" aria-label="Open admin dashboard">
+                Admin
+              </Link>
+            </>
+          )}
+
           {/* Mobile "···" menu */}
           <div className="mobile-menu-wrap header-legal-mobile" ref={mobileMenuRef}>
             <button

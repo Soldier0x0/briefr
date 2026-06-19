@@ -94,23 +94,42 @@ async def _write_job_last_run(
     start: datetime,
     records: int = 0,
     had_error: bool = False,
+    error_message: str = "",
 ) -> None:
-    """Best-effort: persist last-run metadata to sync_state for the admin dashboard."""
+    """Best-effort: persist last-run metadata (ring of 5) to sync_state."""
     import json as _json
 
     duration = (datetime.now(timezone.utc) - start).total_seconds()
+    new_entry = {
+        "started_at": start.isoformat(timespec="seconds"),
+        # keep legacy key for backward compat with older admin.py readers
+        "last_run_utc": start.isoformat(timespec="seconds"),
+        "duration_seconds": round(duration, 2),
+        "records_upserted": records,
+        "had_error": had_error,
+        "error_message": error_message[:500] if error_message else "",
+    }
     try:
         db = await get_db()
         try:
+            existing_raw = await get_sync_state_value(db, f"scheduler.last_run.{job_id}")
+            history: list = []
+            if existing_raw:
+                try:
+                    parsed = _json.loads(existing_raw)
+                    if isinstance(parsed, list):
+                        history = parsed
+                    elif isinstance(parsed, dict):
+                        # Migrate old single-dict format to array
+                        history = [parsed]
+                except Exception:
+                    history = []
+            history.insert(0, new_entry)
+            history = history[:5]
             await set_sync_state_value(
                 db,
                 f"scheduler.last_run.{job_id}",
-                _json.dumps({
-                    "last_run_utc": start.isoformat(timespec="seconds"),
-                    "duration_seconds": round(duration, 2),
-                    "records_upserted": records,
-                    "had_error": had_error,
-                }),
+                _json.dumps(history),
             )
             await db.commit()
         finally:
@@ -190,14 +209,16 @@ async def run_nvd_incremental_sync() -> bool:
 
     _start = datetime.now(timezone.utc)
     _had_error = False
+    _error_msg = ""
     try:
         async with _nvd_lock:
             await _run_nvd_incremental_sync()
-    except Exception:
+    except Exception as _exc:
         _had_error = True
+        _error_msg = str(_exc)[:500]
         raise
     finally:
-        await _write_job_last_run("nvd_incremental_sync", _start, had_error=_had_error)
+        await _write_job_last_run("nvd_incremental_sync", _start, had_error=_had_error, error_message=_error_msg)
     return True
 
 
@@ -310,14 +331,16 @@ async def run_kev_sync() -> bool:
 
     _start = datetime.now(timezone.utc)
     _had_error = False
+    _error_msg = ""
     try:
         async with _kev_lock:
             await _run_kev_sync()
-    except Exception:
+    except Exception as _exc:
         _had_error = True
+        _error_msg = str(_exc)[:500]
         raise
     finally:
-        await _write_job_last_run("kev_metadata_sync", _start, had_error=_had_error)
+        await _write_job_last_run("kev_metadata_sync", _start, had_error=_had_error, error_message=_error_msg)
     return True
 
 
@@ -416,14 +439,16 @@ async def run_epss_sync() -> bool:
 
     _start = datetime.now(timezone.utc)
     _had_error = False
+    _error_msg = ""
     try:
         async with _epss_lock:
             await _run_epss_sync()
-    except Exception:
+    except Exception as _exc:
         _had_error = True
+        _error_msg = str(_exc)[:500]
         raise
     finally:
-        await _write_job_last_run("epss_score_sync", _start, had_error=_had_error)
+        await _write_job_last_run("epss_score_sync", _start, had_error=_had_error, error_message=_error_msg)
     return True
 
 
@@ -612,7 +637,10 @@ async def run_weekly_mitre_refresh() -> bool:
         except Exception as exc:
             logger.error("Weekly MITRE/ATLAS refresh failed: %s", exc)
             ok = False
-        await _write_job_last_run("weekly_mitre_refresh", _start, had_error=not ok)
+            _mitre_error_msg = str(exc)[:500]
+        else:
+            _mitre_error_msg = ""
+        await _write_job_last_run("weekly_mitre_refresh", _start, had_error=not ok, error_message=_mitre_error_msg)
         return ok
 
 
@@ -705,9 +733,12 @@ async def run_exploit_sources_sync() -> bool:
         except Exception as exc:
             logger.error("Exploit sources sync failed: %s", exc)
             _had_error = True
+            _exploit_error_msg = str(exc)[:500]
+        else:
+            _exploit_error_msg = ""
         duration = (datetime.now(timezone.utc) - start).total_seconds()
         logger.info("Exploit sources sync finished in %.1fs", duration)
-    await _write_job_last_run("exploit_sources_sync", _start, had_error=_had_error)
+    await _write_job_last_run("exploit_sources_sync", _start, had_error=_had_error, error_message=_exploit_error_msg)
     return True
 
 
@@ -746,9 +777,12 @@ async def run_vulnrichment_sync() -> bool:
         except Exception as exc:
             logger.error("Vulnrichment sync failed: %s", exc)
             _had_error = True
+            _vuln_error_msg = str(exc)[:500]
+        else:
+            _vuln_error_msg = ""
         duration = (datetime.now(timezone.utc) - start).total_seconds()
         logger.info("Vulnrichment snapshot sync finished in %.1fs", duration)
-    await _write_job_last_run("vulnrichment_snapshot_sync", _start, had_error=_had_error)
+    await _write_job_last_run("vulnrichment_snapshot_sync", _start, had_error=_had_error, error_message=_vuln_error_msg)
     return True
 
 
@@ -796,9 +830,12 @@ async def run_cvelistv5_sync() -> bool:
         except Exception as exc:
             logger.error("cvelistV5 sync failed: %s", exc)
             _had_error = True
+            _cvelist_error_msg = str(exc)[:500]
+        else:
+            _cvelist_error_msg = ""
         duration = (datetime.now(timezone.utc) - start).total_seconds()
         logger.info("cvelistV5 incremental sync finished in %.1fs", duration)
-    await _write_job_last_run("cvelistv5_incremental_sync", _start, had_error=_had_error)
+    await _write_job_last_run("cvelistv5_incremental_sync", _start, had_error=_had_error, error_message=_cvelist_error_msg)
     return True
 
 
@@ -817,7 +854,10 @@ async def run_incident_feed_refresh() -> bool:
     except Exception as exc:
         logger.error("Incident feed snapshot refresh failed: %s", exc)
         _had_error = True
-    await _write_job_last_run("incident_feed_refresh", _start, had_error=_had_error)
+        _incident_error_msg = str(exc)[:500]
+    else:
+        _incident_error_msg = ""
+    await _write_job_last_run("incident_feed_refresh", _start, had_error=_had_error, error_message=_incident_error_msg)
     return True
 
 
@@ -856,9 +896,12 @@ async def run_nightly_correlation() -> bool:
         except Exception as exc:
             logger.error("Nightly correlation job failed: %s", exc)
             _had_error = True
+            _corr_error_msg = str(exc)[:500]
+        else:
+            _corr_error_msg = ""
         finally:
             await db.close()
-    await _write_job_last_run("nightly_correlation", _start, had_error=_had_error)
+    await _write_job_last_run("nightly_correlation", _start, had_error=_had_error, error_message=_corr_error_msg)
     return True
 
 
@@ -889,9 +932,12 @@ async def run_otx_nightly_sync() -> bool:
         except Exception as exc:
             logger.error("OTX nightly correlation failed: %s", exc)
             _had_error = True
+            _otx_error_msg = str(exc)[:500]
+        else:
+            _otx_error_msg = ""
         finally:
             await db.close()
-    await _write_job_last_run("otx_nightly_correlation", _start, had_error=_had_error)
+    await _write_job_last_run("otx_nightly_correlation", _start, had_error=_had_error, error_message=_otx_error_msg)
     return True
 
 
@@ -928,7 +974,10 @@ async def run_embeddings_sync() -> bool:
         except Exception as exc:
             logger.error("Embeddings backfill failed: %s", exc)
             _had_error = True
-    await _write_job_last_run("embeddings_backfill", _start, had_error=_had_error)
+            _emb_error_msg = str(exc)[:500]
+        else:
+            _emb_error_msg = ""
+    await _write_job_last_run("embeddings_backfill", _start, had_error=_had_error, error_message=_emb_error_msg)
     return True
 
 
@@ -966,7 +1015,10 @@ async def run_llm_extraction_sync() -> bool:
         except Exception as exc:
             logger.error("LLM product extraction failed: %s", exc)
             _had_error = True
-    await _write_job_last_run("llm_product_extraction", _start, had_error=_had_error)
+            _llm_error_msg = str(exc)[:500]
+        else:
+            _llm_error_msg = ""
+    await _write_job_last_run("llm_product_extraction", _start, had_error=_had_error, error_message=_llm_error_msg)
     return True
 
 
@@ -974,15 +1026,17 @@ async def run_backup_deadman_check() -> bool:
     """Scheduler hook: warn when backups are overdue (2× interval)."""
     _start = datetime.now(timezone.utc)
     _had_error = False
+    _deadman_error_msg = ""
     try:
         result = await check_backup_deadman()
         return result
     except Exception as exc:
         logger.error("Backup dead-man check failed: %s", exc)
         _had_error = True
+        _deadman_error_msg = str(exc)[:500]
         return False
     finally:
-        await _write_job_last_run("backup_deadman_check", _start, had_error=_had_error)
+        await _write_job_last_run("backup_deadman_check", _start, had_error=_had_error, error_message=_deadman_error_msg)
 
 
 def start_scheduler() -> AsyncIOScheduler:

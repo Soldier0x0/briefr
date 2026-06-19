@@ -2,9 +2,9 @@
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
-**Document version:** 1.0  
-**Last updated:** 2026-06-10  
-**Status:** Planning — **after Beta V1.3**
+**Document version:** 1.1  
+**Last updated:** 2026-06-19  
+**Status:** Theme 1 (Admin pane) **shipped** in PR cursor/admin-overhaul-17e8. Themes 2–4 remain planned.
 
 **Prerequisite:** [`Beta V1.3.md`](Beta%20V1.3.md)  
 **Index:** [`docs/ROADMAP.md`](docs/ROADMAP.md)
@@ -19,11 +19,11 @@ Single user today (admin = analyst); routes and audit model ready for future rol
 
 ---
 
-## Theme 1 — Admin pane (`/admin`)
+## Theme 1 — Admin pane (`/admin`) — ✅ SHIPPED (PR cursor/admin-overhaul-17e8, 2026-06-19)
 
 Separate surface from analyst UI. **All destructive actions admin-gated.**
 
-**Lean-first scope (amendment 2026-06-10):** ship the four high-value sections first — **System health**, **Backup & restore (list + manual trigger + integrity badge)**, **Ingest & scheduler**, **per-feed health** — plus the **audit log viewer** (table exists since V1.2). Defer to later phases: configuration editor, integrations UI, users stub, restore *wizard* (CLI restore remains the supported path), support-pack export.
+**Shipped scope:** System health (stat cards, active locks, recent errors, quick diagnostics), Backups (list, run, upload, verify), Storage (disk partition usage, table counts, purge controls, DB export), Watchlist & cache, API keys & config (queue-edit model, apply-all + restart), Scheduler (manual triggers, global pause/resume, run-now per job), Webhooks (alert log, test send), Security (rate limit status, key rotation), Feed health (card grid, circuit reset), Ingest log (level colors, logger filter, export), Audit log (prefix filter chips). All scheduler jobs report ACTIVE/PAUSED/LOCKED/DISABLED status with last 5 run history and error messages. Disk usage NaN bug fixed.
 
 **Admin gating:** built-in app login with an `admin` role gates `/admin/*` (decision 2026-06-11 — replaces the earlier Cloudflare Access plan); if login has not shipped yet when the admin pane lands, gate interim with `BRIEFR_ADMIN_API_KEY`.
 

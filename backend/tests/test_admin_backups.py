@@ -98,3 +98,59 @@ def test_upload_valid_filename_accepted(admin_client, tmp_path, monkeypatch):
     result = resp.json()
     assert result["ok"] is True
     assert result["filename"] == "briefr-2026-01-01.tar.gz"
+
+
+def test_verify_endpoint_reads_manifest(admin_client, tmp_path, monkeypatch):
+    """Verify reads manifest.json from archive without full extraction."""
+    import json
+    import tarfile
+
+    backup_dir = tmp_path / "backups"
+    backup_dir.mkdir(exist_ok=True)
+    monkeypatch.setenv("BACKUP_DIR", str(backup_dir))
+    monkeypatch.setattr("routers.admin.BACKUP_DIR", str(backup_dir))
+
+    # Create a valid .tar.gz with a manifest.json
+    archive_path = backup_dir / "briefr-test-verify.tar.gz"
+    manifest = {"integrity": "ok", "reason": "test", "db_size": 12345}
+
+    with tarfile.open(archive_path, "w:gz") as tar:
+        manifest_bytes = json.dumps(manifest).encode()
+        info = tarfile.TarInfo("manifest.json")
+        info.size = len(manifest_bytes)
+        tar.addfile(info, io.BytesIO(manifest_bytes))
+
+    resp = admin_client.post(
+        f"/api/admin/backups/verify/{archive_path.name}",
+        json={},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["ok"] is True
+    assert "manifest" in data["details"] or "integrity=ok" in data["details"]
+
+
+def test_verify_nonexistent_file_returns_404(admin_client, tmp_path, monkeypatch):
+    backup_dir = tmp_path / "backups"
+    backup_dir.mkdir(exist_ok=True)
+    monkeypatch.setenv("BACKUP_DIR", str(backup_dir))
+    monkeypatch.setattr("routers.admin.BACKUP_DIR", str(backup_dir))
+
+    resp = admin_client.post("/api/admin/backups/verify/briefr-does-not-exist.tar.gz", json={})
+    assert resp.status_code == 404
+
+
+def test_upload_path_traversal_stays_in_backup_dir(admin_client, tmp_path, monkeypatch):
+    """Path traversal in filename must be rejected — filename stays within BACKUP_DIR."""
+    backup_dir = tmp_path / "backups"
+    backup_dir.mkdir(exist_ok=True)
+    monkeypatch.setenv("BACKUP_DIR", str(backup_dir))
+    monkeypatch.setattr("routers.admin.BACKUP_DIR", str(backup_dir))
+
+    # Try to write outside the backup_dir
+    data = b"malicious content"
+    resp = admin_client.post(
+        "/api/admin/backups/upload",
+        files={"file": ("../evil-file.tar.gz", io.BytesIO(data), "application/octet-stream")},
+    )
+    assert resp.status_code == 400  # Must reject path traversal

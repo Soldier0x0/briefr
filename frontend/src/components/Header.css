@@ -395,6 +395,24 @@
 .mobile-menu-item:last-child { border-bottom: none; }
 .mobile-menu-item:hover { background: var(--bg3); color: var(--text); }
 
+.header-admin-link {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  text-decoration: none;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  transition: color 0.1s, border-color 0.1s;
+  white-space: nowrap;
+}
+
+.header-admin-link:hover {
+  color: var(--text2);
+  border-color: var(--border2);
+}
+
 @media (max-width: 640px) {
   .header-tagline      { display: none; }
   .header-right        { gap: 8px; }
@@ -404,4 +422,5 @@
   .clock-sep           { display: none; }
   .header-legal-desktop { display: none; }
   .header-legal-mobile  { display: block; }
+  .header-admin-link   { display: none; }
 }
