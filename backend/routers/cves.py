@@ -12,7 +12,7 @@ pre-split sequence so the OpenAPI route list stays byte-identical (and
                   /api/cves/export, /api/techniques/top
 - detail_router:  /api/cves/{cve_id}/sentences|epss-history|related,
                   /api/cves/{cve_id}
-- intel_router:   /api/cves/{cve_id}/momentum|detection|correlation,
+- intel_router:   /api/cves/{cve_id}/momentum|risk|detection|correlation,
                   /api/kev/deadlines
 
 Inline imports were hoisted to module top per house convention
@@ -72,7 +72,7 @@ from feeds.extended import (
 from feeds.osv import fetch_osv_by_cve
 from feeds.otx import load_otx_pulses_for_cve
 from ml.embeddings import embeddings_enabled, find_similar_cves
-from scoring.risk import calculate_momentum
+from scoring.risk import calculate_momentum, calculate_risk_score
 from templates.intelligence import (
     epss_sentence_or_fallback,
     exploit_sentence,
@@ -97,6 +97,13 @@ class AssetMatchItem(BaseModel):
 
 
 class AssetMatchRequest(BaseModel):
+    assets: list[AssetMatchItem] = Field(default_factory=list, max_length=500)
+
+
+class RiskScoreRequest(BaseModel):
+    """Optional asset profile for personalised Risk Score v1.1b."""
+
+    profile: dict | None = None
     assets: list[AssetMatchItem] = Field(default_factory=list, max_length=500)
 
 
@@ -911,6 +918,90 @@ async def get_cve(cve_id: str):
         logger.error("CIRCL enrichment failed for %s: %s", cve_id, exc)
 
     return cve
+
+
+@intel_router.post("/api/cves/{cve_id}/risk")
+async def cve_risk_score(cve_id: str, body: RiskScoreRequest | None = None):
+    """
+    Canonical BRIEFR Risk Score v1.1b for one CVE.
+
+    Computes momentum server-side. Optional profile/assets personalise the asset
+    component (CPE match + fuzzy graduation fallback).
+    """
+    if not cve_id.upper().startswith("CVE-"):
+        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+
+    body = body or RiskScoreRequest()
+    cve_key = cve_id.upper()
+
+    db = await get_db()
+    try:
+        rows = await db.execute_fetchall(
+            """
+            SELECT c.cve_id, c.description, c.cvss_score, c.severity, c.published,
+                   c.modified, c.affected_products, c.summary, c.is_kev, c.epss_score,
+                   c.has_poc, c.source_urls, c.cpe_matches,
+                   k.date_added AS kev_date_added,
+                   k.due_date AS kev_due_date
+            FROM cves c
+            LEFT JOIN kev_deadlines k ON k.cve_id = c.cve_id
+            WHERE c.cve_id = ?
+            """,
+            (cve_key,),
+        )
+        if not rows:
+            raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
+
+        cve = _row_to_cve_dict(rows[0])
+        cpe_raw = rows[0]["cpe_matches"]
+        if cpe_raw and isinstance(cpe_raw, str):
+            try:
+                cve["cpe_matches"] = json.loads(cpe_raw)
+            except (json.JSONDecodeError, TypeError):
+                cve["cpe_matches"] = []
+        else:
+            cve["cpe_matches"] = cpe_raw or []
+
+        try:
+            cve["public_exploits"] = await load_public_exploits_for_cve(
+                db,
+                cve_key,
+                has_poc=bool(cve.get("has_poc")),
+                source_urls=cve.get("source_urls"),
+            )
+        except Exception as exc:
+            logger.error("Exploit load failed for risk score %s: %s", cve_id, exc)
+            cve["public_exploits"] = []
+
+        momentum = await calculate_momentum(cve_key, db)
+
+        profile = body.profile if body.profile else None
+        assets = [a.model_dump() for a in body.assets if a.product.strip()]
+        if profile and not assets:
+            from scoring.asset_match import profile_to_match_assets
+
+            assets = profile_to_match_assets(profile)
+
+        backend_match = None
+        if profile and assets:
+            from scoring.asset_match import cpe_match_score_for_cve
+
+            backend_match = cpe_match_score_for_cve(cve, assets)
+
+        risk = calculate_risk_score(
+            cve,
+            profile=profile,
+            backend_match_score=backend_match,
+            momentum_score=momentum.get("momentum_score", 0.0),
+        )
+    finally:
+        await db.close()
+
+    return {
+        **risk,
+        "cve_id": cve_key,
+        "momentum": momentum,
+    }
 
 
 @intel_router.get("/api/cves/{cve_id}/momentum")

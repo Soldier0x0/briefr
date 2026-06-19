@@ -248,86 +248,223 @@ def component_sentences(
     }
 
 
-def calculate_risk_score(
+def _boolish(value: Any) -> bool:
+    return value is True or value == 1 or value == "1" or value == "true"
+
+
+def _num(value: Any, fallback: float = 0.0) -> float:
+    if value is None or value == "":
+        return fallback
+    try:
+        n = float(value)
+    except (TypeError, ValueError):
+        return fallback
+    return n if n == n else fallback  # NaN guard
+
+
+def _kev_score_v11b(cve: dict) -> float:
+    """KEV recency tiers — matches frontend calculateKevScore()."""
+    if not _boolish(cve.get("is_kev")):
+        return 0.0
+    added_days = _days_since(cve.get("kev_date_added"))
+    if added_days is None:
+        return 0.84
+    if added_days <= 7:
+        return 1.0
+    if added_days <= 30:
+        return 0.94
+    if added_days <= 90:
+        return 0.88
+    return 0.84
+
+
+def _exploit_score_v11b(cve: dict) -> float:
+    """Exploit graduation — matches frontend calculateExploitScore()."""
+    exploits = [e for e in (cve.get("public_exploits") or []) if e]
+    types = [str(e.get("type") or "").lower() for e in exploits if isinstance(e, dict)]
+    url_blob = " ".join(
+        [
+            *(str(u) for u in (cve.get("source_urls") or [])),
+            *(
+                f"{e.get('title', '')} {e.get('source', '')} {e.get('url', '')}"
+                for e in exploits
+                if isinstance(e, dict)
+            ),
+        ]
+    ).lower()
+
+    if "metasploit" in types or "metasploit" in url_blob:
+        return 1.0
+    if any(t in ("weaponised", "weaponized") for t in types) or any(
+        h in url_blob for h in ("weaponized", "weaponised", "in-the-wild")
+    ):
+        return 0.88
+    if "poc" in types:
+        return 0.55
+    if cve.get("has_poc") or exploits:
+        return 0.35
+    return 0.0
+
+
+def _build_component_sentences_v11b(
     cve: dict,
-    user_assets: Optional[list] = None,
-    exploits: Optional[list] = None,
-    momentum_score: float = 0.0,
-) -> dict[str, Any]:
-    """
-    Return BRIEFR Risk Score 0.0–100.0 and per-component breakdown.
-    user_assets None or [] → asset component uses 0.5 (unknown).
-    """
-    is_kev = bool(cve.get("is_kev"))
-    has_poc = bool(cve.get("has_poc"))
-    exploit_list = exploits if exploits is not None else cve.get("public_exploits") or []
+    profile: Optional[dict],
+    scores: dict[str, float],
+    asset_match_type: str,
+) -> dict[str, str]:
+    if not profile:
+        asset_sentence = "Load an asset profile for personalised scoring"
+    elif asset_match_type and asset_match_type != "No matching assets in your profile":
+        asset_sentence = asset_match_type
+    else:
+        asset_sentence = "No matching assets found in your profile"
 
-    components = {
-        "asset": asset_component_score(cve, user_assets if user_assets else None),
-        "kev": kev_component_score(
-            is_kev,
-            cve.get("kev_date_added"),
-            cve.get("kev_due_date"),
-        ),
-        "epss": epss_component_score(cve.get("epss_score")),
-        "exploit": _exploit_tier(exploit_list, has_poc),
-        "cvss": cvss_component_score(cve.get("cvss_score"), cve.get("severity")),
-    }
+    if not _boolish(cve.get("is_kev")):
+        kev_sentence = "Not listed in CISA Known Exploited Vulnerabilities catalogue"
+    else:
+        added_days = _days_since(cve.get("kev_date_added"))
+        if added_days is None:
+            kev_sentence = "Listed in CISA Known Exploited Vulnerabilities catalogue"
+        elif added_days == 0:
+            kev_sentence = "Added to CISA KEV today — immediate priority"
+        elif added_days == 1:
+            kev_sentence = "Added to CISA KEV yesterday"
+        elif added_days <= 7:
+            kev_sentence = f"Added to CISA KEV {added_days} days ago"
+        elif added_days <= 30:
+            kev_sentence = f"Added to CISA KEV {added_days} days ago"
+        else:
+            weeks = added_days // 7
+            kev_sentence = (
+                "Listed in CISA KEV for over a week"
+                if weeks == 1
+                else f"Listed in CISA KEV for {weeks} weeks"
+            )
 
-    if not user_assets:
-        components["asset"] = DEFAULT_ASSET_UNKNOWN
+    epss_val = cve.get("epss_score")
+    if epss_val is not None:
+        epss_sentence = f"{float(epss_val) * 100:.1f}% exploitation probability"
+    else:
+        epss_sentence = "No EPSS data available for this CVE"
 
-    momentum = max(0.0, min(1.0, float(momentum_score or 0)))
-    components["momentum"] = momentum
+    exploit_score = scores["exploit"]
+    if exploit_score >= 1.0:
+        exploit_sentence = "Metasploit module available — actively weaponised"
+    elif exploit_score >= 0.88:
+        exploit_list = cve.get("public_exploits") or []
+        src = next(
+            (e.get("source") for e in exploit_list if isinstance(e, dict) and e.get("source")),
+            None,
+        )
+        exploit_sentence = (
+            f"Weaponised exploit on {src}"
+            if src
+            else "Weaponised exploit available in public sources"
+        )
+    elif exploit_score >= 0.55:
+        exploit_sentence = "Public proof-of-concept exploit available"
+    elif exploit_score > 0:
+        exploit_sentence = "Exploit references found in public sources"
+    else:
+        exploit_sentence = "No public exploits identified"
 
-    weighted = (
-        components["asset"]   * WEIGHT_ASSET
-        + components["kev"]     * WEIGHT_KEV
-        + components["epss"]    * WEIGHT_EPSS
-        + components["exploit"] * WEIGHT_EXPLOIT
-        + components["cvss"]    * WEIGHT_CVSS
-        + momentum              * WEIGHT_MOMENTUM
+    cvss_val = cve.get("cvss_score")
+    if cvss_val is not None:
+        cvss_sentence = f"{float(cvss_val):.1f} / 10.0"
+    else:
+        cvss_sentence = f"Severity: {cve.get('severity') or 'unknown'}"
+
+    mom_score = scores["momentum"]
+    momentum_sentence = (
+        "Threat momentum active — score raised by active signals"
+        if mom_score > 0
+        else "No recent threat momentum signals detected"
     )
-    score = round(max(0.0, min(100.0, weighted * 100.0)), 1)
 
-    sentences = component_sentences(cve, user_assets, components)
-    labels = {
-        "asset": "Asset exposure",
-        "kev": "CISA KEV",
-        "epss": "EPSS likelihood",
-        "exploit": "Public exploits",
-        "cvss": "CVSS severity",
-        "momentum": "Momentum",
+    return {
+        "asset": asset_sentence,
+        "kev": kev_sentence,
+        "epss": epss_sentence,
+        "exploit": exploit_sentence,
+        "cvss": cvss_sentence,
+        "momentum": momentum_sentence,
     }
-    weights_map = {
-        "asset":    WEIGHT_ASSET,
-        "kev":      WEIGHT_KEV,
-        "epss":     WEIGHT_EPSS,
-        "exploit":  WEIGHT_EXPLOIT,
-        "cvss":     WEIGHT_CVSS,
+
+
+def get_risk_weights() -> dict[str, float]:
+    return {
+        "asset": WEIGHT_ASSET,
+        "kev": WEIGHT_KEV,
+        "epss": WEIGHT_EPSS,
+        "exploit": WEIGHT_EXPLOIT,
+        "cvss": WEIGHT_CVSS,
         "momentum": WEIGHT_MOMENTUM,
     }
 
-    breakdown = []
-    for key in ("asset", "kev", "epss", "exploit", "cvss", "momentum"):
-        value = components[key]
-        w = weights_map[key]
-        points = round(value * w * 100.0, 1)
-        breakdown.append(
-            {
-                "id": key,
-                "label": labels[key],
-                "weight": w,
-                "value": round(value, 4),
-                "points": points,
-                "sentence": sentences.get(key, ""),
-            }
-        )
+
+def calculate_risk_score(
+    cve: dict,
+    *,
+    profile: Optional[dict] = None,
+    backend_match_score: Optional[int] = None,
+    momentum_score: float = 0.0,
+) -> dict[str, Any]:
+    """
+    Canonical BRIEFR Risk Score v1.1b (0–100) with explainable component breakdown.
+
+    profile None → asset component uses 0.5 (unknown exposure).
+    backend_match_score optional CPE match (0–100) from matching/cpe.py.
+    """
+    from scoring.asset_match import resolve_asset_component
+
+    if not cve:
+        return {}
+
+    asset_score, asset_match_type = resolve_asset_component(
+        cve, profile, backend_match_score
+    )
+    kev_score = _kev_score_v11b(cve)
+    epss_score = _num(cve.get("epss_score"), 0.0)
+    exploit_score = _exploit_score_v11b(cve)
+    cvss_score = _num(cve.get("cvss_score"), 0.0) / 10.0
+    mom_score = max(0.0, min(1.0, float(momentum_score or 0)))
+
+    raw_scores = {
+        "asset": asset_score,
+        "kev": kev_score,
+        "epss": epss_score,
+        "exploit": exploit_score,
+        "cvss": cvss_score,
+        "momentum": mom_score,
+    }
+    weights = get_risk_weights()
+    sentences = _build_component_sentences_v11b(
+        cve, profile, raw_scores, asset_match_type
+    )
+
+    raw_total = sum(raw_scores[k] * weights[k] for k in raw_scores)
+    total = round(raw_total * 100 * 10) / 10
+
+    components: dict[str, dict[str, Any]] = {}
+    for key in raw_scores:
+        w = weights[key]
+        score_val = raw_scores[key]
+        components[key] = {
+            "score": score_val,
+            "weight": w,
+            "points": round(score_val * w * 100 * 10) / 10,
+            "sentence": sentences[key],
+        }
 
     return {
-        "score": score,
+        "version": "1.1b",
+        "total": total,
+        "score": total,
         "components": components,
-        "breakdown": breakdown,
+        "weights": weights,
+        "assetMatchType": asset_match_type,
+        "hasProfile": profile is not None,
+        "momentumScore": mom_score,
     }
 
 
