@@ -1,0 +1,140 @@
+"""Async database connections for SQLite (default) and PostgreSQL (optional)."""
+
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass
+from typing import Any
+
+import aiosqlite
+import os
+
+from db.config import is_postgres, postgres_dsn, resolve_database_url
+from db.dialect import adapt_params, adapt_sql
+
+logger = logging.getLogger(__name__)
+
+_pool: Any | None = None
+
+
+@dataclass
+class _ExecuteResult:
+    rowcount: int
+
+
+class SqliteConnection:
+    """Thin wrapper so callers share the same surface as PostgreSQL."""
+
+    def __init__(self, conn: aiosqlite.Connection) -> None:
+        self._conn = conn
+
+    async def execute(self, sql: str, params: tuple | list = ()) -> _ExecuteResult:
+        cursor = await self._conn.execute(sql, adapt_params(params))
+        return _ExecuteResult(rowcount=cursor.rowcount if cursor.rowcount is not None else 0)
+
+    async def execute_fetchall(self, sql: str, params: tuple | list = ()) -> list[Any]:
+        cursor = await self._conn.execute(sql, adapt_params(params))
+        rows = await cursor.fetchall()
+        return list(rows)
+
+    async def executescript(self, sql: str) -> None:
+        await self._conn.executescript(sql)
+
+    async def commit(self) -> None:
+        await self._conn.commit()
+
+    async def close(self) -> None:
+        await self._conn.close()
+
+
+class PostgresConnection:
+    """asyncpg-backed connection with SQLite placeholder translation."""
+
+    def __init__(self, conn: Any, pool: Any) -> None:
+        self._conn = conn
+        self._pool = pool
+        self._transaction = None
+
+    async def _ensure_transaction(self) -> None:
+        if self._transaction is None:
+            self._transaction = self._conn.transaction()
+            await self._transaction.start()
+
+    async def execute(self, sql: str, params: tuple | list = ()) -> _ExecuteResult:
+        await self._ensure_transaction()
+        adapted = adapt_sql(sql)
+        status = await self._conn.execute(adapted, *adapt_params(params))
+        rowcount = 0
+        if status:
+            parts = status.split()
+            if parts and parts[-1].isdigit():
+                rowcount = int(parts[-1])
+        return _ExecuteResult(rowcount=rowcount)
+
+    async def execute_fetchall(self, sql: str, params: tuple | list = ()) -> list[Any]:
+        await self._ensure_transaction()
+        adapted = adapt_sql(sql)
+        records = await self._conn.fetch(adapted, *adapt_params(params))
+        return [dict(record) for record in records]
+
+    async def executescript(self, sql: str) -> None:
+        raise NotImplementedError(
+            "executescript() is SQLite-only — use Alembic migrations on PostgreSQL"
+        )
+
+    async def commit(self) -> None:
+        if self._transaction is not None:
+            await self._transaction.commit()
+            self._transaction = None
+
+    async def close(self) -> None:
+        if self._transaction is not None:
+            await self._transaction.rollback()
+            self._transaction = None
+        await self._pool.release(self._conn)
+
+
+async def init_pool() -> None:
+    """Create the PostgreSQL pool when ``DATABASE_URL`` points at Postgres."""
+    global _pool
+    if not is_postgres():
+        return
+    if _pool is not None:
+        return
+    import asyncpg
+
+    dsn = postgres_dsn()
+    max_size = max(1, int(os.environ.get("DATABASE_POOL_SIZE", "10")))
+    _pool = await asyncpg.create_pool(dsn=dsn, min_size=1, max_size=max_size)
+    logger.info("PostgreSQL connection pool ready (max_size=%d)", max_size)
+
+
+async def close_pool() -> None:
+    global _pool
+    if _pool is not None:
+        await _pool.close()
+        _pool = None
+
+
+async def get_connection() -> SqliteConnection | PostgresConnection:
+    if is_postgres():
+        if _pool is None:
+            raise RuntimeError(
+                "PostgreSQL pool is not initialized — call init_pool() during app startup"
+            )
+        raw = await _pool.acquire()
+        return PostgresConnection(raw, _pool)
+
+    from db.config import resolve_database_url
+
+    url = resolve_database_url()
+    if url.startswith("sqlite+aiosqlite:///"):
+        path = url.removeprefix("sqlite+aiosqlite:///")
+    else:
+        path = os.environ.get("DB_PATH", "briefr.db")
+    conn = await aiosqlite.connect(path, timeout=30)
+    conn.row_factory = aiosqlite.Row
+    await conn.execute("PRAGMA journal_mode=WAL")
+    await conn.execute("PRAGMA busy_timeout=30000")
+    await conn.execute("PRAGMA foreign_keys=ON")
+    return SqliteConnection(conn)

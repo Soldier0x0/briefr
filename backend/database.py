@@ -1,21 +1,39 @@
 import os
 import json
+import asyncio
 import aiosqlite
 from pathlib import Path
+
+from db.config import is_postgres
+from db.connection import get_connection
 
 DB_PATH = os.environ.get("DB_PATH", "briefr.db")
 
 
-async def get_db() -> aiosqlite.Connection:
-    db = await aiosqlite.connect(DB_PATH, timeout=30)
-    db.row_factory = aiosqlite.Row
-    await db.execute("PRAGMA journal_mode=WAL")
-    await db.execute("PRAGMA busy_timeout=30000")
-    await db.execute("PRAGMA foreign_keys=ON")
-    return db
+async def get_db():
+    """Return a database connection (SQLite default, PostgreSQL when configured)."""
+    return await get_connection()
+
+
+async def _init_postgres_schema() -> None:
+    from alembic import command
+    from alembic.config import Config
+
+    alembic_cfg = Config(str(Path(__file__).resolve().parent / "alembic.ini"))
+    await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
+    db = await get_db()
+    try:
+        await db.execute("UPDATE cves SET epss_score = NULL WHERE epss_score = 0.0")
+        await db.commit()
+    finally:
+        await db.close()
 
 
 async def init_db() -> None:
+    if is_postgres():
+        await _init_postgres_schema()
+        return
+
     db = await get_db()
     try:
         await db.executescript("""
