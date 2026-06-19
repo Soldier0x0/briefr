@@ -18,12 +18,15 @@ from settings import settings
 logger = logging.getLogger(__name__)
 
 
-def require_admin_key(request: Request) -> None:
+async def require_admin_key(request: Request) -> None:
     """When BRIEFR_ADMIN_API_KEY is set, admin routes require X-BRIEFR-Admin-Key."""
     if not settings.briefr_admin_api_key:
         return
     provided = request.headers.get("X-BRIEFR-Admin-Key", "")
     if not secrets.compare_digest(provided, settings.briefr_admin_api_key):
+        from rate_limit import client_key as _client_key
+        ip = _client_key(request)
+        await audit(request, "auth.failure", ip)
         raise HTTPException(status_code=401, detail="Admin API key required")
 
 

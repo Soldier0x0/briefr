@@ -277,3 +277,40 @@ export function removeWatchlistEntry(cveId) {
 export function clearAllSnoozes() {
   return request('/watchlist/snoozes', { method: 'DELETE' })
 }
+
+// ── Admin API ──────────────────────────────────────────────────────────────
+
+export function getAdminKey() {
+  return sessionStorage.getItem('briefr-admin-key') || ''
+}
+
+export function setAdminKey(key) {
+  sessionStorage.setItem('briefr-admin-key', key)
+}
+
+export function clearAdminKey() {
+  sessionStorage.removeItem('briefr-admin-key')
+}
+
+async function adminFetch(path, opts = {}) {
+  const key = getAdminKey()
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) }
+  if (key) headers['X-BRIEFR-Admin-Key'] = key
+  const res = await fetch(`/api/admin${path}`, { ...opts, headers })
+  if (res.status === 401) {
+    clearAdminKey()
+    throw Object.assign(new Error('Unauthorized'), { status: 401 })
+  }
+  return res
+}
+
+export const adminApi = {
+  get: (path) => adminFetch(path),
+  post: (path, body) => adminFetch(path, { method: 'POST', body: JSON.stringify(body) }),
+  del: (path) => adminFetch(path, { method: 'DELETE' }),
+  postForm: (path, formData) => adminFetch(path, {
+    method: 'POST',
+    headers: {},
+    body: formData,
+  }),
+}

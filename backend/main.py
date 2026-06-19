@@ -22,6 +22,7 @@ _REQUEST_ID_RE = re.compile(r"[A-Za-z0-9._-]{1,64}")
 
 from database import init_db
 from resilient_client import close_client
+from routers import admin as admin_router
 from routers import atlas as atlas_router
 from routers import brief as brief_router
 from routers import config as config_router
@@ -80,7 +81,7 @@ app.add_middleware(
     allow_origins=settings.allowed_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_headers=["Content-Type", "Authorization", "X-BRIEFR-Admin-Key"],
 )
 
 app.include_router(refresh_router.router)
@@ -182,6 +183,7 @@ app.include_router(config_router.router)
 app.include_router(forge_router.router)
 app.include_router(brief_router.router)
 app.include_router(watchlist_router.router)
+app.include_router(admin_router.router)
 
 
 if __name__ == "__main__":

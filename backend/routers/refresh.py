@@ -36,7 +36,7 @@ def _spawn(coro) -> None:
 
 @router.post("/api/refresh")
 async def manual_refresh(request: Request):
-    require_admin_key(request)
+    await require_admin_key(request)
     if refresh_in_progress():
         raise HTTPException(
             status_code=409,
@@ -52,7 +52,7 @@ async def manual_refresh(request: Request):
 
 @router.post("/api/refresh/nvd")
 async def manual_nvd_refresh(request: Request):
-    require_admin_key(request)
+    await require_admin_key(request)
     if refresh_in_progress():
         raise HTTPException(status_code=409, detail="An ingest job is already running.")
     await audit(request, "refresh.nvd", "nvd")
@@ -62,7 +62,7 @@ async def manual_nvd_refresh(request: Request):
 
 @router.post("/api/refresh/kev")
 async def manual_kev_refresh(request: Request):
-    require_admin_key(request)
+    await require_admin_key(request)
     if refresh_in_progress():
         raise HTTPException(status_code=409, detail="An ingest job is already running.")
     await audit(request, "refresh.kev", "kev")
@@ -72,7 +72,7 @@ async def manual_kev_refresh(request: Request):
 
 @router.post("/api/refresh/epss")
 async def manual_epss_refresh(request: Request):
-    require_admin_key(request)
+    await require_admin_key(request)
     if refresh_in_progress():
         raise HTTPException(status_code=409, detail="An ingest job is already running.")
     await audit(request, "refresh.epss", "epss")
@@ -82,7 +82,7 @@ async def manual_epss_refresh(request: Request):
 
 @router.post("/api/refresh/mitre")
 async def manual_mitre_refresh(request: Request):
-    require_admin_key(request)
+    await require_admin_key(request)
     await audit(request, "refresh.mitre", "attack+atlas")
     _spawn(run_weekly_mitre_refresh())
     return {

@@ -79,6 +79,46 @@ _llm_extraction_lock = asyncio.Lock()
 _exploit_sources_lock = asyncio.Lock()
 
 
+def any_ingest_lock_held() -> bool:
+    """True when any ingest-related lock is held (used by /api/admin/system)."""
+    return any(lock.locked() for lock in [
+        _nvd_lock, _kev_lock, _epss_lock, _epss_backfill_lock,
+        _mitre_refresh_lock, _otx_lock, _correlation_lock,
+        _vulnrichment_lock, _cvelistv5_lock, _embeddings_lock,
+        _llm_extraction_lock, _exploit_sources_lock,
+    ])
+
+
+async def _write_job_last_run(
+    job_id: str,
+    start: datetime,
+    records: int = 0,
+    had_error: bool = False,
+) -> None:
+    """Best-effort: persist last-run metadata to sync_state for the admin dashboard."""
+    import json as _json
+
+    duration = (datetime.now(timezone.utc) - start).total_seconds()
+    try:
+        db = await get_db()
+        try:
+            await set_sync_state_value(
+                db,
+                f"scheduler.last_run.{job_id}",
+                _json.dumps({
+                    "last_run_utc": start.isoformat(timespec="seconds"),
+                    "duration_seconds": round(duration, 2),
+                    "records_upserted": records,
+                    "had_error": had_error,
+                }),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+    except Exception as exc:
+        logger.warning("Failed to write job last-run state for %s: %s", job_id, exc)
+
+
 def get_scheduler_timezone() -> str:
     return os.environ.get("SCHEDULER_TIMEZONE", SCHEDULER_REFRESH_TZ)
 
@@ -148,8 +188,16 @@ async def run_nvd_incremental_sync() -> bool:
         logger.warning("NVD sync already in progress — skipping")
         return False
 
-    async with _nvd_lock:
-        await _run_nvd_incremental_sync()
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    try:
+        async with _nvd_lock:
+            await _run_nvd_incremental_sync()
+    except Exception:
+        _had_error = True
+        raise
+    finally:
+        await _write_job_last_run("nvd_incremental_sync", _start, had_error=_had_error)
     return True
 
 
@@ -260,8 +308,16 @@ async def run_kev_sync() -> bool:
         logger.warning("KEV sync already in progress — skipping")
         return False
 
-    async with _kev_lock:
-        await _run_kev_sync()
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    try:
+        async with _kev_lock:
+            await _run_kev_sync()
+    except Exception:
+        _had_error = True
+        raise
+    finally:
+        await _write_job_last_run("kev_metadata_sync", _start, had_error=_had_error)
     return True
 
 
@@ -358,8 +414,16 @@ async def run_epss_sync() -> bool:
         logger.warning("EPSS sync already in progress — skipping")
         return False
 
-    async with _epss_lock:
-        await _run_epss_sync()
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    try:
+        async with _epss_lock:
+            await _run_epss_sync()
+    except Exception:
+        _had_error = True
+        raise
+    finally:
+        await _write_job_last_run("epss_score_sync", _start, had_error=_had_error)
     return True
 
 
@@ -515,8 +579,9 @@ async def run_weekly_mitre_refresh() -> bool:
         logger.warning("MITRE refresh already in progress — skipping")
         return False
 
+    _start = datetime.now(timezone.utc)
     async with _mitre_refresh_lock:
-        start = datetime.now(timezone.utc)
+        start = _start
         logger.info("Weekly MITRE ATT&CK + ATLAS refresh started at %s", start.isoformat())
         ok = True
         try:
@@ -547,6 +612,7 @@ async def run_weekly_mitre_refresh() -> bool:
         except Exception as exc:
             logger.error("Weekly MITRE/ATLAS refresh failed: %s", exc)
             ok = False
+        await _write_job_last_run("weekly_mitre_refresh", _start, had_error=not ok)
         return ok
 
 
@@ -614,8 +680,10 @@ async def run_exploit_sources_sync() -> bool:
         logger.warning("Exploit sources sync already in progress — skipping")
         return False
 
+    _start = datetime.now(timezone.utc)
+    _had_error = False
     async with _exploit_sources_lock:
-        start = datetime.now(timezone.utc)
+        start = _start
         logger.info("Exploit sources sync started at %s", start.isoformat())
         try:
             db = await get_db()
@@ -636,8 +704,10 @@ async def run_exploit_sources_sync() -> bool:
                 )
         except Exception as exc:
             logger.error("Exploit sources sync failed: %s", exc)
+            _had_error = True
         duration = (datetime.now(timezone.utc) - start).total_seconds()
         logger.info("Exploit sources sync finished in %.1fs", duration)
+    await _write_job_last_run("exploit_sources_sync", _start, had_error=_had_error)
     return True
 
 
@@ -646,8 +716,10 @@ async def run_vulnrichment_sync() -> bool:
         logger.warning("Vulnrichment sync already in progress — skipping")
         return False
 
+    _start = datetime.now(timezone.utc)
+    _had_error = False
     async with _vulnrichment_lock:
-        start = datetime.now(timezone.utc)
+        start = _start
         logger.info("Vulnrichment snapshot sync started at %s", start.isoformat())
         try:
             db = await get_db()
@@ -660,6 +732,7 @@ async def run_vulnrichment_sync() -> bool:
             enrichments = await fetch_vulnrichment_enrichments(target)
             if not enrichments:
                 logger.info("Vulnrichment sync: no enrichments to apply")
+                await _write_job_last_run("vulnrichment_snapshot_sync", _start)
                 return True
 
             db = await get_db()
@@ -672,8 +745,10 @@ async def run_vulnrichment_sync() -> bool:
             logger.info("Vulnrichment sync complete: %d CVE rows updated", applied)
         except Exception as exc:
             logger.error("Vulnrichment sync failed: %s", exc)
+            _had_error = True
         duration = (datetime.now(timezone.utc) - start).total_seconds()
         logger.info("Vulnrichment snapshot sync finished in %.1fs", duration)
+    await _write_job_last_run("vulnrichment_snapshot_sync", _start, had_error=_had_error)
     return True
 
 
@@ -682,8 +757,10 @@ async def run_cvelistv5_sync() -> bool:
         logger.warning("cvelistV5 sync already in progress — skipping")
         return False
 
+    _start = datetime.now(timezone.utc)
+    _had_error = False
     async with _cvelistv5_lock:
-        start = datetime.now(timezone.utc)
+        start = _start
         logger.info("cvelistV5 incremental sync started at %s", start.isoformat())
         try:
             db = await get_db()
@@ -694,6 +771,7 @@ async def run_cvelistv5_sync() -> bool:
 
             records, rejected_ids, new_head, advance = await fetch_cvelistv5_delta(watermark)
             if not advance or not new_head:
+                await _write_job_last_run("cvelistv5_incremental_sync", _start)
                 return True
 
             applied = 0
@@ -717,13 +795,17 @@ async def run_cvelistv5_sync() -> bool:
             )
         except Exception as exc:
             logger.error("cvelistV5 sync failed: %s", exc)
+            _had_error = True
         duration = (datetime.now(timezone.utc) - start).total_seconds()
         logger.info("cvelistV5 incremental sync finished in %.1fs", duration)
+    await _write_job_last_run("cvelistv5_incremental_sync", _start, had_error=_had_error)
     return True
 
 
 async def run_incident_feed_refresh() -> bool:
     """Rebuild the combined Incidents & News snapshot (RSS in parallel + ATLAS)."""
+    _start = datetime.now(timezone.utc)
+    _had_error = False
     try:
         snapshot = await build_incident_feed_snapshot()
         logger.info(
@@ -734,6 +816,8 @@ async def run_incident_feed_refresh() -> bool:
         )
     except Exception as exc:
         logger.error("Incident feed snapshot refresh failed: %s", exc)
+        _had_error = True
+    await _write_job_last_run("incident_feed_refresh", _start, had_error=_had_error)
     return True
 
 
@@ -743,6 +827,8 @@ async def run_nightly_correlation() -> bool:
         logger.warning("Correlation job already in progress — skipping")
         return False
 
+    _start = datetime.now(timezone.utc)
+    _had_error = False
     async with _correlation_lock:
         from correlation.engine import (
             prefetch_pulse_iocs_for_nightly,
@@ -769,8 +855,10 @@ async def run_nightly_correlation() -> bool:
             )
         except Exception as exc:
             logger.error("Nightly correlation job failed: %s", exc)
+            _had_error = True
         finally:
             await db.close()
+    await _write_job_last_run("nightly_correlation", _start, had_error=_had_error)
     return True
 
 
@@ -779,10 +867,13 @@ async def run_otx_nightly_sync() -> bool:
         logger.warning("OTX nightly correlation already in progress — skipping")
         return False
 
+    _start = datetime.now(timezone.utc)
+    _had_error = False
     async with _otx_lock:
         api_key = os.environ.get("OTX_API_KEY", "")
         if not api_key:
             logger.info("OTX_API_KEY not set — skipping nightly correlation")
+            await _write_job_last_run("otx_nightly_correlation", _start)
             return False
         db = await get_db()
         try:
@@ -797,8 +888,10 @@ async def run_otx_nightly_sync() -> bool:
             )
         except Exception as exc:
             logger.error("OTX nightly correlation failed: %s", exc)
+            _had_error = True
         finally:
             await db.close()
+    await _write_job_last_run("otx_nightly_correlation", _start, had_error=_had_error)
     return True
 
 
@@ -815,8 +908,10 @@ async def run_embeddings_sync() -> bool:
         logger.info("Embeddings backfill already in progress — skipping")
         return False
 
+    _start = datetime.now(timezone.utc)
+    _had_error = False
     async with _embeddings_lock:
-        start = datetime.now(timezone.utc)
+        start = _start
         logger.info("Embeddings backfill started at %s", start.isoformat())
         try:
             db = await get_db()
@@ -832,6 +927,8 @@ async def run_embeddings_sync() -> bool:
             )
         except Exception as exc:
             logger.error("Embeddings backfill failed: %s", exc)
+            _had_error = True
+    await _write_job_last_run("embeddings_backfill", _start, had_error=_had_error)
     return True
 
 
@@ -846,8 +943,10 @@ async def run_llm_extraction_sync() -> bool:
         logger.info("LLM product extraction already in progress — skipping")
         return False
 
+    _start = datetime.now(timezone.utc)
+    _had_error = False
     async with _llm_extraction_lock:
-        start = datetime.now(timezone.utc)
+        start = _start
         logger.info("LLM product extraction started at %s", start.isoformat())
         try:
             db = await get_db()
@@ -866,16 +965,24 @@ async def run_llm_extraction_sync() -> bool:
             )
         except Exception as exc:
             logger.error("LLM product extraction failed: %s", exc)
+            _had_error = True
+    await _write_job_last_run("llm_product_extraction", _start, had_error=_had_error)
     return True
 
 
 async def run_backup_deadman_check() -> bool:
     """Scheduler hook: warn when backups are overdue (2× interval)."""
+    _start = datetime.now(timezone.utc)
+    _had_error = False
     try:
-        return await check_backup_deadman()
+        result = await check_backup_deadman()
+        return result
     except Exception as exc:
         logger.error("Backup dead-man check failed: %s", exc)
+        _had_error = True
         return False
+    finally:
+        await _write_job_last_run("backup_deadman_check", _start, had_error=_had_error)
 
 
 def start_scheduler() -> AsyncIOScheduler:
@@ -1058,6 +1165,24 @@ def start_scheduler() -> AsyncIOScheduler:
 
     scheduler.start()
     _scheduler = scheduler
+
+    async def _reapply_paused_jobs(sched: AsyncIOScheduler) -> None:
+        db = await get_db()
+        try:
+            rows = await db.execute_fetchall(
+                "SELECT key, value FROM sync_state WHERE key LIKE 'scheduler.paused.%'"
+            )
+            for row in rows:
+                job_id = row["key"].replace("scheduler.paused.", "")
+                if row["value"] == "1":
+                    job = sched.get_job(job_id)
+                    if job:
+                        job.pause()
+        finally:
+            await db.close()
+
+    asyncio.ensure_future(_reapply_paused_jobs(_scheduler))
+
     logger.info(
         "Scheduler started (tz=%s). NVD every %dh; KEV every %dm; EPSS every %dh; "
         "MITRE+ATLAS weekly Sunday %02d:%02d; Exploit sources every %dh; "
