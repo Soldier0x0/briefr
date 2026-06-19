@@ -53,7 +53,11 @@ class JsonFormatter(logging.Formatter):
         }
         for key, value in record.__dict__.items():
             if key not in _STANDARD_ATTRS and key not in entry:
-                entry[key] = value
+                key_upper = key.upper()
+                if any(key_upper.endswith(suffix) for suffix in _REDACT_SUFFIXES):
+                    entry[key] = "[REDACTED]"
+                else:
+                    entry[key] = value
         if record.exc_info:
             entry["exc_info"] = self.formatException(record.exc_info)
         if record.stack_info:

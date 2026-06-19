@@ -194,10 +194,8 @@ def _job_is_disabled(job_id: str) -> bool:
     gate = _OPT_IN_DISABLED_JOBS.get(job_id)
     if not gate:
         return False
-    env_key, enabled_value = gate
-    current = os.environ.get(env_key, enabled_value)
-    if env_key == "EXPLOIT_SOURCES_SYNC_ENABLED":
-        return current.lower() in ("0", "false", "no", "off")
+    env_key, default_value = gate
+    current = os.environ.get(env_key, default_value)
     return current.lower() in ("0", "false", "no", "off")
 
 
@@ -358,8 +356,9 @@ async def get_system(request: Request):
     backup_interval_hours = int(os.environ.get("BACKUP_INTERVAL_HOURS", "6"))
     backup_threshold_seconds = 2 * backup_interval_hours * 3600
 
-    # Disk usage for DB
-    db_dir = os.path.dirname(os.path.abspath(DB_PATH)) or "."
+    # Disk usage for DB (read at call time so test monkeypatches apply)
+    import database as _database
+    db_dir = os.path.dirname(os.path.abspath(_database.DB_PATH)) or "."
     du = shutil.disk_usage(db_dir)
     disk_free_bytes = du.free
     disk_total_bytes = du.total
@@ -544,7 +543,8 @@ async def get_storage(request: Request):
     finally:
         await db.close()
 
-    db_path = os.path.abspath(DB_PATH)
+    import database as _database
+    db_path = os.path.abspath(_database.DB_PATH)
     db_size_bytes = 0
     try:
         db_size_bytes = os.path.getsize(db_path)
@@ -672,16 +672,40 @@ async def purge_storage(request: Request, body: dict):
 
 
 @router.get("/storage/export")
-async def export_db(request: Request):
-    """Stream briefr.db as a download. SQLite only (no DATABASE_URL override)."""
-    db_path = os.path.abspath(DB_PATH)
+async def export_db(request: Request, background_tasks: BackgroundTasks):
+    """Stream a consistent briefr.db snapshot using VACUUM INTO.
+
+    Direct file streaming in WAL mode can yield a torn read — WAL frames
+    may not be fully checkpointed to the main .db file.  VACUUM INTO writes a
+    fully-checkpointed, defragmented copy to a temp file which is then served.
+    The temp file is cleaned up after the response is sent.
+    """
+    import tempfile as _tempfile
+    import database as _database
+
+    # Read DB_PATH at call time so test monkeypatches on database.DB_PATH apply.
+    db_path = os.path.abspath(_database.DB_PATH)
     if not os.path.exists(db_path):
         raise HTTPException(404, "Database file not found")
+
     date_str = datetime.now(timezone.utc).strftime("%Y%m%d")
     filename = f"briefr-{date_str}.db"
+
+    tmp_dir = _tempfile.gettempdir()
+    tmp_path = os.path.join(tmp_dir, f"briefr-export-{int(time.time())}.db")
+
+    db = await get_db()
+    try:
+        await db.execute(f"VACUUM INTO '{tmp_path}'")
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to create database export: {exc}")
+    finally:
+        await db.close()
+
     await audit(request, "storage.db_export", filename)
+    background_tasks.add_task(os.remove, tmp_path)
     return FileResponse(
-        db_path,
+        tmp_path,
         media_type="application/octet-stream",
         filename=filename,
     )
@@ -1036,9 +1060,10 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
 
     dotenv_path = str(_DOTENV_PATH.resolve())
     allowed = WRITABLE_CONFIG_KEYS | APPLY_ALL_EXTRA_KEYS
-    changed_keys = []
-    errors = []
+    errors: list[str] = []
+    validated: list[tuple[str, str]] = []
 
+    # Pass 1: validate all items before writing anything
     for item in body:
         if not isinstance(item, dict):
             errors.append(f"Invalid item: {item!r}")
@@ -1058,13 +1083,17 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
             except (ValueError, TypeError):
                 errors.append(f"Key '{key}' requires an integer value")
                 continue
+        validated.append((key, value))
 
+    if errors:
+        raise HTTPException(400, {"errors": errors, "partial_keys": []})
+
+    # Pass 2: write only after full validation passes
+    changed_keys: list[str] = []
+    for key, value in validated:
         dotenv_set_key(dotenv_path, key, value)
         os.environ[key] = value
         changed_keys.append(key)
-
-    if errors:
-        raise HTTPException(400, {"errors": errors, "partial_keys": changed_keys})
 
     if not changed_keys:
         return {"ok": True, "changed_keys": [], "message": "No changes to apply"}
@@ -1334,7 +1363,7 @@ async def get_security(request: Request):
 
 
 @router.post("/restart", status_code=202)
-async def restart_backend(request: Request, background_tasks: BackgroundTasks, body: dict = {}):
+async def restart_backend(request: Request, background_tasks: BackgroundTasks, body: dict | None = None):
     drain = bool(body.get("drain", False)) if body else False
     await audit(request, "system.restart", "drain" if drain else "immediate")
 

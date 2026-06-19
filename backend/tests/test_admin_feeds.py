@@ -45,14 +45,15 @@ def test_reset_circuit_unknown_source_returns_404(admin_client):
 def test_reset_circuit_on_open_circuit(admin_client, monkeypatch):
     import resilient_client as rc
 
-    # Simulate an open circuit
-    rc._health["test_source"] = {
+    # Use monkeypatch.setitem so the dict entry is automatically restored even
+    # if an assertion fails before we reach cleanup.
+    monkeypatch.setitem(rc._health, "test_source", {
         "last_success": None,
         "last_failure": 1.0,
         "last_error": "connection refused",
         "consecutive_failures": 5,
         "circuit_open_until": 9999999999.0,
-    }
+    })
 
     resp = admin_client.post("/api/admin/feeds/test_source/reset-circuit", json={})
     assert resp.status_code == 200
@@ -64,22 +65,18 @@ def test_reset_circuit_on_open_circuit(admin_client, monkeypatch):
     assert state["circuit_open_until"] == 0.0
     assert state["consecutive_failures"] == 0
 
-    # Clean up
-    del rc._health["test_source"]
-
 
 def test_reset_circuit_resets_to_healthy_state(admin_client, monkeypatch):
     import resilient_client as rc
     import time
 
-    # Set up an open circuit
-    rc._health["nvd"] = {
+    monkeypatch.setitem(rc._health, "nvd", {
         "last_success": None,
         "last_failure": time.time(),
         "last_error": "timeout",
         "consecutive_failures": 10,
         "circuit_open_until": time.time() + 60,
-    }
+    })
 
     resp = admin_client.post("/api/admin/feeds/nvd/reset-circuit", json={})
     assert resp.status_code == 200
@@ -87,9 +84,6 @@ def test_reset_circuit_resets_to_healthy_state(admin_client, monkeypatch):
     state = rc._health.get("nvd", {})
     assert state.get("circuit_open_until", 0) == 0.0
     assert state.get("consecutive_failures") == 0
-
-    # Clean up
-    rc._health.pop("nvd", None)
 
 
 def test_webhooks_log_returns_ok(admin_client):
