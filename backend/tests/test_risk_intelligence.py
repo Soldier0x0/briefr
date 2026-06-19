@@ -45,13 +45,13 @@ def test_risk_score_bounds():
         "epss_score": 0.95,
         "has_poc": True,
         "kev_date_added": "2026-06-01",
+        "public_exploits": [{"type": "metasploit"}],
+        "source_urls": [],
+        "affected_products": [],
     }
-    result = calculate_risk_score(
-        cve, None, [{"type": "metasploit"}]
-    )
-    assert 0 <= result["score"] <= 100
-    assert len(result["breakdown"]) == 6  # v1.1b: asset, kev, epss, exploit, cvss, momentum
-    assert result["components"]["asset"] == 0.5
+    result = calculate_risk_score(cve, momentum_score=0.0)
+    assert 0 <= result["total"] <= 100
+    assert result["components"]["asset"]["score"] == 0.5
 
 
 def test_patch_sentence():

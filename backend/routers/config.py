@@ -2,9 +2,8 @@
 
 GET /api/config/risk  →  weights dict keyed by component, version string.
 
-The frontend (frontend/src/scoring/riskScore.js) fetches this once at startup
-and uses the returned weights in calculateRiskScore, falling back to the
-hardcoded constants when the request fails or the response is unavailable.
+The frontend (frontend/src/scoring/riskScore.js) fetches weights for display only;
+the canonical score is computed server-side via POST /api/cves/{cve_id}/risk.
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
@@ -27,8 +26,8 @@ router = APIRouter()
 def get_risk_config() -> dict:
     """Return v1.1b risk score weights sourced from scoring/risk.py.
 
-    Weights sum to 1.0. The frontend consumes this endpoint at startup and
-    falls back to its bundled constants if the request fails.
+    Weights sum to 1.0. Used by the UI for formula display; scoring runs on
+    the server via POST /api/cves/{cve_id}/risk.
     """
     weights = {
         "asset": WEIGHT_ASSET,

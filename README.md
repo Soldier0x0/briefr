@@ -390,7 +390,7 @@ BRIEFR collects no personal data, uses no cookies, and runs no analytics. Tech s
 
 - Single-user SQLite — not designed for concurrent multi-tenant writes
 - No app-level authentication yet — built-in app login ships before the public self-hosted release; until then `BRIEFR_ADMIN_API_KEY` optionally gates `POST /api/refresh*`
-- Risk score weights are authoritative in `backend/scoring/risk.py` and fetched at frontend startup via `GET /api/config/risk` (`frontend/src/scoring/riskScore.js` keeps identical fallback constants if the request fails)
+- Risk score v1.1b is computed server-side via `POST /api/cves/{cve_id}/risk` (`backend/scoring/risk.py`); weights for formula display are fetched at startup via `GET /api/config/risk` (`frontend/src/scoring/riskScore.js`)
 - AI/ML alerts chip requires AI/ML keywords in your saved stack or asset profile `aiSystems`
 
 ---

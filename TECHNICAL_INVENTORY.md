@@ -417,8 +417,9 @@ Primary key `(alert_type, target)` — dedupes KEV-on-stack (one alert per CVE) 
 ## 5. Risk Scoring — v1.1b
 
 **Weight authority:** `backend/scoring/risk.py` constants → `GET /api/config/risk`  
-**Client scoring:** `frontend/src/scoring/riskScore.js` (fetches weights at startup; falls back to bundled constants)  
-**Server momentum:** `backend/scoring/risk.py:calculate_momentum`
+**Canonical scoring:** `POST /api/cves/{cve_id}/risk` → `backend/scoring/risk.py:calculate_risk_score()` (+ `scoring/asset_match.py` for asset component)  
+**Frontend:** `frontend/src/scoring/riskScore.js` — UI helpers + weight display cache only  
+**Server momentum:** `backend/scoring/risk.py:calculate_momentum` (also included in `/risk` response)
 
 | Component | Weight | Env var (future) |
 |---|---|---|
@@ -429,7 +430,7 @@ Primary key `(alert_type, target)` — dedupes KEV-on-stack (one alert per CVE) 
 | CVSS score | 0.10 | — |
 | Momentum | 0.05 | — |
 
-Weights are read by the frontend from `GET /api/config/risk` on every app load (fire-and-forget). Any server-side weight change is immediately reflected without a frontend deploy.
+Weights are read by the frontend from `GET /api/config/risk` on every app load for formula display in the drawer. The numeric score itself always comes from `POST /api/cves/{cve_id}/risk`.
 
 ### Momentum signals (`calculate_momentum`)
 

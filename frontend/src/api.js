@@ -109,6 +109,18 @@ export function fetchCVEMomentum(cveId) {
   return request(`/cves/${encodeURIComponent(cveId)}/momentum`)
 }
 
+/** Canonical Risk Score v1.1b — computed server-side. */
+export function fetchCVERisk(cveId, { profile, assets } = {}) {
+  const body = {}
+  if (profile) body.profile = profile
+  if (assets?.length) body.assets = assets
+  return request(`/cves/${encodeURIComponent(cveId)}/risk`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
 export function fetchCVEsForExport(params = {}) {
   const qs = new URLSearchParams()
   if (params.severity)  qs.set('severity', params.severity)

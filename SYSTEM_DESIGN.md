@@ -100,23 +100,39 @@ Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architectur
 | `audit_log` | Written by `POST /api/refresh*` and backup/restore (admin UI reads in V1.4) | — (not exposed yet) |
 | `hunt_packs` (+ `mitre_techniques`, `cve_technique_map`) | `GET /api/forge/coverage`, `GET /api/hunt-packs/{technique_id}`, `POST /api/hunt-packs/generate` | Forge tab (coverage map + hunt pack panel) |
 | `watchlist` | `GET/POST/DELETE /api/watchlist`, `DELETE /api/watchlist/snoozes`; join on `GET /api/cves` for sort/filter | CVECard + DetailDrawer pin; WATCHLIST feed filter |
-| `scoring/risk.py` constants | `GET /api/config/risk` — v1.1b weights, no DB | `riskScore.js` fetchAndCacheRiskWeights (startup) |
+| `scoring/risk.py` + `POST /api/cves/{id}/risk` | Canonical Risk Score v1.1b | `DetailDrawer.jsx` via `fetchCVERisk()` |
+| `scoring/risk.py` constants | `GET /api/config/risk` — v1.1b weights, no DB | `riskScore.js` formula display (startup prefetch) |
 
 ---
 
-### Risk score weight single-sourcing (v1.1b)
+### Risk score (v1.1b) — backend canonical
 
-`GET /api/config/risk` reads the six component weights directly from
-`backend/scoring/risk.py` and returns them as JSON. `frontend/src/scoring/riskScore.js`
-fetches this once at startup (fire-and-forget) and caches the result in a
-module-level variable. If the request fails, the hardcoded fallback constants
-(identical to the backend values) are used unchanged. The drawer risk breakdown
-shows per-component math (`score × weight × 100 = points`) using these weights
-plus `GET /api/cves/{id}/momentum` signals for the momentum component.
+`POST /api/cves/{cve_id}/risk` computes the full explainable score in
+`backend/scoring/risk.py:calculate_risk_score()`. Optional `profile` / `assets`
+in the POST body personalise the asset component (CPE match via
+`matching/cpe.py`, fuzzy graduation via `scoring/asset_match.py`). Momentum is
+computed server-side in the same request via `calculate_momentum()`.
 
----
+`GET /api/config/risk` still exposes weight constants for the drawer's formula
+display (`score × weight × 100 = points`). `frontend/src/scoring/riskScore.js`
+prefetches weights at startup and provides UI helpers only (colors, hero
+summary text) — it does **not** compute scores.
 
-## 3. Data Flow
+| Component | Weight |
+|---|---|
+| Asset profile match | 0.35 |
+| KEV status | 0.25 |
+| EPSS | 0.15 |
+| Exploit availability | 0.10 |
+| CVSS | 0.10 |
+| Momentum | 0.05 |
+
+**Momentum (card arrows):** `GET /api/cves/{id}/momentum` remains available for
+the momentum tab/signals; cached in `momentumCache.js` for CVECard arrows after
+drawer open.
+
+**Display:** `DetailDrawer.jsx` Overview tab — `RiskScoreBreakdown` fetches
+`POST /api/cves/{id}/risk` when the CVE or asset profile changes.
 
 ### A. CVE lifecycle
 
@@ -133,9 +149,10 @@ Sequence diagram: [`docs/diagrams/flow_cve_feed.mermaid`](docs/diagrams/flow_cve
 1. **Card click:** `App.jsx:handleSelectCVE` sets list CVE, then `fetchCVE(cve_id)` → `GET /api/cves/{id}`.
 2. **Server enrichment (serial awaits in handler):** `cve_exploits` rows (scheduler-fed sources first), on-demand Sploitus fallback, GreyNoise scans, OTX pulses, OSV packages, CIRCL merge (`routers/cves.py:get_cve`).
 3. **Drawer opens** with enriched CVE; parallel client fetches on `cve_id` change:
+   - `POST /api/cves/{id}/risk` (immediate — canonical score; optional profile body)
    - `GET /api/cves/{id}/sentences` (immediate)
    - `GET /api/cves/{id}/epss-history` (immediate)
-   - `GET /api/cves/{id}/momentum` (immediate)
+   - `GET /api/cves/{id}/momentum` (immediate — signals tab + card cache)
    - `GET /api/cves/{id}/correlation?sector=` (immediate)
 4. **Lazy tab fetches:**
    - `GET /api/cves/{id}/related` — only when **Related** tab active
@@ -161,22 +178,9 @@ Sequence diagram: [`docs/diagrams/flow_ioc_lookup.mermaid`](docs/diagrams/flow_i
 
 ### D. Risk scoring (v1.1b)
 
-**Client-side** (`frontend/src/scoring/riskScore.js:calculateRiskScore`):
-
-| Component | Weight |
-|---|---|
-| Asset profile match | 0.35 |
-| KEV status | 0.25 |
-| EPSS | 0.15 |
-| Exploit availability | 0.10 |
-| CVSS | 0.10 |
-| Momentum | 0.05 |
-
-**Momentum** fetched lazily from `GET /api/cves/{id}/momentum` → `scoring/risk.py:calculate_momentum` (EPSS trend, OTX pulse recency, recent KEV, rapid exploitation signals). Cached in `momentumCache.js` for card arrows.
-
-**Display:** `DetailDrawer.jsx` Overview tab — `RiskScoreBreakdown` (not Correlation tab). Cards use momentum `0` until drawer fetch updates cache.
-
-**Duplication debt:** same weights/logic mirrored in `backend/scoring/risk.py` (server momentum only today).
+See **Risk score (v1.1b) — backend canonical** above. Implementation:
+`backend/scoring/risk.py`, `backend/scoring/asset_match.py`,
+`POST /api/cves/{cve_id}/risk` in `routers/cves.py`.
 
 ### E. Incidents & News feed (snapshot-served)
 
@@ -318,10 +322,10 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 - **Why:** Full control over dark terminal aesthetic; smaller bundle (`package.json` — React + Vite only).
 - **Trade-off:** More custom CSS; no pre-built accessibility primitives.
 
-### Client-side risk scoring
+### Backend-canonical risk scoring
 
-- **Why:** Zero API calls for score on cards; instant recalculation when asset profile changes.
-- **Trade-off:** Weights duplicated in Python (`scoring/risk.py`) and JavaScript (`scoring/riskScore.js`) — v1.2 will serve single config.
+- **Why:** One reproducible score for drawer, brief, exports, and future alerts; no Python/JS drift.
+- **Trade-off:** `POST /api/cves/{id}/risk` on drawer open (and on profile change); cards show momentum arrows only until drawer warms cache.
 
 ### Monolithic `main.py` (intentional v1.1)
 
@@ -401,7 +405,6 @@ RSS sources defined in `feeds/incident_sources.py`: The Hacker News, Bleeping Co
 - **Single-user SQLite** — no concurrent write safety under heavy parallel writes.
 - **No app-level authentication yet** — built-in app login ships before the public self-hosted release; the beta instance runs on a trusted private network with an optional `X-BRIEFR-Admin-Key` gate on `POST /api/refresh*`.
 - **`POST /api/investigation/summary`** — legacy route; delegates to `generate_investigation_summary` → `generate_executive_summary`. Prefer `POST /api/ai/summary` for new clients.
-- **Risk weights duplicated** in `backend/scoring/risk.py` and `frontend/src/scoring/riskScore.js` — shared config planned for Beta V1.2.
 - **No circuit breakers** on external APIs (timeouts only).
 - **`DetailDrawer.jsx` — ~1,500 lines** — maintenance risk; v1.2 split planned.
 

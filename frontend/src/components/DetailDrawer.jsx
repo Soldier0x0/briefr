@@ -6,6 +6,7 @@ import {
   fetchCVEEpssHistory,
   fetchCVEMomentum,
   fetchCVERelated,
+  fetchCVERisk,
   fetchCVESentences,
 } from '../api.js'
 import { buildSingleReport, copyToClipboard } from '../utils/report.js'
@@ -25,12 +26,12 @@ import DrawerAtlasSection from './DrawerAtlasSection.jsx'
 import { displayText } from '../utils/displayText.js'
 import {
   buildRiskHeroSummary,
-  calculateRiskScore,
   componentBarColor,
   getRiskWeights,
   riskScoreColor,
   RISK_COMPONENT_LABELS,
 } from '../scoring/riskScore.js'
+import { profileToMatchAssets } from '../utils/assetProfileIo.js'
 import { setMomentumScore } from '../utils/momentumCache.js'
 import useModalLayer from '../hooks/useModalLayer.js'
 import './DetailDrawer.css'
@@ -206,7 +207,19 @@ function RiskScoreBar({ score }) {
   )
 }
 
-function RiskScoreBreakdown({ cve, riskScore, onOpenProfile, momentumData }) {
+function RiskScoreBreakdown({ cve, riskScore, riskLoading, onOpenProfile, momentumData }) {
+  if (riskLoading) {
+    return (
+      <section className="drawer-section drawer-risk-section" aria-labelledby="risk-score-heading">
+        <h3 id="risk-score-heading" className="drawer-risk-section-label mono">
+          // BRIEFR RISK SCORE
+        </h3>
+        <p className="drawer-risk-summary mono" style={{ color: 'var(--text3)' }}>
+          Computing risk score…
+        </p>
+      </section>
+    )
+  }
   if (!riskScore || !cve) return null
 
   const { total, components, hasProfile } = riskScore
@@ -223,7 +236,7 @@ function RiskScoreBreakdown({ cve, riskScore, onOpenProfile, momentumData }) {
       ...components[key],
     }))
 
-  const weights = getRiskWeights()
+  const weights = riskScore.weights || getRiskWeights()
   const pointsSum = breakdownRows.reduce((sum, row) => sum + (row.points || 0), 0)
   const formulaParts = breakdownRows.map(row => row.points.toFixed(1))
 
@@ -456,10 +469,10 @@ function CorrelationFindings({ correlation, loading, onSelectCve }) {
   )
 }
 
-function TabOverview({ cve, riskScore, onOpenProfile, momentumData, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
+function TabOverview({ cve, riskScore, riskLoading, onOpenProfile, momentumData, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
   return (
     <>
-      <RiskScoreBreakdown cve={cve} riskScore={riskScore} onOpenProfile={onOpenProfile} momentumData={momentumData} />
+      <RiskScoreBreakdown cve={cve} riskScore={riskScore} riskLoading={riskLoading} onOpenProfile={onOpenProfile} momentumData={momentumData} />
 
       <EpssTrendSection
         cve={cve}
@@ -1084,6 +1097,8 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
   const [detectionLoading, setDetectionLoading] = useState(false)
   const detectionFetchedRef = useRef(false)
   const [momentumData, setMomentumData] = useState(null)
+  const [riskScore, setRiskScore] = useState(null)
+  const [riskLoading, setRiskLoading] = useState(false)
   const [backStack, setBackStack] = useState([])
   const [pdfModalOpen, setPdfModalOpen] = useState(false)
   const [pdfBusy, setPdfBusy] = useState(false)
@@ -1100,14 +1115,43 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
   const investigation = useInvestigationOptional()
   const assetCtx = useAssetProfileOptional()
 
-  const riskScore = useMemo(() => {
-    if (!cve) return null
-    const backendMatchScore = assetCtx?.isLoaded
-      ? assetCtx.getMatchScore(cve.cve_id)
-      : null
-    const momScore = momentumData?.momentum_score ?? 0
-    return calculateRiskScore(cve, assetCtx?.profile ?? null, backendMatchScore, momScore)
-  }, [cve, assetCtx?.profile, assetCtx?.isLoaded, assetCtx?.matchScores, momentumData])
+  useEffect(() => {
+    if (!cve?.cve_id) {
+      setRiskScore(null)
+      setRiskLoading(false)
+      return
+    }
+    let cancelled = false
+    setRiskLoading(true)
+    const payload =
+      assetCtx?.isLoaded && assetCtx?.profile
+        ? {
+            profile: assetCtx.profile,
+            assets: profileToMatchAssets(assetCtx.profile),
+          }
+        : {}
+    fetchCVERisk(cve.cve_id, payload)
+      .then(data => {
+        if (cancelled) return
+        setRiskScore({
+          total: data.total,
+          components: data.components,
+          hasProfile: data.hasProfile,
+          assetMatchType: data.assetMatchType,
+          momentumScore: data.momentumScore,
+          weights: data.weights,
+        })
+      })
+      .catch(() => {
+        if (!cancelled) setRiskScore(null)
+      })
+      .finally(() => {
+        if (!cancelled) setRiskLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [cve?.cve_id, assetCtx?.profile, assetCtx?.isLoaded])
 
   useEffect(() => {
     investigation?.clearPivotNotice?.()
@@ -1530,6 +1574,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
             <TabOverview
               cve={cve}
               riskScore={riskScore}
+              riskLoading={riskLoading}
               onOpenProfile={assetCtx?.openProfileFlow}
               momentumData={momentumData}
               products={products}
