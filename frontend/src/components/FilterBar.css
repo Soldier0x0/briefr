@@ -4,6 +4,10 @@
   background: var(--bg);
 }
 
+.filter-toolbar-anchor {
+  display: flow-root;
+}
+
 .filter-toolbar {
   position: sticky;
   top: 52px;
@@ -311,6 +315,7 @@
 
 .vendor-filter-label {
   font-size: 0.6875rem;
+  line-height: 1.4;
   letter-spacing: 0.1em;
   color: var(--accent);
   font-weight: 500;

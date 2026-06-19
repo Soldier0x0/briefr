@@ -210,8 +210,9 @@ export default function FilterBar({
 
   return (
     <div className="feed-controls">
-    <div className="filter-toolbar">
-      <div className="filter-bar" role="toolbar" aria-label="CVE feed filters">
+      <div className="filter-toolbar-anchor">
+        <div className="filter-toolbar">
+          <div className="filter-bar" role="toolbar" aria-label="CVE feed filters">
         <div className="filter-bar-top">
           <div className="filter-bar-left">
             <span className="filter-title mono">
@@ -375,7 +376,8 @@ export default function FilterBar({
           {exportSuccess}
         </p>
       )}
-    </div>
+        </div>
+      </div>
 
       {active === 'all' && (
         <div className="vendor-filter-block">
