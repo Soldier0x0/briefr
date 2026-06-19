@@ -826,6 +826,21 @@ async def set_config(request: Request, body: dict):
     dotenv_set_key(dotenv_path, key, value)
     os.environ[key] = value
 
+    # Propagate to the live settings object so the change takes effect without
+    # a restart for keys that settings already tracks.
+    attr = key.lower()
+    if hasattr(settings, attr):
+        try:
+            current = getattr(settings, attr)
+            if isinstance(current, bool):
+                setattr(settings, attr, value.lower() not in ("0", "false", "no", "off"))
+            elif isinstance(current, int):
+                setattr(settings, attr, int(value))
+            else:
+                setattr(settings, attr, value)
+        except Exception:
+            pass
+
     await audit(request, f"config.set.{key}", value[:100])
 
     masked = _mask_key(value) if key in {"DISCORD_WEBHOOK_URL", "TELEGRAM_BOT_TOKEN"} else value

@@ -56,6 +56,8 @@ class TokenBucket:
         self.hit_count: int = 0
         # key -> (tokens_remaining, last_update_monotonic)
         self._buckets: dict[str, tuple[float, float]] = {}
+        # key -> cumulative acquire() call count for that key
+        self._hits: dict[str, int] = {}
 
     def acquire(self, key: str, now: float | None = None) -> float:
         """Try to take one token for `key`.
@@ -64,6 +66,7 @@ class TokenBucket:
         next token becomes available (the Retry-After hint).
         """
         self.hit_count += 1
+        self._hits[key] = self._hits.get(key, 0) + 1
         if now is None:
             now = time.monotonic()
         tokens, last = self._buckets.get(key, (self.capacity, now))
@@ -86,6 +89,8 @@ class TokenBucket:
             for key, state in self._buckets.items()
             if now - state[1] < full_after
         }
+        active_keys = set(self._buckets)
+        self._hits = {k: v for k, v in self._hits.items() if k in active_keys}
         if len(self._buckets) <= _MAX_BUCKETS:
             return
         # Flood of distinct keys inside one refill window: nothing is idle,
@@ -96,6 +101,8 @@ class TokenBucket:
             self._buckets.items(), key=lambda item: item[1][1], reverse=True
         )
         self._buckets = dict(by_recency[:_PRUNE_THRESHOLD])
+        active_keys = set(self._buckets)
+        self._hits = {k: v for k, v in self._hits.items() if k in active_keys}
 
 
 ioc_bucket = TokenBucket(settings.rate_limit_ioc_per_minute, name="ioc")
@@ -158,11 +165,11 @@ def rate_limit_refresh(request: Request) -> None:
 
 
 def get_top_consumers(n: int = 5) -> list[dict]:
-    """Aggregate hits across ioc_bucket and refresh_bucket, return top-n by hit count."""
+    """Aggregate per-key hit counts across ioc_bucket and refresh_bucket, return top-n."""
     counts: dict[str, int] = {}
     for bucket in (ioc_bucket, refresh_bucket):
-        for key in bucket._buckets:
-            counts[key] = counts.get(key, 0) + 1
+        for key, hits in getattr(bucket, "_hits", {}).items():
+            counts[key] = counts.get(key, 0) + hits
     return [
         {"key": k, "hits": v}
         for k, v in sorted(counts.items(), key=lambda x: x[1], reverse=True)[:n]
