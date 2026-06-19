@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRIEFR Architecture Map</title>
+<style>
+:root {
+  --bg: #0F0F0F; --panel: #161616; --panel-2: #1c1c1c; --border: #2a2a2a;
+  --text: #e8e8e8; --muted: #8a8a8a;
+  --client: #4ea1ff; --route: #7bd389; --service: #c792ea;
+  --db: #ffb86b; --external: #ff6b9d; --critical: #ff3860;
+  --accent: #f5b942; --accent-2: #ff7a45;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font: 13px/1.5 system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+header { background: var(--panel); border-bottom: 1px solid var(--border); padding: 10px 16px; flex-shrink: 0; }
+header h1 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); padding: 4px 10px; border-radius: 14px; cursor: pointer; font-size: 11px; transition: all .15s; }
+.chip:hover { border-color: var(--accent); color: var(--text); }
+.chip.active { background: #2a2200; border-color: var(--accent); color: var(--accent); }
+main { display: flex; flex: 1; overflow: hidden; }
+#canvas-wrap { flex: 1; position: relative; overflow: hidden; cursor: grab; }
+#canvas-wrap.dragging { cursor: grabbing; }
+#svg-root { display: block; }
+.controls { position: absolute; bottom: 16px; left: 16px; display: flex; gap: 6px; z-index: 5; }
+.controls button { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.controls button:hover { border-color: var(--accent); }
+#sidebar { width: 340px; background: var(--panel); border-left: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; padding: 16px; }
+#sidebar h2 { font-size: 14px; margin-bottom: 8px; }
+#sidebar h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 6px; }
+#sidebar p, #sidebar li { font-size: 12px; color: #ccc; }
+#sidebar .plain { color: var(--accent); font-style: italic; margin: 8px 0; }
+#sidebar .path { font-family: monospace; font-size: 11px; color: var(--client); word-break: break-all; }
+#sidebar ul { padding-left: 16px; }
+#sidebar .edge-list { font-size: 11px; font-family: monospace; }
+#sidebar .finding { background: var(--panel-2); border-left: 3px solid var(--accent-2); padding: 8px 10px; margin: 6px 0; font-size: 12px; }
+#sidebar .fix-item, #sidebar .bug-item { font-size: 11px; margin: 4px 0; padding: 4px 8px; background: var(--panel-2); border-radius: 4px; }
+.bug-item.high { border-left: 3px solid var(--critical); }
+.bug-item.med { border-left: 3px solid var(--accent-2); }
+.bug-item.low { border-left: 3px solid var(--muted); }
+.cluster-label { fill: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+.cluster-box { fill-opacity: .06; stroke-width: 1; rx: 8; }
+.node { cursor: pointer; transition: opacity .2s; }
+.node.dimmed { opacity: .18; }
+.node rect { stroke-width: 1.4; rx: 5; }
+.node.critical rect { stroke-width: 2.2; }
+.node text { pointer-events: none; }
+.node-label { fill: var(--text); font-size: 10.5px; font-weight: 500; }
+.node-sub { fill: var(--muted); font-size: 9px; }
+.edge { fill: none; stroke-width: 1.3; }
+.edge.dimmed { opacity: .08; }
+.edge-label { fill: var(--muted); font-size: 8.5px; font-family: monospace; }
+.badge-fix, .badge-bug { font-size: 8px; font-weight: 700; }
+.legend { position: absolute; top: 12px; right: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 10px; z-index: 5; }
+.legend-item { display: flex; align-items: center; gap: 6px; margin: 3px 0; color: var(--muted); }
+.legend-swatch { width: 20px; height: 3px; border-radius: 2px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>BRIEFR — Interactive Architecture Map</h1>
+  <div class="chips" id="filter-chips"></div>
+</header>
+<main>
+  <div id="canvas-wrap">
+    <svg id="svg-root" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow-critical" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ff3860"/></marker>
+        <marker id="arrow-api" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ff7a45"/></marker>
+        <marker id="arrow-db" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ffb86b"/></marker>
+        <marker id="arrow-mount" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4ea1ff"/></marker>
+        <marker id="arrow-normal" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#666"/></marker>
+      </defs>
+      <g id="viewport">
+        <g id="clusters-layer"></g>
+        <g id="edges-layer"></g>
+        <g id="nodes-layer"></g>
+      </g>
+    </svg>
+    <div class="controls">
+      <button id="btn-fit">Fit</button>
+      <button id="btn-zoom-in">+</button>
+      <button id="btn-zoom-out">−</button>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:#ff3860"></span> critical path</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ff7a45"></span> external API</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ffb86b"></span> database</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#4ea1ff"></span> mount / HTTP</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#666"></span> normal call</div>
+    </div>
+  </div>
+  <aside id="sidebar"></aside>
+</main>
+<script>
+const clusters = [
+  { id: 'client',      label: 'Client (React)',       x: 20,  y: 30,  w: 270, h: 920 },
+  { id: 'api-client',  label: 'API Client',           x: 310, y: 30,  w: 230, h: 920 },
+  { id: 'entry',       label: 'Server Entry',         x: 560, y: 30,  w: 230, h: 920 },
+  { id: 'routes',      label: 'Routes',               x: 810, y: 30,  w: 270, h: 920 },
+  { id: 'services',    label: 'Services & Feeds',     x: 1100,y: 30,  w: 300, h: 920 },
+  { id: 'data',        label: 'Data (SQLite)',        x: 1420,y: 30,  w: 220, h: 920 },
+  { id: 'external',    label: 'External APIs',        x: 1660,y: 30,  w: 240, h: 920 },
+];
+
+const N = (id, cluster, label, sub, x, y, w, h, color, opts = {}) => ({
+  id, cluster, label, sub, x, y, w, h, color, ...opts
+});
+
+const nodes = [
+  // ── CLIENT ──
+  N('main-jsx', 'client', 'main.jsx', 'React bootstrap', 40, 60, 230, 44, 'client', {
+    role: 'Mounts the React app with BrowserRouter and warms risk-weight cache at startup.',
+    plain: 'This is the front door of the website — it loads the app into the browser and fetches scoring rules once.',
+    path: 'frontend/src/main.jsx:24',
+    notes: ['line:22, fetchAndCacheRiskWeights() fires before first paint', 'line:26-30, BrowserRouter + AssetProfileProvider wrap App', 'Self-hosted fonts via @fontsource — no Google CDN at runtime'],
+    tag: ['overview', 'feed', 'all'],
+  }),
+  N('app-jsx', 'client', 'App.jsx', 'tab shell + drawer', 40, 120, 230, 44, 'client', {
+    role: 'Root component: tab routing, health polling, CVE drawer controller, investigation context.',
+    plain: 'The main screen manager — it switches between BRIEF, FEED, IOC, and other tabs and opens the vulnerability detail panel.',
+    path: 'frontend/src/App.jsx:291',
+    notes: ['line:284-288, createCveDrawerController on mount', 'line:291-293, handleOpenCVE delegates to drawer controller', 'Tab panels use hidden CSS — scroll/filter state survives tab switches'],
+    tag: ['overview', 'feed', 'detail', 'all'],
+    critical: true,
+  }),
+  N('cve-feed', 'client', 'CVEFeed.jsx', 'paginated list', 40, 180, 230, 44, 'client', {
+    role: 'Paginated CVE feed with FilterBar, infinite scroll, and keyboard navigation.',
+    plain: 'The scrollable list of security flaws — loads 20 at a time and lets you filter by severity, KEV status, and your tech stack.',
+    path: 'frontend/src/components/CVEFeed.jsx:151',
+    notes: ['line:151-167, loadPage() calls fetchCVEs with abort controller', 'line:283-284, reloads page 1 when filters change', 'PAGE_LIMIT=20 at line:15'],
+    tag: ['overview', 'feed', 'all'],
+    critical: true,
+  }),
+  N('cve-card', 'client', 'CVECard.jsx', 'list row', 40, 240, 230, 44, 'client', {
+    role: 'Single CVE row in the feed; click triggers onSelect → drawer open.',
+    plain: 'One card in the vulnerability list — clicking it opens the full detail side panel.',
+    path: 'frontend/src/components/CVECard.jsx:48',
+    notes: ['line:48, onSelect prop wired from CVEFeed', 'line:5, useMomentumScore reads client-side momentum cache', 'Shows KEV due-date urgency badges via kevDeadline.js'],
+    tag: ['overview', 'feed', 'detail', 'all'],
+    critical: true,
+  }),
+  N('open-drawer', 'client', 'openCveDrawer.js', 'race-safe fetch', 40, 300, 230, 44, 'client', {
+    role: 'Drawer controller preventing stale fetch from reopening drawer after user closes.',
+    plain: 'A safety wrapper that fetches full vulnerability details without reopening the panel if you closed it while loading.',
+    path: 'frontend/src/utils/openCveDrawer.js:9',
+    notes: ['line:9-27, open() sets activeCveId + requestSeq guard', 'line:30-35, close() cancels in-flight by bumping seq', 'Used by App.jsx handleOpenCVE at line:291'],
+    tag: ['overview', 'detail', 'all'],
+    critical: true,
+  }),
+  N('detail-drawer', 'client', 'DetailDrawer.jsx', 'CVE side panel', 40, 360, 230, 44, 'client', {
+    role: 'Multi-tab CVE detail drawer: overview, intel, detect, related; lazy-fetches sub-endpoints.',
+    plain: 'The slide-out panel showing everything about one security flaw — risk score, exploits, detection rules, and related issues.',
+    path: 'frontend/src/components/DetailDrawer.jsx:66',
+    notes: ['line:1130+, parallel useEffect fetches sentences/epss/momentum/correlation', 'line:28-33, calculateRiskScore runs client-side with momentum', 'Tabs: OVERVIEW / INTEL / DETECT / RELATED at line:66-71'],
+    tag: ['overview', 'detail', 'all'],
+    critical: true,
+  }),
+  N('risk-score-fe', 'client', 'riskScore.js', 'client Risk v1.1b', 40, 420, 230, 44, 'client', {
+    role: 'Client-side explainable risk score v1.1b using weights from GET /api/config/risk.',
+    plain: 'Calculates how dangerous a flaw looks to you — mixing severity, exploit availability, and whether it hits your software stack.',
+    path: 'frontend/src/scoring/riskScore.js',
+    notes: ['Weights fetched once at startup via fetchAndCacheRiskWeights', 'Backend calculate_risk_score() exists but is unused in production', 'Momentum component fed from GET /api/cves/{id}/momentum'],
+    tag: ['detail', 'all'],
+  }),
+  N('ioc-lookup-fe', 'client', 'IOCLookup.jsx', 'IOC tab', 40, 480, 230, 44, 'client', {
+    role: 'IOC lookup form: IP/hash/domain enrichment with optional GreyNoise opt-in.',
+    plain: 'The threat-indicator search tab — paste an IP, file hash, or domain to check it against VirusTotal and other services.',
+    path: 'frontend/src/components/IOCLookup.jsx',
+    notes: ['Submits POST /api/ioc/lookup via api.js', 'GreyNoise is opt-in per lookup (weekly free-tier limit)', 'Results cached server-side for 6 hours'],
+    tag: ['ioc', 'all'],
+  }),
+  N('morning-brief-fe', 'client', 'MorningBrief.jsx', 'BRIEF tab queue', 40, 540, 230, 44, 'client', {
+    role: 'Renders server-computed morning brief action queue from GET /api/brief.',
+    plain: 'Your daily priority list — the server ranks which new flaws need attention based on your stack and deadlines.',
+    path: 'frontend/src/components/MorningBrief.jsx',
+    notes: ['Calls fetchMorningBrief in api.js', 'Stack terms match the same filter logic as /api/cves', 'Shown on BRIEF tab alongside charts and heatmap'],
+    tag: ['brief', 'all'],
+  }),
+  N('case-studies-fe', 'client', 'CaseStudies.jsx', 'Incidents tab', 40, 600, 230, 44, 'client', {
+    role: 'Incidents & News tab: combined RSS + MITRE ATLAS case study cards.',
+    plain: 'Security news and real-world attack stories in one feed — pulled from RSS sources and MITRE ATLAS case studies.',
+    path: 'frontend/src/components/CaseStudies.jsx',
+    notes: ['GET /api/case-studies/feed?atlas_limit=80', 'caseStudyFeed.js caches responses 5 min in sessionStorage', 'Per-source errors shown in banner without blocking other sources'],
+    tag: ['incidents', 'all'],
+  }),
+  N('forge-fe', 'client', 'Forge.jsx', 'detection forge', 40, 660, 230, 44, 'client', {
+    role: 'Detection engineering tab: Sigma/SIEM rule browsing and generation.',
+    plain: 'A workshop for writing detection rules — browse community Sigma rules or generate one for a specific product.',
+    path: 'frontend/src/components/Forge.jsx',
+    notes: ['Uses /api/forge endpoints', 'Shares detection/sigma_generator.py with CVE drawer Detect tab', 'Lazy-loaded detection helpers from backend'],
+    tag: ['forge', 'all'],
+  }),
+
+  // ── API CLIENT ──
+  N('api-js', 'api-client', 'api.js', 'fetch wrapper', 330, 60, 190, 44, 'client', {
+    role: 'Central fetch helper: 20s timeout, /api base, JSON error parsing.',
+    plain: 'The phone line between the website and the server — every data request goes through this one helper.',
+    path: 'frontend/src/api.js:4',
+    notes: ['line:4-33, request() with AbortSignal.timeout(20000)', 'line:1, BASE=/api proxied by Vite to :8000', 'Throws friendly errors on timeout vs network failure'],
+    tag: ['overview', 'all'],
+    critical: true,
+  }),
+  N('fetch-cves', 'api-client', 'fetchCVEs()', 'GET /api/cves', 330, 130, 190, 44, 'client', {
+    role: 'Builds query string from filter params and fetches paginated CVE list.',
+    plain: 'Asks the server for a filtered page of security flaws.',
+    path: 'frontend/src/api.js:52',
+    notes: ['line:52-70, maps kev_only/poc_only/ai_context_only to query params', 'Called by CVEFeed loadPage at line:164', 'Max limit 50 enforced server-side'],
+    tag: ['overview', 'feed', 'all'],
+    critical: true,
+  }),
+  N('fetch-cve', 'api-client', 'fetchCVE()', 'GET detail', 330, 200, 190, 44, 'client', {
+    role: 'Fetches single CVE detail with live enrichment from GET /api/cves/{id}.',
+    plain: 'Gets the full story on one specific security flaw, including live threat-intel lookups.',
+    path: 'frontend/src/api.js:73',
+    notes: ['line:73-75, encodeURIComponent on cve_id', 'Called by openCveDrawer.js line:16', 'Detail endpoint triggers Sploitus/GreyNoise/OTX/OSV/CIRCL'],
+    tag: ['overview', 'detail', 'all'],
+    critical: true,
+  }),
+  N('lookup-ioc-api', 'api-client', 'lookupIOC()', 'POST /api/ioc', 330, 270, 190, 44, 'client', {
+    role: 'POST /api/ioc/lookup with value, type, and optional greynoise flag.',
+    plain: 'Sends an IP, hash, or domain to the server for multi-source threat checking.',
+    path: 'frontend/src/api.js',
+    notes: ['Rate-limited server-side via rate_limit_ioc dependency', 'GreyNoise opt-in passed as greynoise: true in body', '6-hour server cache keyed by normalized IOC value'],
+    tag: ['ioc', 'all'],
+  }),
+
+  // ── SERVER ENTRY ──
+  N('main-py', 'entry', 'main.py', 'FastAPI app', 580, 60, 190, 44, 'route', {
+    role: 'FastAPI entry: lifespan (DB init, scheduler), CORS, security headers, router mounts.',
+    plain: 'The server program that starts everything — sets up the database, scheduled jobs, and wires all API endpoints.',
+    path: 'backend/main.py:60',
+    notes: ['line:42-57, lifespan: backup recovery → init_db → scheduler', 'line:172-184, routers included in byte-identical OpenAPI order', 'line:89-110, security headers middleware (CSP, X-Frame-Options)'],
+    tag: ['overview', 'ingest', 'all'],
+    critical: true,
+  }),
+  N('scheduler', 'entry', 'scheduler.py', 'APScheduler jobs', 580, 130, 190, 44, 'route', {
+    role: 'Background ingest: NVD/KEV/EPSS/MITRE/ATLAS/exploits/embeddings on cron intervals.',
+    plain: 'The overnight worker — automatically downloads new vulnerability data from government and threat feeds on a schedule.',
+    path: 'backend/scheduler.py:546',
+    notes: ['line:68-79, per-job asyncio locks prevent overlapping runs', 'line:432-459, maybe_run_on_startup triggers full ingest if <10 CVEs', '7+ scheduled jobs: NVD hourly, KEV 15min, EPSS 6h, etc.'],
+    tag: ['ingest', 'all'],
+  }),
+  N('resilient-client', 'entry', 'resilient_client.py', 'HTTP pool + CB', 580, 200, 190, 44, 'route', {
+    role: 'Shared httpx.AsyncClient with per-source retries, circuit breakers, health registry.',
+    plain: 'A shared internet connection manager — if an external service goes down, it stops hammering it and reports health.',
+    path: 'backend/resilient_client.py:45',
+    notes: ['line:27-28, CIRCUIT_FAILURE_THRESHOLD=3, cooldown 60s default', 'line:45-54, pooled client max 20 connections', 'Health surfaced on GET /api/health'],
+    tag: ['ingest', 'all'],
+  }),
+
+  // ── ROUTES ──
+  N('cves-router', 'routes', 'routers/cves.py', '4 sub-routers', 830, 60, 230, 44, 'route', {
+    role: 'CVE endpoints split into changes/list/detail/intel sub-routers for OpenAPI order.',
+    plain: 'The main vulnerability API — list, search, export, and full detail for each security flaw.',
+    path: 'backend/routers/cves.py:508',
+    notes: ['line:508-572, list_cves with _build_cve_filters + CVE_ORDER_BY', 'line:799-909, get_cve with live Sploitus/GN/OTX/OSV/CIRCL', 'Four routers: changes_router, list_router, detail_router, intel_router'],
+    tag: ['overview', 'feed', 'detail', 'all'],
+    critical: true,
+  }),
+  N('list-cves', 'routes', 'list_cves()', 'GET /api/cves', 830, 130, 230, 44, 'route', {
+    role: 'Paginated CVE list with 12+ filter dimensions and watchlist pin ordering.',
+    plain: 'The server endpoint that returns a page of security flaws matching your filters.',
+    path: 'backend/routers/cves.py:508',
+    notes: ['line:310-322, CVE_ORDER_BY pins watchlisted CVEs first', 'line:390-481, _build_cve_filters handles stack/technique/AI filters', 'line:557-560, SQL via CVE_SELECT + LEFT JOIN watchlist'],
+    tag: ['overview', 'feed', 'all'],
+    critical: true,
+  }),
+  N('get-cve', 'routes', 'get_cve()', 'GET /api/cves/{id}', 830, 200, 230, 44, 'route', {
+    role: 'CVE detail: DB read + techniques + live Sploitus/GreyNoise/OTX/OSV/CIRCL enrichment.',
+    plain: 'Fetches one flaw from the database then enriches it live with exploit trackers and threat feeds.',
+    path: 'backend/routers/cves.py:800',
+    notes: ['line:854-860, load_public_exploits_for_cve (Sploitus + DB cache)', 'line:867-877, greynoise_scans_for_cve on description IPs', 'line:890-901, fetch_osv_by_cve for package impact'],
+    tag: ['overview', 'detail', 'all'],
+    critical: true,
+  }),
+  N('ioc-router', 'routes', 'routers/ioc.py', 'POST /api/ioc/lookup', 830, 270, 230, 44, 'route', {
+    role: 'IOC lookup endpoint with 6h cache, rate limit, and multi-source enrichment.',
+    plain: 'The server endpoint that checks an indicator against VirusTotal, AbuseIPDB, and other threat services.',
+    path: 'backend/routers/ioc.py:75',
+    notes: ['line:75-76, rate_limit_ioc dependency', 'line:17-18, imports lookup_ioc from enrichment/ioc.py', 'Cached-hit path commits feed_cache writes (PR #95 fix)'],
+    tag: ['ioc', 'all'],
+  }),
+  N('brief-router', 'routes', 'routers/brief.py', 'GET /api/brief', 830, 340, 230, 44, 'route', {
+    role: 'Morning brief endpoint delegating to brief.service.build_morning_brief.',
+    plain: 'Returns a ranked to-do list of vulnerabilities that matter most right now.',
+    path: 'backend/routers/brief.py:11',
+    notes: ['line:22, read-path queries only — no writes', 'stack param matches /api/cves stack filter semantics', 'since_hours default 24, limit default 10'],
+    tag: ['brief', 'all'],
+  }),
+  N('meta-router', 'routes', 'routers/meta.py', 'AI summaries', 830, 410, 230, 44, 'route', {
+    role: 'Meta endpoints: version, usage stats, POST /api/ai/summary, investigation summary.',
+    plain: 'Miscellaneous server info plus the artificial-intelligence text generator for PDF reports.',
+    path: 'backend/routers/meta.py:30',
+    notes: ['line:30, generate_executive_summary from ai/summary.py', 'POST /api/ai/summary used by pdfAiSummary.js', 'Falls back to template text if Groq/Anthropic unavailable'],
+    tag: ['ai', 'all'],
+  }),
+  N('atlas-router', 'routes', 'routers/atlas.py', 'ATLAS + news', 830, 480, 230, 44, 'route', {
+    role: 'MITRE ATLAS techniques, case studies, and combined incident news feed.',
+    plain: 'Endpoints for artificial-intelligence attack patterns and the combined security-news feed.',
+    path: 'backend/routers/atlas.py',
+    notes: ['GET /api/case-studies/feed combines RSS + ATLAS', 'GET /api/atlas/techniques and /casestudies', 'Used by CaseStudies.jsx and DrawerAtlasSection.jsx'],
+    tag: ['incidents', 'all'],
+  }),
+  N('health-router', 'routes', 'routers/health.py', 'GET /api/health', 830, 550, 230, 44, 'route', {
+    role: 'Health check: CVE count, last sync, circuit breaker status, next refresh time.',
+    plain: 'A status check the website polls every minute to show when data was last updated.',
+    path: 'backend/routers/health.py',
+    notes: ['Polled by App.jsx loadHealth every 60s', 'Returns last_updated, next_refresh_at_utc, refresh_schedule', 'Includes per-source circuit breaker state from resilient_client'],
+    tag: ['overview', 'all'],
+  }),
+  N('forge-router', 'routes', 'routers/forge.py', 'detection forge', 830, 620, 230, 44, 'route', {
+    role: 'Forge MVP endpoints for Sigma rule search and SIEM query generation.',
+    plain: 'API for the detection-rule workshop tab.',
+    path: 'backend/routers/forge.py',
+    notes: ['Uses detection/sigma_generator.py and siem_queries.py', 'Shares rule_sources.py with CVE drawer Detect tab', 'Community SigmaHQ + Elastic rules indexed locally'],
+    tag: ['forge', 'all'],
+  }),
+
+  // ── SERVICES ──
+  N('enrich-cve', 'services', 'enrichment/cve.py', 'display fields', 1120, 60, 260, 44, 'service', {
+    role: 'Derives has_poc, mitre_technique, patch_available from NVD references (no LLM).',
+    plain: 'Extracts useful facts from raw vulnerability data — like whether a proof-of-concept exploit exists.',
+    path: 'backend/enrichment/cve.py:71',
+    notes: ['line:71-78, has_public_poc checks reference tags and URLs', 'line:57-68, extract_mitre_technique from ATT&CK URLs', 'Called during NVD ingest in feeds/nvd.py'],
+    tag: ['ingest', 'all'],
+  }),
+  N('build-plain-summary', 'services', 'build_plain_summary()', 'DEAD, zero callers', 1120, 120, 260, 44, 'service', {
+    role: 'DEAD: builds plain summary from KEV/OSV/description — never called outside defining file.',
+    plain: 'Unused helper that was meant to pick the best human-readable summary text — nothing calls it.',
+    path: 'backend/enrichment/cve.py:93',
+    notes: ['line:93-103, prefers kev_short then osv_summary then simplify_description', 'simplify_description() IS used; this wrapper is not', 'Candidate for deletion or wiring into backfill_display_fields'],
+    tag: ['roadmap-bugs', 'all'],
+  }),
+  N('enrich-ioc', 'services', 'enrichment/ioc.py', 'multi-source IOC', 1120, 180, 260, 44, 'service', {
+    role: 'lookup_ioc(): VirusTotal, AbuseIPDB, GreyNoise, MalwareBazaar, URLhaus, OTX.',
+    plain: 'Checks one threat indicator against six different security services and merges the results.',
+    path: 'backend/enrichment/ioc.py:212',
+    notes: ['line:22-23, VT and AbuseIPDB base URLs', 'Privacy note at file top: IOC values sent to third parties', 'record_api_call tracks quota per service in api_usage table'],
+    tag: ['ioc', 'all'],
+  }),
+  N('correlation', 'services', 'correlation/engine.py', '3-level correlate', 1120, 240, 260, 44, 'service', {
+    role: 'Three-level CVE correlation: shared OTX IPs, actor/sector match, temporal vendor spikes.',
+    plain: 'Finds connections between vulnerabilities — shared attacker infrastructure, same threat groups, or unusual vendor activity.',
+    path: 'backend/correlation/engine.py:366',
+    notes: ['line:366, get_correlation_for_cve — DB-backed, no live API at request time', 'line:416, run_nightly_correlation scheduled job', 'Level 1 uses OTX pulse IPs pre-cached nightly'],
+    tag: ['detail', 'all'],
+  }),
+  N('detection-sigma', 'services', 'sigma_generator.py', 'Sigma fallback', 1120, 300, 260, 44, 'service', {
+    role: 'generate_sigma_rule(): community rules from SigmaHQ + generated fallback.',
+    plain: 'Finds or writes a detection rule you can paste into your security monitoring tools.',
+    path: 'backend/detection/sigma_generator.py:232',
+    notes: ['line:232, generate_sigma_rule called from cves.py and forge.py', 'find_sigma_rules/find_elastic_rules in rule_sources.py', 'GitHub API quota consumed for rule index refresh'],
+    tag: ['detail', 'forge', 'all'],
+  }),
+  N('brief-service', 'services', 'brief/service.py', 'action queue', 1120, 360, 260, 44, 'service', {
+    role: 'build_morning_brief(): priority-scored action queue from recent CVEs + KEV deadlines.',
+    plain: 'Builds the ranked morning to-do list by scoring new flaws against your stack and upcoming government deadlines.',
+    path: 'backend/brief/service.py:54',
+    notes: ['line:54, build_morning_brief is the sole export used by brief router', '_priority_score and _build_action_queue are internal-only', 'Read-path only — no DB writes'],
+    tag: ['brief', 'all'],
+  }),
+  N('ai-summary', 'services', 'ai/summary.py', 'Groq/Anthropic', 1120, 420, 260, 44, 'service', {
+    role: 'generate_executive_summary and investigation summary with Groq/Anthropic/template fallback.',
+    plain: 'Writes plain-English executive summaries for PDF reports, using AI when keys are available.',
+    path: 'backend/ai/summary.py:311',
+    notes: ['line:311, generate_executive_summary', 'GROQ_MODEL from ai/groq_config.py', 'Template fallback on provider failure — never blocks PDF export'],
+    tag: ['ai', 'all'],
+  }),
+  N('scoring-be', 'services', 'scoring/risk.py', 'momentum only', 1120, 480, 260, 44, 'service', {
+    role: 'Backend risk scoring: calculate_momentum used; calculate_risk_score is dead re-export.',
+    plain: 'Server-side math for how fast a flaw is getting worse — the main risk score actually runs in the browser.',
+    path: 'backend/scoring/risk.py:336',
+    notes: ['line:336, calculate_momentum used by GET /api/cves/{id}/momentum', 'line:251, calculate_risk_score — zero production callers', 'WEIGHT_* constants exposed via GET /api/config/risk for frontend'],
+    tag: ['detail', 'roadmap-bugs', 'all'],
+  }),
+  N('ml-embeddings', 'services', 'ml/embeddings.py', 'similar CVEs', 1120, 540, 260, 44, 'service', {
+    role: 'CPU embeddings backfill (env-gated) and find_similar_cves for related tab.',
+    plain: 'Optional machine-learning that finds vulnerabilities with similar descriptions — runs in background jobs only.',
+    path: 'backend/ml/embeddings.py:222',
+    notes: ['line:68, embeddings_enabled() checks EMBEDDINGS_ENABLED env', 'line:141, run_embeddings_backfill in scheduler', 'Never on request hot path — scheduler-side only per ROADMAP'],
+    tag: ['ingest', 'detail', 'all'],
+  }),
+  N('feeds-nvd', 'services', 'feeds/nvd.py', 'NVD ingest', 1120, 600, 260, 44, 'service', {
+    role: 'fetch_nvd_cve_updates: incremental NVD sync with 429 retry and API key support.',
+    plain: 'Downloads new and updated vulnerability records from the US government database.',
+    path: 'backend/feeds/nvd.py:398',
+    notes: ['line:398, fetch_nvd_cve_updates called by scheduler', 'line:191-198, API key in header when NVD_API_KEY set', 'Frequent transient 503s — circuit breaker in resilient_client'],
+    tag: ['ingest', 'all'],
+  }),
+  N('feeds-kev', 'services', 'feeds/kev.py', 'CISA KEV', 1120, 660, 260, 44, 'service', {
+    role: 'fetch_kev: downloads CISA Known Exploited Vulnerabilities catalog every 15 min.',
+    plain: 'Pulls the government list of flaws actively being exploited in the wild.',
+    path: 'backend/feeds/kev.py:46',
+    notes: ['line:13, parse_kev_catalog extracts deadline fields', 'Scheduler interval KEV_SYNC_INTERVAL_MINUTES default 15', 'KEV fields populate kev_deadlines table'],
+    tag: ['ingest', 'all'],
+  }),
+  N('feeds-epss', 'services', 'feeds/epss.py', 'EPSS scores', 1120, 720, 260, 44, 'service', {
+    role: 'fetch_epss and time-series batch for exploit-probability scores.',
+    plain: 'Downloads probability scores showing how likely each flaw is to be exploited soon.',
+    path: 'backend/feeds/epss.py:132',
+    notes: ['line:132, fetch_epss for daily scores', 'line:149, fetch_epss_time_series_batch for sparkline backfill', 'EPSS history stored in epss_history table'],
+    tag: ['ingest', 'all'],
+  }),
+  N('feeds-extended', 'services', 'feeds/extended.py', 'Sploitus/CIRCL/GN', 1120, 780, 260, 44, 'service', {
+    role: 'Live enrichment: Sploitus exploits, CIRCL, GreyNoise scans; scheduler batch enrich_cves_extended.',
+    plain: 'Looks up extra threat intelligence — public exploits, scan activity, and reference data — for each vulnerability.',
+    path: 'backend/feeds/extended.py:520',
+    notes: ['line:520, load_public_exploits_for_cve used by get_cve', 'line:597, enrich_cves_extended batch job in scheduler', 'line:685, lookup_greynoise is DEAD alias — use greynoise_for_ip'],
+    tag: ['detail', 'ingest', 'all'],
+    critical: true,
+  }),
+  N('feeds-otx', 'services', 'feeds/otx.py', 'AlienVault OTX', 1120, 840, 260, 44, 'service', {
+    role: 'OTX pulse loading, IOC lookup, and nightly correlation prefetch.',
+    plain: 'Connects to the AlienVault threat-sharing platform for attack campaign data linked to vulnerabilities.',
+    path: 'backend/feeds/otx.py:282',
+    notes: ['line:282, load_otx_pulses_for_cve in get_cve detail path', 'line:366, run_otx_nightly_correlation scheduled', 'Requires OTX_API_KEY — graceful empty if missing'],
+    tag: ['detail', 'ingest', 'all'],
+  }),
+  N('vulnrichment-dead', 'services', 'fetch_vulnrichment_for_cve', 'DEAD, zero callers', 1120, 900, 260, 44, 'service', {
+    role: 'DEAD: on-demand single-CVE Vulnrichment fetch — never wired to router or scheduler.',
+    plain: 'Unused function meant to fetch enriched CVE records from the Vulnrichment GitHub repo for one flaw at a time.',
+    path: 'backend/feeds/vulnrichment.py:141',
+    notes: ['line:104, fetch_vulnrichment_enrichments IS used by scheduler', 'line:141, fetch_vulnrichment_for_cve has zero callers', 'line:149, preview_merge also orphaned (test helper only)'],
+    tag: ['roadmap-bugs', 'all'],
+  }),
+
+  // ── DATA ──
+  N('database-py', 'data', 'database.py', '21 tables + ORM', 1440, 60, 180, 44, 'db', {
+    role: 'aiosqlite access layer: init_db (21 tables), migrations inline, all query helpers.',
+    plain: 'The database manager — stores every vulnerability, cache entry, and sync timestamp in a local SQLite file.',
+    path: 'backend/database.py:18',
+    notes: ['line:18-277, init_db CREATE TABLE for 21 tables', 'line:280-304, inline migrations (no separate migration runner)', 'DB file at backend/briefr.db (gitignored)'],
+    tag: ['overview', 'all'],
+    critical: true,
+  }),
+  N('cves-table', 'data', 'cves table', 'core CVE rows', 1440, 130, 180, 44, 'db', {
+    role: 'Primary CVE store: cvss, epss, kev flags, affected_products JSON, has_ai_context.',
+    plain: 'The main table holding one row per security flaw with scores, descriptions, and flags.',
+    path: 'backend/database.py:22',
+    notes: ['line:22-41, schema definition in init_db', 'affected_products stored as JSON text array', 'Indexes on severity, published, is_kev, epss_score'],
+    tag: ['overview', 'feed', 'detail', 'all'],
+    critical: true,
+  }),
+  N('ioc-cache-table', 'data', 'ioc_cache table', '6h IOC cache', 1440, 200, 180, 44, 'db', {
+    role: 'IOC lookup result cache keyed by normalized value, 6-hour TTL.',
+    plain: 'Remembers recent threat-indicator lookups so the same IP or hash is not re-checked constantly.',
+    path: 'backend/database.py:48',
+    notes: ['line:48-53, schema: value PRIMARY KEY, result JSON', 'GreyNoise uses 1-hour TTL (separate logic in enrichment/ioc.py)', 'Privacy: values stored locally only, not logged'],
+    tag: ['ioc', 'all'],
+  }),
+  N('sync-state', 'data', 'sync_state table', 'watermarks', 1440, 270, 180, 44, 'db', {
+    role: 'Key-value store for NVD watermark, EPSS backfill flags, cvelistV5 head SHA.',
+    plain: 'A bookmark table — remembers where each data download left off so the next sync continues from there.',
+    path: 'backend/database.py:85',
+    notes: ['line:85-89, sync_state schema', 'NVD watermark via resolve_nvd_sync_watermark', 'Enables idempotent incremental ingest'],
+    tag: ['ingest', 'all'],
+  }),
+
+  // ── EXTERNAL ──
+  N('ext-nvd', 'external', 'NVD API', 'nist.gov', 1680, 60, 200, 44, 'external', {
+    role: 'NIST National Vulnerability Database — primary CVE source with optional API key.',
+    plain: 'The US government database of all published security flaws.',
+    path: 'backend/feeds/nvd.py:198',
+    notes: ['services.nvd.nist.gov', 'Frequent 503 errors independent of API key quality', 'Rate limit: 5 req/30s without key, 50 with key'],
+    tag: ['ingest', 'all'],
+  }),
+  N('ext-kev', 'external', 'CISA KEV', 'cisa.gov', 1680, 120, 200, 44, 'external', {
+    role: 'CISA Known Exploited Vulnerabilities catalog JSON feed.',
+    plain: 'The government list of flaws hackers are actively using right now.',
+    path: 'backend/feeds/kev.py:46',
+    notes: ['Downloaded every 15 minutes by scheduler', 'Includes binding remediation deadlines', 'No API key required'],
+    tag: ['ingest', 'all'],
+  }),
+  N('ext-epss', 'external', 'EPSS API', 'first.org', 1680, 180, 200, 44, 'external', {
+    role: 'FIRST EPSS API for exploit probability scores and time-series history.',
+    plain: 'A research service that estimates how likely each flaw is to be attacked in the next month.',
+    path: 'backend/feeds/epss.py:22',
+    notes: ['Bulk and time-series endpoints', 'Scores stored in cves.epss_score and epss_history table', 'No API key required'],
+    tag: ['ingest', 'all'],
+  }),
+  N('ext-vt', 'external', 'VirusTotal', 'virustotal.com', 1680, 240, 200, 44, 'external', {
+    role: 'VirusTotal v3 API for IOC hash/IP/domain reputation.',
+    plain: 'A crowdsourced malware scanner that checks if an indicator is known-bad.',
+    path: 'backend/enrichment/ioc.py:22',
+    notes: ['Requires VIRUSTOTAL_API_KEY', '429 responses surface as partial results', 'Quota tracked in api_usage table'],
+    tag: ['ioc', 'all'],
+  }),
+  N('ext-osv', 'external', 'OSV API', 'osv.dev', 1680, 300, 200, 44, 'external', {
+    role: 'OSV.dev API for open-source package impact per CVE.',
+    plain: 'Shows which open-source software packages are affected by a given security flaw.',
+    path: 'backend/feeds/osv.py:107',
+    notes: ['line:107, fetch_osv_by_cve called in get_cve detail path', 'Can supply summary text when NVD summary is empty', 'No API key required'],
+    tag: ['detail', 'all'],
+    critical: true,
+  }),
+  N('ext-sploitus', 'external', 'Sploitus', 'sploitus.com', 1680, 360, 200, 44, 'external', {
+    role: 'Sploitus exploit search API for public PoC references.',
+    plain: 'A search engine for publicly available exploit code linked to vulnerabilities.',
+    path: 'backend/feeds/extended.py:101',
+    notes: ['Called live on CVE detail open via load_public_exploits_for_cve', 'Results also cached in feed_cache table', 'No API key required'],
+    tag: ['detail', 'all'],
+    critical: true,
+  }),
+  N('ext-gn', 'external', 'GreyNoise', 'greynoise.io', 1680, 420, 200, 44, 'external', {
+    role: 'GreyNoise API for internet background scan activity on CVE-related IPs.',
+    plain: 'Shows whether hackers are already scanning the internet for this vulnerability.',
+    path: 'backend/feeds/extended.py:186',
+    notes: ['Requires GREYNOISE_API_KEY for detail enrichment', 'IOC lookup: opt-in per request (weekly free tier)', '1-hour cache for GreyNoise IOC results'],
+    tag: ['detail', 'ioc', 'all'],
+  }),
+  N('ext-otx', 'external', 'AlienVault OTX', 'otx.alienvault.com', 1680, 480, 200, 44, 'external', {
+    role: 'OTX API for threat pulses, IOCs, and CVE-linked campaign data.',
+    plain: 'A community threat-sharing platform with attack campaign details tied to vulnerabilities.',
+    path: 'backend/feeds/otx.py:158',
+    notes: ['Requires OTX_API_KEY', 'Nightly correlation job pre-caches pulse IOCs', 'Pulses loaded live on CVE detail if key present'],
+    tag: ['detail', 'ingest', 'all'],
+  }),
+  N('ext-groq', 'external', 'Groq / Anthropic', 'AI providers', 1680, 540, 200, 44, 'external', {
+    role: 'Optional LLM providers for PDF executive summaries and product extraction.',
+    plain: 'External artificial-intelligence services that write human-readable report summaries when configured.',
+    path: 'backend/ai/groq_config.py:3',
+    notes: ['GROQ_MODEL and GROQ_URL at line:3-4', 'Template fallback always available — keys optional', 'LLM product extraction in ml/product_extraction.py is scheduler-only'],
+    tag: ['ai', 'ingest', 'all'],
+  }),
+];
+
+const edges = [
+  // Critical path: feed browse
+  { from: 'main-jsx', to: 'app-jsx', kind: 'critical', label: '1 · render App', tag: ['overview', 'feed', 'all'] },
+  { from: 'app-jsx', to: 'cve-feed', kind: 'critical', label: '2 · activeTab=feed', tag: ['overview', 'feed', 'all'] },
+  { from: 'cve-feed', to: 'fetch-cves', kind: 'critical', label: '3 · loadPage → fetchCVEs', tag: ['overview', 'feed', 'all'] },
+  { from: 'fetch-cves', to: 'api-js', kind: 'critical', label: '4 · request()', tag: ['overview', 'feed', 'all'] },
+  { from: 'api-js', to: 'main-py', kind: 'mount', label: 'GET /api/cves', tag: ['overview', 'feed', 'all'] },
+  { from: 'main-py', to: 'cves-router', kind: 'mount', label: 'include_router', tag: ['overview', 'feed', 'detail', 'all'] },
+  { from: 'cves-router', to: 'list-cves', kind: 'critical', label: '5 · list_cves', tag: ['overview', 'feed', 'all'] },
+  { from: 'list-cves', to: 'database-py', kind: 'db', label: '6 · CVE_SELECT query', tag: ['overview', 'feed', 'all'] },
+  { from: 'database-py', to: 'cves-table', kind: 'db', label: 'read cves', tag: ['overview', 'feed', 'all'] },
+  { from: 'cve-feed', to: 'cve-card', kind: 'normal', label: 'render rows', tag: ['overview', 'feed', 'all'] },
+
+  // Critical path: click → detail
+  { from: 'cve-card', to: 'open-drawer', kind: 'critical', label: '7 · onSelect → open', tag: ['overview', 'detail', 'all'] },
+  { from: 'open-drawer', to: 'fetch-cve', kind: 'critical', label: '8 · fetchCVE(id)', tag: ['overview', 'detail', 'all'] },
+  { from: 'fetch-cve', to: 'api-js', kind: 'critical', label: '9 · request()', tag: ['overview', 'detail', 'all'] },
+  { from: 'api-js', to: 'get-cve', kind: 'mount', label: 'GET /api/cves/{id}', tag: ['overview', 'detail', 'all'] },
+  { from: 'get-cve', to: 'database-py', kind: 'db', label: '10 · SELECT cve', tag: ['overview', 'detail', 'all'] },
+  { from: 'get-cve', to: 'feeds-extended', kind: 'critical', label: '11 · Sploitus/CIRCL/GN', tag: ['overview', 'detail', 'all'] },
+  { from: 'get-cve', to: 'feeds-otx', kind: 'critical', label: '12 · OTX pulses', tag: ['overview', 'detail', 'all'] },
+  { from: 'get-cve', to: 'ext-osv', kind: 'api', label: '13 · OSV packages', tag: ['overview', 'detail', 'all'] },
+  { from: 'feeds-extended', to: 'ext-sploitus', kind: 'api', label: 'exploit search', tag: ['detail', 'all'] },
+  { from: 'feeds-extended', to: 'ext-gn', kind: 'api', label: 'IP scans', tag: ['detail', 'all'] },
+  { from: 'feeds-otx', to: 'ext-otx', kind: 'api', label: 'pulse API', tag: ['detail', 'all'] },
+  { from: 'open-drawer', to: 'detail-drawer', kind: 'critical', label: '14 · setSelectedCVE', tag: ['overview', 'detail', 'all'] },
+  { from: 'detail-drawer', to: 'risk-score-fe', kind: 'normal', label: 'calculateRiskScore', tag: ['detail', 'all'] },
+
+  // Background ingest
+  { from: 'main-py', to: 'scheduler', kind: 'normal', label: 'lifespan start', tag: ['ingest', 'all'] },
+  { from: 'scheduler', to: 'feeds-nvd', kind: 'normal', label: 'cron · NVD sync', tag: ['ingest', 'all'] },
+  { from: 'scheduler', to: 'feeds-kev', kind: 'normal', label: 'cron · KEV 15m', tag: ['ingest', 'all'] },
+  { from: 'scheduler', to: 'feeds-epss', kind: 'normal', label: 'cron · EPSS 6h', tag: ['ingest', 'all'] },
+  { from: 'feeds-nvd', to: 'resilient-client', kind: 'normal', label: 'resilient_get', tag: ['ingest', 'all'] },
+  { from: 'feeds-nvd', to: 'ext-nvd', kind: 'api', label: 'CVE updates', tag: ['ingest', 'all'] },
+  { from: 'feeds-nvd', to: 'enrich-cve', kind: 'normal', label: 'parse references', tag: ['ingest', 'all'] },
+  { from: 'feeds-nvd', to: 'database-py', kind: 'db', label: 'upsert_cves', tag: ['ingest', 'all'] },
+  { from: 'feeds-kev', to: 'ext-kev', kind: 'api', label: 'KEV catalog', tag: ['ingest', 'all'] },
+  { from: 'feeds-epss', to: 'ext-epss', kind: 'api', label: 'EPSS scores', tag: ['ingest', 'all'] },
+  { from: 'scheduler', to: 'ml-embeddings', kind: 'normal', label: 'embeddings backfill', tag: ['ingest', 'all'] },
+  { from: 'scheduler', to: 'feeds-extended', kind: 'normal', label: 'enrich_cves_extended', tag: ['ingest', 'all'] },
+
+  // IOC path
+  { from: 'ioc-lookup-fe', to: 'lookup-ioc-api', kind: 'normal', label: 'form submit', tag: ['ioc', 'all'] },
+  { from: 'lookup-ioc-api', to: 'ioc-router', kind: 'mount', label: 'POST /api/ioc/lookup', tag: ['ioc', 'all'] },
+  { from: 'ioc-router', to: 'enrich-ioc', kind: 'normal', label: 'lookup_ioc()', tag: ['ioc', 'all'] },
+  { from: 'ioc-router', to: 'ioc-cache-table', kind: 'db', label: 'get/set cache', tag: ['ioc', 'all'] },
+  { from: 'enrich-ioc', to: 'ext-vt', kind: 'api', label: 'VT v3', tag: ['ioc', 'all'] },
+
+  // Brief path
+  { from: 'morning-brief-fe', to: 'brief-router', kind: 'mount', label: 'GET /api/brief', tag: ['brief', 'all'] },
+  { from: 'brief-router', to: 'brief-service', kind: 'normal', label: 'build_morning_brief', tag: ['brief', 'all'] },
+  { from: 'brief-service', to: 'database-py', kind: 'db', label: 'priority query', tag: ['brief', 'all'] },
+
+  // Incidents
+  { from: 'case-studies-fe', to: 'atlas-router', kind: 'mount', label: 'GET /case-studies/feed', tag: ['incidents', 'all'] },
+
+  // AI / PDF
+  { from: 'detail-drawer', to: 'meta-router', kind: 'mount', label: 'POST /api/ai/summary', tag: ['ai', 'all'] },
+  { from: 'meta-router', to: 'ai-summary', kind: 'normal', label: 'generate_executive_summary', tag: ['ai', 'all'] },
+  { from: 'ai-summary', to: 'ext-groq', kind: 'api', label: 'LLM request', tag: ['ai', 'all'] },
+
+  // Detail sub-endpoints
+  { from: 'detail-drawer', to: 'correlation', kind: 'mount', label: 'GET /correlation', tag: ['detail', 'all'] },
+  { from: 'detail-drawer', to: 'detection-sigma', kind: 'mount', label: 'GET /detection', tag: ['detail', 'forge', 'all'] },
+  { from: 'forge-fe', to: 'forge-router', kind: 'mount', label: '/api/forge', tag: ['forge', 'all'] },
+  { from: 'forge-router', to: 'detection-sigma', kind: 'normal', label: 'generate_sigma_rule', tag: ['forge', 'all'] },
+
+  // Health
+  { from: 'app-jsx', to: 'health-router', kind: 'mount', label: 'GET /api/health', tag: ['overview', 'all'] },
+  { from: 'health-router', to: 'resilient-client', kind: 'normal', label: 'circuit status', tag: ['overview', 'all'] },
+
+  // Scoring
+  { from: 'get-cve', to: 'scoring-be', kind: 'normal', label: 'momentum endpoint', tag: ['detail', 'all'] },
+  { from: 'risk-score-fe', to: 'scoring-be', kind: 'mount', label: 'GET /config/risk weights', tag: ['detail', 'all'] },
+
+  // Sync watermarks
+  { from: 'feeds-nvd', to: 'sync-state', kind: 'db', label: 'NVD watermark', tag: ['ingest', 'all'] },
+
+  // Dead code (no edges — intentionally isolated)
+];
+
+const FIXES = {
+  'build-plain-summary': [{ n: 1, t: 'Wire into backfill_display_fields or delete orphaned helper' }],
+  'vulnrichment-dead': [{ n: 1, t: 'Wire fetch_vulnrichment_for_cve to on-demand detail or remove' }],
+  'scoring-be': [{ n: 1, t: 'Remove dead calculate_risk_score re-export; frontend owns scoring' }],
+  'feeds-extended': [{ n: 1, t: 'Delete lookup_greynoise alias — greynoise_for_ip is canonical' }],
+  'scheduler': [{ n: 1, t: 'V1.3: wire Vulnrichment/cvelistV5/PoC-GitHub exploit sources (ROADMAP)' }],
+  'main-py': [{ n: 1, t: 'V1.2: built-in app login replacing Cloudflare Access identity' }],
+  'ml-embeddings': [{ n: 1, t: 'V1.3: semantic search UI once embeddings backfill completes' }],
+};
+
+const KNOWN_BUGS = {
+  'cves-router': [{ sev: 'low', ref: 'backend/routers/cves.py:488', t: '_sort_by_stack_relevance crashed on NULL affected_products before PR #96 fix — verify no remaining NULL paths' }],
+  'get-cve': [{ sev: 'med', ref: 'backend/routers/cves.py:887', t: 'Detail opens second DB connection for CIRCL after first is closed — works but doubles connection churn per detail view' }],
+};
+
+// ── Rendering ──
+const COLOR_MAP = { client: '#4ea1ff', route: '#7bd389', service: '#c792ea', db: '#ffb86b', external: '#ff6b9d' };
+const EDGE_COLOR = { critical: '#ff3860', api: '#ff7a45', db: '#ffb86b', mount: '#4ea1ff', normal: '#666' };
+const FILTERS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'feed', label: 'CVE Feed' },
+  { id: 'detail', label: 'CVE Detail' },
+  { id: 'ioc', label: 'IOC Lookup' },
+  { id: 'brief', label: 'Morning Brief' },
+  { id: 'incidents', label: 'Incidents' },
+  { id: 'forge', label: 'Forge' },
+  { id: 'ingest', label: 'Background Ingest' },
+  { id: 'ai', label: 'AI / PDF' },
+  { id: 'all', label: 'Show all wires' },
+  { id: 'roadmap-bugs', label: 'Roadmap & bugs' },
+];
+
+let activeFilter = 'overview';
+let selectedId = null;
+let hoveredId = null;
+let pan = { x: 40, y: 20 };
+let scale = 0.72;
+let dragging = false;
+let dragStart = null;
+
+const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
+const chipsEl = document.getElementById('filter-chips');
+const sidebarEl = document.getElementById('sidebar');
+const viewport = document.getElementById('viewport');
+const wrap = document.getElementById('canvas-wrap');
+
+function fixCount(id) { return (FIXES[id] || []).length; }
+function bugCount(id) { return (KNOWN_BUGS[id] || []).length; }
+
+function renderChips() {
+  chipsEl.innerHTML = FILTERS.map(f =>
+    `<button class="chip${activeFilter === f.id ? ' active' : ''}" data-filter="${f.id}">${f.label}</button>`
+  ).join('');
+  chipsEl.querySelectorAll('.chip').forEach(btn => {
+    btn.addEventListener('click', () => { activeFilter = btn.dataset.filter; selectedId = null; render(); });
+  });
+}
+
+function nodeVisible(n) {
+  if (activeFilter === 'all') return true;
+  if (activeFilter === 'roadmap-bugs') return fixCount(n.id) > 0 || bugCount(n.id) > 0;
+  return n.tag.includes(activeFilter);
+}
+
+function edgeVisible(e) {
+  if (activeFilter === 'all') return true;
+  if (activeFilter === 'roadmap-bugs') {
+    return fixCount(e.from) > 0 || bugCount(e.from) > 0 || fixCount(e.to) > 0 || bugCount(e.to) > 0;
+  }
+  return e.tag.includes(activeFilter);
+}
+
+function connectedIds(id) {
+  const s = new Set([id]);
+  edges.forEach(e => {
+    if (e.from === id) s.add(e.to);
+    if (e.to === id) s.add(e.from);
+  });
+  return s;
+}
+
+function edgePath(e) {
+  const a = nodeMap[e.from], b = nodeMap[e.to];
+  if (!a || !b) return '';
+  const x1 = a.x + a.w, y1 = a.y + a.h / 2;
+  const x2 = b.x, y2 = b.y + b.h / 2;
+  const gutter = (x2 - x1) * 0.45;
+  const cx1 = x1 + gutter, cx2 = x2 - gutter;
+  return `M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}`;
+}
+
+function edgeLabelPos(e) {
+  const a = nodeMap[e.from], b = nodeMap[e.to];
+  const x1 = a.x + a.w, y1 = a.y + a.h / 2;
+  const x2 = b.x, y2 = b.y + b.h / 2;
+  return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 - 6 };
+}
+
+function renderClusters() {
+  const layer = document.getElementById('clusters-layer');
+  layer.innerHTML = clusters.map(c => {
+    const col = COLOR_MAP[c.id === 'api-client' ? 'client' : c.id === 'entry' ? 'route' : c.id === 'routes' ? 'route' : c.id === 'services' ? 'service' : c.id === 'data' ? 'db' : c.id === 'external' ? 'external' : 'client'] || '#4ea1ff';
+    return `<rect class="cluster-box" x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" fill="${col}" stroke="${col}"/>
+      <text class="cluster-label" x="${c.x + c.w/2}" y="${c.y + 18}" text-anchor="middle">${c.label}</text>`;
+  }).join('');
+}
+
+function renderGraph() {
+  const focusId = hoveredId || selectedId;
+  const focusSet = focusId ? connectedIds(focusId) : null;
+
+  const edgesLayer = document.getElementById('edges-layer');
+  edgesLayer.innerHTML = edges.map((e, i) => {
+    if (!nodeVisible(nodeMap[e.from]) && !nodeVisible(nodeMap[e.to]) && activeFilter !== 'all') return '';
+    if (!edgeVisible(e) && activeFilter !== 'all') return '';
+    const dim = focusSet && (!focusSet.has(e.from) || !focusSet.has(e.to));
+    const col = EDGE_COLOR[e.kind] || '#666';
+    const marker = `url(#arrow-${e.kind in EDGE_COLOR ? e.kind : 'normal'})`;
+    const path = edgePath(e);
+    const lp = edgeLabelPos(e);
+    const showLabel = activeFilter === 'all' || e.kind === 'critical' || (focusSet && focusSet.has(e.from) && focusSet.has(e.to));
+    return `<path class="edge${dim ? ' dimmed' : ''}" d="${path}" stroke="${col}" marker-end="${marker}"/>
+      ${showLabel ? `<text class="edge-label" x="${lp.x}" y="${lp.y + (i % 3) * 10}" text-anchor="middle">${e.label}</text>` : ''}`;
+  }).join('');
+
+  const nodesLayer = document.getElementById('nodes-layer');
+  nodesLayer.innerHTML = nodes.map(n => {
+    if (!nodeVisible(n) && activeFilter !== 'all' && activeFilter !== 'roadmap-bugs') return '';
+    const dim = focusSet && !focusSet.has(n.id);
+    const col = COLOR_MAP[n.color] || '#888';
+    const fc = fixCount(n.id), bc = bugCount(n.id);
+    const badges = (fc ? `<circle cx="${n.x+n.w-8}" cy="${n.y+8}" r="7" fill="#3d5"/><text class="badge-fix" x="${n.x+n.w-8}" y="${n.y+11}" text-anchor="middle" fill="#fff">${fc}</text>` : '')
+      + (bc ? `<circle cx="${n.x+n.w-8}" cy="${n.y+(fc?22:8)}" r="7" fill="#a33"/><text class="badge-bug" x="${n.x+n.w-8}" y="${n.y+(fc?25:11)}" text-anchor="middle" fill="#fff">${bc}</text>` : '');
+    return `<g class="node${n.critical ? ' critical' : ''}${dim ? ' dimmed' : ''}" data-id="${n.id}" transform="translate(0,0)">
+      <rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="${col}18" stroke="${col}"/>
+      <text class="node-label" x="${n.x+8}" y="${n.y+18}">${n.label}</text>
+      <text class="node-sub" x="${n.x+8}" y="${n.y+32}">${n.sub}</text>
+      ${badges}
+    </g>`;
+  }).join('');
+
+  nodesLayer.querySelectorAll('.node').forEach(g => {
+    g.addEventListener('mouseenter', () => { hoveredId = g.dataset.id; renderGraph(); renderSidebar(); });
+    g.addEventListener('mouseleave', () => { hoveredId = null; renderGraph(); renderSidebar(); });
+    g.addEventListener('click', ev => { ev.stopPropagation(); selectedId = g.dataset.id; renderGraph(); renderSidebar(); });
+  });
+}
+
+function defaultSidebar() {
+  return `<h2>Notable findings from this map</h2>
+    <div class="finding"><strong>Dead code surfaced:</strong> <code>build_plain_summary</code> (enrichment/cve.py:93), <code>fetch_vulnrichment_for_cve</code> (vulnrichment.py:141), <code>lookup_greynoise</code> alias (extended.py:685), and backend <code>calculate_risk_score</code> — all zero production callers.</div>
+    <div class="finding"><strong>Split-brain risk scoring:</strong> The explainable Risk Score v1.1b runs entirely in <code>frontend/src/scoring/riskScore.js</code>; the backend duplicate in <code>scoring/risk.py:251</code> is a dead re-export. Only <code>calculate_momentum</code> is live server-side.</div>
+    <div class="finding"><strong>Hot detail path:</strong> Opening one CVE triggers up to 5 live external calls (Sploitus, GreyNoise, OTX, OSV, CIRCL) plus 4+ lazy drawer fetches (sentences, EPSS history, momentum, correlation). The list endpoint is DB-only — fast.</div>
+    <div class="finding"><strong>Unexpected libraries:</strong> APScheduler for 7+ cron jobs, aiosqlite with inline migrations (no Alembic), CPU embeddings via env-gated ML module, and Groq/Anthropic for optional PDF summaries.</div>
+    <div class="finding"><strong>Schema/code seam:</strong> 21 SQLite tables with migrations embedded in <code>init_db()</code> — no separate migration runner. Watchlist snooze removed from UI but DB rows still queried.</div>
+    <h3>Critical path (spine)</h3>
+    <p style="font-size:12px;color:#aaa">Browse: main.jsx → App → CVEFeed → fetchCVEs → list_cves → cves table<br><br>Detail: CVECard click → openCveDrawer → fetchCVE → get_cve → DB + Sploitus/GN/OTX/OSV → DetailDrawer</p>
+    <h3>Stats</h3>
+    <p style="font-size:12px;color:#aaa">${nodes.length} nodes · ${edges.length} edges · ${nodes.filter(n=>n.critical).length} critical nodes</p>
+    <p style="font-size:11px;color:#666;margin-top:12px">Click a node for details. Scroll to zoom. Drag to pan.</p>`;
+}
+
+function renderSidebar() {
+  const id = hoveredId || selectedId;
+  if (!id || !nodeMap[id]) { sidebarEl.innerHTML = defaultSidebar(); return; }
+  const n = nodeMap[id];
+  const incoming = edges.filter(e => e.to === id).map(e => `${e.from} → ${e.label}`);
+  const outgoing = edges.filter(e => e.from === id).map(e => `→ ${e.to}: ${e.label}`);
+  const fixes = (FIXES[id] || []).map(f => `<div class="fix-item">Fix #${f.n}: ${f.t}</div>`).join('');
+  const bugs = (KNOWN_BUGS[id] || []).map(b => `<div class="bug-item ${b.sev}">[${b.sev}] ${b.t} <span style="color:#666">(${b.ref})</span></div>`).join('');
+
+  sidebarEl.innerHTML = `
+    <h2>${n.label}</h2>
+    <p class="path">${n.path}</p>
+    <p style="margin-top:8px">${n.role}</p>
+    <p class="plain">${n.plain}</p>
+    <h3>Notes</h3><ul>${n.notes.map(x => `<li>${x}</li>`).join('')}</ul>
+    <h3>Incoming (${incoming.length})</h3><div class="edge-list">${incoming.map(x=>`<div>${x}</div>`).join('') || '<span style="color:#666">none</span>'}</div>
+    <h3>Outgoing (${outgoing.length})</h3><div class="edge-list">${outgoing.map(x=>`<div>${x}</div>`).join('') || '<span style="color:#666">none</span>'}</div>
+    ${fixes ? `<h3>Planned fixes</h3>${fixes}` : ''}
+    ${bugs ? `<h3>Known issues</h3>${bugs}` : ''}
+  `;
+}
+
+function applyTransform() {
+  viewport.setAttribute('transform', `translate(${pan.x},${pan.y}) scale(${scale})`);
+}
+
+function fitView() {
+  const bbox = { x: 0, y: 0, w: 1920, h: 980 };
+  const rect = wrap.getBoundingClientRect();
+  const s = Math.min(rect.width / bbox.w, rect.height / bbox.h) * 0.92;
+  scale = Math.max(0.35, Math.min(1.2, s));
+  pan.x = (rect.width - bbox.w * scale) / 2;
+  pan.y = (rect.height - bbox.h * scale) / 2;
+  applyTransform();
+}
+
+function render() { renderGraph(); renderSidebar(); }
+
+wrap.addEventListener('mousedown', e => {
+  if (e.target.closest('.node') || e.target.closest('button')) return;
+  dragging = true; dragStart = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+  wrap.classList.add('dragging');
+});
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  pan.x = e.clientX - dragStart.x;
+  pan.y = e.clientY - dragStart.y;
+  applyTransform();
+});
+window.addEventListener('mouseup', () => { dragging = false; wrap.classList.remove('dragging'); });
+wrap.addEventListener('click', e => {
+  if (e.target.closest('.node')) return;
+  selectedId = null; render();
+});
+wrap.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect = wrap.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const delta = e.deltaY > 0 ? 0.92 : 1.08;
+  const newScale = Math.max(0.25, Math.min(2.5, scale * delta));
+  pan.x = mx - (mx - pan.x) * (newScale / scale);
+  pan.y = my - (my - pan.y) * (newScale / scale);
+  scale = newScale;
+  applyTransform();
+}, { passive: false });
+
+document.getElementById('btn-fit').addEventListener('click', fitView);
+document.getElementById('btn-zoom-in').addEventListener('click', () => { scale = Math.min(2.5, scale * 1.15); applyTransform(); });
+document.getElementById('btn-zoom-out').addEventListener('click', () => { scale = Math.max(0.25, scale / 1.15); applyTransform(); });
+
+renderChips();
+renderClusters();
+render();
+fitView();
+</script>
+</body>
+</html>
