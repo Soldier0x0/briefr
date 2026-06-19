@@ -1,19 +1,27 @@
 flowchart TD
   A[uvicorn starts main:app] --> B[lifespan context enters]
-  B --> C[database.init_db]
-  C --> C1[CREATE TABLE IF NOT EXISTS x21 tables]
-  C1 --> C2[Inline ALTER migrations in init_db lines 280-304]
-  C2 --> C3[Normalize epss_score zeros]
-  D[scheduler.start_scheduler] --> D1[Register 7 APScheduler jobs]
-  D1 --> D2[scheduler.start]
-  E[scheduler.maybe_run_on_startup] --> E1{CVE count less than 10?}
-  E1 -->|yes| E2[asyncio.create_task run_full_ingest_sync]
-  E1 -->|no| E3[strip_auto_generated_summaries + enrich_kev_summaries]
-  E --> F[maybe_run_mitre_on_startup]
-  F --> F1{mitre or atlas count less than 10?}
-  F1 -->|yes| F2[create_task run_weekly_mitre_refresh]
-  F1 -->|no| G[FastAPI ready — /api endpoints live]
-  E2 --> G
-  E3 --> G
-  F2 --> G
-  H[On shutdown] --> H1[scheduler.stop_scheduler]
+  B --> C[backup.manager.ensure_db_or_restore]
+  C --> D[database.init_db]
+  D --> D1[CREATE TABLE IF NOT EXISTS x26 tables]
+  D1 --> D2[Inline ALTER migrations in init_db loop]
+  D2 --> D3[Normalize epss_score zeros to NULL]
+  D --> E[scheduler.start_scheduler]
+  E --> E1[Register 13 APScheduler jobs]
+  E1 --> E2[scheduler.start]
+  E --> F[scheduler.maybe_run_on_startup]
+  F --> F1{CVE count less than 10?}
+  F1 -->|yes| F2[asyncio.create_task run_full_ingest_sync]
+  F1 -->|no| F3[strip_auto_generated_summaries + enrich_kev_summaries]
+  F --> G[maybe_run_mitre_on_startup]
+  G --> G1{mitre or atlas count less than 10?}
+  G1 -->|yes| G2[create_task run_weekly_mitre_refresh]
+  F --> H[create_task run_epss_backfill]
+  F --> I[create_task run_exploit_sources_sync if enabled]
+  G2 --> J[FastAPI ready — /api endpoints live]
+  F2 --> J
+  F3 --> J
+  G1 -->|no| J
+  H --> J
+  I --> J
+  K[On shutdown] --> K1[scheduler.stop_scheduler]
+  K1 --> K2[resilient_client.close_client]

@@ -18,23 +18,31 @@ flowchart TB
     ANTH[Anthropic API]
     GH[GitHub API]
     RSS[RSS Feeds x6]
+    CVLIST[cvelistV5 GitHub]
+    VULN[CISA Vulnrichment]
   end
 
-  subgraph Scheduler["APScheduler — scheduler.py"]
-    J1[NVD incremental<br/>every NVD_SYNC_INTERVAL_HOURS]
-    J2[KEV sync<br/>every KEV_SYNC_INTERVAL_MINUTES]
-    J3[EPSS sync<br/>every EPSS_SYNC_INTERVAL_HOURS]
+  subgraph Scheduler["APScheduler — scheduler.py (13 jobs)"]
+    J1[NVD incremental]
+    J2[KEV sync]
+    J3[EPSS sync]
     J4[MITRE+ATLAS weekly Sun]
     J5[OTX nightly cron]
-    J6[Incident RSS every 4h]
+    J6[Incident feed every 30m]
     J7[Correlation nightly cron]
+    J8[Vulnrichment every 6h]
+    J9[cvelistV5 every 30m]
+    J10[Exploit sources opt-in]
+    J11[Embeddings backfill opt-in]
+    J12[LLM product extract opt-in]
+    J13[Backup dead-man check]
   end
 
-  subgraph Backend["FastAPI — main.py"]
-    API[REST /api/*]
+  subgraph Backend["FastAPI — main.py + routers/"]
+    API[REST /api/* ~43 routes]
   end
 
-  subgraph SQLite["SQLite — briefr.db"]
+  subgraph SQLite["SQLite — briefr.db (26 tables)"]
     T_cves[(cves)]
     T_kev[(kev_deadlines)]
     T_epss[(epss_history)]
@@ -43,14 +51,16 @@ flowchart TB
     T_otx[(otx_cve_pulses<br/>otx_pulse_iocs)]
     T_corr[(correlation_*)]
     T_cache[(feed_cache<br/>ioc_cache)]
-    T_other[(cve_exploits<br/>cve_change_history<br/>api_usage<br/>sync_state)]
+    T_other[(cve_exploits<br/>cve_change_history<br/>watchlist<br/>hunt_packs<br/>audit_log<br/>api_usage<br/>sync_state)]
   end
 
   subgraph Frontend["React — frontend/src"]
-    BRIEF[CVEFeed / CVECard]
+    BRIEF[BRIEF tab<br/>MorningBrief + charts]
+    FEED[FEED tab<br/>CVEFeed / CVECard]
     DRAWER[DetailDrawer]
     IOC[IOCLookup]
-    CASE[CaseStudies]
+    CASE[Incidents tab<br/>CaseStudies]
+    FORGE[Forge tab]
     PDF[pdfReport.js]
   end
 
@@ -65,7 +75,9 @@ flowchart TB
   J5 --> OTX --> T_otx
   J6 --> RSS --> T_cache
   J7 --> T_corr
-  J7 --> T_otx
+  J8 --> VULN --> T_cves
+  J9 --> CVLIST --> T_cves
+  J10 --> GH --> T_other
 
   API --> T_cves
   API --> T_kev
@@ -87,8 +99,10 @@ flowchart TB
   API --> ANTH
   API --> GH
 
-  BRIEF -->|GET /api/cves| API
+  BRIEF -->|GET /api/brief /stats /changes| API
+  FEED -->|GET /api/cves| API
   DRAWER -->|GET /api/cves/id + sub-routes| API
   IOC -->|POST /api/ioc/lookup| API
-  CASE -->|GET /api/case-studies/news<br/>fetchAtlas*| API
+  CASE -->|GET /api/case-studies/feed| API
+  FORGE -->|GET /api/forge/coverage<br/>/api/hunt-packs/*| API
   PDF -->|POST /api/ai/summary| API

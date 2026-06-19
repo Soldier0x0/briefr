@@ -13,18 +13,21 @@ Runtime behaviour traced from source. File:function references match the codebas
 | 1 | `uvicorn` | Loads `main:app` |
 | 2 | `main.py` | `lifespan()` context manager enters |
 | 2a | `backup/manager.py` | `ensure_db_or_restore()` — integrity check; auto-restore from latest backup if corrupt |
-| 3 | `database.py` | `init_db()` — `CREATE TABLE IF NOT EXISTS` for 21 tables (lines 20–277) |
-| 4 | `database.py` | Inline migrations in `init_db()` loop (lines 280–304): ALTER columns, correlation tables, indexes |
-| 5 | `database.py` | Normalize `epss_score = 0.0` → NULL (lines 314–317) |
-| 6 | `scheduler.py` | `start_scheduler()` — register 7 jobs, `scheduler.start()` (lines 546–644) |
-| 7 | `scheduler.py` | `maybe_run_on_startup()` (lines 432–459) |
+| 3 | `database.py` | `init_db()` — `CREATE TABLE IF NOT EXISTS` for 26 tables + inline migrations |
+| 4 | `database.py` | Inline migrations in `init_db()` loop: ALTER columns, correlation/watchlist/hunt_packs tables, indexes |
+| 5 | `database.py` | Normalize `epss_score = 0.0` → NULL |
+| 6 | `scheduler.py` | `start_scheduler()` — register 13 APScheduler jobs, `scheduler.start()` |
+| 7 | `scheduler.py` | `maybe_run_on_startup()` |
 | 7a | `database.py` | If CVE count ≥ 10: `strip_auto_generated_summaries`, `enrich_kev_summaries` |
 | 7b | `scheduler.py` | If CVE count &lt; 10: `asyncio.create_task(run_full_ingest_sync)` |
-| 8 | `scheduler.py` | `maybe_run_mitre_on_startup()` (lines 411–429) |
+| 7c | `scheduler.py` | `asyncio.create_task(run_epss_backfill)` — one-shot EPSS history backfill |
+| 7d | `scheduler.py` | If ≥ 10 CVEs and exploit sources enabled: `create_task(run_exploit_sources_sync)` |
+| 8 | `scheduler.py` | `maybe_run_mitre_on_startup()` |
 | 8a | `database.py` | `get_mitre_technique_count`, `get_atlas_technique_count` |
 | 8b | `scheduler.py` | If either &lt; 10: `create_task(run_weekly_mitre_refresh)` |
 | 9 | `main.py` | FastAPI app ready — all `/api/*` routes accept traffic |
-| Shutdown | `scheduler.py` | `stop_scheduler()` on lifespan exit (line 82) |
+| Shutdown | `scheduler.py` | `stop_scheduler()` on lifespan exit |
+| Shutdown | `resilient_client.py` | `close_client()` — drain httpx pool |
 
 **Note:** There is no separate `run_migrations()` function — migrations run inside `init_db()`.
 
@@ -38,16 +41,26 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid)
 
 | Hop | File | Function | API |
 |---|---|---|---|
-| 1 | `main.jsx` | `ReactDOM.createRoot().render()` | — |
+| 1 | `main.jsx` | `ReactDOM.createRoot().render()` + `fetchAndCacheRiskWeights()` | `GET /api/config/risk` |
 | 2 | `App.jsx` | `useEffect` → `fetchStats({ frameworks })` when AI stack/profile declared | `GET /api/stats?frameworks=` |
 | 3 | `App.jsx` | `loadHealth()` + 60s interval | `GET /api/health?tz=` |
-| 4 | `App.jsx` | Renders `MainApp` when `activeTab === 'feed'` | — |
-| 5 | `StatsRow.jsx` | Displays stats prop | — |
-| 6 | `TimelineHeatmap.jsx` | `fetchStatsTimeline(90)` | `GET /api/stats/timeline?days=90` |
-| 6b | `BriefCharts.jsx` (lazy) | `fetchStatsTimeline(30)`, `fetchKEVDeadlines`, `fetchChanges` | `GET /api/stats/timeline`, `GET /api/kev/deadlines`, `GET /api/changes` |
-| 7 | `CVEFeed.jsx` | `loadPage(1)` on mount / filter change | `GET /api/cves?...` |
-| 8 | `Sidebar.jsx` | `fetchKEVDeadlines`, `fetchTopTechniques` | `GET /api/kev/deadlines`, `GET /api/techniques/top` |
-| 9 | `CVECard.jsx` | Renders each CVE; `calculateRiskScore` with momentum 0 | — |
+| 4 | `App.jsx` | Renders BRIEF panel when `activeTab === 'brief'` | — |
+| 5 | `MorningBrief.jsx` | `fetchBrief()` on mount / stack change | `GET /api/brief` |
+| 6 | `StatsRow.jsx` | Displays stats prop | — |
+| 7 | `TimelineHeatmap.jsx` | `fetchStatsTimeline(90)` | `GET /api/stats/timeline?days=90` |
+| 7b | `BriefCharts.jsx` (lazy) | `fetchStatsTimeline(30)`, `fetchKEVDeadlines`, `fetchChanges` | `GET /api/stats/timeline`, `GET /api/kev/deadlines`, `GET /api/changes` |
+| 8 | `WhatChangedPanel.jsx` | `fetchChanges` with time/field filters | `GET /api/changes` |
+| 9 | `Hero.jsx` | Stack bar input (BRIEF tab only) | localStorage via `cveFilters.js` |
+
+### A2. User opens FEED tab
+
+| Hop | File | Function | API |
+|---|---|---|---|
+| 1 | `App.jsx` | `activeTab === 'feed'` — panel unhidden (stays mounted) | — |
+| 2 | `CVEFeed.jsx` | `loadPage(1)` on mount / filter change | `GET /api/cves?...` |
+| 3 | `Sidebar.jsx` | `fetchKEVDeadlines`, `fetchTopTechniques` | `GET /api/kev/deadlines`, `GET /api/techniques/top` |
+| 4 | `CVECard.jsx` | Renders each CVE; `calculateRiskScore` with momentum 0 | — |
+| 5 | `useWatchlist.js` | Loads pins; clears legacy snoozes on startup | `GET /api/watchlist`, `DELETE /api/watchlist/snoozes` |
 
 ### B. User clicks CVE card — drawer data loads
 
@@ -82,7 +95,7 @@ Sequence: [`docs/diagrams/flow_cve_detail.mermaid`](docs/diagrams/flow_cve_detai
 
 | Hop | File | Function | API |
 |---|---|---|---|
-| 1 | `App.jsx` | `activeTab === 'incidents'` → renders `CaseStudies` | — |
+| 1 | `App.jsx` | `activeTab === 'atlas'` → renders `CaseStudies` | — |
 | 2 | `CaseStudies.jsx` | `loadCaseStudyFeed()` on mount | `GET /api/case-studies/feed?atlas_limit=80` |
 | 3 | `case_study_feed.py` | `fetch_combined_case_study_feed` — RSS then ATLAS on one SQLite connection | `feeds/incident_news.py`, `database.get_atlas_case_studies` |
 | 4 | `caseStudyFeed.js` | Session cache (5 min); `filterCaseStudyCards` for search | — |
@@ -166,8 +179,9 @@ Sequence: [`docs/diagrams/flow_pdf_report.mermaid`](docs/diagrams/flow_pdf_repor
 | IOC lookup result | `IOCLookup.jsx` `useState` | Session; server `ioc_cache` 6h |
 | IOC history | `IOCLookup.jsx` `useState` | Session only (no localStorage) |
 | Momentum cache | `momentumCache.js` module Map | Session until reload |
-| Theme | `Header.jsx` + `main.jsx` | `localStorage` `briefr_theme` |
+| Theme | — | Dark mode only — no theme toggle or `briefr_theme` localStorage |
 | Timezone | `Header.jsx` + `timezone.js` | `localStorage` `briefr_timezone` |
+| Watchlist pins | `useWatchlist.js` + `watchlist` table | Server-backed; legacy snoozes cleared on load |
 | Last visit marker | `CVEFeed.jsx` | `localStorage` `briefr_last_visit` |
 | Active tab | `App.jsx` `activeTab` | Session only |
 | Case study cards | `caseStudyFeed.js` module cache | 5 min session cache (skipped while `meta.warming`); `GET /api/case-studies/feed` reads the scheduler-built snapshot (`incident_feed:snapshot`) |
@@ -186,13 +200,19 @@ OTX and Correlation jobs use their own timezone env vars (default IST).
 00:00        │ EPSS may run (every 6h: 00,06,12,18)
 00:00–24:00  │ NVD incremental every 1h (████ recurring)
 00:00–24:00  │ KEV sync every 15m (█ recurring)
-00:00–24:00  │ Incident RSS refresh every 4h (██ recurring)
+00:00–24:00  │ Incident feed snapshot every 30m (██ recurring)
+00:00–24:00  │ cvelistV5 delta every 30m (██ recurring)
+00:00–24:00  │ Vulnrichment every 6h (██ recurring)
+00:00–24:00  │ Embeddings / LLM extraction every 6h when enabled
+00:00–24:00  │ Backup dead-man every ~3h (BACKUP_INTERVAL_HOURS // 2)
 01:00        │ ████ Nightly correlation (CORRELATION_HOUR=1 IST)
 02:00        │ ████ OTX nightly correlation (OTX_CORRELATION_HOUR=2 IST)
 02:00 Sun    │ ████ Weekly MITRE+ATLAS (MITRE_REFRESH_HOUR=2 sched TZ)
 ──────────────────────────────────────────────────────────────────
 ```
 
-**Overlap protection:** `_nvd_lock`, `_kev_lock`, `_epss_lock`, `_mitre_refresh_lock`, `_otx_lock`, `_correlation_lock` — concurrent duplicate runs log warning and return `False`.
+**Registered jobs (13):** `nvd_incremental_sync`, `kev_metadata_sync`, `epss_score_sync`, `weekly_mitre_refresh`, `otx_nightly_correlation`, `incident_feed_refresh`, `exploit_sources_sync` (opt-in), `embeddings_backfill` (opt-in), `llm_product_extraction` (opt-in), `nightly_correlation`, `vulnrichment_snapshot_sync`, `cvelistv5_incremental_sync`, `backup_deadman_check`.
+
+**Overlap protection:** `_nvd_lock`, `_kev_lock`, `_epss_lock`, `_mitre_refresh_lock`, `_otx_lock`, `_correlation_lock`, `_vulnrichment_lock`, `_cvelistv5_lock`, `_embeddings_lock`, `_llm_extraction_lock`, `_exploit_sources_lock` — concurrent duplicate runs log warning and return `False`.
 
 **Startup catch-up:** If `cves` count &lt; 10, full ingest runs once in background regardless of schedule.
