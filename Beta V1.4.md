@@ -4,7 +4,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 
 **Document version:** 1.1  
 **Last updated:** 2026-06-19  
-**Status:** Theme 1 (Admin pane) **shipped** in PR cursor/admin-overhaul-17e8. Themes 2–4 remain planned.
+**Status:** Theme 1 (Admin pane) **shipped** in PR cursor/admin-overhaul-17e8. Theme 3 (Application logs viewer) **shipped** in PR cursor/admin-log-viewer-789e. Themes 2, 4–6 remain planned.
 
 **Prerequisite:** [`Beta V1.3.md`](Beta%20V1.3.md)  
 **Index:** [`docs/ROADMAP.md`](docs/ROADMAP.md)
@@ -23,7 +23,7 @@ Single user today (admin = analyst); routes and audit model ready for future rol
 
 Separate surface from analyst UI. **All destructive actions admin-gated.**
 
-**Shipped scope:** System health (stat cards, active locks, recent errors, quick diagnostics), Backups (list, run, upload, verify), Storage (disk partition usage, table counts, purge controls, DB export), Watchlist & cache, API keys & config (queue-edit model, apply-all + restart), Scheduler (manual triggers, global pause/resume, run-now per job), Webhooks (alert log, test send), Security (rate limit status, key rotation), Feed health (card grid, circuit reset), Ingest log (level colors, logger filter, export), Audit log (prefix filter chips). All scheduler jobs report ACTIVE/PAUSED/LOCKED/DISABLED status with last 5 run history and error messages. Disk usage NaN bug fixed.
+**Shipped scope:** System health (stat cards, active locks, recent errors, quick diagnostics), Backups (list, run, upload, verify), Storage (disk partition usage, table counts, purge controls, DB export), Watchlist & cache, API keys & config (queue-edit model, apply-all + restart), Scheduler (manual triggers, global pause/resume, run-now per job), Webhooks (alert log, test send), Security (rate limit status, key rotation), Feed health (card grid, circuit reset), Application logs (level/category/logger/request_id filters, auto-refresh, NDJSON export, secret redaction), Audit log (prefix filter chips). All scheduler jobs report ACTIVE/PAUSED/LOCKED/DISABLED status with last 5 run history and error messages. Disk usage NaN bug fixed.
 
 **Admin gating:** built-in app login with an `admin` role gates `/admin/*` (decision 2026-06-11 — replaces the earlier Cloudflare Access plan); if login has not shipped yet when the admin pane lands, gate interim with `BRIEFR_ADMIN_API_KEY`.
 
@@ -61,15 +61,15 @@ Analyst benefits from pushes; **configuration lives in admin**.
 
 ---
 
-## Theme 3 — Application logs (admin)
+## Theme 3 — Application logs (admin) — ✅ SHIPPED (PR cursor/admin-log-viewer-789e, 2026-06-19)
 
-| Item | Goal |
-|------|------|
-| **Structured JSON logging** | Build on V1.2 Theme 3 |
-| **Log categories** | Application, Scheduler, Backup, Webhooks, Security |
-| **Admin log viewer** | Tail last N lines; severity filter; redact secrets |
-| **Container-ready** | stdout JSON + optional `/var/lib/briefr/logs/` volume |
-| **No shell** | Read-only API; rate limited |
+| Item | Goal | Status |
+|------|------|--------|
+| **Structured JSON logging** | Build on V1.2 Theme 3 | ✅ Shipped (V1.2) |
+| **Log categories** | Application, Scheduler, Backup, Webhooks, Security | ✅ Shipped — derived from logger name in ring buffer |
+| **Admin log viewer** | Tail last N lines; severity filter; redact secrets | ✅ Shipped — `GET /api/admin/logs` + admin pane Application logs page |
+| **Container-ready** | stdout JSON + optional `/var/lib/briefr/logs/` volume | 🔲 Planned (Phase 7 — logrotate) |
+| **No shell** | Read-only API; rate limited | ✅ Shipped — in-process ring buffer, admin-gated, refresh bucket |
 
 **Not in scope:** full nginx/host log management in UI — document in [`OPERATIONS.md`](docs/OPERATIONS.md).
 
@@ -132,7 +132,7 @@ Phase 1  Admin shell + auth gate + health dashboard
 Phase 2  Backup/restore UI wired to backup/manager.py
 Phase 3  Scheduler controls + manual refresh
 Phase 4  Webhook engine + Telegram/Discord + delivery log
-Phase 5  Application logs viewer
+Phase 5  Application logs viewer — ✅ shipped
 Phase 6  Wallboard route + aggregated API
 Phase 7  deploy/logrotate + OPERATIONS.md updates
 ```
@@ -145,7 +145,7 @@ Phase 7  deploy/logrotate + OPERATIONS.md updates
 |-----------|---------|
 | Backup | Manual + list + restore from UI without SSH |
 | Webhook | Test KEV-on-stack alert to Telegram |
-| Logs | Admin sees last 200 JSON log lines with redaction |
+| Logs | Admin sees last 200 JSON log lines with redaction | ✅ `GET /api/admin/logs` tails 500-line ring buffer; filters by level/category/request_id |
 | Wallboard | Loads 6 tiles in <2s; readable at 3m distance |
 | Security | All admin routes require auth; audit entries on restore |
 | Break-glass | CLI restore still works |

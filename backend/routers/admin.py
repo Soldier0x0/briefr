@@ -40,7 +40,7 @@ from dependencies import audit, require_admin_key
 from rate_limit import get_top_consumers, rate_limit_refresh
 from resilient_client import get_feed_health, reset_circuit
 from settings import settings
-from structured_logging import get_log_buffer, get_known_loggers
+from structured_logging import LOG_CATEGORIES, get_log_buffer, get_known_loggers
 
 router = APIRouter(
     prefix="/api/admin",
@@ -1323,15 +1323,27 @@ async def get_webhooks_log(
 
 @router.get("/logs")
 async def get_logs(
-    request: Request,
     limit: int = Query(100, ge=1, le=500),
     level: str | None = Query(None),
     logger_name: str | None = Query(None, alias="logger"),
     request_id: str | None = Query(None),
+    category: str | None = Query(None),
 ):
-    logs = get_log_buffer(limit=limit, level=level, logger_name=logger_name, request_id=request_id)
+    logs = get_log_buffer(
+        limit=limit,
+        level=level,
+        logger_name=logger_name,
+        request_id=request_id,
+        category=category,
+    )
     known = get_known_loggers()
-    return {"logs": logs, "known_loggers": known}
+
+    return {
+        "logs": logs,
+        "known_loggers": known,
+        "categories": list(LOG_CATEGORIES),
+        "buffer_capacity": 500,
+    }
 
 
 # ── Security ───────────────────────────────────────────────────────────────

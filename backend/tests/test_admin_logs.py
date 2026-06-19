@@ -11,7 +11,12 @@ import pytest
 from fastapi.testclient import TestClient
 
 from database import init_db
-from structured_logging import _ring_handler, configure_logging
+from structured_logging import (
+    LOG_CATEGORIES,
+    _ring_handler,
+    configure_logging,
+    derive_log_category,
+)
 
 
 @pytest.fixture
@@ -30,36 +35,76 @@ def admin_client(tmp_path, monkeypatch):
 
     asyncio.run(init_db())
 
-    # Disable rate limiting so tests don't hit 429
     import rate_limit as _rl
     from settings import settings as _settings
+
     monkeypatch.setattr(_settings, "rate_limit_enabled", False)
     _rl.refresh_bucket._buckets.pop("testclient", None)
 
     from main import app
+
     return TestClient(app, raise_server_exceptions=False)
 
 
-def test_logs_returns_list_with_expected_fields(admin_client):
-    # Emit a log entry to ensure buffer is non-empty
+def test_logs_endpoint_returns_structured_payload(admin_client):
     logger = logging.getLogger("test.admin.logs")
     logger.info("Test log entry for admin logs test")
 
     resp = admin_client.get("/api/admin/logs?limit=10")
     assert resp.status_code == 200
     data = resp.json()
-    assert isinstance(data, list)
-    if data:
-        entry = data[0]
-        assert "ts" in entry
-        assert "level" in entry
-        assert "logger" in entry
-        assert "message" in entry
-        assert "request_id" in entry
+    assert "logs" in data
+    assert "known_loggers" in data
+    assert "categories" in data
+    assert data["categories"] == list(LOG_CATEGORIES)
+    assert data["buffer_capacity"] == 500
+    assert isinstance(data["logs"], list)
+    assert data["logs"]
+    entry = data["logs"][0]
+    for field in ("ts", "level", "logger", "message", "request_id", "category"):
+        assert field in entry
+
+
+def test_logs_endpoint_filters_by_level_and_request_id(admin_client):
+    logger = logging.getLogger("test.admin.filters")
+    logger.warning("Filter warning entry")
+
+    resp = admin_client.get("/api/admin/logs?limit=50&level=WARNING")
+    assert resp.status_code == 200
+    warnings = resp.json()["logs"]
+    assert warnings
+    assert all(e["level"] == "WARNING" for e in warnings)
+
+    req_id = resp.headers.get("X-Request-ID")
+    assert req_id
+
+    by_id = admin_client.get(f"/api/admin/logs?request_id={req_id}")
+    assert by_id.status_code == 200
+    matched = by_id.json()["logs"]
+    assert matched
+    assert all(e["request_id"] == req_id for e in matched)
+
+
+def test_logs_endpoint_filters_by_category(admin_client):
+    logging.getLogger("scheduler").info("Scheduler category test")
+    logging.getLogger("backup.manager").info("Backup category test")
+
+    resp = admin_client.get("/api/admin/logs?category=Scheduler&limit=20")
+    assert resp.status_code == 200
+    logs = resp.json()["logs"]
+    assert logs
+    assert all(e["category"] == "Scheduler" for e in logs)
+
+
+def test_derive_log_category_mapping():
+    assert derive_log_category("scheduler") == "Scheduler"
+    assert derive_log_category("backup.manager") == "Backup"
+    assert derive_log_category("webhooks.sender") == "Webhooks"
+    assert derive_log_category("dependencies") == "Security"
+    assert derive_log_category("feeds.nvd") == "Application"
 
 
 def test_ring_buffer_respects_limit():
-    # Emit multiple log records
     logger = logging.getLogger("test.ring.limit")
     for i in range(20):
         logger.info("Limit test %d", i)
@@ -68,20 +113,20 @@ def test_ring_buffer_respects_limit():
     assert len(results) <= 5
 
 
-def test_ring_buffer_no_raw_secrets():
-    # Emit a log with a password-like extra
+def test_ring_buffer_redacts_secret_extras():
     logger = logging.getLogger("test.ring.redact")
     logger.info(
         "Should not expose password",
         extra={"password": "super_secret_value", "api_key": "sk-1234567890abcdef"},
     )
 
-    # The ring buffer stores the entry — but the values should still be there
-    # (we're checking that the entry doesn't expose raw secrets in message field)
-    results = _ring_handler.get_logs(limit=10)
-    # The message field should not contain the raw secret
-    for entry in results:
-        assert "super_secret_value" not in entry.get("message", "")
+    results = _ring_handler.get_logs(limit=10, logger_name="test.ring.redact")
+    assert results
+    entry = results[0]
+    assert entry["password"] == "[REDACTED]"
+    assert entry["api_key"] == "[REDACTED]"
+    assert "super_secret_value" not in str(entry)
+    assert "sk-1234567890abcdef" not in str(entry)
 
 
 def test_auth_failure_creates_audit_row(tmp_path, monkeypatch):
@@ -100,12 +145,13 @@ def test_auth_failure_creates_audit_row(tmp_path, monkeypatch):
 
     asyncio.run(init_db())
 
-    # Reload settings with the new env key
     import settings as settings_module
+
     original_key = settings_module.settings.briefr_admin_api_key
     settings_module.settings.briefr_admin_api_key = "correct-secret-key"
 
     from main import app
+
     client = TestClient(app, raise_server_exceptions=False)
 
     try:
@@ -114,13 +160,5 @@ def test_auth_failure_creates_audit_row(tmp_path, monkeypatch):
             headers={"X-BRIEFR-Admin-Key": "wrong-key"},
         )
         assert resp.status_code == 401
-
-        # Give the background audit task a moment to write
-        import time
-        time.sleep(0.2)
-
-        # Check audit log — it's best-effort, so we just check the response code
-        # The actual row may or may not be written depending on async task scheduling
-        # The important thing is we got 401
     finally:
         settings_module.settings.briefr_admin_api_key = original_key

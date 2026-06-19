@@ -283,9 +283,9 @@ const NAV = [
     { id: 'webhooks', label: 'Webhooks' },
     { id: 'security', label: 'Security', badgeKey: 'failed_auth_last_24h' },
   ]},
-  { section: 'FEEDS', items: [
+  { section: 'OBSERVABILITY', items: [
     { id: 'feedhealth', label: 'Feed health', badgeKey: 'open_circuit_count' },
-    { id: 'ingestlog', label: 'Ingest log', badgeKey: 'ingest_error_count' },
+    { id: 'ingestlog', label: 'Application logs', badgeKey: 'ingest_error_count' },
   ]},
   { section: 'AUDIT', items: [
     { id: 'auditlog', label: 'Audit log' },
@@ -1818,11 +1818,12 @@ function PageFeedHealth({ system, toast }) {
   )
 }
 
-// ── Page: Ingest log ───────────────────────────────────────────────────────
+// ── Page: Application logs ─────────────────────────────────────────────────
 
 function PageIngestLog({ toast, onErrorCountChange }) {
   const [logData, setLogData] = useState(null)
   const [level, setLevel] = useState('')
+  const [category, setCategory] = useState('')
   const [loggerFilter, setLoggerFilter] = useState('')
   const [reqId, setReqId] = useState('')
   const [limit, setLimit] = useState(100)
@@ -1831,17 +1832,18 @@ function PageIngestLog({ toast, onErrorCountChange }) {
 
   const logs = logData?.logs || []
   const knownLoggers = logData?.known_loggers || []
+  const categories = logData?.categories || []
 
   async function loadLogs() {
     const params = new URLSearchParams({ limit })
     if (level) params.set('level', level)
+    if (category) params.set('category', category)
     if (loggerFilter) params.set('logger', loggerFilter)
     if (reqId) params.set('request_id', reqId)
     try {
       const res = await adminApi.get(`/logs?${params}`)
       const data = await res.json()
       setLogData(data)
-      // Count errors for sidebar badge
       if (onErrorCountChange) {
         const errorCount = (data.logs || []).filter(e => e.level === 'ERROR' || e.level === 'CRITICAL').length
         onErrorCountChange(errorCount)
@@ -1849,7 +1851,7 @@ function PageIngestLog({ toast, onErrorCountChange }) {
     } catch { }
   }
 
-  useEffect(() => { loadLogs() }, [level, loggerFilter, reqId, limit])
+  useEffect(() => { loadLogs() }, [level, category, loggerFilter, reqId, limit])
 
   useEffect(() => {
     if (autoRefresh) {
@@ -1858,7 +1860,7 @@ function PageIngestLog({ toast, onErrorCountChange }) {
       clearInterval(intervalRef.current)
     }
     return () => clearInterval(intervalRef.current)
-  }, [autoRefresh, level, loggerFilter, reqId, limit])
+  }, [autoRefresh, level, category, loggerFilter, reqId, limit])
 
   function exportLogs() {
     const lines = logs.map(e => JSON.stringify(e)).join('\n')
@@ -1878,11 +1880,15 @@ function PageIngestLog({ toast, onErrorCountChange }) {
 
   return (
     <div>
-      <h1 className="admin-page-title">Ingest log</h1>
+      <h1 className="admin-page-title">Application logs</h1>
       <div className="admin-filter-bar">
         <select className="admin-select" value={level} onChange={e => setLevel(e.target.value)}>
           <option value="">All levels</option>
           {['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'].map(l => <option key={l} value={l}>{l}</option>)}
+        </select>
+        <select className="admin-select" value={category} onChange={e => setCategory(e.target.value)}>
+          <option value="">All categories</option>
+          {categories.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
         <select className="admin-select" value={loggerFilter} onChange={e => setLoggerFilter(e.target.value)}>
           <option value="">All loggers</option>
@@ -1905,17 +1911,18 @@ function PageIngestLog({ toast, onErrorCountChange }) {
       <div className="admin-card" style={{ padding: 0 }}>
         <table className="admin-table">
           <thead>
-            <tr><th>TIMESTAMP</th><th>LEVEL</th><th>LOGGER</th><th>MESSAGE</th><th>REQUEST ID</th></tr>
+            <tr><th>TIMESTAMP</th><th>LEVEL</th><th>CATEGORY</th><th>LOGGER</th><th>MESSAGE</th><th>REQUEST ID</th></tr>
           </thead>
           <tbody>
-            {logs.length === 0 && !logData && <tr><td colSpan={5} className="admin-empty">Loading…</td></tr>}
-            {logs.length === 0 && logData && <tr><td colSpan={5} className="admin-empty">No logs in buffer</td></tr>}
+            {logs.length === 0 && !logData && <tr><td colSpan={6} className="admin-empty">Loading…</td></tr>}
+            {logs.length === 0 && logData && <tr><td colSpan={6} className="admin-empty">No logs in buffer</td></tr>}
             {logs.map((entry, i) => (
               <tr key={i} style={rowStyle(entry)}>
                 <td className="mono" style={{ fontSize: '0.68rem', whiteSpace: 'nowrap' }}>{entry.ts}</td>
                 <td>
                   <span className={`level-badge level-${entry.level}`}>{entry.level}</span>
                 </td>
+                <td style={{ fontSize: '0.72rem', color: 'var(--text3)' }}>{entry.category || 'Application'}</td>
                 <td className="mono" style={{ fontSize: '0.68rem', color: 'var(--text3)' }}>{entry.logger}</td>
                 <td style={{ fontSize: '0.8rem', wordBreak: 'break-word', maxWidth: 480, color: entry.level === 'ERROR' || entry.level === 'CRITICAL' ? 'var(--red)' : undefined }}>
                   {entry.message}

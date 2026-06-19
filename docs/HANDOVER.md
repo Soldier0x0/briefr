@@ -75,7 +75,8 @@ Read in this order before writing any code:
 | #118 | watchlist-pin-snooze | V1.3 Theme 1: CVE watchlist pin/snooze (`watchlist` table, `GET/POST/DELETE /api/watchlist`) | 🔲 Open |
 | #134 | brief-charts-ux-polish | V1.3 Theme 2 follow-up: urgency hierarchy, heatmap labels, Chart.js restyle, EPSS table, KEV bucket clicks | ✅ Merged |
 | #135 | morning-brief-unified-queue | V1.3 Theme 1 follow-up: BRIEF-only Hero/StatsRow/heatmap; FEED compact FilterBar stack; unified action_queue list + filters; histogram → due-window | 🔲 Open |
-| #148 | cursor/admin-overhaul-17e8 | V1.4 Theme 1: Full admin surface overhaul — disk usage NaN fix, scheduler status (ACTIVE/PAUSED/LOCKED/DISABLED), last-5-run history + error_message, 10+ new endpoints (scheduler/run, config/apply-all, webhooks/log, storage/export, diagnostics/smoke, diagnostics/integrity, restart drain), full AdminPage.jsx overhaul (11 pages + Coming Soon placeholders), Header Admin link, root-logger ring buffer logger filter + field redaction | 🔲 Open |
+| #148 | cursor/admin-overhaul-17e8 | V1.4 Theme 1: Full admin surface overhaul — disk usage NaN fix, scheduler status (ACTIVE/PAUSED/LOCKED/DISABLED), last-5-run history + error_message, 10+ new endpoints (scheduler/run, config/apply-all, webhooks/log, storage/export, diagnostics/smoke, diagnostics/integrity, restart drain), full AdminPage.jsx overhaul (11 pages + Coming Soon placeholders), Header Admin link, root-logger ring buffer logger filter + field redaction | ✅ Merged |
+| #149 | cursor/admin-log-viewer-789e | V1.4 Theme 3: Admin application log viewer — ring buffer categories (Application/Scheduler/Backup/Webhooks/Security), `GET /api/admin/logs` level/logger/request_id/category filters, secret redaction hardening, Application logs admin page with category column + export | 🔲 Open |
 
 Each merged PR's description contains its own **post-merge verification
 checklist** — that is the house style; keep it (see §7).
