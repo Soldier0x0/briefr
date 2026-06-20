@@ -120,7 +120,7 @@ def test_dns_rebinding_connects_to_validated_ip(monkeypatch):
         return ["93.184.216.34"]
 
     def handler(request: httpx.Request) -> httpx.Response:
-        calls.append((str(request.url), request.headers.get("Host")))
+        calls.append((str(request.url), request.headers.get("Host"), request.extensions.get("sni_hostname")))
         return httpx.Response(204)
 
     client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
@@ -139,6 +139,39 @@ def test_dns_rebinding_connects_to_validated_ip(monkeypatch):
     assert calls
     assert calls[0][0].startswith("https://93.184.216.34/hook")
     assert calls[0][1] == "example.com"
+    # TLS must still be verified against the original hostname, not the
+    # pinned IP literal — Discord/Slack/etc. sit behind shared certs that
+    # are only valid for the hostname (regression: certificate verify
+    # failed, IP address mismatch, observed against a real Discord webhook).
+    assert calls[0][2] == "example.com"
+
+
+def test_sni_hostname_omitted_for_ip_literal_destination(monkeypatch):
+    """RFC 6066 forbids IP literals in SNI — destination URLs that are
+    themselves an IP (no hostname to verify against) must not set it."""
+    calls = []
+
+    async def fake_resolve(_host):
+        return ["93.184.216.34"]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request.extensions.get("sni_hostname"))
+        return httpx.Response(204)
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    monkeypatch.setattr("webhooks.ssrf._webhook_client", client)
+
+    asyncio.run(
+        safe_webhook_request(
+            "webhook.test",
+            "POST",
+            "https://93.184.216.34/hook",
+            json={"ok": True},
+            resolve=fake_resolve,
+        )
+    )
+
+    assert calls == [None]
 
 
 def test_redirect_is_not_followed(monkeypatch):
