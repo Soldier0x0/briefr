@@ -8,6 +8,7 @@ import { useToast, ToastArea } from './shared/Toast.jsx'
 import OverviewPage from './OverviewPage.jsx'
 import BackupsPage from './BackupsPage.jsx'
 import StoragePage from './StoragePage.jsx'
+import DatabasePage from './DatabasePage.jsx'
 import WatchlistPage from './WatchlistPage.jsx'
 import ApiKeysPage from './ApiKeysPage.jsx'
 import SchedulerPage from './SchedulerPage.jsx'
@@ -105,6 +106,7 @@ export default function AdminPage() {
     overview: <OverviewPage system={system} toast={toast} />,
     backups: <BackupsPage toast={toast} system={system} />,
     storage: <StoragePage toast={toast} />,
+    database: <DatabasePage toast={toast} />,
     watchlist: <WatchlistPage toast={toast} />,
     apikeys: <ApiKeysPage toast={toast} />,
     scheduler: <SchedulerPage toast={toast} system={system} />,

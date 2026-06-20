@@ -3,6 +3,7 @@ export const NAV = [
   { section: 'DATA', items: [
     { id: 'backups', label: 'Backups' },
     { id: 'storage', label: 'Storage' },
+    { id: 'database', label: 'Database' },
     { id: 'watchlist', label: 'Watchlist & cache' },
   ]},
   { section: 'CONFIGURATION', items: [
@@ -21,7 +22,6 @@ export const NAV = [
   { section: 'COMING SOON', items: [
     { id: 'coming-login', label: 'App login & sessions', locked: true, tooltip: 'Ships in V1.4 / T3-S0' },
     { id: 'coming-users', label: 'Multi-user management', locked: true, tooltip: 'Ships in V2.0' },
-    { id: 'coming-postgres', label: 'Postgres migration', locked: true, tooltip: 'Ships in V2.0' },
     { id: 'coming-ratelimit', label: 'Rate limit dashboard', locked: true, tooltip: 'Ships in V1.4' },
   ]},
 ]
@@ -45,10 +45,6 @@ export const COMING_SOON_INFO = {
   'coming-users': {
     title: 'Multi-user management',
     message: 'Ships in V2.0. The users table schema is already designed (id, email, password_hash, role, is_active, created_at) and will be activated when multi-user is enabled.',
-  },
-  'coming-postgres': {
-    title: 'Postgres migration',
-    message: 'Ships in V2.0. To migrate: set DATABASE_URL to a postgres:// connection string, set NVD_DAYS_BACK=3650 and restart. The scheduler will refill from NVD. Keep SQLite as fallback until Postgres is confirmed stable.',
   },
   'coming-ratelimit': {
     title: 'Rate limit dashboard',
