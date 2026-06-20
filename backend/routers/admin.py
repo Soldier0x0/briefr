@@ -37,6 +37,7 @@ from database import (
     set_sync_state_value,
 )
 from dependencies import audit, require_admin_key, trigger_graceful_restart
+from destructive_actions import list_actions, require_confirm
 from rate_limit import get_top_consumers, rate_limit_refresh
 from resilient_client import get_feed_health, reset_circuit
 from settings import settings
@@ -606,15 +607,17 @@ async def get_storage(request: Request):
     }
 
 
-_PURGE_CONFIRM_MAP = {
-    "ioc_cache": "clear",
-    "feed_cache": "clear",
-    "epss_history_old": "prune",
-    "change_history_old": "prune",
-    "rejected_cves": "purge",
-    "nvd_watermark": "backfill",
-    "epss_backfill_reset": None,  # no confirm required
-}
+_PURGE_TARGETS = frozenset({
+    "ioc_cache", "feed_cache", "epss_history_old", "change_history_old",
+    "rejected_cves", "nvd_watermark", "epss_backfill_reset",
+})
+
+
+@router.get("/destructive-actions")
+async def get_destructive_actions(request: Request):
+    """Registry of confirm-gated destructive actions, for the frontend to
+    render confirm dialogs generically instead of hardcoding confirm words."""
+    return list_actions()
 
 
 @router.post("/storage/purge")
@@ -623,12 +626,13 @@ async def purge_storage(request: Request, body: dict):
     confirm_text = body.get("confirm_text", body.get("confirm", ""))
     days_back = body.get("days_back")
 
-    if target not in _PURGE_CONFIRM_MAP:
-        raise HTTPException(400, f"Unknown target '{target}'. Valid: {sorted(_PURGE_CONFIRM_MAP.keys())}")
+    if target not in _PURGE_TARGETS:
+        raise HTTPException(400, f"Unknown target '{target}'. Valid: {sorted(_PURGE_TARGETS)}")
 
-    required_confirm = _PURGE_CONFIRM_MAP[target]
-    if required_confirm is not None and confirm_text != required_confirm:
-        raise HTTPException(400, f"confirm_text must be '{required_confirm}' for target '{target}'")
+    try:
+        require_confirm(f"storage.purge.{target}", confirm_text)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
 
     db = await get_db()
     try:
@@ -774,7 +778,13 @@ async def delete_watchlist_entry(cve_id: str, request: Request):
 
 
 @router.post("/watchlist/clear-snoozes")
-async def clear_all_snoozes(request: Request):
+async def clear_all_snoozes(request: Request, body: dict | None = None):
+    confirm_text = (body or {}).get("confirm_text", "")
+    try:
+        require_confirm("watchlist.clear_snoozes", confirm_text)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
     db = await get_db()
     try:
         rows_deleted = await delete_all_snooze_entries(db)
@@ -1342,6 +1352,73 @@ async def resume_job(request: Request, body: dict):
     return {"ok": True, "job_id": job_id}
 
 
+@router.post("/scheduler/pause-all")
+async def pause_all_jobs(request: Request, body: dict | None = None):
+    """Pause every ACTIVE job server-side in one call.
+
+    Replaces the previous client-side loop over individual /scheduler/pause
+    calls (SchedulerPage.jsx), which was non-atomic and gave no visibility
+    into partial failures.
+    """
+    confirm_text = (body or {}).get("confirm_text", "")
+    try:
+        require_confirm("scheduler.pause_all", confirm_text)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
+    sched = _get_scheduler_module()
+    scheduler = sched._scheduler
+    if not scheduler:
+        raise HTTPException(503, "Scheduler not running")
+
+    paused: list[str] = []
+    db = await get_db()
+    try:
+        for job in scheduler.get_jobs():
+            if job.next_run_time is None:
+                continue  # already paused
+            job.pause()
+            await set_sync_state_value(db, f"scheduler.paused.{job.id}", "1")
+            paused.append(job.id)
+        await db.commit()
+    finally:
+        await db.close()
+
+    await audit(request, "scheduler.pause_all", ", ".join(paused) or "none")
+    return {"ok": True, "paused": paused}
+
+
+@router.post("/scheduler/resume-all")
+async def resume_all_jobs(request: Request, body: dict | None = None):
+    """Resume every paused job server-side in one call (see pause-all)."""
+    confirm_text = (body or {}).get("confirm_text", "")
+    try:
+        require_confirm("scheduler.resume_all", confirm_text)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
+    sched = _get_scheduler_module()
+    scheduler = sched._scheduler
+    if not scheduler:
+        raise HTTPException(503, "Scheduler not running")
+
+    resumed: list[str] = []
+    db = await get_db()
+    try:
+        for job in scheduler.get_jobs():
+            if job.next_run_time is not None:
+                continue  # already active
+            job.resume()
+            await set_sync_state_value(db, f"scheduler.paused.{job.id}", "0")
+            resumed.append(job.id)
+        await db.commit()
+    finally:
+        await db.close()
+
+    await audit(request, "scheduler.resume_all", ", ".join(resumed) or "none")
+    return {"ok": True, "resumed": resumed}
+
+
 @router.get("/scheduler/history")
 async def get_scheduler_history(request: Request):
     db = await get_db()
@@ -1569,6 +1646,12 @@ async def get_security(request: Request):
 @router.post("/restart", status_code=202)
 async def restart_backend(request: Request, background_tasks: BackgroundTasks, body: dict | None = None):
     drain = bool(body.get("drain", False)) if body else False
+    confirm_text = (body or {}).get("confirm_text", "")
+    try:
+        require_confirm("system.restart.drain" if drain else "system.restart", confirm_text)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
     await audit(request, "system.restart", "drain" if drain else "immediate")
 
     background_tasks.add_task(trigger_graceful_restart, drain)
@@ -1586,6 +1669,7 @@ async def get_audit_log(
     action: str | None = Query(None),
     action_prefix: str | None = Query(None),
     actor: str | None = Query(None),
+    q: str | None = Query(None),
 ):
     db = await get_db()
     try:
@@ -1600,6 +1684,10 @@ async def get_audit_log(
         if actor:
             conditions.append("actor = ?")
             params.append(actor)
+        if q:
+            conditions.append("(target LIKE ? OR action LIKE ?)")
+            params.append(f"%{q}%")
+            params.append(f"%{q}%")
 
         where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 

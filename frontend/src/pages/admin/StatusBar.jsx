@@ -40,13 +40,14 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
     <>
       {confirmRestart && (
         <ConfirmModal
+          actionId={confirmRestart === 'drain' ? 'system.restart.drain' : 'system.restart'}
           title={confirmRestart === 'drain' ? 'Drain then restart' : 'Restart now?'}
           message={
             confirmRestart === 'drain'
               ? 'Wait for all running jobs to finish, then shut the backend down gracefully (systemd will restart it).'
-              : 'Shut the backend down gracefully now. Any in-progress jobs will be interrupted.'
+              : undefined
           }
-          confirmWord="restart"
+          confirmWord={confirmRestart === 'drain' ? 'restart' : undefined}
           onConfirm={() => {
             setConfirmRestart(null)
             if (confirmRestart === 'drain') onDrainRestart()
