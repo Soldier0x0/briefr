@@ -98,7 +98,7 @@ export default function ApiKeysPage({ toast }) {
               {writable && (
                 <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }}
                   onClick={() => {
-                    const initial = Array.isArray(value) ? value.join(', ') : (value === 'not configured' ? '' : String(value))
+                    const initial = isSecret ? '' : (Array.isArray(value) ? value.join(', ') : (value === 'not configured' ? '' : String(value)))
                     setEditing(e => ({ ...e, [envKey]: initial }))
                   }}>
                   Edit
@@ -116,6 +116,17 @@ export default function ApiKeysPage({ toast }) {
                   autoFocus
                 >
                   {field.enum_values.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              ) : field?.type === 'bool' ? (
+                <select
+                  className="admin-select"
+                  style={{ minWidth: 220 }}
+                  value={editVal === '1' || editVal === 'true' || editVal === true ? '1' : '0'}
+                  onChange={e => setEditing(ed => ({ ...ed, [envKey]: e.target.value }))}
+                  autoFocus
+                >
+                  <option value="1">Enabled (1)</option>
+                  <option value="0">Disabled (0)</option>
                 </select>
               ) : (
                 <input

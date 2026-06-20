@@ -216,6 +216,9 @@ def validate_value(key: str, value: str) -> str | None:
     if field_def is None:
         return None
 
+    if "…" in value or "***" in value or value == "not configured":
+        return f"Cannot write masked or placeholder value for key '{key}'"
+
     if field_def.type == "int":
         try:
             parsed = int(value)
@@ -225,6 +228,9 @@ def validate_value(key: str, value: str) -> str | None:
             return f"Key '{key}' must be >= {field_def.min}"
         if field_def.max is not None and parsed > field_def.max:
             return f"Key '{key}' must be <= {field_def.max}"
+    elif field_def.type == "bool":
+        if value.lower() not in ("0", "1", "true", "false"):
+            return f"Key '{key}' must be a boolean value ('1', '0', 'true', or 'false')"
     elif field_def.type == "enum" and field_def.enum_values:
         if value not in field_def.enum_values:
             return f"Key '{key}' must be one of: {', '.join(field_def.enum_values)}"

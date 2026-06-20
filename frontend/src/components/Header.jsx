@@ -206,14 +206,9 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
                     Profile
                   </button>
                 )}
-                {(window.location.hostname === 'localhost' ||
-                  window.location.hostname === '127.0.0.1' ||
-                  (() => { try { return !!sessionStorage.getItem('briefr-admin-key') } catch { return false } })()
-                ) && (
-                  <Link to="/admin" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    Admin
-                  </Link>
-                )}
+                <Link to="/admin" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                  Admin
+                </Link>
                 <button
                   className="mobile-menu-item"
                   onClick={() => { setMobileMenuOpen(false); onAboutOpen() }}
