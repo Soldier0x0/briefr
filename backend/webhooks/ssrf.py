@@ -187,6 +187,14 @@ async def safe_webhook_request(
                 json=json,
                 data=data,
                 headers=outbound_headers,
+                # Connecting to the pinned IP literal means httpx's default TLS
+                # verification would check the cert against that IP string —
+                # which fails for virtually every host (Discord, Slack, etc.
+                # sit behind shared/CDN certs valid only for the hostname).
+                # sni_hostname tells httpcore to send the original hostname as
+                # SNI and verify the cert against it, while the TCP connection
+                # itself still goes to the validated, pinned IP.
+                extensions={"sni_hostname": host},
             )
         except httpx.HTTPError as exc:
             last_exc = exc
