@@ -74,6 +74,7 @@ export default function BackupsPage({ toast, system }) {
   return (
     <div>
       <h1 className="admin-page-title">Backups</h1>
+      <p className="admin-page-subtitle">Manages scheduled and on-demand database backups, including restore and integrity checks.</p>
 
       <div className="stat-card-row">
         <StatCard label="LAST BACKUP" value={fmtAge(lastBackupAge)} colorClass={backupAgeColor} />

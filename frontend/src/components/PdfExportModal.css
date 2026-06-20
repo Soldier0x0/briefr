@@ -63,7 +63,7 @@
 
 .pdf-modal-input:focus {
   outline: none;
-  border-color: var(--border2);
+  border-color: var(--accent);
 }
 
 .pdf-modal-actions {

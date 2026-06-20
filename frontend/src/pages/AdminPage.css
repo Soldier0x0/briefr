@@ -73,13 +73,11 @@
 .admin-statusbar .pill-gray   { background: var(--bg3); color: var(--text3); }
 
 /* Split button */
-.admin-split-btn { display: flex; position: relative; }
+.admin-split-btn { display: flex; position: relative; border: 1px solid var(--red); border-radius: 4px; }
 .admin-split-btn-main { border-right: none !important; border-radius: 4px 0 0 4px !important; }
 .admin-split-btn-arrow { border-radius: 0 4px 4px 0 !important; padding: 0.3rem 0.4rem !important; min-width: 0; }
 .admin-split-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
+  position: fixed;
   background: var(--bg2);
   border: 1px solid var(--border2);
   border-radius: 4px;
@@ -210,6 +208,48 @@
 .nav-badge-red   { background: var(--red); }
 .nav-badge-amber { background: var(--amber); }
 
+/* ── Status legend ──────────────────────────────────────────────────────── */
+
+.status-legend {
+  margin: 0.75rem 0.75rem 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.status-legend summary {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  cursor: pointer;
+}
+
+.status-legend ul {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.status-legend li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.6875rem;
+  color: var(--text2);
+  line-height: 1.4;
+}
+
+.status-legend-swatch {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 0.2rem;
+}
+
 /* ── Content pane ───────────────────────────────────────────────────────── */
 
 .admin-content {
@@ -221,8 +261,30 @@
 .admin-page-title {
   font-size: 1.25rem;
   font-weight: 700;
-  margin: 0 0 1.25rem;
+  margin: 0 0 0.4rem;
   color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-page-subtitle {
+  font-size: 0.8125rem;
+  color: var(--text3);
+  margin: 0 0 1.25rem;
+  max-width: 60ch;
+}
+
+.info-tip {
+  font-size: 0.875rem;
+  color: var(--text3);
+  cursor: help;
+  font-weight: 400;
+}
+
+.info-tip:hover,
+.info-tip:focus-visible {
+  color: var(--accent);
 }
 
 /* ── Stat cards ─────────────────────────────────────────────────────────── */
@@ -280,7 +342,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text3);
+  color: var(--text2);
   margin: 0 0 0.75rem;
 }
 
@@ -556,6 +618,22 @@
 .disk-bar-fill-green  { background: var(--green); }
 .disk-bar-fill-amber  { background: var(--amber); }
 .disk-bar-fill-red    { background: var(--red); }
+
+/* ── Danger zone ────────────────────────────────────────────────────────── */
+
+.danger-zone {
+  border: 1px solid var(--red);
+  background: var(--red-dim);
+}
+
+.danger-zone-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--red);
+  margin: 0 0 0.75rem;
+}
 
 /* ── Purge controls ─────────────────────────────────────────────────────── */
 

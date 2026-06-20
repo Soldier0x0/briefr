@@ -61,6 +61,7 @@ export default function OverviewPage({ system, toast }) {
   return (
     <div>
       <h1 className="admin-page-title">System health</h1>
+      <p className="admin-page-subtitle">At-a-glance status: DB integrity, sync ages, active locks, and recent job errors.</p>
 
       {/* Stat cards */}
       <div className="stat-card-row">

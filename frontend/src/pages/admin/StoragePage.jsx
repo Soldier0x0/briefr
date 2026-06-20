@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { adminApi } from '../../api.js'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import AsyncSection from './shared/AsyncSection.jsx'
+import DangerZone from './shared/DangerZone.jsx'
 import { fmtBytes, diskPct, diskBarColor } from './formatters.js'
 
 export default function StoragePage({ toast }) {
@@ -66,6 +67,7 @@ export default function StoragePage({ toast }) {
       )}
 
       <h1 className="admin-page-title">Storage</h1>
+      <p className="admin-page-subtitle">Disk usage breakdown and cache/log purge tools. Purges are destructive and cannot be undone.</p>
 
       <div className="admin-action-bar" style={{ justifyContent: 'flex-end' }}>
         <button className="admin-btn admin-btn-ghost" onClick={exportDb} title={`DB: ${fmtBytes(storage?.db_size_bytes)}`}>
@@ -130,8 +132,7 @@ export default function StoragePage({ toast }) {
         </table>
       </div>
 
-      <div className="admin-card">
-        <div className="admin-card-title">Purge controls</div>
+      <DangerZone title="Purge controls">
         <div className="purge-grid">
           {purgeCards.map(pc => (
             <div key={pc.target} className="purge-card">
@@ -154,7 +155,7 @@ export default function StoragePage({ toast }) {
             </div>
           ))}
         </div>
-      </div>
+      </DangerZone>
     </div>
   )
 }

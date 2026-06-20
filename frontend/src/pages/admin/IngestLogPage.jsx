@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { adminApi } from '../../api.js'
 
-export default function IngestLogPage({ toast, onErrorCountChange }) {
+export default function IngestLogPage({ toast, onErrorCountChange, active = true }) {
   const [logData, setLogData] = useState(null)
   const [level, setLevel] = useState('')
   const [category, setCategory] = useState('')
@@ -35,13 +35,13 @@ export default function IngestLogPage({ toast, onErrorCountChange }) {
   useEffect(() => { loadLogs() }, [level, category, loggerFilter, reqId, limit])
 
   useEffect(() => {
-    if (autoRefresh) {
+    if (autoRefresh && active) {
       intervalRef.current = setInterval(loadLogs, 10000)
     } else {
       clearInterval(intervalRef.current)
     }
     return () => clearInterval(intervalRef.current)
-  }, [autoRefresh, level, category, loggerFilter, reqId, limit])
+  }, [autoRefresh, active, level, category, loggerFilter, reqId, limit])
 
   function exportLogs() {
     const lines = logs.map(e => JSON.stringify(e)).join('\n')
@@ -62,6 +62,7 @@ export default function IngestLogPage({ toast, onErrorCountChange }) {
   return (
     <div>
       <h1 className="admin-page-title">Application logs</h1>
+      <p className="admin-page-subtitle">Live backend log stream, filterable by level/category/logger. Useful for tracing a specific request or recent error.</p>
       <div className="admin-filter-bar">
         <select className="admin-select" value={level} onChange={e => setLevel(e.target.value)}>
           <option value="">All levels</option>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { adminApi } from '../../api.js'
 import ConfirmModal from './shared/ConfirmModal.jsx'
+import DangerZone from './shared/DangerZone.jsx'
 import StatCard from './shared/StatCard.jsx'
 import { fmtBytes } from './formatters.js'
 
@@ -9,7 +10,7 @@ import { fmtBytes } from './formatters.js'
 // connection, run a one-shot data copy (reusing the existing Alembic schema
 // + the SQLite file already on disk), then flip DATABASE_URL through the
 // same apply-all + graceful-restart flow used elsewhere in this panel.
-export default function DatabasePage({ toast }) {
+export default function DatabasePage({ toast, active = true }) {
   const [info, setInfo] = useState(null)
   const [databaseUrl, setDatabaseUrl] = useState('')
   const [testResult, setTestResult] = useState(null)
@@ -38,13 +39,13 @@ export default function DatabasePage({ toast }) {
   useEffect(() => { loadInfo(); loadStatus() }, [])
 
   useEffect(() => {
-    if (status?.status === 'running') {
+    if (status?.status === 'running' && active) {
       pollRef.current = setInterval(loadStatus, 2000)
     } else {
       clearInterval(pollRef.current)
     }
     return () => clearInterval(pollRef.current)
-  }, [status?.status])
+  }, [status?.status, active])
 
   async function testConnection() {
     if (!databaseUrl.trim()) { toast('Enter a postgresql:// URL first', false); return }
@@ -101,6 +102,7 @@ export default function DatabasePage({ toast }) {
       )}
 
       <h1 className="admin-page-title">Database</h1>
+      <p className="admin-page-subtitle">Shows the current database engine and lets you migrate from SQLite to PostgreSQL. The migration is one-way and triggers a restart.</p>
 
       <div className="stat-card-row">
         <StatCard label="ENGINE" value={info?.engine === 'postgresql' ? 'PostgreSQL' : 'SQLite'} colorClass={isSqlite ? 'color-amber' : 'color-green'} />
@@ -115,8 +117,7 @@ export default function DatabasePage({ toast }) {
             concurrent writers or multiple uvicorn workers — see <code>docs/POSTGRES.md</code>.
           </div>
 
-          <div className="admin-card">
-            <div className="admin-card-title">Migrate to PostgreSQL</div>
+          <DangerZone title="Migrate to PostgreSQL">
             <div style={{ fontSize: '0.8125rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
               1. Take a backup. 2. Test the connection below. 3. Run the migration. 4. Apply &amp; restart once it finishes.
             </div>
@@ -178,7 +179,7 @@ export default function DatabasePage({ toast }) {
                 )}
               </div>
             )}
-          </div>
+          </DangerZone>
         </>
       ) : (
         <div className="admin-callout admin-callout-amber">

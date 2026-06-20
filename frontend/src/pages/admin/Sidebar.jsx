@@ -1,5 +1,35 @@
 import { NAV } from './constants.js'
 
+const STATUS_LEGEND = [
+  { swatch: 'badge-ok', label: 'ACTIVE', meaning: 'Job is scheduled and will run normally' },
+  { swatch: 'badge-warn', label: 'PAUSED', meaning: "Won't run until resumed — safe to leave while debugging" },
+  { swatch: 'badge-info', label: 'LOCKED', meaning: "Currently running right now — don't restart the backend" },
+  { swatch: 'badge-muted', label: 'DISABLED', meaning: 'Turned off via an env var, not a runtime state' },
+  { swatch: 'pill-green', label: 'Discord/Telegram green', meaning: 'Configured and last delivery succeeded' },
+  { swatch: 'pill-amber', label: 'Discord/Telegram amber', meaning: 'Configured but the circuit is open (failing)' },
+  { swatch: 'pill-gray', label: 'Discord/Telegram gray', meaning: 'Not configured' },
+  { swatch: 'dot-ok', label: 'DB ok', meaning: 'Last integrity check passed' },
+  { swatch: 'dot-error', label: 'DB degraded', meaning: 'Last integrity check found a problem' },
+]
+
+function StatusLegend() {
+  return (
+    <details className="status-legend">
+      <summary>Status legend</summary>
+      <ul>
+        {STATUS_LEGEND.map(s => (
+          <li key={s.label}>
+            <span className={`status-legend-swatch ${s.swatch}`} />
+            <span className="status-legend-text">
+              <strong>{s.label}</strong> — {s.meaning}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </details>
+  )
+}
+
 export default function Sidebar({ activePage, setPage, system, ingestErrorCount }) {
   const openCircuits = system?.open_circuit_count || 0
   const failedAuth = system?.failed_auth_last_24h || 0
@@ -47,6 +77,7 @@ export default function Sidebar({ activePage, setPage, system, ingestErrorCount 
           })}
         </div>
       ))}
+      <StatusLegend />
     </nav>
   )
 }

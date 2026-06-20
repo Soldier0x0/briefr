@@ -35,6 +35,7 @@ export default function SecurityPage({ toast }) {
   return (
     <div>
       <h1 className="admin-page-title">Security</h1>
+      <p className="admin-page-subtitle">Admin-key status and recent failed authentication attempts.</p>
 
       {security && !security.admin_key_set && (
         <div className="admin-callout admin-callout-amber">

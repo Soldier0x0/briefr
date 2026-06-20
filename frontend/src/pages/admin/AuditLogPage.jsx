@@ -34,6 +34,7 @@ export default function AuditLogPage({ toast }) {
   return (
     <div>
       <h1 className="admin-page-title">Audit log</h1>
+      <p className="admin-page-subtitle">Searchable history of admin actions — who changed what, and when. Read-only.</p>
       <div className="admin-filter-bar" style={{ marginBottom: '0.75rem' }}>
         <div className="admin-filter-chips">
           <button className={`filter-chip ${activePrefix === '' ? 'active' : ''}`} onClick={() => load('', 0, search)}>All</button>

@@ -113,7 +113,7 @@
 }
 
 .ioc-value-input:focus {
-  border-color: var(--border2);
+  border-color: var(--accent);
   outline: none;
 }
 

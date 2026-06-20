@@ -67,6 +67,7 @@ export default function FeedHealthPage({ system, toast }) {
   return (
     <div>
       <h1 className="admin-page-title">Feed health</h1>
+      <p className="admin-page-subtitle">Per-source ingest status and consecutive-failure counts for every upstream feed (NVD, KEV, EPSS, etc.).</p>
 
       {entries.length === 0 ? (
         <div className="admin-empty">No health data yet — sources initialize on first fetch.</div>

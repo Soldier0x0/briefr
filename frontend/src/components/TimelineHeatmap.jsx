@@ -149,7 +149,7 @@ export default function TimelineHeatmap({ filters, onFiltersChange }) {
                 <div className="timeline-row-labels" aria-hidden="true">
                   {ROW_LABELS.map(({ row, label }) => (
                     <span
-                      key={label}
+                      key={row}
                       className="timeline-row-label mono"
                       style={{ gridRow: row + 1 }}
                     >

@@ -19,6 +19,9 @@ export const NAV = [
   { section: 'AUDIT', items: [
     { id: 'auditlog', label: 'Audit log' },
   ]},
+  { section: 'PREFERENCES', items: [
+    { id: 'display', label: 'Display' },
+  ]},
   { section: 'COMING SOON', items: [
     { id: 'coming-login', label: 'App login & sessions', locked: true, tooltip: 'Ships in V1.4 / T3-S0' },
     { id: 'coming-users', label: 'Multi-user management', locked: true, tooltip: 'Ships in V2.0' },
