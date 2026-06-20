@@ -2,8 +2,37 @@ import { useState, useEffect } from 'react'
 import { adminApi } from '../../api.js'
 import DiffReviewModal from './shared/DiffReviewModal.jsx'
 
+// UI section -> { title, backendKey } — backendKey is which dict in the
+// GET /api/admin/config response actually holds these values (a few
+// schema "sections" are UI-only groupings within one backend dict, e.g.
+// scheduler_main/scheduler_cron both read from config.scheduler).
+const SECTIONS = [
+  { id: 'api_keys', title: 'API Keys', backendKey: 'api_keys' },
+  { id: 'webhooks', title: 'Webhooks — Discord / Telegram / generic', backendKey: 'webhooks' },
+  { id: 'scheduler_main', title: 'Scheduler intervals — NVD / KEV / EPSS', backendKey: 'scheduler' },
+  { id: 'scheduler_cron', title: 'Scheduler intervals — cron & timezone', backendKey: 'scheduler' },
+  { id: 'ingest', title: 'Ingest tuning', backendKey: 'ingest' },
+  { id: 'ml', title: 'ML toggles', backendKey: 'ml' },
+  { id: 'app', title: 'Application behaviour', backendKey: 'app' },
+  { id: 'backup', title: 'Backup', backendKey: 'backup' },
+]
+
+function validateClientSide(field, value) {
+  if (!field) return null
+  if (field.type === 'int') {
+    const parsed = Number(value)
+    if (!Number.isInteger(parsed)) return `${field.key} requires an integer value`
+    if (field.min != null && parsed < field.min) return `${field.key} must be >= ${field.min}`
+    if (field.max != null && parsed > field.max) return `${field.key} must be <= ${field.max}`
+  } else if (field.type === 'enum' && field.enum_values?.length) {
+    if (!field.enum_values.includes(value)) return `${field.key} must be one of: ${field.enum_values.join(', ')}`
+  }
+  return null
+}
+
 export default function ApiKeysPage({ toast }) {
   const [config, setConfig] = useState(null)
+  const [schema, setSchema] = useState(null)
   const [queue, setQueue] = useState({}) // {key: value}
   const [editing, setEditing] = useState({}) // {key: tempValue}
   const [showDiff, setShowDiff] = useState(false)
@@ -11,9 +40,12 @@ export default function ApiKeysPage({ toast }) {
 
   useEffect(() => {
     adminApi.get('/config').then(r => r.json()).then(setConfig).catch(() => {})
+    adminApi.get('/config/schema').then(r => r.json()).then(setSchema).catch(() => {})
   }, [])
 
-  function addToQueue(key, value) {
+  function addToQueue(key, value, field) {
+    const error = validateClientSide(field, value)
+    if (error) { toast(error, false); return }
     setQueue(q => ({ ...q, [key]: value }))
     setEditing(e => { const n = { ...e }; delete n[key]; return n })
     toast(`Added ${key} to pending changes`, true)
@@ -40,14 +72,17 @@ export default function ApiKeysPage({ toast }) {
     setApplying(false)
   }
 
-  function ConfigRow({ envKey, value, isSecret = false, writable = true, restartRequired = false }) {
+  function ConfigRow({ envKey, value, isSecret = false, writable = true, restartRequired = false, helpText = '', field = null }) {
     const inQueue = queue[envKey] !== undefined
     const editVal = editing[envKey]
     const isEditing = editVal !== undefined
 
     return (
       <div className="config-row">
-        <div className="config-row-key mono">{envKey}</div>
+        <div className="config-row-key mono">
+          {envKey}
+          {helpText && <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 400, marginTop: '0.15rem' }}>{helpText}</div>}
+        </div>
         <div className="config-row-value">
           {inQueue ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -56,27 +91,44 @@ export default function ApiKeysPage({ toast }) {
             </div>
           ) : !isEditing ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span className="mono" style={{ fontSize: '0.8125rem', color: 'var(--text2)' }}>{String(value)}</span>
+              <span className="mono" style={{ fontSize: '0.8125rem', color: 'var(--text2)' }}>
+                {Array.isArray(value) ? value.join(', ') : String(value)}
+              </span>
               {restartRequired && <span className="badge badge-warn" style={{ fontSize: '0.6rem' }}>restart</span>}
               {writable && (
                 <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }}
-                  onClick={() => setEditing(e => ({ ...e, [envKey]: String(value === 'not configured' ? '' : value) }))}>
+                  onClick={() => {
+                    const initial = Array.isArray(value) ? value.join(', ') : (value === 'not configured' ? '' : String(value))
+                    setEditing(e => ({ ...e, [envKey]: initial }))
+                  }}>
                   Edit
                 </button>
               )}
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <input
-                className="admin-input"
-                type={isSecret ? 'password' : 'text'}
-                style={{ minWidth: 220 }}
-                value={editVal}
-                onChange={e => setEditing(ed => ({ ...ed, [envKey]: e.target.value }))}
-                autoFocus
-              />
+              {field?.type === 'enum' && field.enum_values?.length ? (
+                <select
+                  className="admin-select"
+                  style={{ minWidth: 220 }}
+                  value={editVal}
+                  onChange={e => setEditing(ed => ({ ...ed, [envKey]: e.target.value }))}
+                  autoFocus
+                >
+                  {field.enum_values.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              ) : (
+                <input
+                  className="admin-input"
+                  type={isSecret ? 'password' : 'text'}
+                  style={{ minWidth: 220 }}
+                  value={editVal}
+                  onChange={e => setEditing(ed => ({ ...ed, [envKey]: e.target.value }))}
+                  autoFocus
+                />
+              )}
               <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.75rem' }}
-                onClick={() => addToQueue(envKey, editVal)}>
+                onClick={() => addToQueue(envKey, editVal, field)}>
                 Add to queue
               </button>
               <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }}
@@ -90,9 +142,21 @@ export default function ApiKeysPage({ toast }) {
     )
   }
 
-  if (!config) return <div className="admin-empty">Loading…</div>
+  if (!config || !schema) return <div className="admin-empty">Loading…</div>
 
   const pendingCount = Object.keys(queue).length
+  const fieldsBySection = {}
+  for (const f of schema) {
+    if (!fieldsBySection[f.section]) fieldsBySection[f.section] = []
+    fieldsBySection[f.section].push(f)
+  }
+  const schemaKeys = new Set(schema.map(f => f.key))
+  // A handful of writable keys live under a different backend response dict
+  // than their UI grouping (e.g. VULNRICHMENT_BRANCH/CVELISTV5_BRANCH are
+  // grouped under "Ingest tuning" but the backend returns them inside
+  // config.scheduler) — look values up across every section rather than
+  // assuming a 1:1 mapping between UI section and backend dict.
+  const merged = Object.assign({}, ...SECTIONS.map(s => config[s.backendKey] || {}))
 
   return (
     <div>
@@ -113,80 +177,46 @@ export default function ApiKeysPage({ toast }) {
         Changes here write to <code>.env</code> and take effect after restart.
       </div>
 
-      <div className="admin-card">
-        <div className="admin-card-title">API Keys</div>
-        {Object.entries(config.api_keys || {}).map(([k, v]) => (
-          <ConfigRow key={k} envKey={k} value={v} isSecret writable />
-        ))}
-      </div>
+      {SECTIONS.map(section => {
+        const fields = fieldsBySection[section.id] || []
+        const backendDict = config[section.backendKey] || {}
+        const fieldKeys = new Set(fields.map(f => f.key))
+        // ml/backup sections historically also surfaced a few read-only,
+        // non-writable keys (e.g. feed sync toggles, backup log rotation
+        // settings) that aren't in the schema — keep showing them
+        // (read-only, no broken Edit button) instead of silently dropping
+        // visibility into values the operator could previously see.
+        const extraKeys = (section.id === 'ml' || section.id === 'backup')
+          ? Object.keys(backendDict).filter(k => !fieldKeys.has(k) && !schemaKeys.has(k))
+          : []
 
-      <div className="admin-card">
-        <div className="admin-card-title">Webhooks — Discord / Telegram / generic</div>
-        {[
-          { key: 'DISCORD_WEBHOOK_URL', secret: true },
-          { key: 'DISCORD_WEBHOOK_ENABLED', secret: false },
-          { key: 'DISCORD_WEBHOOK_EVENTS', secret: false },
-          { key: 'TELEGRAM_BOT_TOKEN', secret: true },
-          { key: 'TELEGRAM_CHAT_ID', secret: false },
-          { key: 'TELEGRAM_WEBHOOK_ENABLED', secret: false },
-          { key: 'TELEGRAM_WEBHOOK_EVENTS', secret: false },
-          { key: 'WEBHOOK_GENERIC_URL', secret: true },
-          { key: 'WEBHOOK_GENERIC_ENABLED', secret: false },
-          { key: 'WEBHOOK_GENERIC_LABEL', secret: false },
-          { key: 'WEBHOOK_GENERIC_EVENTS', secret: false },
-        ].map(({ key, secret }) => (
-          <ConfigRow key={key} envKey={key} value={config.webhooks?.[key] ?? 'not configured'} isSecret={secret} />
-        ))}
-        <div style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '0.5rem' }}>
-          After setting a URL/token here, use the Test button on the Webhooks page to confirm delivery.
-        </div>
-      </div>
+        if (fields.length === 0 && extraKeys.length === 0) return null
 
-      <div className="admin-card">
-        <div className="admin-card-title">Scheduler intervals — NVD / KEV / EPSS</div>
-        {['NVD_SYNC_INTERVAL_HOURS', 'KEV_SYNC_INTERVAL_MINUTES', 'EPSS_SYNC_INTERVAL_HOURS',
-          'INCIDENT_FEED_REFRESH_MINUTES', 'VULNRICHMENT_SYNC_INTERVAL_HOURS', 'CVELISTV5_SYNC_INTERVAL_MINUTES'].map(k => (
-          <ConfigRow key={k} envKey={k} value={config.scheduler?.[k] ?? ''} restartRequired />
-        ))}
-      </div>
-
-      <div className="admin-card">
-        <div className="admin-card-title">Scheduler intervals — cron &amp; timezone</div>
-        {['SCHEDULER_TIMEZONE', 'MITRE_REFRESH_HOUR', 'MITRE_REFRESH_MINUTE',
-          'CORRELATION_HOUR', 'CORRELATION_MINUTE', 'CORRELATION_TIMEZONE',
-          'OTX_CORRELATION_HOUR', 'OTX_CORRELATION_MINUTE', 'OTX_CORRELATION_TIMEZONE'].map(k => (
-          <ConfigRow key={k} envKey={k} value={config.scheduler?.[k] ?? ''} restartRequired />
-        ))}
-      </div>
-
-      <div className="admin-card">
-        <div className="admin-card-title">Ingest tuning</div>
-        {['MAX_CVES_PER_FETCH', 'NVD_DAYS_BACK', 'KEV_CROSS_FETCH_NVD',
-          'CVELISTV5_INITIAL_SINCE_DAYS', 'VULNRICHMENT_BRANCH', 'CVELISTV5_BRANCH'].map(k => (
-          <ConfigRow key={k} envKey={k} value={config.ingest?.[k] ?? config.scheduler?.[k] ?? ''} />
-        ))}
-      </div>
-
-      <div className="admin-card">
-        <div className="admin-card-title">ML toggles</div>
-        {Object.entries(config.ml || {}).map(([k, v]) => (
-          <ConfigRow key={k} envKey={k} value={v} restartRequired={k.endsWith('_ENABLED')} />
-        ))}
-      </div>
-
-      <div className="admin-card">
-        <div className="admin-card-title">Application behaviour</div>
-        {Object.entries(config.app || {}).map(([k, v]) => (
-          <ConfigRow key={k} envKey={k} value={Array.isArray(v) ? v.join(', ') : v} restartRequired={['LOG_FORMAT', 'RATE_LIMIT_ENABLED', 'RATE_LIMIT_IOC_PER_MINUTE', 'RATE_LIMIT_REFRESH_PER_MINUTE'].includes(k)} />
-        ))}
-      </div>
-
-      <div className="admin-card">
-        <div className="admin-card-title">Backup</div>
-        {Object.entries(config.backup || {}).map(([k, v]) => (
-          <ConfigRow key={k} envKey={k} value={v} />
-        ))}
-      </div>
+        return (
+          <div className="admin-card" key={section.id}>
+            <div className="admin-card-title">{section.title}</div>
+            {fields.map(f => (
+              <ConfigRow
+                key={f.key}
+                envKey={f.key}
+                value={merged[f.key] ?? ''}
+                isSecret={f.type === 'secret'}
+                restartRequired={f.restart_required}
+                helpText={f.help_text}
+                field={f}
+              />
+            ))}
+            {extraKeys.map(k => (
+              <ConfigRow key={k} envKey={k} value={backendDict[k]} writable={false} />
+            ))}
+            {section.id === 'webhooks' && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '0.5rem' }}>
+                After setting a URL/token here, use the Test button on the Webhooks page to confirm delivery.
+              </div>
+            )}
+          </div>
+        )
+      })}
 
       {/* Pending changes sticky bar */}
       {pendingCount > 0 && (
