@@ -7,20 +7,23 @@ from urllib.parse import urlparse
 
 from settings import settings
 
-_SQLITE_DEFAULT_PATH = os.environ.get("DB_PATH", "briefr.db")
-
-
 def resolve_database_url() -> str:
     """Return the effective database URL.
 
   Priority:
   1. ``DATABASE_URL`` env / settings (explicit)
   2. ``DB_PATH``-derived SQLite URL (legacy default)
+
+    Reads os.environ fresh on every call rather than caching at import time —
+    Settings() is a singleton constructed once at process start, and a
+    module-level constant here would be equally stale, so tests that
+    monkeypatch.setenv("DB_PATH", ...) per-test would otherwise never take
+    effect.
     """
     explicit = (settings.database_url or os.environ.get("DATABASE_URL", "")).strip()
     if explicit:
         return explicit
-    path = (settings.db_path or _SQLITE_DEFAULT_PATH).strip()
+    path = (settings.db_path or os.environ.get("DB_PATH", "briefr.db")).strip()
     if path.startswith("sqlite:"):
         return path
     return f"sqlite+aiosqlite:///{path}"

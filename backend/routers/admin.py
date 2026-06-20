@@ -36,7 +36,7 @@ from database import (
     purge_legacy_rejected_cves,
     set_sync_state_value,
 )
-from dependencies import audit, require_admin_key
+from dependencies import audit, require_admin_key, trigger_graceful_restart
 from rate_limit import get_top_consumers, rate_limit_refresh
 from resilient_client import get_feed_health, reset_circuit
 from settings import settings
@@ -93,6 +93,7 @@ WRITABLE_CONFIG_KEYS = {
     "RATE_LIMIT_IOC_PER_MINUTE", "RATE_LIMIT_REFRESH_PER_MINUTE",
     "DISCORD_WEBHOOK_URL", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID",
     "ALLOWED_ORIGINS", "DEFAULT_TIMEZONE", "BRIEFR_ENV",
+    "DATABASE_URL", "DATABASE_POOL_SIZE",
     # API keys — writable so operator can set them without SSH
     "NVD_API_KEY", "VIRUSTOTAL_API_KEY", "ABUSEIPDB_API_KEY", "GREYNOISE_API_KEY",
     "GITHUB_TOKEN", "GROQ_API_KEY", "ANTHROPIC_API_KEY", "OTX_API_KEY",
@@ -117,6 +118,7 @@ INTEGER_KEYS = {
     "LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS", "LLM_PRODUCT_EXTRACTION_MAX_PER_RUN",
     "BACKUP_RETENTION_COUNT", "BACKUP_INTERVAL_HOURS",
     "RATE_LIMIT_IOC_PER_MINUTE", "RATE_LIMIT_REFRESH_PER_MINUTE",
+    "DATABASE_POOL_SIZE",
 }
 
 RESTART_REQUIRED_KEYS = {
@@ -124,6 +126,7 @@ RESTART_REQUIRED_KEYS = {
     "RATE_LIMIT_REFRESH_PER_MINUTE", "CIRCUIT_FAILURE_THRESHOLD", "CIRCUIT_COOLDOWN_SECONDS",
     "SCHEDULER_TIMEZONE", "CORRELATION_TIMEZONE", "OTX_CORRELATION_TIMEZONE",
     "EMBEDDINGS_ENABLED", "LLM_PRODUCT_EXTRACTION_ENABLED",
+    "DATABASE_URL", "DATABASE_POOL_SIZE",
 }
 
 
@@ -1101,17 +1104,7 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
     changed_summary = ", ".join(changed_keys[:10])
     await audit(request, "config.apply", changed_summary)
 
-    async def _do_restart():
-        from scheduler import stop_scheduler
-        from resilient_client import close_client
-        import asyncio as _asyncio
-
-        stop_scheduler()
-        await close_client()
-        await _asyncio.sleep(2)
-        os._exit(0)
-
-    background_tasks.add_task(_do_restart)
+    background_tasks.add_task(trigger_graceful_restart)
     return {
         "ok": True,
         "changed_keys": changed_keys,
@@ -1130,6 +1123,69 @@ async def test_webhook(request: Request, body: dict):
     result = await send_test_message(channel, "BRIEFR admin webhook test")
     await audit(request, f"webhook.test.{channel}", channel)
     return result
+
+
+# ── Database engine & migration ────────────────────────────────────────────
+
+
+@router.get("/database")
+async def get_database_info(request: Request):
+    from db.config import is_postgres, resolve_database_url
+
+    current_url = resolve_database_url()
+    info: dict[str, Any] = {
+        "engine": "postgresql" if is_postgres(current_url) else "sqlite",
+    }
+    if is_postgres(current_url):
+        info["postgres_dsn_redacted"] = re.sub(r"://[^@]+@", "://***@", current_url)
+    else:
+        db_path = Path(DB_PATH)
+        info["sqlite_path"] = str(db_path)
+        info["sqlite_size_bytes"] = db_path.stat().st_size if db_path.exists() else 0
+    return info
+
+
+@router.post("/database/test-connection")
+async def test_database_connection(request: Request, body: dict):
+    from migration.sqlite_to_postgres import test_connection
+
+    database_url = str(body.get("database_url", "")).strip()
+    if not database_url:
+        raise HTTPException(400, "database_url is required")
+    return await test_connection(database_url)
+
+
+@router.post("/database/migrate")
+async def start_database_migration(request: Request, background_tasks: BackgroundTasks, body: dict):
+    from db.config import is_postgres
+    from migration.sqlite_to_postgres import reserve_migration_slot, run_migration
+
+    database_url = str(body.get("database_url", "")).strip()
+    confirm_text = str(body.get("confirm_text", "")).strip()
+    if not database_url:
+        raise HTTPException(400, "database_url is required")
+    if not is_postgres(database_url):
+        raise HTTPException(400, "database_url must be a postgresql:// URL")
+    if confirm_text != "migrate":
+        raise HTTPException(400, "Type 'migrate' to confirm")
+
+    # Reserve the slot synchronously (not in the background task) so a second
+    # rapid request can't slip past the check before the first task starts.
+    try:
+        await reserve_migration_slot()
+    except RuntimeError as exc:
+        raise HTTPException(409, str(exc))
+
+    await audit(request, "database.migrate.start", re.sub(r"://[^@]+@", "://***@", database_url))
+    background_tasks.add_task(run_migration, database_url, DB_PATH, _reserved=True)
+    return {"ok": True, "message": "Migration started — poll /api/admin/database/migrate/status"}
+
+
+@router.get("/database/migrate/status")
+async def get_database_migration_status(request: Request):
+    from migration.sqlite_to_postgres import get_status
+
+    return get_status()
 
 
 # ── Scheduler ──────────────────────────────────────────────────────────────
@@ -1367,21 +1423,7 @@ async def restart_backend(request: Request, background_tasks: BackgroundTasks, b
     drain = bool(body.get("drain", False)) if body else False
     await audit(request, "system.restart", "drain" if drain else "immediate")
 
-    async def _do_restart(with_drain: bool = False):
-        from scheduler import stop_scheduler, any_ingest_lock_held
-        from resilient_client import close_client
-
-        if with_drain:
-            deadline = time.time() + 120
-            while any_ingest_lock_held() and time.time() < deadline:
-                await asyncio.sleep(2)
-
-        stop_scheduler()
-        await close_client()
-        await asyncio.sleep(1)
-        os._exit(0)
-
-    background_tasks.add_task(_do_restart, drain)
+    background_tasks.add_task(trigger_graceful_restart, drain)
     return {"status": "draining" if drain else "restarting"}
 
 
