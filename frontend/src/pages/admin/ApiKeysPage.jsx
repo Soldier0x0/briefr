@@ -170,12 +170,17 @@ export default function ApiKeysPage({ toast }) {
         />
       )}
 
-      <h1 className="admin-page-title">API keys & config</h1>
-
-      <div className="admin-callout admin-callout-amber">
-        <code>load_dotenv()</code> is called without <code>override=True</code>. Process env vars (systemd / Cursor Secrets) win over <code>.env</code>.
-        Changes here write to <code>.env</code> and take effect after restart.
-      </div>
+      <h1 className="admin-page-title">
+        API keys & config
+        <span
+          className="info-tip"
+          tabIndex={0}
+          title="load_dotenv() is called without override=True — process env vars (systemd / Cursor Secrets) win over .env. Changes here write to .env and take effect after restart."
+        >ⓘ</span>
+      </h1>
+      <p className="admin-page-subtitle">
+        Sets secrets and tunables that the backend reads from .env. Most changes need a restart to take effect.
+      </p>
 
       {SECTIONS.map(section => {
         const fields = fieldsBySection[section.id] || []

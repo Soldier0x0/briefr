@@ -101,6 +101,7 @@ export default function DatabasePage({ toast, active = true }) {
       )}
 
       <h1 className="admin-page-title">Database</h1>
+      <p className="admin-page-subtitle">Shows the current database engine and lets you migrate from SQLite to PostgreSQL. The migration is one-way and triggers a restart.</p>
 
       <div className="stat-card-row">
         <StatCard label="ENGINE" value={info?.engine === 'postgresql' ? 'PostgreSQL' : 'SQLite'} colorClass={isSqlite ? 'color-amber' : 'color-green'} />

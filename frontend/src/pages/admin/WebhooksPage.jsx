@@ -47,6 +47,7 @@ export default function WebhooksPage({ toast }) {
   return (
     <div>
       <h1 className="admin-page-title">Webhooks</h1>
+      <p className="admin-page-subtitle">Test delivery and review send history for Discord/Telegram/generic alerts. Configure URLs and tokens on the API Keys page.</p>
 
       {config && (
         <div className="admin-card">

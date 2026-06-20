@@ -62,6 +62,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
   return (
     <div>
       <h1 className="admin-page-title">Application logs</h1>
+      <p className="admin-page-subtitle">Live backend log stream, filterable by level/category/logger. Useful for tracing a specific request or recent error.</p>
       <div className="admin-filter-bar">
         <select className="admin-select" value={level} onChange={e => setLevel(e.target.value)}>
           <option value="">All levels</option>

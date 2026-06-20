@@ -66,6 +66,7 @@ export default function StoragePage({ toast }) {
       )}
 
       <h1 className="admin-page-title">Storage</h1>
+      <p className="admin-page-subtitle">Disk usage breakdown and cache/log purge tools. Purges are destructive and cannot be undone.</p>
 
       <div className="admin-action-bar" style={{ justifyContent: 'flex-end' }}>
         <button className="admin-btn admin-btn-ghost" onClick={exportDb} title={`DB: ${fmtBytes(storage?.db_size_bytes)}`}>

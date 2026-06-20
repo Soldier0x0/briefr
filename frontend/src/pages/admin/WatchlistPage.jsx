@@ -114,6 +114,7 @@ export default function WatchlistPage({ toast }) {
       )}
 
       <h1 className="admin-page-title">Watchlist & cache</h1>
+      <p className="admin-page-subtitle">Manage pinned/snoozed CVEs, inspect the IOC lookup cache, and review hunt-pack matches.</p>
       <div className="admin-subtabs">
         {[['watchlist', 'WATCHLIST'], ['ioc', 'IOC CACHE'], ['hunt', 'HUNT PACKS']].map(([id, label]) => (
           <button key={id} className={`admin-subtab ${subtab === id ? 'active' : ''}`} onClick={() => setSubtab(id)}>{label}</button>

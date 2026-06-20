@@ -103,16 +103,22 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
           <span className={`sb-value ${openCircuits > 0 ? 'sb-warn' : ''}`}>{openCircuits} open</span>
         </span>
         <div className="sb-sep" />
-        <span className="sb-item">
+        <span className="sb-item" title={integrityOk ? 'Last integrity check passed' : 'Last integrity check found a problem'}>
           <span className={`dot ${integrityOk ? 'dot-ok' : 'dot-error'}`} />
           <span className="sb-label">DB {integrityOk ? 'ok' : 'degraded'}</span>
         </span>
         <div className="sb-sep" />
         <span className="sb-item">
-          <span className={`pill ${discordPillClass()}`}>Discord</span>
+          <span
+            className={`pill ${discordPillClass()}`}
+            title={!discordConfigured ? 'Not configured' : discordFailed ? 'Configured but the circuit is open (failing)' : 'Configured and last delivery succeeded'}
+          >Discord</span>
         </span>
         <span className="sb-item">
-          <span className={`pill ${telegramPillClass()}`}>Telegram</span>
+          <span
+            className={`pill ${telegramPillClass()}`}
+            title={!telegramConfigured ? 'Not configured' : telegramFailed ? 'Configured but the circuit is open (failing)' : 'Configured and last delivery succeeded'}
+          >Telegram</span>
         </span>
         {commit && (
           <>

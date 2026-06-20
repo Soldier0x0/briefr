@@ -1,6 +1,13 @@
 import { Fragment, useState } from 'react'
 import { fmtIso, fmtDur } from '../formatters.js'
 
+const STATUS_TITLES = {
+  ACTIVE: 'Job is scheduled and will run normally',
+  PAUSED: "Won't run until resumed — safe to leave while debugging",
+  LOCKED: "Currently running right now — don't restart the backend",
+  DISABLED: 'Turned off via an env var, not a runtime state',
+}
+
 export function JobStatusBadge({ status }) {
   const map = {
     ACTIVE: 'badge-ok',
@@ -8,7 +15,7 @@ export function JobStatusBadge({ status }) {
     LOCKED: 'badge-info',
     DISABLED: 'badge-muted',
   }
-  return <span className={`badge ${map[status] || 'badge-muted'}`}>{status}</span>
+  return <span className={`badge ${map[status] || 'badge-muted'}`} title={STATUS_TITLES[status]}>{status}</span>
 }
 
 // Shared scheduler job table (used by Overview and Scheduler pages).
