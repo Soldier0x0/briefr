@@ -1,4 +1,4 @@
-"""KEV-on-stack and backup dead-man alert rules (V1.3 Theme 8)."""
+"""KEV-on-stack and backup dead-man alert rules (V1.3 Theme 8, V1.4 engine)."""
 
 from __future__ import annotations
 
@@ -8,20 +8,21 @@ from datetime import datetime, timedelta, timezone
 
 from backup.manager import BackupConfig, list_backups
 from database import (
-    clear_webhook_alert,
     filter_cves_matching_stack,
     get_db,
     get_stack_terms,
-    record_webhook_alert,
-    was_webhook_alert_sent,
+    get_sync_state_value,
+    set_sync_state_value,
 )
 from routers.cves import _stack_match_clause
-from webhooks.sender import send_alert, webhooks_enabled
+from webhooks.destinations import EVENT_BACKUP_FAILURE, EVENT_KEV_ALERT
+from webhooks.engine import clear_event_dedupe, dispatch_event
+from webhooks.destinations import webhooks_enabled
 
 logger = logging.getLogger(__name__)
 
-ALERT_KEV_STACK = "kev_stack"
-ALERT_BACKUP_DEADMAN = "backup_deadman"
+ALERT_KEV_STACK = EVENT_KEV_ALERT
+ALERT_BACKUP_DEADMAN = EVENT_BACKUP_FAILURE
 BACKUP_DEADMAN_TARGET = "stale"
 BACKUP_WATCH_BASELINE_KEY = "backup_deadman_baseline_utc"
 
@@ -99,35 +100,28 @@ async def process_kev_stack_alerts(newly_kev_ids: list[str]) -> int:
         return 0
 
     db = await get_db()
-    candidates = []
     try:
         matches = await filter_cves_matching_stack(db, newly_kev_ids, stack)
+        candidates = []
         for cve in matches:
-            cve_id = cve["cve_id"]
-            if not await was_webhook_alert_sent(db, ALERT_KEV_STACK, cve_id):
-                cve["matched_terms"] = terms
-                candidates.append(cve)
+            cve["matched_terms"] = terms
+            candidates.append(cve)
     finally:
         await db.close()
 
     sent = 0
     for cve in candidates:
         cve_id = cve["cve_id"]
-        result = await send_alert(_format_kev_alert(cve))
+        result = await dispatch_event(
+            EVENT_KEV_ALERT,
+            _format_kev_alert(cve),
+            dedupe_key=cve_id,
+        )
         if not result.get("sent"):
-            logger.warning(
-                "KEV stack alert not delivered for %s: %s", cve_id, result
-            )
+            logger.warning("KEV stack alert not delivered for %s: %s", cve_id, result)
             continue
-
-        db = await get_db()
-        try:
-            await record_webhook_alert(db, ALERT_KEV_STACK, cve_id)
-            await db.commit()
-            sent += 1
-            logger.info("KEV stack alert sent for %s", cve_id)
-        finally:
-            await db.close()
+        sent += 1
+        logger.info("KEV stack alert sent for %s", cve_id)
     return sent
 
 
@@ -145,13 +139,10 @@ async def check_backup_deadman() -> bool:
         if last_backup is not None:
             age = now - last_backup
             if age <= threshold:
-                await clear_webhook_alert(db, ALERT_BACKUP_DEADMAN, BACKUP_DEADMAN_TARGET)
-                await db.commit()
+                await clear_event_dedupe(EVENT_BACKUP_FAILURE, BACKUP_DEADMAN_TARGET)
                 return False
             stale_for = age
         else:
-            from database import get_sync_state_value, set_sync_state_value
-
             baseline_raw = await get_sync_state_value(db, BACKUP_WATCH_BASELINE_KEY)
             if not baseline_raw:
                 await set_sync_state_value(db, BACKUP_WATCH_BASELINE_KEY, now.isoformat())
@@ -163,9 +154,6 @@ async def check_backup_deadman() -> bool:
             stale_for = now - baseline
             if stale_for <= threshold:
                 return False
-
-        if await was_webhook_alert_sent(db, ALERT_BACKUP_DEADMAN, BACKUP_DEADMAN_TARGET):
-            return False
     finally:
         await db.close()
 
@@ -177,16 +165,14 @@ async def check_backup_deadman() -> bool:
         "Check `systemctl status briefr-backup.timer`, "
         "`journalctl -u briefr-backup`, and `/var/lib/briefr/backups`."
     )
-    result = await send_alert(message)
+    result = await dispatch_event(
+        EVENT_BACKUP_FAILURE,
+        message,
+        dedupe_key=BACKUP_DEADMAN_TARGET,
+    )
     if not result.get("sent"):
         logger.warning("Backup dead-man alert not delivered: %s", result)
         return False
 
-    db = await get_db()
-    try:
-        await record_webhook_alert(db, ALERT_BACKUP_DEADMAN, BACKUP_DEADMAN_TARGET)
-        await db.commit()
-        logger.warning("Backup dead-man alert sent (stale_for=%sh)", hours)
-        return True
-    finally:
-        await db.close()
+    logger.warning("Backup dead-man alert sent (stale_for=%sh)", hours)
+    return True

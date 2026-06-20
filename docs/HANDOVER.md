@@ -76,6 +76,7 @@ Read in this order before writing any code:
 | #134 | brief-charts-ux-polish | V1.3 Theme 2 follow-up: urgency hierarchy, heatmap labels, Chart.js restyle, EPSS table, KEV bucket clicks | ✅ Merged |
 | #135 | morning-brief-unified-queue | V1.3 Theme 1 follow-up: BRIEF-only Hero/StatsRow/heatmap; FEED compact FilterBar stack; unified action_queue list + filters; histogram → due-window | 🔲 Open |
 | #148 | cursor/admin-overhaul-17e8 | V1.4 Theme 1: Full admin surface overhaul — disk usage NaN fix, scheduler status (ACTIVE/PAUSED/LOCKED/DISABLED), last-5-run history + error_message, 10+ new endpoints (scheduler/run, config/apply-all, webhooks/log, storage/export, diagnostics/smoke, diagnostics/integrity, restart drain), full AdminPage.jsx overhaul (11 pages + Coming Soon placeholders), Header Admin link, root-logger ring buffer logger filter + field redaction | 🔲 Open |
+| #152 | cursor/webhook-engine-ssrf-5a38 | V1.4 Theme 2: Webhook engine — multi-destination dispatch (`kev_alert`, `backup_failure`, `health`), per-destination enable/event subscriptions (env + `webhook_destinations` DB), dedupe + `webhook_delivery_log`, mandatory SSRF protections (`webhooks/ssrf.py`: block private/reserved IPs, DNS-rebinding pin, https-only, no redirects, no internal secrets on headers, 10s timeout), admin destinations/delivery-log APIs | 🔲 Open |
 
 Each merged PR's description contains its own **post-merge verification
 checklist** — that is the house style; keep it (see §7).
