@@ -181,11 +181,12 @@ async def _ingest_health_tile(db: Any) -> dict[str, Any]:
     incidents_status = await get_incident_feed_status()
     ingest = get_ingest_status()
 
+    feed_health = get_feed_health()
     open_circuits = sum(
-        1 for src in get_feed_health().values() if src.get("circuit_open")
+        1 for src in feed_health.values() if src.get("circuit_open")
     )
     stale_sources = sum(
-        1 for src in get_feed_health().values() if src.get("last_success") is None
+        1 for src in feed_health.values() if src.get("last_success") is None
     )
 
     return {
@@ -197,7 +198,7 @@ async def _ingest_health_tile(db: Any) -> dict[str, Any]:
         "never_synced_source_count": stale_sources,
         "feeds": {
             "incidents": incidents_status,
-            "sources": get_feed_health(),
+            "sources": feed_health,
         },
         "ingest": ingest,
     }
@@ -272,7 +273,7 @@ async def _coverage_gaps_tile(db: Any, stack: str) -> dict[str, Any]:
 async def _headlines_tile() -> dict[str, Any]:
     cards, errors, meta = await get_incident_feed(atlas_limit=40)
     items = []
-    for card in cards[:_HEADLINE_LIMIT]:
+    for card in (cards or [])[:_HEADLINE_LIMIT]:
         title = (card.get("title") or "").strip()
         if not title:
             continue
@@ -284,5 +285,5 @@ async def _headlines_tile() -> dict[str, Any]:
     return {
         "items": items,
         "meta": meta,
-        "error_count": len(errors),
+        "error_count": len(errors or []),
     }

@@ -200,6 +200,7 @@ const TILE_COMPONENTS = {
 
 export default function WallboardPage() {
   const [searchParams] = useSearchParams()
+  const [token, setToken] = useState(getWallboardToken)
   const [payload, setPayload] = useState(null)
   const [error, setError] = useState('')
   const [authError, setAuthError] = useState('')
@@ -212,6 +213,7 @@ export default function WallboardPage() {
     const urlToken = searchParams.get('token')
     if (urlToken) {
       setWallboardToken(urlToken)
+      setToken(urlToken)
     }
   }, [searchParams])
 
@@ -228,6 +230,7 @@ export default function WallboardPage() {
       if (cancelledRef.current) return
       if (e?.status === 401) {
         clearWallboardToken()
+        setToken('')
         setNeedsToken(true)
         setAuthError('Invalid or missing wallboard token')
         return
@@ -238,19 +241,19 @@ export default function WallboardPage() {
 
   useEffect(() => {
     cancelledRef.current = false
-    if (getWallboardToken()) {
+    if (token) {
       load()
     } else {
       setNeedsToken(true)
     }
     const poll = setInterval(() => {
-      if (getWallboardToken()) load()
+      if (token) load()
     }, POLL_MS)
     return () => {
       cancelledRef.current = true
       clearInterval(poll)
     }
-  }, [load])
+  }, [load, token])
 
   useEffect(() => {
     const rotate = setInterval(() => {
@@ -259,10 +262,10 @@ export default function WallboardPage() {
     return () => clearInterval(rotate)
   }, [])
 
-  const handleTokenSubmit = (token) => {
-    setWallboardToken(token)
+  const handleTokenSubmit = (newToken) => {
+    setWallboardToken(newToken)
+    setToken(newToken)
     setAuthError('')
-    load()
   }
 
   return (
