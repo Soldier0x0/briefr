@@ -9,7 +9,7 @@ import { fmtBytes } from './formatters.js'
 // connection, run a one-shot data copy (reusing the existing Alembic schema
 // + the SQLite file already on disk), then flip DATABASE_URL through the
 // same apply-all + graceful-restart flow used elsewhere in this panel.
-export default function DatabasePage({ toast }) {
+export default function DatabasePage({ toast, active = true }) {
   const [info, setInfo] = useState(null)
   const [databaseUrl, setDatabaseUrl] = useState('')
   const [testResult, setTestResult] = useState(null)
@@ -38,13 +38,13 @@ export default function DatabasePage({ toast }) {
   useEffect(() => { loadInfo(); loadStatus() }, [])
 
   useEffect(() => {
-    if (status?.status === 'running') {
+    if (status?.status === 'running' && active) {
       pollRef.current = setInterval(loadStatus, 2000)
     } else {
       clearInterval(pollRef.current)
     }
     return () => clearInterval(pollRef.current)
-  }, [status?.status])
+  }, [status?.status, active])
 
   async function testConnection() {
     if (!databaseUrl.trim()) { toast('Enter a postgresql:// URL first', false); return }

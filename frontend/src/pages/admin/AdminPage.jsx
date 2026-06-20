@@ -100,22 +100,20 @@ export default function AdminPage() {
 
   const isComingSoon = page.startsWith('coming-')
 
-  const pageContent = isComingSoon ? (
-    <ComingSoonPage pageId={page} setPage={setPage} />
-  ) : {
+  const pages = {
     overview: <OverviewPage system={system} toast={toast} />,
     backups: <BackupsPage toast={toast} system={system} />,
     storage: <StoragePage toast={toast} />,
-    database: <DatabasePage toast={toast} />,
+    database: <DatabasePage toast={toast} active={page === 'database'} />,
     watchlist: <WatchlistPage toast={toast} />,
     apikeys: <ApiKeysPage toast={toast} />,
     scheduler: <SchedulerPage toast={toast} system={system} />,
     webhooks: <WebhooksPage toast={toast} />,
     security: <SecurityPage toast={toast} />,
     feedhealth: <FeedHealthPage system={system} toast={toast} />,
-    ingestlog: <IngestLogPage toast={toast} onErrorCountChange={setIngestErrorCount} />,
+    ingestlog: <IngestLogPage toast={toast} onErrorCountChange={setIngestErrorCount} active={page === 'ingestlog'} />,
     auditlog: <AuditLogPage toast={toast} />,
-  }[page] || <div className="admin-empty">Page not found</div>
+  }
 
   return (
     <div className="admin-root">
@@ -132,9 +130,15 @@ export default function AdminPage() {
       <div className="admin-body">
         <Sidebar activePage={page} setPage={setPage} system={system} ingestErrorCount={ingestErrorCount} />
         <div className="admin-content">
-          <ErrorBoundary key={page}>
-            {pageContent}
-          </ErrorBoundary>
+          {isComingSoon ? (
+            <ComingSoonPage pageId={page} setPage={setPage} />
+          ) : (
+            Object.entries(pages).map(([id, content]) => (
+              <div key={id} hidden={page !== id}>
+                <ErrorBoundary>{content}</ErrorBoundary>
+              </div>
+            ))
+          )}
         </div>
       </div>
       <ToastArea toasts={toasts} />

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { adminApi } from '../../api.js'
 
-export default function IngestLogPage({ toast, onErrorCountChange }) {
+export default function IngestLogPage({ toast, onErrorCountChange, active = true }) {
   const [logData, setLogData] = useState(null)
   const [level, setLevel] = useState('')
   const [category, setCategory] = useState('')
@@ -35,13 +35,13 @@ export default function IngestLogPage({ toast, onErrorCountChange }) {
   useEffect(() => { loadLogs() }, [level, category, loggerFilter, reqId, limit])
 
   useEffect(() => {
-    if (autoRefresh) {
+    if (autoRefresh && active) {
       intervalRef.current = setInterval(loadLogs, 10000)
     } else {
       clearInterval(intervalRef.current)
     }
     return () => clearInterval(intervalRef.current)
-  }, [autoRefresh, level, category, loggerFilter, reqId, limit])
+  }, [autoRefresh, active, level, category, loggerFilter, reqId, limit])
 
   function exportLogs() {
     const lines = logs.map(e => JSON.stringify(e)).join('\n')
