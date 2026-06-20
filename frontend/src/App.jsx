@@ -20,6 +20,7 @@ import AboutModal from './components/AboutModal.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import AdminPage from './pages/admin/AdminPage.jsx'
+import WallboardPage from './pages/WallboardPage.jsx'
 import { fetchStats, fetchHealth, fetchCVE } from './api.js'
 import { useWatchlist } from './hooks/useWatchlist.js'
 import { useAssetProfileOptional } from './context/AssetProfileContext.jsx'
@@ -465,6 +466,7 @@ export default function App() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/admin/*" element={<AdminPage />} />
+        <Route path="/wallboard" element={<WallboardPage />} />
         <Route
           path="*"
           element={(

@@ -22,6 +22,18 @@ from settings import settings
 logger = logging.getLogger(__name__)
 
 
+async def require_wallboard_token(request: Request) -> None:
+    """When WALLBOARD_TOKEN is set, wallboard routes require a matching token."""
+    if not settings.wallboard_token:
+        return
+    provided = (
+        request.headers.get("X-BRIEFR-Wallboard-Token", "")
+        or request.query_params.get("token", "")
+    )
+    if not secrets.compare_digest(provided, settings.wallboard_token):
+        raise HTTPException(status_code=401, detail="Wallboard token required")
+
+
 async def require_admin_key(request: Request) -> None:
     """When BRIEFR_ADMIN_API_KEY is set, admin routes require X-BRIEFR-Admin-Key."""
     if not settings.briefr_admin_api_key:

@@ -76,7 +76,7 @@ Analyst benefits from pushes; **configuration lives in admin**.
 
 ---
 
-## Theme 4 — Wallboard (`/wallboard`)
+## Theme 4 — Wallboard (`/wallboard`) — ✅ SHIPPED (PR cursor/wallboard-readonly-display-b10c, 2026-06-19)
 
 Read-only **intel posture** display for kiosk / TV — **not** a SOC log wall.
 
@@ -95,6 +95,8 @@ Read-only **intel posture** display for kiosk / TV — **not** a SOC log wall.
 | **API** | `GET /api/wallboard` aggregated cached payload |
 | **Auth** | Optional `WALLBOARD_TOKEN` read-only scope |
 | **Security** | No secrets, no write actions; rate limit |
+
+**Shipped scope:** `GET /api/wallboard` aggregates six tiles from DB + cached snapshots (`feed_cache`, ~45s TTL). Optional `WALLBOARD_TOKEN` gate via `X-BRIEFR-Wallboard-Token` or `?token=`. Token-bucket rate limit (`RATE_LIMIT_WALLBOARD_PER_MINUTE`, default 60/min). Frontend `/wallboard` route — chromeless 3×2 grid, rotating tile focus, scrolling headline ticker, 90s poll.
 
 ---
 

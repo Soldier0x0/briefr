@@ -107,6 +107,7 @@ class TokenBucket:
 
 ioc_bucket = TokenBucket(settings.rate_limit_ioc_per_minute, name="ioc")
 refresh_bucket = TokenBucket(settings.rate_limit_refresh_per_minute, name="refresh")
+wallboard_bucket = TokenBucket(settings.rate_limit_wallboard_per_minute, name="wallboard")
 
 
 def client_key(request: Request) -> str:
@@ -164,10 +165,15 @@ def rate_limit_refresh(request: Request) -> None:
     _enforce(refresh_bucket, request)
 
 
+def rate_limit_wallboard(request: Request) -> None:
+    """Route dependency: token bucket for GET /api/wallboard."""
+    _enforce(wallboard_bucket, request)
+
+
 def get_top_consumers(n: int = 5) -> list[dict]:
     """Aggregate per-key hit counts across ioc_bucket and refresh_bucket, return top-n."""
     counts: dict[str, int] = {}
-    for bucket in (ioc_bucket, refresh_bucket):
+    for bucket in (ioc_bucket, refresh_bucket, wallboard_bucket):
         for key, hits in getattr(bucket, "_hits", {}).items():
             counts[key] = counts.get(key, 0) + hits
     return [

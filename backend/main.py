@@ -35,6 +35,7 @@ from routers import health as health_router
 from routers import ioc as ioc_router
 from routers import meta as meta_router
 from routers import refresh as refresh_router
+from routers import wallboard as wallboard_router
 from routers import watchlist as watchlist_router
 from scheduler import (
     maybe_run_on_startup,
@@ -90,7 +91,12 @@ app.add_middleware(
     allow_origins=settings.allowed_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "X-BRIEFR-Admin-Key"],
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "X-BRIEFR-Admin-Key",
+        "X-BRIEFR-Wallboard-Token",
+    ],
 )
 
 app.include_router(refresh_router.router)
@@ -193,6 +199,7 @@ app.include_router(forge_router.router)
 app.include_router(brief_router.router)
 app.include_router(watchlist_router.router)
 app.include_router(admin_router.router)
+app.include_router(wallboard_router.router)
 
 
 if __name__ == "__main__":
