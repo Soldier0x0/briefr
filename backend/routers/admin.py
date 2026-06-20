@@ -36,6 +36,13 @@ from database import (
     purge_legacy_rejected_cves,
     set_sync_state_value,
 )
+from config_schema import (
+    INTEGER_KEYS,
+    RESTART_REQUIRED_KEYS,
+    WRITABLE_CONFIG_KEYS,
+    list_schema,
+    validate_value,
+)
 from dependencies import audit, require_admin_key, trigger_graceful_restart
 from destructive_actions import list_actions, require_confirm
 from rate_limit import get_top_consumers, rate_limit_refresh
@@ -70,68 +77,12 @@ _JOB_LOCK_MAP: dict[str, str] = {
     "exploit_sources_sync": "_exploit_sources_lock",
 }
 
-WRITABLE_CONFIG_KEYS = {
-    "NVD_SYNC_INTERVAL_HOURS", "KEV_SYNC_INTERVAL_MINUTES", "EPSS_SYNC_INTERVAL_HOURS",
-    "INCIDENT_FEED_REFRESH_MINUTES", "VULNRICHMENT_SYNC_INTERVAL_HOURS",
-    "VULNRICHMENT_BRANCH", "CVELISTV5_SYNC_INTERVAL_MINUTES", "CVELISTV5_BRANCH",
-    "CVELISTV5_INITIAL_SINCE_DAYS", "CIRCUIT_FAILURE_THRESHOLD", "CIRCUIT_COOLDOWN_SECONDS",
-    "NVD_SYNC_OVERLAP_MINUTES", "SCHEDULER_TIMEZONE",
-    "MITRE_REFRESH_HOUR", "MITRE_REFRESH_MINUTE",
-    "CORRELATION_HOUR", "CORRELATION_MINUTE", "CORRELATION_TIMEZONE",
-    "OTX_CORRELATION_HOUR", "OTX_CORRELATION_MINUTE", "OTX_CORRELATION_TIMEZONE",
-    "CACHE_REFRESH_HOUR", "CACHE_REFRESH_MINUTE",
-    "EXPLOIT_SOURCES_SYNC_ENABLED", "EXPLOIT_SOURCES_SYNC_INTERVAL_HOURS",
-    "EXPLOIT_SOURCES_THROTTLE_SECONDS",
-    "MAX_CVES_PER_FETCH", "NVD_DAYS_BACK", "KEV_CROSS_FETCH_NVD",
-    "ATLAS_YAML_URL", "MITRE_CVE_MAPPINGS_JSON_URL",
-    "EMBEDDINGS_ENABLED", "EMBEDDINGS_SYNC_INTERVAL_HOURS", "EMBEDDINGS_MAX_PER_RUN",
-    "EMBEDDINGS_MODEL", "EMBEDDINGS_CACHE_DIR",
-    "LLM_PRODUCT_EXTRACTION_ENABLED", "LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS",
-    "LLM_PRODUCT_EXTRACTION_MAX_PER_RUN",
-    "BACKUP_ENABLED", "BACKUP_RETENTION_COUNT", "BACKUP_INTERVAL_HOURS",
-    "BACKUP_DIR", "BACKUP_AGE_KEY_FILE",
-    "BRIEFR_STACK_TERMS", "LOG_FORMAT", "RATE_LIMIT_ENABLED",
-    "RATE_LIMIT_IOC_PER_MINUTE", "RATE_LIMIT_REFRESH_PER_MINUTE",
-    "DISCORD_WEBHOOK_URL", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID",
-    "WEBHOOK_GENERIC_URL", "WEBHOOK_GENERIC_ENABLED", "WEBHOOK_GENERIC_EVENTS",
-    "WEBHOOK_GENERIC_LABEL", "DISCORD_WEBHOOK_ENABLED", "DISCORD_WEBHOOK_EVENTS",
-    "TELEGRAM_WEBHOOK_ENABLED", "TELEGRAM_WEBHOOK_EVENTS",
-    "ALLOWED_ORIGINS", "DEFAULT_TIMEZONE", "BRIEFR_ENV",
-    "DATABASE_URL", "DATABASE_POOL_SIZE",
-    # API keys — writable so operator can set them without SSH
-    "NVD_API_KEY", "VIRUSTOTAL_API_KEY", "ABUSEIPDB_API_KEY", "GREYNOISE_API_KEY",
-    "GITHUB_TOKEN", "GROQ_API_KEY", "ANTHROPIC_API_KEY", "OTX_API_KEY",
-    "CIRCL_API_KEY", "ABUSECH_AUTH_KEY",
-}
+# WRITABLE_CONFIG_KEYS / INTEGER_KEYS / RESTART_REQUIRED_KEYS now come from
+# config_schema.py (single source of truth — see that module for the full
+# field list with help text and bounds).
 
 # Keys that are also writable via apply-all (includes BRIEFR_ADMIN_API_KEY for rotation)
 APPLY_ALL_EXTRA_KEYS = {"BRIEFR_ADMIN_API_KEY"}
-
-INTEGER_KEYS = {
-    "NVD_SYNC_INTERVAL_HOURS", "KEV_SYNC_INTERVAL_MINUTES", "EPSS_SYNC_INTERVAL_HOURS",
-    "INCIDENT_FEED_REFRESH_MINUTES", "VULNRICHMENT_SYNC_INTERVAL_HOURS",
-    "CVELISTV5_SYNC_INTERVAL_MINUTES", "CVELISTV5_INITIAL_SINCE_DAYS",
-    "CIRCUIT_FAILURE_THRESHOLD", "CIRCUIT_COOLDOWN_SECONDS", "NVD_SYNC_OVERLAP_MINUTES",
-    "MITRE_REFRESH_HOUR", "MITRE_REFRESH_MINUTE",
-    "CORRELATION_HOUR", "CORRELATION_MINUTE",
-    "OTX_CORRELATION_HOUR", "OTX_CORRELATION_MINUTE",
-    "CACHE_REFRESH_HOUR", "CACHE_REFRESH_MINUTE",
-    "EXPLOIT_SOURCES_SYNC_INTERVAL_HOURS", "EXPLOIT_SOURCES_THROTTLE_SECONDS",
-    "MAX_CVES_PER_FETCH", "NVD_DAYS_BACK",
-    "EMBEDDINGS_SYNC_INTERVAL_HOURS", "EMBEDDINGS_MAX_PER_RUN",
-    "LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS", "LLM_PRODUCT_EXTRACTION_MAX_PER_RUN",
-    "BACKUP_RETENTION_COUNT", "BACKUP_INTERVAL_HOURS",
-    "RATE_LIMIT_IOC_PER_MINUTE", "RATE_LIMIT_REFRESH_PER_MINUTE",
-    "DATABASE_POOL_SIZE",
-}
-
-RESTART_REQUIRED_KEYS = {
-    "LOG_FORMAT", "RATE_LIMIT_ENABLED", "RATE_LIMIT_IOC_PER_MINUTE",
-    "RATE_LIMIT_REFRESH_PER_MINUTE", "CIRCUIT_FAILURE_THRESHOLD", "CIRCUIT_COOLDOWN_SECONDS",
-    "SCHEDULER_TIMEZONE", "CORRELATION_TIMEZONE", "OTX_CORRELATION_TIMEZONE",
-    "EMBEDDINGS_ENABLED", "LLM_PRODUCT_EXTRACTION_ENABLED",
-    "DATABASE_URL", "DATABASE_POOL_SIZE",
-}
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
@@ -993,6 +944,11 @@ def _get_config_response() -> dict[str, Any]:
             "RATE_LIMIT_ENABLED": _env("RATE_LIMIT_ENABLED", "1"),
             "RATE_LIMIT_IOC_PER_MINUTE": _env_int("RATE_LIMIT_IOC_PER_MINUTE", 30),
             "RATE_LIMIT_REFRESH_PER_MINUTE": _env_int("RATE_LIMIT_REFRESH_PER_MINUTE", 10),
+            "DATABASE_URL": (
+                re.sub(r"://[^@]+@", "://***@", _env("DATABASE_URL"))
+                if _env("DATABASE_URL") else "not configured"
+            ),
+            "DATABASE_POOL_SIZE": _env_int("DATABASE_POOL_SIZE", 10),
         },
         "api_keys": {
             "NVD_API_KEY": _mask_key(_env("NVD_API_KEY")),
@@ -1001,6 +957,10 @@ def _get_config_response() -> dict[str, Any]:
             "GREYNOISE_API_KEY": _mask_key(_env("GREYNOISE_API_KEY")),
             "GITHUB_TOKEN": _mask_key(_env("GITHUB_TOKEN")),
             "GROQ_API_KEY": _mask_key(_env("GROQ_API_KEY")),
+            "ANTHROPIC_API_KEY": _mask_key(_env("ANTHROPIC_API_KEY")),
+            "OTX_API_KEY": _mask_key(_env("OTX_API_KEY")),
+            "CIRCL_API_KEY": _mask_key(_env("CIRCL_API_KEY")),
+            "ABUSECH_AUTH_KEY": _mask_key(_env("ABUSECH_AUTH_KEY")),
         },
         "webhooks": {
             "DISCORD_WEBHOOK_URL": _mask_url(_env("DISCORD_WEBHOOK_URL")),
@@ -1023,6 +983,14 @@ async def get_config(request: Request):
     return _get_config_response()
 
 
+@router.get("/config/schema")
+async def get_config_schema(request: Request):
+    """Field metadata (section, type, bounds, help text) for every writable
+    config key, so the frontend can render labels/help text and pre-validate
+    instead of hardcoding a parallel copy of the key list per section."""
+    return list_schema()
+
+
 @router.post("/config")
 async def set_config(request: Request, body: dict):
     from dotenv import set_key as dotenv_set_key
@@ -1033,11 +1001,9 @@ async def set_config(request: Request, body: dict):
     if not key or key == "BRIEFR_ADMIN_API_KEY" or key not in WRITABLE_CONFIG_KEYS:
         raise HTTPException(400, f"Key '{key}' is not writable via this API")
 
-    if key in INTEGER_KEYS:
-        try:
-            int(value)
-        except (ValueError, TypeError):
-            raise HTTPException(400, f"Key '{key}' requires an integer value")
+    validation_error = validate_value(key, value)
+    if validation_error:
+        raise HTTPException(400, validation_error)
 
     dotenv_path = str(_DOTENV_PATH.resolve())
     dotenv_set_key(dotenv_path, key, value)
@@ -1101,12 +1067,10 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
         if key not in allowed:
             errors.append(f"Key '{key}' is not in the writable allowlist")
             continue
-        if key in INTEGER_KEYS:
-            try:
-                int(value)
-            except (ValueError, TypeError):
-                errors.append(f"Key '{key}' requires an integer value")
-                continue
+        validation_error = validate_value(key, value)
+        if validation_error:
+            errors.append(validation_error)
+            continue
         validated.append((key, value))
 
     if errors:

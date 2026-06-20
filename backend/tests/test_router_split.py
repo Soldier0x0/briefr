@@ -82,6 +82,7 @@ EXPECTED_ROUTES = [
     ("DELETE", "/api/admin/ioc-cache/{value}"),
     ("GET", "/api/admin/config"),
     ("POST", "/api/admin/config"),
+    ("GET", "/api/admin/config/schema"),
     ("POST", "/api/admin/config/apply-all"),
     ("POST", "/api/admin/config/webhook-test"),
     ("GET", "/api/admin/webhooks/destinations"),
