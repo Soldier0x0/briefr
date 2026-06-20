@@ -1,0 +1,314 @@
+.brief-charts {
+  border-bottom: 1px solid var(--border);
+  padding: 12px 0 14px;
+}
+
+.brief-charts-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.brief-charts-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.brief-charts-toggle:hover {
+  color: var(--text2);
+}
+
+.brief-charts-chevron {
+  display: inline-block;
+  font-size: 0.625rem;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.brief-charts-chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+.brief-charts-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+  font-weight: 400;
+}
+
+.brief-charts--collapsed .brief-charts-header {
+  margin-bottom: 0;
+}
+
+.brief-charts-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.brief-charts-loading,
+.brief-charts-empty {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  color: var(--text3);
+  letter-spacing: 0.04em;
+}
+
+.brief-charts-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 12px;
+}
+
+.brief-chart-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 10px 10px 8px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.brief-chart-card--table {
+  min-height: 200px;
+}
+
+.brief-chart-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.brief-chart-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.brief-chart-filter-chip {
+  font-size: 7px;
+  letter-spacing: 0.06em;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text3);
+  cursor: pointer;
+}
+
+.brief-chart-filter-chip:hover {
+  border-color: var(--border2);
+  color: var(--text2);
+}
+
+.brief-chart-filter-chip--active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+}
+
+.brief-chart-card-title {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--text2);
+  letter-spacing: 0.05em;
+  margin-bottom: 0;
+  font-weight: 500;
+}
+
+.badge-epss-delta--high {
+  color: var(--red);
+  border-color: var(--red);
+  background: var(--red-dim);
+}
+
+.badge-epss-delta--medium {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: var(--amber-dim);
+}
+
+.badge-epss-delta--low {
+  color: var(--green);
+  border-color: var(--green);
+  background: var(--green-dim);
+}
+
+.brief-chart-card-hint {
+  font-size: 0.625rem;
+  color: var(--text3);
+  letter-spacing: 0.04em;
+  margin: 0 0 8px;
+}
+
+.brief-chart-canvas-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 160px;
+  width: 100%;
+}
+
+.brief-chart-canvas-wrap--kev {
+  min-height: 180px;
+}
+
+.brief-chart-canvas-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* EPSS movers table */
+.brief-epss-table-wrap {
+  flex: 1;
+  overflow-x: auto;
+  min-height: 0;
+}
+
+.brief-epss-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.6875rem;
+}
+
+.brief-epss-table th {
+  text-align: left;
+  color: var(--text3);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  padding: 0 4px 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brief-epss-col-sev {
+  width: 20px;
+}
+
+.brief-epss-col-delta {
+  text-align: right;
+  width: 4.5rem;
+}
+
+.brief-epss-row-cell {
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.brief-epss-row-btn {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(7rem, 1fr) 20px minmax(5rem, 1.4fr) 4.5rem;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.brief-epss-row-btn:hover {
+  background: var(--bg3);
+}
+
+.brief-epss-row-btn:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.brief-epss-id {
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.brief-epss-sev {
+  display: flex;
+  justify-content: center;
+}
+
+.brief-epss-sparkline-cell {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.brief-epss-sparkline {
+  display: block;
+  width: 100%;
+  max-width: 120px;
+  height: auto;
+}
+
+.brief-epss-sparkline--empty,
+.brief-epss-sparkline--loading {
+  display: block;
+  width: 80px;
+  height: 20px;
+  background: var(--bg3);
+}
+
+.brief-epss-delta {
+  justify-self: end;
+}
+
+.badge-epss-delta {
+  color: var(--text2);
+  background: var(--bg3);
+  border-color: var(--border);
+  font-size: 0.5625rem;
+  padding: 2px 5px;
+}
+
+.sev-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.sev-dot-critical { background: color-mix(in srgb, var(--red) 40%, var(--border2)); }
+.sev-dot-high     { background: color-mix(in srgb, var(--amber) 40%, var(--border2)); }
+.sev-dot-medium   { background: var(--border2); }
+.sev-dot-low      { background: var(--text3); }
+.sev-dot-neutral  { background: var(--border); }
+
+@media (max-width: 1100px) {
+  .brief-charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .brief-chart-card {
+    min-height: 180px;
+  }
+}
+
+@media (max-width: 640px) {
+  .brief-chart-card {
+    min-height: 160px;
+  }
+
+  .brief-chart-canvas-wrap {
+    min-height: 140px;
+  }
+
+  .brief-epss-row-btn {
+    grid-template-columns: 1fr 16px 1fr 3.5rem;
+    gap: 6px;
+  }
+
+  .brief-epss-sparkline {
+    max-width: 88px;
+  }
+}

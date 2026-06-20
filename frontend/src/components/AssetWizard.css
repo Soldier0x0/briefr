@@ -1,0 +1,109 @@
+.asset-wizard {
+  max-width: 640px;
+}
+
+.asset-wizard-head {
+  margin-bottom: 16px;
+}
+
+.asset-wizard-title {
+  font-size: 11px;
+  color: var(--text3);
+  margin: 0 0 6px;
+  letter-spacing: 0.1em;
+}
+
+.asset-wizard-step {
+  font-size: 10px;
+  color: var(--text2);
+  margin: 0;
+}
+
+.asset-wizard-body {
+  margin-bottom: 20px;
+}
+
+.asset-row,
+.asset-app-row {
+  display: grid;
+  grid-template-columns: 1fr 120px auto auto;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.asset-app-row {
+  grid-template-columns: 130px 1fr 100px auto auto;
+}
+
+.asset-input,
+.asset-select {
+  font-size: 11px;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  color: var(--text);
+}
+
+.asset-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--text3);
+  margin-bottom: 12px;
+}
+
+.asset-row-remove,
+.asset-add {
+  font-size: 12px;
+  padding: 6px 10px;
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  color: var(--text2);
+  cursor: pointer;
+}
+
+.asset-add {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.asset-optional {
+  font-size: 10px;
+  color: var(--text3);
+  margin: 0 0 12px;
+}
+
+.asset-ai-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.asset-ai-chip {
+  font-size: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+}
+
+.asset-ai-chip--on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.asset-file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.asset-wizard-nav {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}

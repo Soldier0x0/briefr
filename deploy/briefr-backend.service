@@ -1,0 +1,32 @@
+[Unit]
+Description=BRIEFR CVE Intelligence Backend
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=briefr
+Group=briefr
+WorkingDirectory=/opt/briefr/backend
+Environment="PATH=/opt/briefr/venv/bin"
+# Embeddings model cache (V1.3, used only when EMBEDDINGS_ENABLED=1) — must
+# be writable under ProtectSystem=strict; the home-dir HuggingFace cache is not.
+Environment="EMBEDDINGS_CACHE_DIR=/var/lib/briefr/models"
+Environment="HF_HOME=/var/lib/briefr/models/hf-home"
+EnvironmentFile=/opt/briefr/backend/.env
+ExecStart=/opt/briefr/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1 --log-level info
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=briefr-backend
+
+# Security hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=/opt/briefr/backend /var/lib/briefr/backups -/var/lib/briefr/models
+ReadOnlyPaths=/opt/briefr/venv
+
+[Install]
+WantedBy=briefr.target

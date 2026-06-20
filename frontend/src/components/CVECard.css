@@ -1,0 +1,502 @@
+.cve-card {
+  padding: 14px 60px 14px 36px; /* left: checkbox space, right: risk score + share btn space */
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+  transition: background 0.1s;
+  display: block;
+  width: 100%;
+  text-align: left;
+  position: relative;
+  isolation: isolate;
+  scroll-margin-top: 240px;
+}
+
+.cve-card:hover {
+  background: var(--bg2);
+}
+
+.cve-card:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* Urgency accent bar — KEV due-date driven; non-KEV rows stay neutral */
+.cve-card.accent-urgent     { border-left-color: var(--red); }
+.cve-card.accent-red-dim    { border-left-color: color-mix(in srgb, var(--red) 45%, var(--border)); }
+.cve-card.accent-amber-dim  { border-left-color: color-mix(in srgb, var(--amber) 45%, var(--border)); }
+.cve-card.accent-neutral    { border-left-color: var(--border); }
+
+/* Legacy severity border variants (unused on feed cards; kept for reference) */
+.cve-card.sev-critical { border-left-color: var(--red); }
+.cve-card.sev-high     { border-left-color: var(--amber); }
+.cve-card.sev-medium   { border-left-color: var(--border2); }
+.cve-card.sev-low      { border-left-color: var(--text3); }
+.cve-card.sev-unknown  { border-left-color: var(--border); }
+
+/* Bulk-select highlight */
+.cve-card.cve-selected {
+  background: color-mix(in srgb, var(--red-dim) 35%, var(--bg));
+}
+
+/* Arrow-key nav highlight */
+.cve-card.cve-nav-selected {
+  background: var(--bg2);
+  border-left: 1px solid var(--red);
+  outline: none;
+}
+
+.cve-card.cve-card-in-thread {
+  background: color-mix(in srgb, var(--red-dim) 12%, var(--bg));
+}
+
+/* ── Custom rectangular checkbox ─────────────────────────── */
+.card-checkbox-wrap {
+  position: absolute;
+  top: 13px;
+  left: 8px;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cve-card:hover .card-checkbox-wrap,
+.cve-card.cve-selected .card-checkbox-wrap {
+  opacity: 1;
+}
+
+.card-checkbox-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+.card-checkbox-box {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border2);
+  border-radius: 0;
+  background: transparent;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.card-checkbox-input:checked ~ .card-checkbox-box,
+.card-checkbox-input:checked + .card-checkbox-box {
+  background: var(--red);
+  border-color: var(--red);
+}
+
+/* White checkmark when checked */
+.card-checkbox-input:checked ~ .card-checkbox-box::after,
+.card-checkbox-input:checked + .card-checkbox-box::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: 2px solid #ffffff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+
+/* ── Share button — hover-only ───────────────────────────── */
+.card-share-wrap {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.12s;
+  z-index: 2;
+}
+
+.cve-card:hover .card-share-wrap {
+  opacity: 1;
+}
+
+.card-share-btn {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--text3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  transition: color 0.1s;
+}
+
+.card-share-btn:hover {
+  color: var(--accent);
+}
+
+.share-tooltip {
+  position: absolute;
+  top: -26px;
+  right: 0;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--green);
+  font-size: 0.5625rem;
+  letter-spacing: 0.08em;
+  padding: 3px 7px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ── Top row ──────────────────────────────────────────────── */
+.cve-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.cve-id {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.cve-momentum-arrow {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--red);
+  margin-left: 4px;
+  vertical-align: middle;
+  animation: momentum-pulse 1.8s ease-in-out infinite;
+  cursor: help;
+}
+
+@keyframes momentum-pulse {
+  0%, 100% { opacity: 1;   transform: translateY(0); }
+  50%       { opacity: 0.5; transform: translateY(-2px); }
+}
+
+/* Badges — always wrap, never overflow */
+.cve-badges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+}
+
+.badge-kev {
+  color: var(--red);
+  background: var(--red-dim);
+  border-color: var(--red);
+}
+
+.badge-pin {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, var(--bg));
+  border-color: var(--accent);
+}
+
+.badge-snooze {
+  color: var(--text2);
+  background: var(--bg3);
+  border-color: var(--border2);
+}
+
+.cve-card-pinned {
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg));
+}
+
+.cve-card-pinned:hover {
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg2));
+}
+
+.badge-kev-due.badge-urgent,
+.badge-kev-due.badge-overdue {
+  color: var(--red);
+  background: var(--red-dim);
+  border-color: var(--red);
+}
+
+.badge-kev-due.badge-urgent-dim {
+  color: var(--text2);
+  background: var(--red-dim);
+  border-color: color-mix(in srgb, var(--red) 35%, var(--border));
+}
+
+.badge-kev-due.badge-soon {
+  color: var(--text2);
+  background: var(--amber-dim);
+  border-color: color-mix(in srgb, var(--amber) 35%, var(--border));
+}
+
+.badge-kev-due.badge-neutral {
+  color: var(--text2);
+  background: var(--bg3);
+  border-color: var(--border);
+}
+
+.badge-poc {
+  color: var(--text2);
+  background: var(--bg3);
+  border-color: var(--border);
+}
+
+.badge-patch {
+  color: var(--green);
+  background: var(--green-dim);
+  border-color: var(--green);
+}
+
+.badge-exposure {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  border-color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.badge-cvss {
+  font-weight: 500;
+}
+
+.badge-cvss-critical {
+  color: var(--red);
+  background: var(--red-dim);
+  border-color: var(--red);
+}
+
+.badge-cvss-high {
+  color: var(--amber);
+  background: var(--amber-dim);
+  border-color: var(--amber);
+}
+
+.badge-cvss-medium {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  border-color: var(--accent);
+}
+
+.badge-cvss-low {
+  color: var(--green);
+  background: var(--green-dim);
+  border-color: var(--green);
+}
+
+.badge-cvss-unknown {
+  color: var(--text3);
+  background: var(--bg3);
+  border-color: var(--border2);
+}
+
+.sev-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sev-dot-critical { background: color-mix(in srgb, var(--red) 40%, var(--border2)); }
+.sev-dot-high     { background: color-mix(in srgb, var(--amber) 40%, var(--border2)); }
+.sev-dot-medium   { background: var(--border2); }
+.sev-dot-low      { background: var(--text3); }
+.sev-dot-neutral  { background: var(--border); }
+
+/* Plain English summary block */
+.cve-summary {
+  border-left: 3px solid var(--accent);
+  padding: 8px 12px;
+  margin: 10px 0;
+  font-size: 0.875rem;
+  color: var(--text);
+  background: var(--bg2);
+  font-style: normal;
+  line-height: 1.5;
+}
+
+/* EPSS */
+.cve-epss {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.epss-track {
+  flex: 1;
+  height: 3px;
+  background: var(--bg3);
+  border: none;
+  overflow: hidden;
+}
+
+.epss-fill {
+  height: 100%;
+  background: var(--border2);
+  transition: width 0.4s ease;
+}
+
+.epss-label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+/* Meta row */
+.cve-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+}
+
+.meta-key {
+  font-family: var(--font-mono);
+  color: var(--text3);
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+}
+
+.meta-val {
+  font-family: var(--font-mono);
+  color: var(--text2);
+  font-size: 0.6875rem;
+}
+
+.meta-val.age-fresh { color: var(--green); }
+.meta-val.age-recent { color: var(--amber); }
+.meta-val.age-old { color: var(--text3); }
+
+/* Badges shifted left to clear the risk score widget (~56px wide) */
+.cve-thread-badge {
+  position: absolute;
+  top: 10px;
+  right: 112px;
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  color: var(--red);
+  border: 1px solid var(--red);
+  padding: 2px 5px;
+  pointer-events: none;
+}
+
+.cve-new-badge {
+  position: absolute;
+  top: 10px;
+  right: 64px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  background: var(--red);
+  color: #fff;
+  padding: 2px 5px;
+  border-radius: 0;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .cve-card {
+    padding: 20px 40px 20px 36px;
+  }
+}
+
+.cve-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.cve-action-btn {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  padding: 5px 10px;
+  border: 1px solid var(--red);
+  background: transparent;
+  color: var(--red);
+  cursor: pointer;
+}
+
+.cve-action-btn:hover:not(:disabled) {
+  background: var(--red-dim);
+}
+
+.cve-action-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.cve-action-btn-secondary {
+  border-color: var(--border2);
+  color: var(--text2);
+}
+
+.cve-action-btn-secondary:hover {
+  border-color: var(--text3);
+  color: var(--text);
+  background: var(--bg2);
+}
+
+.cve-action-btn-active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+}
+
+@media (max-width: 640px) {
+  .cve-card {
+    padding: 16px 60px 16px 30px;
+    scroll-margin-top: 180px;
+  }
+
+  .card-checkbox-wrap {
+    left: 6px;
+  }
+
+  .card-share-wrap {
+    right: 8px;
+  }
+
+  .cve-new-badge {
+    right: 28px;
+  }
+}

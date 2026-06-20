@@ -1,0 +1,31 @@
+{
+  "status": "ahead",
+  "ahead_by": 2,
+  "behind_by": 0,
+  "files": [
+    {
+      "sha": "abc123",
+      "filename": "cves/2026/0xxx/CVE-2026-0005.json",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 2,
+      "changes": 12
+    },
+    {
+      "sha": "def456",
+      "filename": "cves/2026/0xxx/CVE-2026-0006.json",
+      "status": "added",
+      "additions": 50,
+      "deletions": 0,
+      "changes": 50
+    },
+    {
+      "sha": "ghi789",
+      "filename": "README.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "changes": 1
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+/* Full-height overlay — position:absolute within .app (position:relative)
+   No position:fixed per spec. Page scrolls to top on open. */
+.digest-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-height: 100%;
+  background: rgba(10, 10, 8, 0.88);
+  z-index: 300;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 10vh 16px 40px;
+}
+
+.digest-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+
+/* Header */
+.digest-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+.digest-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.digest-title {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--red);
+}
+
+.digest-count {
+  font-size: 0.6875rem;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+}
+
+.digest-close {
+  font-size: 1rem;
+  color: var(--text3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.1s;
+  line-height: 1;
+}
+
+.digest-close:hover {
+  color: var(--text);
+}
+
+/* Textarea */
+.digest-textarea {
+  flex: 1;
+  width: 100%;
+  background: var(--bg);
+  color: var(--text2);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 16px 20px;
+  font-size: 0.75rem;
+  line-height: 1.7;
+  resize: none;
+  overflow-y: auto;
+  min-height: 300px;
+  outline: none;
+}
+
+.digest-textarea::selection {
+  background: var(--border2);
+}
+
+/* Actions */
+.digest-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  flex-shrink: 0;
+}
+
+.digest-action-btn {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--text2);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  padding: 7px 20px;
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s, background 0.1s;
+}
+
+.digest-action-btn:hover {
+  color: var(--text);
+  border-color: var(--text3);
+}
+
+.digest-copy-btn {
+  color: var(--text);
+  background: var(--bg2);
+  border-color: var(--border2);
+}
+
+.digest-copy-btn.copied {
+  color: var(--green);
+  border-color: var(--green);
+  background: var(--green-dim);
+}
+
+.digest-hint {
+  font-size: 0.625rem;
+  color: var(--text3);
+  letter-spacing: 0.04em;
+  margin-left: 4px;
+}

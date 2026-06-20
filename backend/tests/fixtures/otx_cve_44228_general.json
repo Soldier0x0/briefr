@@ -1,0 +1,31 @@
+{
+  "cve": "CVE-2021-44228",
+  "pulse_info": {
+    "count": 2,
+    "pulses": [
+      {
+        "id": "6231ee27e6834a707de700ae",
+        "name": "Log4j Campaign Sample",
+        "created": "2022-03-16T14:03:19.241000",
+        "author": {
+          "username": "otx_analyst",
+          "id": "12345"
+        },
+        "adversary": "",
+        "malware_families": ["log4j", "rce"],
+        "indicator_count": 12,
+        "tags": ["cve-2021-44228", "log4shell"]
+      },
+      {
+        "id": "7342ff38f7945b818ef811bf",
+        "name": "VMware Log4j Advisory Context",
+        "created": "2021-12-14T08:00:00.000000",
+        "author_name": "legacy_string_author",
+        "adversary": "Unknown",
+        "malware_families": [],
+        "indicators_count": 3,
+        "tags": ["advisory"]
+      }
+    ]
+  }
+}

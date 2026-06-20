@@ -1,0 +1,30 @@
+# Keep production dependencies patched before npm/pip audit CI fails.
+# https://docs.github.com/en/code-security/dependabot
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      frontend-runtime:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - vite
+          - "@vitejs/*"
+          - playwright
+      frontend-tooling:
+        patterns:
+          - vite
+          - "@vitejs/*"
+          - playwright
+
+  - package-ecosystem: pip
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5

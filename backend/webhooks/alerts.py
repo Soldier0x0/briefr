@@ -1,0 +1,192 @@
+"""KEV-on-stack and backup dead-man alert rules (V1.3 Theme 8)."""
+
+from __future__ import annotations
+
+import logging
+import os
+from datetime import datetime, timedelta, timezone
+
+from backup.manager import BackupConfig, list_backups
+from database import (
+    clear_webhook_alert,
+    filter_cves_matching_stack,
+    get_db,
+    get_stack_terms,
+    record_webhook_alert,
+    was_webhook_alert_sent,
+)
+from routers.cves import _stack_match_clause
+from webhooks.sender import send_alert, webhooks_enabled
+
+logger = logging.getLogger(__name__)
+
+ALERT_KEV_STACK = "kev_stack"
+ALERT_BACKUP_DEADMAN = "backup_deadman"
+BACKUP_DEADMAN_TARGET = "stale"
+BACKUP_WATCH_BASELINE_KEY = "backup_deadman_baseline_utc"
+
+
+def get_backup_interval_hours() -> int:
+    raw = os.environ.get("BACKUP_INTERVAL_HOURS", "6").strip()
+    try:
+        hours = int(raw)
+    except ValueError:
+        hours = 6
+    return max(1, hours)
+
+
+def get_backup_deadman_threshold() -> timedelta:
+    return timedelta(hours=get_backup_interval_hours() * 2)
+
+
+def _backup_enabled() -> bool:
+    return os.environ.get("BACKUP_ENABLED", "1").strip().lower() not in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }
+
+
+def _parse_backup_mtime(mtime_utc: str) -> datetime | None:
+    if not mtime_utc:
+        return None
+    try:
+        parsed = datetime.fromisoformat(mtime_utc.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def last_successful_backup_utc() -> datetime | None:
+    rows = list_backups(BackupConfig.from_env())
+    if not rows:
+        return None
+    return _parse_backup_mtime(rows[0].get("mtime_utc", ""))
+
+
+def _format_kev_alert(cve: dict) -> str:
+    cve_id = cve.get("cve_id", "")
+    severity = cve.get("severity") or "UNKNOWN"
+    due = cve.get("kev_due_date") or "—"
+    description = (cve.get("description") or cve.get("summary") or "").strip()
+    if len(description) > 280:
+        description = description[:277] + "..."
+    terms = ", ".join(cve.get("matched_terms") or [])
+    lines = [
+        f"BRIEFR alert: {cve_id} added to CISA KEV and matches your stack",
+        f"Severity: {severity}",
+        f"KEV due date: {due}",
+    ]
+    if terms:
+        lines.append(f"Matched stack terms: {terms}")
+    if description:
+        lines.append(description)
+    return "\n".join(lines)
+
+
+async def process_kev_stack_alerts(newly_kev_ids: list[str]) -> int:
+    """Send one alert per CVE the first time it enters KEV and matches the stack."""
+    if not newly_kev_ids or not webhooks_enabled():
+        return 0
+
+    stack = get_stack_terms()
+    clause, _, terms = _stack_match_clause(stack)
+    if not clause or not terms:
+        logger.debug("KEV stack alerts skipped: BRIEFR_STACK_TERMS unset")
+        return 0
+
+    db = await get_db()
+    candidates = []
+    try:
+        matches = await filter_cves_matching_stack(db, newly_kev_ids, stack)
+        for cve in matches:
+            cve_id = cve["cve_id"]
+            if not await was_webhook_alert_sent(db, ALERT_KEV_STACK, cve_id):
+                cve["matched_terms"] = terms
+                candidates.append(cve)
+    finally:
+        await db.close()
+
+    sent = 0
+    for cve in candidates:
+        cve_id = cve["cve_id"]
+        result = await send_alert(_format_kev_alert(cve))
+        if not result.get("sent"):
+            logger.warning(
+                "KEV stack alert not delivered for %s: %s", cve_id, result
+            )
+            continue
+
+        db = await get_db()
+        try:
+            await record_webhook_alert(db, ALERT_KEV_STACK, cve_id)
+            await db.commit()
+            sent += 1
+            logger.info("KEV stack alert sent for %s", cve_id)
+        finally:
+            await db.close()
+    return sent
+
+
+async def check_backup_deadman() -> bool:
+    """Warn when no successful backup exists within 2× BACKUP_INTERVAL_HOURS."""
+    if not _backup_enabled() or not webhooks_enabled():
+        return False
+
+    threshold = get_backup_deadman_threshold()
+    now = datetime.now(timezone.utc)
+    last_backup = last_successful_backup_utc()
+
+    db = await get_db()
+    try:
+        if last_backup is not None:
+            age = now - last_backup
+            if age <= threshold:
+                await clear_webhook_alert(db, ALERT_BACKUP_DEADMAN, BACKUP_DEADMAN_TARGET)
+                await db.commit()
+                return False
+            stale_for = age
+        else:
+            from database import get_sync_state_value, set_sync_state_value
+
+            baseline_raw = await get_sync_state_value(db, BACKUP_WATCH_BASELINE_KEY)
+            if not baseline_raw:
+                await set_sync_state_value(db, BACKUP_WATCH_BASELINE_KEY, now.isoformat())
+                await db.commit()
+                return False
+            baseline = _parse_backup_mtime(baseline_raw)
+            if baseline is None:
+                baseline = now
+            stale_for = now - baseline
+            if stale_for <= threshold:
+                return False
+
+        if await was_webhook_alert_sent(db, ALERT_BACKUP_DEADMAN, BACKUP_DEADMAN_TARGET):
+            return False
+    finally:
+        await db.close()
+
+    hours = int(stale_for.total_seconds() // 3600)
+    interval = get_backup_interval_hours()
+    message = (
+        "BRIEFR backup dead-man alert: no successful backup within "
+        f"{interval * 2}h (last success ~{hours}h ago). "
+        "Check `systemctl status briefr-backup.timer`, "
+        "`journalctl -u briefr-backup`, and `/var/lib/briefr/backups`."
+    )
+    result = await send_alert(message)
+    if not result.get("sent"):
+        logger.warning("Backup dead-man alert not delivered: %s", result)
+        return False
+
+    db = await get_db()
+    try:
+        await record_webhook_alert(db, ALERT_BACKUP_DEADMAN, BACKUP_DEADMAN_TARGET)
+        await db.commit()
+        logger.warning("Backup dead-man alert sent (stale_for=%sh)", hours)
+        return True
+    finally:
+        await db.close()

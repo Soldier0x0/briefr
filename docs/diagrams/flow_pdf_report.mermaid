@@ -1,0 +1,26 @@
+sequenceDiagram
+  participant User
+  participant Drawer as DetailDrawer.jsx
+  participant PDF as pdfReport.js
+  participant API as POST /api/ai/summary
+  participant AI as ai/summary.py
+  participant Groq as Groq API
+  participant Anth as Anthropic API
+
+  User->>Drawer: Export PDF confirm
+  Drawer->>PDF: downloadSingleCvePdf(cve, options)
+  PDF->>API: fetchCVESentences (optional enrich)
+  PDF->>API: POST /api/ai/summary
+  API->>AI: generate_executive_summary
+  AI->>Groq: _call_groq (if GROQ_API_KEY)
+  alt Groq fails or no key
+    AI->>Anth: _call_anthropic (if ANTHROPIC_API_KEY)
+  end
+  alt both AI fail
+    AI-->>API: template summary (source template)
+  else
+    AI-->>API: AI JSON (source groq or anthropic)
+  end
+  API-->>PDF: executive_summary, key_findings, confidence, source
+  PDF->>PDF: jsPDF layout + html2canvas sparkline
+  PDF->>User: browser download .pdf

@@ -1,0 +1,56 @@
+.session-lock-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.session-lock-inner {
+  text-align: center;
+  padding: 32px;
+}
+
+.session-lock-logo {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--text);
+  margin: 0 0 24px;
+  letter-spacing: 0.08em;
+}
+
+.session-lock-cleared {
+  font-size: 11px;
+  color: var(--text2);
+  margin: 0 0 8px;
+}
+
+.session-lock-hint {
+  font-size: 11px;
+  color: var(--text3);
+  margin: 0 0 24px;
+}
+
+.session-lock-load {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 10px 20px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.session-lock-load:hover {
+  background: var(--bg3);
+}
+
+.session-lock-file {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}

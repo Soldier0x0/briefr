@@ -1,0 +1,118 @@
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+
+/* 2×2 grid on tablet and below */
+@media (max-width: 1024px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-cell:nth-child(2) {
+    border-right: none;
+  }
+
+  .stat-cell:nth-child(3) {
+    border-top: 1px solid var(--border);
+  }
+
+  .stat-cell:nth-child(4) {
+    border-top: 1px solid var(--border);
+  }
+}
+
+.stat-cell {
+  padding: 24px 20px;
+  border-right: 1px solid var(--border);
+}
+
+.stat-cell:last-child {
+  border-right: none;
+}
+
+.stat-number {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 400;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+}
+
+/* Variants */
+.stat-red .stat-number   { color: var(--red); }
+.stat-amber .stat-number { color: var(--amber); }
+.stat-green .stat-number { color: var(--green); }
+.stat-ai .stat-number    { color: var(--amber); }
+
+.stat-cell-interactive {
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  font: inherit;
+  color: inherit;
+}
+
+.stat-cell-interactive:hover {
+  background: var(--bg2);
+}
+
+.stat-cell-interactive:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Skeleton */
+.stat-skeleton {
+  display: block;
+  width: 80px;
+  height: 2.5rem;
+  background: var(--bg3);
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 0.8; }
+}
+
+.stats-row--five {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+@media (max-width: 1200px) {
+  .stats-row--five {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.stat-ai .stat-number { color: var(--amber); }
+
+.stat-cell-interactive {
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  font: inherit;
+  color: inherit;
+}
+
+.stat-cell-interactive:hover { background: var(--bg2); }
+
+.stat-cell-interactive:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
