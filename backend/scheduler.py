@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import sqlite3
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -109,33 +110,43 @@ async def _write_job_last_run(
         "had_error": had_error,
         "error_message": error_message[:500] if error_message else "",
     }
-    try:
-        db = await get_db()
+    for attempt in range(4):
         try:
-            existing_raw = await get_sync_state_value(db, f"scheduler.last_run.{job_id}")
-            history: list = []
-            if existing_raw:
-                try:
-                    parsed = _json.loads(existing_raw)
-                    if isinstance(parsed, list):
-                        history = parsed
-                    elif isinstance(parsed, dict):
-                        # Migrate old single-dict format to array
-                        history = [parsed]
-                except Exception:
-                    history = []
-            history.insert(0, new_entry)
-            history = history[:5]
-            await set_sync_state_value(
-                db,
-                f"scheduler.last_run.{job_id}",
-                _json.dumps(history),
-            )
-            await db.commit()
-        finally:
-            await db.close()
-    except Exception as exc:
-        logger.warning("Failed to write job last-run state for %s: %s", job_id, exc)
+            db = await get_db()
+            try:
+                existing_raw = await get_sync_state_value(db, f"scheduler.last_run.{job_id}")
+                history: list = []
+                if existing_raw:
+                    try:
+                        parsed = _json.loads(existing_raw)
+                        if isinstance(parsed, list):
+                            history = parsed
+                        elif isinstance(parsed, dict):
+                            # Migrate old single-dict format to array
+                            history = [parsed]
+                    except Exception:
+                        history = []
+                history.insert(0, new_entry)
+                history = history[:5]
+                await set_sync_state_value(
+                    db,
+                    f"scheduler.last_run.{job_id}",
+                    _json.dumps(history),
+                )
+                await db.commit()
+            finally:
+                await db.close()
+            return
+        except sqlite3.OperationalError as exc:
+            if "locked" not in str(exc).lower() or attempt == 3:
+                logger.warning(
+                    "Failed to write job last-run state for %s: %s", job_id, exc
+                )
+                return
+            await asyncio.sleep(0.25 * (attempt + 1))
+        except Exception as exc:
+            logger.warning("Failed to write job last-run state for %s: %s", job_id, exc)
+            return
 
 
 def get_scheduler_timezone() -> str:
