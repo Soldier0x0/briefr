@@ -34,3 +34,20 @@ def test_insert_or_ignore():
 def test_pragma_integrity_check():
     sql = adapt_sql("PRAGMA integrity_check", backend="postgresql")
     assert sql.startswith("SELECT 'ok'")
+
+
+def test_datetime_now_interval():
+    sql = adapt_sql(
+        "SELECT * FROM ioc_cache WHERE cached_at > datetime('now', '-6 hours')",
+        backend="postgresql",
+    )
+    assert "CAST('-6 hours' AS interval)" in sql
+
+
+def test_date_now_interval():
+    sql = adapt_sql(
+        "SELECT * FROM cves WHERE DATE(published) >= DATE('now', ?)",
+        backend="postgresql",
+    )
+    assert "published::date" in sql
+    assert "CAST($1 AS interval)" in sql

@@ -13,7 +13,7 @@ from sqlalchemy import create_engine, pool
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND_DIR))
 
-from db.config import postgres_dsn, resolve_database_url  # noqa: E402
+from db.config import postgres_dsn  # noqa: E402
 
 config = context.config
 if config.config_file_name is not None:
@@ -23,9 +23,6 @@ target_metadata = None
 
 
 def _sync_postgres_url() -> str:
-    url = resolve_database_url()
-    if url.startswith("postgresql://") or url.startswith("postgres://"):
-        return postgres_dsn().replace("postgresql://", "postgresql+psycopg://", 1)
     return postgres_dsn().replace("postgresql://", "postgresql+psycopg://", 1)
 
 

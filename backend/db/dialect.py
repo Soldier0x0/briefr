@@ -28,6 +28,30 @@ def adapt_sql(sql: str, *, backend: str | None = None) -> str:
         return "SELECT '' AS foreign_key_check WHERE FALSE"
     text = re.sub(r"\bdatetime\('now'\)", _NOW_UTC_TEXT, text, flags=re.IGNORECASE)
     text = re.sub(
+        r"\bdatetime\('now',\s*([^)]+)\)",
+        r"((NOW() AT TIME ZONE 'utc') + CAST(\1 AS interval))",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"\bdate\('now',\s*([^)]+)\)",
+        r"(((NOW() AT TIME ZONE 'utc') + CAST(\1 AS interval))::date)",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"\bdate\('now'\)",
+        r"((NOW() AT TIME ZONE 'utc')::date)",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"\bdate\((\w+)\)",
+        r"\1::date",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
         r"datetime\((\w+)\)\s*>\s*datetime\('now'\)",
         r"\1::timestamp > (NOW() AT TIME ZONE 'utc')",
         text,

@@ -37,6 +37,14 @@ class SqliteConnection:
         rows = await cursor.fetchall()
         return list(rows)
 
+    async def executemany(
+        self, sql: str, params_list: list[tuple | list]
+    ) -> _ExecuteResult:
+        cursor = await self._conn.executemany(
+            sql, [adapt_params(p) for p in params_list]
+        )
+        return _ExecuteResult(rowcount=cursor.rowcount if cursor.rowcount is not None else 0)
+
     async def executescript(self, sql: str) -> None:
         await self._conn.executescript(sql)
 
@@ -76,6 +84,15 @@ class PostgresConnection:
         adapted = adapt_sql(sql)
         records = await self._conn.fetch(adapted, *adapt_params(params))
         return [dict(record) for record in records]
+
+    async def executemany(
+        self, sql: str, params_list: list[tuple | list]
+    ) -> _ExecuteResult:
+        await self._ensure_transaction()
+        adapted = adapt_sql(sql)
+        adapted_params = [adapt_params(p) for p in params_list]
+        await self._conn.executemany(adapted, adapted_params)
+        return _ExecuteResult(rowcount=len(params_list))
 
     async def executescript(self, sql: str) -> None:
         raise NotImplementedError(
