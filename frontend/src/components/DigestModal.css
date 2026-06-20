@@ -91,6 +91,10 @@
   background: var(--border2);
 }
 
+.digest-textarea:focus {
+  border-bottom-color: var(--accent);
+}
+
 /* Actions */
 .digest-actions {
   display: flex;

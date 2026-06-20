@@ -281,7 +281,7 @@
 }
 
 .tz-search::placeholder { color: var(--text3); }
-.tz-search:focus { border-color: var(--border2); }
+.tz-search:focus { border-color: var(--accent); }
 
 .tz-list {
   list-style: none;

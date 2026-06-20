@@ -128,7 +128,7 @@ input, textarea {
 }
 
 input:focus, textarea:focus {
-  border-color: var(--border-strong);
+  border-color: var(--accent);
 }
 
 [data-theme="light"] input:focus,
@@ -241,7 +241,7 @@ input:focus, textarea:focus {
 
 /* ── Last refreshed bar ────────────────────────────────── */
 .last-refreshed {
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   letter-spacing: 0.06em;
   color: var(--text3);
   padding: 7px 0;
@@ -277,7 +277,7 @@ input:focus, textarea:focus {
 .footer-copyright {
   display: block;
   margin-top: 4px;
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   letter-spacing: 0.02em;
   color: var(--text3);
 }
@@ -290,7 +290,7 @@ input:focus, textarea:focus {
 /* ── Keyboard shortcut badge ───────────────────────────── */
 kbd {
   font-family: var(--font-mono);
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   color: var(--text2);
   background: var(--bg3);
   border: 1px solid var(--border2);
@@ -318,7 +318,7 @@ kbd {
 /* Brief charts lazy-load fallback (full styles in BriefCharts.css). */
 .brief-charts-loading {
   font-family: var(--font-mono);
-  font-size: 0.5625rem;
+  font-size: 0.75rem;
   color: var(--text3);
   letter-spacing: 0.04em;
   padding: 8px 0;

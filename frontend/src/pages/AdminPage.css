@@ -77,9 +77,7 @@
 .admin-split-btn-main { border-right: none !important; border-radius: 4px 0 0 4px !important; }
 .admin-split-btn-arrow { border-radius: 0 4px 4px 0 !important; padding: 0.3rem 0.4rem !important; min-width: 0; }
 .admin-split-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
+  position: fixed;
   background: var(--bg2);
   border: 1px solid var(--border2);
   border-radius: 4px;
