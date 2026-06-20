@@ -366,19 +366,45 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | `cvelistv5_incremental_sync` | Every `CVELISTV5_SYNC_INTERVAL_MINUTES` (default 30m; first run ~60s after boot) | CVEProject/cvelistV5 GitHub compare + raw JSON | `cves`, `sync_state.cvelistv5_head_sha` | Log error; watermark not advanced on failure | Yes — delta + additive merge |
 | `embeddings_backfill` | Every `EMBEDDINGS_SYNC_INTERVAL_HOURS` (default 6h; first run ~90s after boot) | Local CPU model (fastembed/ONNX) — no network after model download | `cve_embeddings` | **No-op unless `EMBEDDINGS_ENABLED=1`**; clear warning if `fastembed` missing; log error otherwise | Yes — only missing vectors embedded, commit per batch |
 | `llm_product_extraction` | Every `LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS` (default 6h; first run ~150s after boot) | Groq API (via `resilient_client`, `retries=0`) | `cves.affected_products` (only while empty) + `affected_products_source='llm'`, `feed_cache` (`llm_products:*`) | **No-op unless `LLM_PRODUCT_EXTRACTION_ENABLED=1` AND `GROQ_API_KEY` set**; circuit-open aborts run; per-CVE errors retried next run (not cached) | Yes — completed extractions negative-cached 7d; write guarded on empty field |
-| `backup_deadman_check` | Every `max(1, BACKUP_INTERVAL_HOURS // 2)` (default 3h; first run ~5m after boot) | Local backup archive mtimes | `webhook_alert_log`, `sync_state.backup_deadman_baseline_utc` | **No-op unless `BACKUP_ENABLED=1` and a webhook channel is configured**; log on delivery failure | Yes — one alert per stale period |
+| `backup_deadman_check` | Every `max(1, BACKUP_INTERVAL_HOURS // 2)` (default 3h; first run ~5m after boot) | Local backup archive mtimes | `webhook_alert_log`, `webhook_delivery_log`, `sync_state.backup_deadman_baseline_utc` | **No-op unless `BACKUP_ENABLED=1` and a webhook destination is configured**; log on delivery failure | Yes — one alert per stale period |
 
 ---
 
-### webhook_alert_log (V1.3)
+### webhook_alert_log (V1.3, event types updated V1.4)
 
 | Column | Type | Notes |
 |--------|------|-------|
-| `alert_type` | TEXT | `kev_stack` or `backup_deadman` |
+| `alert_type` | TEXT | `kev_alert` / `backup_failure` (legacy `kev_stack` / `backup_deadman` still queried) |
 | `target` | TEXT | CVE ID or `stale` |
 | `alerted_at` | TEXT | UTC timestamp |
 
-Primary key `(alert_type, target)` — dedupes KEV-on-stack (one alert per CVE) and backup dead-man (one alert per stale period until a fresh backup clears it).
+Primary key `(alert_type, target)` — dedupes events until cleared (backup dead-man clears on fresh backup).
+
+### webhook_destinations (V1.4)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | TEXT | `discord`, `telegram`, `generic`, or custom |
+| `kind` | TEXT | `discord`, `telegram`, `generic` |
+| `label` | TEXT | Display name |
+| `enabled` | INTEGER | 1 = active |
+| `event_types` | TEXT | JSON array: `kev_alert`, `backup_failure`, `health` |
+| `config_json` | TEXT | Channel config (URL, token, chat_id) — env-seeded rows refresh config on startup |
+| `source` | TEXT | `env` or `db` |
+
+### webhook_delivery_log (V1.4)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | INTEGER | Auto-increment |
+| `destination_id` | TEXT | FK to `webhook_destinations.id` |
+| `event_type` | TEXT | Event dispatched |
+| `dedupe_key` | TEXT | Optional dedupe target (CVE ID, `stale`, etc.) |
+| `status` | TEXT | `ok` or `failed` |
+| `error` | TEXT | Truncated error message |
+| `attempted_at` | TEXT | UTC timestamp |
+
+Retention: operator may purge rows older than ~90 days (see `docs/OPERATIONS.md`).
 
 ---
 
@@ -409,8 +435,9 @@ Primary key `(alert_type, target)` — dedupes KEV-on-stack (one alert per CVE) 
 | GitHub | `api.github.com/search/code` | `GITHUB_TOKEN` | 60/hr without token | `[]` rules |
 | CISA Vulnrichment | `api.github.com` + `raw.githubusercontent.com/cisagov/vulnrichment` | `GITHUB_TOKEN` optional | 60/hr anon API | Skip run; circuit opens |
 | cvelistV5 | `api.github.com` + `raw.githubusercontent.com/CVEProject/cvelistV5` | `GITHUB_TOKEN` optional | 60/hr anon API | Skip run; watermark retained |
-| Discord webhook | Operator-configured `DISCORD_WEBHOOK_URL` | — | Discord limits | Log error; circuit opens |
-| Telegram Bot API | `api.telegram.org/bot…/sendMessage` | `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` | Bot API limits | Log error; circuit opens |
+| Discord webhook | Operator-configured `DISCORD_WEBHOOK_URL` | — | Discord limits | Log error; circuit opens (`webhook.discord`) |
+| Telegram Bot API | `api.telegram.org/bot…/sendMessage` | `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` | Bot API limits | Log error; circuit opens (`webhook.telegram`) |
+| Generic HTTPS webhook | Operator-configured `WEBHOOK_GENERIC_URL` | — | Destination limits | SSRF-blocked private IPs; circuit opens (`webhook.generic`) |
 
 ---
 

@@ -3,6 +3,7 @@ import json
 import asyncio
 import aiosqlite
 from pathlib import Path
+from typing import Any
 
 from db.config import is_postgres
 from db.connection import get_connection
@@ -401,6 +402,11 @@ async def init_db() -> None:
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_cve_exploits_cve_url ON cve_exploits(cve_id, url)",
             "CREATE TABLE IF NOT EXISTS webhook_alert_log (alert_type TEXT NOT NULL, target TEXT NOT NULL, alerted_at TEXT DEFAULT (datetime('now')), PRIMARY KEY (alert_type, target))",
             "CREATE INDEX IF NOT EXISTS idx_webhook_alert_log_type ON webhook_alert_log(alert_type)",
+            "CREATE TABLE IF NOT EXISTS webhook_destinations (id TEXT PRIMARY KEY, kind TEXT NOT NULL, label TEXT NOT NULL DEFAULT '', enabled INTEGER NOT NULL DEFAULT 1, event_types TEXT NOT NULL DEFAULT '[]', config_json TEXT NOT NULL DEFAULT '{}', source TEXT NOT NULL DEFAULT 'db', created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')))",
+            "CREATE TABLE IF NOT EXISTS webhook_delivery_log (id INTEGER PRIMARY KEY AUTOINCREMENT, destination_id TEXT NOT NULL, event_type TEXT NOT NULL, dedupe_key TEXT, status TEXT NOT NULL, error TEXT, attempted_at TEXT DEFAULT (datetime('now')))",
+            "CREATE INDEX IF NOT EXISTS idx_webhook_delivery_log_dest ON webhook_delivery_log(destination_id)",
+            "CREATE INDEX IF NOT EXISTS idx_webhook_delivery_log_at ON webhook_delivery_log(attempted_at)",
+            "CREATE INDEX IF NOT EXISTS idx_webhook_delivery_log_event ON webhook_delivery_log(event_type)",
         ):
             try:
                 await db.execute(migration)
@@ -2094,15 +2100,29 @@ def get_stack_terms() -> str:
     return os.environ.get("BRIEFR_STACK_TERMS", "").strip()
 
 
+_WEBHOOK_ALERT_ALIASES = {
+    "kev_alert": ("kev_alert", "kev_stack"),
+    "kev_stack": ("kev_alert", "kev_stack"),
+    "backup_failure": ("backup_failure", "backup_deadman"),
+    "backup_deadman": ("backup_failure", "backup_deadman"),
+}
+
+
+def _webhook_alert_types(alert_type: str) -> tuple[str, ...]:
+    return _WEBHOOK_ALERT_ALIASES.get(alert_type, (alert_type,))
+
+
 async def was_webhook_alert_sent(
     db: aiosqlite.Connection, alert_type: str, target: str
 ) -> bool:
+    types = _webhook_alert_types(alert_type)
+    placeholders = ", ".join("?" for _ in types)
     rows = await db.execute_fetchall(
-        """
+        f"""
         SELECT 1 FROM webhook_alert_log
-        WHERE alert_type = ? AND target = ?
+        WHERE alert_type IN ({placeholders}) AND target = ?
         """,
-        (alert_type, target),
+        (*types, target),
     )
     return bool(rows)
 
@@ -2122,10 +2142,110 @@ async def record_webhook_alert(
 async def clear_webhook_alert(
     db: aiosqlite.Connection, alert_type: str, target: str
 ) -> None:
+    types = _webhook_alert_types(alert_type)
+    placeholders = ", ".join("?" for _ in types)
     await db.execute(
-        "DELETE FROM webhook_alert_log WHERE alert_type = ? AND target = ?",
-        (alert_type, target),
+        f"DELETE FROM webhook_alert_log WHERE alert_type IN ({placeholders}) AND target = ?",
+        (*types, target),
     )
+
+
+async def record_webhook_delivery(
+    db: aiosqlite.Connection,
+    *,
+    destination_id: str,
+    event_type: str,
+    dedupe_key: str | None,
+    status: str,
+    error: str | None,
+) -> None:
+    await db.execute(
+        """
+        INSERT INTO webhook_delivery_log (
+            destination_id, event_type, dedupe_key, status, error
+        ) VALUES (?, ?, ?, ?, ?)
+        """,
+        (destination_id, event_type, dedupe_key, status, error),
+    )
+
+
+async def list_webhook_destinations(db: aiosqlite.Connection) -> list[aiosqlite.Row]:
+    return await db.execute_fetchall(
+        """
+        SELECT id, kind, label, enabled, event_types, config_json, source,
+               created_at, updated_at
+        FROM webhook_destinations
+        ORDER BY id
+        """
+    )
+
+
+async def update_webhook_destination(
+    db: aiosqlite.Connection,
+    destination_id: str,
+    *,
+    enabled: bool | None = None,
+    event_types: list[str] | None = None,
+    label: str | None = None,
+) -> bool:
+    fields: list[str] = []
+    params: list[Any] = []
+    if enabled is not None:
+        fields.append("enabled = ?")
+        params.append(int(enabled))
+    if event_types is not None:
+        fields.append("event_types = ?")
+        params.append(json.dumps(event_types))
+    if label is not None:
+        fields.append("label = ?")
+        params.append(label)
+    if not fields:
+        return False
+    fields.append("updated_at = datetime('now')")
+    params.append(destination_id)
+    cursor = await db.execute(
+        f"UPDATE webhook_destinations SET {', '.join(fields)} WHERE id = ?",
+        params,
+    )
+    return cursor.rowcount > 0
+
+
+async def list_webhook_delivery_log(
+    db: aiosqlite.Connection,
+    *,
+    destination_id: str | None = None,
+    event_type: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> tuple[list[aiosqlite.Row], int]:
+    conditions: list[str] = []
+    params: list[Any] = []
+    if destination_id:
+        conditions.append("destination_id = ?")
+        params.append(destination_id)
+    if event_type:
+        types = _webhook_alert_types(event_type)
+        placeholders = ", ".join("?" for _ in types)
+        conditions.append(f"event_type IN ({placeholders})")
+        params.extend(types)
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+
+    count_row = await db.execute_fetchall(
+        f"SELECT COUNT(*) as cnt FROM webhook_delivery_log {where}",
+        params,
+    )
+    total = count_row[0]["cnt"] if count_row else 0
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT id, destination_id, event_type, dedupe_key, status, error, attempted_at
+        FROM webhook_delivery_log
+        {where}
+        ORDER BY attempted_at DESC, id DESC
+        LIMIT ? OFFSET ?
+        """,
+        params + [limit, offset],
+    )
+    return rows, total
 
 
 async def filter_cves_matching_stack(

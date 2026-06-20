@@ -92,6 +92,9 @@ WRITABLE_CONFIG_KEYS = {
     "BRIEFR_STACK_TERMS", "LOG_FORMAT", "RATE_LIMIT_ENABLED",
     "RATE_LIMIT_IOC_PER_MINUTE", "RATE_LIMIT_REFRESH_PER_MINUTE",
     "DISCORD_WEBHOOK_URL", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID",
+    "WEBHOOK_GENERIC_URL", "WEBHOOK_GENERIC_ENABLED", "WEBHOOK_GENERIC_EVENTS",
+    "WEBHOOK_GENERIC_LABEL", "DISCORD_WEBHOOK_ENABLED", "DISCORD_WEBHOOK_EVENTS",
+    "TELEGRAM_WEBHOOK_ENABLED", "TELEGRAM_WEBHOOK_EVENTS",
     "ALLOWED_ORIGINS", "DEFAULT_TIMEZONE", "BRIEFR_ENV",
     "DATABASE_URL", "DATABASE_POOL_SIZE",
     # API keys — writable so operator can set them without SSH
@@ -993,6 +996,9 @@ def _get_config_response() -> dict[str, Any]:
             "DISCORD_WEBHOOK_URL": _mask_url(_env("DISCORD_WEBHOOK_URL")),
             "TELEGRAM_BOT_TOKEN": _mask_key(_env("TELEGRAM_BOT_TOKEN")),
             "TELEGRAM_CHAT_ID": _env("TELEGRAM_CHAT_ID") or "not configured",
+            "WEBHOOK_GENERIC_URL": _mask_url(_env("WEBHOOK_GENERIC_URL")),
+            "WEBHOOK_GENERIC_ENABLED": _env("WEBHOOK_GENERIC_ENABLED", "1"),
+            "WEBHOOK_GENERIC_EVENTS": _env("WEBHOOK_GENERIC_EVENTS", ""),
         },
     }
 
@@ -1039,7 +1045,7 @@ async def set_config(request: Request, body: dict):
 
     await audit(request, f"config.set.{key}", value[:100])
 
-    masked = _mask_key(value) if key in {"DISCORD_WEBHOOK_URL", "TELEGRAM_BOT_TOKEN"} else value
+    masked = _mask_key(value) if key in {"DISCORD_WEBHOOK_URL", "TELEGRAM_BOT_TOKEN", "WEBHOOK_GENERIC_URL"} else value
     return {
         "ok": True,
         "key": key,
@@ -1114,15 +1120,108 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
 
 @router.post("/config/webhook-test")
 async def test_webhook(request: Request, body: dict):
+    from webhooks.destinations import load_destinations
     from webhooks.sender import send_test_message
 
-    channel = body.get("channel", "")
-    if channel not in ("discord", "telegram"):
-        raise HTTPException(400, "channel must be 'discord' or 'telegram'")
+    destination_id = body.get("destination_id") or body.get("channel", "")
+    destinations = await load_destinations()
+    valid_ids = {dest.id for dest in destinations}
+    if destination_id not in valid_ids:
+        raise HTTPException(
+            400,
+            f"destination_id must be one of: {', '.join(sorted(valid_ids)) or 'none configured'}",
+        )
 
-    result = await send_test_message(channel, "BRIEFR admin webhook test")
-    await audit(request, f"webhook.test.{channel}", channel)
+    result = await send_test_message(destination_id, "BRIEFR admin webhook test")
+    await audit(request, f"webhook.test.{destination_id}", destination_id)
     return result
+
+
+@router.get("/webhooks/destinations")
+async def get_webhook_destinations(request: Request):
+    from webhooks.destinations import load_destinations
+
+    destinations = await load_destinations()
+    rows = []
+    for dest in destinations:
+        rows.append(
+            {
+                "id": dest.id,
+                "kind": dest.kind,
+                "label": dest.label,
+                "enabled": dest.enabled,
+                "event_types": dest.event_types,
+                "source": dest.source,
+                "health_source": dest.health_source,
+            }
+        )
+    return {"destinations": rows}
+
+
+@router.patch("/webhooks/destinations/{destination_id}")
+async def patch_webhook_destination(request: Request, destination_id: str, body: dict):
+    from webhooks.destinations import ALL_EVENT_TYPES, load_destinations, parse_event_types, sync_env_destinations_to_db
+
+    enabled = body.get("enabled")
+    if enabled is not None and not isinstance(enabled, bool):
+        raise HTTPException(400, "enabled must be a boolean")
+
+    event_types = body.get("event_types")
+    if event_types is not None:
+        if not isinstance(event_types, list):
+            raise HTTPException(400, "event_types must be an array")
+        normalized = parse_event_types(event_types)
+        unknown = [item for item in normalized if item not in ALL_EVENT_TYPES]
+        if unknown:
+            raise HTTPException(400, f"unknown event_types: {', '.join(unknown)}")
+        event_types = normalized
+
+    label = body.get("label")
+    if label is not None and not isinstance(label, str):
+        raise HTTPException(400, "label must be a string")
+
+    if enabled is None and event_types is None and label is None:
+        raise HTTPException(400, "no fields to update")
+
+    await sync_env_destinations_to_db()
+    if not any(dest.id == destination_id for dest in await load_destinations()):
+        raise HTTPException(404, f"Destination '{destination_id}' not found")
+
+    db = await get_db()
+    try:
+        from database import update_webhook_destination
+
+        updated = await update_webhook_destination(
+            db,
+            destination_id,
+            enabled=enabled,
+            event_types=event_types,
+            label=label.strip() if isinstance(label, str) else None,
+        )
+        if not updated:
+            raise HTTPException(404, f"Destination '{destination_id}' not found")
+        await db.commit()
+    finally:
+        await db.close()
+
+    await audit(request, f"webhook.destination.update.{destination_id}", destination_id)
+    from webhooks.destinations import load_destinations
+
+    dest = next((item for item in await load_destinations() if item.id == destination_id), None)
+    if dest is None:
+        raise HTTPException(404, f"Destination '{destination_id}' not found")
+    return {
+        "ok": True,
+        "destination": {
+            "id": dest.id,
+            "kind": dest.kind,
+            "label": dest.label,
+            "enabled": dest.enabled,
+            "event_types": dest.event_types,
+            "source": dest.source,
+            "health_source": dest.health_source,
+        },
+    }
 
 
 # ── Database engine & migration ────────────────────────────────────────────
@@ -1341,13 +1440,17 @@ async def get_webhooks_log(
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
+    from database import _webhook_alert_types
+
     db = await get_db()
     try:
         conditions: list[str] = []
         params: list[Any] = []
         if event_type:
-            conditions.append("alert_type = ?")
-            params.append(event_type)
+            types = _webhook_alert_types(event_type)
+            placeholders = ", ".join("?" for _ in types)
+            conditions.append(f"alert_type IN ({placeholders})")
+            params.extend(types)
         where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
         count_row = await db.execute_fetchall(
@@ -1364,6 +1467,34 @@ async def get_webhooks_log(
             LIMIT ? OFFSET ?
             """,
             params + [limit, offset],
+        )
+    finally:
+        await db.close()
+
+    return {
+        "rows": [dict(r) for r in rows],
+        "total": total,
+    }
+
+
+@router.get("/webhooks/delivery-log")
+async def get_webhooks_delivery_log(
+    request: Request,
+    destination_id: str | None = Query(None),
+    event_type: str | None = Query(None),
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+):
+    db = await get_db()
+    try:
+        from database import list_webhook_delivery_log
+
+        rows, total = await list_webhook_delivery_log(
+            db,
+            destination_id=destination_id,
+            event_type=event_type,
+            limit=limit,
+            offset=offset,
         )
     finally:
         await db.close()

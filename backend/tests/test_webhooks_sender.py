@@ -10,13 +10,24 @@ import httpx
 import pytest
 
 import resilient_client
+from database import init_db
 from resilient_client import reset_feed_health
+from webhooks.destinations import sync_env_destinations_to_db
 from webhooks.sender import configured_channels, send_alert, webhooks_enabled
+
+
+def _setup_db(tmp_path, monkeypatch) -> None:
+    db_path = tmp_path / "sender.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+    asyncio.run(init_db())
+    asyncio.run(sync_env_destinations_to_db())
 
 
 def _install_transport(monkeypatch, handler) -> None:
     client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     monkeypatch.setattr(resilient_client, "_client", client)
+    monkeypatch.setattr("webhooks.ssrf._webhook_client", client)
 
 
 @pytest.fixture(autouse=True)
@@ -29,6 +40,11 @@ def _clean(monkeypatch):
     ):
         monkeypatch.delenv(key, raising=False)
 
+    async def fake_resolve(_host):
+        return ["93.184.216.34"]
+
+    monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
+
     async def no_sleep(_seconds):
         return None
 
@@ -37,15 +53,18 @@ def _clean(monkeypatch):
     reset_feed_health()
 
 
-def test_webhooks_disabled_without_env(monkeypatch):
+def test_webhooks_disabled_without_env(monkeypatch, tmp_path):
+    _setup_db(tmp_path, monkeypatch)
     assert webhooks_enabled() is False
     assert configured_channels() == []
     result = asyncio.run(send_alert("hello"))
     assert result["status"] == "skipped"
 
 
-def test_discord_only(monkeypatch):
+def test_discord_only(monkeypatch, tmp_path):
+    _setup_db(tmp_path, monkeypatch)
     monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
+    asyncio.run(sync_env_destinations_to_db())
     calls = []
 
     def handler(request):
@@ -62,9 +81,11 @@ def test_discord_only(monkeypatch):
     assert b"KEV alert" in calls[0][2]
 
 
-def test_telegram_only(monkeypatch):
+def test_telegram_only(monkeypatch, tmp_path):
+    _setup_db(tmp_path, monkeypatch)
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123:abc")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "-100")
+    asyncio.run(sync_env_destinations_to_db())
     calls = []
 
     def handler(request):
@@ -81,15 +102,17 @@ def test_telegram_only(monkeypatch):
     assert b"stack hit" in calls[0].content
 
 
-def test_both_channels(monkeypatch):
+def test_both_channels(monkeypatch, tmp_path):
+    _setup_db(tmp_path, monkeypatch)
     monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123:abc")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "-100")
+    asyncio.run(sync_env_destinations_to_db())
     calls = {"n": 0}
 
     def handler(request):
         calls["n"] += 1
-        return httpx.Response(204 if "discord" in str(request.url) else 200)
+        return httpx.Response(204 if request.headers.get("Host") == "discord.com" else 200)
 
     _install_transport(monkeypatch, handler)
     result = asyncio.run(send_alert("both"))
@@ -97,8 +120,10 @@ def test_both_channels(monkeypatch):
     assert calls["n"] == 2
 
 
-def test_uses_retries(monkeypatch):
+def test_uses_retries(monkeypatch, tmp_path):
+    _setup_db(tmp_path, monkeypatch)
     monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
+    asyncio.run(sync_env_destinations_to_db())
     calls = {"n": 0}
 
     def handler(request):

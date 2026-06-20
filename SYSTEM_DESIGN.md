@@ -299,13 +299,15 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 - **Scope honesty:** this protects **off-site / at-rest archive copies only** (rclone/S3, stolen disks, leaked archive directories). A compromised host or service user can read the key — see `docs/THREAT_MODEL.md` § Scope of backup encryption.
 - **Opt-out:** `BACKUP_AGE_KEY_FILE=""` forces plaintext archives; dev machines without the default key file are unchanged.
 
-### Push notifications (V1.3 Theme 8)
+### Push notifications (V1.3 Theme 8 → V1.4 engine)
 
-- **Channels:** `webhooks/sender.py` delivers plain-text alerts to **Discord** (`DISCORD_WEBHOOK_URL`) and/or **Telegram** (`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`). Channels are independent — configure one or both. Disabled when no channel env vars are set.
-- **Transport:** all outbound delivery uses `resilient_client` (`retries=2`); health keys `webhook.discord` / `webhook.telegram` appear in `feeds.sources` after the first attempt.
-- **KEV-on-stack:** after each `kev_metadata_sync`, newly flagged KEV CVEs (`mark_cves_as_kev` return value) are matched against `BRIEFR_STACK_TERMS` (comma-separated server-side stack — same matching rules as `GET /api/cves?stack=`). One alert per CVE, deduped in `webhook_alert_log`.
-- **Backup dead-man:** `backup_deadman_check` scheduler job (every `max(1, BACKUP_INTERVAL_HOURS // 2)`) warns when the newest archive in `BACKUP_DIR` is older than `2 × BACKUP_INTERVAL_HOURS` (default 12h). Skipped when `BACKUP_ENABLED=0` or no webhook channel is configured. Clears its dedupe marker when a fresh backup appears.
-- **V1.4:** full webhook engine (rules UI, delivery log viewer, SSRF protection) — see `Beta V1.4.md`.
+- **Engine:** `webhooks/engine.py` dispatches events (`kev_alert`, `backup_failure`, `health`) to one or more **destinations** loaded from env vars and the `webhook_destinations` table. Env seeds are upserted on startup (`sync_env_destinations_to_db`); per-destination `enabled` and `event_types` can be overridden in SQLite via admin API.
+- **Built-in destinations:** Discord (`DISCORD_WEBHOOK_URL`), Telegram (`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`), optional generic HTTPS POST (`WEBHOOK_GENERIC_URL`). Each channel can be independently enabled/disabled (`*_WEBHOOK_ENABLED`) and subscribed to event types (`*_WEBHOOK_EVENTS`).
+- **Transport:** outbound webhook HTTP uses `webhooks/ssrf.py` — **https only**, DNS resolve + block private/reserved ranges (RFC1918, 127.0.0.0/8, ::1, 169.254.0.0/16, 0.0.0.0, unique-local IPv6), connect to resolved IP with original `Host` header (DNS-rebinding safe), **no redirect following**, 10s timeout, no internal API keys on outbound headers. Failures recorded via `resilient_client` health (`webhook.{destination_id}`).
+- **Dedupe:** `webhook_alert_log` stores one row per `(event_type, target)`; `webhook_delivery_log` records every delivery attempt (destination, status, error).
+- **KEV-on-stack:** after each `kev_metadata_sync`, newly flagged KEV CVEs matching `BRIEFR_STACK_TERMS` dispatch `kev_alert` (deduped per CVE).
+- **Backup dead-man:** `backup_deadman_check` dispatches `backup_failure` when the newest archive is older than `2 × BACKUP_INTERVAL_HOURS`. Clears dedupe when a fresh backup appears.
+- **Admin:** `GET /api/admin/webhooks/destinations`, `PATCH /api/admin/webhooks/destinations/{id}`, `GET /api/admin/webhooks/delivery-log`, `GET /api/admin/webhooks/log` (dedupe log).
 
 ### SQLite over PostgreSQL
 

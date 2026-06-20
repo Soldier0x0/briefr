@@ -154,16 +154,24 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 | `BACKUP_LOG_BACKUP_COUNT` | `5` | Gzipped backup log generations |
 | `BACKUP_INTERVAL_HOURS` | `6` | Expected backup cadence; dead-man alert fires after 2× with no successful archive |
 
-### Webhook alerts (V1.3)
+### Webhook alerts (V1.3 → V1.4 engine)
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `DISCORD_WEBHOOK_URL` | — | Discord incoming webhook URL (optional) |
+| `DISCORD_WEBHOOK_ENABLED` | `1` | Enable/disable Discord destination |
+| `DISCORD_WEBHOOK_EVENTS` | all | Comma-separated: `kev_alert`, `backup_failure`, `health` |
 | `TELEGRAM_BOT_TOKEN` | — | Telegram bot token (optional; requires `TELEGRAM_CHAT_ID`) |
 | `TELEGRAM_CHAT_ID` | — | Telegram destination chat/channel ID |
+| `TELEGRAM_WEBHOOK_ENABLED` | `1` | Enable/disable Telegram destination |
+| `TELEGRAM_WEBHOOK_EVENTS` | all | Comma-separated event subscriptions |
+| `WEBHOOK_GENERIC_URL` | — | Generic HTTPS POST webhook (SSRF-protected) |
+| `WEBHOOK_GENERIC_ENABLED` | `1` | Enable/disable generic destination |
+| `WEBHOOK_GENERIC_EVENTS` | all | Comma-separated event subscriptions |
+| `WEBHOOK_GENERIC_LABEL` | `Generic HTTPS` | Admin display label |
 | `BRIEFR_STACK_TERMS` | — | Comma-separated products/CVE IDs for KEV-on-stack server matching |
 
-Configure **one or both** channels. Alerts are scheduler-side only (KEV-on-stack after each KEV sync; backup dead-man check). No admin UI until V1.4.
+Configure **one or more** destinations. Alerts are scheduler-side (`kev_alert` after KEV sync; `backup_failure` from dead-man check). Per-destination enable/event subscriptions can be overridden via `PATCH /api/admin/webhooks/destinations/{id}`.
 
 ### Scheduler intervals
 

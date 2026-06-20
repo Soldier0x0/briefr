@@ -4,7 +4,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 
 **Document version:** 1.1  
 **Last updated:** 2026-06-19  
-**Status:** Theme 1 (Admin pane) **shipped** in PR cursor/admin-overhaul-17e8. Theme 3 (Application logs viewer) **shipped** in PR cursor/admin-log-viewer-789e. Themes 2, 4–6 remain planned.
+**Status:** Theme 1 (Admin pane) **shipped** in PR cursor/admin-overhaul-17e8. Theme 2 (Webhook engine) **shipped** in PR cursor/webhook-engine-ssrf-5a38. Themes 3–4 remain planned.
 
 **Prerequisite:** [`Beta V1.3.md`](Beta%20V1.3.md)  
 **Index:** [`docs/ROADMAP.md`](docs/ROADMAP.md)
@@ -44,18 +44,19 @@ Separate surface from analyst UI. **All destructive actions admin-gated.**
 
 ---
 
-## Theme 2 — Webhooks & notifications
+## Theme 2 — Webhooks & notifications — ✅ SHIPPED (PR cursor/webhook-engine-ssrf-5a38, 2026-06-19)
 
-**Note:** the first channel + KEV-on-stack rule + backup dead-man ping ship early in [`Beta V1.3.md`](Beta%20V1.3.md) Theme 8. V1.4 builds the full engine around them.
+**Note:** the first channel + KEV-on-stack rule + backup dead-man ping ship early in [`Beta V1.3.md`](Beta%20V1.3.md) Theme 8. V1.4 generalizes them into a multi-destination engine.
 
-| Item | Goal |
-|------|------|
-| **Channels** | Telegram, Discord, Slack, generic HTTP POST, optional SMTP |
-| **Rules** | KEV-on-stack, EPSS threshold, digest, ingest failure, backup failure |
-| **Delivery log** | Last N attempts, errors, retries |
-| **Dedupe & quiet hours** | Prevent alert fatigue |
-| **Test send** | Per channel |
-| **Security** | SSRF protection on generic URLs; encrypted token storage; admin-only config |
+| Item | Goal | Status |
+|------|------|--------|
+| **Channels** | Telegram, Discord, generic HTTPS POST | ✅ Shipped |
+| **Rules** | KEV-on-stack (`kev_alert`), backup failure (`backup_failure`), health event type | ✅ Shipped (health = subscription + test send) |
+| **Delivery log** | Last N attempts, errors, retries | ✅ `webhook_delivery_log` + admin API |
+| **Dedupe** | Prevent alert fatigue | ✅ `webhook_alert_log` + engine dedupe |
+| **Per-destination enable/disable** | Toggle channels without removing env config | ✅ env `*_ENABLED` + `PATCH /api/admin/webhooks/destinations/{id}` |
+| **Test send** | Per destination | ✅ `POST /api/admin/config/webhook-test` |
+| **Security** | SSRF protection on all outbound webhook HTTP | ✅ `webhooks/ssrf.py` — block private/reserved IPs, DNS-rebinding pin, https-only, no redirects, no internal secrets on headers |
 
 Analyst benefits from pushes; **configuration lives in admin**.
 
