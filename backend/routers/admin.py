@@ -1158,7 +1158,7 @@ async def test_database_connection(request: Request, body: dict):
 @router.post("/database/migrate")
 async def start_database_migration(request: Request, background_tasks: BackgroundTasks, body: dict):
     from db.config import is_postgres
-    from migration.sqlite_to_postgres import get_status, run_migration
+    from migration.sqlite_to_postgres import reserve_migration_slot, run_migration
 
     database_url = str(body.get("database_url", "")).strip()
     confirm_text = str(body.get("confirm_text", "")).strip()
@@ -1168,11 +1168,16 @@ async def start_database_migration(request: Request, background_tasks: Backgroun
         raise HTTPException(400, "database_url must be a postgresql:// URL")
     if confirm_text != "migrate":
         raise HTTPException(400, "Type 'migrate' to confirm")
-    if get_status()["status"] == "running":
-        raise HTTPException(409, "A migration is already running")
+
+    # Reserve the slot synchronously (not in the background task) so a second
+    # rapid request can't slip past the check before the first task starts.
+    try:
+        await reserve_migration_slot()
+    except RuntimeError as exc:
+        raise HTTPException(409, str(exc))
 
     await audit(request, "database.migrate.start", re.sub(r"://[^@]+@", "://***@", database_url))
-    background_tasks.add_task(run_migration, database_url, DB_PATH)
+    background_tasks.add_task(run_migration, database_url, DB_PATH, _reserved=True)
     return {"ok": True, "message": "Migration started — poll /api/admin/database/migrate/status"}
 
 

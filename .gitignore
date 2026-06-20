@@ -1,3 +1,18 @@
-fatal: ambiguous argument 'origin\main;.gitignore': unknown revision or path not in the working tree.
-Use '--' to separate paths from revisions, like this:
-'git <command> [<revision>...] -- [<file>...]'
+# Cross-cutting ignores. backend/.gitignore and frontend/.gitignore cover
+# their own subtrees in more detail.
+node_modules/
+dist/
+build/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.local
+*.db
+*.db-wal
+*.db-shm
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -98,22 +98,38 @@ async def _apply_schema(database_url: str) -> None:
     logger.info("Target schema migrated: %s", stdout.decode(errors="replace")[-500:])
 
 
-async def run_migration(database_url: str, sqlite_path: str) -> None:
-    """Copy every row from the SQLite file at sqlite_path into the target Postgres DB.
+async def reserve_migration_slot() -> None:
+    """Atomically claim the running slot, or raise if one is already in flight.
 
-    Truncates target tables first, so this is safely re-runnable if it fails partway.
-    Designed to be scheduled as a background task; progress is polled via get_status().
+    Must be awaited synchronously in the request handler — before scheduling
+    run_migration as a background task — so a second rapid request can't slip
+    past the check before the first task actually starts (background tasks
+    only run after the response is returned).
     """
-    if _state["status"] == "running":
-        raise RuntimeError("A migration is already running")
-
-    import asyncpg
-
     async with _lock:
+        if _state["status"] == "running":
+            raise RuntimeError("A migration is already running")
         _state.update(
             status="running", current_table=None, tables_done=0,
             rows_copied=0, started_at=time.time(), finished_at=None, error=None,
         )
+
+
+async def run_migration(database_url: str, sqlite_path: str, _reserved: bool = False) -> None:
+    """Copy every row from the SQLite file at sqlite_path into the target Postgres DB.
+
+    Truncates target tables first, so this is safely re-runnable if it fails partway.
+    Designed to be scheduled as a background task; progress is polled via get_status().
+    Callers going through the admin API should reserve the slot first via
+    reserve_migration_slot() and pass _reserved=True; this keeps the function
+    safe to call directly (e.g. from tests/scripts) too.
+    """
+    import asyncpg
+
+    if not _reserved:
+        await reserve_migration_slot()
+
+    async with _lock:
         try:
             await _apply_schema(database_url)
 

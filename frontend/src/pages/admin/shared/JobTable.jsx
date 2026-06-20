@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { fmtIso, fmtDur } from '../formatters.js'
 
 export function JobStatusBadge({ status }) {
@@ -27,7 +27,7 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
       </thead>
       <tbody>
         {jobs.map(job => (
-          <>
+          <Fragment key={job.id}>
             <tr key={job.id}>
               <td className="mono" style={{ fontSize: '0.7rem' }}>{job.id}</td>
               <td style={{ fontSize: '0.8rem' }}>{job.name}</td>
@@ -89,7 +89,7 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                 </td>
               </tr>
             )}
-          </>
+          </Fragment>
         ))}
       </tbody>
     </table>

@@ -6,28 +6,24 @@ import { adminApi } from '../../../api.js'
 // the confirm word + description from GET /api/admin/destructive-actions.
 export default function ConfirmModal({ actionId, title, message, confirmWord, onConfirm, onCancel }) {
   const [input, setInput] = useState('')
-  const [resolved, setResolved] = useState({ title, message, confirmWord })
+  const [apiAction, setApiAction] = useState(null)
 
   useEffect(() => {
     if (!actionId) return
     adminApi.get('/destructive-actions').then(r => r.json()).then(list => {
       const found = (list || []).find(a => a.id === actionId)
-      if (found) {
-        setResolved(r => ({
-          title: r.title ?? found.description,
-          message: r.message ?? found.description,
-          confirmWord: r.confirmWord ?? found.confirm_word,
-        }))
-      }
+      if (found) setApiAction(found)
     }).catch(() => {})
   }, [actionId])
 
-  const word = resolved.confirmWord
+  const displayTitle = title ?? apiAction?.description ?? ''
+  const displayMessage = message ?? apiAction?.description ?? ''
+  const word = confirmWord ?? apiAction?.confirm_word ?? ''
   return (
     <div className="admin-modal-overlay">
       <div className="admin-modal">
-        <div className="admin-modal-title">{resolved.title}</div>
-        <div className="admin-modal-body">{resolved.message}</div>
+        <div className="admin-modal-title">{displayTitle}</div>
+        <div className="admin-modal-body">{displayMessage}</div>
         {word && (
           <div style={{ marginTop: '1rem' }}>
             <label style={{ fontSize: '0.8125rem', color: 'var(--text2)', marginBottom: '0.4rem', display: 'block' }}>

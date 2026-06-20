@@ -44,7 +44,7 @@ export default function StoragePage({ toast }) {
   const purgeCards = [
     { target: 'ioc_cache', title: 'Clear IOC cache', desc: 'Deletes all rows from ioc_cache. Next lookups will re-query external APIs.', confirmWord: 'clear', impact: `${storage?.tables?.ioc_cache ?? 0} rows` },
     { target: 'feed_cache', title: 'Clear feed cache', desc: 'Deletes all rows from feed_cache. Next incident feed load will be slower.', confirmWord: 'clear', impact: `${storage?.tables?.feed_cache ?? 0} rows` },
-    { target: 'epss_history_old', title: 'Prune EPSS history (>90 days)', desc: 'Deletes epss_history rows older than 90 days.', confirmWord: 'prune', impact: '~' + storage?.tables?.epss_history ?? '?' + ' total rows' },
+    { target: 'epss_history_old', title: 'Prune EPSS history (>90 days)', desc: 'Deletes epss_history rows older than 90 days.', confirmWord: 'prune', impact: '~' + (storage?.tables?.epss_history ?? '?') + ' total rows' },
     { target: 'change_history_old', title: 'Prune change history (>90 days)', desc: 'Deletes cve_change_history rows older than 90 days.', confirmWord: 'prune', impact: `${storage?.tables?.cve_change_history ?? 0} total rows` },
     { target: 'rejected_cves', title: 'Remove rejected CVEs', desc: "Removes CVEs with 'Rejected reason:' in description.", confirmWord: 'purge', impact: 'varies' },
     { target: 'epss_backfill_reset', title: 'Re-trigger EPSS backfill', desc: 'Clears the epss_backfill_done marker. Next startup re-runs full backfill.', confirmWord: null, impact: 'not destructive' },

@@ -23,12 +23,18 @@ def admin_client(tmp_path, monkeypatch):
     monkeypatch.setenv("NVD_API_KEY", "supersecretkey1234")
     monkeypatch.setenv("VIRUSTOTAL_API_KEY", "")
 
-    async def _noop_async():
+    async def _noop_async(*args, **kwargs):
         return None
 
     monkeypatch.setattr("main.start_scheduler", lambda: None)
     monkeypatch.setattr("main.stop_scheduler", lambda: None)
     monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
+
+    # apply-all/restart schedule trigger_graceful_restart as a background task,
+    # which TestClient runs synchronously within the request — a real
+    # os.kill(SIGTERM) here would kill the test process itself. Neutralize it.
+    import routers.admin as _admin_mod
+    monkeypatch.setattr(_admin_mod, "trigger_graceful_restart", _noop_async)
 
     asyncio.run(init_db())
 
