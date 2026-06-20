@@ -14,11 +14,15 @@ import tracking
 
 @pytest.fixture(autouse=True)
 def reset_tracking_buffers():
+    tracking._API_USAGE_LOCK = asyncio.Lock()
+    tracking._API_USAGE_WRITE_LOCK = asyncio.Lock()
     tracking._api_usage_pending.clear()
     if tracking._api_usage_flush_task and not tracking._api_usage_flush_task.done():
         tracking._api_usage_flush_task.cancel()
     tracking._api_usage_flush_task = None
     yield
+    tracking._API_USAGE_LOCK = asyncio.Lock()
+    tracking._API_USAGE_WRITE_LOCK = asyncio.Lock()
     tracking._api_usage_pending.clear()
     if tracking._api_usage_flush_task and not tracking._api_usage_flush_task.done():
         tracking._api_usage_flush_task.cancel()

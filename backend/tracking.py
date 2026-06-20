@@ -125,6 +125,7 @@ IOC_QUOTA_SERVICES: list[tuple[str, list[str] | None]] = [
 
 _API_USAGE_FLUSH_DELAY_SECONDS = 0.5
 _API_USAGE_LOCK = asyncio.Lock()
+_API_USAGE_WRITE_LOCK = asyncio.Lock()
 _api_usage_pending: dict[tuple[str, str, str], int] = {}
 _api_usage_flush_task: asyncio.Task | None = None
 
@@ -226,37 +227,40 @@ async def flush_api_usage_pending() -> None:
     """Persist buffered api_usage counters in one transaction (test hook)."""
     global _api_usage_flush_task
 
-    async with _API_USAGE_LOCK:
-        batch = dict(_api_usage_pending)
-        _api_usage_pending.clear()
-        _api_usage_flush_task = None
-
-    if not batch:
-        return
-
-    try:
-        db = await get_db()
-        try:
-            for (service, today, month), count in batch.items():
-                await db.execute(
-                    _API_USAGE_UPSERT_SQL,
-                    (service, today, month, count),
-                )
-            await db.commit()
-        finally:
-            await db.close()
-    except sqlite3.OperationalError as exc:
-        if "locked" not in str(exc).lower():
-            logger.error("Failed to record API usage batch: %s", exc)
-            return
-        logger.warning("API usage batch deferred (database is locked)")
+    async with _API_USAGE_WRITE_LOCK:
         async with _API_USAGE_LOCK:
-            for key, count in batch.items():
-                _api_usage_pending[key] = _api_usage_pending.get(key, 0) + count
-            if _api_usage_flush_task is None or _api_usage_flush_task.done():
-                _api_usage_flush_task = asyncio.create_task(_schedule_api_usage_flush())
-    except Exception as exc:
-        logger.error("Failed to record API usage batch: %s", exc)
+            batch = dict(_api_usage_pending)
+            _api_usage_pending.clear()
+            _api_usage_flush_task = None
+
+        if not batch:
+            return
+
+        try:
+            db = await get_db()
+            try:
+                for (service, today, month), count in batch.items():
+                    await db.execute(
+                        _API_USAGE_UPSERT_SQL,
+                        (service, today, month, count),
+                    )
+                await db.commit()
+            finally:
+                await db.close()
+        except sqlite3.OperationalError as exc:
+            if "locked" not in str(exc).lower():
+                logger.error("Failed to record API usage batch: %s", exc)
+                return
+            logger.warning("API usage batch deferred (database is locked)")
+            async with _API_USAGE_LOCK:
+                for key, count in batch.items():
+                    _api_usage_pending[key] = _api_usage_pending.get(key, 0) + count
+                if _api_usage_flush_task is None or _api_usage_flush_task.done():
+                    _api_usage_flush_task = asyncio.create_task(
+                        _schedule_api_usage_flush()
+                    )
+        except Exception as exc:
+            logger.error("Failed to record API usage batch: %s", exc)
 
 
 async def get_ioc_usage_stats() -> list[dict]:
