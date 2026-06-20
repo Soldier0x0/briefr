@@ -35,6 +35,9 @@ def _setup_db(tmp_path, monkeypatch) -> Path:
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
     asyncio.run(init_db())
+    from webhooks.destinations import sync_env_destinations_to_db
+
+    asyncio.run(sync_env_destinations_to_db())
     return db_path
 
 
@@ -47,15 +50,24 @@ def _mock_webhooks(monkeypatch):
 
     client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     monkeypatch.setattr(resilient_client, "_client", client)
+    monkeypatch.setattr("webhooks.ssrf._webhook_client", client)
     monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
     monkeypatch.setenv("BRIEFR_STACK_TERMS", "nginx")
     monkeypatch.setenv("BACKUP_ENABLED", "1")
+
+    async def fake_resolve(_host):
+        return ["93.184.216.34"]
+
+    monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
 
     async def no_sleep(_seconds):
         return None
 
     monkeypatch.setattr(resilient_client.asyncio, "sleep", no_sleep)
     reset_feed_health()
+    from webhooks.destinations import sync_env_destinations_to_db
+
+    asyncio.run(sync_env_destinations_to_db())
     return calls
 
 

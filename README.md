@@ -253,7 +253,11 @@ See `backend/.env.example` for the full list. Key variables:
 | `BACKUP_AGE_KEY_FILE` | age identity for archive encryption (outside `BACKUP_DIR`; `""` disables) | `/var/lib/briefr/keys/backup-age.key` if present |
 | `BACKUP_INTERVAL_HOURS` | Expected backup cadence (dead-man alert threshold = 2× this) | `6` |
 | `DISCORD_WEBHOOK_URL` | Discord incoming webhook for scheduler alerts | — |
+| `DISCORD_WEBHOOK_ENABLED` / `DISCORD_WEBHOOK_EVENTS` | Discord destination toggle + event filter | `1` / all events |
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Telegram bot alerts (both required to enable) | — |
+| `TELEGRAM_WEBHOOK_ENABLED` / `TELEGRAM_WEBHOOK_EVENTS` | Telegram destination toggle + event filter | `1` / all events |
+| `WEBHOOK_GENERIC_URL` | Generic HTTPS POST webhook (SSRF-protected) | — |
+| `WEBHOOK_GENERIC_ENABLED` / `WEBHOOK_GENERIC_EVENTS` / `WEBHOOK_GENERIC_LABEL` | Generic destination toggle, events, label | `1` / all / `Generic HTTPS` |
 | `BRIEFR_STACK_TERMS` | Comma-separated stack for server-side KEV-on-stack matching | — |
 | `NVD_SYNC_INTERVAL_HOURS` | NVD incremental cadence | `1` |
 | `KEV_SYNC_INTERVAL_MINUTES` | KEV sync cadence | `15` |

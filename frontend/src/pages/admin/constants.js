@@ -12,9 +12,9 @@ export const NAV = [
     { id: 'webhooks', label: 'Webhooks' },
     { id: 'security', label: 'Security', badgeKey: 'failed_auth_last_24h' },
   ]},
-  { section: 'FEEDS', items: [
+  { section: 'OBSERVABILITY', items: [
     { id: 'feedhealth', label: 'Feed health', badgeKey: 'open_circuit_count' },
-    { id: 'ingestlog', label: 'Ingest log', badgeKey: 'ingest_error_count' },
+    { id: 'ingestlog', label: 'Application logs', badgeKey: 'ingest_error_count' },
   ]},
   { section: 'AUDIT', items: [
     { id: 'auditlog', label: 'Audit log' },
