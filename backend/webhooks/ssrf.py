@@ -179,6 +179,23 @@ async def safe_webhook_request(
     client = _get_webhook_client()
     last_exc: Exception | None = None
 
+    # Connecting to the pinned IP literal means httpx's default TLS
+    # verification would check the cert against that IP string — which
+    # fails for virtually every host (Discord, Slack, etc. sit behind
+    # shared/CDN certs valid only for the hostname). sni_hostname tells
+    # httpcore to send the original hostname as SNI and verify the cert
+    # against it, while the TCP connection itself still goes to the
+    # validated, pinned IP. Only set it for actual hostnames though: RFC
+    # 6066 forbids IP literals in SNI (the destination URL itself could be
+    # an IP, in which case there's no hostname to verify against anyway),
+    # and non-ASCII hostnames need IDNA/punycode encoding or Python's ssl
+    # module raises UnicodeEncodeError during the handshake.
+    request_extensions: dict[str, Any] = {}
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        request_extensions["sni_hostname"] = host.encode("idna").decode("ascii")
+
     for attempt in range(retries + 1):
         try:
             response = await client.request(
@@ -187,14 +204,7 @@ async def safe_webhook_request(
                 json=json,
                 data=data,
                 headers=outbound_headers,
-                # Connecting to the pinned IP literal means httpx's default TLS
-                # verification would check the cert against that IP string —
-                # which fails for virtually every host (Discord, Slack, etc.
-                # sit behind shared/CDN certs valid only for the hostname).
-                # sni_hostname tells httpcore to send the original hostname as
-                # SNI and verify the cert against it, while the TCP connection
-                # itself still goes to the validated, pinned IP.
-                extensions={"sni_hostname": host},
+                extensions=request_extensions,
             )
         except httpx.HTTPError as exc:
             last_exc = exc
