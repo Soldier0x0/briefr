@@ -58,7 +58,7 @@ export default function WatchlistPage({ toast }) {
 
   async function clearSnoozes() {
     try {
-      const res = await adminApi.post('/watchlist/clear-snoozes', {})
+      const res = await adminApi.post('/watchlist/clear-snoozes', { confirm_text: 'clear' })
       const data = await res.json()
       toast(`Cleared ${data.rows_deleted} snooze entries`, data.ok)
       loadWatchlist()
@@ -98,18 +98,16 @@ export default function WatchlistPage({ toast }) {
     <div>
       {confirmClearSnoozes && (
         <ConfirmModal
+          actionId="watchlist.clear_snoozes"
           title="Clear all snoozes?"
-          message="This removes every legacy snooze entry from the watchlist table."
-          confirmWord="clear"
           onConfirm={() => { setConfirmClearSnoozes(false); clearSnoozes() }}
           onCancel={() => setConfirmClearSnoozes(false)}
         />
       )}
       {confirmClearIoc && (
         <ConfirmModal
+          actionId="storage.purge.ioc_cache"
           title="Clear all IOC cache entries?"
-          message="Deletes all rows from ioc_cache. Next lookups will re-query external APIs."
-          confirmWord="clear"
           onConfirm={() => { setConfirmClearIoc(false); clearAllIoc() }}
           onCancel={() => setConfirmClearIoc(false)}
         />

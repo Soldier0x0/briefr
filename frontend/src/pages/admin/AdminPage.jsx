@@ -86,14 +86,14 @@ export default function AdminPage() {
 
   async function handleRestart() {
     try {
-      await adminApi.post('/restart', {})
+      await adminApi.post('/restart', { confirm_text: 'restart' })
       toast('Backend is shutting down gracefully…', true)
     } catch (e) { toast(String(e.message), false) }
   }
 
   async function handleDrainRestart() {
     try {
-      await adminApi.post('/restart', { drain: true })
+      await adminApi.post('/restart', { drain: true, confirm_text: 'restart' })
       toast('Drain initiated — backend will shut down gracefully when jobs complete', true)
     } catch (e) { toast(String(e.message), false) }
   }

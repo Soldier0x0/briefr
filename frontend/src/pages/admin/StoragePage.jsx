@@ -7,7 +7,7 @@ import { fmtBytes, diskPct, diskBarColor } from './formatters.js'
 export default function StoragePage({ toast }) {
   const [storage, setStorage] = useState(null)
   const [loadError, setLoadError] = useState(null)
-  const [confirm, setConfirm] = useState(null) // {target, word, extra}
+  const [confirm, setConfirm] = useState(null) // {target, title, extra}
 
   const load = useCallback(async () => {
     try {
@@ -55,9 +55,8 @@ export default function StoragePage({ toast }) {
     <div>
       {confirm && (
         <ConfirmModal
+          actionId={`storage.purge.${confirm.target}`}
           title={confirm.title}
-          message={confirm.desc}
-          confirmWord={confirm.word}
           onConfirm={(inputText) => {
             setConfirm(null)
             doPurge(confirm.target, inputText, confirm.extra || {})
@@ -146,7 +145,7 @@ export default function StoragePage({ toast }) {
                   if (!pc.confirmWord) {
                     doPurge(pc.target, '', {})
                   } else {
-                    setConfirm({ target: pc.target, title: pc.title, desc: pc.desc, word: pc.confirmWord })
+                    setConfirm({ target: pc.target, title: pc.title })
                   }
                 }}
               >

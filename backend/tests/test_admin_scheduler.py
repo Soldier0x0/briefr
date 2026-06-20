@@ -127,6 +127,72 @@ def test_resume_job_sets_key_to_zero(admin_client, monkeypatch, tmp_path):
         sched_module._scheduler = original
 
 
+def test_pause_all_requires_confirm(admin_client, monkeypatch):
+    mock_scheduler = MagicMock()
+    mock_scheduler.get_jobs.return_value = [_make_mock_job("a"), _make_mock_job("b")]
+    import scheduler as sched_module
+    original = sched_module._scheduler
+    sched_module._scheduler = mock_scheduler
+    try:
+        resp = admin_client.post("/api/admin/scheduler/pause-all", json={})
+        assert resp.status_code == 400
+    finally:
+        sched_module._scheduler = original
+
+
+def test_pause_all_pauses_only_active_jobs(admin_client, monkeypatch):
+    active = _make_mock_job("a")
+    already_paused = _make_mock_job("b", paused=True)
+    mock_scheduler = MagicMock()
+    mock_scheduler.get_jobs.return_value = [active, already_paused]
+    import scheduler as sched_module
+    original = sched_module._scheduler
+    sched_module._scheduler = mock_scheduler
+    try:
+        resp = admin_client.post("/api/admin/scheduler/pause-all", json={"confirm_text": "pause"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["ok"] is True
+        assert data["paused"] == ["a"]
+        active.pause.assert_called_once()
+        already_paused.pause.assert_not_called()
+    finally:
+        sched_module._scheduler = original
+
+
+def test_resume_all_requires_confirm(admin_client, monkeypatch):
+    mock_scheduler = MagicMock()
+    mock_scheduler.get_jobs.return_value = [_make_mock_job("a", paused=True)]
+    import scheduler as sched_module
+    original = sched_module._scheduler
+    sched_module._scheduler = mock_scheduler
+    try:
+        resp = admin_client.post("/api/admin/scheduler/resume-all", json={"confirm_text": "wrong"})
+        assert resp.status_code == 400
+    finally:
+        sched_module._scheduler = original
+
+
+def test_resume_all_resumes_only_paused_jobs(admin_client, monkeypatch):
+    paused = _make_mock_job("a", paused=True)
+    already_active = _make_mock_job("b")
+    mock_scheduler = MagicMock()
+    mock_scheduler.get_jobs.return_value = [paused, already_active]
+    import scheduler as sched_module
+    original = sched_module._scheduler
+    sched_module._scheduler = mock_scheduler
+    try:
+        resp = admin_client.post("/api/admin/scheduler/resume-all", json={"confirm_text": "resume"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["ok"] is True
+        assert data["resumed"] == ["a"]
+        paused.resume.assert_called_once()
+        already_active.resume.assert_not_called()
+    finally:
+        sched_module._scheduler = original
+
+
 def test_run_unknown_job_returns_400(admin_client):
     resp = admin_client.post("/api/admin/scheduler/run", json={"job_id": "nonexistent_job_xyz"})
     assert resp.status_code == 400
