@@ -142,13 +142,15 @@ async def get_connection() -> SqliteConnection | PostgresConnection:
         raw = await _pool.acquire()
         return PostgresConnection(raw, _pool)
 
-    from db.config import resolve_database_url
+    # Lazy import (avoids a circular import with database.py) and read the
+    # module attribute directly rather than db.config.resolve_database_url():
+    # the latter resolves through the Settings singleton, which is frozen at
+    # process start and does not observe per-test monkeypatch.setattr /
+    # monkeypatch.setenv("DB_PATH", ...) overrides that the existing test
+    # suite relies on for per-test database isolation.
+    import database
 
-    url = resolve_database_url()
-    if url.startswith("sqlite+aiosqlite:///"):
-        path = url.removeprefix("sqlite+aiosqlite:///")
-    else:
-        path = os.environ.get("DB_PATH", "briefr.db")
+    path = database.DB_PATH
     conn = await aiosqlite.connect(path, timeout=30)
     conn.row_factory = aiosqlite.Row
     await conn.execute("PRAGMA journal_mode=WAL")

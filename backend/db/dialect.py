@@ -86,7 +86,14 @@ def adapt_sql(sql: str, *, backend: str | None = None) -> str:
     return text
 
 
-def adapt_params(params: tuple | list) -> tuple:
+def adapt_params(params: tuple | list | dict) -> tuple | dict:
+    """Pass dict (named ``:name``-style) params through unchanged — sqlite3
+    binds them natively. Converting to tuple(params) would silently bind the
+    dict's *keys* instead of its values, and break if the dict has any extra
+    keys the SQL doesn't reference (sqlite3.ProgrammingError: incorrect
+    number of bindings)."""
+    if isinstance(params, dict):
+        return params
     return tuple(params)
 
 
