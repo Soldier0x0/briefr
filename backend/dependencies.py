@@ -6,9 +6,13 @@ the admin/refresh routes.
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
 
+import asyncio
 import logging
+import os
 import secrets
+import signal
 import sqlite3
+import time
 
 from fastapi import HTTPException, Request
 
@@ -59,3 +63,23 @@ async def audit(request: Request, action: str, target: str = "") -> None:
             await db.close()
     except sqlite3.OperationalError as exc:
         logger.error("Audit log write failed (%s): %s", action, exc)
+
+
+async def trigger_graceful_restart(drain: bool = False) -> None:
+    """Shut the process down via SIGTERM instead of os._exit(0).
+
+    uvicorn's installed signal handler runs the app's lifespan shutdown
+    (stop_scheduler/close_pool/close_client in main.py) and finishes
+    in-flight responses before the process exits. Requires the deploy unit
+    to set Restart=on-failure or Restart=always (see deploy/briefr-backend.service)
+    for the process to actually come back up.
+    """
+    if drain:
+        from scheduler import any_ingest_lock_held
+
+        deadline = time.time() + 120
+        while any_ingest_lock_held() and time.time() < deadline:
+            await asyncio.sleep(2)
+
+    await asyncio.sleep(1)
+    os.kill(os.getpid(), signal.SIGTERM)
