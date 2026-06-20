@@ -48,9 +48,15 @@ def test_logs_returns_list_with_expected_fields(admin_client):
     resp = admin_client.get("/api/admin/logs?limit=10")
     assert resp.status_code == 200
     data = resp.json()
-    assert isinstance(data, list)
-    if data:
-        entry = data[0]
+    # GET /api/admin/logs returns {logs: [...], known_loggers: [...]} (the
+    # frontend's IngestLogPage.jsx already consumes this shape) — not a bare list.
+    assert isinstance(data, dict)
+    assert "logs" in data
+    assert "known_loggers" in data
+    logs = data["logs"]
+    assert isinstance(logs, list)
+    if logs:
+        entry = logs[0]
         assert "ts" in entry
         assert "level" in entry
         assert "logger" in entry
