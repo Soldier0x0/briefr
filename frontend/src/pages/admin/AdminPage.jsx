@@ -17,6 +17,7 @@ import SecurityPage from './SecurityPage.jsx'
 import FeedHealthPage from './FeedHealthPage.jsx'
 import IngestLogPage from './IngestLogPage.jsx'
 import AuditLogPage from './AuditLogPage.jsx'
+import DisplayPage from './DisplayPage.jsx'
 import ComingSoonPage from './ComingSoonPage.jsx'
 import '../AdminPage.css'
 
@@ -113,6 +114,7 @@ export default function AdminPage() {
     feedhealth: <FeedHealthPage system={system} toast={toast} />,
     ingestlog: <IngestLogPage toast={toast} onErrorCountChange={setIngestErrorCount} active={page === 'ingestlog'} />,
     auditlog: <AuditLogPage toast={toast} />,
+    display: <DisplayPage />,
   }
 
   return (
