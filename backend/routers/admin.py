@@ -994,10 +994,13 @@ def _get_config_response() -> dict[str, Any]:
         },
         "webhooks": {
             "DISCORD_WEBHOOK_URL": _mask_url(_env("DISCORD_WEBHOOK_URL")),
+            "DISCORD_WEBHOOK_ENABLED": _env("DISCORD_WEBHOOK_ENABLED", "1"),
+            "DISCORD_WEBHOOK_EVENTS": _env("DISCORD_WEBHOOK_EVENTS", ""),
             "TELEGRAM_BOT_TOKEN": _mask_key(_env("TELEGRAM_BOT_TOKEN")),
             "TELEGRAM_CHAT_ID": _env("TELEGRAM_CHAT_ID") or "not configured",
             "WEBHOOK_GENERIC_URL": _mask_url(_env("WEBHOOK_GENERIC_URL")),
             "WEBHOOK_GENERIC_ENABLED": _env("WEBHOOK_GENERIC_ENABLED", "1"),
+            "WEBHOOK_GENERIC_LABEL": _env("WEBHOOK_GENERIC_LABEL") or "not configured",
             "WEBHOOK_GENERIC_EVENTS": _env("WEBHOOK_GENERIC_EVENTS", ""),
         },
     }

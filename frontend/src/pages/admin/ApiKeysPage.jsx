@@ -121,6 +121,26 @@ export default function ApiKeysPage({ toast }) {
       </div>
 
       <div className="admin-card">
+        <div className="admin-card-title">Webhooks — Discord / Telegram / generic</div>
+        {[
+          { key: 'DISCORD_WEBHOOK_URL', secret: true },
+          { key: 'DISCORD_WEBHOOK_ENABLED', secret: false },
+          { key: 'DISCORD_WEBHOOK_EVENTS', secret: false },
+          { key: 'TELEGRAM_BOT_TOKEN', secret: true },
+          { key: 'TELEGRAM_CHAT_ID', secret: false },
+          { key: 'WEBHOOK_GENERIC_URL', secret: true },
+          { key: 'WEBHOOK_GENERIC_ENABLED', secret: false },
+          { key: 'WEBHOOK_GENERIC_LABEL', secret: false },
+          { key: 'WEBHOOK_GENERIC_EVENTS', secret: false },
+        ].map(({ key, secret }) => (
+          <ConfigRow key={key} envKey={key} value={config.webhooks?.[key] ?? 'not configured'} isSecret={secret} />
+        ))}
+        <div style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '0.5rem' }}>
+          After setting a URL/token here, use the Test button on the Webhooks page to confirm delivery.
+        </div>
+      </div>
+
+      <div className="admin-card">
         <div className="admin-card-title">Scheduler intervals — NVD / KEV / EPSS</div>
         {['NVD_SYNC_INTERVAL_HOURS', 'KEV_SYNC_INTERVAL_MINUTES', 'EPSS_SYNC_INTERVAL_HOURS',
           'INCIDENT_FEED_REFRESH_MINUTES', 'VULNRICHMENT_SYNC_INTERVAL_HOURS', 'CVELISTV5_SYNC_INTERVAL_MINUTES'].map(k => (
