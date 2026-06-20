@@ -66,7 +66,16 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
       )
     : COMMON_TIMEZONES
 
+  const TABS = [
+    { id: 'brief', label: 'BRIEF', aria: 'Switch to morning brief' },
+    { id: 'feed', label: 'FEED', aria: 'Switch to full CVE feed' },
+    { id: 'ioc', label: 'IOC LOOKUP', aria: 'Switch to IOC lookup' },
+    { id: 'atlas', label: 'INCIDENTS & NEWS', aria: 'Switch to incidents and news' },
+    { id: 'forge', label: 'FORGE', aria: 'Switch to Forge detection engineering' },
+  ]
+
   return (
+    <>
     <header className="header" role="banner">
       <div className="header-inner">
         {/* Left: logo */}
@@ -189,6 +198,22 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
             </button>
             {mobileMenuOpen && (
               <div className="mobile-menu-dropdown">
+                {assetCtx && (
+                  <button
+                    className="mobile-menu-item"
+                    onClick={() => { setMobileMenuOpen(false); assetCtx.openProfileFlow() }}
+                  >
+                    Profile
+                  </button>
+                )}
+                {(window.location.hostname === 'localhost' ||
+                  window.location.hostname === '127.0.0.1' ||
+                  (() => { try { return !!sessionStorage.getItem('briefr-admin-key') } catch { return false } })()
+                ) && (
+                  <Link to="/admin" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                    Admin
+                  </Link>
+                )}
                 <button
                   className="mobile-menu-item"
                   onClick={() => { setMobileMenuOpen(false); onAboutOpen() }}
@@ -272,5 +297,21 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
         </div>
       </div>
     </header>
+    {activeTab !== null && (
+      <nav className="mobile-tab-bar" aria-label="Main navigation">
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            className={`mobile-tab${activeTab === t.id ? ' active' : ''}`}
+            onClick={() => onTabChange(t.id)}
+            aria-label={t.aria}
+            aria-current={activeTab === t.id ? 'page' : undefined}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
+    )}
+    </>
   )
 }
