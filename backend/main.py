@@ -21,6 +21,7 @@ access_logger = logging.getLogger("briefr.access")
 _REQUEST_ID_RE = re.compile(r"[A-Za-z0-9._-]{1,64}")
 
 from database import init_db
+from db.connection import close_pool, init_pool
 from resilient_client import close_client
 from routers import admin as admin_router
 from routers import atlas as atlas_router
@@ -43,18 +44,22 @@ from scheduler import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from backup.manager import ensure_db_or_restore
+    from db.config import is_postgres
 
-    recovery = ensure_db_or_restore()
-    if recovery.get("status") == "restored":
-        logger.warning(
-            "Recovered corrupt database from backup: %s",
-            recovery.get("archive"),
-        )
+    if not is_postgres():
+        recovery = ensure_db_or_restore()
+        if recovery.get("status") == "restored":
+            logger.warning(
+                "Recovered corrupt database from backup: %s",
+                recovery.get("archive"),
+            )
+    await init_pool()
     await init_db()
     start_scheduler()
     await maybe_run_on_startup()
     yield
     stop_scheduler()
+    await close_pool()
     await close_client()
 
 

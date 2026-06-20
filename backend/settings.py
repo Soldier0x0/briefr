@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     briefr_env: str = "development"
     briefr_admin_api_key: str = ""
     allowed_origins: str = "http://localhost:3000"
+    database_url: str = ""
+    db_path: str = ""
+    database_pool_size: int = 10
 
     # §5.5 — structured logging + rate limiting (import-time config)
     log_format: str = "json"
@@ -36,6 +39,11 @@ class Settings(BaseSettings):
     @field_validator("briefr_admin_api_key")
     @classmethod
     def _strip_admin_key(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("database_url", "db_path")
+    @classmethod
+    def _strip_db_settings(cls, value: str) -> str:
         return value.strip()
 
     @field_validator("log_format")

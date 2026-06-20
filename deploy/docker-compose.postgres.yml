@@ -1,0 +1,23 @@
+# PostgreSQL dev stack (optional — SQLite remains the default)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: briefr-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: briefr
+      POSTGRES_PASSWORD: briefr
+      POSTGRES_DB: briefr
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - briefr-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U briefr -d briefr"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  briefr-pg-data:
