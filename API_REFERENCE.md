@@ -813,8 +813,11 @@ Response: `{ok, integrity_ok, foreign_keys_ok, message, foreign_key_violations}`
 Body `{drain?: bool}`. When `drain=true`: waits up to 120s for all job locks to clear before restarting. Returns `{status: "draining"|"restarting"}`.
 
 ### GET /api/admin/logs
-Params: `limit`, `level`, `logger` (filter by logger name), `request_id`.
-Response: `{logs: [...], known_loggers: [...]}`.
+Admin-gated read-only tail of the in-process ring buffer (last 500 JSON log lines captured at emit time — no `journalctl` or shell). Shares the refresh token-bucket rate limit.
+
+Params: `limit` (1–500, default 100), `level` (exact match, e.g. `ERROR`), `logger` (exact logger name), `request_id` (exact match), `category` (`Application` | `Scheduler` | `Backup` | `Webhooks` | `Security`).
+
+Response: `{logs: [{ts, level, logger, message, request_id, category, ...}], known_loggers: [...], categories: [...], buffer_capacity: 500}`. Secret-like `extra` fields are redacted to `[REDACTED]` in buffer entries.
 
 ### GET /api/admin/audit-log
 Params: `limit`, `offset`, `action`, `action_prefix`, `actor`. Use `action_prefix=backup.` for category filters.

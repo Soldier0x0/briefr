@@ -98,9 +98,12 @@ These env vars must remain supported across releases (defaults preserved):
 
 ## Application logs in admin (V1.4)
 
-- Categories: Application, Scheduler, Backup, Webhooks, Security  
-- Tail last N lines; redact secrets  
-- Support pack export: health JSON + version + truncated logs  
+- **Ring buffer:** in-process, last 500 `INFO+` JSON log lines (`structured_logging._RingBufferHandler`); no `journalctl` from the app.
+- **API:** `GET /api/admin/logs` — admin-gated, refresh rate-limited; filters: `level`, `logger`, `request_id`, `category`.
+- **Categories:** Application, Scheduler, Backup, Webhooks, Security (derived from logger name).
+- **Redaction:** secret-like `extra` keys (`password`, `api_key`, `*_TOKEN`, etc.) stored as `[REDACTED]` in buffer entries.
+- **UI:** Admin pane → **Application logs** — tail, filter, auto-refresh (10s), NDJSON export.
+- Support pack export: health JSON + version + truncated logs (future)
 
 ---
 

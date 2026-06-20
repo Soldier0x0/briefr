@@ -499,6 +499,7 @@ Weights are read by the frontend from `GET /api/config/risk` on every app load f
 | Repository / DI layer | Not implemented | Planned Beta V1.2 |
 | Circuit breakers | Not implemented | Timeouts only |
 | Structured logging | Complete | JSON lines with `request_id` (`structured_logging.py`); `X-Request-ID` response header; `LOG_FORMAT=plain` opt-out |
+| Admin log viewer (V1.4) | Complete | In-process 500-line ring buffer; `GET /api/admin/logs` with level/logger/request_id/category filters; admin pane Application logs page |
 | Rate limiting | Complete | In-memory token bucket per client IP (`rate_limit.py`) on `/api/ioc/lookup` (30/min) + `/api/refresh*` (10/min); 429 + `Retry-After` |
 
 Spreadsheet export: [`TECHNICAL_INVENTORY.xlsx`](TECHNICAL_INVENTORY.xlsx)
