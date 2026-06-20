@@ -67,6 +67,13 @@ export default function SchedulerPage({ toast, system }) {
 
   const activeLocks = system?.active_locks || []
   const filteredJobs = jobs ? (statusFilter ? jobs.filter(j => j.status === statusFilter) : jobs) : null
+
+  useEffect(() => {
+    if (filteredJobs && page > 0 && page * PAGE_SIZE >= filteredJobs.length) {
+      setPage(Math.max(0, Math.ceil(filteredJobs.length / PAGE_SIZE) - 1))
+    }
+  }, [filteredJobs, page])
+
   const pagedJobs = filteredJobs ? filteredJobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE) : null
 
   return (

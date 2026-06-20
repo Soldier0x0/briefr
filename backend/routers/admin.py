@@ -1371,18 +1371,22 @@ async def pause_all_jobs(request: Request, body: dict | None = None):
     if not scheduler:
         raise HTTPException(503, "Scheduler not running")
 
+    to_pause = [job for job in scheduler.get_jobs() if job.next_run_time is not None]
     paused: list[str] = []
     db = await get_db()
     try:
-        for job in scheduler.get_jobs():
-            if job.next_run_time is None:
-                continue  # already paused
-            job.pause()
+        for job in to_pause:
             await set_sync_state_value(db, f"scheduler.paused.{job.id}", "1")
             paused.append(job.id)
         await db.commit()
     finally:
         await db.close()
+
+    # Only flip the in-memory scheduler state once the DB commit has
+    # succeeded — otherwise a failed commit leaves jobs paused in memory
+    # but not persisted, out of sync with what /scheduler reports.
+    for job in to_pause:
+        job.pause()
 
     await audit(request, "scheduler.pause_all", ", ".join(paused) or "none")
     return {"ok": True, "paused": paused}
@@ -1402,18 +1406,20 @@ async def resume_all_jobs(request: Request, body: dict | None = None):
     if not scheduler:
         raise HTTPException(503, "Scheduler not running")
 
+    to_resume = [job for job in scheduler.get_jobs() if job.next_run_time is None]
     resumed: list[str] = []
     db = await get_db()
     try:
-        for job in scheduler.get_jobs():
-            if job.next_run_time is not None:
-                continue  # already active
-            job.resume()
+        for job in to_resume:
             await set_sync_state_value(db, f"scheduler.paused.{job.id}", "0")
             resumed.append(job.id)
         await db.commit()
     finally:
         await db.close()
+
+    # See pause-all: only flip in-memory state after the DB commit succeeds.
+    for job in to_resume:
+        job.resume()
 
     await audit(request, "scheduler.resume_all", ", ".join(resumed) or "none")
     return {"ok": True, "resumed": resumed}
