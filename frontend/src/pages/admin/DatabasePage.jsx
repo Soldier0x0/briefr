@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { adminApi } from '../../api.js'
 import ConfirmModal from './shared/ConfirmModal.jsx'
+import DangerZone from './shared/DangerZone.jsx'
 import StatCard from './shared/StatCard.jsx'
 import { fmtBytes } from './formatters.js'
 
@@ -116,8 +117,7 @@ export default function DatabasePage({ toast, active = true }) {
             concurrent writers or multiple uvicorn workers — see <code>docs/POSTGRES.md</code>.
           </div>
 
-          <div className="admin-card">
-            <div className="admin-card-title">Migrate to PostgreSQL</div>
+          <DangerZone title="Migrate to PostgreSQL">
             <div style={{ fontSize: '0.8125rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
               1. Take a backup. 2. Test the connection below. 3. Run the migration. 4. Apply &amp; restart once it finishes.
             </div>
@@ -179,7 +179,7 @@ export default function DatabasePage({ toast, active = true }) {
                 )}
               </div>
             )}
-          </div>
+          </DangerZone>
         </>
       ) : (
         <div className="admin-callout admin-callout-amber">

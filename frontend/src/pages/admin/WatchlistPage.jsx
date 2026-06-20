@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { adminApi } from '../../api.js'
 import ConfirmModal from './shared/ConfirmModal.jsx'
+import DangerZone from './shared/DangerZone.jsx'
 import { fmtAge, fmtIso } from './formatters.js'
 
 export default function WatchlistPage({ toast }) {
@@ -134,10 +135,12 @@ export default function WatchlistPage({ toast }) {
                 </button>
               ))}
             </div>
-            <button className="admin-btn admin-btn-warn" style={{ marginLeft: 'auto' }} onClick={() => setConfirmClearSnoozes(true)}>
+          </div>
+          <DangerZone title="Clear snoozes">
+            <button className="admin-btn admin-btn-warn" onClick={() => setConfirmClearSnoozes(true)}>
               Clear all snoozes
             </button>
-          </div>
+          </DangerZone>
           <div className="admin-card">
             <table className="admin-table">
               <thead><tr><th>CVE ID</th><th>SEVERITY</th><th>EPSS</th><th>KEV</th><th>STATE</th><th>CREATED</th><th></th></tr></thead>
@@ -178,10 +181,12 @@ export default function WatchlistPage({ toast }) {
               <option value="domain">Domain</option>
             </select>
             <input className="admin-input" placeholder="Search value…" value={iocSearch} onChange={e => setIocSearch(e.target.value)} />
-            <button className="admin-btn admin-btn-danger" style={{ marginLeft: 'auto', fontSize: '0.75rem' }} onClick={() => setConfirmClearIoc(true)}>
+          </div>
+          <DangerZone title="Clear IOC cache">
+            <button className="admin-btn admin-btn-danger" style={{ fontSize: '0.75rem' }} onClick={() => setConfirmClearIoc(true)}>
               Clear all
             </button>
-          </div>
+          </DangerZone>
           <div className="admin-card">
             <table className="admin-table">
               <thead><tr><th>VALUE</th><th>TYPE</th><th>CACHED AT</th><th>AGE</th><th></th></tr></thead>

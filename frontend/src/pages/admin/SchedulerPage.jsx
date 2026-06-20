@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { adminApi } from '../../api.js'
 import ConfirmModal from './shared/ConfirmModal.jsx'
+import DangerZone from './shared/DangerZone.jsx'
 import JobTable from './shared/JobTable.jsx'
 import { MANUAL_PIPELINES } from './constants.js'
 
@@ -124,13 +125,12 @@ export default function SchedulerPage({ toast, system }) {
         )}
       </div>
 
-      <div className="admin-card">
-        <div className="admin-card-title">Global controls</div>
+      <DangerZone title="Global controls">
         <div className="admin-action-bar">
           <button className="admin-btn admin-btn-danger" onClick={() => setPauseAllConfirm(true)}>Pause all jobs</button>
           <button className="admin-btn admin-btn-primary" onClick={() => setResumeAllConfirm(true)}>Resume all jobs</button>
         </div>
-      </div>
+      </DangerZone>
 
       <div className="admin-card">
         <div className="admin-card-title">All jobs</div>
