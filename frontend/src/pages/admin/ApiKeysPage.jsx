@@ -128,6 +128,8 @@ export default function ApiKeysPage({ toast }) {
           { key: 'DISCORD_WEBHOOK_EVENTS', secret: false },
           { key: 'TELEGRAM_BOT_TOKEN', secret: true },
           { key: 'TELEGRAM_CHAT_ID', secret: false },
+          { key: 'TELEGRAM_WEBHOOK_ENABLED', secret: false },
+          { key: 'TELEGRAM_WEBHOOK_EVENTS', secret: false },
           { key: 'WEBHOOK_GENERIC_URL', secret: true },
           { key: 'WEBHOOK_GENERIC_ENABLED', secret: false },
           { key: 'WEBHOOK_GENERIC_LABEL', secret: false },
