@@ -17,7 +17,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-CACHE_HOURS = 6
+from correlation.config import ENGINE_VERSION, get_correlation_cache_hours, get_otx_ioc_sync_max_per_run
 
 # Sector keyword mapping for actor description parsing
 SECTOR_KEYWORDS: dict[str, list[str]] = {
@@ -367,35 +367,57 @@ async def get_correlation_for_cve(
     db,
     cve_id: str,
     user_sector: str = "",
-    cache_hours: float = CACHE_HOURS,
+    cache_hours: float | None = None,
 ) -> dict:
     """
     Return correlation findings for a single CVE with a 6-hour cache.
     Runs Level 1 + Level 2 live; Level 3 uses pre-computed nightly data.
+    v2: includes pulse-centric campaign clusters when built by nightly job.
     """
     from database import get_feed_cache, set_feed_cache
+    from correlation.campaigns import get_campaigns_for_cve
+
+    if cache_hours is None:
+        cache_hours = get_correlation_cache_hours()
 
     cve_upper = cve_id.upper()
-    cache_key = f"correlation:v1:{cve_upper}:{user_sector}"
+    cache_key = f"correlation:v2:{cve_upper}:{user_sector}"
 
     cached = await get_feed_cache(db, cache_key, cache_hours)
     if cached is not None:
         return cached
 
+    import os
+    otx_configured = bool(os.environ.get("OTX_API_KEY", "").strip())
+
     try:
         infrastructure = await find_shared_infrastructure(db, cve_upper)
         actor = await find_actor_sector_correlation(db, cve_upper, user_sector)
         temporal = await _get_temporal_for_cve(db, cve_upper)
+        campaigns = await get_campaigns_for_cve(db, cve_upper)
 
         await _store_infrastructure_correlation(db, cve_upper, infrastructure)
         await _store_actor_correlation(db, cve_upper, actor)
 
+        if campaigns:
+            otx_status = "ok"
+        elif otx_configured:
+            otx_status = "ok"
+        else:
+            otx_status = "not_configured"
+
         result = {
             "cve_id": cve_upper,
+            "campaigns": campaigns,
             "infrastructure": infrastructure,
             "actor": actor,
             "temporal": temporal,
             "computed_at": datetime.now(timezone.utc).isoformat(),
+            "otx_status": otx_status,
+            "meta": {
+                "engine_version": ENGINE_VERSION,
+                "cache_hit": False,
+            },
         }
         await set_feed_cache(db, cache_key, result)
         return result
@@ -404,10 +426,13 @@ async def get_correlation_for_cve(
         logger.error("Correlation engine failed for %s: %s", cve_id, exc)
         return {
             "cve_id": cve_id.upper(),
+            "campaigns": [],
             "infrastructure": [],
             "actor": [],
             "temporal": [],
+            "otx_status": "degraded",
             "error": str(exc),
+            "meta": {"engine_version": ENGINE_VERSION},
         }
 
 
@@ -415,17 +440,21 @@ async def get_correlation_for_cve(
 
 async def run_nightly_correlation(db) -> dict:
     """
-    Nightly: Run all three correlation levels.
+    Nightly: Run all three correlation levels + v2 campaign rebuild.
     Level 3 runs once globally; Levels 1+2 run per recently-modified CVE.
     Also pre-warms OTX pulse IOCs for recently-active pulses.
     """
-    from database import get_recent_cve_ids_for_otx
+    from database import delete_feed_cache_prefix, get_recent_cve_ids_for_otx
+    from correlation.campaigns import build_campaigns_from_pulses, prune_invalid_campaign_members
 
     stats = {
         "cves_processed": 0,
         "infrastructure_pairs": 0,
         "actor_findings": 0,
         "temporal_anomalies": 0,
+        "campaigns_built": 0,
+        "campaign_members": 0,
+        "pruned_members": 0,
     }
 
     # Level 3: global vendor volume anomaly detection
@@ -436,6 +465,8 @@ async def run_nightly_correlation(db) -> dict:
         logger.info("Temporal anomalies: %d vendors flagged", len(temporal))
     except Exception as exc:
         logger.error("Level 3 temporal correlation failed: %s", exc)
+
+    stats["pruned_members"] = await prune_invalid_campaign_members(db)
 
     # Level 1 + 2: per-CVE for recent CVEs
     cve_ids = await get_recent_cve_ids_for_otx(db, days=7)
@@ -455,19 +486,32 @@ async def run_nightly_correlation(db) -> dict:
         except Exception as exc:
             logger.warning("Nightly correlation skip %s: %s", cve_id, exc)
 
+    try:
+        campaign_stats = await build_campaigns_from_pulses(db)
+        stats["campaigns_built"] = campaign_stats.get("campaigns", 0)
+        stats["campaign_members"] = campaign_stats.get("members", 0)
+    except Exception as exc:
+        logger.error("Campaign build failed: %s", exc)
+
+    await delete_feed_cache_prefix(db, "correlation:v2:")
+    await delete_feed_cache_prefix(db, "correlation:v1:")
+
     await db.commit()
     logger.info(
-        "Nightly correlation done: %d CVEs, %d infra pairs, %d actors, %d anomalies",
+        "Nightly correlation done: %d CVEs, %d infra pairs, %d actors, %d anomalies, "
+        "%d campaigns (%d members)",
         stats["cves_processed"],
         stats["infrastructure_pairs"],
         stats["actor_findings"],
         stats["temporal_anomalies"],
+        stats["campaigns_built"],
+        stats["campaign_members"],
     )
     return stats
 
 
 async def prefetch_pulse_iocs_for_nightly(
-    db, api_key: str, max_pulses: int = 100
+    db, api_key: str, max_pulses: int | None = None
 ) -> int:
     """
     Pre-fetch IOC data for pulses not yet in otx_pulse_iocs.
@@ -479,14 +523,23 @@ async def prefetch_pulse_iocs_for_nightly(
     if not api_key:
         return 0
 
+    if max_pulses is None:
+        max_pulses = get_otx_ioc_sync_max_per_run()
+
     missing_rows = await db.execute_fetchall(
         """
-        SELECT DISTINCT ocp.pulse_id
+        SELECT DISTINCT ocp.pulse_id,
+               CASE WHEN EXISTS (
+                   SELECT 1 FROM otx_cve_pulses p2
+                   JOIN cves c ON c.cve_id = p2.cve_id
+                   WHERE p2.pulse_id = ocp.pulse_id
+                     AND (COALESCE(c.is_kev, 0) = 1 OR COALESCE(c.has_poc, 0) = 1)
+               ) THEN 0 ELSE 1 END AS priority_rank
         FROM otx_cve_pulses ocp
         WHERE NOT EXISTS (
             SELECT 1 FROM otx_pulse_iocs opi WHERE opi.pulse_id = ocp.pulse_id
         )
-        ORDER BY ocp.fetched_at DESC
+        ORDER BY priority_rank ASC, ocp.fetched_at DESC
         LIMIT ?
         """,
         (max_pulses,),

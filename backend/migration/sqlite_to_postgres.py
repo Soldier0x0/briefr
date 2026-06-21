@@ -29,8 +29,9 @@ TABLE_ORDER: list[str] = [
     "cves", "ioc_cache", "kev_deadlines", "api_usage", "sync_state",
     "mitre_techniques", "cve_technique_map", "atlas_techniques",
     "atlas_case_studies", "cve_atlas_map", "epss_history", "cve_exploits",
-    "feed_cache", "cve_change_history", "otx_cve_pulses", "otx_pulse_iocs",
+    "feed_cache", "cve_change_history",     "otx_cve_pulses", "otx_pulse_iocs", "otx_pulses",
     "correlation_infrastructure", "correlation_actor", "correlation_temporal",
+    "correlation_campaigns", "correlation_campaign_members",
     "mitre_groups", "group_technique_map", "cve_embeddings", "hunt_packs",
     "audit_log", "watchlist", "webhook_alert_log",
 ]

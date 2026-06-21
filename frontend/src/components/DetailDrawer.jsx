@@ -362,10 +362,12 @@ function CorrelationFindings({ correlation, loading, onSelectCve }) {
     )
   }
 
+  const campaigns = correlation?.campaigns || []
   const infra = correlation?.infrastructure || []
   const actor = correlation?.actor || []
   const temporal = correlation?.temporal || []
-  const hasFindings = infra.length > 0 || actor.length > 0 || temporal.length > 0
+  const otxStatus = correlation?.otx_status
+  const hasFindings = campaigns.length > 0 || infra.length > 0 || actor.length > 0 || temporal.length > 0
 
   return (
     <section className="drawer-section" aria-labelledby="corr-heading">
@@ -373,10 +375,45 @@ function CorrelationFindings({ correlation, loading, onSelectCve }) {
         // CORRELATION FINDINGS
       </h3>
 
-      {!hasFindings && (
+      {!hasFindings && otxStatus === 'not_configured' && (
+        <p className="drawer-intel-empty mono">
+          // Infrastructure correlation requires an OTX API key
+        </p>
+      )}
+
+      {!hasFindings && otxStatus !== 'not_configured' && (
         <p className="drawer-intel-empty mono">
           // No correlation signals detected for this CVE
         </p>
+      )}
+
+      {campaigns.length > 0 && (
+        <div className="corr-group" aria-label="Campaign correlation">
+          <p className="corr-group-label mono">// CAMPAIGN LINKS</p>
+          {campaigns.map(item => (
+            <div key={item.campaign_id} className="corr-finding">
+              <div className="corr-finding-head">
+                <ConfidenceBadge confidence={item.confidence} />
+                <p className="corr-finding-text">
+                  {item.summary || item.label}
+                  {(item.members || []).filter(id => id !== correlation?.cve_id).map((cveId, idx) => (
+                    <span key={cveId}>
+                      {idx === 0 ? ' ' : ', '}
+                      <button
+                        type="button"
+                        className="corr-cve-link mono"
+                        onClick={() => onSelectCve?.(cveId)}
+                        aria-label={`Open ${cveId} in drawer`}
+                      >
+                        {cveId}
+                      </button>
+                    </span>
+                  ))}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {/* Level 1: Infrastructure */}

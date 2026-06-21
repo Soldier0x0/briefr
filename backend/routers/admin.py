@@ -480,9 +480,11 @@ async def upload_backup(request: Request, file: UploadFile = File(...)):
 _STORAGE_TABLES = [
     "cves", "kev_deadlines", "epss_history", "mitre_techniques", "mitre_groups",
     "atlas_techniques", "atlas_case_studies", "cve_technique_map", "cve_atlas_map",
-    "group_technique_map", "otx_cve_pulses", "otx_pulse_iocs", "cve_exploits",
+    "group_technique_map", "otx_cve_pulses", "otx_pulse_iocs", "otx_pulses",
+    "cve_exploits",
     "cve_change_history", "ioc_cache", "feed_cache", "correlation_infrastructure",
-    "correlation_actor", "correlation_temporal", "cve_embeddings", "api_usage",
+    "correlation_actor", "correlation_temporal", "correlation_campaigns",
+    "correlation_campaign_members", "cve_embeddings", "api_usage",
     "audit_log", "sync_state", "watchlist", "hunt_packs", "webhook_alert_log",
 ]
 

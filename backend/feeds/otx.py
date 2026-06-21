@@ -364,13 +364,13 @@ async def top_pulse_ipv4s(
 
 
 async def run_otx_nightly_correlation(db, api_key: str) -> dict:
-    """Pre-warm OTX pulse cache for CVEs published in the last 7 days."""
-    from database import get_recent_cve_ids_for_otx, store_otx_cve_pulses
+    """Pre-warm OTX pulse cache for prioritized CVEs."""
+    from database import get_prioritized_cve_ids_for_otx, store_otx_cve_pulses
 
     if not api_key:
         return {"cves": 0, "pulses": 0}
 
-    cve_ids = await get_recent_cve_ids_for_otx(db, days=7)
+    cve_ids = await get_prioritized_cve_ids_for_otx(db)
     total_pulses = 0
     for cve_id in cve_ids:
         try:
