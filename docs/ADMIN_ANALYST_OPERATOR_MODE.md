@@ -107,7 +107,7 @@ Retain as **Operator mode** with polish:
 | Control | Segmented toggle: **Analyst** \| **Operator** |
 | Default | `analyst` |
 | Persistence | `localStorage` key `briefr-admin-mode` (`analyst` \| `operator`) |
-| Pattern | Mirror `frontend/src/utils/displayPrefs.js` → new `frontend/src/utils/adminMode.js` |
+| Pattern | Mirror `frontend/src/utils/displayPrefs.js` (wrap all `localStorage` access in `try…catch` so private browsing / sandboxed iframes cannot crash the panel) → new `frontend/src/utils/adminMode.js` |
 | Plumbing | `AdminPage.jsx` holds mode state; pass `mode` to StatusBar, Sidebar, all pages |
 
 **Redirect guard:** If user is on an operator-only page and switches to Analyst → `setPage('overview')`.
@@ -254,7 +254,7 @@ Traffic light summary (one line):
 |------|---------|---------------------|------------------|
 | CVEs in database | `cve_count` | See §5.1 for `+N last 24h` | Always |
 | NIST CVE feed | `fmtAge(last_nvd_sync_age_seconds)` | `usually every {NVD_SYNC_INTERVAL_HOURS}h · incremental` | Always |
-| Last backup | `fmtAge(last_backup_age_seconds)` | `threshold {backup_threshold_seconds}` converted to hours | **Only if** `backup_enabled` / age present; see §5.2 |
+| Last backup | `fmtAge(last_backup_age_seconds)` | `threshold {backup_threshold_seconds}` converted to hours | **Only if** `last_backup_age_seconds != null` (matches `StatusBar.jsx`; no `backup_enabled` on the system payload today — add later if needed); see §5.2 |
 | Database health | Healthy / Problem | `checked on startup` or `run health check in Operator view` | Always; red callout if `db_integrity.ok === false` |
 | Sources with issues | `open_circuit_count` or “All OK” | Name worst source + cooldown if available from `feeds.sources` | Always |
 
@@ -393,13 +393,24 @@ Implement per **Recommendation** unless the operator overrides later.
 | Hide unless amber/red | **Yes** |
 | Never show | Too hidden for solo operator-analyst |
 
-**Decision:** Show **only when** `last_backup_age_seconds > backup_threshold_seconds * 0.75` (warning) or backup missing when enabled. Subtitle explains threshold. Otherwise omit card (grid becomes 4 cards).
+**Decision:** Show the card **only when** `last_backup_age_seconds != null` (same gate as `StatusBar.jsx` — the backend omits age when backups are disabled or `BACKUP_DIR` is unset). Within that, prefer showing when `last_backup_age_seconds > backup_threshold_seconds * 0.75` (warning) or backup is missing/stale. Subtitle explains threshold. Otherwise omit card (grid becomes 4 cards).
 
 ### 5.3 Slim scheduler table in analyst view
 
 **Question:** Mockup has 3-column schedule table. Alternative: cards only.
 
-**Decision:** **Include slim table** (mockup-inspired) for top 5–6 intel jobs only (NVD, KEV, EPSS, MITRE+ATLAS, Incident RSS, Correlation). Hide ML/embeddings/exploit sync jobs from analyst table unless errored.
+**Decision:** **Include slim table** (mockup-inspired) for these **6 job ids only**:
+
+- `nvd_incremental_sync`
+- `kev_metadata_sync`
+- `epss_score_sync`
+- `weekly_mitre_refresh`
+- `incident_feed_refresh`
+- `nightly_correlation`
+
+**Hide** all other scheduler jobs from the analyst table unless they have a recent error (`last_run_had_error === true`), e.g. `embeddings_backfill`, `llm_product_extraction`, `exploit_sources_sync`, `otx_nightly_correlation`, `vulnrichment_snapshot_sync`, `cvelistv5_incremental_sync`, `backup_deadman_check`.
+
+Export a constant in `intelStatus.js` or `catalog.js`, e.g. `ANALYST_SCHEDULE_TABLE_JOB_IDS`, so Claude Code does not guess filter logic.
 
 ### 5.4 Top bar alert pill
 
@@ -454,7 +465,7 @@ Do not introduce a new design system or light theme.
 | CVE count | Discord/Telegram pills |
 | NVD sync age | Backup age (unless critical — see §5.2) |
 | Worst-issue pill when `open_circuit_count > 0` | Run full ingest |
-| **Refresh all sources** → `POST /api/refresh` | Restart now / drain |
+| **Refresh all sources** → `POST /api/refresh` with manual `X-BRIEFR-Admin-Key` (`getAdminKey()`, same as `handleRunIngest`) | Restart now / drain |
 
 ### 6.2 Operator status bar
 
@@ -480,7 +491,7 @@ Use STATUS_CATALOG; render visible hint below badge in analyst mode (not title-o
 
 ### 7.3 `HelpTip.jsx` (new, small)
 
-Reusable `?` / `ⓘ` with `aria-describedby`. Use on: database health, sources paused, circuit breaker.
+Reusable `?` / `ⓘ` trigger button/icon. Use React’s `useId()` to generate a unique id for the tooltip/description element and associate it with the trigger via `aria-describedby` (avoids id collisions when multiple HelpTips render on one page). Use on: database health, sources paused, circuit breaker.
 
 ### 7.4 Toasts
 
@@ -583,7 +594,7 @@ All analyst UI derives from existing endpoints:
 | `GET /api/admin/system` | Counts, ages, integrity, scheduler_jobs, active_locks, feeds, circuits |
 | `GET /api/admin/config` | Masked key status (connection card) |
 | `POST /api/admin/scheduler/run` | Per-source refresh |
-| `POST /api/refresh` | Refresh all sources |
+| `POST /api/refresh` | Refresh all sources — **not** behind `adminApi`; pass `X-BRIEFR-Admin-Key` manually via `getAdminKey()` (see `handleRunIngest` in `AdminPage.jsx`) |
 | `POST /api/admin/feeds/{id}/reset-circuit` | Try again |
 
 Key `system` fields: `cve_count`, `last_nvd_sync_age_seconds`, `last_backup_age_seconds`, `backup_threshold_seconds`, `db_integrity`, `open_circuit_count`, `feeds.sources`, `feeds.incidents`, `scheduler_jobs`, `active_locks`, `recent_errors`, `jobs_with_errors_count`, `refresh_in_progress`.
