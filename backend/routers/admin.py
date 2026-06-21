@@ -97,10 +97,10 @@ def _read_build_info() -> dict[str, Any]:
 
 
 def _mask_key(value: str) -> str:
-    """Show last 4 chars or 'not configured'."""
+    """Show last 6 chars or 'not configured'."""
     if not value:
         return "not configured"
-    return f"…{value[-4:]}"
+    return f"…{value[-6:]}"
 
 
 def _mask_url(value: str) -> str:
@@ -108,6 +108,25 @@ def _mask_url(value: str) -> str:
     if not value:
         return "not configured"
     return value[:30] + "…[masked]"
+
+
+def _propagate_to_settings(key: str, value: str) -> None:
+    """Push a freshly-written env value into the live `settings` object so
+    non-restart-required keys take effect immediately instead of only on
+    next process start (settings is read from os.environ once at import)."""
+    attr = key.lower()
+    if not hasattr(settings, attr):
+        return
+    try:
+        current = getattr(settings, attr)
+        if isinstance(current, bool):
+            setattr(settings, attr, value.lower() not in ("0", "false", "no", "off"))
+        elif isinstance(current, int):
+            setattr(settings, attr, int(value))
+        else:
+            setattr(settings, attr, value)
+    except Exception:
+        pass
 
 
 def _age_seconds(ts: float | None) -> float | None:
@@ -1010,21 +1029,7 @@ async def set_config(request: Request, body: dict):
     dotenv_path = str(_DOTENV_PATH.resolve())
     dotenv_set_key(dotenv_path, key, value)
     os.environ[key] = value
-
-    # Propagate to the live settings object so the change takes effect without
-    # a restart for keys that settings already tracks.
-    attr = key.lower()
-    if hasattr(settings, attr):
-        try:
-            current = getattr(settings, attr)
-            if isinstance(current, bool):
-                setattr(settings, attr, value.lower() not in ("0", "false", "no", "off"))
-            elif isinstance(current, int):
-                setattr(settings, attr, int(value))
-            else:
-                setattr(settings, attr, value)
-        except Exception:
-            pass
+    _propagate_to_settings(key, value)
 
     await audit(request, f"config.set.{key}", value[:100])
 
@@ -1083,6 +1088,7 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
     for key, value in validated:
         dotenv_set_key(dotenv_path, key, value)
         os.environ[key] = value
+        _propagate_to_settings(key, value)
         changed_keys.append(key)
 
     if not changed_keys:
@@ -1091,11 +1097,18 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
     changed_summary = ", ".join(changed_keys[:10])
     await audit(request, "config.apply", changed_summary)
 
-    background_tasks.add_task(trigger_graceful_restart)
+    restart_needed = any(key in RESTART_REQUIRED_KEYS for key in changed_keys)
+    if restart_needed:
+        background_tasks.add_task(trigger_graceful_restart)
+        message = f"Applied {len(changed_keys)} key(s); restarting backend"
+    else:
+        message = f"Applied {len(changed_keys)} key(s) — took effect immediately, no restart needed"
+
     return {
         "ok": True,
         "changed_keys": changed_keys,
-        "message": f"Applied {len(changed_keys)} key(s); restarting backend",
+        "restart_required": restart_needed,
+        "message": message,
     }
 
 
