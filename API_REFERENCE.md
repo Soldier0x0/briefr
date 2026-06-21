@@ -412,19 +412,63 @@ Single-user for now — no `user_id` column. Built-in app login will add per-use
 |---|---|---|---|
 | `sector` | str | `""` | User industry for actor sector matching |
 
-**Response:**
+**Response (v2):**
 
 ```json
 {
   "cve_id": "CVE-2024-0001",
-  "infrastructure": [],
+  "campaigns": [
+    {
+      "campaign_id": "camp_abc123",
+      "label": "Ransomware wave",
+      "members": ["CVE-2024-0001", "CVE-2024-0002"],
+      "confidence": "medium",
+      "evidence": [{"type": "same_pulse", "pulse_id": "...", "pulse_name": "..."}],
+      "summary": "Linked to 1 other CVE(s) via OTX pulse ...",
+      "attribution_conflict": false
+    }
+  ],
+  "infrastructure": [
+    {
+      "cve_id_b": "CVE-2024-0002",
+      "shared_ip_count": 1,
+      "shared_domain_count": 0,
+      "shared_hash_count": 1,
+      "shared_url_count": 0,
+      "confidence": "high",
+      "evidence": [{"type": "shared_indicator", "ioc_type": "HASH", "value": "..."}],
+      "summary": "Shares 1 hash with CVE-2024-0002 via OTX pulses."
+    }
+  ],
   "actor": [],
   "temporal": [],
+  "otx_status": "ok",
+  "meta": {"engine_version": "2.0", "cache_hit": false},
   "computed_at": "2024-01-01T00:00:00+00:00"
 }
 ```
 
-Cached 6 hours in `feed_cache`. On engine error, returns empty arrays + `"error"` string.
+Cached 6 hours in `feed_cache` (`correlation:v2:{cve}:{sector}`). On engine error, returns empty arrays + `"error"` string.
+
+### POST /api/cves/{cve_id}/correlation/suppress
+
+Dismiss a campaign or infrastructure finding for this CVE.
+
+**Body:**
+
+```json
+{
+  "scope": "campaign_id",
+  "key": {"campaign_id": "camp_abc123"},
+  "reason": "optional analyst note"
+}
+```
+
+Scopes: `campaign_id`, `cve_pair`, `pulse_id`, `infrastructure`.
+
+### DELETE /api/cves/{cve_id}/correlation/suppress
+
+Query params: `scope` plus `campaign_id`, `cve_id_b`, or `pulse_id` depending on scope.
 
 ---
 

@@ -8,6 +8,7 @@ import {
   fetchCVERelated,
   fetchCVERisk,
   fetchCVESentences,
+  suppressCVECorrelation,
 } from '../api.js'
 import { buildSingleReport, copyToClipboard } from '../utils/report.js'
 import { downloadSingleCvePdf } from '../utils/pdfReport.js'
@@ -337,20 +338,52 @@ function RiskScoreBreakdown({ cve, riskScore, riskLoading, onOpenProfile, moment
 // ── Correlation Findings (Intel tab) ─────────────────────
 
 function ConfidenceBadge({ confidence }) {
+  const level = (confidence || 'low').toLowerCase()
   const cls =
-    confidence === 'high'
+    level === 'high'
       ? 'corr-badge-high'
-      : confidence === 'medium'
+      : level === 'medium'
         ? 'corr-badge-medium'
         : 'corr-badge-low'
+  const title =
+    level === 'high'
+      ? 'Strong OTX or multi-IOC evidence'
+      : level === 'medium'
+        ? 'Moderate community or shared-pulse link'
+        : 'Weak or IP-only signal — verify before acting'
   return (
-    <span className={`corr-confidence-badge mono ${cls}`}>
-      {(confidence || 'low').toUpperCase()}
+    <span className={`corr-confidence-badge mono ${cls}`} title={title}>
+      {level.toUpperCase()}
     </span>
   )
 }
 
-function CorrelationFindings({ correlation, loading, onSelectCve }) {
+function CorrelationEvidence({ evidence }) {
+  const items = Array.isArray(evidence) ? evidence : []
+  if (!items.length) return null
+  return (
+    <details className="corr-evidence">
+      <summary className="corr-evidence-toggle mono">Show evidence</summary>
+      <ul className="corr-evidence-list">
+        {items.map((ev, idx) => (
+          <li key={`${ev.type}-${idx}`} className="mono corr-evidence-item">
+            {ev.type === 'same_pulse' && `Same OTX pulse: ${ev.pulse_name || ev.pulse_id}`}
+            {ev.type === 'shared_indicator' && (
+              <>
+                {`Shared ${ev.ioc_type}: ${ev.value}`}
+                {ev.confirmation ? ` (${ev.confirmation})` : ''}
+              </>
+            )}
+            {ev.type === 'enrichment_confirmation' && ev.summary}
+            {!['same_pulse', 'shared_indicator', 'enrichment_confirmation'].includes(ev.type) && JSON.stringify(ev)}
+          </li>
+        ))}
+      </ul>
+    </details>
+  )
+}
+
+function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
   if (loading) {
     return (
       <section className="drawer-section" aria-labelledby="corr-heading">
@@ -395,7 +428,13 @@ function CorrelationFindings({ correlation, loading, onSelectCve }) {
               <div className="corr-finding-head">
                 <ConfidenceBadge confidence={item.confidence} />
                 <p className="corr-finding-text">
+                  <span className="corr-lane-tag mono">Campaign link</span>{' '}
                   {item.summary || item.label}
+                  {item.attribution_conflict && (
+                    <span className="corr-conflict-note" title="OTX adversary disagrees with MITRE actor mapping">
+                      {' '}Attribution conflict — treat as unverified.
+                    </span>
+                  )}
                   {(item.members || []).filter(id => id !== correlation?.cve_id).map((cveId, idx) => (
                     <span key={cveId}>
                       {idx === 0 ? ' ' : ', '}
@@ -411,6 +450,16 @@ function CorrelationFindings({ correlation, loading, onSelectCve }) {
                   ))}
                 </p>
               </div>
+              <CorrelationEvidence evidence={item.evidence} />
+              {onDismiss && (
+                <button
+                  type="button"
+                  className="corr-dismiss-btn mono"
+                  onClick={() => onDismiss({ scope: 'campaign_id', key: { campaign_id: item.campaign_id } })}
+                >
+                  Not related
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -425,22 +474,59 @@ function CorrelationFindings({ correlation, loading, onSelectCve }) {
               <div className="corr-finding-head">
                 <ConfidenceBadge confidence={item.confidence} />
                 <p className="corr-finding-text">
-                  This CVE shares exploitation infrastructure with{' '}
-                  <button
-                    type="button"
-                    className="corr-cve-link mono"
-                    onClick={() => onSelectCve?.(item.cve_id_b)}
-                    aria-label={`Open ${item.cve_id_b} in drawer`}
-                  >
-                    {item.cve_id_b}
-                  </button>
-                  {' '}({item.shared_ip_count} common IP
-                  {item.shared_ip_count !== 1 ? 's' : ''}).
-                  {item.shared_ip_count >= 2 && (
-                    <span className="corr-campaign-note"> Possible coordinated campaign.</span>
+                  <span className="corr-lane-tag mono">Shared infrastructure</span>{' '}
+                  {item.summary ? (
+                    (() => {
+                      const peer = item.cve_id_b
+                      const parts = item.summary.split(peer)
+                      if (parts.length === 2) {
+                        return (
+                          <>
+                            {parts[0]}
+                            <button
+                              type="button"
+                              className="corr-cve-link mono"
+                              onClick={() => onSelectCve?.(peer)}
+                              aria-label={`Open ${peer} in drawer`}
+                            >
+                              {peer}
+                            </button>
+                            {parts[1]}
+                          </>
+                        )
+                      }
+                      return item.summary
+                    })()
+                  ) : (
+                    <>
+                      This CVE shares exploitation infrastructure with{' '}
+                      <button
+                        type="button"
+                        className="corr-cve-link mono"
+                        onClick={() => onSelectCve?.(item.cve_id_b)}
+                        aria-label={`Open ${item.cve_id_b} in drawer`}
+                      >
+                        {item.cve_id_b}
+                      </button>
+                      {' '}({item.shared_ip_count ?? 0} common IP
+                      {(item.shared_ip_count ?? 0) !== 1 ? 's' : ''}).
+                    </>
                   )}
                 </p>
               </div>
+              <CorrelationEvidence evidence={item.evidence} />
+              {onDismiss && (
+                <button
+                  type="button"
+                  className="corr-dismiss-btn mono"
+                  onClick={() => onDismiss({
+                    scope: 'infrastructure',
+                    key: { cve_id_b: item.cve_id_b },
+                  })}
+                >
+                  Not related
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -598,7 +684,7 @@ function exploitTypeLabel(type) {
   return 'PoC'
 }
 
-function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxConfigured, cve, loading, onInvestigateIp, onInvestigatePulse, pivotNotice, correlation, correlationLoading, onSelectCorrelatedCve }) {
+function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxConfigured, cve, loading, onInvestigateIp, onInvestigatePulse, pivotNotice, correlation, correlationLoading, onSelectCorrelatedCve, onDismissCorrelation }) {
   const exploits = Array.isArray(publicExploits) ? publicExploits : []
   const scans = Array.isArray(greynoiseScans) ? greynoiseScans : []
   const pulses = Array.isArray(otxPulses) ? otxPulses : []
@@ -800,6 +886,7 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
         correlation={correlation}
         loading={correlationLoading}
         onSelectCve={onSelectCorrelatedCve}
+        onDismiss={onDismissCorrelation}
       />
     </>
   )
@@ -1070,8 +1157,13 @@ function TabRelated({ related, relatedMethod, loading, onSelectRelated }) {
   return (
     <section className="drawer-section" aria-labelledby="related-heading">
       <h3 id="related-heading" className="drawer-human-label mono">
-        {semantic ? 'SEMANTICALLY SIMILAR' : 'SAME PRODUCT (30 DAYS)'}
+        {semantic ? 'SIMILAR DESCRIPTION' : 'SAME PRODUCT FAMILY'}
       </h3>
+      <p className="drawer-related-lane-note mono">
+        {semantic
+          ? '// Semantic neighbor — not the same as campaign correlation'
+          : '// Same affected product — not the same as campaign correlation'}
+      </p>
       <ul className="drawer-related-list" aria-label="Related CVEs">
         {related.map(item => {
           const sev = (item.severity || '').toUpperCase()
@@ -1316,6 +1408,18 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
       .finally(() => { if (!cancelled) setDetectionLoading(false) })
     return () => { cancelled = true }
   }, [activeTab, cve?.cve_id])
+
+  async function handleDismissCorrelation(body) {
+    if (!cve?.cve_id) return
+    try {
+      await suppressCVECorrelation(cve.cve_id, body)
+      const sector = assetCtx?.profile?.environment?.industry || ''
+      const data = await fetchCVECorrelation(cve.cve_id, sector)
+      setCorrelation(data)
+    } catch {
+      /* dismiss is best-effort */
+    }
+  }
 
   // Correlation: fetch on drawer open (Level 1 + 2 on-demand, Level 3 pre-computed)
   useEffect(() => {
@@ -1649,6 +1753,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
               correlation={correlation}
               correlationLoading={correlationLoading}
               onSelectCorrelatedCve={handleSelectRelated}
+              onDismissCorrelation={handleDismissCorrelation}
             />
             </DrawerTabErrorBoundary>
           )}

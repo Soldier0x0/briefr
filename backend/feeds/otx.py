@@ -332,18 +332,24 @@ async def lookup_otx_for_ioc(
     db, ioc_value: str, ioc_type: str, api_key: str
 ) -> dict:
     """Cached OTX IOC enrichment for IOC Lookup."""
+    from correlation.ioc_graph import related_cves_for_ioc
     from database import get_feed_cache, set_feed_cache
 
     if not api_key:
-        return await lookup_ioc_in_otx(ioc_value, ioc_type, "")
+        result = await lookup_ioc_in_otx(ioc_value, ioc_type, "")
+    else:
+        cache_key = f"otx:ioc:{ioc_type}:{ioc_value.lower()}"
+        cached = await get_feed_cache(db, cache_key, CACHE_HOURS)
+        if cached is not None:
+            result = cached
+        else:
+            result = await lookup_ioc_in_otx(ioc_value, ioc_type, api_key)
+            await set_feed_cache(db, cache_key, result)
 
-    cache_key = f"otx:ioc:{ioc_type}:{ioc_value.lower()}"
-    cached = await get_feed_cache(db, cache_key, CACHE_HOURS)
-    if cached is not None:
-        return cached
-
-    result = await lookup_ioc_in_otx(ioc_value, ioc_type, api_key)
-    await set_feed_cache(db, cache_key, result)
+    db_related = await related_cves_for_ioc(db, ioc_type, ioc_value)
+    if db_related:
+        merged = sorted(set(result.get("related_cves") or []) | set(db_related))
+        result = {**result, "related_cves": merged, "related_cves_source": "correlation_tables"}
     return result
 
 

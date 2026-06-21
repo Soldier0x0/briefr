@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 
 ENGINE_VERSION = "2.0"
-CAMPAIGN_ALGORITHM_VERSION = "2.0.0-phase1"
+CAMPAIGN_ALGORITHM_VERSION = "2.0.0-phase2"
 
 
 def get_otx_ioc_sync_max_per_run() -> int:
@@ -22,6 +22,14 @@ def get_correlation_cache_hours() -> float:
 
 def get_hub_cve_pulse_cap() -> int:
     return max(1, int(os.environ.get("CORRELATION_HUB_CVE_PULSE_CAP", "50")))
+
+
+def get_correlation_confirm_enabled() -> bool:
+    return os.environ.get("CORRELATION_CONFIRM_ENABLED", "1").strip() not in (
+        "0",
+        "false",
+        "False",
+    )
 
 
 def get_max_campaign_members() -> int:
