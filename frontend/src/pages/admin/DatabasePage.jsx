@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { AlertTriangle } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import DangerZone from './shared/DangerZone.jsx'
@@ -113,8 +114,11 @@ export default function DatabasePage({ toast, active = true }) {
       {isSqlite ? (
         <>
           <div className="admin-callout admin-callout-amber">
-            Running on SQLite (single-writer). PostgreSQL is optional and only worth migrating to if you need
-            concurrent writers or multiple uvicorn workers — see <code>docs/POSTGRES.md</code>.
+            <AlertTriangle size={16} strokeWidth={2} />
+            <span>
+              Running on SQLite (single-writer). PostgreSQL is optional and only worth migrating to if you need
+              concurrent writers or multiple uvicorn workers — see <code>docs/POSTGRES.md</code>.
+            </span>
           </div>
 
           <DangerZone title="Migrate to PostgreSQL">
@@ -163,13 +167,16 @@ export default function DatabasePage({ toast, active = true }) {
                 )}
                 {migrationDone && (
                   <div className="admin-callout admin-callout-amber">
-                    <strong>Migration complete</strong> — {status.rows_copied?.toLocaleString()} rows copied across {status.tables_total} tables.
-                    Verify the data looks right against the target database, then apply the switch:
-                    <div style={{ marginTop: '0.5rem' }}>
-                      <button className="admin-btn admin-btn-primary" onClick={applyAndRestart} disabled={applying}>
-                        {applying ? <><span className="admin-spinner" /> Applying…</> : 'Apply DATABASE_URL & restart'}
-                      </button>
-                    </div>
+                    <AlertTriangle size={16} strokeWidth={2} />
+                    <span>
+                      <strong>Migration complete</strong> — {status.rows_copied?.toLocaleString()} rows copied across {status.tables_total} tables.
+                      Verify the data looks right against the target database, then apply the switch:
+                      <div style={{ marginTop: '0.5rem' }}>
+                        <button className="admin-btn admin-btn-primary" onClick={applyAndRestart} disabled={applying}>
+                          {applying ? <><span className="admin-spinner" /> Applying…</> : 'Apply DATABASE_URL & restart'}
+                        </button>
+                      </div>
+                    </span>
                   </div>
                 )}
                 {migrationError && (
@@ -183,8 +190,11 @@ export default function DatabasePage({ toast, active = true }) {
         </>
       ) : (
         <div className="admin-callout admin-callout-amber">
-          Running on PostgreSQL. To roll back to SQLite: stop the backend, restore a pre-migration SQLite backup,
-          remove <code>DATABASE_URL</code>, and restart — see <code>docs/POSTGRES.md</code>.
+          <AlertTriangle size={16} strokeWidth={2} />
+          <span>
+            Running on PostgreSQL. To roll back to SQLite: stop the backend, restore a pre-migration SQLite backup,
+            remove <code>DATABASE_URL</code>, and restart — see <code>docs/POSTGRES.md</code>.
+          </span>
         </div>
       )}
     </div>

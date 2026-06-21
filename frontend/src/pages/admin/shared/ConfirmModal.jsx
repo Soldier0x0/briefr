@@ -19,6 +19,16 @@ export default function ConfirmModal({ actionId, title, message, confirmWord, on
   const displayTitle = title ?? apiAction?.description ?? ''
   const displayMessage = message ?? apiAction?.description ?? ''
   const word = confirmWord ?? apiAction?.confirm_word ?? ''
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') onCancel()
+      else if (e.key === 'Enter' && (!word || input === word)) onConfirm(input)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onCancel, onConfirm, input, word])
+
   return (
     <div className="admin-modal-overlay">
       <div className="admin-modal">

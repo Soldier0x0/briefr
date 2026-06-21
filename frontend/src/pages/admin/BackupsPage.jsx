@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Settings2 } from 'lucide-react'
+import { Settings2, AlertTriangle } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import StatCard from './shared/StatCard.jsx'
 import AsyncSection from './shared/AsyncSection.jsx'
@@ -240,9 +240,12 @@ export default function BackupsPage({ toast, system }) {
       </div>
 
       <div className="admin-callout admin-callout-amber" style={{ marginTop: '1rem' }}>
-        <strong>Restore is a CLI operation</strong> to prevent accidental data loss.<br />
-        <code className="mono">bash /opt/briefr/deploy/briefr-restore.sh</code><br />
-        To restore specific archive: <code className="mono">briefr-restore.sh {'<filename>'}</code>
+        <AlertTriangle size={16} strokeWidth={2} />
+        <span>
+          <strong>Restore is a CLI operation</strong> to prevent accidental data loss.<br />
+          <code className="mono">bash /opt/briefr/deploy/briefr-restore.sh</code><br />
+          To restore specific archive: <code className="mono">briefr-restore.sh {'<filename>'}</code>
+        </span>
       </div>
     </div>
   )

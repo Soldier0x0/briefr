@@ -1,17 +1,23 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Eye, Wrench, RefreshCw, RotateCw, Hourglass, ChevronDown } from 'lucide-react'
+import { Eye, Wrench, RefreshCw, RotateCw, Hourglass, ChevronDown, Clock } from 'lucide-react'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import { fmtAge } from './formatters.js'
 import { worstSource } from './intelStatus.js'
 
-export default function StatusBar({ system, onRunIngest, onRestart, onDrainRestart, refreshInProgress, mode, setMode }) {
+export default function StatusBar({ system, onRunIngest, onRestart, onDrainRestart, refreshInProgress, mode, setMode, lastUpdated }) {
   const [restartMenu, setRestartMenu] = useState(false)
   const [menuPos, setMenuPos] = useState(null)
   const [confirmRestart, setConfirmRestart] = useState(null) // null | 'immediate' | 'drain'
+  const [now, setNow] = useState(Date.now())
   const menuRef = useRef(null)
   const arrowRef = useRef(null)
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
 
   function handleModeClick(next) {
     setMode(next)
@@ -62,6 +68,16 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
   }
 
   const worst = mode === 'analyst' ? worstSource(system) : null
+  const updatedAgo = lastUpdated ? Math.max(0, Math.round((now - lastUpdated) / 1000)) : null
+  const updatedAgoEl = updatedAgo !== null ? (
+    <>
+      <div className="sb-sep" />
+      <span className="sb-item" title="Time since the status bar last refreshed from the backend">
+        <Clock size={11} strokeWidth={2} />
+        <span className="sb-label">Updated {updatedAgo}s ago</span>
+      </span>
+    </>
+  ) : null
 
   return (
     <>
@@ -74,7 +90,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
               ? 'Wait for all running jobs to finish, then shut the backend down gracefully (systemd will restart it).'
               : undefined
           }
-          confirmWord={confirmRestart === 'drain' ? 'restart' : undefined}
+          confirmWord="restart"
           onConfirm={() => {
             setConfirmRestart(null)
             if (confirmRestart === 'drain') onDrainRestart()
@@ -122,6 +138,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
                 </span>
               </>
             )}
+            {updatedAgoEl}
             <div className="sb-actions">
               <button
                 className="admin-btn admin-btn-ghost"
@@ -190,6 +207,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
                 </span>
               </>
             )}
+            {updatedAgoEl}
             <div className="sb-actions">
               <button
                 className="admin-btn admin-btn-warn"
