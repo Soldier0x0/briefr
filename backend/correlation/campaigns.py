@@ -42,9 +42,18 @@ def _parse_json_list(value: Any) -> list:
     return []
 
 
-async def _pulse_counts_by_cve(db) -> dict[str, int]:
+async def _pulse_counts_for_cves(db, cve_ids: list[str]) -> dict[str, int]:
+    if not cve_ids:
+        return {}
+    placeholders = ",".join("?" * len(cve_ids))
     rows = await db.execute_fetchall(
-        "SELECT cve_id, COUNT(DISTINCT pulse_id) AS pulse_count FROM otx_cve_pulses GROUP BY cve_id"
+        f"""
+        SELECT cve_id, COUNT(DISTINCT pulse_id) AS pulse_count
+        FROM otx_cve_pulses
+        WHERE cve_id IN ({placeholders})
+        GROUP BY cve_id
+        """,
+        tuple(cve_ids),
     )
     return {row["cve_id"]: int(row["pulse_count"]) for row in rows}
 
@@ -92,17 +101,17 @@ async def build_campaigns_from_pulses(db) -> dict[str, int]:
             """,
             (pulse_id,),
         )
-        meta = meta_rows[0] if meta_rows else {}
+        meta = dict(meta_rows[0]) if meta_rows else {}
 
         label = (
-            (meta["pulse_name"] or meta["link_pulse_name"] or "OTX pulse").strip()
+            (meta.get("pulse_name") or meta.get("link_pulse_name") or "OTX pulse").strip()
             or "OTX pulse"
         )
-        adversary = (meta["adversary"] or meta["link_adversary"] or "").strip()
-        malware = _parse_json_list(meta["malware_families"] or meta["link_malware"])
-        tags = _parse_json_list(meta["tags"] or meta["link_tags"])
+        adversary = (meta.get("adversary") or meta.get("link_adversary") or "").strip()
+        malware = _parse_json_list(meta.get("malware_families") or meta.get("link_malware"))
+        tags = _parse_json_list(meta.get("tags") or meta.get("link_tags"))
         countries = _parse_json_list(
-            meta["targeted_countries"] or meta["link_countries"]
+            meta.get("targeted_countries") or meta.get("link_countries")
         )
 
         member_rows = await db.execute_fetchall(
@@ -197,7 +206,6 @@ async def prune_invalid_campaign_members(db) -> int:
 async def get_campaigns_for_cve(db, cve_id: str) -> list[dict]:
     """Return campaign clusters containing cve_id with hub filtering applied."""
     cve_upper = cve_id.upper()
-    pulse_counts = await _pulse_counts_by_cve(db)
 
     rows = await db.execute_fetchall(
         """
@@ -223,6 +231,7 @@ async def get_campaigns_for_cve(db, cve_id: str) -> list[dict]:
             (row["campaign_id"],),
         )
         all_members = [r["cve_id"] for r in member_rows]
+        pulse_counts = await _pulse_counts_for_cves(db, all_members)
         filtered = filter_campaign_members(
             cve_upper, all_members, pulse_counts
         )

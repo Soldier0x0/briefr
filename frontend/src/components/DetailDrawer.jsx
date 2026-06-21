@@ -396,7 +396,7 @@ function CorrelationFindings({ correlation, loading, onSelectCve }) {
                 <ConfidenceBadge confidence={item.confidence} />
                 <p className="corr-finding-text">
                   {item.summary || item.label}
-                  {item.members?.filter(id => id !== correlation?.cve_id).map((cveId, idx) => (
+                  {(item.members || []).filter(id => id !== correlation?.cve_id).map((cveId, idx) => (
                     <span key={cveId}>
                       {idx === 0 ? ' ' : ', '}
                       <button
