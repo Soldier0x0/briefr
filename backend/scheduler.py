@@ -900,11 +900,13 @@ async def run_nightly_correlation() -> bool:
 
             stats = await _run_correlation(db)
             logger.info(
-                "Nightly correlation: %d CVEs, %d infra pairs, %d actors, %d anomalies",
+                "Nightly correlation: %d CVEs, %d infra pairs, %d actors, %d anomalies, "
+                "%d campaigns",
                 stats.get("cves_processed", 0),
                 stats.get("infrastructure_pairs", 0),
                 stats.get("actor_findings", 0),
                 stats.get("temporal_anomalies", 0),
+                stats.get("campaigns_built", 0),
             )
         except Exception as exc:
             logger.error("Nightly correlation job failed: %s", exc)

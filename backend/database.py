@@ -249,6 +249,47 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_value
                 ON otx_pulse_iocs(ioc_value);
 
+            CREATE TABLE IF NOT EXISTS otx_pulses (
+                pulse_id TEXT PRIMARY KEY,
+                pulse_name TEXT NOT NULL DEFAULT '',
+                author TEXT DEFAULT '',
+                created_date TEXT DEFAULT '',
+                adversary TEXT DEFAULT '',
+                malware_families TEXT DEFAULT '[]',
+                tags TEXT DEFAULT '[]',
+                targeted_countries TEXT DEFAULT '[]',
+                ioc_count INTEGER DEFAULT 0,
+                fetched_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS correlation_campaigns (
+                campaign_id TEXT PRIMARY KEY,
+                primary_pulse_id TEXT,
+                label TEXT NOT NULL DEFAULT '',
+                adversary TEXT DEFAULT '',
+                malware_families TEXT DEFAULT '[]',
+                tags TEXT DEFAULT '[]',
+                targeted_countries TEXT DEFAULT '[]',
+                confidence TEXT DEFAULT 'medium',
+                member_count INTEGER DEFAULT 0,
+                lifecycle TEXT DEFAULT 'active',
+                campaign_version TEXT DEFAULT '',
+                computed_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_correlation_campaigns_pulse
+                ON correlation_campaigns(primary_pulse_id);
+
+            CREATE TABLE IF NOT EXISTS correlation_campaign_members (
+                campaign_id TEXT NOT NULL,
+                cve_id TEXT NOT NULL,
+                role TEXT DEFAULT 'member',
+                PRIMARY KEY (campaign_id, cve_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_correlation_campaign_members_cve
+                ON correlation_campaign_members(cve_id);
+
             CREATE TABLE IF NOT EXISTS correlation_infrastructure (
                 cve_id_a TEXT NOT NULL,
                 cve_id_b TEXT NOT NULL,
@@ -407,6 +448,49 @@ async def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_webhook_delivery_log_dest ON webhook_delivery_log(destination_id)",
             "CREATE INDEX IF NOT EXISTS idx_webhook_delivery_log_at ON webhook_delivery_log(attempted_at)",
             "CREATE INDEX IF NOT EXISTS idx_webhook_delivery_log_event ON webhook_delivery_log(event_type)",
+            # Correlation v2 Phase 1
+            """
+            CREATE TABLE IF NOT EXISTS otx_pulses (
+                pulse_id TEXT PRIMARY KEY,
+                pulse_name TEXT NOT NULL DEFAULT '',
+                author TEXT DEFAULT '',
+                created_date TEXT DEFAULT '',
+                adversary TEXT DEFAULT '',
+                malware_families TEXT DEFAULT '[]',
+                tags TEXT DEFAULT '[]',
+                targeted_countries TEXT DEFAULT '[]',
+                ioc_count INTEGER DEFAULT 0,
+                fetched_at TEXT DEFAULT (datetime('now'))
+            )
+            """,
+            "ALTER TABLE otx_cve_pulses ADD COLUMN targeted_countries TEXT DEFAULT '[]'",
+            """
+            CREATE TABLE IF NOT EXISTS correlation_campaigns (
+                campaign_id TEXT PRIMARY KEY,
+                primary_pulse_id TEXT,
+                label TEXT NOT NULL DEFAULT '',
+                adversary TEXT DEFAULT '',
+                malware_families TEXT DEFAULT '[]',
+                tags TEXT DEFAULT '[]',
+                targeted_countries TEXT DEFAULT '[]',
+                confidence TEXT DEFAULT 'medium',
+                member_count INTEGER DEFAULT 0,
+                lifecycle TEXT DEFAULT 'active',
+                campaign_version TEXT DEFAULT '',
+                computed_at TEXT DEFAULT (datetime('now'))
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_correlation_campaigns_pulse ON correlation_campaigns(primary_pulse_id)",
+            """
+            CREATE TABLE IF NOT EXISTS correlation_campaign_members (
+                campaign_id TEXT NOT NULL,
+                cve_id TEXT NOT NULL,
+                role TEXT DEFAULT 'member',
+                PRIMARY KEY (campaign_id, cve_id)
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_correlation_campaign_members_cve ON correlation_campaign_members(cve_id)",
+            "CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_type_value ON otx_pulse_iocs(ioc_type, ioc_value)",
         ):
             try:
                 await db.execute(migration)
@@ -1427,6 +1511,15 @@ async def set_ioc_cache(db: aiosqlite.Connection, value: str, ioc_type: str, res
     )
 
 
+async def delete_feed_cache_prefix(db: aiosqlite.Connection, prefix: str) -> int:
+    """Delete feed_cache rows whose key starts with prefix."""
+    cursor = await db.execute(
+        "DELETE FROM feed_cache WHERE cache_key LIKE ?",
+        (f"{prefix}%",),
+    )
+    return cursor.rowcount or 0
+
+
 async def get_feed_cache(
     db: aiosqlite.Connection, cache_key: str, max_age_hours: float
 ) -> dict | None:
@@ -1682,36 +1775,79 @@ async def mark_has_poc_additive(
 
 
 
-async def replace_otx_cve_pulses(
-    db: aiosqlite.Connection, cve_id: str, pulses: list[dict]
+async def upsert_otx_pulses(
+    db: aiosqlite.Connection, pulses: list[dict]
 ) -> None:
-    key = cve_id.upper()
-    await db.execute("DELETE FROM otx_cve_pulses WHERE cve_id = ?", (key,))
+    """Upsert pulse dimension rows (caller commits)."""
     if not pulses:
         return
     await db.executemany(
         """
-        INSERT INTO otx_cve_pulses (
-            cve_id, pulse_id, pulse_name, author, created_date,
-            adversary, malware_families, ioc_count, tags, fetched_at
+        INSERT INTO otx_pulses (
+            pulse_id, pulse_name, author, created_date, adversary,
+            malware_families, tags, targeted_countries, ioc_count, fetched_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(pulse_id) DO UPDATE SET
+            pulse_name = excluded.pulse_name,
+            author = excluded.author,
+            created_date = excluded.created_date,
+            adversary = excluded.adversary,
+            malware_families = excluded.malware_families,
+            tags = excluded.tags,
+            targeted_countries = excluded.targeted_countries,
+            ioc_count = excluded.ioc_count,
+            fetched_at = excluded.fetched_at
         """,
         [
             (
-                key,
                 p.get("pulse_id") or "",
                 p.get("pulse_name") or "",
                 p.get("author") or "",
                 p.get("created_date") or "",
                 p.get("adversary") or "",
                 json.dumps(p.get("malware_families") or []),
-                int(p.get("ioc_count") or 0),
                 json.dumps(p.get("tags") or []),
+                json.dumps(p.get("targeted_countries") or []),
+                int(p.get("ioc_count") or 0),
             )
             for p in pulses
             if p.get("pulse_id")
         ],
     )
+
+
+async def replace_otx_cve_pulses(
+    db: aiosqlite.Connection, cve_id: str, pulses: list[dict]
+) -> None:
+    key = cve_id.upper()
+    await db.execute("DELETE FROM otx_cve_pulses WHERE cve_id = ?", (key,))
+    if pulses:
+        await upsert_otx_pulses(db, pulses)
+        await db.executemany(
+            """
+            INSERT INTO otx_cve_pulses (
+                cve_id, pulse_id, pulse_name, author, created_date,
+                adversary, malware_families, ioc_count, tags, targeted_countries,
+                fetched_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            """,
+            [
+                (
+                    key,
+                    p.get("pulse_id") or "",
+                    p.get("pulse_name") or "",
+                    p.get("author") or "",
+                    p.get("created_date") or "",
+                    p.get("adversary") or "",
+                    json.dumps(p.get("malware_families") or []),
+                    int(p.get("ioc_count") or 0),
+                    json.dumps(p.get("tags") or []),
+                    json.dumps(p.get("targeted_countries") or []),
+                )
+                for p in pulses
+                if p.get("pulse_id")
+            ],
+        )
 
 
 async def store_otx_cve_pulses(
@@ -1728,7 +1864,7 @@ async def read_otx_cve_pulses(
     rows = await db.execute_fetchall(
         """
         SELECT pulse_id, pulse_name, author, created_date, adversary,
-               malware_families, ioc_count, tags
+               malware_families, ioc_count, tags, targeted_countries
         FROM otx_cve_pulses
         WHERE cve_id = ?
           AND fetched_at > datetime('now', ?)
@@ -1748,6 +1884,7 @@ async def read_otx_cve_pulses(
             "malware_families": json.loads(row["malware_families"] or "[]"),
             "ioc_count": row["ioc_count"],
             "tags": json.loads(row["tags"] or "[]"),
+            "targeted_countries": json.loads(row["targeted_countries"] or "[]"),
         }
         for row in rows
     ]
@@ -1756,8 +1893,25 @@ async def read_otx_cve_pulses(
 async def replace_otx_pulse_iocs(
     db: aiosqlite.Connection, pulse_id: str, iocs: list[dict]
 ) -> None:
+    from correlation.ioc_normalize import normalize_ioc_row
+
     await db.execute("DELETE FROM otx_pulse_iocs WHERE pulse_id = ?", (pulse_id,))
     if not iocs:
+        return
+    normalized_rows: list[tuple] = []
+    for row in iocs:
+        norm = normalize_ioc_row(row)
+        if norm is None:
+            continue
+        normalized_rows.append(
+            (
+                pulse_id,
+                norm.get("ioc_type") or "",
+                norm.get("ioc_value") or "",
+                norm.get("description") or "",
+            )
+        )
+    if not normalized_rows:
         return
     await db.executemany(
         """
@@ -1765,16 +1919,7 @@ async def replace_otx_pulse_iocs(
             pulse_id, ioc_type, ioc_value, description, fetched_at
         ) VALUES (?, ?, ?, ?, datetime('now'))
         """,
-        [
-            (
-                pulse_id,
-                row.get("ioc_type") or "",
-                row.get("ioc_value") or "",
-                row.get("description") or "",
-            )
-            for row in iocs
-            if row.get("ioc_value")
-        ],
+        normalized_rows,
     )
 
 
@@ -1821,6 +1966,79 @@ async def get_recent_cve_ids_for_otx(
         (f"-{days} days",),
     )
     return [row["cve_id"] for row in rows]
+
+
+async def get_prioritized_cve_ids_for_otx(
+    db: aiosqlite.Connection,
+    days: int | None = None,
+    backlog_cap: int = 200,
+) -> list[str]:
+    """
+    Tiered CVE set for OTX pulse refresh (P0 → P3).
+    P0: KEV or watchlisted. P1: high EPSS, PoC, or changed in 7d.
+    P2: published within sync window. P3: backlog cap by recency.
+    """
+    from correlation.config import get_otx_cve_sync_days
+
+    window_days = days if days is not None else get_otx_cve_sync_days()
+    ordered: list[str] = []
+    seen: set[str] = set()
+
+    def _add(rows: list) -> None:
+        for row in rows:
+            cid = row["cve_id"]
+            if cid not in seen:
+                seen.add(cid)
+                ordered.append(cid)
+
+    p0 = await db.execute_fetchall(
+        """
+        SELECT c.cve_id
+        FROM cves c
+        LEFT JOIN watchlist w ON w.cve_id = c.cve_id AND w.state = 'pin'
+        WHERE COALESCE(c.is_kev, 0) = 1 OR w.cve_id IS NOT NULL
+        ORDER BY c.published DESC
+        """
+    )
+    _add(p0)
+
+    p1 = await db.execute_fetchall(
+        """
+        SELECT c.cve_id
+        FROM cves c
+        WHERE (
+            COALESCE(c.epss_score, 0) >= 0.5
+            OR COALESCE(c.has_poc, 0) = 1
+            OR datetime(c.modified) >= datetime('now', '-7 days')
+        )
+        ORDER BY COALESCE(c.epss_score, 0) DESC, c.published DESC
+        LIMIT 500
+        """
+    )
+    _add(p1)
+
+    p2 = await db.execute_fetchall(
+        """
+        SELECT cve_id FROM cves
+        WHERE DATE(published) >= DATE('now', ?)
+        ORDER BY published DESC
+        """,
+        (f"-{window_days} days",),
+    )
+    _add(p2)
+
+    if len(ordered) < backlog_cap:
+        p3 = await db.execute_fetchall(
+            """
+            SELECT cve_id FROM cves
+            ORDER BY published DESC
+            LIMIT ?
+            """,
+            (backlog_cap,),
+        )
+        _add(p3)
+
+    return ordered[:backlog_cap] if backlog_cap > 0 else ordered
 
 
 async def get_cve_count(db: aiosqlite.Connection) -> int:
