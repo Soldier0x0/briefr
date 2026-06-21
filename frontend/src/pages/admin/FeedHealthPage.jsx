@@ -1,14 +1,15 @@
 import { adminApi } from '../../api.js'
 import { fmtIso, sourceLabel } from './formatters.js'
 
-export default function FeedHealthPage({ system, toast }) {
+export default function FeedHealthPage({ system, toast, mode = 'operator' }) {
+  const isAnalyst = mode === 'analyst'
   const sources = system?.feeds?.sources || {}
   const incidents = system?.feeds?.incidents
 
   async function resetCircuit(sourceId) {
     try {
       await adminApi.post(`/feeds/${encodeURIComponent(sourceId)}/reset-circuit`, {})
-      toast(`Circuit reset for ${sourceId}`, true)
+      toast(isAnalyst ? 'Trying again' : `Circuit reset for ${sourceId}`, true)
     } catch (e) { toast(String(e.message), false) }
   }
 
@@ -29,16 +30,18 @@ export default function FeedHealthPage({ system, toast }) {
         <div className="feed-source-name">{sourceLabel(entryKey)}</div>
         <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', margin: '0.4rem 0' }}>
           <span className={`badge ${s.circuit_open ? 'badge-error' : 'badge-ok'}`}>
-            {s.circuit_open ? 'OPEN' : 'CLOSED'}
+            {s.circuit_open ? (isAnalyst ? 'PAUSED' : 'OPEN') : (isAnalyst ? 'Healthy' : 'CLOSED')}
           </span>
-          {s.consecutive_failures > 0 && (
+          {!isAnalyst && s.consecutive_failures > 0 && (
             <span className="badge badge-warn">{s.consecutive_failures} fail{s.consecutive_failures !== 1 ? 's' : ''}</span>
           )}
         </div>
-        <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>
-          {s.last_success ? `✓ ${fmtIso(s.last_success)}` : 'Never succeeded'}
-        </div>
-        {s.last_error && (
+        {!isAnalyst && (
+          <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>
+            {s.last_success ? `✓ ${fmtIso(s.last_success)}` : 'Never succeeded'}
+          </div>
+        )}
+        {!isAnalyst && s.last_error && (
           <div style={{ fontSize: '0.7rem', color: 'var(--amber)', marginTop: '0.2rem', wordBreak: 'break-all' }}>
             {s.last_error.slice(0, 80)}
           </div>
@@ -49,7 +52,7 @@ export default function FeedHealthPage({ system, toast }) {
           disabled={!s.circuit_open}
           onClick={() => resetCircuit(entryKey)}
         >
-          Reset circuit
+          {isAnalyst ? 'Try again' : 'Reset circuit'}
         </button>
       </div>
     )
@@ -66,8 +69,12 @@ export default function FeedHealthPage({ system, toast }) {
 
   return (
     <div>
-      <h1 className="admin-page-title">Feed health</h1>
-      <p className="admin-page-subtitle">Per-source ingest status and consecutive-failure counts for every upstream feed (NVD, KEV, EPSS, etc.).</p>
+      <h1 className="admin-page-title">{isAnalyst ? 'Source status' : 'Feed health'}</h1>
+      <p className="admin-page-subtitle">
+        {isAnalyst
+          ? 'Which intel sources are current and which need attention.'
+          : 'Per-source ingest status and consecutive-failure counts for every upstream feed (NVD, KEV, EPSS, etc.).'}
+      </p>
 
       {entries.length === 0 ? (
         <div className="admin-empty">No health data yet — sources initialize on first fetch.</div>
@@ -75,7 +82,9 @@ export default function FeedHealthPage({ system, toast }) {
         <>
           {openCircuits.length > 0 && (
             <div style={{ marginBottom: '1.25rem' }}>
-              <div className="admin-card-title" style={{ color: 'var(--red)' }}>Open circuits ({openCircuits.length})</div>
+              <div className="admin-card-title" style={{ color: 'var(--red)' }}>
+                {isAnalyst ? `Sources temporarily paused (${openCircuits.length})` : `Open circuits (${openCircuits.length})`}
+              </div>
               <div className="feed-card-grid">
                 {sortByFailures(openCircuits).map(([key, s]) => <FeedCard key={key} entryKey={key} s={s} />)}
               </div>

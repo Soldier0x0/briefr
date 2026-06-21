@@ -4,7 +4,8 @@ import ConfirmModal from './shared/ConfirmModal.jsx'
 import DangerZone from './shared/DangerZone.jsx'
 import { fmtAge, fmtIso } from './formatters.js'
 
-export default function WatchlistPage({ toast }) {
+export default function WatchlistPage({ toast, mode = 'operator' }) {
+  const isAnalyst = mode === 'analyst'
   const [subtab, setSubtab] = useState('watchlist')
   const [watchlistState, setWatchlistState] = useState('all')
   const [watchlistRows, setWatchlistRows] = useState(null)
@@ -114,13 +115,17 @@ export default function WatchlistPage({ toast }) {
         />
       )}
 
-      <h1 className="admin-page-title">Watchlist & cache</h1>
-      <p className="admin-page-subtitle">Manage pinned/snoozed CVEs, inspect the IOC lookup cache, and review hunt-pack matches.</p>
-      <div className="admin-subtabs">
-        {[['watchlist', 'WATCHLIST'], ['ioc', 'IOC CACHE'], ['hunt', 'HUNT PACKS']].map(([id, label]) => (
-          <button key={id} className={`admin-subtab ${subtab === id ? 'active' : ''}`} onClick={() => setSubtab(id)}>{label}</button>
-        ))}
-      </div>
+      <h1 className="admin-page-title">{isAnalyst ? 'Pinned CVEs' : 'Watchlist & cache'}</h1>
+      <p className="admin-page-subtitle">
+        {isAnalyst ? 'CVEs you’ve pinned to track.' : 'Manage pinned/snoozed CVEs, inspect the IOC lookup cache, and review hunt-pack matches.'}
+      </p>
+      {!isAnalyst && (
+        <div className="admin-subtabs">
+          {[['watchlist', 'WATCHLIST'], ['ioc', 'IOC CACHE'], ['hunt', 'HUNT PACKS']].map(([id, label]) => (
+            <button key={id} className={`admin-subtab ${subtab === id ? 'active' : ''}`} onClick={() => setSubtab(id)}>{label}</button>
+          ))}
+        </div>
+      )}
 
       {subtab === 'watchlist' && (
         <div>
@@ -136,11 +141,13 @@ export default function WatchlistPage({ toast }) {
               ))}
             </div>
           </div>
-          <DangerZone title="Clear snoozes">
-            <button className="admin-btn admin-btn-warn" onClick={() => setConfirmClearSnoozes(true)}>
-              Clear all snoozes
-            </button>
-          </DangerZone>
+          {!isAnalyst && (
+            <DangerZone title="Clear snoozes">
+              <button className="admin-btn admin-btn-warn" onClick={() => setConfirmClearSnoozes(true)}>
+                Clear all snoozes
+              </button>
+            </DangerZone>
+          )}
           <div className="admin-card">
             <table className="admin-table">
               <thead><tr><th>CVE ID</th><th>SEVERITY</th><th>EPSS</th><th>KEV</th><th>STATE</th><th>CREATED</th><th></th></tr></thead>

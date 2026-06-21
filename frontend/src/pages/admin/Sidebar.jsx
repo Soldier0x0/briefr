@@ -1,4 +1,4 @@
-import { NAV } from './constants.js'
+import { NAV, ANALYST_NAV } from './constants.js'
 
 const STATUS_LEGEND = [
   { swatch: 'badge-ok', label: 'ACTIVE', meaning: 'Job is scheduled and will run normally' },
@@ -12,12 +12,19 @@ const STATUS_LEGEND = [
   { swatch: 'dot-error', label: 'DB degraded', meaning: 'Last integrity check found a problem' },
 ]
 
-function StatusLegend() {
+const ANALYST_STATUS_LEGEND = [
+  { swatch: 'badge-ok', label: 'Current', meaning: 'Data is fresh' },
+  { swatch: 'badge-warn', label: 'Delayed', meaning: 'Older than expected' },
+  { swatch: 'badge-info', label: 'Updating', meaning: 'Sync in progress' },
+]
+
+function StatusLegend({ mode }) {
+  const legend = mode === 'analyst' ? ANALYST_STATUS_LEGEND : STATUS_LEGEND
   return (
     <details className="status-legend">
       <summary>Status legend</summary>
       <ul>
-        {STATUS_LEGEND.map(s => (
+        {legend.map(s => (
           <li key={s.label}>
             <span className={`status-legend-swatch ${s.swatch}`} />
             <span className="status-legend-text">
@@ -30,10 +37,11 @@ function StatusLegend() {
   )
 }
 
-export default function Sidebar({ activePage, setPage, system, ingestErrorCount }) {
+export default function Sidebar({ activePage, setPage, system, ingestErrorCount, mode, setMode }) {
   const openCircuits = system?.open_circuit_count || 0
   const failedAuth = system?.failed_auth_last_24h || 0
   const jobErrors = system?.jobs_with_errors_count || 0
+  const navConfig = mode === 'analyst' ? ANALYST_NAV : NAV
 
   function getBadge(item) {
     if (item.badgeKey === 'open_circuit_count') return openCircuits
@@ -45,7 +53,7 @@ export default function Sidebar({ activePage, setPage, system, ingestErrorCount 
 
   return (
     <nav className="admin-sidebar">
-      {NAV.map(section => (
+      {navConfig.map(section => (
         <div key={section.section}>
           <div className="nav-section-label">{section.section}</div>
           {section.items.map(item => {
@@ -77,7 +85,12 @@ export default function Sidebar({ activePage, setPage, system, ingestErrorCount 
           })}
         </div>
       ))}
-      <StatusLegend />
+      {mode === 'analyst' && setMode && (
+        <button className="nav-footer-link" onClick={() => setMode('operator')}>
+          Backups, config, logs → switch to Operator view
+        </button>
+      )}
+      <StatusLegend mode={mode} />
     </nav>
   )
 }

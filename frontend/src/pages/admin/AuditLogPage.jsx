@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { adminApi } from '../../api.js'
 import { AUDIT_PREFIXES } from './constants.js'
 import { fmtIsoMono } from './formatters.js'
+import { auditActionLabel } from './catalog.js'
 
 export default function AuditLogPage({ toast }) {
   const [data, setData] = useState(null)
@@ -62,7 +63,7 @@ export default function AuditLogPage({ toast }) {
               <tr key={r.id}>
                 <td style={{ fontSize: '0.75rem' }}>{r.id}</td>
                 <td className="mono" style={{ fontSize: '0.75rem' }}>{r.actor || '—'}</td>
-                <td className="mono" style={{ fontSize: '0.75rem' }}>{r.action}</td>
+                <td style={{ fontSize: '0.75rem' }}>{auditActionLabel(r.action)}</td>
                 <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.8rem' }}>{r.target || '—'}</td>
                 <td className="mono" style={{ fontSize: '0.7rem' }}>{fmtIsoMono(r.created_at)}</td>
               </tr>

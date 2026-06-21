@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { adminApi, getAdminKey, setAdminKey } from '../../api.js'
+import { getAdminMode, setAdminMode } from '../../utils/adminMode.js'
 import AdminPage_KeyModal from '../AdminPage_KeyModal.jsx'
 import StatusBar from './StatusBar.jsx'
 import Sidebar from './Sidebar.jsx'
 import ErrorBoundary from './shared/ErrorBoundary.jsx'
 import { useToast, ToastArea } from './shared/Toast.jsx'
+import { ANALYST_NAV } from './constants.js'
 import OverviewPage from './OverviewPage.jsx'
 import BackupsPage from './BackupsPage.jsx'
 import StoragePage from './StoragePage.jsx'
@@ -13,6 +15,7 @@ import WatchlistPage from './WatchlistPage.jsx'
 import ApiKeysPage from './ApiKeysPage.jsx'
 import SchedulerPage from './SchedulerPage.jsx'
 import WebhooksPage from './WebhooksPage.jsx'
+import AlertsPage from './AlertsPage.jsx'
 import SecurityPage from './SecurityPage.jsx'
 import FeedHealthPage from './FeedHealthPage.jsx'
 import IngestLogPage from './IngestLogPage.jsx'
@@ -21,8 +24,11 @@ import DisplayPage from './DisplayPage.jsx'
 import ComingSoonPage from './ComingSoonPage.jsx'
 import '../AdminPage.css'
 
+const ANALYST_PAGE_IDS = new Set(ANALYST_NAV.flatMap(section => section.items.map(i => i.id)))
+
 export default function AdminPage() {
   const [page, setPage] = useState('overview')
+  const [mode, setModeState] = useState(getAdminMode)
   const [system, setSystem] = useState(null)
   const [keyModalOpen, setKeyModalOpen] = useState(false)
   const [modalError, setModalError] = useState('')
@@ -66,6 +72,12 @@ export default function AdminPage() {
     return () => clearInterval(pollRef.current)
   }, [])
 
+  function setMode(next) {
+    setModeState(next)
+    setAdminMode(next)
+    if (next === 'analyst' && !ANALYST_PAGE_IDS.has(page)) setPage('overview')
+  }
+
   function handleKeySubmit(key) {
     setAdminKey(key)
     setModalError('')
@@ -102,16 +114,17 @@ export default function AdminPage() {
   const isComingSoon = page.startsWith('coming-')
 
   const pages = {
-    overview: <OverviewPage system={system} toast={toast} />,
+    overview: <OverviewPage system={system} toast={toast} mode={mode} />,
     backups: <BackupsPage toast={toast} system={system} />,
     storage: <StoragePage toast={toast} />,
     database: <DatabasePage toast={toast} active={page === 'database'} />,
-    watchlist: <WatchlistPage toast={toast} />,
+    watchlist: <WatchlistPage toast={toast} mode={mode} />,
     apikeys: <ApiKeysPage toast={toast} />,
     scheduler: <SchedulerPage toast={toast} system={system} />,
     webhooks: <WebhooksPage toast={toast} />,
+    alerts: <AlertsPage toast={toast} />,
     security: <SecurityPage toast={toast} />,
-    feedhealth: <FeedHealthPage system={system} toast={toast} />,
+    feedhealth: <FeedHealthPage system={system} toast={toast} mode={mode} />,
     ingestlog: <IngestLogPage toast={toast} onErrorCountChange={setIngestErrorCount} active={page === 'ingestlog'} />,
     auditlog: <AuditLogPage toast={toast} />,
     display: <DisplayPage />,
@@ -128,9 +141,11 @@ export default function AdminPage() {
         onRestart={handleRestart}
         onDrainRestart={handleDrainRestart}
         refreshInProgress={system?.refresh_in_progress || false}
+        mode={mode}
+        setMode={setMode}
       />
       <div className="admin-body">
-        <Sidebar activePage={page} setPage={setPage} system={system} ingestErrorCount={ingestErrorCount} />
+        <Sidebar activePage={page} setPage={setPage} system={system} ingestErrorCount={ingestErrorCount} mode={mode} setMode={setMode} />
         <div className="admin-content">
           {isComingSoon ? (
             <ComingSoonPage pageId={page} setPage={setPage} />

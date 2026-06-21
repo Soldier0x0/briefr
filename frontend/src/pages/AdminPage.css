@@ -855,6 +855,111 @@
 
 .mono { font-family: var(--font-mono); font-size: 0.8em; }
 
+/* ── Admin mode toggle (Analyst / Operator) ────────────────────────────── */
+
+.admin-mode-toggle {
+  display: flex;
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.admin-mode-toggle-btn {
+  background: none;
+  border: none;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text3);
+  cursor: pointer;
+}
+
+.admin-mode-toggle-btn.active {
+  background: var(--bg3);
+  color: var(--accent);
+}
+
+/* ── Intel banner (Analyst overview health summary) ────────────────────── */
+
+.intel-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+}
+
+.intel-banner strong { font-size: 0.9375rem; }
+
+.intel-banner-green { background: var(--green-dim); color: var(--green); }
+.intel-banner-amber { background: var(--amber-dim); color: var(--amber); }
+.intel-banner-red   { background: var(--red-dim);   color: var(--red); }
+
+/* ── Help tip ───────────────────────────────────────────────────────────── */
+
+.help-tip-wrap { position: relative; display: inline-flex; }
+
+.help-tip-bubble {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--text2);
+  width: 220px;
+  display: none;
+  z-index: 50;
+}
+
+.help-tip-wrap:hover .help-tip-bubble,
+.help-tip-wrap:focus-within .help-tip-bubble { display: block; }
+
+/* ── Job status hint (visible, not hover-only, in analyst mode) ─────────── */
+
+.status-hint-text {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--text3);
+  margin-top: 0.15rem;
+}
+
+/* ── Sidebar footer link (Analyst → Operator) ──────────────────────────── */
+
+.nav-footer-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border);
+  padding: 0.6rem 14px;
+  font-size: 0.75rem;
+  color: var(--link);
+  cursor: pointer;
+}
+
+/* ── Generic pill (used outside the status bar, e.g. Alerts page) ───────── */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.pill-green { background: var(--green-dim); color: var(--green); }
+.pill-amber { background: var(--amber-dim); color: var(--amber); }
+.pill-gray  { background: var(--bg3); color: var(--text3); }
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
