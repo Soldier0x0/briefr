@@ -1,7 +1,7 @@
 # BRIEFR Correlation Engine v2 — Implementation Plan
 
 **Status:** Implementation spec (ready for Claude Code / human implementers)  
-**Last updated:** 2026-06-21  
+**Last updated:** 2026-06-20  
 **Scope:** Backend correlation engine, OTX ingest, API, UI, and product integrations  
 **Companion docs:** `PRODUCT.md`, `docs/ADMIN_ANALYST_OPERATOR_MODE.md`, `SYSTEM_DESIGN.md`, `API_REFERENCE.md`
 
@@ -66,6 +66,7 @@ BRIEFR correlation today is a **v1 research feature**: three explainable levels 
 5. **Honest:** Receipts on every finding; distinguish *no signal* vs *cannot compute* vs *OTX off*.
 6. **Tested:** Fixtures + regression tests for clustering and confidence rules.
 7. **Operator-visible:** Admin diagnostics for OTX IOC coverage and last correlation run.
+8. **Trustworthy:** Hub/noise suppression, enrichment confirmation, analyst dismiss feedback, and one coherent “related” story in the UI (see §24).
 
 ---
 
@@ -128,7 +129,8 @@ BRIEFR correlation today is a **v1 research feature**: three explainable levels 
 | Signal | Source | Role |
 |--------|--------|------|
 | **KEV co-week** | `cves.is_kev`, KEV dates | Cluster bump; ransomware field |
-| **Exploit tooling** | `cve_exploits`, exploit sync | Same ExploitDB/Metasploit/Nuclei/PoC family |
+| **Exploit tooling** | `cve_exploits`, exploit sync | Same ExploitDB ID, Metasploit module, Nuclei template, or GitHub PoC repo (`source_urls`) |
+| **Co-exploitation window** | KEV dates, `epss_history`, `cve_change_history` | Members with synchronized exploitation signals within N days |
 | **EPSS / change** | `epss_history`, `cve_change_history` | Synchronized jumps in cluster |
 | **CWE family** | CVE CWE fields | Same weakness class + vendor week |
 | **Package** | OSV enrichment on detail | Shared library (e.g. `vendor:product`) |
@@ -136,7 +138,20 @@ BRIEFR correlation today is a **v1 research feature**: three explainable levels 
 | **MITRE actor** | `cve_technique_map`, `mitre_groups` | Technique **overlap %**, top 3 groups — not “any technique” |
 | **Temporal vendor** | improved baseline table | Stack-aware vendor spike + KEV/exploit compound |
 
-### 6.3 Degraded mode (no `OTX_API_KEY`)
+### 6.3 Enrichment confirmation (existing IOC sources)
+
+Use data BRIEFR already fetches — **scheduler-side or cached only**, never new per-drawer HTTP:
+
+| Confirmation | Source | Effect on confidence |
+|--------------|--------|----------------------|
+| Shared IP + GreyNoise `malicious` | `feeds/extended.py` / IOC cache | IP edge bump (+1 level, cap high) |
+| Shared IP + GreyNoise `benign` / riot | same | Downgrade or omit edge |
+| Shared hash + MalwareBazaar hit | abuse.ch enrichment | Strong hash edge |
+| Shared URL + URLhaus active | abuse.ch enrichment | Strong URL edge |
+
+Implement in `correlation/confirm.py`; read from `ioc_cache` where available.
+
+### 6.4 Degraded mode (no `OTX_API_KEY`)
 
 - Pulse/IOC levels empty with explicit `otx_status: "not_configured"`.
 - Local boosters + semantic + MITRE + temporal (stack-gated) still run.
@@ -158,7 +173,9 @@ Every finding returns:
   ],
   "why_not_higher": "Optional string when capped",
   "sources": ["otx", "mitre", "kev"],
-  "attribution_disclaimer": "OTX community pulse — unverified attribution"
+  "attribution_disclaimer": "OTX community pulse — unverified attribution",
+  "attribution_conflict": false,
+  "lifecycle": "emerging|active|declining|stale"
 }
 ```
 
@@ -175,6 +192,10 @@ Every finding returns:
 | KEV + cluster membership | bump +1 level (cap high) |
 | Pulse age > 12 months | downgrade |
 | No exploit/KEV signal on IP-only edge | downgrade |
+| GreyNoise malicious on shared IP | bump +1 (cap high) |
+| GreyNoise benign/riot on shared IP | downgrade or omit |
+| Hub CVE / mega-pulse edge (§24.1) | downgrade or cap cluster growth |
+| OTX adversary ≠ MITRE top group | `attribution_conflict: true`, lower confidence |
 
 ---
 
@@ -188,9 +209,9 @@ Every finding returns:
 |-------|---------|
 | `otx_pulses` | pulse_id PK, name, author, created_date, adversary, malware_families JSON, tags JSON, targeted_countries JSON, ioc_count, fetched_at |
 | `otx_cve_pulses` | cve_id + pulse_id (FK), fetched_at |
-| `otx_pulse_iocs` | unchanged PK; add optional `pulse_id` index coverage |
+| `otx_pulse_iocs` | unchanged PK; store **canonical** `ioc_value` + normalized `ioc_type`; index `(ioc_value, ioc_type)` |
 
-Migrate: backfill `otx_pulses` from existing `otx_cve_pulses` rows on upgrade.
+Migrate: backfill `otx_pulses` from existing `otx_cve_pulses` rows on upgrade. Run IOC canonicalization pass on existing `otx_pulse_iocs` rows (§24.2).
 
 **Store `targeted_countries`** — already parsed in `_normalize_pulse`, currently dropped.
 
@@ -198,9 +219,10 @@ Migrate: backfill `otx_pulses` from existing `otx_cve_pulses` rows on upgrade.
 
 | Table | Purpose |
 |-------|---------|
-| `correlation_campaigns` | campaign_id, primary_pulse_id (nullable), label, adversary, malware JSON, confidence, member_count, computed_at |
+| `correlation_campaigns` | campaign_id, primary_pulse_id (nullable), label, adversary, malware JSON, confidence, member_count, **lifecycle**, **campaign_version**, computed_at |
 | `correlation_campaign_members` | campaign_id, cve_id, role (optional) |
 | `correlation_campaign_edges` | campaign_id, edge_type, evidence JSON |
+| `correlation_suppressions` | id, scope (`edge`/`campaign`/`pulse`/`cve_pair`), key JSON, reason, created_at — analyst dismiss feedback (§24.5) |
 
 Retain v1 tables during migration; deprecate after read path uses campaigns.
 
@@ -268,7 +290,10 @@ Expose backlog in admin: `GET /api/admin/correlation/status` (phase 5).
 | `correlation/engine.py` | Orchestrator: `get_correlation_for_cve`, `run_nightly_correlation` |
 | `correlation/pulses.py` | Pulse co-occurrence, cluster seeding |
 | `correlation/ioc_graph.py` | Multi-IOC edges, Jaccard, noise filters |
-| `correlation/local.py` | KEV, exploit, CWE, package, EPSS boosters |
+| `correlation/ioc_normalize.py` | Canonical IOC types/values at ingest (§24.2) |
+| `correlation/hub_suppress.py` | Hub CVE / mega-pulse downranking (§24.1) |
+| `correlation/confirm.py` | GreyNoise / abuse.ch confirmation from cache |
+| `correlation/local.py` | KEV, exploit, CWE, package, EPSS, co-exploitation timing boosters |
 | `correlation/mitre.py` | Technique overlap %, actor normalization |
 | `correlation/temporal.py` | Vendor weekly baseline, stack-gated anomalies |
 | `correlation/semantic.py` | Embeddings neighbors + validation |
@@ -303,7 +328,21 @@ Keep files focused; extract from monolithic `engine.py` as phases land.
 
 Update `API_REFERENCE.md` in same PR as response shape stabilizes.
 
-### 11.2 Optional phase 4
+### 11.2 Analyst suppress (Phase 2)
+
+`POST /api/cves/{cve_id}/correlation/suppress`
+
+```json
+{
+  "scope": "cve_pair|pulse_id|campaign_id|ioc_edge",
+  "key": { "cve_id_b": "CVE-..." },
+  "reason": "optional analyst note"
+}
+```
+
+`DELETE` same path with scope/key to undo (or operator reset in admin Phase 5).
+
+### 11.3 Optional phase 4
 
 `GET /api/correlation/clusters?stack=1&limit=20` — brief/feed consumer.
 
@@ -320,6 +359,8 @@ Update `API_REFERENCE.md` in same PR as response shape stabilizes.
 - **Campaign-first** layout: pulse name, members, shared indicators, adversary/malware/countries.
 - Plain language (use `correlation/copy.py` or frontend catalog mirror).
 - **Receipts** expandable: “Show evidence.”
+- **Dismiss** action: “Not related” per finding/campaign → writes `correlation_suppressions` (§24.5).
+- **Attribution conflict** banner when OTX adversary ≠ MITRE group (§24.6).
 - Link: pivot IOC, open correlated CVE, “Add cluster to investigation” (phase 3).
 - Top-of-drawer chip when findings exist: “Linked to N other CVEs” (phase 3).
 - Empty states:
@@ -327,20 +368,36 @@ Update `API_REFERENCE.md` in same PR as response shape stabilizes.
   - `no_signals` → “No campaign links found”
   - `warming` → “OTX sync in progress”
 
-### 12.2 IOC Lookup
+### 12.2 Related CVE lanes (unified UX contract)
+
+The drawer currently shows three unrelated “related” concepts. v2 must make them **coherent** (§24.4):
+
+| Lane | API | UI label |
+|------|-----|----------|
+| Campaign | `/correlation` → `campaigns` | “Campaign link” |
+| Same product | `/related` (`product_heuristic`) | “Same product family” |
+| Semantic | `/related` (`embeddings`) | “Similar description” |
+| IOC pivot | IOC lookup `related_cves` | “Same pulse / indicator” |
+
+Rules:
+- Never show the same CVE twice without explaining **why** (badge per lane).
+- Correlation members rank above semantic neighbors in default sort.
+- Cross-link: “Also related via same product” under campaign members when applicable.
+
+### 12.3 IOC Lookup
 
 - Reuse same cluster data for `related_cves` — consistent labels.
 
-### 12.3 Brief / feed (phase 3)
+### 12.4 Brief / feed (phase 3)
 
 - Brief card: “Campaign: {label} — {n} CVEs on your stack”
 - Feed row badge: `Campaign` when `member_of_campaign` on list API (optional lightweight join or nightly marker column on `cves`).
 
-### 12.4 PDF (`pdfReport.js`)
+### 12.5 PDF (`pdfReport.js`)
 
 - Campaign paragraph + disclaimer; not actor bullet dump only.
 
-### 12.5 Admin (operator)
+### 12.6 Admin (operator)
 
 - Correlation status widget on Overview or dedicated Observability row.
 - Link from analyst Intel status when `open_circuits`-style correlation issues exist.
@@ -354,7 +411,7 @@ Align copy with `docs/ADMIN_ANALYST_OPERATOR_MODE.md` analyst register.
 | Consumer | Behavior | Phase |
 |----------|----------|-------|
 | **Risk score** | Small explainable bump when correlated peer is KEV or stack-matched high EPSS | 3 |
-| **Morning brief** | Surface top 1–3 active campaigns affecting stack | 3 |
+| **Morning brief** | Surface top 1–3 **active** campaigns affecting stack (lifecycle filter) | 3 |
 | **Investigation thread** | Suggest correlated CVEs; add cluster on action | 3 |
 | **Watchlist** | Optional prompt: “Correlated to pinned CVE-XXXX” | 4 |
 | **Webhooks** | KEV-on-stack message includes campaign label if member | 4 |
@@ -384,6 +441,19 @@ Replace “group uses any technique” with:
 3. **Gate:** only surface to analyst if vendor ∈ stack OR cluster has KEV/exploit booster.  
 4. Per-CVE: attach vendor anomalies only for CVE’s vendors.
 
+### 15.1 Co-exploitation timing (local booster)
+
+Independent of vendor volume — detect **synchronized exploitation windows** across cluster members:
+
+| Signal | Window | Source |
+|--------|--------|--------|
+| KEV `date_added` alignment | configurable (default 14d) | `kev_deadlines` |
+| EPSS jump | same window | `epss_history` |
+| `has_poc` / exploit first seen | same window | `cve_exploits`, `cves` |
+| CVSS/EPSS change | same window | `cve_change_history` |
+
+Surface as booster receipt: “3 CVEs in this cluster saw exploitation signals within 10 days.”
+
 ---
 
 ## 16. Semantic layer (Level 4)
@@ -409,62 +479,85 @@ Create `backend/tests/test_correlation.py` + fixtures:
 | No OTX key → `otx_status` + local only | Degraded |
 | Cache invalidation on job complete | Staleness |
 | IOC lookup + correlation same CVE set | Unified graph |
+| Hub CVE does not blow up cluster | §24.1 noise control |
+| GreyNoise benign downgrades shared IP edge | §24.3 confirmation |
+| Analyst suppression hides edge on rebuild | §24.5 feedback |
+| OTX vs MITRE attribution conflict flagged | §24.6 trust |
+| Related vs correlation lane labels distinct | §24.4 UX |
+| Rejected CVE pruned from cluster | Data hygiene |
+| Stable campaign ordering across runs | Determinism |
+| Cached correlation API < 200ms p95 | Performance budget |
 
-Use in-memory SQLite with seed rows in `tests/fixtures/correlation/`.
+Use in-memory SQLite with seed rows in `tests/fixtures/correlation/`. Target **≥ 20 tests** at v2 complete (was 15; quality cases add 5+).
 
 ---
 
 ## 18. Implementation phases
 
+Phases 1–2 **must** include quality controls from §24 — not deferred to ops.
+
 ### Phase 1 — Foundation (OTX data + pulse clusters)
 
 - [ ] `otx_pulses` dimension + migrate `targeted_countries`
+- [ ] `correlation/ioc_normalize.py` — canonical IOC types/values at ingest (§24.2)
 - [ ] Prioritized CVE/pulse IOC sync; raise IOC budget; merge job clarity
-- [ ] `correlation/campaigns.py` nightly pulse clustering
-- [ ] `correlation_campaigns` + members tables
+- [ ] `correlation/hub_suppress.py` — hub CVE / mega-pulse caps in clustering (§24.1)
+- [ ] `correlation/campaigns.py` nightly pulse clustering + **incremental** member updates
+- [ ] `correlation_campaigns` + members tables (include `lifecycle`, `campaign_version`)
+- [ ] Prune rejected/non-existent CVE IDs from clusters after NVD sync
 - [ ] Read campaigns in `get_correlation_for_cve`; v2 cache key
-- [ ] Tests for pulse clustering
+- [ ] Tests: pulse clustering + hub suppression fixture
 - [ ] Invalidate cache after nightly job
 
-**Exit:** Drawer shows pulse-centric campaign for CVEs with OTX data.
+**Exit:** Drawer shows pulse-centric campaign for CVEs with OTX data. Hub CVE does not create spurious mega-clusters in test fixture.
 
-### Phase 2 — IOC graph + confidence + multi-IOC
+### Phase 2 — IOC graph + confidence + multi-IOC + trust
 
 - [ ] `ioc_graph.py` domain/hash/URL edges, Jaccard, noise filter
-- [ ] `confidence.py` + evidence arrays
+- [ ] `confidence.py` + evidence arrays (incl. `attribution_conflict`, `lifecycle`)
+- [ ] `confirm.py` — GreyNoise / abuse.ch confirmation from `ioc_cache` (§24.3)
+- [ ] `correlation_suppressions` table + dismiss API + UI action (§24.5)
 - [ ] Unified IOC lookup table usage
-- [ ] Analyst copy catalog (backend or shared)
+- [ ] Related-lane UX contract in drawer (§24.4) — labels, no silent duplicates
+- [ ] Analyst copy catalog (backend or shared); sanitize OTX pulse strings for display
 - [ ] Redesigned `CorrelationFindings` UI
 - [ ] `API_REFERENCE.md` update
 
-**Exit:** Findings have receipts; multi-IOC works; IOC tab agrees with drawer.
+**Exit:** Findings have receipts; multi-IOC works; IOC tab agrees with drawer; analyst can dismiss bad edges; benign GreyNoise IPs downranked.
 
 ### Phase 3 — Local boosters + product wiring
 
 - [ ] `local.py` KEV/exploit/CWE/package boosters on campaigns
-- [ ] MITRE overlap refactor
+- [ ] Co-exploitation timing booster (§15.1)
+- [ ] CISA KEV cluster annotations (`known_ransomware`, shared `vendor_project`, due dates)
+- [ ] MITRE overlap refactor + attribution conflict policy (§24.6)
 - [ ] Temporal v2 + vendor weekly table
 - [ ] Semantic validated neighbors
-- [ ] Brief card + feed badge (minimal)
+- [ ] Incident/news fuzzy match to campaign label (receipt-backed, optional)
+- [ ] Stack-first default sort for all campaign findings (§24.7)
+- [ ] Brief card + feed badge (minimal) — **active** campaigns only
 - [ ] Investigation thread suggestions
 - [ ] Explainable risk bump
 - [ ] Drawer top chip
 
-**Exit:** Correlation changes what analysts see without opening Intel tab last.
+**Exit:** Correlation changes what analysts see without opening Intel tab last. Stack-matched campaigns rank first.
 
 ### Phase 4 — Depth
 
 - [ ] `GET /api/correlation/clusters`
-- [ ] Watchlist correlation hints
+- [ ] Watchlist correlation hints (prioritize watchlisted peers in sort)
 - [ ] Forge/detection overlap for cluster
-- [ ] PDF campaign section
+- [ ] PDF campaign section + OTX pulse citation links
 - [ ] Webhook message enrichment
+- [ ] Atlas case-study narrative booster (2+ cluster CVEs in same study)
 
 ### Phase 5 — Ops
 
 - [ ] `GET /api/admin/correlation/status`
-- [ ] Metrics: hit rate, empty rate (log or admin)
+- [ ] Metrics: hit rate, empty rate, dismiss rate, top noisy pulses (§24.8)
+- [ ] Operator reset for `correlation_suppressions`
 - [ ] Deprecate v1 table write path if redundant
+- [ ] Performance indexes verified; cached API p95 < 200ms
 - [ ] `SYSTEM_DESIGN.md` + `TECHNICAL_INVENTORY.md` update
 
 ---
@@ -481,6 +574,10 @@ Add to `config_schema.py` when implementing (admin-tunable):
 | `CORRELATION_CACHE_HOURS` | 6 | Request cache |
 | `CORRELATION_MITRE_MIN_OVERLAP` | 0.25 | Actor filter |
 | `CORRELATION_SEMANTIC_ENABLED` | 1 | Level 4 on/off |
+| `CORRELATION_HUB_CVE_PULSE_CAP` | 50 | Pulses per CVE before hub downrank (§24.1) |
+| `CORRELATION_MAX_CAMPAIGN_MEMBERS` | 25 | Hard cap per campaign in API response |
+| `CORRELATION_COEXPLOIT_WINDOW_DAYS` | 14 | Co-exploitation timing window (§15.1) |
+| `CORRELATION_CONFIRM_ENABLED` | 1 | GreyNoise/abuse.ch confirmation layer |
 
 Document in `.env.example` + `ONBOARDING.md`.
 
@@ -494,7 +591,7 @@ Document in `.env.example` + `ONBOARDING.md`.
 | OTX | `backend/feeds/otx.py`, `backend/database.py` |
 | Scheduler | `backend/scheduler.py` |
 | API | `backend/routers/cves.py`, optional `routers/admin.py` |
-| IOC | `backend/enrichment/ioc.py` (if wired) |
+| IOC | `backend/enrichment/ioc.py`, `backend/feeds/extended.py` |
 | UI | `frontend/src/components/DetailDrawer.jsx`, `IOCLookup.jsx`, `MorningBrief.jsx`, `api.js` |
 | Risk | `backend/scoring/risk.py`, `frontend/src/scoring/riskScore.js` |
 | Brief | `backend/brief/service.py` |
@@ -507,15 +604,24 @@ Document in `.env.example` + `ONBOARDING.md`.
 
 - [ ] Pulse co-occurrence drives campaign clusters; not IP-only headline
 - [ ] Domain/hash/URL edges implemented; IP downranked appropriately
+- [ ] Hub CVE / mega-pulse suppression prevents spurious mega-clusters (§24.1)
+- [ ] IOC normalization at ingest; type drift (`IP`/`IPv4`) handled (§24.2)
+- [ ] GreyNoise / abuse.ch confirmation adjusts confidence (§24.3)
+- [ ] Analyst dismiss persists and suppresses edges on rebuild (§24.5)
+- [ ] Related lanes in drawer are labeled and non-contradictory (§24.4)
+- [ ] Attribution conflicts surfaced, not merged silently (§24.6)
+- [ ] Stack-first sort for campaign findings (§24.7)
 - [ ] OTX prioritized ingest with visible backlog metric (admin)
 - [ ] IOC lookup and correlation return consistent related CVE sets
 - [ ] Every finding includes `evidence` + analyst `summary`
 - [ ] Degraded mode without OTX is explicit and still useful (local boosters)
-- [ ] Brief or feed surfaces at least one campaign signal without opening drawer
+- [ ] Brief or feed surfaces at least one **active** campaign without opening drawer
 - [ ] Risk or investigation integration shipped (at least one)
 - [ ] Cache invalidates after nightly correlation
-- [ ] `test_correlation.py` ≥ 15 tests, CI green
+- [ ] `test_correlation.py` ≥ 20 tests, CI green
+- [ ] Cached correlation API p95 < 200ms
 - [ ] No new request-time OTX HTTP calls on drawer open
+- [ ] OTX pulse/adversary strings sanitized before UI/PDF render
 
 ---
 
@@ -528,6 +634,7 @@ Read the plan end-to-end, then engine.py, feeds/otx.py, DetailDrawer Correlation
 
 Start Phase 1 only unless instructed otherwise. One PR per phase.
 OTX is the spine; include local boosters and product wiring in later phases per plan.
+Phase 1–2 must ship §24 quality controls (hub suppression, IOC normalize, confirmation, dismiss).
 Explainable evidence only — no black-box scores.
 Run pytest and npm build before push.
 ```
@@ -542,7 +649,147 @@ Run pytest and npm build before push.
 | Keep v1 `correlation_infrastructure` table? | **Write during migration**; switch read to campaigns; drop in phase 5 |
 | Campaign ID format? | `camp_{sha256(pulse_id)[:12]}` for pulse-rooted; merge hash for IOC-only |
 | Groq for correlation? | **No** — scheduler ML stays product extraction only |
+| Multi-hop edges shown? | **1-hop default**; 2-hop only with receipts + lower confidence (§24.9) |
+| Analyst dismiss storage? | **`correlation_suppressions` table**; operator can reset in admin |
 
 ---
 
-*End of plan. Implement Phase 1 → 2 → 3 in order.*
+## 24. Quality & trust controls
+
+This section is **required**, not optional polish. OTX-maximal correlation without these controls produces noise analysts will ignore.
+
+### 24.1 Hub CVE and mega-pulse suppression
+
+**Problem:** High-visibility CVEs (e.g. Log4Shell) appear in hundreds of OTX pulses and glue unrelated CVEs into false campaigns.
+
+**Rules:**
+1. Track `pulse_count_per_cve` and `member_count_per_pulse` at build time.
+2. When a CVE exceeds `CORRELATION_HUB_CVE_PULSE_CAP` (default 50), downrank edges **through** that CVE — do not let it expand clusters via weak IOC overlap alone.
+3. Cap campaign growth: max `CORRELATION_MAX_CAMPAIGN_MEMBERS` (default 25) in API response; paginate or summarize overflow.
+4. Apply inverse-frequency weight: edges via rarely-shared pulses score higher than edges via ubiquitous pulses.
+5. **Test fixture required:** one hub CVE must not create a 20+ member campaign from a single shared CDN IP.
+
+Implement in `correlation/hub_suppress.py`; call from `campaigns.py` and `ioc_graph.py`.
+
+### 24.2 IOC normalization pipeline
+
+**Problem:** Type drift (`IP` vs `IPv4`), defanged values, and URL variance create duplicate or false edges.
+
+**At ingest** (`correlation/ioc_normalize.py`, called from `store_otx_pulse_iocs`):
+| Step | Rule |
+|------|------|
+| Type canonicalization | Map `IP`, `IPV4`, `IPV6` → consistent enum |
+| Defang refang | `hxxp`, `[.]`, `[:] ` → normal form before storage |
+| Hash case | Lowercase hex |
+| Domain | Lowercase, punycode where applicable |
+| URL | Normalize scheme/host; optional path trim policy |
+| Noise ranges | Flag RFC1918, link-local, known CDN resolver patterns for downrank (not delete) |
+
+Store canonical value in `otx_pulse_iocs.ioc_value`; keep raw optional in evidence JSON for receipts.
+
+### 24.3 Enrichment confirmation layer
+
+**Problem:** “Shared IP” from OTX alone is weak; BRIEFR already has GreyNoise and abuse.ch data.
+
+**Rules** (see §6.3):
+- Read from `ioc_cache` / scheduler-precomputed enrichment — **no new HTTP on drawer open**.
+- Shared IP + GreyNoise `malicious` → confidence bump.
+- Shared IP + GreyNoise `benign` / riot → downgrade or omit from findings (still in evidence if operator mode).
+- Shared hash + MalwareBazaar → strong edge confirmation.
+- Shared URL + URLhaus active → strong edge confirmation.
+
+If confirmation data is stale/missing, finding stands on OTX evidence alone with `why_not_higher: "No enrichment confirmation available"`.
+
+### 24.4 Unified “related CVE” lanes (drawer contract)
+
+**Problem:** `/related`, `/correlation`, and IOC `related_cves` can disagree in the same drawer.
+
+**Contract:**
+1. Each lane has a **fixed label** (see §12.2 table).
+2. Default sort: campaign > stack-matched > KEV > watchlisted > other.
+3. Same CVE in multiple lanes → show once in primary lane, cross-reference in secondary (“Also: similar description”).
+4. IOC lookup `related_cves` must use the same campaign tables as `/correlation` after Phase 2.
+
+### 24.5 Analyst dismiss / suppress feedback
+
+**Problem:** One bad OTX pulse poisons the experience indefinitely.
+
+**Implementation:**
+- UI: “Not related” on finding or whole campaign.
+- `POST /api/cves/{cve_id}/correlation/suppress` (or nested under correlation router) writes `correlation_suppressions`.
+- Scopes: `cve_pair`, `pulse_id`, `campaign_id`, `ioc_edge` (type + value).
+- Nightly rebuild **respects** suppressions.
+- Admin: operator can list/reset suppressions (Phase 5).
+- Optional: log dismiss events for noisy-pulse metrics (§24.8).
+
+### 24.6 Attribution conflict policy
+
+**Problem:** OTX adversary strings often disagree with MITRE groups.
+
+**Rules:**
+1. Never merge OTX adversary and MITRE group into one actor name silently.
+2. Set `attribution_conflict: true` when top MITRE group (overlap ≥ threshold) ≠ normalized OTX adversary.
+3. UI shows both with disclaimer; confidence capped at `medium`.
+4. Infrastructure findings (shared IOC) do not imply attribution — separate receipts.
+5. Prefer MITRE for technique-backed claims; OTX for community campaign labels only.
+
+### 24.7 Stack-first ranking
+
+**Problem:** Correlation that ignores the operator’s stack feels academic.
+
+**Default sort** for campaign members and cluster list:
+1. On stack (`filter_cves_matching_stack`)
+2. Watchlisted
+3. KEV
+4. High EPSS (≥ 0.5) or `has_poc`
+5. Confidence level
+6. Recency (campaign `lifecycle` = emerging/active first)
+
+Apply in API response ordering and brief/feed selection.
+
+### 24.8 Observability (quality metrics)
+
+Beyond admin “last run” status, track:
+| Metric | Use |
+|--------|-----|
+| % CVEs with ≥1 campaign | Coverage health |
+| Avg members per campaign | Detect hub blowups |
+| Dismiss rate per pulse_id | Identify noisy pulses |
+| % findings with confirmation | Enrichment value |
+| Cached API latency p95 | Performance regression |
+
+Expose in `GET /api/admin/correlation/status` (Phase 5).
+
+### 24.9 Multi-hop policy
+
+- **Default:** 1-hop only (direct campaign member or direct IOC edge).
+- **2-hop** (A↔B↔C): allowed only when both hops have receipts; confidence capped at `low`; omitted from brief/webhooks.
+- No unbounded transitive closure.
+
+### 24.10 Campaign lifecycle
+
+Nightly compute `lifecycle` on `correlation_campaigns`:
+
+| State | Criteria |
+|-------|----------|
+| `emerging` | New member added in last 7d |
+| `active` | Member with KEV, exploit, or EPSS jump in last 14d |
+| `declining` | No activity 30d+ |
+| `stale` | Pulse age > 12 months AND no local boosters |
+
+Brief, feed badges, and webhooks prefer `emerging` / `active`. Drawer may show `stale` collapsed by default.
+
+### 24.11 Incremental rebuild and determinism
+
+- Campaign build updates only pulses/CVEs/IOCs changed since last run (track watermark in `sync_state`).
+- Bump `campaign_version` when algorithm changes.
+- Stable tie-break: sort by `cve_id` ASC, then `confidence` DESC.
+- Rejected CVEs purged from members after NVD/cvelistV5 sync.
+
+### 24.12 Display safety
+
+OTX pulse names, adversary strings, and tags are user-generated. Sanitize (strip HTML, length cap) before UI and PDF. Never `dangerouslySetInnerHTML` pulse content.
+
+---
+
+*End of plan. Implement Phase 1 → 2 → 3 in order. Phase 1–2 must satisfy §24.*
