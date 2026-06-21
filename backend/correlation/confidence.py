@@ -120,6 +120,9 @@ def attribution_conflict(
         return False
     otx_lower = otx_adversary.lower()
     for name in mitre_actors:
-        if name and name.lower() not in otx_lower and otx_lower not in name.lower():
-            return True
-    return False
+        if not name:
+            continue
+        name_lower = name.lower()
+        if name_lower in otx_lower or otx_lower in name_lower:
+            return False
+    return True

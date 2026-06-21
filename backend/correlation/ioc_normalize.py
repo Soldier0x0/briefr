@@ -5,6 +5,7 @@ from __future__ import annotations
 import ipaddress
 import re
 from typing import Any
+from urllib.parse import urlparse, urlunparse
 
 _DEFANG_REPLACEMENTS = (
     (re.compile(r"hxxps?://", re.I), "http://"),
@@ -51,7 +52,12 @@ def _normalize_url(value: str) -> str:
     v = refang(value).strip()
     if "://" not in v:
         v = f"http://{v}"
-    return v.lower()
+    parsed = urlparse(v)
+    scheme = (parsed.scheme or "http").lower()
+    netloc = parsed.netloc.lower() if parsed.netloc else ""
+    return urlunparse(
+        (scheme, netloc, parsed.path, parsed.params, parsed.query, parsed.fragment)
+    )
 
 
 def is_noise_ip(value: str) -> bool:

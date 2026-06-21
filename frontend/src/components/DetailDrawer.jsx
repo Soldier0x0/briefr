@@ -368,7 +368,12 @@ function CorrelationEvidence({ evidence }) {
         {items.map((ev, idx) => (
           <li key={`${ev.type}-${idx}`} className="mono corr-evidence-item">
             {ev.type === 'same_pulse' && `Same OTX pulse: ${ev.pulse_name || ev.pulse_id}`}
-            {ev.type === 'shared_indicator' && `Shared ${ev.ioc_type}: ${ev.value}`}
+            {ev.type === 'shared_indicator' && (
+              <>
+                {`Shared ${ev.ioc_type}: ${ev.value}`}
+                {ev.confirmation ? ` (${ev.confirmation})` : ''}
+              </>
+            )}
             {ev.type === 'enrichment_confirmation' && ev.summary}
             {!['same_pulse', 'shared_indicator', 'enrichment_confirmation'].includes(ev.type) && JSON.stringify(ev)}
           </li>
@@ -430,7 +435,7 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
                       {' '}Attribution conflict — treat as unverified.
                     </span>
                   )}
-                  {item.members?.filter(id => id !== correlation?.cve_id).map((cveId, idx) => (
+                  {(item.members || []).filter(id => id !== correlation?.cve_id).map((cveId, idx) => (
                     <span key={cveId}>
                       {idx === 0 ? ' ' : ', '}
                       <button
@@ -470,7 +475,29 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
                 <ConfidenceBadge confidence={item.confidence} />
                 <p className="corr-finding-text">
                   <span className="corr-lane-tag mono">Shared infrastructure</span>{' '}
-                  {item.summary || (
+                  {item.summary ? (
+                    (() => {
+                      const peer = item.cve_id_b
+                      const parts = item.summary.split(peer)
+                      if (parts.length === 2) {
+                        return (
+                          <>
+                            {parts[0]}
+                            <button
+                              type="button"
+                              className="corr-cve-link mono"
+                              onClick={() => onSelectCve?.(peer)}
+                              aria-label={`Open ${peer} in drawer`}
+                            >
+                              {peer}
+                            </button>
+                            {parts[1]}
+                          </>
+                        )
+                      }
+                      return item.summary
+                    })()
+                  ) : (
                     <>
                       This CVE shares exploitation infrastructure with{' '}
                       <button
@@ -483,19 +510,6 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
                       </button>
                       {' '}({item.shared_ip_count ?? 0} common IP
                       {(item.shared_ip_count ?? 0) !== 1 ? 's' : ''}).
-                    </>
-                  )}
-                  {item.summary && (
-                    <>
-                      {' '}
-                      <button
-                        type="button"
-                        className="corr-cve-link mono"
-                        onClick={() => onSelectCve?.(item.cve_id_b)}
-                        aria-label={`Open ${item.cve_id_b} in drawer`}
-                      >
-                        {item.cve_id_b}
-                      </button>
                     </>
                   )}
                 </p>

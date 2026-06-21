@@ -2046,7 +2046,7 @@ async def get_recent_cve_ids_for_otx(
     rows = await db.execute_fetchall(
         """
         SELECT cve_id FROM cves
-        WHERE DATE(published) >= DATE('now', ?)
+        WHERE published >= DATE('now', ?)
         ORDER BY published DESC
         """,
         (f"-{days} days",),
@@ -2106,7 +2106,7 @@ async def get_prioritized_cve_ids_for_otx(
     p2 = await db.execute_fetchall(
         """
         SELECT cve_id FROM cves
-        WHERE DATE(published) >= DATE('now', ?)
+        WHERE published >= DATE('now', ?)
         ORDER BY published DESC
         """,
         (f"-{window_days} days",),

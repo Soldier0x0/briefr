@@ -22,12 +22,7 @@ async def _shared_ioc_rows(db, cve_id: str) -> list:
                oi.ioc_value
         FROM otx_pulse_iocs oi
         JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id AND ocp.cve_id = ?
-        JOIN otx_pulse_iocs oi2
-          ON oi2.pulse_id = oi.pulse_id
-         AND oi2.ioc_type = oi.ioc_type
-         AND oi2.ioc_value = oi.ioc_value
-        JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi2.pulse_id
-        WHERE ocp2.cve_id != ?
+        JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi.pulse_id AND ocp2.cve_id != ?
         GROUP BY ocp2.cve_id, oi.ioc_type, oi.ioc_value
         ORDER BY ocp2.cve_id ASC
         """,
@@ -39,10 +34,10 @@ def _count_by_type(edges: list[dict]) -> dict[str, int]:
     counts: dict[str, int] = {"IP": 0, "DOMAIN": 0, "HASH": 0, "URL": 0}
     for edge in edges:
         t = (edge.get("ioc_type") or "").upper()
+        if t in ("IPV4", "IPV6"):
+            t = "IP"
         if t in counts:
             counts[t] += 1
-        elif t == "IP":
-            counts["IP"] += 1
     return counts
 
 
@@ -114,11 +109,7 @@ async def ioc_edges_between(
         SELECT oi.ioc_type, oi.ioc_value
         FROM otx_pulse_iocs oi
         JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id AND ocp.cve_id = ?
-        JOIN otx_pulse_iocs oi2
-          ON oi2.pulse_id = oi.pulse_id
-         AND oi2.ioc_type = oi.ioc_type
-         AND oi2.ioc_value = oi.ioc_value
-        JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi2.pulse_id AND ocp2.cve_id = ?
+        JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi.pulse_id AND ocp2.cve_id = ?
         GROUP BY oi.ioc_type, oi.ioc_value
         """,
         (cve_id_a.upper(), cve_id_b.upper()),
