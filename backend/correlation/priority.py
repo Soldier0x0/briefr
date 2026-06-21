@@ -46,7 +46,7 @@ def _infrastructure_contribution(infrastructure: list[dict]) -> tuple[float, str
         return 0.0, None
     best = _best_by_confidence(infrastructure)
     fraction = _confidence_fraction(best.get("confidence"))
-    ioc_bonus = min(0.2, best.get("shared_ioc_count", 0) * 0.02)
+    ioc_bonus = min(0.2, (best.get("shared_ioc_count") or 0) * 0.02)
     points = round(CAP_INFRASTRUCTURE * min(1.0, fraction + ioc_bonus), 1)
     if points <= 0:
         return 0.0, None

@@ -203,13 +203,19 @@ async def prune_invalid_campaign_members(db) -> int:
     return removed
 
 
-async def get_campaigns_for_cve(db, cve_id: str) -> list[dict]:
+async def get_campaigns_for_cve(
+    db, cve_id: str, strong_infra_peers: set[str] | None = None
+) -> list[dict]:
     """
     Return campaign clusters containing cve_id with hub filtering applied.
     Clusters are seeded by same-pulse co-tagging (nightly build_campaigns_from_pulses)
     and expanded here with CVEs that share strong indicators (hash/domain) with
     the anchor, even when never co-tagged in the same OTX pulse — strong shared
     evidence shouldn't be siloed into the weaker "infrastructure" bucket.
+
+    `strong_infra_peers` lets a caller that already computed
+    find_shared_infrastructure_v2 (e.g. get_correlation_for_cve) pass the
+    result through instead of triggering a second, identical query.
     """
     from correlation.confidence import attribution_conflict, campaign_confidence
     from correlation.copy import campaign_summary, sanitize_pulse_text
@@ -219,11 +225,12 @@ async def get_campaigns_for_cve(db, cve_id: str) -> list[dict]:
     cve_upper = cve_id.upper()
     suppressions = await load_suppressions(db, cve_upper)
 
-    strong_infra_peers = {
-        peer["cve_id_b"]
-        for peer in await find_shared_infrastructure_v2(db, cve_upper)
-        if peer["shared_hash_count"] or peer["shared_domain_count"]
-    }
+    if strong_infra_peers is None:
+        strong_infra_peers = {
+            peer["cve_id_b"]
+            for peer in await find_shared_infrastructure_v2(db, cve_upper)
+            if peer["shared_hash_count"] or peer["shared_domain_count"]
+        }
 
     rows = await db.execute_fetchall(
         """

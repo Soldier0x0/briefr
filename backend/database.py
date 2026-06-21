@@ -234,6 +234,9 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_otx_cve_pulses_cve
                 ON otx_cve_pulses(cve_id);
 
+            CREATE INDEX IF NOT EXISTS idx_otx_cve_pulses_pulse
+                ON otx_cve_pulses(pulse_id);
+
             CREATE TABLE IF NOT EXISTS otx_pulse_iocs (
                 pulse_id TEXT NOT NULL,
                 ioc_type TEXT NOT NULL DEFAULT '',
@@ -518,6 +521,7 @@ async def init_db() -> None:
             """,
             "CREATE INDEX IF NOT EXISTS idx_correlation_suppressions_cve ON correlation_suppressions(cve_id)",
             "ALTER TABLE correlation_suppressions ADD COLUMN dismissed_by TEXT DEFAULT ''",
+            "CREATE INDEX IF NOT EXISTS idx_otx_cve_pulses_pulse ON otx_cve_pulses(pulse_id)",
         ):
             try:
                 await db.execute(migration)

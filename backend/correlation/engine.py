@@ -338,7 +338,20 @@ async def get_correlation_for_cve(
         ]
         actor = await find_actor_sector_correlation(db, cve_upper, user_sector)
         temporal = await _get_temporal_for_cve(db, cve_upper)
-        campaigns = await get_campaigns_for_cve(db, cve_upper)
+
+        # Reuse the infrastructure rows already fetched above instead of
+        # having get_campaigns_for_cve run find_shared_infrastructure_v2
+        # again — also ensures suppressed infra peers aren't promoted into
+        # campaign membership, since `infrastructure` here is already
+        # suppression-filtered.
+        strong_infra_peers = {
+            row["cve_id_b"]
+            for row in infrastructure
+            if row["shared_hash_count"] or row["shared_domain_count"]
+        }
+        campaigns = await get_campaigns_for_cve(
+            db, cve_upper, strong_infra_peers=strong_infra_peers
+        )
 
         # Exclude infrastructure peers already promoted into a campaign above
         # (strong shared IOCs) so campaigns and infrastructure are
