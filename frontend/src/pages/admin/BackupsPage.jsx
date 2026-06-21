@@ -1,16 +1,21 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { Settings2 } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import StatCard from './shared/StatCard.jsx'
 import AsyncSection from './shared/AsyncSection.jsx'
+import ToggleSwitch from './shared/ToggleSwitch.jsx'
 import { fmtBytes, fmtAge, ageColor } from './formatters.js'
 
-export default function BackupsPage({ toast, system, setPage: setAdminPage }) {
+export default function BackupsPage({ toast, system }) {
   const [backups, setBackups] = useState(null)
   const [loadError, setLoadError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [verifyResults, setVerifyResults] = useState({})
   const [page, setPage] = useState(0)
   const [schedule, setSchedule] = useState(null)
+  const [editingSchedule, setEditingSchedule] = useState(false)
+  const [scheduleForm, setScheduleForm] = useState(null)
+  const [savingSchedule, setSavingSchedule] = useState(false)
   const pageSize = 20
   const fileInputRef = useRef(null)
 
@@ -54,6 +59,40 @@ export default function BackupsPage({ toast, system, setPage: setAdminPage }) {
     }
   }
 
+  function openScheduleEdit() {
+    setScheduleForm({
+      BACKUP_ENABLED: schedule.BACKUP_ENABLED !== '0',
+      BACKUP_INTERVAL_HOURS: String(schedule.BACKUP_INTERVAL_HOURS ?? ''),
+      BACKUP_RETENTION_COUNT: String(schedule.BACKUP_RETENTION_COUNT ?? ''),
+    })
+    setEditingSchedule(true)
+  }
+
+  async function saveSchedule() {
+    const interval = Number(scheduleForm.BACKUP_INTERVAL_HOURS)
+    const retention = Number(scheduleForm.BACKUP_RETENTION_COUNT)
+    if (!Number.isInteger(interval) || interval < 1) { toast('Interval must be a whole number of hours (≥ 1)', false); return }
+    if (!Number.isInteger(retention) || retention < 1) { toast('Retention count must be a whole number (≥ 1)', false); return }
+    setSavingSchedule(true)
+    try {
+      const items = [
+        { key: 'BACKUP_ENABLED', value: scheduleForm.BACKUP_ENABLED ? '1' : '0' },
+        { key: 'BACKUP_INTERVAL_HOURS', value: String(interval) },
+        { key: 'BACKUP_RETENTION_COUNT', value: String(retention) },
+      ]
+      const res = await adminApi.post('/config/apply-all', items)
+      const data = await res.json()
+      if (res.ok) {
+        toast(`Backup schedule updated. Restarting…`, true)
+        setEditingSchedule(false)
+        setSchedule(s => ({ ...s, ...scheduleForm, BACKUP_ENABLED: scheduleForm.BACKUP_ENABLED ? '1' : '0' }))
+      } else {
+        toast(`Failed: ${(data.errors || [data.detail]).join('; ')}`, false)
+      }
+    } catch (e) { toast(String(e.message), false) }
+    setSavingSchedule(false)
+  }
+
   async function uploadBackup(e) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -88,16 +127,50 @@ export default function BackupsPage({ toast, system, setPage: setAdminPage }) {
 
       {schedule && schedule.BACKUP_INTERVAL_HOURS !== undefined && (
         <div className="admin-card">
-          <div className="admin-card-title">Schedule</div>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text2)', marginBottom: '0.5rem' }}>
-            {schedule.BACKUP_ENABLED === '0'
-              ? 'Scheduled backups are disabled — only manual "Run backup now" creates archives.'
-              : `Backups run automatically every ${schedule.BACKUP_INTERVAL_HOURS} hour${schedule.BACKUP_INTERVAL_HOURS === 1 ? '' : 's'}, keeping the latest ${schedule.BACKUP_RETENTION_COUNT} archives (older ones are pruned automatically).`}
-          </p>
-          {setAdminPage && (
-            <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={() => setAdminPage('apikeys')}>
-              Edit schedule & retention in Config →
-            </button>
+          <div className="admin-card-title">Schedule &amp; retention</div>
+          {!editingSchedule ? (
+            <>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text2)', marginBottom: '0.5rem' }}>
+                {schedule.BACKUP_ENABLED === '0'
+                  ? 'Scheduled backups are disabled — only manual "Run backup now" creates archives.'
+                  : `Backups run automatically every ${schedule.BACKUP_INTERVAL_HOURS} hour${schedule.BACKUP_INTERVAL_HOURS === 1 ? '' : 's'}, keeping the latest ${schedule.BACKUP_RETENTION_COUNT} archives (older ones are pruned automatically).`}
+              </p>
+              <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={openScheduleEdit}>
+                <Settings2 size={13} strokeWidth={2} /> Edit schedule & retention
+              </button>
+            </>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxWidth: 420 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem' }}>
+                <ToggleSwitch on={scheduleForm.BACKUP_ENABLED} onChange={v => setScheduleForm(f => ({ ...f, BACKUP_ENABLED: v }))} />
+                Scheduled backups enabled
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
+                Run every
+                <input
+                  className="admin-input" type="number" min={1} style={{ width: 80, marginLeft: '0.5rem' }}
+                  value={scheduleForm.BACKUP_INTERVAL_HOURS}
+                  onChange={e => setScheduleForm(f => ({ ...f, BACKUP_INTERVAL_HOURS: e.target.value }))}
+                  disabled={!scheduleForm.BACKUP_ENABLED}
+                /> hour(s)
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
+                Keep the latest
+                <input
+                  className="admin-input" type="number" min={1} style={{ width: 80, marginLeft: '0.5rem' }}
+                  value={scheduleForm.BACKUP_RETENTION_COUNT}
+                  onChange={e => setScheduleForm(f => ({ ...f, BACKUP_RETENTION_COUNT: e.target.value }))}
+                /> archives (older ones auto-deleted)
+              </label>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.3rem' }}>
+                <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.75rem' }} onClick={saveSchedule} disabled={savingSchedule}>
+                  {savingSchedule ? <><span className="admin-spinner" /> Saving…</> : 'Save (restarts backend)'}
+                </button>
+                <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={() => setEditingSchedule(false)} disabled={savingSchedule}>
+                  Cancel
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}

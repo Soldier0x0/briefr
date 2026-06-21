@@ -6,9 +6,10 @@ export function getDisplayPrefs() {
     return {
       fontScale: localStorage.getItem('briefr_font_scale') || 'medium',
       density: localStorage.getItem('briefr_density') || 'comfortable',
+      showTechnicalIds: localStorage.getItem('briefr_show_technical_ids') === '1',
     }
   } catch {
-    return { fontScale: 'medium', density: 'comfortable' }
+    return { fontScale: 'medium', density: 'comfortable', showTechnicalIds: false }
   }
 }
 
@@ -18,10 +19,11 @@ export function applyDisplayPrefs({ fontScale, density } = getDisplayPrefs()) {
   document.documentElement.classList.toggle('density-spacious', density === 'spacious')
 }
 
-export function setDisplayPrefs({ fontScale, density }) {
+export function setDisplayPrefs({ fontScale, density, showTechnicalIds }) {
   try {
     if (fontScale) localStorage.setItem('briefr_font_scale', fontScale)
     if (density) localStorage.setItem('briefr_density', density)
+    if (showTechnicalIds !== undefined) localStorage.setItem('briefr_show_technical_ids', showTechnicalIds ? '1' : '0')
   } catch { /* localStorage unavailable, prefs just won't persist */ }
   applyDisplayPrefs({ ...getDisplayPrefs(), ...(fontScale && { fontScale }), ...(density && { density }) })
 }

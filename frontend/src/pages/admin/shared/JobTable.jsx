@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react'
 import { fmtIso, fmtDur } from '../formatters.js'
 import { jobLabel, statusLabel, statusHint } from '../catalog.js'
+import { getDisplayPrefs, setDisplayPrefs } from '../../../utils/displayPrefs.js'
 
 export function JobStatusBadge({ status, mode = 'operator' }) {
   const map = {
@@ -20,7 +21,13 @@ export function JobStatusBadge({ status, mode = 'operator' }) {
 // Shared scheduler job table (used by Overview and Scheduler pages).
 export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors = true, mode = 'operator' }) {
   const [expanded, setExpanded] = useState({})
-  const [showIds, setShowIds] = useState(false)
+  const [showIds, setShowIds] = useState(() => getDisplayPrefs().showTechnicalIds)
+
+  function toggleShowIds(v) {
+    setShowIds(v)
+    setDisplayPrefs({ showTechnicalIds: v })
+  }
+
   if (!jobs) return <div className="admin-empty">Loading…</div>
   if (jobs.length === 0) return <div className="admin-empty">No jobs registered</div>
 
@@ -49,7 +56,7 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
   return (
     <div>
       <label className="admin-checkbox-label" style={{ fontSize: '0.75rem', marginBottom: '0.4rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-        <input type="checkbox" checked={showIds} onChange={e => setShowIds(e.target.checked)} />
+        <input type="checkbox" checked={showIds} onChange={e => toggleShowIds(e.target.checked)} />
         Show technical IDs
       </label>
       <table className="admin-table">
@@ -88,7 +95,7 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                     {onRunNow && (
                       <button
                         className="admin-btn admin-btn-ghost"
-                        style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}
+                        style={{ fontSize: '0.8125rem', padding: '0.35rem 0.85rem' }}
                         onClick={() => onRunNow(job.id)}
                         disabled={job.status === 'LOCKED'}
                       >Run</button>
@@ -96,7 +103,7 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                     {onPauseResume && (
                       <button
                         className={`admin-btn ${job.status === 'PAUSED' ? 'admin-btn-primary' : 'admin-btn-warn'}`}
-                        style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}
+                        style={{ fontSize: '0.8125rem', padding: '0.35rem 0.85rem' }}
                         onClick={() => onPauseResume(job)}
                       >
                         {job.status === 'PAUSED' ? 'Resume' : 'Pause'}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ToggleSwitch from './shared/ToggleSwitch.jsx'
 import { getDisplayPrefs, setDisplayPrefs, FONT_SCALE_OPTIONS, DENSITY_OPTIONS } from '../../utils/displayPrefs.js'
 
 const FONT_LABELS = { xsmall: 'Extra small', small: 'Small', medium: 'Medium (default)', large: 'Large', xlarge: 'Extra large' }
@@ -46,6 +47,17 @@ export default function DisplayPage() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="admin-card">
+        <div className="admin-card-title">Tables</div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
+          <ToggleSwitch on={!!prefs.showTechnicalIds} onChange={v => update('showTechnicalIds', v)} />
+          Show technical job IDs in scheduler tables
+        </label>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text3)', margin: '0.4rem 0 0' }}>
+          Remembered across pages and sessions, instead of resetting every time you leave the Scheduler page.
+        </p>
       </div>
     </div>
   )

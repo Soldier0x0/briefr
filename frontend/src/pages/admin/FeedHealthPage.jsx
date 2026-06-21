@@ -1,3 +1,4 @@
+import { CheckCircle2, AlertTriangle, XCircle, RefreshCw } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import { fmtIso, sourceLabel } from './formatters.js'
 import HelpTip from './shared/HelpTip.jsx'
@@ -24,13 +25,15 @@ export default function FeedHealthPage({ system, toast, mode = 'operator' }) {
 
   function FeedCard({ entryKey, s }) {
     let borderColor = 'var(--border)'
-    if (s.circuit_open) borderColor = 'var(--red)'
-    else if (s.consecutive_failures > 0) borderColor = 'var(--amber)'
+    let StatusIcon = CheckCircle2
+    if (s.circuit_open) { borderColor = 'var(--red)'; StatusIcon = XCircle }
+    else if (s.consecutive_failures > 0) { borderColor = 'var(--amber)'; StatusIcon = AlertTriangle }
     return (
       <div key={entryKey} className="feed-source-card" style={{ borderLeftColor: borderColor }}>
         <div className="feed-source-name">{sourceLabel(entryKey)}</div>
         <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', margin: '0.4rem 0' }}>
           <span className={`badge ${s.circuit_open ? 'badge-error' : 'badge-ok'}`}>
+            <StatusIcon size={11} strokeWidth={2.25} style={{ marginRight: '0.25rem', verticalAlign: '-1px' }} />
             {s.circuit_open ? (isAnalyst ? 'PAUSED' : 'OPEN') : (isAnalyst ? 'Healthy' : 'CLOSED')}
           </span>
           {!isAnalyst && s.consecutive_failures > 0 && (
@@ -113,6 +116,9 @@ export default function FeedHealthPage({ system, toast, mode = 'operator' }) {
       {incidents && (
         <div className="admin-card" style={{ marginTop: '1rem' }}>
           <div className="admin-card-title">Incidents snapshot</div>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text3)', margin: '0 0 0.6rem' }}>
+            The "Recent incidents" feed shown on the dashboard — built from security news RSS, separate from CVE/KEV/EPSS data.
+          </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             <div>
               <span className={`badge ${incidents.stale ? 'badge-warn' : 'badge-ok'}`}>
@@ -122,8 +128,13 @@ export default function FeedHealthPage({ system, toast, mode = 'operator' }) {
             <div style={{ fontSize: '0.8125rem', color: 'var(--text2)' }}>
               Last built: {fmtIso(incidents.last_refresh)}
             </div>
-            <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={rebuildFeed}>
-              Rebuild now
+            <button
+              className="admin-btn admin-btn-ghost"
+              style={{ fontSize: '0.75rem' }}
+              onClick={rebuildFeed}
+              title="Rebuilds the incident/news feed snapshot — does not affect CVE, KEV, or EPSS data"
+            >
+              <RefreshCw size={13} strokeWidth={2} /> Rebuild incidents feed
             </button>
             <HelpTip text="Rebuilds the incident/news feed snapshot shown on the dashboard. Does not affect CVE, KEV, or EPSS data." />
           </div>

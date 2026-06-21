@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { Eye, Wrench, RefreshCw, RotateCw, Hourglass, ChevronDown } from 'lucide-react'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import { fmtAge } from './formatters.js'
@@ -83,15 +84,20 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
         />
       )}
       <div className="admin-statusbar">
-        <div className="admin-mode-toggle" role="group" aria-label="Admin view mode">
-          <button
-            className={`admin-mode-toggle-btn ${mode === 'analyst' ? 'active' : ''}`}
-            onClick={() => handleModeClick('analyst')}
-          >Analyst</button>
-          <button
-            className={`admin-mode-toggle-btn ${mode === 'operator' ? 'active' : ''}`}
-            onClick={() => handleModeClick('operator')}
-          >Operator</button>
+        <div className="admin-mode-toggle-group">
+          <span className="admin-mode-toggle-label">VIEW</span>
+          <div className="admin-mode-toggle" role="group" aria-label="Switch admin view mode">
+            <button
+              className={`admin-mode-toggle-btn ${mode === 'analyst' ? 'active' : ''}`}
+              onClick={() => handleModeClick('analyst')}
+              title="Analyst view — CVE triage, simplified language, no destructive actions"
+            ><Eye size={13} strokeWidth={2} /> Analyst</button>
+            <button
+              className={`admin-mode-toggle-btn ${mode === 'operator' ? 'active' : ''}`}
+              onClick={() => handleModeClick('operator')}
+              title="Operator view — system management: restart, full ingest, purge, config"
+            ><Wrench size={13} strokeWidth={2} /> Operator</button>
+          </div>
         </div>
         <div className="sb-sep" />
 
@@ -122,8 +128,9 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
                 onClick={onRunIngest}
                 disabled={refreshInProgress}
                 style={{ fontSize: '0.75rem' }}
+                title="Pulls the latest CVEs, KEV entries, and EPSS scores from every source right now"
               >
-                {refreshInProgress ? <><span className="admin-spinner" /> Refreshing…</> : 'Refresh all sources'}
+                {refreshInProgress ? <><span className="admin-spinner" /> Refreshing…</> : <><RefreshCw size={13} strokeWidth={2} /> Refresh all sources</>}
               </button>
               <HelpTip text="Pulls the latest CVEs, KEV entries, and EPSS scores from every configured source right now, instead of waiting for the normal schedule." />
             </div>
@@ -189,8 +196,9 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
                 onClick={onRunIngest}
                 disabled={refreshInProgress}
                 style={{ fontSize: '0.75rem' }}
+                title="Pulls fresh data from every source: NVD, KEV, EPSS, MITRE/ATLAS, OTX, etc. — not just NVD CVEs"
               >
-                {refreshInProgress ? <><span className="admin-spinner" /> Running…</> : 'Run full ingest'}
+                {refreshInProgress ? <><span className="admin-spinner" /> Running…</> : <><RefreshCw size={13} strokeWidth={2} /> Run full ingest</>}
               </button>
               <HelpTip text="Pulls fresh data from every configured source — NVD, KEV, EPSS, MITRE/ATLAS, OTX, etc. — not just NVD CVEs." />
               <div className="admin-split-btn" ref={menuRef}>
@@ -198,8 +206,9 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
                   className="admin-btn admin-btn-ghost admin-split-btn-main"
                   onClick={() => setConfirmRestart('immediate')}
                   style={{ fontSize: '0.75rem' }}
+                  title="Stops the backend immediately — systemd restarts it within seconds"
                 >
-                  Restart now
+                  <RotateCw size={13} strokeWidth={2} /> Restart now
                 </button>
                 <button
                   ref={arrowRef}
@@ -207,7 +216,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
                   onClick={toggleRestartMenu}
                   aria-label="Restart options"
                   style={{ fontSize: '0.75rem' }}
-                >▾</button>
+                ><ChevronDown size={13} strokeWidth={2} /></button>
                 <HelpTip text="Restart now: stops the backend immediately (systemd restarts it within seconds). Drain then restart: waits for in-flight jobs to finish first, so nothing gets cut off mid-run." />
                 {restartMenu && menuPos && createPortal(
                   <div
@@ -215,8 +224,8 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
                     ref={menuRef}
                     style={{ top: menuPos.top, right: menuPos.right }}
                   >
-                    <button className="admin-split-menu-item" onClick={() => { setRestartMenu(false); setConfirmRestart('immediate') }}>Restart now</button>
-                    <button className="admin-split-menu-item" onClick={() => { setRestartMenu(false); setConfirmRestart('drain') }}>Drain then restart</button>
+                    <button className="admin-split-menu-item" onClick={() => { setRestartMenu(false); setConfirmRestart('immediate') }}><RotateCw size={12} strokeWidth={2} /> Restart now</button>
+                    <button className="admin-split-menu-item" onClick={() => { setRestartMenu(false); setConfirmRestart('drain') }} title="Waits for in-flight jobs to finish, then restarts — nothing gets cut off mid-run"><Hourglass size={12} strokeWidth={2} /> Drain then restart</button>
                   </div>,
                   document.body
                 )}

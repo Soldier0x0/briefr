@@ -86,7 +86,9 @@
   overflow: hidden;
 }
 .admin-split-menu-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   width: 100%;
   padding: 0.5rem 0.75rem;
   font-size: 0.8125rem;
@@ -131,7 +133,7 @@
 .admin-sidebar .nav-item {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.55rem;
   padding: 7px 14px;
   font-size: 13px;
   color: var(--text2);
@@ -139,6 +141,16 @@
   border-left: 2px solid transparent;
   transition: background 0.1s, color 0.1s;
   user-select: none;
+}
+
+.admin-sidebar .nav-icon {
+  flex-shrink: 0;
+  color: var(--text3);
+}
+
+.admin-sidebar .nav-item:hover .nav-icon,
+.admin-sidebar .nav-item.active .nav-icon {
+  color: inherit;
 }
 
 .admin-sidebar .nav-item:hover {
@@ -167,8 +179,9 @@
 }
 
 .admin-sidebar .nav-lock-icon {
-  font-size: 10px;
   opacity: 0.5;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .admin-sidebar .nav-item-tooltip {
@@ -824,6 +837,20 @@
 
 /* ── Admin mode toggle (Analyst / Operator) ────────────────────────────── */
 
+.admin-mode-toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.admin-mode-toggle-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+}
+
 .admin-mode-toggle {
   display: flex;
   background: var(--bg2);
@@ -835,6 +862,9 @@
 }
 
 .admin-mode-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   background: none;
   border: none;
   border-radius: 999px;
@@ -903,7 +933,9 @@
 /* ── Sidebar footer link (Analyst → Operator) ──────────────────────────── */
 
 .nav-footer-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   width: 100%;
   text-align: left;
   background: none;
@@ -914,6 +946,8 @@
   color: var(--link);
   cursor: pointer;
 }
+
+.nav-footer-link svg { flex-shrink: 0; }
 
 /* ── Generic pill (used outside the status bar, e.g. Alerts page) ───────── */
 

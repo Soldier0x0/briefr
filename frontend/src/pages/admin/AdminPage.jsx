@@ -130,7 +130,7 @@ export default function AdminPage() {
 
   const pages = {
     overview: <OverviewPage system={system} toast={toast} mode={mode} />,
-    backups: <BackupsPage toast={toast} system={system} setPage={setPage} />,
+    backups: <BackupsPage toast={toast} system={system} />,
     storage: <StoragePage toast={toast} />,
     database: <DatabasePage toast={toast} active={page === 'database'} />,
     watchlist: <WatchlistPage toast={toast} mode={mode} />,

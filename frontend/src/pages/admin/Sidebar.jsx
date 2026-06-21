@@ -1,4 +1,15 @@
+import {
+  Activity, Archive, HardDrive, Database, Bookmark, KeyRound, Clock, Webhook,
+  ShieldAlert, HeartPulse, ScrollText, ClipboardList, Settings2, LogIn, Users,
+  Gauge, BellRing, Lock, ArrowRightLeft,
+} from 'lucide-react'
 import { NAV, ANALYST_NAV } from './constants.js'
+
+const ICONS = {
+  Activity, Archive, HardDrive, Database, Bookmark, KeyRound, Clock, Webhook,
+  ShieldAlert, HeartPulse, ScrollText, ClipboardList, Settings2, LogIn, Users,
+  Gauge, BellRing,
+}
 
 export default function Sidebar({ activePage, setPage, system, ingestErrorCount, mode, setMode }) {
   const openCircuits = system?.open_circuit_count || 0
@@ -21,6 +32,7 @@ export default function Sidebar({ activePage, setPage, system, ingestErrorCount,
           <div className="nav-section-label">{section.section}</div>
           {section.items.map(item => {
             const badge = getBadge(item)
+            const Icon = ICONS[item.icon]
             if (item.locked) {
               return (
                 <div
@@ -29,8 +41,9 @@ export default function Sidebar({ activePage, setPage, system, ingestErrorCount,
                   onClick={() => setPage(item.id)}
                   title={item.tooltip}
                 >
-                  <span className="nav-lock-icon">🔒</span>
+                  {Icon && <Icon className="nav-icon" size={15} strokeWidth={1.75} />}
                   <span>{item.label}</span>
+                  <Lock className="nav-lock-icon" size={11} strokeWidth={2} />
                   {item.tooltip && <span className="nav-item-tooltip">{item.tooltip}</span>}
                 </div>
               )
@@ -41,7 +54,8 @@ export default function Sidebar({ activePage, setPage, system, ingestErrorCount,
                 className={`nav-item ${activePage === item.id ? 'active' : ''}`}
                 onClick={() => setPage(item.id)}
               >
-                {item.label}
+                {Icon && <Icon className="nav-icon" size={15} strokeWidth={1.75} />}
+                <span>{item.label}</span>
                 {badge > 0 && <span className={`nav-badge ${item.badgeKey === 'failed_auth_last_24h' ? 'nav-badge-amber' : 'nav-badge-red'}`}>{badge}</span>}
               </div>
             )
@@ -50,7 +64,8 @@ export default function Sidebar({ activePage, setPage, system, ingestErrorCount,
       ))}
       {mode === 'analyst' && setMode && (
         <button className="nav-footer-link" onClick={() => setMode('operator')}>
-          Backups, config, logs → switch to Operator view
+          <ArrowRightLeft size={13} strokeWidth={1.75} />
+          <span>Backups, config, logs → switch to Operator view</span>
         </button>
       )}
     </nav>
