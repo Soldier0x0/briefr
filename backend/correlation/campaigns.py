@@ -203,15 +203,34 @@ async def prune_invalid_campaign_members(db) -> int:
     return removed
 
 
-async def get_campaigns_for_cve(db, cve_id: str) -> list[dict]:
-    """Return campaign clusters containing cve_id with hub filtering applied."""
+async def get_campaigns_for_cve(
+    db, cve_id: str, strong_infra_peers: set[str] | None = None
+) -> list[dict]:
+    """
+    Return campaign clusters containing cve_id with hub filtering applied.
+    Clusters are seeded by same-pulse co-tagging (nightly build_campaigns_from_pulses)
+    and expanded here with CVEs that share strong indicators (hash/domain) with
+    the anchor, even when never co-tagged in the same OTX pulse — strong shared
+    evidence shouldn't be siloed into the weaker "infrastructure" bucket.
+
+    `strong_infra_peers` lets a caller that already computed
+    find_shared_infrastructure_v2 (e.g. get_correlation_for_cve) pass the
+    result through instead of triggering a second, identical query.
+    """
     from correlation.confidence import attribution_conflict, campaign_confidence
     from correlation.copy import campaign_summary, sanitize_pulse_text
-    from correlation.ioc_graph import ioc_edges_between
+    from correlation.ioc_graph import find_shared_infrastructure_v2, ioc_edges_between
     from correlation.suppressions import is_campaign_suppressed, load_suppressions
 
     cve_upper = cve_id.upper()
     suppressions = await load_suppressions(db, cve_upper)
+
+    if strong_infra_peers is None:
+        strong_infra_peers = {
+            peer["cve_id_b"]
+            for peer in await find_shared_infrastructure_v2(db, cve_upper)
+            if peer["shared_hash_count"] or peer["shared_domain_count"]
+        }
 
     rows = await db.execute_fetchall(
         """
@@ -240,6 +259,9 @@ async def get_campaigns_for_cve(db, cve_id: str) -> list[dict]:
             (row["campaign_id"],),
         )
         all_members = [r["cve_id"] for r in member_rows]
+        for peer in strong_infra_peers:
+            if peer not in all_members:
+                all_members.append(peer)
         pulse_counts = await _pulse_counts_for_cves(db, all_members)
         filtered = filter_campaign_members(
             cve_upper, all_members, pulse_counts

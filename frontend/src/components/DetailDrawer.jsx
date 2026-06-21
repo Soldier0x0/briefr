@@ -358,6 +358,19 @@ function ConfidenceBadge({ confidence }) {
   )
 }
 
+function CorrelationPriority({ priority }) {
+  const score = priority?.score || 0
+  const top = (priority?.components || [])[0]
+  if (score <= 0 || !top) return null
+  const level = score >= 50 ? 'high' : score >= 25 ? 'medium' : 'low'
+  return (
+    <div className={`corr-priority corr-priority-${level}`}>
+      <span className="corr-priority-score mono">{score.toFixed(0)}</span>
+      <p className="corr-priority-reason mono">{top.sentence}</p>
+    </div>
+  )
+}
+
 function CorrelationEvidence({ evidence }) {
   const items = Array.isArray(evidence) ? evidence : []
   if (!items.length) return null
@@ -400,6 +413,7 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
   const actor = correlation?.actor || []
   const temporal = correlation?.temporal || []
   const otxStatus = correlation?.otx_status
+  const priority = correlation?.priority
   const hasFindings = campaigns.length > 0 || infra.length > 0 || actor.length > 0 || temporal.length > 0
 
   return (
@@ -407,6 +421,8 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
       <h3 id="corr-heading" className="drawer-human-label mono">
         // CORRELATION FINDINGS
       </h3>
+
+      <CorrelationPriority priority={priority} />
 
       {!hasFindings && otxStatus === 'not_configured' && (
         <p className="drawer-intel-empty mono">

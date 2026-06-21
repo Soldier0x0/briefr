@@ -1140,6 +1140,10 @@ class CorrelationSuppressBody(BaseModel):
     )
     key: dict = Field(default_factory=dict)
     reason: str = ""
+    dismissed_by: str = Field(
+        default="",
+        description="Analyst identity, free-text until app login ships",
+    )
 
 
 @intel_router.post("/api/cves/{cve_id}/correlation/suppress")
@@ -1159,6 +1163,7 @@ async def suppress_correlation_finding(cve_id: str, body: CorrelationSuppressBod
             body.scope.strip(),
             body.key,
             body.reason.strip(),
+            body.dismissed_by.strip(),
         )
         await delete_feed_cache_prefix(db, f"correlation:v2:{cve_id.upper()}")
         await db.commit()

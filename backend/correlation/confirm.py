@@ -12,22 +12,7 @@ def confirmations_enabled() -> bool:
     return get_correlation_confirm_enabled()
 
 
-async def confirmations_for_ioc(
-    db, ioc_type: str, ioc_value: str
-) -> dict[str, Any]:
-    """
-    Read ioc_cache (no new HTTP). Returns keys:
-    greynoise, malwarebazaar, urlhaus_active
-    """
-    if not confirmations_enabled():
-        return {}
-
-    from database import get_ioc_cache
-
-    cached = await get_ioc_cache(db, ioc_value)
-    if not cached:
-        return {}
-
+def _parse_confirmations(cached: dict[str, Any]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     gn = cached.get("greynoise") or {}
     classification = (gn.get("classification") or "").strip().lower()
@@ -42,6 +27,26 @@ async def confirmations_for_ioc(
         out["urlhaus_active"] = True
 
     return out
+
+
+async def confirmations_for_iocs_batch(
+    db, ioc_values: list[str]
+) -> dict[str, dict[str, Any]]:
+    """
+    Read ioc_cache for all distinct IOC values in one query (instead of one
+    query per (peer, ioc) edge). Returns {ioc_value: confirmations}, where
+    each confirmations dict has keys: greynoise, malwarebazaar, urlhaus_active.
+    """
+    if not confirmations_enabled() or not ioc_values:
+        return {}
+
+    from database import get_ioc_cache_batch
+
+    cached_by_value = await get_ioc_cache_batch(db, ioc_values)
+    return {
+        value: _parse_confirmations(cached)
+        for value, cached in cached_by_value.items()
+    }
 
 
 def confirmation_receipt(confirmations: dict[str, Any]) -> dict | None:

@@ -155,3 +155,94 @@ def test_intel_endpoints_reject_malformed_cve_id(tmp_path, monkeypatch):
         # Well-formed IDs still pass validation and answer 200.
         res = client.get("/api/cves/CVE-2024-0001/momentum")
         assert res.status_code == 200
+
+
+def test_correlation_endpoint_serializes_priority_and_suppress_round_trip(tmp_path, monkeypatch):
+    """The /correlation response must carry the new `priority` field through
+    HTTP JSON serialization, and the suppress/unsuppress endpoints must
+    actually remove a campaign from a subsequent GET (dismissed_by included)."""
+    db_path = tmp_path / "corr_router.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    async def _noop_async() -> None:
+        return None
+
+    monkeypatch.setattr("main.start_scheduler", lambda: None)
+    monkeypatch.setattr("main.stop_scheduler", lambda: None)
+    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
+
+    asyncio.run(init_db())
+
+    async def seed() -> None:
+        import database
+        from correlation.campaigns import build_campaigns_from_pulses
+
+        db = await database.get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO cves (cve_id, description, published, is_kev, has_poc, epss_score)
+                VALUES
+                    ('CVE-2024-7001', 'Alpha', '2024-01-01', 0, 0, 0.1),
+                    ('CVE-2024-7002', 'Beta', '2024-01-02', 0, 0, 0.2)
+                """
+            )
+            pulses = [
+                {
+                    "pulse_id": "pulse-router-1",
+                    "pulse_name": "Router test pulse",
+                    "author": "analyst",
+                    "created_date": "2024-01-10",
+                    "adversary": "APT-ROUTER",
+                    "malware_families": [],
+                    "tags": [],
+                    "targeted_countries": [],
+                    "ioc_count": 0,
+                }
+            ]
+            await database.replace_otx_cve_pulses(db, "CVE-2024-7001", pulses)
+            await database.replace_otx_cve_pulses(db, "CVE-2024-7002", pulses)
+            await db.commit()
+            await build_campaigns_from_pulses(db)
+            await db.commit()
+        finally:
+            await db.close()
+
+    asyncio.run(seed())
+
+    from fastapi.testclient import TestClient
+    from main import app
+
+    with TestClient(app) as client:
+        res = client.get("/api/cves/CVE-2024-7001/correlation")
+        assert res.status_code == 200
+        body = res.json()
+        assert len(body["campaigns"]) == 1
+        campaign_id = body["campaigns"][0]["campaign_id"]
+        assert body["priority"]["score"] > 0
+        assert body["priority"]["components"][0]["signal"] == "campaign"
+
+        sup = client.post(
+            f"/api/cves/CVE-2024-7001/correlation/suppress",
+            json={
+                "scope": "campaign_id",
+                "key": {"campaign_id": campaign_id},
+                "reason": "test dismiss",
+                "dismissed_by": "tester@example.com",
+            },
+        )
+        assert sup.status_code == 200
+        assert sup.json()["suppression"]["dismissed_by"] == "tester@example.com"
+
+        res2 = client.get("/api/cves/CVE-2024-7001/correlation")
+        assert res2.json()["campaigns"] == []
+
+        unsup = client.delete(
+            f"/api/cves/CVE-2024-7001/correlation/suppress"
+            f"?scope=campaign_id&campaign_id={campaign_id}"
+        )
+        assert unsup.status_code == 200
+
+        res3 = client.get("/api/cves/CVE-2024-7001/correlation")
+        assert len(res3.json()["campaigns"]) == 1

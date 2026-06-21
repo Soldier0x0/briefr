@@ -1,11 +1,13 @@
 """
-BRIEFR Correlation Engine v1
-Three levels of CVE correlation analysis — all DB-backed, no external API calls
-at on-demand time (external data is pre-cached by the nightly OTX job).
+BRIEFR Correlation Engine v2
+CVE correlation analysis — DB-backed, no external API calls at on-demand time
+(external data is pre-cached by the nightly OTX job).
 
-Level 1 — Infrastructure: shared exploitation IPs across OTX pulses.
-Level 2 — Actor/Sector: ATT&CK groups using this CVE's techniques vs user sector.
-Level 3 — Temporal: vendor CVE volume spikes (nightly-only, pre-computed).
+Campaigns — pulse-seeded clusters expanded on-demand by shared strong IOCs
+            (ioc_graph.py); see correlation/campaigns.py.
+Infrastructure — weaker shared-IOC peers that don't qualify for a campaign.
+Actor/Sector — ATT&CK groups using this CVE's techniques vs user sector.
+Temporal — vendor CVE volume spikes (nightly-only, pre-computed).
 """
 
 from __future__ import annotations
@@ -49,14 +51,6 @@ def _parse_json_list(value: Any) -> list:
     return []
 
 
-def _confidence_from_ip_count(count: int) -> str:
-    if count >= 4:
-        return "high"
-    if count >= 2:
-        return "medium"
-    return "low"
-
-
 def extract_sectors_from_text(text: str) -> list[str]:
     """Keyword-match SECTOR_KEYWORDS against a free-text description."""
     lower = (text or "").lower()
@@ -65,68 +59,6 @@ def extract_sectors_from_text(text: str) -> list[str]:
         if any(kw in lower for kw in keywords):
             matched.append(sector)
     return matched
-
-
-# ── Level 1 — Infrastructure Correlation ─────────────────
-
-async def find_shared_infrastructure(db, cve_id: str) -> list[dict]:
-    """
-    Find CVEs that share exploitation IPs with cve_id via OTX pulse IOCs.
-    Uses data already in otx_pulse_iocs (pre-cached by nightly OTX job).
-    Returns list of {cve_id_b, shared_ip_count, confidence}.
-    """
-    cve_upper = cve_id.upper()
-
-    shared_rows = await db.execute_fetchall(
-        """
-        SELECT ocp2.cve_id, COUNT(DISTINCT oi2.ioc_value) AS shared_ip_count
-        FROM otx_pulse_iocs oi2
-        JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi2.pulse_id
-        WHERE oi2.ioc_value IN (
-            SELECT DISTINCT oi.ioc_value
-            FROM otx_cve_pulses ocp
-            JOIN otx_pulse_iocs oi ON oi.pulse_id = ocp.pulse_id
-            WHERE ocp.cve_id = ?
-              AND UPPER(oi.ioc_type) IN ('IPV4', 'IPV6', 'IP')
-        )
-          AND UPPER(oi2.ioc_type) IN ('IPV4', 'IPV6', 'IP')
-          AND ocp2.cve_id != ?
-        GROUP BY ocp2.cve_id
-        ORDER BY shared_ip_count DESC
-        LIMIT 20
-        """,
-        (cve_upper, cve_upper),
-    )
-
-    results = []
-    for row in shared_rows:
-        count = row["shared_ip_count"]
-        results.append({
-            "cve_id_b": row["cve_id"],
-            "shared_ip_count": count,
-            "confidence": _confidence_from_ip_count(count),
-        })
-    return results
-
-
-async def _store_infrastructure_correlation(db, cve_id: str, findings: list[dict]) -> None:
-    await db.execute(
-        "DELETE FROM correlation_infrastructure WHERE cve_id_a = ?",
-        (cve_id.upper(),),
-    )
-    for f in findings:
-        await db.execute(
-            """
-            INSERT INTO correlation_infrastructure
-                (cve_id_a, cve_id_b, shared_ip_count, confidence, detected_at)
-            VALUES (?, ?, ?, ?, datetime('now'))
-            ON CONFLICT(cve_id_a, cve_id_b) DO UPDATE SET
-                shared_ip_count = excluded.shared_ip_count,
-                confidence      = excluded.confidence,
-                detected_at     = excluded.detected_at
-            """,
-            (cve_id.upper(), f["cve_id_b"], f["shared_ip_count"], f["confidence"]),
-        )
 
 
 # ── Level 2 — Actor / Sector Correlation ─────────────────
@@ -371,11 +303,12 @@ async def get_correlation_for_cve(
 ) -> dict:
     """
     Return correlation findings for a single CVE with a 6-hour cache.
-    Runs Level 1 + Level 2 live; Level 3 uses pre-computed nightly data.
-    v2: includes pulse-centric campaign clusters when built by nightly job.
+    Campaigns/infrastructure/actor are computed live; temporal anomalies use
+    pre-computed nightly data. Includes a combined priority score.
     """
     from database import get_feed_cache, set_feed_cache
     from correlation.campaigns import get_campaigns_for_cve
+    from correlation.priority import compute_correlation_priority
 
     if cache_hours is None:
         cache_hours = get_correlation_cache_hours()
@@ -405,9 +338,30 @@ async def get_correlation_for_cve(
         ]
         actor = await find_actor_sector_correlation(db, cve_upper, user_sector)
         temporal = await _get_temporal_for_cve(db, cve_upper)
-        campaigns = await get_campaigns_for_cve(db, cve_upper)
 
-        await _store_infrastructure_correlation(db, cve_upper, infrastructure)
+        # Reuse the infrastructure rows already fetched above instead of
+        # having get_campaigns_for_cve run find_shared_infrastructure_v2
+        # again — also ensures suppressed infra peers aren't promoted into
+        # campaign membership, since `infrastructure` here is already
+        # suppression-filtered.
+        strong_infra_peers = {
+            row["cve_id_b"]
+            for row in infrastructure
+            if row["shared_hash_count"] or row["shared_domain_count"]
+        }
+        campaigns = await get_campaigns_for_cve(
+            db, cve_upper, strong_infra_peers=strong_infra_peers
+        )
+
+        # Exclude infrastructure peers already promoted into a campaign above
+        # (strong shared IOCs) so campaigns and infrastructure are
+        # non-overlapping tiers rather than two views of the same data.
+        campaign_members = {m for c in campaigns for m in c.get("members", [])}
+        infrastructure = [
+            row for row in infrastructure
+            if row["cve_id_b"] not in campaign_members
+        ]
+
         await _store_actor_correlation(db, cve_upper, actor)
 
         if campaigns:
@@ -430,6 +384,7 @@ async def get_correlation_for_cve(
                 "cache_hit": False,
             },
         }
+        result["priority"] = compute_correlation_priority(result)
         await set_feed_cache(db, cache_key, result)
         return result
 
@@ -442,7 +397,8 @@ async def get_correlation_for_cve(
             "actor": [],
             "temporal": [],
             "otx_status": "degraded",
-            "error": str(exc),
+            "error": "correlation_unavailable",
+            "priority": {"score": 0, "components": []},
             "meta": {"engine_version": ENGINE_VERSION},
         }
 
@@ -479,15 +435,11 @@ async def run_nightly_correlation(db) -> dict:
 
     stats["pruned_members"] = await prune_invalid_campaign_members(db)
 
-    # Level 1 + 2: per-CVE for recent CVEs
+    # Actor/sector: per-CVE for recent CVEs (infrastructure is computed
+    # on-demand only — see ioc_graph.find_shared_infrastructure_v2)
     cve_ids = await get_recent_cve_ids_for_otx(db, days=7)
     for cve_id in cve_ids:
         try:
-            infra = await find_shared_infrastructure(db, cve_id)
-            if infra:
-                await _store_infrastructure_correlation(db, cve_id, infra)
-                stats["infrastructure_pairs"] += len(infra)
-
             actor = await find_actor_sector_correlation(db, cve_id)
             if actor:
                 await _store_actor_correlation(db, cve_id, actor)

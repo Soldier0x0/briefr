@@ -482,7 +482,7 @@ _STORAGE_TABLES = [
     "atlas_techniques", "atlas_case_studies", "cve_technique_map", "cve_atlas_map",
     "group_technique_map", "otx_cve_pulses", "otx_pulse_iocs", "otx_pulses",
     "cve_exploits",
-    "cve_change_history", "ioc_cache", "feed_cache", "correlation_infrastructure",
+    "cve_change_history", "ioc_cache", "feed_cache",
     "correlation_actor", "correlation_temporal", "correlation_campaigns",
     "correlation_campaign_members", "correlation_suppressions", "cve_embeddings", "api_usage",
     "audit_log", "sync_state", "watchlist", "hunt_packs", "webhook_alert_log",
