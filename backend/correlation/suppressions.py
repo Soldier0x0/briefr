@@ -26,6 +26,7 @@ async def add_suppression(
     scope: str,
     key: dict[str, Any],
     reason: str = "",
+    dismissed_by: str = "",
 ) -> dict:
     from database import insert_correlation_suppression
 
@@ -35,7 +36,7 @@ async def add_suppression(
     if not sk:
         raise ValueError("Missing scope key")
     row = await insert_correlation_suppression(
-        db, cve_id.upper(), scope, sk, reason.strip()
+        db, cve_id.upper(), scope, sk, reason.strip(), dismissed_by.strip()
     )
     return row
 

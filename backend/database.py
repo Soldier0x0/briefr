@@ -296,6 +296,7 @@ async def init_db() -> None:
                 scope TEXT NOT NULL,
                 scope_key TEXT NOT NULL,
                 reason TEXT DEFAULT '',
+                dismissed_by TEXT DEFAULT '',
                 created_at TEXT DEFAULT (datetime('now')),
                 UNIQUE (cve_id, scope, scope_key)
             );
@@ -516,6 +517,7 @@ async def init_db() -> None:
             )
             """,
             "CREATE INDEX IF NOT EXISTS idx_correlation_suppressions_cve ON correlation_suppressions(cve_id)",
+            "ALTER TABLE correlation_suppressions ADD COLUMN dismissed_by TEXT DEFAULT ''",
         ):
             try:
                 await db.execute(migration)
@@ -1523,6 +1525,24 @@ async def get_ioc_cache(db: aiosqlite.Connection, value: str) -> dict | None:
     return None
 
 
+async def get_ioc_cache_batch(
+    db: aiosqlite.Connection, values: list[str]
+) -> dict[str, dict]:
+    """Batch lookup of cached IOC enrichment results, keyed by value."""
+    if not values:
+        return {}
+    distinct = sorted(set(values))
+    placeholders = ",".join("?" * len(distinct))
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT value, result FROM ioc_cache
+        WHERE value IN ({placeholders}) AND cached_at > datetime('now', '-6 hours')
+        """,
+        tuple(distinct),
+    )
+    return {row["value"]: json.loads(row["result"]) for row in rows}
+
+
 async def set_ioc_cache(db: aiosqlite.Connection, value: str, ioc_type: str, result: dict) -> None:
     await db.execute(
         """
@@ -1984,7 +2004,7 @@ async def list_correlation_suppressions(
 ) -> list[dict]:
     rows = await db.execute_fetchall(
         """
-        SELECT id, cve_id, scope, scope_key, reason, created_at
+        SELECT id, cve_id, scope, scope_key, reason, dismissed_by, created_at
         FROM correlation_suppressions
         WHERE cve_id = ?
         ORDER BY created_at DESC
@@ -2000,20 +2020,22 @@ async def insert_correlation_suppression(
     scope: str,
     scope_key: str,
     reason: str = "",
+    dismissed_by: str = "",
 ) -> dict:
     await db.execute(
         """
-        INSERT INTO correlation_suppressions (cve_id, scope, scope_key, reason, created_at)
-        VALUES (?, ?, ?, ?, datetime('now'))
+        INSERT INTO correlation_suppressions (cve_id, scope, scope_key, reason, dismissed_by, created_at)
+        VALUES (?, ?, ?, ?, ?, datetime('now'))
         ON CONFLICT(cve_id, scope, scope_key) DO UPDATE SET
             reason = excluded.reason,
+            dismissed_by = excluded.dismissed_by,
             created_at = datetime('now')
         """,
-        (cve_id.upper(), scope, scope_key, reason),
+        (cve_id.upper(), scope, scope_key, reason, dismissed_by),
     )
     rows = await db.execute_fetchall(
         """
-        SELECT id, cve_id, scope, scope_key, reason, created_at
+        SELECT id, cve_id, scope, scope_key, reason, dismissed_by, created_at
         FROM correlation_suppressions
         WHERE cve_id = ? AND scope = ? AND scope_key = ?
         """,
@@ -2024,6 +2046,7 @@ async def insert_correlation_suppression(
         "scope": scope,
         "scope_key": scope_key,
         "reason": reason,
+        "dismissed_by": dismissed_by,
     }
 
 

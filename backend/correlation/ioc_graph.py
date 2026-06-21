@@ -8,7 +8,7 @@ from correlation.confidence import (
     aggregate_infrastructure_confidence,
     confidence_for_ioc_edge,
 )
-from correlation.confirm import confirmation_receipt, confirmations_for_ioc
+from correlation.confirm import confirmation_receipt, confirmations_for_iocs_batch
 from correlation.copy import infrastructure_summary
 from correlation.ioc_normalize import is_noise_ip
 
@@ -22,7 +22,10 @@ async def _shared_ioc_rows(db, cve_id: str) -> list:
                oi.ioc_value
         FROM otx_pulse_iocs oi
         JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id AND ocp.cve_id = ?
-        JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi.pulse_id AND ocp2.cve_id != ?
+        JOIN otx_pulse_iocs oi2
+            ON oi2.ioc_type = oi.ioc_type AND oi2.ioc_value = oi.ioc_value
+        JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi2.pulse_id AND ocp2.cve_id != ?
+        JOIN cves c ON c.cve_id = ocp2.cve_id
         GROUP BY ocp2.cve_id, oi.ioc_type, oi.ioc_value
         ORDER BY ocp2.cve_id ASC
         """,
@@ -46,13 +49,16 @@ async def find_shared_infrastructure_v2(
 ) -> list[dict[str, Any]]:
     """Peer CVEs linked by shared OTX pulse IOCs (all normalized types)."""
     rows = await _shared_ioc_rows(db, cve_id)
+    confirmations_by_value = await confirmations_for_iocs_batch(
+        db, [row["ioc_value"] for row in rows]
+    )
     by_peer: dict[str, list[dict]] = {}
 
     for row in rows:
         peer = row["cve_id_b"]
         ioc_type = row["ioc_type"]
         ioc_value = row["ioc_value"]
-        confirmations = await confirmations_for_ioc(db, ioc_type, ioc_value)
+        confirmations = confirmations_by_value.get(ioc_value, {})
         noise = ioc_type.upper() == "IP" and is_noise_ip(ioc_value)
         conf, why = confidence_for_ioc_edge(
             ioc_type,
@@ -109,7 +115,9 @@ async def ioc_edges_between(
         SELECT oi.ioc_type, oi.ioc_value
         FROM otx_pulse_iocs oi
         JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id AND ocp.cve_id = ?
-        JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi.pulse_id AND ocp2.cve_id = ?
+        JOIN otx_pulse_iocs oi2
+            ON oi2.ioc_type = oi.ioc_type AND oi2.ioc_value = oi.ioc_value
+        JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi2.pulse_id AND ocp2.cve_id = ?
         GROUP BY oi.ioc_type, oi.ioc_value
         """,
         (cve_id_a.upper(), cve_id_b.upper()),

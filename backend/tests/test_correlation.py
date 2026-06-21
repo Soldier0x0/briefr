@@ -312,3 +312,109 @@ def test_related_cves_for_ioc_from_tables(tmp_path, monkeypatch):
             await db.close()
 
     asyncio.run(run())
+
+
+def test_confirmations_batch_matches_per_value_cache(tmp_path, monkeypatch):
+    async def run():
+        db_path = str(tmp_path / "corr-confirm-batch.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        db = await _seed_db(db_path)
+        try:
+            from correlation.confirm import confirmations_for_iocs_batch
+            from database import set_ioc_cache
+
+            await set_ioc_cache(
+                db, "1.2.3.4", "IP", {"greynoise": {"classification": "malicious"}}
+            )
+            await set_ioc_cache(
+                db, "5.6.7.8", "IP", {"greynoise": {"classification": "benign"}}
+            )
+            await db.commit()
+
+            out = await confirmations_for_iocs_batch(db, ["1.2.3.4", "5.6.7.8", "9.9.9.9"])
+            assert out["1.2.3.4"]["greynoise"] == "malicious"
+            assert out["5.6.7.8"]["greynoise"] == "benign"
+            assert "9.9.9.9" not in out
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+
+def test_shared_hash_pulls_uncopulsed_cve_into_campaign(tmp_path, monkeypatch):
+    async def run():
+        db_path = str(tmp_path / "corr-hash-expand.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        db = await _seed_db(db_path)
+        try:
+            shared_hash = "a" * 32
+            await replace_otx_pulse_iocs(
+                db,
+                "pulse-campaign-1",
+                [
+                    {"ioc_type": "IPv4", "ioc_value": "192.168.1.10", "description": ""},
+                    {"ioc_type": "domain", "ioc_value": "evil[.]example.com", "description": ""},
+                    {"ioc_type": "hash", "ioc_value": shared_hash, "description": ""},
+                ],
+            )
+            await replace_otx_pulse_iocs(
+                db, "pulse-solo", [{"ioc_type": "hash", "ioc_value": shared_hash, "description": ""}]
+            )
+            await build_campaigns_from_pulses(db)
+            await db.commit()
+
+            # CVE-2024-1003 was only ever tagged in pulse-solo, never co-pulsed
+            # with CVE-2024-1001 — but they now share a hash IOC.
+            campaigns = await get_campaigns_for_cve(db, "CVE-2024-1001")
+            assert len(campaigns) == 1
+            assert "CVE-2024-1003" in campaigns[0]["members"]
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+
+def test_compute_correlation_priority_breakdown():
+    from correlation.priority import compute_correlation_priority
+
+    result = {
+        "campaigns": [{"confidence": "high", "label": "Ransomware wave"}],
+        "infrastructure": [{"confidence": "medium", "cve_id_b": "CVE-2024-9999", "shared_ioc_count": 2}],
+        "actor": [{"confidence": "medium", "actor_name": "APT-TEST", "user_sector_match": True}],
+        "temporal": [{"vendor": "acme", "anomaly_score": 4.0}],
+    }
+    priority = compute_correlation_priority(result)
+    assert priority["score"] > 0
+    assert priority["components"][0]["signal"] == "campaign"
+    signals = {c["signal"] for c in priority["components"]}
+    assert signals == {"campaign", "infrastructure", "actor", "temporal"}
+
+    empty = compute_correlation_priority({})
+    assert empty == {"score": 0, "components": []}
+
+
+def test_get_correlation_error_path_hides_exception_text(tmp_path, monkeypatch):
+    async def run():
+        db_path = str(tmp_path / "corr-error-path.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        db = await _seed_db(db_path)
+        try:
+            import correlation.campaigns as campaigns_mod
+
+            async def _boom(*args, **kwargs):
+                raise RuntimeError("super secret internal detail")
+
+            monkeypatch.setattr(campaigns_mod, "get_campaigns_for_cve", _boom)
+
+            result = await get_correlation_for_cve(db, "CVE-2024-1001")
+            assert result["otx_status"] == "degraded"
+            assert result["error"] == "correlation_unavailable"
+            assert "super secret" not in str(result)
+            assert result["priority"] == {"score": 0, "components": []}
+        finally:
+            await db.close()
+
+    asyncio.run(run())

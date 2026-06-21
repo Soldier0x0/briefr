@@ -1038,6 +1038,33 @@
 
 /* ── Correlation Findings (Intel tab) ────────────────────── */
 
+.corr-priority {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  margin-bottom: 14px;
+}
+
+.corr-priority-score {
+  font-size: 1.125rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.corr-priority-reason {
+  font-size: 0.75rem;
+  color: var(--text2);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.corr-priority-high .corr-priority-score { color: var(--red); }
+.corr-priority-medium .corr-priority-score { color: var(--amber); }
+.corr-priority-low .corr-priority-score { color: var(--text3); }
+
 .corr-group {
   display: flex;
   flex-direction: column;
