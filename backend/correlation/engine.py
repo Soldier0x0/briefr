@@ -391,7 +391,18 @@ async def get_correlation_for_cve(
     otx_configured = bool(os.environ.get("OTX_API_KEY", "").strip())
 
     try:
-        infrastructure = await find_shared_infrastructure(db, cve_upper)
+        from correlation.ioc_graph import find_shared_infrastructure_v2
+        from correlation.suppressions import (
+            is_infrastructure_suppressed,
+            load_suppressions,
+        )
+
+        suppressions = await load_suppressions(db, cve_upper)
+        infrastructure = await find_shared_infrastructure_v2(db, cve_upper)
+        infrastructure = [
+            row for row in infrastructure
+            if not is_infrastructure_suppressed(suppressions, row["cve_id_b"])
+        ]
         actor = await find_actor_sector_correlation(db, cve_upper, user_sector)
         temporal = await _get_temporal_for_cve(db, cve_upper)
         campaigns = await get_campaigns_for_cve(db, cve_upper)
