@@ -81,10 +81,10 @@ export default function AdminPage() {
   }
 
   function getOperatorAck() {
-    try { return localStorage.getItem('briefr-operator-ack') === '1' } catch { return false }
+    try { return sessionStorage.getItem('briefr-operator-ack') === '1' } catch { return false }
   }
   function setOperatorAck() {
-    try { localStorage.setItem('briefr-operator-ack', '1') } catch { /* unavailable */ }
+    try { sessionStorage.setItem('briefr-operator-ack', '1') } catch { /* unavailable */ }
   }
 
   function handleModeChange(next) {
