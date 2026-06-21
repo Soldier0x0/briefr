@@ -55,7 +55,7 @@ def test_config_api_keys_are_masked(admin_client):
     api_keys = data["api_keys"]
 
     # Each key must be masked or 'not configured'
-    masked_pattern = re.compile(r"^…\w{6}$")
+    masked_pattern = re.compile(r"^….{6}$")
     for key, val in api_keys.items():
         assert val == "not configured" or masked_pattern.match(val), (
             f"Key {key!r} not properly masked: {val!r}"

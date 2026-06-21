@@ -72,14 +72,14 @@ export default function SecurityPage({ toast }) {
                   <input className="admin-input" style={{ minWidth: 300, fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}
                     value={rotateValue} onChange={e => setRotateValue(e.target.value)} />
                   <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.8rem' }} onClick={saveRotatedKey}>
-                    Save & restart
+                    Save
                   </button>
                   <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.8rem' }} onClick={() => setRotateOpen(false)}>
                     Cancel
                   </button>
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text3)', marginTop: '0.4rem' }}>
-                  Backend will restart immediately after saving. You will be logged out.
+                  Takes effect immediately — no backend restart needed.
                 </div>
               </div>
             )}
