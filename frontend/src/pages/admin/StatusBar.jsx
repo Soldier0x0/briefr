@@ -2,13 +2,28 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import { fmtAge } from './formatters.js'
+import { worstSource } from './intelStatus.js'
 
-export default function StatusBar({ system, onRunIngest, onRestart, onDrainRestart, refreshInProgress }) {
+function getOperatorAck() {
+  try { return localStorage.getItem('briefr-operator-ack') === '1' } catch { return false }
+}
+function setOperatorAck() {
+  try { localStorage.setItem('briefr-operator-ack', '1') } catch { /* unavailable */ }
+}
+
+export default function StatusBar({ system, onRunIngest, onRestart, onDrainRestart, refreshInProgress, mode, setMode }) {
   const [restartMenu, setRestartMenu] = useState(false)
   const [menuPos, setMenuPos] = useState(null)
   const [confirmRestart, setConfirmRestart] = useState(null) // null | 'immediate' | 'drain'
+  const [confirmOperatorSwitch, setConfirmOperatorSwitch] = useState(false)
   const menuRef = useRef(null)
   const arrowRef = useRef(null)
+
+  function handleModeClick(next) {
+    if (next === mode) return
+    if (next === 'operator' && !getOperatorAck()) { setConfirmOperatorSwitch(true); return }
+    setMode(next)
+  }
 
   useEffect(() => {
     function onDown(e) {
@@ -54,6 +69,8 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
     return telegramFailed ? 'pill-amber' : 'pill-green'
   }
 
+  const worst = mode === 'analyst' ? worstSource(system) : null
+
   return (
     <>
       {confirmRestart && (
@@ -74,97 +91,154 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
           onCancel={() => setConfirmRestart(null)}
         />
       )}
+      {confirmOperatorSwitch && (
+        <ConfirmModal
+          title="Switch to Operator view?"
+          message="Operator view exposes destructive actions: restart, full ingest, purge, and config changes. Use it only when you need to manage the system, not for everyday CVE triage."
+          confirmWord={undefined}
+          onConfirm={() => { setOperatorAck(); setConfirmOperatorSwitch(false); setMode('operator') }}
+          onCancel={() => setConfirmOperatorSwitch(false)}
+        />
+      )}
       <div className="admin-statusbar">
-        <span className="sb-item">
-          <span className="sb-label">CVEs</span>
-          <span className="sb-value">{system?.cve_count?.toLocaleString() ?? '…'}</span>
-        </span>
+        <div className="admin-mode-toggle" role="group" aria-label="Admin view mode">
+          <button
+            className={`admin-mode-toggle-btn ${mode === 'analyst' ? 'active' : ''}`}
+            onClick={() => handleModeClick('analyst')}
+          >Analyst</button>
+          <button
+            className={`admin-mode-toggle-btn ${mode === 'operator' ? 'active' : ''}`}
+            onClick={() => handleModeClick('operator')}
+          >Operator</button>
+        </div>
         <div className="sb-sep" />
-        <span className="sb-item">
-          <span className="sb-label">NVD sync</span>
-          <span className={`sb-value ${nvdAge > 7200 ? 'sb-warn' : ''}`}>
-            {nvdAge != null ? fmtAge(nvdAge) : '—'}
-          </span>
-        </span>
-        {backupAge != null && (
+
+        {mode === 'analyst' ? (
           <>
+            <span className="sb-item">
+              <span className="sb-label">CVEs</span>
+              <span className="sb-value">{system?.cve_count?.toLocaleString() ?? '…'}</span>
+            </span>
             <div className="sb-sep" />
             <span className="sb-item">
-              <span className="sb-label">Backup</span>
-              <span className={`sb-value ${backupAge > backupThreshold ? 'sb-warn' : ''}`}>
-                {fmtAge(backupAge)}
+              <span className="sb-label">NVD feed</span>
+              <span className={`sb-value ${nvdAge > 7200 ? 'sb-warn' : ''}`}>
+                {nvdAge != null ? fmtAge(nvdAge) : '—'}
               </span>
             </span>
+            {openCircuits > 0 && (
+              <>
+                <div className="sb-sep" />
+                <span className="sb-item">
+                  <span className="pill pill-amber">{worst || 'A source'} unavailable</span>
+                </span>
+              </>
+            )}
+            <div className="sb-actions">
+              <button
+                className="admin-btn admin-btn-ghost"
+                onClick={onRunIngest}
+                disabled={refreshInProgress}
+                style={{ fontSize: '0.75rem' }}
+              >
+                {refreshInProgress ? <><span className="admin-spinner" /> Refreshing…</> : 'Refresh all sources'}
+              </button>
+            </div>
           </>
-        )}
-        <div className="sb-sep" />
-        <span className="sb-item">
-          <span className="sb-label">Circuits</span>
-          <span className={`sb-value ${openCircuits > 0 ? 'sb-warn' : ''}`}>{openCircuits} open</span>
-        </span>
-        <div className="sb-sep" />
-        <span className="sb-item" title={integrityOk ? 'Last integrity check passed' : 'Last integrity check found a problem'}>
-          <span className={`dot ${integrityOk ? 'dot-ok' : 'dot-error'}`} />
-          <span className="sb-label">DB {integrityOk ? 'ok' : 'degraded'}</span>
-        </span>
-        <div className="sb-sep" />
-        <span className="sb-item">
-          <span
-            className={`pill ${discordPillClass()}`}
-            title={!discordConfigured ? 'Not configured' : discordFailed ? 'Configured but the circuit is open (failing)' : 'Configured and last delivery succeeded'}
-          >Discord</span>
-        </span>
-        <span className="sb-item">
-          <span
-            className={`pill ${telegramPillClass()}`}
-            title={!telegramConfigured ? 'Not configured' : telegramFailed ? 'Configured but the circuit is open (failing)' : 'Configured and last delivery succeeded'}
-          >Telegram</span>
-        </span>
-        {commit && (
+        ) : (
           <>
+            <span className="sb-item">
+              <span className="sb-label">CVEs</span>
+              <span className="sb-value">{system?.cve_count?.toLocaleString() ?? '…'}</span>
+            </span>
             <div className="sb-sep" />
             <span className="sb-item">
-              <span className="sb-label mono" style={{ fontSize: '0.6875rem' }}>{commit.slice(0, 7) || 'dev'}</span>
+              <span className="sb-label">NVD sync</span>
+              <span className={`sb-value ${nvdAge > 7200 ? 'sb-warn' : ''}`}>
+                {nvdAge != null ? fmtAge(nvdAge) : '—'}
+              </span>
             </span>
+            {backupAge != null && (
+              <>
+                <div className="sb-sep" />
+                <span className="sb-item">
+                  <span className="sb-label">Backup</span>
+                  <span className={`sb-value ${backupAge > backupThreshold ? 'sb-warn' : ''}`}>
+                    {fmtAge(backupAge)}
+                  </span>
+                </span>
+              </>
+            )}
+            <div className="sb-sep" />
+            <span className="sb-item">
+              <span className="sb-label">Circuits</span>
+              <span className={`sb-value ${openCircuits > 0 ? 'sb-warn' : ''}`}>{openCircuits} open</span>
+            </span>
+            <div className="sb-sep" />
+            <span className="sb-item" title={integrityOk ? 'Last integrity check passed' : 'Last integrity check found a problem'}>
+              <span className={`dot ${integrityOk ? 'dot-ok' : 'dot-error'}`} />
+              <span className="sb-label">DB {integrityOk ? 'ok' : 'degraded'}</span>
+            </span>
+            <div className="sb-sep" />
+            <span className="sb-item">
+              <span
+                className={`pill ${discordPillClass()}`}
+                title={!discordConfigured ? 'Not configured' : discordFailed ? 'Configured but the circuit is open (failing)' : 'Configured and last delivery succeeded'}
+              >Discord</span>
+            </span>
+            <span className="sb-item">
+              <span
+                className={`pill ${telegramPillClass()}`}
+                title={!telegramConfigured ? 'Not configured' : telegramFailed ? 'Configured but the circuit is open (failing)' : 'Configured and last delivery succeeded'}
+              >Telegram</span>
+            </span>
+            {commit && (
+              <>
+                <div className="sb-sep" />
+                <span className="sb-item">
+                  <span className="sb-label mono" style={{ fontSize: '0.6875rem' }}>{commit.slice(0, 7) || 'dev'}</span>
+                </span>
+              </>
+            )}
+            <div className="sb-actions">
+              <button
+                className="admin-btn admin-btn-warn"
+                onClick={onRunIngest}
+                disabled={refreshInProgress}
+                style={{ fontSize: '0.75rem' }}
+              >
+                {refreshInProgress ? <><span className="admin-spinner" /> Running…</> : 'Run full ingest'}
+              </button>
+              <div className="admin-split-btn" ref={menuRef}>
+                <button
+                  className="admin-btn admin-btn-ghost admin-split-btn-main"
+                  onClick={() => setConfirmRestart('immediate')}
+                  style={{ fontSize: '0.75rem' }}
+                >
+                  Restart now
+                </button>
+                <button
+                  ref={arrowRef}
+                  className="admin-btn admin-btn-ghost admin-split-btn-arrow"
+                  onClick={toggleRestartMenu}
+                  aria-label="Restart options"
+                  style={{ fontSize: '0.75rem' }}
+                >▾</button>
+                {restartMenu && menuPos && createPortal(
+                  <div
+                    className="admin-split-menu"
+                    ref={menuRef}
+                    style={{ top: menuPos.top, right: menuPos.right }}
+                  >
+                    <button className="admin-split-menu-item" onClick={() => { setRestartMenu(false); setConfirmRestart('immediate') }}>Restart now</button>
+                    <button className="admin-split-menu-item" onClick={() => { setRestartMenu(false); setConfirmRestart('drain') }}>Drain then restart</button>
+                  </div>,
+                  document.body
+                )}
+              </div>
+            </div>
           </>
         )}
-        <div className="sb-actions">
-          <button
-            className="admin-btn admin-btn-warn"
-            onClick={onRunIngest}
-            disabled={refreshInProgress}
-            style={{ fontSize: '0.75rem' }}
-          >
-            {refreshInProgress ? <><span className="admin-spinner" /> Running…</> : 'Run full ingest'}
-          </button>
-          <div className="admin-split-btn" ref={menuRef}>
-            <button
-              className="admin-btn admin-btn-ghost admin-split-btn-main"
-              onClick={() => setConfirmRestart('immediate')}
-              style={{ fontSize: '0.75rem' }}
-            >
-              Restart now
-            </button>
-            <button
-              ref={arrowRef}
-              className="admin-btn admin-btn-ghost admin-split-btn-arrow"
-              onClick={toggleRestartMenu}
-              aria-label="Restart options"
-              style={{ fontSize: '0.75rem' }}
-            >▾</button>
-            {restartMenu && menuPos && createPortal(
-              <div
-                className="admin-split-menu"
-                ref={menuRef}
-                style={{ top: menuPos.top, right: menuPos.right }}
-              >
-                <button className="admin-split-menu-item" onClick={() => { setRestartMenu(false); setConfirmRestart('immediate') }}>Restart now</button>
-                <button className="admin-split-menu-item" onClick={() => { setRestartMenu(false); setConfirmRestart('drain') }}>Drain then restart</button>
-              </div>,
-              document.body
-            )}
-          </div>
-        </div>
       </div>
     </>
   )

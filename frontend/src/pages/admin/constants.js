@@ -29,6 +29,20 @@ export const NAV = [
   ]},
 ]
 
+export const ANALYST_NAV = [
+  { section: 'INTEL', items: [
+    { id: 'overview', label: 'Intel status', badgeKey: 'jobs_with_errors_count' },
+    { id: 'feedhealth', label: 'Source status', badgeKey: 'open_circuit_count' },
+    { id: 'alerts', label: 'Alert channels' },
+  ]},
+  { section: 'YOUR DATA', items: [
+    { id: 'watchlist', label: 'Pinned CVEs' },
+  ]},
+  { section: 'PREFERENCES', items: [
+    { id: 'display', label: 'Display' },
+  ]},
+]
+
 export const MANUAL_PIPELINES = [
   { id: 'nvd_incremental_sync', label: 'NVD only' },
   { id: 'kev_metadata_sync', label: 'KEV only' },

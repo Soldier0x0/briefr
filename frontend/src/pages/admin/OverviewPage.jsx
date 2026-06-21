@@ -2,9 +2,104 @@ import { useState } from 'react'
 import { adminApi } from '../../api.js'
 import StatCard from './shared/StatCard.jsx'
 import JobTable from './shared/JobTable.jsx'
-import { fmtIso, fmtAge, ageColor } from './formatters.js'
+import { fmtIso, fmtAge, ageColor, sourceLabel } from './formatters.js'
+import { overallHealth, analystScheduleJobs } from './intelStatus.js'
+import { jobLabel } from './catalog.js'
 
-export default function OverviewPage({ system, toast }) {
+function AnalystOverview({ system, toast }) {
+  const [running, setRunning] = useState({})
+
+  async function runNow(jobId) {
+    setRunning(r => ({ ...r, [jobId]: true }))
+    try {
+      const res = await adminApi.post('/scheduler/run', { job_id: jobId })
+      const data = await res.json()
+      if (res.status === 409) { toast('Already updating', false); setRunning(r => ({ ...r, [jobId]: false })); return }
+      toast(data.ok ? `${jobLabel(jobId, 'analyst')} refresh started` : data.detail, data.ok)
+    } catch (e) { toast(String(e.message), false) }
+    setTimeout(() => setRunning(r => ({ ...r, [jobId]: false })), 2000)
+  }
+
+  const health = overallHealth(system)
+  const { db_integrity, scheduler_jobs, active_locks } = system
+  const openCircuits = system.open_circuit_count ?? 0
+  const sources = system.feeds?.sources || {}
+  const worstEntries = Object.entries(sources).filter(([, s]) => s.circuit_open)
+  const backupAge = system.last_backup_age_seconds
+  const backupThreshold = system.backup_threshold_seconds || 43200
+  const showBackupCard = backupAge != null && backupAge > backupThreshold * 0.75
+
+  return (
+    <div>
+      <h1 className="admin-page-title">Intel status</h1>
+      <p className="admin-page-subtitle">Live snapshot — refreshes every 30 seconds.</p>
+
+      <div className={`intel-banner intel-banner-${health.level}`}>
+        <strong>{health.headline}</strong>
+        <span>{health.detail}</span>
+      </div>
+
+      <div className="stat-card-row">
+        <StatCard label="CVES IN DATABASE" value={system.cve_count?.toLocaleString()} subLabel="CVEs stored locally" />
+        <StatCard
+          label="NIST CVE FEED"
+          value={fmtAge(system.last_nvd_sync_age_seconds)}
+          colorClass={ageColor(system.last_nvd_sync_age_seconds, 7200, 14400)}
+          subLabel="usually hourly · incremental"
+        />
+        {showBackupCard && (
+          <StatCard label="LAST BACKUP" value={fmtAge(backupAge)} colorClass="color-amber" subLabel={`threshold ${Math.round(backupThreshold / 3600)}h`} />
+        )}
+        <StatCard
+          label="DATABASE HEALTH"
+          value={db_integrity?.ok ? 'Healthy' : 'Problem'}
+          colorClass={db_integrity?.ok ? 'color-green' : 'color-red'}
+          subLabel="checked on startup"
+        />
+        <StatCard
+          label="SOURCES WITH ISSUES"
+          value={openCircuits || 'All OK'}
+          colorClass={openCircuits > 0 ? 'color-red' : 'color-green'}
+          subLabel={worstEntries.length ? sourceLabel(worstEntries[0][0]) : undefined}
+        />
+      </div>
+
+      {active_locks?.length > 0 && (
+        <div className="admin-card">
+          <div className="admin-card-title">Background sync in progress</div>
+          {active_locks.map(l => (
+            <div key={l.job_id} style={{ fontSize: '0.8125rem', color: 'var(--text2)', padding: '0.2rem 0' }}>
+              {jobLabel(l.job_id, 'analyst')} — started recently. Wait before restarting the server.
+            </div>
+          ))}
+        </div>
+      )}
+
+      {worstEntries.length > 0 && (
+        <div className="admin-card">
+          <div className="admin-card-title" style={{ color: 'var(--red)' }}>Problems</div>
+          {worstEntries.map(([key]) => (
+            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.3rem 0' }}>
+              <span style={{ fontSize: '0.8125rem' }}>
+                <strong>{sourceLabel(key)}</strong> temporarily unavailable. BRIEFR will retry automatically.
+              </span>
+              <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem', marginLeft: 'auto' }} onClick={() => adminApi.post(`/feeds/${encodeURIComponent(key)}/reset-circuit`, {}).then(() => toast('Trying again', true)).catch(e => toast(String(e.message), false))}>
+                Try again
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="admin-card">
+        <div className="admin-card-title">Data refresh schedule</div>
+        <JobTable jobs={analystScheduleJobs(scheduler_jobs)} onRunNow={runNow} mode="analyst" />
+      </div>
+    </div>
+  )
+}
+
+function OperatorOverview({ system, toast }) {
   const [diagResult, setDiagResult] = useState(null)
   const [intResult, setIntResult] = useState(null)
   const [running, setRunning] = useState({})
@@ -15,8 +110,8 @@ export default function OverviewPage({ system, toast }) {
     try {
       const res = await adminApi.post('/scheduler/run', { job_id: jobId })
       const data = await res.json()
-      if (res.status === 409) { toast('Already running — check active locks', false); return }
-      toast(data.ok ? `Job started: ${jobId}` : data.detail, data.ok)
+      if (res.status === 409) { toast('Already running — check active locks', false); setRunning(r => ({ ...r, [jobId]: false })); return }
+      toast(data.ok ? `Job started: ${jobLabel(jobId, 'operator')}` : data.detail, data.ok)
     } catch (e) { toast(String(e.message), false) }
     setTimeout(() => setRunning(r => ({ ...r, [jobId]: false })), 2000)
   }
@@ -52,28 +147,24 @@ export default function OverviewPage({ system, toast }) {
     setRunning(r => ({ ...r, integrity: false }))
   }
 
-  if (!system) return <div className="admin-empty">Loading…</div>
-
   const { db_integrity, scheduler_jobs, active_locks, recent_errors } = system
-  const nvdAgeColor = ageColor(system.last_nvd_sync_age_seconds, 7200, 14400)
-  const backupAgeColor = ageColor(system.last_backup_age_seconds, 28800, 43200)
+  const nvdAgeColorClass = ageColor(system.last_nvd_sync_age_seconds, 7200, 14400)
+  const backupAgeColorClass = ageColor(system.last_backup_age_seconds, 28800, 43200)
 
   return (
     <div>
       <h1 className="admin-page-title">System health</h1>
       <p className="admin-page-subtitle">At-a-glance status: DB integrity, sync ages, active locks, and recent job errors.</p>
 
-      {/* Stat cards */}
       <div className="stat-card-row">
         <StatCard label="CVE COUNT" value={system.cve_count?.toLocaleString()} />
-        <StatCard label="NVD SYNC AGE" value={fmtAge(system.last_nvd_sync_age_seconds)} colorClass={nvdAgeColor} />
-        <StatCard label="LAST BACKUP" value={fmtAge(system.last_backup_age_seconds)} colorClass={backupAgeColor} />
+        <StatCard label="NVD SYNC AGE" value={fmtAge(system.last_nvd_sync_age_seconds)} colorClass={nvdAgeColorClass} />
+        <StatCard label="LAST BACKUP" value={fmtAge(system.last_backup_age_seconds)} colorClass={backupAgeColorClass} />
         <StatCard label="DB INTEGRITY" value={db_integrity?.ok ? 'OK' : 'FAILED'} colorClass={db_integrity?.ok ? 'color-green' : 'color-red'} />
         <StatCard label="OPEN CIRCUITS" value={system.open_circuit_count ?? 0} colorClass={system.open_circuit_count > 0 ? 'color-red' : 'color-green'} />
         <StatCard label="JOBS WITH ERRORS" value={system.jobs_with_errors_count ?? 0} colorClass={system.jobs_with_errors_count > 0 ? 'color-red' : 'color-green'} />
       </div>
 
-      {/* Quick diagnostics */}
       <div className="admin-card">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: showDiag ? '0.75rem' : 0 }}>
           <span className="admin-card-title" style={{ marginBottom: 0 }}>Quick diagnostics</span>
@@ -112,7 +203,6 @@ export default function OverviewPage({ system, toast }) {
         )}
       </div>
 
-      {/* Two-column: active locks + recent errors */}
       <div className="admin-two-col">
         <div className="admin-card" style={{ flex: 1 }}>
           <div className="admin-card-title">Active locks</div>
@@ -154,11 +244,17 @@ export default function OverviewPage({ system, toast }) {
         </div>
       </div>
 
-      {/* Full scheduler table */}
       <div className="admin-card">
         <div className="admin-card-title">Scheduler jobs</div>
-        <JobTable jobs={scheduler_jobs} onRunNow={runNow} onPauseResume={pauseResume} />
+        <JobTable jobs={scheduler_jobs} onRunNow={runNow} onPauseResume={pauseResume} mode="operator" />
       </div>
     </div>
   )
+}
+
+export default function OverviewPage({ system, toast, mode = 'analyst' }) {
+  if (!system) return <div className="admin-empty">Loading…</div>
+  return mode === 'analyst'
+    ? <AnalystOverview system={system} toast={toast} />
+    : <OperatorOverview system={system} toast={toast} />
 }

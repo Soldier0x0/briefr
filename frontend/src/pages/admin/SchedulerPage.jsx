@@ -96,7 +96,7 @@ export default function SchedulerPage({ toast, system }) {
         />
       )}
 
-      <h1 className="admin-page-title">Scheduler</h1>
+      <h1 className="admin-page-title">Data refresh schedule</h1>
       <p className="admin-page-subtitle">Controls when each ingest job runs. Pausing a job stops it from running automatically until resumed — safe to pause individual jobs while debugging a feed issue.</p>
 
       <div className="admin-card">
