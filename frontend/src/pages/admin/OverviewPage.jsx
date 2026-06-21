@@ -14,7 +14,7 @@ function AnalystOverview({ system, toast }) {
     try {
       const res = await adminApi.post('/scheduler/run', { job_id: jobId })
       const data = await res.json()
-      if (res.status === 409) { toast('Already updating', false); return }
+      if (res.status === 409) { toast('Already updating', false); setRunning(r => ({ ...r, [jobId]: false })); return }
       toast(data.ok ? `${jobLabel(jobId, 'analyst')} refresh started` : data.detail, data.ok)
     } catch (e) { toast(String(e.message), false) }
     setTimeout(() => setRunning(r => ({ ...r, [jobId]: false })), 2000)
@@ -83,7 +83,7 @@ function AnalystOverview({ system, toast }) {
               <span style={{ fontSize: '0.8125rem' }}>
                 <strong>{sourceLabel(key)}</strong> temporarily unavailable. BRIEFR will retry automatically.
               </span>
-              <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem', marginLeft: 'auto' }} onClick={() => adminApi.post(`/feeds/${encodeURIComponent(key)}/reset-circuit`, {}).then(() => toast('Trying again', true))}>
+              <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem', marginLeft: 'auto' }} onClick={() => adminApi.post(`/feeds/${encodeURIComponent(key)}/reset-circuit`, {}).then(() => toast('Trying again', true)).catch(e => toast(String(e.message), false))}>
                 Try again
               </button>
             </div>
@@ -110,7 +110,7 @@ function OperatorOverview({ system, toast }) {
     try {
       const res = await adminApi.post('/scheduler/run', { job_id: jobId })
       const data = await res.json()
-      if (res.status === 409) { toast('Already running — check active locks', false); return }
+      if (res.status === 409) { toast('Already running — check active locks', false); setRunning(r => ({ ...r, [jobId]: false })); return }
       toast(data.ok ? `Job started: ${jobLabel(jobId, 'operator')}` : data.detail, data.ok)
     } catch (e) { toast(String(e.message), false) }
     setTimeout(() => setRunning(r => ({ ...r, [jobId]: false })), 2000)

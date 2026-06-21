@@ -22,8 +22,9 @@ export default function AlertsPage({ toast }) {
   }
 
   function channelConfigured(ch) {
-    if (ch === 'discord') return config?.webhooks?.DISCORD_WEBHOOK_URL !== 'not configured'
-    if (ch === 'telegram') return config?.webhooks?.TELEGRAM_BOT_TOKEN !== 'not configured'
+    if (!config) return false
+    if (ch === 'discord') return config.webhooks?.DISCORD_WEBHOOK_URL !== 'not configured'
+    if (ch === 'telegram') return config.webhooks?.TELEGRAM_BOT_TOKEN !== 'not configured'
     return false
   }
 

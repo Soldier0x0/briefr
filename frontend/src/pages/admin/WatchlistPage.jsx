@@ -17,6 +17,8 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
   const [confirmClearSnoozes, setConfirmClearSnoozes] = useState(false)
   const [confirmClearIoc, setConfirmClearIoc] = useState(false)
 
+  useEffect(() => { if (isAnalyst) setSubtab('watchlist') }, [isAnalyst])
+
   async function loadWatchlist() {
     try {
       const res = await adminApi.get(`/watchlist?state=${watchlistState}&limit=200`)
