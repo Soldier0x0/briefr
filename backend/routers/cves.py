@@ -1113,9 +1113,10 @@ async def cve_correlation(
 ):
     """
     On-demand correlation for a CVE.
-    Level 1: shared exploitation IPs with other CVEs (OTX pulse IOCs).
+    Level 1: shared exploitation indicators with other CVEs (OTX pulse IOCs).
     Level 2: ATT&CK groups linked to this CVE's techniques, matched against user sector.
     Level 3: temporal vendor volume anomalies (pre-computed nightly).
+    v2: pulse-centric campaign clusters with evidence receipts.
     Results are cached for 6 hours.
     """
     if not cve_id.upper().startswith("CVE-"):
@@ -1131,6 +1132,80 @@ async def cve_correlation(
         await db.close()
 
     return result
+
+
+class CorrelationSuppressBody(BaseModel):
+    scope: str = Field(
+        description="campaign_id | cve_pair | pulse_id | infrastructure"
+    )
+    key: dict = Field(default_factory=dict)
+    reason: str = ""
+
+
+@intel_router.post("/api/cves/{cve_id}/correlation/suppress")
+async def suppress_correlation_finding(cve_id: str, body: CorrelationSuppressBody):
+    """Dismiss a correlation finding for this CVE (persisted across rebuilds)."""
+    if not cve_id.upper().startswith("CVE-"):
+        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+
+    from correlation.suppressions import add_suppression
+    from database import delete_feed_cache_prefix
+
+    db = await get_db()
+    try:
+        row = await add_suppression(
+            db,
+            cve_id.upper(),
+            body.scope.strip(),
+            body.key,
+            body.reason.strip(),
+        )
+        await delete_feed_cache_prefix(db, f"correlation:v2:{cve_id.upper()}")
+        await db.commit()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    finally:
+        await db.close()
+
+    return {"ok": True, "suppression": row}
+
+
+@intel_router.delete("/api/cves/{cve_id}/correlation/suppress")
+async def unsuppress_correlation_finding(
+    cve_id: str,
+    scope: str = Query(...),
+    cve_id_b: str = Query(default=""),
+    campaign_id: str = Query(default=""),
+    pulse_id: str = Query(default=""),
+):
+    """Remove a correlation suppression."""
+    if not cve_id.upper().startswith("CVE-"):
+        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+
+    from correlation.suppressions import remove_suppression
+    from database import delete_feed_cache_prefix
+
+    key: dict = {}
+    if scope == "campaign_id":
+        key = {"campaign_id": campaign_id}
+    elif scope == "cve_pair":
+        key = {"cve_id_b": cve_id_b}
+    elif scope == "pulse_id":
+        key = {"pulse_id": pulse_id}
+    elif scope == "infrastructure":
+        key = {"cve_id_b": cve_id_b}
+
+    db = await get_db()
+    try:
+        removed = await remove_suppression(db, cve_id.upper(), scope, key)
+        if not removed:
+            raise HTTPException(status_code=404, detail="Suppression not found")
+        await delete_feed_cache_prefix(db, f"correlation:v2:{cve_id.upper()}")
+        await db.commit()
+    finally:
+        await db.close()
+
+    return {"ok": True}
 
 
 @intel_router.get("/api/kev/deadlines")
