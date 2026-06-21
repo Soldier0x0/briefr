@@ -67,7 +67,7 @@ export default function ApiKeysPage({ toast }) {
       const res = await adminApi.post('/config/apply-all', items)
       const data = await res.json()
       if (res.ok) {
-        toast(`Applied ${data.changed_keys?.length} changes. Restarting…`, true)
+        toast(data.message || `Applied ${data.changed_keys?.length} changes.`, true)
         setQueue({})
       } else {
         const errs = data.errors || [data.detail]
@@ -92,18 +92,29 @@ export default function ApiKeysPage({ toast }) {
         <div className="config-row-value">
           {inQueue ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span className="badge badge-warn">queued: {isSecret ? '••••' : queue[envKey]}</span>
+              <span className="badge badge-warn">
+                queued: {isSecret
+                  ? '••••'
+                  : field?.type === 'bool'
+                    ? ((queue[envKey] === '1' || queue[envKey] === 'true') ? 'Enabled' : 'Disabled')
+                    : queue[envKey]}
+              </span>
               <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem' }} onClick={() => removeFromQueue(envKey)}>×</button>
             </div>
           ) : !isEditing ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span className="mono" style={{ fontSize: '0.8125rem', color: 'var(--text2)' }}>
-                {field?.type === 'bool'
-                  ? ((value === '1' || value === 'true' || value === true) ? 'Enabled' : 'Disabled')
-                  : Array.isArray(value) ? value.join(', ') : String(value)}
-              </span>
+              {field?.type === 'bool' ? (
+                <ToggleSwitch
+                  on={value === '1' || value === 'true' || value === true}
+                  onChange={v => addToQueue(envKey, v ? '1' : '0', field)}
+                />
+              ) : (
+                <span className="mono admin-input admin-input-display" title={isSecret ? undefined : (Array.isArray(value) ? value.join(', ') : String(value))}>
+                  {Array.isArray(value) ? value.join(', ') : String(value)}
+                </span>
+              )}
               {restartRequired && <span className="badge badge-warn" style={{ fontSize: '0.6rem' }}>restart</span>}
-              {writable && (
+              {writable && field?.type !== 'bool' && (
                 <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }}
                   onClick={() => {
                     const initial = isSecret ? '' : (Array.isArray(value) ? value.join(', ') : (value === 'not configured' ? '' : String(value)))
@@ -125,11 +136,6 @@ export default function ApiKeysPage({ toast }) {
                 >
                   {field.enum_values.map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
-              ) : field?.type === 'bool' ? (
-                <ToggleSwitch
-                  on={editVal === '1' || editVal === 'true' || editVal === true}
-                  onChange={v => setEditing(ed => ({ ...ed, [envKey]: v ? '1' : '0' }))}
-                />
               ) : TIMEZONE_KEYS.has(envKey) ? (
                 <select
                   className="admin-select"

@@ -641,10 +641,12 @@
 
 .config-row {
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 0.5rem 0;
   border-bottom: 0.5px solid var(--border);
+  flex-wrap: wrap;
 }
 
 .config-row:last-child { border-bottom: none; }
@@ -652,11 +654,29 @@
 .config-row-key {
   font-size: 0.75rem;
   color: var(--text2);
+  flex: 0 0 260px;
+  min-width: 200px;
 }
 
-.config-row-value { flex: 1; }
+.config-row-value { flex: 1 1 260px; display: flex; justify-content: flex-end; }
 .config-row-value .admin-input,
 .config-row-value .admin-select { max-width: 420px; }
+
+/* Uniform, box-styled, right-aligned readout for a row's current value
+   (masked secrets, booleans, plain values) — same fixed width regardless
+   of content length so the API-keys section stops looking scattered. */
+.admin-input-display {
+  display: inline-flex;
+  align-items: center;
+  width: 260px;
+  justify-content: flex-end;
+  text-align: right;
+  color: var(--text2);
+  cursor: default;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ── Pending changes bar ────────────────────────────────────────────────── */
 

@@ -24,7 +24,7 @@ export default function SecurityPage({ toast }) {
       const data = await res.json()
       if (res.ok) {
         setAdminKey(rotateValue)
-        toast('Admin key rotated. Backend restarting…', true)
+        toast(data.message || 'Admin key rotated — took effect immediately', true)
         setRotateOpen(false)
       } else {
         toast(data.detail || 'Failed to rotate key', false)
