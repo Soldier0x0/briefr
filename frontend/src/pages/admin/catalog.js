@@ -93,6 +93,13 @@ export const JOB_CATALOG = {
     analystDescription: 'Confirms backups are still running on schedule.',
     refreshButton: 'Check backups',
   },
+  scheduled_backup: {
+    label: 'Scheduled backup',
+    short: 'Backup',
+    operatorName: 'Scheduled Backup',
+    analystDescription: 'Creates a backup archive and prunes old ones, on BACKUP_INTERVAL_HOURS.',
+    refreshButton: 'Run backup',
+  },
 }
 
 export function jobLabel(id, mode = 'operator') {

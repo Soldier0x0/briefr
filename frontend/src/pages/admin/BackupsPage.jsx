@@ -4,12 +4,13 @@ import StatCard from './shared/StatCard.jsx'
 import AsyncSection from './shared/AsyncSection.jsx'
 import { fmtBytes, fmtAge, ageColor } from './formatters.js'
 
-export default function BackupsPage({ toast, system }) {
+export default function BackupsPage({ toast, system, setPage: setAdminPage }) {
   const [backups, setBackups] = useState(null)
   const [loadError, setLoadError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [verifyResults, setVerifyResults] = useState({})
   const [page, setPage] = useState(0)
+  const [schedule, setSchedule] = useState(null)
   const pageSize = 20
   const fileInputRef = useRef(null)
 
@@ -24,6 +25,9 @@ export default function BackupsPage({ toast, system }) {
   }, [])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => {
+    adminApi.get('/config').then(r => r.json()).then(c => setSchedule(c.backup || {})).catch(() => {})
+  }, [])
 
   async function runBackup() {
     setLoading(true)
@@ -81,6 +85,22 @@ export default function BackupsPage({ toast, system }) {
         <StatCard label="ARCHIVE COUNT" value={archiveCount} />
         <StatCard label="DB INTEGRITY" value={integrityOk ? 'OK' : 'FAILED'} colorClass={integrityOk ? 'color-green' : 'color-red'} />
       </div>
+
+      {schedule && (
+        <div className="admin-card">
+          <div className="admin-card-title">Schedule</div>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--text2)', marginBottom: '0.5rem' }}>
+            {schedule.BACKUP_ENABLED === '0'
+              ? 'Scheduled backups are disabled — only manual "Run backup now" creates archives.'
+              : `Backups run automatically every ${schedule.BACKUP_INTERVAL_HOURS} hour${schedule.BACKUP_INTERVAL_HOURS === 1 ? '' : 's'}, keeping the latest ${schedule.BACKUP_RETENTION_COUNT} archives (older ones are pruned automatically).`}
+          </p>
+          {setAdminPage && (
+            <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={() => setAdminPage('apikeys')}>
+              Edit schedule & retention in Config →
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="admin-action-bar" style={{ justifyContent: 'flex-end' }}>
         <button className="admin-btn admin-btn-primary" onClick={runBackup} disabled={loading}>

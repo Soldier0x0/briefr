@@ -1,14 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { adminApi } from '../../api.js'
-import ConfirmModal from './shared/ConfirmModal.jsx'
 import AsyncSection from './shared/AsyncSection.jsx'
 import DangerZone from './shared/DangerZone.jsx'
+import GuardedPurgePanel from './shared/GuardedPurgePanel.jsx'
 import { fmtBytes, diskPct, diskBarColor } from './formatters.js'
 
 export default function StoragePage({ toast }) {
   const [storage, setStorage] = useState(null)
   const [loadError, setLoadError] = useState(null)
-  const [confirm, setConfirm] = useState(null) // {target, title, extra}
 
   const load = useCallback(async () => {
     try {
@@ -40,32 +39,18 @@ export default function StoragePage({ toast }) {
   const dbPct = diskPct(dbPartition)
   const backupPct = diskPct(backupPartition)
 
-  const maxTableRows = Math.max(1, ...Object.values(storage?.tables || {}).map(v => v || 0))
-
   const purgeCards = [
-    { target: 'ioc_cache', title: 'Clear IOC cache', desc: 'Deletes all rows from ioc_cache. Next lookups will re-query external APIs.', confirmWord: 'clear', impact: `${storage?.tables?.ioc_cache ?? 0} rows` },
-    { target: 'feed_cache', title: 'Clear feed cache', desc: 'Deletes all rows from feed_cache. Next incident feed load will be slower.', confirmWord: 'clear', impact: `${storage?.tables?.feed_cache ?? 0} rows` },
-    { target: 'epss_history_old', title: 'Prune EPSS history (>90 days)', desc: 'Deletes epss_history rows older than 90 days.', confirmWord: 'prune', impact: '~' + (storage?.tables?.epss_history ?? '?') + ' total rows' },
-    { target: 'change_history_old', title: 'Prune change history (>90 days)', desc: 'Deletes cve_change_history rows older than 90 days.', confirmWord: 'prune', impact: `${storage?.tables?.cve_change_history ?? 0} total rows` },
-    { target: 'rejected_cves', title: 'Remove rejected CVEs', desc: "Removes CVEs with 'Rejected reason:' in description.", confirmWord: 'purge', impact: 'varies' },
-    { target: 'epss_backfill_reset', title: 'Re-trigger EPSS backfill', desc: 'Clears the epss_backfill_done marker. Next startup re-runs full backfill.', confirmWord: null, impact: 'not destructive' },
-    { target: 'nvd_watermark', title: 'NVD backfill reset', desc: 'Clears the NVD sync watermark. Next NVD sync re-fetches from NVD_DAYS_BACK days ago.', confirmWord: 'backfill', impact: 'triggers full re-ingest', extraDaysBack: true },
+    { target: 'ioc_cache', title: 'Clear IOC cache', desc: 'Why: IOC lookups (IPs, hashes, domains) are cached to avoid re-querying external threat-intel APIs on every page load. What happens: deletes every cached result. After: the next lookup for each IOC is slower (re-fetches from the source API), but nothing is lost — the cache rebuilds itself automatically.', confirmWord: 'clear', impact: `${storage?.tables?.ioc_cache ?? 0} rows`, run: () => doPurge('ioc_cache', 'clear') },
+    { target: 'feed_cache', title: 'Clear feed cache', desc: 'Why: the incident/news feed is cached so the dashboard loads instantly. What happens: deletes the cached feed snapshot. After: the next incident feed load rebuilds it from scratch and will be noticeably slower once.', confirmWord: 'clear', impact: `${storage?.tables?.feed_cache ?? 0} rows`, run: () => doPurge('feed_cache', 'clear') },
+    { target: 'epss_history_old', title: 'Prune EPSS history (>90 days)', desc: 'Why: EPSS scores are tracked over time to show trend charts, but old history is rarely useful and takes up space. What happens: deletes EPSS history rows older than 90 days. After: trend charts only show the last 90 days; current EPSS scores are unaffected.', confirmWord: 'prune', impact: '~' + (storage?.tables?.epss_history ?? '?') + ' total rows', run: () => doPurge('epss_history_old', 'prune') },
+    { target: 'change_history_old', title: 'Prune change history (>90 days)', desc: 'Why: every CVE field change is logged for audit/diff purposes; old entries add up. What happens: deletes change-history rows older than 90 days. After: you lose the ability to see what changed on a CVE before that window; current CVE data is unaffected.', confirmWord: 'prune', impact: `${storage?.tables?.cve_change_history ?? 0} total rows`, run: () => doPurge('change_history_old', 'prune') },
+    { target: 'rejected_cves', title: 'Remove rejected CVEs', desc: "Why: NVD occasionally marks a CVE ID as rejected/withdrawn; we keep a placeholder so it doesn't look missing, but they clutter search. What happens: deletes CVEs whose description starts with 'Rejected reason:'. After: those IDs disappear from search until/unless NVD re-publishes them.", confirmWord: 'purge', impact: 'varies', run: () => doPurge('rejected_cves', 'purge') },
+    { target: 'epss_backfill_reset', title: 'Re-trigger EPSS backfill', desc: 'Why: use this if EPSS scores look incomplete or stale across many CVEs. What happens: clears the internal marker that says backfill already ran. After: the next startup re-downloads the full EPSS dataset — not destructive, nothing is deleted.', confirmWord: null, impact: 'not destructive', actionLabel: 'Reset', run: () => doPurge('epss_backfill_reset', '') },
+    { target: 'nvd_watermark', title: 'NVD backfill reset', desc: 'Why: use this if NVD sync seems to have missed CVEs (e.g. after downtime). What happens: clears the watermark that tracks how far back NVD sync has already fetched. After: the next NVD sync re-fetches everything from NVD_DAYS_BACK days ago, which can take a while and re-uses NVD API quota.', confirmWord: 'backfill', impact: 'triggers full re-ingest', extraDaysBack: true, run: (daysBack) => doPurge('nvd_watermark', 'backfill', daysBack ? { days_back: daysBack } : {}) },
   ]
 
   return (
     <div>
-      {confirm && (
-        <ConfirmModal
-          actionId={`storage.purge.${confirm.target}`}
-          title={confirm.title}
-          onConfirm={(inputText) => {
-            setConfirm(null)
-            doPurge(confirm.target, inputText, confirm.extra || {})
-          }}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
-
       <h1 className="admin-page-title">Storage</h1>
       <p className="admin-page-subtitle">Disk usage breakdown and cache/log purge tools. Purges are destructive and cannot be undone.</p>
 
@@ -109,52 +94,12 @@ export default function StoragePage({ toast }) {
         )}
       </AsyncSection>
 
-      <div className="admin-card">
-        <div className="admin-card-title">Table row counts</div>
-        <table className="admin-table">
-          <thead><tr><th>TABLE</th><th style={{ width: '140px' }}>SIZE</th><th style={{ textAlign: 'right' }}>ROWS</th></tr></thead>
-          <tbody>
-            {Object.entries(storage?.tables || {}).map(([t, c]) => {
-              const pct = c > 0 ? Math.max(2, Math.round((c / maxTableRows) * 100)) : 0
-              return (
-                <tr key={t}>
-                  <td className="mono" style={{ fontSize: '0.75rem' }}>{t}</td>
-                  <td>
-                    <div style={{ height: '6px', background: 'var(--bg3)', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${pct}%`, background: 'var(--border-strong)', borderRadius: '3px' }} />
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>{c === -1 ? 'n/a' : c.toLocaleString()}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
 
       <DangerZone title="Purge controls">
-        <div className="purge-grid">
-          {purgeCards.map(pc => (
-            <div key={pc.target} className="purge-card">
-              <div className="purge-card-title">{pc.title}</div>
-              <div className="purge-card-desc">{pc.desc}</div>
-              <div className="purge-card-impact">Impact: {pc.impact}</div>
-              <button
-                className="admin-btn admin-btn-danger"
-                style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}
-                onClick={() => {
-                  if (!pc.confirmWord) {
-                    doPurge(pc.target, '', {})
-                  } else {
-                    setConfirm({ target: pc.target, title: pc.title })
-                  }
-                }}
-              >
-                {pc.target === 'epss_backfill_reset' ? 'Reset' : 'Purge'}
-              </button>
-            </div>
-          ))}
-        </div>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '-0.25rem', marginBottom: '0.75rem' }}>
+          Pick what to clear, read what it does, then type "clear" to enable the button. Nothing fires on a single click.
+        </p>
+        <GuardedPurgePanel targets={purgeCards} />
       </DangerZone>
     </div>
   )

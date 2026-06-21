@@ -1,5 +1,6 @@
 import { adminApi } from '../../api.js'
 import { fmtIso, sourceLabel } from './formatters.js'
+import HelpTip from './shared/HelpTip.jsx'
 
 export default function FeedHealthPage({ system, toast, mode = 'operator' }) {
   const isAnalyst = mode === 'analyst'
@@ -124,6 +125,7 @@ export default function FeedHealthPage({ system, toast, mode = 'operator' }) {
             <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={rebuildFeed}>
               Rebuild now
             </button>
+            <HelpTip text="Rebuilds the incident/news feed snapshot shown on the dashboard. Does not affect CVE, KEV, or EPSS data." />
           </div>
         </div>
       )}

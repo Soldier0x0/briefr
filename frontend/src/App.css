@@ -331,6 +331,10 @@ html.density-compact body {
   line-height: 1.35;
 }
 
+html.density-spacious body {
+  line-height: 1.7;
+}
+
 /* Honor the OS-level reduced-motion preference everywhere. */
 @media (prefers-reduced-motion: reduce) {
   *,

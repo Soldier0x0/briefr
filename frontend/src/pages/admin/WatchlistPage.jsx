@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { adminApi } from '../../api.js'
-import ConfirmModal from './shared/ConfirmModal.jsx'
 import DangerZone from './shared/DangerZone.jsx'
+import GuardedPurgePanel from './shared/GuardedPurgePanel.jsx'
 import { fmtAge, fmtIso } from './formatters.js'
 
 export default function WatchlistPage({ toast, mode = 'operator' }) {
@@ -14,8 +14,6 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
   const [iocSearch, setIocSearch] = useState('')
   const [huntRows, setHuntRows] = useState(null)
   const [huntTechnique, setHuntTechnique] = useState('')
-  const [confirmClearSnoozes, setConfirmClearSnoozes] = useState(false)
-  const [confirmClearIoc, setConfirmClearIoc] = useState(false)
 
   useEffect(() => { if (isAnalyst) setSubtab('watchlist') }, [isAnalyst])
 
@@ -100,23 +98,6 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
 
   return (
     <div>
-      {confirmClearSnoozes && (
-        <ConfirmModal
-          actionId="watchlist.clear_snoozes"
-          title="Clear all snoozes?"
-          onConfirm={() => { setConfirmClearSnoozes(false); clearSnoozes() }}
-          onCancel={() => setConfirmClearSnoozes(false)}
-        />
-      )}
-      {confirmClearIoc && (
-        <ConfirmModal
-          actionId="storage.purge.ioc_cache"
-          title="Clear all IOC cache entries?"
-          onConfirm={() => { setConfirmClearIoc(false); clearAllIoc() }}
-          onCancel={() => setConfirmClearIoc(false)}
-        />
-      )}
-
       <h1 className="admin-page-title">{isAnalyst ? 'Pinned CVEs' : 'Watchlist & cache'}</h1>
       <p className="admin-page-subtitle">
         {isAnalyst ? 'CVEs you’ve pinned to track.' : 'Manage pinned/snoozed CVEs, inspect the IOC lookup cache, and review hunt-pack matches.'}
@@ -145,9 +126,9 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
           </div>
           {!isAnalyst && (
             <DangerZone title="Clear snoozes">
-              <button className="admin-btn admin-btn-warn" onClick={() => setConfirmClearSnoozes(true)}>
-                Clear all snoozes
-              </button>
+              <GuardedPurgePanel targets={[
+                { target: 'watchlist_snoozes', title: 'Clear all snoozes', desc: 'Why: snoozed CVEs are hidden from the default watchlist view until you snooze again. What happens: removes every snooze entry. After: previously snoozed CVEs reappear in the default view; pinned CVEs are unaffected.', impact: `${snoozeCount} snoozed`, confirmWord: 'clear', run: clearSnoozes },
+              ]} />
             </DangerZone>
           )}
           <div className="admin-card">
@@ -192,9 +173,9 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
             <input className="admin-input" placeholder="Search value…" value={iocSearch} onChange={e => setIocSearch(e.target.value)} />
           </div>
           <DangerZone title="Clear IOC cache">
-            <button className="admin-btn admin-btn-danger" style={{ fontSize: '0.75rem' }} onClick={() => setConfirmClearIoc(true)}>
-              Clear all
-            </button>
+            <GuardedPurgePanel targets={[
+              { target: 'ioc_cache_all', title: 'Clear all IOC cache entries', desc: 'Why: IOC lookups are cached to avoid re-querying external threat-intel APIs on every page load. What happens: deletes every cached result below. After: the next lookup for each IOC is slower (re-fetches from the source API), but nothing is lost — the cache rebuilds itself automatically.', impact: `${iocRows?.length ?? 0} entries`, confirmWord: 'clear', run: clearAllIoc },
+            ]} />
           </DangerZone>
           <div className="admin-card">
             <table className="admin-table">
@@ -210,7 +191,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
                     <td>{fmtAge(r.age_seconds)}</td>
                     <td>
                       <button className="admin-btn admin-btn-danger" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }}
-                        onClick={() => deleteIoc(r.value)}>Expire</button>
+                        onClick={() => deleteIoc(r.value)}>Clear</button>
                     </td>
                   </tr>
                 ))}
