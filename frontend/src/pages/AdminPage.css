@@ -208,48 +208,6 @@
 .nav-badge-red   { background: var(--red); }
 .nav-badge-amber { background: var(--amber); }
 
-/* ── Status legend ──────────────────────────────────────────────────────── */
-
-.status-legend {
-  margin: 0.75rem 0.75rem 0;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border);
-}
-
-.status-legend summary {
-  font-size: 0.6875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text3);
-  cursor: pointer;
-}
-
-.status-legend ul {
-  list-style: none;
-  margin: 0.5rem 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.status-legend li {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.4rem;
-  font-size: 0.6875rem;
-  color: var(--text2);
-  line-height: 1.4;
-}
-
-.status-legend-swatch {
-  flex-shrink: 0;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-top: 0.2rem;
-}
-
 /* ── Content pane ───────────────────────────────────────────────────────── */
 
 .admin-content {
@@ -514,6 +472,10 @@
 .admin-toggle-wrap input:checked + .admin-toggle-slider { background: var(--red); border-color: var(--red); }
 .admin-toggle-wrap input:checked + .admin-toggle-slider::before { transform: translateX(14px); background: #fff; }
 
+.admin-toggle-wrap-onoff input:checked + .admin-toggle-slider { background: var(--green); border-color: var(--green); }
+.admin-toggle-wrap-onoff input:not(:checked) + .admin-toggle-slider { background: var(--red); border-color: var(--red); }
+.admin-toggle-wrap-onoff input:not(:checked) + .admin-toggle-slider::before { background: #fff; }
+
 /* ── Indicators ─────────────────────────────────────────────────────────── */
 
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -643,6 +605,12 @@
   gap: 0.75rem;
 }
 
+.purge-panel {
+  max-width: 480px;
+}
+
+.purge-panel .admin-select { width: 100%; }
+
 .purge-card {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -673,9 +641,9 @@
 
 .config-row {
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.4rem 0;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem 0;
   border-bottom: 0.5px solid var(--border);
 }
 
@@ -684,12 +652,11 @@
 .config-row-key {
   font-size: 0.75rem;
   color: var(--text2);
-  min-width: 260px;
-  padding-top: 0.3rem;
-  flex-shrink: 0;
 }
 
 .config-row-value { flex: 1; }
+.config-row-value .admin-input,
+.config-row-value .admin-select { max-width: 420px; }
 
 /* ── Pending changes bar ────────────────────────────────────────────────── */
 
@@ -859,8 +826,10 @@
 
 .admin-mode-toggle {
   display: flex;
+  background: var(--bg2);
   border: 1px solid var(--border2);
-  border-radius: 6px;
+  border-radius: 999px;
+  padding: 2px;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -868,6 +837,7 @@
 .admin-mode-toggle-btn {
   background: none;
   border: none;
+  border-radius: 999px;
   padding: 0.3rem 0.7rem;
   font-size: 0.75rem;
   font-weight: 600;
@@ -876,8 +846,8 @@
 }
 
 .admin-mode-toggle-btn.active {
-  background: var(--bg3);
-  color: var(--accent);
+  background: var(--accent);
+  color: var(--bg1);
 }
 
 /* ── Intel banner (Analyst overview health summary) ────────────────────── */

@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { getDisplayPrefs, setDisplayPrefs, FONT_SCALE_OPTIONS, DENSITY_OPTIONS } from '../../utils/displayPrefs.js'
 
-const FONT_LABELS = { small: 'Small', medium: 'Medium (default)', large: 'Large' }
-const DENSITY_LABELS = { comfortable: 'Comfortable (default)', compact: 'Compact' }
+const FONT_LABELS = { xsmall: 'Extra small', small: 'Small', medium: 'Medium (default)', large: 'Large', xlarge: 'Extra large' }
+const DENSITY_LABELS = { compact: 'Compact', comfortable: 'Comfortable (default)', spacious: 'Spacious' }
 
 export default function DisplayPage() {
   const [prefs, setPrefs] = useState(getDisplayPrefs())

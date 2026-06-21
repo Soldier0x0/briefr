@@ -4,6 +4,7 @@ import { getAdminMode, setAdminMode } from '../../utils/adminMode.js'
 import AdminPage_KeyModal from '../AdminPage_KeyModal.jsx'
 import StatusBar from './StatusBar.jsx'
 import Sidebar from './Sidebar.jsx'
+import ConfirmModal from './shared/ConfirmModal.jsx'
 import ErrorBoundary from './shared/ErrorBoundary.jsx'
 import { useToast, ToastArea } from './shared/Toast.jsx'
 import { ANALYST_NAV } from './constants.js'
@@ -34,6 +35,7 @@ export default function AdminPage() {
   const [modalError, setModalError] = useState('')
   const [authed, setAuthed] = useState(false)
   const [ingestErrorCount, setIngestErrorCount] = useState(0)
+  const [confirmOperatorSwitch, setConfirmOperatorSwitch] = useState(false)
   const { toasts, show: toast } = useToast()
   const pollRef = useRef(null)
 
@@ -78,6 +80,19 @@ export default function AdminPage() {
     if (next === 'analyst' && !ANALYST_PAGE_IDS.has(page)) setPage('overview')
   }
 
+  function getOperatorAck() {
+    try { return localStorage.getItem('briefr-operator-ack') === '1' } catch { return false }
+  }
+  function setOperatorAck() {
+    try { localStorage.setItem('briefr-operator-ack', '1') } catch { /* unavailable */ }
+  }
+
+  function handleModeChange(next) {
+    if (next === mode) return
+    if (next === 'operator' && !getOperatorAck()) { setConfirmOperatorSwitch(true); return }
+    setMode(next)
+  }
+
   function handleKeySubmit(key) {
     setAdminKey(key)
     setModalError('')
@@ -115,7 +130,7 @@ export default function AdminPage() {
 
   const pages = {
     overview: <OverviewPage system={system} toast={toast} mode={mode} />,
-    backups: <BackupsPage toast={toast} system={system} />,
+    backups: <BackupsPage toast={toast} system={system} setPage={setPage} />,
     storage: <StoragePage toast={toast} />,
     database: <DatabasePage toast={toast} active={page === 'database'} />,
     watchlist: <WatchlistPage toast={toast} mode={mode} />,
@@ -135,6 +150,15 @@ export default function AdminPage() {
       {keyModalOpen && (
         <AdminPage_KeyModal onSubmit={handleKeySubmit} error={modalError} />
       )}
+      {confirmOperatorSwitch && (
+        <ConfirmModal
+          title="Switch to Operator view?"
+          message="Operator view exposes destructive actions: restart, full ingest, purge, and config changes. Use it only when you need to manage the system, not for everyday CVE triage."
+          confirmWord={undefined}
+          onConfirm={() => { setOperatorAck(); setConfirmOperatorSwitch(false); setMode('operator') }}
+          onCancel={() => setConfirmOperatorSwitch(false)}
+        />
+      )}
       <StatusBar
         system={system}
         onRunIngest={handleRunIngest}
@@ -142,10 +166,10 @@ export default function AdminPage() {
         onDrainRestart={handleDrainRestart}
         refreshInProgress={system?.refresh_in_progress || false}
         mode={mode}
-        setMode={setMode}
+        setMode={handleModeChange}
       />
       <div className="admin-body">
-        <Sidebar activePage={page} setPage={setPage} system={system} ingestErrorCount={ingestErrorCount} mode={mode} setMode={setMode} />
+        <Sidebar activePage={page} setPage={setPage} system={system} ingestErrorCount={ingestErrorCount} mode={mode} setMode={handleModeChange} />
         <div className="admin-content">
           {isComingSoon ? (
             <ComingSoonPage pageId={page} setPage={setPage} />

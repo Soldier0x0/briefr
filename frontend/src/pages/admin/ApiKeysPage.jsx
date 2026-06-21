@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
 import { adminApi } from '../../api.js'
 import DiffReviewModal from './shared/DiffReviewModal.jsx'
+import ToggleSwitch from './shared/ToggleSwitch.jsx'
+import { TIMEZONES_BY_CONTINENT } from '../../utils/timezone.js'
+import { RATE_LIMIT_HINTS } from './rateLimits.js'
+
+const TIMEZONE_KEYS = new Set(['SCHEDULER_TIMEZONE', 'CORRELATION_TIMEZONE', 'OTX_CORRELATION_TIMEZONE', 'DEFAULT_TIMEZONE'])
 
 // UI section -> { title, backendKey } — backendKey is which dict in the
 // GET /api/admin/config response actually holds these values (a few
@@ -82,6 +87,7 @@ export default function ApiKeysPage({ toast }) {
         <div className="config-row-key mono">
           {envKey}
           {helpText && <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 400, marginTop: '0.15rem' }}>{helpText}</div>}
+          {RATE_LIMIT_HINTS[envKey] && <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 400, marginTop: '0.15rem' }}>{RATE_LIMIT_HINTS[envKey]}</div>}
         </div>
         <div className="config-row-value">
           {inQueue ? (
@@ -92,7 +98,9 @@ export default function ApiKeysPage({ toast }) {
           ) : !isEditing ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span className="mono" style={{ fontSize: '0.8125rem', color: 'var(--text2)' }}>
-                {Array.isArray(value) ? value.join(', ') : String(value)}
+                {field?.type === 'bool'
+                  ? ((value === '1' || value === 'true' || value === true) ? 'Enabled' : 'Disabled')
+                  : Array.isArray(value) ? value.join(', ') : String(value)}
               </span>
               {restartRequired && <span className="badge badge-warn" style={{ fontSize: '0.6rem' }}>restart</span>}
               {writable && (
@@ -118,15 +126,26 @@ export default function ApiKeysPage({ toast }) {
                   {field.enum_values.map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
               ) : field?.type === 'bool' ? (
+                <ToggleSwitch
+                  on={editVal === '1' || editVal === 'true' || editVal === true}
+                  onChange={v => setEditing(ed => ({ ...ed, [envKey]: v ? '1' : '0' }))}
+                />
+              ) : TIMEZONE_KEYS.has(envKey) ? (
                 <select
                   className="admin-select"
                   style={{ minWidth: 220 }}
-                  value={editVal === '1' || editVal === 'true' || editVal === true ? '1' : '0'}
+                  value={editVal}
                   onChange={e => setEditing(ed => ({ ...ed, [envKey]: e.target.value }))}
                   autoFocus
                 >
-                  <option value="1">Enabled (1)</option>
-                  <option value="0">Disabled (0)</option>
+                  {editVal && !TIMEZONES_BY_CONTINENT.some(g => g.zones.some(z => z.tz === editVal)) && (
+                    <option value={editVal}>{editVal} (current)</option>
+                  )}
+                  {TIMEZONES_BY_CONTINENT.map(group => (
+                    <optgroup key={group.continent} label={group.continent}>
+                      {group.zones.map(z => <option key={z.tz} value={z.tz}>{z.label}</option>)}
+                    </optgroup>
+                  ))}
                 </select>
               ) : (
                 <input

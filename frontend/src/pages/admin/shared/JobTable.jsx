@@ -88,7 +88,7 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                     {onRunNow && (
                       <button
                         className="admin-btn admin-btn-ghost"
-                        style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}
+                        style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}
                         onClick={() => onRunNow(job.id)}
                         disabled={job.status === 'LOCKED'}
                       >Run</button>
@@ -96,7 +96,7 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                     {onPauseResume && (
                       <button
                         className={`admin-btn ${job.status === 'PAUSED' ? 'admin-btn-primary' : 'admin-btn-warn'}`}
-                        style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}
+                        style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}
                         onClick={() => onPauseResume(job)}
                       >
                         {job.status === 'PAUSED' ? 'Resume' : 'Pause'}

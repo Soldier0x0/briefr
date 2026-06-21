@@ -1,27 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import ConfirmModal from './shared/ConfirmModal.jsx'
+import HelpTip from './shared/HelpTip.jsx'
 import { fmtAge } from './formatters.js'
 import { worstSource } from './intelStatus.js'
-
-function getOperatorAck() {
-  try { return localStorage.getItem('briefr-operator-ack') === '1' } catch { return false }
-}
-function setOperatorAck() {
-  try { localStorage.setItem('briefr-operator-ack', '1') } catch { /* unavailable */ }
-}
 
 export default function StatusBar({ system, onRunIngest, onRestart, onDrainRestart, refreshInProgress, mode, setMode }) {
   const [restartMenu, setRestartMenu] = useState(false)
   const [menuPos, setMenuPos] = useState(null)
   const [confirmRestart, setConfirmRestart] = useState(null) // null | 'immediate' | 'drain'
-  const [confirmOperatorSwitch, setConfirmOperatorSwitch] = useState(false)
   const menuRef = useRef(null)
   const arrowRef = useRef(null)
 
   function handleModeClick(next) {
-    if (next === mode) return
-    if (next === 'operator' && !getOperatorAck()) { setConfirmOperatorSwitch(true); return }
     setMode(next)
   }
 
@@ -91,15 +82,6 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
           onCancel={() => setConfirmRestart(null)}
         />
       )}
-      {confirmOperatorSwitch && (
-        <ConfirmModal
-          title="Switch to Operator view?"
-          message="Operator view exposes destructive actions: restart, full ingest, purge, and config changes. Use it only when you need to manage the system, not for everyday CVE triage."
-          confirmWord={undefined}
-          onConfirm={() => { setOperatorAck(); setConfirmOperatorSwitch(false); setMode('operator') }}
-          onCancel={() => setConfirmOperatorSwitch(false)}
-        />
-      )}
       <div className="admin-statusbar">
         <div className="admin-mode-toggle" role="group" aria-label="Admin view mode">
           <button
@@ -143,6 +125,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
               >
                 {refreshInProgress ? <><span className="admin-spinner" /> Refreshing…</> : 'Refresh all sources'}
               </button>
+              <HelpTip text="Pulls the latest CVEs, KEV entries, and EPSS scores from every configured source right now, instead of waiting for the normal schedule." />
             </div>
           </>
         ) : (
@@ -209,6 +192,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
               >
                 {refreshInProgress ? <><span className="admin-spinner" /> Running…</> : 'Run full ingest'}
               </button>
+              <HelpTip text="Pulls fresh data from every configured source — NVD, KEV, EPSS, MITRE/ATLAS, OTX, etc. — not just NVD CVEs." />
               <div className="admin-split-btn" ref={menuRef}>
                 <button
                   className="admin-btn admin-btn-ghost admin-split-btn-main"
@@ -224,6 +208,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
                   aria-label="Restart options"
                   style={{ fontSize: '0.75rem' }}
                 >▾</button>
+                <HelpTip text="Restart now: stops the backend immediately (systemd restarts it within seconds). Drain then restart: waits for in-flight jobs to finish first, so nothing gets cut off mid-run." />
                 {restartMenu && menuPos && createPortal(
                   <div
                     className="admin-split-menu"

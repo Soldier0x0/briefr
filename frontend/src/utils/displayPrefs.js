@@ -1,5 +1,5 @@
-const FONT_SCALES = { small: 0.9, medium: 1, large: 1.15 }
-const DENSITY_MODES = ['comfortable', 'compact']
+const FONT_SCALES = { xsmall: 0.8, small: 0.9, medium: 1, large: 1.15, xlarge: 1.3 }
+const DENSITY_MODES = ['compact', 'comfortable', 'spacious']
 
 export function getDisplayPrefs() {
   try {
@@ -15,6 +15,7 @@ export function getDisplayPrefs() {
 export function applyDisplayPrefs({ fontScale, density } = getDisplayPrefs()) {
   document.documentElement.style.fontSize = `${(FONT_SCALES[fontScale] ?? 1) * 100}%`
   document.documentElement.classList.toggle('density-compact', density === 'compact')
+  document.documentElement.classList.toggle('density-spacious', density === 'spacious')
 }
 
 export function setDisplayPrefs({ fontScale, density }) {

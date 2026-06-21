@@ -60,6 +60,7 @@ from ml.product_extraction import (
     run_llm_product_extraction,
 )
 from webhooks.alerts import check_backup_deadman, get_backup_interval_hours, process_kev_stack_alerts
+from backup.manager import run_backup
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,7 @@ _cvelistv5_lock = asyncio.Lock()
 _embeddings_lock = asyncio.Lock()
 _llm_extraction_lock = asyncio.Lock()
 _exploit_sources_lock = asyncio.Lock()
+_scheduled_backup_lock = asyncio.Lock()
 
 
 def any_ingest_lock_held() -> bool:
@@ -86,7 +88,7 @@ def any_ingest_lock_held() -> bool:
         _nvd_lock, _kev_lock, _epss_lock, _epss_backfill_lock,
         _mitre_refresh_lock, _otx_lock, _correlation_lock,
         _vulnrichment_lock, _cvelistv5_lock, _embeddings_lock,
-        _llm_extraction_lock, _exploit_sources_lock,
+        _llm_extraction_lock, _exploit_sources_lock, _scheduled_backup_lock,
     ])
 
 
@@ -1033,6 +1035,27 @@ async def run_llm_extraction_sync() -> bool:
     return True
 
 
+async def run_scheduled_backup() -> bool:
+    """Scheduler hook: create a backup archive and prune old ones, on
+    BACKUP_INTERVAL_HOURS. run_backup() itself no-ops when BACKUP_ENABLED=0
+    and applies BACKUP_RETENTION_COUNT pruning — this just wires it to a job."""
+    if _scheduled_backup_lock.locked():
+        logger.info("Scheduled backup already in progress — skipping")
+        return False
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _error_msg = ""
+    async with _scheduled_backup_lock:
+        try:
+            await asyncio.to_thread(run_backup, reason="scheduled")
+        except Exception as exc:
+            logger.error("Scheduled backup failed: %s", exc)
+            _had_error = True
+            _error_msg = str(exc)[:500]
+    await _write_job_last_run("scheduled_backup", _start, had_error=_had_error, error_message=_error_msg)
+    return not _had_error
+
+
 async def run_backup_deadman_check() -> bool:
     """Scheduler hook: warn when backups are overdue (2× interval)."""
     _start = datetime.now(timezone.utc)
@@ -1216,7 +1239,17 @@ def start_scheduler() -> AsyncIOScheduler:
         next_run_time=datetime.now(sched_tz) + timedelta(seconds=60),
     )
 
-    backup_hours = get_backup_interval_hours()
+    backup_hours = max(1, get_backup_interval_hours())
+    scheduler.add_job(
+        run_scheduled_backup,
+        trigger=IntervalTrigger(hours=backup_hours, timezone=sched_tz),
+        id="scheduled_backup",
+        name="Scheduled Backup",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(minutes=2),
+    )
     scheduler.add_job(
         run_backup_deadman_check,
         trigger=IntervalTrigger(hours=max(1, backup_hours // 2), timezone=sched_tz),
@@ -1252,7 +1285,7 @@ def start_scheduler() -> AsyncIOScheduler:
         "Scheduler started (tz=%s). NVD every %dh; KEV every %dm; EPSS every %dh; "
         "MITRE+ATLAS weekly Sunday %02d:%02d; Exploit sources every %dh; "
         "Correlation nightly %02d:%02d IST; OTX nightly %02d:%02d IST; "
-        "Vulnrichment every %dh; cvelistV5 every %dm; backup dead-man every %dh.",
+        "Vulnrichment every %dh; cvelistV5 every %dm; backup every %dh (dead-man check every %dh).",
         tz_name,
         intervals["nvd_hours"],
         intervals["kev_minutes"],
@@ -1266,6 +1299,7 @@ def start_scheduler() -> AsyncIOScheduler:
         otx_minute,
         vulnrichment_hours,
         cvelist_minutes,
+        backup_hours,
         max(1, backup_hours // 2),
     )
     return scheduler
