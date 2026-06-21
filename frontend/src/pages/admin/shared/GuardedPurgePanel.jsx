@@ -39,6 +39,8 @@ export default function GuardedPurgePanel({ targets }) {
         {target.extraDaysBack && (
           <input
             className="admin-input"
+            type="number"
+            min="1"
             placeholder="Days back (optional)"
             value={daysBack}
             onChange={e => setDaysBack(e.target.value)}

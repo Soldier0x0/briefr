@@ -138,6 +138,9 @@ export default function ApiKeysPage({ toast }) {
                   onChange={e => setEditing(ed => ({ ...ed, [envKey]: e.target.value }))}
                   autoFocus
                 >
+                  {editVal && !TIMEZONES_BY_CONTINENT.some(g => g.zones.some(z => z.tz === editVal)) && (
+                    <option value={editVal}>{editVal} (current)</option>
+                  )}
                   {TIMEZONES_BY_CONTINENT.map(group => (
                     <optgroup key={group.continent} label={group.continent}>
                       {group.zones.map(z => <option key={z.tz} value={z.tz}>{z.label}</option>)}

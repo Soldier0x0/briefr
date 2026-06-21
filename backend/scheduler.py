@@ -1239,7 +1239,7 @@ def start_scheduler() -> AsyncIOScheduler:
         next_run_time=datetime.now(sched_tz) + timedelta(seconds=60),
     )
 
-    backup_hours = get_backup_interval_hours()
+    backup_hours = max(1, get_backup_interval_hours())
     scheduler.add_job(
         run_scheduled_backup,
         trigger=IntervalTrigger(hours=backup_hours, timezone=sched_tz),

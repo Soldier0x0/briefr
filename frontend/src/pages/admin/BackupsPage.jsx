@@ -86,7 +86,7 @@ export default function BackupsPage({ toast, system, setPage: setAdminPage }) {
         <StatCard label="DB INTEGRITY" value={integrityOk ? 'OK' : 'FAILED'} colorClass={integrityOk ? 'color-green' : 'color-red'} />
       </div>
 
-      {schedule && (
+      {schedule && schedule.BACKUP_INTERVAL_HOURS !== undefined && (
         <div className="admin-card">
           <div className="admin-card-title">Schedule</div>
           <p style={{ fontSize: '0.8125rem', color: 'var(--text2)', marginBottom: '0.5rem' }}>
