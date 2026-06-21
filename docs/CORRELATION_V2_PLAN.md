@@ -221,7 +221,7 @@ Migrate: backfill `otx_pulses` from existing `otx_cve_pulses` rows on upgrade. R
 |-------|---------|
 | `correlation_campaigns` | campaign_id, primary_pulse_id (nullable), label, adversary, malware JSON, confidence, member_count, **lifecycle**, **campaign_version**, computed_at |
 | `correlation_campaign_members` | campaign_id, cve_id, role (optional) |
-| `correlation_campaign_edges` | campaign_id, edge_type, evidence JSON |
+| `correlation_campaign_edges` | campaign_id, cve_id_a, cve_id_b, edge_type, evidence JSON |
 | `correlation_suppressions` | id, scope (`edge`/`campaign`/`pulse`/`cve_pair`), key JSON, reason, created_at — analyst dismiss feedback (§24.5) |
 
 Retain v1 tables during migration; deprecate after read path uses campaigns.
@@ -316,7 +316,15 @@ Keep files focused; extract from monolithic `engine.py` as phases land.
   "cve_id": "CVE-2024-0001",
   "computed_at": "...",
   "otx_status": "ok|not_configured|degraded",
-  "campaigns": [ { "campaign_id", "label", "members", "findings", "confidence", "evidence" } ],
+  "campaigns": [
+    {
+      "campaign_id": "camp_abc123",
+      "label": "Ransomware wave Q1",
+      "members": ["CVE-2024-0001", "CVE-2024-0002"],
+      "confidence": "medium",
+      "evidence": [{ "type": "same_pulse", "pulse_id": "..." }]
+    }
+  ],
   "infrastructure": [],
   "actor": [],
   "temporal": [],
@@ -437,7 +445,7 @@ Replace “group uses any technique” with:
 ## 15. Temporal v2
 
 1. Nightly: write `correlation_vendor_weekly` from CVE publish dates.  
-2. Anomaly when current week / rolling avg ≥ threshold (config `CORRELATION_VENDOR_ANOMALY_RATIO`, default 3.0).  
+2. Anomaly when current week count / **rolling N-week average** ≥ threshold (`CORRELATION_VENDOR_ANOMALY_RATIO`, default 3.0; baseline window `CORRELATION_VENDOR_BASELINE_WEEKS`, default 8).  
 3. **Gate:** only surface to analyst if vendor ∈ stack OR cluster has KEV/exploit booster.  
 4. Per-CVE: attach vendor anomalies only for CVE’s vendors.
 
@@ -460,6 +468,7 @@ Surface as booster receipt: “3 CVEs in this cluster saw exploitation signals w
 
 1. Call existing embedding neighbor logic (do not re-embed on request path).  
 2. For each neighbor, **validate**: same campaign OR shared IOC OR same CWE family.  
+   CWE-only validation requires a **specific** child CWE (not a top-level bucket) and rejects known-generic parents (e.g. CWE-20, CWE-77, CWE-119, CWE-200) unless vendor/product also overlap.  
 3. If validation fails, list under `semantic_unvalidated` with lower confidence or omit.  
 4. Do not merge into risk score until validated neighbor.
 
@@ -571,6 +580,7 @@ Add to `config_schema.py` when implementing (admin-tunable):
 | `OTX_IOC_SYNC_MAX_PER_RUN` | 500 | Pulse IOC download budget |
 | `OTX_CVE_SYNC_DAYS` | 30 | CVE pulse refresh window |
 | `CORRELATION_VENDOR_ANOMALY_RATIO` | 3.0 | Temporal threshold |
+| `CORRELATION_VENDOR_BASELINE_WEEKS` | 8 | Rolling average window for vendor weekly baseline (§15) |
 | `CORRELATION_CACHE_HOURS` | 6 | Request cache |
 | `CORRELATION_MITRE_MIN_OVERLAP` | 0.25 | Actor filter |
 | `CORRELATION_SEMANTIC_ENABLED` | 1 | Level 4 on/off |
