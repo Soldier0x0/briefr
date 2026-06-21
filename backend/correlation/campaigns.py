@@ -205,13 +205,7 @@ async def prune_invalid_campaign_members(db) -> int:
 
 async def get_campaigns_for_cve(db, cve_id: str) -> list[dict]:
     """Return campaign clusters containing cve_id with hub filtering applied."""
-    from correlation.confidence import attribution_conflict, campaign_confidence
-    from correlation.copy import campaign_summary, sanitize_pulse_text
-    from correlation.ioc_graph import ioc_edges_between
-    from correlation.suppressions import is_campaign_suppressed, load_suppressions
-
     cve_upper = cve_id.upper()
-    suppressions = await load_suppressions(db, cve_upper)
 
     rows = await db.execute_fetchall(
         """
@@ -228,9 +222,6 @@ async def get_campaigns_for_cve(db, cve_id: str) -> list[dict]:
 
     results: list[dict] = []
     for row in rows:
-        if is_campaign_suppressed(suppressions, row["campaign_id"]):
-            continue
-
         member_rows = await db.execute_fetchall(
             """
             SELECT cve_id FROM correlation_campaign_members
@@ -247,69 +238,32 @@ async def get_campaigns_for_cve(db, cve_id: str) -> list[dict]:
         if len(filtered) < 2:
             continue
 
-        ioc_edges: list[dict] = []
-        seen_iocs: set[tuple[str, str]] = set()
-        for peer in filtered:
-            if peer == cve_upper:
-                continue
-            for edge in await ioc_edges_between(db, cve_upper, peer):
-                key = (edge.get("ioc_type", ""), edge.get("ioc_value", ""))
-                if key in seen_iocs:
-                    continue
-                seen_iocs.add(key)
-                ioc_edges.append(edge)
-
-        confidence, why_not_higher = campaign_confidence(
-            row["confidence"] or "medium",
-            ioc_edges,
-            has_same_pulse=True,
-        )
-        safe_label = sanitize_pulse_text(row["label"])
-
         evidence = [
             {
                 "type": "same_pulse",
                 "pulse_id": row["primary_pulse_id"],
-                "pulse_name": safe_label,
+                "pulse_name": row["label"],
             }
         ]
-        for edge in ioc_edges[:5]:
-            evidence.append({
-                "type": "shared_indicator",
-                "ioc_type": edge.get("ioc_type", ""),
-                "value": edge.get("ioc_value", ""),
-            })
-
-        actor_rows = await db.execute_fetchall(
-            "SELECT actor_name FROM correlation_actor WHERE cve_id = ?",
-            (cve_upper,),
-        )
-        mitre_names = [r["actor_name"] for r in actor_rows if r["actor_name"]]
-        conflict = attribution_conflict(row["adversary"] or "", mitre_names)
-        if conflict:
-            confidence = "medium" if confidence == "high" else confidence
 
         results.append({
             "campaign_id": row["campaign_id"],
-            "label": safe_label,
+            "label": row["label"],
             "primary_pulse_id": row["primary_pulse_id"],
-            "adversary": sanitize_pulse_text(row["adversary"] or "", 120),
+            "adversary": row["adversary"] or "",
             "malware_families": _parse_json_list(row["malware_families"]),
             "tags": _parse_json_list(row["tags"]),
             "targeted_countries": _parse_json_list(row["targeted_countries"]),
             "members": filtered,
             "member_count": len(filtered),
-            "confidence": confidence,
+            "confidence": row["confidence"],
             "lifecycle": row["lifecycle"] or "active",
             "evidence": evidence,
-            "summary": campaign_summary(
-                safe_label,
-                len(filtered) - 1,
-                has_ioc=bool(ioc_edges),
+            "summary": (
+                f"Linked to {len(filtered) - 1} other CVE(s) via OTX pulse "
+                f"\"{row['label']}\"."
             ),
             "sources": ["otx"],
-            "why_not_higher": why_not_higher,
-            "attribution_conflict": conflict,
             "attribution_disclaimer": "OTX community pulse — unverified attribution",
         })
 

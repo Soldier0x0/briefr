@@ -44,8 +44,6 @@ EXPECTED_ROUTES = [
     ("GET", "/api/cves/{cve_id}/momentum"),
     ("GET", "/api/cves/{cve_id}/detection"),
     ("GET", "/api/cves/{cve_id}/correlation"),
-    ("POST", "/api/cves/{cve_id}/correlation/suppress"),
-    ("DELETE", "/api/cves/{cve_id}/correlation/suppress"),
     ("GET", "/api/kev/deadlines"),
     ("GET", "/api/usage"),
     ("GET", "/api/usage/ioc"),

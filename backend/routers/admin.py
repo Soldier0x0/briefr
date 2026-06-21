@@ -484,7 +484,7 @@ _STORAGE_TABLES = [
     "cve_exploits",
     "cve_change_history", "ioc_cache", "feed_cache", "correlation_infrastructure",
     "correlation_actor", "correlation_temporal", "correlation_campaigns",
-    "correlation_campaign_members", "correlation_suppressions", "cve_embeddings", "api_usage",
+    "correlation_campaign_members", "cve_embeddings", "api_usage",
     "audit_log", "sync_state", "watchlist", "hunt_packs", "webhook_alert_log",
 ]
 

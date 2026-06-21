@@ -290,19 +290,6 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_correlation_campaign_members_cve
                 ON correlation_campaign_members(cve_id);
 
-            CREATE TABLE IF NOT EXISTS correlation_suppressions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                cve_id TEXT NOT NULL,
-                scope TEXT NOT NULL,
-                scope_key TEXT NOT NULL,
-                reason TEXT DEFAULT '',
-                created_at TEXT DEFAULT (datetime('now')),
-                UNIQUE (cve_id, scope, scope_key)
-            );
-
-            CREATE INDEX IF NOT EXISTS idx_correlation_suppressions_cve
-                ON correlation_suppressions(cve_id);
-
             CREATE TABLE IF NOT EXISTS correlation_infrastructure (
                 cve_id_a TEXT NOT NULL,
                 cve_id_b TEXT NOT NULL,
@@ -504,18 +491,6 @@ async def init_db() -> None:
             """,
             "CREATE INDEX IF NOT EXISTS idx_correlation_campaign_members_cve ON correlation_campaign_members(cve_id)",
             "CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_type_value ON otx_pulse_iocs(ioc_type, ioc_value)",
-            """
-            CREATE TABLE IF NOT EXISTS correlation_suppressions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                cve_id TEXT NOT NULL,
-                scope TEXT NOT NULL,
-                scope_key TEXT NOT NULL,
-                reason TEXT DEFAULT '',
-                created_at TEXT DEFAULT (datetime('now')),
-                UNIQUE (cve_id, scope, scope_key)
-            )
-            """,
-            "CREATE INDEX IF NOT EXISTS idx_correlation_suppressions_cve ON correlation_suppressions(cve_id)",
         ):
             try:
                 await db.execute(migration)
@@ -1977,67 +1952,6 @@ async def read_otx_pulse_iocs(
         }
         for row in rows
     ]
-
-
-async def list_correlation_suppressions(
-    db: aiosqlite.Connection, cve_id: str
-) -> list[dict]:
-    rows = await db.execute_fetchall(
-        """
-        SELECT id, cve_id, scope, scope_key, reason, created_at
-        FROM correlation_suppressions
-        WHERE cve_id = ?
-        ORDER BY created_at DESC
-        """,
-        (cve_id.upper(),),
-    )
-    return [dict(row) for row in rows]
-
-
-async def insert_correlation_suppression(
-    db: aiosqlite.Connection,
-    cve_id: str,
-    scope: str,
-    scope_key: str,
-    reason: str = "",
-) -> dict:
-    await db.execute(
-        """
-        INSERT INTO correlation_suppressions (cve_id, scope, scope_key, reason, created_at)
-        VALUES (?, ?, ?, ?, datetime('now'))
-        ON CONFLICT(cve_id, scope, scope_key) DO UPDATE SET
-            reason = excluded.reason,
-            created_at = datetime('now')
-        """,
-        (cve_id.upper(), scope, scope_key, reason),
-    )
-    rows = await db.execute_fetchall(
-        """
-        SELECT id, cve_id, scope, scope_key, reason, created_at
-        FROM correlation_suppressions
-        WHERE cve_id = ? AND scope = ? AND scope_key = ?
-        """,
-        (cve_id.upper(), scope, scope_key),
-    )
-    return dict(rows[0]) if rows else {
-        "cve_id": cve_id.upper(),
-        "scope": scope,
-        "scope_key": scope_key,
-        "reason": reason,
-    }
-
-
-async def delete_correlation_suppression(
-    db: aiosqlite.Connection, cve_id: str, scope: str, scope_key: str
-) -> bool:
-    cursor = await db.execute(
-        """
-        DELETE FROM correlation_suppressions
-        WHERE cve_id = ? AND scope = ? AND scope_key = ?
-        """,
-        (cve_id.upper(), scope, scope_key),
-    )
-    return (cursor.rowcount or 0) > 0
 
 
 async def get_recent_cve_ids_for_otx(

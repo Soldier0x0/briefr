@@ -100,14 +100,6 @@ export function fetchCVECorrelation(cveId, sector = '') {
   return request(`/cves/${encodeURIComponent(cveId)}/correlation${qs}`)
 }
 
-export function suppressCVECorrelation(cveId, body) {
-  return request(`/cves/${encodeURIComponent(cveId)}/correlation/suppress`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-}
-
 export function fetchCVEDetection(cveId, product = '') {
   const qs = product ? `?product=${encodeURIComponent(product)}` : ''
   return request(`/cves/${encodeURIComponent(cveId)}/detection${qs}`)
