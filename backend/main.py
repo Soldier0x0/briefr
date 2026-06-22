@@ -172,7 +172,6 @@ async def request_context(request: Request, call_next):
                 "path": request.url.path,
                 "status": 500,
                 "duration_ms": duration_ms,
-                "client": request.client.host if request.client else "",
             },
         )
         raise
