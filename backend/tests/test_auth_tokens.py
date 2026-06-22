@@ -20,7 +20,8 @@ from settings import settings
 
 @pytest.fixture(autouse=True)
 def _jwt_secret(monkeypatch):
-    monkeypatch.setattr(settings, "jwt_secret", "test-secret-for-unit-tests")
+    # 32+ bytes avoids PyJWT InsecureKeyLengthWarning and matches production guidance.
+    monkeypatch.setattr(settings, "jwt_secret", "test-secret-for-unit-tests-32bytes!!")
 
 
 def test_create_and_decode_access_token_round_trip():
@@ -33,7 +34,8 @@ def test_create_and_decode_access_token_round_trip():
 
 def test_decode_access_token_rejects_bad_signature():
     token = create_access_token(1, "ops@example.com", "admin")
-    tampered = token[:-1] + ("a" if token[-1] != "a" else "b")
+    header, payload, _signature = token.split(".")
+    tampered = f"{header}.{payload}.not-a-valid-signature"
     with pytest.raises(jwt.PyJWTError):
         decode_access_token(tampered)
 
