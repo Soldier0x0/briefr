@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import sqlite3
+import time
 from datetime import datetime, timedelta, timezone
 
 from database import get_db
@@ -353,8 +354,23 @@ async def record_api_call(service: str, count: int = 1) -> None:
             logger.warning("%s daily quota near limit (%d/%d calls today)", service, used, limit)
 
 
+_COMMITTED_USAGE_CACHE_TTL_SECONDS = 2.0
+_committed_usage_cache: dict[tuple[str, str], tuple[float, int]] = {}
+
+
 async def _committed_usage(service: str, today: str) -> int:
-    """Today's already-flushed count for service, excluding the in-memory buffer."""
+    """Today's already-flushed count for service, excluding the in-memory buffer.
+
+    Cached for a couple seconds — bulk IOC lookups call has_quota/record_api_call
+    once per item, and without this a 100-item lookup means 100+ DB round-trips
+    on a server that already sees SQLite lock contention.
+    """
+    cache_key = (service, today)
+    now = time.monotonic()
+    cached = _committed_usage_cache.get(cache_key)
+    if cached is not None and now - cached[0] < _COMMITTED_USAGE_CACHE_TTL_SECONDS:
+        return cached[1]
+
     try:
         db = await get_db()
         try:
@@ -362,12 +378,15 @@ async def _committed_usage(service: str, today: str) -> int:
                 "SELECT SUM(count) as total FROM api_usage WHERE service = ? AND date_utc = ?",
                 (service, today),
             )
-            return (row[0]["total"] if row and row[0]["total"] else 0)
+            value = row[0]["total"] if row and row[0]["total"] else 0
         finally:
             await db.close()
     except Exception as exc:
         logger.error("Failed to read committed usage for %s: %s", service, exc)
-        return 0
+        return cached[1] if cached is not None else 0
+
+    _committed_usage_cache[cache_key] = (now, value)
+    return value
 
 
 async def get_today_usage(service: str) -> int:
