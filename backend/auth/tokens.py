@@ -19,11 +19,11 @@ from settings import settings
 ALGORITHM = "HS256"
 
 
-def create_access_token(user_id: int, email: str, role: str) -> str:
+def create_access_token(user_id: int, username: str, role: str) -> str:
     now = datetime.now(timezone.utc)
     payload = {
         "sub": str(user_id),
-        "email": email,
+        "username": username,
         "role": role,
         "iat": now,
         "exp": now + timedelta(minutes=settings.jwt_access_token_minutes),

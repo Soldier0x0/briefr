@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 
-from auth.passwords import DUMMY_HASH, validate_password_strength, verify_password
+from auth.passwords import DUMMY_HASH, PASSWORD_MAX_LEN, validate_password_strength, verify_password
 from auth.repo import (
     count_users,
     create_session,
@@ -24,29 +24,47 @@ from auth.repo import (
     rotate_session,
     update_last_login,
 )
-from auth.repo import get_user_by_email as _get_user_by_email
+from auth.repo import get_user_by_username as _get_user_by_username
 from auth.tokens import create_access_token, generate_refresh_token
+from auth.usernames import validate_username
 from database import get_db
 from dependencies import audit, require_user
-from pydantic import BaseModel
-from rate_limit import check_login_email_rate_limit, rate_limit_auth_refresh, rate_limit_login
+from pydantic import BaseModel, Field, field_validator
+from rate_limit import check_login_username_rate_limit, rate_limit_auth_refresh, rate_limit_login
 from settings import settings
 
 router = APIRouter(prefix="/api/auth")
 
 ACCESS_COOKIE = "briefr_at"
 REFRESH_COOKIE = "briefr_rt"
+_AUTH_FAILURE = "Invalid username or password"
 
 
 class LoginRequest(BaseModel):
-    email: str
-    password: str
+    username: str = Field(min_length=1, max_length=32)
+    password: str = Field(min_length=1, max_length=PASSWORD_MAX_LEN)
     remember_me: bool = False
+
+    @field_validator("username")
+    @classmethod
+    def _normalize_username(cls, value: str) -> str:
+        return value.strip().lower()
 
 
 class SetupRequest(BaseModel):
-    email: str
-    password: str
+    username: str = Field(min_length=1, max_length=32)
+    password: str = Field(min_length=1, max_length=PASSWORD_MAX_LEN)
+
+    @field_validator("username")
+    @classmethod
+    def _normalize_username(cls, value: str) -> str:
+        return validate_username(value)
+
+    @field_validator("password")
+    @classmethod
+    def _check_password(cls, value: str) -> str:
+        validate_password_strength(value)
+        return value
 
 
 def _refresh_expiry() -> str:
@@ -88,19 +106,25 @@ def _clear_auth_cookies(response: Response) -> None:
 async def login(
     body: LoginRequest, request: Request, response: Response, _rl=Depends(rate_limit_login)
 ):
-    check_login_email_rate_limit(body.email)
+    try:
+        username = validate_username(body.username)
+    except ValueError:
+        verify_password(body.password, DUMMY_HASH)
+        raise HTTPException(status_code=401, detail=_AUTH_FAILURE)
+
+    check_login_username_rate_limit(username)
 
     db = await get_db()
     try:
-        user = await _get_user_by_email(db, body.email)
+        user = await _get_user_by_username(db, username)
         if user is None or not user["is_active"]:
             verify_password(body.password, DUMMY_HASH)
-            await audit(request, "auth.login_failed", body.email.strip().lower())
-            raise HTTPException(status_code=401, detail="Invalid email or password")
+            await audit(request, "auth.login_failed", username)
+            raise HTTPException(status_code=401, detail=_AUTH_FAILURE)
 
         if not verify_password(body.password, user["password_hash"]):
-            await audit(request, "auth.login_failed", user["email"])
-            raise HTTPException(status_code=401, detail="Invalid email or password")
+            await audit(request, "auth.login_failed", user["username"])
+            raise HTTPException(status_code=401, detail=_AUTH_FAILURE)
 
         refresh_token = generate_refresh_token()
         await create_session(
@@ -117,14 +141,14 @@ async def login(
     finally:
         await db.close()
 
-    access_token = create_access_token(user["id"], user["email"], user["role"])
+    access_token = create_access_token(user["id"], user["username"], user["role"])
     _set_access_cookie(response, access_token)
     _set_refresh_cookie(response, refresh_token, body.remember_me)
 
-    request.state.user_email = user["email"]
-    await audit(request, "auth.login", user["email"])
+    request.state.user_username = user["username"]
+    await audit(request, "auth.login", user["username"])
 
-    return {"email": user["email"], "role": user["role"]}
+    return {"username": user["username"], "role": user["role"]}
 
 
 @router.post("/logout")
@@ -178,11 +202,11 @@ async def refresh(
     finally:
         await db.close()
 
-    access_token = create_access_token(user["id"], user["email"], user["role"])
+    access_token = create_access_token(user["id"], user["username"], user["role"])
     _set_access_cookie(response, access_token)
     _set_refresh_cookie(response, new_refresh_token, remember_me=bool(rotated["remember_me"]))
 
-    return {"email": user["email"], "role": user["role"]}
+    return {"username": user["username"], "role": user["role"]}
 
 
 @router.get("/me")
@@ -195,7 +219,7 @@ async def me(payload: dict = Depends(require_user)):
     if user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return {
-        "email": user["email"],
+        "username": user["username"],
         "role": user["role"],
         "last_login_at": user["last_login_at"],
     }
@@ -223,17 +247,12 @@ async def setup_required():
 async def setup(
     body: SetupRequest, request: Request, response: Response, _rl=Depends(rate_limit_login)
 ):
-    try:
-        validate_password_strength(body.password)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
     db = await get_db()
     try:
         if await count_users(db) > 0:
             raise HTTPException(status_code=409, detail="Setup already completed")
 
-        user = await create_user(db, body.email, body.password, role="admin")
+        user = await create_user(db, body.username, body.password, role="admin")
 
         refresh_token = generate_refresh_token()
         await create_session(
@@ -250,11 +269,11 @@ async def setup(
     finally:
         await db.close()
 
-    access_token = create_access_token(user["id"], user["email"], user["role"])
+    access_token = create_access_token(user["id"], user["username"], user["role"])
     _set_access_cookie(response, access_token)
     _set_refresh_cookie(response, refresh_token, remember_me=False)
 
-    request.state.user_email = user["email"]
-    await audit(request, "auth.setup_completed", user["email"])
+    request.state.user_username = user["username"]
+    await audit(request, "auth.setup_completed", user["username"])
 
-    return {"email": user["email"], "role": user["role"]}
+    return {"username": user["username"], "role": user["role"]}

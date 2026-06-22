@@ -36,7 +36,7 @@ def empty_client(tmp_path, monkeypatch):
     monkeypatch.setattr(_settings, "jwt_secret", "test-secret-for-unit-tests")
     monkeypatch.setattr(_settings, "auth_cookie_secure", False)
     _rl.login_bucket._buckets.clear()
-    _rl.login_email_bucket._buckets.clear()
+    _rl.login_username_bucket._buckets.clear()
     _rl.auth_refresh_bucket._buckets.clear()
 
     from main import app
@@ -53,7 +53,7 @@ def test_setup_required_false_once_user_exists(empty_client):
     async def _seed():
         db = await get_db()
         try:
-            await create_user(db, "ops@example.com", "correct-horse-battery", role="admin")
+            await create_user(db, "ops", "correct-horse-battery", role="admin")
             await db.commit()
         finally:
             await db.close()
@@ -68,28 +68,28 @@ def test_setup_required_false_once_user_exists(empty_client):
 def test_setup_creates_account_and_signs_in(empty_client):
     resp = empty_client.post(
         "/api/auth/setup",
-        json={"email": "ops@example.com", "password": "correct-horse-battery"},
+        json={"username": "ops", "password": "correct-horse-battery"},
     )
     assert resp.status_code == 200
-    assert resp.json() == {"email": "ops@example.com", "role": "admin"}
+    assert resp.json() == {"username": "ops", "role": "admin"}
     assert "briefr_at" in resp.cookies
     assert "briefr_rt" in resp.cookies
 
     me = empty_client.get("/api/auth/me")
     assert me.status_code == 200
-    assert me.json()["email"] == "ops@example.com"
+    assert me.json()["username"] == "ops"
 
 
 def test_setup_rejected_once_a_user_already_exists(empty_client):
     first = empty_client.post(
         "/api/auth/setup",
-        json={"email": "ops@example.com", "password": "correct-horse-battery"},
+        json={"username": "ops", "password": "correct-horse-battery"},
     )
     assert first.status_code == 200
 
     second = empty_client.post(
         "/api/auth/setup",
-        json={"email": "someone-else@example.com", "password": "another-pass"},
+        json={"username": "someone", "password": "another-pass"},
     )
     assert second.status_code == 409
 
@@ -97,6 +97,6 @@ def test_setup_rejected_once_a_user_already_exists(empty_client):
 def test_setup_rejects_short_password(empty_client):
     resp = empty_client.post(
         "/api/auth/setup",
-        json={"email": "ops@example.com", "password": "short"},
+        json={"username": "ops", "password": "short"},
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 422

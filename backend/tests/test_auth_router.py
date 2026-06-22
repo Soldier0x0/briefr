@@ -32,7 +32,7 @@ def client(tmp_path, monkeypatch):
     async def _seed_user():
         db = await get_db()
         try:
-            await create_user(db, "ops@example.com", "correct-horse-battery", role="admin")
+            await create_user(db, "ops", "correct-horse-battery", role="admin")
             await db.commit()
         finally:
             await db.close()
@@ -45,7 +45,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(_settings, "jwt_secret", "test-secret-for-unit-tests")
     monkeypatch.setattr(_settings, "auth_cookie_secure", False)
     _rl.login_bucket._buckets.clear()
-    _rl.login_email_bucket._buckets.clear()
+    _rl.login_username_bucket._buckets.clear()
     _rl.auth_refresh_bucket._buckets.clear()
 
     from main import app
@@ -55,10 +55,10 @@ def client(tmp_path, monkeypatch):
 def test_login_succeeds_with_correct_credentials(client):
     resp = client.post(
         "/api/auth/login",
-        json={"email": "ops@example.com", "password": "correct-horse-battery"},
+        json={"username": "ops", "password": "correct-horse-battery"},
     )
     assert resp.status_code == 200
-    assert resp.json() == {"email": "ops@example.com", "role": "admin"}
+    assert resp.json() == {"username": "ops", "role": "admin"}
     assert "briefr_at" in resp.cookies
     assert "briefr_rt" in resp.cookies
 
@@ -66,15 +66,24 @@ def test_login_succeeds_with_correct_credentials(client):
 def test_login_fails_with_wrong_password(client):
     resp = client.post(
         "/api/auth/login",
-        json={"email": "ops@example.com", "password": "wrong-password"},
+        json={"username": "ops", "password": "wrong-password"},
     )
     assert resp.status_code == 401
 
 
-def test_login_fails_for_unknown_email(client):
+def test_login_rejects_malformed_username_with_generic_error(client):
     resp = client.post(
         "/api/auth/login",
-        json={"email": "nobody@example.com", "password": "whatever12"},
+        json={"username": "bad name!", "password": "correct-horse-battery"},
+    )
+    assert resp.status_code == 401
+    assert resp.json()["detail"] == "Invalid username or password"
+
+
+def test_login_fails_for_unknown_username(client):
+    resp = client.post(
+        "/api/auth/login",
+        json={"username": "nobody", "password": "whatever12"},
     )
     assert resp.status_code == 401
 
@@ -94,11 +103,11 @@ def test_login_rate_limited_per_ip(client, monkeypatch):
     for _ in range(2):
         client.post(
             "/api/auth/login",
-            json={"email": "ops@example.com", "password": "wrong-password"},
+            json={"username": "ops", "password": "wrong-password"},
         )
     resp = client.post(
         "/api/auth/login",
-        json={"email": "ops@example.com", "password": "wrong-password"},
+        json={"username": "ops", "password": "wrong-password"},
     )
     assert resp.status_code == 429
 
@@ -108,22 +117,38 @@ def test_me_requires_authentication(client):
     assert resp.status_code == 401
 
 
+def test_me_rejects_legacy_jwt_missing_username(client, monkeypatch):
+    import jwt
+
+    from settings import settings as _settings
+
+    monkeypatch.setattr(_settings, "jwt_secret", "test-secret-for-unit-tests")
+    legacy_token = jwt.encode(
+        {"sub": "1", "email": "ops@example.com", "role": "admin"},
+        _settings.jwt_secret,
+        algorithm="HS256",
+    )
+    client.cookies.set("briefr_at", legacy_token)
+    resp = client.get("/api/auth/me")
+    assert resp.status_code == 401
+
+
 def test_me_returns_user_after_login(client):
     client.post(
         "/api/auth/login",
-        json={"email": "ops@example.com", "password": "correct-horse-battery"},
+        json={"username": "ops", "password": "correct-horse-battery"},
     )
     resp = client.get("/api/auth/me")
     assert resp.status_code == 200
     body = resp.json()
-    assert body["email"] == "ops@example.com"
+    assert body["username"] == "ops"
     assert body["role"] == "admin"
 
 
 def test_refresh_rotates_token_and_keeps_session_valid(client):
     client.post(
         "/api/auth/login",
-        json={"email": "ops@example.com", "password": "correct-horse-battery"},
+        json={"username": "ops", "password": "correct-horse-battery"},
     )
     old_refresh_cookie = client.cookies.get("briefr_rt")
 
@@ -139,7 +164,7 @@ def test_refresh_rotates_token_and_keeps_session_valid(client):
 def test_refresh_reuse_of_rotated_token_revokes_all_sessions(client):
     client.post(
         "/api/auth/login",
-        json={"email": "ops@example.com", "password": "correct-horse-battery"},
+        json={"username": "ops", "password": "correct-horse-battery"},
     )
     old_refresh_cookie = client.cookies.get("briefr_rt")
 
@@ -160,7 +185,7 @@ def test_refresh_reuse_of_rotated_token_revokes_all_sessions(client):
 def test_logout_clears_cookies_and_revokes_session(client):
     client.post(
         "/api/auth/login",
-        json={"email": "ops@example.com", "password": "correct-horse-battery"},
+        json={"username": "ops", "password": "correct-horse-battery"},
     )
     resp = client.post("/api/auth/logout")
     assert resp.status_code == 200

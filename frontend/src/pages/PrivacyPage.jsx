@@ -23,7 +23,7 @@ export default function PrivacyPage() {
         short-lived access token and a longer-lived session (refresh) token
         used to keep you signed in without re-entering your password. Neither
         cookie is readable by page JavaScript. Your account record stores
-        your email address and a one-way bcrypt hash of your password — never
+        your username and a one-way bcrypt hash of your password — never
         the password itself. Checking "Remember me" persists the session
         cookie for up to 30 days; leaving it unchecked makes it a
         session-only cookie cleared when the browser closes. Logging out, or

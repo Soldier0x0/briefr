@@ -60,11 +60,11 @@ async function request(path, options = {}, _retried = false) {
 
 // ── Built-in app login (decision 2026-06-11) ───────────────────────────────
 
-export function login(email, password, rememberMe = false) {
+export function login(username, password, rememberMe = false) {
   return request('/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, remember_me: rememberMe }),
+    body: JSON.stringify({ username, password, remember_me: rememberMe }),
   })
 }
 
@@ -72,11 +72,11 @@ export function fetchSetupRequired() {
   return request('/auth/setup-required')
 }
 
-export function setupAccount(email, password) {
+export function setupAccount(username, password) {
   return request('/auth/setup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ username, password }),
   })
 }
 

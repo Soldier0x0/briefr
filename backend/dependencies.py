@@ -48,7 +48,7 @@ async def require_admin_key(request: Request) -> None:
 
 async def require_user(request: Request) -> dict:
     """Built-in app login (decision 2026-06-11): require a valid `briefr_at`
-    access-token cookie, and populate request.state.user_email/user_role for
+    access-token cookie, and populate request.state.user_username/user_role for
     audit() to pick up."""
     from auth.tokens import decode_access_token
 
@@ -59,7 +59,9 @@ async def require_user(request: Request) -> dict:
         payload = decode_access_token(token)
     except Exception:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    request.state.user_email = payload.get("email", "")
+    if not payload.get("username"):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    request.state.user_username = payload["username"]
     request.state.user_role = payload.get("role", "")
     return payload
 
@@ -79,13 +81,13 @@ async def require_admin(request: Request) -> dict | None:
 
 
 async def audit(request: Request, action: str, target: str = "") -> None:
-    """Record an audited action. request.state.user_email is populated by
+    """Record an audited action. request.state.user_username is populated by
     require_user() once a session cookie is presented.
 
     Best-effort: write contention (e.g. bootstrap ingest holding the DB)
     must not turn an otherwise valid admin action into a 500.
     """
-    actor = getattr(request.state, "user_email", None)
+    actor = getattr(request.state, "user_username", None)
     try:
         db = await get_db()
         try:

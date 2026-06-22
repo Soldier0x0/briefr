@@ -61,7 +61,7 @@ export const COMING_SOON_INFO = {
   },
   'coming-users': {
     title: 'Multi-user management',
-    message: 'Ships in V2.0. The users table schema is already designed (id, email, password_hash, role, is_active, created_at) and will be activated when multi-user is enabled.',
+    message: 'Ships in V2.0. The users table schema is already designed (id, username, password_hash, role, is_active, created_at) and will be activated when multi-user is enabled.',
   },
   'coming-ratelimit': {
     title: 'Rate limit dashboard',

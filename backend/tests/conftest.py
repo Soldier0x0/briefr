@@ -25,7 +25,7 @@ FRONTEND_PORT = int(os.environ.get("PLAYWRIGHT_FRONTEND_PORT", "5173"))
 BACKEND_URL = f"http://127.0.0.1:{BACKEND_PORT}"
 FRONTEND_URL = f"http://127.0.0.1:{FRONTEND_PORT}"
 
-SMOKE_AUTH_EMAIL = "smoke@briefr.test"
+SMOKE_AUTH_USERNAME = "smoke"
 SMOKE_AUTH_PASSWORD = "smoke-test-password-32bytes!!"
 
 
@@ -81,11 +81,11 @@ def _smoke_auth_cookies(backend_url: str) -> list[dict[str, str | bool]]:
         setup_required = json.loads(resp.read()).get("required", False)
 
     if setup_required:
-        payload = {"email": SMOKE_AUTH_EMAIL, "password": SMOKE_AUTH_PASSWORD}
+        payload = {"username": SMOKE_AUTH_USERNAME, "password": SMOKE_AUTH_PASSWORD}
         endpoint = f"{backend_url}/api/auth/setup"
     else:
         payload = {
-            "email": SMOKE_AUTH_EMAIL,
+            "username": SMOKE_AUTH_USERNAME,
             "password": SMOKE_AUTH_PASSWORD,
             "remember_me": True,
         }
