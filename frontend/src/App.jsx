@@ -663,7 +663,7 @@ function AppLayout({
             )}
 
 
-            <ToolErrorBoundary label="CVE detail" onReset={onCloseCVE}>
+            <ToolErrorBoundary key={selectedCVE?.cve_id || 'empty'} label="CVE detail" onReset={onCloseCVE}>
               <DetailDrawer
                 cve={selectedCVE}
                 loading={drawerLoading}
