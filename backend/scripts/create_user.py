@@ -3,8 +3,8 @@
 this is the only way accounts get provisioned (decision 2026-06-11).
 
 Usage:
-    python3 scripts/create_user.py --email ops@example.com
-    python3 scripts/create_user.py --email ops@example.com --password 'hunter2' --non-interactive
+    python3 scripts/create_user.py --username ops
+    python3 scripts/create_user.py --username ops --password 'hunter2' --non-interactive
 """
 from __future__ import annotations
 
@@ -62,7 +62,8 @@ load_dotenv(backend_dir / ".env")
 import asyncio
 
 from auth.passwords import validate_password_strength
-from auth.repo import create_user, get_user_by_email
+from auth.repo import create_user, get_user_by_username
+from auth.usernames import validate_username
 from database import get_db, init_db
 
 
@@ -90,7 +91,7 @@ def _read_password(non_interactive_value: str | None) -> str:
 
 async def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--email", required=True, help="Login email address")
+    parser.add_argument("--username", required=True, help="Login username")
     parser.add_argument(
         "--password",
         default=None,
@@ -99,16 +100,22 @@ async def main() -> None:
     parser.add_argument("--role", default="admin", help="Account role (default: admin)")
     args = parser.parse_args()
 
+    try:
+        username = validate_username(args.username)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
     password = _read_password(args.password)
 
     await init_db()
     db = await get_db()
     try:
-        existing = await get_user_by_email(db, args.email)
-        user = await create_user(db, args.email, password, role=args.role)
+        existing = await get_user_by_username(db, username)
+        user = await create_user(db, username, password, role=args.role)
         await db.commit()
         verb = "Reset password for" if existing else "Created"
-        print(f"{verb} user '{user['email']}' (id={user['id']}, role={user['role']}).")
+        print(f"{verb} user '{user['username']}' (id={user['id']}, role={user['role']}).")
     finally:
         await db.close()
 

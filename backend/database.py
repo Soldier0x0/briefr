@@ -526,7 +526,7 @@ async def init_db() -> None:
             """
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email TEXT NOT NULL UNIQUE,
+                username TEXT NOT NULL UNIQUE,
                 password_hash TEXT NOT NULL,
                 role TEXT NOT NULL DEFAULT 'admin',
                 is_active INTEGER NOT NULL DEFAULT 1,
@@ -534,7 +534,7 @@ async def init_db() -> None:
                 last_login_at TEXT
             )
             """,
-            "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
+            "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)",
             """
             CREATE TABLE IF NOT EXISTS sessions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -552,6 +552,9 @@ async def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)",
             "CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(refresh_token_hash)",
             "CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)",
+            "ALTER TABLE users RENAME COLUMN email TO username",
+            "DROP INDEX IF EXISTS idx_users_email",
+            "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)",
         ):
             try:
                 await db.execute(migration)

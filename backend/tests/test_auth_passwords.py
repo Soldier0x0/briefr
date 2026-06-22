@@ -47,3 +47,8 @@ def test_validate_password_strength_accepts_long_enough_password():
 def test_validate_password_strength_rejects_short_password():
     with pytest.raises(ValueError):
         validate_password_strength("short")
+
+
+def test_validate_password_strength_rejects_overlong_password():
+    with pytest.raises(ValueError):
+        validate_password_strength("x" * 129)

@@ -10,15 +10,20 @@ import secrets
 import bcrypt
 
 # A dummy hash so login can run verify_password() against *something* when no
-# user matches the submitted email — keeps response timing roughly constant
+# user matches the submitted username — keeps response timing roughly constant
 # and avoids a timing oracle for user enumeration. Randomized at import time
 # so no caller could ever construct a plaintext that verifies against it.
 DUMMY_HASH = bcrypt.hashpw(secrets.token_bytes(32), bcrypt.gensalt(rounds=12)).decode("utf-8")
 
 
+PASSWORD_MAX_LEN = 128
+
+
 def validate_password_strength(password: str) -> None:
     if len(password) < 8:
         raise ValueError("Password must be at least 8 characters.")
+    if len(password) > PASSWORD_MAX_LEN:
+        raise ValueError(f"Password must be at most {PASSWORD_MAX_LEN} characters.")
 
 
 def hash_password(plain: str) -> str:

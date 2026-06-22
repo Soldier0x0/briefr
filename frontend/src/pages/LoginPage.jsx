@@ -9,7 +9,7 @@ export default function LoginPage() {
   const location = useLocation()
   const navigate = useNavigate()
 
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -29,9 +29,9 @@ export default function LoginPage() {
     setError('')
     try {
       if (setupRequired) {
-        await completeSetup(email, password)
+        await completeSetup(username, password)
       } else {
-        await login(email, password, rememberMe)
+        await login(username, password, rememberMe)
       }
       const from = location.state?.from?.pathname || '/'
       navigate(from, { replace: true })
@@ -59,13 +59,18 @@ export default function LoginPage() {
 
         <form className="login-form" onSubmit={handleSubmit}>
           <label className="login-field">
-            <span className="login-label mono">Email</span>
+            <span className="login-label mono">Username</span>
             <input
-              type="email"
+              type="text"
               className="login-input"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              autoComplete="email"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              autoComplete="username"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              pattern="[a-zA-Z0-9][a-zA-Z0-9_-]{1,30}[a-zA-Z0-9]|[a-zA-Z0-9]{3,32}"
+              title="3–32 characters: letters, numbers, underscores, and hyphens"
               autoFocus
               required
             />

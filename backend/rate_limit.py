@@ -109,9 +109,9 @@ ioc_bucket = TokenBucket(settings.rate_limit_ioc_per_minute, name="ioc")
 refresh_bucket = TokenBucket(settings.rate_limit_refresh_per_minute, name="refresh")
 wallboard_bucket = TokenBucket(settings.rate_limit_wallboard_per_minute, name="wallboard")
 login_bucket = TokenBucket(settings.rate_limit_login_per_minute, name="login")
-# Keyed by submitted email (not client IP) — catches credential-stuffing
+# Keyed by submitted username (not client IP) — catches credential-stuffing
 # against one account spread across many source IPs.
-login_email_bucket = TokenBucket(settings.rate_limit_login_per_minute, name="login_email")
+login_username_bucket = TokenBucket(settings.rate_limit_login_per_minute, name="login_username")
 auth_refresh_bucket = TokenBucket(
     settings.rate_limit_auth_refresh_per_minute, name="auth_refresh"
 )
@@ -187,13 +187,13 @@ def rate_limit_auth_refresh(request: Request) -> None:
     _enforce(auth_refresh_bucket, request)
 
 
-def check_login_email_rate_limit(email: str) -> None:
-    """Per-email companion to rate_limit_login — called directly from the
-    login handler (the email lives in the request body, not the dependency-
+def check_login_username_rate_limit(username: str) -> None:
+    """Per-username companion to rate_limit_login — called directly from the
+    login handler (the username lives in the request body, not the dependency-
     injectable part of the request) once the body has been parsed."""
     if not settings.rate_limit_enabled:
         return
-    retry_after = login_email_bucket.acquire(email.strip().lower())
+    retry_after = login_username_bucket.acquire(username.strip().lower())
     if retry_after > 0:
         raise HTTPException(
             status_code=429,

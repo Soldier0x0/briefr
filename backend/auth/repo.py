@@ -13,6 +13,7 @@ from typing import Any
 
 from auth.passwords import hash_password
 from auth.tokens import hash_refresh_token
+from auth.usernames import normalize_username
 
 
 async def count_users(db: Any) -> int:
@@ -20,14 +21,14 @@ async def count_users(db: Any) -> int:
     return rows[0]["n"]
 
 
-async def get_user_by_email(db: Any, email: str) -> dict | None:
+async def get_user_by_username(db: Any, username: str) -> dict | None:
     rows = await db.execute_fetchall(
         """
-        SELECT id, email, password_hash, role, is_active, created_at, last_login_at
+        SELECT id, username, password_hash, role, is_active, created_at, last_login_at
         FROM users
-        WHERE email = ?
+        WHERE username = ?
         """,
-        (email.strip().lower(),),
+        (normalize_username(username),),
     )
     return dict(rows[0]) if rows else None
 
@@ -35,7 +36,7 @@ async def get_user_by_email(db: Any, email: str) -> dict | None:
 async def get_user_by_id(db: Any, user_id: int) -> dict | None:
     rows = await db.execute_fetchall(
         """
-        SELECT id, email, password_hash, role, is_active, created_at, last_login_at
+        SELECT id, username, password_hash, role, is_active, created_at, last_login_at
         FROM users
         WHERE id = ?
         """,
@@ -45,14 +46,14 @@ async def get_user_by_id(db: Any, user_id: int) -> dict | None:
 
 
 async def create_user(
-    db: Any, email: str, password: str, role: str = "admin"
+    db: Any, username: str, password: str, role: str = "admin"
 ) -> dict:
-    """Insert a new user, or update the password hash if the email already
+    """Insert a new user, or update the password hash if the username already
     exists (idempotent — also serves as the interim password-reset path)."""
-    normalized_email = email.strip().lower()
+    normalized = normalize_username(username)
     password_hash = hash_password(password)
 
-    existing = await get_user_by_email(db, normalized_email)
+    existing = await get_user_by_username(db, normalized)
     if existing is not None:
         await db.execute(
             "UPDATE users SET password_hash = ? WHERE id = ?",
@@ -63,11 +64,11 @@ async def create_user(
 
     rows = await db.execute_fetchall(
         """
-        INSERT INTO users (email, password_hash, role)
+        INSERT INTO users (username, password_hash, role)
         VALUES (?, ?, ?)
-        RETURNING id, email, password_hash, role, is_active, created_at, last_login_at
+        RETURNING id, username, password_hash, role, is_active, created_at, last_login_at
         """,
-        (normalized_email, password_hash, role),
+        (normalized, password_hash, role),
     )
     return dict(rows[0])
 

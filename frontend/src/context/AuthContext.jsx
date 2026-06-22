@@ -50,8 +50,8 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener('briefr-auth-expired', handleExpired)
   }, [])
 
-  const login = useCallback(async (email, password, rememberMe = false) => {
-    const me = await apiLogin(email, password, rememberMe)
+  const login = useCallback(async (username, password, rememberMe = false) => {
+    const me = await apiLogin(username, password, rememberMe)
     setUser(me)
     setStatus('authed')
     return me
@@ -66,8 +66,8 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  const completeSetup = useCallback(async (email, password) => {
-    const me = await setupAccount(email, password)
+  const completeSetup = useCallback(async (username, password) => {
+    const me = await setupAccount(username, password)
     setUser(me)
     setStatus('authed')
     setSetupRequired(false)

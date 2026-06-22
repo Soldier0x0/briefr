@@ -25,15 +25,15 @@ def _jwt_secret(monkeypatch):
 
 
 def test_create_and_decode_access_token_round_trip():
-    token = create_access_token(1, "ops@example.com", "admin")
+    token = create_access_token(1, "ops", "admin")
     payload = decode_access_token(token)
     assert payload["sub"] == "1"
-    assert payload["email"] == "ops@example.com"
+    assert payload["username"] == "ops"
     assert payload["role"] == "admin"
 
 
 def test_decode_access_token_rejects_bad_signature():
-    token = create_access_token(1, "ops@example.com", "admin")
+    token = create_access_token(1, "ops", "admin")
     header, payload, _signature = token.split(".")
     tampered = f"{header}.{payload}.not-a-valid-signature"
     with pytest.raises(jwt.PyJWTError):
@@ -42,7 +42,7 @@ def test_decode_access_token_rejects_bad_signature():
 
 def test_decode_access_token_rejects_expired(monkeypatch):
     monkeypatch.setattr(settings, "jwt_access_token_minutes", -1)
-    token = create_access_token(1, "ops@example.com", "admin")
+    token = create_access_token(1, "ops", "admin")
     with pytest.raises(jwt.PyJWTError):
         decode_access_token(token)
 
