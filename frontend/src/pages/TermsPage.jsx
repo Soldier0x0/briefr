@@ -64,10 +64,15 @@ export default function TermsPage() {
         use of the source code is free for personal, non-commercial purposes.
         Any use by or on behalf of a for-profit organisation or business
         ("commercial use") requires a separate paid commercial licence —
-        contact harsha@projectjupiter.in to obtain one. Self-hosted instances
-        are run entirely at the operator's own risk: no maintenance, support,
-        updates, or uptime guarantee is provided (see Section 5, Disclaimer,
-        which applies equally to self-hosted instances). The operator of a
+        contact harsha@projectjupiter.in to obtain one. A commercial licence
+        grants only the right to use BRIEFR commercially — it is not a
+        support or maintenance contract, and does not entitle the licensee to
+        future updates, patches, or fixes. Self-hosted instances, whether
+        under the free personal licence or a paid commercial licence, are run
+        entirely at the operator's own risk: no maintenance, support,
+        updates, or uptime guarantee is provided to anyone (see Section 5,
+        Disclaimer, which applies equally to self-hosted instances). The
+        operator of a
         self-hosted instance is solely responsible for that instance's data
         handling and legal compliance — BRIEFR's Privacy Policy describes only
         the hosted instance at projectjupiter.in. Four years after first
