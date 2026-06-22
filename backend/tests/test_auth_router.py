@@ -117,6 +117,22 @@ def test_me_requires_authentication(client):
     assert resp.status_code == 401
 
 
+def test_me_rejects_legacy_jwt_missing_username(client, monkeypatch):
+    import jwt
+
+    from settings import settings as _settings
+
+    monkeypatch.setattr(_settings, "jwt_secret", "test-secret-for-unit-tests")
+    legacy_token = jwt.encode(
+        {"sub": "1", "email": "ops@example.com", "role": "admin"},
+        _settings.jwt_secret,
+        algorithm="HS256",
+    )
+    client.cookies.set("briefr_at", legacy_token)
+    resp = client.get("/api/auth/me")
+    assert resp.status_code == 401
+
+
 def test_me_returns_user_after_login(client):
     client.post(
         "/api/auth/login",

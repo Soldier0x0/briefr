@@ -59,7 +59,9 @@ async def require_user(request: Request) -> dict:
         payload = decode_access_token(token)
     except Exception:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    request.state.user_username = payload.get("username", "")
+    if not payload.get("username"):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    request.state.user_username = payload["username"]
     request.state.user_role = payload.get("role", "")
     return payload
 

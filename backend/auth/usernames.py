@@ -13,7 +13,6 @@ import re
 USERNAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,30}[a-z0-9]$")
 USERNAME_MIN_LEN = 3
 USERNAME_MAX_LEN = 32
-PASSWORD_MAX_LEN = 128
 
 
 def normalize_username(raw: str) -> str:

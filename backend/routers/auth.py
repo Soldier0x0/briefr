@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 
-from auth.passwords import DUMMY_HASH, validate_password_strength, verify_password
+from auth.passwords import DUMMY_HASH, PASSWORD_MAX_LEN, validate_password_strength, verify_password
 from auth.repo import (
     count_users,
     create_session,
@@ -26,7 +26,7 @@ from auth.repo import (
 )
 from auth.repo import get_user_by_username as _get_user_by_username
 from auth.tokens import create_access_token, generate_refresh_token
-from auth.usernames import PASSWORD_MAX_LEN, validate_username
+from auth.usernames import validate_username
 from database import get_db
 from dependencies import audit, require_user
 from pydantic import BaseModel, Field, field_validator
