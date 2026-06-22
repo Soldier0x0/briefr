@@ -25,7 +25,7 @@ export default function TermsPage() {
       <h2 className="legal-section-heading">3. Prohibited use</h2>
       <ul className="legal-ul">
         <li>Exploiting vulnerabilities in systems you do not own or have no authorisation to test</li>
-        <li>Automated scraping exceeding 120 requests per minute</li>
+        <li>Automated scraping or abuse of rate-limited endpoints (IOC lookup: 30 requests/minute, refresh: 10/minute, wallboard: 60/minute)</li>
         <li>Attempting to tamper with or disrupt the service</li>
         <li>Using IOC Lookup to investigate individuals without legal authority</li>
         <li>Reselling BRIEFR data as a commercial product without attribution</li>

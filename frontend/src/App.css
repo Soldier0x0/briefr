@@ -288,6 +288,32 @@ input:focus, textarea:focus {
   color: var(--text3);
 }
 
+.footer-legal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-legal-link {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: var(--text3);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.footer-legal-link:hover { color: var(--text2); }
+
+.footer-legal-sep {
+  font-size: 0.75rem;
+  color: var(--text3);
+  user-select: none;
+}
+
 /* ── Keyboard shortcut badge ───────────────────────────── */
 kbd {
   font-family: var(--font-mono);

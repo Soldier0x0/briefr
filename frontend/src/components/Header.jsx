@@ -162,16 +162,20 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
             </button>
           )}
 
-          {/* Legal links — hidden on mobile, shown inline on desktop */}
-          <nav className="header-legal header-legal-desktop" aria-label="Legal links">
-            <button className="header-legal-link" onClick={onAboutOpen} aria-label="About BRIEFR">
-              About
-            </button>
-            <span className="header-legal-sep" aria-hidden="true">&middot;</span>
-            <Link to="/privacy" className="header-legal-link">Privacy</Link>
-            <span className="header-legal-sep" aria-hidden="true">&middot;</span>
-            <Link to="/terms" className="header-legal-link">Terms</Link>
-          </nav>
+          {/* Legal links — Feed has no page footer (infinite scroll), so they
+              stay reachable here only on that tab; every other tab shows
+              them in the footer instead. */}
+          {activeTab === 'feed' && (
+            <nav className="header-legal header-legal-desktop" aria-label="Legal links">
+              <button className="header-legal-link" onClick={onAboutOpen} aria-label="About BRIEFR">
+                About
+              </button>
+              <span className="header-legal-sep" aria-hidden="true">&middot;</span>
+              <Link to="/privacy" className="header-legal-link">Privacy</Link>
+              <span className="header-legal-sep" aria-hidden="true">&middot;</span>
+              <Link to="/terms" className="header-legal-link">Terms</Link>
+            </nav>
+          )}
 
           {/* Admin link — only visible to operator (localhost or authed session) */}
           {(window.location.hostname === 'localhost' ||
@@ -209,18 +213,22 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
                 <Link to="/admin" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
                   Admin
                 </Link>
-                <button
-                  className="mobile-menu-item"
-                  onClick={() => { setMobileMenuOpen(false); onAboutOpen() }}
-                >
-                  About
-                </button>
-                <Link to="/privacy" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                  Privacy
-                </Link>
-                <Link to="/terms" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                  Terms
-                </Link>
+                {activeTab === 'feed' && (
+                  <>
+                    <button
+                      className="mobile-menu-item"
+                      onClick={() => { setMobileMenuOpen(false); onAboutOpen() }}
+                    >
+                      About
+                    </button>
+                    <Link to="/privacy" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                      Privacy
+                    </Link>
+                    <Link to="/terms" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                      Terms
+                    </Link>
+                  </>
+                )}
               </div>
             )}
           </div>

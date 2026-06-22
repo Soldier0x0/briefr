@@ -153,7 +153,6 @@ async def request_context(request: Request, call_next):
                 "path": request.url.path,
                 "status": response.status_code,
                 "duration_ms": duration_ms,
-                "client": request.client.host if request.client else "",
             },
         )
         return response

@@ -11,7 +11,7 @@ export default function PrivacyPage() {
         <li>No cookies of any kind</li>
         <li>No analytics (no Google Analytics, no Plausible)</li>
         <li>No user accounts or personal information</li>
-        <li>No IP addresses at application layer</li>
+        <li>No IP addresses written to logs or any database</li>
         <li>No browser fingerprinting or tracking</li>
         <li>No data sold or shared with third parties</li>
       </ul>
@@ -30,11 +30,20 @@ export default function PrivacyPage() {
         result — not associated with any user or session.
       </p>
 
-      <h3 className="legal-sub-heading">Server logs</h3>
+      <h3 className="legal-sub-heading">Rate limiting</h3>
       <p className="legal-p">
-        Nginx logs contain: HTTP method, path, status code, response size. They
-        do NOT contain IP addresses, User-Agent strings, or query parameters.
-        Logs are retained for 7 days, then deleted.
+        To prevent abuse, requests to a few endpoints (IOC lookup, refresh,
+        wallboard) are throttled per requesting IP address using short-lived,
+        in-memory counters. The IP is held only long enough to enforce the
+        limit and is never written to a log file or database — it is
+        discarded once the counter goes idle.
+      </p>
+
+      <h3 className="legal-sub-heading">Application logs</h3>
+      <p className="legal-p">
+        The backend logs HTTP method, path, status code, and response time
+        for each request, for operational debugging. These log lines do not
+        contain your IP address, User-Agent string, or query parameters.
       </p>
 
       <h2 className="legal-section-heading">3. localStorage (browser only)</h2>
