@@ -28,6 +28,7 @@ from webhooks.ssrf import close_webhook_client
 from webhooks.destinations import sync_env_destinations_to_db
 from routers import admin as admin_router
 from routers import atlas as atlas_router
+from routers import auth as auth_router
 from routers import brief as brief_router
 from routers import config as config_router
 from routers import cves as cves_router
@@ -200,6 +201,9 @@ app.include_router(brief_router.router)
 app.include_router(watchlist_router.router)
 app.include_router(admin_router.router)
 app.include_router(wallboard_router.router)
+# Built-in app login (decision 2026-06-11): appended after wallboard_router —
+# additive only, see test_router_split.py's EXPECTED_ROUTES comment.
+app.include_router(auth_router.router)
 
 
 if __name__ == "__main__":

@@ -35,6 +35,15 @@ class Settings(BaseSettings):
     # V1.4 Theme 4 — optional read-only kiosk token (X-BRIEFR-Wallboard-Token).
     wallboard_token: str = ""
 
+    # Built-in app login (decision 2026-06-11) — replaces X-BRIEFR-Admin-Key.
+    jwt_secret: str = ""
+    jwt_access_token_minutes: int = 15
+    refresh_token_days: int = 30
+    auth_cookie_secure: bool = True
+    allow_legacy_admin_key: bool = True
+    rate_limit_login_per_minute: int = 5
+    rate_limit_auth_refresh_per_minute: int = 30
+
     @field_validator("briefr_env")
     @classmethod
     def _normalize_env(cls, value: str) -> str:
@@ -48,6 +57,11 @@ class Settings(BaseSettings):
     @field_validator("wallboard_token")
     @classmethod
     def _strip_wallboard_token(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("jwt_secret")
+    @classmethod
+    def _strip_jwt_secret(cls, value: str) -> str:
         return value.strip()
 
     @field_validator("database_url", "db_path")
@@ -70,3 +84,8 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+if settings.is_production and not settings.jwt_secret:
+    raise RuntimeError(
+        "JWT_SECRET must be set in production (generate with `openssl rand -hex 32`)"
+    )

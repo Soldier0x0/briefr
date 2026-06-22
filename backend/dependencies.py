@@ -46,9 +46,41 @@ async def require_admin_key(request: Request) -> None:
         raise HTTPException(status_code=401, detail="Admin API key required")
 
 
+async def require_user(request: Request) -> dict:
+    """Built-in app login (decision 2026-06-11): require a valid `briefr_at`
+    access-token cookie, and populate request.state.user_email/user_role for
+    audit() to pick up."""
+    from auth.tokens import decode_access_token
+
+    token = request.cookies.get("briefr_at", "")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        payload = decode_access_token(token)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    request.state.user_email = payload.get("email", "")
+    request.state.user_role = payload.get("role", "")
+    return payload
+
+
+async def require_admin(request: Request) -> dict | None:
+    """Admin routes during the legacy-key soak window: accept EITHER a valid
+    login session OR the legacy X-BRIEFR-Admin-Key header (when configured —
+    matching require_admin_key's existing "unset key = open" dev convenience).
+    Once ALLOW_LEGACY_ADMIN_KEY is flipped off, this collapses to require_user."""
+    if settings.allow_legacy_admin_key:
+        if not settings.briefr_admin_api_key:
+            return None
+        provided = request.headers.get("X-BRIEFR-Admin-Key", "")
+        if provided and secrets.compare_digest(provided, settings.briefr_admin_api_key):
+            return None
+    return await require_user(request)
+
+
 async def audit(request: Request, action: str, target: str = "") -> None:
-    """Record an audited action. Actor stays empty until built-in app login
-    ships (decision 2026-06-11); request.state.user_email is the future hook.
+    """Record an audited action. request.state.user_email is populated by
+    require_user() once a session cookie is presented.
 
     Best-effort: write contention (e.g. bootstrap ingest holding the DB)
     must not turn an otherwise valid admin action into a 500.

@@ -522,6 +522,36 @@ async def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_correlation_suppressions_cve ON correlation_suppressions(cve_id)",
             "ALTER TABLE correlation_suppressions ADD COLUMN dismissed_by TEXT DEFAULT ''",
             "CREATE INDEX IF NOT EXISTS idx_otx_cve_pulses_pulse ON otx_cve_pulses(pulse_id)",
+            # Built-in app login (decision 2026-06-11): users + sessions.
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'admin',
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT DEFAULT (datetime('now')),
+                last_login_at TEXT
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
+            """
+            CREATE TABLE IF NOT EXISTS sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                refresh_token_hash TEXT NOT NULL,
+                created_at TEXT DEFAULT (datetime('now')),
+                last_used_at TEXT DEFAULT (datetime('now')),
+                expires_at TEXT NOT NULL,
+                revoked_at TEXT,
+                user_agent TEXT DEFAULT '',
+                ip TEXT DEFAULT '',
+                remember_me INTEGER NOT NULL DEFAULT 0
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(refresh_token_hash)",
+            "CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)",
         ):
             try:
                 await db.execute(migration)

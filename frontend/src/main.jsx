@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import AppErrorBoundary from './components/AppErrorBoundary.jsx'
 import { AssetProfileProvider } from './context/AssetProfileContext.jsx'
+import { AuthProvider } from './context/AuthContext.jsx'
 import { fetchAndCacheRiskWeights } from './scoring/riskScore.js'
 import { applyDisplayPrefs } from './utils/displayPrefs.js'
 // Self-hosted fonts — no runtime requests to Google (privacy posture, offline
@@ -28,9 +29,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AppErrorBoundary>
       <BrowserRouter>
-        <AssetProfileProvider>
-          <App />
-        </AssetProfileProvider>
+        <AuthProvider>
+          <AssetProfileProvider>
+            <App />
+          </AssetProfileProvider>
+        </AuthProvider>
       </BrowserRouter>
     </AppErrorBoundary>
   </React.StrictMode>

@@ -402,6 +402,28 @@ html.density-spacious body {
   word-break: break-word;
 }
 
+/* Auth-check gate (RequireAuth) — brief flash while /api/auth/me resolves. */
+.app-auth-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.app-auth-loading-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: app-auth-loading-pulse 1s ease-in-out infinite;
+}
+
+@keyframes app-auth-loading-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.85); }
+  50%      { opacity: 1;    transform: scale(1); }
+}
+
 .app-crash-retry {
   font-family: var(--font-mono);
   font-size: 0.8125rem;

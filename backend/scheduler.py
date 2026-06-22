@@ -1127,6 +1127,22 @@ async def run_backup_deadman_check() -> bool:
         await _write_job_last_run("backup_deadman_check", _start, had_error=_had_error, error_message=_deadman_error_msg)
 
 
+async def run_session_cleanup() -> int:
+    """Scheduler hook: purge expired built-in-login sessions (decision 2026-06-11)."""
+    from auth.repo import purge_expired_sessions
+
+    db = await get_db()
+    try:
+        purged = await purge_expired_sessions(db)
+        await db.commit()
+        return purged
+    except Exception as exc:
+        logger.error("Session cleanup failed: %s", exc)
+        return 0
+    finally:
+        await db.close()
+
+
 def start_scheduler() -> AsyncIOScheduler:
     global _scheduler
 
@@ -1323,6 +1339,17 @@ def start_scheduler() -> AsyncIOScheduler:
         max_instances=1,
         coalesce=True,
         next_run_time=datetime.now(sched_tz) + timedelta(minutes=5),
+    )
+
+    scheduler.add_job(
+        run_session_cleanup,
+        trigger=IntervalTrigger(hours=24, timezone=sched_tz),
+        id="session_cleanup",
+        name="Expired Login Session Cleanup",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(minutes=10),
     )
 
     scheduler.start()

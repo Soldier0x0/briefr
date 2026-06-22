@@ -1,0 +1,235 @@
+.login-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* Faint, slow-drifting ambient glow — purely decorative. */
+.login-bg {
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(circle at 30% 30%, rgba(232, 85, 51, 0.04), transparent 60%);
+  animation: login-bg-drift 30s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes login-bg-drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(6%, 8%) scale(1.15); }
+}
+
+.login-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 22rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: var(--shadow-md);
+  animation: login-card-in 0.4s ease-out;
+}
+
+@keyframes login-card-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.login-card.login-shake {
+  animation: login-shake 0.4s ease-in-out;
+}
+
+@keyframes login-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(5px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(3px); }
+}
+
+.login-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.login-wordmark {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.login-tagline {
+  font-size: 0.75rem;
+  color: var(--text2);
+  letter-spacing: 0.02em;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.login-label {
+  font-size: 0.75rem;
+  color: var(--text2);
+}
+
+.login-input {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.9rem;
+  color: var(--text);
+  width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-dim);
+}
+
+.login-password-wrap {
+  position: relative;
+  display: flex;
+}
+
+.login-password-wrap .login-input {
+  padding-right: 2.25rem;
+}
+
+.login-password-toggle {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.2rem;
+}
+
+.login-password-toggle:hover {
+  color: var(--text);
+}
+
+.login-remember {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text2);
+  cursor: pointer;
+}
+
+.login-remember input {
+  margin-top: 0.15rem;
+}
+
+.login-remember-hint {
+  color: var(--text3);
+}
+
+.login-error {
+  background: var(--red-dim);
+  color: var(--red);
+  border-radius: 4px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.login-submit {
+  background: var(--red);
+  color: var(--on-red);
+  border: none;
+  border-radius: 4px;
+  padding: 0.65rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+}
+
+.login-submit:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.login-submit:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.login-submit:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.login-dots {
+  display: inline-flex;
+  gap: 0.3rem;
+  justify-content: center;
+}
+
+.login-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--on-red);
+  animation: login-dots-pulse 1s ease-in-out infinite;
+}
+
+.login-dots span:nth-child(2) { animation-delay: 0.15s; }
+.login-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes login-dots-pulse {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40%           { opacity: 1;   transform: scale(1); }
+}
+
+.login-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text3);
+}
+
+.login-footer a {
+  color: var(--text3);
+}
+
+.login-footer a:hover {
+  color: var(--text2);
+}
+
+.login-footer-sep {
+  margin: 0 0.4rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-card,
+  .login-input,
+  .login-submit {
+    transition: none;
+  }
+}

@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { adminApi, getAdminKey, setAdminKey } from '../../api.js'
+import { adminApi, getAdminKey } from '../../api.js'
 import { getAdminMode, setAdminMode } from '../../utils/adminMode.js'
 import { getDisplayPrefs } from '../../utils/displayPrefs.js'
-import AdminPage_KeyModal from '../AdminPage_KeyModal.jsx'
 import StatusBar from './StatusBar.jsx'
 import Sidebar from './Sidebar.jsx'
 import ConfirmModal from './shared/ConfirmModal.jsx'
@@ -40,9 +39,6 @@ export default function AdminPage() {
   }
   const [mode, setModeState] = useState(getAdminMode)
   const [system, setSystem] = useState(null)
-  const [keyModalOpen, setKeyModalOpen] = useState(false)
-  const [modalError, setModalError] = useState('')
-  const [authed, setAuthed] = useState(false)
   const [ingestErrorCount, setIngestErrorCount] = useState(0)
   const [confirmOperatorSwitch, setConfirmOperatorSwitch] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(null)
@@ -52,34 +48,17 @@ export default function AdminPage() {
   async function loadSystem() {
     try {
       const res = await adminApi.get('/system')
-      if (res.status === 401) {
-        setAuthed(false); setKeyModalOpen(true); return
-      }
       if (!res.ok) return
       const data = await res.json()
-      setSystem(data); setAuthed(true); setKeyModalOpen(false); setModalError(''); setLastUpdated(Date.now())
-    } catch (e) {
-      if (e?.status === 401) { setAuthed(false); setKeyModalOpen(true) }
-    }
-  }
-
-  async function checkKeyRequired() {
-    try {
-      const res = await adminApi.get('/security')
-      if (res.status === 401) { setKeyModalOpen(true); return }
-      if (!res.ok) { await loadSystem(); return }
-      const data = await res.json()
-      if (!data.admin_key_set) { setAuthed(true); await loadSystem() }
-      else if (!getAdminKey()) { setKeyModalOpen(true) }
-      else { await loadSystem() }
-    } catch (e) {
-      if (e?.status === 401) setKeyModalOpen(true)
-      else await loadSystem()
+      setSystem(data); setLastUpdated(Date.now())
+    } catch {
+      // Best-effort — RequireAuth already guards this route; a transient
+      // fetch failure here just leaves the previous system snapshot stale.
     }
   }
 
   useEffect(() => {
-    checkKeyRequired()
+    loadSystem()
   }, [])
 
   useEffect(() => {
@@ -115,18 +94,11 @@ export default function AdminPage() {
     setMode(next)
   }
 
-  function handleKeySubmit(key) {
-    setAdminKey(key)
-    setModalError('')
-    loadSystem().then(() => {
-      if (!authed && !getAdminKey()) setModalError('Invalid key')
-    })
-  }
-
   async function handleRunIngest() {
     try {
       const res = await fetch('/api/refresh', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json', 'X-BRIEFR-Admin-Key': getAdminKey() },
       })
       if (!res.ok) throw new Error((await res.json()).detail || 'Failed')
@@ -169,9 +141,6 @@ export default function AdminPage() {
 
   return (
     <div className="admin-root">
-      {keyModalOpen && (
-        <AdminPage_KeyModal onSubmit={handleKeySubmit} error={modalError} />
-      )}
       {confirmOperatorSwitch && (
         <ConfirmModal
           title="Switch to Operator view?"

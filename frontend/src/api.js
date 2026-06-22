@@ -6,6 +6,7 @@ async function request(path, options = {}) {
   if (!options.signal && typeof AbortSignal?.timeout === 'function') {
     options = { ...options, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) }
   }
+  options = { credentials: 'include', ...options }
   let res
   try {
     res = await fetch(`${BASE}${path}`, options)
@@ -24,12 +25,33 @@ async function request(path, options = {}) {
   }
 
   if (!res.ok) {
+    if (res.status === 401 && !path.startsWith('/auth/')) {
+      window.dispatchEvent(new CustomEvent('briefr-auth-expired'))
+    }
     const body = await res.json().catch(() => ({ detail: res.statusText }))
     const err = new Error(body.detail || `HTTP ${res.status}`)
     err.status = res.status
     throw err
   }
   return res.json()
+}
+
+// ── Built-in app login (decision 2026-06-11) ───────────────────────────────
+
+export function login(email, password, rememberMe = false) {
+  return request('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, remember_me: rememberMe }),
+  })
+}
+
+export function logout() {
+  return request('/auth/logout', { method: 'POST' })
+}
+
+export function fetchMe() {
+  return request('/auth/me')
 }
 
 export function fetchStats({ frameworks = [] } = {}) {
@@ -327,9 +349,10 @@ async function adminFetch(path, opts = {}) {
   const key = getAdminKey()
   const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) }
   if (key) headers['X-BRIEFR-Admin-Key'] = key
-  const res = await fetch(`/api/admin${path}`, { ...opts, headers })
+  const res = await fetch(`/api/admin${path}`, { ...opts, headers, credentials: 'include' })
   if (res.status === 401) {
     clearAdminKey()
+    window.dispatchEvent(new CustomEvent('briefr-auth-expired'))
     throw Object.assign(new Error('Unauthorized'), { status: 401 })
   }
   return res
