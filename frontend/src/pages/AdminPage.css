@@ -497,12 +497,12 @@
 .admin-toggle-wrap input:checked + .admin-toggle-slider::before { transform: translateX(14px); background: #fff; }
 
 .admin-toggle-wrap-onoff input:checked + .admin-toggle-slider {
-  background: #22a55b;
-  border-color: #22a55b;
+  background: var(--toggle-on);
+  border-color: var(--toggle-on);
 }
 .admin-toggle-wrap-onoff input:not(:checked) + .admin-toggle-slider {
-  background: #c62828;
-  border-color: #c62828;
+  background: var(--toggle-off);
+  border-color: var(--toggle-off);
 }
 .admin-toggle-wrap-onoff input:not(:checked) + .admin-toggle-slider::before { background: #fff; }
 .admin-toggle-wrap-onoff input:checked + .admin-toggle-slider::before { background: #fff; }

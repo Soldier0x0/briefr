@@ -16,6 +16,8 @@
   --amber-dim:   #2e1e04;
   --green:       #4a9e6a;
   --green-dim:   #0d2318;
+  --toggle-on:   #22a55b;
+  --toggle-off:  #c62828;
   --accent:      #c8b88a;
   --link:        #6eb5ff;
 
@@ -59,6 +61,8 @@
   --amber-dim:   #faf0dc;
   --green:       #2a7044;
   --green-dim:   #d8ebe0;
+  --toggle-on:   #22a55b;
+  --toggle-off:  #c62828;
   --accent:      #c8b88a;
 
   --surface-page:    #f0ece4;
