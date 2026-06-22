@@ -25,7 +25,7 @@ export default function TermsPage() {
       <h2 className="legal-section-heading">3. Prohibited use</h2>
       <ul className="legal-ul">
         <li>Exploiting vulnerabilities in systems you do not own or have no authorisation to test</li>
-        <li>Automated scraping exceeding 120 requests per minute</li>
+        <li>Automated scraping or abuse of rate-limited endpoints (IOC lookup: 30 requests/minute, refresh: 10/minute, wallboard: 60/minute)</li>
         <li>Attempting to tamper with or disrupt the service</li>
         <li>Using IOC Lookup to investigate individuals without legal authority</li>
         <li>Reselling BRIEFR data as a commercial product without attribution</li>
@@ -59,16 +59,27 @@ export default function TermsPage() {
 
       <h2 className="legal-section-heading">8. License</h2>
       <p className="legal-p">
-        BRIEFR is free to use at projectjupiter.in. The application and source code
-        are proprietary software. Copyright &copy; 2026 Sai Harsha Vardhan. All rights
-        reserved. Unauthorised copying, modification, distribution, reverse
-        engineering, sublicensing, or commercial use of the codebase is not permitted
-        without prior written permission.
+        The BRIEFR source code is licensed under the Business Source License
+        1.1 (BSL). Copyright &copy; 2026 Sai Harsha Vardhan. Self-hosting and
+        use of the source code is free for personal, non-commercial purposes.
+        Any use by or on behalf of a for-profit organisation or business
+        ("commercial use") requires a separate paid commercial licence —
+        contact harsha@projectjupiter.in to obtain one. Self-hosted instances
+        are run entirely at the operator's own risk: no maintenance, support,
+        updates, or uptime guarantee is provided (see Section 5, Disclaimer,
+        which applies equally to self-hosted instances). The operator of a
+        self-hosted instance is solely responsible for that instance's data
+        handling and legal compliance — BRIEFR's Privacy Policy describes only
+        the hosted instance at projectjupiter.in. Four years after first
+        publication under this BSL, the license converts to the Apache
+        License 2.0.
       </p>
 
       <h2 className="legal-section-heading">9. Contact</h2>
       <p className="legal-p">
-        For questions about these terms, contact us through projectjupiter.in.
+        For questions about these terms, including commercial licensing,
+        contact Sai Harsha Vardhan (Grievance Officer) at
+        harsha@projectjupiter.in.
       </p>
     </LegalPage>
   )

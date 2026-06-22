@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, useLocation, Link } from 'react-router-dom'
 import { InvestigationProvider } from './context/InvestigationContext.jsx'
 import { overlayDepth } from './hooks/useModalLayer.js'
 import InvestigationPanel from './components/InvestigationPanel.jsx'
@@ -628,7 +628,7 @@ function AppLayout({
           </div>
         </div>
 
-            {activeTab !== 'feed' && activeTab !== 'brief' && (
+            {activeTab !== 'feed' && (
               <footer className="app-footer" role="contentinfo">
                 <div className="footer-left">
                   <span>BRIEFR</span> // CVE intelligence platform
@@ -636,6 +636,13 @@ function AppLayout({
                     &copy; 2026 BRIEFR &middot; Proprietary &middot; All Rights Reserved
                   </span>
                 </div>
+                <nav className="footer-legal" aria-label="Legal links">
+                  <button type="button" className="footer-legal-link mono" onClick={onAboutOpen}>About</button>
+                  <span className="footer-legal-sep" aria-hidden="true">&middot;</span>
+                  <Link to="/privacy" className="footer-legal-link mono">Privacy</Link>
+                  <span className="footer-legal-sep" aria-hidden="true">&middot;</span>
+                  <Link to="/terms" className="footer-legal-link mono">Terms</Link>
+                </nav>
                 <div className="footer-right" style={{ fontSize: '0.6875rem', color: 'var(--text3)' }}>
                   All times UTC &mdash; not a substitute for professional security advice
                 </div>
