@@ -55,6 +55,7 @@ def test_pointer_target_detects_alias_files():
     assert _pointer_target("v6/ATLAS-latest.yaml\n") == "v6/ATLAS-latest.yaml"
     assert _pointer_target("ATLAS-2026.05.yaml") == "ATLAS-2026.05.yaml"
     assert _pointer_target("format-version: 6\nmatrix: {}\n") is None
+    assert _pointer_target("v6/ATLAS-latest.yaml\nformat-version: 6\n") is None
 
 
 def test_resolve_pointer_url_relative():

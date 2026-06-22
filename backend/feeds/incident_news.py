@@ -6,10 +6,12 @@ from __future__ import annotations
 
 import asyncio
 import html
+import json
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
+from typing import Any
 from xml.etree import ElementTree as ET
 
 from database import get_feed_cache, set_feed_cache
@@ -182,11 +184,65 @@ async def _fetch_rss_bytes(url: str, source_id: str = "rss") -> bytes:
     return response.content
 
 
-async def fetch_rss_source(db, source: dict) -> list[dict]:
-    cache_key = f"incident_rss:{source['id']}"
-    cached = await get_feed_cache(db, cache_key, max_age_hours=CACHE_HOURS)
-    if cached is not None and isinstance(cached.get("items"), list):
-        return _filter_news_items(cached["items"])
+def rss_cache_key(source_id: str) -> str:
+    return f"incident_rss:{source_id}"
+
+
+def _rss_cache_stale(cached_at: str | None) -> bool:
+    if not cached_at:
+        return True
+    try:
+        cached = datetime.fromisoformat(cached_at.replace("Z", "+00:00"))
+    except ValueError:
+        try:
+            cached = datetime.strptime(cached_at, "%Y-%m-%d %H:%M:%S").replace(
+                tzinfo=timezone.utc
+            )
+        except ValueError:
+            return True
+    if cached.tzinfo is None:
+        cached = cached.replace(tzinfo=timezone.utc)
+    age = datetime.now(timezone.utc) - cached
+    return age > timedelta(hours=CACHE_HOURS)
+
+
+async def get_rss_sources_status(db) -> list[dict[str, Any]]:
+    """Per-RSS-source cache metadata for admin incident feed health."""
+    sources: list[dict[str, Any]] = []
+    for source in INCIDENT_RSS_SOURCES:
+        row = await db.execute_fetchall(
+            "SELECT cached_at, result FROM feed_cache WHERE cache_key = ?",
+            (rss_cache_key(source["id"]),),
+        )
+        item_count = 0
+        cached_at = None
+        if row:
+            cached_at = row[0]["cached_at"]
+            try:
+                payload = json.loads(row[0]["result"])
+                if isinstance(payload.get("items"), list):
+                    item_count = len(_filter_news_items(payload["items"]))
+            except (TypeError, ValueError, json.JSONDecodeError):
+                pass
+        sources.append(
+            {
+                "id": source["id"],
+                "label": source["label"],
+                "kind": "rss",
+                "item_count": item_count,
+                "cached_at": cached_at,
+                "stale": _rss_cache_stale(cached_at),
+            }
+        )
+    return sources
+
+
+async def fetch_rss_source(db, source: dict, *, force: bool = False) -> list[dict]:
+    cache_key = rss_cache_key(source["id"])
+    if not force:
+        cached = await get_feed_cache(db, cache_key, max_age_hours=CACHE_HOURS)
+        if cached is not None and isinstance(cached.get("items"), list):
+            return _filter_news_items(cached["items"])
 
     raw = await _fetch_rss_bytes(source["url"], source["id"])
     items = parse_rss_xml(raw.decode("utf-8", errors="replace"), source)
@@ -224,7 +280,7 @@ async def fetch_all_incident_news_parallel(db) -> tuple[list[dict], list[dict]]:
     to_fetch: list[dict] = []
 
     for source in INCIDENT_RSS_SOURCES:
-        cache_key = f"incident_rss:{source['id']}"
+        cache_key = rss_cache_key(source["id"])
         cached = await get_feed_cache(db, cache_key, max_age_hours=CACHE_HOURS)
         if cached is not None and isinstance(cached.get("items"), list):
             cards.extend(_filter_news_items(cached["items"]))
@@ -259,7 +315,7 @@ async def fetch_all_incident_news_parallel(db) -> tuple[list[dict], list[dict]]:
             continue
         cards.extend(items)
         try:
-            await set_feed_cache(db, f"incident_rss:{source['id']}", {"items": items})
+            await set_feed_cache(db, rss_cache_key(source["id"]), {"items": items})
         except Exception as exc:
             # Cache write contention (e.g. bootstrap ingest) must not drop
             # successfully parsed items; the next cycle will persist them.

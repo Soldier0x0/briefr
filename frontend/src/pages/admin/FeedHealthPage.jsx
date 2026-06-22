@@ -1,12 +1,15 @@
+import { useState } from 'react'
 import { CheckCircle2, AlertTriangle, XCircle, RefreshCw } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import { fmtIso, sourceLabel } from './formatters.js'
 import HelpTip from './shared/HelpTip.jsx'
 
-export default function FeedHealthPage({ system, toast, mode = 'operator' }) {
+export default function FeedHealthPage({ system, toast, mode = 'operator', onReload }) {
   const isAnalyst = mode === 'analyst'
+  const [refreshing, setRefreshing] = useState({})
   const sources = system?.feeds?.sources || {}
   const incidents = system?.feeds?.incidents
+  const incidentSources = incidents?.sources || []
 
   async function resetCircuit(sourceId) {
     try {
@@ -20,7 +23,19 @@ export default function FeedHealthPage({ system, toast, mode = 'operator' }) {
       const res = await adminApi.post('/scheduler/run', { job_id: 'incident_feed_refresh' })
       const data = await res.json()
       toast(data.ok ? 'Incident feed rebuild started' : data.detail || 'Failed', data.ok)
+      if (data.ok) setTimeout(() => onReload?.(), 1500)
     } catch (e) { toast(String(e.message), false) }
+  }
+
+  async function refreshSource(sourceId) {
+    setRefreshing(prev => ({ ...prev, [sourceId]: true }))
+    try {
+      const res = await adminApi.post('/incidents/refresh', { sources: [sourceId] })
+      const data = await res.json()
+      toast(data.ok ? `Refreshing ${sourceId}` : data.detail || 'Failed', data.ok)
+      if (data.ok) setTimeout(() => onReload?.(), 1500)
+    } catch (e) { toast(String(e.message), false) }
+    setTimeout(() => setRefreshing(prev => ({ ...prev, [sourceId]: false })), 2000)
   }
 
   function FeedCard({ entryKey, s }) {
@@ -138,6 +153,54 @@ export default function FeedHealthPage({ system, toast, mode = 'operator' }) {
             </button>
             <HelpTip text="Rebuilds the incident/news feed snapshot shown on the dashboard. Does not affect CVE, KEV, or EPSS data." />
           </div>
+
+          {incidentSources.length > 0 && (
+            <div style={{ marginTop: '1rem' }}>
+              <div className="admin-card-title" style={{ fontSize: '0.75rem', marginBottom: '0.5rem' }}>
+                {isAnalyst ? 'Refresh by source' : 'Per-source refresh'}
+              </div>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text3)', margin: '0 0 0.6rem' }}>
+                {isAnalyst
+                  ? 'Refresh one news outlet or ATLAS without rebuilding everything. ATLAS reloads from local data — run the MITRE/ATLAS job first for upstream updates.'
+                  : 'Refresh a single RSS outlet or ATLAS slice. ATLAS reloads from the local DB; run Weekly MITRE ATT&CK + ATLAS Refresh for upstream YAML.'}
+              </p>
+              <div className="feed-card-grid">
+                {incidentSources.map(src => (
+                  <div key={src.id} className="feed-source-card" style={{ borderLeftColor: src.stale ? 'var(--amber)' : 'var(--green)' }}>
+                    <div className="feed-source-name">{src.label}</div>
+                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', margin: '0.35rem 0' }}>
+                      <span className={`badge ${src.stale ? 'badge-warn' : 'badge-ok'}`}>
+                        {src.kind === 'atlas' ? 'ATLAS' : 'RSS'}
+                      </span>
+                      {!isAnalyst && (
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>
+                          {src.snapshot_item_count ?? src.item_count ?? 0} in feed
+                        </span>
+                      )}
+                    </div>
+                    {!isAnalyst && (
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>
+                        {src.cached_at ? `Cached: ${fmtIso(src.cached_at)}` : 'No cache yet'}
+                      </div>
+                    )}
+                    {!isAnalyst && src.last_error && (
+                      <div style={{ fontSize: '0.7rem', color: 'var(--amber)', marginTop: '0.2rem', wordBreak: 'break-all' }}>
+                        {src.last_error.slice(0, 80)}
+                      </div>
+                    )}
+                    <button
+                      className="admin-btn admin-btn-ghost"
+                      style={{ marginTop: '0.5rem', fontSize: '0.7rem', padding: '0.15rem 0.5rem' }}
+                      disabled={!!refreshing[src.id]}
+                      onClick={() => refreshSource(src.id)}
+                    >
+                      <RefreshCw size={12} strokeWidth={2} /> {refreshing[src.id] ? 'Refreshing…' : 'Refresh'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

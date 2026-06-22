@@ -9,7 +9,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from database import get_atlas_case_studies, get_db, get_feed_cache, set_feed_cache
-from feeds.incident_news import fetch_all_incident_news_parallel
+from feeds.incident_news import (
+    fetch_all_incident_news_parallel,
+    fetch_rss_source,
+    get_rss_sources_status,
+)
+from feeds.incident_sources import INCIDENT_RSS_SOURCES
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +22,9 @@ SNAPSHOT_CACHE_KEY = "incident_feed:snapshot"
 SNAPSHOT_ATLAS_LIMIT = 100
 # Snapshots are always served if present; staleness is reported via meta.
 SNAPSHOT_MAX_AGE_HOURS = 24 * 7
+
+INCIDENT_RSS_SOURCE_IDS = {source["id"] for source in INCIDENT_RSS_SOURCES}
+INCIDENT_SOURCE_IDS = INCIDENT_RSS_SOURCE_IDS | {"atlas"}
 
 
 def get_incident_feed_refresh_minutes() -> int:
@@ -208,13 +216,179 @@ async def get_incident_feed(
     return cards, list(snapshot.get("errors") or []), meta
 
 
+async def refresh_incident_feed_sources(
+    source_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    """Refresh selected incident-feed sources and merge into the snapshot.
+
+    * RSS source ids — force re-fetch that feed (bypass 30-minute cache).
+    * ``atlas`` — reload case studies from the local DB (run
+      ``weekly_mitre_refresh`` first to pull upstream MITRE data).
+    * ``None`` or empty — full rebuild (all RSS + ATLAS).
+    """
+    if not source_ids:
+        return await build_incident_feed_snapshot()
+
+    unknown = set(source_ids) - INCIDENT_SOURCE_IDS
+    if unknown:
+        raise ValueError(
+            f"Unknown incident source(s): {sorted(unknown)}. "
+            f"Valid: {sorted(INCIDENT_SOURCE_IDS)}"
+        )
+
+    requested = set(source_ids)
+    async with _build_lock:
+        db = await get_db()
+        news_cards: list[dict[str, Any]] = []
+        atlas_cards: list[dict[str, Any]] = []
+        errors: list[dict[str, str]] = []
+        try:
+            existing = await get_feed_cache(
+                db, SNAPSHOT_CACHE_KEY, max_age_hours=SNAPSHOT_MAX_AGE_HOURS
+            )
+            news_cards = list((existing or {}).get("news") or [])
+            atlas_cards = list((existing or {}).get("atlas") or [])
+            errors = list((existing or {}).get("errors") or [])
+
+            rss_requested = requested & INCIDENT_RSS_SOURCE_IDS
+            if rss_requested:
+                news_cards = [
+                    card
+                    for card in news_cards
+                    if card.get("sourceId") not in rss_requested
+                ]
+                errors = [
+                    err
+                    for err in errors
+                    if isinstance(err, dict)
+                    and err.get("source")
+                    not in {
+                        s["label"]
+                        for s in INCIDENT_RSS_SOURCES
+                        if s["id"] in rss_requested
+                    }
+                ]
+                for source in INCIDENT_RSS_SOURCES:
+                    if source["id"] not in rss_requested:
+                        continue
+                    try:
+                        items = await fetch_rss_source(db, source, force=True)
+                        news_cards.extend(items)
+                    except Exception as exc:
+                        logger.warning(
+                            "RSS refresh failed for %s: %s", source["label"], exc
+                        )
+                        errors.append(
+                            {
+                                "source": source["label"],
+                                "message": str(exc) or "Failed to load feed",
+                            }
+                        )
+                news_cards.sort(
+                    key=lambda c: c.get("publishedAt") or "", reverse=True
+                )
+
+            if "atlas" in requested:
+                errors = [
+                    err
+                    for err in errors
+                    if isinstance(err, dict) and err.get("source") != "MITRE ATLAS"
+                ]
+                try:
+                    atlas_cards, atlas_errors = await _load_atlas_cards(
+                        db, limit=SNAPSHOT_ATLAS_LIMIT
+                    )
+                    errors.extend(atlas_errors)
+                except Exception as exc:
+                    logger.warning("ATLAS feed reload failed: %s", exc)
+                    errors.append(
+                        {"source": "MITRE ATLAS", "message": str(exc)}
+                    )
+
+            snapshot = {
+                "news": news_cards,
+                "atlas": atlas_cards,
+                "errors": errors,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+            }
+            await set_feed_cache(db, SNAPSHOT_CACHE_KEY, snapshot)
+            await db.commit()
+        finally:
+            await db.close()
+
+        logger.info(
+            "Incident feed partial refresh (%s): %d news, %d ATLAS, %d errors",
+            ",".join(sorted(requested)),
+            len(news_cards),
+            len(atlas_cards),
+            len(errors),
+        )
+        return snapshot
+
+
 async def get_incident_feed_status() -> dict[str, Any]:
     """Snapshot freshness for /api/health — never triggers a build."""
     snapshot = await _read_snapshot()
-    if snapshot is None:
-        return {"last_refresh": None, "stale": True}
-    generated_at = snapshot.get("generated_at") or ""
+    generated_at = (snapshot or {}).get("generated_at") or ""
+    stale = True if snapshot is None else _is_snapshot_stale(generated_at)
+
+    db = await get_db()
+    try:
+        rss_sources = await get_rss_sources_status(db)
+        count_row = await db.execute_fetchall(
+            "SELECT COUNT(*) AS cnt FROM atlas_case_studies"
+        )
+        atlas_count = int(count_row[0]["cnt"]) if count_row else 0
+        latest_atlas = await db.execute_fetchall(
+            """
+            SELECT date FROM atlas_case_studies
+            WHERE date IS NOT NULL AND date != ''
+            ORDER BY date DESC
+            LIMIT 1
+            """
+        )
+        atlas_latest_date = latest_atlas[0]["date"] if latest_atlas else None
+    finally:
+        await db.close()
+
+    snapshot_news = (snapshot or {}).get("news") or []
+    snapshot_atlas = (snapshot or {}).get("atlas") or []
+    snapshot_errors = (snapshot or {}).get("errors") or []
+    errors_by_label = {
+        e.get("source"): e.get("message", "")
+        for e in snapshot_errors
+        if isinstance(e, dict) and e.get("source")
+    }
+
+    sources: list[dict[str, Any]] = []
+    for src in rss_sources:
+        in_snapshot = sum(
+            1 for card in snapshot_news if card.get("sourceId") == src["id"]
+        )
+        sources.append(
+            {
+                **src,
+                "snapshot_item_count": in_snapshot,
+                "last_error": errors_by_label.get(src["label"], ""),
+            }
+        )
+
+    sources.append(
+        {
+            "id": "atlas",
+            "label": "MITRE ATLAS",
+            "kind": "atlas",
+            "item_count": atlas_count,
+            "snapshot_item_count": len(snapshot_atlas),
+            "cached_at": atlas_latest_date,
+            "stale": atlas_count == 0,
+            "last_error": errors_by_label.get("MITRE ATLAS", ""),
+            "upstream_job_id": "weekly_mitre_refresh",
+        }
+    )
+
     return {
         "last_refresh": generated_at or None,
-        "stale": _is_snapshot_stale(generated_at),
+        "stale": stale,
+        "sources": sources,
     }

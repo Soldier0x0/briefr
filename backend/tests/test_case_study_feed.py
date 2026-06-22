@@ -146,6 +146,8 @@ def test_status_without_snapshot_is_stale(tmp_path, monkeypatch):
     async def run() -> None:
         await init_db()
         status = await case_study_feed.get_incident_feed_status()
-        assert status == {"last_refresh": None, "stale": True}
+        assert status["last_refresh"] is None
+        assert status["stale"] is True
+        assert isinstance(status.get("sources"), list)
 
     asyncio.run(run())

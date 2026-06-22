@@ -1497,6 +1497,50 @@ async def reset_feed_circuit(source_id: str, request: Request):
     return {"ok": True, "source_id": source_id}
 
 
+@router.post("/incidents/refresh")
+async def refresh_incidents_feed(
+    request: Request, body: dict, background_tasks: BackgroundTasks
+):
+    """Refresh one or more incident-feed sources (RSS outlet or ATLAS).
+
+    Body: ``{"sources": ["bleeping", "atlas"]}`` — omit or pass ``[]`` for a
+    full rebuild (same as the ``incident_feed_refresh`` scheduler job).
+    """
+    from feeds.case_study_feed import INCIDENT_SOURCE_IDS, refresh_incident_feed_sources
+
+    sources = body.get("sources")
+    if sources is not None and not isinstance(sources, list):
+        raise HTTPException(400, "sources must be a list of source ids")
+    if sources:
+        unknown = sorted(set(sources) - INCIDENT_SOURCE_IDS)
+        if unknown:
+            raise HTTPException(
+                400,
+                f"Unknown source(s): {unknown}. Valid: {sorted(INCIDENT_SOURCE_IDS)}",
+            )
+
+    target = sources if sources else None
+    label = ",".join(sorted(target)) if target else "all"
+
+    async def _run() -> None:
+        try:
+            await refresh_incident_feed_sources(target)
+        except Exception as exc:
+            import logging
+
+            logging.getLogger(__name__).error(
+                "Incident feed refresh failed (%s): %s", label, exc
+            )
+
+    background_tasks.add_task(_run)
+    await audit(request, "incidents.refresh", label)
+    return {
+        "ok": True,
+        "sources": target or "all",
+        "message": f"Incident feed refresh started for {label}",
+    }
+
+
 # ── Webhooks log ───────────────────────────────────────────────────────────
 
 
