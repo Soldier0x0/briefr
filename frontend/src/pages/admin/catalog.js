@@ -30,6 +30,13 @@ export const JOB_CATALOG = {
     analystDescription: 'Adversary technique and AI-attack reference data.',
     refreshButton: 'Refresh MITRE',
   },
+  atlas_version_check: {
+    label: 'ATLAS upstream version check',
+    short: 'ATLAS',
+    operatorName: 'ATLAS Upstream Version Check',
+    analystDescription: 'Checks for new MITRE ATLAS releases and refreshes data automatically when found.',
+    refreshButton: 'Check ATLAS version',
+  },
   otx_nightly_correlation: {
     label: 'Threat campaign correlation',
     short: 'OTX',

@@ -29,7 +29,15 @@ import '../AdminPage.css'
 const ANALYST_PAGE_IDS = new Set(ANALYST_NAV.flatMap(section => section.items.map(i => i.id)))
 
 export default function AdminPage() {
-  const [page, setPage] = useState('overview')
+  const [page, setPageRaw] = useState('overview')
+  // Tracks which sub-pages have ever been visited, so we only mount (and let
+  // fire their data-loading effects) pages the user has actually opened,
+  // instead of all of them at once on every admin-panel open.
+  const [visitedPages, setVisitedPages] = useState(() => new Set(['overview']))
+  function setPage(id) {
+    setVisitedPages(prev => (prev.has(id) ? prev : new Set(prev).add(id)))
+    setPageRaw(id)
+  }
   const [mode, setModeState] = useState(getAdminMode)
   const [system, setSystem] = useState(null)
   const [keyModalOpen, setKeyModalOpen] = useState(false)
@@ -189,11 +197,13 @@ export default function AdminPage() {
           {isComingSoon ? (
             <ComingSoonPage pageId={page} setPage={setPage} />
           ) : (
-            Object.entries(pages).map(([id, content]) => (
-              <div key={id} hidden={page !== id}>
-                <ErrorBoundary>{content}</ErrorBoundary>
-              </div>
-            ))
+            Object.entries(pages)
+              .filter(([id]) => visitedPages.has(id))
+              .map(([id, content]) => (
+                <div key={id} hidden={page !== id}>
+                  <ErrorBoundary>{content}</ErrorBoundary>
+                </div>
+              ))
           )}
         </div>
       </div>

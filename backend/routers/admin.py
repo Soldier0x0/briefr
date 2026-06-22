@@ -31,9 +31,11 @@ from database import (
     NVD_SYNC_WATERMARK_KEY,
     delete_all_snooze_entries,
     get_db,
+    get_feed_cache,
     get_nvd_sync_watermark,
     get_sync_state_value,
     purge_legacy_rejected_cves,
+    set_feed_cache,
     set_sync_state_value,
 )
 from config_schema import (
@@ -68,6 +70,7 @@ _JOB_LOCK_MAP: dict[str, str] = {
     "kev_metadata_sync": "_kev_lock",
     "epss_score_sync": "_epss_lock",
     "weekly_mitre_refresh": "_mitre_refresh_lock",
+    "atlas_version_check": "_atlas_version_check_lock",
     "otx_nightly_correlation": "_otx_lock",
     "nightly_correlation": "_correlation_lock",
     "vulnrichment_snapshot_sync": "_vulnrichment_lock",
@@ -283,13 +286,18 @@ async def get_system(request: Request):
         epss_done_val = await get_sync_state_value(db, EPSS_BACKFILL_DONE_KEY)
         epss_backfill_done = epss_done_val == "1"
 
-        # DB integrity
-        ic_rows = await db.execute_fetchall("PRAGMA integrity_check")
-        integrity_ok = (
-            len(ic_rows) == 1 and ic_rows[0][0].lower() == "ok"
-        ) if ic_rows else False
-        integrity_msg = ic_rows[0][0] if ic_rows else "unknown"
-        db_integrity = {"ok": integrity_ok, "message": integrity_msg}
+        # DB integrity (full scan is expensive — cache it, this endpoint is polled)
+        cached_integrity = await get_feed_cache(db, "admin_db_integrity", max_age_hours=1 / 6)
+        if cached_integrity is not None:
+            db_integrity = cached_integrity
+        else:
+            ic_rows = await db.execute_fetchall("PRAGMA integrity_check")
+            integrity_ok = (
+                len(ic_rows) == 1 and ic_rows[0][0].lower() == "ok"
+            ) if ic_rows else False
+            integrity_msg = ic_rows[0][0] if ic_rows else "unknown"
+            db_integrity = {"ok": integrity_ok, "message": integrity_msg}
+            await set_feed_cache(db, "admin_db_integrity", db_integrity)
 
         # Failed auth last 24h
         auth_row = await db.execute_fetchall(
@@ -1449,6 +1457,7 @@ _JOB_RUN_MAP: dict[str, str] = {
     "kev_metadata_sync": "run_kev_sync",
     "epss_score_sync": "run_epss_sync",
     "weekly_mitre_refresh": "run_weekly_mitre_refresh",
+    "atlas_version_check": "run_atlas_version_check",
     "otx_nightly_correlation": "run_otx_nightly_sync",
     "incident_feed_refresh": "run_incident_feed_refresh",
     "nightly_correlation": "run_nightly_correlation",

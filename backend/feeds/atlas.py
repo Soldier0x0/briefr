@@ -27,6 +27,7 @@ ATLAS_YAML_FALLBACK = (
 ATLAS_CASE_STUDIES_DIR_URL = (
     "https://api.github.com/repos/mitre-atlas/atlas-data/contents/data/case-studies"
 )
+ATLAS_RELEASES_ATOM_URL = "https://github.com/mitre-atlas/atlas-data/releases.atom"
 
 TECHNIQUE_ID_RE = re.compile(r"^AML\.T\d{4}(?:\.\d{3})?$", re.IGNORECASE)
 TACTIC_ID_RE = re.compile(r"^AML\.TA\d{4}$", re.IGNORECASE)
@@ -392,6 +393,26 @@ async def download_atlas_bundle() -> tuple[list[dict], list[dict]]:
             logger.warning("ATLAS YAML fetch/parse failed for %s: %s", start_url, exc)
 
     raise last_err or RuntimeError("ATLAS YAML download failed")
+
+
+async def get_latest_atlas_release() -> str | None:
+    """Return the latest upstream ATLAS release tag (e.g. "v2026.05"), or None on failure."""
+    import xml.etree.ElementTree as ET
+
+    try:
+        raw = await _fetch_bytes(ATLAS_RELEASES_ATOM_URL, timeout=15.0)
+        root = ET.fromstring(raw)
+        ns = {"atom": "http://www.w3.org/2005/Atom"}
+        entry = root.find("atom:entry", ns)
+        if entry is None:
+            return None
+        title = entry.find("atom:title", ns)
+        if title is None or not title.text:
+            return None
+        return title.text.strip()
+    except Exception as exc:
+        logger.warning("ATLAS release feed check failed: %s", exc)
+        return None
 
 
 async def refresh_atlas_data(db) -> dict[str, int]:

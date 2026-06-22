@@ -47,7 +47,7 @@ from feeds.case_study_feed import (
 from feeds.nvd import fetch_cve_by_id, fetch_nvd_cve_updates
 from feeds.kev import fetch_kev
 from feeds.epss import fetch_epss
-from feeds.atlas import refresh_atlas_data
+from feeds.atlas import get_latest_atlas_release, refresh_atlas_data
 from feeds.mitre import refresh_mitre_data
 from feeds.exploit_sync import (
     exploit_sources_enabled,
@@ -72,6 +72,7 @@ _kev_lock = asyncio.Lock()
 _epss_lock = asyncio.Lock()
 _epss_backfill_lock = asyncio.Lock()
 _mitre_refresh_lock = asyncio.Lock()
+_atlas_version_check_lock = asyncio.Lock()
 _otx_lock = asyncio.Lock()
 _correlation_lock = asyncio.Lock()
 _vulnrichment_lock = asyncio.Lock()
@@ -657,6 +658,57 @@ async def run_weekly_mitre_refresh() -> bool:
         return ok
 
 
+async def run_atlas_version_check() -> bool:
+    """Check upstream ATLAS releases.atom for a new version and refresh if found."""
+    from database import ATLAS_UPSTREAM_VERSION_KEY, get_sync_state_value, set_sync_state_value
+
+    if _atlas_version_check_lock.locked():
+        logger.warning("ATLAS version check already in progress — skipping")
+        return False
+
+    _start = datetime.now(timezone.utc)
+    async with _atlas_version_check_lock:
+        ok = True
+        error_msg = ""
+        try:
+            latest = await get_latest_atlas_release()
+            if latest is None:
+                logger.warning("ATLAS version check: could not fetch upstream release feed")
+                return False
+
+            db = await get_db()
+            try:
+                stored = await get_sync_state_value(db, ATLAS_UPSTREAM_VERSION_KEY)
+                if stored == latest:
+                    logger.info("ATLAS version check: up to date (%s)", latest)
+                    return False
+
+                logger.info("ATLAS version check: new release %s (was %s) — refreshing", latest, stored)
+            finally:
+                await db.close()
+
+            refreshed = await run_weekly_mitre_refresh()
+            if not refreshed:
+                ok = False
+                error_msg = "weekly_mitre_refresh did not complete"
+                return False
+
+            db = await get_db()
+            try:
+                await set_sync_state_value(db, ATLAS_UPSTREAM_VERSION_KEY, latest)
+                await db.commit()
+            finally:
+                await db.close()
+            return True
+        except Exception as exc:
+            logger.error("ATLAS version check failed: %s", exc)
+            ok = False
+            error_msg = str(exc)[:500]
+            return False
+        finally:
+            await _write_job_last_run("atlas_version_check", _start, had_error=not ok, error_message=error_msg)
+
+
 async def maybe_run_mitre_on_startup() -> None:
     from database import get_atlas_technique_count, get_mitre_technique_count
 
@@ -1126,6 +1178,16 @@ def start_scheduler() -> AsyncIOScheduler:
         name="Weekly MITRE ATT&CK + ATLAS Refresh",
         replace_existing=True,
         max_instances=1,
+    )
+
+    scheduler.add_job(
+        run_atlas_version_check,
+        trigger=IntervalTrigger(hours=24, timezone=sched_tz),
+        id="atlas_version_check",
+        name="ATLAS Upstream Version Check",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
     )
 
     otx_hour = int(os.environ.get("OTX_CORRELATION_HOUR", "2"))
