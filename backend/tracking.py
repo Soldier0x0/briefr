@@ -224,7 +224,13 @@ async def _schedule_api_usage_flush() -> None:
 
 
 async def flush_api_usage_pending() -> None:
-    """Persist buffered api_usage counters in one transaction (test hook)."""
+    """Persist buffered api_usage counters in one transaction (test hook).
+
+    Any failure to write — locked DB or otherwise — requeues the batch rather
+    than dropping it, since a silently undercounted total would let the
+    pre-flight quota gate in enrichment/ioc.py keep calling past a provider's
+    real daily limit.
+    """
     global _api_usage_flush_task
 
     async with _API_USAGE_WRITE_LOCK:
@@ -248,10 +254,10 @@ async def flush_api_usage_pending() -> None:
             finally:
                 await db.close()
         except sqlite3.OperationalError as exc:
-            if "locked" not in str(exc).lower():
-                logger.error("Failed to record API usage batch: %s", exc)
-                return
-            logger.warning("API usage batch deferred (database is locked)")
+            if "locked" in str(exc).lower():
+                logger.warning("API usage batch deferred (database is locked)")
+            else:
+                logger.error("API usage batch deferred (write error): %s", exc)
             async with _API_USAGE_LOCK:
                 for key, count in batch.items():
                     _api_usage_pending[key] = _api_usage_pending.get(key, 0) + count
@@ -260,7 +266,14 @@ async def flush_api_usage_pending() -> None:
                         _schedule_api_usage_flush()
                     )
         except Exception as exc:
-            logger.error("Failed to record API usage batch: %s", exc)
+            logger.error("API usage batch deferred (unexpected error): %s", exc)
+            async with _API_USAGE_LOCK:
+                for key, count in batch.items():
+                    _api_usage_pending[key] = _api_usage_pending.get(key, 0) + count
+                if _api_usage_flush_task is None or _api_usage_flush_task.done():
+                    _api_usage_flush_task = asyncio.create_task(
+                        _schedule_api_usage_flush()
+                    )
 
 
 async def get_ioc_usage_stats() -> list[dict]:
@@ -326,8 +339,56 @@ async def record_api_call(service: str, count: int = 1) -> None:
     global _api_usage_flush_task
     async with _API_USAGE_LOCK:
         _api_usage_pending[key] = _api_usage_pending.get(key, 0) + count
+        pending_total = _api_usage_pending[key]
         if _api_usage_flush_task is None or _api_usage_flush_task.done():
             _api_usage_flush_task = asyncio.create_task(_schedule_api_usage_flush())
+
+    limit = API_LIMITS.get(service, {}).get("daily_limit")
+    if limit:
+        committed = await _committed_usage(service, today)
+        used = committed + pending_total
+        if used >= limit:
+            logger.warning("%s daily quota exhausted (%d/%d calls today)", service, used, limit)
+        elif used >= limit * 0.8:
+            logger.warning("%s daily quota near limit (%d/%d calls today)", service, used, limit)
+
+
+async def _committed_usage(service: str, today: str) -> int:
+    """Today's already-flushed count for service, excluding the in-memory buffer."""
+    try:
+        db = await get_db()
+        try:
+            row = await db.execute_fetchall(
+                "SELECT SUM(count) as total FROM api_usage WHERE service = ? AND date_utc = ?",
+                (service, today),
+            )
+            return (row[0]["total"] if row and row[0]["total"] else 0)
+        finally:
+            await db.close()
+    except Exception as exc:
+        logger.error("Failed to read committed usage for %s: %s", service, exc)
+        return 0
+
+
+async def get_today_usage(service: str) -> int:
+    """Today's usage for service, combining committed rows and the unflushed buffer."""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    committed = await _committed_usage(service, today)
+    async with _API_USAGE_LOCK:
+        pending = sum(
+            count for (svc, day, _month), count in _api_usage_pending.items()
+            if svc == service and day == today
+        )
+    return committed + pending
+
+
+async def has_quota(service: str) -> bool:
+    """True if service has remaining daily quota (no limit == unrestricted)."""
+    limit = API_LIMITS.get(service, {}).get("daily_limit")
+    if not limit:
+        return True
+    used = await get_today_usage(service)
+    return used < limit
 
 
 async def get_usage_stats() -> list[dict]:

@@ -15,7 +15,7 @@ import httpx
 
 from enrichment.domain_validation import is_valid_domain
 from resilient_client import CircuitOpenError, resilient_get
-from tracking import record_api_call
+from tracking import has_quota, record_api_call
 
 logger = logging.getLogger(__name__)
 
@@ -260,12 +260,12 @@ async def lookup_ioc(
         abuse_data = {}
         missing: list[str] = []
 
-        if vt_key:
+        if vt_key and await has_quota("virustotal"):
             vt_data = await _lookup_vt_ip(value, vt_key)
             await record_api_call("virustotal", 1)
         else:
             missing.append("virustotal")
-        if abuse_key:
+        if abuse_key and await has_quota("abuseipdb"):
             abuse_data = await _lookup_abuseipdb(value, abuse_key)
             await record_api_call("abuseipdb", 1)
         else:
@@ -306,7 +306,7 @@ async def lookup_ioc(
 
     elif ioc_type == "hash":
         vt_data = {}
-        if vt_key:
+        if vt_key and await has_quota("virustotal"):
             vt_data = await _lookup_vt_hash(value, vt_key)
             await record_api_call("virustotal", 1)
 
@@ -334,7 +334,7 @@ async def lookup_ioc(
 
     elif ioc_type == "domain":
         vt_data = {}
-        if vt_key:
+        if vt_key and await has_quota("virustotal"):
             vt_data = await _lookup_vt_domain(value, vt_key)
             await record_api_call("virustotal", 1)
 
