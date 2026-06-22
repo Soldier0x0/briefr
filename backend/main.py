@@ -23,6 +23,7 @@ _REQUEST_ID_RE = re.compile(r"[A-Za-z0-9._-]{1,64}")
 from database import init_db
 from db.connection import close_pool, init_pool
 from resilient_client import close_client
+from tracking import flush_api_usage_pending
 from webhooks.ssrf import close_webhook_client
 from webhooks.destinations import sync_env_destinations_to_db
 from routers import admin as admin_router
@@ -63,6 +64,7 @@ async def lifespan(app: FastAPI):
     await maybe_run_on_startup()
     yield
     stop_scheduler()
+    await flush_api_usage_pending()
     await close_pool()
     await close_client()
     await close_webhook_client()
