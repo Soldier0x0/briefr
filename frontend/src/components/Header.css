@@ -401,8 +401,12 @@
 }
 
 .mobile-menu-user .user-menu-dropdown {
-  right: auto;
-  left: 0;
+  position: static;
+  box-shadow: none;
+  border: none;
+  border-radius: 0;
+  min-width: auto;
+  margin-top: 8px;
 }
 
 .header-admin-link {

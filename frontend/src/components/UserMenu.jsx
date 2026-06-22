@@ -4,7 +4,7 @@ import { ChevronDown, Home, LayoutDashboard, LogOut, Settings } from 'lucide-rea
 import { useAuth } from '../context/AuthContext.jsx'
 import './UserMenu.css'
 
-export default function UserMenu({ className = '' }) {
+export default function UserMenu({ className = '', onItemClick }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -15,8 +15,10 @@ export default function UserMenu({ className = '' }) {
   const onAdmin = location.pathname.startsWith('/admin')
 
   useEffect(() => {
+    if (!open) return
+
     function onDown(e) {
-      if (open && wrapRef.current && !wrapRef.current.contains(e.target)) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
         setOpen(false)
       }
     }
@@ -33,6 +35,7 @@ export default function UserMenu({ className = '' }) {
 
   async function handleLogout() {
     setOpen(false)
+    onItemClick?.()
     try {
       await logout()
     } finally {
@@ -42,6 +45,7 @@ export default function UserMenu({ className = '' }) {
 
   function close() {
     setOpen(false)
+    onItemClick?.()
   }
 
   return (

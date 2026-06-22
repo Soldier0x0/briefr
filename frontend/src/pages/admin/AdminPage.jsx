@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { adminApi, getAdminKey } from '../../api.js'
 import { getAdminMode, setAdminMode } from '../../utils/adminMode.js'
@@ -40,10 +40,10 @@ export default function AdminPage() {
   // fire their data-loading effects) pages the user has actually opened,
   // instead of all of them at once on every admin-panel open.
   const [visitedPages, setVisitedPages] = useState(() => new Set(['overview']))
-  function setPage(id) {
+  const setPage = useCallback((id) => {
     setVisitedPages(prev => (prev.has(id) ? prev : new Set(prev).add(id)))
     setPageRaw(id)
-  }
+  }, [])
   const [mode, setModeState] = useState(getAdminMode)
   const [system, setSystem] = useState(null)
   const [ingestErrorCount, setIngestErrorCount] = useState(0)
@@ -73,7 +73,7 @@ export default function AdminPage() {
     if (requested && VALID_ADMIN_PAGES.has(requested)) {
       setPage(requested)
     }
-  }, [searchParams])
+  }, [searchParams, setPage])
 
   useEffect(() => {
     function setupPolling() {

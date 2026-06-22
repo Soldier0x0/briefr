@@ -204,7 +204,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
                 )}
                 {authStatus === 'authed' && (
                   <div className="mobile-menu-user">
-                    <UserMenu />
+                    <UserMenu onItemClick={() => setMobileMenuOpen(false)} />
                   </div>
                 )}
                 {activeTab === 'feed' && (
