@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { adminApi, getAdminKey } from '../../api.js'
 import { getAdminMode, setAdminMode } from '../../utils/adminMode.js'
 import { getDisplayPrefs } from '../../utils/displayPrefs.js'
@@ -23,11 +24,17 @@ import IngestLogPage from './IngestLogPage.jsx'
 import AuditLogPage from './AuditLogPage.jsx'
 import DisplayPage from './DisplayPage.jsx'
 import ComingSoonPage from './ComingSoonPage.jsx'
+import UserMenu from '../../components/UserMenu.jsx'
 import '../AdminPage.css'
 
 const ANALYST_PAGE_IDS = new Set(ANALYST_NAV.flatMap(section => section.items.map(i => i.id)))
+const VALID_ADMIN_PAGES = new Set([
+  'overview', 'backups', 'storage', 'database', 'watchlist', 'apikeys', 'scheduler',
+  'webhooks', 'alerts', 'security', 'feedhealth', 'ingestlog', 'auditlog', 'display',
+])
 
 export default function AdminPage() {
+  const [searchParams] = useSearchParams()
   const [page, setPageRaw] = useState('overview')
   // Tracks which sub-pages have ever been visited, so we only mount (and let
   // fire their data-loading effects) pages the user has actually opened,
@@ -60,6 +67,13 @@ export default function AdminPage() {
   useEffect(() => {
     loadSystem()
   }, [])
+
+  useEffect(() => {
+    const requested = searchParams.get('p')
+    if (requested && VALID_ADMIN_PAGES.has(requested)) {
+      setPage(requested)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     function setupPolling() {
@@ -159,6 +173,7 @@ export default function AdminPage() {
         mode={mode}
         setMode={handleModeChange}
         lastUpdated={lastUpdated}
+        userMenu={<UserMenu className="user-menu-wrap--admin" />}
       />
       <div className="admin-body">
         <Sidebar activePage={page} setPage={setPage} system={system} ingestErrorCount={ingestErrorCount} mode={mode} setMode={handleModeChange} />
