@@ -29,5 +29,5 @@ def test_verify_password_rejects_malformed_hash():
 
 
 def test_dummy_hash_never_verifies():
-    assert verify_password("not-a-real-password", DUMMY_HASH) is True
+    assert verify_password("not-a-real-password", DUMMY_HASH) is False
     assert verify_password("something-else", DUMMY_HASH) is False

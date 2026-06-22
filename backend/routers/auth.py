@@ -10,6 +10,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 
 from auth.passwords import DUMMY_HASH, verify_password
 from auth.repo import (
@@ -156,8 +157,9 @@ async def refresh(
             await revoke_all_sessions_for_user(db, session["user_id"])
             await db.commit()
             await audit(request, "auth.token_reuse_detected", str(session["user_id"]))
-            _clear_auth_cookies(response)
-            raise HTTPException(status_code=401, detail="Not authenticated")
+            error_response = JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+            _clear_auth_cookies(error_response)
+            return error_response
 
         user = await get_user_by_id(db, session["user_id"])
         if user is None or not user["is_active"]:

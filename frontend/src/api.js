@@ -1,15 +1,29 @@
 const BASE = '/api'
 const REQUEST_TIMEOUT_MS = 20000
 
-async function request(path, options = {}) {
-  // Bounded failure: a hung backend must not leave spinners forever.
+// Shared in-flight refresh promise so concurrent 401s share one
+// /api/auth/refresh call instead of each racing to rotate the same refresh
+// token — a second independent call would find the token already rotated
+// and trip the backend's reuse-detection, revoking every session.
+let refreshPromise = null
+
+function refreshAccessToken() {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${BASE}/auth/refresh`, { method: 'POST', credentials: 'include' })
+      .then(res => res.ok)
+      .catch(() => false)
+      .finally(() => { refreshPromise = null })
+  }
+  return refreshPromise
+}
+
+async function doFetch(path, options) {
   if (!options.signal && typeof AbortSignal?.timeout === 'function') {
     options = { ...options, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) }
   }
   options = { credentials: 'include', ...options }
-  let res
   try {
-    res = await fetch(`${BASE}${path}`, options)
+    return await fetch(`${BASE}${path}`, options)
   } catch (e) {
     if (e?.name === 'AbortError') {
       throw e
@@ -23,9 +37,17 @@ async function request(path, options = {}) {
     err.status = 0
     throw err
   }
+}
+
+async function request(path, options = {}, _retried = false) {
+  // Bounded failure: a hung backend must not leave spinners forever.
+  const res = await doFetch(path, options)
 
   if (!res.ok) {
     if (res.status === 401 && !path.startsWith('/auth/')) {
+      if (!_retried && (await refreshAccessToken())) {
+        return request(path, options, true)
+      }
       window.dispatchEvent(new CustomEvent('briefr-auth-expired'))
     }
     const body = await res.json().catch(() => ({ detail: res.statusText }))

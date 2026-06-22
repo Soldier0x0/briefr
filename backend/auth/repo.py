@@ -8,6 +8,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from auth.passwords import hash_password
@@ -151,7 +152,9 @@ async def revoke_all_sessions_for_user(db: Any, user_id: int) -> None:
 
 
 async def purge_expired_sessions(db: Any) -> int:
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     result = await db.execute(
-        "DELETE FROM sessions WHERE datetime(expires_at) < datetime('now')"
+        "DELETE FROM sessions WHERE expires_at < ?",
+        (now,),
     )
     return result.rowcount

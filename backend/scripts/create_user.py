@@ -67,6 +67,9 @@ from database import get_db, init_db
 
 def _read_password(non_interactive_value: str | None) -> str:
     if non_interactive_value is not None:
+        if len(non_interactive_value) < 8:
+            print("Password must be at least 8 characters.", file=sys.stderr)
+            sys.exit(1)
         return non_interactive_value
     while True:
         password = getpass.getpass("Password: ")
