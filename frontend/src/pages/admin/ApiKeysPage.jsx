@@ -91,7 +91,7 @@ export default function ApiKeysPage({ toast }) {
         </div>
         <div className="config-row-value">
           {inQueue ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="config-row-value-control">
               <span className="badge badge-warn">
                 queued: {isSecret
                   ? '••••'
@@ -99,10 +99,12 @@ export default function ApiKeysPage({ toast }) {
                     ? ((queue[envKey] === '1' || queue[envKey] === 'true') ? 'Enabled' : 'Disabled')
                     : queue[envKey]}
               </span>
-              <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem' }} onClick={() => removeFromQueue(envKey)}>×</button>
+              <div className="config-row-actions">
+                <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem' }} onClick={() => removeFromQueue(envKey)}>×</button>
+              </div>
             </div>
           ) : !isEditing ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="config-row-value-control">
               {field?.type === 'bool' ? (
                 <ToggleSwitch
                   on={value === '1' || value === 'true' || value === true}
@@ -113,23 +115,24 @@ export default function ApiKeysPage({ toast }) {
                   {Array.isArray(value) ? value.join(', ') : String(value)}
                 </span>
               )}
-              {restartRequired && <span className="badge badge-warn" style={{ fontSize: '0.6rem' }}>restart</span>}
-              {writable && field?.type !== 'bool' && (
-                <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }}
-                  onClick={() => {
-                    const initial = isSecret ? '' : (Array.isArray(value) ? value.join(', ') : (value === 'not configured' ? '' : String(value)))
-                    setEditing(e => ({ ...e, [envKey]: initial }))
-                  }}>
-                  Edit
-                </button>
-              )}
+              <div className="config-row-actions">
+                {restartRequired && <span className="badge badge-warn" style={{ fontSize: '0.6rem' }}>restart</span>}
+                {writable && field?.type !== 'bool' && (
+                  <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }}
+                    onClick={() => {
+                      const initial = isSecret ? '' : (Array.isArray(value) ? value.join(', ') : (value === 'not configured' ? '' : String(value)))
+                      setEditing(e => ({ ...e, [envKey]: initial }))
+                    }}>
+                    Edit
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <div className="config-row-value-control config-row-value-control--edit">
               {field?.type === 'enum' && field.enum_values?.length ? (
                 <select
-                  className="admin-select"
-                  style={{ minWidth: 220 }}
+                  className="admin-select config-row-input"
                   value={editVal}
                   onChange={e => setEditing(ed => ({ ...ed, [envKey]: e.target.value }))}
                   autoFocus
@@ -138,8 +141,7 @@ export default function ApiKeysPage({ toast }) {
                 </select>
               ) : TIMEZONE_KEYS.has(envKey) ? (
                 <select
-                  className="admin-select"
-                  style={{ minWidth: 220 }}
+                  className="admin-select config-row-input"
                   value={editVal}
                   onChange={e => setEditing(ed => ({ ...ed, [envKey]: e.target.value }))}
                   autoFocus
@@ -155,22 +157,23 @@ export default function ApiKeysPage({ toast }) {
                 </select>
               ) : (
                 <input
-                  className="admin-input"
+                  className="admin-input config-row-input"
                   type={isSecret ? 'password' : 'text'}
-                  style={{ minWidth: 220 }}
                   value={editVal}
                   onChange={e => setEditing(ed => ({ ...ed, [envKey]: e.target.value }))}
                   autoFocus
                 />
               )}
-              <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.75rem' }}
-                onClick={() => addToQueue(envKey, editVal, field)}>
-                Add to queue
-              </button>
-              <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }}
-                onClick={() => setEditing(e => { const n = { ...e }; delete n[envKey]; return n })}>
-                Cancel
-              </button>
+              <div className="config-row-actions">
+                <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.75rem' }}
+                  onClick={() => addToQueue(envKey, editVal, field)}>
+                  Add to queue
+                </button>
+                <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }}
+                  onClick={() => setEditing(e => { const n = { ...e }; delete n[envKey]; return n })}>
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -236,6 +239,7 @@ export default function ApiKeysPage({ toast }) {
         return (
           <div className="admin-card" key={section.id}>
             <div className="admin-card-title">{section.title}</div>
+            <div className="config-grid">
             {fields.map(f => (
               <ConfigRow
                 key={f.key}
@@ -250,6 +254,7 @@ export default function ApiKeysPage({ toast }) {
             {extraKeys.map(k => (
               <ConfigRow key={k} envKey={k} value={backendDict[k]} writable={false} />
             ))}
+            </div>
             {section.id === 'webhooks' && (
               <div style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '0.5rem' }}>
                 After setting a URL/token here, use the Test button on the Webhooks page to confirm delivery.

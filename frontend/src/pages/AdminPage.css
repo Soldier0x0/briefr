@@ -496,9 +496,16 @@
 .admin-toggle-wrap input:checked + .admin-toggle-slider { background: var(--red); border-color: var(--red); }
 .admin-toggle-wrap input:checked + .admin-toggle-slider::before { transform: translateX(14px); background: #fff; }
 
-.admin-toggle-wrap-onoff input:checked + .admin-toggle-slider { background: var(--green); border-color: var(--green); }
-.admin-toggle-wrap-onoff input:not(:checked) + .admin-toggle-slider { background: var(--red); border-color: var(--red); }
+.admin-toggle-wrap-onoff input:checked + .admin-toggle-slider {
+  background: #22a55b;
+  border-color: #22a55b;
+}
+.admin-toggle-wrap-onoff input:not(:checked) + .admin-toggle-slider {
+  background: #c62828;
+  border-color: #c62828;
+}
 .admin-toggle-wrap-onoff input:not(:checked) + .admin-toggle-slider::before { background: #fff; }
+.admin-toggle-wrap-onoff input:checked + .admin-toggle-slider::before { background: #fff; }
 
 /* ── Indicators ─────────────────────────────────────────────────────────── */
 
@@ -675,43 +682,79 @@
 
 /* ── Config rows ────────────────────────────────────────────────────────── */
 
-.config-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.5rem 0;
-  border-bottom: 0.5px solid var(--border);
-  flex-wrap: wrap;
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
 }
 
-.config-row:last-child { border-bottom: none; }
+@media (max-width: 960px) {
+  .config-grid { grid-template-columns: 1fr; }
+}
+
+.config-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg2);
+}
 
 .config-row-key {
   font-size: 0.75rem;
   color: var(--text2);
-  flex: 0 0 260px;
-  min-width: 200px;
+  width: 100%;
+  min-width: 0;
 }
 
-.config-row-value { flex: 1 1 260px; display: flex; justify-content: flex-end; }
-.config-row-value .admin-input,
-.config-row-value .admin-select { max-width: 420px; }
+.config-row-value {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+}
 
-/* Uniform, box-styled, right-aligned readout for a row's current value
-   (masked secrets, booleans, plain values) — same fixed width regardless
-   of content length so the API-keys section stops looking scattered. */
-.admin-input-display {
-  display: inline-flex;
+.config-row-value-control {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.config-row-value-control--edit .config-row-actions {
+  flex-wrap: wrap;
+}
+
+.config-row-actions {
+  display: flex;
   align-items: center;
-  width: 260px;
-  justify-content: flex-end;
-  text-align: right;
+  gap: 0.5rem;
+}
+
+.config-row-input,
+.config-row-value .admin-input,
+.config-row-value .admin-select {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Full-width readout below the field label — long URLs/tokens wrap instead of clipping. */
+.admin-input-display {
+  display: block;
+  width: 100%;
+  text-align: left;
   color: var(--text2);
   cursor: default;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.4;
+  min-height: 2rem;
 }
 
 /* ── Pending changes bar ────────────────────────────────────────────────── */
