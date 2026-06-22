@@ -171,9 +171,9 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
                 About
               </button>
               <span className="header-legal-sep" aria-hidden="true">&middot;</span>
-              <Link to="/privacy" className="header-legal-link">Privacy</Link>
+              <Link to="/privacy" className="header-legal-link">Privacy Policy</Link>
               <span className="header-legal-sep" aria-hidden="true">&middot;</span>
-              <Link to="/terms" className="header-legal-link">Terms</Link>
+              <Link to="/terms" className="header-legal-link">Terms of Use</Link>
             </nav>
           )}
 
@@ -222,10 +222,10 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
                       About
                     </button>
                     <Link to="/privacy" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                      Privacy
+                      Privacy Policy
                     </Link>
                     <Link to="/terms" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                      Terms
+                      Terms of Use
                     </Link>
                   </>
                 )}
