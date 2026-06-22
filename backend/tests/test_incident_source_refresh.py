@@ -163,7 +163,15 @@ def test_atlas_only_refresh_keeps_rss_cards(tmp_path, monkeypatch):
     asyncio.run(run())
 
 
-def test_admin_incidents_refresh_accepts_valid_source(admin_client):
+def test_admin_incidents_refresh_accepts_valid_source(admin_client, monkeypatch):
+    async def _noop_refresh(_sources=None):
+        return {"news": [], "atlas": [], "errors": [], "generated_at": "now"}
+
+    monkeypatch.setattr(
+        "feeds.case_study_feed.refresh_incident_feed_sources",
+        _noop_refresh,
+    )
+
     resp = admin_client.post(
         "/api/admin/incidents/refresh",
         json={"sources": ["hackernews"]},
