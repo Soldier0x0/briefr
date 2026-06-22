@@ -91,7 +91,7 @@ export default function AboutModal({ onClose }) {
           </Link>
           <span className="about-dot" aria-hidden="true">&middot;</span>
           <Link to="/terms" onClick={onClose} className="about-legal-link mono">
-            Terms of Service
+            Terms of Use
           </Link>
         </div>
       </div>

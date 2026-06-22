@@ -639,9 +639,9 @@ function AppLayout({
                 <nav className="footer-legal" aria-label="Legal links">
                   <button type="button" className="footer-legal-link mono" onClick={onAboutOpen}>About</button>
                   <span className="footer-legal-sep" aria-hidden="true">&middot;</span>
-                  <Link to="/privacy" className="footer-legal-link mono">Privacy</Link>
+                  <Link to="/privacy" className="footer-legal-link mono">Privacy Policy</Link>
                   <span className="footer-legal-sep" aria-hidden="true">&middot;</span>
-                  <Link to="/terms" className="footer-legal-link mono">Terms</Link>
+                  <Link to="/terms" className="footer-legal-link mono">Terms of Use</Link>
                 </nav>
                 <div className="footer-right" style={{ fontSize: '0.6875rem', color: 'var(--text3)' }}>
                   All times UTC &mdash; not a substitute for professional security advice

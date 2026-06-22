@@ -3,7 +3,7 @@ import LegalPage from './LegalPage.jsx'
 export default function TermsPage() {
   return (
     <LegalPage
-      title="Terms of Service"
+      title="Terms of Use"
       subtitle="Effective June 2026 — projectjupiter.in"
     >
       <h2 className="legal-section-heading">1. What BRIEFR is</h2>
@@ -63,11 +63,23 @@ export default function TermsPage() {
         1.1 (BSL). Copyright &copy; 2026 Sai Harsha Vardhan. Self-hosting and
         use of the source code is free for personal, non-commercial purposes.
         Any use by or on behalf of a for-profit organisation or business
-        ("commercial use") requires a separate paid commercial licence —
-        contact harsha@projectjupiter.in to obtain one. Self-hosted instances
-        are run entirely at the operator's own risk: no maintenance, support,
-        updates, or uptime guarantee is provided (see Section 5, Disclaimer,
-        which applies equally to self-hosted instances). The operator of a
+        ("commercial use") requires a one-time, lifetime commercial license —
+        contact harsha@projectjupiter.in to obtain one. A commercial license
+        grants only the right to use BRIEFR commercially, for life, in
+        exchange for a single one-time payment — it is not a support or
+        maintenance contract, and does not entitle the licensee to future
+        updates, patches, or fixes; a commercial licensee may self-maintain
+        their own fork or adopt whatever updates the operator chooses to
+        publish, at the operator's discretion. Individuals using BRIEFR for
+        free under the personal license may optionally support development
+        via Buy Me a Coffee (one-time or monthly) — this is never required,
+        and confers no additional rights, support, or update guarantee beyond
+        what the free personal license already provides. Self-hosted instances, whether
+        under the free personal license or a paid commercial license, are run
+        entirely at the operator's own risk: no maintenance, support,
+        updates, or uptime guarantee is provided to anyone (see Section 5,
+        Disclaimer, which applies equally to self-hosted instances). The
+        operator of a
         self-hosted instance is solely responsible for that instance's data
         handling and legal compliance — BRIEFR's Privacy Policy describes only
         the hosted instance at projectjupiter.in. Four years after first
