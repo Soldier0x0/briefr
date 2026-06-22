@@ -17,6 +17,7 @@ import Forge from './components/Forge.jsx'
 import DetailDrawer from './components/DetailDrawer.jsx'
 import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
+import ToolErrorBoundary from './components/ToolErrorBoundary.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import AdminPage from './pages/admin/AdminPage.jsx'
@@ -468,7 +469,7 @@ export default function App() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/admin/*" element={<AdminPage />} />
-        <Route path="/wallboard" element={<WallboardPage />} />
+        <Route path="/wallboard" element={<ToolErrorBoundary label="Wallboard"><WallboardPage /></ToolErrorBoundary>} />
         <Route
           path="*"
           element={(
@@ -578,55 +579,65 @@ function AppLayout({
 
         <div className="app-main">
           <div className="app-tab-panel" hidden={activeTab !== 'brief'} aria-hidden={activeTab !== 'brief'}>
-            <BriefView
-              stats={stats}
-              filters={filters}
-              setFilters={setFilters}
-              timezone={timezone}
-              lastUpdated={lastUpdated}
-              nextRefreshUtc={nextRefreshUtc}
-              refreshSchedule={refreshSchedule}
-              showAiAlerts={showAiAlerts}
-              onAiAlertsClick={onAiAlertsClick}
-              onOpenFullFeed={() => setActiveTab('feed')}
-              onSelectCVE={onSelectCVE}
-            />
+            <ToolErrorBoundary label="Brief">
+              <BriefView
+                stats={stats}
+                filters={filters}
+                setFilters={setFilters}
+                timezone={timezone}
+                lastUpdated={lastUpdated}
+                nextRefreshUtc={nextRefreshUtc}
+                refreshSchedule={refreshSchedule}
+                showAiAlerts={showAiAlerts}
+                onAiAlertsClick={onAiAlertsClick}
+                onOpenFullFeed={() => setActiveTab('feed')}
+                onSelectCVE={onSelectCVE}
+              />
+            </ToolErrorBoundary>
           </div>
           <div className="app-tab-panel" hidden={activeTab !== 'feed'} aria-hidden={activeTab !== 'feed'}>
-            <FeedView
-              filters={filters}
-              setFilters={setFilters}
-              selectedCVE={selectedCVE}
-              setSelectedCVE={setSelectedCVE}
-              digestOpen={digestOpen}
-              setDigestOpen={setDigestOpen}
-              digestCVEs={digestCVEs}
-              setDigestCVEs={setDigestCVEs}
-              searchFocusTrigger={searchFocusTrigger}
-              setSearchFocusTrigger={setSearchFocusTrigger}
-              aboutOpen={aboutOpen}
-              setAboutOpen={setAboutOpen}
-              timezone={timezone}
-              lastUpdated={lastUpdated}
-              nextRefreshUtc={nextRefreshUtc}
-              refreshSchedule={refreshSchedule}
-              onDigestRequest={onDigestRequest}
-              onSelectCVE={onSelectCVE}
-              watchlist={watchlist}
-              onWatchlistChange={onWatchlistChange}
-            />
+            <ToolErrorBoundary label="Feed">
+              <FeedView
+                filters={filters}
+                setFilters={setFilters}
+                selectedCVE={selectedCVE}
+                setSelectedCVE={setSelectedCVE}
+                digestOpen={digestOpen}
+                setDigestOpen={setDigestOpen}
+                digestCVEs={digestCVEs}
+                setDigestCVEs={setDigestCVEs}
+                searchFocusTrigger={searchFocusTrigger}
+                setSearchFocusTrigger={setSearchFocusTrigger}
+                aboutOpen={aboutOpen}
+                setAboutOpen={setAboutOpen}
+                timezone={timezone}
+                lastUpdated={lastUpdated}
+                nextRefreshUtc={nextRefreshUtc}
+                refreshSchedule={refreshSchedule}
+                onDigestRequest={onDigestRequest}
+                onSelectCVE={onSelectCVE}
+                watchlist={watchlist}
+                onWatchlistChange={onWatchlistChange}
+              />
+            </ToolErrorBoundary>
           </div>
           <div className="app-tab-panel" hidden={activeTab !== 'ioc'} aria-hidden={activeTab !== 'ioc'}>
-            <IOCLookup key={iocSessionKey} prefill={iocPrefill} />
+            <ToolErrorBoundary label="IOC Lookup">
+              <IOCLookup key={iocSessionKey} prefill={iocPrefill} />
+            </ToolErrorBoundary>
           </div>
           <div className="app-tab-panel" hidden={activeTab !== 'atlas'} aria-hidden={activeTab !== 'atlas'}>
-            <CaseStudies
-              initialSearch={atlasActorFilter || ''}
-              onClearFilter={onClearAtlasFilter}
-            />
+            <ToolErrorBoundary label="ATLAS">
+              <CaseStudies
+                initialSearch={atlasActorFilter || ''}
+                onClearFilter={onClearAtlasFilter}
+              />
+            </ToolErrorBoundary>
           </div>
           <div className="app-tab-panel" hidden={activeTab !== 'forge'} aria-hidden={activeTab !== 'forge'}>
-            <Forge />
+            <ToolErrorBoundary label="Forge">
+              <Forge />
+            </ToolErrorBoundary>
           </div>
         </div>
 
@@ -652,25 +663,31 @@ function AppLayout({
             )}
 
 
-            <DetailDrawer
-              cve={selectedCVE}
-              loading={drawerLoading}
-              onClose={onCloseCVE}
-              onCveReplace={onCveReplace}
-              watchlistState={
-                selectedCVE
-                  ? (watchlist?.getState(selectedCVE.cve_id) || selectedCVE.watchlist_state)
-                  : null
-              }
-              onWatchlistChange={onWatchlistChange}
-            />
+            <ToolErrorBoundary label="CVE detail" onReset={onCloseCVE}>
+              <DetailDrawer
+                cve={selectedCVE}
+                loading={drawerLoading}
+                onClose={onCloseCVE}
+                onCveReplace={onCveReplace}
+                watchlistState={
+                  selectedCVE
+                    ? (watchlist?.getState(selectedCVE.cve_id) || selectedCVE.watchlist_state)
+                    : null
+                }
+                onWatchlistChange={onWatchlistChange}
+              />
+            </ToolErrorBoundary>
 
             {digestOpen && (
-              <DigestModal cves={digestCVEs} filters={filters} onClose={() => setDigestOpen(false)} />
+              <ToolErrorBoundary label="Digest" onReset={() => setDigestOpen(false)}>
+                <DigestModal cves={digestCVEs} filters={filters} onClose={() => setDigestOpen(false)} />
+              </ToolErrorBoundary>
             )}
 
             {aboutOpen && (
-              <AboutModal onClose={() => setAboutOpen(false)} />
+              <ToolErrorBoundary label="About" onReset={() => setAboutOpen(false)}>
+                <AboutModal onClose={() => setAboutOpen(false)} />
+              </ToolErrorBoundary>
             )}
       </div>
     </div>
