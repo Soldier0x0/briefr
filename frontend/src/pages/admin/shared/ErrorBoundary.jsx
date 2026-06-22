@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import { AlertOctagon } from 'lucide-react'
 
 // Class component is required here - React has no hook-based error boundary.
 // Wraps each admin page's render so a render-time exception (e.g. malformed API
@@ -21,10 +22,11 @@ export default class ErrorBoundary extends Component {
     if (this.state.error) {
       return (
         <div className="admin-empty" style={{ color: 'var(--red)' }}>
-          This page failed to render: {String(this.state.error.message || this.state.error)}
+          <AlertOctagon className="admin-empty-icon" size={20} strokeWidth={2} />
+          <div>This page failed to render: {String(this.state.error.message || this.state.error)}</div>
           <button
             className="admin-btn admin-btn-ghost"
-            style={{ marginLeft: '0.75rem', fontSize: '0.75rem' }}
+            style={{ fontSize: '0.75rem' }}
             onClick={() => this.setState({ error: null })}
           >
             Retry

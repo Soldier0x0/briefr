@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { adminApi } from '../../../api.js'
 
 // Generic confirm-text gate, standardized across all destructive admin actions.
@@ -19,6 +19,22 @@ export default function ConfirmModal({ actionId, title, message, confirmWord, on
   const displayTitle = title ?? apiAction?.description ?? ''
   const displayMessage = message ?? apiAction?.description ?? ''
   const word = confirmWord ?? apiAction?.confirm_word ?? ''
+
+  const stateRef = useRef({ input, word, onCancel, onConfirm })
+  useEffect(() => {
+    stateRef.current = { input, word, onCancel, onConfirm }
+  })
+
+  useEffect(() => {
+    function onKey(e) {
+      const { input, word, onCancel, onConfirm } = stateRef.current
+      if (e.key === 'Escape') onCancel()
+      else if (e.key === 'Enter' && (!word || input === word)) onConfirm(input)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
+
   return (
     <div className="admin-modal-overlay">
       <div className="admin-modal">

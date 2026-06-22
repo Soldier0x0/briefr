@@ -1,3 +1,5 @@
+import { getDisplayPrefs } from '../../utils/displayPrefs.js'
+
 export function fmtAge(seconds) {
   if (seconds === null || seconds === undefined) return '—'
   const s = Math.round(seconds)
@@ -23,6 +25,7 @@ export function fmtDur(sec) {
 
 export function fmtIso(iso) {
   if (!iso) return '—'
+  if (getDisplayPrefs().utcTime) return fmtIsoMono(iso)
   try { return new Date(iso).toLocaleString() } catch { return iso }
 }
 

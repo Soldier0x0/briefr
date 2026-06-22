@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { adminApi, getAdminKey, setAdminKey } from '../../api.js'
 import { getAdminMode, setAdminMode } from '../../utils/adminMode.js'
+import { getDisplayPrefs } from '../../utils/displayPrefs.js'
 import AdminPage_KeyModal from '../AdminPage_KeyModal.jsx'
 import StatusBar from './StatusBar.jsx'
 import Sidebar from './Sidebar.jsx'
@@ -36,7 +37,8 @@ export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
   const [ingestErrorCount, setIngestErrorCount] = useState(0)
   const [confirmOperatorSwitch, setConfirmOperatorSwitch] = useState(false)
-  const { toasts, show: toast } = useToast()
+  const [lastUpdated, setLastUpdated] = useState(null)
+  const { toasts, show: toast, dismiss: dismissToast } = useToast()
   const pollRef = useRef(null)
 
   async function loadSystem() {
@@ -47,7 +49,7 @@ export default function AdminPage() {
       }
       if (!res.ok) return
       const data = await res.json()
-      setSystem(data); setAuthed(true); setKeyModalOpen(false); setModalError('')
+      setSystem(data); setAuthed(true); setKeyModalOpen(false); setModalError(''); setLastUpdated(Date.now())
     } catch (e) {
       if (e?.status === 401) { setAuthed(false); setKeyModalOpen(true) }
     }
@@ -70,8 +72,20 @@ export default function AdminPage() {
 
   useEffect(() => {
     checkKeyRequired()
-    pollRef.current = setInterval(loadSystem, 30000)
-    return () => clearInterval(pollRef.current)
+  }, [])
+
+  useEffect(() => {
+    function setupPolling() {
+      clearInterval(pollRef.current)
+      const seconds = getDisplayPrefs().pollIntervalSeconds || 30
+      pollRef.current = setInterval(loadSystem, seconds * 1000)
+    }
+    setupPolling()
+    window.addEventListener('briefr-display-prefs-changed', setupPolling)
+    return () => {
+      clearInterval(pollRef.current)
+      window.removeEventListener('briefr-display-prefs-changed', setupPolling)
+    }
   }, [])
 
   function setMode(next) {
@@ -81,10 +95,10 @@ export default function AdminPage() {
   }
 
   function getOperatorAck() {
-    try { return localStorage.getItem('briefr-operator-ack') === '1' } catch { return false }
+    try { return sessionStorage.getItem('briefr-operator-ack') === '1' } catch { return false }
   }
   function setOperatorAck() {
-    try { localStorage.setItem('briefr-operator-ack', '1') } catch { /* unavailable */ }
+    try { sessionStorage.setItem('briefr-operator-ack', '1') } catch { /* unavailable */ }
   }
 
   function handleModeChange(next) {
@@ -130,7 +144,7 @@ export default function AdminPage() {
 
   const pages = {
     overview: <OverviewPage system={system} toast={toast} mode={mode} />,
-    backups: <BackupsPage toast={toast} system={system} setPage={setPage} />,
+    backups: <BackupsPage toast={toast} system={system} />,
     storage: <StoragePage toast={toast} />,
     database: <DatabasePage toast={toast} active={page === 'database'} />,
     watchlist: <WatchlistPage toast={toast} mode={mode} />,
@@ -167,6 +181,7 @@ export default function AdminPage() {
         refreshInProgress={system?.refresh_in_progress || false}
         mode={mode}
         setMode={handleModeChange}
+        lastUpdated={lastUpdated}
       />
       <div className="admin-body">
         <Sidebar activePage={page} setPage={setPage} system={system} ingestErrorCount={ingestErrorCount} mode={mode} setMode={handleModeChange} />
@@ -182,7 +197,7 @@ export default function AdminPage() {
           )}
         </div>
       </div>
-      <ToastArea toasts={toasts} />
+      <ToastArea toasts={toasts} onDismiss={dismissToast} />
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { AlertTriangle } from 'lucide-react'
 import { adminApi, setAdminKey } from '../../api.js'
 import StatCard from './shared/StatCard.jsx'
 
@@ -39,7 +40,8 @@ export default function SecurityPage({ toast }) {
 
       {security && !security.admin_key_set && (
         <div className="admin-callout admin-callout-amber">
-          Admin API key not configured — routes are unauthenticated.
+          <AlertTriangle size={16} strokeWidth={2} />
+          <span>Admin API key not configured — routes are unauthenticated.</span>
         </div>
       )}
 
@@ -88,7 +90,8 @@ export default function SecurityPage({ toast }) {
           <div className="admin-card">
             <div className="admin-card-title">Auth failures (last 24h)</div>
             <div className="admin-callout admin-callout-amber" style={{ fontSize: '0.8rem' }}>
-              No app login yet. Auth failure tracking will appear here in V1.4 / T3-S0.
+              <AlertTriangle size={16} strokeWidth={2} />
+              <span>No app login yet. Auth failure tracking will appear here in V1.4 / T3-S0.</span>
             </div>
             {security.failed_auth_last_24h > 0 ? (
               <div style={{ marginTop: '0.5rem', fontSize: '0.8125rem', color: 'var(--red)' }}>

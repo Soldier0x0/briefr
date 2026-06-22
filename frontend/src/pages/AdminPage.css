@@ -86,7 +86,9 @@
   overflow: hidden;
 }
 .admin-split-menu-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   width: 100%;
   padding: 0.5rem 0.75rem;
   font-size: 0.8125rem;
@@ -131,7 +133,7 @@
 .admin-sidebar .nav-item {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.55rem;
   padding: 7px 14px;
   font-size: 13px;
   color: var(--text2);
@@ -139,6 +141,16 @@
   border-left: 2px solid transparent;
   transition: background 0.1s, color 0.1s;
   user-select: none;
+}
+
+.admin-sidebar .nav-icon {
+  flex-shrink: 0;
+  color: var(--text3);
+}
+
+.admin-sidebar .nav-item:hover .nav-icon,
+.admin-sidebar .nav-item.active .nav-icon {
+  color: inherit;
 }
 
 .admin-sidebar .nav-item:hover {
@@ -167,8 +179,9 @@
 }
 
 .admin-sidebar .nav-lock-icon {
-  font-size: 10px;
   opacity: 0.5;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .admin-sidebar .nav-item-tooltip {
@@ -234,10 +247,15 @@
 }
 
 .info-tip {
+  display: inline-flex;
+  align-items: center;
   font-size: 0.875rem;
   color: var(--text3);
   cursor: help;
   font-weight: 400;
+  background: none;
+  border: none;
+  padding: 0;
 }
 
 .info-tip:hover,
@@ -341,6 +359,7 @@
 }
 
 .admin-table tr:last-child td { border-bottom: none; }
+.admin-table tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.02); }
 .admin-table tr:hover td { background: var(--bg3); }
 
 /* ── Badges ─────────────────────────────────────────────────────────────── */
@@ -373,14 +392,19 @@
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: opacity 0.1s;
+  transition: opacity 0.1s, transform 0.06s, filter 0.1s, background 0.1s;
 }
 
 .admin-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.admin-btn:active:not(:disabled) { transform: scale(0.97); }
 
 .admin-btn-primary { background: var(--red); color: var(--on-red); border-color: var(--red); }
 .admin-btn-danger  { background: rgba(232,85,51,0.12); color: var(--red); border-color: var(--red); }
 .admin-btn-warn    { background: rgba(212,134,10,0.1); color: var(--amber); border-color: var(--amber); }
+
+.admin-btn-primary:hover:not(:disabled),
+.admin-btn-danger:hover:not(:disabled),
+.admin-btn-warn:hover:not(:disabled) { filter: brightness(1.12); }
 
 .admin-btn-ghost { background: transparent; color: var(--text2); border-color: var(--border); }
 .admin-btn-ghost:hover { background: var(--bg3); }
@@ -408,7 +432,7 @@
   min-width: 180px;
 }
 
-.admin-input:focus { border-color: var(--red); }
+.admin-input:focus { border-color: var(--red); box-shadow: 0 0 0 2px var(--red-dim); }
 
 .admin-select {
   padding: 0.35rem 0.65rem;
@@ -420,7 +444,7 @@
   outline: none;
 }
 
-.admin-select:focus { border-color: var(--red); }
+.admin-select:focus { border-color: var(--red); box-shadow: 0 0 0 2px var(--red-dim); }
 
 /* ── Toggle switch ──────────────────────────────────────────────────────── */
 
@@ -493,6 +517,14 @@
   line-height: 1.5;
 }
 
+.admin-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.admin-callout svg { flex-shrink: 0; margin-top: 0.15rem; }
+
 .admin-callout-amber { background: var(--amber-dim); border: 1px solid var(--amber); color: var(--amber); }
 .admin-callout-red   { background: var(--red-dim);   border: 1px solid var(--red);   color: var(--red); }
 
@@ -520,6 +552,7 @@
   letter-spacing: 0.04em;
 }
 
+.admin-subtab { transition: color 0.15s, border-bottom-color 0.15s; }
 .admin-subtab.active { color: var(--red); border-bottom-color: var(--red); }
 .admin-subtab:hover  { color: var(--text2); }
 
@@ -540,7 +573,7 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
 }
 
 .filter-chip:hover { background: var(--bg3); color: var(--text2); }
@@ -589,6 +622,9 @@
 }
 
 .danger-zone-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.8125rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -738,14 +774,19 @@
 
 /* ── Modal ──────────────────────────────────────────────────────────────── */
 
+@keyframes admin-modal-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes admin-modal-scale-in { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
 .admin-modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: admin-modal-fade-in 0.15s ease-out;
 }
 
 .admin-modal {
@@ -757,6 +798,7 @@
   max-width: 600px;
   max-height: 80vh;
   overflow-y: auto;
+  animation: admin-modal-scale-in 0.18s ease-out;
 }
 
 .admin-modal-title {
@@ -807,14 +849,39 @@
   gap: 0.5rem;
 }
 
+@keyframes admin-toast-in  { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes admin-toast-out { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(16px); } }
+
 .admin-toast {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.6rem 1rem;
   border-radius: 6px;
   font-size: 0.8125rem;
   font-weight: 500;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   min-width: 220px;
+  animation: admin-toast-in 0.2s ease-out;
 }
+
+.admin-toast-leaving { animation: admin-toast-out 0.18s ease-in forwards; }
+
+.admin-toast svg { flex-shrink: 0; }
+.admin-toast-msg { flex: 1; }
+
+.admin-toast-close {
+  display: inline-flex;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.admin-toast-close:hover { opacity: 1; }
 
 .admin-toast-ok    { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
 .admin-toast-error { background: var(--red-dim);   color: var(--red);   border: 1px solid var(--red); }
@@ -832,17 +899,38 @@
 /* ── Empty state ────────────────────────────────────────────────────────── */
 
 .admin-empty {
-  padding: 1rem;
+  padding: 1.5rem 1rem;
   color: var(--text3);
   font-size: 0.8125rem;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
 }
+
+.admin-empty-icon { opacity: 0.55; }
+.admin-empty-icon.spin { animation: admin-spin 0.8s linear infinite; }
 
 /* ── Mono ───────────────────────────────────────────────────────────────── */
 
 .mono { font-family: var(--font-mono); font-size: 0.8em; }
 
 /* ── Admin mode toggle (Analyst / Operator) ────────────────────────────── */
+
+.admin-mode-toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.admin-mode-toggle-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+}
 
 .admin-mode-toggle {
   display: flex;
@@ -855,6 +943,9 @@
 }
 
 .admin-mode-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   background: none;
   border: none;
   border-radius: 999px;
@@ -923,7 +1014,9 @@
 /* ── Sidebar footer link (Analyst → Operator) ──────────────────────────── */
 
 .nav-footer-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   width: 100%;
   text-align: left;
   background: none;
@@ -934,6 +1027,8 @@
   color: var(--link);
   cursor: pointer;
 }
+
+.nav-footer-link svg { flex-shrink: 0; }
 
 /* ── Generic pill (used outside the status bar, e.g. Alerts page) ───────── */
 
@@ -962,3 +1057,52 @@
   .admin-sidebar { display: none; }
   .stat-card-row { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── Scrollbars ─────────────────────────────────────────────────────────── */
+
+.admin-sidebar, .admin-content, .admin-modal {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
+
+.admin-sidebar::-webkit-scrollbar,
+.admin-content::-webkit-scrollbar,
+.admin-modal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.admin-sidebar::-webkit-scrollbar-track,
+.admin-content::-webkit-scrollbar-track,
+.admin-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb,
+.admin-content::-webkit-scrollbar-thumb,
+.admin-modal::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 4px;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb:hover,
+.admin-content::-webkit-scrollbar-thumb:hover,
+.admin-modal::-webkit-scrollbar-thumb:hover {
+  background: var(--text3);
+}
+
+/* ── Reduced motion (Display preferences → "Reduce interface motion") ───── */
+
+.reduce-motion .admin-toast,
+.reduce-motion .admin-toast-leaving,
+.reduce-motion .admin-modal-overlay,
+.reduce-motion .admin-modal,
+.reduce-motion .admin-btn,
+.reduce-motion .nav-item,
+.reduce-motion .filter-chip,
+.reduce-motion .admin-subtab,
+.reduce-motion .disk-bar-fill {
+  animation: none !important;
+  transition: none !important;
+}
+
+.reduce-motion .admin-btn:active { transform: none !important; }

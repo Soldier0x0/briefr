@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { AlertTriangle } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import { fmtIso } from './formatters.js'
 
@@ -86,7 +87,8 @@ export default function WebhooksPage({ toast }) {
             </button>
             {showAddCallout && (
               <div className="admin-callout admin-callout-amber" style={{ marginTop: '0.5rem' }}>
-                Additional channels (Slack, PagerDuty) ship in V1.4.
+                <AlertTriangle size={16} strokeWidth={2} />
+                <span>Additional channels (Slack, PagerDuty) ship in V1.4.</span>
               </div>
             )}
           </div>

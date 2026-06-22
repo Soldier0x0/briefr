@@ -1,45 +1,45 @@
 export const NAV = [
-  { section: 'OVERVIEW', items: [{ id: 'overview', label: 'System health', badgeKey: 'jobs_with_errors_count' }] },
+  { section: 'OVERVIEW', items: [{ id: 'overview', label: 'System health', icon: 'Activity', badgeKey: 'jobs_with_errors_count' }] },
   { section: 'DATA', items: [
-    { id: 'backups', label: 'Backups' },
-    { id: 'storage', label: 'Storage' },
-    { id: 'database', label: 'Database' },
-    { id: 'watchlist', label: 'Watchlist & cache' },
+    { id: 'backups', label: 'Backups', icon: 'Archive' },
+    { id: 'storage', label: 'Storage', icon: 'HardDrive' },
+    { id: 'database', label: 'Database', icon: 'Database' },
+    { id: 'watchlist', label: 'Watchlist & cache', icon: 'Bookmark' },
   ]},
   { section: 'CONFIGURATION', items: [
-    { id: 'apikeys', label: 'API keys & config' },
-    { id: 'scheduler', label: 'Scheduler' },
-    { id: 'webhooks', label: 'Webhooks' },
-    { id: 'security', label: 'Security', badgeKey: 'failed_auth_last_24h' },
+    { id: 'apikeys', label: 'API keys & config', icon: 'KeyRound' },
+    { id: 'scheduler', label: 'Scheduler', icon: 'Clock' },
+    { id: 'webhooks', label: 'Webhooks', icon: 'Webhook' },
+    { id: 'security', label: 'Security', icon: 'ShieldAlert', badgeKey: 'failed_auth_last_24h' },
   ]},
   { section: 'OBSERVABILITY', items: [
-    { id: 'feedhealth', label: 'Feed health', badgeKey: 'open_circuit_count' },
-    { id: 'ingestlog', label: 'Application logs', badgeKey: 'ingest_error_count' },
+    { id: 'feedhealth', label: 'Feed health', icon: 'HeartPulse', badgeKey: 'open_circuit_count' },
+    { id: 'ingestlog', label: 'Application logs', icon: 'ScrollText', badgeKey: 'ingest_error_count' },
   ]},
   { section: 'AUDIT', items: [
-    { id: 'auditlog', label: 'Audit log' },
+    { id: 'auditlog', label: 'Audit log', icon: 'ClipboardList' },
   ]},
   { section: 'PREFERENCES', items: [
-    { id: 'display', label: 'Display' },
+    { id: 'display', label: 'Display', icon: 'Settings2' },
   ]},
   { section: 'COMING SOON', items: [
-    { id: 'coming-login', label: 'App login & sessions', locked: true, tooltip: 'Ships in V1.4 / T3-S0' },
-    { id: 'coming-users', label: 'Multi-user management', locked: true, tooltip: 'Ships in V2.0' },
-    { id: 'coming-ratelimit', label: 'Rate limit dashboard', locked: true, tooltip: 'Ships in V1.4' },
+    { id: 'coming-login', label: 'App login & sessions', icon: 'LogIn', locked: true, tooltip: 'Ships in V1.4 / T3-S0' },
+    { id: 'coming-users', label: 'Multi-user management', icon: 'Users', locked: true, tooltip: 'Ships in V2.0' },
+    { id: 'coming-ratelimit', label: 'Rate limit dashboard', icon: 'Gauge', locked: true, tooltip: 'Ships in V1.4' },
   ]},
 ]
 
 export const ANALYST_NAV = [
   { section: 'INTEL', items: [
-    { id: 'overview', label: 'Intel status', badgeKey: 'jobs_with_errors_count' },
-    { id: 'feedhealth', label: 'Source status', badgeKey: 'open_circuit_count' },
-    { id: 'alerts', label: 'Alert channels' },
+    { id: 'overview', label: 'Intel status', icon: 'Activity', badgeKey: 'jobs_with_errors_count' },
+    { id: 'feedhealth', label: 'Source status', icon: 'HeartPulse', badgeKey: 'open_circuit_count' },
+    { id: 'alerts', label: 'Alert channels', icon: 'BellRing' },
   ]},
   { section: 'YOUR DATA', items: [
-    { id: 'watchlist', label: 'Pinned CVEs' },
+    { id: 'watchlist', label: 'Pinned CVEs', icon: 'Bookmark' },
   ]},
   { section: 'PREFERENCES', items: [
-    { id: 'display', label: 'Display' },
+    { id: 'display', label: 'Display', icon: 'Settings2' },
   ]},
 ]
 
