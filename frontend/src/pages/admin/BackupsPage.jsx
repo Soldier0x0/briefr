@@ -85,7 +85,12 @@ export default function BackupsPage({ toast, system }) {
       if (res.ok) {
         toast(`Backup schedule updated. Restarting…`, true)
         setEditingSchedule(false)
-        setSchedule(s => ({ ...s, ...scheduleForm, BACKUP_ENABLED: scheduleForm.BACKUP_ENABLED ? '1' : '0' }))
+        setSchedule(s => ({
+          ...s,
+          BACKUP_ENABLED: scheduleForm.BACKUP_ENABLED ? '1' : '0',
+          BACKUP_INTERVAL_HOURS: interval,
+          BACKUP_RETENTION_COUNT: retention,
+        }))
       } else {
         toast(`Failed: ${(data.errors || [data.detail]).join('; ')}`, false)
       }
