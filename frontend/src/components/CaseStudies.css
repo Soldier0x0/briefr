@@ -47,12 +47,14 @@
   color: var(--text);
   background: var(--bg3);
   border: 1px solid var(--border);
-  padding: 12px 14px;
+  border-left: 3px solid var(--border);
+  padding: 12px 14px 12px 12px;
 }
 
-.cs-search-input:focus {
+.cs-search-input:focus-visible {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--border2);
+  border-left-color: var(--accent);
 }
 
 .cs-search-clear {

@@ -431,6 +431,7 @@ export default function CVEFeed({
             onClick={() => onFiltersChange({
               severity: null,
               kev_only: false,
+              kev_overdue_only: false,
               poc_only: false,
               search: '',
               epss_min: null,

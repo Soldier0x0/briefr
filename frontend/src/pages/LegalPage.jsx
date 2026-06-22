@@ -7,16 +7,16 @@ export default function LegalPage({ title, subtitle, children }) {
 
   return (
     <div className="app">
-      {/* Logo navigates home; About and nav tabs hidden on legal pages */}
       <Header
         activeTab={null}
         onTabChange={() => {}}
         onAboutOpen={() => navigate('/')}
+        onLogoClick={() => navigate('/')}
       />
       <main className="legal-main">
         <div className="legal-content">
-          <Link to="/" className="legal-back mono" aria-label="Back to CVE feed">
-            &larr; BACK
+          <Link to="/" className="legal-back mono" aria-label="Back to BRIEFR home">
+            &larr; BACK TO BRIEFR
           </Link>
           <h1 className="legal-title">{title}</h1>
           {subtitle && (

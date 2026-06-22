@@ -39,6 +39,7 @@ const BriefCharts = lazy(() => import('./components/BriefCharts.jsx'))
 const DEFAULT_FILTERS = {
   severity: null,
   kev_only: false,
+  kev_overdue_only: false,
   poc_only: false,
   epss_min: null,
   search: '',
@@ -351,6 +352,7 @@ export default function App() {
       ai_profile_match: true,
       ai_profile: fw,
       kev_only: false,
+      kev_overdue_only: false,
       poc_only: false,
       severity: null,
       search: '',

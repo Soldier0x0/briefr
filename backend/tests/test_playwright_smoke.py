@@ -148,7 +148,7 @@ def test_filter_click_anchors_to_feed(smoke_page):
     assert feed_top_before is not None
     assert feed_top_before < -100, "Feed should start well above viewport before filter click"
 
-    smoke_page.get_by_role("button", name="Filter: KEV").click()
+    smoke_page.get_by_role("button", name="Filter: KEV", exact=True).click()
     _poll(smoke_page, "() => !document.querySelector('.feed-refreshing')", timeout=30.0)
 
     feed_top_after = smoke_page.evaluate(

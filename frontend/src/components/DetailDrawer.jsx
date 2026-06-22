@@ -700,6 +700,111 @@ function exploitTypeLabel(type) {
   return 'PoC'
 }
 
+const CAMPAIGN_SOURCE_PREVIEW = 5
+
+function groupPulsesByAuthor(pulses) {
+  const groups = new Map()
+  for (const pulse of pulses) {
+    const author = displayText(pulse.author) || 'Unknown source'
+    if (!groups.has(author)) groups.set(author, [])
+    groups.get(author).push(pulse)
+  }
+  for (const items of groups.values()) {
+    items.sort((a, b) => String(b.created_date || '').localeCompare(String(a.created_date || '')))
+  }
+  return Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length)
+}
+
+function CampaignPulseRow({ pulse, cve, onInvestigatePulse }) {
+  return (
+    <li className="drawer-otx-item drawer-otx-item-compact">
+      <p className="drawer-otx-name">{displayText(pulse.pulse_name) || 'Unnamed pulse'}</p>
+      <div className="drawer-otx-meta">
+        {pulse.created_date && (
+          <span className="drawer-otx-date mono">{String(pulse.created_date).slice(0, 10)}</span>
+        )}
+        {pulse.ioc_count > 0 && (
+          <span className="drawer-otx-ioc-count mono">{pulse.ioc_count} IOCs</span>
+        )}
+      </div>
+      <div className="drawer-otx-tags">
+        {displayText(pulse.adversary) && (
+          <span className="drawer-otx-adversary mono">{displayText(pulse.adversary)}</span>
+        )}
+        {(pulse.malware_families || []).slice(0, 3).map((fam, famIdx) => {
+          const label = displayText(fam)
+          if (!label) return null
+          return <span key={`${label}-${famIdx}`} className="drawer-otx-malware mono">{label}</span>
+        })}
+      </div>
+      {onInvestigatePulse && pulse.pulse_id && (
+        <button type="button" className="drawer-investigate-btn" onClick={() => onInvestigatePulse(pulse, cve)}>
+          → Investigate IOCs
+        </button>
+      )}
+    </li>
+  )
+}
+
+function CampaignPulseGroup({ author, items, cve, onInvestigatePulse, defaultOpen }) {
+  // Freeze initial open state so parent re-renders (e.g. "show more sources")
+  // do not reset manual expand/collapse — same pattern as Forge SavedPack.
+  const [initialOpen] = useState(defaultOpen)
+
+  return (
+    <details className="drawer-otx-group" open={initialOpen || undefined}>
+      <summary className="drawer-otx-group-summary">
+        <span className="drawer-otx-group-author mono">{author}</span>
+        <span className="drawer-otx-group-count mono">
+          {items.length} pulse{items.length === 1 ? '' : 's'}
+        </span>
+      </summary>
+      <ul className="drawer-otx-list drawer-otx-group-list">
+        {items.map((pulse, pulseIdx) => (
+          <CampaignPulseRow
+            key={pulse.pulse_id || `${author}-${pulseIdx}`}
+            pulse={pulse}
+            cve={cve}
+            onInvestigatePulse={onInvestigatePulse}
+          />
+        ))}
+      </ul>
+    </details>
+  )
+}
+
+function CampaignPulseGroups({ pulses, cve, onInvestigatePulse }) {
+  const [showAllSources, setShowAllSources] = useState(false)
+  const groups = useMemo(() => groupPulsesByAuthor(pulses), [pulses])
+  const visibleGroups = showAllSources ? groups : groups.slice(0, CAMPAIGN_SOURCE_PREVIEW)
+  const hiddenSourceCount = Math.max(0, groups.length - CAMPAIGN_SOURCE_PREVIEW)
+
+  return (
+    <div className="drawer-otx-groups">
+      {visibleGroups.map(([author, items]) => (
+        <CampaignPulseGroup
+          key={author}
+          author={author}
+          items={items}
+          cve={cve}
+          onInvestigatePulse={onInvestigatePulse}
+          defaultOpen={items.length <= 2 || groups.length === 1}
+        />
+      ))}
+      {hiddenSourceCount > 0 && !showAllSources && (
+        <button
+          type="button"
+          className="drawer-otx-more-btn mono"
+          onClick={() => setShowAllSources(true)}
+          aria-label={`Show ${hiddenSourceCount} more campaign sources`}
+        >
+          + {hiddenSourceCount} more source{hiddenSourceCount === 1 ? '' : 's'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxConfigured, cve, loading, onInvestigateIp, onInvestigatePulse, pivotNotice, correlation, correlationLoading, onSelectCorrelatedCve, onDismissCorrelation }) {
   const exploits = Array.isArray(publicExploits) ? publicExploits : []
   const scans = Array.isArray(greynoiseScans) ? greynoiseScans : []
@@ -825,33 +930,11 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
         ) : pulses.length === 0 ? (
           <p className="drawer-intel-empty mono">// No community intelligence found for this CVE</p>
         ) : (
-          <ul className="drawer-otx-list">
-            {pulses.map((pulse, pulseIdx) => (
-              <li key={pulse.pulse_id || `pulse-${pulseIdx}`} className="drawer-otx-item">
-                <p className="drawer-otx-name">{displayText(pulse.pulse_name) || "Unnamed pulse"}</p>
-                <div className="drawer-otx-meta">
-                  {displayText(pulse.author) && (
-                    <span className="drawer-otx-author mono">{displayText(pulse.author)}</span>
-                  )}
-                  {pulse.created_date && <span className="drawer-otx-date mono">{String(pulse.created_date).slice(0, 10)}</span>}
-                  {pulse.ioc_count > 0 && <span className="drawer-otx-ioc-count mono">{pulse.ioc_count} IOCs</span>}
-                </div>
-                <div className="drawer-otx-tags">
-                  {displayText(pulse.adversary) && (
-                    <span className="drawer-otx-adversary mono">{displayText(pulse.adversary)}</span>
-                  )}
-                  {(pulse.malware_families || []).slice(0, 4).map((fam, famIdx) => {
-                    const label = displayText(fam)
-                    if (!label) return null
-                    return <span key={`${label}-${famIdx}`} className="drawer-otx-malware mono">{label}</span>
-                  })}
-                </div>
-                {onInvestigatePulse && pulse.pulse_id && (
-                  <button type="button" className="drawer-investigate-btn" onClick={() => onInvestigatePulse(pulse, cve)}>→ Investigate IOCs</button>
-                )}
-              </li>
-            ))}
-          </ul>
+          <CampaignPulseGroups
+            pulses={pulses}
+            cve={cve}
+            onInvestigatePulse={onInvestigatePulse}
+          />
         )}
         {pivotNotice && (
           <p className="drawer-intel-empty mono" role="status">{pivotNotice}</p>

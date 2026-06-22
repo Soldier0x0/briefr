@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 ATLAS_YAML_URL = os.environ.get(
     "ATLAS_YAML_URL",
-    "https://raw.githubusercontent.com/mitre-atlas/atlas-data/main/data/ATLAS.yaml",
+    "https://raw.githubusercontent.com/mitre-atlas/atlas-data/main/dist/ATLAS-latest.yaml",
 )
 ATLAS_YAML_FALLBACK = (
-    "https://raw.githubusercontent.com/mitre-atlas/atlas-data/main/dist/ATLAS.yaml"
+    "https://raw.githubusercontent.com/mitre-atlas/atlas-data/main/dist/v6/ATLAS-latest.yaml"
 )
 ATLAS_CASE_STUDIES_DIR_URL = (
     "https://api.github.com/repos/mitre-atlas/atlas-data/contents/data/case-studies"

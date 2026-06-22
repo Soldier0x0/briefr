@@ -138,20 +138,21 @@
 }
 
 .filter-stack-input {
-  flex: 1;
-  min-width: 0;
   font-family: var(--font-mono);
   font-size: 0.8125rem;
-  letter-spacing: 0.02em;
-  padding: 8px 10px;
-  border: 1px solid var(--border2);
-  background: var(--bg);
   color: var(--text);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  padding: 8px 12px 8px 10px;
+  flex: 1;
+  min-width: 0;
 }
 
 .filter-stack-input:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--border2);
+  border-left-color: var(--accent);
 }
 
 .filter-stack-input::placeholder {
@@ -231,9 +232,16 @@
   color: var(--text);
   background: var(--bg2);
   border: 1px solid var(--border);
-  padding: 8px 12px;
+  border-left: 3px solid var(--border);
+  padding: 8px 12px 8px 10px;
   width: 100%;
   flex: 1 1 100%;
+}
+
+.filter-search:focus-visible {
+  outline: none;
+  border-color: var(--border2);
+  border-left-color: var(--accent);
 }
 
 .filter-search::placeholder {

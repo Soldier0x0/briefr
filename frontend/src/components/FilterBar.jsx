@@ -14,6 +14,7 @@ const QUICK_FILTERS = [
   { id: 'high',     label: 'HIGH' },
   { id: 'medium',   label: 'MEDIUM' },
   { id: 'poc',      label: 'PoC' },
+  { id: 'kev_overdue', label: 'KEV OVERDUE' },
 ]
 
 export const VENDORS = [
@@ -24,14 +25,15 @@ export const VENDORS = [
 ]
 
 function deriveActive(filters) {
-  if (filters.watchlist_only && !filters.kev_only && !filters.poc_only && !filters.severity) {
+  if (filters.watchlist_only && !filters.kev_only && !filters.kev_overdue_only && !filters.poc_only && !filters.severity) {
     return 'watchlist'
   }
-  if (filters.kev_only && !filters.poc_only && !filters.severity) return 'kev'
-  if (filters.severity === 'CRITICAL' && !filters.kev_only && !filters.poc_only) return 'critical'
-  if (filters.severity === 'HIGH'     && !filters.kev_only && !filters.poc_only) return 'high'
-  if (filters.severity === 'MEDIUM'   && !filters.kev_only && !filters.poc_only) return 'medium'
-  if (filters.poc_only && !filters.kev_only && !filters.severity) return 'poc'
+  if (filters.kev_overdue_only && !filters.kev_only && !filters.poc_only && !filters.severity) return 'kev_overdue'
+  if (filters.kev_only && !filters.kev_overdue_only && !filters.poc_only && !filters.severity) return 'kev'
+  if (filters.severity === 'CRITICAL' && !filters.kev_only && !filters.kev_overdue_only && !filters.poc_only) return 'critical'
+  if (filters.severity === 'HIGH'     && !filters.kev_only && !filters.kev_overdue_only && !filters.poc_only) return 'high'
+  if (filters.severity === 'MEDIUM'   && !filters.kev_only && !filters.kev_overdue_only && !filters.poc_only) return 'medium'
+  if (filters.poc_only && !filters.kev_only && !filters.kev_overdue_only && !filters.severity) return 'poc'
   return 'all'
 }
 
@@ -47,6 +49,7 @@ export function hasActiveFilters(filters) {
     filters.technique ||
     filters.vendors ||
     filters.kev_only ||
+    filters.kev_overdue_only ||
     filters.poc_only ||
     filters.epss_min != null ||
     filters.severity ||
@@ -102,9 +105,16 @@ export default function FilterBar({
   const selectedVendors = parseVendors(filters.vendors)
 
   function handleQuickFilter(id) {
-    const base = { severity: null, kev_only: false, poc_only: false, watchlist_only: false }
+    const base = {
+      severity: null,
+      kev_only: false,
+      kev_overdue_only: false,
+      poc_only: false,
+      watchlist_only: false,
+    }
     if (id === 'watchlist')     onFiltersChange({ ...base, watchlist_only: true })
     else if (id === 'kev')           onFiltersChange({ ...base, kev_only: true })
+    else if (id === 'kev_overdue')   onFiltersChange({ ...base, kev_overdue_only: true })
     else if (id === 'critical') onFiltersChange({ ...base, severity: 'CRITICAL' })
     else if (id === 'high')     onFiltersChange({ ...base, severity: 'HIGH' })
     else if (id === 'medium')   onFiltersChange({ ...base, severity: 'MEDIUM' })

@@ -20,6 +20,7 @@ function buildDigest(cves, filters) {
   const activeFilters = []
   if (filters.severity) activeFilters.push(filters.severity)
   if (filters.kev_only) activeFilters.push('KEV')
+  if (filters.kev_overdue_only) activeFilters.push('KEV overdue')
   if (filters.poc_only) activeFilters.push('PoC')
   if (filters.epss_min) activeFilters.push(`EPSS>${filters.epss_min * 100}%`)
   if (filters.search)   activeFilters.push(`search:"${filters.search}"`)

@@ -14,13 +14,20 @@
   display: inline-block;
   font-size: 10px;
   letter-spacing: 0.1em;
-  color: var(--text3);
+  color: var(--accent);
   text-decoration: none;
   margin-bottom: 28px;
-  transition: color 0.1s;
+  padding: 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg2));
+  transition: color 0.1s, border-color 0.1s, background 0.1s;
 }
 
-.legal-back:hover { color: var(--accent); }
+.legal-back:hover {
+  color: var(--text);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg2));
+}
 
 .legal-title {
   font-family: var(--font-display);
