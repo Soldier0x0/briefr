@@ -63,19 +63,19 @@ export default function TermsPage() {
         1.1 (BSL). Copyright &copy; 2026 Sai Harsha Vardhan. Self-hosting and
         use of the source code is free for personal, non-commercial purposes.
         Any use by or on behalf of a for-profit organisation or business
-        ("commercial use") requires a one-time, lifetime commercial licence —
-        contact harsha@projectjupiter.in to obtain one. A commercial licence
+        ("commercial use") requires a one-time, lifetime commercial license —
+        contact harsha@projectjupiter.in to obtain one. A commercial license
         grants only the right to use BRIEFR commercially, for life, in
         exchange for a single one-time payment — it is not a support or
         maintenance contract, and does not entitle the licensee to future
         updates, patches, or fixes; a commercial licensee may self-maintain
         their own fork or adopt whatever updates the operator chooses to
         publish, at the operator's discretion. Individuals using BRIEFR for
-        free under the personal licence may optionally support development
+        free under the personal license may optionally support development
         via Buy Me a Coffee (one-time or monthly) — this is never required,
         and confers no additional rights, support, or update guarantee beyond
-        what the free personal licence already provides. Self-hosted instances, whether
-        under the free personal licence or a paid commercial licence, are run
+        what the free personal license already provides. Self-hosted instances, whether
+        under the free personal license or a paid commercial license, are run
         entirely at the operator's own risk: no maintenance, support,
         updates, or uptime guarantee is provided to anyone (see Section 5,
         Disclaimer, which applies equally to self-hosted instances). The
