@@ -2401,6 +2401,7 @@ async def get_atlas_case_studies(
 
 NVD_SYNC_WATERMARK_KEY = "nvd_last_mod_end"
 EPSS_BACKFILL_DONE_KEY = "epss_backfill_done"
+ATLAS_UPSTREAM_VERSION_KEY = "atlas_upstream_version"
 
 
 async def get_sync_state_value(db: aiosqlite.Connection, key: str) -> str | None:
