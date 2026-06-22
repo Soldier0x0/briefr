@@ -101,6 +101,7 @@ EXPECTED_ROUTES = [
     ("GET", "/api/admin/scheduler/history"),
     ("POST", "/api/admin/scheduler/run"),
     ("POST", "/api/admin/feeds/{source_id}/reset-circuit"),
+    ("POST", "/api/admin/incidents/refresh"),
     ("GET", "/api/admin/webhooks/log"),
     ("GET", "/api/admin/webhooks/delivery-log"),
     ("GET", "/api/admin/logs"),

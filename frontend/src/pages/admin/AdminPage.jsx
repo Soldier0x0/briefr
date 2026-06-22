@@ -153,7 +153,7 @@ export default function AdminPage() {
     webhooks: <WebhooksPage toast={toast} />,
     alerts: <AlertsPage toast={toast} />,
     security: <SecurityPage toast={toast} />,
-    feedhealth: <FeedHealthPage system={system} toast={toast} mode={mode} />,
+    feedhealth: <FeedHealthPage system={system} toast={toast} mode={mode} onReload={loadSystem} />,
     ingestlog: <IngestLogPage toast={toast} onErrorCountChange={setIngestErrorCount} active={page === 'ingestlog'} />,
     auditlog: <AuditLogPage toast={toast} />,
     display: <DisplayPage />,
