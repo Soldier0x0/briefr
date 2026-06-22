@@ -397,6 +397,7 @@ def _framework_match_clause(frameworks: str | None) -> tuple[str, list]:
 def _build_cve_filters(
     severity: str | None,
     kev_only: bool,
+    kev_overdue_only: bool,
     poc_only: bool,
     epss_min: float | None,
     search: str | None,
@@ -422,6 +423,14 @@ def _build_cve_filters(
 
     if kev_only:
         conditions.append("c.is_kev = 1")
+
+    if kev_overdue_only:
+        conditions.append("c.is_kev = 1")
+        conditions.append(
+            "EXISTS (SELECT 1 FROM kev_deadlines k WHERE k.cve_id = c.cve_id "
+            "AND k.due_date IS NOT NULL AND TRIM(k.due_date) != '' "
+            "AND DATE(k.due_date) < DATE('now'))"
+        )
 
     if poc_only:
         conditions.append("c.has_poc = 1")
@@ -516,6 +525,7 @@ def _sort_by_stack_relevance(cve_list: list[dict], stack_products: list[str]) ->
 async def list_cves(
     severity: str | None = Query(default=None, description="CRITICAL/HIGH/MEDIUM/LOW"),
     kev_only: bool = Query(default=False),
+    kev_overdue_only: bool = Query(default=False),
     poc_only: bool = Query(default=False),
     epss_min: float | None = Query(default=None, ge=0.0, le=1.0),
     search: str | None = Query(default=None, max_length=200),
@@ -533,6 +543,7 @@ async def list_cves(
     conditions, params, stack_products = _build_cve_filters(
         severity,
         kev_only,
+        kev_overdue_only,
         poc_only,
         epss_min,
         search,
@@ -599,6 +610,7 @@ async def match_cves_to_assets(body: AssetMatchRequest):
 async def export_cves(
     severity: str | None = Query(default=None),
     kev_only: bool = Query(default=False),
+    kev_overdue_only: bool = Query(default=False),
     poc_only: bool = Query(default=False),
     epss_min: float | None = Query(default=None, ge=0.0, le=1.0),
     search: str | None = Query(default=None, max_length=200),
@@ -616,6 +628,7 @@ async def export_cves(
     conditions, params, stack_products = _build_cve_filters(
         severity,
         kev_only,
+        kev_overdue_only,
         poc_only,
         epss_min,
         search,

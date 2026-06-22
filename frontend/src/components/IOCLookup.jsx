@@ -1161,7 +1161,11 @@ export default function IOCLookup({ prefill }) {
             <span className="idle-arrow">+</span>
             <span className="idle-node">ABUSEIPDB</span>
             <span className="idle-arrow">+</span>
-            <span className="idle-node">MORE</span>
+            <span className="idle-node">GREYNOISE</span>
+            <span className="idle-arrow">+</span>
+            <span className="idle-node">MALWAREBAZAAR</span>
+            <span className="idle-arrow">+</span>
+            <span className="idle-node">URLHAUS</span>
             <span className="idle-arrow">--&gt;</span>
             <span className="idle-node">VERDICT</span>
           </div>

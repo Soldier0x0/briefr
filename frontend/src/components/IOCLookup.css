@@ -100,11 +100,12 @@
   color: var(--text);
   background: var(--bg2);
   border: 1px solid var(--border);
-  padding: 16px 18px;
+  border-left: 3px solid var(--border);
+  padding: 16px 18px 16px 16px;
   resize: vertical;
   min-height: 88px;
   line-height: 1.6;
-  transition: border-color 0.12s;
+  transition: border-color 0.12s, border-left-color 0.12s;
 }
 
 .ioc-value-input::placeholder {
@@ -112,8 +113,9 @@
   font-size: 0.8125rem;
 }
 
-.ioc-value-input:focus {
-  border-color: var(--accent);
+.ioc-value-input:focus-visible {
+  border-color: var(--border2);
+  border-left-color: var(--accent);
   outline: none;
 }
 

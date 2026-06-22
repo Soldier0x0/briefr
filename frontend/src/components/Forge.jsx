@@ -4,7 +4,8 @@ import {
   fetchHuntPack,
   generateHuntPack,
 } from '../api.js'
-import { getSavedStack } from '../utils/cveFilters.js'
+import { useAssetProfileOptional } from '../context/AssetProfileContext.jsx'
+import { profileToMatchAssets } from '../utils/assetProfileIo.js'
 import './Forge.css'
 
 const STATUS_LABELS = {
@@ -284,18 +285,30 @@ export default function Forge() {
   const [stackOnly, setStackOnly] = useState(false)
   const [selectedTechnique, setSelectedTechnique] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
-  const savedStack = getSavedStack()
+  const assetCtx = useAssetProfileOptional()
+
+  const profileStack = useMemo(() => {
+    if (!assetCtx?.isLoaded || !assetCtx?.profile) return ''
+    const products = profileToMatchAssets(assetCtx.profile)
+      .map(a => a.product)
+      .filter(Boolean)
+    return [...new Set(products)].join(', ')
+  }, [assetCtx?.isLoaded, assetCtx?.profile])
+
+  useEffect(() => {
+    if (!profileStack) setStackOnly(false)
+  }, [profileStack])
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError(null)
-    fetchForgeCoverage(stackOnly ? savedStack : '')
+    fetchForgeCoverage(stackOnly ? profileStack : '')
       .then(data => { if (!cancelled) setCoverage(data) })
       .catch(err => { if (!cancelled) setError(err.message || 'Failed to load coverage map') })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [stackOnly, savedStack, reloadKey])
+  }, [stackOnly, profileStack, reloadKey])
 
   // A saved pack flips the technique to "yours" — refetch keeps the map honest.
   const handlePackSaved = useCallback(() => {
@@ -334,14 +347,14 @@ export default function Forge() {
             <span className="fg-count mono"><StatusChip status="yours" /> {counts.yours}</span>
           </div>
         )}
-        {savedStack && (
+        {profileStack && (
           <label className="fg-stack-toggle mono">
             <input
               type="checkbox"
               checked={stackOnly}
               onChange={e => setStackOnly(e.target.checked)}
             />
-            MY STACK ONLY ({savedStack})
+            MY STACK ONLY ({profileStack})
           </label>
         )}
       </div>
