@@ -53,7 +53,7 @@ function Toggle({ label, hint, checked, onChange, id }) {
         >
           <span className="toggle-thumb" aria-hidden="true" />
         </button>
-        <label htmlFor={id} className="toggle-label" onClick={() => onChange(!checked)}>
+        <label htmlFor={id} className="toggle-label">
           {label}
         </label>
       </div>

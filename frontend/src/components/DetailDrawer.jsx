@@ -715,9 +715,9 @@ function groupPulsesByAuthor(pulses) {
   return Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length)
 }
 
-function CampaignPulseRow({ pulse, pulseIdx, cve, onInvestigatePulse }) {
+function CampaignPulseRow({ pulse, cve, onInvestigatePulse }) {
   return (
-    <li key={pulse.pulse_id || `pulse-${pulseIdx}`} className="drawer-otx-item drawer-otx-item-compact">
+    <li className="drawer-otx-item drawer-otx-item-compact">
       <p className="drawer-otx-name">{displayText(pulse.pulse_name) || 'Unnamed pulse'}</p>
       <div className="drawer-otx-meta">
         {pulse.created_date && (
@@ -746,6 +746,33 @@ function CampaignPulseRow({ pulse, pulseIdx, cve, onInvestigatePulse }) {
   )
 }
 
+function CampaignPulseGroup({ author, items, cve, onInvestigatePulse, defaultOpen }) {
+  // Freeze initial open state so parent re-renders (e.g. "show more sources")
+  // do not reset manual expand/collapse — same pattern as Forge SavedPack.
+  const [initialOpen] = useState(defaultOpen)
+
+  return (
+    <details className="drawer-otx-group" open={initialOpen || undefined}>
+      <summary className="drawer-otx-group-summary">
+        <span className="drawer-otx-group-author mono">{author}</span>
+        <span className="drawer-otx-group-count mono">
+          {items.length} pulse{items.length === 1 ? '' : 's'}
+        </span>
+      </summary>
+      <ul className="drawer-otx-list drawer-otx-group-list">
+        {items.map((pulse, pulseIdx) => (
+          <CampaignPulseRow
+            key={pulse.pulse_id || `${author}-${pulseIdx}`}
+            pulse={pulse}
+            cve={cve}
+            onInvestigatePulse={onInvestigatePulse}
+          />
+        ))}
+      </ul>
+    </details>
+  )
+}
+
 function CampaignPulseGroups({ pulses, cve, onInvestigatePulse }) {
   const [showAllSources, setShowAllSources] = useState(false)
   const groups = useMemo(() => groupPulsesByAuthor(pulses), [pulses])
@@ -755,29 +782,14 @@ function CampaignPulseGroups({ pulses, cve, onInvestigatePulse }) {
   return (
     <div className="drawer-otx-groups">
       {visibleGroups.map(([author, items]) => (
-        <details
+        <CampaignPulseGroup
           key={author}
-          className="drawer-otx-group"
-          open={items.length <= 2 || groups.length === 1}
-        >
-          <summary className="drawer-otx-group-summary">
-            <span className="drawer-otx-group-author mono">{author}</span>
-            <span className="drawer-otx-group-count mono">
-              {items.length} pulse{items.length === 1 ? '' : 's'}
-            </span>
-          </summary>
-          <ul className="drawer-otx-list drawer-otx-group-list">
-            {items.map((pulse, pulseIdx) => (
-              <CampaignPulseRow
-                key={pulse.pulse_id || `${author}-${pulseIdx}`}
-                pulse={pulse}
-                pulseIdx={pulseIdx}
-                cve={cve}
-                onInvestigatePulse={onInvestigatePulse}
-              />
-            ))}
-          </ul>
-        </details>
+          author={author}
+          items={items}
+          cve={cve}
+          onInvestigatePulse={onInvestigatePulse}
+          defaultOpen={items.length <= 2 || groups.length === 1}
+        />
       ))}
       {hiddenSourceCount > 0 && !showAllSources && (
         <button
