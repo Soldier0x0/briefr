@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
+import AppErrorBoundary from './components/AppErrorBoundary.jsx'
 import { AssetProfileProvider } from './context/AssetProfileContext.jsx'
 import { fetchAndCacheRiskWeights } from './scoring/riskScore.js'
 import { applyDisplayPrefs } from './utils/displayPrefs.js'
@@ -25,10 +26,12 @@ applyDisplayPrefs()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <AssetProfileProvider>
-        <App />
-      </AssetProfileProvider>
-    </BrowserRouter>
+    <AppErrorBoundary>
+      <BrowserRouter>
+        <AssetProfileProvider>
+          <App />
+        </AssetProfileProvider>
+      </BrowserRouter>
+    </AppErrorBoundary>
   </React.StrictMode>
 )

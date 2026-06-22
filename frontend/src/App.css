@@ -372,3 +372,47 @@ html.density-spacious body {
     scroll-behavior: auto !important;
   }
 }
+
+/* App-level crash screen (root error boundary fallback). */
+.app-crash {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app-crash-box {
+  max-width: 32rem;
+  text-align: center;
+}
+
+.app-crash-box h1 {
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+  color: var(--red);
+}
+
+.app-crash-box p {
+  font-size: 0.875rem;
+  color: var(--text2);
+  margin-bottom: 16px;
+  word-break: break-word;
+}
+
+.app-crash-retry {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  padding: 8px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.app-crash-retry:hover {
+  border-color: var(--border-strong);
+}
