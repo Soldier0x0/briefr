@@ -61,14 +61,17 @@ load_dotenv(backend_dir / ".env")
 
 import asyncio
 
+from auth.passwords import validate_password_strength
 from auth.repo import create_user, get_user_by_email
 from database import get_db, init_db
 
 
 def _read_password(non_interactive_value: str | None) -> str:
     if non_interactive_value is not None:
-        if len(non_interactive_value) < 8:
-            print("Password must be at least 8 characters.", file=sys.stderr)
+        try:
+            validate_password_strength(non_interactive_value)
+        except ValueError as e:
+            print(str(e), file=sys.stderr)
             sys.exit(1)
         return non_interactive_value
     while True:
@@ -77,8 +80,10 @@ def _read_password(non_interactive_value: str | None) -> str:
         if password != confirm:
             print("Passwords did not match, try again.", file=sys.stderr)
             continue
-        if len(password) < 8:
-            print("Password must be at least 8 characters.", file=sys.stderr)
+        try:
+            validate_password_strength(password)
+        except ValueError as e:
+            print(str(e), file=sys.stderr)
             continue
         return password
 

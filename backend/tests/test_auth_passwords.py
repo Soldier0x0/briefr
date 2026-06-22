@@ -5,7 +5,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from auth.passwords import DUMMY_HASH, hash_password, verify_password
+import pytest
+
+from auth.passwords import (
+    DUMMY_HASH,
+    hash_password,
+    validate_password_strength,
+    verify_password,
+)
 
 
 def test_hash_password_is_not_plaintext():
@@ -31,3 +38,12 @@ def test_verify_password_rejects_malformed_hash():
 def test_dummy_hash_never_verifies():
     assert verify_password("not-a-real-password", DUMMY_HASH) is False
     assert verify_password("something-else", DUMMY_HASH) is False
+
+
+def test_validate_password_strength_accepts_long_enough_password():
+    validate_password_strength("12345678")
+
+
+def test_validate_password_strength_rejects_short_password():
+    with pytest.raises(ValueError):
+        validate_password_strength("short")

@@ -68,6 +68,18 @@ export function login(email, password, rememberMe = false) {
   })
 }
 
+export function fetchSetupRequired() {
+  return request('/auth/setup-required')
+}
+
+export function setupAccount(email, password) {
+  return request('/auth/setup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+}
+
 export function logout() {
   return request('/auth/logout', { method: 'POST' })
 }

@@ -118,6 +118,10 @@ EXPECTED_ROUTES = [
     ("POST", "/api/auth/logout"),
     ("POST", "/api/auth/refresh"),
     ("GET", "/api/auth/me"),
+    # First-run setup flow (decision 2026-06-22): appended after the
+    # original auth routes — additive only.
+    ("GET", "/api/auth/setup-required"),
+    ("POST", "/api/auth/setup"),
 ]
 
 

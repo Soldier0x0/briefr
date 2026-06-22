@@ -12,9 +12,11 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 
-from auth.passwords import DUMMY_HASH, verify_password
+from auth.passwords import DUMMY_HASH, validate_password_strength, verify_password
 from auth.repo import (
+    count_users,
     create_session,
+    create_user,
     get_session_by_token,
     get_user_by_id,
     revoke_all_sessions_for_user,
@@ -40,6 +42,11 @@ class LoginRequest(BaseModel):
     email: str
     password: str
     remember_me: bool = False
+
+
+class SetupRequest(BaseModel):
+    email: str
+    password: str
 
 
 def _refresh_expiry() -> str:
@@ -192,3 +199,62 @@ async def me(payload: dict = Depends(require_user)):
         "role": user["role"],
         "last_login_at": user["last_login_at"],
     }
+
+
+# ── First-run setup (decision 2026-06-22) ──────────────────────────────────
+# Bootstraps the first admin account so a fresh install doesn't require
+# running scripts/create_user.py by hand. Permanently disabled the instant
+# any user row exists — this is not self-service signup, it only ever fires
+# once. scripts/create_user.py remains the only way to add a second account
+# or reset a password afterward.
+
+
+@router.get("/setup-required")
+async def setup_required():
+    db = await get_db()
+    try:
+        required = await count_users(db) == 0
+    finally:
+        await db.close()
+    return {"required": required}
+
+
+@router.post("/setup")
+async def setup(
+    body: SetupRequest, request: Request, response: Response, _rl=Depends(rate_limit_login)
+):
+    try:
+        validate_password_strength(body.password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    db = await get_db()
+    try:
+        if await count_users(db) > 0:
+            raise HTTPException(status_code=409, detail="Setup already completed")
+
+        user = await create_user(db, body.email, body.password, role="admin")
+
+        refresh_token = generate_refresh_token()
+        await create_session(
+            db,
+            user["id"],
+            refresh_token,
+            _refresh_expiry(),
+            user_agent=request.headers.get("user-agent", "")[:255],
+            ip=request.client.host if request.client else "",
+            remember_me=False,
+        )
+        await update_last_login(db, user["id"])
+        await db.commit()
+    finally:
+        await db.close()
+
+    access_token = create_access_token(user["id"], user["email"], user["role"])
+    _set_access_cookie(response, access_token)
+    _set_refresh_cookie(response, refresh_token, remember_me=False)
+
+    request.state.user_email = user["email"]
+    await audit(request, "auth.setup_completed", user["email"])
+
+    return {"email": user["email"], "role": user["role"]}

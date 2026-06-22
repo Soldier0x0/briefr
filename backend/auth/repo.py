@@ -15,6 +15,11 @@ from auth.passwords import hash_password
 from auth.tokens import hash_refresh_token
 
 
+async def count_users(db: Any) -> int:
+    rows = await db.execute_fetchall("SELECT COUNT(*) AS n FROM users")
+    return rows[0]["n"]
+
+
 async def get_user_by_email(db: Any, email: str) -> dict | None:
     rows = await db.execute_fetchall(
         """

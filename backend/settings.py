@@ -8,11 +8,18 @@ router-split phases.
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
 
-from dotenv import load_dotenv
+import logging
+import os
+import secrets
+from pathlib import Path
+
+from dotenv import load_dotenv, set_key
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -84,6 +91,20 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+if not settings.jwt_secret:
+    # First boot with no JWT_SECRET set: generate one and persist it to .env
+    # so it survives restarts (same dotenv.set_key() mechanism routers/admin.py
+    # uses for runtime-writable config) instead of forcing a manual step.
+    _generated_secret = secrets.token_hex(32)
+    _dotenv_path = Path(__file__).resolve().parent / ".env"
+    try:
+        set_key(str(_dotenv_path), "JWT_SECRET", _generated_secret)
+    except OSError:
+        pass
+    os.environ["JWT_SECRET"] = _generated_secret
+    settings.jwt_secret = _generated_secret
+    logger.warning("No JWT_SECRET configured — generated and persisted a new one to .env")
 
 if settings.is_production and not settings.jwt_secret:
     raise RuntimeError(

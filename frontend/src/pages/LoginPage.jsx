@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 import './LoginPage.css'
 
 export default function LoginPage() {
-  const { status, login } = useAuth()
+  const { status, setupRequired, login, completeSetup } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -28,11 +28,15 @@ export default function LoginPage() {
     setSubmitting(true)
     setError('')
     try {
-      await login(email, password, rememberMe)
+      if (setupRequired) {
+        await completeSetup(email, password)
+      } else {
+        await login(email, password, rememberMe)
+      }
       const from = location.state?.from?.pathname || '/'
       navigate(from, { replace: true })
     } catch (err) {
-      setError(err.message || 'Login failed')
+      setError(err.message || (setupRequired ? 'Setup failed' : 'Login failed'))
       setShake(true)
     } finally {
       setSubmitting(false)
@@ -48,7 +52,9 @@ export default function LoginPage() {
       >
         <div className="login-brand">
           <span className="login-wordmark">BRIEFR</span>
-          <span className="login-tagline mono">CVE intelligence</span>
+          <span className="login-tagline mono">
+            {setupRequired ? 'Create your admin account' : 'CVE intelligence'}
+          </span>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
@@ -87,28 +93,32 @@ export default function LoginPage() {
             </div>
           </label>
 
-          <label className="login-remember mono">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={e => setRememberMe(e.target.checked)}
-            />
-            <span>
-              Remember me
-              <span className="login-remember-hint">
-                {' '}— stay signed in on this device for 30 days. Leave
-                unchecked on a shared machine.
+          {!setupRequired && (
+            <label className="login-remember mono">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+              />
+              <span>
+                Remember me
+                <span className="login-remember-hint">
+                  {' '}— stay signed in on this device for 30 days. Leave
+                  unchecked on a shared machine.
+                </span>
               </span>
-            </span>
-          </label>
+            </label>
+          )}
 
           {error && <div className="login-error mono">{error}</div>}
 
           <button type="submit" className="login-submit" disabled={submitting}>
             {submitting ? (
-              <span className="login-dots" aria-label="Signing in">
+              <span className="login-dots" aria-label={setupRequired ? 'Creating account' : 'Signing in'}>
                 <span /><span /><span />
               </span>
+            ) : setupRequired ? (
+              'Create account'
             ) : (
               'Sign in'
             )}

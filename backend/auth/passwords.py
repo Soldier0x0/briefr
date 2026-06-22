@@ -16,6 +16,11 @@ import bcrypt
 DUMMY_HASH = bcrypt.hashpw(secrets.token_bytes(32), bcrypt.gensalt(rounds=12)).decode("utf-8")
 
 
+def validate_password_strength(password: str) -> None:
+    if len(password) < 8:
+        raise ValueError("Password must be at least 8 characters.")
+
+
 def hash_password(plain: str) -> str:
     return bcrypt.hashpw(plain.encode("utf-8"), bcrypt.gensalt(rounds=12)).decode("utf-8")
 

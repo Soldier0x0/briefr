@@ -6,13 +6,20 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { fetchMe, login as apiLogin, logout as apiLogout } from '../api.js'
+import {
+  fetchMe,
+  fetchSetupRequired,
+  login as apiLogin,
+  logout as apiLogout,
+  setupAccount,
+} from '../api.js'
 
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [status, setStatus] = useState('loading')
+  const [setupRequired, setSetupRequired] = useState(false)
 
   const refreshAuthState = useCallback(async () => {
     try {
@@ -29,6 +36,9 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     refreshAuthState()
+    fetchSetupRequired()
+      .then(({ required }) => setSetupRequired(required))
+      .catch(() => setSetupRequired(false))
   }, [refreshAuthState])
 
   useEffect(() => {
@@ -56,9 +66,17 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  const completeSetup = useCallback(async (email, password) => {
+    const me = await setupAccount(email, password)
+    setUser(me)
+    setStatus('authed')
+    setSetupRequired(false)
+    return me
+  }, [])
+
   const value = useMemo(
-    () => ({ user, status, login, logout, refreshAuthState }),
-    [user, status, login, logout, refreshAuthState],
+    () => ({ user, status, setupRequired, login, logout, completeSetup, refreshAuthState }),
+    [user, status, setupRequired, login, logout, completeSetup, refreshAuthState],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
