@@ -1,14 +1,29 @@
 const BASE = '/api'
 const REQUEST_TIMEOUT_MS = 20000
 
-async function request(path, options = {}) {
-  // Bounded failure: a hung backend must not leave spinners forever.
+// Shared in-flight refresh promise so concurrent 401s share one
+// /api/auth/refresh call instead of each racing to rotate the same refresh
+// token — a second independent call would find the token already rotated
+// and trip the backend's reuse-detection, revoking every session.
+let refreshPromise = null
+
+function refreshAccessToken() {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${BASE}/auth/refresh`, { method: 'POST', credentials: 'include' })
+      .then(res => res.ok)
+      .catch(() => false)
+      .finally(() => { refreshPromise = null })
+  }
+  return refreshPromise
+}
+
+async function doFetch(path, options) {
   if (!options.signal && typeof AbortSignal?.timeout === 'function') {
     options = { ...options, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) }
   }
-  let res
+  options = { credentials: 'include', ...options }
   try {
-    res = await fetch(`${BASE}${path}`, options)
+    return await fetch(`${BASE}${path}`, options)
   } catch (e) {
     if (e?.name === 'AbortError') {
       throw e
@@ -22,14 +37,55 @@ async function request(path, options = {}) {
     err.status = 0
     throw err
   }
+}
+
+async function request(path, options = {}, _retried = false) {
+  // Bounded failure: a hung backend must not leave spinners forever.
+  const res = await doFetch(path, options)
 
   if (!res.ok) {
+    if (res.status === 401 && !path.startsWith('/auth/')) {
+      if (!_retried && (await refreshAccessToken())) {
+        return request(path, options, true)
+      }
+      window.dispatchEvent(new CustomEvent('briefr-auth-expired'))
+    }
     const body = await res.json().catch(() => ({ detail: res.statusText }))
     const err = new Error(body.detail || `HTTP ${res.status}`)
     err.status = res.status
     throw err
   }
   return res.json()
+}
+
+// ── Built-in app login (decision 2026-06-11) ───────────────────────────────
+
+export function login(email, password, rememberMe = false) {
+  return request('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, remember_me: rememberMe }),
+  })
+}
+
+export function fetchSetupRequired() {
+  return request('/auth/setup-required')
+}
+
+export function setupAccount(email, password) {
+  return request('/auth/setup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+}
+
+export function logout() {
+  return request('/auth/logout', { method: 'POST' })
+}
+
+export function fetchMe() {
+  return request('/auth/me')
 }
 
 export function fetchStats({ frameworks = [] } = {}) {
@@ -327,9 +383,10 @@ async function adminFetch(path, opts = {}) {
   const key = getAdminKey()
   const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) }
   if (key) headers['X-BRIEFR-Admin-Key'] = key
-  const res = await fetch(`/api/admin${path}`, { ...opts, headers })
+  const res = await fetch(`/api/admin${path}`, { ...opts, headers, credentials: 'include' })
   if (res.status === 401) {
     clearAdminKey()
+    window.dispatchEvent(new CustomEvent('briefr-auth-expired'))
     throw Object.assign(new Error('Unauthorized'), { status: 401 })
   }
   return res

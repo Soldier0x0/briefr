@@ -45,7 +45,7 @@ from config_schema import (
     list_schema,
     validate_value,
 )
-from dependencies import audit, require_admin_key, trigger_graceful_restart
+from dependencies import audit, require_admin, trigger_graceful_restart
 from destructive_actions import list_actions, require_confirm
 from rate_limit import get_top_consumers, rate_limit_refresh
 from resilient_client import get_feed_health, reset_circuit
@@ -54,7 +54,7 @@ from structured_logging import LOG_CATEGORIES, get_log_buffer, get_known_loggers
 
 router = APIRouter(
     prefix="/api/admin",
-    dependencies=[Depends(require_admin_key), Depends(rate_limit_refresh)],
+    dependencies=[Depends(require_admin), Depends(rate_limit_refresh)],
 )
 
 _BUILD_INFO_PATH = Path(__file__).resolve().parents[1] / ".build-info.json"

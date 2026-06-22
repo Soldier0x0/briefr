@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import json
 import os
 import signal
 import subprocess
 import sys
 import time
 import urllib.error
+import http.cookiejar
 import urllib.request
 from pathlib import Path
 
@@ -22,6 +24,9 @@ BACKEND_PORT = int(os.environ.get("PLAYWRIGHT_BACKEND_PORT", "8765"))
 FRONTEND_PORT = int(os.environ.get("PLAYWRIGHT_FRONTEND_PORT", "5173"))
 BACKEND_URL = f"http://127.0.0.1:{BACKEND_PORT}"
 FRONTEND_URL = f"http://127.0.0.1:{FRONTEND_PORT}"
+
+SMOKE_AUTH_EMAIL = "smoke@briefr.test"
+SMOKE_AUTH_PASSWORD = "smoke-test-password-32bytes!!"
 
 
 def _wait_url(url: str, *, timeout: float = 120.0) -> None:
@@ -67,6 +72,53 @@ asyncio.run(build_incident_feed_snapshot())
     )
 
 
+def _smoke_auth_cookies(backend_url: str) -> list[dict[str, str | bool]]:
+    """Bootstrap or log in the smoke admin via API; return Playwright cookie dicts."""
+    jar = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+
+    with opener.open(f"{backend_url}/api/auth/setup-required", timeout=10) as resp:
+        setup_required = json.loads(resp.read()).get("required", False)
+
+    if setup_required:
+        payload = {"email": SMOKE_AUTH_EMAIL, "password": SMOKE_AUTH_PASSWORD}
+        endpoint = f"{backend_url}/api/auth/setup"
+    else:
+        payload = {
+            "email": SMOKE_AUTH_EMAIL,
+            "password": SMOKE_AUTH_PASSWORD,
+            "remember_me": True,
+        }
+        endpoint = f"{backend_url}/api/auth/login"
+
+    req = urllib.request.Request(
+        endpoint,
+        data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with opener.open(req, timeout=10) as resp:
+        if resp.status >= 400:
+            raise RuntimeError(f"Smoke auth failed ({resp.status}): {resp.read()}")
+
+    cookies: list[dict[str, str | bool]] = []
+    for cookie in jar:
+        cookies.append(
+            {
+                "name": cookie.name,
+                "value": cookie.value,
+                "domain": "127.0.0.1",
+                "path": cookie.path or "/",
+                "httpOnly": True,
+                "secure": False,
+                "sameSite": "Strict",
+            }
+        )
+    if not cookies:
+        raise RuntimeError("Smoke auth succeeded but no session cookies were issued")
+    return cookies
+
+
 @pytest.fixture(scope="session")
 def playwright_smoke_stack(tmp_path_factory):
     """Seed SQLite, start uvicorn + Vite preview, yield the UI base URL."""
@@ -88,6 +140,9 @@ def playwright_smoke_stack(tmp_path_factory):
             "BRIEFR_ENV": "development",
             "ALLOWED_ORIGINS": f"http://127.0.0.1:{FRONTEND_PORT}",
             "PLAYWRIGHT_BACKEND_URL": BACKEND_URL,
+            "AUTH_COOKIE_SECURE": "0",
+            "JWT_SECRET": "playwright-smoke-test-jwt-secret-32b",
+            "RATE_LIMIT_ENABLED": "0",
         }
     )
 
@@ -147,12 +202,18 @@ def playwright_smoke_stack(tmp_path_factory):
             _terminate(backend)
 
 
+@pytest.fixture(scope="session")
+def smoke_auth_cookies(playwright_smoke_stack):
+    return _smoke_auth_cookies(BACKEND_URL)
+
+
 @pytest.fixture
-def smoke_page(playwright_smoke_stack, browser):
+def smoke_page(playwright_smoke_stack, smoke_auth_cookies, browser):
     context = browser.new_context(
         viewport={"width": 1440, "height": 900},
         color_scheme="dark",
     )
+    context.add_cookies(smoke_auth_cookies)
     page = context.new_page()
     page.add_init_script(
         """

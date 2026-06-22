@@ -8,15 +8,28 @@ export default function PrivacyPage() {
     >
       <h2 className="legal-section-heading">1. What we do not collect</h2>
       <ul className="legal-ul">
-        <li>No cookies of any kind</li>
         <li>No analytics (no Google Analytics, no Plausible)</li>
-        <li>No user accounts or personal information</li>
         <li>No IP addresses written to logs or any database</li>
         <li>No browser fingerprinting or tracking</li>
         <li>No data sold or shared with third parties</li>
       </ul>
 
       <h2 className="legal-section-heading">2. What we do collect</h2>
+
+      <h3 className="legal-sub-heading">Login &amp; session cookies</h3>
+      <p className="legal-p">
+        BRIEFR requires sign-in for operator accounts. When you log in, the
+        backend issues two httpOnly, Secure, SameSite=Strict cookies: a
+        short-lived access token and a longer-lived session (refresh) token
+        used to keep you signed in without re-entering your password. Neither
+        cookie is readable by page JavaScript. Your account record stores
+        your email address and a one-way bcrypt hash of your password — never
+        the password itself. Checking "Remember me" persists the session
+        cookie for up to 30 days; leaving it unchecked makes it a
+        session-only cookie cleared when the browser closes. Logging out, or
+        an administrator revoking a session, invalidates these cookies
+        immediately.
+      </p>
 
       <h3 className="legal-sub-heading">IOC lookup cache</h3>
       <p className="legal-p">

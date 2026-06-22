@@ -20,8 +20,10 @@ import AboutModal from './components/AboutModal.jsx'
 import ToolErrorBoundary from './components/ToolErrorBoundary.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
+import LoginPage from './pages/LoginPage.jsx'
 import AdminPage from './pages/admin/AdminPage.jsx'
 import WallboardPage from './pages/WallboardPage.jsx'
+import RequireAuth from './components/RequireAuth.jsx'
 import { fetchStats, fetchHealth, fetchCVE } from './api.js'
 import { useWatchlist } from './hooks/useWatchlist.js'
 import { useAssetProfileOptional } from './context/AssetProfileContext.jsx'
@@ -466,13 +468,15 @@ export default function App() {
   return (
     <InvestigationProvider navigation={investigationNav}>
       <Routes>
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
-        <Route path="/admin/*" element={<AdminPage />} />
+        <Route path="/admin/*" element={<RequireAuth><AdminPage /></RequireAuth>} />
         <Route path="/wallboard" element={<ToolErrorBoundary label="Wallboard"><WallboardPage /></ToolErrorBoundary>} />
         <Route
           path="*"
           element={(
+            <RequireAuth>
             <AppLayout
               activeTab={activeTab}
               setActiveTab={setActiveTab}
@@ -511,6 +515,7 @@ export default function App() {
               watchlist={watchlist}
               onWatchlistChange={handleWatchlistChange}
             />
+            </RequireAuth>
           )}
         />
       </Routes>

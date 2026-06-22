@@ -112,6 +112,16 @@ EXPECTED_ROUTES = [
     ("POST", "/api/admin/diagnostics/integrity"),
     # V1.4 Theme 4: read-only wallboard (additive, after admin routes).
     ("GET", "/api/wallboard"),
+    # Built-in app login (decision 2026-06-11): appended after wallboard
+    # routes — additive only.
+    ("POST", "/api/auth/login"),
+    ("POST", "/api/auth/logout"),
+    ("POST", "/api/auth/refresh"),
+    ("GET", "/api/auth/me"),
+    # First-run setup flow (decision 2026-06-22): appended after the
+    # original auth routes — additive only.
+    ("GET", "/api/auth/setup-required"),
+    ("POST", "/api/auth/setup"),
 ]
 
 

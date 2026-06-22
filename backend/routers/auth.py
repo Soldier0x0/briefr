@@ -1,0 +1,260 @@
+"""Built-in app login (decision 2026-06-11): /api/auth/login, /logout,
+/refresh, /me. Replaces the shared X-BRIEFR-Admin-Key during the dual-auth
+soak window (see settings.allow_legacy_admin_key / dependencies.require_admin).
+
+Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
+
+from auth.passwords import DUMMY_HASH, validate_password_strength, verify_password
+from auth.repo import (
+    count_users,
+    create_session,
+    create_user,
+    get_session_by_token,
+    get_user_by_id,
+    revoke_all_sessions_for_user,
+    revoke_session,
+    rotate_session,
+    update_last_login,
+)
+from auth.repo import get_user_by_email as _get_user_by_email
+from auth.tokens import create_access_token, generate_refresh_token
+from database import get_db
+from dependencies import audit, require_user
+from pydantic import BaseModel
+from rate_limit import check_login_email_rate_limit, rate_limit_auth_refresh, rate_limit_login
+from settings import settings
+
+router = APIRouter(prefix="/api/auth")
+
+ACCESS_COOKIE = "briefr_at"
+REFRESH_COOKIE = "briefr_rt"
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+    remember_me: bool = False
+
+
+class SetupRequest(BaseModel):
+    email: str
+    password: str
+
+
+def _refresh_expiry() -> str:
+    expires = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_days)
+    return expires.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _set_access_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        ACCESS_COOKIE,
+        token,
+        max_age=settings.jwt_access_token_minutes * 60,
+        path="/",
+        httponly=True,
+        secure=settings.auth_cookie_secure,
+        samesite="strict",
+    )
+
+
+def _set_refresh_cookie(response: Response, token: str, remember_me: bool) -> None:
+    max_age = settings.refresh_token_days * 86400 if remember_me else None
+    response.set_cookie(
+        REFRESH_COOKIE,
+        token,
+        max_age=max_age,
+        path="/api/auth",
+        httponly=True,
+        secure=settings.auth_cookie_secure,
+        samesite="strict",
+    )
+
+
+def _clear_auth_cookies(response: Response) -> None:
+    response.delete_cookie(ACCESS_COOKIE, path="/")
+    response.delete_cookie(REFRESH_COOKIE, path="/api/auth")
+
+
+@router.post("/login")
+async def login(
+    body: LoginRequest, request: Request, response: Response, _rl=Depends(rate_limit_login)
+):
+    check_login_email_rate_limit(body.email)
+
+    db = await get_db()
+    try:
+        user = await _get_user_by_email(db, body.email)
+        if user is None or not user["is_active"]:
+            verify_password(body.password, DUMMY_HASH)
+            await audit(request, "auth.login_failed", body.email.strip().lower())
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+
+        if not verify_password(body.password, user["password_hash"]):
+            await audit(request, "auth.login_failed", user["email"])
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+
+        refresh_token = generate_refresh_token()
+        await create_session(
+            db,
+            user["id"],
+            refresh_token,
+            _refresh_expiry(),
+            user_agent=request.headers.get("user-agent", "")[:255],
+            ip=request.client.host if request.client else "",
+            remember_me=body.remember_me,
+        )
+        await update_last_login(db, user["id"])
+        await db.commit()
+    finally:
+        await db.close()
+
+    access_token = create_access_token(user["id"], user["email"], user["role"])
+    _set_access_cookie(response, access_token)
+    _set_refresh_cookie(response, refresh_token, body.remember_me)
+
+    request.state.user_email = user["email"]
+    await audit(request, "auth.login", user["email"])
+
+    return {"email": user["email"], "role": user["role"]}
+
+
+@router.post("/logout")
+async def logout(request: Request, response: Response):
+    refresh_token = request.cookies.get(REFRESH_COOKIE, "")
+    if refresh_token:
+        db = await get_db()
+        try:
+            session = await get_session_by_token(db, refresh_token)
+            if session is not None and session["revoked_at"] is None:
+                await revoke_session(db, session["id"])
+                await db.commit()
+        finally:
+            await db.close()
+
+    _clear_auth_cookies(response)
+    return {"status": "ok"}
+
+
+@router.post("/refresh")
+async def refresh(
+    request: Request, response: Response, _rl=Depends(rate_limit_auth_refresh)
+):
+    refresh_token = request.cookies.get(REFRESH_COOKIE, "")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    db = await get_db()
+    try:
+        session = await get_session_by_token(db, refresh_token)
+        if session is None:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
+        if session["revoked_at"] is not None:
+            # Replay of an already-rotated (or logged-out) token: treat as
+            # theft and kill every session for this user.
+            await revoke_all_sessions_for_user(db, session["user_id"])
+            await db.commit()
+            await audit(request, "auth.token_reuse_detected", str(session["user_id"]))
+            error_response = JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+            _clear_auth_cookies(error_response)
+            return error_response
+
+        user = await get_user_by_id(db, session["user_id"])
+        if user is None or not user["is_active"]:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
+        new_refresh_token = generate_refresh_token()
+        rotated = await rotate_session(db, session, new_refresh_token, _refresh_expiry())
+        await db.commit()
+    finally:
+        await db.close()
+
+    access_token = create_access_token(user["id"], user["email"], user["role"])
+    _set_access_cookie(response, access_token)
+    _set_refresh_cookie(response, new_refresh_token, remember_me=bool(rotated["remember_me"]))
+
+    return {"email": user["email"], "role": user["role"]}
+
+
+@router.get("/me")
+async def me(payload: dict = Depends(require_user)):
+    db = await get_db()
+    try:
+        user = await get_user_by_id(db, int(payload["sub"]))
+    finally:
+        await db.close()
+    if user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return {
+        "email": user["email"],
+        "role": user["role"],
+        "last_login_at": user["last_login_at"],
+    }
+
+
+# ── First-run setup (decision 2026-06-22) ──────────────────────────────────
+# Bootstraps the first admin account so a fresh install doesn't require
+# running scripts/create_user.py by hand. Permanently disabled the instant
+# any user row exists — this is not self-service signup, it only ever fires
+# once. scripts/create_user.py remains the only way to add a second account
+# or reset a password afterward.
+
+
+@router.get("/setup-required")
+async def setup_required():
+    db = await get_db()
+    try:
+        required = await count_users(db) == 0
+    finally:
+        await db.close()
+    return {"required": required}
+
+
+@router.post("/setup")
+async def setup(
+    body: SetupRequest, request: Request, response: Response, _rl=Depends(rate_limit_login)
+):
+    try:
+        validate_password_strength(body.password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    db = await get_db()
+    try:
+        if await count_users(db) > 0:
+            raise HTTPException(status_code=409, detail="Setup already completed")
+
+        user = await create_user(db, body.email, body.password, role="admin")
+
+        refresh_token = generate_refresh_token()
+        await create_session(
+            db,
+            user["id"],
+            refresh_token,
+            _refresh_expiry(),
+            user_agent=request.headers.get("user-agent", "")[:255],
+            ip=request.client.host if request.client else "",
+            remember_me=False,
+        )
+        await update_last_login(db, user["id"])
+        await db.commit()
+    finally:
+        await db.close()
+
+    access_token = create_access_token(user["id"], user["email"], user["role"])
+    _set_access_cookie(response, access_token)
+    _set_refresh_cookie(response, refresh_token, remember_me=False)
+
+    request.state.user_email = user["email"]
+    await audit(request, "auth.setup_completed", user["email"])
+
+    return {"email": user["email"], "role": user["role"]}

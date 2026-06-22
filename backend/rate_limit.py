@@ -108,6 +108,13 @@ class TokenBucket:
 ioc_bucket = TokenBucket(settings.rate_limit_ioc_per_minute, name="ioc")
 refresh_bucket = TokenBucket(settings.rate_limit_refresh_per_minute, name="refresh")
 wallboard_bucket = TokenBucket(settings.rate_limit_wallboard_per_minute, name="wallboard")
+login_bucket = TokenBucket(settings.rate_limit_login_per_minute, name="login")
+# Keyed by submitted email (not client IP) — catches credential-stuffing
+# against one account spread across many source IPs.
+login_email_bucket = TokenBucket(settings.rate_limit_login_per_minute, name="login_email")
+auth_refresh_bucket = TokenBucket(
+    settings.rate_limit_auth_refresh_per_minute, name="auth_refresh"
+)
 
 
 def client_key(request: Request) -> str:
@@ -168,6 +175,31 @@ def rate_limit_refresh(request: Request) -> None:
 def rate_limit_wallboard(request: Request) -> None:
     """Route dependency: token bucket for GET /api/wallboard."""
     _enforce(wallboard_bucket, request)
+
+
+def rate_limit_login(request: Request) -> None:
+    """Route dependency: per-IP token bucket for POST /api/auth/login."""
+    _enforce(login_bucket, request)
+
+
+def rate_limit_auth_refresh(request: Request) -> None:
+    """Route dependency: token bucket for POST /api/auth/refresh."""
+    _enforce(auth_refresh_bucket, request)
+
+
+def check_login_email_rate_limit(email: str) -> None:
+    """Per-email companion to rate_limit_login — called directly from the
+    login handler (the email lives in the request body, not the dependency-
+    injectable part of the request) once the body has been parsed."""
+    if not settings.rate_limit_enabled:
+        return
+    retry_after = login_email_bucket.acquire(email.strip().lower())
+    if retry_after > 0:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many login attempts for this account. Retry later.",
+            headers={"Retry-After": str(max(1, math.ceil(retry_after)))},
+        )
 
 
 def get_top_consumers(n: int = 5) -> list[dict]:
