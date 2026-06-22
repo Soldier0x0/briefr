@@ -260,7 +260,8 @@ async def refresh_incident_feed_sources(
                 errors = [
                     err
                     for err in errors
-                    if err.get("source")
+                    if isinstance(err, dict)
+                    and err.get("source")
                     not in {
                         s["label"]
                         for s in INCIDENT_RSS_SOURCES
@@ -289,7 +290,9 @@ async def refresh_incident_feed_sources(
 
             if "atlas" in requested:
                 errors = [
-                    err for err in errors if err.get("source") != "MITRE ATLAS"
+                    err
+                    for err in errors
+                    if isinstance(err, dict) and err.get("source") != "MITRE ATLAS"
                 ]
                 try:
                     atlas_cards, atlas_errors = await _load_atlas_cards(

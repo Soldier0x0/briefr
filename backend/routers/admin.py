@@ -1498,7 +1498,9 @@ async def reset_feed_circuit(source_id: str, request: Request):
 
 
 @router.post("/incidents/refresh")
-async def refresh_incidents_feed(request: Request, body: dict):
+async def refresh_incidents_feed(
+    request: Request, body: dict, background_tasks: BackgroundTasks
+):
     """Refresh one or more incident-feed sources (RSS outlet or ATLAS).
 
     Body: ``{"sources": ["bleeping", "atlas"]}`` — omit or pass ``[]`` for a
@@ -1530,7 +1532,7 @@ async def refresh_incidents_feed(request: Request, body: dict):
                 "Incident feed refresh failed (%s): %s", label, exc
             )
 
-    asyncio.create_task(_run())
+    background_tasks.add_task(_run)
     await audit(request, "incidents.refresh", label)
     return {
         "ok": True,

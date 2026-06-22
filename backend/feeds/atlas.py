@@ -94,8 +94,12 @@ def _strip_yaml_document_marker(text: str) -> str:
 
 def _pointer_target(body: str) -> str | None:
     """Return relative pointer path when the body is a single-line alias file."""
-    line = body.strip().splitlines()[0].strip() if body.strip() else ""
-    if not line or "\n" in line or line.startswith("{"):
+    stripped_body = body.strip()
+    if "\n" in stripped_body:
+        return None
+
+    line = stripped_body
+    if not line or line.startswith("{"):
         return None
     if line.endswith((".yaml", ".yml")) or "/" in line:
         return line
@@ -363,7 +367,11 @@ async def download_atlas_bundle() -> tuple[list[dict], list[dict]]:
                 raw = await _fetch_bytes(current_url)
                 text = raw.decode("utf-8", errors="replace")
                 pointer = _pointer_target(text)
-                if pointer and hop + 1 < _POINTER_MAX_HOPS:
+                if pointer:
+                    if hop + 1 >= _POINTER_MAX_HOPS:
+                        raise ValueError(
+                            f"ATLAS pointer chain exceeded {_POINTER_MAX_HOPS} hops"
+                        )
                     current_url = _resolve_pointer_url(current_url, pointer)
                     logger.info("ATLAS pointer → %s", current_url)
                     continue
