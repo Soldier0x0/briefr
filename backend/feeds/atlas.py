@@ -4,12 +4,12 @@ MITRE ATLAS — AI/ML adversarial threat landscape (separate from Enterprise ATT
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import re
 from datetime import date, datetime
 from typing import Any
+from urllib.parse import urljoin
 
 import yaml
 
@@ -29,7 +29,9 @@ ATLAS_CASE_STUDIES_DIR_URL = (
 )
 
 TECHNIQUE_ID_RE = re.compile(r"^AML\.T\d{4}(?:\.\d{3})?$", re.IGNORECASE)
+TACTIC_ID_RE = re.compile(r"^AML\.TA\d{4}$", re.IGNORECASE)
 CVE_ID_RE = re.compile(r"CVE-\d{4}-\d{4,7}", re.IGNORECASE)
+_POINTER_MAX_HOPS = 6
 
 
 def atlas_technique_url(technique_id: str) -> str:
@@ -83,13 +85,55 @@ async def _fetch_bytes(url: str, timeout: float = 180.0) -> bytes:
     return response.content
 
 
-def parse_atlas_yaml(data: dict) -> tuple[list[dict], list[dict]]:
-    """Parse ATLAS.yaml into technique rows and case study rows."""
-    matrix = (data.get("matrices") or [{}])[0]
+def _strip_yaml_document_marker(text: str) -> str:
+    stripped = text.strip()
+    if stripped.startswith("---"):
+        return stripped.split("---", 1)[-1].strip()
+    return stripped
+
+
+def _pointer_target(body: str) -> str | None:
+    """Return relative pointer path when the body is a single-line alias file."""
+    line = body.strip().splitlines()[0].strip() if body.strip() else ""
+    if not line or "\n" in line or line.startswith("{"):
+        return None
+    if line.endswith((".yaml", ".yml")) or "/" in line:
+        return line
+    return None
+
+
+def _resolve_pointer_url(current_url: str, pointer: str) -> str:
+    if pointer.startswith("http://") or pointer.startswith("https://"):
+        return pointer
+    base = current_url.rsplit("/", 1)[0] + "/"
+    return urljoin(base, pointer)
+
+
+def _load_yaml_mapping(text: str) -> dict:
+    data = yaml.safe_load(_strip_yaml_document_marker(text))
+    if not isinstance(data, dict):
+        raise ValueError("ATLAS YAML did not parse to a mapping")
+    return data
+
+
+def _is_v6_document(data: dict) -> bool:
+    if data.get("format-version"):
+        return True
+    return "matrix" in data and "matrices" not in data
+
+
+def _legacy_tactic_names(matrix: dict) -> dict[str, str]:
     tactic_names: dict[str, str] = {}
     for tactic in matrix.get("tactics") or []:
         if tactic.get("object-type") == "tactic" and tactic.get("id"):
             tactic_names[tactic["id"]] = _as_text(tactic.get("name"), tactic["id"])
+    return tactic_names
+
+
+def _parse_legacy_atlas_yaml(data: dict) -> tuple[list[dict], list[dict]]:
+    """Parse legacy ATLAS.yaml (matrices[] list layout)."""
+    matrix = (data.get("matrices") or [{}])[0]
+    tactic_names = _legacy_tactic_names(matrix)
 
     techniques_out: list[dict] = []
     seen_techniques: set[str] = set()
@@ -182,29 +226,164 @@ def parse_atlas_yaml(data: dict) -> tuple[list[dict], list[dict]]:
     return techniques_out, case_studies_out
 
 
+def _v6_tactic_names(data: dict) -> dict[str, str]:
+    names: dict[str, str] = {}
+    tactics = data.get("tactics") or {}
+    if isinstance(tactics, dict):
+        for tid, tactic in tactics.items():
+            if isinstance(tactic, dict):
+                key = _as_text(tactic.get("id"), tid)
+                names[key] = _as_text(tactic.get("name"), key)
+    return names
+
+
+def _v6_technique_tactic_map(data: dict) -> dict[str, str]:
+    tactic_names = _v6_tactic_names(data)
+    tech_tactic: dict[str, str] = {}
+    relationships = data.get("relationships") or {}
+    if not isinstance(relationships, dict):
+        return tech_tactic
+
+    for key, rel in relationships.items():
+        technique_id = _normalize_technique_id(key)
+        if not technique_id or not isinstance(rel, dict):
+            continue
+        for ach in rel.get("achieves") or []:
+            if not isinstance(ach, dict):
+                continue
+            target = _as_text(ach.get("target")).upper()
+            if TACTIC_ID_RE.match(target):
+                tech_tactic[technique_id] = tactic_names.get(target, target)
+                break
+    return tech_tactic
+
+
+def _v6_case_study_techniques(data: dict, study_id: str) -> list[str]:
+    rel = (data.get("relationships") or {}).get(study_id) or {}
+    if not isinstance(rel, dict):
+        return []
+    technique_ids: list[str] = []
+    for emp in rel.get("employs") or []:
+        if not isinstance(emp, dict):
+            continue
+        tid = _normalize_technique_id(emp.get("target") or "")
+        if tid and tid not in technique_ids:
+            technique_ids.append(tid)
+    return technique_ids
+
+
+def _parse_v6_atlas_yaml(data: dict) -> tuple[list[dict], list[dict]]:
+    """Parse ATLAS format v6 (dict-keyed techniques / case-studies)."""
+    tactic_by_technique = _v6_technique_tactic_map(data)
+
+    techniques_out: list[dict] = []
+    seen_techniques: set[str] = set()
+    techniques = data.get("techniques") or {}
+    if isinstance(techniques, dict):
+        for _key, tech in techniques.items():
+            if not isinstance(tech, dict):
+                continue
+            if tech.get("object-type") not in (None, "technique"):
+                continue
+            technique_id = _normalize_technique_id(tech.get("id") or _key)
+            if not technique_id or technique_id in seen_techniques:
+                continue
+            seen_techniques.add(technique_id)
+            tactic_label = tactic_by_technique.get(technique_id, "")
+            techniques_out.append(
+                {
+                    "technique_id": technique_id,
+                    "name": _as_text(tech.get("name"), technique_id),
+                    "description": _truncate(tech.get("description") or "", 600),
+                    "tactic": tactic_label,
+                    "tactic_id": "",
+                    "url": atlas_technique_url(technique_id),
+                }
+            )
+
+    case_studies_out: list[dict] = []
+    studies = data.get("case-studies") or {}
+    if isinstance(studies, dict):
+        for _key, study in studies.items():
+            if not isinstance(study, dict):
+                continue
+            if study.get("object-type") not in (None, "case-study"):
+                continue
+            study_id = _as_text(study.get("id") or _key)
+            if not study_id:
+                continue
+
+            summary_raw = _as_text(study.get("summary") or study.get("description"))
+            ref_texts: list[str] = []
+            for ref in study.get("references") or []:
+                if isinstance(ref, dict):
+                    ref_texts.append(_as_text(ref.get("title")))
+                    ref_texts.append(_as_text(ref.get("url")))
+
+            technique_ids = _v6_case_study_techniques(data, study_id)
+            cve_ids = extract_cve_ids(
+                summary_raw,
+                _as_text(study.get("name")),
+                *ref_texts,
+            )
+
+            case_studies_out.append(
+                {
+                    "study_id": study_id,
+                    "name": _as_text(study.get("name"), study_id),
+                    "summary": _truncate(summary_raw, 400),
+                    "summary_full": summary_raw,
+                    "techniques": technique_ids,
+                    "target": _as_text(study.get("target"), "AI / ML system"),
+                    "date": _as_text(study.get("date") or study.get("incident-date")),
+                    "study_type": _as_text(study.get("case-study-type") or study.get("type")),
+                    "cve_ids": cve_ids,
+                }
+            )
+
+    return techniques_out, case_studies_out
+
+
+def parse_atlas_yaml(data: dict) -> tuple[list[dict], list[dict]]:
+    """Parse ATLAS YAML (legacy list layout or v6 dict layout) into DB rows."""
+    if _is_v6_document(data):
+        return _parse_v6_atlas_yaml(data)
+    return _parse_legacy_atlas_yaml(data)
+
+
 async def download_atlas_bundle() -> tuple[list[dict], list[dict]]:
     urls = [ATLAS_YAML_URL, ATLAS_YAML_FALLBACK]
-    raw = None
-    last_err = None
-    for url in urls:
+    last_err: Exception | None = None
+
+    for start_url in urls:
+        current_url = start_url
         try:
-            logger.info("Downloading MITRE ATLAS from %s", url)
-            raw = await _fetch_bytes(url)
-            break
+            for hop in range(_POINTER_MAX_HOPS):
+                logger.info("Downloading MITRE ATLAS from %s", current_url)
+                raw = await _fetch_bytes(current_url)
+                text = raw.decode("utf-8", errors="replace")
+                pointer = _pointer_target(text)
+                if pointer and hop + 1 < _POINTER_MAX_HOPS:
+                    current_url = _resolve_pointer_url(current_url, pointer)
+                    logger.info("ATLAS pointer → %s", current_url)
+                    continue
+                data = _load_yaml_mapping(text)
+                techniques, case_studies = parse_atlas_yaml(data)
+                logger.info(
+                    "Parsed %d ATLAS techniques, %d case studies (format v6=%s)",
+                    len(techniques),
+                    len(case_studies),
+                    _is_v6_document(data),
+                )
+                if not techniques and not case_studies:
+                    raise ValueError("ATLAS bundle contained no techniques or case studies")
+                return techniques, case_studies
+            raise ValueError(f"ATLAS pointer chain exceeded {_POINTER_MAX_HOPS} hops")
         except Exception as exc:
             last_err = exc
-            logger.warning("ATLAS YAML fetch failed for %s: %s", url, exc)
-    if raw is None:
-        raise last_err or RuntimeError("ATLAS YAML download failed")
-    text = raw.decode("utf-8", errors="replace")
-    if text.startswith("---"):
-        text = text.split("---", 1)[-1]
-    data = yaml.safe_load(text)
-    if not isinstance(data, dict):
-        raise ValueError("ATLAS.yaml did not parse to a mapping")
-    techniques, case_studies = parse_atlas_yaml(data)
-    logger.info("Parsed %d ATLAS techniques, %d case studies", len(techniques), len(case_studies))
-    return techniques, case_studies
+            logger.warning("ATLAS YAML fetch/parse failed for %s: %s", start_url, exc)
+
+    raise last_err or RuntimeError("ATLAS YAML download failed")
 
 
 async def refresh_atlas_data(db) -> dict[str, int]:
