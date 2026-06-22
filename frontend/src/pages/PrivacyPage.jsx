@@ -27,7 +27,12 @@ export default function PrivacyPage() {
         result is cached locally for up to
         6 hours to reduce API calls; GreyNoise IP results are refreshed at most
         every 1 hour. This cache stores only the IOC value and the enrichment
-        result — not associated with any user or session.
+        result — not associated with any user or session. If you submit an
+        IOC belonging to someone else (e.g. a third party's IP address), that
+        value is sent to the services above under their own terms — you are
+        responsible for having a legitimate reason to do so. We process these
+        submissions on the basis of legitimate interest in security research
+        and threat intelligence.
       </p>
 
       <h3 className="legal-sub-heading">Rate limiting</h3>
@@ -76,10 +81,15 @@ export default function PrivacyPage() {
 
       <h2 className="legal-section-heading">5. Your rights</h2>
       <p className="legal-p">
-        No personal data is stored, so most GDPR and DPDP rights do not apply in
-        the traditional sense. You can clear localStorage at any time. IOC cache
-        entries auto-purge after 6 hours. For any privacy questions, contact us
-        through projectjupiter.in.
+        Sai Harsha Vardhan, sole operator of projectjupiter.in, is the Data
+        Fiduciary for this hosted instance. Because no persistent personal
+        data is stored, requests to access, correct, or erase your data will
+        generally resolve to "nothing is held" — but the right to ask, and to
+        raise a grievance, applies regardless. You can also clear
+        localStorage at any time, and IOC cache entries auto-purge after 6
+        hours. To exercise any of these rights or raise a grievance, contact
+        our Grievance Officer, Sai Harsha Vardhan, at
+        harsha@projectjupiter.in.
       </p>
 
       <h2 className="legal-section-heading">6. Children</h2>
@@ -88,11 +98,15 @@ export default function PrivacyPage() {
         researchers. It is not directed at children under the age of 13.
       </p>
 
-      <h2 className="legal-section-heading">7. Proprietary software</h2>
+      <h2 className="legal-section-heading">7. License and self-hosting</h2>
       <p className="legal-p">
-        BRIEFR is proprietary software operated at projectjupiter.in.
-        Copyright &copy; 2026 Sai Harsha Vardhan. All rights reserved. The
-        application source code is not publicly distributed.
+        BRIEFR's source code is licensed under the Business Source License
+        1.1 — see the Terms of Service for details. Copyright &copy; 2026
+        Sai Harsha Vardhan. This Privacy Policy describes data practices for
+        the hosted instance at projectjupiter.in only. If you encounter a
+        self-hosted BRIEFR instance elsewhere, its operator — not Sai Harsha
+        Vardhan — is the data fiduciary for that instance, and this policy
+        does not apply to it.
       </p>
     </LegalPage>
   )
