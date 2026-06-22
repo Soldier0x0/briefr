@@ -54,6 +54,7 @@
 
 .admin-statusbar .sb-actions {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
   margin-left: auto;
   flex-shrink: 0;

@@ -6,7 +6,7 @@ import HelpTip from './shared/HelpTip.jsx'
 import { fmtAge } from './formatters.js'
 import { worstSource } from './intelStatus.js'
 
-export default function StatusBar({ system, onRunIngest, onRestart, onDrainRestart, refreshInProgress, mode, setMode, lastUpdated }) {
+export default function StatusBar({ system, onRunIngest, onRestart, onDrainRestart, refreshInProgress, mode, setMode, lastUpdated, userMenu }) {
   const [restartMenu, setRestartMenu] = useState(false)
   const [menuPos, setMenuPos] = useState(null)
   const [confirmRestart, setConfirmRestart] = useState(null) // null | 'immediate' | 'drain'
@@ -140,6 +140,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
             )}
             {updatedAgoEl}
             <div className="sb-actions">
+              {userMenu}
               <button
                 className="admin-btn admin-btn-ghost"
                 onClick={onRunIngest}
@@ -209,6 +210,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
             )}
             {updatedAgoEl}
             <div className="sb-actions">
+              {userMenu}
               <button
                 className="admin-btn admin-btn-warn"
                 onClick={onRunIngest}

@@ -395,6 +395,20 @@
 .mobile-menu-item:last-child { border-bottom: none; }
 .mobile-menu-item:hover { background: var(--bg3); color: var(--text); }
 
+.mobile-menu-user {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mobile-menu-user .user-menu-dropdown {
+  position: static;
+  box-shadow: none;
+  border: none;
+  border-radius: 0;
+  min-width: auto;
+  margin-top: 8px;
+}
+
 .header-admin-link {
   font-family: var(--font-mono);
   font-size: 10px;
