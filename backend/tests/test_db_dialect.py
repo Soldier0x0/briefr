@@ -41,7 +41,7 @@ def test_datetime_now_interval():
         "SELECT * FROM ioc_cache WHERE cached_at > datetime('now', '-6 hours')",
         backend="postgresql",
     )
-    assert "CAST('-6 hours' AS interval)" in sql
+    assert "CAST(CAST('-6 hours' AS text) AS interval)" in sql
 
 
 def test_date_now_interval():
@@ -50,7 +50,7 @@ def test_date_now_interval():
         backend="postgresql",
     )
     assert "published::date" in sql
-    assert "CAST($1 AS interval)" in sql
+    assert "CAST(CAST($1 AS text) AS interval)" in sql
 
 
 def test_named_params_to_dollar():
