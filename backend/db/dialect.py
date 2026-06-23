@@ -25,15 +25,21 @@ def _postgres_translate_sql(text: str) -> str:
     # compared directly against this with no cast (e.g. `cached_at > datetime('now', ?)`).
     # Must stay TEXT like the no-arg case above, or Postgres raises
     # "operator does not exist: text > timestamp without time zone".
+    # \1 is often a bound placeholder (e.g. `datetime('now', ?)` -> `?`/`$n`).
+    # Casting the placeholder directly `AS interval` makes Postgres infer the
+    # parameter's type as `interval`, so asyncpg then tries to encode the
+    # Python str itself as an interval (AttributeError: 'str' object has no
+    # attribute 'days') instead of letting Postgres parse the text. Casting
+    # through `::text` first keeps the parameter's inferred type as text.
     text = re.sub(
         r"\bdatetime\('now',\s*([^)]+)\)",
-        r"(TO_CHAR(((NOW() AT TIME ZONE 'utc') + CAST(\1 AS interval)), 'YYYY-MM-DD HH24:MI:SS'))",
+        r"(TO_CHAR(((NOW() AT TIME ZONE 'utc') + CAST(CAST(\1 AS text) AS interval)), 'YYYY-MM-DD HH24:MI:SS'))",
         text,
         flags=re.IGNORECASE,
     )
     text = re.sub(
         r"\bdate\('now',\s*([^)]+)\)",
-        r"(((NOW() AT TIME ZONE 'utc') + CAST(\1 AS interval))::date)",
+        r"(((NOW() AT TIME ZONE 'utc') + CAST(CAST(\1 AS text) AS interval))::date)",
         text,
         flags=re.IGNORECASE,
     )
