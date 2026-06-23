@@ -21,9 +21,13 @@ def _postgres_translate_sql(text: str) -> str:
     if upper.startswith("PRAGMA FOREIGN_KEY_CHECK"):
         return "SELECT '' AS foreign_key_check WHERE FALSE"
     text = re.sub(r"\bdatetime\('now'\)", _NOW_UTC_TEXT, text, flags=re.IGNORECASE)
+    # cached_at/fetched_at/etc. are TEXT columns (mirroring SQLite), and are
+    # compared directly against this with no cast (e.g. `cached_at > datetime('now', ?)`).
+    # Must stay TEXT like the no-arg case above, or Postgres raises
+    # "operator does not exist: text > timestamp without time zone".
     text = re.sub(
         r"\bdatetime\('now',\s*([^)]+)\)",
-        r"((NOW() AT TIME ZONE 'utc') + CAST(\1 AS interval))",
+        r"(TO_CHAR(((NOW() AT TIME ZONE 'utc') + CAST(\1 AS interval)), 'YYYY-MM-DD HH24:MI:SS'))",
         text,
         flags=re.IGNORECASE,
     )
