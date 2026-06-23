@@ -22,36 +22,17 @@ fi
 
 # Pull first, then re-exec so we always run the latest script body (bash does not
 # re-read the file after git pull while a run is in progress).
-restore_deploy_mode_drift() {
-  local rel
-  shopt -s nullglob
-  for rel in deploy/*.sh; do
-    if ! git -C "${INSTALL_DIR}" diff --no-color --quiet -- "${rel}" 2>/dev/null; then
-      # Permission-only drift has no +/- content lines (only ---/+++ headers at most).
-      # --no-color avoids ANSI sequences when color.diff/color.ui is always on.
-      if ! git -C "${INSTALL_DIR}" diff --no-color -- "${rel}" 2>/dev/null \
-        | grep -vE '^[+-]{3}' | grep -qE '^[+-]'; then
-        echo "    Resetting permission-only drift on ${rel} (from a prior deploy run)"
-        git -C "${INSTALL_DIR}" restore -- "${rel}" 2>/dev/null \
-          || git -C "${INSTALL_DIR}" checkout -- "${rel}" 2>/dev/null \
-          || true
-      fi
-    fi
-  done
-  shopt -u nullglob
-}
-
 if [ "${BRIEFR_UPDATE_REEXECED:-}" != "1" ]; then
   echo "==> Pulling latest from main"
   git config --global --add safe.directory "${INSTALL_DIR}" 2>/dev/null || true
   git -C "${INSTALL_DIR}" remote set-url origin https://github.com/Soldier0x0/briefr.git 2>/dev/null || true
-  restore_deploy_mode_drift
+  restore_git_permission_drift
   if ! git -C "${INSTALL_DIR}" diff --quiet; then
     echo "ERROR: Local changes would block git pull:"
     git -C "${INSTALL_DIR}" diff --stat
     echo ""
-    echo "Permission-only drift under deploy/*.sh is reset automatically."
-    echo "For other tracked files, restore upstream copies (keeps .env and briefr.db untouched):"
+    echo "Permission-only drift is reset automatically before pull."
+    echo "For other tracked files, restore upstream copies (.env and briefr.db are gitignored):"
     echo "  git -C ${INSTALL_DIR} restore <path>"
     echo "Then re-run: bash ${SCRIPT_PATH}"
     exit 1
@@ -65,7 +46,9 @@ ensure_app_home
 run_pre_update_backup
 
 echo "==> Stopping services"
-systemctl stop briefr.target briefr-frontend briefr-backend 2>/dev/null || true
+systemctl stop briefr.target briefr-backend 2>/dev/null || true
+# Legacy Vite dev unit (removed from repo; may still exist on older hosts).
+systemctl stop briefr-frontend 2>/dev/null || true
 
 fix_tree_permissions
 
@@ -102,9 +85,8 @@ echo "==> Service status"
 systemctl status briefr-backend --no-pager -l | head -15 || true
 systemctl status nginx --no-pager -l | head -10 || true
 if systemctl is-active --quiet briefr-frontend 2>/dev/null; then
-  echo "WARNING: briefr-frontend (Vite) is still running — run: systemctl stop briefr-frontend && systemctl mask briefr-frontend"
-else
-  echo "briefr-frontend (Vite :5173): disabled (expected)"
+  echo "WARNING: legacy briefr-frontend (Vite :5173) is still running"
+  echo "         Run: systemctl stop briefr-frontend && systemctl mask briefr-frontend"
 fi
 
 echo ""
