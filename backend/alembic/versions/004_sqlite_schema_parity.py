@@ -148,9 +148,18 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.execute("DROP INDEX IF EXISTS idx_webhook_delivery_log_event")
+    op.execute("DROP INDEX IF EXISTS idx_webhook_delivery_log_at")
+    op.execute("DROP INDEX IF EXISTS idx_webhook_delivery_log_dest")
     op.execute("DROP TABLE IF EXISTS webhook_delivery_log")
     op.execute("DROP TABLE IF EXISTS webhook_destinations")
+    op.execute("DROP INDEX IF EXISTS idx_correlation_suppressions_cve")
     op.execute("DROP TABLE IF EXISTS correlation_suppressions")
+    op.execute("DROP INDEX IF EXISTS idx_correlation_campaign_members_cve")
     op.execute("DROP TABLE IF EXISTS correlation_campaign_members")
+    op.execute("DROP INDEX IF EXISTS idx_correlation_campaigns_pulse")
     op.execute("DROP TABLE IF EXISTS correlation_campaigns")
     op.execute("DROP TABLE IF EXISTS otx_pulses")
+    op.execute("DROP INDEX IF EXISTS idx_otx_pulse_iocs_type_value")
+    op.execute("DROP INDEX IF EXISTS idx_otx_cve_pulses_pulse")
+    op.execute("ALTER TABLE otx_cve_pulses DROP COLUMN IF EXISTS targeted_countries")

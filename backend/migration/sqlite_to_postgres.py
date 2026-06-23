@@ -115,6 +115,21 @@ async def _sqlite_columns(src: aiosqlite.Connection, table: str) -> list[str]:
     return [row[1] for row in await cursor.fetchall()]
 
 
+def _intersect_columns(
+    sqlite_cols: list[str], pg_cols: list[str],
+) -> tuple[list[str], list[str]]:
+    """Return (sqlite_select_cols, pg_insert_cols) with case-insensitive match."""
+    pg_lower = {c.lower(): c for c in pg_cols}
+    sqlite_select: list[str] = []
+    pg_insert: list[str] = []
+    for col in sqlite_cols:
+        pg_col = pg_lower.get(col.lower())
+        if pg_col:
+            sqlite_select.append(col)
+            pg_insert.append(pg_col)
+    return sqlite_select, pg_insert
+
+
 async def _pg_columns(pg: Any, table: str) -> list[str]:
     rows = await pg.fetch(
         """
@@ -171,66 +186,74 @@ async def run_migration(database_url: str, sqlite_path: str, _reserved: bool = F
             verification: dict[str, Any] = {"tables": {}, "mismatches": []}
             tables_copied = 0
             try:
-                existing_pg = []
-                for table in TABLE_ORDER:
-                    cols = await _pg_columns(pg, table)
-                    if cols:
-                        existing_pg.append(table)
-                if existing_pg:
-                    table_list = ", ".join(existing_pg)
-                    await pg.execute(f"TRUNCATE TABLE {table_list} RESTART IDENTITY CASCADE")
-
-                async with aiosqlite.connect(sqlite_path) as src:
-                    src.row_factory = aiosqlite.Row
+                async with pg.transaction():
+                    existing_pg = []
                     for table in TABLE_ORDER:
-                        _state["current_table"] = table
-                        if not await _sqlite_table_exists(src, table):
-                            logger.info("Skipping %s — not present in SQLite", table)
-                            _state["tables_done"] += 1
-                            continue
-
-                        sqlite_cols = await _sqlite_columns(src, table)
-                        pg_cols = await _pg_columns(pg, table)
-                        if not pg_cols:
-                            raise RuntimeError(f"Table {table} missing on PostgreSQL after Alembic")
-
-                        pg_set = set(pg_cols)
-                        columns = [c for c in sqlite_cols if c in pg_set]
-                        if not columns:
-                            logger.warning("No shared columns for %s — skipping", table)
-                            _state["tables_done"] += 1
-                            continue
-
-                        col_list = ", ".join(columns)
-                        cursor = await src.execute(f"SELECT {col_list} FROM {table}")
-                        table_rows = 0
-                        while True:
-                            batch = await cursor.fetchmany(_BATCH_SIZE)
-                            if not batch:
-                                break
-                            records = [tuple(row[c] for c in columns) for row in batch]
-                            await pg.copy_records_to_table(
-                                table, records=records, columns=columns,
-                            )
-                            table_rows += len(records)
-                            _state["rows_copied"] += len(records)
-                        tables_copied += 1
-                        _state["tables_done"] += 1
-
-                        sqlite_count = await _count_sqlite_rows(src, table)
-                        pg_count = await _count_pg_rows(pg, table)
-                        verification["tables"][table] = {
-                            "sqlite_rows": sqlite_count,
-                            "postgres_rows": pg_count,
-                        }
-                        if sqlite_count != pg_count:
-                            verification["mismatches"].append(table)
-
-                    for table in SERIAL_ID_TABLES:
+                        cols = await _pg_columns(pg, table)
+                        if cols:
+                            existing_pg.append(table)
+                    if existing_pg:
+                        table_list = ", ".join(existing_pg)
                         await pg.execute(
-                            f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), "
-                            f"COALESCE((SELECT MAX(id) FROM {table}), 1))"
+                            f"TRUNCATE TABLE {table_list} RESTART IDENTITY CASCADE"
                         )
+
+                    async with aiosqlite.connect(sqlite_path) as src:
+                        src.row_factory = aiosqlite.Row
+                        for table in TABLE_ORDER:
+                            _state["current_table"] = table
+                            if not await _sqlite_table_exists(src, table):
+                                logger.info("Skipping %s — not present in SQLite", table)
+                                _state["tables_done"] += 1
+                                continue
+
+                            sqlite_cols = await _sqlite_columns(src, table)
+                            pg_cols = await _pg_columns(pg, table)
+                            if not pg_cols:
+                                raise RuntimeError(
+                                    f"Table {table} missing on PostgreSQL after Alembic"
+                                )
+
+                            sqlite_columns, pg_columns = _intersect_columns(
+                                sqlite_cols, pg_cols,
+                            )
+                            if not sqlite_columns:
+                                logger.warning("No shared columns for %s — skipping", table)
+                                _state["tables_done"] += 1
+                                continue
+
+                            col_list = ", ".join(sqlite_columns)
+                            cursor = await src.execute(
+                                f"SELECT {col_list} FROM {table}"
+                            )
+                            while True:
+                                batch = await cursor.fetchmany(_BATCH_SIZE)
+                                if not batch:
+                                    break
+                                records = [
+                                    tuple(row[c] for c in sqlite_columns) for row in batch
+                                ]
+                                await pg.copy_records_to_table(
+                                    table, records=records, columns=pg_columns,
+                                )
+                                _state["rows_copied"] += len(records)
+                            tables_copied += 1
+                            _state["tables_done"] += 1
+
+                            sqlite_count = await _count_sqlite_rows(src, table)
+                            pg_count = await _count_pg_rows(pg, table)
+                            verification["tables"][table] = {
+                                "sqlite_rows": sqlite_count,
+                                "postgres_rows": pg_count,
+                            }
+                            if sqlite_count != pg_count:
+                                verification["mismatches"].append(table)
+
+                        for table in SERIAL_ID_TABLES:
+                            await pg.execute(
+                                f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), "
+                                f"COALESCE((SELECT MAX(id) FROM {table}), 1))"
+                            )
             finally:
                 await pg.close()
 

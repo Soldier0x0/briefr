@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 
 from db.config import is_postgres
 
@@ -128,10 +129,11 @@ def adapt_params(params: tuple | list | dict) -> tuple | dict:
     return tuple(params)
 
 
-def _colon_to_dollar(sql: str) -> tuple[str, list[str]]:
+@lru_cache(maxsize=1024)
+def _colon_to_dollar(sql: str) -> tuple[str, tuple[str, ...]]:
     """Convert SQLite ``:name`` placeholders to PostgreSQL ``$n``."""
     if ":" not in sql:
-        return sql, []
+        return sql, ()
     out: list[str] = []
     names: list[str] = []
     index = 0
@@ -166,7 +168,7 @@ def _colon_to_dollar(sql: str) -> tuple[str, list[str]]:
                 continue
         out.append(ch)
         index += 1
-    return "".join(out), names
+    return "".join(out), tuple(names)
 
 
 def _qmark_to_dollar(sql: str) -> str:
