@@ -1,9 +1,8 @@
 """One-shot SQLite -> PostgreSQL data migration, driven from the admin panel.
 
-Reuses the existing Alembic schema (backend/alembic/versions/001_initial_schema.py)
-for DDL and the Postgres URL helpers in db/config.py. This module only moves rows;
-it never decides which engine BRIEFR runs on — that switch happens by setting
-DATABASE_URL via the existing /api/admin/config/apply-all + graceful-restart flow.
+Reuses Alembic for DDL on the target and copies rows from the on-disk SQLite
+file. Setting DATABASE_URL (via Admin -> Database) switches the running app to
+PostgreSQL; this module never writes to briefr.db after that point.
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
@@ -23,21 +22,24 @@ from db.config import postgres_dsn
 
 logger = logging.getLogger(__name__)
 
-# Mirrors the CREATE TABLE order in alembic/versions/001_initial_schema.py
-# (already dependency-safe — cves before *_map tables, etc.)
+# Dependency-safe copy order (parents before children).
 TABLE_ORDER: list[str] = [
     "cves", "ioc_cache", "kev_deadlines", "api_usage", "sync_state",
     "mitre_techniques", "cve_technique_map", "atlas_techniques",
     "atlas_case_studies", "cve_atlas_map", "epss_history", "cve_exploits",
-    "feed_cache", "cve_change_history",     "otx_cve_pulses", "otx_pulse_iocs", "otx_pulses",
+    "feed_cache", "cve_change_history", "otx_cve_pulses", "otx_pulse_iocs", "otx_pulses",
     "correlation_infrastructure", "correlation_actor", "correlation_temporal",
     "correlation_campaigns", "correlation_campaign_members", "correlation_suppressions",
     "mitre_groups", "group_technique_map", "cve_embeddings", "hunt_packs",
     "audit_log", "watchlist", "webhook_alert_log",
+    "webhook_destinations", "webhook_delivery_log",
+    "users", "sessions",
 ]
 
-# Tables with a SERIAL id column — sequence must be re-synced after a row-level copy.
-SERIAL_ID_TABLES: list[str] = ["cve_exploits", "cve_change_history", "hunt_packs", "audit_log"]
+SERIAL_ID_TABLES: list[str] = [
+    "cve_exploits", "cve_change_history", "hunt_packs", "audit_log",
+    "correlation_suppressions", "webhook_delivery_log", "users", "sessions",
+]
 
 _BATCH_SIZE = 2000
 _BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -51,6 +53,7 @@ _state: dict[str, Any] = {
     "started_at": None,
     "finished_at": None,
     "error": None,
+    "verification": None,
 }
 _lock = asyncio.Lock()
 
@@ -80,7 +83,7 @@ async def test_connection(database_url: str) -> dict[str, Any]:
 
 
 async def _apply_schema(database_url: str) -> None:
-    """Run `alembic upgrade head` against the target DB (idempotent — CREATE TABLE IF NOT EXISTS)."""
+    """Run ``alembic upgrade head`` against the target DB."""
     env = dict(os.environ)
     env["DATABASE_URL"] = database_url
     proc = await asyncio.create_subprocess_exec(
@@ -99,32 +102,61 @@ async def _apply_schema(database_url: str) -> None:
     logger.info("Target schema migrated: %s", stdout.decode(errors="replace")[-500:])
 
 
-async def reserve_migration_slot() -> None:
-    """Atomically claim the running slot, or raise if one is already in flight.
+async def _sqlite_table_exists(src: aiosqlite.Connection, table: str) -> bool:
+    cursor = await src.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+        (table,),
+    )
+    return bool(await cursor.fetchone())
 
-    Must be awaited synchronously in the request handler — before scheduling
-    run_migration as a background task — so a second rapid request can't slip
-    past the check before the first task actually starts (background tasks
-    only run after the response is returned).
-    """
+
+async def _sqlite_columns(src: aiosqlite.Connection, table: str) -> list[str]:
+    cursor = await src.execute(f"PRAGMA table_info({table})")
+    return [row[1] for row in await cursor.fetchall()]
+
+
+async def _pg_columns(pg: Any, table: str) -> list[str]:
+    rows = await pg.fetch(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = $1
+        ORDER BY ordinal_position
+        """,
+        table,
+    )
+    return [row["column_name"] for row in rows]
+
+
+async def _count_sqlite_rows(src: aiosqlite.Connection, table: str) -> int:
+    if not await _sqlite_table_exists(src, table):
+        return 0
+    cursor = await src.execute(f"SELECT COUNT(*) FROM {table}")
+    row = await cursor.fetchone()
+    return int(row[0]) if row else 0
+
+
+async def _count_pg_rows(pg: Any, table: str) -> int:
+    try:
+        return int(await pg.fetchval(f"SELECT COUNT(*) FROM {table}"))
+    except Exception:
+        return -1
+
+
+async def reserve_migration_slot() -> None:
+    """Atomically claim the running slot, or raise if one is already in flight."""
     async with _lock:
         if _state["status"] == "running":
             raise RuntimeError("A migration is already running")
         _state.update(
             status="running", current_table=None, tables_done=0,
-            rows_copied=0, started_at=time.time(), finished_at=None, error=None,
+            rows_copied=0, started_at=time.time(), finished_at=None,
+            error=None, verification=None,
         )
 
 
 async def run_migration(database_url: str, sqlite_path: str, _reserved: bool = False) -> None:
-    """Copy every row from the SQLite file at sqlite_path into the target Postgres DB.
-
-    Truncates target tables first, so this is safely re-runnable if it fails partway.
-    Designed to be scheduled as a background task; progress is polled via get_status().
-    Callers going through the admin API should reserve the slot first via
-    reserve_migration_slot() and pass _reserved=True; this keeps the function
-    safe to call directly (e.g. from tests/scripts) too.
-    """
+    """Copy rows from SQLite into PostgreSQL (truncates target tables first)."""
     import asyncpg
 
     if not _reserved:
@@ -136,27 +168,63 @@ async def run_migration(database_url: str, sqlite_path: str, _reserved: bool = F
 
             dsn = postgres_dsn(database_url)
             pg = await asyncpg.connect(dsn=dsn, timeout=30)
+            verification: dict[str, Any] = {"tables": {}, "mismatches": []}
+            tables_copied = 0
             try:
-                # Truncate in one statement so FK cascades don't fight table order.
-                table_list = ", ".join(TABLE_ORDER)
-                await pg.execute(f"TRUNCATE TABLE {table_list} RESTART IDENTITY CASCADE")
+                existing_pg = []
+                for table in TABLE_ORDER:
+                    cols = await _pg_columns(pg, table)
+                    if cols:
+                        existing_pg.append(table)
+                if existing_pg:
+                    table_list = ", ".join(existing_pg)
+                    await pg.execute(f"TRUNCATE TABLE {table_list} RESTART IDENTITY CASCADE")
 
                 async with aiosqlite.connect(sqlite_path) as src:
                     src.row_factory = aiosqlite.Row
                     for table in TABLE_ORDER:
                         _state["current_table"] = table
-                        cols_cursor = await src.execute(f"PRAGMA table_info({table})")
-                        columns = [row[1] for row in await cols_cursor.fetchall()]
+                        if not await _sqlite_table_exists(src, table):
+                            logger.info("Skipping %s — not present in SQLite", table)
+                            _state["tables_done"] += 1
+                            continue
 
-                        cursor = await src.execute(f"SELECT {', '.join(columns)} FROM {table}")
+                        sqlite_cols = await _sqlite_columns(src, table)
+                        pg_cols = await _pg_columns(pg, table)
+                        if not pg_cols:
+                            raise RuntimeError(f"Table {table} missing on PostgreSQL after Alembic")
+
+                        pg_set = set(pg_cols)
+                        columns = [c for c in sqlite_cols if c in pg_set]
+                        if not columns:
+                            logger.warning("No shared columns for %s — skipping", table)
+                            _state["tables_done"] += 1
+                            continue
+
+                        col_list = ", ".join(columns)
+                        cursor = await src.execute(f"SELECT {col_list} FROM {table}")
+                        table_rows = 0
                         while True:
                             batch = await cursor.fetchmany(_BATCH_SIZE)
                             if not batch:
                                 break
-                            records = [tuple(row) for row in batch]
-                            await pg.copy_records_to_table(table, records=records, columns=columns)
+                            records = [tuple(row[c] for c in columns) for row in batch]
+                            await pg.copy_records_to_table(
+                                table, records=records, columns=columns,
+                            )
+                            table_rows += len(records)
                             _state["rows_copied"] += len(records)
+                        tables_copied += 1
                         _state["tables_done"] += 1
+
+                        sqlite_count = await _count_sqlite_rows(src, table)
+                        pg_count = await _count_pg_rows(pg, table)
+                        verification["tables"][table] = {
+                            "sqlite_rows": sqlite_count,
+                            "postgres_rows": pg_count,
+                        }
+                        if sqlite_count != pg_count:
+                            verification["mismatches"].append(table)
 
                     for table in SERIAL_ID_TABLES:
                         await pg.execute(
@@ -169,7 +237,13 @@ async def run_migration(database_url: str, sqlite_path: str, _reserved: bool = F
             _state["status"] = "done"
             _state["current_table"] = None
             _state["finished_at"] = time.time()
-        except Exception as exc:  # noqa: BLE001 - reported to the admin panel, not swallowed
+            _state["verification"] = verification
+            if verification["mismatches"]:
+                logger.warning(
+                    "Migration finished with row-count mismatches: %s",
+                    verification["mismatches"],
+                )
+        except Exception as exc:  # noqa: BLE001 - reported to the admin panel
             logger.exception("SQLite to Postgres migration failed")
             _state["status"] = "error"
             _state["error"] = str(exc)
