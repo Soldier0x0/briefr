@@ -101,24 +101,24 @@ export default function MorningBrief({
 }) {
   const [brief, setBrief] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState(null)
   const seqRef = useRef(0)
 
   useEffect(() => {
     const seq = ++seqRef.current
     let cancelled = false
     setLoading(true)
-    setError(false)
+    setError(null)
 
     fetchBrief({ stack, sinceHours, limit: 10 })
       .then(data => {
         if (cancelled || seq !== seqRef.current) return
         setBrief(data)
       })
-      .catch(() => {
+      .catch(err => {
         if (cancelled || seq !== seqRef.current) return
         setBrief(null)
-        setError(true)
+        setError(err?.message || 'Could not load morning brief.')
       })
       .finally(() => {
         if (cancelled || seq !== seqRef.current) return
@@ -177,7 +177,7 @@ export default function MorningBrief({
 
       {error && !loading && (
         <p className="morning-brief-error mono" role="alert">
-          Could not load morning brief — check backend connectivity.
+          {error}
         </p>
       )}
 

@@ -6,7 +6,10 @@ import hashlib
 from datetime import datetime, timezone
 from typing import Any
 
+from database import _normalize_epss_score
 from routers.cves import CVE_SELECT, _row_to_cve_dict, _stack_match_clause
+
+_ISO_DATE_LIKE = "____-__-__"
 
 
 def _stack_profile_id(stack_terms: list[str]) -> str | None:
@@ -51,6 +54,42 @@ def _stack_filter_sql(stack: str | None) -> tuple[str, list, list[str]]:
     return "", [], terms
 
 
+def _epss_delta(old_value: object, new_value: object) -> tuple[float, float, float] | None:
+    """Return (old, new, delta) when both values parse as EPSS scores and delta > 0."""
+    old_v = _normalize_epss_score(old_value)
+    new_v = _normalize_epss_score(new_value)
+    if old_v is None or new_v is None:
+        return None
+    delta = round(new_v - old_v, 6)
+    if delta <= 0:
+        return None
+    return old_v, new_v, delta
+
+
+def _build_epss_movers(rows: list, *, limit: int) -> list[dict]:
+    """Rank EPSS change rows by positive delta (Python-side, DB-agnostic)."""
+    candidates: list[tuple[float, dict]] = []
+    for raw_row in rows:
+        row = dict(raw_row)
+        parsed = _epss_delta(row.get("old_value"), row.get("new_value"))
+        if parsed is None:
+            continue
+        old_v, new_v, delta = parsed
+        item = _brief_cve_item(
+            row,
+            reasons=["epss_mover"],
+            extra={
+                "epss_delta": delta,
+                "epss_old": old_v,
+                "epss_new": new_v,
+                "changed_at": row["detected_at"],
+            },
+        )
+        candidates.append((delta, item))
+    candidates.sort(key=lambda pair: pair[0], reverse=True)
+    return [item for _, item in candidates[:limit]]
+
+
 async def build_morning_brief(
     db: Any,
     *,
@@ -65,6 +104,9 @@ async def build_morning_brief(
     profile_id = _stack_profile_id(stack_terms)
 
     # ── EPSS movers (largest positive deltas in window) ─────
+    # Rank deltas in Python: SQLite CAST(... AS REAL) is forgiving, but Postgres
+    # errors on non-numeric change-history text (while /api/stats still works).
+    epss_scan_limit = min(max(limit * 10, limit), 200)
     epss_rows = await db.execute_fetchall(
         f"""
         SELECT ch.cve_id, ch.old_value, ch.new_value, ch.detected_at,
@@ -78,31 +120,12 @@ async def build_morning_brief(
         WHERE ch.field_name = 'epss_score'
           AND ch.detected_at >= datetime('now', ?)
           {stack_sql}
-        ORDER BY (CAST(NULLIF(ch.new_value, '') AS REAL) - CAST(NULLIF(ch.old_value, '') AS REAL)) DESC
+        ORDER BY ch.detected_at DESC, ch.id DESC
         LIMIT ?
         """,
-        [since_sql, *stack_params, limit],
+        [since_sql, *stack_params, epss_scan_limit],
     )
-    epss_items = []
-    for raw_row in epss_rows:
-        row = dict(raw_row)
-        old_v = float(row["old_value"] or 0)
-        new_v = float(row["new_value"] or 0)
-        delta = round(new_v - old_v, 6)
-        if delta <= 0:
-            continue
-        epss_items.append(
-            _brief_cve_item(
-                row,
-                reasons=["epss_mover"],
-                extra={
-                    "epss_delta": delta,
-                    "epss_old": old_v,
-                    "epss_new": new_v,
-                    "changed_at": row["detected_at"],
-                },
-            )
-        )
+    epss_items = _build_epss_movers(epss_rows, limit=limit)
 
     # ── New KEV catalogue entries ───────────────────────────
     new_kev_rows = await db.execute_fetchall(
@@ -116,12 +139,13 @@ async def build_morning_brief(
         FROM kev_deadlines k
         JOIN cves c ON c.cve_id = k.cve_id
         WHERE k.date_added IS NOT NULL AND k.date_added != ''
+          AND k.date_added LIKE ?
           AND DATE(k.date_added) >= date('now', ?)
           {stack_sql}
         ORDER BY k.date_added DESC
         LIMIT ?
         """,
-        [since_sql, *stack_params, limit],
+        [_ISO_DATE_LIKE, since_sql, *stack_params, limit],
     )
     new_kev_items = [
         _brief_cve_item(
@@ -144,13 +168,14 @@ async def build_morning_brief(
         FROM kev_deadlines k
         JOIN cves c ON c.cve_id = k.cve_id
         WHERE k.due_date IS NOT NULL AND k.due_date != ''
+          AND k.due_date LIKE ?
           AND DATE(k.due_date) >= DATE('now')
           AND DATE(k.due_date) <= DATE('now', ?)
           {stack_sql}
         ORDER BY k.due_date ASC
         LIMIT ?
         """,
-        [f"+{kev_due_days} days", *stack_params, limit],
+        [_ISO_DATE_LIKE, f"+{kev_due_days} days", *stack_params, limit],
     )
     kev_due_items = [
         _brief_cve_item(

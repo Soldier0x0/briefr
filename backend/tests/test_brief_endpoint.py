@@ -9,8 +9,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import aiosqlite
 
-from brief.service import build_morning_brief, _stack_profile_id
+from brief.service import build_morning_brief, _build_epss_movers, _stack_profile_id
 from database import get_db, init_db
+from db.dialect import adapt_sql
 
 
 def _patch_app_lifecycle(monkeypatch) -> None:
@@ -167,3 +168,126 @@ def test_brief_registered_in_openapi():
         for method in methods
     }
     assert ("GET", "/api/brief") in routes
+
+
+def test_brief_epss_sql_avoids_real_cast_on_postgres():
+    sql = adapt_sql(
+        """
+        SELECT ch.cve_id FROM cve_change_history ch
+        WHERE ch.field_name = 'epss_score'
+          AND ch.detected_at >= datetime('now', ?)
+        ORDER BY ch.detected_at DESC, ch.id DESC
+        LIMIT ?
+        """,
+        backend="postgresql",
+    )
+    assert "AS REAL" not in sql.upper()
+
+
+def test_build_epss_movers_skips_non_numeric_history():
+    rows = [
+        {
+            "cve_id": "CVE-2024-9001",
+            "old_value": "0.05",
+            "new_value": "0.15",
+            "detected_at": "2026-06-23 10:00:00",
+            "description": "ok",
+            "cvss_score": 7.5,
+            "severity": "HIGH",
+            "published": "2026-06-01",
+            "modified": "2026-06-02",
+            "affected_products": "[]",
+            "affected_products_source": None,
+            "mitre_technique": None,
+            "summary": "",
+            "is_kev": 0,
+            "epss_score": 0.15,
+            "has_poc": 0,
+            "patch_available": 0,
+            "has_ai_context": 0,
+            "source_urls": "[]",
+            "cwe_ids": "[]",
+            "updated_at": "2026-06-02",
+            "kev_due_date": None,
+        },
+        {
+            "cve_id": "CVE-2024-9002",
+            "old_value": "N/A",
+            "new_value": "0.20",
+            "detected_at": "2026-06-23 11:00:00",
+            "description": "bad old",
+            "cvss_score": 5.0,
+            "severity": "MEDIUM",
+            "published": "2026-06-01",
+            "modified": "2026-06-02",
+            "affected_products": "[]",
+            "affected_products_source": None,
+            "mitre_technique": None,
+            "summary": "",
+            "is_kev": 0,
+            "epss_score": 0.2,
+            "has_poc": 0,
+            "patch_available": 0,
+            "has_ai_context": 0,
+            "source_urls": "[]",
+            "cwe_ids": "[]",
+            "updated_at": "2026-06-02",
+            "kev_due_date": None,
+        },
+    ]
+    movers = _build_epss_movers(rows, limit=5)
+    assert len(movers) == 1
+    assert movers[0]["cve_id"] == "CVE-2024-9001"
+    assert movers[0]["epss_delta"] == 0.1
+
+
+async def _seed_brief_bad_epss_db(db_path: Path) -> None:
+    now = datetime.now(timezone.utc)
+    recent = (now - timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S")
+
+    db = await aiosqlite.connect(db_path)
+    try:
+        await db.execute(
+            """
+            INSERT INTO cves (
+                cve_id, description, severity, is_kev, epss_score, published, modified,
+                affected_products
+            ) VALUES (
+                'CVE-2024-9010', 'Bad EPSS history row', 'HIGH', 0, 0.2,
+                datetime('now', '-2 days'), datetime('now', '-1 hour'), '[]'
+            )
+            """
+        )
+        await db.execute(
+            """
+            INSERT INTO cve_change_history (
+                cve_id, field_name, old_value, new_value, detected_at
+            ) VALUES (
+                'CVE-2024-9010', 'epss_score', 'pending', '0.20', ?
+            )
+            """,
+            (recent,),
+        )
+        await db.commit()
+    finally:
+        await db.close()
+
+
+def test_brief_tolerates_non_numeric_epss_history(tmp_path, monkeypatch):
+    db_path = tmp_path / "brief_bad_epss.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+    _patch_app_lifecycle(monkeypatch)
+
+    asyncio.run(init_db())
+    asyncio.run(_seed_brief_bad_epss_db(db_path))
+
+    from fastapi.testclient import TestClient
+    from main import app
+
+    with TestClient(app) as client:
+        resp = client.get("/api/brief?limit=5")
+        assert resp.status_code == 200
+        body = resp.json()
+    assert "action_queue" in body
+    assert body["sections"]["epss_movers"]["count"] == 0

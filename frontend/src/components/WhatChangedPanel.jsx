@@ -67,7 +67,7 @@ export default function WhatChangedPanel({ onSelectCVE }) {
   const [sinceHours, setSinceHours] = useState(24)
   const [changes, setChanges] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState(null)
   const [collapsed, setCollapsed] = useState(false)
   const panelRef = useRef(null)
   const filtersInitialMountRef = useRef(true)
@@ -92,7 +92,7 @@ export default function WhatChangedPanel({ onSelectCVE }) {
 
     let cancelled = false
     setLoading(true)
-    setError(false)
+    setError(null)
 
     fetchChanges({ field: fieldFilter, sinceHours, limit: 50 })
       .then(data => {
@@ -100,10 +100,10 @@ export default function WhatChangedPanel({ onSelectCVE }) {
         const rows = Array.isArray(data?.data) ? data.data : []
         setChanges(rows.filter(isVisibleChange))
       })
-      .catch(() => {
+      .catch(err => {
         if (!cancelled) {
           setChanges([])
-          setError(true)
+          setError(err?.message || 'Unable to load recent changes.')
         }
       })
       .finally(() => {
@@ -179,7 +179,7 @@ export default function WhatChangedPanel({ onSelectCVE }) {
             </p>
           )}
           {!loading && error && (
-            <p className="what-changed-empty">Unable to load recent changes.</p>
+            <p className="what-changed-empty">{error}</p>
           )}
           {!loading && !error && changes.length === 0 && (
             <p className="what-changed-empty">No tracked field changes in this window.</p>
