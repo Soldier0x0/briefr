@@ -26,6 +26,20 @@
   overflow-x: auto;
 }
 
+.admin-brand-link {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: color 0.12s;
+}
+
+.admin-brand-link:hover {
+  color: var(--accent);
+}
+
 .admin-statusbar .sb-item {
   display: flex;
   align-items: center;

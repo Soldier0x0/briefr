@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { Link } from 'react-router-dom'
 import { Eye, Wrench, RefreshCw, RotateCw, Hourglass, ChevronDown, Clock } from 'lucide-react'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import HelpTip from './shared/HelpTip.jsx'
@@ -100,6 +101,10 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
         />
       )}
       <div className="admin-statusbar">
+        <Link to="/" className="admin-brand-link mono" title="Back to BRIEFR">
+          BRIEFR
+        </Link>
+        <div className="sb-sep" />
         <div className="admin-mode-toggle-group">
           <span className="admin-mode-toggle-label">VIEW</span>
           <div className="admin-mode-toggle" role="group" aria-label="Switch admin view mode">
