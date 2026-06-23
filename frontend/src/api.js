@@ -44,7 +44,8 @@ async function request(path, options = {}, _retried = false) {
   const res = await doFetch(path, options)
 
   if (!res.ok) {
-    if (res.status === 401 && !path.startsWith('/auth/')) {
+    const isRefreshExempt = path === '/auth/login' || path === '/auth/refresh' || path === '/auth/setup'
+    if (res.status === 401 && !isRefreshExempt) {
       if (!_retried && (await refreshAccessToken())) {
         return request(path, options, true)
       }

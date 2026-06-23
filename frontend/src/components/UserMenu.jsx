@@ -12,6 +12,8 @@ export default function UserMenu({ className = '', onItemClick }) {
   const wrapRef = useRef(null)
 
   const username = user?.username || 'account'
+  const role = user?.role || ''
+  const initial = username.charAt(0).toUpperCase()
   const onAdmin = location.pathname.startsWith('/admin')
 
   useEffect(() => {
@@ -52,38 +54,49 @@ export default function UserMenu({ className = '', onItemClick }) {
     <div className={`user-menu-wrap${className ? ` ${className}` : ''}`} ref={wrapRef}>
       <button
         type="button"
-        className="user-menu-trigger mono"
+        className="user-menu-trigger"
         onClick={() => setOpen(v => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Account menu for ${username}`}
       >
-        <span className="user-menu-name">{username}</span>
+        <span className="user-menu-avatar" aria-hidden="true">{initial}</span>
+        <span className="user-menu-name mono">{username}</span>
         <ChevronDown size={14} className={`user-menu-chevron${open ? ' open' : ''}`} aria-hidden="true" />
       </button>
 
       {open && (
         <div className="user-menu-dropdown" role="menu" aria-label="Account menu">
-          {onAdmin && (
-            <Link to="/" className="user-menu-item" role="menuitem" onClick={close}>
-              <Home size={14} aria-hidden="true" />
-              <span>Back to BRIEFR</span>
+          <div className="user-menu-header">
+            <span className="user-menu-avatar user-menu-avatar--lg" aria-hidden="true">{initial}</span>
+            <div className="user-menu-header-text">
+              <span className="user-menu-header-name">{username}</span>
+              {role && <span className="user-menu-header-role">{role}</span>}
+            </div>
+          </div>
+          <div className="user-menu-group">
+            {onAdmin ? (
+              <Link to="/" className="user-menu-item" role="menuitem" onClick={close}>
+                <Home size={14} aria-hidden="true" />
+                <span>Back to BRIEFR</span>
+              </Link>
+            ) : (
+              <Link to="/admin" className="user-menu-item" role="menuitem" onClick={close}>
+                <LayoutDashboard size={14} aria-hidden="true" />
+                <span>Admin panel</span>
+              </Link>
+            )}
+            <Link to="/admin?p=display" className="user-menu-item" role="menuitem" onClick={close}>
+              <Settings size={14} aria-hidden="true" />
+              <span>Preferences</span>
             </Link>
-          )}
-          {!onAdmin && (
-            <Link to="/admin" className="user-menu-item" role="menuitem" onClick={close}>
-              <LayoutDashboard size={14} aria-hidden="true" />
-              <span>Admin panel</span>
-            </Link>
-          )}
-          <Link to="/admin?p=display" className="user-menu-item" role="menuitem" onClick={close}>
-            <Settings size={14} aria-hidden="true" />
-            <span>Settings</span>
-          </Link>
-          <button type="button" className="user-menu-item user-menu-item-danger" role="menuitem" onClick={handleLogout}>
-            <LogOut size={14} aria-hidden="true" />
-            <span>Log out</span>
-          </button>
+          </div>
+          <div className="user-menu-group">
+            <button type="button" className="user-menu-item user-menu-item-danger" role="menuitem" onClick={handleLogout}>
+              <LogOut size={14} aria-hidden="true" />
+              <span>Log out</span>
+            </button>
+          </div>
         </div>
       )}
     </div>
