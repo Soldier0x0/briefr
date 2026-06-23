@@ -16,12 +16,21 @@ async def get_db():
     return await get_connection()
 
 
-async def _init_postgres_schema() -> None:
+async def run_postgres_migrations() -> None:
+    """Apply Alembic DDL before the asyncpg pool opens (avoids migration lock waits)."""
+    import logging
+
     from alembic import command
     from alembic.config import Config
 
+    log = logging.getLogger(__name__)
     alembic_cfg = Config(str(Path(__file__).resolve().parent / "alembic.ini"))
+    log.info("PostgreSQL: running Alembic upgrade head")
     await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
+    log.info("PostgreSQL: Alembic upgrade head finished")
+
+
+async def _init_postgres_schema() -> None:
     db = await get_db()
     try:
         await db.execute("UPDATE cves SET epss_score = NULL WHERE epss_score = 0.0")

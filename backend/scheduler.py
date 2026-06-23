@@ -730,21 +730,30 @@ async def maybe_run_mitre_on_startup() -> None:
         logger.info("MITRE techniques loaded (%d rows), ATLAS (%d rows)", mitre_count, atlas_count)
 
 
-async def maybe_run_on_startup() -> None:
+async def _run_startup_summary_maintenance() -> None:
+    """Strip auto-generated summaries and backfill KEV text — runs off the hot path."""
     from database import enrich_kev_summaries, strip_auto_generated_summaries
 
+    db = await get_db()
+    try:
+        stripped = await strip_auto_generated_summaries(db)
+        await enrich_kev_summaries(db)
+        await db.commit()
+        if stripped:
+            logger.info(
+                "Startup: cleared %d auto-generated plain summaries", stripped
+            )
+    except Exception:
+        logger.exception("Startup summary maintenance failed")
+    finally:
+        await db.close()
+
+
+async def maybe_run_on_startup() -> None:
     count = 0
     db = await get_db()
     try:
         count = await get_cve_count(db)
-        if count >= 10:
-            stripped = await strip_auto_generated_summaries(db)
-            await enrich_kev_summaries(db)
-            await db.commit()
-            if stripped:
-                logger.info(
-                    "Startup: cleared %d auto-generated plain summaries", stripped
-                )
     finally:
         await db.close()
 
@@ -752,6 +761,7 @@ async def maybe_run_on_startup() -> None:
         logger.info("CVE table has %d rows (< 10). Running full ingest on startup.", count)
         asyncio.create_task(run_full_ingest_sync())
     else:
+        asyncio.create_task(_run_startup_summary_maintenance())
         logger.info(
             "CVE table has %d rows. Incremental schedulers will maintain freshness.",
             count,
