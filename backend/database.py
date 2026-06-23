@@ -1172,7 +1172,7 @@ async def get_epss_history(
         SELECT recorded_date AS date, score
         FROM epss_history
         WHERE cve_id = ?
-          AND recorded_date >= DATE('now', ?)
+          AND DATE(recorded_date) >= DATE('now', ?)
         ORDER BY recorded_date ASC
         """,
         (cve_id.upper(), f"-{days - 1} days"),
@@ -2158,7 +2158,7 @@ async def get_recent_cve_ids_for_otx(
     rows = await db.execute_fetchall(
         """
         SELECT cve_id FROM cves
-        WHERE published >= DATE('now', ?)
+        WHERE DATE(published) >= DATE('now', ?)
         ORDER BY published DESC
         """,
         (f"-{days} days",),
@@ -2218,7 +2218,7 @@ async def get_prioritized_cve_ids_for_otx(
     p2 = await db.execute_fetchall(
         """
         SELECT cve_id FROM cves
-        WHERE published >= DATE('now', ?)
+        WHERE DATE(published) >= DATE('now', ?)
         ORDER BY published DESC
         """,
         (f"-{window_days} days",),

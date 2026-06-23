@@ -20,6 +20,24 @@ def _postgres_translate_sql(text: str) -> str:
         return "SELECT 'ok' AS integrity_check"
     if upper.startswith("PRAGMA FOREIGN_KEY_CHECK"):
         return "SELECT '' AS foreign_key_check WHERE FALSE"
+    # datetime(col) OP datetime('now'[, interval]) comparisons must be rewritten
+    # *before* the generic datetime('now') replacement below, or the literal
+    # ``datetime('now')`` text this pattern matches on is already gone by the
+    # time this runs, leaving the bare `datetime(col)` side untranslated
+    # (Postgres has no datetime() function -> UndefinedFunctionError).
+    def _datetime_compare(match: re.Match[str]) -> str:
+        col, op, interval = match.group(1), match.group(2), match.group(3)
+        rhs = "(NOW() AT TIME ZONE 'utc')"
+        if interval:
+            rhs = f"({rhs} + CAST(CAST({interval} AS text) AS interval))"
+        return f"{col}::timestamp {op} {rhs}"
+
+    text = re.sub(
+        r"\bdatetime\((\w+(?:\.\w+)?)\)\s*(>=|<=|>|<|=)\s*datetime\('now'(?:,\s*([^)]+))?\)",
+        _datetime_compare,
+        text,
+        flags=re.IGNORECASE,
+    )
     text = re.sub(r"\bdatetime\('now'\)", _NOW_UTC_TEXT, text, flags=re.IGNORECASE)
     # cached_at/fetched_at/etc. are TEXT columns (mirroring SQLite), and are
     # compared directly against this with no cast (e.g. `cached_at > datetime('now', ?)`).
@@ -59,14 +77,16 @@ def _postgres_translate_sql(text: str) -> str:
         flags=re.IGNORECASE,
     )
     text = re.sub(
-        r"\bdate\((\w+)\)",
+        r"\bdate\((\w+(?:\.\w+)?)\)",
         r"\1::date",
         text,
         flags=re.IGNORECASE,
     )
+    # Any datetime(col) left standing (not a comparison against 'now', e.g.
+    # used bare in a SELECT/ORDER BY) -> cast the TEXT column to timestamp.
     text = re.sub(
-        r"datetime\((\w+)\)\s*>\s*datetime\('now'\)",
-        r"\1::timestamp > (NOW() AT TIME ZONE 'utc')",
+        r"\bdatetime\((\w+(?:\.\w+)?)\)",
+        r"\1::timestamp",
         text,
         flags=re.IGNORECASE,
     )
