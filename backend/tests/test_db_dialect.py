@@ -44,6 +44,16 @@ def test_datetime_now_interval():
     assert "CAST(CAST('-6 hours' AS text) AS interval)" in sql
 
 
+def test_julianday_age_seconds():
+    sql = adapt_sql(
+        "SELECT CAST((julianday('now') - julianday(cached_at)) * 86400 AS INTEGER) AS age_seconds FROM ioc_cache",
+        backend="postgresql",
+    )
+    assert "julianday" not in sql.lower()
+    assert "EXTRACT(EPOCH FROM" in sql
+    assert "CAST(cached_at AS timestamp)" in sql
+
+
 def test_date_now_interval():
     sql = adapt_sql(
         "SELECT * FROM cves WHERE DATE(published) >= DATE('now', ?)",
