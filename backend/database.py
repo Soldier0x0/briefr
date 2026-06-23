@@ -20,12 +20,39 @@ async def run_postgres_migrations() -> None:
     """Apply Alembic DDL before the asyncpg pool opens (avoids migration lock waits)."""
     import logging
 
+    import asyncpg
     from alembic import command
     from alembic.config import Config
+    from alembic.script import ScriptDirectory
+
+    from db.config import postgres_dsn
 
     log = logging.getLogger(__name__)
     alembic_cfg = Config(str(Path(__file__).resolve().parent / "alembic.ini"))
-    log.info("database.py run_postgres_migrations(): running Alembic upgrade head")
+    head = ScriptDirectory.from_config(alembic_cfg).get_current_head()
+
+    current: str | None = None
+    conn = await asyncpg.connect(postgres_dsn(), timeout=15)
+    try:
+        row = await conn.fetchrow("SELECT version_num FROM alembic_version LIMIT 1")
+        current = row["version_num"] if row else None
+    except asyncpg.UndefinedTableError:
+        current = None
+    finally:
+        await conn.close()
+
+    if current == head:
+        log.info(
+            "database.py run_postgres_migrations(): already at head (%s) — skipping Alembic",
+            head,
+        )
+        return
+
+    log.info(
+        "database.py run_postgres_migrations(): current=%s head=%s — running Alembic upgrade head",
+        current or "(none)",
+        head,
+    )
     try:
         await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
     except Exception as exc:
