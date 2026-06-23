@@ -37,6 +37,15 @@ def _postgres_translate_sql(text: str) -> str:
         text,
         flags=re.IGNORECASE,
     )
+    # admin.py's IOC cache age display: SQLite has no equivalent of
+    # EXTRACT(EPOCH FROM ...), so it uses julianday() day-diff * 86400 to get
+    # seconds. Postgres has no julianday() at all, and cached_at is TEXT.
+    text = re.sub(
+        r"\(\s*julianday\('now'\)\s*-\s*julianday\((\w+)\)\s*\)\s*\*\s*86400",
+        r"EXTRACT(EPOCH FROM ((NOW() AT TIME ZONE 'utc') - CAST(\1 AS timestamp)))",
+        text,
+        flags=re.IGNORECASE,
+    )
     text = re.sub(
         r"\bdate\('now',\s*([^)]+)\)",
         r"(((NOW() AT TIME ZONE 'utc') + CAST(CAST(\1 AS text) AS interval))::date)",

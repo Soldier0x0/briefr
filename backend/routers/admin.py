@@ -293,9 +293,9 @@ async def get_system(request: Request):
         else:
             ic_rows = await db.execute_fetchall("PRAGMA integrity_check")
             integrity_ok = (
-                len(ic_rows) == 1 and ic_rows[0][0].lower() == "ok"
+                len(ic_rows) == 1 and ic_rows[0]["integrity_check"].lower() == "ok"
             ) if ic_rows else False
-            integrity_msg = ic_rows[0][0] if ic_rows else "unknown"
+            integrity_msg = ic_rows[0]["integrity_check"] if ic_rows else "unknown"
             db_integrity = {"ok": integrity_ok, "message": integrity_msg}
             await set_feed_cache(db, "admin_db_integrity", db_integrity)
 
@@ -1776,12 +1776,12 @@ async def run_smoke_test(request: Request):
             kev_row = await db.execute_fetchall("SELECT COUNT(*) as cnt FROM kev_deadlines")
             kev_count = kev_row[0]["cnt"] if kev_row else 0
             ic_rows = await db.execute_fetchall("PRAGMA integrity_check")
-            integrity_ok = len(ic_rows) == 1 and ic_rows[0][0].lower() == "ok"
+            integrity_ok = len(ic_rows) == 1 and ic_rows[0]["integrity_check"].lower() == "ok"
         finally:
             await db.close()
         checks.append({"name": "cves > 0", "passed": cve_count > 0, "detail": f"{cve_count} CVEs"})
         checks.append({"name": "kev_deadlines > 0", "passed": kev_count > 0, "detail": f"{kev_count} KEV entries"})
-        checks.append({"name": "db integrity_check", "passed": integrity_ok, "detail": ic_rows[0][0] if ic_rows else "?"})
+        checks.append({"name": "db integrity_check", "passed": integrity_ok, "detail": ic_rows[0]["integrity_check"] if ic_rows else "?"})
     except Exception as exc:
         checks.append({"name": "db checks", "passed": False, "detail": str(exc)[:200]})
 
@@ -1819,9 +1819,9 @@ async def check_integrity(request: Request):
     finally:
         await db.close()
 
-    integrity_ok = len(ic_rows) == 1 and ic_rows[0][0].lower() == "ok"
+    integrity_ok = len(ic_rows) == 1 and ic_rows[0]["integrity_check"].lower() == "ok"
     foreign_keys_ok = len(fk_rows) == 0
-    msg = ic_rows[0][0] if ic_rows else "unknown"
+    msg = ic_rows[0]["integrity_check"] if ic_rows else "unknown"
     await audit(request, "diagnostics.integrity", "pass" if integrity_ok and foreign_keys_ok else "fail")
     return {
         "ok": integrity_ok and foreign_keys_ok,
