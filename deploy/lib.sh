@@ -32,6 +32,26 @@ as_app_user() {
   runuser -u "${APP_USER}" -- env HOME="${APP_HOME}" "$@"
 }
 
+# Reset tracked files whose only diff is file mode (leftover +x from older deploy runs).
+restore_git_permission_drift() {
+  local rel
+  if ! git -C "${INSTALL_DIR}" rev-parse --is-inside-work-tree &>/dev/null; then
+    return 0
+  fi
+  while IFS= read -r -d '' rel; do
+    [ -n "${rel}" ] || continue
+    if ! git -C "${INSTALL_DIR}" diff --no-color --quiet -- "${rel}" 2>/dev/null; then
+      if ! git -C "${INSTALL_DIR}" diff --no-color -- "${rel}" 2>/dev/null \
+        | grep -vE '^[+-]{3}' | grep -qE '^[+-]'; then
+        echo "    Resetting permission-only drift on ${rel}"
+        git -C "${INSTALL_DIR}" restore -- "${rel}" 2>/dev/null \
+          || git -C "${INSTALL_DIR}" checkout -- "${rel}" 2>/dev/null \
+          || true
+      fi
+    fi
+  done < <(git -C "${INSTALL_DIR}" diff -z --name-only 2>/dev/null || true)
+}
+
 fix_tree_permissions() {
   ensure_app_user
   echo "==> Fixing ownership and permissions"
@@ -42,11 +62,6 @@ fix_tree_permissions() {
   [ -f "${INSTALL_DIR}/backend/.env" ] && chmod 640 "${INSTALL_DIR}/backend/.env"
   if [ -d "${INSTALL_DIR}/deploy" ]; then
     chmod 755 "${INSTALL_DIR}/deploy"
-    # Only +x scripts that git tracks as executable — setup.sh and lib.sh stay 644
-    # so a prior deploy does not dirty the tree and block the next git pull.
-    for script in briefr-update.sh briefr-backup.sh briefr-restore.sh check-backend.sh smoke-intel.sh; do
-      [ -f "${INSTALL_DIR}/deploy/${script}" ] && chmod 755 "${INSTALL_DIR}/deploy/${script}"
-    done
   fi
   [ -d "${INSTALL_DIR}/venv/bin" ] && chmod 755 "${INSTALL_DIR}/venv/bin/"* 2>/dev/null || true
   # Playwright driver/node loses +x after the blanket chmod 644 above.
@@ -125,7 +140,7 @@ install_systemd_units() {
 
 disable_vite_dev() {
   echo "==> Disabling Vite dev server (production uses nginx + frontend/dist)"
-  systemctl stop briefr.target briefr-frontend 2>/dev/null || true
+  systemctl stop briefr-frontend 2>/dev/null || true
   systemctl disable briefr-frontend 2>/dev/null || true
   systemctl mask briefr-frontend 2>/dev/null || true
 }
