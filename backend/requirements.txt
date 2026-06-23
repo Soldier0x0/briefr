@@ -7,7 +7,7 @@ pydantic==2.13.4
 pydantic-settings==2.14.2
 aiosqlite==0.22.1
 asyncpg==0.30.0
-alembic==1.15.2
+alembic==1.18.4
 psycopg[binary]==3.2.6
 PyYAML==6.0.3
 openpyxl==3.1.5
