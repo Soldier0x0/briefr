@@ -63,6 +63,41 @@ def test_date_now_interval():
     assert "CAST(CAST($1 AS text) AS interval)" in sql
 
 
+def test_datetime_column_compare_now():
+    sql = adapt_sql(
+        "SELECT * FROM watchlist WHERE datetime(snooze_until) > datetime('now')",
+        backend="postgresql",
+    )
+    assert "datetime(" not in sql.lower()
+    assert "snooze_until::timestamp >" in sql
+
+
+def test_datetime_column_compare_now_interval():
+    sql = adapt_sql(
+        "SELECT * FROM cves WHERE datetime(c.modified) >= datetime('now', '-7 days')",
+        backend="postgresql",
+    )
+    assert "datetime(" not in sql.lower()
+    assert "c.modified::timestamp >=" in sql
+    assert "CAST(CAST('-7 days' AS text) AS interval)" in sql
+
+
+def test_bare_datetime_column():
+    sql = adapt_sql(
+        "SELECT datetime(fetched_at) AS f FROM cache",
+        backend="postgresql",
+    )
+    assert sql == "SELECT fetched_at::timestamp AS f FROM cache"
+
+
+def test_date_dotted_column():
+    sql = adapt_sql(
+        "SELECT * FROM kev_deadlines k WHERE DATE(k.date_added) >= DATE('now', ?)",
+        backend="postgresql",
+    )
+    assert "k.date_added::date" in sql
+
+
 def test_named_params_to_dollar():
     from db.dialect import prepare_query
 

@@ -625,7 +625,7 @@ async def purge_storage(request: Request, body: dict):
             rows_deleted = cursor.rowcount
         elif target == "epss_history_old":
             cursor = await db.execute(
-                "DELETE FROM epss_history WHERE recorded_date < date('now', '-90 days')"
+                "DELETE FROM epss_history WHERE DATE(recorded_date) < date('now', '-90 days')"
             )
             rows_deleted = cursor.rowcount
         elif target == "change_history_old":

@@ -78,7 +78,7 @@ async def build_morning_brief(
         WHERE ch.field_name = 'epss_score'
           AND ch.detected_at >= datetime('now', ?)
           {stack_sql}
-        ORDER BY (CAST(ch.new_value AS REAL) - CAST(ch.old_value AS REAL)) DESC
+        ORDER BY (CAST(NULLIF(ch.new_value, '') AS REAL) - CAST(NULLIF(ch.old_value, '') AS REAL)) DESC
         LIMIT ?
         """,
         [since_sql, *stack_params, limit],
@@ -116,7 +116,7 @@ async def build_morning_brief(
         FROM kev_deadlines k
         JOIN cves c ON c.cve_id = k.cve_id
         WHERE k.date_added IS NOT NULL AND k.date_added != ''
-          AND k.date_added >= date('now', ?)
+          AND DATE(k.date_added) >= date('now', ?)
           {stack_sql}
         ORDER BY k.date_added DESC
         LIMIT ?
