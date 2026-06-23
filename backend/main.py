@@ -20,7 +20,7 @@ access_logger = logging.getLogger("briefr.access")
 # Accept a caller-supplied X-Request-ID only when it is shaped like an ID.
 _REQUEST_ID_RE = re.compile(r"[A-Za-z0-9._-]{1,64}")
 
-from database import init_db
+from database import init_db, run_postgres_migrations
 from db.connection import close_pool, init_pool
 from resilient_client import close_client
 from tracking import flush_api_usage_pending
@@ -64,6 +64,8 @@ async def lifespan(app: FastAPI):
                 "Recovered corrupt database from backup: %s",
                 recovery.get("archive"),
             )
+    if is_postgres():
+        await run_postgres_migrations()
     await init_pool()
     await init_db()
     await sync_env_destinations_to_db()
