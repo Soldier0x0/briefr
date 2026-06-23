@@ -38,7 +38,7 @@ restore_git_permission_drift() {
   if ! git -C "${INSTALL_DIR}" rev-parse --is-inside-work-tree &>/dev/null; then
     return 0
   fi
-  while IFS= read -r rel; do
+  while IFS= read -r -d '' rel; do
     [ -n "${rel}" ] || continue
     if ! git -C "${INSTALL_DIR}" diff --no-color --quiet -- "${rel}" 2>/dev/null; then
       if ! git -C "${INSTALL_DIR}" diff --no-color -- "${rel}" 2>/dev/null \
@@ -49,7 +49,7 @@ restore_git_permission_drift() {
           || true
       fi
     fi
-  done < <(git -C "${INSTALL_DIR}" diff --name-only 2>/dev/null || true)
+  done < <(git -C "${INSTALL_DIR}" diff -z --name-only 2>/dev/null || true)
 }
 
 fix_tree_permissions() {
@@ -140,7 +140,6 @@ install_systemd_units() {
 
 disable_vite_dev() {
   echo "==> Disabling Vite dev server (production uses nginx + frontend/dist)"
-  systemctl stop briefr.target briefr-backend 2>/dev/null || true
   systemctl stop briefr-frontend 2>/dev/null || true
   systemctl disable briefr-frontend 2>/dev/null || true
   systemctl mask briefr-frontend 2>/dev/null || true
