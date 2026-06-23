@@ -111,6 +111,16 @@ export default function DatabasePage({ toast, active = true }) {
         {!isSqlite && info && <StatCard label="TARGET" value={info.postgres_dsn_redacted} />}
       </div>
 
+      {info?.require_postgres && isSqlite && (
+        <div className="admin-callout admin-callout-amber" style={{ marginBottom: '1rem' }}>
+          <AlertTriangle size={16} strokeWidth={2} />
+          <span>
+            <strong>PostgreSQL required</strong> — <code>BRIEFR_REQUIRE_POSTGRES=1</code> is set.
+            Complete the migration below and apply <code>DATABASE_URL</code> before the backend will start.
+          </span>
+        </div>
+      )}
+
       {isSqlite ? (
         <>
           <div className="admin-callout admin-callout-amber">
@@ -170,6 +180,16 @@ export default function DatabasePage({ toast, active = true }) {
                     <AlertTriangle size={16} strokeWidth={2} />
                     <span>
                       <strong>Migration complete</strong> — {status.rows_copied?.toLocaleString()} rows copied across {status.tables_total} tables.
+                      {status.verification?.mismatches?.length > 0 && (
+                        <span style={{ display: 'block', marginTop: '0.35rem', color: 'var(--red)' }}>
+                          Row-count mismatches: {status.verification.mismatches.join(', ')} — review before switching.
+                        </span>
+                      )}
+                      {status.verification?.mismatches?.length === 0 && status.verification?.tables && (
+                        <span style={{ display: 'block', marginTop: '0.35rem', color: 'var(--green)' }}>
+                          Row counts verified for all copied tables.
+                        </span>
+                      )}
                       Verify the data looks right against the target database, then apply the switch:
                       <div style={{ marginTop: '0.5rem' }}>
                         <button className="admin-btn admin-btn-primary" onClick={applyAndRestart} disabled={applying}>
@@ -192,8 +212,9 @@ export default function DatabasePage({ toast, active = true }) {
         <div className="admin-callout admin-callout-amber">
           <AlertTriangle size={16} strokeWidth={2} />
           <span>
-            Running on PostgreSQL. To roll back to SQLite: stop the backend, restore a pre-migration SQLite backup,
-            remove <code>DATABASE_URL</code>, and restart — see <code>docs/POSTGRES.md</code>.
+            Running on PostgreSQL — the app no longer writes to <code>briefr.db</code>.
+            You may archive or delete the old SQLite file after verifying backups.
+            To roll back: stop backend, restore SQLite from backup, remove <code>DATABASE_URL</code>, restart — see <code>docs/POSTGRES.md</code>.
           </span>
         </div>
       )}

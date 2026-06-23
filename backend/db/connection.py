@@ -10,7 +10,7 @@ import aiosqlite
 import os
 
 from db.config import is_postgres, postgres_dsn, resolve_database_url
-from db.dialect import adapt_params, adapt_sql
+from db.dialect import adapt_params, prepare_query
 
 logger = logging.getLogger(__name__)
 
@@ -68,10 +68,10 @@ class PostgresConnection:
             self._transaction = self._conn.transaction()
             await self._transaction.start()
 
-    async def execute(self, sql: str, params: tuple | list = ()) -> _ExecuteResult:
+    async def execute(self, sql: str, params: tuple | list | dict = ()) -> _ExecuteResult:
         await self._ensure_transaction()
-        adapted = adapt_sql(sql)
-        status = await self._conn.execute(adapted, *adapt_params(params))
+        adapted, bound = prepare_query(sql, params, backend="postgresql")
+        status = await self._conn.execute(adapted, *bound)
         rowcount = 0
         if status:
             parts = status.split()
@@ -79,18 +79,20 @@ class PostgresConnection:
                 rowcount = int(parts[-1])
         return _ExecuteResult(rowcount=rowcount)
 
-    async def execute_fetchall(self, sql: str, params: tuple | list = ()) -> list[Any]:
+    async def execute_fetchall(self, sql: str, params: tuple | list | dict = ()) -> list[Any]:
         await self._ensure_transaction()
-        adapted = adapt_sql(sql)
-        records = await self._conn.fetch(adapted, *adapt_params(params))
+        adapted, bound = prepare_query(sql, params, backend="postgresql")
+        records = await self._conn.fetch(adapted, *bound)
         return [dict(record) for record in records]
 
     async def executemany(
-        self, sql: str, params_list: list[tuple | list]
+        self, sql: str, params_list: list[tuple | list | dict]
     ) -> _ExecuteResult:
         await self._ensure_transaction()
-        adapted = adapt_sql(sql)
-        adapted_params = [adapt_params(p) for p in params_list]
+        adapted, _ = prepare_query(sql, params_list[0] if params_list else (), backend="postgresql")
+        adapted_params = [
+            prepare_query(sql, p, backend="postgresql")[1] for p in params_list
+        ]
         await self._conn.executemany(adapted, adapted_params)
         return _ExecuteResult(rowcount=len(params_list))
 

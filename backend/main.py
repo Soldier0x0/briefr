@@ -51,6 +51,12 @@ async def lifespan(app: FastAPI):
     from backup.manager import ensure_db_or_restore
     from db.config import is_postgres
 
+    if settings.briefr_require_postgres and not is_postgres():
+        raise RuntimeError(
+            "BRIEFR_REQUIRE_POSTGRES=1 but DATABASE_URL is not set to a postgresql:// DSN. "
+            "Migrate via Admin -> Database, apply DATABASE_URL, and restart."
+        )
+
     if not is_postgres():
         recovery = ensure_db_or_restore()
         if recovery.get("status") == "restored":

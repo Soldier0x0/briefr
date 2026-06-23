@@ -87,6 +87,7 @@ Then set `DATABASE_URL`, restart the backend, and verify `/api/health` (`cve_cou
 | `DATABASE_URL` | _(empty → SQLite via `DB_PATH`)_ | `postgresql://user:pass@host:5432/dbname` |
 | `DB_PATH` | `briefr.db` | SQLite file when `DATABASE_URL` unset |
 | `DATABASE_POOL_SIZE` | `10` | asyncpg pool size |
+| `BRIEFR_REQUIRE_POSTGRES` | `0` | When `1`, refuse to start unless `DATABASE_URL` points at PostgreSQL |
 
 ## Troubleshooting
 

@@ -1232,12 +1232,16 @@ async def patch_webhook_destination(request: Request, destination_id: str, body:
 @router.get("/database")
 async def get_database_info(request: Request):
     from db.config import is_postgres, resolve_database_url
+    from settings import settings
 
     current_url = resolve_database_url()
+    on_postgres = is_postgres(current_url)
     info: dict[str, Any] = {
-        "engine": "postgresql" if is_postgres(current_url) else "sqlite",
+        "engine": "postgresql" if on_postgres else "sqlite",
+        "require_postgres": settings.briefr_require_postgres,
+        "writes_sqlite": not on_postgres and not settings.briefr_require_postgres,
     }
-    if is_postgres(current_url):
+    if on_postgres:
         info["postgres_dsn_redacted"] = re.sub(r"://[^@]+@", "://***@", current_url)
     else:
         db_path = Path(DB_PATH)

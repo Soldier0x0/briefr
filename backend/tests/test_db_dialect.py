@@ -51,3 +51,20 @@ def test_date_now_interval():
     )
     assert "published::date" in sql
     assert "CAST($1 AS interval)" in sql
+
+
+def test_named_params_to_dollar():
+    from db.dialect import prepare_query
+
+    sql = """
+        INSERT INTO cves (cve_id, description, cvss_score)
+        VALUES (:cve_id, :description, :cvss_score)
+    """
+    adapted, params = prepare_query(
+        sql,
+        {"cve_id": "CVE-2024-1", "description": "test", "cvss_score": 9.8},
+        backend="postgresql",
+    )
+    assert ":cve_id" not in adapted
+    assert "$1" in adapted and "$3" in adapted
+    assert params == ("CVE-2024-1", "test", 9.8)
