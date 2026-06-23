@@ -124,8 +124,16 @@ async def init_pool() -> None:
 
     dsn = postgres_dsn()
     max_size = max(1, int(os.environ.get("DATABASE_POOL_SIZE", "10")))
-    _pool = await asyncpg.create_pool(dsn=dsn, min_size=1, max_size=max_size)
-    logger.info("PostgreSQL connection pool ready (max_size=%d)", max_size)
+    try:
+        _pool = await asyncpg.create_pool(dsn=dsn, min_size=1, max_size=max_size)
+    except Exception as exc:
+        logger.error(
+            "db/connection.py init_pool(): cannot connect to PostgreSQL at %s — %s",
+            dsn.split("@")[-1] if "@" in dsn else dsn,
+            exc,
+        )
+        raise
+    logger.info("db/connection.py init_pool(): PostgreSQL pool ready (max_size=%d)", max_size)
 
 
 async def close_pool() -> None:
@@ -138,6 +146,11 @@ async def close_pool() -> None:
 async def get_connection() -> SqliteConnection | PostgresConnection:
     if is_postgres():
         if _pool is None:
+            logger.error(
+                "db/connection.py get_connection(): PostgreSQL pool is not open. "
+                "DATABASE_URL is set but main.py startup did not finish (or the backend is restarting). "
+                "Fix: systemctl restart briefr-backend and check journalctl for startup errors."
+            )
             raise RuntimeError(
                 "PostgreSQL pool is not initialized — call init_pool() during app startup"
             )

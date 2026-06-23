@@ -25,9 +25,17 @@ async def run_postgres_migrations() -> None:
 
     log = logging.getLogger(__name__)
     alembic_cfg = Config(str(Path(__file__).resolve().parent / "alembic.ini"))
-    log.info("PostgreSQL: running Alembic upgrade head")
-    await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
-    log.info("PostgreSQL: Alembic upgrade head finished")
+    log.info("database.py run_postgres_migrations(): running Alembic upgrade head")
+    try:
+        await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
+    except Exception as exc:
+        log.error(
+            "database.py run_postgres_migrations(): Alembic failed — %s. "
+            "Check DATABASE_URL and that Postgres is running.",
+            exc,
+        )
+        raise
+    log.info("database.py run_postgres_migrations(): Alembic upgrade head finished")
 
 
 async def _init_postgres_schema() -> None:
