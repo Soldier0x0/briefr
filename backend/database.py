@@ -32,16 +32,24 @@ async def run_postgres_migrations() -> None:
     head = ScriptDirectory.from_config(alembic_cfg).get_current_head()
 
     current: str | None = None
-    conn = await asyncpg.connect(postgres_dsn(), timeout=15)
+    skip_alembic = False
     try:
-        row = await conn.fetchrow("SELECT version_num FROM alembic_version LIMIT 1")
-        current = row["version_num"] if row else None
-    except asyncpg.UndefinedTableError:
-        current = None
-    finally:
-        await conn.close()
+        conn = await asyncpg.connect(postgres_dsn(), timeout=15)
+        try:
+            row = await conn.fetchrow("SELECT version_num FROM alembic_version LIMIT 1")
+            current = row["version_num"] if row else None
+            skip_alembic = current == head
+        except asyncpg.UndefinedTableError:
+            current = None
+        finally:
+            await conn.close()
+    except Exception as exc:
+        log.warning(
+            "database.py run_postgres_migrations(): version check failed (%s) — falling back to Alembic",
+            exc,
+        )
 
-    if current == head:
+    if skip_alembic:
         log.info(
             "database.py run_postgres_migrations(): already at head (%s) — skipping Alembic",
             head,
