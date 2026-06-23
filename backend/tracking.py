@@ -134,7 +134,7 @@ _API_USAGE_UPSERT_SQL = """
     INSERT INTO api_usage (service, date_utc, month_utc, count)
     VALUES (?, ?, ?, ?)
     ON CONFLICT(service, date_utc) DO UPDATE SET
-        count = count + excluded.count,
+        count = api_usage.count + excluded.count,
         month_utc = excluded.month_utc
 """
 
