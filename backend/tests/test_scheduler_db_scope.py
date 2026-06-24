@@ -18,7 +18,6 @@ def test_llm_extraction_releases_db_during_groq(tmp_path, monkeypatch):
     """Without a passed connection, Groq runs while no pool slot is held."""
     monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "llm_scope.db"))
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
-    monkeypatch.setattr(pex, "THROTTLE_SECONDS", 0.0)
 
     held: list[bool] = []
 

@@ -82,13 +82,20 @@ def _record_success(source: str) -> None:
     state["last_error"] = None
 
 
-def _record_failure(source: str, error: str) -> None:
+def _record_failure(
+    source: str, error: str, *, cooldown_seconds: float | None = None
+) -> None:
     state = _state(source)
     state["last_failure"] = time.time()
     state["last_error"] = error[:300]
     state["consecutive_failures"] += 1
     if state["consecutive_failures"] >= CIRCUIT_FAILURE_THRESHOLD:
-        state["circuit_open_until"] = time.time() + CIRCUIT_COOLDOWN_SECONDS
+        cooldown = (
+            cooldown_seconds
+            if cooldown_seconds is not None
+            else CIRCUIT_COOLDOWN_SECONDS
+        )
+        state["circuit_open_until"] = time.time() + cooldown
         logger.warning(
             "Circuit opened for %s after %d consecutive failures (cooldown %ss): %s",
             source,
@@ -162,7 +169,8 @@ async def resilient_request(
             if attempt < retries:
                 await asyncio.sleep(_retry_after_seconds(response, attempt))
                 continue
-            _record_failure(source, f"HTTP {response.status_code}")
+            cooldown = max(_retry_after_seconds(response, attempt), CIRCUIT_COOLDOWN_SECONDS)
+            _record_failure(source, f"HTTP {response.status_code}", cooldown_seconds=cooldown)
             response.raise_for_status()
 
         if response.is_server_error:

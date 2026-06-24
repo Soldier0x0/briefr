@@ -19,7 +19,6 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import os
@@ -27,13 +26,13 @@ import re
 
 import aiosqlite
 
-from ai.groq_config import GROQ_MODEL, GROQ_URL
+from ai.groq_client import GroqRateLimitError, chat_completion, message_content
+from ai.groq_config import GROQ_MODEL
 from database import (
     get_cves_for_llm_product_extraction,
     set_feed_cache,
     set_llm_affected_products,
 )
-from resilient_client import CircuitOpenError, resilient_request
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +41,6 @@ logger = logging.getLogger(__name__)
 # candidate pool permanently because affected_products is no longer empty.
 # Errored attempts are not cached at all and retry on the next run.
 RETRY_HOURS = 168.0
-THROTTLE_SECONDS = 2.0
 MAX_PRODUCTS_PER_CVE = 10
 
 SYSTEM_PROMPT = (
@@ -76,7 +74,7 @@ def llm_product_extraction_enabled() -> bool:
 
 
 def get_extraction_max_per_run() -> int:
-    return int(os.environ.get("LLM_PRODUCT_EXTRACTION_MAX_PER_RUN", "25"))
+    return int(os.environ.get("LLM_PRODUCT_EXTRACTION_MAX_PER_RUN", "10"))
 
 
 def _normalize_token(value: str) -> str:
@@ -161,35 +159,22 @@ def products_to_affected_keys(products: list[dict]) -> list[str]:
 async def extract_products_via_groq(description: str, api_key: str) -> list[dict]:
     """One Groq call → validated product dicts. retries=0: never burn quota
     on automatic retries (same policy as VT/AbuseIPDB/GreyNoise)."""
-    response = await resilient_request(
-        "groq",
-        "POST",
-        GROQ_URL,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": GROQ_MODEL,
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": USER_PROMPT_TEMPLATE.format(
-                        description=(description or "")[:3000]
-                    ),
-                },
-            ],
-            "max_tokens": 500,
-            "temperature": 0.0,
-        },
+    response = await chat_completion(
+        api_key,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": USER_PROMPT_TEMPLATE.format(
+                    description=(description or "")[:3000]
+                ),
+            },
+        ],
+        max_tokens=500,
+        temperature=0.0,
         timeout=60.0,
-        retries=0,
     )
-    content = (
-        response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-    )
-    return parse_products_payload(content)
+    return parse_products_payload(message_content(response))
 
 
 async def run_llm_product_extraction(db: aiosqlite.Connection | None = None) -> dict:
@@ -206,6 +191,7 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None) -> 
     scopes — Groq HTTP and throttle sleeps run without a connection.
     """
     from database import get_db
+    from resilient_client import CircuitOpenError
 
     api_key = os.environ.get("GROQ_API_KEY", "").strip()
     stats = {"candidates": 0, "extracted": 0, "written": 0, "errors": 0}
@@ -242,6 +228,15 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None) -> 
                 len(candidates),
             )
             break
+        except GroqRateLimitError as exc:
+            logger.warning(
+                "LLM product extraction: Groq rate limit — aborting run "
+                "(%d/%d candidates processed): %s",
+                index,
+                len(candidates),
+                exc,
+            )
+            break
         except Exception as exc:
             stats["errors"] += 1
             logger.error("LLM product extraction failed for %s: %s", cve_id, exc)
@@ -276,8 +271,5 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None) -> 
                 await _persist(conn)
             finally:
                 await conn.close()
-
-        if index + 1 < len(candidates):
-            await asyncio.sleep(THROTTLE_SECONDS)
 
     return stats

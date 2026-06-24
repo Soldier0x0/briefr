@@ -52,6 +52,7 @@ export default function StatusBar({ system, onRunIngest, refreshInProgress, mode
 
   return (
     <div className="admin-statusbar">
+      <div className="admin-statusbar-scroll">
         <Link to="/" className="admin-brand-link mono" title="Back to BRIEFR">
           BRIEFR
         </Link>
@@ -95,19 +96,6 @@ export default function StatusBar({ system, onRunIngest, refreshInProgress, mode
               </>
             )}
             {updatedAgoEl}
-            <div className="sb-actions">
-              {userMenu}
-              <button
-                className="admin-btn admin-btn-ghost"
-                onClick={onRunIngest}
-                disabled={refreshInProgress}
-                style={{ fontSize: '0.75rem' }}
-                title="Pulls the latest CVEs, KEV entries, and EPSS scores from every source right now"
-              >
-                {refreshInProgress ? <><span className="admin-spinner" /> Refreshing…</> : <><RefreshCw size={13} strokeWidth={2} /> Refresh all sources</>}
-              </button>
-              <HelpTip text="Pulls the latest CVEs, KEV entries, and EPSS scores from every configured source right now, instead of waiting for the normal schedule." />
-            </div>
           </>
         ) : (
           <>
@@ -165,11 +153,27 @@ export default function StatusBar({ system, onRunIngest, refreshInProgress, mode
               </>
             )}
             {updatedAgoEl}
-            <div className="sb-actions">
-              {userMenu}
-            </div>
           </>
         )}
       </div>
+
+      <div className="sb-actions">
+        {userMenu}
+        {mode === 'analyst' && (
+          <>
+            <button
+              className="admin-btn admin-btn-ghost"
+              onClick={onRunIngest}
+              disabled={refreshInProgress}
+              style={{ fontSize: '0.75rem' }}
+              title="Pulls the latest CVEs, KEV entries, and EPSS scores from every source right now"
+            >
+              {refreshInProgress ? <><span className="admin-spinner" /> Refreshing…</> : <><RefreshCw size={13} strokeWidth={2} /> Refresh all sources</>}
+            </button>
+            <HelpTip text="Pulls the latest CVEs, KEV entries, and EPSS scores from every configured source right now, instead of waiting for the normal schedule." />
+          </>
+        )}
+      </div>
+    </div>
   )
 }

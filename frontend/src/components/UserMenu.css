@@ -135,4 +135,5 @@
 
 .user-menu-wrap--admin .user-menu-dropdown {
   right: 0;
+  z-index: 300;
 }

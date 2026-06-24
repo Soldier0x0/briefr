@@ -234,7 +234,6 @@ def test_candidate_query_targets_only_unanalyzed_cves(tmp_path, monkeypatch):
 def test_run_extraction_writes_products_and_negative_caches(tmp_path, monkeypatch):
     monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "run.db"))
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
-    monkeypatch.setattr(pex, "THROTTLE_SECONDS", 0.0)
 
     calls: list[str] = []
 
@@ -299,7 +298,6 @@ def test_run_extraction_errors_are_not_negative_cached(tmp_path, monkeypatch):
     7 days — the CVE stays a candidate and is retried on the next run."""
     monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "errs.db"))
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
-    monkeypatch.setattr(pex, "THROTTLE_SECONDS", 0.0)
 
     attempts = {"n": 0}
 
