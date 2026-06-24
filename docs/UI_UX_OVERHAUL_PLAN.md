@@ -285,7 +285,51 @@ px/hex scattered in components), so this is cheaper than it sounds.
 6. Section 2 (mobile nav redesign) — independent, do whenever.
 7. Section 7 (settings panel) — independent, do last, it's additive and
    non-urgent.
+8. Section 8 (consolidate feed-health dot) — small, ship with §1 or §2;
+   unblocks cleaner mobile header right rail.
 
 Also merge the already-built-but-unmerged `feat/config-schema` branch
 (per-field help text in API keys & config) — it directly supports section
 3e and is just sitting there ready.
+
+---
+
+## 8. Consolidate feed-health LIVE indicator (discussion — batch with other UI work)
+
+**Problem:** The same feed-health badge appears twice today — in
+`Header.jsx` (top right) and again in `FeedRefreshStatus` at the bottom of
+BRIEF/FEED (`App.jsx`). Both read the same `feedHealth` from `/api/health`
+(polled every 60s). The right side of the header is already crowded
+(clock, legal, shortcuts, user menu).
+
+**Agreed direction (2026-06-24 discussion):**
+
+- **Single placement only** — one indicator in the header, nowhere else.
+  Remove the duplicate from `FeedRefreshStatus`; keep the footer text-only
+  (“Last refreshed … · Next refresh …”).
+- **Placement:** header **left**, beside logo/tagline (e.g. after “CVE
+  intelligence”), not top right.
+- **Dot-only UI** — drop the “LIVE” label. Keep `title` + `aria-label` for
+  hover/focus discoverability.
+- **One dot, four states** (not four dots visible at once). Color + pulse
+  speed encode state:
+
+  | State | When | Color | Pulse |
+  |---|---|---|---|
+  | Healthy | `cve_count ≥ 10`, not ingesting | Green | Slow (~2s) |
+  | Syncing | `refresh_in_progress` | Amber | Faster (~1s) |
+  | Bootstrapping | `cve_count < 10` | Gray | Static |
+  | Unknown / degraded | Health not loaded or poll failed | Gray or muted red | Static or slow |
+
+- **Scope:** stays tied to **backend pipeline health** (`/api/health` ingest
+  status, CVE count, refresh). Do **not** pulse on every frontend API call
+  (drawer, infinite scroll, IOC lookup) — too noisy and loses meaning.
+  Optional later: explicit “degraded” when a feed circuit is open.
+
+**Files likely touched:** `Header.jsx`, `Header.css`, `App.jsx`
+(`FeedRefreshStatus`), mobile header simplification in §2 (update “wordmark +
+LIVE indicator” to “wordmark + status dot” on the left).
+
+**Verification:** green/amber/gray states visible with seeded DB; footer has
+no second dot; tooltip text matches state; `aria-label` present without
+visible “LIVE” text; desktop + mobile header screenshots.

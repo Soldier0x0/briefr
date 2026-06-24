@@ -53,6 +53,8 @@
        legend anywhere in admin panel, permanent non-dismissible warning
        banner on API keys page.
      - **P3**: pre-existing React duplicate-key warning in 90-day heatmap.
+   - **Queued (2026-06-24)**: consolidate feed-health LIVE indicator to a
+     single header-left dot — spec in `docs/UI_UX_OVERHAUL_PLAN.md` §8.
    - **No code changes made for any of the above** — user wants a plan
      file only, work starts next session.
 
