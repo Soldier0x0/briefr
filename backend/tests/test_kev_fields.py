@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import aiosqlite
 
-from database import upsert_kev
+from database import _clean_iso_date, upsert_kev
 from feeds.kev import parse_kev_catalog
 
 SAMPLE_CATALOG = {
@@ -121,6 +121,44 @@ def test_parse_kev_catalog_tolerates_missing_fields():
     assert log4j["vulnerabilityName"] == ""
     assert log4j["knownRansomwareCampaignUse"] == ""
     assert log4j["cwes"] == []
+
+
+def test_clean_iso_date_accepts_valid_and_rejects_garbage():
+    assert _clean_iso_date("2026-06-23") == "2026-06-23"
+    assert _clean_iso_date("2026-06-23T12:00:00Z") == "2026-06-23T12:00:00Z"
+    assert _clean_iso_date("") == ""
+    assert _clean_iso_date(None) == ""
+    assert _clean_iso_date("pending") == ""
+    assert _clean_iso_date(123) == ""
+
+
+def test_upsert_kev_sanitizes_null_and_garbage_dates():
+    async def _run():
+        db = await aiosqlite.connect(":memory:")
+        db.row_factory = aiosqlite.Row
+        await db.execute(_kev_table_sql())
+
+        await upsert_kev(
+            db,
+            {
+                "cveID": "CVE-2026-9999",
+                "product": "Widget",
+                "shortDescription": "Test",
+                "requiredAction": "Patch",
+                "dueDate": None,
+                "dateAdded": "not-a-date",
+            },
+        )
+        await db.commit()
+
+        row = await db.execute_fetchall(
+            "SELECT due_date, date_added FROM kev_deadlines WHERE cve_id = ?",
+            ("CVE-2026-9999",),
+        )
+        assert dict(row[0]) == {"due_date": "", "date_added": ""}
+        await db.close()
+
+    asyncio.run(_run())
 
 
 def test_upsert_kev_stores_and_updates_enrichment_fields():

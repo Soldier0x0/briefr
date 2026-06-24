@@ -14,9 +14,11 @@ DB_PATH = os.environ.get("DB_PATH", "briefr.db")
 _ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}")
 
 
-def _clean_iso_date(value: str) -> str:
+def _clean_iso_date(value: str | None) -> str:
     """Keep only values that start with a YYYY-MM-DD date; drop garbage (e.g. stray header text)."""
-    return value if _ISO_DATE_RE.match(value or "") else ""
+    if isinstance(value, str) and _ISO_DATE_RE.match(value):
+        return value
+    return ""
 
 
 async def get_db():
