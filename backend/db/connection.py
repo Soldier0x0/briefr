@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass
 from typing import Any
@@ -59,7 +60,7 @@ class PostgresConnection:
     """asyncpg-backed connection with SQLite placeholder translation."""
 
     def __init__(self, conn: Any, pool: Any) -> None:
-        self._conn = conn
+        self._conn: Any | None = conn
         self._pool = pool
         self._transaction = None
 
@@ -107,10 +108,20 @@ class PostgresConnection:
             self._transaction = None
 
     async def close(self) -> None:
-        if self._transaction is not None:
-            await self._transaction.rollback()
+        if self._conn is None:
+            return
+        try:
+            if self._transaction is not None:
+                await self._transaction.rollback()
+        except Exception as exc:
+            logger.warning(
+                "PostgresConnection.close(): rollback failed (%s) — releasing anyway",
+                exc,
+            )
+        finally:
             self._transaction = None
-        await self._pool.release(self._conn)
+            conn, self._conn = self._conn, None
+            await self._pool.release(conn)
 
 
 async def init_pool() -> None:
@@ -139,7 +150,13 @@ async def init_pool() -> None:
 async def close_pool() -> None:
     global _pool
     if _pool is not None:
-        await _pool.close()
+        try:
+            await asyncio.wait_for(_pool.close(), timeout=5.0)
+        except TimeoutError:
+            logger.warning(
+                "db/connection.py close_pool(): timed out after 5s — "
+                "connections may still be leaked; process exit will reclaim them"
+            )
         _pool = None
 
 

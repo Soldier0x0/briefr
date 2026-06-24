@@ -17,6 +17,12 @@ EnvironmentFile=/opt/briefr/backend/.env
 ExecStart=/opt/briefr/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1 --log-level info
 Restart=always
 RestartSec=10
+# When the DB pool is exhausted, in-flight requests hang on pool.acquire() and
+# uvicorn graceful shutdown never finishes — cap stop wait so restart doesn't
+# block for the systemd default (~90s).
+TimeoutStopSec=15
+KillMode=mixed
+KillSignal=SIGTERM
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=briefr-backend
