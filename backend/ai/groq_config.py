@@ -19,17 +19,30 @@ class GroqLimits:
 
 def groq_limits() -> GroqLimits:
     """Limits for the configured model — override via env for other tiers/models."""
-    rpm = int(os.environ.get("GROQ_RPM_LIMIT", "30"))
-    tpm = int(os.environ.get("GROQ_TPM_LIMIT", "6000"))
-    est_tokens = int(os.environ.get("GROQ_ESTIMATED_TOKENS_PER_REQUEST", "1500"))
+    try:
+        rpm = int(os.environ.get("GROQ_RPM_LIMIT", "30"))
+    except ValueError:
+        rpm = 30
+    try:
+        tpm = int(os.environ.get("GROQ_TPM_LIMIT", "6000"))
+    except ValueError:
+        tpm = 6000
+    try:
+        est_tokens = int(os.environ.get("GROQ_ESTIMATED_TOKENS_PER_REQUEST", "1500"))
+    except ValueError:
+        est_tokens = 1500
 
     min_from_rpm = 60.0 / max(rpm, 1)
     min_from_tpm = (60.0 * est_tokens) / max(tpm, 1)
     default_interval = max(min_from_rpm, min_from_tpm, 2.0)
 
-    interval = float(
-        os.environ.get("GROQ_MIN_REQUEST_INTERVAL_SECONDS", str(default_interval))
-    )
+    try:
+        interval = float(
+            os.environ.get("GROQ_MIN_REQUEST_INTERVAL_SECONDS", str(default_interval))
+        )
+    except ValueError:
+        interval = default_interval
+
     return GroqLimits(
         rpm=rpm,
         tpm=tpm,

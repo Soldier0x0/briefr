@@ -19,10 +19,12 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
 import re
+import time
 
 import aiosqlite
 
@@ -74,7 +76,10 @@ def llm_product_extraction_enabled() -> bool:
 
 
 def get_extraction_max_per_run() -> int:
-    return int(os.environ.get("LLM_PRODUCT_EXTRACTION_MAX_PER_RUN", "10"))
+    try:
+        return int(os.environ.get("LLM_PRODUCT_EXTRACTION_MAX_PER_RUN", "10"))
+    except ValueError:
+        return 10
 
 
 def _normalize_token(value: str) -> str:
@@ -216,34 +221,39 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None) -> 
 
     for index, candidate in enumerate(candidates):
         cve_id = candidate["cve_id"]
-        try:
-            products = await extract_products_via_groq(
-                candidate["description"], api_key
-            )
-        except CircuitOpenError:
-            logger.warning(
-                "LLM product extraction: Groq circuit open — aborting run "
-                "(%d/%d candidates processed)",
-                index,
-                len(candidates),
-            )
-            break
-        except GroqRateLimitError as exc:
-            logger.warning(
-                "LLM product extraction: Groq rate limit — aborting run "
-                "(%d/%d candidates processed): %s",
-                index,
-                len(candidates),
-                exc,
-            )
-            break
-        except Exception as exc:
-            stats["errors"] += 1
-            logger.error("LLM product extraction failed for %s: %s", cve_id, exc)
-            # Transient failures (timeouts, 5xx, rate limits) are NOT
-            # negative-cached — the CVE stays a candidate and is retried on
-            # the next run. Repeated provider failures trip the Groq circuit
-            # breaker, which aborts the whole run above.
+        products = None
+        while products is None:
+            try:
+                products = await extract_products_via_groq(
+                    candidate["description"], api_key
+                )
+            except CircuitOpenError as exc:
+                wait = max(1.0, exc.retry_at - time.time())
+                logger.warning(
+                    "LLM product extraction: Groq circuit open for %s — "
+                    "waiting %.1fs then retrying (%d/%d)",
+                    cve_id,
+                    wait,
+                    index + 1,
+                    len(candidates),
+                )
+                await asyncio.sleep(wait)
+            except GroqRateLimitError as exc:
+                logger.warning(
+                    "LLM product extraction: Groq rate limit for %s — "
+                    "waiting 60s then retrying (%d/%d): %s",
+                    cve_id,
+                    index + 1,
+                    len(candidates),
+                    exc,
+                )
+                await asyncio.sleep(60.0)
+            except Exception as exc:
+                stats["errors"] += 1
+                logger.error("LLM product extraction failed for %s: %s", cve_id, exc)
+                break
+
+        if products is None:
             continue
 
         written = False

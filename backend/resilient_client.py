@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -113,9 +114,21 @@ def _check_circuit(source: str) -> None:
 
 
 def _retry_after_seconds(response: httpx.Response, attempt: int) -> float:
-    retry_after = response.headers.get("Retry-After", "")
-    if retry_after.isdigit():
-        return min(float(retry_after), 30.0)
+    for header in ("Retry-After", "retry-after"):
+        retry_after = (response.headers.get(header) or "").strip()
+        if not retry_after:
+            continue
+        try:
+            return min(float(retry_after), 120.0)
+        except ValueError:
+            pass
+        match = re.match(
+            r"^(?:(?P<mins>\d+)m)?(?:(?P<secs>\d+(?:\.\d+)?)s)?$", retry_after
+        )
+        if match:
+            mins = int(match.group("mins") or 0)
+            secs = float(match.group("secs") or 0)
+            return min(mins * 60.0 + secs, 120.0)
     return RETRY_BACKOFF_SECONDS * (2**attempt)
 
 
@@ -169,6 +182,10 @@ async def resilient_request(
             if attempt < retries:
                 await asyncio.sleep(_retry_after_seconds(response, attempt))
                 continue
+            if response.status_code == 429:
+                # Rate limits are quota signals, not source outages — do not
+                # trip the circuit; let callers (e.g. groq_client) pace and retry.
+                response.raise_for_status()
             cooldown = max(_retry_after_seconds(response, attempt), CIRCUIT_COOLDOWN_SECONDS)
             _record_failure(source, f"HTTP {response.status_code}", cooldown_seconds=cooldown)
             response.raise_for_status()

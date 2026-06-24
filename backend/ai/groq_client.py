@@ -3,12 +3,16 @@
 Groq org limits are multi-dimensional (RPM, RPD, TPM, TPD) — you hit
 whichever threshold is reached first. For ``llama-3.1-8b-instant`` the TPM
 cap (6K/min) is usually tighter than RPM (30/min) for our extraction prompts.
+
+On HTTP 429 or an open circuit, the client waits and retries so scheduler
+jobs finish every candidate instead of aborting mid-run.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import re
 import time
 from typing import Any
@@ -16,25 +20,29 @@ from typing import Any
 import httpx
 
 from ai.groq_config import GROQ_MODEL, GROQ_URL, groq_limits
-from resilient_client import resilient_request
+from resilient_client import CircuitOpenError, resilient_request
 
 logger = logging.getLogger(__name__)
 
-_lock = asyncio.Lock()
+_lock: asyncio.Lock | None = None
 _pause_until = 0.0
 _last_request_at = 0.0
 
+GROQ_RATE_LIMIT_MAX_RETRIES = int(os.environ.get("GROQ_RATE_LIMIT_MAX_RETRIES", "50"))
+
 
 class GroqRateLimitError(Exception):
-    """Groq returned HTTP 429 or headers indicate quota is exhausted."""
+    """Groq returned HTTP 429 after all in-client retries were exhausted."""
 
 
 def _parse_duration_seconds(value: str) -> float:
     text = (value or "").strip()
     if not text:
         return 0.0
-    if text.isdigit():
+    try:
         return float(text)
+    except ValueError:
+        pass
     match = re.match(r"^(?:(?P<mins>\d+)m)?(?:(?P<secs>\d+(?:\.\d+)?)s)?$", text)
     if not match:
         return 0.0
@@ -76,14 +84,17 @@ def _apply_rate_limit_headers(headers: httpx.Headers, *, estimated_tokens: int) 
 
 def reset_groq_limiter_state() -> None:
     """Test helper — clear in-memory pacing state."""
-    global _pause_until, _last_request_at
+    global _pause_until, _last_request_at, _lock
     _pause_until = 0.0
     _last_request_at = 0.0
+    _lock = None
 
 
 async def await_groq_slot() -> None:
     """Wait until Groq header pacing and minimum inter-request interval allow a call."""
-    global _last_request_at
+    global _last_request_at, _lock
+    if _lock is None:
+        _lock = asyncio.Lock()
     limits = groq_limits()
     async with _lock:
         now = time.monotonic()
@@ -108,51 +119,83 @@ async def chat_completion(
     estimated_input_tokens: int | None = None,
     source: str = "groq",
 ) -> httpx.Response:
-    """POST to Groq chat completions with quota-aware pacing."""
+    """POST to Groq chat completions with quota-aware pacing and 429 retries."""
     limits = groq_limits()
     est_tokens = estimated_input_tokens
     if est_tokens is None:
         est_tokens = limits.estimated_tokens_per_request
     token_budget = est_tokens + max_tokens
 
-    await await_groq_slot()
-    try:
-        response = await resilient_request(
-            source,
-            "POST",
-            GROQ_URL,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": GROQ_MODEL,
-                "messages": messages,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-            },
-            timeout=timeout,
-            retries=0,
-        )
-    except httpx.HTTPStatusError as exc:
-        if exc.response.status_code == 429:
-            _apply_rate_limit_headers(exc.response.headers, estimated_tokens=token_budget)
-            retry_after = exc.response.headers.get("retry-after", "")
-            raise GroqRateLimitError(
-                f"Groq rate limit (HTTP 429)"
-                + (f", retry-after={retry_after}" if retry_after else "")
-            ) from exc
-        raise
+    for attempt in range(GROQ_RATE_LIMIT_MAX_RETRIES + 1):
+        await await_groq_slot()
+        try:
+            response = await resilient_request(
+                source,
+                "POST",
+                GROQ_URL,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": GROQ_MODEL,
+                    "messages": messages,
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                },
+                timeout=timeout,
+                retries=0,
+            )
+        except CircuitOpenError as exc:
+            wait = max(0.5, exc.retry_at - time.time())
+            logger.warning(
+                "Groq circuit open, waiting %.1fs before retry (%d/%d)",
+                wait,
+                attempt + 1,
+                GROQ_RATE_LIMIT_MAX_RETRIES + 1,
+            )
+            await asyncio.sleep(wait)
+            continue
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 429:
+                _apply_rate_limit_headers(
+                    exc.response.headers, estimated_tokens=token_budget
+                )
+                if attempt < GROQ_RATE_LIMIT_MAX_RETRIES:
+                    retry_after = exc.response.headers.get("retry-after", "")
+                    logger.warning(
+                        "Groq rate limit (HTTP 429), will wait and retry "
+                        "(%d/%d)%s",
+                        attempt + 1,
+                        GROQ_RATE_LIMIT_MAX_RETRIES + 1,
+                        f", retry-after={retry_after}" if retry_after else "",
+                    )
+                    continue
+                raise GroqRateLimitError(
+                    "Groq rate limit (HTTP 429) after "
+                    f"{GROQ_RATE_LIMIT_MAX_RETRIES + 1} attempts"
+                    + (f", retry-after={retry_after}" if retry_after else "")
+                ) from exc
+            raise
 
-    _apply_rate_limit_headers(response.headers, estimated_tokens=token_budget)
-    return response
+        _apply_rate_limit_headers(response.headers, estimated_tokens=token_budget)
+        return response
+
+    raise GroqRateLimitError(
+        f"Groq rate limit retries exhausted after {GROQ_RATE_LIMIT_MAX_RETRIES + 1} attempts"
+    )
 
 
 def message_content(response: httpx.Response) -> str:
-    return (
-        response.json()
-        .get("choices", [{}])[0]
-        .get("message", {})
-        .get("content", "")
-        or ""
-    )
+    try:
+        data = response.json()
+        if isinstance(data, dict):
+            return (
+                data.get("choices", [{}])[0]
+                .get("message", {})
+                .get("content", "")
+                or ""
+            )
+    except (ValueError, TypeError, KeyError, IndexError):
+        pass
+    return ""
