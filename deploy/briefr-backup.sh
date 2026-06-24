@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-# Create a BRIEFR backup (SQLite or PostgreSQL + .env) with integrity checks
+# Create a BRIEFR backup (PostgreSQL pg_dump + .env) with integrity checks
 # and retention pruning. Archives are age-encrypted with the key in
 # ${APP_HOME}/keys/backup-age.key (generated on first run, deliberately OUTSIDE
 # BACKUP_DIR; set BACKUP_AGE_KEY_FILE="" to disable encryption).
 #
-# Backend selection is automatic:
-#   DATABASE_URL=postgresql://...  →  pg_dump custom format (briefr.pgdump in tarball)
-#   (unset)                      →  SQLite online backup (briefr.db in tarball)
+# Requires DATABASE_URL (postgresql://...) and postgresql-client (pg_dump/pg_restore)
+# on the host. Production Postgres is typically Docker at /opt/infra/postgres
+# (published port 127.0.0.1:5432).
 #
-# Requires postgresql-client (pg_dump) when DATABASE_URL points at PostgreSQL.
 # Run as root or as the briefr user.
 set -euo pipefail
 

@@ -74,7 +74,7 @@ export default function StoragePage({ toast }) {
                   <div className={`disk-bar-fill disk-bar-fill-${diskBarColor(dbPct)}`} style={{ width: `${dbPct}%` }} />
                 </div>
                 <div style={{ marginTop: '0.3rem', fontSize: '0.7rem', color: 'var(--text3)' }}>
-                  DB file: {storage.db_path} ({fmtBytes(storage.db_size_bytes)})
+                  Database: {storage.db_path} ({fmtBytes(storage.db_size_bytes)})
                 </div>
               </div>
               <div style={{ flex: 1 }}>

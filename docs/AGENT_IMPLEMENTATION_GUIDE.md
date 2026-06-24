@@ -60,8 +60,8 @@ See [`Beta V1.3.md`](../Beta%20V1.3.md) Theme 4 and [`OPERATIONS.md`](OPERATIONS
 
 ## Deploy compatibility
 
-Existing production: systemd + nginx + cloudflared, SQLite, `/var/lib/briefr/backups`.  
-Releases must stay **additive** — see [`OPERATIONS.md`](OPERATIONS.md).
+Existing production: systemd + nginx + cloudflared, **PostgreSQL 16** (`DATABASE_URL`), `/var/lib/briefr/backups`.  
+See [`POSTGRES.md`](POSTGRES.md) and [`OPERATIONS.md`](OPERATIONS.md).
 
 ---
 

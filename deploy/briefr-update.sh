@@ -32,7 +32,7 @@ if [ "${BRIEFR_UPDATE_REEXECED:-}" != "1" ]; then
     git -C "${INSTALL_DIR}" diff --stat
     echo ""
     echo "Permission-only drift is reset automatically before pull."
-    echo "For other tracked files, restore upstream copies (.env and briefr.db are gitignored):"
+    echo "For other tracked files, restore upstream copies (.env is gitignored):"
     echo "  git -C ${INSTALL_DIR} restore <path>"
     echo "Then re-run: bash ${SCRIPT_PATH}"
     exit 1
