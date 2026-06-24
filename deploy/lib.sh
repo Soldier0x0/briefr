@@ -107,7 +107,8 @@ ensure_nginx() {
 is_postgres_deployment() {
   local env_file="${INSTALL_DIR}/backend/.env"
   [ -f "${env_file}" ] || return 1
-  grep -qE '^[[:space:]]*DATABASE_URL[[:space:]]*=[[:space:]]*postgres(ql)?://' \
+  # Optional single/double quotes around the DSN value are common in .env files.
+  grep -qE '^[[:space:]]*DATABASE_URL[[:space:]]*=[[:space:]]*["'\'']?postgres(ql)?://' \
     "${env_file}" 2>/dev/null
 }
 
@@ -119,8 +120,13 @@ ensure_postgresql_client() {
   if command -v pg_dump &>/dev/null && command -v pg_restore &>/dev/null; then
     return 0
   fi
+  if [ "$(id -u)" -ne 0 ]; then
+    echo "WARN: postgresql-client is missing and we are not root — cannot auto-install."
+    echo "      Install as root: apt install postgresql-client"
+    return 1
+  fi
   echo "==> Installing postgresql-client (pg_dump/pg_restore for PostgreSQL backups)"
-  apt-get update -qq
+  apt-get update -qq || true
   if ! apt-get install -y -qq postgresql-client; then
     # Bookworm/Trixie often expose versioned metapackages only.
     local ver
@@ -141,10 +147,10 @@ ensure_postgresql_client() {
 configure_backup_timer() {
   if is_postgres_deployment; then
     systemctl disable --now briefr-backup.timer 2>/dev/null || true
-    systemctl enable briefr-pg-backup.timer
+    systemctl enable --now briefr-pg-backup.timer
   else
     systemctl disable --now briefr-pg-backup.timer 2>/dev/null || true
-    systemctl enable briefr-backup.timer
+    systemctl enable --now briefr-backup.timer
   fi
 }
 
