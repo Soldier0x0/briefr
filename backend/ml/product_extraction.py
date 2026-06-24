@@ -192,7 +192,7 @@ async def extract_products_via_groq(description: str, api_key: str) -> list[dict
     return parse_products_payload(content)
 
 
-async def run_llm_product_extraction(db: aiosqlite.Connection) -> dict:
+async def run_llm_product_extraction(db: aiosqlite.Connection | None = None) -> dict:
     """Scheduler job body: extract products for NVD-unanalyzed CVEs.
 
     Caller is responsible for the enabled() gate and the job lock. Every
@@ -201,13 +201,29 @@ async def run_llm_product_extraction(db: aiosqlite.Connection) -> dict:
     query skips it for RETRY_HOURS; successful writes set
     affected_products_source='llm'. Errors are never cached — transient
     failures retry on the next run.
+
+    When ``db`` is omitted, pool connections are held only for short read/write
+    scopes — Groq HTTP and throttle sleeps run without a connection.
     """
+    from database import get_db
+
     api_key = os.environ.get("GROQ_API_KEY", "").strip()
     stats = {"candidates": 0, "extracted": 0, "written": 0, "errors": 0}
 
-    candidates = await get_cves_for_llm_product_extraction(
-        db, limit=get_extraction_max_per_run(), retry_hours=RETRY_HOURS
-    )
+    async def _load_candidates(conn):
+        return await get_cves_for_llm_product_extraction(
+            conn, limit=get_extraction_max_per_run(), retry_hours=RETRY_HOURS
+        )
+
+    if db is not None:
+        candidates = await _load_candidates(db)
+    else:
+        conn = await get_db()
+        try:
+            candidates = await _load_candidates(conn)
+        finally:
+            await conn.close()
+
     stats["candidates"] = len(candidates)
     if not candidates:
         return stats
@@ -237,17 +253,29 @@ async def run_llm_product_extraction(db: aiosqlite.Connection) -> dict:
 
         written = False
         keys = products_to_affected_keys(products)
-        if keys:
-            stats["extracted"] += 1
-            written = await set_llm_affected_products(db, cve_id, keys)
-            if written:
-                stats["written"] += 1
-        await set_feed_cache(
-            db,
-            f"llm_products:{cve_id.upper()}",
-            {"products": products, "model": GROQ_MODEL, "written": written},
-        )
-        await db.commit()
+
+        async def _persist(conn, _cve_id=cve_id, _keys=keys, _products=products):
+            nonlocal written
+            if _keys:
+                stats["extracted"] += 1
+                written = await set_llm_affected_products(conn, _cve_id, _keys)
+                if written:
+                    stats["written"] += 1
+            await set_feed_cache(
+                conn,
+                f"llm_products:{_cve_id.upper()}",
+                {"products": _products, "model": GROQ_MODEL, "written": written},
+            )
+            await conn.commit()
+
+        if db is not None:
+            await _persist(db)
+        else:
+            conn = await get_db()
+            try:
+                await _persist(conn)
+            finally:
+                await conn.close()
 
         if index + 1 < len(candidates):
             await asyncio.sleep(THROTTLE_SECONDS)

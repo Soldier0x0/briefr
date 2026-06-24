@@ -474,14 +474,14 @@ async def run_nightly_correlation(db) -> dict:
 
 
 async def prefetch_pulse_iocs_for_nightly(
-    db, api_key: str, max_pulses: int | None = None
+    api_key: str, max_pulses: int | None = None
 ) -> int:
     """
     Pre-fetch IOC data for pulses not yet in otx_pulse_iocs.
     Called by the nightly OTX + correlation job so Level 1 has IP data.
     """
+    from database import get_db, store_otx_pulse_iocs
     from feeds.otx import fetch_pulse_iocs
-    from database import store_otx_pulse_iocs
 
     if not api_key:
         return 0
@@ -489,8 +489,10 @@ async def prefetch_pulse_iocs_for_nightly(
     if max_pulses is None:
         max_pulses = get_otx_ioc_sync_max_per_run()
 
-    missing_rows = await db.execute_fetchall(
-        """
+    db = await get_db()
+    try:
+        missing_rows = await db.execute_fetchall(
+            """
         SELECT DISTINCT ocp.pulse_id,
                CASE WHEN EXISTS (
                    SELECT 1 FROM otx_cve_pulses p2
@@ -505,17 +507,25 @@ async def prefetch_pulse_iocs_for_nightly(
         ORDER BY priority_rank ASC, ocp.fetched_at DESC
         LIMIT ?
         """,
-        (max_pulses,),
-    )
+            (max_pulses,),
+        )
+    finally:
+        await db.close()
 
     fetched = 0
     for row in missing_rows:
         pulse_id = row["pulse_id"]
         try:
             iocs = await fetch_pulse_iocs(pulse_id, api_key)
-            if iocs:
+            if not iocs:
+                continue
+            db = await get_db()
+            try:
                 await store_otx_pulse_iocs(db, pulse_id, iocs)
+                await db.commit()
                 fetched += 1
+            finally:
+                await db.close()
         except Exception as exc:
             logger.warning("IOC prefetch failed for pulse %s: %s", pulse_id, exc)
     return fetched

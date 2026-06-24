@@ -918,6 +918,7 @@ def _get_config_response() -> dict[str, Any]:
             "CIRCUIT_FAILURE_THRESHOLD": _env_int("CIRCUIT_FAILURE_THRESHOLD", 3),
             "CIRCUIT_COOLDOWN_SECONDS": _env_int("CIRCUIT_COOLDOWN_SECONDS", 60),
             "NVD_SYNC_OVERLAP_MINUTES": _env_int("NVD_SYNC_OVERLAP_MINUTES", 15),
+            "SCHEDULER_DB_CONCURRENCY": _env_int("SCHEDULER_DB_CONCURRENCY", 3),
             "SCHEDULER_TIMEZONE": _env("SCHEDULER_TIMEZONE", "Asia/Kolkata"),
             "MITRE_REFRESH_HOUR": _env_int("MITRE_REFRESH_HOUR", 2),
             "MITRE_REFRESH_MINUTE": _env_int("MITRE_REFRESH_MINUTE", 0),
