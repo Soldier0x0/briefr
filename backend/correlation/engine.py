@@ -494,7 +494,7 @@ async def prefetch_pulse_iocs_for_nightly(
         missing_rows = await db.execute_fetchall(
             """
         SELECT ocp.pulse_id,
-               MAX(ocp.fetched_at) AS fetched_at,
+               MAX(ocp.fetched_at) AS max_fetched_at,
                MIN(CASE WHEN EXISTS (
                    SELECT 1 FROM otx_cve_pulses p2
                    JOIN cves c ON c.cve_id = p2.cve_id
@@ -506,7 +506,7 @@ async def prefetch_pulse_iocs_for_nightly(
             SELECT 1 FROM otx_pulse_iocs opi WHERE opi.pulse_id = ocp.pulse_id
         )
         GROUP BY ocp.pulse_id
-        ORDER BY priority_rank ASC, fetched_at DESC
+        ORDER BY priority_rank ASC, max_fetched_at DESC
         LIMIT ?
         """,
             (max_pulses,),

@@ -36,7 +36,12 @@ function validateClientSide(field, value) {
 }
 
 function isConfigTruthy(value) {
-  return value === '1' || value === 'true' || value === true || value === 1
+  if (value === true || value === 1) return true
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on'
+  }
+  return false
 }
 
 export default function ApiKeysPage({ toast }) {

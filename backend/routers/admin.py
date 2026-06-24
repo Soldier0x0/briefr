@@ -17,7 +17,7 @@ import shutil
 import tarfile
 import time
 import urllib.parse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -343,11 +343,13 @@ async def get_system(request: Request):
             db_integrity = {"ok": integrity_ok, "message": integrity_msg}
             await set_feed_cache(db, "admin_db_integrity", db_integrity)
 
-        # Failed auth last 24h
+        # Failed auth last 24h (Python cutoff — works on SQLite TEXT and Postgres)
+        auth_cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
         auth_row = await db.execute_fetchall(
             "SELECT COUNT(*) as cnt FROM audit_log "
             "WHERE action IN ('auth.login_failed', 'auth.failure') "
-            "AND created_at >= datetime('now', '-24 hours')"
+            "AND created_at >= ?",
+            (auth_cutoff,),
         )
         failed_auth = auth_row[0]["cnt"] if auth_row else 0
     finally:
@@ -1710,10 +1712,12 @@ async def get_logs(
 async def get_security(request: Request):
     db = await get_db()
     try:
+        auth_cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
         row = await db.execute_fetchall(
             "SELECT COUNT(*) as cnt FROM audit_log "
             "WHERE action IN ('auth.login_failed', 'auth.failure') "
-            "AND created_at >= datetime('now', '-24 hours')"
+            "AND created_at >= ?",
+            (auth_cutoff,),
         )
         failed_auth = row[0]["cnt"] if row else 0
     finally:

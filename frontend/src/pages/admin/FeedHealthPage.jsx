@@ -68,12 +68,12 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
         <button
           className="admin-btn admin-btn-danger"
           style={{ marginTop: '0.5rem', fontSize: '0.7rem', padding: '0.15rem 0.5rem' }}
-          disabled={!s.circuit_open && !(s.consecutive_failures > 0) && !s.last_error}
+          disabled={!s?.circuit_open && !(s?.consecutive_failures > 0) && !s?.last_error}
           onClick={() => resetCircuit(entryKey)}
           title={
-            s.circuit_open
+            s?.circuit_open
               ? 'Circuit is open — clear the pause and allow retries'
-              : (s.last_error || s.consecutive_failures > 0)
+              : (s?.last_error || s?.consecutive_failures > 0)
                 ? 'Clear failure state and allow the next scheduled fetch to retry'
                 : 'No failures to reset'
           }
