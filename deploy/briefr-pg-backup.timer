@@ -1,0 +1,12 @@
+[Unit]
+Description=BRIEFR PostgreSQL backup timer (every 6 hours)
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=6h
+RandomizedDelaySec=300
+Persistent=true
+Unit=briefr-pg-backup.service
+
+[Install]
+WantedBy=timers.target

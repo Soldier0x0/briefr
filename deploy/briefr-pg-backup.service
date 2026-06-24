@@ -1,0 +1,28 @@
+[Unit]
+Description=BRIEFR scheduled backup (PostgreSQL pg_dump + config)
+Documentation=https://github.com/Soldier0x0/briefr/blob/main/docs/POSTGRES.md
+# Postgres is typically Docker at /opt/infra/postgres — pg_dump on the host uses
+# DATABASE_URL (e.g. 127.0.0.1:5432). No dependency on postgresql.service.
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+User=briefr
+Group=briefr
+WorkingDirectory=/opt/briefr/backend
+Environment="PATH=/opt/briefr/venv/bin:/usr/bin:/bin"
+Environment="BACKUP_DIR=/var/lib/briefr/backups"
+EnvironmentFile=-/opt/briefr/backend/.env
+ExecStart=/opt/briefr/deploy/briefr-pg-backup.sh scheduled
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+
+ReadWritePaths=/var/lib/briefr/backups /opt/briefr/backend
+ReadOnlyPaths=/opt/briefr/venv
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target
