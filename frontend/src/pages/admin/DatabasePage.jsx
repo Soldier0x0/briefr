@@ -78,13 +78,23 @@ export default function DatabasePage({ toast, active = true }) {
     setApplying(false)
   }
 
-  const needsPostgres = info?.engine !== 'postgresql'
-  const migrationDone = status?.status === 'done'
-  const migrationRunning = status?.status === 'running'
-  const migrationError = status?.status === 'error'
   const progressPct = status?.tables_total
     ? Math.round((status.tables_done / status.tables_total) * 100)
     : 0
+
+  if (!info) {
+    return (
+      <div>
+        <h1 className="admin-page-title">Database</h1>
+        <p className="admin-page-subtitle">Loading database configuration…</p>
+      </div>
+    )
+  }
+
+  const needsPostgres = info.engine !== 'postgresql'
+  const migrationDone = status?.status === 'done'
+  const migrationRunning = status?.status === 'running'
+  const migrationError = status?.status === 'error'
 
   return (
     <div>
