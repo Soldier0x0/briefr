@@ -13,7 +13,7 @@ WorkingDirectory=/opt/briefr/backend
 Environment="PATH=/opt/briefr/venv/bin:/usr/bin:/bin"
 Environment="BACKUP_DIR=/var/lib/briefr/backups"
 EnvironmentFile=-/opt/briefr/backend/.env
-ExecStart=/opt/briefr/deploy/briefr-pg-backup.sh scheduled
+ExecStart=/bin/bash /opt/briefr/deploy/briefr-pg-backup.sh scheduled
 Nice=10
 IOSchedulingClass=best-effort
 IOSchedulingPriority=7

@@ -32,23 +32,51 @@ as_app_user() {
   runuser -u "${APP_USER}" -- env HOME="${APP_HOME}" "$@"
 }
 
+# Re-apply executable bits for tracked files git records as 100755.
+# fix_tree_permissions runs chmod 644 on all files, which would otherwise
+# leave mode-only diffs that block git pull on the next update.
+sync_git_tracked_executable_bits() {
+  local mode rel
+  if ! git -C "${INSTALL_DIR}" rev-parse --is-inside-work-tree &>/dev/null; then
+    return 0
+  fi
+  while IFS=$'\t' read -r mode rel; do
+    [ -n "${rel}" ] || continue
+    [ -f "${INSTALL_DIR}/${rel}" ] || continue
+    if [ "${mode}" = "100755" ]; then
+      chmod 755 "${INSTALL_DIR}/${rel}"
+    fi
+  done < <(
+    git -C "${INSTALL_DIR}" ls-files -s 2>/dev/null \
+      | awk '$1 == "100755" { print $1 "\t" $4 }'
+  )
+}
+
 # Reset tracked files whose only diff is file mode (leftover +x from older deploy runs).
 restore_git_permission_drift() {
   local rel
   if ! git -C "${INSTALL_DIR}" rev-parse --is-inside-work-tree &>/dev/null; then
     return 0
   fi
+
+  sync_git_tracked_executable_bits
+
   while IFS= read -r -d '' rel; do
     [ -n "${rel}" ] || continue
-    if ! git -C "${INSTALL_DIR}" diff --no-color --quiet -- "${rel}" 2>/dev/null; then
-      if ! git -C "${INSTALL_DIR}" diff --no-color -- "${rel}" 2>/dev/null \
-        | grep -vE '^[+-]{3}' | grep -qE '^[+-]'; then
-        echo "    Resetting permission-only drift on ${rel}"
-        git -C "${INSTALL_DIR}" restore -- "${rel}" 2>/dev/null \
-          || git -C "${INSTALL_DIR}" checkout -- "${rel}" 2>/dev/null \
-          || true
-      fi
+    if git -C "${INSTALL_DIR}" diff --no-color --quiet -- "${rel}" 2>/dev/null; then
+      continue
     fi
+    if git -C "${INSTALL_DIR}" diff --no-color -- "${rel}" 2>/dev/null \
+      | grep -vE '^(diff --git|index |[+-]{3} |@@|old mode|new mode)' \
+      | grep -qE '^[+-]'; then
+      continue
+    fi
+    echo "    Resetting permission-only drift on ${rel}"
+    git -C "${INSTALL_DIR}" checkout-index -f -- "${rel}" 2>/dev/null \
+      || git -C "${INSTALL_DIR}" restore --worktree -- "${rel}" 2>/dev/null \
+      || git -C "${INSTALL_DIR}" checkout -- "${rel}" 2>/dev/null \
+      || true
+    sync_git_tracked_executable_bits
   done < <(git -C "${INSTALL_DIR}" diff -z --name-only 2>/dev/null || true)
 }
 
@@ -69,6 +97,7 @@ fix_tree_permissions() {
   if [ -d "${INSTALL_DIR}/frontend/node_modules/.bin" ]; then
     chmod 755 "${INSTALL_DIR}/frontend/node_modules/.bin/"* 2>/dev/null || true
   fi
+  sync_git_tracked_executable_bits
 }
 
 ensure_node() {
