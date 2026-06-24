@@ -97,6 +97,27 @@ sudo mv /opt/briefr/backend/briefr.db /var/lib/briefr/backups/briefr.db.retired
 sudo systemctl start briefr-backend
 ```
 
+### Docker Postgres (`/opt/infra/postgres`)
+
+Production often runs PostgreSQL in Docker (separate from BRIEFR), e.g. compose stack under **`/opt/infra/postgres`**. BRIEFR only needs a TCP URL to the **published** port — typically `127.0.0.1:5432` on the host:
+
+```bash
+# Infra (once) — outside this repo
+cd /opt/infra/postgres
+docker compose up -d
+
+# BRIEFR backend/.env
+DATABASE_URL=postgresql://briefr:YOUR_PASSWORD@127.0.0.1:5432/briefr
+```
+
+**Backups:** `pg_dump` / `pg_restore` run on the **host** (install `postgresql-client`), connecting to that published port. They do **not** exec into the container. If the container is stopped, backup fails with a connection error — start the stack in `/opt/infra/postgres` first.
+
+**Version note:** host `pg_dump` major version should match the container Postgres major (e.g. both 16). Mismatch often surfaces as `pg_dump: error: server version mismatch`.
+
+**Container data & logs** (volume paths, log driver, compose log rotation) live in **`/opt/infra/postgres`** — not in the BRIEFR tree. BRIEFR’s `briefr-*.tar.gz[.age]` archives are logical dumps via `pg_dump`; optional extra infra backups (volume snapshots, `docker compose` data dir tarballs) are operator choice in the infra repo.
+
+**systemd:** `briefr-pg-backup.service` orders after `docker.service` + network, not `postgresql.service` (there is no host Postgres unit when using Docker).
+
 ## Backups on PostgreSQL
 
 `python -m backup run` (and `deploy/briefr-backup.sh`) **auto-detect** the backend:
@@ -147,7 +168,11 @@ curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool | grep cve_count
 
 ### PostgreSQL server logs
 
-BRIEFR backup run logs still go to `${BACKUP_DIR}/logs/backup.log` (size rotation via `BACKUP_LOG_MAX_BYTES`). PostgreSQL server logs are managed separately (Debian: `/etc/postgresql/*/main/postgresql.conf` + `/etc/logrotate.d/postgresql-common`).
+| Layer | Where |
+|-------|--------|
+| **BRIEFR backup runs** | `${BACKUP_DIR}/logs/backup.log` — size rotation via `BACKUP_LOG_MAX_BYTES` / `BACKUP_LOG_BACKUP_COUNT` |
+| **Postgres in Docker** | `/opt/infra/postgres` — compose logging driver, mounted log dir, or `docker logs`; configure log rotation there |
+| **Native Debian Postgres** | `/etc/postgresql/*/main/postgresql.conf` + `/etc/logrotate.d/postgresql-common` |
 
 ## Environment variables
 
@@ -166,3 +191,5 @@ BRIEFR backup run logs still go to `${BACKUP_DIR}/logs/backup.log` (size rotatio
 | `relation "cves" does not exist` | Migrations not applied — restart backend or run `alembic upgrade head` from `backend/` |
 | SQL syntax error on Postgres | Report upstream — dialect adapter may need extending |
 | Still see SQLite lock errors | You're still on SQLite — confirm `DATABASE_URL` is set and backend was restarted |
+| `pg_dump: connection refused` | Docker Postgres down — `cd /opt/infra/postgres && docker compose up -d` |
+| `pg_dump: server version mismatch` | Install matching `postgresql-client` major on the host (e.g. `postgresql-client-16`) |

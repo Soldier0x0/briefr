@@ -27,6 +27,7 @@ systemd:
 Paths:
   Code:     /opt/briefr
   Database: /opt/briefr/backend/briefr.db (SQLite default) or PostgreSQL via DATABASE_URL
+            (production: Docker stack at /opt/infra/postgres, host port 127.0.0.1:5432)
   Backups:  /var/lib/briefr/backups
   Secrets:  /opt/briefr/backend/.env
 ```
