@@ -25,6 +25,7 @@ if [ "$(id -u)" -eq 0 ]; then
   chmod 700 "${APP_HOME}/keys"
   chown -R "${APP_USER}:${APP_USER}" "${APP_HOME}/backups" "${APP_HOME}/keys"
   exec runuser -u "${APP_USER}" -- env HOME="${APP_HOME}" \
+    PATH="/usr/bin:/bin:${INSTALL_DIR}/venv/bin" \
     INSTALL_DIR="${INSTALL_DIR}" \
     BACKUP_AGE_KEY_FILE="${BACKUP_AGE_KEY_FILE}" \
     bash "${INSTALL_DIR}/deploy/briefr-backup.sh" "${REASON}"

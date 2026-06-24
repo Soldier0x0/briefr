@@ -129,7 +129,7 @@ DATABASE_URL=postgresql://briefr:YOUR_PASSWORD@127.0.0.1:5432/briefr
 
 Requirements for Postgres backups:
 
-- `postgresql-client` on the host (`pg_dump`, `pg_restore`)
+- `postgresql-client` on the host (`pg_dump`, `pg_restore`) — `briefr-update.sh` / `setup.sh` install this automatically when `DATABASE_URL` is set
 - `DATABASE_URL` in `backend/.env` (same DSN the app uses)
 - Existing backup settings still apply: `BACKUP_DIR`, `BACKUP_RETENTION_COUNT`, `BACKUP_AGE_KEY_FILE`, log rotation env vars
 

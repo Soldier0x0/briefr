@@ -103,6 +103,51 @@ ensure_nginx() {
   systemctl enable nginx
 }
 
+# True when backend/.env sets DATABASE_URL to a postgresql:// DSN.
+is_postgres_deployment() {
+  local env_file="${INSTALL_DIR}/backend/.env"
+  [ -f "${env_file}" ] || return 1
+  grep -qE '^[[:space:]]*DATABASE_URL[[:space:]]*=[[:space:]]*postgres(ql)?://' \
+    "${env_file}" 2>/dev/null
+}
+
+# pg_dump/pg_restore on the host (connects to Docker Postgres via published port).
+ensure_postgresql_client() {
+  if ! is_postgres_deployment; then
+    return 0
+  fi
+  if command -v pg_dump &>/dev/null && command -v pg_restore &>/dev/null; then
+    return 0
+  fi
+  echo "==> Installing postgresql-client (pg_dump/pg_restore for PostgreSQL backups)"
+  apt-get update -qq
+  if ! apt-get install -y -qq postgresql-client; then
+    # Bookworm/Trixie often expose versioned metapackages only.
+    local ver
+    for ver in 17 16 15 14; do
+      if apt-get install -y -qq "postgresql-client-${ver}"; then
+        break
+      fi
+    done
+  fi
+  if ! command -v pg_dump &>/dev/null; then
+    echo "ERROR: postgresql-client not available — backups and restore require pg_dump on PATH"
+    echo "       Install manually: apt install postgresql-client"
+    return 1
+  fi
+  echo "    pg_dump: $(command -v pg_dump)"
+}
+
+configure_backup_timer() {
+  if is_postgres_deployment; then
+    systemctl disable --now briefr-backup.timer 2>/dev/null || true
+    systemctl enable briefr-pg-backup.timer
+  else
+    systemctl disable --now briefr-pg-backup.timer 2>/dev/null || true
+    systemctl enable briefr-backup.timer
+  fi
+}
+
 install_nginx_site() {
   ensure_nginx
   local use_tls=0
@@ -133,9 +178,16 @@ install_systemd_units() {
   sed "s|/opt/briefr|${INSTALL_DIR}|g" "${INSTALL_DIR}/deploy/briefr-backup.service" \
     > /etc/systemd/system/briefr-backup.service
   cp "${INSTALL_DIR}/deploy/briefr-backup.timer" /etc/systemd/system/briefr-backup.timer
+  sed "s|/opt/briefr|${INSTALL_DIR}|g" "${INSTALL_DIR}/deploy/briefr-pg-backup.service" \
+    > /etc/systemd/system/briefr-pg-backup.service
+  cp "${INSTALL_DIR}/deploy/briefr-pg-backup.timer" /etc/systemd/system/briefr-pg-backup.timer
   cp "${INSTALL_DIR}/deploy/briefr.target" /etc/systemd/system/briefr.target
   systemctl daemon-reload
-  systemctl enable briefr-backup.timer
+  if is_postgres_deployment; then
+    ensure_postgresql_client || \
+      echo "    WARN: postgresql-client missing — scheduled Postgres backups will fail until installed"
+  fi
+  configure_backup_timer
 }
 
 disable_vite_dev() {
@@ -163,6 +215,9 @@ build_frontend() {
 
 run_pre_update_backup() {
   if [ -f "${INSTALL_DIR}/backend/backup/manager.py" ]; then
+    if is_postgres_deployment; then
+      ensure_postgresql_client || return 0
+    fi
     echo "==> Pre-update backup (integrity-checked)"
     if bash "${INSTALL_DIR}/deploy/briefr-backup.sh" pre-update; then
       echo "    Backup OK"

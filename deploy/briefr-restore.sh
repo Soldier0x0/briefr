@@ -44,6 +44,7 @@ export BACKUP_AGE_KEY_FILE="${BACKUP_AGE_KEY_FILE-${APP_HOME}/keys/backup-age.ke
 
 if [ "${LIST}" -eq 1 ]; then
   runuser -u "${APP_USER}" -- env HOME="${APP_HOME}" BACKUP_DIR="${BACKUP_DIR}" \
+    PATH="/usr/bin:/bin:${INSTALL_DIR}/venv/bin" \
     BACKUP_AGE_KEY_FILE="${BACKUP_AGE_KEY_FILE}" \
     bash -c "cd '${INSTALL_DIR}/backend' && '${INSTALL_DIR}/venv/bin/python' -m backup list"
   exit 0
@@ -57,10 +58,12 @@ FORCE_FLAG=""
 
 if [ -n "${ARCHIVE}" ]; then
   runuser -u "${APP_USER}" -- env HOME="${APP_HOME}" BACKUP_DIR="${BACKUP_DIR}" \
+    PATH="/usr/bin:/bin:${INSTALL_DIR}/venv/bin" \
     BACKUP_AGE_KEY_FILE="${BACKUP_AGE_KEY_FILE}" \
     bash -c "cd '${INSTALL_DIR}/backend' && '${INSTALL_DIR}/venv/bin/python' -m backup restore ${FORCE_FLAG} '${ARCHIVE}'"
 else
   runuser -u "${APP_USER}" -- env HOME="${APP_HOME}" BACKUP_DIR="${BACKUP_DIR}" \
+    PATH="/usr/bin:/bin:${INSTALL_DIR}/venv/bin" \
     BACKUP_AGE_KEY_FILE="${BACKUP_AGE_KEY_FILE}" \
     bash -c "cd '${INSTALL_DIR}/backend' && '${INSTALL_DIR}/venv/bin/python' -m backup restore ${FORCE_FLAG}"
 fi
