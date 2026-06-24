@@ -19,6 +19,7 @@ from backup.postgres_util import (
     PG_DUMP_ARCHIVE_NAME,
     PGDUMP_MAGIC,
     _build_pg_cmd,
+    _pg_tool,
     parse_postgres_url,
     redact_database_url,
     verify_pg_dump,
@@ -168,6 +169,21 @@ def test_run_postgres_backup_refuses_unreachable_db(tmp_path, monkeypatch):
     )
     with pytest.raises(RuntimeError, match="Refusing to backup unreachable"):
         run_backup(reason="test", config=cfg)
+
+
+def test_pg_tool_finds_versioned_postgresql_client_path(tmp_path, monkeypatch):
+    versioned = tmp_path / "16" / "bin"
+    versioned.mkdir(parents=True)
+    pg_dump = versioned / "pg_dump"
+    pg_dump.write_text("#!/bin/sh\necho ok\n", encoding="utf-8")
+    pg_dump.chmod(0o755)
+
+    monkeypatch.setattr("backup.postgres_util.shutil.which", lambda _name: None)
+    monkeypatch.setattr(
+        "backup.postgres_util.glob.glob",
+        lambda pattern: [str(pg_dump)] if pattern.endswith("/pg_dump") else [],
+    )
+    assert _pg_tool("pg_dump") == str(pg_dump)
 
 
 def test_run_postgres_backup_requires_pg_dump(tmp_path, monkeypatch):

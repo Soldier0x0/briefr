@@ -144,11 +144,12 @@ async def related_cves_for_ioc(
 
     rows = await db.execute_fetchall(
         """
-        SELECT DISTINCT ocp.cve_id
+        SELECT ocp.cve_id
         FROM otx_pulse_iocs oi
         JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id
         JOIN cves c ON c.cve_id = ocp.cve_id
         WHERE oi.ioc_type = ? AND oi.ioc_value = ?
+        GROUP BY ocp.cve_id
         ORDER BY ocp.cve_id ASC
         LIMIT ?
         """,

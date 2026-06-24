@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import glob
 import logging
 import os
 import re
@@ -51,12 +52,18 @@ def parse_postgres_url(url: str) -> dict[str, str | int]:
 
 def _pg_tool(name: str) -> str:
     path = shutil.which(name)
-    if not path:
-        raise RuntimeError(
-            f"{name} not found on PATH — install postgresql-client "
-            "(e.g. apt install postgresql-client)"
-        )
-    return path
+    if path:
+        return path
+    # Debian/Ubuntu postgresql-client-N installs under /usr/lib/postgresql/N/bin
+    # without always symlinking into PATH.
+    versioned = sorted(glob.glob(f"/usr/lib/postgresql/*/bin/{name}"), reverse=True)
+    for candidate in versioned:
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    raise RuntimeError(
+        f"{name} not found on PATH — install postgresql-client "
+        "(e.g. apt install postgresql-client or postgresql-client-16)"
+    )
 
 
 def _subprocess_env(params: dict[str, str | int]) -> dict[str, str]:

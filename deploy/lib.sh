@@ -148,6 +148,12 @@ ensure_postgresql_client() {
   if command -v pg_dump &>/dev/null && command -v pg_restore &>/dev/null; then
     return 0
   fi
+  for ver in 18 17 16 15; do
+    if [ -x "/usr/lib/postgresql/${ver}/bin/pg_dump" ] \
+      && [ -x "/usr/lib/postgresql/${ver}/bin/pg_restore" ]; then
+      return 0
+    fi
+  done
   if [ "$(id -u)" -ne 0 ]; then
     echo "WARN: postgresql-client is missing and we are not root — cannot auto-install."
     echo "      Install as root: apt install postgresql-client"
@@ -160,6 +166,14 @@ ensure_postgresql_client() {
     local ver
     for ver in 18 17 16 15; do
       if apt-get install -y -qq "postgresql-client-${ver}"; then
+        break
+      fi
+    done
+  fi
+  if ! command -v pg_dump &>/dev/null; then
+    for ver in 18 17 16 15; do
+      if [ -x "/usr/lib/postgresql/${ver}/bin/pg_dump" ]; then
+        export PATH="/usr/lib/postgresql/${ver}/bin:${PATH}"
         break
       fi
     done

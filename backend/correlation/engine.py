@@ -88,10 +88,11 @@ async def find_actor_sector_correlation(
         placeholders = ",".join("?" * len(technique_ids))
         group_rows = await db.execute_fetchall(
             f"""
-            SELECT DISTINCT mg.group_id, mg.name, mg.sectors
+            SELECT mg.group_id, mg.name, mg.sectors
             FROM group_technique_map gtm
             JOIN mitre_groups mg ON mg.group_id = gtm.group_id
             WHERE gtm.technique_id IN ({placeholders})
+            GROUP BY mg.group_id, mg.name, mg.sectors
             ORDER BY mg.name
             LIMIT 10
             """,
