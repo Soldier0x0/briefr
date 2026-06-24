@@ -203,12 +203,14 @@ def check_login_username_rate_limit(username: str) -> None:
 
 
 def get_top_consumers(n: int = 5) -> list[dict]:
-    """Aggregate per-key hit counts across ioc_bucket and refresh_bucket, return top-n."""
-    counts: dict[str, int] = {}
-    for bucket in (ioc_bucket, refresh_bucket, wallboard_bucket):
+    """Per-client hit counts per rate-limit bucket (since process start)."""
+    merged: list[dict] = []
+    for bucket_name, bucket in (
+        ("ioc", ioc_bucket),
+        ("refresh", refresh_bucket),
+        ("wallboard", wallboard_bucket),
+    ):
         for key, hits in getattr(bucket, "_hits", {}).items():
-            counts[key] = counts.get(key, 0) + hits
-    return [
-        {"key": k, "hits": v}
-        for k, v in sorted(counts.items(), key=lambda x: x[1], reverse=True)[:n]
-    ]
+            merged.append({"key": key, "hits": hits, "bucket": bucket_name})
+    merged.sort(key=lambda row: row["hits"], reverse=True)
+    return merged[:n]

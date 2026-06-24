@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { adminApi } from '../../api.js'
 import DangerZone from './shared/DangerZone.jsx'
 import GuardedPurgePanel from './shared/GuardedPurgePanel.jsx'
+import { parseAdminListResponse } from './shared/adminListResponse.js'
 import { fmtAge, fmtIso } from './formatters.js'
 
 export default function WatchlistPage({ toast, mode = 'operator' }) {
@@ -20,7 +21,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
   async function loadWatchlist() {
     try {
       const res = await adminApi.get(`/watchlist?state=${watchlistState}&limit=200`)
-      setWatchlistRows(await res.json())
+      setWatchlistRows(await parseAdminListResponse(res))
     } catch { setWatchlistRows([]) }
   }
 
@@ -30,7 +31,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
     if (iocSearch) params.set('search', iocSearch)
     try {
       const res = await adminApi.get(`/ioc-cache?${params}`)
-      setIocRows(await res.json())
+      setIocRows(await parseAdminListResponse(res))
     } catch { setIocRows([]) }
   }
 
@@ -39,7 +40,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
     if (huntTechnique) params.set('technique_id', huntTechnique)
     try {
       const res = await adminApi.get(`/hunt-packs?${params}`)
-      setHuntRows(await res.json())
+      setHuntRows(await parseAdminListResponse(res))
     } catch { setHuntRows([]) }
   }
 
@@ -88,6 +89,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
     try {
       await adminApi.del(`/hunt-packs/${id}`)
       toast('Deleted', true)
+      setHuntRows(prev => Array.isArray(prev) ? prev.filter(r => r.id !== id) : [])
       loadHunts()
     } catch (e) { toast(String(e.message), false) }
   }
@@ -124,13 +126,6 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               ))}
             </div>
           </div>
-          {!isAnalyst && (
-            <DangerZone title="Clear snoozes">
-              <GuardedPurgePanel targets={[
-                { target: 'watchlist_snoozes', title: 'Clear all snoozes', desc: 'Why: snoozed CVEs are hidden from the default watchlist view until you snooze again. What happens: removes every snooze entry. After: previously snoozed CVEs reappear in the default view; pinned CVEs are unaffected.', impact: `${snoozeCount} snoozed`, confirmWord: 'clear', run: clearSnoozes },
-              ]} />
-            </DangerZone>
-          )}
           <div className="admin-card">
             <table className="admin-table">
               <thead><tr><th>CVE ID</th><th>SEVERITY</th><th>EPSS</th><th>KEV</th><th>STATE</th><th>CREATED</th><th></th></tr></thead>
@@ -154,6 +149,13 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               </tbody>
             </table>
           </div>
+          {!isAnalyst && (
+            <DangerZone title="Clear snoozes">
+              <GuardedPurgePanel targets={[
+                { target: 'watchlist_snoozes', title: 'Clear all snoozes', desc: 'Why: snoozed CVEs are hidden from the default watchlist view until you snooze again. What happens: removes every snooze entry. After: previously snoozed CVEs reappear in the default view; pinned CVEs are unaffected.', impact: `${snoozeCount} snoozed`, confirmWord: 'clear', run: clearSnoozes },
+              ]} />
+            </DangerZone>
+          )}
         </div>
       )}
 
@@ -172,11 +174,6 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
             </select>
             <input className="admin-input" placeholder="Search value…" value={iocSearch} onChange={e => setIocSearch(e.target.value)} />
           </div>
-          <DangerZone title="Clear IOC cache">
-            <GuardedPurgePanel targets={[
-              { target: 'ioc_cache_all', title: 'Clear all IOC cache entries', desc: 'Why: IOC lookups are cached to avoid re-querying external threat-intel APIs on every page load. What happens: deletes every cached result below. After: the next lookup for each IOC is slower (re-fetches from the source API), but nothing is lost — the cache rebuilds itself automatically.', impact: `${iocRows?.length ?? 0} entries`, confirmWord: 'clear', run: clearAllIoc },
-            ]} />
-          </DangerZone>
           <div className="admin-card">
             <table className="admin-table">
               <thead><tr><th>VALUE</th><th>TYPE</th><th>CACHED AT</th><th>AGE</th><th></th></tr></thead>
@@ -198,6 +195,11 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               </tbody>
             </table>
           </div>
+          <DangerZone title="Clear IOC cache">
+            <GuardedPurgePanel targets={[
+              { target: 'ioc_cache_all', title: 'Clear all IOC cache entries', desc: 'Why: IOC lookups are cached to avoid re-querying external threat-intel APIs on every page load. What happens: deletes every cached result below. After: the next lookup for each IOC is slower (re-fetches from the source API), but nothing is lost — the cache rebuilds itself automatically.', impact: `${iocRows?.length ?? 0} entries`, confirmWord: 'clear', run: clearAllIoc },
+            ]} />
+          </DangerZone>
         </div>
       )}
 

@@ -35,6 +35,10 @@ function validateClientSide(field, value) {
   return null
 }
 
+function isConfigTruthy(value) {
+  return value === '1' || value === 'true' || value === true || value === 1
+}
+
 export default function ApiKeysPage({ toast }) {
   const [config, setConfig] = useState(null)
   const [schema, setSchema] = useState(null)
@@ -107,7 +111,7 @@ export default function ApiKeysPage({ toast }) {
             <div className="config-row-value-control">
               {field?.type === 'bool' ? (
                 <ToggleSwitch
-                  on={value === '1' || value === 'true' || value === true}
+                  on={isConfigTruthy(value)}
                   onChange={v => addToQueue(envKey, v ? '1' : '0', field)}
                 />
               ) : (

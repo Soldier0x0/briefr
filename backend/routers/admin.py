@@ -302,7 +302,8 @@ async def get_system(request: Request):
         # Failed auth last 24h
         auth_row = await db.execute_fetchall(
             "SELECT COUNT(*) as cnt FROM audit_log "
-            "WHERE action = 'auth.failure' AND created_at >= datetime('now', '-24 hours')"
+            "WHERE action IN ('auth.login_failed', 'auth.failure') "
+            "AND created_at >= datetime('now', '-24 hours')"
         )
         failed_auth = auth_row[0]["cnt"] if auth_row else 0
     finally:
@@ -937,7 +938,7 @@ def _get_config_response() -> dict[str, Any]:
         "ingest": {
             "MAX_CVES_PER_FETCH": _env_int("MAX_CVES_PER_FETCH", 2000),
             "NVD_DAYS_BACK": _env_int("NVD_DAYS_BACK", 14),
-            "KEV_CROSS_FETCH_NVD": _env_int("KEV_CROSS_FETCH_NVD", 1),
+            "KEV_CROSS_FETCH_NVD": _env("KEV_CROSS_FETCH_NVD", "1"),
             "ATLAS_YAML_URL": _env("ATLAS_YAML_URL", ""),
             "MITRE_CVE_MAPPINGS_JSON_URL": _env("MITRE_CVE_MAPPINGS_JSON_URL", ""),
             "DB_PATH": _env("DB_PATH", "briefr.db"),
@@ -1667,7 +1668,8 @@ async def get_security(request: Request):
     try:
         row = await db.execute_fetchall(
             "SELECT COUNT(*) as cnt FROM audit_log "
-            "WHERE action = 'auth.failure' AND created_at >= datetime('now', '-24 hours')"
+            "WHERE action IN ('auth.login_failed', 'auth.failure') "
+            "AND created_at >= datetime('now', '-24 hours')"
         )
         failed_auth = row[0]["cnt"] if row else 0
     finally:

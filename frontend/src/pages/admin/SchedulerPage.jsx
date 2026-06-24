@@ -3,18 +3,23 @@ import { adminApi } from '../../api.js'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import DangerZone from './shared/DangerZone.jsx'
 import JobTable from './shared/JobTable.jsx'
+import OperatorSystemActions from './shared/OperatorSystemActions.jsx'
 import { MANUAL_PIPELINES } from './constants.js'
 
 const STATUS_FILTERS = ['ACTIVE', 'PAUSED', 'LOCKED', 'DISABLED']
-const PAGE_SIZE = 10
 
-export default function SchedulerPage({ toast, system }) {
+export default function SchedulerPage({
+  toast,
+  system,
+  onRunIngest,
+  onRestart,
+  onDrainRestart,
+}) {
   const [jobs, setJobs] = useState(null)
   const [running, setRunning] = useState({})
   const [pauseAllConfirm, setPauseAllConfirm] = useState(false)
   const [resumeAllConfirm, setResumeAllConfirm] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
-  const [page, setPage] = useState(0)
 
   async function loadJobs() {
     try {
@@ -69,14 +74,6 @@ export default function SchedulerPage({ toast, system }) {
   const activeLocks = system?.active_locks || []
   const filteredJobs = jobs ? (statusFilter ? jobs.filter(j => j.status === statusFilter) : jobs) : null
 
-  useEffect(() => {
-    if (filteredJobs && page > 0 && page * PAGE_SIZE >= filteredJobs.length) {
-      setPage(Math.max(0, Math.ceil(filteredJobs.length / PAGE_SIZE) - 1))
-    }
-  }, [filteredJobs, page])
-
-  const pagedJobs = filteredJobs ? filteredJobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE) : null
-
   return (
     <div>
       {pauseAllConfirm && (
@@ -125,6 +122,19 @@ export default function SchedulerPage({ toast, system }) {
         )}
       </div>
 
+      <div className="admin-card">
+        <div className="admin-card-title">All jobs</div>
+        <div className="admin-filter-chips" style={{ marginBottom: '0.75rem' }}>
+          <button className={`filter-chip ${statusFilter === '' ? 'active' : ''}`} onClick={() => setStatusFilter('')}>All</button>
+          {STATUS_FILTERS.map(s => (
+            <button key={s} className={`filter-chip ${statusFilter === s ? 'active' : ''}`} onClick={() => setStatusFilter(s)}>
+              {s}
+            </button>
+          ))}
+        </div>
+        <JobTable jobs={filteredJobs} onRunNow={runNow} onPauseResume={pauseResume} />
+      </div>
+
       <DangerZone title="Global controls">
         <div className="admin-action-bar">
           <button className="admin-btn admin-btn-danger" onClick={() => setPauseAllConfirm(true)}>Pause all jobs</button>
@@ -132,27 +142,12 @@ export default function SchedulerPage({ toast, system }) {
         </div>
       </DangerZone>
 
-      <div className="admin-card">
-        <div className="admin-card-title">All jobs</div>
-        <div className="admin-filter-chips" style={{ marginBottom: '0.75rem' }}>
-          <button className={`filter-chip ${statusFilter === '' ? 'active' : ''}`} onClick={() => { setStatusFilter(''); setPage(0) }}>All</button>
-          {STATUS_FILTERS.map(s => (
-            <button key={s} className={`filter-chip ${statusFilter === s ? 'active' : ''}`} onClick={() => { setStatusFilter(s); setPage(0) }}>
-              {s}
-            </button>
-          ))}
-        </div>
-        <JobTable jobs={pagedJobs} onRunNow={runNow} onPauseResume={pauseResume} />
-        {filteredJobs && filteredJobs.length > PAGE_SIZE && (
-          <div className="admin-pagination">
-            <button className="admin-btn admin-btn-ghost" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Prev</button>
-            <span style={{ color: 'var(--text3)', fontSize: '0.8125rem' }}>
-              {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filteredJobs.length)} of {filteredJobs.length}
-            </span>
-            <button className="admin-btn admin-btn-ghost" disabled={(page + 1) * PAGE_SIZE >= filteredJobs.length} onClick={() => setPage(p => p + 1)}>Next →</button>
-          </div>
-        )}
-      </div>
+      <OperatorSystemActions
+        onRunIngest={onRunIngest}
+        onRestart={onRestart}
+        onDrainRestart={onDrainRestart}
+        refreshInProgress={system?.refresh_in_progress || false}
+      />
     </div>
   )
 }

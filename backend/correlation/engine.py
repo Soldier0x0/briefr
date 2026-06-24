@@ -493,18 +493,20 @@ async def prefetch_pulse_iocs_for_nightly(
     try:
         missing_rows = await db.execute_fetchall(
             """
-        SELECT DISTINCT ocp.pulse_id,
-               CASE WHEN EXISTS (
+        SELECT ocp.pulse_id,
+               MAX(ocp.fetched_at) AS fetched_at,
+               MIN(CASE WHEN EXISTS (
                    SELECT 1 FROM otx_cve_pulses p2
                    JOIN cves c ON c.cve_id = p2.cve_id
                    WHERE p2.pulse_id = ocp.pulse_id
                      AND (COALESCE(c.is_kev, 0) = 1 OR COALESCE(c.has_poc, 0) = 1)
-               ) THEN 0 ELSE 1 END AS priority_rank
+               ) THEN 0 ELSE 1 END) AS priority_rank
         FROM otx_cve_pulses ocp
         WHERE NOT EXISTS (
             SELECT 1 FROM otx_pulse_iocs opi WHERE opi.pulse_id = ocp.pulse_id
         )
-        ORDER BY priority_rank ASC, ocp.fetched_at DESC
+        GROUP BY ocp.pulse_id
+        ORDER BY priority_rank ASC, fetched_at DESC
         LIMIT ?
         """,
             (max_pulses,),

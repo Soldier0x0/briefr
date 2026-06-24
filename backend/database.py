@@ -2393,7 +2393,20 @@ async def get_mitre_technique_count(db: aiosqlite.Connection) -> int:
 
 
 async def replace_atlas_techniques(db: aiosqlite.Connection, techniques: list[dict]) -> None:
-    await db.execute("DELETE FROM atlas_techniques")
+    incoming_ids = [t["technique_id"] for t in techniques]
+    if incoming_ids:
+        placeholders = ",".join("?" * len(incoming_ids))
+        await db.execute(
+            f"DELETE FROM cve_atlas_map WHERE technique_id NOT IN ({placeholders})",
+            tuple(incoming_ids),
+        )
+        await db.execute(
+            f"DELETE FROM atlas_techniques WHERE technique_id NOT IN ({placeholders})",
+            tuple(incoming_ids),
+        )
+    else:
+        await db.execute("DELETE FROM cve_atlas_map")
+        await db.execute("DELETE FROM atlas_techniques")
     if not techniques:
         return
     await db.executemany(

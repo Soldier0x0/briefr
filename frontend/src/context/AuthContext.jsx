@@ -28,6 +28,18 @@ export function AuthProvider({ children }) {
       setStatus('authed')
       return me
     } catch {
+      // Access cookie may have expired while a persistent refresh cookie remains.
+      try {
+        const res = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
+        if (res.ok) {
+          const me = await fetchMe()
+          setUser(me)
+          setStatus('authed')
+          return me
+        }
+      } catch {
+        // fall through to anon
+      }
       setUser(null)
       setStatus('anon')
       return null

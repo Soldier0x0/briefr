@@ -231,6 +231,7 @@ def reset_circuit(source_id: str) -> None:
     state = _health[source_id]
     state["circuit_open_until"] = 0.0
     state["consecutive_failures"] = 0
+    state["last_error"] = None
     logger.info("Circuit reset by admin for source: %s", source_id)
 
 

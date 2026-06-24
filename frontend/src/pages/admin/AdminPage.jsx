@@ -143,7 +143,7 @@ export default function AdminPage() {
     database: <DatabasePage toast={toast} active={page === 'database'} />,
     watchlist: <WatchlistPage toast={toast} mode={mode} />,
     apikeys: <ApiKeysPage toast={toast} />,
-    scheduler: <SchedulerPage toast={toast} system={system} />,
+    scheduler: <SchedulerPage toast={toast} system={system} onRunIngest={handleRunIngest} onRestart={handleRestart} onDrainRestart={handleDrainRestart} />,
     webhooks: <WebhooksPage toast={toast} />,
     alerts: <AlertsPage toast={toast} />,
     security: <SecurityPage toast={toast} />,
@@ -167,8 +167,6 @@ export default function AdminPage() {
       <StatusBar
         system={system}
         onRunIngest={handleRunIngest}
-        onRestart={handleRestart}
-        onDrainRestart={handleDrainRestart}
         refreshInProgress={system?.refresh_in_progress || false}
         mode={mode}
         setMode={handleModeChange}
