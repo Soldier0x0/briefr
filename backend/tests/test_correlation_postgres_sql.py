@@ -89,3 +89,33 @@ def test_build_campaign_members_query_runs_on_sqlite(tmp_path, monkeypatch):
             await db.close()
 
     asyncio.run(run())
+
+
+def test_nightly_correlation_recovers_after_temporal_failure(tmp_path, monkeypatch):
+    from correlation.engine import run_nightly_correlation
+
+    async def run():
+        db_path = str(tmp_path / "nightly-recover.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        await init_db()
+        db = await database.get_db()
+        try:
+            calls = {"temporal": 0}
+
+            async def boom_temporal(_db):
+                calls["temporal"] += 1
+                raise RuntimeError("simulated temporal SQL failure")
+
+            monkeypatch.setattr(
+                "correlation.engine.find_temporal_anomalies",
+                boom_temporal,
+            )
+            stats = await run_nightly_correlation(db)
+            assert calls["temporal"] == 1
+            assert stats["pruned_members"] == 0
+            assert stats["campaigns_built"] == 0
+        finally:
+            await db.close()
+
+    asyncio.run(run())

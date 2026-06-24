@@ -181,14 +181,18 @@ async def find_temporal_anomalies(db) -> list[dict]:
     Anomaly score = current_week / average_weekly; flag if ≥ 3.0.
     Returns list of {vendor, current_week_count, average_weekly_count, anomaly_score}.
     """
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%d")
     rows = await db.execute_fetchall(
         """
         SELECT cve_id, affected_products, published
         FROM cves
-        WHERE datetime(published) >= datetime('now', '-90 days')
+        WHERE published IS NOT NULL
+          AND published != ''
+          AND published >= ?
           AND affected_products IS NOT NULL
           AND affected_products != '[]'
         """,
+        (cutoff,),
     )
 
     now_utc = datetime.now(timezone.utc)
@@ -404,6 +408,13 @@ async def get_correlation_for_cve(
         }
 
 
+async def _recover_db_transaction(db) -> None:
+    """Postgres aborts the whole transaction after any failed statement."""
+    rollback = getattr(db, "rollback", None)
+    if rollback is not None:
+        await rollback()
+
+
 # ── Nightly batch job ─────────────────────────────────────
 
 async def run_nightly_correlation(db) -> dict:
@@ -433,6 +444,7 @@ async def run_nightly_correlation(db) -> dict:
         logger.info("Temporal anomalies: %d vendors flagged", len(temporal))
     except Exception as exc:
         logger.error("Level 3 temporal correlation failed: %s", exc)
+        await _recover_db_transaction(db)
 
     stats["pruned_members"] = await prune_invalid_campaign_members(db)
 
@@ -449,6 +461,7 @@ async def run_nightly_correlation(db) -> dict:
             stats["cves_processed"] += 1
         except Exception as exc:
             logger.warning("Nightly correlation skip %s: %s", cve_id, exc)
+            await _recover_db_transaction(db)
 
     try:
         campaign_stats = await build_campaigns_from_pulses(db)
@@ -456,6 +469,7 @@ async def run_nightly_correlation(db) -> dict:
         stats["campaign_members"] = campaign_stats.get("members", 0)
     except Exception as exc:
         logger.error("Campaign build failed: %s", exc)
+        await _recover_db_transaction(db)
 
     await delete_feed_cache_prefix(db, "correlation:v2:")
     await delete_feed_cache_prefix(db, "correlation:v1:")
