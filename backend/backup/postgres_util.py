@@ -24,7 +24,11 @@ def redact_database_url(url: str) -> str:
 
 
 def parse_postgres_url(url: str) -> dict[str, str | int]:
-    """Parse a postgresql:// DSN into pg_dump/pg_restore connection fields."""
+    """Parse a postgresql:// DSN into pg_dump/pg_restore connection fields.
+
+    Only keys explicitly present in the DSN are returned so libpq can fall back
+    to Unix sockets, peer auth, or ~/.pgpass when host/user/port are omitted.
+    """
     dsn = postgres_dsn(url)
     parsed = urlparse(dsn)
     if parsed.scheme not in {"postgresql", "postgres"}:
@@ -32,13 +36,17 @@ def parse_postgres_url(url: str) -> dict[str, str | int]:
     dbname = (parsed.path or "").lstrip("/")
     if not dbname:
         raise ValueError(f"PostgreSQL URL missing database name: {url!r}")
-    return {
-        "host": parsed.hostname or "127.0.0.1",
-        "port": parsed.port or 5432,
-        "user": unquote(parsed.username or ""),
-        "password": unquote(parsed.password or ""),
-        "dbname": dbname,
-    }
+
+    params: dict[str, str | int] = {"dbname": dbname}
+    if parsed.hostname is not None:
+        params["host"] = parsed.hostname
+    if parsed.port is not None:
+        params["port"] = parsed.port
+    if parsed.username is not None:
+        params["user"] = unquote(parsed.username)
+    if parsed.password is not None:
+        params["password"] = unquote(parsed.password)
+    return params
 
 
 def _pg_tool(name: str) -> str:
@@ -51,38 +59,52 @@ def _pg_tool(name: str) -> str:
     return path
 
 
-def _subprocess_env(password: str) -> dict[str, str]:
+def _subprocess_env(params: dict[str, str | int]) -> dict[str, str]:
     env = os.environ.copy()
+    password = params.get("password")
     if password:
-        env["PGPASSWORD"] = password
+        env["PGPASSWORD"] = str(password)
     else:
         env.pop("PGPASSWORD", None)
     return env
+
+
+def _build_pg_cmd(
+    tool: str,
+    params: dict[str, str | int],
+    *,
+    extra_args: list[str],
+) -> list[str]:
+    cmd = [_pg_tool(tool)]
+    if "host" in params:
+        cmd.extend(["-h", str(params["host"])])
+    if "port" in params:
+        cmd.extend(["-p", str(params["port"])])
+    if "user" in params:
+        cmd.extend(["-U", str(params["user"])])
+    cmd.extend(["-d", str(params["dbname"])])
+    cmd.extend(extra_args)
+    return cmd
 
 
 def run_pg_dump(database_url: str, destination: Path) -> None:
     """Create a custom-format pg_dump at destination."""
     params = parse_postgres_url(database_url)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    cmd = [
-        _pg_tool("pg_dump"),
-        "-h",
-        str(params["host"]),
-        "-p",
-        str(params["port"]),
-        "-U",
-        str(params["user"]),
-        "-d",
-        str(params["dbname"]),
-        "--format=custom",
-        "--no-owner",
-        "--no-acl",
-        "-f",
-        str(destination),
-    ]
+    cmd = _build_pg_cmd(
+        "pg_dump",
+        params,
+        extra_args=[
+            "--format=custom",
+            "--no-owner",
+            "--no-acl",
+            "-f",
+            str(destination),
+        ],
+    )
     proc = subprocess.run(
         cmd,
-        env=_subprocess_env(str(params["password"])),
+        env=_subprocess_env(params),
         capture_output=True,
         text=True,
         check=False,
@@ -97,25 +119,20 @@ def run_pg_restore(database_url: str, dump_path: Path) -> None:
     params = parse_postgres_url(database_url)
     if not dump_path.is_file():
         raise FileNotFoundError(f"pg_dump archive not found: {dump_path}")
-    cmd = [
-        _pg_tool("pg_restore"),
-        "-h",
-        str(params["host"]),
-        "-p",
-        str(params["port"]),
-        "-U",
-        str(params["user"]),
-        "-d",
-        str(params["dbname"]),
-        "--clean",
-        "--if-exists",
-        "--no-owner",
-        "--no-acl",
-        str(dump_path),
-    ]
+    cmd = _build_pg_cmd(
+        "pg_restore",
+        params,
+        extra_args=[
+            "--clean",
+            "--if-exists",
+            "--no-owner",
+            "--no-acl",
+            str(dump_path),
+        ],
+    )
     proc = subprocess.run(
         cmd,
-        env=_subprocess_env(str(params["password"])),
+        env=_subprocess_env(params),
         capture_output=True,
         text=True,
         check=False,
@@ -133,8 +150,13 @@ def verify_pg_dump(path: Path) -> tuple[bool, str]:
         return False, "pgdump file does not exist"
     if path.stat().st_size < len(PGDUMP_MAGIC):
         return False, "pgdump file is empty or truncated"
-    if path.read_bytes()[: len(PGDUMP_MAGIC)] != PGDUMP_MAGIC:
-        return False, "not a PostgreSQL custom-format dump"
+    try:
+        with path.open("rb") as handle:
+            header = handle.read(len(PGDUMP_MAGIC))
+        if header != PGDUMP_MAGIC:
+            return False, "not a PostgreSQL custom-format dump"
+    except OSError as exc:
+        return False, f"failed to read file: {exc}"
     return True, "ok"
 
 

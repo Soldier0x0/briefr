@@ -18,6 +18,7 @@ from backup.manager import (
 from backup.postgres_util import (
     PG_DUMP_ARCHIVE_NAME,
     PGDUMP_MAGIC,
+    _build_pg_cmd,
     parse_postgres_url,
     redact_database_url,
     verify_pg_dump,
@@ -58,10 +59,35 @@ def test_parse_postgres_url():
     assert params["password"] == "pass"
     assert params["dbname"] == "mydb"
 
+    minimal = parse_postgres_url("postgresql:///mydb")
+    assert "host" not in minimal
+    assert "port" not in minimal
+    assert "user" not in minimal
+    assert "password" not in minimal
+    assert minimal["dbname"] == "mydb"
 
-def test_verify_pg_dump_ok_and_bad(tmp_path):
+
+def test_build_pg_cmd_omits_unspecified_connection_fields(monkeypatch):
+    monkeypatch.setattr("backup.postgres_util._pg_tool", lambda name: name)
+    params = parse_postgres_url("postgresql:///mydb")
+    cmd = _build_pg_cmd("pg_dump", params, extra_args=["--format=custom", "-f", "out.dump"])
+    assert cmd[0].endswith("pg_dump")
+    assert "-h" not in cmd
+    assert "-p" not in cmd
+    assert "-U" not in cmd
+    assert "-d" in cmd and cmd[cmd.index("-d") + 1] == "mydb"
+
+    full = parse_postgres_url("postgresql://briefr:secret@127.0.0.1:5432/briefr")
+    full_cmd = _build_pg_cmd("pg_restore", full, extra_args=["--clean", "dump"])
+    assert "-h" in full_cmd and "127.0.0.1" in full_cmd
+    assert "-p" in full_cmd and "5432" in full_cmd
+    assert "-U" in full_cmd and "briefr" in full_cmd
+
+
+def test_verify_pg_dump_reads_only_header(tmp_path):
     good = tmp_path / "good.dump"
-    good.write_bytes(PGDUMP_MAGIC + b"rest")
+    # Header plus a large tail — verify must not load the whole file.
+    good.write_bytes(PGDUMP_MAGIC + b"\x00" * (2 * 1024 * 1024))
     ok, msg = verify_pg_dump(good)
     assert ok is True
     assert msg == "ok"
