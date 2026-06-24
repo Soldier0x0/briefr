@@ -102,7 +102,7 @@
 
 .what-changed-row {
   display: grid;
-  grid-template-columns: minmax(110px, 1.1fr) 52px 1fr auto;
+  grid-template-columns: minmax(118px, 1.15fr) 64px minmax(72px, 1fr) auto;
   gap: 8px;
   align-items: center;
   width: 100%;
@@ -143,6 +143,7 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .what-changed-old {

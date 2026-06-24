@@ -1,5 +1,5 @@
 .cve-card {
-  padding: 14px 88px 14px 36px;
+  padding: 14px 100px 14px 36px;
   border-bottom: 1px solid var(--border);
   border-left: 3px solid var(--border);
   background: var(--bg);
@@ -183,6 +183,17 @@
   margin-bottom: 8px;
   flex-wrap: wrap;
   min-width: 0;
+  padding-right: 4px;
+}
+
+.cve-badges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: calc(100% - 4px);
 }
 
 .cve-id {
@@ -207,13 +218,6 @@
 @keyframes momentum-pulse {
   0%, 100% { opacity: 1;   transform: translateY(0); }
   50%       { opacity: 0.5; transform: translateY(-2px); }
-}
-
-/* Badges — always wrap, never overflow */
-.cve-badges {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
 }
 
 .badge {
