@@ -1015,6 +1015,14 @@ async def run_nightly_correlation() -> bool:
             logger.error("Nightly correlation job failed: %s", exc)
             _had_error = True
             _corr_error_msg = str(exc)[:500]
+            if hasattr(db, "rollback"):
+                try:
+                    await db.rollback()
+                except Exception as rollback_exc:
+                    logger.warning(
+                        "Failed to rollback database transaction on job failure: %s",
+                        rollback_exc,
+                    )
         else:
             _corr_error_msg = ""
         finally:

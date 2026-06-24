@@ -2165,13 +2165,18 @@ async def delete_correlation_suppression(
 async def get_recent_cve_ids_for_otx(
     db: aiosqlite.Connection, days: int = 7
 ) -> list[str]:
+    from datetime import datetime, timedelta, timezone
+
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
     rows = await db.execute_fetchall(
         """
         SELECT cve_id FROM cves
-        WHERE DATE(published) >= DATE('now', ?)
+        WHERE published IS NOT NULL
+          AND published != ''
+          AND published >= ?
         ORDER BY published DESC
         """,
-        (f"-{days} days",),
+        (cutoff,),
     )
     return [row["cve_id"] for row in rows]
 

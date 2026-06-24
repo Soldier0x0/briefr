@@ -71,6 +71,9 @@ class SqliteConnection:
     async def commit(self) -> None:
         await self._conn.commit()
 
+    async def rollback(self) -> None:
+        await self._conn.rollback()
+
     async def close(self) -> None:
         await self._conn.close()
 
@@ -125,6 +128,13 @@ class PostgresConnection:
         if self._transaction is not None:
             await self._transaction.commit()
             self._transaction = None
+
+    async def rollback(self) -> None:
+        if self._transaction is not None:
+            try:
+                await self._transaction.rollback()
+            finally:
+                self._transaction = None
 
     async def close(self) -> None:
         if self._conn is None:
