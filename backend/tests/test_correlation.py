@@ -383,10 +383,18 @@ def test_compute_correlation_priority_breakdown():
         "campaigns": [{"confidence": "high", "label": "Ransomware wave"}],
         "infrastructure": [{"confidence": "medium", "cve_id_b": "CVE-2024-9999", "shared_ioc_count": 2}],
         "actor": [{"confidence": "medium", "actor_name": "APT-TEST", "user_sector_match": True}],
-        "temporal": [{"vendor": "acme", "anomaly_score": 4.0}],
+        "temporal": [{
+            "vendor": "wordpress",
+            "anomaly_score": 4.0,
+            "current_week_count": 15,
+            "average_weekly_count": 1.6,
+        }],
     }
     priority = compute_correlation_priority(result)
     assert priority["score"] > 0
+    temporal = next(c for c in priority["components"] if c["signal"] == "temporal")
+    assert "Wordpress" in temporal["sentence"]
+    assert "15 published" in temporal["sentence"]
     assert priority["components"][0]["signal"] == "campaign"
     signals = {c["signal"] for c in priority["components"]}
     assert signals == {"campaign", "infrastructure", "actor", "temporal"}

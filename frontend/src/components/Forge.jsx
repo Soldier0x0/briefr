@@ -333,9 +333,8 @@ export default function Forge() {
         <p className="fg-hero-kicker mono">DETECTION ENGINEERING</p>
         <h1 className="fg-hero-title">Forge</h1>
         <p className="fg-hero-sub">
-          MITRE ATT&amp;CK coverage for the CVEs in your intel feed — see where
-          detection content exists, where it does not, and generate Sigma + SIEM
-          hunt packs per CVE. Rules are templates: validate before deploying.
+          See which ATT&amp;CK techniques your feed CVEs map to, find community detection rules,
+          and export Sigma and SIEM hunt templates per CVE. Rules are starting points — validate before production.
         </p>
       </header>
 

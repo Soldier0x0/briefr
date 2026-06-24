@@ -2254,6 +2254,29 @@ async def get_cve_count(db: aiosqlite.Connection) -> int:
     return rows[0]["cnt"] if rows else 0
 
 
+async def get_timeline_activity_summary(db, *, days: int = 90) -> dict:
+    """Days with at least one published CVE in the last N UTC calendar days."""
+    window = max(1, min(int(days), 365))
+    rows = await db.execute_fetchall(
+        """
+        SELECT DATE(published) AS day, COUNT(*) AS count
+        FROM cves
+        WHERE published IS NOT NULL
+          AND published != ''
+          AND DATE(published) >= DATE('now', ?)
+        GROUP BY DATE(published)
+        """,
+        (f"-{window - 1} days",),
+    )
+    days_with_data = sum(1 for r in rows if (r["count"] or 0) > 0)
+    total_cves = sum(int(r["count"] or 0) for r in rows)
+    return {
+        "days_with_data": days_with_data,
+        "total_cves": total_cves,
+        "window_days": window,
+    }
+
+
 async def get_last_updated(db: aiosqlite.Connection) -> str | None:
     rows = await db.execute_fetchall(
         "SELECT MAX(updated_at) as ts FROM cves"

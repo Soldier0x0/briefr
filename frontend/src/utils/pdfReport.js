@@ -3,7 +3,8 @@
  */
 import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
-import { fetchCVE, fetchCVECorrelation, fetchCVESentences } from '../api.js'
+import { fetchCVE, fetchCVECorrelation, fetchCVEDetection, fetchCVESentences } from '../api.js'
+import { appOrigin } from './appLinks.js'
 import {
   aiFooterNoteForSource,
   formatExecutiveSummaryBody,
@@ -65,7 +66,7 @@ function applyFootersAndStripes(doc, meta) {
       FOOTER_Y - 3,
       { align: 'center' },
     )
-    const footer = `BRIEFR — projectjupiter.in | Generated ${meta.timestamp} | Page ${p} of ${total}`
+    const footer = `BRIEFR — ${appOrigin() || 'self-hosted'} | Generated ${meta.timestamp} | Page ${p} of ${total}`
     doc.text(footer, PAGE_W / 2, FOOTER_Y, { align: 'center' })
     if (meta.aiFooterNote) {
       doc.setFontSize(6)
@@ -111,6 +112,44 @@ function hexToRgb(hex) {
     parseInt(h.slice(2, 4), 16),
     parseInt(h.slice(4, 6), 16),
   ]
+}
+
+function drawCodeBlock(ctx, title, code, borderRgb) {
+  if (!code) return
+  const maxW = PAGE_W - MARGIN * 2 - 8
+  const lines = splitLines(ctx.doc, code, maxW)
+  const blockH = 12 + lines.length * 4.2 + 8
+  ensureSpace(ctx, blockH)
+
+  const x = MARGIN
+  const y0 = ctx.y
+  if (borderRgb) {
+    ctx.doc.setFillColor(...borderRgb)
+    ctx.doc.rect(x, y0, 2, blockH - 2, 'F')
+  }
+
+  ctx.doc.setFont(FONT_MONO, 'bold')
+  ctx.doc.setFontSize(8)
+  ctx.doc.setTextColor(...hexToRgb(BRAND))
+  ctx.doc.text(`// ${title}`, x + 5, y0 + 5)
+
+  ctx.doc.setFont(FONT_MONO, 'normal')
+  ctx.doc.setFontSize(7.5)
+  ctx.doc.setTextColor(40, 40, 40)
+  let y = y0 + 12
+  lines.forEach(line => {
+    ctx.doc.text(line, x + 5, y)
+    y += 4.2
+  })
+  ctx.y = y0 + blockH
+}
+
+function pickSigmaYaml(detection) {
+  if (!detection) return ''
+  const rules = detection.sigma_rules || []
+  if (rules.length && rules[0].content) return rules[0].content
+  if (detection.generated_sigma) return detection.generated_sigma
+  return ''
 }
 
 function drawCheckboxList(ctx, title, items, borderRgb) {
@@ -330,6 +369,10 @@ function renderSingleCvePages(doc, ctx, cve, meta, sparklineDataUrl, { newPage =
     })
     drawSection(ctx, 'MITRE ATT&CK', mitreLines.join('\n'), border)
     drawSection(ctx, 'DETECTION OPPORTUNITIES', detectionLinesFromTechniques(techniques), border)
+    const sigmaYaml = pickSigmaYaml(cve.detection)
+    if (sigmaYaml) {
+      drawCodeBlock(ctx, 'SIGMA RULE (copy-ready)', sigmaYaml, border)
+    }
   } else {
     drawSection(ctx, 'MITRE ATT&CK', 'No techniques mapped.', border)
     drawSection(ctx, 'DETECTION OPPORTUNITIES', 'No detection guidance — no ATT&CK mapping.', border)
@@ -369,13 +412,20 @@ export async function enrichCveForPdf(cve) {
   }
 
   let correlation = null
+  let detection = null
   try {
     correlation = await fetchCVECorrelation(id)
   } catch {
     correlation = null
   }
+  try {
+    const product = full.affected_products?.[0]?.split(':')?.[1] || ''
+    detection = await fetchCVEDetection(id, product)
+  } catch {
+    detection = null
+  }
 
-  return { ...full, sentences: sentences || {}, correlation: correlation || {} }
+  return { ...full, sentences: sentences || {}, correlation: correlation || {}, detection: detection || null }
 }
 
 export async function downloadSingleCvePdf(cve, options = {}) {

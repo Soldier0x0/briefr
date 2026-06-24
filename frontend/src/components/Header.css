@@ -206,6 +206,23 @@
   color: var(--green);
 }
 
+.live-indicator--live { color: var(--green); }
+.live-indicator--live .live-dot { background: var(--green); animation: pulse-dot 2s ease-in-out infinite; }
+
+.live-indicator--syncing { color: var(--amber); }
+.live-indicator--syncing .live-dot { background: var(--amber); animation: pulse-dot 1s ease-in-out infinite; }
+
+.live-indicator--idle,
+.live-indicator--unknown {
+  color: var(--text3);
+}
+.live-indicator--idle .live-dot,
+.live-indicator--unknown .live-dot {
+  background: var(--text3);
+  animation: none;
+  opacity: 0.6;
+}
+
 .live-dot {
   width: 6px;
   height: 6px;

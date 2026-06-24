@@ -12,7 +12,7 @@ import {
 } from '../utils/timezone.js'
 import './Header.css'
 
-export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClick, onTimezoneChange, showShortcuts }) {
+export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClick, onTimezoneChange, showShortcuts, feedHealth = null }) {
   const assetCtx = useAssetProfileOptional()
   const { status: authStatus } = useAuth()
   const [now, setNow]               = useState(new Date())
@@ -159,9 +159,9 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
               type="button"
               className="header-profile-btn mono"
               onClick={assetCtx.openProfileFlow}
-              aria-label="Open asset profile setup"
+              aria-label="Open My Stack setup"
             >
-              PROFILE
+              MY STACK
             </button>
           )}
 
@@ -199,7 +199,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
                     className="mobile-menu-item"
                     onClick={() => { setMobileMenuOpen(false); assetCtx.openProfileFlow() }}
                   >
-                    Profile
+                    My Stack
                   </button>
                 )}
                 {authStatus === 'authed' && (
@@ -227,11 +227,29 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
             )}
           </div>
 
-          {/* Live dot */}
-          <span className="live-indicator" aria-label="Live data feed active">
-            <span className="live-dot" aria-hidden="true" />
-            LIVE
-          </span>
+          {/* Live ingest status */}
+          {(() => {
+            const syncing = feedHealth?.refresh_in_progress
+            const hasData = (feedHealth?.cve_count ?? 0) >= 10
+            const level = !feedHealth ? 'unknown' : syncing ? 'syncing' : hasData ? 'live' : 'idle'
+            const label = level === 'live'
+              ? 'CVE feeds active'
+              : level === 'syncing'
+                ? 'Ingest running'
+                : level === 'idle'
+                  ? 'Building CVE database'
+                  : 'Checking feed status'
+            return (
+              <span
+                className={`live-indicator live-indicator--${level}`}
+                aria-label={label}
+                title={label}
+              >
+                <span className="live-dot" aria-hidden="true" />
+                LIVE
+              </span>
+            )
+          })()}
 
           {/* Clock — clicking opens timezone popover */}
           <div className="tz-wrap" ref={popoverRef}>
