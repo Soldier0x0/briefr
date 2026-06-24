@@ -76,6 +76,22 @@ def test_postgres_rollback_clears_failed_transaction():
     asyncio.run(_run())
 
 
+def test_postgres_rollback_clears_state_when_rollback_raises():
+    raw = MagicMock()
+    transaction = AsyncMock()
+    transaction.rollback.side_effect = RuntimeError("connection lost")
+    pool = AsyncMock()
+
+    async def _run() -> None:
+        conn = PostgresConnection(raw, pool)
+        conn._transaction = transaction
+        with pytest.raises(RuntimeError, match="connection lost"):
+            await conn.rollback()
+        assert conn._transaction is None
+
+    asyncio.run(_run())
+
+
 def test_postgres_close_releases_even_when_rollback_fails():
     raw = MagicMock()
     transaction = AsyncMock()

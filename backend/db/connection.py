@@ -131,8 +131,10 @@ class PostgresConnection:
 
     async def rollback(self) -> None:
         if self._transaction is not None:
-            await self._transaction.rollback()
-            self._transaction = None
+            try:
+                await self._transaction.rollback()
+            finally:
+                self._transaction = None
 
     async def close(self) -> None:
         if self._conn is None:

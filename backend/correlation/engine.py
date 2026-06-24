@@ -412,7 +412,10 @@ async def _recover_db_transaction(db) -> None:
     """Postgres aborts the whole transaction after any failed statement."""
     rollback = getattr(db, "rollback", None)
     if rollback is not None:
-        await rollback()
+        try:
+            await rollback()
+        except Exception as exc:
+            logger.warning("Failed to rollback transaction during recovery: %s", exc)
 
 
 # ── Nightly batch job ─────────────────────────────────────
