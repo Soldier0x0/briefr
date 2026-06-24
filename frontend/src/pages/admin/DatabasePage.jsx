@@ -6,11 +6,7 @@ import DangerZone from './shared/DangerZone.jsx'
 import StatCard from './shared/StatCard.jsx'
 import { fmtBytes } from './formatters.js'
 
-// Lets a single operator move from the default SQLite file to an optional
-// PostgreSQL database without leaving the admin panel: test the target
-// connection, run a one-shot data copy (reusing the existing Alembic schema
-// + the SQLite file already on disk), then flip DATABASE_URL through the
-// same apply-all + graceful-restart flow used elsewhere in this panel.
+// PostgreSQL connection: test target DSN, copy data into Postgres, apply DATABASE_URL + restart.
 export default function DatabasePage({ toast, active = true }) {
   const [info, setInfo] = useState(null)
   const [databaseUrl, setDatabaseUrl] = useState('')
@@ -82,20 +78,30 @@ export default function DatabasePage({ toast, active = true }) {
     setApplying(false)
   }
 
-  const isSqlite = info?.engine === 'sqlite'
-  const migrationDone = status?.status === 'done'
-  const migrationRunning = status?.status === 'running'
-  const migrationError = status?.status === 'error'
   const progressPct = status?.tables_total
     ? Math.round((status.tables_done / status.tables_total) * 100)
     : 0
+
+  if (!info) {
+    return (
+      <div>
+        <h1 className="admin-page-title">Database</h1>
+        <p className="admin-page-subtitle">Loading database configuration…</p>
+      </div>
+    )
+  }
+
+  const needsPostgres = info.engine !== 'postgresql'
+  const migrationDone = status?.status === 'done'
+  const migrationRunning = status?.status === 'running'
+  const migrationError = status?.status === 'error'
 
   return (
     <div>
       {confirmMigrate && (
         <ConfirmModal
-          title="Start PostgreSQL migration?"
-          message="Copies every row from the current SQLite database into the target PostgreSQL database, replacing any existing data there. Take a backup first (Backups page) — this does not touch the SQLite file, but a bad target URL could otherwise leave you without a path back. This is safely re-runnable if it fails partway."
+          title="Start PostgreSQL data copy?"
+          message="Copies every row from the current database into the target PostgreSQL database, replacing any existing data there. Take a backup first (Backups page). A bad target URL could leave the target empty — verify the connection before running. This is safely re-runnable if it fails partway."
           confirmWord="migrate"
           onConfirm={startMigration}
           onCancel={() => setConfirmMigrate(false)}
@@ -103,37 +109,39 @@ export default function DatabasePage({ toast, active = true }) {
       )}
 
       <h1 className="admin-page-title">Database</h1>
-      <p className="admin-page-subtitle">Shows the current database engine and lets you migrate from SQLite to PostgreSQL. The migration is one-way and triggers a restart.</p>
+      <p className="admin-page-subtitle">PostgreSQL connection and health. Production uses Postgres 16+ via <code>DATABASE_URL</code>; see <code>docs/POSTGRES.md</code>.</p>
 
       <div className="stat-card-row">
-        <StatCard label="ENGINE" value={info?.engine === 'postgresql' ? 'PostgreSQL' : 'SQLite'} colorClass={isSqlite ? 'color-amber' : 'color-green'} />
-        {isSqlite && info && <StatCard label="SQLITE FILE SIZE" value={fmtBytes(info.sqlite_size_bytes)} />}
-        {!isSqlite && info && <StatCard label="TARGET" value={info.postgres_dsn_redacted} />}
+        <StatCard label="ENGINE" value={info?.engine === 'postgresql' ? 'PostgreSQL' : 'Not connected'} colorClass={needsPostgres ? 'color-amber' : 'color-green'} />
+        {needsPostgres && info?.sqlite_size_bytes != null && (
+          <StatCard label="LOCAL DATA SIZE" value={fmtBytes(info.sqlite_size_bytes)} />
+        )}
+        {!needsPostgres && info && <StatCard label="TARGET" value={info.postgres_dsn_redacted} />}
       </div>
 
-      {info?.require_postgres && isSqlite && (
+      {info?.require_postgres && needsPostgres && (
         <div className="admin-callout admin-callout-amber" style={{ marginBottom: '1rem' }}>
           <AlertTriangle size={16} strokeWidth={2} />
           <span>
             <strong>PostgreSQL required</strong> — <code>BRIEFR_REQUIRE_POSTGRES=1</code> is set.
-            Complete the migration below and apply <code>DATABASE_URL</code> before the backend will start.
+            Set <code>DATABASE_URL</code> below and complete the data copy before the backend will start.
           </span>
         </div>
       )}
 
-      {isSqlite ? (
+      {needsPostgres ? (
         <>
           <div className="admin-callout admin-callout-amber">
             <AlertTriangle size={16} strokeWidth={2} />
             <span>
-              Running on SQLite (single-writer). PostgreSQL is optional and only worth migrating to if you need
-              concurrent writers or multiple uvicorn workers — see <code>docs/POSTGRES.md</code>.
+              Backend is not on PostgreSQL yet. Point <code>DATABASE_URL</code> at your Postgres instance
+              (production: Docker at <code>/opt/infra/postgres</code>, port <code>5432</code>) — see <code>docs/POSTGRES.md</code>.
             </span>
           </div>
 
-          <DangerZone title="Migrate to PostgreSQL">
+          <DangerZone title="Connect PostgreSQL">
             <div style={{ fontSize: '0.8125rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
-              1. Take a backup. 2. Test the connection below. 3. Run the migration. 4. Apply &amp; restart once it finishes.
+              1. Take a backup. 2. Test the connection below. 3. Run the data copy. 4. Apply &amp; restart once it finishes.
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
               <input
@@ -159,7 +167,7 @@ export default function DatabasePage({ toast, active = true }) {
                 onClick={() => setConfirmMigrate(true)}
                 disabled={!testResult?.ok || migrationRunning}
               >
-                Run migration
+                Run data copy
               </button>
             </div>
 
@@ -179,7 +187,7 @@ export default function DatabasePage({ toast, active = true }) {
                   <div className="admin-callout admin-callout-amber">
                     <AlertTriangle size={16} strokeWidth={2} />
                     <span>
-                      <strong>Migration complete</strong> — {status.rows_copied?.toLocaleString()} rows copied across {status.tables_total} tables.
+                      <strong>Data copy complete</strong> — {status.rows_copied?.toLocaleString()} rows copied across {status.tables_total} tables.
                       {status.verification?.mismatches?.length > 0 && (
                         <span style={{ display: 'block', marginTop: '0.35rem', color: 'var(--red)' }}>
                           Row-count mismatches: {status.verification.mismatches.join(', ')} — review before switching.
@@ -201,7 +209,7 @@ export default function DatabasePage({ toast, active = true }) {
                 )}
                 {migrationError && (
                   <div style={{ fontSize: '0.8125rem', color: 'var(--red)' }}>
-                    Migration failed: {status.error}
+                    Data copy failed: {status.error}
                   </div>
                 )}
               </div>
@@ -212,9 +220,8 @@ export default function DatabasePage({ toast, active = true }) {
         <div className="admin-callout admin-callout-amber">
           <AlertTriangle size={16} strokeWidth={2} />
           <span>
-            Running on PostgreSQL — the app no longer writes to <code>briefr.db</code>.
-            You may archive or delete the old SQLite file after verifying backups.
-            To roll back: stop backend, restore SQLite from backup, remove <code>DATABASE_URL</code>, restart — see <code>docs/POSTGRES.md</code>.
+            Running on PostgreSQL. Backups use <code>pg_dump</code> (<code>briefr.pgdump</code> in each archive).
+            Restore via <code>deploy/briefr-restore.sh</code> — see <code>docs/POSTGRES.md</code>.
           </span>
         </div>
       )}

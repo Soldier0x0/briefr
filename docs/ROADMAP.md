@@ -65,7 +65,7 @@ Cross-release amendments approved in planning (details in each release doc):
 | STRIDE-lite worksheet and HyperDX provisioner | **Deferred** | Speculative until the modular-SIEM future is real |
 | Repository layer | **Pay-as-you-go** | Extract per table only when needed; full layer waits for V2.0 Postgres |
 
-**Storage decision:** intel data stays in SQLite inside BRIEFR. No NiFi / external Postgres / ClickHouse for intel ingest — volumes do not justify it and it breaks the single-tool deploy contract. ClickHouse remains the **telemetry sidecar** store only (see [`JUPITER_VISION.md`](JUPITER_VISION.md)).
+**Storage decision:** intel data stays in **PostgreSQL** inside BRIEFR (production: Postgres 16 in Docker at `/opt/infra/postgres`). ClickHouse remains the **telemetry sidecar** store only (see [`JUPITER_VISION.md`](JUPITER_VISION.md)).
 
 **ML placement rules:** all ML is env-gated, CPU-only, runs in scheduler jobs (never the request path), and the tool stays fully functional with ML disabled. No log ML in core; no black-box replacement of the explainable risk score; EPSS is consumed, never re-derived.
 
@@ -117,7 +117,7 @@ Update `SYSTEM_DESIGN.md` in the same PR when a release phase changes runtime be
 
 Releases must remain **additive** for existing systemd + nginx + cloudflared deploys unless documented:
 
-- Stable default paths: `DB_PATH`, `BACKUP_DIR`, `/opt/briefr`
+- Stable default paths: `DATABASE_URL`, `BACKUP_DIR`, `/opt/briefr`
 - Forward-only DB migrations
 - Public **read** APIs remain unauthenticated until an env flag tightens policy
 - Admin / write / destructive actions require auth

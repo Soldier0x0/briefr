@@ -57,7 +57,7 @@ Every file in the repository with a one-line purpose. Tags:
 | Path | Description |
 |---|---|
 | `backend/backup/__init__.py` | Package marker |
-| `backend/backup/manager.py` | SQLite backup/restore, age encryption, startup auto-restore |
+| `backend/backup/manager.py` | PostgreSQL backup/restore (`pg_dump`), age encryption, startup auto-restore |
 | `backend/backup/__main__.py` | CLI entry: `python -m backup run` |
 
 ### backend/ml/
@@ -340,7 +340,7 @@ Every file in the repository with a one-line purpose. Tags:
 |---|---|
 | `scripts/seed_screenshot_data.py` | Seeds sample CVE rows + warms RSS cache before README screenshot capture |
 | `scripts/capture_readme_screenshots.mjs` | Playwright capture of README tab screenshots; preflights API health/feeds; exits non-zero on empty data or feed errors |
-| `deploy/briefr-backup.sh` | Integrity-checked SQLite + `.env` backup; retention pruning |
+| `deploy/briefr-backup.sh` | PostgreSQL `pg_dump` + `.env` backup; retention pruning |
 | `deploy/briefr-restore.sh` | Restore newest or specified archive; stops/starts backend |
 | `deploy/briefr-backup.service` / `.timer` | systemd oneshot + 6h timer → `/var/lib/briefr/backups` |
 | `backend/backup/manager.py` | Backup core: integrity_check, online backup, restore, log rotation |

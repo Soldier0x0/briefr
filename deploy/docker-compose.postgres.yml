@@ -1,4 +1,4 @@
-# PostgreSQL dev stack (optional — SQLite remains the default)
+# PostgreSQL dev stack (Postgres 16 — matches production major)
 
 services:
   postgres:

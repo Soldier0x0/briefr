@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# Restore BRIEFR database (and .env when present in archive) from a backup.
-# Handles SQLite (briefr.db) and PostgreSQL (briefr.pgdump) archives,
-# both plaintext (.tar.gz) and age-encrypted (.tar.gz.age).
-# PostgreSQL restore requires DATABASE_URL and pg_restore (postgresql-client).
+# Restore BRIEFR PostgreSQL database (and .env when present in archive) from a backup.
+# Archives contain briefr.pgdump (pg_dump custom format), plaintext (.tar.gz) or
+# age-encrypted (.tar.gz.age). Requires DATABASE_URL and pg_restore (postgresql-client).
 # Usage:
 #   bash briefr-restore.sh                 # newest valid archive
 #   bash briefr-restore.sh --list

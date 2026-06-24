@@ -130,7 +130,7 @@ ensure_postgresql_client() {
   if ! apt-get install -y -qq postgresql-client; then
     # Bookworm/Trixie often expose versioned metapackages only.
     local ver
-    for ver in 17 16 15 14; do
+    for ver in 18 17 16 15; do
       if apt-get install -y -qq "postgresql-client-${ver}"; then
         break
       fi
@@ -145,13 +145,8 @@ ensure_postgresql_client() {
 }
 
 configure_backup_timer() {
-  if is_postgres_deployment; then
-    systemctl disable --now briefr-backup.timer 2>/dev/null || true
-    systemctl enable --now briefr-pg-backup.timer
-  else
-    systemctl disable --now briefr-pg-backup.timer 2>/dev/null || true
-    systemctl enable --now briefr-backup.timer
-  fi
+  systemctl disable --now briefr-backup.timer 2>/dev/null || true
+  systemctl enable --now briefr-pg-backup.timer
 }
 
 install_nginx_site() {

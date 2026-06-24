@@ -6,15 +6,35 @@ BRIEFR is a self-hosted CVE intelligence dashboard: a **FastAPI (Python) backend
 and a **React + Vite frontend** in `frontend/`. See `README.md` and `docs/ONBOARDING.md` for the
 full developer guide; this section only captures non-obvious cloud-environment caveats.
 
+### Database (PostgreSQL)
+
+Production uses **PostgreSQL 16** in Docker at `/opt/infra/postgres`. BRIEFR connects via
+`DATABASE_URL` in `backend/.env` (host port `127.0.0.1:5432`).
+
+```bash
+DATABASE_URL=postgresql://briefr:PASSWORD@127.0.0.1:5432/briefr
+BRIEFR_REQUIRE_POSTGRES=1
+DATABASE_POOL_SIZE=10
+```
+
+- Runtime: **asyncpg** pool; migrations: **Alembic**
+- Backups: host `pg_dump` / `pg_restore` — install `postgresql-client-16` (or matching major)
+- Verify: `curl -s http://127.0.0.1:8000/api/health` → `"backend": "postgresql"`
+- See `docs/POSTGRES.md` for backups, restore, and troubleshooting
+
 ### Services and how to run them
 
 The update script provisions the backend virtualenv (`backend/.venv`), installs Python and npm
 dependencies, and ensures `backend/.env` exists (copied from `backend/.env.example`). On startup:
 
+- **Postgres** (production): `cd /opt/infra/postgres && docker compose up -d`
 - **Backend** (`:8000`): from `backend/`, `source .venv/bin/activate` then
   `uvicorn main:app --host 0.0.0.0 --port 8000 --reload`.
 - **Frontend** (`:5173`): from `frontend/`, `npm run dev`. Vite proxies `/api` → `:8000`, so the
   backend must be running first or the UI shows `/api` 404s.
+
+Local dev without production infra: `docker compose -f deploy/docker-compose.postgres.yml up -d`
+(Postgres 16).
 
 ### Tests / build / lint
 
@@ -45,11 +65,8 @@ dependencies, and ensures `backend/.env` exists (copied from `backend/.env.examp
   resilient client has a per-source circuit breaker, so retry later rather than assuming a bad key.
 - **Empty feed on first boot:** if the `cves` table has fewer than 10 rows, the backend kicks off a
   full NVD→KEV→EPSS ingest on startup (needs network and is slow). To get realistic data instantly,
-  run the seed script with an activated backend venv — `python ../scripts/seed_screenshot_data.py`
-  from `backend/`, or `python scripts/seed_screenshot_data.py` from the repository root (the script
-  `chdir`s into `backend/` itself). It seeds 15 sample CVEs and warms the RSS incident feed.
-  Re-running is safe (skips CVE seeding once 10+ rows exist).
-- The SQLite DB lives at `backend/briefr.db` (gitignored). Deleting it resets state; the next backend
-  start re-triggers the bootstrap ingest.
+  run the seed script with `DATABASE_URL` set — `python scripts/seed_screenshot_data.py` from the
+  repository root (the script `chdir`s into `backend/`). Re-running is safe (skips CVE seeding once
+  10+ rows exist).
 - `backend/.python-version` pins `3.13`, but CI and this environment use **Python 3.12**, which is
   fully supported (`requirements.txt` is 3.11+).

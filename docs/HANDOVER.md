@@ -28,9 +28,9 @@ Read in this order before writing any code:
 ## 2. Deployment context (do not violate)
 
 - **Private instance**: Cloudflare Access policy gates everything; 3 beta testers; not open source.
-- Production: Debian, systemd (`briefr-backend`), nginx :80, cloudflared, SQLite at `/opt/briefr/backend/briefr.db`, backups in `/var/lib/briefr/backups`.
+- Production: Debian, systemd (`briefr-backend`), nginx :80, cloudflared, **PostgreSQL 16** in Docker at `/opt/infra/postgres` (`DATABASE_URL` → `127.0.0.1:5432/briefr`), backups in `/var/lib/briefr/backups`. See [`POSTGRES.md`](POSTGRES.md).
 - Operator deploys with: `cd /opt/briefr && bash deploy/briefr-update.sh` (script pulls main itself).
-- **Single complete tool now; modular SIEM later.** Intel stays in SQLite. No NiFi/Postgres/ClickHouse for intel ingest. ML is env-gated, CPU-only, scheduler-side, with deterministic fallback. See `JUPITER_VISION.md` § Strategy statement.
+- **Single complete tool now; modular SIEM later.** Intel stays in PostgreSQL inside BRIEFR. ML is env-gated, CPU-only, scheduler-side, with deterministic fallback. See `JUPITER_VISION.md` § Strategy statement.
 
 ---
 
@@ -275,12 +275,11 @@ operator; default recommendation is yes.
 5. **PR description must contain a "Post-merge verification" section** with
    copy-pasteable commands for the operator's production box
    (`http://127.0.0.1:8000`, `journalctl -u briefr-backend`,
-   `sqlite3 /opt/briefr/backend/briefr.db`). The operator runs these after
+   `psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM cves;"`). The operator runs these after
    `bash deploy/briefr-update.sh`. Patterns to imitate: PRs #85, #86, #89, #90.
 6. **Compatibility rules** (from `OPERATIONS.md`): additive API responses;
-   forward-only idempotent migrations (the `ALTER TABLE` try/except list in
-   `database.py:init_db`); env defaults unchanged; CLI backup/restore always
-   works; SQLite = 1 uvicorn worker.
+   forward-only Alembic migrations; env defaults unchanged; CLI backup/restore always
+   works; PostgreSQL + connection pool for multi-worker when needed.
 7. Code conventions: imports at top of module (no inline imports); follow
    existing patterns (`resilient_client` for outbound HTTP, `feed_cache` for
    caching, cancellation guards in frontend effects, `useModalLayer` for any
@@ -293,7 +292,7 @@ operator; default recommendation is yes.
 | New feed/source | `feeds.sources.<name>` in `/api/health` shows `last_success`, `circuit_open: false`; row counts in target table; journal free of errors |
 | New endpoint | curl with expected params; additive shape confirmed; `API_REFERENCE.md` matches reality |
 | Scheduler job | journal line for first run; `sync_state` marker if watermarked; idempotency on restart |
-| Schema migration | `PRAGMA table_info(<table>)` shows columns; old DB upgrades in place (deploy does this implicitly); fresh DB boots |
+| Schema migration | Alembic at `head`; `\d cves` in psql shows expected columns; fresh DB boots |
 | Frontend | `npm run build` green; the specific interaction tested in browser (list exact clicks/keys); no console errors; DevTools network tab if requests changed |
 | Deploy script | `bash -n` syntax check; one full `briefr-update.sh` run; smoke output (`smoke-intel.sh` passes for CVE-2021-44228) |
 
@@ -318,9 +317,8 @@ cd ../frontend && npm install && npm run build
 
 Known quirks: `python3 -m venv` may be unavailable (use `pip3 --user`);
 an empty dev DB triggers a full bootstrap ingest on app start (set
-`BACKUP_ENABLED=0`, expect `database is locked` noise from write contention —
-the snapshot/feed code degrades gracefully through it); test the API on a
-spare port with `DB_PATH=/tmp/test.db`.
+`BACKUP_ENABLED=0` and `DATABASE_URL` to local Postgres); test the API on a
+spare port with `docker compose -f deploy/docker-compose.postgres.yml up -d`.
 
 ---
 
