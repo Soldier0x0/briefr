@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 
 import httpx
 
+from api_queue import apply_rate_limit_headers, await_api_slot, release_api_slot
 from resilient_client import record_source_failure, record_source_success
 
 logger = logging.getLogger(__name__)
@@ -196,7 +197,9 @@ async def safe_webhook_request(
     except ValueError:
         request_extensions["sni_hostname"] = host.encode("idna").decode("ascii")
 
-    for attempt in range(retries + 1):
+    attempt = 0
+    while True:
+        await await_api_slot(source)
         try:
             response = await client.request(
                 method,
@@ -207,43 +210,45 @@ async def safe_webhook_request(
                 extensions=request_extensions,
             )
         except httpx.HTTPError as exc:
-            last_exc = exc
-            if attempt < retries:
-                await asyncio.sleep(RETRY_BACKOFF_SECONDS * (2**attempt))
-                continue
+            release_api_slot(source)
             record_source_failure(source, f"{type(exc).__name__}: {exc}")
             raise
 
-        if response.status_code in RETRYABLE_STATUS or response.status_code == 429:
-            last_exc = httpx.HTTPStatusError(
-                f"HTTP {response.status_code}",
-                request=response.request,
-                response=response,
-            )
+        if response.status_code == 429:
+            apply_rate_limit_headers(source, response.headers)
+            release_api_slot(source)
+            continue
+
+        if response.status_code in RETRYABLE_STATUS:
+            release_api_slot(source)
             if attempt < retries:
-                await asyncio.sleep(RETRY_BACKOFF_SECONDS * (2**attempt))
+                attempt += 1
+                await asyncio.sleep(RETRY_BACKOFF_SECONDS * (2 ** (attempt - 1)))
                 continue
             record_source_failure(source, f"HTTP {response.status_code}")
             response.raise_for_status()
 
         if response.is_redirect:
+            release_api_slot(source)
             record_source_failure(source, f"redirect blocked: HTTP {response.status_code}")
             raise SSRFError(
                 f"redirect responses are not followed (HTTP {response.status_code})"
             )
 
         if response.is_server_error:
+            release_api_slot(source)
             record_source_failure(source, f"HTTP {response.status_code}")
             response.raise_for_status()
 
         if response.is_client_error:
+            release_api_slot(source)
             record_source_failure(source, f"HTTP {response.status_code}")
             response.raise_for_status()
 
+        release_api_slot(source)
         record_source_success(source)
+        apply_rate_limit_headers(source, response.headers)
         return response
-
-    raise last_exc if last_exc else RuntimeError(f"webhook request failed for {source}")
 
 
 def webhook_json_payload(message: str, *, event_type: str, dedupe_key: str | None = None) -> dict[str, Any]:

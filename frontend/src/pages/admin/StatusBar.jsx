@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, Wrench, RefreshCw, Clock } from 'lucide-react'
 import HelpTip from './shared/HelpTip.jsx'
+import ApiQueueIndicator from '../../components/ApiQueueIndicator.jsx'
 import { fmtAge } from './formatters.js'
 import { worstSource } from './intelStatus.js'
 
@@ -158,6 +159,7 @@ export default function StatusBar({ system, onRunIngest, refreshInProgress, mode
       </div>
 
       <div className="sb-actions">
+        <ApiQueueIndicator apiQueue={system?.api_queue} className="admin-api-queue" />
         {userMenu}
         {mode === 'analyst' && (
           <>
