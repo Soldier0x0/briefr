@@ -1,7 +1,7 @@
 """Tests for /api/stats/timeline date normalization (Postgres asyncpg date objects)."""
 
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -11,6 +11,10 @@ from routers.cves import _timeline_date_key
 
 def test_timeline_date_key_from_date_object():
     assert _timeline_date_key(date(2026, 6, 24)) == "2026-06-24"
+
+
+def test_timeline_date_key_from_datetime_object():
+    assert _timeline_date_key(datetime(2026, 6, 24, 12, 30, 0)) == "2026-06-24"
 
 
 def test_timeline_date_key_from_string():

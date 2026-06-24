@@ -274,7 +274,7 @@ def _timeline_date_key(value) -> str:
     if value is None:
         return ""
     if hasattr(value, "isoformat"):
-        return value.isoformat()
+        return value.isoformat()[:10]
     text = str(value).strip()
     return text[:10] if text else ""
 
