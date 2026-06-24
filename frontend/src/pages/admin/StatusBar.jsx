@@ -1,19 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
-import { createPortal } from 'react-dom'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Eye, Wrench, RefreshCw, RotateCw, Hourglass, ChevronDown, Clock } from 'lucide-react'
-import ConfirmModal from './shared/ConfirmModal.jsx'
+import { Eye, Wrench, RefreshCw, Clock } from 'lucide-react'
 import HelpTip from './shared/HelpTip.jsx'
 import { fmtAge } from './formatters.js'
 import { worstSource } from './intelStatus.js'
 
-export default function StatusBar({ system, onRunIngest, onRestart, onDrainRestart, refreshInProgress, mode, setMode, lastUpdated, userMenu }) {
-  const [restartMenu, setRestartMenu] = useState(false)
-  const [menuPos, setMenuPos] = useState(null)
-  const [confirmRestart, setConfirmRestart] = useState(null) // null | 'immediate' | 'drain'
+export default function StatusBar({ system, onRunIngest, refreshInProgress, mode, setMode, lastUpdated, userMenu }) {
   const [now, setNow] = useState(Date.now())
-  const menuRef = useRef(null)
-  const arrowRef = useRef(null)
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000)
@@ -22,29 +15,6 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
 
   function handleModeClick(next) {
     setMode(next)
-  }
-
-  useEffect(() => {
-    function onDown(e) {
-      if (
-        restartMenu &&
-        menuRef.current &&
-        !menuRef.current.contains(e.target) &&
-        !arrowRef.current?.contains(e.target)
-      ) {
-        setRestartMenu(false)
-      }
-    }
-    document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [restartMenu])
-
-  function toggleRestartMenu() {
-    if (!restartMenu && arrowRef.current) {
-      const rect = arrowRef.current.getBoundingClientRect()
-      setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
-    }
-    setRestartMenu(v => !v)
   }
 
   const nvdAge = system?.last_nvd_sync_age_seconds
@@ -81,26 +51,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
   ) : null
 
   return (
-    <>
-      {confirmRestart && (
-        <ConfirmModal
-          actionId={confirmRestart === 'drain' ? 'system.restart.drain' : 'system.restart'}
-          title={confirmRestart === 'drain' ? 'Drain then restart' : 'Restart now?'}
-          message={
-            confirmRestart === 'drain'
-              ? 'Wait for all running jobs to finish, then shut the backend down gracefully (systemd will restart it).'
-              : undefined
-          }
-          confirmWord="restart"
-          onConfirm={() => {
-            setConfirmRestart(null)
-            if (confirmRestart === 'drain') onDrainRestart()
-            else onRestart()
-          }}
-          onCancel={() => setConfirmRestart(null)}
-        />
-      )}
-      <div className="admin-statusbar">
+    <div className="admin-statusbar">
         <Link to="/" className="admin-brand-link mono" title="Back to BRIEFR">
           BRIEFR
         </Link>
@@ -216,49 +167,9 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
             {updatedAgoEl}
             <div className="sb-actions">
               {userMenu}
-              <button
-                className="admin-btn admin-btn-warn"
-                onClick={onRunIngest}
-                disabled={refreshInProgress}
-                style={{ fontSize: '0.75rem' }}
-                title="Pulls fresh data from every source: NVD, KEV, EPSS, MITRE/ATLAS, OTX, etc. — not just NVD CVEs"
-              >
-                {refreshInProgress ? <><span className="admin-spinner" /> Running…</> : <><RefreshCw size={13} strokeWidth={2} /> Run full ingest</>}
-              </button>
-              <HelpTip text="Pulls fresh data from every configured source — NVD, KEV, EPSS, MITRE/ATLAS, OTX, etc. — not just NVD CVEs." />
-              <div className="admin-split-btn" ref={menuRef}>
-                <button
-                  className="admin-btn admin-btn-ghost admin-split-btn-main"
-                  onClick={() => setConfirmRestart('immediate')}
-                  style={{ fontSize: '0.75rem' }}
-                  title="Stops the backend immediately — systemd restarts it within seconds"
-                >
-                  <RotateCw size={13} strokeWidth={2} /> Restart now
-                </button>
-                <button
-                  ref={arrowRef}
-                  className="admin-btn admin-btn-ghost admin-split-btn-arrow"
-                  onClick={toggleRestartMenu}
-                  aria-label="Restart options"
-                  style={{ fontSize: '0.75rem' }}
-                ><ChevronDown size={13} strokeWidth={2} /></button>
-                <HelpTip text="Restart now: stops the backend immediately (systemd restarts it within seconds). Drain then restart: waits for in-flight jobs to finish first, so nothing gets cut off mid-run." />
-                {restartMenu && menuPos && createPortal(
-                  <div
-                    className="admin-split-menu"
-                    ref={menuRef}
-                    style={{ top: menuPos.top, right: menuPos.right }}
-                  >
-                    <button className="admin-split-menu-item" onClick={() => { setRestartMenu(false); setConfirmRestart('immediate') }}><RotateCw size={12} strokeWidth={2} /> Restart now</button>
-                    <button className="admin-split-menu-item" onClick={() => { setRestartMenu(false); setConfirmRestart('drain') }} title="Waits for in-flight jobs to finish, then restarts — nothing gets cut off mid-run"><Hourglass size={12} strokeWidth={2} /> Drain then restart</button>
-                  </div>,
-                  document.body
-                )}
-              </div>
             </div>
           </>
         )}
       </div>
-    </>
   )
 }

@@ -11,6 +11,7 @@ import {
   setTimezone as persistTimezone,
 } from '../utils/timezone.js'
 import './Header.css'
+import { feedHealthLevel, feedHealthLabel } from '../utils/feedHealthStatus.js'
 
 export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClick, onTimezoneChange, showShortcuts, feedHealth = null }) {
   const assetCtx = useAssetProfileOptional()
@@ -69,6 +70,9 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
       )
     : COMMON_TIMEZONES
 
+  const feedLevel = feedHealthLevel(feedHealth)
+  const feedLabel = feedHealthLabel(feedLevel)
+
   const TABS = [
     { id: 'brief', label: 'BRIEF', aria: 'Switch to morning brief' },
     { id: 'feed', label: 'FEED', aria: 'Switch to full CVE feed' },
@@ -92,6 +96,15 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
           </button>
           <span className="header-divider" aria-hidden="true">//</span>
           <span className="header-tagline">CVE intelligence</span>
+          {feedHealth && (
+            <span
+              className={`live-indicator live-indicator--dot-only live-indicator--${feedLevel}`}
+              aria-label={feedLabel}
+              title={feedLabel}
+            >
+              <span className="live-dot" aria-hidden="true" />
+            </span>
+          )}
         </div>
 
         {/* Center: tabs */}
@@ -226,30 +239,6 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
               </div>
             )}
           </div>
-
-          {/* Live ingest status */}
-          {(() => {
-            const syncing = feedHealth?.refresh_in_progress
-            const hasData = (feedHealth?.cve_count ?? 0) >= 10
-            const level = !feedHealth ? 'unknown' : syncing ? 'syncing' : hasData ? 'live' : 'idle'
-            const label = level === 'live'
-              ? 'CVE feeds active'
-              : level === 'syncing'
-                ? 'Ingest running'
-                : level === 'idle'
-                  ? 'Building CVE database'
-                  : 'Checking feed status'
-            return (
-              <span
-                className={`live-indicator live-indicator--${level}`}
-                aria-label={label}
-                title={label}
-              >
-                <span className="live-dot" aria-hidden="true" />
-                LIVE
-              </span>
-            )
-          })()}
 
           {/* Clock — clicking opens timezone popover */}
           <div className="tz-wrap" ref={popoverRef}>

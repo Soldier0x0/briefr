@@ -11,16 +11,15 @@ const ICONS = {
   Gauge, BellRing,
 }
 
-export default function Sidebar({ activePage, setPage, system, ingestErrorCount, mode, setMode }) {
+export default function Sidebar({ activePage, setPage, system, ingestErrorCount, unackJobErrorCount = 0, mode, setMode }) {
   const openCircuits = system?.open_circuit_count || 0
   const failedAuth = system?.failed_auth_last_24h || 0
-  const jobErrors = system?.jobs_with_errors_count || 0
   const navConfig = mode === 'analyst' ? ANALYST_NAV : NAV
 
   function getBadge(item) {
     if (item.badgeKey === 'open_circuit_count') return openCircuits
     if (item.badgeKey === 'failed_auth_last_24h') return failedAuth
-    if (item.badgeKey === 'jobs_with_errors_count') return jobErrors
+    if (item.badgeKey === 'jobs_with_errors_count') return unackJobErrorCount
     if (item.badgeKey === 'ingest_error_count') return ingestErrorCount
     return 0
   }
@@ -56,7 +55,18 @@ export default function Sidebar({ activePage, setPage, system, ingestErrorCount,
               >
                 {Icon && <Icon className="nav-icon" size={15} strokeWidth={1.75} />}
                 <span>{item.label}</span>
-                {badge > 0 && <span className={`nav-badge ${item.badgeKey === 'failed_auth_last_24h' ? 'nav-badge-amber' : 'nav-badge-red'}`}>{badge}</span>}
+                {badge > 0 && (
+                  <span
+                    className={`nav-badge ${item.badgeKey === 'failed_auth_last_24h' ? 'nav-badge-amber' : 'nav-badge-red'}`}
+                    title={
+                      item.badgeKey === 'jobs_with_errors_count'
+                        ? `${badge} unacknowledged scheduler job failure(s)`
+                        : undefined
+                    }
+                  >
+                    {badge}
+                  </span>
+                )}
               </div>
             )
           })}

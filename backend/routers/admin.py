@@ -17,9 +17,12 @@ import shutil
 import tarfile
 import time
 import urllib.parse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
 import aiosqlite
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, Response, UploadFile, File
@@ -199,6 +202,46 @@ async def _get_job_last_run(db: aiosqlite.Connection, job_id: str) -> list[dict[
         return []
 
 
+def _schedule_cadence_for_job(job: Any) -> str:
+    """Human-readable cadence from the APScheduler trigger (for admin UI)."""
+    trigger = job.trigger
+    tz = getattr(trigger, "timezone", None)
+    tz_label = str(tz) if tz is not None else "UTC"
+    if isinstance(trigger, IntervalTrigger):
+        total = int(trigger.interval.total_seconds())
+        if total >= 86400 and total % 86400 == 0:
+            days = total // 86400
+            unit = f"{days} day{'s' if days != 1 else ''}"
+        elif total >= 3600 and total % 3600 == 0:
+            hours = total // 3600
+            unit = f"{hours} hour{'s' if hours != 1 else ''}"
+        elif total >= 60 and total % 60 == 0:
+            minutes = total // 60
+            unit = f"{minutes} minute{'s' if minutes != 1 else ''}"
+        else:
+            unit = f"{int(total)} seconds"
+        return f"Every {unit} ({tz_label})"
+    if isinstance(trigger, CronTrigger):
+        fields = getattr(trigger, "fields", None)
+        if fields:
+            dow = getattr(fields, "day_of_week", None)
+            hour = getattr(fields, "hour", None)
+            minute = getattr(fields, "minute", None)
+            if dow is not None and str(dow) not in ("*", "None"):
+                hh = hour.expressions[0].values[0] if hour and hour.expressions else 0
+                mm = minute.expressions[0].values[0] if minute and minute.expressions else 0
+                return f"Weekly {str(dow).title()} {hh:02d}:{mm:02d} ({tz_label})"
+            if hour is not None and minute is not None:
+                try:
+                    hh = hour.expressions[0].values[0]
+                    mm = minute.expressions[0].values[0]
+                    return f"Daily {hh:02d}:{mm:02d} ({tz_label})"
+                except (AttributeError, IndexError, TypeError):
+                    pass
+        return f"Cron schedule ({tz_label})"
+    return "Scheduled"
+
+
 def _build_job_info(job: Any, history: list[dict]) -> dict[str, Any]:
     paused = job.next_run_time is None
     lock_held = _job_lock_held(job.id)
@@ -223,6 +266,7 @@ def _build_job_info(job: Any, history: list[dict]) -> dict[str, Any]:
     return {
         "id": job.id,
         "name": job.name,
+        "schedule_cadence": _schedule_cadence_for_job(job),
         "next_run_time": next_run,
         "paused": paused,
         "lock_held": lock_held,
@@ -299,10 +343,13 @@ async def get_system(request: Request):
             db_integrity = {"ok": integrity_ok, "message": integrity_msg}
             await set_feed_cache(db, "admin_db_integrity", db_integrity)
 
-        # Failed auth last 24h
+        # Failed auth last 24h (Python cutoff — works on SQLite TEXT and Postgres)
+        auth_cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
         auth_row = await db.execute_fetchall(
             "SELECT COUNT(*) as cnt FROM audit_log "
-            "WHERE action = 'auth.failure' AND created_at >= datetime('now', '-24 hours')"
+            "WHERE action IN ('auth.login_failed', 'auth.failure') "
+            "AND created_at >= ?",
+            (auth_cutoff,),
         )
         failed_auth = auth_row[0]["cnt"] if auth_row else 0
     finally:
@@ -937,7 +984,7 @@ def _get_config_response() -> dict[str, Any]:
         "ingest": {
             "MAX_CVES_PER_FETCH": _env_int("MAX_CVES_PER_FETCH", 2000),
             "NVD_DAYS_BACK": _env_int("NVD_DAYS_BACK", 14),
-            "KEV_CROSS_FETCH_NVD": _env_int("KEV_CROSS_FETCH_NVD", 1),
+            "KEV_CROSS_FETCH_NVD": _env("KEV_CROSS_FETCH_NVD", "1"),
             "ATLAS_YAML_URL": _env("ATLAS_YAML_URL", ""),
             "MITRE_CVE_MAPPINGS_JSON_URL": _env("MITRE_CVE_MAPPINGS_JSON_URL", ""),
             "DB_PATH": _env("DB_PATH", "briefr.db"),
@@ -1665,9 +1712,12 @@ async def get_logs(
 async def get_security(request: Request):
     db = await get_db()
     try:
+        auth_cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
         row = await db.execute_fetchall(
             "SELECT COUNT(*) as cnt FROM audit_log "
-            "WHERE action = 'auth.failure' AND created_at >= datetime('now', '-24 hours')"
+            "WHERE action IN ('auth.login_failed', 'auth.failure') "
+            "AND created_at >= ?",
+            (auth_cutoff,),
         )
         failed_auth = row[0]["cnt"] if row else 0
     finally:

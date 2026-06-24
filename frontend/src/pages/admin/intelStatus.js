@@ -1,6 +1,6 @@
 // Pure derivation helpers for the Analyst "Intel status" view.
-// No new API calls — everything is computed from the existing GET /api/admin/system payload.
 import { sourceLabel } from './formatters.js'
+import { fmtAge } from './formatters.js'
 
 export const ANALYST_SCHEDULE_TABLE_JOB_IDS = [
   'nvd_incremental_sync',
@@ -22,32 +22,71 @@ export function worstSource(system) {
   return sourceLabel(key)
 }
 
-export function overallHealth(system) {
-  if (!system) return { level: 'green', headline: 'Intel looks current', detail: 'Loading…' }
+function nvdJob(system) {
+  return system?.scheduler_jobs?.find(j => j.id === 'nvd_incremental_sync')
+}
 
-  const dbFailed = system.db_integrity?.ok === false
+export function nvdCadenceLabel(system) {
+  const job = nvdJob(system)
+  return job?.schedule_cadence || 'Scheduled interval'
+}
+
+export function nvdStaleDetail(system) {
+  const age = system?.last_nvd_sync_age_seconds
+  if (age == null) return null
+  const cadence = nvdCadenceLabel(system)
+  return `NIST CVE feed — ${fmtAge(age)} since last sync (expected ${cadence.toLowerCase()})`
+}
+
+export function collectHealthIssues(system) {
+  if (!system) return []
+  const issues = []
   const nvdAge = system.last_nvd_sync_age_seconds
-  const openCircuits = system.open_circuit_count || 0
-  const incidentsStale = system.feeds?.incidents?.stale === true
+  if (nvdAge != null && nvdAge > NVD_AMBER_SECONDS) {
+    issues.push(nvdStaleDetail(system))
+  }
+  const sources = system.feeds?.sources || {}
+  for (const [key, s] of Object.entries(sources)) {
+    if (s.circuit_open) {
+      issues.push(`${sourceLabel(key)} — circuit open (${s.consecutive_failures || 0} consecutive failures)`)
+    }
+  }
+  if (system.feeds?.incidents?.stale) {
+    issues.push('Incident news feed — snapshot is stale')
+  }
+  for (const err of system.recent_errors || []) {
+    issues.push(`Scheduler job failed — ${err.job_id}`)
+  }
+  if (system.db_integrity?.ok === false) {
+    issues.push('Database integrity check failed on last startup')
+  }
+  return issues.filter(Boolean)
+}
+
+export function overallHealth(system) {
+  if (!system) return { level: 'green', headline: 'Intel looks current', detail: 'Loading…', issues: [] }
+
+  const issues = collectHealthIssues(system)
+  const dbFailed = system.db_integrity?.ok === false
   const jobErrors = system.jobs_with_errors_count || 0
+  const openCircuits = system.open_circuit_count || 0
+  const nvdAged = system.last_nvd_sync_age_seconds != null && system.last_nvd_sync_age_seconds > NVD_AMBER_SECONDS
 
-  const failureCount = [openCircuits > 0, jobErrors > 0, incidentsStale].filter(Boolean).length
-
-  if (dbFailed || failureCount >= 2) {
+  if (dbFailed || (openCircuits > 0 && jobErrors > 0)) {
     return {
       level: 'red',
       headline: 'Intel may be unreliable',
-      detail: dbFailed ? 'The database file may be damaged.' : 'Multiple sources are failing — see details below.',
+      detail: issues[0] || 'Multiple sources are failing.',
+      issues,
     }
   }
 
-  const nvdAged = nvdAge != null && nvdAge > NVD_AMBER_SECONDS
-  if (nvdAged || openCircuits > 0 || incidentsStale) {
-    const worst = worstSource(system)
+  if (issues.length > 0) {
     return {
-      level: 'amber',
-      headline: 'Some sources are delayed',
-      detail: worst ? `${worst} is unavailable — see details below.` : 'See details below.',
+      level: nvdAged && issues.length === 1 ? 'amber' : issues.some(i => i.includes('circuit open')) ? 'red' : 'amber',
+      headline: issues.length === 1 ? issues[0] : `${issues.length} items need attention`,
+      detail: issues.length === 1 ? 'See details below.' : issues.join(' · '),
+      issues,
     }
   }
 
@@ -55,6 +94,7 @@ export function overallHealth(system) {
     level: 'green',
     headline: 'Intel looks current',
     detail: 'All sources are within expected windows.',
+    issues: [],
   }
 }
 

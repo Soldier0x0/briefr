@@ -1037,6 +1037,40 @@
 .intel-banner-amber { background: var(--amber-dim); color: var(--amber); }
 .intel-banner-red   { background: var(--red-dim);   color: var(--red); }
 
+.intel-issue-list {
+  margin: -0.5rem 0 1rem;
+  padding-left: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.admin-action-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+  padding: 0.55rem 0.75rem;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  color: var(--text2);
+}
+
+.admin-action-progress-label {
+  color: var(--text);
+}
+
+.admin-action-progress-stage {
+  color: var(--text3);
+  font-size: 0.75rem;
+}
+
+.admin-action-progress-stage::before {
+  content: '— ';
+}
+
 /* ── Help tip ───────────────────────────────────────────────────────────── */
 
 .help-tip-wrap { position: relative; display: inline-flex; }
