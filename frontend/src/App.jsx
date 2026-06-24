@@ -77,7 +77,7 @@ function formatScheduleLabel(schedule) {
   return `${hh}:${mm} ${getTzAbbr(schedule.timezone)}`
 }
 
-function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSchedule }) {
+function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSchedule, feedHealth }) {
   const [, tick] = useState(0)
   useEffect(() => {
     const id = setInterval(() => tick(n => n + 1), 60000)
@@ -89,11 +89,32 @@ function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSched
   const nextUserLabel =
     nextRefreshUtc && timezone ? formatAbsolute(nextRefreshUtc, timezone) : null
   const scheduleLabel = formatScheduleLabel(refreshSchedule)
+  const syncing = feedHealth?.refresh_in_progress
+  const hasData = (feedHealth?.cve_count ?? 0) >= 10
+  const liveLevel = !feedHealth ? null : syncing ? 'syncing' : hasData ? 'live' : 'idle'
 
-  if (!lastLabel && !nextUtcLabel) return null
+  if (!lastLabel && !nextUtcLabel && !liveLevel) return null
 
   return (
     <p className="last-refreshed mono" aria-live="polite">
+      {liveLevel && (
+        <>
+          <span
+            className={`live-indicator live-indicator--inline live-indicator--${liveLevel}`}
+            title={
+              liveLevel === 'live'
+                ? 'CVE feeds active'
+                : liveLevel === 'syncing'
+                  ? 'Ingest running'
+                  : 'Building CVE database'
+            }
+          >
+            <span className="live-dot" aria-hidden="true" />
+            LIVE
+          </span>
+          {(lastLabel || nextUtcLabel) && <span> · </span>}
+        </>
+      )}
       {lastLabel && <span>Last refreshed {lastLabel}</span>}
       {lastLabel && nextUtcLabel && <span> · </span>}
       {nextUtcLabel && (
@@ -122,7 +143,8 @@ function cycleFilter(filters) {
 
 function BriefView({ stats, filters, setFilters,
                     timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
-                    showAiAlerts, onAiAlertsClick, onOpenFullFeed, onSelectCVE }) {
+                    showAiAlerts, onAiAlertsClick, onOpenFullFeed, onSelectCVE,
+                    feedHealth }) {
 
   const [queueReasonFilter, setQueueReasonFilter] = useState('all')
   const [queueDueWindow, setQueueDueWindow] = useState(null)
@@ -185,6 +207,7 @@ function BriefView({ stats, filters, setFilters,
         nextRefreshUtc={nextRefreshUtc}
         timezone={timezone}
         refreshSchedule={refreshSchedule}
+        feedHealth={feedHealth}
       />
     </>
   )
@@ -194,7 +217,8 @@ function FeedView({ filters, setFilters, selectedCVE, setSelectedCVE,
                    digestOpen, setDigestOpen, digestCVEs, setDigestCVEs,
                    searchFocusTrigger, setSearchFocusTrigger, aboutOpen, setAboutOpen,
                    timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
-                   onDigestRequest, watchlist, onWatchlistChange, onSelectCVE }) {
+                   onDigestRequest, watchlist, onWatchlistChange, onSelectCVE,
+                   feedHealth }) {
 
   const handleFiltersChange = useCallback((next) => {
     setFilters(prev => {
@@ -217,6 +241,7 @@ function FeedView({ filters, setFilters, selectedCVE, setSelectedCVE,
         nextRefreshUtc={nextRefreshUtc}
         timezone={timezone}
         refreshSchedule={refreshSchedule}
+        feedHealth={feedHealth}
       />
       <div className="content-grid">
         <CVEFeed
@@ -617,6 +642,7 @@ function AppLayout({
                 onAiAlertsClick={onAiAlertsClick}
                 onOpenFullFeed={() => setActiveTab('feed')}
                 onSelectCVE={onSelectCVE}
+                feedHealth={feedHealth}
               />
             </ToolErrorBoundary>
           </div>
@@ -643,6 +669,7 @@ function AppLayout({
                 onSelectCVE={onSelectCVE}
                 watchlist={watchlist}
                 onWatchlistChange={onWatchlistChange}
+                feedHealth={feedHealth}
               />
             </ToolErrorBoundary>
           </div>

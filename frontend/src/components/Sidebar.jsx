@@ -147,7 +147,7 @@ export default function Sidebar({ filters, onFiltersChange }) {
 
   const loadSparkline = useCallback((useCache = true) => {
     if (useCache) {
-      const hit = getCached('spark')
+      const hit = getCached('spark-v2')
       if (hit !== undefined) {
         setSparkBars(hit)
         setSparkLoading(false)
@@ -167,7 +167,7 @@ export default function Sidebar({ filters, onFiltersChange }) {
           setSparkBars([])
           return
         }
-        setCached('spark', bars)
+        setCached('spark-v2', bars)
         setSparkBars(bars)
       })
       .catch(() => {

@@ -254,6 +254,15 @@ input:focus, textarea:focus {
   line-height: 1.5;
 }
 
+.live-indicator--inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  vertical-align: middle;
+}
+
 .refresh-status-sep,
 .refresh-status-hint {
   color: var(--text3);
