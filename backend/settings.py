@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     database_url: str = ""
     db_path: str = ""
     database_pool_size: int = 10
+    database_pool_acquire_timeout_seconds: int = 10
+    database_pool_command_timeout_seconds: int = 60
     briefr_require_postgres: bool = False
 
     # §5.5 — structured logging + rate limiting (import-time config)

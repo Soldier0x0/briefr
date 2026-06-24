@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 load_dotenv()
 
@@ -21,7 +22,7 @@ access_logger = logging.getLogger("briefr.access")
 _REQUEST_ID_RE = re.compile(r"[A-Za-z0-9._-]{1,64}")
 
 from database import init_db, run_postgres_migrations
-from db.connection import close_pool, init_pool
+from db.connection import PoolExhaustedError, close_pool, init_pool
 from db.config import is_postgres, resolve_database_url
 from resilient_client import close_client
 from tracking import flush_api_usage_pending
@@ -119,6 +120,18 @@ app = FastAPI(
     openapi_url=None if settings.is_production else "/api/openapi.json",
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(PoolExhaustedError)
+async def pool_exhausted_handler(request: Request, exc: PoolExhaustedError):
+    access_logger.warning(
+        "Pool exhausted on %s %s: %s",
+        request.method,
+        request.url.path,
+        exc,
+    )
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
+
 
 app.add_middleware(
     CORSMiddleware,

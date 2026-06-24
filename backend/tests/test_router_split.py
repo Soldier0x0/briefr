@@ -21,6 +21,7 @@ EXPECTED_ROUTES = [
     ("POST", "/api/refresh/epss"),
     ("POST", "/api/refresh/mitre"),
     ("GET", "/api/health"),
+    ("GET", "/api/health/live"),
     ("GET", "/api/changes"),
     ("GET", "/api/version"),
     ("GET", "/api/time"),
@@ -170,6 +171,7 @@ def test_moved_endpoints_live_in_routers():
     """All endpoint handlers come from routers/, none remain in main."""
     by_path = _routes_by_path()
     assert by_path["/api/health"] == "routers.health"
+    assert by_path["/api/health/live"] == "routers.health"
     assert by_path["/api/atlas/techniques"] == "routers.atlas"
     assert by_path["/api/case-studies/feed"] == "routers.atlas"
     assert by_path["/api/atlas/casestudies"] == "routers.atlas"
