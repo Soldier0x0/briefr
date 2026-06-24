@@ -141,11 +141,34 @@ is_postgres_deployment() {
 }
 
 # pg_dump/pg_restore on the host (connects to Docker Postgres via published port).
+_highest_postgresql_client_bin() {
+  local best_dir=""
+  local max_ver=0
+  local pg_dir ver_dir ver
+  for pg_dir in /usr/lib/postgresql/*/bin; do
+    [ -d "${pg_dir}" ] || continue
+    if [ -x "${pg_dir}/pg_dump" ] && [ -x "${pg_dir}/pg_restore" ]; then
+      ver_dir="${pg_dir%/bin}"
+      ver="${ver_dir##*/}"
+      if [ "${ver}" -gt "${max_ver}" ] 2>/dev/null; then
+        max_ver="${ver}"
+        best_dir="${pg_dir}"
+      fi
+    fi
+  done
+  if [ -n "${best_dir}" ]; then
+    echo "${best_dir}"
+  fi
+}
+
 ensure_postgresql_client() {
   if ! is_postgres_deployment; then
     return 0
   fi
   if command -v pg_dump &>/dev/null && command -v pg_restore &>/dev/null; then
+    return 0
+  fi
+  if [ -n "$(_highest_postgresql_client_bin)" ]; then
     return 0
   fi
   if [ "$(id -u)" -ne 0 ]; then
@@ -163,6 +186,13 @@ ensure_postgresql_client() {
         break
       fi
     done
+  fi
+  if ! command -v pg_dump &>/dev/null; then
+    local pg_bin
+    pg_bin="$(_highest_postgresql_client_bin)"
+    if [ -n "${pg_bin}" ]; then
+      export PATH="${pg_bin}:${PATH}"
+    fi
   fi
   if ! command -v pg_dump &>/dev/null; then
     echo "ERROR: postgresql-client not available — backups and restore require pg_dump on PATH"

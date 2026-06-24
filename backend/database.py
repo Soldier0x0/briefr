@@ -2414,6 +2414,12 @@ async def replace_atlas_techniques(db: aiosqlite.Connection, techniques: list[di
         INSERT INTO atlas_techniques (
             technique_id, name, description, tactic, tactic_id, url
         ) VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(technique_id) DO UPDATE SET
+            name = excluded.name,
+            description = excluded.description,
+            tactic = excluded.tactic,
+            tactic_id = excluded.tactic_id,
+            url = excluded.url
         """,
         [
             (
