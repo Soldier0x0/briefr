@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass
 from typing import Any
@@ -146,7 +147,13 @@ async def init_pool() -> None:
 async def close_pool() -> None:
     global _pool
     if _pool is not None:
-        await _pool.close()
+        try:
+            await asyncio.wait_for(_pool.close(), timeout=5.0)
+        except TimeoutError:
+            logger.warning(
+                "db/connection.py close_pool(): timed out after 5s — "
+                "connections may still be leaked; process exit will reclaim them"
+            )
         _pool = None
 
 
