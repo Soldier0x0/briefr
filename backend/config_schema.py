@@ -41,6 +41,9 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 help_text="How often the CISA Vulnrichment gap-fill sync runs."),
     ConfigField("CVELISTV5_SYNC_INTERVAL_MINUTES", "scheduler_main", "int", min=1, max=1440,
                 help_text="How often the CVE List V5 (GitHub) delta sync runs."),
+    ConfigField("SCHEDULER_DB_CONCURRENCY", "scheduler_main", "int", min=1, max=10,
+                help_text="Max concurrent background scheduler jobs that may hold DB pool connections.",
+                restart_required=True),
 
     # ── Scheduler intervals — cron & timezone ───────────────────────────────
     ConfigField("SCHEDULER_TIMEZONE", "scheduler_cron", "str", restart_required=True,

@@ -82,6 +82,29 @@ _llm_extraction_lock = asyncio.Lock()
 _exploit_sources_lock = asyncio.Lock()
 _scheduled_backup_lock = asyncio.Lock()
 
+# Cap concurrent background jobs that hold pool connections (Postgres).
+_SCHEDULER_DB_CONCURRENCY = max(1, int(os.environ.get("SCHEDULER_DB_CONCURRENCY", "3")))
+_scheduler_db_sem = asyncio.Semaphore(_SCHEDULER_DB_CONCURRENCY)
+
+
+def _schedule_background(coro) -> asyncio.Task:
+    """Run a coroutine under the scheduler DB concurrency limit."""
+
+    async def _guarded() -> None:
+        async with _scheduler_db_sem:
+            await coro
+
+    return asyncio.create_task(_guarded())
+
+
+async def _with_db(coro):
+    """Acquire a DB connection for a short coroutine, then release."""
+    db = await get_db()
+    try:
+        return await coro(db)
+    finally:
+        await db.close()
+
 
 def any_ingest_lock_held() -> bool:
     """True when any ingest-related lock is held (used by /api/admin/system)."""
@@ -408,40 +431,47 @@ async def _run_kev_sync() -> None:
 
 async def _cross_fetch_missing_kev_cves(kev_entries: list[dict], nvd_api_key: str | None) -> None:
     try:
-        db = await get_db()
-        try:
+        missing_kev: list[str] = []
+        kev_short_map: dict[str, str] = {}
+
+        async def _load_missing(db):
+            nonlocal missing_kev, kev_short_map
             existing_ids = set(await get_all_cve_ids(db))
             missing_kev = [
                 e.get("cveID", "")
                 for e in kev_entries
                 if e.get("cveID") and e.get("cveID") not in existing_ids
             ]
-            if not missing_kev:
-                return
-
-            logger.info("KEV cross-fetch: %d CVEs missing from cves table", len(missing_kev))
             kev_short_map = {
                 e.get("cveID", ""): e.get("shortDescription", "") for e in kev_entries
             }
-            kev_cross_fetched = 0
-            for kev_cve_id in missing_kev:
-                try:
-                    cve_data = await fetch_cve_by_id(kev_cve_id, nvd_api_key)
-                    if cve_data:
-                        cve_data["is_kev"] = True
-                        kev_short = kev_short_map.get(kev_cve_id, "")
-                        if kev_short:
-                            cve_data["summary"] = kev_short
-                        await upsert_cve(db, cve_data)
-                        kev_cross_fetched += 1
-                except Exception as exc:
-                    logger.error("KEV cross-fetch failed for %s: %s", kev_cve_id, exc)
-                await asyncio.sleep(1)
-            if kev_cross_fetched:
-                await db.commit()
-            logger.info("KEV cross-fetch complete: %d CVEs inserted", kev_cross_fetched)
-        finally:
-            await db.close()
+
+        await _with_db(_load_missing)
+        if not missing_kev:
+            return
+
+        logger.info("KEV cross-fetch: %d CVEs missing from cves table", len(missing_kev))
+        kev_cross_fetched = 0
+        for kev_cve_id in missing_kev:
+            try:
+                cve_data = await fetch_cve_by_id(kev_cve_id, nvd_api_key)
+                if not cve_data:
+                    continue
+                cve_data["is_kev"] = True
+                kev_short = kev_short_map.get(kev_cve_id, "")
+                if kev_short:
+                    cve_data["summary"] = kev_short
+
+                async def _upsert(db, payload=cve_data):
+                    await upsert_cve(db, payload)
+                    await db.commit()
+
+                await _with_db(_upsert)
+                kev_cross_fetched += 1
+            except Exception as exc:
+                logger.error("KEV cross-fetch failed for %s: %s", kev_cve_id, exc)
+            await asyncio.sleep(1)
+        logger.info("KEV cross-fetch complete: %d CVEs inserted", kev_cross_fetched)
     except Exception as exc:
         logger.error("KEV cross-fetch step failed: %s", exc)
 
@@ -532,21 +562,28 @@ async def _run_epss_backfill() -> None:
     total_batches = 0
     all_cve_ids: list[str] = []
 
-    db = await get_db()
-    try:
+    async def _load_state(db):
+        nonlocal all_cve_ids, total_batches
         done = await get_sync_state_value(db, EPSS_BACKFILL_DONE_KEY)
         if done:
-            logger.info("EPSS backfill: marker %r already set — skipping", EPSS_BACKFILL_DONE_KEY)
-            return
-
+            return "done"
         all_cve_ids = await get_all_cve_ids(db)
         if not all_cve_ids:
-            logger.info("EPSS backfill: DB has no CVEs — marking done immediately")
             await set_sync_state_value(db, EPSS_BACKFILL_DONE_KEY, "1")
             await db.commit()
+            return "empty"
+        total_batches = (len(all_cve_ids) + BACKFILL_BATCH_SIZE - 1) // BACKFILL_BATCH_SIZE
+        return "run"
+
+    try:
+        state = await _with_db(_load_state)
+        if state == "done":
+            logger.info("EPSS backfill: marker %r already set — skipping", EPSS_BACKFILL_DONE_KEY)
+            return
+        if state == "empty":
+            logger.info("EPSS backfill: DB has no CVEs — marking done immediately")
             return
 
-        total_batches = (len(all_cve_ids) + BACKFILL_BATCH_SIZE - 1) // BACKFILL_BATCH_SIZE
         logger.info(
             "EPSS backfill: %d CVEs → %d batches (size=%d, throttle=%.1fs)",
             len(all_cve_ids),
@@ -559,9 +596,14 @@ async def _run_epss_backfill() -> None:
             batch = all_cve_ids[offset : offset + BACKFILL_BATCH_SIZE]
             rows = await fetch_epss_time_series_batch(batch)
             if rows:
-                inserted = await insert_epss_history_rows(db, rows)
-                await db.commit()
-                total_rows += inserted
+
+                async def _insert(db, payload=rows):
+                    nonlocal total_rows
+                    inserted = await insert_epss_history_rows(db, payload)
+                    await db.commit()
+                    total_rows += inserted
+
+                await _with_db(_insert)
 
             batch_num += 1
             if batch_num % 10 == 0 or batch_num == total_batches:
@@ -575,8 +617,11 @@ async def _run_epss_backfill() -> None:
             if offset + BACKFILL_BATCH_SIZE < len(all_cve_ids):
                 await asyncio.sleep(BACKFILL_THROTTLE_SECONDS)
 
-        await set_sync_state_value(db, EPSS_BACKFILL_DONE_KEY, "1")
-        await db.commit()
+        async def _mark_done(db):
+            await set_sync_state_value(db, EPSS_BACKFILL_DONE_KEY, "1")
+            await db.commit()
+
+        await _with_db(_mark_done)
 
         duration = (datetime.now(timezone.utc) - start).total_seconds()
         logger.info(
@@ -592,8 +637,6 @@ async def _run_epss_backfill() -> None:
             total_batches,
             exc,
         )
-    finally:
-        await db.close()
 
 
 async def run_full_ingest_sync() -> bool:
@@ -624,10 +667,10 @@ async def run_weekly_mitre_refresh() -> bool:
         logger.info("Weekly MITRE ATT&CK + ATLAS refresh started at %s", start.isoformat())
         ok = True
         try:
+            stats = await refresh_mitre_data()
+            atlas_stats = await refresh_atlas_data()
             db = await get_db()
             try:
-                stats = await refresh_mitre_data(db)
-                atlas_stats = await refresh_atlas_data(db)
                 ai_stats = await refresh_all_cve_ai_context(db)
                 await db.commit()
             finally:
@@ -725,7 +768,7 @@ async def maybe_run_mitre_on_startup() -> None:
             mitre_count,
             atlas_count,
         )
-        asyncio.create_task(run_weekly_mitre_refresh())
+        _schedule_background(run_weekly_mitre_refresh())
     else:
         logger.info("MITRE techniques loaded (%d rows), ATLAS (%d rows)", mitre_count, atlas_count)
 
@@ -749,6 +792,14 @@ async def _run_startup_summary_maintenance() -> None:
         await db.close()
 
 
+async def _run_deferred_startup_jobs() -> None:
+    """Run heavy startup maintenance sequentially — avoids pool stampedes."""
+    await _run_startup_summary_maintenance()
+    await run_epss_backfill()
+    if exploit_sources_enabled():
+        await run_exploit_sources_sync()
+
+
 async def maybe_run_on_startup() -> None:
     count = 0
     db = await get_db()
@@ -759,18 +810,15 @@ async def maybe_run_on_startup() -> None:
 
     if count < 10:
         logger.info("CVE table has %d rows (< 10). Running full ingest on startup.", count)
-        asyncio.create_task(run_full_ingest_sync())
+        _schedule_background(run_full_ingest_sync())
     else:
-        asyncio.create_task(_run_startup_summary_maintenance())
+        _schedule_background(_run_deferred_startup_jobs())
         logger.info(
-            "CVE table has %d rows. Incremental schedulers will maintain freshness.",
+            "CVE table has %d rows. Deferred startup maintenance scheduled.",
             count,
         )
 
     await maybe_run_mitre_on_startup()
-    asyncio.create_task(run_epss_backfill())
-    if count >= 10 and exploit_sources_enabled():
-        asyncio.create_task(run_exploit_sources_sync())
 
 
 async def run_exploit_sources_sync() -> bool:
@@ -789,12 +837,7 @@ async def run_exploit_sources_sync() -> bool:
         start = _start
         logger.info("Exploit sources sync started at %s", start.isoformat())
         try:
-            db = await get_db()
-            try:
-                stats = await sync_all_exploit_sources(db)
-                await db.commit()
-            finally:
-                await db.close()
+            stats = await sync_all_exploit_sources()
             if stats:
                 logger.info(
                     "Exploit sources sync complete: PoC-GitHub %s, ExploitDB %s, "
@@ -951,15 +994,13 @@ async def run_nightly_correlation() -> bool:
         )
 
         api_key = os.environ.get("OTX_API_KEY", "")
+        if api_key:
+            ioc_count = await prefetch_pulse_iocs_for_nightly(api_key)
+            if ioc_count:
+                logger.info("Pre-fetched IOCs for %d pulses", ioc_count)
+
         db = await get_db()
         try:
-            # Pre-warm IOC data for Level 1 before running correlation
-            if api_key:
-                ioc_count = await prefetch_pulse_iocs_for_nightly(db, api_key)
-                if ioc_count:
-                    await db.commit()
-                    logger.info("Pre-fetched IOCs for %d pulses", ioc_count)
-
             stats = await _run_correlation(db)
             logger.info(
                 "Nightly correlation: %d CVEs, %d infra pairs, %d actors, %d anomalies, "
@@ -995,12 +1036,10 @@ async def run_otx_nightly_sync() -> bool:
             logger.info("OTX_API_KEY not set — skipping nightly correlation")
             await _write_job_last_run("otx_nightly_correlation", _start)
             return False
-        db = await get_db()
         try:
             from feeds.otx import run_otx_nightly_correlation
 
-            stats = await run_otx_nightly_correlation(db, api_key)
-            await db.commit()
+            stats = await run_otx_nightly_correlation(api_key)
             logger.info(
                 "OTX nightly correlation complete: %d CVEs, %d pulses cached",
                 stats.get("cves", 0),
@@ -1012,8 +1051,6 @@ async def run_otx_nightly_sync() -> bool:
             _otx_error_msg = str(exc)[:500]
         else:
             _otx_error_msg = ""
-        finally:
-            await db.close()
     await _write_job_last_run("otx_nightly_correlation", _start, had_error=_had_error, error_message=_otx_error_msg)
     return True
 
@@ -1075,11 +1112,7 @@ async def run_llm_extraction_sync() -> bool:
         start = _start
         logger.info("LLM product extraction started at %s", start.isoformat())
         try:
-            db = await get_db()
-            try:
-                stats = await run_llm_product_extraction(db)
-            finally:
-                await db.close()
+            stats = await run_llm_product_extraction()
             logger.info(
                 "LLM product extraction complete: %d candidates, %d extracted, "
                 "%d written, %d errors in %.1fs",

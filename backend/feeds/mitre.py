@@ -454,21 +454,24 @@ async def cve_technique_from_db_column(db) -> dict[str, list[str]]:
     return {cve: sorted(tids) for cve, tids in mapping.items()}
 
 
-async def refresh_mitre_data(db) -> dict[str, int]:
+async def refresh_mitre_data(db=None) -> dict[str, int]:
     """
     Refresh mitre_techniques, cve_technique_map, mitre_groups, and group_technique_map.
     Returns counts: techniques, cve_mappings, cve_links_inserted, groups, group_links.
+
+    When ``db`` is omitted, downloads complete before a pool connection is acquired.
     """
     from database import (
         clear_cve_technique_map,
         get_all_cve_ids_set,
-        replace_mitre_techniques,
+        get_db,
         replace_mitre_groups,
+        replace_mitre_techniques,
         upsert_cve_technique_pairs,
         upsert_group_technique_pairs,
     )
 
-    # Download full STIX bundle once; parse both techniques and groups from it
+    # Network-bound phase — no pool slot held.
     logger.info("Downloading MITRE Enterprise ATT&CK STIX (techniques + groups)")
     raw_stix = await _fetch_bytes(ENTERPRISE_ATTACK_URL)
     stix_data = json.loads(raw_stix)
@@ -479,75 +482,83 @@ async def refresh_mitre_data(db) -> dict[str, int]:
     groups, group_tech_pairs = parse_attack_groups_stix(stix_data)
 
     cve_map = await download_cve_technique_mappings()
-    db_column_map = await cve_technique_from_db_column(db)
-    if db_column_map:
-        cve_map = merge_cve_technique_maps(cve_map, db_column_map)
-        logger.info(
-            "Added %d CVEs from mitre_technique column; merged total %d CVEs",
-            len(db_column_map),
-            len(cve_map),
-        )
 
-    # Clear mappings before replacing techniques (FK: map.technique_id → mitre_techniques)
-    await clear_cve_technique_map(db)
-    await replace_mitre_techniques(db, techniques)
+    own_db = db is None
+    if own_db:
+        db = await get_db()
+    try:
+        db_column_map = await cve_technique_from_db_column(db)
+        if db_column_map:
+            cve_map = merge_cve_technique_maps(cve_map, db_column_map)
+            logger.info(
+                "Added %d CVEs from mitre_technique column; merged total %d CVEs",
+                len(db_column_map),
+                len(cve_map),
+            )
 
-    known_technique_ids = {t["technique_id"] for t in techniques}
-    known_cves = await get_all_cve_ids_set(db)
-    pairs: list[tuple[str, str]] = []
-    seen_pairs: set[tuple[str, str]] = set()
-    skipped_unknown = 0
+        # Clear mappings before replacing techniques (FK: map.technique_id → mitre_techniques)
+        await clear_cve_technique_map(db)
+        await replace_mitre_techniques(db, techniques)
 
-    for cve_id, tids in cve_map.items():
-        if cve_id not in known_cves:
-            continue
-        for tid in tids:
+        known_technique_ids = {t["technique_id"] for t in techniques}
+        known_cves = await get_all_cve_ids_set(db)
+        pairs: list[tuple[str, str]] = []
+        seen_pairs: set[tuple[str, str]] = set()
+        skipped_unknown = 0
+
+        for cve_id, tids in cve_map.items():
+            if cve_id not in known_cves:
+                continue
+            for tid in tids:
+                resolved = resolve_technique_id(tid, known_technique_ids)
+                if not resolved:
+                    skipped_unknown += 1
+                    continue
+                key = (cve_id, resolved)
+                if key in seen_pairs:
+                    continue
+                seen_pairs.add(key)
+                pairs.append(key)
+
+        if skipped_unknown:
+            logger.info(
+                "Skipped %d CVE→technique links (technique not in Enterprise STIX)",
+                skipped_unknown,
+            )
+
+        inserted = await upsert_cve_technique_pairs(db, pairs)
+
+        # Persist ATT&CK groups and group→technique links
+        group_count = await replace_mitre_groups(db, groups)
+        # Filter group-technique pairs to known technique IDs only
+        valid_group_pairs = []
+        seen_group_pairs: set[tuple[str, str]] = set()
+        for gid, tid in group_tech_pairs:
             resolved = resolve_technique_id(tid, known_technique_ids)
-            if not resolved:
-                skipped_unknown += 1
-                continue
-            key = (cve_id, resolved)
-            if key in seen_pairs:
-                continue
-            seen_pairs.add(key)
-            pairs.append(key)
+            if resolved:
+                pair = (gid, resolved)
+                if pair not in seen_group_pairs:
+                    seen_group_pairs.add(pair)
+                    valid_group_pairs.append(pair)
+        group_links = await upsert_group_technique_pairs(db, valid_group_pairs)
 
-    if skipped_unknown:
+        await db.commit()
+
         logger.info(
-            "Skipped %d CVE→technique links (technique not in Enterprise STIX)",
-            skipped_unknown,
+            "ATT&CK groups: %d groups, %d group-technique links persisted",
+            group_count,
+            group_links,
         )
 
-    inserted = await upsert_cve_technique_pairs(db, pairs)
-
-    # Persist ATT&CK groups and group→technique links
-    group_count = await replace_mitre_groups(db, groups)
-    # Filter group-technique pairs to known technique IDs only
-    valid_group_pairs = []
-    seen_group_pairs: set[tuple[str, str]] = set()
-    for gid, tid in group_tech_pairs:
-        resolved = resolve_technique_id(tid, known_technique_ids)
-        if resolved:
-            pair = (gid, resolved)
-            if pair not in seen_group_pairs:
-                seen_group_pairs.add(pair)
-                valid_group_pairs.append(pair)
-    group_links = await upsert_group_technique_pairs(db, valid_group_pairs)
-
-    await db.commit()
-
-    logger.info(
-        "ATT&CK groups: %d groups, %d group-technique links persisted",
-        group_count,
-        group_links,
-    )
-
-    return {
-        "techniques": len(techniques),
-        "cve_mappings_source": len(cve_map),
-        "cve_links": inserted,
-        "skipped_unknown_techniques": skipped_unknown,
-        "mapping_sources": "ctid_csv+kev_json+db_column",
-        "groups": group_count,
-        "group_links": group_links,
-    }
+        return {
+            "techniques": len(techniques),
+            "cve_mappings_source": len(cve_map),
+            "cve_links": inserted,
+            "skipped_unknown_techniques": skipped_unknown,
+            "mapping_sources": "ctid_csv+kev_json+db_column",
+            "groups": group_count,
+            "group_links": group_links,
+        }
+    finally:
+        if own_db:
+            await db.close()

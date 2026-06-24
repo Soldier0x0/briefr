@@ -369,20 +369,34 @@ async def top_pulse_ipv4s(
     return ips
 
 
-async def run_otx_nightly_correlation(db, api_key: str) -> dict:
+async def run_otx_nightly_correlation(api_key: str, db=None) -> dict:
     """Pre-warm OTX pulse cache for prioritized CVEs."""
-    from database import get_prioritized_cve_ids_for_otx, store_otx_cve_pulses
+    from database import get_db, get_prioritized_cve_ids_for_otx, store_otx_cve_pulses
 
     if not api_key:
         return {"cves": 0, "pulses": 0}
 
-    cve_ids = await get_prioritized_cve_ids_for_otx(db)
+    own_db = db is None
+    if own_db:
+        db = await get_db()
+    try:
+        cve_ids = await get_prioritized_cve_ids_for_otx(db)
+    finally:
+        if own_db:
+            await db.close()
     total_pulses = 0
     for cve_id in cve_ids:
         try:
             pulses = await fetch_cve_pulses(cve_id, api_key)
-            await store_otx_cve_pulses(db, cve_id, pulses)
-            total_pulses += len(pulses)
+            if not pulses:
+                continue
+            write_db = await get_db()
+            try:
+                await store_otx_cve_pulses(write_db, cve_id, pulses)
+                await write_db.commit()
+                total_pulses += len(pulses)
+            finally:
+                await write_db.close()
         except Exception as exc:
             logger.warning("OTX nightly skip %s: %s", cve_id, exc)
 
