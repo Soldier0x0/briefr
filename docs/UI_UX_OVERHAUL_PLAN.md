@@ -277,7 +277,8 @@ px/hex scattered in components), so this is cheaper than it sounds.
 
 0. **Section 11 (P0 scheduler fixes)** — real prod errors; unblocks badge
    truthfulness and correlation/backup/MITRE pipelines.
-1. Section 1 (quick safe fixes) — same session, low risk, ship together.
+1. Sections 1 + 8 (quick safe fixes + feed-health dot) — same session, low
+   risk, ship together; §8 unblocks cleaner mobile header left rail.
 2. Section 6 (restart dropdown) — small, isolated, fully diagnosed already.
 3. Section 4 (stop reloading pages) — foundational, makes every other admin
    change feel better immediately.
@@ -287,9 +288,7 @@ px/hex scattered in components), so this is cheaper than it sounds.
 6. Section 2 (mobile nav redesign) — independent, do whenever.
 7. Section 7 (settings panel) — independent, do last, it's additive and
    non-urgent.
-8. Section 8 (consolidate feed-health dot) — small, ship with §1 or §2;
-   unblocks cleaner mobile header right rail.
-9. Sections 9–10 (admin badge truthfulness, precise delay copy, schedule
+8. Sections 9–10 (admin badge truthfulness, precise delay copy, schedule
    cadence) — ship together after §11 clears the error count.
 
 Also merge the already-built-but-unmerged `feat/config-schema` branch
@@ -315,14 +314,15 @@ BRIEF/FEED (`App.jsx`). Both read the same `feedHealth` from `/api/health`
   intelligence”), not top right.
 - **Dot-only UI** — drop the “LIVE” label. Keep `title` + `aria-label` for
   hover/focus discoverability.
-- **One dot, four states** (not four dots visible at once). Color + pulse
+- **One dot, four mutually exclusive states** (evaluate in order below; first
+  match wins — syncing takes precedence over bootstrapping). Color + pulse
   speed encode state:
 
-  | State | When | Color | Pulse |
+  | State | When (first match wins) | Color | Pulse |
   |---|---|---|---|
-  | Healthy | `cve_count ≥ 10`, not ingesting | Green | Slow (~2s) |
   | Syncing | `refresh_in_progress` | Amber | Faster (~1s) |
-  | Bootstrapping | `cve_count < 10` | Gray | Static |
+  | Bootstrapping | `cve_count < 10` and not syncing | Gray | Static |
+  | Healthy | `cve_count ≥ 10` and not syncing | Green | Slow (~2s) |
   | Unknown / degraded | Health not loaded or poll failed | Gray or muted red | Static or slow |
 
 - **Scope:** stays tied to **backend pipeline health** (`/api/health` ingest
