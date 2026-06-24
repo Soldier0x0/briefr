@@ -178,7 +178,7 @@ BRIEFR backs up the SQLite database and `.env` to **`/var/lib/briefr/backups`** 
 
 | Mechanism | Schedule | Notes |
 |-----------|----------|-------|
-| `briefr-backup.timer` | Every **6 hours** | systemd oneshot; integrity-checked before write |
+| `briefr-backup.timer` | Every **6 hours** | systemd oneshot; SQLite or PostgreSQL (`pg_dump` when `DATABASE_URL` is set) |
 | `briefr-update.sh` | Before each deploy | Labelled `pre-update` in the manifest |
 | Startup | On backend boot | If `briefr.db` fails `PRAGMA integrity_check`, restores the newest valid archive |
 

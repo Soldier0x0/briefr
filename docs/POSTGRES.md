@@ -69,7 +69,7 @@ Then set `DATABASE_URL`, restart the backend, and verify `/api/health` (`cve_cou
 | CVE feed / ingest | ✅ | ✅ (beta — report issues) |
 | IOC lookup | ✅ | ✅ |
 | Admin pane | ✅ | ✅ (integrity check adapted) |
-| File backups (`briefr.db` tarball) | ✅ | ❌ — use `pg_dump` instead |
+| File backups (`briefr.db` tarball) | ✅ | ✅ (`pg_dump` custom format in same `briefr-*.tar.gz[.age]` archives) |
 | sqlite-vec embeddings accelerator | optional | ❌ — use NumPy fallback |
 | CI default | ✅ | opt-in via `POSTGRES_TEST_URL` |
 
@@ -78,7 +78,76 @@ Then set `DATABASE_URL`, restart the backend, and verify `/api/health` (`cve_cou
 - Runtime driver: **asyncpg** connection pool (`db/connection.py`)
 - Migrations: **Alembic** + **psycopg** (sync, migration-time only)
 - SQL compatibility: `db/dialect.py` translates `?` placeholders, `datetime('now')`, `INSERT OR IGNORE`, and `PRAGMA` checks
-- Remaining V2.0 work: `pg_dump` backup path, repository layer extraction, pgvector for embeddings, Docker Compose all-in-one
+- Remaining V2.0 work: repository layer extraction, pgvector for embeddings, Docker Compose all-in-one
+
+## Postgres-only production
+
+When `DATABASE_URL` points at PostgreSQL, `DB_PATH` / `briefr.db` are **ignored** at runtime. To lock this in:
+
+```bash
+DATABASE_URL=postgresql://briefr:YOUR_PASSWORD@127.0.0.1:5432/briefr
+BRIEFR_REQUIRE_POSTGRES=1
+```
+
+After verifying `/api/health` shows `"backend": "postgresql"`, you may archive the old SQLite file:
+
+```bash
+sudo systemctl stop briefr-backend
+sudo mv /opt/briefr/backend/briefr.db /var/lib/briefr/backups/briefr.db.retired
+sudo systemctl start briefr-backend
+```
+
+## Backups on PostgreSQL
+
+`python -m backup run` (and `deploy/briefr-backup.sh`) **auto-detect** the backend:
+
+| Backend | Archive contents | Tool |
+|---------|------------------|------|
+| SQLite | `briefr.db` + `.env` + `manifest.json` | `sqlite3` online backup |
+| PostgreSQL | `briefr.pgdump` + `.env` + `manifest.json` | `pg_dump --format=custom` |
+
+Requirements for Postgres backups:
+
+- `postgresql-client` on the host (`pg_dump`, `pg_restore`)
+- `DATABASE_URL` in `backend/.env` (same DSN the app uses)
+- Existing backup settings still apply: `BACKUP_DIR`, `BACKUP_RETENTION_COUNT`, `BACKUP_AGE_KEY_FILE`, log rotation env vars
+
+### systemd timer (production)
+
+Use the dedicated Postgres timer (same 6h cadence as SQLite):
+
+```bash
+sudo cp /opt/briefr/deploy/briefr-pg-backup.{service,timer} /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl disable --now briefr-backup.timer   # if migrating from SQLite
+sudo systemctl enable --now briefr-pg-backup.timer
+```
+
+Or keep `briefr-backup.timer` — both invoke the same `python -m backup run` path.
+
+Manual backup:
+
+```bash
+sudo -u briefr bash /opt/briefr/deploy/briefr-backup.sh manual
+```
+
+### Restore PostgreSQL
+
+```bash
+sudo bash /opt/briefr/deploy/briefr-restore.sh --force /var/lib/briefr/backups/briefr-YYYYMMDDTHHMMSSZ.tar.gz.age
+```
+
+`DATABASE_URL` must be set in `.env`. The backend is stopped automatically; `pg_restore --clean --if-exists` loads `briefr.pgdump` from the archive.
+
+Verify after restore:
+
+```bash
+curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool | grep cve_count
+```
+
+### PostgreSQL server logs
+
+BRIEFR backup run logs still go to `${BACKUP_DIR}/logs/backup.log` (size rotation via `BACKUP_LOG_MAX_BYTES`). PostgreSQL server logs are managed separately (Debian: `/etc/postgresql/*/main/postgresql.conf` + `/etc/logrotate.d/postgresql-common`).
 
 ## Environment variables
 

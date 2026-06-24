@@ -248,8 +248,8 @@ export default function BackupsPage({ toast, system }) {
         <AlertTriangle size={16} strokeWidth={2} />
         <span>
           <strong>Restore is a CLI operation</strong> to prevent accidental data loss.<br />
-          <code className="mono">bash /opt/briefr/deploy/briefr-restore.sh</code><br />
-          To restore specific archive: <code className="mono">briefr-restore.sh {'<filename>'}</code>
+          SQLite archives contain <code className="mono">briefr.db</code>; PostgreSQL archives contain <code className="mono">briefr.pgdump</code> (requires <code className="mono">DATABASE_URL</code> and <code className="mono">pg_restore</code>).<br />
+          <code className="mono">bash /opt/briefr/deploy/briefr-restore.sh --force {'<filename>'}</code>
         </span>
       </div>
     </div>

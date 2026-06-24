@@ -243,12 +243,13 @@ BRIEFR targets a single Debian server with **systemd + nginx**. Install path: `/
 |--------|---------|
 | [`deploy/setup.sh`](../deploy/setup.sh) | Initial install: Python, clone repo, venv, then production deploy |
 | [`deploy/briefr-update.sh`](../deploy/briefr-update.sh) | Pull, build frontend, restart backend + nginx |
-| [`deploy/briefr-backup.sh`](../deploy/briefr-backup.sh) | Manual or scheduled integrity-checked backup |
+| [`deploy/briefr-backup.sh`](../deploy/briefr-backup.sh) | Manual or scheduled backup (SQLite or PostgreSQL via `DATABASE_URL`) |
+| [`deploy/briefr-pg-backup.sh`](../deploy/briefr-pg-backup.sh) | Alias for Postgres deployments (`briefr-pg-backup.timer`) |
 | [`deploy/briefr-restore.sh`](../deploy/briefr-restore.sh) | List or restore archives |
 | [`deploy/check-backend.sh`](../deploy/check-backend.sh) | Health probe for monitoring |
 | [`deploy/smoke-intel.sh`](../deploy/smoke-intel.sh) | Post-deploy smoke checks |
 
-**systemd units:** `briefr-backend.service`, `briefr-backup.timer` (every 6h). Scheduled ingest (NVD, KEV, EPSS, MITRE+ATLAS, exploit sources, backup dead-man) runs inside the backend — no separate refresh scripts needed.
+**systemd units:** `briefr-backend.service`, `briefr-backup.timer` or `briefr-pg-backup.timer` (every 6h). Scheduled ingest (NVD, KEV, EPSS, MITRE+ATLAS, exploit sources, backup dead-man) runs inside the backend — no separate refresh scripts needed.
 
 **Production notes:**
 - Set `ALLOWED_ORIGINS` to your public URL (not `:5173`).

@@ -1,16 +1,19 @@
 """
-SQLite backup manager for BRIEFR.
+Database backup manager for BRIEFR (SQLite and PostgreSQL).
 
+SQLite:
 - Online backup via sqlite3.Connection.backup() (WAL-safe)
 - PRAGMA integrity_check before and after each backup
-- Tar archives with DB, optional .env, and manifest JSON
-- Optional age (X25519) archive encryption via BACKUP_AGE_KEY_FILE —
-  the identity file must live OUTSIDE BACKUP_DIR (enforced) so stolen
-  archive copies cannot be decrypted with what sits next to them
-- Retention pruning (default: keep latest 100)
-- Rotating backup logs
 - Automatic restore on startup when the live DB fails integrity check
-  (works for both plaintext .tar.gz and encrypted .tar.gz.age archives)
+
+PostgreSQL (when DATABASE_URL is set):
+- pg_dump custom-format archive (briefr.pgdump inside the tarball)
+- pg_restore on manual restore (--clean --if-exists)
+
+Both backends:
+- Tar archives with optional .env and manifest JSON
+- Optional age (X25519) archive encryption via BACKUP_AGE_KEY_FILE
+- Retention pruning (default: keep latest 100) and rotating backup logs
 """
 
 from __future__ import annotations
@@ -31,6 +34,17 @@ from typing import Any
 
 import pyrage
 from pyrage import x25519
+
+from backup.postgres_util import (
+    PG_DUMP_ARCHIVE_NAME,
+    check_postgres_health,
+    redact_database_url,
+    run_pg_dump,
+    run_pg_restore,
+    verify_pg_dump,
+    write_audit_postgres,
+)
+from db.config import is_postgres, resolve_database_url
 
 logger = logging.getLogger(__name__)
 
@@ -165,6 +179,7 @@ class BackupConfig:
     log_backup_count: int = 5
     enabled: bool = True
     age_key_path: Path | None = None
+    database_url: str | None = None
 
     @classmethod
     def from_env(cls, *, backend_dir: Path | None = None) -> BackupConfig:
@@ -204,6 +219,8 @@ class BackupConfig:
             "off",
         }
 
+        database_url = resolve_database_url() if is_postgres() else None
+
         return cls(
             db_path=db_path,
             env_path=env_path,
@@ -214,6 +231,7 @@ class BackupConfig:
             log_backup_count=max(1, log_keep),
             enabled=enabled,
             age_key_path=_resolve_age_key_path(base),
+            database_url=database_url,
         )
 
 
@@ -280,12 +298,40 @@ def _write_manifest(
 ) -> None:
     payload = {
         "version": 1,
+        "backend": "sqlite",
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "reason": reason,
         "source_db": str(db_path),
         "source_integrity": source_integrity,
         "backup_integrity": backup_integrity,
         "db_sha256": db_sha256,
+        "env_included": env_included,
+        "env_sha256": env_sha256,
+        "encrypted": encrypted,
+        "age_public_key": age_public_key,
+    }
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
+def _write_manifest_postgres(
+    path: Path,
+    *,
+    database_url: str,
+    pgdump_sha256: str,
+    env_included: bool,
+    env_sha256: str | None,
+    reason: str,
+    encrypted: bool = False,
+    age_public_key: str | None = None,
+) -> None:
+    payload = {
+        "version": 2,
+        "backend": "postgresql",
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "reason": reason,
+        "source_db": redact_database_url(database_url),
+        "pgdump_format": "custom",
+        "pgdump_sha256": pgdump_sha256,
         "env_included": env_included,
         "env_sha256": env_sha256,
         "encrypted": encrypted,
@@ -308,6 +354,16 @@ def _check_age_key_location(cfg: BackupConfig) -> None:
 
 
 def _create_archive_bundle(
+    cfg: BackupConfig,
+    *,
+    reason: str,
+) -> Path:
+    if cfg.database_url and is_postgres(cfg.database_url):
+        return _create_postgres_archive_bundle(cfg, reason=reason)
+    return _create_sqlite_archive_bundle(cfg, reason=reason)
+
+
+def _create_sqlite_archive_bundle(
     cfg: BackupConfig,
     *,
     reason: str,
@@ -372,6 +428,83 @@ def _create_archive_bundle(
         tar_target = tmp_path / "bundle.tar.gz" if recipient is not None else archive_path
         with tarfile.open(tar_target, "w:gz") as tar:
             tar.add(staged_db, arcname=DB_ARCHIVE_NAME)
+            tar.add(tmp_path / MANIFEST_NAME, arcname=MANIFEST_NAME)
+            if env_included:
+                tar.add(tmp_path / ENV_ARCHIVE_NAME, arcname=ENV_ARCHIVE_NAME)
+
+        if recipient is not None:
+            pyrage.encrypt_file(str(tar_target), str(archive_path), [recipient])
+
+    try:
+        archive_path.chmod(0o600)
+    except OSError:
+        pass
+    return archive_path
+
+
+def _create_postgres_archive_bundle(
+    cfg: BackupConfig,
+    *,
+    reason: str,
+) -> Path:
+    if not cfg.database_url:
+        raise RuntimeError("PostgreSQL backup requires DATABASE_URL")
+
+    live_ok, live_msg = check_postgres_health(cfg.database_url)
+    if not live_ok:
+        raise RuntimeError(
+            f"Refusing to backup unreachable PostgreSQL database: {live_msg}"
+        )
+
+    cfg.backup_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        cfg.backup_dir.chmod(0o750)
+    except OSError:
+        pass
+
+    recipient: x25519.Recipient | None = None
+    age_public_key: str | None = None
+    if cfg.age_key_path is not None:
+        _check_age_key_location(cfg)
+        recipient = load_age_identity(cfg.age_key_path).to_public()
+        age_public_key = str(recipient)
+
+    archive_name = f"briefr-{_utc_stamp()}.tar.gz"
+    if recipient is not None:
+        archive_name += ENCRYPTED_ARCHIVE_SUFFIX
+    archive_path = cfg.backup_dir / archive_name
+
+    with tempfile.TemporaryDirectory(prefix="briefr-backup-") as tmp:
+        tmp_path = Path(tmp)
+        staged_dump = tmp_path / PG_DUMP_ARCHIVE_NAME
+        run_pg_dump(cfg.database_url, staged_dump)
+
+        dump_ok, dump_msg = verify_pg_dump(staged_dump)
+        if not dump_ok:
+            raise RuntimeError(f"Backup failed pgdump verification: {dump_msg}")
+
+        dump_sha = _sha256_file(staged_dump)
+        env_sha: str | None = None
+        env_included = False
+        if cfg.env_path and cfg.env_path.is_file():
+            shutil.copy2(cfg.env_path, tmp_path / ENV_ARCHIVE_NAME)
+            env_included = True
+            env_sha = _sha256_file(tmp_path / ENV_ARCHIVE_NAME)
+
+        _write_manifest_postgres(
+            tmp_path / MANIFEST_NAME,
+            database_url=cfg.database_url,
+            pgdump_sha256=dump_sha,
+            env_included=env_included,
+            env_sha256=env_sha,
+            reason=reason,
+            encrypted=recipient is not None,
+            age_public_key=age_public_key,
+        )
+
+        tar_target = tmp_path / "bundle.tar.gz" if recipient is not None else archive_path
+        with tarfile.open(tar_target, "w:gz") as tar:
+            tar.add(staged_dump, arcname=PG_DUMP_ARCHIVE_NAME)
             tar.add(tmp_path / MANIFEST_NAME, arcname=MANIFEST_NAME)
             if env_included:
                 tar.add(tmp_path / ENV_ARCHIVE_NAME, arcname=ENV_ARCHIVE_NAME)
@@ -464,9 +597,14 @@ def run_backup(*, reason: str = "scheduled", config: BackupConfig | None = None)
             "retention": cfg.retention_count,
         }
         _append_log(cfg, f"OK reason={reason} archive={archive.name} pruned={len(removed)}")
-        _write_audit_sync(
-            cfg.db_path, "system", "backup.run", f"{archive.name} reason={reason}"
-        )
+        if cfg.database_url and is_postgres(cfg.database_url):
+            write_audit_postgres(
+                cfg.database_url, "system", "backup.run", f"{archive.name} reason={reason}"
+            )
+        else:
+            _write_audit_sync(
+                cfg.db_path, "system", "backup.run", f"{archive.name} reason={reason}"
+            )
         logger.info("Backup created: %s", archive)
         return result
     except Exception as exc:
@@ -505,7 +643,26 @@ def _safe_extract_tar(tar: tarfile.TarFile, destination: Path) -> None:
     tar.extractall(dest_root)
 
 
+def _archive_backend(tmp_path: Path) -> str:
+    manifest_path = tmp_path / MANIFEST_NAME
+    if manifest_path.is_file():
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            backend = manifest.get("backend")
+            if backend in {"sqlite", "postgresql"}:
+                return backend
+        except json.JSONDecodeError:
+            pass
+    if (tmp_path / PG_DUMP_ARCHIVE_NAME).is_file():
+        return "postgresql"
+    return "sqlite"
+
+
 def _verify_archive_contents(tmp_path: Path) -> tuple[bool, str]:
+    backend = _archive_backend(tmp_path)
+    if backend == "postgresql":
+        ok, msg = verify_pg_dump(tmp_path / PG_DUMP_ARCHIVE_NAME)
+        return ok, msg
     db_file = tmp_path / DB_ARCHIVE_NAME
     if not db_file.is_file():
         return False, "archive missing briefr.db"
@@ -548,47 +705,75 @@ def restore_backup(
         if not ok:
             raise RuntimeError(f"Backup archive failed integrity check: {msg}")
 
-        if cfg.db_path.is_file() and not force:
-            live_ok, live_msg = check_db_integrity(cfg.db_path)
-            if live_ok:
-                raise RuntimeError(
-                    "Live database is healthy; pass force=True to overwrite"
-                )
-
-        cfg.db_path.parent.mkdir(parents=True, exist_ok=True)
-        if cfg.db_path.is_file():
-            corrupt_copy = cfg.db_path.with_suffix(
-                cfg.db_path.suffix + f".corrupt.{_utc_stamp()}"
-            )
-            shutil.move(cfg.db_path, corrupt_copy)
-            for sidecar in (f"{cfg.db_path}-wal", f"{cfg.db_path}-shm"):
-                side_path = Path(sidecar)
-                if side_path.is_file():
-                    side_path.unlink()
-
-        shutil.copy2(tmp_path / DB_ARCHIVE_NAME, cfg.db_path)
-
+        backend = _archive_backend(tmp_path)
         env_restored = False
+
+        if backend == "postgresql":
+            if not cfg.database_url:
+                raise RuntimeError(
+                    "PostgreSQL restore requires DATABASE_URL to be set in the environment"
+                )
+            if not force:
+                live_ok, live_msg = check_postgres_health(cfg.database_url)
+                if live_ok:
+                    raise RuntimeError(
+                        "Live PostgreSQL database is reachable; pass force=True to overwrite"
+                    )
+            run_pg_restore(cfg.database_url, tmp_path / PG_DUMP_ARCHIVE_NAME)
+            restored_ok, restored_msg = check_postgres_health(cfg.database_url)
+            if not restored_ok:
+                raise RuntimeError(
+                    f"Restored database failed health check: {restored_msg}"
+                )
+            db_target = redact_database_url(cfg.database_url)
+        else:
+            if cfg.db_path.is_file() and not force:
+                live_ok, live_msg = check_db_integrity(cfg.db_path)
+                if live_ok:
+                    raise RuntimeError(
+                        "Live database is healthy; pass force=True to overwrite"
+                    )
+
+            cfg.db_path.parent.mkdir(parents=True, exist_ok=True)
+            if cfg.db_path.is_file():
+                corrupt_copy = cfg.db_path.with_suffix(
+                    cfg.db_path.suffix + f".corrupt.{_utc_stamp()}"
+                )
+                shutil.move(cfg.db_path, corrupt_copy)
+                for sidecar in (f"{cfg.db_path}-wal", f"{cfg.db_path}-shm"):
+                    side_path = Path(sidecar)
+                    if side_path.is_file():
+                        side_path.unlink()
+
+            shutil.copy2(tmp_path / DB_ARCHIVE_NAME, cfg.db_path)
+
+            restored_ok, restored_msg = check_db_integrity(cfg.db_path)
+            if not restored_ok:
+                raise RuntimeError(
+                    f"Restored database failed integrity check: {restored_msg}"
+                )
+            db_target = str(cfg.db_path)
+
         env_archive = tmp_path / ENV_ARCHIVE_NAME
         if env_archive.is_file() and cfg.env_path:
             shutil.copy2(env_archive, cfg.env_path)
             env_restored = True
 
-        restored_ok, restored_msg = check_db_integrity(cfg.db_path)
-        if not restored_ok:
-            raise RuntimeError(f"Restored database failed integrity check: {restored_msg}")
-
     result = {
         "status": "ok",
         "archive": str(archive),
         "encrypted": archive.name.endswith(ENCRYPTED_ARCHIVE_SUFFIX),
-        "db_path": str(cfg.db_path),
+        "backend": backend,
+        "db_path": db_target,
         "env_restored": env_restored,
         "integrity": restored_msg,
     }
-    _append_log(cfg, f"RESTORE archive={archive.name} db={cfg.db_path}")
-    _write_audit_sync(cfg.db_path, "system", "backup.restore", archive.name)
-    logger.warning("Database restored from %s", archive)
+    _append_log(cfg, f"RESTORE archive={archive.name} backend={backend} db={db_target}")
+    if backend == "postgresql" and cfg.database_url:
+        write_audit_postgres(cfg.database_url, "system", "backup.restore", archive.name)
+    else:
+        _write_audit_sync(cfg.db_path, "system", "backup.restore", archive.name)
+    logger.warning("Database restored from %s (%s)", archive, backend)
     return result
 
 
