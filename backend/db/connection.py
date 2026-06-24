@@ -60,7 +60,7 @@ class PostgresConnection:
     """asyncpg-backed connection with SQLite placeholder translation."""
 
     def __init__(self, conn: Any, pool: Any) -> None:
-        self._conn = conn
+        self._conn: Any | None = conn
         self._pool = pool
         self._transaction = None
 
@@ -108,6 +108,8 @@ class PostgresConnection:
             self._transaction = None
 
     async def close(self) -> None:
+        if self._conn is None:
+            return
         try:
             if self._transaction is not None:
                 await self._transaction.rollback()
@@ -118,7 +120,8 @@ class PostgresConnection:
             )
         finally:
             self._transaction = None
-            await self._pool.release(self._conn)
+            conn, self._conn = self._conn, None
+            await self._pool.release(conn)
 
 
 async def init_pool() -> None:
