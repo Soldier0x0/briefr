@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { buildCveShareText } from '../utils/appLinks.js'
 import { copyToClipboard } from '../utils/report.js'
 import { formatAbsolute } from '../utils/timezone.js'
 import { publishedAgeClass } from '../utils/cveAge.js'
@@ -61,7 +62,17 @@ export default function CVECard({
   watchlistState = null,
   onWatchlistPin,
 }) {
-  const [shareCopied, setShareCopied] = useState(false)
+  const [shareCopied, setShareCopied] = useState(null)
+
+  async function handleShare(e, linkType) {
+    e.stopPropagation()
+    const text = buildCveShareText(cve, { linkType })
+    const ok = await copyToClipboard(text)
+    if (ok) {
+      setShareCopied(linkType)
+      setTimeout(() => setShareCopied(null), 1500)
+    }
+  }
   const momentumScore = useMomentumScore(cve.cve_id)
   const epss =
     typeof cve.epss_score === 'number' && cve.epss_score >= 0
@@ -104,18 +115,6 @@ export default function CVECard({
     onLookupIoc?.(cve)
   }
 
-  async function handleShare(e) {
-    e.stopPropagation()
-    const desc = (cve.description || '').slice(0, 60).trimEnd()
-    const url = `https://projectjupiter.in/cve/${cve.cve_id}`
-    const text = `${cve.cve_id} — ${desc}\nvia BRIEFR: ${url}`
-    const ok = await copyToClipboard(text)
-    if (ok) {
-      setShareCopied(true)
-      setTimeout(() => setShareCopied(false), 1500)
-    }
-  }
-
   function handleWatchlistPin(e) {
     e.stopPropagation()
     onWatchlistPin?.()
@@ -150,31 +149,30 @@ export default function CVECard({
         <span className="card-checkbox-box" aria-hidden="true" />
       </label>
 
-      {inThread && (
-        <span className="cve-thread-badge mono" aria-label="In investigation thread">
-          IN THREAD
-        </span>
-      )}
-
-      {isNew && (
-        <span className="cve-new-badge mono" aria-label="New since your last visit">
-          NEW
-        </span>
-      )}
-
-      {/* Share button — top-right, hover-only */}
-      <div className="card-share-wrap">
+      <div className="card-share-wrap" onClick={e => e.stopPropagation()}>
         <button
-          className="card-share-btn"
-          onClick={handleShare}
-          aria-label={`Copy share link for ${cve.cve_id}`}
+          type="button"
+          className="card-share-btn mono"
+          onClick={e => handleShare(e, 'briefr')}
+          aria-label={`Copy BRIEFR link for ${cve.cve_id}`}
+          title="Copy BRIEFR link"
           tabIndex={-1}
         >
-          &#x2197;
+          BRIEFR
+        </button>
+        <button
+          type="button"
+          className="card-share-btn mono card-share-btn-nvd"
+          onClick={e => handleShare(e, 'nvd')}
+          aria-label={`Copy NVD link for ${cve.cve_id}`}
+          title="Copy NVD link"
+          tabIndex={-1}
+        >
+          NVD
         </button>
         {shareCopied && (
           <span className="share-tooltip mono" role="status" aria-live="polite">
-            Link copied
+            {shareCopied === 'nvd' ? 'NVD link copied' : 'BRIEFR link copied'}
           </span>
         )}
       </div>
@@ -194,6 +192,16 @@ export default function CVECard({
           )}
         </span>
         <div className="cve-badges" aria-label="CVE attributes">
+          {isNew && (
+            <span className="badge badge-new mono" aria-label="New since your last visit">
+              NEW
+            </span>
+          )}
+          {inThread && (
+            <span className="badge badge-in-thread mono" aria-label="In investigation thread">
+              IN THREAD
+            </span>
+          )}
           {cve.is_kev && (
             <span className="badge badge-kev" title="Listed in CISA Known Exploited Vulnerabilities">
               KEV

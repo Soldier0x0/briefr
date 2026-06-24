@@ -2,6 +2,7 @@
 // Used by DetailDrawer (single) and CVEFeed multi-select (combined)
 
 import { getReportTimestamp } from './timezone.js'
+import { appOrigin } from './appLinks.js'
 
 function cveSection(cve) {
   const epss =

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react'
-import { Routes, Route, useLocation, Link } from 'react-router-dom'
+import { Routes, Route, useLocation, Link, useSearchParams } from 'react-router-dom'
 import { InvestigationProvider } from './context/InvestigationContext.jsx'
 import { overlayDepth } from './hooks/useModalLayer.js'
 import InvestigationPanel from './components/InvestigationPanel.jsx'
@@ -256,6 +256,7 @@ export default function App() {
     try { return localStorage.getItem('briefr_timezone') || 'UTC' } catch { return 'UTC' }
   })
   const [lastUpdated, setLastUpdated]           = useState(null)
+  const [feedHealth, setFeedHealth]             = useState(null)
   const [nextRefreshUtc, setNextRefreshUtc]     = useState(null)
   const [refreshSchedule, setRefreshSchedule]   = useState(null)
   const [iocPrefill, setIocPrefill]             = useState(null)
@@ -279,6 +280,7 @@ export default function App() {
   const loadHealth = useCallback(() => {
     fetchHealth(timezone)
       .then(h => {
+        setFeedHealth(h)
         setLastUpdated(h.last_updated ?? null)
         setNextRefreshUtc(h.next_refresh_at_utc ?? null)
         setRefreshSchedule(h.refresh_schedule ?? null)
@@ -366,6 +368,21 @@ export default function App() {
   const openCveById = useCallback((cveId) => {
     handleOpenCVE({ cve_id: cveId })
   }, [handleOpenCVE])
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  const deepLinkHandled = useRef(null)
+
+  useEffect(() => {
+    const cveParam = searchParams.get('cve')
+    if (!cveParam || deepLinkHandled.current === cveParam) return
+    if (!/^CVE-\d{4}-\d+$/i.test(cveParam.trim())) return
+    deepLinkHandled.current = cveParam.trim().toUpperCase()
+    setActiveTab('feed')
+    openCveById(deepLinkHandled.current)
+    const next = new URLSearchParams(searchParams)
+    next.delete('cve')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, openCveById, setSearchParams])
 
   const investigationNav = useMemo(() => ({
     setActiveTab,
@@ -504,6 +521,7 @@ export default function App() {
               lastUpdated={lastUpdated}
               nextRefreshUtc={nextRefreshUtc}
               refreshSchedule={refreshSchedule}
+              feedHealth={feedHealth}
               onDigestRequest={registerDigestHandler}
               openCveById={openCveById}
               showAiAlerts={showAiAlerts}
@@ -550,6 +568,7 @@ function AppLayout({
   lastUpdated,
   nextRefreshUtc,
   refreshSchedule,
+  feedHealth,
   onDigestRequest,
   openCveById,
   showAiAlerts,
@@ -580,6 +599,7 @@ function AppLayout({
           onLogoClick={() => setActiveTab('brief')}
           onTimezoneChange={onTimezoneChange}
           showShortcuts={showFeedShortcuts}
+          feedHealth={feedHealth}
         />
 
         <div className="app-main">

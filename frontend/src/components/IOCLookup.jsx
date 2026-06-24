@@ -76,7 +76,7 @@ function parseError(err) {
   if (err.status === 403) return 'Invalid API key — check your .env file'
   if (err.status === 429) return 'Rate limit reached — try again in 60 seconds'
   if (err.status === 404) return 'Not found in threat databases'
-  if (err.status === 422) return 'Invalid input — check the value and type'
+  if (err.status === 422) return err.message || 'Invalid input — use a full hostname, not a filename or path'
   return err.message || 'Lookup failed — unknown error'
 }
 
@@ -777,6 +777,15 @@ export default function IOCLookup({ prefill }) {
     if (!raw) return
     const trimmed = normalizeIocValue(raw, type)
 
+    if (type === 'domain' && !isValidDomain(trimmed)) {
+      setLoading(false)
+      setResult(null)
+      setError(
+        `'${raw}' is not a valid domain. Paste a full hostname (e.g. plugins.trac.wordpress.org) or URL — filenames like class-query.php cannot be looked up.`,
+      )
+      return
+    }
+
     setLoading(true)
     setResult(null)
     setError(null)
@@ -935,8 +944,8 @@ export default function IOCLookup({ prefill }) {
       <div className="ioc-page-header">
         <h1 className="ioc-page-title">IOC LOOKUP</h1>
         <p className="ioc-page-sub">
-          Enrich indicators against VirusTotal, AbuseIPDB, MalwareBazaar, and URLhaus.
-          GreyNoise is optional for IP lookups (50 calls/week). Paste an IP, hash, or domain below.
+          Check whether an IP, file hash, or domain appears in threat feeds. Paste a full URL or hostname — not filenames.
+          GreyNoise is optional for IP lookups (50 calls/week).
         </p>
       </div>
 

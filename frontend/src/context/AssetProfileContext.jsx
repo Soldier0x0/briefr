@@ -84,6 +84,11 @@ export function AssetProfileProvider({ children }) {
   useInactivityTimeout({
     enabled: isLoaded,
     onTimeout: lockSession,
+    onWarning: () => {
+      try {
+        window.dispatchEvent(new CustomEvent('briefr-session-warn'))
+      } catch {}
+    },
   })
 
   const value = useMemo(
@@ -137,7 +142,10 @@ export function AssetProfileProvider({ children }) {
         />
       )}
       {isLocked && (
-        <SessionLockOverlay onLoadProfile={loadProfileFromFile} />
+        <SessionLockOverlay
+          onLoadProfile={loadProfileFromFile}
+          onContinueWithoutStack={() => setIsLocked(false)}
+        />
       )}
     </AssetProfileContext.Provider>
   )

@@ -7,7 +7,7 @@ export default function Hero() {
         <em>What broke overnight.</em>
       </h1>
       <p className="hero-sub">
-        Live CVE intelligence filtered for your stack. No noise, no filler.
+        Your morning snapshot: new CVEs, KEV additions, and what changed — scoped to My Stack when you set it up.
       </p>
     </section>
   )

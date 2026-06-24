@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { fetchStatsTimeline, fetchTopTechniques } from '../api.js'
 import { getSavedStack } from '../utils/cveFilters.js'
 import './Sidebar.css'
@@ -65,9 +65,7 @@ function Toggle({ label, hint, checked, onChange, id }) {
 }
 
 const SPARKLINE_DAYS = 14
-
 const TOP_TECHNIQUES_LIMIT = 5
-
 const SIDEBAR_CACHE_MS = 5 * 60 * 1000
 const sidebarCache = new Map()
 
@@ -91,38 +89,112 @@ function SidebarSkeleton({ rows = 3, tall = false }) {
   )
 }
 
-export default function Sidebar({ filters, onFiltersChange, stats }) {
+function SparklineSection({ bars, loading, error, onRetry }) {
+  const sparkMax = Math.max(...bars, 1)
+  const total = bars.reduce((s, v) => s + v, 0)
+
+  if (loading) {
+    return <SidebarSkeleton rows={1} tall />
+  }
+  if (error) {
+    return (
+      <div className="sidebar-spark-error">
+        <p className="sidebar-empty">{error}</p>
+        <button type="button" className="sidebar-retry-btn mono" onClick={onRetry}>
+          Retry
+        </button>
+      </div>
+    )
+  }
+  if (bars.length === 0) {
+    return <p className="sidebar-empty">Could not load publication history.</p>
+  }
+
+  return (
+    <>
+      <div className="sparkline" aria-label="14-day CVE publication counts">
+        {bars.map((val, i) => {
+          const pct = Math.max(Math.round((val / sparkMax) * 100), val === 0 ? 4 : 8)
+          return (
+            <div
+              key={i}
+              className={`spark-bar${i === bars.length - 1 ? ' spark-today' : ''}${val === 0 ? ' spark-bar-zero' : ''}`}
+              style={{ height: `${pct}%` }}
+              title={i === bars.length - 1 ? `Today: ${val}` : `Day ${i + 1}: ${val}`}
+              aria-label={i === bars.length - 1 ? `Today: ${val} CVEs` : `${val} CVEs`}
+            />
+          )
+        })}
+      </div>
+      <div className="sparkline-labels" aria-hidden="true">
+        <span>14d ago</span>
+        <span>today</span>
+      </div>
+      {total === 0 && (
+        <p className="sidebar-spark-note mono">No CVEs published in the last 14 days.</p>
+      )}
+    </>
+  )
+}
+
+export default function Sidebar({ filters, onFiltersChange }) {
   const [topTechniques, setTopTechniques] = useState([])
   const [techniquesLoading, setTechniquesLoading] = useState(true)
   const [sparkBars, setSparkBars] = useState([])
   const [sparkLoading, setSparkLoading] = useState(true)
+  const [sparkError, setSparkError] = useState(null)
   const savedStack = getSavedStack()
-  const sparkMax = Math.max(...sparkBars, 1)
 
-  useEffect(() => {
-    const hit = getCached('spark')
-    if (hit !== undefined) {
-      setSparkBars(hit)
-      setSparkLoading(false)
-      return
+  const loadSparkline = useCallback((useCache = true) => {
+    if (useCache) {
+      const hit = getCached('spark')
+      if (hit !== undefined) {
+        setSparkBars(hit)
+        setSparkLoading(false)
+        setSparkError(null)
+        return
+      }
     }
     let cancelled = false
     setSparkLoading(true)
+    setSparkError(null)
     fetchStatsTimeline(SPARKLINE_DAYS)
       .then(data => {
         if (cancelled) return
-        const bars = Array.isArray(data) ? data.map(d => d.count || 0) : []
+        const bars = Array.isArray(data) && data.length ? data.map(d => d.count || 0) : []
+        if (!bars.length) {
+          setSparkError('Publication data unavailable — check that the backend is running.')
+          setSparkBars([])
+          return
+        }
         setCached('spark', bars)
         setSparkBars(bars)
       })
       .catch(() => {
-        if (!cancelled) setSparkBars([])
+        if (!cancelled) {
+          setSparkError('Could not load publications — is the backend running?')
+          setSparkBars([])
+        }
       })
       .finally(() => {
         if (!cancelled) setSparkLoading(false)
       })
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    const cleanup = loadSparkline(true)
+    return cleanup
+  }, [loadSparkline])
+
+  useEffect(() => {
+    function onFocus() {
+      sidebarCache.delete('spark')
+      loadSparkline(false)
+    }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [loadSparkline])
 
   useEffect(() => {
     const hit = getCached('tech')
@@ -172,64 +244,7 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
   return (
     <aside className="sidebar" aria-label="Filters and supplementary data">
 
-      {/* ── Section 1: Top Techniques ── */}
-      <section className="sidebar-section" aria-labelledby="techniques-heading">
-        <h2 id="techniques-heading" className="sidebar-heading">// TOP TECHNIQUES THIS WEEK</h2>
-        {techniquesLoading && <SidebarSkeleton rows={3} />}
-        {!techniquesLoading && topTechniques.length === 0 && (
-          <p className="sidebar-empty">No technique data yet.</p>
-        )}
-        <ul className="technique-list" aria-label="Most frequent ATT&CK techniques in database">
-          {topTechniques.map(tech => {
-            const active = filters.technique === tech.technique_id
-            return (
-              <li key={tech.technique_id}>
-                <button
-                  type="button"
-                  className={`technique-row${active ? ' technique-row-active' : ''}`}
-                  onClick={() => handleTechniqueClick(tech.technique_id)}
-                  aria-pressed={active}
-                  aria-label={`Filter CVEs by ${tech.technique_id}: ${tech.name}, ${tech.cve_count ?? tech.count} CVEs`}
-                >
-                  <span className="technique-row-id mono">{tech.technique_id}</span>
-                  <span className="technique-row-name">{tech.name}</span>
-                  <span className="technique-row-count mono">{tech.cve_count ?? tech.count}</span>
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      </section>
-
-      {/* ── Section 2: Sparkline ── */}
-      <section className="sidebar-section" aria-labelledby="sparkline-heading">
-        <h2 id="sparkline-heading" className="sidebar-heading">14-DAY PUBLICATIONS</h2>
-        {sparkLoading ? (
-          <SidebarSkeleton rows={1} tall />
-        ) : sparkBars.length === 0 ? (
-          <p className="sidebar-empty">No publication data yet.</p>
-        ) : (
-          <>
-            <div className="sparkline" aria-label="14-day CVE publication counts">
-              {sparkBars.map((val, i) => (
-                <div
-                  key={i}
-                  className={`spark-bar${i === sparkBars.length - 1 ? ' spark-today' : ''}`}
-                  style={{ height: `${Math.round((val / sparkMax) * 100)}%` }}
-                  title={i === sparkBars.length - 1 ? `Today: ${val}` : `Day ${i + 1}: ${val}`}
-                  aria-label={i === sparkBars.length - 1 ? `Today: ${val} CVEs` : `${val} CVEs`}
-                />
-              ))}
-            </div>
-            <div className="sparkline-labels" aria-hidden="true">
-              <span>14d ago</span>
-              <span>today</span>
-            </div>
-          </>
-        )}
-      </section>
-
-      {/* ── Section 3: Filters ── */}
+      {/* ── Section 1: Your Filters ── */}
       <section className="sidebar-section" aria-labelledby="filter-heading">
         <h2 id="filter-heading" className="sidebar-heading">YOUR FILTERS</h2>
 
@@ -277,6 +292,49 @@ export default function Sidebar({ filters, onFiltersChange, stats }) {
             </button>
           </div>
         )}
+      </section>
+
+      {/* ── Section 2: 14-day publications ── */}
+      <section className="sidebar-section" aria-labelledby="sparkline-heading">
+        <h2 id="sparkline-heading" className="sidebar-heading">14-DAY PUBLICATIONS</h2>
+        <SparklineSection
+          bars={sparkBars}
+          loading={sparkLoading}
+          error={sparkError}
+          onRetry={() => {
+            sidebarCache.delete('spark')
+            loadSparkline(false)
+          }}
+        />
+      </section>
+
+      {/* ── Section 3: Top techniques ── */}
+      <section className="sidebar-section" aria-labelledby="techniques-heading">
+        <h2 id="techniques-heading" className="sidebar-heading">// TOP TECHNIQUES THIS WEEK</h2>
+        {techniquesLoading && <SidebarSkeleton rows={3} />}
+        {!techniquesLoading && topTechniques.length === 0 && (
+          <p className="sidebar-empty">No technique data yet.</p>
+        )}
+        <ul className="technique-list" aria-label="Most frequent ATT&CK techniques in database">
+          {topTechniques.map(tech => {
+            const active = filters.technique === tech.technique_id
+            return (
+              <li key={tech.technique_id}>
+                <button
+                  type="button"
+                  className={`technique-row${active ? ' technique-row-active' : ''}`}
+                  onClick={() => handleTechniqueClick(tech.technique_id)}
+                  aria-pressed={active}
+                  aria-label={`Filter CVEs by ${tech.technique_id}: ${tech.name}, ${tech.cve_count ?? tech.count} CVEs`}
+                >
+                  <span className="technique-row-id mono">{tech.technique_id}</span>
+                  <span className="technique-row-name">{tech.name}</span>
+                  <span className="technique-row-count mono">{tech.cve_count ?? tech.count}</span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
       </section>
 
     </aside>

@@ -36,6 +36,7 @@ function formatTooltipDate(isoDate) {
 export default function TimelineHeatmap({ filters, onFiltersChange }) {
   const [timeline, setTimeline] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
   const [collapsed, setCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia(MOBILE_MQ).matches
@@ -55,23 +56,42 @@ export default function TimelineHeatmap({ filters, onFiltersChange }) {
     return () => mq.removeEventListener('change', onChange)
   }, [])
 
-  useEffect(() => {
+  const loadTimeline = useCallback(() => {
     let cancelled = false
     setLoading(true)
+    setLoadError(null)
     fetchStatsTimeline(DESKTOP_DAYS)
       .then(data => {
-        if (!cancelled) setTimeline(Array.isArray(data) ? data : [])
+        if (cancelled) return
+        if (!Array.isArray(data) || data.length === 0) {
+          setTimeline([])
+          setLoadError('Activity data unavailable — check that the backend is running.')
+          return
+        }
+        setTimeline(data)
       })
       .catch(() => {
-        if (!cancelled) setTimeline([])
+        if (!cancelled) {
+          setTimeline([])
+          setLoadError('Could not load activity — is the backend running?')
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
       })
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    const cleanup = loadTimeline()
+    return cleanup
+  }, [loadTimeline])
+
+  useEffect(() => {
+    const onFocus = () => loadTimeline()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [loadTimeline])
 
   const slicedTimeline = useMemo(() => {
     if (!timeline.length) return []
@@ -107,6 +127,7 @@ export default function TimelineHeatmap({ filters, onFiltersChange }) {
   )
 
   const titleDays = isMobile ? MOBILE_DAYS : DESKTOP_DAYS
+  const totalActivity = slicedTimeline.reduce((s, d) => s + (d.count || 0), 0)
 
   return (
     <section
@@ -137,8 +158,20 @@ export default function TimelineHeatmap({ filters, onFiltersChange }) {
             <p className="timeline-heatmap-loading mono" aria-live="polite">
               Loading activity…
             </p>
+          ) : loadError ? (
+            <div className="timeline-heatmap-error">
+              <p className="timeline-heatmap-loading mono">{loadError}</p>
+              <button type="button" className="timeline-heatmap-retry mono" onClick={loadTimeline}>
+                Retry
+              </button>
+            </div>
           ) : (
             <>
+              {totalActivity === 0 && (
+                <p className="timeline-heatmap-empty-note mono">
+                  No CVE publications in this window yet. Ingest may still be running.
+                </p>
+              )}
               <div
                 className="timeline-heatmap-chart"
                 style={{
