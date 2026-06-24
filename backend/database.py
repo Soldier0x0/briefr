@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import asyncio
 import aiosqlite
 from pathlib import Path
@@ -9,6 +10,13 @@ from db.config import is_postgres
 from db.connection import get_connection
 
 DB_PATH = os.environ.get("DB_PATH", "briefr.db")
+
+_ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}")
+
+
+def _clean_iso_date(value: str) -> str:
+    """Keep only values that start with a YYYY-MM-DD date; drop garbage (e.g. stray header text)."""
+    return value if _ISO_DATE_RE.match(value or "") else ""
 
 
 async def get_db():
@@ -1591,8 +1599,8 @@ async def upsert_kev(db: aiosqlite.Connection, entry: dict) -> None:
             "product": entry.get("product", ""),
             "short_description": entry.get("shortDescription", ""),
             "required_action": entry.get("requiredAction", ""),
-            "due_date": entry.get("dueDate", ""),
-            "date_added": entry.get("dateAdded", ""),
+            "due_date": _clean_iso_date(entry.get("dueDate", "")),
+            "date_added": _clean_iso_date(entry.get("dateAdded", "")),
             "vendor_project": entry.get("vendorProject", ""),
             "vulnerability_name": entry.get("vulnerabilityName", ""),
             "known_ransomware": entry.get("knownRansomwareCampaignUse", ""),
