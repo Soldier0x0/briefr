@@ -1359,6 +1359,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
   const [detection, setDetection] = useState(null)
   const [detectionLoading, setDetectionLoading] = useState(false)
   const [detectionError, setDetectionError] = useState(null)
+  const activeFetchIdRef = useRef(0)
   const [momentumData, setMomentumData] = useState(null)
   const [riskScore, setRiskScore] = useState(null)
   const [riskLoading, setRiskLoading] = useState(false)
@@ -1505,6 +1506,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
 
   // Reset detection + momentum when CVE changes
   useEffect(() => {
+    activeFetchIdRef.current += 1
     setDetection(null)
     setDetectionLoading(false)
     setDetectionError(null)
@@ -1513,17 +1515,24 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
 
   const loadDetection = useCallback(async () => {
     if (!cve?.cve_id) return
+    const fetchId = ++activeFetchIdRef.current
     setDetectionLoading(true)
     setDetectionError(null)
     const product = cve.affected_products?.[0]?.split(':')?.[1] || ''
     try {
       const data = await fetchCVEDetection(cve.cve_id, product)
-      setDetection(data)
+      if (fetchId === activeFetchIdRef.current) {
+        setDetection(data)
+      }
     } catch {
-      setDetection(null)
-      setDetectionError('Could not load detection rules — try again or check network')
+      if (fetchId === activeFetchIdRef.current) {
+        setDetection(null)
+        setDetectionError('Could not load detection rules — try again or check network')
+      }
     } finally {
-      setDetectionLoading(false)
+      if (fetchId === activeFetchIdRef.current) {
+        setDetectionLoading(false)
+      }
     }
   }, [cve?.cve_id, cve?.affected_products])
 
