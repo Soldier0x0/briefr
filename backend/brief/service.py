@@ -6,7 +6,6 @@ import hashlib
 from datetime import datetime, timezone
 from typing import Any
 
-from database import _normalize_epss_score
 from routers.cves import CVE_SELECT, _row_to_cve_dict, _stack_match_clause
 
 _ISO_DATE_LIKE = "____-__-__"
@@ -54,10 +53,24 @@ def _stack_filter_sql(stack: str | None) -> tuple[str, list, list[str]]:
     return "", [], terms
 
 
+def _parse_epss_history_value(value: object) -> float | None:
+    """Parse EPSS change-history text for brief deltas.
+
+    Unlike ``_normalize_epss_score`` (display/NULL semantics), history deltas
+    must treat NULL/empty/0.0 as a real zero baseline so 0 → 0.15 is surfaced.
+    """
+    if value is None or value == "":
+        return 0.0
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _epss_delta(old_value: object, new_value: object) -> tuple[float, float, float] | None:
     """Return (old, new, delta) when both values parse as EPSS scores and delta > 0."""
-    old_v = _normalize_epss_score(old_value)
-    new_v = _normalize_epss_score(new_value)
+    old_v = _parse_epss_history_value(old_value)
+    new_v = _parse_epss_history_value(new_value)
     if old_v is None or new_v is None:
         return None
     delta = round(new_v - old_v, 6)

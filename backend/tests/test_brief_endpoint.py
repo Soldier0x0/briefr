@@ -9,7 +9,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import aiosqlite
 
-from brief.service import build_morning_brief, _build_epss_movers, _stack_profile_id
+from brief.service import (
+    build_morning_brief,
+    _build_epss_movers,
+    _epss_delta,
+    _stack_profile_id,
+)
 from database import get_db, init_db
 from db.dialect import adapt_sql
 
@@ -184,6 +189,16 @@ def test_brief_epss_sql_avoids_real_cast_on_postgres():
     assert "AS REAL" not in sql.upper()
 
 
+def test_epss_delta_counts_zero_to_positive():
+    parsed = _epss_delta("0.0", "0.15")
+    assert parsed == (0.0, 0.15, 0.15)
+
+    parsed_empty = _epss_delta("", "0.15")
+    assert parsed_empty == (0.0, 0.15, 0.15)
+
+    assert _epss_delta("N/A", "0.15") is None
+
+
 def test_build_epss_movers_skips_non_numeric_history():
     rows = [
         {
@@ -194,6 +209,30 @@ def test_build_epss_movers_skips_non_numeric_history():
             "description": "ok",
             "cvss_score": 7.5,
             "severity": "HIGH",
+            "published": "2026-06-01",
+            "modified": "2026-06-02",
+            "affected_products": "[]",
+            "affected_products_source": None,
+            "mitre_technique": None,
+            "summary": "",
+            "is_kev": 0,
+            "epss_score": 0.15,
+            "has_poc": 0,
+            "patch_available": 0,
+            "has_ai_context": 0,
+            "source_urls": "[]",
+            "cwe_ids": "[]",
+            "updated_at": "2026-06-02",
+            "kev_due_date": None,
+        },
+        {
+            "cve_id": "CVE-2024-9000",
+            "old_value": "0.0",
+            "new_value": "0.15",
+            "detected_at": "2026-06-23 09:00:00",
+            "description": "zero baseline",
+            "cvss_score": 6.0,
+            "severity": "MEDIUM",
             "published": "2026-06-01",
             "modified": "2026-06-02",
             "affected_products": "[]",
@@ -236,9 +275,10 @@ def test_build_epss_movers_skips_non_numeric_history():
         },
     ]
     movers = _build_epss_movers(rows, limit=5)
-    assert len(movers) == 1
-    assert movers[0]["cve_id"] == "CVE-2024-9001"
-    assert movers[0]["epss_delta"] == 0.1
+    assert len(movers) == 2
+    by_id = {m["cve_id"]: m for m in movers}
+    assert by_id["CVE-2024-9001"]["epss_delta"] == 0.1
+    assert by_id["CVE-2024-9000"]["epss_delta"] == 0.15
 
 
 async def _seed_brief_bad_epss_db(db_path: Path) -> None:
