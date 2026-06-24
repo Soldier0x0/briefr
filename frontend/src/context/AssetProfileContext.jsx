@@ -93,7 +93,10 @@ export function AssetProfileProvider({ children }) {
 
   useEffect(() => {
     if (!sessionWarnOpen) return undefined
-    const clear = () => setSessionWarnOpen(false)
+    const clear = (e) => {
+      if (e.target?.closest?.('.session-idle-warning')) return
+      setSessionWarnOpen(false)
+    }
     window.addEventListener('mousedown', clear)
     window.addEventListener('keydown', clear)
     return () => {
