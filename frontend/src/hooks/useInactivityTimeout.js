@@ -6,7 +6,7 @@ const HIDDEN_MS = 30 * 60 * 1000
 const TICK_MS = 60 * 1000
 
 /**
- * Clears profile when idle (30m) or tab hidden (10m).
+ * Clears My Stack when idle (30m) or tab hidden (30m).
  * lastInteraction stored in ref only — no re-renders on activity.
  */
 export function useInactivityTimeout({ enabled, onTimeout, onWarning }) {

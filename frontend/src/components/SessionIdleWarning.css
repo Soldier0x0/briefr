@@ -1,0 +1,55 @@
+.session-idle-warning {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9500;
+  max-width: min(420px, calc(100vw - 32px));
+}
+
+.session-idle-inner {
+  background: var(--bg2);
+  border: 1px solid var(--amber);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  padding: 14px 16px;
+}
+
+.session-idle-title {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--amber);
+}
+
+.session-idle-body {
+  margin: 0 0 12px;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--text2);
+}
+
+.session-idle-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.session-idle-export,
+.session-idle-dismiss {
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.session-idle-export {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.session-idle-export:hover,
+.session-idle-dismiss:hover {
+  border-color: var(--text2);
+}

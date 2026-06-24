@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from 'react'
@@ -9,6 +10,7 @@ import AssetWarning from '../components/AssetWarning.jsx'
 import AssetProfileManage from '../components/AssetProfileManage.jsx'
 import AssetWizard from '../components/AssetWizard.jsx'
 import SessionLockOverlay from '../components/SessionLockOverlay.jsx'
+import SessionIdleWarning from '../components/SessionIdleWarning.jsx'
 import { fetchCveAssetMatch } from '../api.js'
 import { useInactivityTimeout } from '../hooks/useInactivityTimeout.js'
 import { parseProfileFile, profileToMatchAssets } from '../utils/assetProfileIo.js'
@@ -19,6 +21,7 @@ export function AssetProfileProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [matchScores, setMatchScores] = useState({})
   const [isLocked, setIsLocked] = useState(false)
+  const [sessionWarnOpen, setSessionWarnOpen] = useState(false)
   const [flow, setFlow] = useState(null)
   const [wizardProfile, setWizardProfile] = useState(null)
 
@@ -37,6 +40,7 @@ export function AssetProfileProvider({ children }) {
     setProfile(null)
     setMatchScores({})
     setIsLocked(true)
+    setSessionWarnOpen(false)
     setFlow(null)
     setWizardProfile(null)
   }, [])
@@ -84,12 +88,19 @@ export function AssetProfileProvider({ children }) {
   useInactivityTimeout({
     enabled: isLoaded,
     onTimeout: lockSession,
-    onWarning: () => {
-      try {
-        window.dispatchEvent(new CustomEvent('briefr-session-warn'))
-      } catch {}
-    },
+    onWarning: () => setSessionWarnOpen(true),
   })
+
+  useEffect(() => {
+    if (!sessionWarnOpen) return undefined
+    const clear = () => setSessionWarnOpen(false)
+    window.addEventListener('mousedown', clear)
+    window.addEventListener('keydown', clear)
+    return () => {
+      window.removeEventListener('mousedown', clear)
+      window.removeEventListener('keydown', clear)
+    }
+  }, [sessionWarnOpen])
 
   const value = useMemo(
     () => ({
@@ -139,6 +150,12 @@ export function AssetProfileProvider({ children }) {
           initialProfile={wizardProfile}
           onComplete={applyProfile}
           onCancel={() => setFlow(null)}
+        />
+      )}
+      {sessionWarnOpen && profile && !isLocked && (
+        <SessionIdleWarning
+          profile={profile}
+          onDismiss={() => setSessionWarnOpen(false)}
         />
       )}
       {isLocked && (

@@ -240,16 +240,17 @@ async def stats_timeline(
     finally:
         await db.close()
 
-    by_date = {
-        row["date"]: {
-            "date": row["date"],
+    by_date: dict[str, dict] = {}
+    for row in rows:
+        key = _timeline_date_key(row["date"])
+        if not key:
+            continue
+        by_date[key] = {
+            "date": key,
             "count": row["count"],
             "critical": row["critical"],
             "kev": row["kev"],
         }
-        for row in rows
-        if row["date"]
-    }
 
     end = datetime.now(timezone.utc).date()
     start = end - timedelta(days=days - 1)
@@ -266,6 +267,16 @@ async def stats_timeline(
         cursor += timedelta(days=1)
 
     return timeline
+
+
+def _timeline_date_key(value) -> str:
+    """Normalize DATE() results to YYYY-MM-DD (asyncpg returns date objects)."""
+    if value is None:
+        return ""
+    if hasattr(value, "isoformat"):
+        return value.isoformat()[:10]
+    text = str(value).strip()
+    return text[:10] if text else ""
 
 
 def _text_match_or_clause(terms: list[str]) -> tuple[str, list]:
