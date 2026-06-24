@@ -215,7 +215,7 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
             ) : campaigns.length === 0 ? (
               <p className="cs-sidebar-empty mono">// No campaign headlines in current feeds</p>
             ) : (
-              <div className="cs-feed">
+              <div className="cs-feed cs-feed-grid">
                 {campaigns.map(card => (
                   <FeedCard key={card.id} card={card} query={debounced} />
                 ))}

@@ -1,26 +1,26 @@
 import { useRef } from 'react'
 import './AssetWarning.css'
 
-const WARNING_TEXT = `// BEFORE YOU ENTER YOUR ENVIRONMENT
+const WARNING_TEXT = `// BEFORE YOU SET UP MY STACK
 
-Your asset profile is sensitive data.
+Your My Stack is sensitive data.
 BRIEFR keeps it in this browser session only
 and does not save it to browser storage.
 
 To score CVE exposure, product and version
 data is sent to POST /api/cves/match when
-you apply a profile. It is not stored on
+you apply My Stack. It is not stored on
 the server after matching.
 
-When you close this tab your profile is gone.
-Use the export option to save it as a local
-file and reload it next visit. Store that file
-as you would any sensitive document.
+When you close this tab your stack is gone.
+Use Export My Stack to save a local file
+and reload it on your next visit. Store that
+file as you would any sensitive document.
 
 For maximum security:
 → Use a dedicated browser profile for security
   tooling with no personal extensions installed
-→ Do not load a real asset profile on shared
+→ Do not load a real My Stack on shared
   or untrusted computers
 → BRIEFR cannot protect against malicious
   browser extensions. This is a browser
@@ -44,7 +44,7 @@ export default function AssetWarning({ onAccept, onUpload, onSkip, onClose }) {
       try {
         await onUpload(file)
       } catch {
-        alert('Failed to load profile: Invalid or corrupted file.')
+        alert('Failed to load My Stack: Invalid or corrupted file.')
       }
     }
   }
@@ -61,10 +61,10 @@ export default function AssetWarning({ onAccept, onUpload, onSkip, onClose }) {
         <pre id="asset-warning-title" className="asset-warning-text mono">{WARNING_TEXT}</pre>
         <div className="asset-warning-actions">
           <button type="button" className="asset-btn asset-btn-primary mono" onClick={onAccept}>
-            I understand — Set up my profile
+            I understand — Set up My Stack
           </button>
           <button type="button" className="asset-btn asset-btn-primary mono" onClick={handlePick}>
-            Upload my profile
+            Upload My Stack file
           </button>
           <button type="button" className="asset-btn asset-btn-ghost mono" onClick={onSkip}>
             Skip — show all CVEs
