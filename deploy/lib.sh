@@ -36,20 +36,19 @@ as_app_user() {
 # fix_tree_permissions runs chmod 644 on all files, which would otherwise
 # leave mode-only diffs that block git pull on the next update.
 sync_git_tracked_executable_bits() {
-  local mode rel
+  local meta rel
   if ! git -C "${INSTALL_DIR}" rev-parse --is-inside-work-tree &>/dev/null; then
     return 0
   fi
-  while IFS=$'\t' read -r mode rel; do
+  while IFS=$'\t' read -r meta rel; do
+    case "${meta}" in
+      100755\ *) ;;
+      *) continue ;;
+    esac
     [ -n "${rel}" ] || continue
     [ -f "${INSTALL_DIR}/${rel}" ] || continue
-    if [ "${mode}" = "100755" ]; then
-      chmod 755 "${INSTALL_DIR}/${rel}"
-    fi
-  done < <(
-    git -C "${INSTALL_DIR}" ls-files -s 2>/dev/null \
-      | awk '$1 == "100755" { print $1 "\t" $4 }'
-  )
+    chmod 755 "${INSTALL_DIR}/${rel}"
+  done < <(git -C "${INSTALL_DIR}" ls-files -s 2>/dev/null)
 }
 
 # Reset tracked files whose only diff is file mode (leftover +x from older deploy runs).
@@ -76,8 +75,8 @@ restore_git_permission_drift() {
       || git -C "${INSTALL_DIR}" restore --worktree -- "${rel}" 2>/dev/null \
       || git -C "${INSTALL_DIR}" checkout -- "${rel}" 2>/dev/null \
       || true
-    sync_git_tracked_executable_bits
   done < <(git -C "${INSTALL_DIR}" diff -z --name-only 2>/dev/null || true)
+  sync_git_tracked_executable_bits
 }
 
 fix_tree_permissions() {
