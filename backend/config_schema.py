@@ -147,6 +147,12 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 help_text="postgresql://user:pass@host:5432/db — blank uses the default SQLite file."),
     ConfigField("DATABASE_POOL_SIZE", "app", "int", min=1, max=100, restart_required=True,
                 help_text="asyncpg connection pool size, when DATABASE_URL points at PostgreSQL."),
+    ConfigField("DATABASE_POOL_ACQUIRE_TIMEOUT_SECONDS", "app", "int", min=1, max=120,
+                restart_required=True,
+                help_text="Seconds to wait for a free pool connection before HTTP 503."),
+    ConfigField("DATABASE_POOL_COMMAND_TIMEOUT_SECONDS", "app", "int", min=1, max=600,
+                restart_required=True,
+                help_text="asyncpg per-query timeout (seconds) for pooled connections."),
 
     # ── Webhooks — Discord / Telegram / generic ─────────────────────────────
     ConfigField("DISCORD_WEBHOOK_URL", "webhooks", "secret",
