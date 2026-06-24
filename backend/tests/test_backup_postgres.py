@@ -186,6 +186,24 @@ def test_pg_tool_finds_versioned_postgresql_client_path(tmp_path, monkeypatch):
     assert _pg_tool("pg_dump") == str(pg_dump)
 
 
+def test_pg_tool_prefers_highest_numeric_version(tmp_path, monkeypatch):
+    for ver in (9, 16):
+        versioned = tmp_path / str(ver) / "bin"
+        versioned.mkdir(parents=True)
+        pg_dump = versioned / "pg_dump"
+        pg_dump.write_text("#!/bin/sh\necho ok\n", encoding="utf-8")
+        pg_dump.chmod(0o755)
+
+    monkeypatch.setattr("backup.postgres_util.shutil.which", lambda _name: None)
+    monkeypatch.setattr(
+        "backup.postgres_util.glob.glob",
+        lambda pattern: [
+            str(tmp_path / str(ver) / "bin" / "pg_dump") for ver in (9, 16)
+        ] if pattern.endswith("/pg_dump") else [],
+    )
+    assert _pg_tool("pg_dump") == str(tmp_path / "16" / "bin" / "pg_dump")
+
+
 def test_run_postgres_backup_requires_pg_dump(tmp_path, monkeypatch):
     cfg = _pg_cfg(tmp_path)
     monkeypatch.setattr(

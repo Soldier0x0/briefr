@@ -50,14 +50,22 @@ def parse_postgres_url(url: str) -> dict[str, str | int]:
     return params
 
 
+def _versioned_pg_tool_paths(name: str) -> list[str]:
+    def _version_key(path: str) -> int:
+        match = re.search(r"/(\d+)/bin/", path)
+        return int(match.group(1)) if match else 0
+
+    paths = glob.glob(f"/usr/lib/postgresql/*/bin/{name}")
+    return sorted(paths, key=_version_key, reverse=True)
+
+
 def _pg_tool(name: str) -> str:
     path = shutil.which(name)
     if path:
         return path
     # Debian/Ubuntu postgresql-client-N installs under /usr/lib/postgresql/N/bin
     # without always symlinking into PATH.
-    versioned = sorted(glob.glob(f"/usr/lib/postgresql/*/bin/{name}"), reverse=True)
-    for candidate in versioned:
+    for candidate in _versioned_pg_tool_paths(name):
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate
     raise RuntimeError(

@@ -92,7 +92,7 @@ async def find_actor_sector_correlation(
             FROM group_technique_map gtm
             JOIN mitre_groups mg ON mg.group_id = gtm.group_id
             WHERE gtm.technique_id IN ({placeholders})
-            GROUP BY mg.group_id, mg.name, mg.sectors
+            GROUP BY mg.group_id
             ORDER BY mg.name
             LIMIT 10
             """,
