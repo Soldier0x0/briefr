@@ -376,7 +376,8 @@ async def run_otx_nightly_correlation(api_key: str, db=None) -> dict:
     if not api_key:
         return {"cves": 0, "pulses": 0}
 
-    own_db = db is None
+    passed_db = db
+    own_db = passed_db is None
     if own_db:
         db = await get_db()
     try:
@@ -390,13 +391,14 @@ async def run_otx_nightly_correlation(api_key: str, db=None) -> dict:
             pulses = await fetch_cve_pulses(cve_id, api_key)
             if not pulses:
                 continue
-            write_db = await get_db()
+            write_db = await get_db() if own_db else passed_db
             try:
                 await store_otx_cve_pulses(write_db, cve_id, pulses)
                 await write_db.commit()
                 total_pulses += len(pulses)
             finally:
-                await write_db.close()
+                if own_db:
+                    await write_db.close()
         except Exception as exc:
             logger.warning("OTX nightly skip %s: %s", cve_id, exc)
 
