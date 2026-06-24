@@ -21,6 +21,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
+
 import aiosqlite
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, Response, UploadFile, File
 from fastapi.responses import FileResponse, StreamingResponse
@@ -199,6 +202,46 @@ async def _get_job_last_run(db: aiosqlite.Connection, job_id: str) -> list[dict[
         return []
 
 
+def _schedule_cadence_for_job(job: Any) -> str:
+    """Human-readable cadence from the APScheduler trigger (for admin UI)."""
+    trigger = job.trigger
+    tz = getattr(trigger, "timezone", None)
+    tz_label = str(tz) if tz is not None else "UTC"
+    if isinstance(trigger, IntervalTrigger):
+        total = int(trigger.interval.total_seconds())
+        if total >= 86400 and total % 86400 == 0:
+            days = total // 86400
+            unit = f"{days} day{'s' if days != 1 else ''}"
+        elif total >= 3600 and total % 3600 == 0:
+            hours = total // 3600
+            unit = f"{hours} hour{'s' if hours != 1 else ''}"
+        elif total >= 60 and total % 60 == 0:
+            minutes = total // 60
+            unit = f"{minutes} minute{'s' if minutes != 1 else ''}"
+        else:
+            unit = f"{int(total)} seconds"
+        return f"Every {unit} ({tz_label})"
+    if isinstance(trigger, CronTrigger):
+        fields = getattr(trigger, "fields", None)
+        if fields:
+            dow = getattr(fields, "day_of_week", None)
+            hour = getattr(fields, "hour", None)
+            minute = getattr(fields, "minute", None)
+            if dow is not None and str(dow) not in ("*", "None"):
+                hh = hour.expressions[0].values[0] if hour and hour.expressions else 0
+                mm = minute.expressions[0].values[0] if minute and minute.expressions else 0
+                return f"Weekly {str(dow).title()} {hh:02d}:{mm:02d} ({tz_label})"
+            if hour is not None and minute is not None:
+                try:
+                    hh = hour.expressions[0].values[0]
+                    mm = minute.expressions[0].values[0]
+                    return f"Daily {hh:02d}:{mm:02d} ({tz_label})"
+                except (AttributeError, IndexError, TypeError):
+                    pass
+        return f"Cron schedule ({tz_label})"
+    return "Scheduled"
+
+
 def _build_job_info(job: Any, history: list[dict]) -> dict[str, Any]:
     paused = job.next_run_time is None
     lock_held = _job_lock_held(job.id)
@@ -223,6 +266,7 @@ def _build_job_info(job: Any, history: list[dict]) -> dict[str, Any]:
     return {
         "id": job.id,
         "name": job.name,
+        "schedule_cadence": _schedule_cadence_for_job(job),
         "next_run_time": next_run,
         "paused": paused,
         "lock_held": lock_held,

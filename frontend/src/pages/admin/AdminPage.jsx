@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { adminApi, getAdminKey } from '../../api.js'
 import { getAdminMode, setAdminMode } from '../../utils/adminMode.js'
@@ -25,6 +25,8 @@ import AuditLogPage from './AuditLogPage.jsx'
 import DisplayPage from './DisplayPage.jsx'
 import ComingSoonPage from './ComingSoonPage.jsx'
 import UserMenu from '../../components/UserMenu.jsx'
+import { loadJobAcks, markAllJobErrorsRead, filterUnacknowledgedErrors } from './adminJobAck.js'
+import { jobErrorsFromSystem } from './shared/JobErrorsPanel.jsx'
 import '../AdminPage.css'
 
 const ANALYST_PAGE_IDS = new Set(ANALYST_NAV.flatMap(section => section.items.map(i => i.id)))
@@ -49,6 +51,7 @@ export default function AdminPage() {
   const [ingestErrorCount, setIngestErrorCount] = useState(0)
   const [confirmOperatorSwitch, setConfirmOperatorSwitch] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(null)
+  const [jobAcks, setJobAcks] = useState(() => loadJobAcks())
   const { toasts, show: toast, dismiss: dismissToast } = useToast()
   const pollRef = useRef(null)
 
@@ -136,8 +139,26 @@ export default function AdminPage() {
 
   const isComingSoon = page.startsWith('coming-')
 
+  const unackJobErrorCount = useMemo(
+    () => filterUnacknowledgedErrors(jobErrorsFromSystem(system), jobAcks).length,
+    [system, jobAcks],
+  )
+
+  function handleMarkJobErrorsRead(errors) {
+    setJobAcks(markAllJobErrorsRead(errors))
+    toast('Marked job errors as read', true)
+  }
+
   const pages = {
-    overview: <OverviewPage system={system} toast={toast} mode={mode} />,
+    overview: (
+      <OverviewPage
+        system={system}
+        toast={toast}
+        mode={mode}
+        jobAcks={jobAcks}
+        onMarkJobErrorsRead={handleMarkJobErrorsRead}
+      />
+    ),
     backups: <BackupsPage toast={toast} system={system} />,
     storage: <StoragePage toast={toast} />,
     database: <DatabasePage toast={toast} active={page === 'database'} />,
@@ -174,7 +195,7 @@ export default function AdminPage() {
         userMenu={<UserMenu className="user-menu-wrap--admin" />}
       />
       <div className="admin-body">
-        <Sidebar activePage={page} setPage={setPage} system={system} ingestErrorCount={ingestErrorCount} mode={mode} setMode={handleModeChange} />
+        <Sidebar activePage={page} setPage={setPage} system={system} ingestErrorCount={ingestErrorCount} unackJobErrorCount={unackJobErrorCount} mode={mode} setMode={handleModeChange} />
         <div className="admin-content">
           {isComingSoon ? (
             <ComingSoonPage pageId={page} setPage={setPage} />

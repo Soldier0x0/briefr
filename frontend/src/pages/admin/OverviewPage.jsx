@@ -2,22 +2,38 @@ import { useState } from 'react'
 import { adminApi } from '../../api.js'
 import StatCard from './shared/StatCard.jsx'
 import JobTable from './shared/JobTable.jsx'
-import { fmtIso, fmtAge, ageColor, sourceLabel } from './formatters.js'
-import { overallHealth, analystScheduleJobs } from './intelStatus.js'
+import JobErrorsPanel from './shared/JobErrorsPanel.jsx'
+import ActionProgress from './shared/ActionProgress.jsx'
+import { fmtAge, ageColor, sourceLabel } from './formatters.js'
+import { overallHealth, analystScheduleJobs, nvdCadenceLabel } from './intelStatus.js'
 import { jobLabel } from './catalog.js'
 
-function AnalystOverview({ system, toast }) {
+function AnalystOverview({ system, toast, jobAcks, onMarkJobErrorsRead }) {
   const [running, setRunning] = useState({})
+  const [progress, setProgress] = useState(null)
 
   async function runNow(jobId) {
     setRunning(r => ({ ...r, [jobId]: true }))
+    setProgress({ label: `Starting ${jobLabel(jobId, 'analyst')}…`, stage: 'Contacting scheduler' })
     try {
       const res = await adminApi.post('/scheduler/run', { job_id: jobId })
       const data = await res.json()
-      if (res.status === 409) { toast('Already updating', false); setRunning(r => ({ ...r, [jobId]: false })); return }
+      if (res.status === 409) {
+        toast('Already updating', false)
+        setProgress(null)
+        setRunning(r => ({ ...r, [jobId]: false }))
+        return
+      }
+      setProgress({ label: data.ok ? 'Job started' : 'Job failed to start', stage: data.detail || jobId })
       toast(data.ok ? `${jobLabel(jobId, 'analyst')} refresh started` : data.detail, data.ok)
-    } catch (e) { toast(String(e.message), false) }
-    setTimeout(() => setRunning(r => ({ ...r, [jobId]: false })), 2000)
+    } catch (e) {
+      toast(String(e.message), false)
+      setProgress({ label: 'Request failed', stage: String(e.message) })
+    }
+    setTimeout(() => {
+      setRunning(r => ({ ...r, [jobId]: false }))
+      setProgress(null)
+    }, 2500)
   }
 
   const health = overallHealth(system)
@@ -38,6 +54,15 @@ function AnalystOverview({ system, toast }) {
         <strong>{health.headline}</strong>
         <span>{health.detail}</span>
       </div>
+      {health.issues?.length > 1 && (
+        <ul className="intel-issue-list">
+          {health.issues.map((issue, i) => (
+            <li key={i}>{issue}</li>
+          ))}
+        </ul>
+      )}
+
+      <ActionProgress label={progress?.label} stage={progress?.stage} visible={!!progress} />
 
       <div className="stat-card-row">
         <StatCard label="CVES IN DATABASE" value={system.cve_count?.toLocaleString()} subLabel="CVEs stored locally" />
@@ -45,7 +70,7 @@ function AnalystOverview({ system, toast }) {
           label="NIST CVE FEED"
           value={fmtAge(system.last_nvd_sync_age_seconds)}
           colorClass={ageColor(system.last_nvd_sync_age_seconds, 7200, 14400)}
-          subLabel="usually hourly · incremental"
+          subLabel={nvdCadenceLabel(system)}
         />
         {showBackupCard && (
           <StatCard label="LAST BACKUP" value={fmtAge(backupAge)} colorClass="color-amber" subLabel={`threshold ${Math.round(backupThreshold / 3600)}h`} />
@@ -75,9 +100,18 @@ function AnalystOverview({ system, toast }) {
         </div>
       )}
 
+      <JobErrorsPanel
+        system={system}
+        jobAcks={jobAcks}
+        onMarkAllRead={onMarkJobErrorsRead}
+        onRetry={runNow}
+        mode="analyst"
+        running={running}
+      />
+
       {worstEntries.length > 0 && (
         <div className="admin-card">
-          <div className="admin-card-title" style={{ color: 'var(--red)' }}>Problems</div>
+          <div className="admin-card-title" style={{ color: 'var(--red)' }}>Feed circuit problems</div>
           {worstEntries.map(([key]) => (
             <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.3rem 0' }}>
               <span style={{ fontSize: '0.8125rem' }}>
@@ -99,21 +133,35 @@ function AnalystOverview({ system, toast }) {
   )
 }
 
-function OperatorOverview({ system, toast }) {
+function OperatorOverview({ system, toast, jobAcks, onMarkJobErrorsRead }) {
   const [diagResult, setDiagResult] = useState(null)
   const [intResult, setIntResult] = useState(null)
   const [running, setRunning] = useState({})
   const [showDiag, setShowDiag] = useState(false)
+  const [progress, setProgress] = useState(null)
 
   async function runNow(jobId) {
     setRunning(r => ({ ...r, [jobId]: true }))
+    setProgress({ label: `Starting ${jobLabel(jobId, 'operator')}…`, stage: 'Contacting scheduler' })
     try {
       const res = await adminApi.post('/scheduler/run', { job_id: jobId })
       const data = await res.json()
-      if (res.status === 409) { toast('Already running — check active locks', false); setRunning(r => ({ ...r, [jobId]: false })); return }
+      if (res.status === 409) {
+        toast('Already running — check active locks', false)
+        setProgress(null)
+        setRunning(r => ({ ...r, [jobId]: false }))
+        return
+      }
       toast(data.ok ? `Job started: ${jobLabel(jobId, 'operator')}` : data.detail, data.ok)
-    } catch (e) { toast(String(e.message), false) }
-    setTimeout(() => setRunning(r => ({ ...r, [jobId]: false })), 2000)
+      setProgress({ label: data.ok ? 'Job started' : 'Failed', stage: data.detail || '' })
+    } catch (e) {
+      toast(String(e.message), false)
+      setProgress({ label: 'Request failed', stage: String(e.message) })
+    }
+    setTimeout(() => {
+      setRunning(r => ({ ...r, [jobId]: false }))
+      setProgress(null)
+    }, 2500)
   }
 
   async function pauseResume(job) {
@@ -127,6 +175,7 @@ function OperatorOverview({ system, toast }) {
 
   async function runSmoke() {
     setRunning(r => ({ ...r, smoke: true }))
+    setProgress({ label: 'Running smoke test…', stage: 'Checking core endpoints' })
     try {
       const res = await adminApi.post('/diagnostics/smoke', {})
       const data = await res.json()
@@ -134,10 +183,12 @@ function OperatorOverview({ system, toast }) {
       setShowDiag(true)
     } catch (e) { toast(String(e.message), false) }
     setRunning(r => ({ ...r, smoke: false }))
+    setProgress(null)
   }
 
   async function runIntegrity() {
     setRunning(r => ({ ...r, integrity: true }))
+    setProgress({ label: 'Checking database integrity…', stage: 'Running PRAGMA checks' })
     try {
       const res = await adminApi.post('/diagnostics/integrity', {})
       const data = await res.json()
@@ -145,9 +196,10 @@ function OperatorOverview({ system, toast }) {
       setShowDiag(true)
     } catch (e) { toast(String(e.message), false) }
     setRunning(r => ({ ...r, integrity: false }))
+    setProgress(null)
   }
 
-  const { db_integrity, scheduler_jobs, active_locks, recent_errors } = system
+  const { db_integrity, scheduler_jobs, active_locks } = system
   const nvdAgeColorClass = ageColor(system.last_nvd_sync_age_seconds, 7200, 14400)
   const backupAgeColorClass = ageColor(system.last_backup_age_seconds, 28800, 43200)
 
@@ -156,9 +208,11 @@ function OperatorOverview({ system, toast }) {
       <h1 className="admin-page-title">System health</h1>
       <p className="admin-page-subtitle">At-a-glance status: DB integrity, sync ages, active locks, and recent job errors.</p>
 
+      <ActionProgress label={progress?.label} stage={progress?.stage} visible={!!progress} />
+
       <div className="stat-card-row">
         <StatCard label="CVE COUNT" value={system.cve_count?.toLocaleString()} />
-        <StatCard label="NVD SYNC AGE" value={fmtAge(system.last_nvd_sync_age_seconds)} colorClass={nvdAgeColorClass} />
+        <StatCard label="NVD SYNC AGE" value={fmtAge(system.last_nvd_sync_age_seconds)} colorClass={nvdAgeColorClass} subLabel={nvdCadenceLabel(system)} />
         <StatCard label="LAST BACKUP" value={fmtAge(system.last_backup_age_seconds)} colorClass={backupAgeColorClass} />
         <StatCard label="DB INTEGRITY" value={db_integrity?.ok ? 'OK' : 'FAILED'} colorClass={db_integrity?.ok ? 'color-green' : 'color-red'} />
         <StatCard label="OPEN CIRCUITS" value={system.open_circuit_count ?? 0} colorClass={system.open_circuit_count > 0 ? 'color-red' : 'color-green'} />
@@ -222,27 +276,16 @@ function OperatorOverview({ system, toast }) {
             </table>
           )}
         </div>
-        <div className="admin-card" style={{ flex: 1 }}>
-          <div className="admin-card-title">Recent errors</div>
-          {(!recent_errors || recent_errors.length === 0) ? (
-            <div className="admin-empty" style={{ color: 'var(--green)' }}>All jobs clean</div>
-          ) : (
-            <table className="admin-table">
-              <thead><tr><th>JOB ID</th><th>ERROR</th><th>LAST RUN</th><th></th></tr></thead>
-              <tbody>
-                {recent_errors.map(e => (
-                  <tr key={e.job_id}>
-                    <td className="mono" style={{ fontSize: '0.75rem' }}>{e.job_id}</td>
-                    <td style={{ fontSize: '0.75rem', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.error || '—'}</td>
-                    <td style={{ fontSize: '0.75rem' }}>{fmtIso(e.last_run_utc)}</td>
-                    <td><button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }} onClick={() => runNow(e.job_id)}>Retry</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
       </div>
+
+      <JobErrorsPanel
+        system={system}
+        jobAcks={jobAcks}
+        onMarkAllRead={onMarkJobErrorsRead}
+        onRetry={runNow}
+        mode="operator"
+        running={running}
+      />
 
       <div className="admin-card">
         <div className="admin-card-title">Scheduler jobs</div>
@@ -252,9 +295,10 @@ function OperatorOverview({ system, toast }) {
   )
 }
 
-export default function OverviewPage({ system, toast, mode = 'analyst' }) {
+export default function OverviewPage({ system, toast, mode = 'analyst', jobAcks = [], onMarkJobErrorsRead }) {
   if (!system) return <div className="admin-empty">Loading…</div>
+  const shared = { system, toast, jobAcks, onMarkJobErrorsRead }
   return mode === 'analyst'
-    ? <AnalystOverview system={system} toast={toast} />
-    : <OperatorOverview system={system} toast={toast} />
+    ? <AnalystOverview {...shared} />
+    : <OperatorOverview {...shared} />
 }

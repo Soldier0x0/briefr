@@ -89,32 +89,11 @@ function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSched
   const nextUserLabel =
     nextRefreshUtc && timezone ? formatAbsolute(nextRefreshUtc, timezone) : null
   const scheduleLabel = formatScheduleLabel(refreshSchedule)
-  const syncing = feedHealth?.refresh_in_progress
-  const hasData = (feedHealth?.cve_count ?? 0) >= 10
-  const liveLevel = !feedHealth ? null : syncing ? 'syncing' : hasData ? 'live' : 'idle'
 
-  if (!lastLabel && !nextUtcLabel && !liveLevel) return null
+  if (!lastLabel && !nextUtcLabel) return null
 
   return (
     <p className="last-refreshed mono" aria-live="polite">
-      {liveLevel && (
-        <>
-          <span
-            className={`live-indicator live-indicator--inline live-indicator--${liveLevel}`}
-            title={
-              liveLevel === 'live'
-                ? 'CVE feeds active'
-                : liveLevel === 'syncing'
-                  ? 'Ingest running'
-                  : 'Building CVE database'
-            }
-          >
-            <span className="live-dot" aria-hidden="true" />
-            LIVE
-          </span>
-          {(lastLabel || nextUtcLabel) && <span> · </span>}
-        </>
-      )}
       {lastLabel && <span>Last refreshed {lastLabel}</span>}
       {lastLabel && nextUtcLabel && <span> · </span>}
       {nextUtcLabel && (

@@ -3,6 +3,7 @@ import { adminApi } from '../../api.js'
 import DangerZone from './shared/DangerZone.jsx'
 import GuardedPurgePanel from './shared/GuardedPurgePanel.jsx'
 import { parseAdminListResponse } from './shared/adminListResponse.js'
+import ActionProgress from './shared/ActionProgress.jsx'
 import { fmtAge, fmtIso } from './formatters.js'
 
 export default function WatchlistPage({ toast, mode = 'operator' }) {
@@ -15,6 +16,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
   const [iocSearch, setIocSearch] = useState('')
   const [huntRows, setHuntRows] = useState(null)
   const [huntTechnique, setHuntTechnique] = useState('')
+  const [progress, setProgress] = useState(null)
 
   useEffect(() => { if (isAnalyst) setSubtab('watchlist') }, [isAnalyst])
 
@@ -86,12 +88,14 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
   }
 
   async function deleteHunt(id) {
+    setProgress({ label: 'Deleting hunt pack…', stage: `Pack #${id}` })
     try {
       await adminApi.del(`/hunt-packs/${id}`)
       toast('Deleted', true)
       setHuntRows(prev => Array.isArray(prev) ? prev.filter(r => r.id !== id) : [])
       loadHunts()
     } catch (e) { toast(String(e.message), false) }
+    setTimeout(() => setProgress(null), 1200)
   }
 
   const iocOldestAge = iocRows?.length
@@ -104,6 +108,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
       <p className="admin-page-subtitle">
         {isAnalyst ? 'CVEs you’ve pinned to track.' : 'Manage pinned/snoozed CVEs, inspect the IOC lookup cache, and review hunt-pack matches.'}
       </p>
+      <ActionProgress label={progress?.label} stage={progress?.stage} visible={!!progress} />
       {!isAnalyst && (
         <div className="admin-subtabs">
           {[['watchlist', 'WATCHLIST'], ['ioc', 'IOC CACHE'], ['hunt', 'HUNT PACKS']].map(([id, label]) => (

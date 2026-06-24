@@ -4,6 +4,7 @@ import ConfirmModal from './shared/ConfirmModal.jsx'
 import DangerZone from './shared/DangerZone.jsx'
 import JobTable from './shared/JobTable.jsx'
 import OperatorSystemActions from './shared/OperatorSystemActions.jsx'
+import ActionProgress from './shared/ActionProgress.jsx'
 import { MANUAL_PIPELINES } from './constants.js'
 
 const STATUS_FILTERS = ['ACTIVE', 'PAUSED', 'LOCKED', 'DISABLED']
@@ -20,6 +21,7 @@ export default function SchedulerPage({
   const [pauseAllConfirm, setPauseAllConfirm] = useState(false)
   const [resumeAllConfirm, setResumeAllConfirm] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
+  const [progress, setProgress] = useState(null)
 
   async function loadJobs() {
     try {
@@ -32,14 +34,22 @@ export default function SchedulerPage({
 
   async function runNow(jobId) {
     setRunning(r => ({ ...r, [jobId]: true }))
+    setProgress({ label: `Starting ${jobId}…`, stage: 'Sending run request to scheduler' })
     try {
       const res = await adminApi.post('/scheduler/run', { job_id: jobId })
       const data = await res.json()
-      if (res.status === 409) { toast('Already running', false); return }
+      if (res.status === 409) { toast('Already running', false); setProgress(null); return }
       toast(data.ok ? `Started: ${jobId}` : data.detail || 'Failed', data.ok)
+      setProgress({ label: data.ok ? 'Job accepted' : 'Job rejected', stage: data.detail || jobId })
       setTimeout(loadJobs, 1000)
-    } catch (e) { toast(String(e.message), false) }
-    setTimeout(() => setRunning(r => ({ ...r, [jobId]: false })), 2000)
+    } catch (e) {
+      toast(String(e.message), false)
+      setProgress({ label: 'Request failed', stage: String(e.message) })
+    }
+    setTimeout(() => {
+      setRunning(r => ({ ...r, [jobId]: false }))
+      setProgress(null)
+    }, 2500)
   }
 
   async function pauseResume(job) {
@@ -95,6 +105,8 @@ export default function SchedulerPage({
 
       <h1 className="admin-page-title">Data refresh schedule</h1>
       <p className="admin-page-subtitle">Controls when each ingest job runs. Pausing a job stops it from running automatically until resumed — safe to pause individual jobs while debugging a feed issue.</p>
+
+      <ActionProgress label={progress?.label} stage={progress?.stage} visible={!!progress} />
 
       <div className="admin-card">
         <div className="admin-card-title">Manual triggers</div>

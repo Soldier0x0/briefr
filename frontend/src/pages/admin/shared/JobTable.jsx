@@ -35,13 +35,14 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
     return (
       <table className="admin-table">
         <thead>
-          <tr><th>NAME</th><th>STATUS</th><th>LAST RUN</th><th>NEXT RUN</th></tr>
+          <tr><th>NAME</th><th>STATUS</th><th>CADENCE</th><th>LAST RUN</th><th>NEXT RUN</th></tr>
         </thead>
         <tbody>
           {jobs.map(job => (
             <tr key={job.id}>
               <td style={{ fontSize: '0.8rem' }}>{jobLabel(job.id, 'analyst')}</td>
               <td><JobStatusBadge status={job.status} mode="analyst" /></td>
+              <td style={{ fontSize: '0.72rem', color: 'var(--text3)' }}>{job.schedule_cadence || '—'}</td>
               <td style={{ fontSize: '0.75rem' }}>{fmtIso(job.last_run_utc)}</td>
               <td style={{ fontSize: '0.75rem' }}>
                 {job.status === 'PAUSED' ? '(paused)' : fmtIso(job.next_run_time)}
@@ -62,7 +63,7 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
       <table className="admin-table">
         <thead>
           <tr>
-            {showIds && <th>JOB ID</th>}<th>NAME</th><th>STATUS</th><th>LAST RUN</th>
+            {showIds && <th>JOB ID</th>}<th>NAME</th><th>STATUS</th><th>CADENCE</th><th>LAST RUN</th>
             <th>DURATION</th><th>RECORDS</th><th>ERROR</th><th>NEXT RUN</th><th>ACTIONS</th>
           </tr>
         </thead>
@@ -73,6 +74,7 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                 {showIds && <td className="mono" style={{ fontSize: '0.7rem' }}>{job.id}</td>}
                 <td style={{ fontSize: '0.8rem' }}>{jobLabel(job.id, 'operator') || job.name}</td>
                 <td><JobStatusBadge status={job.status} mode="operator" /></td>
+                <td style={{ fontSize: '0.72rem', color: 'var(--text3)' }}>{job.schedule_cadence || '—'}</td>
                 <td style={{ fontSize: '0.75rem' }}>{fmtIso(job.last_run_utc)}</td>
                 <td>{fmtDur(job.last_run_duration_seconds)}</td>
                 <td>{job.last_run_records_upserted ?? '—'}</td>
@@ -114,7 +116,7 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
               </tr>
               {expandErrors && expanded[job.id] && job.last_error_message && (
                 <tr key={`${job.id}-err`}>
-                  <td colSpan={showIds ? 9 : 8} style={{ background: 'var(--bg3)', padding: '0.5rem 0.75rem' }}>
+                  <td colSpan={showIds ? 10 : 9} style={{ background: 'var(--bg3)', padding: '0.5rem 0.75rem' }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--red)', wordBreak: 'break-all' }}>
                       {job.last_error_message}
                     </div>

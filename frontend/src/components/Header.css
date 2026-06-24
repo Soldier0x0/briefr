@@ -206,6 +206,15 @@
   color: var(--green);
 }
 
+.live-indicator--dot-only {
+  gap: 0;
+  margin-left: 0.5rem;
+}
+
+.header-left .live-indicator--dot-only {
+  flex-shrink: 0;
+}
+
 .live-indicator--live { color: var(--green); }
 .live-indicator--live .live-dot { background: var(--green); animation: pulse-dot 2s ease-in-out infinite; }
 
