@@ -107,10 +107,17 @@ class PostgresConnection:
             self._transaction = None
 
     async def close(self) -> None:
-        if self._transaction is not None:
-            await self._transaction.rollback()
+        try:
+            if self._transaction is not None:
+                await self._transaction.rollback()
+        except Exception as exc:
+            logger.warning(
+                "PostgresConnection.close(): rollback failed (%s) — releasing anyway",
+                exc,
+            )
+        finally:
             self._transaction = None
-        await self._pool.release(self._conn)
+            await self._pool.release(self._conn)
 
 
 async def init_pool() -> None:

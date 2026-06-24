@@ -1087,14 +1087,12 @@ async def cve_detection(
         if primary_technique and primary_technique not in technique_ids:
             technique_ids.insert(0, primary_technique)
 
-        # Run community rule lookups concurrently
-        sigma_task = asyncio.create_task(
-            find_sigma_rules(db, cve_upper, technique_ids, github_token)
-        )
-        elastic_task = asyncio.create_task(
-            find_elastic_rules(db, technique_ids, github_token)
-        )
-        sigma_rules, elastic_rules = await asyncio.gather(sigma_task, elastic_task)
+        # Sigma + Elastic lookups must not share one asyncpg connection — unlike
+        # SQLite, Postgres connections reject concurrent queries on the same
+        # session ("another operation is in progress"), which poisoned the pool
+        # when close() could not roll back and never released the connection.
+        sigma_rules = await find_sigma_rules(db, cve_upper, technique_ids, github_token)
+        elastic_rules = await find_elastic_rules(db, technique_ids, github_token)
         await db.commit()
 
         # Generate Sigma rule if no community rules found
