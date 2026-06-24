@@ -183,7 +183,7 @@ async def close_pool() -> None:
     if _pool is not None:
         try:
             await asyncio.wait_for(_pool.close(), timeout=5.0)
-        except TimeoutError:
+        except asyncio.TimeoutError:
             logger.warning(
                 "db/connection.py close_pool(): timed out after 5s — "
                 "connections may still be leaked; process exit will reclaim them"
@@ -205,7 +205,7 @@ async def get_connection() -> SqliteConnection | PostgresConnection:
         acquire_timeout = max(1.0, float(settings.database_pool_acquire_timeout_seconds))
         try:
             raw = await asyncio.wait_for(_pool.acquire(), timeout=acquire_timeout)
-        except TimeoutError:
+        except asyncio.TimeoutError:
             stats = get_pool_stats() or {}
             logger.error(
                 "db/connection.py get_connection(): pool acquire timed out after %.1fs — %s",

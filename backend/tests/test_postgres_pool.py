@@ -18,47 +18,43 @@ pytestmark = pytest.mark.skipif(
 
 
 @pytest.fixture(scope="module")
-def postgres_ready():
+def postgres_migrations():
+    """Schema only — do not bind asyncpg pool to a closed event loop."""
+
     async def _boot() -> None:
         from database import init_db, run_postgres_migrations
-        from db.connection import close_pool, init_pool
 
         await run_postgres_migrations()
-        await init_pool()
         await init_db()
 
     asyncio.run(_boot())
-    yield
-    asyncio.run(_close())
 
 
-async def _close() -> None:
-    from db.connection import close_pool
-
-    await close_pool()
-
-
-def test_postgres_pool_acquire_query_and_stats(postgres_ready):
+def test_postgres_pool_acquire_query_and_stats(postgres_migrations):
     async def _run() -> None:
-        from db.connection import get_connection, get_pool_stats
+        from db.connection import close_pool, get_connection, get_pool_stats, init_pool
 
-        db = await get_connection()
+        await init_pool()
         try:
-            rows = await db.execute_fetchall("SELECT 1 AS ok")
-            assert rows[0]["ok"] == 1
-        finally:
-            await db.close()
+            db = await get_connection()
+            try:
+                rows = await db.execute_fetchall("SELECT 1 AS ok")
+                assert rows[0]["ok"] == 1
+            finally:
+                await db.close()
 
-        stats = get_pool_stats()
-        assert stats is not None
-        assert stats["max"] >= 1
-        assert stats["idle"] >= 1
-        assert stats["in_use"] == stats["size"] - stats["idle"]
+            stats = get_pool_stats()
+            assert stats is not None
+            assert stats["max"] >= 1
+            assert stats["idle"] >= 1
+            assert stats["in_use"] == stats["size"] - stats["idle"]
+        finally:
+            await close_pool()
 
     asyncio.run(_run())
 
 
-def test_postgres_pool_stats_on_health(postgres_ready, monkeypatch):
+def test_postgres_pool_stats_on_health(postgres_migrations, monkeypatch):
     async def _noop_async() -> None:
         return None
 
