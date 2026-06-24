@@ -8,7 +8,7 @@ Type=oneshot
 User=briefr
 Group=briefr
 WorkingDirectory=/opt/briefr/backend
-Environment="PATH=/opt/briefr/venv/bin"
+Environment="PATH=/opt/briefr/venv/bin:/usr/bin:/bin"
 Environment="BACKUP_DIR=/var/lib/briefr/backups"
 EnvironmentFile=-/opt/briefr/backend/.env
 ExecStart=/opt/briefr/venv/bin/python -m backup run --reason scheduled
