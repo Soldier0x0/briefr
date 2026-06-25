@@ -111,7 +111,8 @@ def any_ingest_lock_held() -> bool:
     """True when any ingest-related lock is held (used by /api/admin/system)."""
     return any(lock.locked() for lock in [
         _nvd_lock, _kev_lock, _epss_lock, _epss_backfill_lock,
-        _mitre_refresh_lock, _otx_lock, _correlation_lock,
+        _mitre_refresh_lock, _atlas_version_check_lock,
+        _otx_lock, _otx_continuous_lock, _correlation_lock,
         _vulnrichment_lock, _cvelistv5_lock, _embeddings_lock,
         _llm_extraction_lock, _exploit_sources_lock, _scheduled_backup_lock,
     ])

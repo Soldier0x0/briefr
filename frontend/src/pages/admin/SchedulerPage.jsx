@@ -3,9 +3,17 @@ import { adminApi } from '../../api.js'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import DangerZone from './shared/DangerZone.jsx'
 import JobTable from './shared/JobTable.jsx'
+import RunningJobsPanel from './shared/RunningJobsPanel.jsx'
 import OperatorSystemActions from './shared/OperatorSystemActions.jsx'
 import ActionProgress from './shared/ActionProgress.jsx'
 import { MANUAL_PIPELINES } from './constants.js'
+import { statusLabel } from './catalog.js'
+import {
+  getRunningJobs,
+  getSchedulerJobs,
+  isJobRunning,
+  jobById,
+} from './jobStatus.js'
 
 const STATUS_FILTERS = ['ACTIVE', 'PAUSED', 'LOCKED', 'DISABLED']
 
@@ -15,22 +23,31 @@ export default function SchedulerPage({
   onRunIngest,
   onRestart,
   onDrainRestart,
+  onRefreshSystem,
 }) {
-  const [jobs, setJobs] = useState(null)
+  const [jobsFallback, setJobsFallback] = useState(null)
   const [running, setRunning] = useState({})
   const [pauseAllConfirm, setPauseAllConfirm] = useState(false)
   const [resumeAllConfirm, setResumeAllConfirm] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
   const [progress, setProgress] = useState(null)
 
-  async function loadJobs() {
+  const schedulerJobs = getSchedulerJobs(system, jobsFallback)
+  const runningJobs = getRunningJobs(system, jobsFallback)
+
+  async function loadJobsFallback() {
     try {
       const res = await adminApi.get('/scheduler')
-      setJobs(await res.json())
-    } catch { }
+      setJobsFallback(await res.json())
+    } catch { /* polled system is primary */ }
   }
 
-  useEffect(() => { loadJobs() }, [])
+  useEffect(() => { loadJobsFallback() }, [])
+
+  function refreshSchedulerState() {
+    onRefreshSystem?.()
+    loadJobsFallback()
+  }
 
   async function runNow(jobId) {
     setRunning(r => ({ ...r, [jobId]: true }))
@@ -38,10 +55,14 @@ export default function SchedulerPage({
     try {
       const res = await adminApi.post('/scheduler/run', { job_id: jobId })
       const data = await res.json()
-      if (res.status === 409) { toast('Already running', false); setProgress(null); return }
+      if (res.status === 409) {
+        toast('Already running', false)
+        setProgress(null)
+        return
+      }
       toast(data.ok ? `Started: ${jobId}` : data.detail || 'Failed', data.ok)
       setProgress({ label: data.ok ? 'Job accepted' : 'Job rejected', stage: data.detail || jobId })
-      setTimeout(loadJobs, 1000)
+      refreshSchedulerState()
     } catch (e) {
       toast(String(e.message), false)
       setProgress({ label: 'Request failed', stage: String(e.message) })
@@ -57,7 +78,7 @@ export default function SchedulerPage({
     try {
       await adminApi.post(`/scheduler/${action}`, { job_id: job.id })
       toast(`Job ${action}d`, true)
-      loadJobs()
+      refreshSchedulerState()
     } catch (e) { toast(String(e.message), false) }
   }
 
@@ -67,7 +88,7 @@ export default function SchedulerPage({
       const res = await adminApi.post('/scheduler/pause-all', { confirm_text: 'pause' })
       const data = await res.json()
       toast(data.ok ? `Paused ${data.paused?.length ?? 0} job(s)` : 'Failed', data.ok)
-      loadJobs()
+      refreshSchedulerState()
     } catch (e) { toast(String(e.message), false) }
   }
 
@@ -77,12 +98,13 @@ export default function SchedulerPage({
       const res = await adminApi.post('/scheduler/resume-all', { confirm_text: 'resume' })
       const data = await res.json()
       toast(data.ok ? `Resumed ${data.resumed?.length ?? 0} job(s)` : 'Failed', data.ok)
-      loadJobs()
+      refreshSchedulerState()
     } catch (e) { toast(String(e.message), false) }
   }
 
-  const activeLocks = system?.active_locks || []
-  const filteredJobs = jobs ? (statusFilter ? jobs.filter(j => j.status === statusFilter) : jobs) : null
+  const filteredJobs = schedulerJobs
+    ? (statusFilter ? schedulerJobs.filter(j => j.status === statusFilter) : schedulerJobs)
+    : null
 
   return (
     <div>
@@ -112,24 +134,26 @@ export default function SchedulerPage({
         <div className="admin-card-title">Manual triggers</div>
         <div className="admin-action-bar" style={{ flexWrap: 'wrap' }}>
           {MANUAL_PIPELINES.map(p => {
-            const job = (jobs || []).find(j => j.id === p.id)
-            const locked = job?.status === 'LOCKED' || running[p.id]
+            const job = jobById(schedulerJobs, p.id)
+            const busy = isJobRunning(job) || running[p.id]
             return (
               <button
                 key={p.id}
                 className="admin-btn admin-btn-ghost"
                 style={{ fontSize: '0.8125rem' }}
                 onClick={() => runNow(p.id)}
-                disabled={locked}
+                disabled={busy}
               >
-                {locked ? <><span className="admin-spinner" /> Running…</> : p.label}
+                {busy ? (
+                  <><span className="admin-spinner" /> {statusLabel('LOCKED', 'operator')}…</>
+                ) : p.label}
               </button>
             )
           })}
         </div>
-        {activeLocks.length > 0 && (
-          <div style={{ fontSize: '0.75rem', color: 'var(--amber)', marginTop: '0.5rem' }}>
-            {activeLocks.map(l => l.job_id).join(', ')} currently running
+        {runningJobs.length > 0 && (
+          <div style={{ marginTop: '0.75rem' }}>
+            <RunningJobsPanel jobs={runningJobs} mode="operator" showTechnicalIds />
           </div>
         )}
       </div>
@@ -140,7 +164,7 @@ export default function SchedulerPage({
           <button className={`filter-chip ${statusFilter === '' ? 'active' : ''}`} onClick={() => setStatusFilter('')}>All</button>
           {STATUS_FILTERS.map(s => (
             <button key={s} className={`filter-chip ${statusFilter === s ? 'active' : ''}`} onClick={() => setStatusFilter(s)}>
-              {s}
+              {statusLabel(s, 'operator')}
             </button>
           ))}
         </div>
