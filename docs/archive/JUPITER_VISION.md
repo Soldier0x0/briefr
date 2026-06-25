@@ -139,6 +139,6 @@ Single operator today; routes and audit fields designed for future roles.
 ## Related docs
 
 - [`ROADMAP.md`](ROADMAP.md) — release index
-- [`Beta V1.3.md`](../Beta%20V1.3.md) — Forge and analyst features
-- [`Beta V1.4.md`](../Beta%20V1.4.md) — admin and webhooks
+- [`beta/Beta V1.3.md`](beta/Beta%20V1.3.md) — Forge and analyst features
+- [`beta/Beta V1.4.md`](beta/Beta%20V1.4.md) — admin and webhooks
 - [`THREAT_MODEL.md`](THREAT_MODEL.md) — app security model

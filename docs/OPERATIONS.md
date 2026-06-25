@@ -131,7 +131,7 @@ env_file:            secrets (DATABASE_URL)
 ports:               127.0.0.1:8000:8000
 ```
 
-Same env vars as systemd. See [`Beta V2.0.md`](../Beta%20V2.0.md).
+Same env vars as systemd. See [`archive/beta/Beta V2.0.md`](archive/beta/Beta%20V2.0.md).
 
 ---
 
@@ -176,7 +176,7 @@ cloudflared requires **outbound** HTTPS only.
 | Document | Role |
 |----------|------|
 | [`ROADMAP.md`](ROADMAP.md) | Release index |
-| [`THREAT_MODEL.md`](THREAT_MODEL.md) | Security |
+| [`archive/THREAT_MODEL.md`](archive/THREAT_MODEL.md) | Security |
 | [`POSTGRES.md`](POSTGRES.md) | PostgreSQL production guide |
 | [`ONBOARDING.md`](ONBOARDING.md) | Deploy scripts |
 | [`../deploy/setup.sh`](../deploy/setup.sh) | Initial install |

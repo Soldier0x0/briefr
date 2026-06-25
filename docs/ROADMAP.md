@@ -21,7 +21,7 @@ BRIEFR is **not** a SIEM, XDR, or enterprise threat-intelligence platform. It is
 
 > A **self-hosted analyst intelligence pane** — vulnerability and threat context (KEV, EPSS, MITRE, IOC) ranked for **your stack**, connected to **detection engineering** and **investigation**, without enterprise TI pricing or log-scale infrastructure.
 
-See [`JUPITER_VISION.md`](JUPITER_VISION.md) for the full north-star architecture.
+See [`archive/JUPITER_VISION.md`](archive/JUPITER_VISION.md) for the full north-star architecture.
 
 ---
 
@@ -65,7 +65,7 @@ Cross-release amendments approved in planning (details in each release doc):
 | STRIDE-lite worksheet and HyperDX provisioner | **Deferred** | Speculative until the modular-SIEM future is real |
 | Repository layer | **Pay-as-you-go** | Extract per table only when needed; full layer waits for V2.0 Postgres |
 
-**Storage decision:** intel data stays in **PostgreSQL** inside BRIEFR (production: Postgres 16 in Docker at `/opt/infra/postgres`). ClickHouse remains the **telemetry sidecar** store only (see [`JUPITER_VISION.md`](JUPITER_VISION.md)).
+**Storage decision:** intel data stays in **PostgreSQL** inside BRIEFR (production: Postgres 16 in Docker at `/opt/infra/postgres`). ClickHouse remains the **telemetry sidecar** store only (see [`archive/JUPITER_VISION.md`](archive/JUPITER_VISION.md)).
 
 **ML placement rules:** all ML is env-gated, CPU-only, runs in scheduler jobs (never the request path), and the tool stays fully functional with ML disabled. No log ML in core; no black-box replacement of the explainable risk score; EPSS is consumed, never re-derived.
 
@@ -75,15 +75,15 @@ Cross-release amendments approved in planning (details in each release doc):
 
 | Document | Contents |
 |----------|----------|
-| [`../Beta V1.2.md`](../Beta%20V1.2.md) | Foundation: structure, repos, auth, resilience — **not a feature explosion** |
-| [`../Beta V1.3.md`](../Beta%20V1.3.md) | Analyst pane: action queue, Chart.js, Forge MVP, performance |
-| [`../Beta V1.4.md`](../Beta%20V1.4.md) | Operator pane: admin, backups UI, webhooks, wallboard |
-| [`../Beta V1.5.md`](../Beta%20V1.5.md) | Threat modeling, detection proof, intel-driven backlog |
-| [`../Beta V2.0.md`](../Beta%20V2.0.md) | Containerization, Postgres option, team-ready auth |
-| [`JUPITER_VISION.md`](JUPITER_VISION.md) | Jupiter ecosystem, ClickStack relationship, ML split |
-| [`THREAT_MODEL.md`](THREAT_MODEL.md) | Application threat model (BRIEFR itself) |
+| [`archive/beta/Beta V1.2.md`](archive/beta/Beta%20V1.2.md) | Foundation: structure, repos, auth, resilience — **not a feature explosion** |
+| [`archive/beta/Beta V1.3.md`](archive/beta/Beta%20V1.3.md) | Analyst pane: action queue, Chart.js, Forge MVP, performance |
+| [`archive/beta/Beta V1.4.md`](archive/beta/Beta%20V1.4.md) | Operator pane: admin, backups UI, webhooks, wallboard |
+| [`archive/beta/Beta V1.5.md`](archive/beta/Beta%20V1.5.md) | Threat modeling, detection proof, intel-driven backlog |
+| [`archive/beta/Beta V2.0.md`](archive/beta/Beta%20V2.0.md) | Containerization, Postgres option, team-ready auth |
+| [`archive/JUPITER_VISION.md`](archive/JUPITER_VISION.md) | Jupiter ecosystem, ClickStack relationship, ML split |
+| [`archive/THREAT_MODEL.md`](archive/THREAT_MODEL.md) | Application threat model (BRIEFR itself) |
 | [`OPERATIONS.md`](OPERATIONS.md) | Backup, logs, container seams, deploy compatibility |
-| [`AGENT_IMPLEMENTATION_GUIDE.md`](AGENT_IMPLEMENTATION_GUIDE.md) | Notes for AI agents / implementers |
+| [`archive/AGENT_IMPLEMENTATION_GUIDE.md`](archive/AGENT_IMPLEMENTATION_GUIDE.md) | Notes for AI agents / implementers |
 
 ---
 
@@ -133,7 +133,7 @@ See [`OPERATIONS.md`](OPERATIONS.md).
 2. Pick **one phase** from the target release doc.
 3. Follow [`ONBOARDING.md`](ONBOARDING.md) and existing code conventions.
 4. Do not expand scope into a later release without updating these docs in the same PR.
-5. Jupiter telemetry (ClickStack) is **optional** and documented in `JUPITER_VISION.md` — not required for BRIEFR core releases.
+5. Jupiter telemetry (ClickStack) is **optional** and documented in `archive/JUPITER_VISION.md` — not required for BRIEFR core releases.
 
 ---
 

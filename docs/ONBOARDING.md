@@ -2,28 +2,24 @@
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
-**Purpose:** Single entry point for developers who want to understand BRIEFR, run it locally, and navigate the codebase. Use this before diving into individual reference documents.
+**Purpose:** Entry point for developers changing the code. If you only want to **use** or **self-host** BRIEFR, start at [`index.md`](index.md) instead.
 
 ---
 
 ## 1. Recommended reading order
 
-Read in this sequence the first time through. Skim what you already know; stop and run commands where indicated.
-
 | Step | Document | Why |
 |------|----------|-----|
-| 1 | [`README.md`](../README.md) | Product scope, features, quick start |
-| 2 | [`SYSTEM_DESIGN.md`](../SYSTEM_DESIGN.md) | Architecture, data flows, trade-offs |
-| 3 | [`docs/diagrams/`](../docs/diagrams/) | Visual architecture + sequence diagrams (open `.mermaid` in GitHub or VS Code) |
-| 4 | [`APPLICATION_EXECUTION_MAP.md`](../APPLICATION_EXECUTION_MAP.md) | Startup order and per-tab request journeys |
-| 5 | [`API_REFERENCE.md`](../API_REFERENCE.md) | Endpoint params and response shapes |
-| 6 | [`FOLDER_STRUCTURE_GUIDE.md`](../FOLDER_STRUCTURE_GUIDE.md) | File-by-file map — use when you need the exact module to edit |
-| 6b | [`CODEBASE_CONTEXT.md`](../CODEBASE_CONTEXT.md) | Consolidated codebase reference (WHAT/WHERE/WHY/HOW/WHEN + AI guardrails) |
-| 7 | [`TECHNICAL_INVENTORY.md`](../TECHNICAL_INVENTORY.md) | Schema (26 tables), scheduler jobs, feature matrix |
-| 8 | [`docs/ROADMAP.md`](ROADMAP.md) | Release index (V1.2–V2.0) and product positioning |
-| 9 | [`Beta V1.2.md`](../Beta%20V1.2.md) | Current release — foundation and hardening |
-| 10 | [`docs/JUPITER_VISION.md`](JUPITER_VISION.md) | Jupiter ecosystem and beast identity (optional sidecars) |
-| 11 | Source + tests | `backend/tests/` and the files named in the execution map |
+| 1 | [`index.md`](index.md) + [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) | Quick product context (5 min) |
+| 2 | [`README.md`](../README.md) | Features and local quick start |
+| 3 | [`SYSTEM_DESIGN.md`](../SYSTEM_DESIGN.md) | Architecture and trade-offs |
+| 4 | [`API_REFERENCE.md`](../API_REFERENCE.md) | Endpoints when you touch the API |
+| 5 | [`CODEBASE_CONTEXT.md`](../CODEBASE_CONTEXT.md) | Module map + AI guardrails |
+| 6 | Source + tests | `backend/tests/` and files named in [`APPLICATION_EXECUTION_MAP.md`](../APPLICATION_EXECUTION_MAP.md) |
+
+**Deep reference when needed:** [`FOLDER_STRUCTURE_GUIDE.md`](../FOLDER_STRUCTURE_GUIDE.md), [`TECHNICAL_INVENTORY.md`](../TECHNICAL_INVENTORY.md), [`OPERATIONS.md`](OPERATIONS.md), [`PRODUCT_STATUS.md`](PRODUCT_STATUS.md).
+
+**Historical planning:** [`archive/`](archive/) (beta specs, agent notes — not required reading).
 
 **Printable architecture:** [`SYSTEM_DESIGN.pdf`](../SYSTEM_DESIGN.pdf) — regenerate with `node scripts/generate_system_design_pdf.mjs` after editing `SYSTEM_DESIGN.md`.
 
