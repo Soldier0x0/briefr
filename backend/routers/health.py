@@ -22,7 +22,7 @@ from database import (
 from db.config import is_postgres, resolve_database_url
 from db.connection import get_pool_stats
 from feeds.case_study_feed import get_incident_feed_status
-from resilient_client import get_feed_health
+from resilient_client import get_api_queue_status, get_feed_health
 from scheduler import (
     get_ingest_intervals,
     get_ingest_status,
@@ -95,6 +95,7 @@ async def health(
         "cve_count": cve_count,
         "database": database_meta,
         "feeds": {"incidents": incidents_status, "sources": get_feed_health()},
+        "api_queue": get_api_queue_status(),
         "last_updated": last_updated,
         "nvd_sync_watermark": nvd_sync_watermark,
         "refresh_in_progress": refresh_in_progress(),

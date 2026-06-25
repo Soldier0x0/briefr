@@ -51,7 +51,7 @@ from config_schema import (
 from dependencies import audit, require_admin, trigger_graceful_restart
 from destructive_actions import list_actions, require_confirm
 from rate_limit import get_top_consumers, rate_limit_refresh
-from resilient_client import get_feed_health, reset_circuit
+from resilient_client import get_api_queue_status, get_feed_health, reset_circuit
 from settings import settings
 from structured_logging import LOG_CATEGORIES, get_log_buffer, get_known_loggers
 
@@ -426,6 +426,7 @@ async def get_system(request: Request):
             "incidents": incidents,
         },
         "open_circuit_count": open_circuit_count,
+        "api_queue": get_api_queue_status(),
         "jobs_with_errors_count": len(jobs_with_errors),
         "active_locks": active_locks,
         "recent_errors": [

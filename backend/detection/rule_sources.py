@@ -16,6 +16,8 @@ from typing import Any
 
 import httpx
 
+from resilient_client import resilient_get
+
 logger = logging.getLogger(__name__)
 
 SIGMA_REPO = "SigmaHQ/sigma"
@@ -40,21 +42,23 @@ def _gh_headers(token: str = "") -> dict[str, str]:
 
 
 async def _github_search(query: str, token: str = "") -> list[dict]:
-    """Search GitHub code. Returns items list or [] on error/rate-limit."""
+    """Search GitHub code. Returns items list or [] on hard errors."""
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get(
-                GITHUB_SEARCH_URL,
-                params={"q": query, "per_page": "10"},
-                headers=_gh_headers(token),
-            )
-        if resp.status_code in (403, 429):
-            logger.warning("GitHub Search rate-limited (query=%r): %d", query, resp.status_code)
-            return []
-        if resp.status_code != 200:
-            logger.warning("GitHub Search failed (query=%r): %d", query, resp.status_code)
-            return []
+        resp = await resilient_get(
+            "github",
+            GITHUB_SEARCH_URL,
+            params={"q": query, "per_page": "10"},
+            headers=_gh_headers(token),
+            timeout=15.0,
+            retries=0,
+        )
         return resp.json().get("items", [])
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code in (403, 429):
+            logger.warning("GitHub Search rate-limited (query=%r): %d", query, exc.response.status_code)
+        else:
+            logger.warning("GitHub Search failed (query=%r): %d", query, exc.response.status_code)
+        return []
     except Exception as exc:
         logger.warning("GitHub Search error: %s", exc)
         return []
@@ -63,11 +67,14 @@ async def _github_search(query: str, token: str = "") -> list[dict]:
 async def _fetch_raw(url: str, token: str = "") -> str | None:
     """Fetch raw file content from GitHub. Returns None on error."""
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(url, headers=_gh_headers(token))
-        if resp.status_code == 200:
-            return resp.text
-        return None
+        resp = await resilient_get(
+            "github",
+            url,
+            headers=_gh_headers(token),
+            timeout=10.0,
+            retries=0,
+        )
+        return resp.text
     except Exception as exc:
         logger.warning("Raw fetch error (%s): %s", url, exc)
         return None

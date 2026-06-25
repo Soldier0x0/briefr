@@ -4,6 +4,7 @@ import { useAssetProfileOptional } from '../context/AssetProfileContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import ShortcutsPanel from './ShortcutsPanel.jsx'
 import UserMenu from './UserMenu.jsx'
+import ApiQueueIndicator from './ApiQueueIndicator.jsx'
 import {
   COMMON_TIMEZONES,
   formatTime,
@@ -156,6 +157,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
         {/* Right: legal, live dot, clock */}
         <div className="header-right">
           {showShortcuts && <ShortcutsPanel placement="header" />}
+          <ApiQueueIndicator apiQueue={feedHealth?.api_queue} />
 
           {assetCtx?.isLoaded && (
             <button

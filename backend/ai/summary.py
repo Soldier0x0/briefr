@@ -263,28 +263,26 @@ async def _call_groq(prompt: str, api_key: str) -> str | None:
 
 async def _call_anthropic(prompt: str, api_key: str) -> str | None:
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                ANTHROPIC_URL,
-                headers={
-                    "x-api-key": api_key,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json",
-                },
-                json={
-                    "model": ANTHROPIC_MODEL,
-                    "max_tokens": 600,
-                    "system": SYSTEM_PROMPT,
-                    "messages": [{"role": "user", "content": prompt}],
-                },
-            )
-        if response.status_code != 200:
-            logger.warning(
-                "Anthropic summary error %s: %s",
-                response.status_code,
-                response.text[:300],
-            )
-            return None
+        from resilient_client import resilient_request
+
+        response = await resilient_request(
+            "anthropic",
+            "POST",
+            ANTHROPIC_URL,
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": ANTHROPIC_MODEL,
+                "max_tokens": 600,
+                "system": SYSTEM_PROMPT,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=60.0,
+            retries=0,
+        )
         blocks = response.json().get("content") or []
         parts = [b.get("text", "") for b in blocks if b.get("type") == "text"]
         text = "".join(parts).strip()
