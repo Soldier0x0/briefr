@@ -13,7 +13,8 @@ from typing import Any
 
 import httpx
 
-from ai.groq_config import GROQ_MODEL, GROQ_URL
+from ai.groq_client import chat_completion, message_content
+from ai.groq_config import GROQ_MODEL
 from templates.intelligence import kev_sentence, severity_sentence
 
 logger = logging.getLogger(__name__)
@@ -243,33 +244,18 @@ def _build_user_prompt(
 
 async def _call_groq(prompt: str, api_key: str) -> str | None:
     try:
-        async with httpx.AsyncClient(timeout=50.0) as client:
-            response = await client.post(
-                GROQ_URL,
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": GROQ_MODEL,
-                    "messages": [
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "max_tokens": 600,
-                    "temperature": 0.25,
-                },
-            )
-        if response.status_code != 200:
-            logger.warning("Groq summary error %s: %s", response.status_code, response.text[:300])
-            return None
-        content = (
-            response.json()
-            .get("choices", [{}])[0]
-            .get("message", {})
-            .get("content", "")
+        response = await chat_completion(
+            api_key,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=600,
+            temperature=0.25,
+            timeout=50.0,
         )
-        return content.strip() or None
+        content = message_content(response).strip()
+        return content or None
     except Exception as exc:
         logger.error("Groq summary request failed: %s", exc)
         return None
