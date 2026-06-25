@@ -43,11 +43,20 @@ def _parse_duration_seconds(value: str) -> float:
     except ValueError:
         pass
     match = re.match(r"^(?:(?P<mins>\d+)m)?(?:(?P<secs>\d+(?:\.\d+)?)s)?$", text)
-    if not match:
-        return 0.0
-    mins = int(match.group("mins") or 0)
-    secs = float(match.group("secs") or 0)
-    return mins * 60.0 + secs
+    if match:
+        mins = int(match.group("mins") or 0)
+        secs = float(match.group("secs") or 0)
+        return mins * 60.0 + secs
+    try:
+        from datetime import datetime, timezone
+        from email.utils import parsedate_to_datetime
+
+        dt = parsedate_to_datetime(text)
+        if dt:
+            return max(0.0, (dt - datetime.now(timezone.utc)).total_seconds())
+    except Exception:
+        pass
+    return 0.0
 
 
 def schedule_source_pause(source: str, seconds: float, *, reason: str = "rate_limit") -> None:
@@ -142,10 +151,7 @@ async def await_api_slot(source: str) -> None:
                         state.wait_reason = ""
                         return
             await asyncio.sleep(min(wait, 1.0))
-    except BaseException:
-        state.queued = max(0, state.queued - 1)
-        raise
-    else:
+    finally:
         state.queued = max(0, state.queued - 1)
 
 

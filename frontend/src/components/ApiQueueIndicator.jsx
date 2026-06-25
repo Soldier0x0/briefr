@@ -58,10 +58,11 @@ export default function ApiQueueIndicator({ apiQueue, className = '' }) {
                 <li key={key}>
                   <span className="api-queue-source-name">{formatSourceLabel(key)}</span>
                   <span className="api-queue-source-meta mono">
-                    {info.queued > 0 && `${info.queued} waiting`}
-                    {info.queued > 0 && info.active > 0 && ' · '}
-                    {info.active > 0 && `${info.active} active`}
-                    {info.paused_for_seconds > 0 && ` · ${info.paused_for_seconds}s pause`}
+                    {[
+                      info.queued > 0 && `${info.queued} waiting`,
+                      info.active > 0 && `${info.active} active`,
+                      info.paused_for_seconds > 0 && `${info.paused_for_seconds}s pause`,
+                    ].filter(Boolean).join(' · ')}
                   </span>
                 </li>
               ))}

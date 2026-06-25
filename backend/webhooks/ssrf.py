@@ -201,54 +201,50 @@ async def safe_webhook_request(
     while True:
         await await_api_slot(source)
         try:
-            response = await client.request(
-                method,
-                pinned_url,
-                json=json,
-                data=data,
-                headers=outbound_headers,
-                extensions=request_extensions,
-            )
-        except httpx.HTTPError as exc:
-            release_api_slot(source)
-            record_source_failure(source, f"{type(exc).__name__}: {exc}")
-            raise
+            try:
+                response = await client.request(
+                    method,
+                    pinned_url,
+                    json=json,
+                    data=data,
+                    headers=outbound_headers,
+                    extensions=request_extensions,
+                )
+            except httpx.HTTPError as exc:
+                record_source_failure(source, f"{type(exc).__name__}: {exc}")
+                raise
 
-        if response.status_code == 429:
-            apply_rate_limit_headers(source, response.headers)
-            release_api_slot(source)
-            continue
-
-        if response.status_code in RETRYABLE_STATUS:
-            release_api_slot(source)
-            if attempt < retries:
-                attempt += 1
-                await asyncio.sleep(RETRY_BACKOFF_SECONDS * (2 ** (attempt - 1)))
+            if response.status_code == 429:
+                apply_rate_limit_headers(source, response.headers)
                 continue
-            record_source_failure(source, f"HTTP {response.status_code}")
-            response.raise_for_status()
 
-        if response.is_redirect:
+            if response.status_code in RETRYABLE_STATUS:
+                if attempt < retries:
+                    attempt += 1
+                    await asyncio.sleep(RETRY_BACKOFF_SECONDS * (2 ** (attempt - 1)))
+                    continue
+                record_source_failure(source, f"HTTP {response.status_code}")
+                response.raise_for_status()
+
+            if response.is_redirect:
+                record_source_failure(source, f"redirect blocked: HTTP {response.status_code}")
+                raise SSRFError(
+                    f"redirect responses are not followed (HTTP {response.status_code})"
+                )
+
+            if response.is_server_error:
+                record_source_failure(source, f"HTTP {response.status_code}")
+                response.raise_for_status()
+
+            if response.is_client_error:
+                record_source_failure(source, f"HTTP {response.status_code}")
+                response.raise_for_status()
+
+            record_source_success(source)
+            apply_rate_limit_headers(source, response.headers)
+            return response
+        finally:
             release_api_slot(source)
-            record_source_failure(source, f"redirect blocked: HTTP {response.status_code}")
-            raise SSRFError(
-                f"redirect responses are not followed (HTTP {response.status_code})"
-            )
-
-        if response.is_server_error:
-            release_api_slot(source)
-            record_source_failure(source, f"HTTP {response.status_code}")
-            response.raise_for_status()
-
-        if response.is_client_error:
-            release_api_slot(source)
-            record_source_failure(source, f"HTTP {response.status_code}")
-            response.raise_for_status()
-
-        release_api_slot(source)
-        record_source_success(source)
-        apply_rate_limit_headers(source, response.headers)
-        return response
 
 
 def webhook_json_payload(message: str, *, event_type: str, dedupe_key: str | None = None) -> dict[str, Any]:

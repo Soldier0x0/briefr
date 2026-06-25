@@ -75,6 +75,6 @@ def message_content(response: httpx.Response) -> str:
                 .get("content", "")
                 or ""
             )
-    except (ValueError, TypeError, KeyError, IndexError):
+    except (ValueError, TypeError, KeyError, IndexError, AttributeError):
         pass
     return ""

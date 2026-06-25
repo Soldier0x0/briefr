@@ -18,6 +18,29 @@ def test_parse_duration_seconds():
     assert abs(aq._parse_duration_seconds("2m59.56s") - 179.56) < 0.01
 
 
+def test_parse_duration_http_date():
+    from datetime import datetime, timedelta, timezone
+    from email.utils import format_datetime
+
+    future = datetime.now(timezone.utc) + timedelta(seconds=120)
+    http_date = format_datetime(future)
+    result = aq._parse_duration_seconds(http_date)
+    assert 100 < result < 140
+
+
+def test_queued_decrements_after_slot_acquired():
+    aq.reset_api_queue()
+
+    async def run():
+        await aq.await_api_slot("test_source")
+        return aq.get_api_queue_status()
+
+    status = asyncio.run(run())
+    assert status["total_queued"] == 0
+    aq.release_api_slot("test_source")
+    aq.reset_api_queue()
+
+
 def test_queue_status_tracks_waiting(monkeypatch):
     aq.reset_api_queue()
     pacing_calls = {"n": 0}
