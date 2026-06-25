@@ -68,26 +68,21 @@ async def run_otx_continuous_sync(api_key: str) -> dict:
     db = await get_db()
     try:
         missing_cves = await get_cves_missing_otx_pulses(db, limit=min(budget, 500))
+        for cve_id in missing_cves:
+            if stats["api_calls"] >= budget or not await has_quota("otx"):
+                break
+            try:
+                pulses = await fetch_cve_pulses(cve_id, api_key)
+                stats["api_calls"] += 1
+                if not pulses:
+                    continue
+                await store_otx_cve_pulses(db, cve_id, pulses)
+                await db.commit()
+                stats["cve_pulses_stored"] += len(pulses)
+            except Exception as exc:
+                logger.warning("OTX continuous CVE skip %s: %s", cve_id, exc)
     finally:
         await db.close()
-
-    for cve_id in missing_cves:
-        if stats["api_calls"] >= budget or not await has_quota("otx"):
-            break
-        try:
-            pulses = await fetch_cve_pulses(cve_id, api_key)
-            stats["api_calls"] += 1
-            if not pulses:
-                continue
-            write_db = await get_db()
-            try:
-                await store_otx_cve_pulses(write_db, cve_id, pulses)
-                await write_db.commit()
-                stats["cve_pulses_stored"] += len(pulses)
-            finally:
-                await write_db.close()
-        except Exception as exc:
-            logger.warning("OTX continuous CVE skip %s: %s", cve_id, exc)
 
     ioc_budget = min(
         get_otx_ioc_sync_max_per_run(),

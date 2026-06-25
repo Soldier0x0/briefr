@@ -46,7 +46,9 @@ def build_yara_rules_from_hashes(
             cond = f'hash.sha1(0, filesize) == "{h}"'
         else:
             cond = f'hash.sha256(0, filesize) == "{h}"'
-        yara = f"""rule {_rule_name(cve_id, idx)} {{
+        yara = f"""import "hash"
+
+rule {_rule_name(cve_id, idx)} {{
     meta:
         author = "BRIEFR (generated from OTX)"
         description = "Hash from {meta_pulse} linked to {cve_id}"

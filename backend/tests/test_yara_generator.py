@@ -14,6 +14,7 @@ def test_build_yara_sha256():
     assert len(rules) == 1
     assert rules[0]["hash_type"] == "sha256"
     assert h in rules[0]["yara"]
+    assert 'import "hash"' in rules[0]["yara"]
     assert "CVE-2024-1234" in rules[0]["yara"]
 
 

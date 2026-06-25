@@ -2239,7 +2239,7 @@ async def get_embedding_boosted_cve_ids_for_otx(
     if not anchors:
         return []
 
-    ordered: list[str] = []
+    candidates: list[str] = []
     seen: set[str] = set()
     for row in anchors:
         anchor_id = row["cve_id"]
@@ -2248,24 +2248,28 @@ async def get_embedding_boosted_cve_ids_for_otx(
             continue
         for item in similar:
             cid = item.get("cve_id")
-            if not cid or cid in seen:
-                continue
-            check = await db.execute_fetchall(
-                """
-                SELECT 1 FROM cves c
-                WHERE c.cve_id = ?
-                  AND NOT EXISTS (
-                    SELECT 1 FROM otx_cve_pulses o WHERE o.cve_id = c.cve_id
-                  )
-                """,
-                (cid,),
-            )
-            if check:
+            if cid and cid not in seen:
                 seen.add(cid)
-                ordered.append(cid)
-                if len(ordered) >= limit:
-                    return [{"cve_id": c} for c in ordered]
-    return [{"cve_id": c} for c in ordered]
+                candidates.append(cid)
+
+    if not candidates:
+        return []
+
+    placeholders = ",".join("?" for _ in candidates)
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT c.cve_id
+        FROM cves c
+        WHERE c.cve_id IN ({placeholders})
+          AND NOT EXISTS (
+            SELECT 1 FROM otx_cve_pulses o WHERE o.cve_id = c.cve_id
+          )
+        """,
+        tuple(candidates),
+    )
+    missing_set = {row["cve_id"] for row in rows}
+    ordered = [cid for cid in candidates if cid in missing_set]
+    return [{"cve_id": c} for c in ordered[:limit]]
 
 
 async def get_prioritized_cve_ids_for_otx(
