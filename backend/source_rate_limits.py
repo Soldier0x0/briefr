@@ -11,7 +11,7 @@ References:
 - GitHub REST: https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api
 - AbuseIPDB: https://docs.abuseipdb.com/ (1,000 checks/day free)
 - GreyNoise: https://docs.greynoise.io/docs/using-the-greynoise-community-api
-- OTX: https://otx.alienvault.com/api (10,000 req/month free tier)
+- OTX: https://otx.alienvault.com/api (10,000 req/hour with API key)
 - Anthropic: https://docs.anthropic.com/en/api/rate-limits
 """
 
@@ -79,9 +79,9 @@ PACING_PROFILES: dict[str, SourcePacing] = {
         notes="Faster with GITHUB_TOKEN (5,000 req/hour).",
     ),
     "otx": SourcePacing(
-        min_interval_seconds=1.0,
+        min_interval_seconds=0.5,
         docs_url="https://otx.alienvault.com/api",
-        notes="10,000 req/month free tier.",
+        notes="10,000 req/hour with API key; BRIEFR targets ~7,200/hour (2 req/sec).",
     ),
     "epss": SourcePacing(
         min_interval_seconds=2.0,
@@ -166,3 +166,13 @@ def get_source_pacing(source: str) -> SourcePacing:
         docs_url=profile.docs_url,
         notes=profile.notes,
     )
+
+
+def get_otx_hourly_limit() -> int:
+    """OTX authenticated tier: 10,000 requests/hour."""
+    return max(1, int(os.environ.get("OTX_HOURLY_LIMIT", "10000")))
+
+
+def get_min_interval(source: str) -> float:
+    """Seconds to wait after the previous request to the same source."""
+    return get_source_pacing(source).min_interval_seconds

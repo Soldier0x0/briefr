@@ -2181,6 +2181,97 @@ async def get_recent_cve_ids_for_otx(
     return [row["cve_id"] for row in rows]
 
 
+async def get_cves_missing_otx_pulses(
+    db: aiosqlite.Connection, limit: int = 200
+) -> list[str]:
+    """CVEs with no OTX pulse rows yet, tier-prioritized for continuous sync."""
+    prioritized = await get_prioritized_cve_ids_for_otx(db, backlog_cap=limit * 2)
+    if not prioritized:
+        return []
+
+    missing: list[str] = []
+    chunk = 100
+    for i in range(0, len(prioritized), chunk):
+        batch = prioritized[i : i + chunk]
+        placeholders = ",".join("?" for _ in batch)
+        rows = await db.execute_fetchall(
+            f"""
+            SELECT c.cve_id
+            FROM cves c
+            WHERE c.cve_id IN ({placeholders})
+              AND NOT EXISTS (
+                SELECT 1 FROM otx_cve_pulses o WHERE o.cve_id = c.cve_id
+              )
+            """,
+            tuple(batch),
+        )
+        have = {row["cve_id"] for row in rows}
+        for cid in batch:
+            if cid in have:
+                missing.append(cid)
+            if len(missing) >= limit:
+                return missing
+    return missing
+
+
+async def get_embedding_boosted_cve_ids_for_otx(
+    db: aiosqlite.Connection, limit: int = 150
+) -> list[dict]:
+    """
+    CVEs semantically similar to KEV/watchlist anchors that lack OTX pulses.
+    Used as P1b tier when EMBEDDINGS_ENABLED=1.
+    """
+    from ml.embeddings import embeddings_enabled, find_similar_cves
+
+    if not embeddings_enabled() or limit <= 0:
+        return []
+
+    anchors = await db.execute_fetchall(
+        """
+        SELECT c.cve_id
+        FROM cves c
+        LEFT JOIN watchlist w ON w.cve_id = c.cve_id AND w.state = 'pin'
+        WHERE COALESCE(c.is_kev, 0) = 1 OR w.cve_id IS NOT NULL
+        ORDER BY COALESCE(c.epss_score, 0) DESC
+        LIMIT 15
+        """
+    )
+    if not anchors:
+        return []
+
+    candidates: list[str] = []
+    seen: set[str] = set()
+    for row in anchors:
+        anchor_id = row["cve_id"]
+        similar = await find_similar_cves(db, anchor_id, limit=20)
+        if not similar:
+            continue
+        for item in similar:
+            cid = item.get("cve_id")
+            if cid and cid not in seen:
+                seen.add(cid)
+                candidates.append(cid)
+
+    if not candidates:
+        return []
+
+    placeholders = ",".join("?" for _ in candidates)
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT c.cve_id
+        FROM cves c
+        WHERE c.cve_id IN ({placeholders})
+          AND NOT EXISTS (
+            SELECT 1 FROM otx_cve_pulses o WHERE o.cve_id = c.cve_id
+          )
+        """,
+        tuple(candidates),
+    )
+    missing_set = {row["cve_id"] for row in rows}
+    ordered = [cid for cid in candidates if cid in missing_set]
+    return [{"cve_id": c} for c in ordered[:limit]]
+
+
 async def get_prioritized_cve_ids_for_otx(
     db: aiosqlite.Connection,
     days: int | None = None,
@@ -2229,6 +2320,15 @@ async def get_prioritized_cve_ids_for_otx(
         """
     )
     _add(p1)
+
+    try:
+        from ml.embeddings import embeddings_enabled
+
+        if embeddings_enabled():
+            p1b = await get_embedding_boosted_cve_ids_for_otx(db, limit=150)
+            _add(p1b)
+    except Exception:
+        pass
 
     p2 = await db.execute_fetchall(
         """

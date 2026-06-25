@@ -5,6 +5,7 @@ import time
 from datetime import datetime, timedelta, timezone
 
 from database import get_db
+from source_rate_limits import get_otx_hourly_limit
 
 logger = logging.getLogger(__name__)
 
@@ -106,9 +107,10 @@ API_LIMITS: dict[str, dict] = {
     "otx": {
         "name": "AlienVault OTX",
         "daily_limit": None,
-        "monthly_limit": 10000,
-        "rate_limit": "10,000 req/month (free tier)",
-        "notes": "Campaign correlation via community pulses. BRIEFR caches 6h per CVE/pulse/IOC.",
+        "hourly_limit": 10000,
+        "monthly_limit": None,
+        "rate_limit": "10,000 req/hour (API key) · BRIEFR paces 2 req/sec",
+        "notes": "Campaign correlation via community pulses. Hourly quota with API key. BRIEFR caches 6h per CVE/pulse/IOC.",
         "docs_url": "https://otx.alienvault.com/api",
         "cache_hours": 6,
     },
@@ -139,6 +141,32 @@ _API_USAGE_UPSERT_SQL = """
 """
 
 
+def _hourly_tracked_services() -> set[str]:
+  return {
+      service
+      for service, limits in API_LIMITS.items()
+      if limits.get("hourly_limit") is not None
+  }
+
+
+def _usage_bucket_key(service: str, now: datetime | None = None) -> str:
+    """Date or hour bucket for api_usage.date_utc depending on service limits."""
+    ts = now or datetime.now(timezone.utc)
+    if service in _hourly_tracked_services():
+        return ts.strftime("%Y-%m-%dT%H")
+    return ts.strftime("%Y-%m-%d")
+
+
+def _effective_hourly_limit(service: str) -> int | None:
+    limits = API_LIMITS.get(service, {})
+    hourly = limits.get("hourly_limit")
+    if hourly is None:
+        return None
+    if service == "otx":
+        return get_otx_hourly_limit()
+    return int(hourly)
+
+
 def _usage_bucket(used: int, limit: int | None) -> dict:
     remaining = (limit - used) if limit is not None else None
     pct = round(used / limit * 100, 1) if limit else None
@@ -164,6 +192,7 @@ def _build_service_stat(
     month_map: dict[str, int],
     week_map: dict[str, int] | None = None,
     source_services: list[str] | None = None,
+    hour_map: dict[str, int] | None = None,
 ) -> dict:
     sources = source_services or [service]
     daily_used = sum(today_map.get(s, 0) for s in sources)
@@ -172,6 +201,7 @@ def _build_service_stat(
     daily_limit = limits.get("daily_limit")
     weekly_limit = limits.get("weekly_limit")
     monthly_limit = limits.get("monthly_limit")
+    hourly_limit = _effective_hourly_limit(service)
 
     daily_bucket = _usage_bucket(daily_used, daily_limit)
     weekly_bucket = _usage_bucket(weekly_used, weekly_limit)
@@ -209,6 +239,21 @@ def _build_service_stat(
         },
         "warning": warning,
     }
+    if hourly_limit is not None:
+        hour_used = sum((hour_map or {}).get(s, 0) for s in sources)
+        hour_bucket = _usage_bucket(hour_used, hourly_limit)
+        hour_warning = hour_bucket.pop("warning")
+        if not warning and hour_warning:
+            if hour_warning == "daily_quota_exceeded":
+                warning = "hourly_quota_exceeded"
+            elif hour_warning == "daily_quota_near_limit":
+                warning = "hourly_quota_near_limit"
+        stat["this_hour"] = {
+            "used": hour_bucket["used"],
+            "limit": hour_bucket["limit"],
+            "remaining": hour_bucket["remaining"],
+            "percent_used": hour_bucket["percent_used"],
+        }
     if weekly_limit is not None:
         stat["this_week"] = {
             "used": weekly_bucket["used"],
@@ -287,15 +332,30 @@ async def get_ioc_usage_stats() -> list[dict]:
     today_map: dict[str, int] = {}
     month_map: dict[str, int] = {}
     week_map: dict[str, int] = {}
+    hour_map: dict[str, int] = {}
+    hour_bucket = _usage_bucket_key("otx")
 
     try:
         db = await get_db()
         try:
             today_rows = await db.execute_fetchall(
-                "SELECT service, SUM(count) as total FROM api_usage WHERE date_utc = ? GROUP BY service",
-                (today,),
+                """
+                SELECT service, SUM(count) as total FROM api_usage
+                WHERE date_utc = ? OR date_utc LIKE ?
+                GROUP BY service
+                """,
+                (today, f"{today}%"),
             )
             today_map = {r["service"]: r["total"] for r in today_rows}
+            hour_rows = await db.execute_fetchall(
+                """
+                SELECT service, SUM(count) as total FROM api_usage
+                WHERE date_utc = ?
+                GROUP BY service
+                """,
+                (hour_bucket,),
+            )
+            hour_map = {r["service"]: r["total"] for r in hour_rows}
             month_rows = await db.execute_fetchall(
                 "SELECT service, SUM(count) as total FROM api_usage WHERE month_utc = ? GROUP BY service",
                 (month,),
@@ -322,7 +382,7 @@ async def get_ioc_usage_stats() -> list[dict]:
             continue
         results.append(
             _build_service_stat(
-                service, limits, today_map, month_map, week_map, aggregate
+                service, limits, today_map, month_map, week_map, aggregate, hour_map
             )
         )
 
@@ -333,9 +393,9 @@ async def record_api_call(service: str, count: int = 1) -> None:
     if count <= 0:
         return
     now = datetime.now(timezone.utc)
-    today = now.strftime("%Y-%m-%d")
+    bucket = _usage_bucket_key(service, now)
     month = now.strftime("%Y-%m")
-    key = (service, today, month)
+    key = (service, bucket, month)
 
     global _api_usage_flush_task
     async with _API_USAGE_LOCK:
@@ -344,9 +404,23 @@ async def record_api_call(service: str, count: int = 1) -> None:
         if _api_usage_flush_task is None or _api_usage_flush_task.done():
             _api_usage_flush_task = asyncio.create_task(_schedule_api_usage_flush())
 
+    hourly_limit = _effective_hourly_limit(service)
+    if hourly_limit:
+        committed = await _committed_usage_bucket(service, bucket)
+        used = committed + pending_total
+        if used >= hourly_limit:
+            logger.warning(
+                "%s hourly quota exhausted (%d/%d calls this hour)", service, used, hourly_limit
+            )
+        elif used >= hourly_limit * 0.8:
+            logger.warning(
+                "%s hourly quota near limit (%d/%d calls this hour)", service, used, hourly_limit
+            )
+        return
+
     limit = API_LIMITS.get(service, {}).get("daily_limit")
     if limit:
-        committed = await _committed_usage(service, today)
+        committed = await _committed_usage_bucket(service, bucket)
         used = committed + pending_total
         if used >= limit:
             logger.warning("%s daily quota exhausted (%d/%d calls today)", service, used, limit)
@@ -358,14 +432,9 @@ _COMMITTED_USAGE_CACHE_TTL_SECONDS = 2.0
 _committed_usage_cache: dict[tuple[str, str], tuple[float, int]] = {}
 
 
-async def _committed_usage(service: str, today: str) -> int:
-    """Today's already-flushed count for service, excluding the in-memory buffer.
-
-    Cached for a couple seconds — bulk IOC lookups call has_quota/record_api_call
-    once per item, and without this a 100-item lookup means 100+ DB round-trips
-    on a server that already sees SQLite lock contention.
-    """
-    cache_key = (service, today)
+async def _committed_usage_bucket(service: str, bucket: str) -> int:
+    """Flushed count for service in the given date/hour bucket."""
+    cache_key = (service, bucket)
     now = time.monotonic()
     cached = _committed_usage_cache.get(cache_key)
     if cached is not None and now - cached[0] < _COMMITTED_USAGE_CACHE_TTL_SECONDS:
@@ -376,7 +445,7 @@ async def _committed_usage(service: str, today: str) -> int:
         try:
             row = await db.execute_fetchall(
                 "SELECT SUM(count) as total FROM api_usage WHERE service = ? AND date_utc = ?",
-                (service, today),
+                (service, bucket),
             )
             value = row[0]["total"] if row and row[0]["total"] else 0
         finally:
@@ -389,10 +458,46 @@ async def _committed_usage(service: str, today: str) -> int:
     return value
 
 
+async def get_hour_usage(service: str) -> int:
+    """Current UTC hour usage, including the unflushed buffer."""
+    bucket = _usage_bucket_key(service)
+    committed = await _committed_usage_bucket(service, bucket)
+    async with _API_USAGE_LOCK:
+        pending = sum(
+            count for (svc, bkt, _month), count in _api_usage_pending.items()
+            if svc == service and bkt == bucket
+        )
+    return committed + pending
+
+
 async def get_today_usage(service: str) -> int:
     """Today's usage for service, combining committed rows and the unflushed buffer."""
+    if service in _hourly_tracked_services():
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        try:
+            db = await get_db()
+            try:
+                rows = await db.execute_fetchall(
+                    """
+                    SELECT SUM(count) as total FROM api_usage
+                    WHERE service = ? AND date_utc LIKE ?
+                    """,
+                    (service, f"{today}%"),
+                )
+                committed = rows[0]["total"] if rows and rows[0]["total"] else 0
+            finally:
+                await db.close()
+        except Exception:
+            committed = 0
+        async with _API_USAGE_LOCK:
+            pending = sum(
+                count for (svc, bkt, _month), count in _api_usage_pending.items()
+                if svc == service and bkt.startswith(today)
+            )
+        return committed + pending
+
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    committed = await _committed_usage(service, today)
+    committed = await _committed_usage_bucket(service, today)
     async with _API_USAGE_LOCK:
         pending = sum(
             count for (svc, day, _month), count in _api_usage_pending.items()
@@ -402,7 +507,10 @@ async def get_today_usage(service: str) -> int:
 
 
 async def has_quota(service: str) -> bool:
-    """True if service has remaining daily quota (no limit == unrestricted)."""
+    """True if service has remaining quota (hourly or daily). No limit == unrestricted."""
+    hourly_limit = _effective_hourly_limit(service)
+    if hourly_limit is not None:
+        return await get_hour_usage(service) < hourly_limit
     limit = API_LIMITS.get(service, {}).get("daily_limit")
     if not limit:
         return True
@@ -414,16 +522,22 @@ async def get_usage_stats() -> list[dict]:
     now = datetime.now(timezone.utc)
     today = now.strftime("%Y-%m-%d")
     month = now.strftime("%Y-%m")
+    hour_bucket = _usage_bucket_key("otx", now)
 
     today_map: dict[str, int] = {}
     month_map: dict[str, int] = {}
+    hour_map: dict[str, int] = {}
 
     try:
         db = await get_db()
         try:
             today_rows = await db.execute_fetchall(
-                "SELECT service, SUM(count) as total FROM api_usage WHERE date_utc = ? GROUP BY service",
-                (today,),
+                """
+                SELECT service, SUM(count) as total FROM api_usage
+                WHERE date_utc = ? OR date_utc LIKE ?
+                GROUP BY service
+                """,
+                (today, f"{today}%"),
             )
             today_map = {r["service"]: r["total"] for r in today_rows}
 
@@ -432,6 +546,16 @@ async def get_usage_stats() -> list[dict]:
                 (month,),
             )
             month_map = {r["service"]: r["total"] for r in month_rows}
+
+            hour_rows = await db.execute_fetchall(
+                """
+                SELECT service, SUM(count) as total FROM api_usage
+                WHERE date_utc = ?
+                GROUP BY service
+                """,
+                (hour_bucket,),
+            )
+            hour_map = {r["service"]: r["total"] for r in hour_rows}
         finally:
             await db.close()
     except Exception as exc:
@@ -439,50 +563,10 @@ async def get_usage_stats() -> list[dict]:
 
     results = []
     for service, limits in API_LIMITS.items():
-        daily_used = today_map.get(service, 0)
-        monthly_used = month_map.get(service, 0)
-        daily_limit = limits["daily_limit"]
-        monthly_limit = limits["monthly_limit"]
-
-        daily_remaining = (daily_limit - daily_used) if daily_limit is not None else None
-        monthly_remaining = (monthly_limit - monthly_used) if monthly_limit is not None else None
-
-        daily_pct = round(daily_used / daily_limit * 100, 1) if daily_limit else None
-        monthly_pct = round(monthly_used / monthly_limit * 100, 1) if monthly_limit else None
-
-        warning = None
-        if daily_limit and daily_remaining is not None:
-            if daily_remaining <= 0:
-                warning = "daily_quota_exceeded"
-            elif daily_pct and daily_pct >= 80:
-                warning = "daily_quota_near_limit"
-        if not warning and monthly_limit and monthly_remaining is not None:
-            if monthly_remaining <= 0:
-                warning = "monthly_quota_exceeded"
-            elif monthly_pct and monthly_pct >= 80:
-                warning = "monthly_quota_near_limit"
-
         results.append(
-            {
-                "service": service,
-                "name": limits["name"],
-                "rate_limit": limits["rate_limit"],
-                "notes": limits["notes"],
-                "docs_url": limits["docs_url"],
-                "today": {
-                    "used": daily_used,
-                    "limit": daily_limit,
-                    "remaining": daily_remaining,
-                    "percent_used": daily_pct,
-                },
-                "this_month": {
-                    "used": monthly_used,
-                    "limit": monthly_limit,
-                    "remaining": monthly_remaining,
-                    "percent_used": monthly_pct,
-                },
-                "warning": warning,
-            }
+            _build_service_stat(
+                service, limits, today_map, month_map, hour_map=hour_map
+            )
         )
 
     return results

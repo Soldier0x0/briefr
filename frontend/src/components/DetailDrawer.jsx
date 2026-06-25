@@ -7,6 +7,7 @@ import {
   fetchCVEMomentum,
   fetchCVERelated,
   fetchCVERisk,
+  fetchCVEInvestigationScore,
   fetchCVESentences,
   suppressCVECorrelation,
 } from '../api.js'
@@ -208,7 +209,7 @@ function RiskScoreBar({ score }) {
   )
 }
 
-function RiskScoreBreakdown({ cve, riskScore, riskLoading, onOpenProfile, momentumData }) {
+function RiskScoreBreakdown({ cve, riskScore, riskLoading, investigationScore, onOpenProfile, momentumData }) {
   const [scoreCopied, setScoreCopied] = useState(false)
 
   if (riskLoading) {
@@ -289,6 +290,11 @@ function RiskScoreBreakdown({ cve, riskScore, riskLoading, onOpenProfile, moment
         </div>
         {summary && (
           <p className="drawer-risk-summary mono">{summary}</p>
+        )}
+        {investigationScore != null && investigationScore > 0 && (
+          <p className="drawer-risk-summary mono" title="Unified Investigation Score (risk + correlation + OTX)">
+            Investigation score: {investigationScore.toFixed(1)}
+          </p>
         )}
       </div>
 
@@ -632,10 +638,10 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
   )
 }
 
-function TabOverview({ cve, riskScore, riskLoading, onOpenProfile, momentumData, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
+function TabOverview({ cve, riskScore, riskLoading, investigationScore, onOpenProfile, momentumData, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
   return (
     <>
-      <RiskScoreBreakdown cve={cve} riskScore={riskScore} riskLoading={riskLoading} onOpenProfile={onOpenProfile} momentumData={momentumData} />
+      <RiskScoreBreakdown cve={cve} riskScore={riskScore} riskLoading={riskLoading} investigationScore={investigationScore} onOpenProfile={onOpenProfile} momentumData={momentumData} />
 
       <EpssTrendSection
         cve={cve}
@@ -1363,6 +1369,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
   const [momentumData, setMomentumData] = useState(null)
   const [riskScore, setRiskScore] = useState(null)
   const [riskLoading, setRiskLoading] = useState(false)
+  const [investigationScore, setInvestigationScore] = useState(null)
   const [backStack, setBackStack] = useState([])
   const [pdfModalOpen, setPdfModalOpen] = useState(false)
   const [pdfBusy, setPdfBusy] = useState(false)
@@ -1383,6 +1390,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
     if (!cve?.cve_id) {
       setRiskScore(null)
       setRiskLoading(false)
+      setInvestigationScore(null)
       return
     }
     let cancelled = false
@@ -1411,6 +1419,13 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
       })
       .finally(() => {
         if (!cancelled) setRiskLoading(false)
+      })
+    fetchCVEInvestigationScore(cve.cve_id)
+      .then(data => {
+        if (!cancelled) setInvestigationScore(data?.investigation?.total ?? null)
+      })
+      .catch(() => {
+        if (!cancelled) setInvestigationScore(null)
       })
     return () => {
       cancelled = true
@@ -1869,6 +1884,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
               cve={cve}
               riskScore={riskScore}
               riskLoading={riskLoading}
+              investigationScore={investigationScore}
               onOpenProfile={assetCtx?.openProfileFlow}
               momentumData={momentumData}
               products={products}
