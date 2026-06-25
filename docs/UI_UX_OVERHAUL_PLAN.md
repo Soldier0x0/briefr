@@ -275,7 +275,10 @@ px/hex scattered in components), so this is cheaper than it sounds.
 
 ## Suggested execution order
 
-1. Section 1 (quick safe fixes) — same session, low risk, ship together.
+0. **Section 11 (P0 scheduler fixes)** — real prod errors; unblocks badge
+   truthfulness and correlation/backup/MITRE pipelines.
+1. Sections 1 + 8 (quick safe fixes + feed-health dot) — same session, low
+   risk, ship together; §8 unblocks cleaner mobile header left rail.
 2. Section 6 (restart dropdown) — small, isolated, fully diagnosed already.
 3. Section 4 (stop reloading pages) — foundational, makes every other admin
    change feel better immediately.
@@ -285,7 +288,187 @@ px/hex scattered in components), so this is cheaper than it sounds.
 6. Section 2 (mobile nav redesign) — independent, do whenever.
 7. Section 7 (settings panel) — independent, do last, it's additive and
    non-urgent.
+8. Sections 9–10 (admin badge truthfulness, precise delay copy, schedule
+   cadence) — ship together after §11 clears the error count.
 
 Also merge the already-built-but-unmerged `feat/config-schema` branch
 (per-field help text in API keys & config) — it directly supports section
 3e and is just sitting there ready.
+
+---
+
+## 8. Consolidate feed-health LIVE indicator (discussion — batch with other UI work)
+
+**Problem:** The same feed-health badge appears twice today — in
+`Header.jsx` (top right) and again in `FeedRefreshStatus` at the bottom of
+BRIEF/FEED (`App.jsx`). Both read the same `feedHealth` from `/api/health`
+(polled every 60s). The right side of the header is already crowded
+(clock, legal, shortcuts, user menu).
+
+**Agreed direction (2026-06-24 discussion):**
+
+- **Single placement only** — one indicator in the header, nowhere else.
+  Remove the duplicate from `FeedRefreshStatus`; keep the footer text-only
+  (“Last refreshed … · Next refresh …”).
+- **Placement:** header **left**, beside logo/tagline (e.g. after “CVE
+  intelligence”), not top right.
+- **Dot-only UI** — drop the “LIVE” label. Keep `title` + `aria-label` for
+  hover/focus discoverability.
+- **One dot, four mutually exclusive states** (evaluate in order below; first
+  match wins — syncing takes precedence over bootstrapping). Color + pulse
+  speed encode state:
+
+  | State | When (first match wins) | Color | Pulse |
+  |---|---|---|---|
+  | Syncing | `refresh_in_progress` | Amber | Faster (~1s) |
+  | Bootstrapping | `cve_count < 10` and not syncing | Gray | Static |
+  | Healthy | `cve_count ≥ 10` and not syncing | Green | Slow (~2s) |
+  | Unknown / degraded | Health not loaded or poll failed | Gray or muted red | Static or slow |
+
+- **Scope:** stays tied to **backend pipeline health** (`/api/health` ingest
+  status, CVE count, refresh). Do **not** pulse on every frontend API call
+  (drawer, infinite scroll, IOC lookup) — too noisy and loses meaning.
+  Optional later: explicit “degraded” when a feed circuit is open.
+
+**Files likely touched:** `Header.jsx`, `Header.css`, `App.jsx`
+(`FeedRefreshStatus`), mobile header simplification in §2 (update “wordmark +
+LIVE indicator” to “wordmark + status dot” on the left).
+
+**Verification:** green/amber/gray states visible with seeded DB; footer has
+no second dot; tooltip text matches state; `aria-label` present without
+visible “LIVE” text; desktop + mobile header screenshots.
+
+---
+
+## 9. Admin notification badge must be truthful + dismissible (discussion — 2026-06-24)
+
+**Problem (confirmed in prod screenshots):** Sidebar shows a red **3** on
+“Intel status” / “System health”, but Analyst mode does not surface what
+those 3 items are. User perceives it as dummy data.
+
+**Root cause — not dummy:** The badge is `jobs_with_errors_count` from
+`GET /api/admin/system` — a real count of scheduler jobs whose last run set
+`had_error: true` in `sync_state` (`scheduler.last_run.{job_id}`). In the
+reported instance the three errors are:
+
+1. `nightly_correlation` — Postgres SQL: `SELECT DISTINCT … ORDER BY
+   ocp.fetched_at` in `prefetch_pulse_iocs_for_nightly` (`engine.py`) —
+   `fetched_at` is not in the SELECT list (Postgres rejects; SQLite did
+   not).
+2. `scheduled_backup` — `pg_dump not found on PATH` (missing
+   `postgresql-client` on the host).
+3. `weekly_mitre_refresh` — `DELETE FROM atlas_techniques` blocked by FK
+   from `cve_atlas_map` (`replace_atlas_techniques` in `database.py`).
+
+Operator mode **does** show these in “Recent errors” + Scheduler ERROR
+rows. Analyst mode’s `JobTable` (`mode="analyst"`) omits the ERROR column
+entirely — badge and banner disagree with what the page shows.
+
+**Agreed direction:**
+
+- **Rename/reframe badge** — not “notifications” generically; label as
+  **“N issues”** or **“Job failures”** with tooltip explaining scheduler
+  last-run errors (distinct from circuits, auth failures, log errors —
+  each badge type already has its own `badgeKey` in `constants.js`).
+- **Analyst Intel status must list the same errors** Operator sees — add a
+  “Problems” card when `jobs_with_errors_count > 0` (job name, truncated
+  error, “Retry” / link to Operator scheduler). Do not show a count badge
+  without a matching visible list on that page.
+- **Mark all as read / acknowledge** — persist per-operator acknowledgment
+  in `localStorage` (or `sync_state` if we want cross-device): store
+  `{ job_id, last_run_utc }` tuples the user has seen; badge count =
+  unacknowledged errors only. Provide **“Mark all as read”** on the
+  problems panel. Re-surface an item when the same job fails again with a
+  newer `last_run_utc`.
+- **No zero-truth badges anywhere** — audit all `badgeKey` usages in
+  `Sidebar.jsx` (`open_circuit_count`, `failed_auth_last_24h`,
+  `ingest_error_count`, `jobs_with_errors_count`) and ensure each linked
+  page surfaces the underlying items.
+
+**Files likely touched:** `OverviewPage.jsx`, `JobTable.jsx`, `Sidebar.jsx`,
+`intelStatus.js`, `AdminPage.css`, optionally new
+`adminNotifications.js` helper.
+
+---
+
+## 10. Precise “delayed” messaging + configured refresh cadence (discussion — 2026-06-24)
+
+**Problem:** Analyst banner says **“Some sources are delayed”** with vague
+“See details below”, while NVD at **4h** triggered amber (`NVD_AMBER_SECONDS
+= 7200` in `intelStatus.js`) even though no circuit is open. Stat card
+sub-label says **“usually hourly · incremental”** — we have exact APScheduler
+triggers, not guesses.
+
+**Agreed direction:**
+
+- **Banner names names** — e.g. “**NIST CVE feed — 4h since last sync**
+  (expected every 1h)” instead of “Some sources are delayed”. Enumerate
+  every stale source in one sentence (NVD age, open circuits by
+  `sourceLabel`, incidents stale, job errors — separate lines if multiple).
+- **Per-source configured cadence** — expose from backend (extend
+  `_build_job_info` or add `schedule` block to `/api/admin/system`):
+  interval/cron from APScheduler trigger + env (`NVD_SYNC_INTERVAL_HOURS`,
+  `KEV_SYNC_INTERVAL_MINUTES`, cron for nightly jobs, etc.). Display as
+  **“Every 1h”**, **“Daily at 01:00 UTC”**, or user TZ when
+  `briefr_timezone` / admin display prefs set.
+- **Replace “usually …” copy** — delete `subLabel="usually hourly ·
+  incremental"` from `OverviewPage.jsx`; use computed cadence string.
+- **Timestamps** — Last run / Next run already in job table; ensure they
+  respect operator timezone preference (reuse `formatAbsolute` /
+  `briefr_timezone`).
+
+**Files likely touched:** `intelStatus.js`, `OverviewPage.jsx`, `formatters.js`,
+`backend/routers/admin.py`, `backend/scheduler.py` (read trigger metadata).
+
+---
+
+## 11. P0 — Fix three scheduler errors + confirm watermark safety (discussion — 2026-06-24)
+
+**Priority:** Ship before or with §9–§10 — failures are real; user asked
+for ASAP and data-loss assurance.
+
+### 11a. `nightly_correlation` SQL (Postgres)
+
+Fix `prefetch_pulse_iocs_for_nightly` query: include `ocp.fetched_at` in
+SELECT or drop DISTINCT and use subquery/`GROUP BY`. Add a Postgres CI test
+if not already covered.
+
+### 11b. `weekly_mitre_refresh` FK violation
+
+`replace_atlas_techniques` must not blind `DELETE` while `cve_atlas_map`
+references rows. Options (pick one in implementation):
+
+- Upsert techniques + delete only orphaned IDs, or
+- `DELETE FROM cve_atlas_map WHERE technique_id NOT IN (…)` for removed
+  techniques before replace, or
+- `ON CONFLICT` upsert without full table wipe.
+
+ATLAS upstream version watermark (`ATLAS_UPSTREAM_VERSION_KEY`) must only
+advance after successful refresh.
+
+### 11c. `scheduled_backup` — `pg_dump` missing
+
+Document in deploy (`POSTGRES.md` / `briefr-update.sh`): install
+`postgresql-client` when `DATABASE_URL` is Postgres. Fail with actionable
+message in admin if binary absent. Not a data-loss bug — backup never ran.
+
+### Watermark / data-loss audit (answer for operator)
+
+| Pipeline | Watermark / checkpoint | Advances on failure? |
+|---|---|---|
+| NVD incremental | `sync_state` `nvd_sync_watermark` | **No** — set only after successful upsert (`scheduler.py`) |
+| cvelistV5 | `cvelistv5_head_sha` | **No** — only when `advance=True` from delta fetch |
+| EPSS backfill | `epss_backfill_done` | **No** — only on completion |
+| Correlation campaigns | `correlation_build_watermark` | **No** — set in `build_campaigns_from_pulses` on success |
+| OTX / PoC GitHub | per-source `sync_state` keys | **No** — commit after success |
+| Scheduler job errors | `scheduler.last_run.{id}` ring | Records `had_error` only — does not advance ingest watermarks |
+
+**Conclusion:** These three job failures did **not** roll back or corrupt CVE
+data; they blocked correlation rebuild, ATLAS refresh, and backups
+respectively. NVD at 4h is **staleness** (scheduler still running on
+interval — check why last success was 4h ago separately), not watermark
+loss.
+
+**Verification:** After fixes, Operator System health shows 0 job errors;
+retry each job; Postgres `pytest` green; backup creates archive when
+`pg_dump` present.

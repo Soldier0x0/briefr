@@ -19,7 +19,12 @@ def test_message_content_handles_malformed_json():
     assert gc.message_content(response) == ""
 
 
-def test_chat_completion_delegates_to_resilient_request(monkeypatch):
+def test_message_content_handles_null_choice():
+    response = httpx.Response(200, json={"choices": [None]})
+    assert gc.message_content(response) == ""
+
+
+def test_chat_completion_retries_on_429_then_succeeds(monkeypatch):
     gc.reset_groq_limiter_state()
 
     class Fake200Response:
