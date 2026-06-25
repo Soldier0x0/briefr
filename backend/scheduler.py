@@ -74,6 +74,7 @@ _epss_backfill_lock = asyncio.Lock()
 _mitre_refresh_lock = asyncio.Lock()
 _atlas_version_check_lock = asyncio.Lock()
 _otx_lock = asyncio.Lock()
+_otx_continuous_lock = asyncio.Lock()
 _correlation_lock = asyncio.Lock()
 _vulnrichment_lock = asyncio.Lock()
 _cvelistv5_lock = asyncio.Lock()
@@ -1063,6 +1064,50 @@ async def run_otx_nightly_sync() -> bool:
     return True
 
 
+async def run_otx_continuous_sync() -> bool:
+    """Continuous OTX pulse + IOC prefetch within hourly API budget."""
+    from feeds.otx_continuous import otx_continuous_enabled, run_otx_continuous_sync as _run
+
+    if not otx_continuous_enabled():
+        return False
+    if _otx_continuous_lock.locked():
+        logger.info("OTX continuous sync already in progress — skipping")
+        return False
+
+    api_key = os.environ.get("OTX_API_KEY", "")
+    if not api_key:
+        return False
+
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _records = 0
+    async with _otx_continuous_lock:
+        try:
+            stats = await _run(api_key)
+            _records = int(stats.get("api_calls") or 0)
+            logger.info(
+                "OTX continuous sync: %d API calls, %d CVE pulse batches, %d pulse IOCs (%s)",
+                _records,
+                stats.get("cve_pulses_stored", 0),
+                stats.get("pulse_iocs_fetched", 0),
+                stats.get("stop_reason", ""),
+            )
+        except Exception as exc:
+            logger.error("OTX continuous sync failed: %s", exc)
+            _had_error = True
+            _otx_cont_error_msg = str(exc)[:500]
+        else:
+            _otx_cont_error_msg = ""
+    await _write_job_last_run(
+        "otx_continuous_sync",
+        _start,
+        records=_records,
+        had_error=_had_error,
+        error_message=_otx_cont_error_msg,
+    )
+    return True
+
+
 async def run_embeddings_sync() -> bool:
     """Embed CVE descriptions missing vectors (V1.3 Theme 7).
 
@@ -1078,18 +1123,21 @@ async def run_embeddings_sync() -> bool:
 
     _start = datetime.now(timezone.utc)
     _had_error = False
+    _embedded = 0
     async with _embeddings_lock:
         start = _start
         logger.info("Embeddings backfill started at %s", start.isoformat())
+        stats: dict = {}
         try:
             db = await get_db()
             try:
                 stats = await run_embeddings_backfill(db)
+                _embedded = int(stats.get("embedded", 0))
             finally:
                 await db.close()
             logger.info(
                 "Embeddings backfill complete: %d CVEs embedded (model=%s) in %.1fs",
-                stats.get("embedded", 0),
+                _embedded,
                 stats.get("model", ""),
                 (datetime.now(timezone.utc) - start).total_seconds(),
             )
@@ -1099,7 +1147,13 @@ async def run_embeddings_sync() -> bool:
             _emb_error_msg = str(exc)[:500]
         else:
             _emb_error_msg = ""
-    await _write_job_last_run("embeddings_backfill", _start, had_error=_had_error, error_message=_emb_error_msg)
+    await _write_job_last_run(
+        "embeddings_backfill",
+        _start,
+        records=_embedded,
+        had_error=_had_error,
+        error_message=_emb_error_msg,
+    )
     return True
 
 
@@ -1273,6 +1327,21 @@ def start_scheduler() -> AsyncIOScheduler:
         max_instances=1,
         coalesce=True,
     )
+
+    from feeds.otx_continuous import get_otx_continuous_interval_minutes, otx_continuous_enabled
+
+    if otx_continuous_enabled():
+        otx_cont_minutes = get_otx_continuous_interval_minutes()
+        scheduler.add_job(
+            run_otx_continuous_sync,
+            trigger=IntervalTrigger(minutes=otx_cont_minutes, timezone=sched_tz),
+            id="otx_continuous_sync",
+            name="OTX Continuous Pulse + IOC Sync",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            next_run_time=datetime.now(sched_tz) + timedelta(minutes=2),
+        )
 
     incident_minutes = get_incident_feed_refresh_minutes()
     if os.environ.get("PLAYWRIGHT_SMOKE") != "1":

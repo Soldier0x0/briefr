@@ -73,6 +73,7 @@ from feeds.osv import fetch_osv_by_cve
 from feeds.otx import load_otx_pulses_for_cve
 from ml.embeddings import embeddings_enabled, find_similar_cves
 from scoring.risk import calculate_momentum, calculate_risk_score
+from scoring.investigation import compute_investigation_score
 from templates.intelligence import (
     epss_sentence_or_fallback,
     exploit_sentence,
@@ -1028,6 +1029,67 @@ async def cve_risk_score(cve_id: str, body: RiskScoreRequest | None = None):
     }
 
 
+@intel_router.get("/api/cves/{cve_id}/investigation-score")
+async def cve_investigation_score(
+    cve_id: str,
+    sector: str = Query(default="", description="Declared industry sector for actor matching"),
+):
+    """
+    Unified Investigation Score (0–100) fusing BRIEFR Risk Score, Correlation
+    Priority, and OTX campaign freshness. Component scores remain available
+    separately via /risk and /correlation.
+    """
+    if not cve_id.upper().startswith("CVE-"):
+        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+
+    cve_key = cve_id.upper()
+    db = await get_db()
+    try:
+        rows = await db.execute_fetchall(
+            """
+            SELECT c.cve_id, c.description, c.cvss_score, c.severity, c.published,
+                   c.modified, c.affected_products, c.summary, c.is_kev, c.epss_score,
+                   c.has_poc, c.source_urls, c.cpe_matches,
+                   k.date_added AS kev_date_added,
+                   k.due_date AS kev_due_date
+            FROM cves c
+            LEFT JOIN kev_deadlines k ON k.cve_id = c.cve_id
+            WHERE c.cve_id = ?
+            """,
+            (cve_key,),
+        )
+        if not rows:
+            raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
+
+        cve = _row_to_cve_dict(rows[0])
+        momentum = await calculate_momentum(cve_key, db)
+        risk = calculate_risk_score(
+            cve,
+            momentum_score=momentum.get("momentum_score", 0.0),
+        )
+        correlation = await get_correlation_for_cve(
+            db, cve_key, user_sector=sector.strip()
+        )
+        await db.commit()
+
+        priority = correlation.get("priority") or {}
+        investigation = compute_investigation_score(
+            risk_total=risk.get("total", 0.0),
+            correlation_priority=priority.get("score", 0.0),
+            campaigns=correlation.get("campaigns") or [],
+        )
+    finally:
+        await db.close()
+
+    return {
+        "cve_id": cve_key,
+        "investigation": investigation,
+        "risk_total": risk.get("total", 0.0),
+        "correlation_priority": priority.get("score", 0.0),
+        "risk_version": risk.get("version"),
+    }
+
+
 @intel_router.get("/api/cves/{cve_id}/momentum")
 async def cve_momentum(cve_id: str):
     """
@@ -1065,6 +1127,7 @@ async def cve_detection(
     github_token = os.environ.get("GITHUB_TOKEN", "")
     cve_upper = cve_id.upper()
 
+    yara_rules: list = []
     db = await get_db()
     try:
         # Get CVE metadata for context
@@ -1114,6 +1177,10 @@ async def cve_detection(
             product=product.strip(),
         )
 
+        from detection.yara_generator import find_yara_rules_for_cve
+
+        yara_rules = await find_yara_rules_for_cve(db, cve_upper)
+
     finally:
         await db.close()
 
@@ -1125,6 +1192,7 @@ async def cve_detection(
         "has_community_rules": has_community_rules,
         "generated_sigma": generated_sigma,
         "siem_queries": siem_queries,
+        "yara_rules": yara_rules,
     }
 
 

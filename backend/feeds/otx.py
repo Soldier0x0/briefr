@@ -23,6 +23,11 @@ logger = logging.getLogger(__name__)
 
 async def _otx_get(url: str, api_key: str) -> dict | None:
     """GET via the resilient client; returns None on 404, circuit-open or failure."""
+    from tracking import has_quota
+
+    if not await has_quota("otx"):
+        logger.warning("OTX hourly quota exhausted — skipping %s", url)
+        return None
     try:
         response = await resilient_get(
             "otx", url, headers=_otx_headers(api_key), timeout=30.0

@@ -130,6 +130,9 @@ async def resilient_request(
     Retries transport errors and retryable status codes (5xx, 429) with
     backoff; non-retryable HTTP errors are raised after recording health.
     """
+    from source_throttle import throttle_before_request
+
+    await throttle_before_request(source)
     _check_circuit(source)
     client = _get_client()
     last_exc: Exception | None = None

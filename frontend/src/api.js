@@ -187,6 +187,12 @@ export function fetchCVERisk(cveId, { profile, assets } = {}) {
   })
 }
 
+/** Unified Investigation Score — fuses risk + correlation + OTX freshness. */
+export function fetchCVEInvestigationScore(cveId, { sector } = {}) {
+  const qs = sector ? `?sector=${encodeURIComponent(sector)}` : ''
+  return request(`/cves/${encodeURIComponent(cveId)}/investigation-score${qs}`)
+}
+
 export function fetchCVEsForExport(params = {}) {
   const qs = new URLSearchParams()
   if (params.severity)  qs.set('severity', params.severity)
