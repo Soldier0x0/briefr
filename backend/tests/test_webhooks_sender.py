@@ -49,6 +49,9 @@ def _clean(monkeypatch):
         return None
 
     monkeypatch.setattr(resilient_client.asyncio, "sleep", no_sleep)
+    import api_queue as _aq
+
+    monkeypatch.setattr(_aq.asyncio, "sleep", no_sleep)
     yield
     reset_feed_health()
 

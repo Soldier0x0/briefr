@@ -234,7 +234,6 @@ def test_candidate_query_targets_only_unanalyzed_cves(tmp_path, monkeypatch):
 def test_run_extraction_writes_products_and_negative_caches(tmp_path, monkeypatch):
     monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "run.db"))
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
-    monkeypatch.setattr(pex, "THROTTLE_SECONDS", 0.0)
 
     calls: list[str] = []
 
@@ -299,7 +298,6 @@ def test_run_extraction_errors_are_not_negative_cached(tmp_path, monkeypatch):
     7 days — the CVE stays a candidate and is retried on the next run."""
     monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "errs.db"))
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
-    monkeypatch.setattr(pex, "THROTTLE_SECONDS", 0.0)
 
     attempts = {"n": 0}
 
@@ -343,6 +341,48 @@ def test_run_extraction_errors_are_not_negative_cached(tmp_path, monkeypatch):
     assert stats_second == {"candidates": 1, "extracted": 1, "written": 1, "errors": 0}
     assert json.loads(row["affected_products"]) == ["acme:widget"]
     assert row["affected_products_source"] == "llm"
+
+
+def test_run_extraction_retries_on_groq_rate_limit(tmp_path, monkeypatch):
+    """Rate limits must wait and retry the same CVE — never abort the run."""
+    monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "rate.db"))
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
+
+    from ai.groq_client import GroqRateLimitError
+
+    attempts = {"n": 0}
+    sleeps: list[float] = []
+
+    async def fake_sleep(seconds: float):
+        sleeps.append(seconds)
+
+    async def rate_limited_extract(description: str, api_key: str) -> list[dict]:
+        attempts["n"] += 1
+        if attempts["n"] == 1:
+            raise GroqRateLimitError("simulated 429")
+        return [{"vendor": "acme", "product": "widget", "version_range": ""}]
+
+    monkeypatch.setattr(pex, "extract_products_via_groq", rate_limited_extract)
+    monkeypatch.setattr(pex.asyncio, "sleep", fake_sleep)
+
+    async def run():
+        await init_db()
+        db = await database.get_db()
+        try:
+            await db.execute(
+                "INSERT INTO cves (cve_id, description, published, affected_products, cpe_matches) "
+                "VALUES ('CVE-2024-0001', 'RCE in acme widget', ?, '[]', '[]')",
+                (date.today().isoformat(),),
+            )
+            await db.commit()
+            return await run_llm_product_extraction(db)
+        finally:
+            await db.close()
+
+    stats = asyncio.run(run())
+    assert stats == {"candidates": 1, "extracted": 1, "written": 1, "errors": 0}
+    assert attempts["n"] == 2
+    assert sleeps == [60.0]
 
 
 def test_scheduler_llm_job_noop_when_disabled(monkeypatch):

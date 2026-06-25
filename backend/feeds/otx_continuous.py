@@ -2,7 +2,7 @@
 
 Runs on a short interval (default 5 min) and uses up to OTX_CONTINUOUS_BUDGET_PER_RUN
 API calls per invocation for CVE pulse fetch + pulse IOC prefetch. Pacing (2 req/sec)
-and hourly quota gates are enforced by source_throttle + tracking.has_quota.
+and hourly quota gates are enforced by api_queue + tracking.has_quota.
 """
 
 from __future__ import annotations

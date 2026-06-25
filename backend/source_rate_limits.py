@@ -1,28 +1,178 @@
-"""Per-source minimum request intervals for outbound API calls.
+"""Per-source outbound API pacing derived from official provider documentation.
 
-BRIEFR paces outbound HTTP to stay within provider rate limits. OTX with an
-API key allows ~10,000 requests/hour; we target ~7,200/hour (2 req/sec) to
-leave headroom for bursts and other jobs.
+BRIEFR never drops requests for rate limits — callers wait in the queue until
+a slot opens. Intervals here are minimum spacing between requests for each
+pacing group (conservative defaults when docs only publish daily/monthly caps).
+
+References:
+- NVD: https://nvd.nist.gov/developers/start (5 req/30s w/o key, 50/30s w/ key)
+- Groq: https://console.groq.com/docs/rate-limits
+- VirusTotal: https://docs.virustotal.com/reference/public-vs-premium-api
+- GitHub REST: https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api
+- AbuseIPDB: https://docs.abuseipdb.com/ (1,000 checks/day free)
+- GreyNoise: https://docs.greynoise.io/docs/using-the-greynoise-community-api
+- OTX: https://otx.alienvault.com/api (10,000 req/hour with API key)
+- Anthropic: https://docs.anthropic.com/en/api/rate-limits
 """
 
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 
-# source_id -> minimum seconds between consecutive requests
-_SOURCE_MIN_INTERVAL: dict[str, float] = {
-    "otx": 0.5,
-    "github": 0.12,
-    "nvd": 0.6,
-    "groq": float(os.environ.get("GROQ_MIN_REQUEST_INTERVAL_SECONDS", "2")),
+
+@dataclass(frozen=True)
+class SourcePacing:
+    min_interval_seconds: float
+    max_concurrent: int = 1
+    docs_url: str = ""
+    notes: str = ""
+
+
+def _nvd_interval() -> float:
+    if os.environ.get("NVD_API_KEY", "").strip():
+        return 60.0 / 50.0  # 50 requests per 30s window
+    return 60.0 / 5.0  # 5 requests per 30s window
+
+
+def _github_interval() -> float:
+    if os.environ.get("GITHUB_TOKEN", "").strip():
+        return 3600.0 / 5000.0  # 5,000 req/hour authenticated
+    return 6.0  # unauthenticated search: ~10/min
+
+
+# Pacing profile key -> limits. Multiple circuit sources map via resolve_pacing_key().
+PACING_PROFILES: dict[str, SourcePacing] = {
+    "nvd": SourcePacing(
+        min_interval_seconds=6.0,
+        docs_url="https://nvd.nist.gov/developers/start",
+        notes="Overridden at runtime when NVD_API_KEY is set (50 req/30s).",
+    ),
+    "groq": SourcePacing(
+        min_interval_seconds=15.0,
+        docs_url="https://console.groq.com/docs/rate-limits",
+        notes="llama-3.1-8b-instant TPM (6K/min) is usually tighter than RPM.",
+    ),
+    "anthropic": SourcePacing(
+        min_interval_seconds=1.0,
+        docs_url="https://docs.anthropic.com/en/api/rate-limits",
+        notes="Tier-dependent; conservative default spacing.",
+    ),
+    "virustotal": SourcePacing(
+        min_interval_seconds=15.0,
+        docs_url="https://docs.virustotal.com/reference/public-vs-premium-api",
+        notes="Public API: 4 requests/minute.",
+    ),
+    "abuseipdb": SourcePacing(
+        min_interval_seconds=0.5,
+        docs_url="https://docs.abuseipdb.com/",
+        notes="Daily quota (1,000/day free) enforced separately in tracking.has_quota.",
+    ),
+    "greynoise": SourcePacing(
+        min_interval_seconds=2.0,
+        docs_url="https://docs.greynoise.io/docs/using-the-greynoise-community-api",
+        notes="50 lookups/week on free Community API.",
+    ),
+    "github": SourcePacing(
+        min_interval_seconds=0.75,
+        docs_url="https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api",
+        notes="Faster with GITHUB_TOKEN (5,000 req/hour).",
+    ),
+    "otx": SourcePacing(
+        min_interval_seconds=0.5,
+        docs_url="https://otx.alienvault.com/api",
+        notes="10,000 req/hour with API key; BRIEFR targets ~7,200/hour (2 req/sec).",
+    ),
+    "epss": SourcePacing(
+        min_interval_seconds=2.0,
+        docs_url="https://www.first.org/epss/api",
+        notes="No published per-minute cap; scheduler backfill spacing.",
+    ),
+    "osv": SourcePacing(
+        min_interval_seconds=0.25,
+        docs_url="https://google.github.io/osv.dev/api/",
+    ),
+    "kev": SourcePacing(
+        min_interval_seconds=0.0,
+        docs_url="https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+        notes="Static JSON; no published rate limit.",
+    ),
+    "mitre": SourcePacing(
+        min_interval_seconds=1.0,
+        max_concurrent=2,
+        docs_url="https://github.com/mitre/cti",
+        notes="Large GitHub raw downloads.",
+    ),
+    "rss": SourcePacing(
+        min_interval_seconds=0.5,
+        max_concurrent=3,
+        notes="Parallel RSS fetches with modest spacing.",
+    ),
+    "webhook": SourcePacing(
+        min_interval_seconds=0.5,
+        max_concurrent=2,
+        notes="Outbound Discord/Telegram/custom webhooks.",
+    ),
+    "sploitus": SourcePacing(min_interval_seconds=1.0),
+    "circl": SourcePacing(min_interval_seconds=0.5),
+    "malwarebazaar": SourcePacing(min_interval_seconds=0.5),
+    "urlhaus": SourcePacing(min_interval_seconds=0.5),
+    "poc_github": SourcePacing(
+        min_interval_seconds=0.5,
+        docs_url="https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api",
+    ),
+    "default": SourcePacing(min_interval_seconds=1.0),
+}
+
+# Circuit-breaker source id -> pacing profile
+_SOURCE_ALIASES: dict[str, str] = {
+    "epss_bulk": "epss",
+    "poc_github": "github",
+    "cvelistv5": "github",
+    "vulnrichment": "github",
+    "metasploit": "github",
+    "nuclei": "github",
+    "exploitdb": "github",
+    "atlas": "github",
 }
 
 
-def get_min_interval(source: str) -> float:
-    """Seconds to wait after the previous request to the same source."""
-    return max(0.0, float(_SOURCE_MIN_INTERVAL.get(source, 0.0)))
+def resolve_pacing_key(source: str) -> str:
+    if source.startswith("rss:"):
+        return "rss"
+    if source.startswith("webhook."):
+        return "webhook"
+    return _SOURCE_ALIASES.get(source, source)
+
+
+def get_source_pacing(source: str) -> SourcePacing:
+    key = resolve_pacing_key(source)
+    profile = PACING_PROFILES.get(key, PACING_PROFILES["default"])
+    interval = profile.min_interval_seconds
+    if key == "nvd":
+        interval = _nvd_interval()
+    elif key == "github":
+        interval = _github_interval()
+    elif key == "groq":
+        try:
+            from ai.groq_config import groq_limits
+
+            interval = groq_limits().min_interval_seconds
+        except Exception:
+            pass
+    return SourcePacing(
+        min_interval_seconds=max(interval, 0.0),
+        max_concurrent=profile.max_concurrent,
+        docs_url=profile.docs_url,
+        notes=profile.notes,
+    )
 
 
 def get_otx_hourly_limit() -> int:
     """OTX authenticated tier: 10,000 requests/hour."""
     return max(1, int(os.environ.get("OTX_HOURLY_LIMIT", "10000")))
+
+
+def get_min_interval(source: str) -> float:
+    """Seconds to wait after the previous request to the same source."""
+    return get_source_pacing(source).min_interval_seconds
