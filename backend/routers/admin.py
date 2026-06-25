@@ -82,6 +82,7 @@ _JOB_LOCK_MAP: dict[str, str] = {
     "embeddings_backfill": "_embeddings_lock",
     "llm_product_extraction": "_llm_extraction_lock",
     "exploit_sources_sync": "_exploit_sources_lock",
+    "scheduled_backup": "_scheduled_backup_lock",
 }
 
 # WRITABLE_CONFIG_KEYS / INTEGER_KEYS / RESTART_REQUIRED_KEYS now come from

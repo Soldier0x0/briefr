@@ -44,6 +44,13 @@ export const JOB_CATALOG = {
     analystDescription: 'Links CVEs to known threat campaigns from OTX.',
     refreshButton: 'Refresh campaign links',
   },
+  otx_continuous_sync: {
+    label: 'OTX continuous background sync',
+    short: 'OTX continuous',
+    operatorName: 'OTX Continuous Sync',
+    analystDescription: 'Keeps OTX pulse and IOC data fresh throughout the day.',
+    refreshButton: 'Run OTX continuous sync',
+  },
   incident_feed_refresh: {
     label: 'Incident news feed',
     short: 'Incidents',

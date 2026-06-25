@@ -7,6 +7,8 @@ import ActionProgress from './shared/ActionProgress.jsx'
 import { fmtAge, ageColor, sourceLabel } from './formatters.js'
 import { overallHealth, analystScheduleJobs, nvdCadenceLabel } from './intelStatus.js'
 import { jobLabel } from './catalog.js'
+import { getRunningJobs, getSchedulerJobs } from './jobStatus.js'
+import RunningJobsPanel from './shared/RunningJobsPanel.jsx'
 
 function AnalystOverview({ system, toast, jobAcks, onMarkJobErrorsRead }) {
   const [running, setRunning] = useState({})
@@ -37,7 +39,9 @@ function AnalystOverview({ system, toast, jobAcks, onMarkJobErrorsRead }) {
   }
 
   const health = overallHealth(system)
-  const { db_integrity, scheduler_jobs, active_locks } = system
+  const { db_integrity, scheduler_jobs } = system
+  const normalizedJobs = getSchedulerJobs(system, scheduler_jobs)
+  const runningJobs = getRunningJobs(system, scheduler_jobs)
   const openCircuits = system.open_circuit_count ?? 0
   const sources = system.feeds?.sources || {}
   const worstEntries = Object.entries(sources).filter(([, s]) => s.circuit_open)
@@ -89,14 +93,10 @@ function AnalystOverview({ system, toast, jobAcks, onMarkJobErrorsRead }) {
         />
       </div>
 
-      {active_locks?.length > 0 && (
+      {runningJobs.length > 0 && (
         <div className="admin-card">
           <div className="admin-card-title">Background sync in progress</div>
-          {active_locks.map(l => (
-            <div key={l.job_id} style={{ fontSize: '0.8125rem', color: 'var(--text2)', padding: '0.2rem 0' }}>
-              {jobLabel(l.job_id, 'analyst')} — started recently. Wait before restarting the server.
-            </div>
-          ))}
+          <RunningJobsPanel jobs={runningJobs} mode="analyst" />
         </div>
       )}
 
@@ -127,7 +127,7 @@ function AnalystOverview({ system, toast, jobAcks, onMarkJobErrorsRead }) {
 
       <div className="admin-card">
         <div className="admin-card-title">Data refresh schedule</div>
-        <JobTable jobs={analystScheduleJobs(scheduler_jobs)} onRunNow={runNow} mode="analyst" />
+        <JobTable jobs={analystScheduleJobs(normalizedJobs)} onRunNow={runNow} mode="analyst" />
       </div>
     </div>
   )
@@ -199,7 +199,9 @@ function OperatorOverview({ system, toast, jobAcks, onMarkJobErrorsRead }) {
     setProgress(null)
   }
 
-  const { db_integrity, scheduler_jobs, active_locks } = system
+  const { db_integrity, scheduler_jobs } = system
+  const normalizedJobs = getSchedulerJobs(system, scheduler_jobs)
+  const runningJobs = getRunningJobs(system, scheduler_jobs)
   const nvdAgeColorClass = ageColor(system.last_nvd_sync_age_seconds, 7200, 14400)
   const backupAgeColorClass = ageColor(system.last_backup_age_seconds, 28800, 43200)
 
@@ -260,21 +262,11 @@ function OperatorOverview({ system, toast, jobAcks, onMarkJobErrorsRead }) {
       <div className="admin-two-col">
         <div className="admin-card" style={{ flex: 1 }}>
           <div className="admin-card-title">Active locks</div>
-          {(!active_locks || active_locks.length === 0) ? (
-            <div className="admin-empty">No jobs running</div>
-          ) : (
-            <table className="admin-table">
-              <thead><tr><th>JOB ID</th><th>LOCK</th></tr></thead>
-              <tbody>
-                {active_locks.map(l => (
-                  <tr key={l.job_id}>
-                    <td className="mono" style={{ fontSize: '0.75rem' }}>{l.job_id}</td>
-                    <td><span className="badge badge-info">LOCKED</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          <RunningJobsPanel
+            jobs={runningJobs}
+            mode="operator"
+            showTechnicalIds
+          />
         </div>
       </div>
 
@@ -289,7 +281,7 @@ function OperatorOverview({ system, toast, jobAcks, onMarkJobErrorsRead }) {
 
       <div className="admin-card">
         <div className="admin-card-title">Scheduler jobs</div>
-        <JobTable jobs={scheduler_jobs} onRunNow={runNow} onPauseResume={pauseResume} mode="operator" />
+        <JobTable jobs={normalizedJobs} onRunNow={runNow} onPauseResume={pauseResume} mode="operator" />
       </div>
     </div>
   )
