@@ -5,7 +5,11 @@ import StatCard from './shared/StatCard.jsx'
 const RATE_LIMIT_BUCKET_LABELS = {
   ioc: 'IOC lookups',
   refresh: 'Manual refresh / ingest',
+  admin_read: 'Admin read (GET)',
   wallboard: 'Wallboard API',
+  login: 'Login / setup (per IP)',
+  login_username: 'Login / setup (per username)',
+  auth_refresh: 'Session refresh',
 }
 
 export default function SecurityPage({ toast }) {
@@ -26,9 +30,14 @@ export default function SecurityPage({ toast }) {
         <>
           <div className="stat-card-row">
             <StatCard label="RATE LIMIT" value={security.rate_limit_enabled ? 'ON' : 'OFF'} colorClass={security.rate_limit_enabled ? 'color-green' : 'color-amber'} />
-            <StatCard label="IOC LIMIT / MIN" value={security.rate_limit_ioc_per_minute} />
-            <StatCard label="REFRESH LIMIT / MIN" value={security.rate_limit_refresh_per_minute} />
+            <StatCard label="LOGIN LIMIT / MIN" value={security.rate_limit_login_per_minute ?? '—'} />
+            <StatCard label="AUTH REFRESH / MIN" value={security.rate_limit_auth_refresh_per_minute ?? '—'} />
             <StatCard label="LOGIN FAILURES (24H)" value={security.failed_auth_last_24h} colorClass={security.failed_auth_last_24h > 0 ? 'color-red' : 'color-green'} />
+          </div>
+          <div className="stat-card-row">
+            <StatCard label="IOC LIMIT / MIN" value={security.rate_limit_ioc_per_minute ?? '—'} />
+            <StatCard label="REFRESH LIMIT / MIN" value={security.rate_limit_refresh_per_minute ?? '—'} />
+            <StatCard label="ADMIN READ / MIN" value={security.rate_limit_admin_read_per_minute ?? '—'} />
           </div>
 
           <div className="admin-card">
@@ -50,14 +59,14 @@ export default function SecurityPage({ toast }) {
           <div className="admin-card">
             <div className="admin-card-title">Rate-limit usage (since backend start)</div>
             <p style={{ fontSize: '0.8125rem', color: 'var(--text2)', margin: '0 0 0.75rem', lineHeight: 1.5 }}>
-              Each row is a client IP (or Cloudflare-attested IP behind the proxy) that hit a throttled endpoint.
-              <strong> Hits</strong> count requests that consumed a rate-limit token — mostly IOC lookups and manual refresh/ingest calls.
+              Each row is a client IP (or Cloudflare-attested IP behind the proxy), or a username for login throttling.
+              <strong> Hits</strong> count requests that consumed a rate-limit token — IOC lookups, manual refresh/ingest, admin reads, and auth endpoints.
               Limits reset continuously (token bucket); high counts mean that client is busy, not that they are blocked forever.
             </p>
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>CLIENT IP</th>
+                  <th>CLIENT / USER</th>
                   <th>ENDPOINT GROUP</th>
                   <th>HITS</th>
                 </tr>

@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     rate_limit_enabled: bool = True
     rate_limit_ioc_per_minute: int = 30
     rate_limit_refresh_per_minute: int = 10
+    rate_limit_admin_read_per_minute: int = 120
     rate_limit_wallboard_per_minute: int = 60
 
     # V1.4 Theme 4 — optional read-only kiosk token (X-BRIEFR-Wallboard-Token).

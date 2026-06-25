@@ -90,6 +90,11 @@ async def lifespan(app: FastAPI):
 
     await init_db()
     logger.info("main.py lifespan: database ready")
+    if settings.is_production and not settings.rate_limit_enabled:
+        logger.warning(
+            "RATE_LIMIT_ENABLED=0 in production — IOC, refresh, admin, wallboard, "
+            "and auth endpoints are not throttled. Set RATE_LIMIT_ENABLED=1."
+        )
     await sync_env_destinations_to_db()
     start_scheduler()
     await maybe_run_on_startup()

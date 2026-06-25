@@ -107,6 +107,9 @@ class TokenBucket:
 
 ioc_bucket = TokenBucket(settings.rate_limit_ioc_per_minute, name="ioc")
 refresh_bucket = TokenBucket(settings.rate_limit_refresh_per_minute, name="refresh")
+admin_read_bucket = TokenBucket(
+    settings.rate_limit_admin_read_per_minute, name="admin_read"
+)
 wallboard_bucket = TokenBucket(settings.rate_limit_wallboard_per_minute, name="wallboard")
 login_bucket = TokenBucket(settings.rate_limit_login_per_minute, name="login")
 # Keyed by submitted username (not client IP) — catches credential-stuffing
@@ -172,6 +175,16 @@ def rate_limit_refresh(request: Request) -> None:
     _enforce(refresh_bucket, request)
 
 
+def rate_limit_admin(request: Request) -> None:
+    """Route dependency: read-only admin GETs use a generous bucket; POSTs share refresh."""
+    if not settings.rate_limit_enabled:
+        return
+    if request.method == "GET":
+        _enforce(admin_read_bucket, request)
+    else:
+        _enforce(refresh_bucket, request)
+
+
 def rate_limit_wallboard(request: Request) -> None:
     """Route dependency: token bucket for GET /api/wallboard."""
     _enforce(wallboard_bucket, request)
@@ -208,7 +221,11 @@ def get_top_consumers(n: int = 5) -> list[dict]:
     for bucket_name, bucket in (
         ("ioc", ioc_bucket),
         ("refresh", refresh_bucket),
+        ("admin_read", admin_read_bucket),
         ("wallboard", wallboard_bucket),
+        ("login", login_bucket),
+        ("login_username", login_username_bucket),
+        ("auth_refresh", auth_refresh_bucket),
     ):
         for key, hits in getattr(bucket, "_hits", {}).items():
             merged.append({"key": key, "hits": hits, "bucket": bucket_name})
