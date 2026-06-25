@@ -177,8 +177,6 @@ def rate_limit_refresh(request: Request) -> None:
 
 def rate_limit_admin(request: Request) -> None:
     """Route dependency: read-only admin GETs use a generous bucket; POSTs share refresh."""
-    if not settings.rate_limit_enabled:
-        return
     if request.method == "GET":
         _enforce(admin_read_bucket, request)
     else:

@@ -2034,17 +2034,13 @@ async def read_otx_cve_pulses(
     ]
 
 
-_pulse_ioc_store_locks: dict[str, asyncio.Lock] = {}
-_pulse_ioc_locks_guard = asyncio.Lock()
+_NUM_IOC_LOCKS = 64
+_pulse_ioc_locks = [asyncio.Lock() for _ in range(_NUM_IOC_LOCKS)]
 
 
-async def _acquire_pulse_ioc_lock(pulse_id: str) -> asyncio.Lock:
-    async with _pulse_ioc_locks_guard:
-        lock = _pulse_ioc_store_locks.get(pulse_id)
-        if lock is None:
-            lock = asyncio.Lock()
-            _pulse_ioc_store_locks[pulse_id] = lock
-        return lock
+def _pulse_ioc_lock(pulse_id: str) -> asyncio.Lock:
+    """Fixed-size lock pool — avoids unbounded growth from per-pulse lock dicts."""
+    return _pulse_ioc_locks[hash(pulse_id) % _NUM_IOC_LOCKS]
 
 
 async def replace_otx_pulse_iocs(
@@ -2089,25 +2085,24 @@ async def replace_otx_pulse_iocs(
         (pulse_id,),
     )
     stale = [
-        (row["ioc_type"], row["ioc_value"])
+        (pulse_id, row["ioc_type"], row["ioc_value"])
         for row in existing
         if (row["ioc_type"], row["ioc_value"]) not in new_keys
     ]
-    for ioc_type, ioc_value in stale:
-        await db.execute(
+    if stale:
+        await db.executemany(
             """
             DELETE FROM otx_pulse_iocs
             WHERE pulse_id = ? AND ioc_type = ? AND ioc_value = ?
             """,
-            (pulse_id, ioc_type, ioc_value),
+            stale,
         )
 
 
 async def store_otx_pulse_iocs(
     db: aiosqlite.Connection, pulse_id: str, iocs: list[dict]
 ) -> None:
-    lock = await _acquire_pulse_ioc_lock(pulse_id)
-    async with lock:
+    async with _pulse_ioc_lock(pulse_id):
         await replace_otx_pulse_iocs(db, pulse_id, iocs)
         await set_feed_cache(db, f"otx:pulse:{pulse_id}", {"iocs": iocs})
 
