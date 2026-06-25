@@ -271,15 +271,15 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 
 ## Checklist
 
-| # | Filename | Priority |
-|---|----------|----------|
-| 1 | production-architecture.png | **P0** |
-| 5 | correlation-pipeline.png | **P0** |
-| 6 | ingest-pipeline.png | **P0** |
-| 8 | auth-layers.png | **P0** |
-| 9 | rate-limits-and-queue.png | **P1** |
-| 3 | backup-restore-flow.png | **P1** |
-| 11–15 | ui-*.png | **P1** (screenshots OK) |
-| 2,4,7,10,16,17 | others | **P2** |
+| # | Filename | Priority | Done |
+|---|----------|----------|------|
+| 1 | production-architecture.png | **P0** | [ ] |
+| 5 | correlation-pipeline.png | **P0** | [ ] |
+| 6 | ingest-pipeline.png | **P0** | [ ] |
+| 8 | auth-layers.png | **P0** | [ ] |
+| 9 | rate-limits-and-queue.png | **P1** | [ ] |
+| 3 | backup-restore-flow.png | **P1** | [ ] |
+| 11–15 | ui-*.png | **P1** (screenshots OK) | [ ] |
+| 2,4,7,10,16,17 | others | **P2** | [ ] |
 
-When an asset is added, update the doc `![...]()` path and check the box here.
+When an asset is added, update the doc `![...]()` path and mark **Done** `[x]` here.

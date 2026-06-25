@@ -1,5 +1,7 @@
 # ADR-NNN: Title
 
+Copy into `docs/decisions/`. **After copying**, use `../assets/` for image paths.
+
 **Status:** Proposed | Accepted | Superseded  
 **Date:** YYYY-MM-DD
 
@@ -24,7 +26,7 @@ What we chose.
 
 ## Diagram (optional)
 
-![Decision diagram — pending](../assets/placeholder-diagram.svg)
+![Decision diagram — pending](assets/placeholder-diagram.svg)
 
 > **Asset:** `docs/assets/adr-NNN-short-name.png`  
 > **Brief:** Add to IMAGE_BRIEFS.md when created.

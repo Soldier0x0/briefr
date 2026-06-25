@@ -104,7 +104,7 @@ Each concept page follows [`TEMPLATE_concept.md`](TEMPLATE_concept.md):
 ### `reference/*` — Lookup
 
 - Tables, not narrative. Minimal or no images.
-- `api.md` points to root [`API_REFERENCE.md`](../API_REFERENCE.md).
+- `docs/reference/api.md` points to root [`API_REFERENCE.md`](../../API_REFERENCE.md) (two levels up from `reference/`).
 
 ### `decisions/*` — ADRs
 

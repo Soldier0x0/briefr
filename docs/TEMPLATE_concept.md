@@ -1,6 +1,8 @@
 # Concept page template
 
-Copy this file when adding a new `concepts/*.md` page. Replace `TITLE`, assets, and tables.
+Copy this file into `docs/concepts/<name>.md`. **After copying**, change image paths from `assets/` to `../assets/`.
+
+Replace `TITLE`, assets, and tables.
 
 ---
 
@@ -8,7 +10,7 @@ Copy this file when adding a new `concepts/*.md` page. Replace `TITLE`, assets, 
 
 One-sentence summary.
 
-![TITLE — pending](../assets/placeholder-diagram.svg)
+![TITLE — pending](assets/placeholder-diagram.svg)
 
 > **Asset:** `docs/assets/FILENAME.png`  
 > **Brief:** [IMAGE_BRIEFS.md §N](../IMAGE_BRIEFS.md)
@@ -23,7 +25,7 @@ One-sentence summary.
 
 ## How it works
 
-![Flow — pending](../assets/placeholder-diagram.svg)
+![Flow — pending](assets/placeholder-diagram.svg)
 
 > **Asset:** `docs/assets/FLOW-FILENAME.png`
 
