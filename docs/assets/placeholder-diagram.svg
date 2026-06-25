@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420">
+  <rect width="960" height="420" rx="16" fill="#0a0a08" stroke="#3d3d38" stroke-width="2"/>
+  <rect x="24" y="24" width="912" height="48" rx="8" fill="#141412" stroke="#2a2a25"/>
+  <text x="48" y="54" fill="#c8b88a" font-family="system-ui,sans-serif" font-size="16" font-weight="600">Diagram placeholder</text>
+  <text x="48" y="120" fill="#e8e6df" font-family="system-ui,sans-serif" font-size="22" font-weight="600">Image not added yet</text>
+  <text x="48" y="156" fill="#9a9890" font-family="system-ui,sans-serif" font-size="14">Export from Miro / Figma / Penpot and save to docs/assets/</text>
+  <text x="48" y="184" fill="#9a9890" font-family="system-ui,sans-serif" font-size="14">See IMAGE_BRIEFS.md for filename and prompt</text>
+  <rect x="48" y="220" width="864" height="2" fill="#2a2a25"/>
+  <text x="48" y="260" fill="#5a5850" font-family="ui-monospace,monospace" font-size="13">Replace this file reference in the doc when your PNG/SVG is ready</text>
+</svg>
