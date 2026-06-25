@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import { AlertTriangle } from 'lucide-react'
+import { isChunkLoadError } from '../utils/lazyWithReload.js'
 
 // Class component is required here - React has no hook-based error boundary.
 // Scopes a render-time exception to one tab/tool/overlay instead of letting
@@ -20,6 +21,10 @@ export default class ToolErrorBoundary extends Component {
   }
 
   handleRetry = () => {
+    if (isChunkLoadError(this.state.error)) {
+      window.location.reload()
+      return
+    }
     this.setState({ error: null })
     this.props.onReset?.()
   }

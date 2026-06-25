@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from 'react'
 import { Routes, Route, useLocation, Link, useSearchParams } from 'react-router-dom'
 import { InvestigationProvider } from './context/InvestigationContext.jsx'
 import { overlayDepth } from './hooks/useModalLayer.js'
@@ -34,10 +34,11 @@ import {
 } from './utils/aiAssets.js'
 import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
 import { createCveDrawerController } from './utils/openCveDrawer.js'
+import { lazyWithReload } from './utils/lazyWithReload.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 import './components/InvestigationPanel.css'
 
-const BriefCharts = lazy(() => import('./components/BriefCharts.jsx'))
+const BriefCharts = lazyWithReload(() => import('./components/BriefCharts.jsx'))
 
 const DEFAULT_FILTERS = {
   severity: null,
