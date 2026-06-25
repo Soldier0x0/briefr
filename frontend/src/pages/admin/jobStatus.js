@@ -14,7 +14,7 @@ export function getSchedulerJobs(system, fallbackJobs) {
   if (!jobs?.length) return jobs ?? null
   const lockedIds = new Set((system?.active_locks || []).map((l) => l.job_id))
   return jobs.map((job) => {
-    if (!lockedIds.has(job.id) || job.status === 'DISABLED') return job
+    if (!lockedIds.has(job.id)) return job
     if (job.status === 'LOCKED') return job
     return { ...job, status: 'LOCKED', lock_held: true }
   })
