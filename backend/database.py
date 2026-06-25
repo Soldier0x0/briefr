@@ -2034,14 +2034,20 @@ async def read_otx_cve_pulses(
     ]
 
 
+_NUM_IOC_LOCKS = 64
+_pulse_ioc_locks = [asyncio.Lock() for _ in range(_NUM_IOC_LOCKS)]
+
+
+def _pulse_ioc_lock(pulse_id: str) -> asyncio.Lock:
+    """Fixed-size lock pool — avoids unbounded growth from per-pulse lock dicts."""
+    return _pulse_ioc_locks[hash(pulse_id) % _NUM_IOC_LOCKS]
+
+
 async def replace_otx_pulse_iocs(
     db: aiosqlite.Connection, pulse_id: str, iocs: list[dict]
 ) -> None:
     from correlation.ioc_normalize import normalize_ioc_row
 
-    await db.execute("DELETE FROM otx_pulse_iocs WHERE pulse_id = ?", (pulse_id,))
-    if not iocs:
-        return
     normalized_rows: list[tuple] = []
     for row in iocs:
         norm = normalize_ioc_row(row)
@@ -2056,22 +2062,49 @@ async def replace_otx_pulse_iocs(
             )
         )
     if not normalized_rows:
+        await db.execute("DELETE FROM otx_pulse_iocs WHERE pulse_id = ?", (pulse_id,))
         return
+    new_keys = {(row[1], row[2]) for row in normalized_rows}
     await db.executemany(
         """
         INSERT INTO otx_pulse_iocs (
             pulse_id, ioc_type, ioc_value, description, fetched_at
         ) VALUES (?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(pulse_id, ioc_type, ioc_value) DO UPDATE SET
+            description = excluded.description,
+            fetched_at = excluded.fetched_at
         """,
         normalized_rows,
     )
+    existing = await db.execute_fetchall(
+        """
+        SELECT ioc_type, ioc_value
+        FROM otx_pulse_iocs
+        WHERE pulse_id = ?
+        """,
+        (pulse_id,),
+    )
+    stale = [
+        (pulse_id, row["ioc_type"], row["ioc_value"])
+        for row in existing
+        if (row["ioc_type"], row["ioc_value"]) not in new_keys
+    ]
+    if stale:
+        await db.executemany(
+            """
+            DELETE FROM otx_pulse_iocs
+            WHERE pulse_id = ? AND ioc_type = ? AND ioc_value = ?
+            """,
+            stale,
+        )
 
 
 async def store_otx_pulse_iocs(
     db: aiosqlite.Connection, pulse_id: str, iocs: list[dict]
 ) -> None:
-    await replace_otx_pulse_iocs(db, pulse_id, iocs)
-    await set_feed_cache(db, f"otx:pulse:{pulse_id}", {"iocs": iocs})
+    async with _pulse_ioc_lock(pulse_id):
+        await replace_otx_pulse_iocs(db, pulse_id, iocs)
+        await set_feed_cache(db, f"otx:pulse:{pulse_id}", {"iocs": iocs})
 
 
 async def read_otx_pulse_iocs(

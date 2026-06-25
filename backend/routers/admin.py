@@ -1,7 +1,8 @@
 """Admin dashboard API endpoints.
 
-All routes require the X-BRIEFR-Admin-Key header (when BRIEFR_ADMIN_API_KEY is
-configured) and share the same token-bucket rate limit as the refresh routes.
+All routes require an authenticated admin session (or legacy admin key during
+dual-auth soak). Read-only GETs use a generous token bucket; POSTs share the
+refresh ingest limit.
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
@@ -50,14 +51,14 @@ from config_schema import (
 )
 from dependencies import audit, require_admin, trigger_graceful_restart
 from destructive_actions import list_actions, require_confirm
-from rate_limit import get_top_consumers, rate_limit_refresh
+from rate_limit import get_top_consumers, rate_limit_admin
 from resilient_client import get_api_queue_status, get_feed_health, reset_circuit
 from settings import settings
 from structured_logging import LOG_CATEGORIES, get_log_buffer, get_known_loggers
 
 router = APIRouter(
     prefix="/api/admin",
-    dependencies=[Depends(require_admin), Depends(rate_limit_refresh)],
+    dependencies=[Depends(require_admin), Depends(rate_limit_admin)],
 )
 
 _BUILD_INFO_PATH = Path(__file__).resolve().parents[1] / ".build-info.json"
@@ -1024,6 +1025,11 @@ def _get_config_response() -> dict[str, Any]:
             "RATE_LIMIT_ENABLED": _env("RATE_LIMIT_ENABLED", "1"),
             "RATE_LIMIT_IOC_PER_MINUTE": _env_int("RATE_LIMIT_IOC_PER_MINUTE", 30),
             "RATE_LIMIT_REFRESH_PER_MINUTE": _env_int("RATE_LIMIT_REFRESH_PER_MINUTE", 10),
+            "RATE_LIMIT_ADMIN_READ_PER_MINUTE": _env_int("RATE_LIMIT_ADMIN_READ_PER_MINUTE", 120),
+            "RATE_LIMIT_LOGIN_PER_MINUTE": _env_int("RATE_LIMIT_LOGIN_PER_MINUTE", 5),
+            "RATE_LIMIT_AUTH_REFRESH_PER_MINUTE": _env_int(
+                "RATE_LIMIT_AUTH_REFRESH_PER_MINUTE", 30
+            ),
             "DATABASE_URL": (
                 re.sub(r"://[^@]+@", "://***@", _env("DATABASE_URL"))
                 if _env("DATABASE_URL") else "not configured"
@@ -1733,6 +1739,9 @@ async def get_security(request: Request):
         "rate_limit_enabled": settings.rate_limit_enabled,
         "rate_limit_ioc_per_minute": settings.rate_limit_ioc_per_minute,
         "rate_limit_refresh_per_minute": settings.rate_limit_refresh_per_minute,
+        "rate_limit_admin_read_per_minute": settings.rate_limit_admin_read_per_minute,
+        "rate_limit_login_per_minute": settings.rate_limit_login_per_minute,
+        "rate_limit_auth_refresh_per_minute": settings.rate_limit_auth_refresh_per_minute,
         "top_rate_limit_consumers": get_top_consumers(5),
     }
 

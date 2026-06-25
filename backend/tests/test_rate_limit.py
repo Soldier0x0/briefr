@@ -247,3 +247,16 @@ def test_other_endpoints_are_not_rate_limited():
     assert resp.status_code == 200
     _reset(rate_limit.ioc_bucket)
     _reset(rate_limit.refresh_bucket)
+
+
+def test_get_top_consumers_includes_auth_buckets():
+    rate_limit.login_bucket._hits["203.0.113.1"] = 3
+    rate_limit.auth_refresh_bucket._hits["203.0.113.1"] = 2
+    try:
+        rows = rate_limit.get_top_consumers(10)
+        buckets = {row["bucket"] for row in rows}
+        assert "login" in buckets
+        assert "auth_refresh" in buckets
+    finally:
+        rate_limit.login_bucket._hits.clear()
+        rate_limit.auth_refresh_bucket._hits.clear()
