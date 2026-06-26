@@ -7,7 +7,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 **Status:** Planning — **after Beta V1.4**
 
 **Prerequisite:** [`Beta V1.4.md`](Beta%20V1.4.md)  
-**Index:** [`docs/ROADMAP.md`](docs/ROADMAP.md)
+**Index:** [`docs/ROADMAP.md`](../../ROADMAP.md)
 
 ---
 
@@ -129,5 +129,5 @@ Phase 5  IOC watchlist + ThreatFox + retro-match + VulnCheck KEV tier
 
 | Document | Role |
 |----------|------|
-| [`docs/JUPITER_VISION.md`](docs/JUPITER_VISION.md) | ML / ClickStack split |
+| [`docs/JUPITER_VISION.md`](../JUPITER_VISION.md) | ML / ClickStack split |
 | [`Beta V2.0.md`](Beta%20V2.0.md) | Platform packaging |

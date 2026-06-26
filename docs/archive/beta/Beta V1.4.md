@@ -7,7 +7,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 **Status:** Theme 1 (Admin pane) **shipped** in PR cursor/admin-overhaul-17e8. Theme 2 (Webhook engine) **shipped** in PR cursor/webhook-engine-ssrf-5a38. Themes 3–4 remain planned.
 
 **Prerequisite:** [`Beta V1.3.md`](Beta%20V1.3.md)  
-**Index:** [`docs/ROADMAP.md`](docs/ROADMAP.md)
+**Index:** [`docs/ROADMAP.md`](../../ROADMAP.md)
 
 ---
 
@@ -72,7 +72,7 @@ Analyst benefits from pushes; **configuration lives in admin**.
 | **Container-ready** | stdout JSON + optional `/var/lib/briefr/logs/` volume | 🔲 Planned (Phase 7 — logrotate) |
 | **No shell** | Read-only API; rate limited | ✅ Shipped — in-process ring buffer, admin-gated, refresh bucket |
 
-**Not in scope:** full nginx/host log management in UI — document in [`OPERATIONS.md`](docs/OPERATIONS.md).
+**Not in scope:** full nginx/host log management in UI — document in [`OPERATIONS.md`](../../OPERATIONS.md).
 
 ---
 
@@ -159,6 +159,6 @@ Phase 7  deploy/logrotate + OPERATIONS.md updates
 
 | Document | Role |
 |----------|------|
-| [`docs/OPERATIONS.md`](docs/OPERATIONS.md) | Backup, container, compatibility |
-| [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) | Admin attack surface |
+| [`docs/OPERATIONS.md`](../../OPERATIONS.md) | Backup, container, compatibility |
+| [`docs/THREAT_MODEL.md`](../THREAT_MODEL.md) | Admin attack surface |
 | [`Beta V1.5.md`](Beta%20V1.5.md) | Next — threat model + proof bench |

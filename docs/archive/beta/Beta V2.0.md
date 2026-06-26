@@ -7,7 +7,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 **Status:** Planning — **when scale or packaging demands it**
 
 **Prerequisite:** Beta V1.5 recommended; Beta V1.2 repository layer **required**  
-**Index:** [`docs/ROADMAP.md`](docs/ROADMAP.md)
+**Index:** [`docs/ROADMAP.md`](../../ROADMAP.md)
 
 ---
 
@@ -30,7 +30,7 @@ V2.0 is **platform packaging and scale** — not a new product category. Trigger
 
 **Migration path:** parallel run on `:8001`, cutover nginx upstream, disable systemd unit.
 
-See [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
+See [`docs/OPERATIONS.md`](../../OPERATIONS.md).
 
 ---
 
@@ -106,5 +106,5 @@ Not required to ship V2.0 BRIEFR core.
 
 | Document | Role |
 |----------|------|
-| [`docs/OPERATIONS.md`](docs/OPERATIONS.md) | Volume mapping, secrets |
+| [`docs/OPERATIONS.md`](../../OPERATIONS.md) | Volume mapping, secrets |
 | [`Beta V1.2.md`](Beta%20V1.2.md) | Repository prerequisite |

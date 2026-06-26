@@ -7,7 +7,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 **Status:** Planning — **starts after Beta V1.2 success criteria are met**
 
 **Prerequisite:** [`Beta V1.2.md`](Beta%20V1.2.md) (foundation)  
-**Index:** [`docs/ROADMAP.md`](docs/ROADMAP.md)
+**Index:** [`docs/ROADMAP.md`](../../ROADMAP.md)
 
 ---
 
@@ -115,7 +115,7 @@ All ride the V1.2 `resilient_client` feed framework; snapshot sources need no wa
 
 ## Theme 7 — ML assist (amendment 2026-06-10)
 
-Env-gated, CPU-only, scheduler-side, deterministic fallback — see ML placement rules in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Env-gated, CPU-only, scheduler-side, deterministic fallback — see ML placement rules in [`docs/ROADMAP.md`](../../ROADMAP.md).
 
 | Item | Goal | Status |
 |------|------|--------|
@@ -188,4 +188,4 @@ Phase 6  Watchlist / pin / snooze + React Query cleanup  ✅ watchlist shipped (
 |----------|------|
 | [`Beta V1.2.md`](Beta%20V1.2.md) | Prerequisite |
 | [`Beta V1.4.md`](Beta%20V1.4.md) | Next — operator features |
-| [`docs/JUPITER_VISION.md`](docs/JUPITER_VISION.md) | Ecosystem context |
+| [`docs/JUPITER_VISION.md`](../JUPITER_VISION.md) | Ecosystem context |
