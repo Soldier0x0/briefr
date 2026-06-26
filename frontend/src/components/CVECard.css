@@ -1,20 +1,25 @@
 .cve-card {
-  padding: 14px 100px 14px 36px;
+  padding: var(--space-4) 88px var(--space-4) 36px;
   border-bottom: 1px solid var(--border);
   border-left: 3px solid var(--border);
-  background: var(--bg);
+  background: var(--surface-0);
   cursor: pointer;
-  transition: background 0.1s;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
   display: block;
   width: 100%;
   text-align: left;
   position: relative;
   isolation: isolate;
-  scroll-margin-top: 240px;
+  scroll-margin-top: 200px;
+  border-radius: 0;
 }
 
 .cve-card:hover {
-  background: var(--bg2);
+  background: var(--surface-1);
+  transform: translateY(-1px);
 }
 
 .cve-card:focus-visible {

@@ -165,8 +165,17 @@ input:focus, textarea:focus {
   flex: 1;
   width: 100%;
   max-width: 100%;
-  padding: 0 24px;
+  padding: 0;
   overflow-x: hidden;
+}
+
+.brief-page {
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-12);
+}
+
+.feed-page {
+  padding-top: var(--space-4);
 }
 
 .app-tab-panel[hidden] {
@@ -197,10 +206,9 @@ input:focus, textarea:focus {
 
 .content-grid {
   display: grid;
-  grid-template-columns: 1fr 280px;
-  gap: 0;
+  grid-template-columns: 1fr 260px;
+  gap: var(--space-6);
   align-items: start;
-  border-top: 1px solid var(--border);
 }
 
 /* Feed column must not overflow its grid track */
@@ -271,11 +279,13 @@ input:focus, textarea:focus {
 /* ── Footer ────────────────────────────────────────────── */
 .app-footer {
   border-top: 1px solid var(--border);
-  padding: 20px 24px;
+  padding: var(--space-5) var(--space-6);
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
 }
 
 .footer-left {

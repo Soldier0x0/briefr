@@ -1,6 +1,15 @@
 .brief-charts {
-  border-bottom: 1px solid var(--border);
-  padding: 12px 0 14px;
+  padding: var(--space-4) 0;
+}
+
+.brief-charts-title {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--text2);
+  margin: 0;
 }
 
 .brief-charts-header {
@@ -27,21 +36,13 @@
 
 .brief-charts-chevron {
   display: inline-block;
-  font-size: 0.625rem;
+  font-size: var(--text-xs);
   line-height: 1;
-  transition: transform 0.15s ease;
+  transition: transform var(--duration-fast) var(--ease-out);
 }
 
 .brief-charts-chevron.collapsed {
   transform: rotate(-90deg);
-}
-
-.brief-charts-title {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--text3);
-  letter-spacing: 0.06em;
-  font-weight: 400;
 }
 
 .brief-charts--collapsed .brief-charts-header {

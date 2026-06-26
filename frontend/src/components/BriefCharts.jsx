@@ -494,7 +494,7 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
             ▾
           </span>
         </button>
-        <h2 className="brief-charts-title mono">// ANALYST CHARTS</h2>
+        <h2 className="brief-charts-title mono">Analyst charts</h2>
       </div>
 
       {!collapsed && (

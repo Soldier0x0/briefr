@@ -67,12 +67,14 @@ export default function FilterBar({
   showingRange,
   onGenerateDigest,
   searchFocusTrigger,
+  hideStackInput = true,
 }) {
   const [localSearch, setLocalSearch] = useState(filters.search || '')
   const [localStack, setLocalStack] = useState(() => filters.stack || '')
   const [exporting, setExporting] = useState(null)
   const [exportError, setExportError] = useState(null)
   const [exportSuccess, setExportSuccess] = useState(null)
+  const [vendorsExpanded, setVendorsExpanded] = useState(false)
   const debounceRef  = useRef(null)
   const stackDebounceRef = useRef(null)
   const exportSuccessTimeoutRef = useRef(null)
@@ -225,12 +227,12 @@ export default function FilterBar({
           <div className="filter-bar" role="toolbar" aria-label="CVE feed filters">
         <div className="filter-bar-top">
           <div className="filter-bar-left">
-            <span className="filter-title mono">
-              CVE FEED
+            <span className="filter-title">
+              CVE Feed
               {total != null && (
                 <>
                   <span className="filter-count" aria-label={`${total} results`}>
-                    &nbsp;//{' '}
+                    {' · '}
                     {hasActiveFilters(filters)
                       ? `${total.toLocaleString()} matches`
                       : total.toLocaleString()}
@@ -288,7 +290,7 @@ export default function FilterBar({
           <div className="filter-action-btns">
             <button
               type="button"
-              className="digest-btn"
+              className="btn btn-primary digest-btn"
               onClick={onGenerateDigest}
               aria-label="Generate digest of current CVE results"
               title="Generate digest of currently visible CVEs"
@@ -297,7 +299,7 @@ export default function FilterBar({
             </button>
             <button
               type="button"
-              className="export-btn"
+              className="btn btn-secondary export-btn"
               onClick={handleExportCsv}
               disabled={!!exporting}
               aria-label="Export filtered CVEs to CSV"
@@ -307,7 +309,7 @@ export default function FilterBar({
             </button>
             <button
               type="button"
-              className="export-btn export-btn-xlsx"
+              className="btn btn-secondary export-btn export-btn-xlsx"
               onClick={handleExportXlsx}
               disabled={!!exporting}
               aria-label="Export filtered CVEs to Excel"
@@ -318,9 +320,10 @@ export default function FilterBar({
           </div>
         </div>
 
+        {!hideStackInput && (
         <div className="filter-bar-stack">
-          <label htmlFor="feed-stack-input" className="filter-stack-label mono">
-            STACK //
+          <label htmlFor="feed-stack-input" className="filter-stack-label">
+            Stack
           </label>
           <input
             id="feed-stack-input"
@@ -336,7 +339,7 @@ export default function FilterBar({
           {localStack && (
             <button
               type="button"
-              className="filter-stack-clear-btn mono"
+              className="filter-stack-clear-btn"
               onClick={handleStackClear}
               aria-label="Clear stack filter"
             >
@@ -344,6 +347,7 @@ export default function FilterBar({
             </button>
           )}
         </div>
+        )}
 
         <div className="filter-bar-search-row">
           <input
@@ -392,24 +396,32 @@ export default function FilterBar({
       {active === 'all' && (
         <div className="vendor-filter-block">
           <div className="vendor-filter-header">
-            <span className="vendor-filter-label mono">// COMMON VENDORS</span>
+            <span className="vendor-filter-label">Vendors</span>
             {selectedVendors.length > 0 && (
               <button
                 type="button"
-                className="vendor-clear-btn mono"
+                className="vendor-clear-btn"
                 onClick={clearVendors}
                 aria-label="Clear all vendor filters"
               >
-                CLEAR ({selectedVendors.length})
+                Clear ({selectedVendors.length})
               </button>
             )}
+            <button
+              type="button"
+              className="btn btn-ghost vendor-expand-btn"
+              onClick={() => setVendorsExpanded(v => !v)}
+              aria-expanded={vendorsExpanded}
+            >
+              {vendorsExpanded ? 'Show fewer' : 'All vendors'}
+            </button>
           </div>
           <div
             className="vendor-filter-row"
             role="group"
             aria-label="Filter by vendor (multi-select)"
           >
-            {VENDORS.map(v => (
+            {(vendorsExpanded ? VENDORS : VENDORS.slice(0, 10)).map(v => (
               <button
                 key={v}
                 type="button"

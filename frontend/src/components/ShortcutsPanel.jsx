@@ -46,7 +46,7 @@ export default function ShortcutsPanel({ placement = 'header' }) {
           role="dialog"
           aria-label="Keyboard shortcuts reference"
         >
-          <div className="shortcuts-title mono">// SHORTCUTS</div>
+          <div className="shortcuts-title mono">Shortcuts</div>
           <ul className="shortcuts-list">
             {SHORTCUTS.map(s => (
               <li key={s.key} className="shortcut-row">

@@ -1,0 +1,347 @@
+/* ── BRIEFR design system (spacing, surfaces, buttons, motion) ── */
+
+:root {
+  /* Spacing scale */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 220ms;
+  --duration-slow: 320ms;
+
+  /* Layout */
+  --content-max: 1240px;
+  --header-h: 52px;
+  --drawer-w: 560px;
+
+  /* Surfaces (layered, not border-heavy) */
+  --surface-0: var(--bg);
+  --surface-1: var(--bg2);
+  --surface-2: var(--bg3);
+  --surface-inset: color-mix(in srgb, var(--bg3) 70%, var(--bg));
+
+  /* Elevation */
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.24);
+  --elev-2: 0 4px 16px rgba(0, 0, 0, 0.28);
+  --elev-3: 0 12px 32px rgba(0, 0, 0, 0.36);
+
+  /* Type scale (12px floor for UI) */
+  --text-xs:  0.75rem;   /* 12px */
+  --text-sm:  0.8125rem; /* 13px */
+  --text-base: 0.9375rem;/* 15px */
+  --text-lg:  1.0625rem; /* 17px */
+}
+
+[data-theme="light"] {
+  --elev-1: 0 1px 2px rgba(26, 24, 20, 0.06);
+  --elev-2: 0 4px 16px rgba(26, 24, 20, 0.08);
+  --elev-3: 0 12px 32px rgba(26, 24, 20, 0.12);
+}
+
+/* ── Page shell ─────────────────────────────────────────── */
+.page-shell {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding-inline: var(--space-6);
+}
+
+@media (max-width: 640px) {
+  .page-shell {
+    padding-inline: var(--space-3);
+  }
+}
+
+.page-shell--wide {
+  max-width: 100%;
+  padding-inline: 0;
+}
+
+/* ── Section labels (replaces // motif) ─────────────────── */
+.section-kicker {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin: 0 0 var(--space-2);
+}
+
+.section-title {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin: 0;
+}
+
+/* ── Panels & cards ─────────────────────────────────────── */
+.panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+}
+
+.panel + .panel {
+  margin-top: var(--space-6);
+}
+
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+/* ── Buttons ────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+  white-space: nowrap;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  color: var(--on-red);
+  background: var(--red);
+  border-color: var(--red);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red) 88%, #fff);
+  border-color: color-mix(in srgb, var(--red) 88%, #fff);
+}
+
+.btn-secondary {
+  color: var(--text);
+  background: var(--surface-1);
+  border-color: var(--border2);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+
+.btn-ghost {
+  color: var(--text2);
+  background: transparent;
+  border-color: transparent;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.btn-danger {
+  color: var(--red);
+  background: transparent;
+  border-color: color-mix(in srgb, var(--red) 40%, var(--border));
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--red-dim);
+  border-color: var(--red);
+}
+
+/* ── Chips ──────────────────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--text2);
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+.chip-active {
+  color: var(--text);
+  background: var(--chip-active-bg);
+  border-color: color-mix(in srgb, var(--red) 50%, var(--border));
+}
+
+.chip-removable {
+  cursor: pointer;
+}
+
+.chip-removable:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+/* ── Tab content transition ─────────────────────────────── */
+/* Tab panels: animation applied only when panel is visible (not [hidden]) */
+.app-tab-panel:not([hidden]) {
+  animation: tab-fade-in var(--duration-normal) var(--ease-out);
+}
+
+@keyframes tab-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Stack context bar ──────────────────────────────────── */
+.stack-context-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-4);
+}
+
+.stack-context-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text3);
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+.stack-context-input {
+  flex: 1;
+  min-width: 160px;
+  max-width: 420px;
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+}
+
+.stack-context-input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.stack-context-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ── Active filter bar ──────────────────────────────────── */
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0 var(--space-3);
+}
+
+.active-filters-label {
+  font-size: var(--text-xs);
+  color: var(--text3);
+  margin-right: var(--space-1);
+}
+
+/* ── Collapsible intel section (BRIEF) ──────────────────── */
+.intel-collapsible {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  margin: var(--space-6) 0;
+  overflow: hidden;
+}
+
+.intel-collapsible-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.intel-collapsible-summary::-webkit-details-marker {
+  display: none;
+}
+
+.intel-collapsible-summary:hover {
+  background: var(--surface-2);
+}
+
+.intel-collapsible-chevron {
+  font-size: var(--text-xs);
+  color: var(--text3);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.intel-collapsible[open] .intel-collapsible-chevron {
+  transform: rotate(180deg);
+}
+
+.intel-collapsible-body {
+  padding: 0 var(--space-5) var(--space-5);
+  border-top: 1px solid var(--border);
+}
+
+/* ── Focus ring (WCAG) ──────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible) {
+  outline: none;
+}

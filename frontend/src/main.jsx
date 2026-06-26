@@ -18,6 +18,7 @@ import '@fontsource/dm-serif-display/400-italic.css'
 import '@fontsource/ibm-plex-mono/300.css'
 import '@fontsource/ibm-plex-mono/400.css'
 import '@fontsource/ibm-plex-mono/500.css'
+import './theme/design-system.css'
 import './App.css'
 
 // Warm the risk-weights cache from the backend once at startup.

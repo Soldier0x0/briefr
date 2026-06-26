@@ -147,8 +147,8 @@ export default function TimelineHeatmap({ filters, onFiltersChange }) {
             ▾
           </span>
         </button>
-        <h2 className="timeline-heatmap-title mono">
-          // {titleDays}-DAY ACTIVITY
+        <h2 className="timeline-heatmap-title">
+          {titleDays}-day activity
         </h2>
       </div>
 

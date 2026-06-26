@@ -17,6 +17,8 @@ import Forge from './components/Forge.jsx'
 import DetailDrawer from './components/DetailDrawer.jsx'
 import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
+import StackContextBar from './components/StackContextBar.jsx'
+import ActiveFilterChips from './components/ActiveFilterChips.jsx'
 import ToolErrorBoundary from './components/ToolErrorBoundary.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
@@ -153,12 +155,11 @@ function BriefView({ stats, filters, setFilters,
   }, [])
 
   return (
-    <>
+    <div className="page-shell brief-page">
       <Hero />
-      <StatsRow
-        stats={stats}
-        showAiAlerts={showAiAlerts}
-        onAiAlertsClick={onAiAlertsClick}
+      <StackContextBar
+        stack={filters.stack}
+        onStackChange={(stack) => handleFiltersChange({ stack })}
       />
       <MorningBrief
         stack={filters.stack}
@@ -169,19 +170,36 @@ function BriefView({ stats, filters, setFilters,
         dueWindow={queueDueWindow}
         onDueWindowClear={handleDueWindowClear}
       />
-      <Suspense
-        fallback={
-          <p className="brief-charts-loading mono" aria-live="polite">
-            Loading charts…
-          </p>
-        }
-      >
-        <BriefCharts onSelectCVE={onSelectCVE} onBucketClick={handleBucketClick} />
-      </Suspense>
-      <div className="brief-intel-row">
-        <TimelineHeatmap filters={filters} onFiltersChange={handleFiltersChange} />
-        <WhatChangedPanel onSelectCVE={onSelectCVE} />
-      </div>
+      <StatsRow
+        stats={stats}
+        showAiAlerts={showAiAlerts}
+        onAiAlertsClick={onAiAlertsClick}
+        compact
+      />
+      <details className="intel-collapsible">
+        <summary className="intel-collapsible-summary">
+          <div>
+            <p className="section-kicker">Intelligence overview</p>
+            <p className="section-title">Charts, heatmap &amp; recent changes</p>
+          </div>
+          <span className="intel-collapsible-chevron" aria-hidden="true">▼</span>
+        </summary>
+        <div className="intel-collapsible-body">
+          <Suspense
+            fallback={
+              <p className="brief-charts-loading mono" aria-live="polite">
+                Loading charts…
+              </p>
+            }
+          >
+            <BriefCharts onSelectCVE={onSelectCVE} onBucketClick={handleBucketClick} />
+          </Suspense>
+          <div className="brief-intel-row">
+            <TimelineHeatmap filters={filters} onFiltersChange={handleFiltersChange} />
+            <WhatChangedPanel onSelectCVE={onSelectCVE} />
+          </div>
+        </div>
+      </details>
       <FeedRefreshStatus
         lastUpdated={lastUpdated}
         nextRefreshUtc={nextRefreshUtc}
@@ -189,7 +207,7 @@ function BriefView({ stats, filters, setFilters,
         refreshSchedule={refreshSchedule}
         feedHealth={feedHealth}
       />
-    </>
+    </div>
   )
 }
 
@@ -215,7 +233,11 @@ function FeedView({ filters, setFilters, selectedCVE, setSelectedCVE,
   }, [setDigestCVEs, setDigestOpen])
 
   return (
-    <>
+      <div className="page-shell feed-page">
+      <StackContextBar
+        stack={filters.stack}
+        onStackChange={(stack) => handleFiltersChange({ stack })}
+      />
       <FeedRefreshStatus
         lastUpdated={lastUpdated}
         nextRefreshUtc={nextRefreshUtc}
@@ -223,6 +245,7 @@ function FeedView({ filters, setFilters, selectedCVE, setSelectedCVE,
         refreshSchedule={refreshSchedule}
         feedHealth={feedHealth}
       />
+      <ActiveFilterChips filters={filters} onFiltersChange={handleFiltersChange} />
       <div className="content-grid">
         <CVEFeed
           filters={filters}
@@ -239,7 +262,7 @@ function FeedView({ filters, setFilters, selectedCVE, setSelectedCVE,
         />
         <Sidebar filters={filters} onFiltersChange={handleFiltersChange} />
       </div>
-    </>
+    </div>
   )
 }
 
@@ -655,20 +678,26 @@ function AppLayout({
           </div>
           <div className="app-tab-panel" hidden={activeTab !== 'ioc'} aria-hidden={activeTab !== 'ioc'}>
             <ToolErrorBoundary label="IOC Lookup">
-              <IOCLookup key={iocSessionKey} prefill={iocPrefill} />
+              <div className="page-shell">
+                <IOCLookup key={iocSessionKey} prefill={iocPrefill} />
+              </div>
             </ToolErrorBoundary>
           </div>
           <div className="app-tab-panel" hidden={activeTab !== 'atlas'} aria-hidden={activeTab !== 'atlas'}>
             <ToolErrorBoundary label="ATLAS">
-              <CaseStudies
-                initialSearch={atlasActorFilter || ''}
-                onClearFilter={onClearAtlasFilter}
-              />
+              <div className="page-shell">
+                <CaseStudies
+                  initialSearch={atlasActorFilter || ''}
+                  onClearFilter={onClearAtlasFilter}
+                />
+              </div>
             </ToolErrorBoundary>
           </div>
           <div className="app-tab-panel" hidden={activeTab !== 'forge'} aria-hidden={activeTab !== 'forge'}>
             <ToolErrorBoundary label="Forge">
-              <Forge />
+              <div className="page-shell">
+                <Forge />
+              </div>
             </ToolErrorBoundary>
           </div>
         </div>
@@ -676,7 +705,7 @@ function AppLayout({
             {activeTab !== 'feed' && (
               <footer className="app-footer" role="contentinfo">
                 <div className="footer-left">
-                  <span>BRIEFR</span> // CVE intelligence platform
+                  <span>BRIEFR</span> · CVE intelligence platform
                   <span className="footer-copyright mono">
                     &copy; 2026 BRIEFR &middot; Proprietary &middot; All Rights Reserved
                   </span>
