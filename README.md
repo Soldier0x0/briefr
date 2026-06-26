@@ -321,18 +321,17 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 
 ## Documentation
 
-**Start here:** [`docs/index.md`](docs/index.md) — choose deploy, use, troubleshoot, or develop.
+**Start here:** [`docs/index.md`](docs/index.md) — four guides, pick one.
 
 | I want to… | Doc |
 |------------|-----|
-| Deploy on my server | [`docs/deploy/quickstart.md`](docs/deploy/quickstart.md) |
-| Use BRIEFR | [`docs/use/brief-and-feed.md`](docs/use/brief-and-feed.md) |
-| Fix a problem | [`docs/troubleshoot/index.md`](docs/troubleshoot/index.md) |
-| What's shipped today? | [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md) |
-| **Diagram prompts (Miro)** | [`docs/IMAGE_BRIEFS.md`](docs/IMAGE_BRIEFS.md) |
-| Develop / contribute | [`docs/develop/onboarding.md`](docs/develop/onboarding.md) |
+| Self-host | [`docs/SELF_HOST.md`](docs/SELF_HOST.md) |
+| Use the product | [`docs/USE.md`](docs/USE.md) |
+| Fix a problem | [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) |
+| Understand internals | [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md) |
+| Develop | [`docs/ONBOARDING.md`](docs/ONBOARDING.md) |
 
-Reference: [`API_REFERENCE.md`](API_REFERENCE.md) · [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md)
+Diagram prompts (maintainers): [`docs/IMAGE_BRIEFS.md`](docs/IMAGE_BRIEFS.md)
 
 Regenerate `SYSTEM_DESIGN.pdf` (requires network for Mermaid CDN on first run):
 

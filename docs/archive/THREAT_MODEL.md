@@ -130,7 +130,7 @@ BRIEFR calls external APIs (NVD, GitHub, VT, etc.). Threats:
 ## Related documents
 
 - [`OPERATIONS.md`](OPERATIONS.md) — backup, logs, container  
-- [`Beta V1.2.md`](../Beta%20V1.2.md) — auth and resilience  
-- [`Beta V1.4.md`](../Beta%20V1.4.md) — admin and webhooks  
+- [`beta/Beta V1.2.md`](beta/Beta%20V1.2.md) — auth and resilience  
+- [`beta/Beta V1.4.md`](beta/Beta%20V1.4.md) — admin and webhooks  
 
 Review this document when adding admin, webhooks, or container support.

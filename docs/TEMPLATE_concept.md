@@ -1,6 +1,6 @@
 # Concept page template
 
-Copy this file into `docs/concepts/<name>.md`. **After copying**, change image paths from `assets/` to `../assets/`.
+Copy a section into [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) (or add a `##` heading there). **After adding**, image paths use `assets/` from `docs/`.
 
 Replace `TITLE`, assets, and tables.
 

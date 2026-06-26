@@ -13,7 +13,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/production-architecture.png` |
-| **Used in** | [`deploy/production.md`](deploy/production.md), [`concepts/architecture.md`](concepts/architecture.md) |
+| **Used in** | [`SELF_HOST.md`](SELF_HOST.md), [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) |
 
 **Shows:** Top-to-bottom self-hosted topology in **5 numbered zones**: (01) Analyst browser → (02) Optional Cloudflare Tunnel + nginx → (03) Application host `/opt/briefr` with FastAPI/Uvicorn, APScheduler, Admin → (04) Data plane PostgreSQL 16 + encrypted backups + optional model cache → (05) External intel APIs as a chip row (NVD, KEV, EPSS, OTX, VT, AbuseIPDB, etc.). Downward flow arrows between zones.
 
@@ -28,7 +28,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/deploy-update-flow.png` |
-| **Used in** | [`deploy/updates-and-backups.md`](deploy/updates-and-backups.md) |
+| **Used in** | [`SELF_HOST.md`](SELF_HOST.md) |
 
 **Shows:** `briefr-update.sh` sequence: git pull → pre-update backup → frontend build → restart backend + nginx → optional pytest.
 
@@ -43,7 +43,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/backup-restore-flow.png` |
-| **Used in** | [`deploy/updates-and-backups.md`](deploy/updates-and-backups.md), [`troubleshoot/postgres-and-backups.md`](troubleshoot/postgres-and-backups.md) |
+| **Used in** | [`SELF_HOST.md`](SELF_HOST.md), [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) |
 
 **Shows:** Timer (6h) + pre-update + manual → age-encrypted archive → restore path stops backend → pg_restore → restart.
 
@@ -58,7 +58,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/postgres-topology.png` |
-| **Used in** | [`deploy/postgres.md`](deploy/postgres.md) |
+| **Used in** | [`SELF_HOST.md`](SELF_HOST.md) |
 
 **Shows:** App (asyncpg pool) → PostgreSQL 16 (Docker or host) → volume; not SQLite.
 
@@ -75,7 +75,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/correlation-pipeline.png` |
-| **Used in** | [`concepts/correlation.md`](concepts/correlation.md), [`use/investigation-and-correlation.md`](use/investigation-and-correlation.md) |
+| **Used in** | [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md), [`USE.md`](USE.md) |
 
 **Shows:** Horizontal pipeline: OTX nightly → PostgreSQL tables → `correlation/engine.py` → `GET /api/cves/{id}/correlation` → Detail drawer Intel tab. Below: four lanes (Campaigns, Infrastructure, Actor/sector, Temporal).
 
@@ -90,7 +90,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/ingest-pipeline.png` |
-| **Used in** | [`concepts/ingest-pipeline.md`](concepts/ingest-pipeline.md) |
+| **Used in** | [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) |
 
 **Shows:** APScheduler jobs feeding PostgreSQL: NVD, KEV, EPSS, cvelistV5, Vulnrichment, OTX, MITRE, exploit sources, embeddings (optional).
 
@@ -105,7 +105,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/nvd-sync-detail.png` |
-| **Used in** | [`concepts/ingest-pipeline.md`](concepts/ingest-pipeline.md) |
+| **Used in** | [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) |
 
 **Shows:** Watermark → fetch → upsert → change_history → extended enrich; failure does not advance watermark.
 
@@ -120,7 +120,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/auth-layers.png` |
-| **Used in** | [`concepts/auth-and-sessions.md`](concepts/auth-and-sessions.md) |
+| **Used in** | [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) |
 
 **Shows:** Two layers: (A) optional Cloudflare Zero Trust at edge, (B) built-in app login sessions; clarify CF JWT removed from app code (#93).
 
@@ -135,7 +135,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/rate-limits-and-queue.png` |
-| **Used in** | [`concepts/rate-limits-and-queues.md`](concepts/rate-limits-and-queues.md) |
+| **Used in** | [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) |
 
 **Shows:** Client IP → token buckets (IOC, refresh, admin read, login) + separate API queue for outbound NVD/OTX/etc.
 
@@ -150,7 +150,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/data-model-overview.png` |
-| **Used in** | [`concepts/architecture.md`](concepts/architecture.md) |
+| **Used in** | [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) |
 
 **Shows:** Entity **groups** only (not full ER): cves hub, kev/epss, mitre/atlas, otx/correlation, cache, auth/admin — ~8 boxes.
 
@@ -167,7 +167,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/ui-brief-tab.png` |
-| **Used in** | [`use/brief-and-feed.md`](use/brief-and-feed.md) |
+| **Used in** | [`USE.md`](USE.md) |
 
 **Shows:** Annotated screenshot of BRIEF tab: morning brief, what changed, heatmap callouts.
 
@@ -182,7 +182,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/ui-feed-tab.png` |
-| **Used in** | [`use/brief-and-feed.md`](use/brief-and-feed.md) |
+| **Used in** | [`USE.md`](USE.md) |
 
 **Shows:** FEED with filter bar, CVE cards, KEV sidebar.
 
@@ -197,7 +197,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/ui-detail-drawer.png` |
-| **Used in** | [`use/investigation-and-correlation.md`](use/investigation-and-correlation.md) |
+| **Used in** | [`USE.md`](USE.md) |
 
 **Shows:** CVE detail drawer tabs: Intel, Related, Detect, correlation section.
 
@@ -212,7 +212,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/ui-ioc-lookup.png` |
-| **Used in** | [`use/ioc-lookup.md`](use/ioc-lookup.md) |
+| **Used in** | [`USE.md`](USE.md) |
 
 **Shows:** IOC lookup form + multi-source results + quota display.
 
@@ -227,7 +227,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/ui-admin-security.png` |
-| **Used in** | [`use/admin-and-wallboard.md`](use/admin-and-wallboard.md) |
+| **Used in** | [`USE.md`](USE.md) |
 
 **Shows:** Admin Security page with rate limit status, auth settings.
 
@@ -244,7 +244,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/ioc-lookup-flow.png` |
-| **Used in** | [`use/ioc-lookup.md`](use/ioc-lookup.md), [`concepts/architecture.md`](concepts/architecture.md) |
+| **Used in** | [`USE.md`](USE.md), [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) |
 
 **Shows:** User → POST /api/ioc/lookup → cache check → parallel VT/AIPDB/GN/OTX → store ioc_cache.
 
@@ -259,7 +259,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 | Field | Value |
 |-------|--------|
 | **File** | `docs/assets/investigation-pivot-flow.png` |
-| **Used in** | [`use/investigation-and-correlation.md`](use/investigation-and-correlation.md) |
+| **Used in** | [`USE.md`](USE.md) |
 
 **Shows:** CVE → IOC → related CVE cross-tab pivots; session-only thread.
 
