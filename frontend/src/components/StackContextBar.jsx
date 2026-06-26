@@ -33,6 +33,7 @@ export default function StackContextBar({ stack, onStackChange }) {
   }
 
   function removeTerm(term) {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
     const parts = local.split(',').map(s => s.trim()).filter(Boolean)
     const next = parts.filter(p => p.toLowerCase() !== term.toLowerCase()).join(', ')
     setLocal(next)

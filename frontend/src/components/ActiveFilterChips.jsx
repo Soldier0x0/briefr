@@ -1,5 +1,3 @@
-import { VENDORS } from './FilterBar.jsx'
-
 function parseVendors(vendorsStr) {
   if (!vendorsStr?.trim()) return []
   return vendorsStr.split(',').map(v => v.trim()).filter(Boolean)
