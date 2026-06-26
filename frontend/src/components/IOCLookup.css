@@ -1,8 +1,7 @@
 .ioc-lookup {
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: var(--space-10) 0 var(--space-16);
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 48px 0 80px;
 }
 
 /* ── Page header ─────────────────────────────────────────── */

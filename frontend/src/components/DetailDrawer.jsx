@@ -160,7 +160,7 @@ function EpssTrendSection({ cve, history, loading, epssSparklineRef }) {
     <section className="drawer-section" aria-labelledby="epss-heading">
       <h3 id="epss-heading" className="drawer-section-label">EPSS</h3>
       {loading ? (
-        <p className="drawer-epss-loading mono">Loading EPSS trend…</p>
+        <p className="drawer-epss-loading mono">// Loading EPSS trend…</p>
       ) : showSparkline ? (
         <>
           <svg
@@ -189,7 +189,7 @@ function EpssTrendSection({ cve, history, loading, epssSparklineRef }) {
           {trendLine}
         </>
       ) : (
-        <p className="drawer-epss-loading mono">No EPSS history yet</p>
+        <p className="drawer-epss-loading mono">// No EPSS history yet</p>
       )}
     </section>
   )
@@ -434,7 +434,7 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
         <h3 id="corr-heading" className="drawer-human-label mono">
           // CORRELATION FINDINGS
         </h3>
-        <p className="drawer-intel-empty mono">Loading correlation analysis…</p>
+        <p className="drawer-intel-empty mono">// Loading correlation analysis…</p>
       </section>
     )
   }
@@ -469,7 +469,7 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
 
       {campaigns.length > 0 && (
         <div className="corr-group" aria-label="Campaign correlation">
-          <p className="corr-group-label mono">Campaign links</p>
+          <p className="corr-group-label mono">// CAMPAIGN LINKS</p>
           {campaigns.map(item => (
             <div key={item.campaign_id} className="corr-finding">
               <div className="corr-finding-head">
@@ -515,7 +515,7 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
       {/* Level 1: Infrastructure */}
       {infra.length > 0 && (
         <div className="corr-group" aria-label="Infrastructure correlation">
-          <p className="corr-group-label mono">Shared infrastructure</p>
+          <p className="corr-group-label mono">// SHARED INFRASTRUCTURE</p>
           {infra.map(item => (
             <div key={item.cve_id_b} className="corr-finding">
               <div className="corr-finding-head">
@@ -582,7 +582,7 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
       {/* Level 2: Actor / Sector */}
       {actor.length > 0 && (
         <div className="corr-group" aria-label="Actor correlation">
-          <p className="corr-group-label mono">Actor attribution</p>
+          <p className="corr-group-label mono">// ACTOR ATTRIBUTION</p>
           {actor.map(item => (
             <div key={item.actor_name} className="corr-finding">
               <div className="corr-finding-head">
@@ -614,7 +614,7 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
       {/* Level 3: Temporal */}
       {temporal.length > 0 && (
         <div className="corr-group" aria-label="Temporal anomaly">
-          <p className="corr-group-label mono">Temporal anomaly</p>
+          <p className="corr-group-label mono">// TEMPORAL ANOMALY</p>
           {temporal.map(item => (
             <div key={item.vendor} className="corr-finding">
               <div className="corr-finding-head">
@@ -666,7 +666,7 @@ function TabOverview({ cve, riskScore, riskLoading, investigationScore, onOpenPr
 
       {sentencesLoading && (
         <section className="drawer-section">
-          <p className="drawer-human-loading mono">Loading intelligence summary…</p>
+          <p className="drawer-human-loading mono">// Loading intelligence summary...</p>
         </section>
       )}
 
@@ -853,9 +853,9 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
           </span>
         </div>
         {loading && exploits.length === 0 ? (
-          <p className="drawer-intel-empty mono">Loading public exploit intelligence…</p>
+          <p className="drawer-intel-empty mono">// Loading public exploit intelligence…</p>
         ) : exploits.length === 0 ? (
-          <p className="drawer-intel-empty mono">No public exploits from Sploitus or NVD references for this CVE</p>
+          <p className="drawer-intel-empty mono">// No public exploits from Sploitus or NVD references for this CVE</p>
         ) : (
           <ul className="drawer-exploit-list" aria-label="Public exploits from Sploitus">
             {exploits.map((exp, idx) => (
@@ -896,9 +896,9 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
       </section>
 
       <section className="drawer-section" aria-labelledby="scanning-heading">
-        <h3 id="scanning-heading" className="drawer-human-label mono">Active scanning</h3>
+        <h3 id="scanning-heading" className="drawer-human-label mono">// ACTIVE SCANNING</h3>
         {loading && scans.length === 0 ? (
-          <p className="drawer-intel-empty mono">Loading active scanning context…</p>
+          <p className="drawer-intel-empty mono">// Loading active scanning context…</p>
         ) : scans.length === 0 ? (
           <p className="drawer-intel-empty mono">
             // No exploitation-related IPs found in this CVE record
@@ -950,15 +950,15 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
 
       <section className="drawer-section" aria-labelledby="campaigns-heading">
         <div className="drawer-intel-section-head">
-          <h3 id="campaigns-heading" className="drawer-human-label mono">Active campaigns</h3>
+          <h3 id="campaigns-heading" className="drawer-human-label mono">// ACTIVE CAMPAIGNS</h3>
           <span className="drawer-count-badge mono">{pulses.length}</span>
         </div>
         {otxConfigured === false ? (
-          <p className="drawer-intel-empty mono">Campaign intelligence unavailable — OTX not configured on this instance</p>
+          <p className="drawer-intel-empty mono">// Campaign intelligence unavailable — OTX not configured on this instance</p>
         ) : loading && pulses.length === 0 ? (
-          <p className="drawer-intel-empty mono">Loading campaign intelligence…</p>
+          <p className="drawer-intel-empty mono">// Loading campaign intelligence…</p>
         ) : pulses.length === 0 ? (
-          <p className="drawer-intel-empty mono">No community intelligence found for this CVE</p>
+          <p className="drawer-intel-empty mono">// No community intelligence found for this CVE</p>
         ) : (
           <CampaignPulseGroups
             pulses={pulses}
@@ -974,9 +974,9 @@ function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxCo
       <section className="drawer-section" aria-labelledby="mitre-heading">
         <h3 id="mitre-heading" className="drawer-section-label">MITRE ATT&CK</h3>
         {loading && techList.length === 0 ? (
-          <p className="mitre-empty mono">Loading ATT&CK mapping…</p>
+          <p className="mitre-empty mono">// Loading ATT&CK mapping…</p>
         ) : techList.length === 0 ? (
-          <p className="mitre-empty mono">No ATT&CK mapping available</p>
+          <p className="mitre-empty mono">// No ATT&CK mapping available</p>
         ) : (
           <div className="mitre-techniques" role="list" aria-label="Mapped ATT&CK techniques">
             {techList.map(tech => {
@@ -1159,7 +1159,7 @@ function TabDetect({ detection, loading, error, onRetry }) {
   if (loading) {
     return (
       <section className="drawer-section">
-        <p className="drawer-intel-empty mono">Loading detection intelligence…</p>
+        <p className="drawer-intel-empty mono">// Loading detection intelligence…</p>
       </section>
     )
   }
@@ -1167,7 +1167,7 @@ function TabDetect({ detection, loading, error, onRetry }) {
   if (error) {
     return (
       <section className="drawer-section">
-        <p className="drawer-intel-empty mono drawer-intel-error">{error}</p>
+        <p className="drawer-intel-empty mono drawer-intel-error">// {error}</p>
         {onRetry && (
           <button type="button" className="drawer-retry-btn mono" onClick={onRetry}>
             Retry loading rules
@@ -1180,7 +1180,7 @@ function TabDetect({ detection, loading, error, onRetry }) {
   if (!detection) {
     return (
       <section className="drawer-section">
-        <p className="drawer-intel-empty mono">No detection data for this CVE</p>
+        <p className="drawer-intel-empty mono">// No detection data for this CVE</p>
       </section>
     )
   }
@@ -1301,8 +1301,8 @@ function TabRelated({ related, relatedMethod, loading, onSelectRelated }) {
       </h3>
       <p className="drawer-related-lane-note mono">
         {semantic
-          ? 'Semantic neighbor — not the same as campaign correlation'
-          : 'Same affected product — not the same as campaign correlation'}
+          ? '// Semantic neighbor — not the same as campaign correlation'
+          : '// Same affected product — not the same as campaign correlation'}
       </p>
       <ul className="drawer-related-list" aria-label="Related CVEs">
         {related.map(item => {

@@ -17,14 +17,14 @@ function StatCell({ value, label, variant, loading, onClick, interactive }) {
   )
 }
 
-export default function StatsRow({ stats, showAiAlerts, onAiAlertsClick, compact = false }) {
+export default function StatsRow({ stats, showAiAlerts, onAiAlertsClick }) {
   const loading = !stats
   const aiCount = stats?.ai_ml_alerts ?? 0
   const showAi = showAiAlerts && (loading || aiCount > 0)
 
   return (
     <section
-      className={`stats-row${showAi ? ' stats-row--five' : ''}${compact ? ' stats-row--compact' : ''}`}
+      className={`stats-row${showAi ? ' stats-row--five' : ''}`}
       aria-label="CVE statistics summary"
     >
       <StatCell

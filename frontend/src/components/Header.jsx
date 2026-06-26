@@ -95,7 +95,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
           >
             BRIEFR
           </button>
-          <span className="header-divider" aria-hidden="true">·</span>
+          <span className="header-divider" aria-hidden="true">//</span>
           <span className="header-tagline">CVE intelligence</span>
           {feedHealth && (
             <span
