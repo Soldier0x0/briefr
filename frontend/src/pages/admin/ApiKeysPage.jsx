@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { Search } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import DiffReviewModal from './shared/DiffReviewModal.jsx'
 import ToggleSwitch from './shared/ToggleSwitch.jsx'
@@ -7,20 +8,42 @@ import { RATE_LIMIT_HINTS } from './rateLimits.js'
 
 const TIMEZONE_KEYS = new Set(['SCHEDULER_TIMEZONE', 'CORRELATION_TIMEZONE', 'OTX_CORRELATION_TIMEZONE', 'DEFAULT_TIMEZONE'])
 
-// UI section -> { title, backendKey } — backendKey is which dict in the
-// GET /api/admin/config response actually holds these values (a few
-// schema "sections" are UI-only groupings within one backend dict, e.g.
-// scheduler_main/scheduler_cron both read from config.scheduler).
 const SECTIONS = [
-  { id: 'api_keys', title: 'API Keys', backendKey: 'api_keys' },
-  { id: 'webhooks', title: 'Webhooks — Discord / Telegram / generic', backendKey: 'webhooks' },
-  { id: 'scheduler_main', title: 'Scheduler intervals — NVD / KEV / EPSS', backendKey: 'scheduler' },
-  { id: 'scheduler_cron', title: 'Scheduler intervals — cron & timezone', backendKey: 'scheduler' },
+  { id: 'api_keys', title: 'API keys & credentials', backendKey: 'api_keys', defaultOpen: true },
+  { id: 'webhooks', title: 'Webhooks — Discord, Telegram, generic', backendKey: 'webhooks', defaultOpen: true },
+  { id: 'scheduler_main', title: 'Scheduler — NVD, KEV, EPSS intervals', backendKey: 'scheduler' },
+  { id: 'scheduler_cron', title: 'Scheduler — cron expressions & timezone', backendKey: 'scheduler' },
   { id: 'ingest', title: 'Ingest tuning', backendKey: 'ingest' },
   { id: 'ml', title: 'ML toggles', backendKey: 'ml' },
   { id: 'app', title: 'Application behaviour', backendKey: 'app' },
   { id: 'backup', title: 'Backup', backendKey: 'backup' },
 ]
+
+const HUMAN_LABELS = {
+  NVD_API_KEY: 'NVD API key',
+  NVD_DAYS_BACK: 'NVD lookback window (days)',
+  VIRUSTOTAL_API_KEY: 'VirusTotal API key',
+  ABUSEIPDB_API_KEY: 'AbuseIPDB API key',
+  GREYNOISE_API_KEY: 'GreyNoise API key',
+  GITHUB_TOKEN: 'GitHub token',
+  OPENAI_API_KEY: 'OpenAI API key',
+  OTX_API_KEY: 'AlienVault OTX API key',
+  DISCORD_WEBHOOK_URL: 'Discord webhook URL',
+  TELEGRAM_BOT_TOKEN: 'Telegram bot token',
+  TELEGRAM_CHAT_ID: 'Telegram chat ID',
+  GENERIC_WEBHOOK_URL: 'Generic webhook URL',
+  BRIEFR_STACK_TERMS: 'Stack filter terms (BRIEF)',
+  SCHEDULER_TIMEZONE: 'Scheduler timezone',
+  DEFAULT_TIMEZONE: 'Default display timezone',
+}
+
+function humanizeConfigKey(key) {
+  if (HUMAN_LABELS[key]) return HUMAN_LABELS[key]
+  return key
+    .split('_')
+    .map((part, i) => (i === 0 ? part.charAt(0) + part.slice(1).toLowerCase() : part.toLowerCase()))
+    .join(' ')
+}
 
 function validateClientSide(field, value) {
   if (!field) return null
@@ -44,13 +67,24 @@ function isConfigTruthy(value) {
   return false
 }
 
+function matchesSearch(query, field, humanTitle) {
+  if (!query) return true
+  const q = query.toLowerCase()
+  return (
+    field.key.toLowerCase().includes(q)
+    || humanTitle.toLowerCase().includes(q)
+    || (field.help_text || '').toLowerCase().includes(q)
+  )
+}
+
 export default function ApiKeysPage({ toast }) {
   const [config, setConfig] = useState(null)
   const [schema, setSchema] = useState(null)
-  const [queue, setQueue] = useState({}) // {key: value}
-  const [editing, setEditing] = useState({}) // {key: tempValue}
+  const [queue, setQueue] = useState({})
+  const [editing, setEditing] = useState({})
   const [showDiff, setShowDiff] = useState(false)
   const [applying, setApplying] = useState(false)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     adminApi.get('/config').then(r => r.json()).then(setConfig).catch(() => {})
@@ -62,7 +96,7 @@ export default function ApiKeysPage({ toast }) {
     if (error) { toast(error, false); return }
     setQueue(q => ({ ...q, [key]: value }))
     setEditing(({ [key]: _, ...rest }) => rest)
-    toast(`Added ${key} to pending changes`, true)
+    toast(`Queued change for ${humanizeConfigKey(key)}`, true)
   }
 
   function removeFromQueue(key) {
@@ -86,17 +120,19 @@ export default function ApiKeysPage({ toast }) {
     setApplying(false)
   }
 
-  function ConfigRow({ envKey, value, isSecret = false, writable = true, restartRequired = false, helpText = '', field = null }) {
+  function ConfigField({ envKey, value, isSecret = false, writable = true, restartRequired = false, helpText = '', field = null }) {
     const inQueue = queue[envKey] !== undefined
     const editVal = editing[envKey]
     const isEditing = editVal !== undefined
+    const humanTitle = humanizeConfigKey(envKey)
 
     return (
-      <div className="config-row">
-        <div className="config-row-key mono">
-          {envKey}
-          {helpText && <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 400, marginTop: '0.15rem' }}>{helpText}</div>}
-          {RATE_LIMIT_HINTS[envKey] && <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 400, marginTop: '0.15rem' }}>{RATE_LIMIT_HINTS[envKey]}</div>}
+      <div className="admin-config-field config-row">
+        <div className="admin-config-field-label config-row-key">
+          <div className="admin-config-field-title">{humanTitle}</div>
+          <div className="admin-config-field-key mono">{envKey}</div>
+          {helpText && <div className="admin-config-field-help">{helpText}</div>}
+          {RATE_LIMIT_HINTS[envKey] && <div className="admin-config-field-help">{RATE_LIMIT_HINTS[envKey]}</div>}
         </div>
         <div className="config-row-value">
           {inQueue ? (
@@ -109,7 +145,7 @@ export default function ApiKeysPage({ toast }) {
                     : queue[envKey]}
               </span>
               <div className="config-row-actions">
-                <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem' }} onClick={() => removeFromQueue(envKey)}>×</button>
+                <button type="button" className="admin-btn admin-btn-ghost admin-btn--sm" onClick={() => removeFromQueue(envKey)}>×</button>
               </div>
             </div>
           ) : !isEditing ? (
@@ -127,11 +163,14 @@ export default function ApiKeysPage({ toast }) {
               <div className="config-row-actions">
                 {restartRequired && <span className="badge badge-warn" style={{ fontSize: '0.6rem' }}>restart</span>}
                 {writable && field?.type !== 'bool' && (
-                  <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }}
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-ghost admin-btn--sm"
                     onClick={() => {
                       const initial = isSecret ? '' : (Array.isArray(value) ? value.join(', ') : (value === 'not configured' ? '' : String(value)))
                       setEditing(e => ({ ...e, [envKey]: initial }))
-                    }}>
+                    }}
+                  >
                     Edit
                   </button>
                 )}
@@ -174,12 +213,10 @@ export default function ApiKeysPage({ toast }) {
                 />
               )}
               <div className="config-row-actions">
-                <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.75rem' }}
-                  onClick={() => addToQueue(envKey, editVal, field)}>
-                  Add to queue
+                <button type="button" className="admin-btn admin-btn-primary admin-btn--sm" onClick={() => addToQueue(envKey, editVal, field)}>
+                  Queue change
                 </button>
-                <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }}
-                  onClick={() => setEditing(({ [envKey]: _, ...rest }) => rest)}>
+                <button type="button" className="admin-btn admin-btn-ghost admin-btn--sm" onClick={() => setEditing(({ [envKey]: _, ...rest }) => rest)}>
                   Cancel
                 </button>
               </div>
@@ -190,21 +227,32 @@ export default function ApiKeysPage({ toast }) {
     )
   }
 
-  if (!config || !schema) return <div className="admin-empty">Loading…</div>
+  const fieldsBySection = useMemo(() => {
+    if (!schema) return {}
+    const map = {}
+    for (const f of schema) {
+      if (!map[f.section]) map[f.section] = []
+      map[f.section].push(f)
+    }
+    return map
+  }, [schema])
+
+  if (!config || !schema) return <div className="admin-loading"><span className="admin-spinner" /> Loading configuration…</div>
 
   const pendingCount = Object.keys(queue).length
-  const fieldsBySection = {}
-  for (const f of schema) {
-    if (!fieldsBySection[f.section]) fieldsBySection[f.section] = []
-    fieldsBySection[f.section].push(f)
-  }
   const schemaKeys = new Set(schema.map(f => f.key))
-  // A handful of writable keys live under a different backend response dict
-  // than their UI grouping (e.g. VULNRICHMENT_BRANCH/CVELISTV5_BRANCH are
-  // grouped under "Ingest tuning" but the backend returns them inside
-  // config.scheduler) — look values up across every section rather than
-  // assuming a 1:1 mapping between UI section and backend dict.
   const merged = Object.assign({}, ...SECTIONS.map(s => config[s.backendKey] || {}))
+  const query = search.trim()
+
+  const visibleSections = SECTIONS.map(section => {
+    const fields = (fieldsBySection[section.id] || []).filter(f => matchesSearch(query, f, humanizeConfigKey(f.key)))
+    const backendDict = config[section.backendKey] || {}
+    const fieldKeys = new Set((fieldsBySection[section.id] || []).map(f => f.key))
+    const extraKeys = (section.id === 'ml' || section.id === 'backup')
+      ? Object.keys(backendDict).filter(k => !fieldKeys.has(k) && !schemaKeys.has(k) && (!query || k.toLowerCase().includes(query.toLowerCase())))
+      : []
+    return { section, fields, extraKeys, backendDict, count: fields.length + extraKeys.length }
+  }).filter(s => s.count > 0)
 
   return (
     <div>
@@ -218,39 +266,48 @@ export default function ApiKeysPage({ toast }) {
         />
       )}
 
-      <h1 className="admin-page-title">
-        API keys & config
-        <span
-          className="info-tip"
-          tabIndex={0}
-          title="load_dotenv() is called without override=True — process env vars (systemd / Cursor Secrets) win over .env. Changes here write to .env and take effect after restart."
-        >ⓘ</span>
-      </h1>
-      <p className="admin-page-subtitle">
-        Sets secrets and tunables that the backend reads from .env. Most changes need a restart to take effect.
-      </p>
+      <header className="admin-page-header">
+        <h1 className="admin-page-title">
+          API keys & config
+          <span
+            className="info-tip"
+            tabIndex={0}
+            title="Process environment variables win over .env. Changes here write to .env and usually need a restart."
+          >ⓘ</span>
+        </h1>
+        <p className="admin-page-subtitle">
+          Secrets and tunables the backend reads from .env. Search by friendly name or env key.
+        </p>
+      </header>
 
-      {SECTIONS.map(section => {
-        const fields = fieldsBySection[section.id] || []
-        const backendDict = config[section.backendKey] || {}
-        const fieldKeys = new Set(fields.map(f => f.key))
-        // ml/backup sections historically also surfaced a few read-only,
-        // non-writable keys (e.g. feed sync toggles, backup log rotation
-        // settings) that aren't in the schema — keep showing them
-        // (read-only, no broken Edit button) instead of silently dropping
-        // visibility into values the operator could previously see.
-        const extraKeys = (section.id === 'ml' || section.id === 'backup')
-          ? Object.keys(backendDict).filter(k => !fieldKeys.has(k) && !schemaKeys.has(k))
-          : []
+      <div className="admin-config-toolbar">
+        <div className="admin-config-search">
+          <Search size={14} aria-hidden />
+          <input
+            type="search"
+            placeholder="Search settings…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            aria-label="Search configuration settings"
+          />
+        </div>
+        {pendingCount > 0 && (
+          <span className="badge badge-warn">{pendingCount} pending</span>
+        )}
+      </div>
 
-        if (fields.length === 0 && extraKeys.length === 0) return null
-
-        return (
-          <div className="admin-card" key={section.id}>
-            <div className="admin-card-title">{section.title}</div>
-            <div className="config-grid">
+      {visibleSections.length === 0 ? (
+        <div className="admin-config-empty">No settings match your search.</div>
+      ) : (
+        visibleSections.map(({ section, fields, extraKeys, backendDict }) => (
+          <details key={section.id} className="admin-config-category" open={section.defaultOpen ?? !query}>
+            <summary>
+              {section.title}
+              <span className="admin-config-category-count">{fields.length + extraKeys.length}</span>
+            </summary>
+            <div className="admin-config-grid config-grid">
               {fields.map(f => (
-                <ConfigRow
+                <ConfigField
                   key={f.key}
                   envKey={f.key}
                   value={merged[f.key] ?? ''}
@@ -261,29 +318,27 @@ export default function ApiKeysPage({ toast }) {
                 />
               ))}
               {extraKeys.map(k => (
-                <ConfigRow key={k} envKey={k} value={backendDict[k]} writable={false} />
+                <ConfigField key={k} envKey={k} value={backendDict[k]} writable={false} />
               ))}
             </div>
             {section.id === 'webhooks' && (
-              <div style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '0.5rem' }}>
-                After setting a URL/token here, use the Test button on the Webhooks page to confirm delivery.
-              </div>
+              <p className="admin-text-muted" style={{ fontSize: 11, padding: '0 16px 14px' }}>
+                After setting a URL or token, use the Test button on the Webhooks page to confirm delivery.
+              </p>
             )}
-          </div>
-        )
-      })}
+          </details>
+        ))
+      )}
 
-      {/* Pending changes sticky bar */}
       {pendingCount > 0 && (
         <div className="pending-bar">
           <span className="pending-bar-info">
-            {pendingCount} pending {pendingCount === 1 ? 'change' : 'changes'}:&nbsp;
-            <span className="mono" style={{ fontSize: '0.75rem' }}>{Object.keys(queue).join(', ')}</span>
+            {pendingCount} pending {pendingCount === 1 ? 'change' : 'changes'} ready to write
           </span>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={() => setShowDiff(true)}>Review diff</button>
-            <button className="admin-btn admin-btn-danger" style={{ fontSize: '0.75rem' }} onClick={() => setQueue({})}>Discard</button>
-            <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.75rem' }} onClick={applyAll} disabled={applying}>
+          <div className="admin-btn-row" style={{ marginTop: 0 }}>
+            <button type="button" className="admin-btn admin-btn-ghost admin-btn--sm" onClick={() => setShowDiff(true)}>Review diff</button>
+            <button type="button" className="admin-btn admin-btn-danger admin-btn--sm" onClick={() => setQueue({})}>Discard</button>
+            <button type="button" className="admin-btn admin-btn-primary admin-btn--sm" onClick={applyAll} disabled={applying}>
               {applying ? <><span className="admin-spinner" /> Applying…</> : 'Write & restart'}
             </button>
           </div>

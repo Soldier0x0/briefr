@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Menu, X } from 'lucide-react'
 import { adminApi, getAdminKey } from '../../api.js'
 import { getAdminMode, setAdminMode } from '../../utils/adminMode.js'
 import { getDisplayPrefs } from '../../utils/displayPrefs.js'
@@ -45,6 +46,7 @@ export default function AdminPage() {
   const setPage = useCallback((id) => {
     setVisitedPages(prev => (prev.has(id) ? prev : new Set(prev).add(id)))
     setPageRaw(id)
+    setSidebarOpen(false)
   }, [])
   const [mode, setModeState] = useState(getAdminMode)
   const [system, setSystem] = useState(null)
@@ -52,6 +54,7 @@ export default function AdminPage() {
   const [confirmOperatorSwitch, setConfirmOperatorSwitch] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(null)
   const [jobAcks, setJobAcks] = useState(() => loadJobAcks())
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const { toasts, show: toast, dismiss: dismissToast } = useToast()
   const pollRef = useRef(null)
 
@@ -175,7 +178,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="admin-root">
+    <div className={`admin-root admin-root--${mode}`}>
       {confirmOperatorSwitch && (
         <ConfirmModal
           title="Switch to Operator view?"
@@ -193,9 +196,28 @@ export default function AdminPage() {
         setMode={handleModeChange}
         lastUpdated={lastUpdated}
         userMenu={<UserMenu className="user-menu-wrap--admin" />}
+        onToggleSidebar={() => setSidebarOpen(v => !v)}
+        sidebarOpen={sidebarOpen}
       />
       <div className="admin-body">
-        <Sidebar activePage={page} setPage={setPage} system={system} ingestErrorCount={ingestErrorCount} unackJobErrorCount={unackJobErrorCount} mode={mode} setMode={handleModeChange} />
+        {sidebarOpen && (
+          <button
+            type="button"
+            className="admin-sidebar-backdrop"
+            aria-label="Close navigation"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        <Sidebar
+          activePage={page}
+          setPage={setPage}
+          system={system}
+          ingestErrorCount={ingestErrorCount}
+          unackJobErrorCount={unackJobErrorCount}
+          mode={mode}
+          setMode={handleModeChange}
+          open={sidebarOpen}
+        />
         <div className="admin-content">
           {isComingSoon ? (
             <ComingSoonPage pageId={page} setPage={setPage} />

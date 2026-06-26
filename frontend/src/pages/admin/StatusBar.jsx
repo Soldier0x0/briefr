@@ -1,22 +1,28 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Eye, Wrench, RefreshCw, Clock } from 'lucide-react'
+import { Eye, Wrench, RefreshCw, Clock, Menu, X, Shield } from 'lucide-react'
 import HelpTip from './shared/HelpTip.jsx'
 import ApiQueueIndicator from '../../components/ApiQueueIndicator.jsx'
 import { fmtAge } from './formatters.js'
 import { worstSource } from './intelStatus.js'
 
-export default function StatusBar({ system, onRunIngest, refreshInProgress, mode, setMode, lastUpdated, userMenu }) {
+export default function StatusBar({
+  system,
+  onRunIngest,
+  refreshInProgress,
+  mode,
+  setMode,
+  lastUpdated,
+  userMenu,
+  onToggleSidebar,
+  sidebarOpen,
+}) {
   const [now, setNow] = useState(Date.now())
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(t)
   }, [])
-
-  function handleModeClick(next) {
-    setMode(next)
-  }
 
   const nvdAge = system?.last_nvd_sync_age_seconds
   const backupAge = system?.last_backup_age_seconds
@@ -41,36 +47,48 @@ export default function StatusBar({ system, onRunIngest, refreshInProgress, mode
 
   const worst = mode === 'analyst' ? worstSource(system) : null
   const updatedAgo = lastUpdated ? Math.max(0, Math.round((now - lastUpdated) / 1000)) : null
-  const updatedAgoEl = updatedAgo !== null ? (
-    <>
-      <div className="sb-sep" />
-      <span className="sb-item" title="Time since the status bar last refreshed from the backend">
-        <Clock size={11} strokeWidth={2} />
-        <span className="sb-label">Updated {updatedAgo}s ago</span>
-      </span>
-    </>
-  ) : null
 
   return (
     <div className="admin-statusbar">
-      <div className="admin-statusbar-scroll">
-        <Link to="/" className="admin-brand-link mono" title="Back to BRIEFR">
+      <div className="admin-status-left" style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+        {onToggleSidebar && (
+          <button
+            type="button"
+            className="admin-sidebar-toggle"
+            onClick={onToggleSidebar}
+            aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={sidebarOpen}
+          >
+            {sidebarOpen ? <X size={16} /> : <Menu size={16} />}
+          </button>
+        )}
+        <Link to="/" className="admin-brand-link" title="Back to BRIEFR">
+          <Shield size={15} strokeWidth={2.25} aria-hidden />
           BRIEFR
         </Link>
         <div className="sb-sep" />
+        <span className={`admin-status-pill admin-status-pill--${mode}`}>
+          {mode === 'analyst' ? 'Analyst' : 'Operator'}
+        </span>
+        <div className="sb-sep" />
         <div className="admin-mode-toggle-group">
-          <span className="admin-mode-toggle-label">VIEW</span>
           <div className="admin-mode-toggle" role="group" aria-label="Switch admin view mode">
             <button
+              type="button"
               className={`admin-mode-toggle-btn ${mode === 'analyst' ? 'active' : ''}`}
-              onClick={() => handleModeClick('analyst')}
+              onClick={() => setMode('analyst')}
               title="Analyst view — CVE triage, simplified language, no destructive actions"
-            ><Eye size={13} strokeWidth={2} /> Analyst</button>
+            >
+              <Eye size={13} strokeWidth={2} /> Analyst
+            </button>
             <button
+              type="button"
               className={`admin-mode-toggle-btn ${mode === 'operator' ? 'active' : ''}`}
-              onClick={() => handleModeClick('operator')}
+              onClick={() => setMode('operator')}
               title="Operator view — system management: restart, full ingest, purge, config"
-            ><Wrench size={13} strokeWidth={2} /> Operator</button>
+            >
+              <Wrench size={13} strokeWidth={2} /> Operator
+            </button>
           </div>
         </div>
         <div className="sb-sep" />
@@ -96,7 +114,6 @@ export default function StatusBar({ system, onRunIngest, refreshInProgress, mode
                 </span>
               </>
             )}
-            {updatedAgoEl}
           </>
         ) : (
           <>
@@ -134,16 +151,10 @@ export default function StatusBar({ system, onRunIngest, refreshInProgress, mode
             </span>
             <div className="sb-sep" />
             <span className="sb-item">
-              <span
-                className={`pill ${discordPillClass()}`}
-                title={!discordConfigured ? 'Not configured' : discordFailed ? 'Configured but the circuit is open (failing)' : 'Configured and last delivery succeeded'}
-              >Discord</span>
+              <span className={`pill ${discordPillClass()}`} title="Discord webhook">Discord</span>
             </span>
             <span className="sb-item">
-              <span
-                className={`pill ${telegramPillClass()}`}
-                title={!telegramConfigured ? 'Not configured' : telegramFailed ? 'Configured but the circuit is open (failing)' : 'Configured and last delivery succeeded'}
-              >Telegram</span>
+              <span className={`pill ${telegramPillClass()}`} title="Telegram webhook">Telegram</span>
             </span>
             {commit && (
               <>
@@ -153,7 +164,15 @@ export default function StatusBar({ system, onRunIngest, refreshInProgress, mode
                 </span>
               </>
             )}
-            {updatedAgoEl}
+          </>
+        )}
+        {updatedAgo !== null && (
+          <>
+            <div className="sb-sep" />
+            <span className="sb-item" title="Time since the status bar last refreshed from the backend">
+              <Clock size={11} strokeWidth={2} />
+              <span className="sb-label">Updated {updatedAgo}s ago</span>
+            </span>
           </>
         )}
       </div>
@@ -164,13 +183,17 @@ export default function StatusBar({ system, onRunIngest, refreshInProgress, mode
         {mode === 'analyst' && (
           <>
             <button
-              className="admin-btn admin-btn-ghost"
+              type="button"
+              className="admin-btn admin-btn-ghost admin-btn--sm"
               onClick={onRunIngest}
               disabled={refreshInProgress}
-              style={{ fontSize: '0.75rem' }}
               title="Pulls the latest CVEs, KEV entries, and EPSS scores from every source right now"
             >
-              {refreshInProgress ? <><span className="admin-spinner" /> Refreshing…</> : <><RefreshCw size={13} strokeWidth={2} /> Refresh all sources</>}
+              {refreshInProgress ? (
+                <><span className="admin-spinner" /> Refreshing…</>
+              ) : (
+                <><RefreshCw size={13} strokeWidth={2} /> Refresh all sources</>
+              )}
             </button>
             <HelpTip text="Pulls the latest CVEs, KEV entries, and EPSS scores from every configured source right now, instead of waiting for the normal schedule." />
           </>
