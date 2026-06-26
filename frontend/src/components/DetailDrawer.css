@@ -55,7 +55,7 @@
   background: rgba(0, 0, 0, 0);
   z-index: 200;
   pointer-events: none;
-  transition: background var(--duration-normal) var(--ease-out);
+  transition: background 0.25s ease;
 }
 
 .drawer-overlay-active {
@@ -74,24 +74,23 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: transform var(--duration-normal) var(--ease-out);
+  transition: transform 0.25s ease;
 }
 
 [data-theme="light"] .drawer-panel {
   --white: var(--text);
 }
 
-/* Desktop: right slide-in, fixed reading width */
+/* Desktop: right slide-in, 65vw */
 @media (min-width: 1280px) {
   .drawer-panel {
     top: 0;
     right: 0;
     bottom: 0;
     left: auto;
-    width: min(var(--drawer-w), 92vw);
-    max-width: min(var(--drawer-w), 92vw);
+    width: 65vw;
+    max-width: 65vw;
     border-left: 1px solid var(--border);
-    box-shadow: var(--elev-3);
     transform: translateX(100%);
   }
 
@@ -104,17 +103,16 @@
   }
 }
 
-/* Tablet */
+/* Tablet: 75vw */
 @media (min-width: 1024px) and (max-width: 1279px) {
   .drawer-panel {
     top: 0;
     right: 0;
     bottom: 0;
     left: auto;
-    width: min(520px, 88vw);
-    max-width: min(520px, 88vw);
+    width: 75vw;
+    max-width: 75vw;
     border-left: 1px solid var(--border);
-    box-shadow: var(--elev-3);
     transform: translateX(100%);
   }
 

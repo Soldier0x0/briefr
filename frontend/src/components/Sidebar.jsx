@@ -246,7 +246,7 @@ export default function Sidebar({ filters, onFiltersChange }) {
 
       {/* ── Section 1: Your Filters ── */}
       <section className="sidebar-section" aria-labelledby="filter-heading">
-        <h2 id="filter-heading" className="sidebar-heading">Your filters</h2>
+        <h2 id="filter-heading" className="sidebar-heading">YOUR FILTERS</h2>
 
         <div className="sidebar-filter-grid">
           {SIDEBAR_FILTERS.map(def => (
@@ -296,7 +296,7 @@ export default function Sidebar({ filters, onFiltersChange }) {
 
       {/* ── Section 2: 14-day publications ── */}
       <section className="sidebar-section" aria-labelledby="sparkline-heading">
-        <h2 id="sparkline-heading" className="sidebar-heading">14-day publications</h2>
+        <h2 id="sparkline-heading" className="sidebar-heading">14-DAY PUBLICATIONS</h2>
         <SparklineSection
           bars={sparkBars}
           loading={sparkLoading}
@@ -310,7 +310,7 @@ export default function Sidebar({ filters, onFiltersChange }) {
 
       {/* ── Section 3: Top techniques ── */}
       <section className="sidebar-section" aria-labelledby="techniques-heading">
-        <h2 id="techniques-heading" className="sidebar-heading">Top techniques this week</h2>
+        <h2 id="techniques-heading" className="sidebar-heading">// TOP TECHNIQUES THIS WEEK</h2>
         {techniquesLoading && <SidebarSkeleton rows={3} />}
         {!techniquesLoading && topTechniques.length === 0 && (
           <p className="sidebar-empty">No technique data yet.</p>

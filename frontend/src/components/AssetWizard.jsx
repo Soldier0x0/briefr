@@ -133,7 +133,7 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
         onClick={e => e.stopPropagation()}
       >
         <div className="asset-wizard-head">
-          <h2 className="asset-wizard-title mono">Asset profile</h2>
+          <h2 className="asset-wizard-title mono">// ASSET PROFILE</h2>
           <p className="asset-wizard-step mono">
             Step {step + 1} of {STEPS.length} — {STEPS[step]}
           </p>
@@ -252,7 +252,7 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
 
         {step === 3 && (
           <div className="asset-wizard-body">
-            <p className="asset-optional mono">Optional — AI and ML systems in your environment</p>
+            <p className="asset-optional mono">// Optional — AI and ML systems in your environment</p>
             <div className="asset-ai-grid">
               {AI_PRODUCTS.map(name => {
                 const on = (profile.aiSystems || []).includes(name)

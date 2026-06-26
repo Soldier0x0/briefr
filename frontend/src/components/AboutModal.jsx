@@ -59,7 +59,7 @@ export default function AboutModal({ onClose }) {
         </p>
 
         <div className="about-sources-section">
-          <span className="about-sources-label mono">Data sources</span>
+          <span className="about-sources-label mono">// DATA SOURCES</span>
           <div className="about-sources-tags">
             {SOURCES.map(s => (
               <span key={s} className="about-source-tag mono">{s}</span>

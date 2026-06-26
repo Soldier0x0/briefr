@@ -181,7 +181,7 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
             <p className="cs-empty mono">
               {debounced
                 ? `No incidents or news found for "${debounced}"`
-                : 'No feed items loaded — check source errors above'}
+                : '// No feed items loaded — check source errors above'}
             </p>
           ) : (
             <div className="cs-feed">
@@ -198,7 +198,7 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
             {loading ? (
               <SkeletonCards count={3} />
             ) : atlasLatest.length === 0 ? (
-              <p className="cs-sidebar-empty mono">No ATLAS case studies loaded</p>
+              <p className="cs-sidebar-empty mono">// No ATLAS case studies loaded</p>
             ) : (
               <div className="cs-feed">
                 {atlasLatest.map(card => (
@@ -213,7 +213,7 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
             {loading ? (
               <SkeletonCards count={3} />
             ) : campaigns.length === 0 ? (
-              <p className="cs-sidebar-empty mono">No campaign headlines in current feeds</p>
+              <p className="cs-sidebar-empty mono">// No campaign headlines in current feeds</p>
             ) : (
               <div className="cs-feed cs-feed-grid">
                 {campaigns.map(card => (

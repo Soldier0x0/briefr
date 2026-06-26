@@ -37,7 +37,7 @@ export default function DrawerAtlasSection({ cve }) {
       )}
 
       {techniques.length === 0 ? (
-        <p className="drawer-intel-empty mono">No ATLAS techniques linked for this CVE</p>
+        <p className="drawer-intel-empty mono">// No ATLAS techniques linked for this CVE</p>
       ) : (
         <div className="atlas-techniques" role="list" aria-label="Relevant ATLAS techniques">
           {techniques.map(tech => {
@@ -73,7 +73,7 @@ export default function DrawerAtlasSection({ cve }) {
 
       {studies.length > 0 && (
         <div className="atlas-case-studies">
-          <h4 className="drawer-atlas-subhead mono">Related case studies</h4>
+          <h4 className="drawer-atlas-subhead mono">// RELATED CASE STUDIES</h4>
           <ul className="atlas-case-list">
             {studies.map(study => (
               <li key={study.study_id} className="atlas-case-item">
