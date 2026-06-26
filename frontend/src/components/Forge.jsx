@@ -195,7 +195,7 @@ function HuntPackPanel({ techniqueId, onPackSaved }) {
     )
   }
   if (loading) return <SkeletonRows count={5} />
-  if (error) return <p className="fg-error mono">// {error}</p>
+  if (error) return <p className="fg-error mono">{error}</p>
   if (!detail) return null
 
   const { technique, status, packs, siem_queries: siemQueries, log_patterns: logPatterns, linked_cves: linkedCves } = detail
@@ -225,9 +225,9 @@ function HuntPackPanel({ techniqueId, onPackSaved }) {
 
       <section className="fg-section" aria-label="Linked CVEs">
         <h4 className="fg-section-label mono">LINKED CVES</h4>
-        {generateError && <p className="fg-error mono">// {generateError}</p>}
+        {generateError && <p className="fg-error mono">{generateError}</p>}
         {linkedCves.length === 0 ? (
-          <p className="fg-panel-empty mono">// No CVEs mapped to this technique yet</p>
+          <p className="fg-panel-empty mono">No CVEs mapped to this technique yet</p>
         ) : (
           <ul className="fg-cve-list">
             {linkedCves.map(cve => (
@@ -358,7 +358,7 @@ export default function Forge() {
         )}
       </div>
 
-      {error && <p className="fg-error mono">// {error}</p>}
+      {error && <p className="fg-error mono">{error}</p>}
 
       <div className="fg-layout">
         <section className="fg-map" aria-label="MITRE coverage map">
@@ -368,8 +368,8 @@ export default function Forge() {
           ) : byTactic.length === 0 ? (
             <p className="fg-panel-empty mono">
               {stackOnly
-                ? '// No techniques linked to CVEs matching your stack'
-                : '// No techniques mapped yet — wait for the MITRE feed to populate'}
+                ? 'No techniques linked to CVEs matching your stack'
+                : 'No techniques mapped yet — wait for the MITRE feed to populate'}
             </p>
           ) : (
             byTactic.map(([tactic, techniques]) => (

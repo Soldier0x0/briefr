@@ -201,7 +201,7 @@ function UsageMeter({ label, used, limit, percentUsed, warning }) {
           <span className="quota-meter-label">{label}</span>
           <span className="quota-meter-val mono">{used.toLocaleString()} today</span>
         </div>
-        <p className="quota-meter-note mono">// no published daily cap · fair use</p>
+        <p className="quota-meter-note mono">No published daily cap · fair use</p>
       </div>
     )
   }
@@ -300,7 +300,7 @@ function IOCQuotaPanel() {
         </p>
 
         {loading && (
-          <p className="ioc-quota-loading mono">// Loading usage counters…</p>
+          <p className="ioc-quota-loading mono">Loading usage counters…</p>
         )}
         {error && (
           <p className="ioc-quota-error mono" role="alert">{error}</p>
@@ -508,7 +508,7 @@ function IPResultBody({ result, onViewActorTechniques, onOpenCve }) {
 
       <div className="ioc-meta-cards">
         <div className="ioc-meta-card">
-          <h3 className="ioc-meta-card-title">// NETWORK</h3>
+          <h3 className="ioc-meta-card-title">Network</h3>
           <div className="ioc-meta-row">
             <span className="ioc-meta-key">ISP</span>
             <span className="ioc-meta-val">{abuse.isp || '—'}</span>
@@ -530,7 +530,7 @@ function IPResultBody({ result, onViewActorTechniques, onOpenCve }) {
           </div>
         </div>
         <div className="ioc-meta-card">
-          <h3 className="ioc-meta-card-title">// REPUTATION</h3>
+          <h3 className="ioc-meta-card-title">Reputation</h3>
           <div className="ioc-meta-row">
             <span className="ioc-meta-key">Country</span>
             <span className="ioc-meta-val">
@@ -607,7 +607,7 @@ function IPResultBody({ result, onViewActorTechniques, onOpenCve }) {
       </div>
 
       {result.greynoise_sentence && (
-        <EnrichmentBlock heading="// GREYNOISE" sentence={result.greynoise_sentence}>
+        <EnrichmentBlock heading="GreyNoise" sentence={result.greynoise_sentence}>
           {result.greynoise?.link && (
             <a className="ioc-enrichment-link mono" href={result.greynoise.link} target="_blank" rel="noopener noreferrer">
               View on GreyNoise &rarr;
@@ -620,7 +620,7 @@ function IPResultBody({ result, onViewActorTechniques, onOpenCve }) {
 
       {actorTags.length > 0 && (
         <section className="ioc-enrichment-block ioc-actor-tags" aria-label="Threat actor tags">
-          <h3 className="ioc-enrichment-heading mono">// THREAT ACTOR TAGS</h3>
+          <h3 className="ioc-enrichment-heading mono">Threat actor tags</h3>
           <div className="ioc-actor-tag-row">
             {actorTags.map(tag => (
               <span key={tag} className="ioc-actor-tag mono">{tag}</span>
@@ -650,7 +650,7 @@ function OtxEnrichment({ result, onOpenCve }) {
   const pulses = Array.isArray(otx.pulses) ? otx.pulses : []
   const cves = Array.isArray(otx.related_cves) ? otx.related_cves : []
   return (
-    <EnrichmentBlock heading="// OTX" sentence={result.otx_sentence}>
+    <EnrichmentBlock heading="OTX" sentence={result.otx_sentence}>
       {pulses.length > 0 && (
         <ul className="ioc-otx-pulse-list">
           {pulses.slice(0, 6).map(p => (
@@ -976,7 +976,7 @@ export default function IOCLookup({ prefill }) {
       {/* ── Input section ── */}
       <div className="ioc-input-section">
         <label htmlFor="ioc-value-input" className="ioc-input-label">
-          // INDICATOR
+          Indicator
         </label>
         <textarea
           id="ioc-value-input"
@@ -1033,8 +1033,8 @@ export default function IOCLookup({ prefill }) {
         </div>
 
         <p className="ioc-privacy-notice mono" role="note">
-          {'// Lookups are sent to third-party enrichment APIs (see Privacy Policy).'}<br />
-          {'// Results cached locally (6h IOC, 1h GreyNoise). No user accounts.'}
+          {'Lookups are sent to third-party enrichment APIs (see Privacy Policy).'}<br />
+          {'Results cached locally (6h IOC, 1h GreyNoise). No user accounts.'}
         </p>
 
         <IOCQuotaPanel />
@@ -1093,7 +1093,7 @@ export default function IOCLookup({ prefill }) {
 
           {result.type === 'ip' ? null : result.greynoise_sentence && (
             <EnrichmentBlock
-              heading="// GREYNOISE"
+              heading="GreyNoise"
               sentence={result.greynoise_sentence}
             >
               {result.greynoise?.link && (
@@ -1117,14 +1117,14 @@ export default function IOCLookup({ prefill }) {
 
           {result.type === 'hash' && result.malwarebazaar_sentence && (
             <EnrichmentBlock
-              heading="// MALWAREBAZAAR"
+              heading="MalwareBazaar"
               sentence={result.malwarebazaar_sentence}
             />
           )}
 
           {result.type === 'domain' && result.urlhaus_sentence && (
             <EnrichmentBlock
-              heading="// URLHAUS"
+              heading="URLhaus"
               sentence={result.urlhaus_sentence}
             >
               {result.urlhaus?.reference && (
@@ -1149,7 +1149,7 @@ export default function IOCLookup({ prefill }) {
       {/* ── History ── */}
       {history.length > 0 && (
         <div className="ioc-history" aria-label="Recent lookups this session">
-          <h2 className="ioc-history-heading mono">// RECENT</h2>
+          <h2 className="ioc-history-heading mono">Recent lookups</h2>
           <div className="history-list" role="list">
             {history.map(item => (
               <div key={item.value} role="listitem">

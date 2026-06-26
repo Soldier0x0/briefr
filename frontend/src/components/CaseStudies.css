@@ -3,16 +3,16 @@
 }
 
 .cs-hero {
-  padding: 40px 0 24px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 24px;
+  padding: var(--space-10) 0 var(--space-6);
+  margin-bottom: var(--space-6);
 }
 
 .cs-hero-kicker {
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  color: var(--accent);
-  margin-bottom: 10px;
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: var(--space-2);
 }
 
 .cs-hero-title {

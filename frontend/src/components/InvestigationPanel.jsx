@@ -88,7 +88,7 @@ function PanelChrome({ expanded, onToggle, onPdf, onClear, count }) {
         >
           ‹
         </button>
-        <span className="inv-panel-title mono">// INVESTIGATION</span>
+        <span className="inv-panel-title mono">Investigation</span>
         <span className="inv-panel-count mono">{count}</span>
       </div>
       <div className="inv-panel-actions">
@@ -188,7 +188,7 @@ export default function InvestigationPanel() {
             onClick={e => e.stopPropagation()}
           >
             <div className="inv-sheet-head">
-              <span className="mono">// INVESTIGATION ({count})</span>
+              <span className="mono">Investigation ({count})</span>
               <button
                 type="button"
                 className="inv-sheet-close"

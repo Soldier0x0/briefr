@@ -151,7 +151,7 @@ export default function MorningBrief({
     <section className="morning-brief" aria-label="Morning brief action queue">
       <div className="morning-brief-header">
         <div>
-          <h2 className="morning-brief-heading mono">// MORNING BRIEF</h2>
+          <h2 className="morning-brief-heading mono">Morning brief</h2>
           <p className="morning-brief-sub">
             Ranked action queue since your last visit window
             {brief?.meta?.since_hours ? ` (${brief.meta.since_hours}h)` : ''}.
@@ -160,7 +160,7 @@ export default function MorningBrief({
         {onOpenFullFeed && (
           <button
             type="button"
-            className="morning-brief-feed-link mono"
+            className="morning-brief-feed-link btn btn-secondary"
             onClick={onOpenFullFeed}
           >
             Open full feed →
