@@ -1,9 +1,9 @@
-"""LLM product extraction for NVD-unanalyzed CVEs — env-gated (V1.3).
+"""LLM product extraction for NVD-unanalyzed CVEs - env-gated (V1.3).
 
 Many fresh CVEs carry no CPE data for hours or days. When
 ``LLM_PRODUCT_EXTRACTION_ENABLED=1`` AND ``GROQ_API_KEY`` is set, a scheduler
 job extracts ``{vendor, product, version_range}`` from the description text
-and fills ``affected_products`` — ONLY while that field is empty — marking
+and fills ``affected_products`` - ONLY while that field is empty - marking
 ``affected_products_source='llm'`` so the data stays distinguishable.
 Official CPE data supersedes LLM output on the next NVD upsert (the upsert
 SQL clears the marker whenever a non-empty official product list arrives).
@@ -14,7 +14,7 @@ ones) are negative-cached in ``feed_cache`` so quota is never burned twice
 on the same CVE within the retry window; errors are not cached and retry on
 the next run.
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
+Copyright (c) 2026 Sai Harsha Vardhan. All rights reserved.
 """
 
 from __future__ import annotations
@@ -108,7 +108,7 @@ def _json_candidates(text: str):
 
 
 def _extract_items(text: str) -> list:
-    """First candidate that parses AND carries a products list wins — a
+    """First candidate that parses AND carries a products list wins - a
     candidate that merely parses (e.g. a sub-object grabbed by the brace-span
     fallback) must not stop the search."""
     for candidate in _json_candidates(text):
@@ -124,7 +124,7 @@ def _extract_items(text: str) -> list:
 
 def parse_products_payload(content: str) -> list[dict]:
     """Parse the model response into validated {vendor, product, version_range}
-    dicts. Returns [] for anything malformed — never raises."""
+    dicts. Returns [] for anything malformed - never raises."""
     text = (content or "").strip()
     if not text:
         return []
@@ -162,7 +162,7 @@ def products_to_affected_keys(products: list[dict]) -> list[str]:
 
 
 async def extract_products_via_groq(description: str, api_key: str) -> list[dict]:
-    """One Groq call → validated product dicts. retries=0: never burn quota
+    """One Groq call -> validated product dicts. retries=0: never burn quota
     on automatic retries (same policy as VT/AbuseIPDB/GreyNoise)."""
     response = await chat_completion(
         api_key,
@@ -189,11 +189,11 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, pro
     *completed* extraction (including ones that found no products) is
     recorded in feed_cache (key ``llm_products:<cve_id>``) so the candidate
     query skips it for RETRY_HOURS; successful writes set
-    affected_products_source='llm'. Errors are never cached — transient
+    affected_products_source='llm'. Errors are never cached - transient
     failures retry on the next run.
 
     When ``db`` is omitted, pool connections are held only for short read/write
-    scopes — Groq HTTP and throttle sleeps run without a connection.
+    scopes - Groq HTTP and throttle sleeps run without a connection.
     """
     from database import get_db
     from resilient_client import CircuitOpenError
@@ -222,7 +222,7 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, pro
     for index, candidate in enumerate(candidates):
         cve_id = candidate["cve_id"]
         if progress_cb:
-            progress_cb(f"Processing CVE {index + 1} of {stats[chr(39)]candidates[chr(39)]}�")
+            progress_cb(f"Processing CVE {index + 1} of {stats['candidates']}...")
         products = None
         while products is None:
             try:
@@ -232,7 +232,7 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, pro
             except CircuitOpenError as exc:
                 wait = max(1.0, exc.retry_at - time.time())
                 logger.warning(
-                    "LLM product extraction: Groq circuit open for %s � "
+                    "LLM product extraction: Groq circuit open for %s - "
                     "waiting %.1fs then retrying (%d/%d)",
                     cve_id,
                     wait,
@@ -242,7 +242,7 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, pro
                 await asyncio.sleep(wait)
             except GroqRateLimitError as exc:
                 logger.warning(
-                    "LLM product extraction: Groq rate limit for %s � "
+                    "LLM product extraction: Groq rate limit for %s - "
                     "waiting 60s then retrying (%d/%d): %s",
                     cve_id,
                     index + 1,
