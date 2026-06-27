@@ -1,16 +1,21 @@
-const ACCENT_COLORS = {
-  'color-green': 'var(--green)',
-  'color-amber': 'var(--amber)',
-  'color-red': 'var(--red)',
+const TONE_CLASS = {
+  'color-green': 'admin-stat-card--ok',
+  'color-amber': 'admin-stat-card--warn',
+  'color-red': 'admin-stat-card--err',
 }
 
 export default function StatCard({ label, value, subLabel, colorClass, valueStyle }) {
-  const accent = ACCENT_COLORS[colorClass]
+  const tone = TONE_CLASS[colorClass] || ''
   return (
-    <div className="stat-card" style={accent ? { borderLeft: `3px solid ${accent}` } : undefined}>
-      <div className="stat-card-label">{label}</div>
-      <div className={`stat-card-value ${colorClass || ''}`} style={valueStyle}>{value ?? '—'}</div>
-      {subLabel && <div className="stat-card-sub">{subLabel}</div>}
+    <div className={`stat-card admin-stat-card ${tone}`}>
+      <div className="stat-card-label admin-stat-card-label">{label}</div>
+      <div
+        className={`stat-card-value admin-stat-card-value ${colorClass || ''}`}
+        style={valueStyle}
+      >
+        {value ?? '—'}
+      </div>
+      {subLabel && <div className="stat-card-sub admin-stat-card-sub">{subLabel}</div>}
     </div>
   )
 }
