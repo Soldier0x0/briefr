@@ -1,36 +1,36 @@
-/* ═══════════════════════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════════════════════
    BRIEFR Admin — control-plane layout & tokens (scoped to .admin-root)
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .admin-root {
-  --admin-bg: #0a0a0a;
-  --admin-surface: #111111;
-  --admin-surface-raised: #161616;
-  --admin-surface-hover: #1a1a1a;
-  --admin-border: #1f1f1f;
-  --admin-border-strong: #2a2a2a;
-  --admin-text: #e8e8e8;
-  --admin-text-muted: #888888;
-  --admin-text-dim: #555555;
-  --admin-accent: #3b82f6;
-  --admin-accent-dim: rgba(59, 130, 246, 0.12);
-  --admin-accent-glow: rgba(59, 130, 246, 0.25);
-  --admin-success: #22c55e;
-  --admin-success-dim: rgba(34, 197, 94, 0.12);
-  --admin-warning: #f59e0b;
-  --admin-warning-dim: rgba(245, 158, 11, 0.12);
-  --admin-danger: #ef4444;
-  --admin-danger-dim: rgba(239, 68, 68, 0.12);
-  --admin-purple: #a855f7;
-  --admin-purple-dim: rgba(168, 85, 247, 0.12);
+  --admin-bg: #0a0a08;
+  --admin-surface: #111110;
+  --admin-surface-raised: #1a1a17;
+  --admin-surface-hover: #1f1f1c;
+  --admin-border: #2a2a25;
+  --admin-border-strong: #3d3d38;
+  --admin-text: #e8e6df;
+  --admin-text-muted: #9a9890;
+  --admin-text-dim: #5a5850;
+  --admin-accent: #e85533;
+  --admin-accent-dim: rgba(232, 85, 51, 0.12);
+  --admin-accent-glow: rgba(232, 85, 51, 0.25);
+  --admin-success: #4a9e6a;
+  --admin-success-dim: rgba(74, 158, 106, 0.12);
+  --admin-warning: #d4860a;
+  --admin-warning-dim: rgba(212, 134, 10, 0.12);
+  --admin-danger: #e85533;
+  --admin-danger-dim: rgba(232, 85, 51, 0.12);
+  --admin-purple: #d4860a;
+  --admin-purple-dim: rgba(212, 134, 10, 0.12);
   --admin-radius: 8px;
   --admin-radius-sm: 6px;
   --admin-radius-lg: 12px;
   --admin-sidebar-w: 220px;
   --admin-status-h: 48px;
   --admin-content-max: 1200px;
-  --admin-font: 'Inter', system-ui, -apple-system, sans-serif;
-  --admin-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --admin-font: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --admin-mono: 'IBM Plex Mono', 'Courier New', monospace;
   --admin-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --admin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --admin-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
@@ -91,7 +91,7 @@
   gap: 12px;
   height: var(--admin-status-h);
   padding: 0 16px;
-  background: rgba(10, 10, 10, 0.92);
+  background: rgba(10, 10, 8, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--admin-border);
@@ -150,15 +150,15 @@
 }
 
 .admin-status-pill--analyst {
-  border-color: rgba(59, 130, 246, 0.35);
+  border-color: rgba(232, 85, 51, 0.35);
   background: var(--admin-accent-dim);
-  color: #93c5fd;
+  color: #f4a07a;
 }
 
 .admin-status-pill--operator {
-  border-color: rgba(168, 85, 247, 0.35);
+  border-color: rgba(212, 134, 10, 0.35);
   background: var(--admin-purple-dim);
-  color: #d8b4fe;
+  color: #f0b86a;
 }
 
 .admin-status-dot {
@@ -236,12 +236,12 @@
 
 .admin-mode-btn--active.admin-mode-btn--analyst {
   background: var(--admin-accent-dim);
-  color: #93c5fd;
+  color: #f4a07a;
 }
 
 .admin-mode-btn--active.admin-mode-btn--operator {
   background: var(--admin-purple-dim);
-  color: #d8b4fe;
+  color: #f0b86a;
 }
 
 .admin-status-action {
@@ -266,7 +266,7 @@
 }
 
 .admin-status-action--danger:hover {
-  border-color: rgba(239, 68, 68, 0.5);
+  border-color: rgba(232, 85, 51, 0.5);
   color: var(--admin-danger);
 }
 
@@ -487,8 +487,8 @@
 }
 
 .admin-status-legend-tag--locked {
-  background: rgba(100, 116, 139, 0.2);
-  color: #94a3b8;
+  background: rgba(90, 88, 80, 0.2);
+  color: #9a9890;
 }
 
 .admin-status-legend-tag--disabled {
@@ -699,7 +699,7 @@
 
 .admin-job-status--active { background: var(--admin-success-dim); color: var(--admin-success); }
 .admin-job-status--paused { background: var(--admin-warning-dim); color: var(--admin-warning); }
-.admin-job-status--locked { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+.admin-job-status--locked { background: rgba(90, 88, 80, 0.2); color: #9a9890; }
 .admin-job-status--disabled { background: var(--admin-danger-dim); color: var(--admin-danger); }
 .admin-job-status--circuit { background: var(--admin-purple-dim); color: var(--admin-purple); }
 
@@ -914,12 +914,12 @@
 }
 
 .admin-btn--primary:hover:not(:disabled) {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: #c4431e;
+  border-color: #c4431e;
 }
 
 .admin-btn--danger {
-  border-color: rgba(239, 68, 68, 0.4);
+  border-color: rgba(232, 85, 51, 0.4);
   color: var(--admin-danger);
 }
 
@@ -944,9 +944,9 @@
 .admin-danger-zone {
   margin-top: 28px;
   padding: 18px 20px;
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  border: 1px solid rgba(232, 85, 51, 0.35);
   border-radius: var(--admin-radius-lg);
-  background: linear-gradient(180deg, rgba(239, 68, 68, 0.06) 0%, transparent 100%);
+  background: linear-gradient(180deg, rgba(232, 85, 51, 0.06) 0%, transparent 100%);
 }
 
 .admin-danger-zone-title {
@@ -1130,7 +1130,7 @@
   font-size: 12px;
   color: var(--admin-danger);
   background: var(--admin-danger-dim);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(232, 85, 51, 0.3);
   border-radius: var(--admin-radius);
 }
 
@@ -1426,7 +1426,7 @@
   gap: 12px;
   height: var(--admin-status-h);
   padding: 0 16px;
-  background: rgba(10, 10, 10, 0.92);
+  background: rgba(10, 10, 8, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--admin-border);
@@ -1528,12 +1528,12 @@
 
 .admin-mode-toggle-btn.active:first-child {
   background: var(--admin-accent-dim);
-  color: #93c5fd;
+  color: #f4a07a;
 }
 
 .admin-mode-toggle-btn.active:last-child {
   background: var(--admin-purple-dim);
-  color: #d8b4fe;
+  color: #f0b86a;
 }
 
 .intel-banner {
@@ -1558,19 +1558,19 @@
 
 .intel-banner-green {
   background: var(--admin-success-dim);
-  border-color: rgba(34, 197, 94, 0.35);
+  border-color: rgba(74, 158, 106, 0.35);
   color: var(--admin-success);
 }
 
 .intel-banner-amber {
   background: var(--admin-warning-dim);
-  border-color: rgba(245, 158, 11, 0.35);
+  border-color: rgba(212, 134, 10, 0.35);
   color: var(--admin-warning);
 }
 
 .intel-banner-red {
   background: var(--admin-danger-dim);
-  border-color: rgba(239, 68, 68, 0.35);
+  border-color: rgba(232, 85, 51, 0.35);
   color: var(--admin-danger);
 }
 
@@ -1611,7 +1611,7 @@
   margin-top: 24px;
   padding: 14px 18px;
   background: var(--admin-surface-raised);
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  border: 1px solid rgba(212, 134, 10, 0.35);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-md);
 }
