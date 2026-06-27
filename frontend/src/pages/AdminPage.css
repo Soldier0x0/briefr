@@ -586,56 +586,6 @@
   margin-bottom: 20px;
 }
 
-.admin-stat-card {
-  padding: 14px 16px;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.admin-stat-card:hover {
-  border-color: var(--admin-border-strong);
-  box-shadow: var(--admin-shadow-sm);
-}
-
-.admin-stat-card-label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-bottom: 6px;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--admin-text-dim);
-}
-
-.admin-stat-card-value {
-  font-size: 22px;
-  font-weight: 700;
-  font-family: var(--admin-mono);
-  letter-spacing: -0.02em;
-  color: var(--admin-text);
-  line-height: 1.1;
-}
-
-.admin-stat-card-value--sm {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.admin-stat-card-sub {
-  margin-top: 4px;
-  font-size: 11px;
-  color: var(--admin-text-muted);
-}
-
-.admin-stat-card--ok .admin-stat-card-value { color: var(--admin-success); }
-.admin-stat-card--warn .admin-stat-card-value { color: var(--admin-warning); }
-.admin-stat-card--err .admin-stat-card-value { color: var(--admin-danger); }
-.admin-stat-card--accent .admin-stat-card-value { color: var(--admin-accent); }
-
 /* Operator sub-tabs */
 .admin-subtabs {
   display: flex;
@@ -1585,50 +1535,6 @@
   color: #d8b4fe;
 }
 
-.stat-card-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.stat-card {
-  padding: 14px 16px;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.stat-card:hover {
-  border-color: var(--admin-border-strong);
-  box-shadow: var(--admin-shadow-sm);
-}
-
-.stat-card-label {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--admin-text-dim);
-  margin-bottom: 6px;
-}
-
-.stat-card-value {
-  font-size: 22px;
-  font-weight: 700;
-  font-family: var(--admin-mono);
-  letter-spacing: -0.02em;
-  color: var(--admin-text);
-  line-height: 1.1;
-}
-
-.stat-card-sub {
-  margin-top: 4px;
-  font-size: 11px;
-  color: var(--admin-text-muted);
-}
-
 .intel-banner {
   display: flex;
   flex-direction: column;
@@ -1858,6 +1764,59 @@
   color: var(--text3);
   margin-top: 0.2rem;
 }
+
+/* Admin control-plane stat card skin — placed after the legacy .stat-card
+   rules above so cards carrying both classes (StatCard.jsx) pick up the
+   refreshed look instead of being overridden by the legacy defaults. */
+.admin-stat-card {
+  padding: 14px 16px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.admin-stat-card:hover {
+  border-color: var(--admin-border-strong);
+  box-shadow: var(--admin-shadow-sm);
+}
+
+.admin-stat-card-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--admin-text-dim);
+}
+
+.admin-stat-card-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--admin-mono);
+  letter-spacing: -0.02em;
+  color: var(--admin-text);
+  line-height: 1.1;
+}
+
+.admin-stat-card-value--sm {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-stat-card-sub {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--admin-text-muted);
+}
+
+.admin-stat-card--ok .admin-stat-card-value { color: var(--admin-success); }
+.admin-stat-card--warn .admin-stat-card-value { color: var(--admin-warning); }
+.admin-stat-card--err .admin-stat-card-value { color: var(--admin-danger); }
+.admin-stat-card--accent .admin-stat-card-value { color: var(--admin-accent); }
 
 .color-red   { color: var(--red); }
 .color-amber { color: var(--amber); }
