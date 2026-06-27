@@ -5,7 +5,6 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { NAV, ANALYST_NAV } from './constants.js'
-import StatusLegend from './shared/StatusLegend.jsx'
 
 const ICONS = {
   Activity, Archive, HardDrive, Database, Bookmark, KeyRound, Clock, Webhook,
@@ -91,7 +90,6 @@ export default function Sidebar({
       </div>
 
       <div className="admin-sidebar-footer">
-        {mode === 'operator' && <StatusLegend compact />}
         {mode === 'analyst' && setMode && (
           <button type="button" className="nav-footer-link" onClick={() => setMode('operator')}>
             <ArrowRightLeft size={13} strokeWidth={1.75} />
