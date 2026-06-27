@@ -132,11 +132,11 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                   </div>
                 </td>
               </tr>
-              {expandErrors && expanded[job.id] && job.last_error_message && (
+              {expandErrors && expanded[job.id] && (
                 <tr>
                   <td colSpan={colCount} style={{ background: 'var(--bg3)', padding: '10px 12px' }}>
                     <div className="mono" style={{ fontSize: 12, color: 'var(--red)', wordBreak: 'break-all' }}>
-                      {job.last_error_message}
+                      {job.last_error_message || 'An unknown error occurred during the last run.'}
                     </div>
                     {onRunNow && (
                       <button
