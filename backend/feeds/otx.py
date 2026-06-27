@@ -374,7 +374,7 @@ async def top_pulse_ipv4s(
     return ips
 
 
-async def run_otx_nightly_correlation(api_key: str, db=None) -> dict:
+async def run_otx_nightly_correlation(db, api_key: str, progress_cb=None) -> dict:
     """Pre-warm OTX pulse cache for prioritized CVEs."""
     from database import get_db, get_prioritized_cve_ids_for_otx, store_otx_cve_pulses
 
@@ -391,7 +391,9 @@ async def run_otx_nightly_correlation(api_key: str, db=None) -> dict:
         if own_db:
             await db.close()
     total_pulses = 0
-    for cve_id in cve_ids:
+    for index, cve_id in enumerate(cve_ids):
+        if progress_cb:
+            progress_cb(f"Fetching OTX threat intelligence pulses: {cve_id} ({index + 1}/{len(cve_ids)})…")
         try:
             pulses = await fetch_cve_pulses(cve_id, api_key)
             if not pulses:

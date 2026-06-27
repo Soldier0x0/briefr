@@ -107,6 +107,11 @@ async def _with_db(coro):
         await db.close()
 
 
+# Live progress messages for currently-running jobs, keyed by job ID.
+# Jobs write here via the _progress callback pattern to avoid circular imports.
+_job_progress: dict[str, str] = {}
+
+
 def any_ingest_lock_held() -> bool:
     """True when any ingest-related lock is held (used by /api/admin/system)."""
     return any(lock.locked() for lock in [
@@ -251,12 +256,14 @@ async def run_nvd_incremental_sync() -> bool:
     _error_msg = ""
     try:
         async with _nvd_lock:
+            _job_progress["nvd_incremental_sync"] = "Resolving NVD sync watermark…"
             await _run_nvd_incremental_sync()
     except Exception as _exc:
         _had_error = True
         _error_msg = str(_exc)[:500]
         raise
     finally:
+        _job_progress.pop("nvd_incremental_sync", None)
         await _write_job_last_run("nvd_incremental_sync", _start, had_error=_had_error, error_message=_error_msg)
     return True
 
@@ -286,6 +293,7 @@ async def _run_nvd_incremental_sync() -> None:
         finally:
             await db.close()
 
+        _job_progress["nvd_incremental_sync"] = f"Fetching CVE updates from NVD API (watermark: {watermark or 'full window'})…"
         cves, mod_end_iso, used_incremental, rejected_ids = await fetch_nvd_cve_updates(
             nvd_api_key,
             watermark=watermark,
@@ -311,6 +319,7 @@ async def _run_nvd_incremental_sync() -> None:
 
         db = await get_db()
         try:
+            _job_progress["nvd_incremental_sync"] = f"Writing {len(cves)} CVEs to database, purging {len(rejected_ids)} rejected IDs…"
             legacy_purged = await purge_legacy_rejected_cves(db)
             rejected_purged = await delete_cves_by_ids(db, rejected_ids)
             if legacy_purged or rejected_purged:
@@ -329,12 +338,14 @@ async def _run_nvd_incremental_sync() -> None:
                 if cve.get("cve_id")
             ]
             if updated_ids:
+                _job_progress["nvd_incremental_sync"] = f"Post-processing {len(updated_ids)} CVEs: stripping stale summaries, backfilling display fields…"
                 stripped = await strip_auto_generated_summaries(db, updated_ids)
                 filled = await backfill_display_fields(db, updated_ids)
                 poc_marked = await backfill_has_poc(db, updated_ids)
             else:
                 stripped = filled = poc_marked = 0
             if updated_ids:
+                _job_progress["nvd_incremental_sync"] = f"Cross-enriching {len(updated_ids)} CVEs via Sploitus and CIRCL exploit references…"
                 from feeds.extended import enrich_cves_extended
 
                 ext_stats = await enrich_cves_extended(db, updated_ids)
@@ -373,12 +384,14 @@ async def run_kev_sync() -> bool:
     _error_msg = ""
     try:
         async with _kev_lock:
+            _job_progress["kev_metadata_sync"] = "Fetching CISA KEV catalog from CISA.gov…"
             await _run_kev_sync()
     except Exception as _exc:
         _had_error = True
         _error_msg = str(_exc)[:500]
         raise
     finally:
+        _job_progress.pop("kev_metadata_sync", None)
         await _write_job_last_run("kev_metadata_sync", _start, had_error=_had_error, error_message=_error_msg)
     return True
 
@@ -393,6 +406,7 @@ async def _run_kev_sync() -> None:
 
     try:
         kev_entries = await fetch_kev()
+        _job_progress["kev_metadata_sync"] = f"Writing {len(kev_entries)} KEV catalog entries, marking CVEs as exploited-in-wild…"
 
         db = await get_db()
         try:
@@ -404,6 +418,7 @@ async def _run_kev_sync() -> None:
                     kev_ids.append(cve_id)
                     kev_count += 1
             newly_kev = await mark_cves_as_kev(db, kev_ids)
+            _job_progress["kev_metadata_sync"] = f"Enriching KEV summaries from CISA descriptions ({len(newly_kev)} newly flagged CVEs)…"
             kev_summaries = await enrich_kev_summaries(db)
             await db.commit()
             if kev_summaries:
@@ -413,6 +428,7 @@ async def _run_kev_sync() -> None:
 
         if newly_kev:
             try:
+                _job_progress["kev_metadata_sync"] = f"Sending KEV-on-stack webhook alerts for {len(newly_kev)} newly exploited CVEs…"
                 alerted = await process_kev_stack_alerts(newly_kev)
                 if alerted:
                     logger.info("KEV-on-stack alerts sent: %d", alerted)
@@ -422,6 +438,7 @@ async def _run_kev_sync() -> None:
         logger.info("KEV sync complete: %d catalog entries processed", kev_count)
 
         if os.environ.get("KEV_CROSS_FETCH_NVD", "1").strip().lower() in ("1", "true", "yes"):
+            _job_progress["kev_metadata_sync"] = "Cross-fetching KEV CVEs missing from NVD database…"
             await _cross_fetch_missing_kev_cves(kev_entries, nvd_api_key)
 
     except Exception as exc:
@@ -488,12 +505,14 @@ async def run_epss_sync() -> bool:
     _error_msg = ""
     try:
         async with _epss_lock:
+            _job_progress["epss_score_sync"] = "Loading CVE IDs from database…"
             await _run_epss_sync()
     except Exception as _exc:
         _had_error = True
         _error_msg = str(_exc)[:500]
         raise
     finally:
+        _job_progress.pop("epss_score_sync", None)
         await _write_job_last_run("epss_score_sync", _start, had_error=_had_error, error_message=_error_msg)
     return True
 
@@ -515,11 +534,13 @@ async def _run_epss_sync() -> None:
             logger.info("EPSS sync skipped: no CVEs in database")
             return
 
+        _job_progress["epss_score_sync"] = f"Fetching EPSS exploit-probability scores for {len(all_cve_ids)} CVEs from FIRST.org…"
         scores = await fetch_epss(all_cve_ids)
         epss_updated = len(scores)
 
         db = await get_db()
         try:
+            _job_progress["epss_score_sync"] = f"Snapshotting current EPSS scores for delta tracking, then writing {len(scores)} updated scores…"
             snapshotted = await snapshot_epss_scores(db)
             await update_epss_scores(db, scores)
             await db.commit()
@@ -551,7 +572,9 @@ async def run_epss_backfill() -> bool:
         return False
 
     async with _epss_backfill_lock:
+        _job_progress["epss_backfill"] = "Loading CVE IDs for EPSS historical backfill…"
         await _run_epss_backfill()
+    _job_progress.pop("epss_backfill", None)
     return True
 
 
@@ -596,6 +619,7 @@ async def _run_epss_backfill() -> None:
 
         for offset in range(0, len(all_cve_ids), BACKFILL_BATCH_SIZE):
             batch = all_cve_ids[offset : offset + BACKFILL_BATCH_SIZE]
+            _job_progress["epss_backfill"] = f"Fetching EPSS time-series history: batch {batch_num + 1}/{total_batches} ({offset + len(batch)}/{len(all_cve_ids)} CVEs)…"
             rows = await fetch_epss_time_series_batch(batch)
             if rows:
 
@@ -673,6 +697,11 @@ async def run_weekly_mitre_refresh() -> bool:
             atlas_stats = await refresh_atlas_data()
             db = await get_db()
             try:
+                _job_progress["weekly_mitre_refresh"] = "Refreshing MITRE ATT&CK technique catalog and CVE technique mappings…"
+                stats = await refresh_mitre_data(db)
+                _job_progress["weekly_mitre_refresh"] = "Refreshing ATLAS AI security matrix techniques and case studies…"
+                atlas_stats = await refresh_atlas_data(db)
+                _job_progress["weekly_mitre_refresh"] = "Updating CVE AI context flags and ATLAS technique links across database…"
                 ai_stats = await refresh_all_cve_ai_context(db)
                 await db.commit()
             finally:
@@ -699,6 +728,7 @@ async def run_weekly_mitre_refresh() -> bool:
             _mitre_error_msg = str(exc)[:500]
         else:
             _mitre_error_msg = ""
+        _job_progress.pop("weekly_mitre_refresh", None)
         await _write_job_last_run("weekly_mitre_refresh", _start, had_error=not ok, error_message=_mitre_error_msg)
         return ok
 
@@ -716,6 +746,7 @@ async def run_atlas_version_check() -> bool:
         ok = True
         error_msg = ""
         try:
+            _job_progress["atlas_version_check"] = "Fetching ATLAS upstream release feed from mitre-atlas.github.io…"
             latest = await get_latest_atlas_release()
             if latest is None:
                 logger.warning("ATLAS version check: could not fetch upstream release feed")
@@ -726,9 +757,11 @@ async def run_atlas_version_check() -> bool:
                 stored = await get_sync_state_value(db, ATLAS_UPSTREAM_VERSION_KEY)
                 if stored == latest:
                     logger.info("ATLAS version check: up to date (%s)", latest)
+                    _job_progress.pop("atlas_version_check", None)
                     return False
 
                 logger.info("ATLAS version check: new release %s (was %s) — refreshing", latest, stored)
+                _job_progress["atlas_version_check"] = f"New ATLAS release {latest} detected (was {stored}) — triggering MITRE/ATLAS refresh…"
             finally:
                 await db.close()
 
@@ -738,6 +771,7 @@ async def run_atlas_version_check() -> bool:
                 error_msg = "weekly_mitre_refresh did not complete"
                 return False
 
+            _job_progress["atlas_version_check"] = f"Storing new ATLAS version marker ({latest})…"
             db = await get_db()
             try:
                 await set_sync_state_value(db, ATLAS_UPSTREAM_VERSION_KEY, latest)
@@ -751,6 +785,7 @@ async def run_atlas_version_check() -> bool:
             error_msg = str(exc)[:500]
             return False
         finally:
+            _job_progress.pop("atlas_version_check", None)
             await _write_job_last_run("atlas_version_check", _start, had_error=not ok, error_message=error_msg)
 
 
@@ -839,7 +874,9 @@ async def run_exploit_sources_sync() -> bool:
         start = _start
         logger.info("Exploit sources sync started at %s", start.isoformat())
         try:
-            stats = await sync_all_exploit_sources()
+            def _exploit_progress(msg: str) -> None:
+                _job_progress["exploit_sources_sync"] = msg
+            stats = await sync_all_exploit_sources(progress_cb=_exploit_progress)
             if stats:
                 logger.info(
                     "Exploit sources sync complete: PoC-GitHub %s, ExploitDB %s, "
@@ -875,17 +912,21 @@ async def run_vulnrichment_sync() -> bool:
         try:
             db = await get_db()
             try:
+                _job_progress["vulnrichment_snapshot_sync"] = "Identifying CVEs with missing CWE/CVSS/CPE intel enrichments…"
                 gap_ids = await get_cves_needing_intel_enrichment(db, limit=1000)
             finally:
                 await db.close()
 
             target = set(gap_ids) if gap_ids else None
+            _job_progress["vulnrichment_snapshot_sync"] = f"Fetching CISA Vulnrichment enrichments for {len(gap_ids)} CVEs from GitHub snapshot…"
             enrichments = await fetch_vulnrichment_enrichments(target)
             if not enrichments:
                 logger.info("Vulnrichment sync: no enrichments to apply")
+                _job_progress.pop("vulnrichment_snapshot_sync", None)
                 await _write_job_last_run("vulnrichment_snapshot_sync", _start)
                 return True
 
+            _job_progress["vulnrichment_snapshot_sync"] = f"Applying {len(enrichments)} Vulnrichment records (CWE, CVSS, CPE metadata) to database…"
             db = await get_db()
             try:
                 applied = await apply_additive_cve_enrichments(db, enrichments)
@@ -900,6 +941,8 @@ async def run_vulnrichment_sync() -> bool:
             _vuln_error_msg = str(exc)[:500]
         else:
             _vuln_error_msg = ""
+        finally:
+            _job_progress.pop("vulnrichment_snapshot_sync", None)
         duration = (datetime.now(timezone.utc) - start).total_seconds()
         logger.info("Vulnrichment snapshot sync finished in %.1fs", duration)
     await _write_job_last_run("vulnrichment_snapshot_sync", _start, had_error=_had_error, error_message=_vuln_error_msg)
@@ -923,8 +966,10 @@ async def run_cvelistv5_sync() -> bool:
             finally:
                 await db.close()
 
+            _job_progress["cvelistv5_incremental_sync"] = f"Fetching cvelistV5 delta from GitHub (since commit {(watermark or 'HEAD')[:12]})…"
             records, rejected_ids, new_head, advance = await fetch_cvelistv5_delta(watermark)
             if not advance or not new_head:
+                _job_progress.pop("cvelistv5_incremental_sync", None)
                 await _write_job_last_run("cvelistv5_incremental_sync", _start)
                 return True
 
@@ -933,8 +978,10 @@ async def run_cvelistv5_sync() -> bool:
             db = await get_db()
             try:
                 if records:
+                    _job_progress["cvelistv5_incremental_sync"] = f"Applying {len(records)} cvelistV5 CVE record updates (descriptions, CWEs, references)…"
                     applied = await apply_additive_cve_enrichments(db, records)
                 if rejected_ids:
+                    _job_progress["cvelistv5_incremental_sync"] = f"Purging {len(rejected_ids)} CVEs rejected by cvelistV5 maintainers…"
                     purged = await delete_cves_by_ids(db, rejected_ids)
                 await set_sync_state_value(db, CVELISTV5_SYNC_STATE_KEY, new_head)
                 await db.commit()
@@ -953,6 +1000,8 @@ async def run_cvelistv5_sync() -> bool:
             _cvelist_error_msg = str(exc)[:500]
         else:
             _cvelist_error_msg = ""
+        finally:
+            _job_progress.pop("cvelistv5_incremental_sync", None)
         duration = (datetime.now(timezone.utc) - start).total_seconds()
         logger.info("cvelistV5 incremental sync finished in %.1fs", duration)
     await _write_job_last_run("cvelistv5_incremental_sync", _start, had_error=_had_error, error_message=_cvelist_error_msg)
@@ -1003,7 +1052,18 @@ async def run_nightly_correlation() -> bool:
 
         db = await get_db()
         try:
-            stats = await _run_correlation(db)
+            # Pre-warm IOC data for Level 1 before running correlation
+            if api_key:
+                _job_progress["nightly_correlation"] = "Pre-fetching OTX pulse IOCs to warm Level 1 infrastructure correlation…"
+                ioc_count = await prefetch_pulse_iocs_for_nightly(db, api_key)
+                if ioc_count:
+                    await db.commit()
+                    logger.info("Pre-fetched IOCs for %d pulses", ioc_count)
+
+            def _corr_progress(msg: str) -> None:
+                _job_progress["nightly_correlation"] = msg
+            stats = await _run_correlation(db, progress_cb=_corr_progress)
+
             logger.info(
                 "Nightly correlation: %d CVEs, %d infra pairs, %d actors, %d anomalies, "
                 "%d campaigns",
@@ -1029,6 +1089,7 @@ async def run_nightly_correlation() -> bool:
             _corr_error_msg = ""
         finally:
             await db.close()
+            _job_progress.pop("nightly_correlation", None)
     await _write_job_last_run("nightly_correlation", _start, had_error=_had_error, error_message=_corr_error_msg)
     return True
 
@@ -1049,7 +1110,11 @@ async def run_otx_nightly_sync() -> bool:
         try:
             from feeds.otx import run_otx_nightly_correlation
 
-            stats = await run_otx_nightly_correlation(api_key)
+            def _otx_progress(msg: str) -> None:
+                _job_progress["otx_nightly_correlation"] = msg
+            stats = await run_otx_nightly_correlation(db, api_key, progress_cb=_otx_progress)
+            await db.commit()
+
             logger.info(
                 "OTX nightly correlation complete: %d CVEs, %d pulses cached",
                 stats.get("cves", 0),
@@ -1061,6 +1126,9 @@ async def run_otx_nightly_sync() -> bool:
             _otx_error_msg = str(exc)[:500]
         else:
             _otx_error_msg = ""
+        finally:
+            await db.close()
+            _job_progress.pop("otx_nightly_correlation", None)
     await _write_job_last_run("otx_nightly_correlation", _start, had_error=_had_error, error_message=_otx_error_msg)
     return True
 
@@ -1132,10 +1200,13 @@ async def run_embeddings_sync() -> bool:
         try:
             db = await get_db()
             try:
-                stats = await run_embeddings_backfill(db)
+                def _emb_progress(msg: str) -> None:
+                    _job_progress["embeddings_backfill"] = msg
+                stats = await run_embeddings_backfill(db, progress_cb=_emb_progress)
                 _embedded = int(stats.get("embedded", 0))
             finally:
                 await db.close()
+                _job_progress.pop("embeddings_backfill", None)
             logger.info(
                 "Embeddings backfill complete: %d CVEs embedded (model=%s) in %.1fs",
                 _embedded,
@@ -1175,7 +1246,15 @@ async def run_llm_extraction_sync() -> bool:
         start = _start
         logger.info("LLM product extraction started at %s", start.isoformat())
         try:
-            stats = await run_llm_product_extraction()
+            db = await get_db()
+            try:
+                def _progress(msg: str) -> None:
+                    _job_progress["llm_product_extraction"] = msg
+                stats = await run_llm_product_extraction(db, progress_cb=_progress)
+            finally:
+                await db.close()
+                _job_progress.pop("llm_product_extraction", None)
+
             logger.info(
                 "LLM product extraction complete: %d candidates, %d extracted, "
                 "%d written, %d errors in %.1fs",
@@ -1207,11 +1286,14 @@ async def run_scheduled_backup() -> bool:
     _error_msg = ""
     async with _scheduled_backup_lock:
         try:
+            _job_progress["scheduled_backup"] = "Creating database backup archive and pruning old backups…"
             await asyncio.to_thread(run_backup, reason="scheduled")
         except Exception as exc:
             logger.error("Scheduled backup failed: %s", exc)
             _had_error = True
             _error_msg = str(exc)[:500]
+        finally:
+            _job_progress.pop("scheduled_backup", None)
     await _write_job_last_run("scheduled_backup", _start, had_error=_had_error, error_message=_error_msg)
     return not _had_error
 

@@ -89,6 +89,14 @@ export function fetchMe() {
   return request('/auth/me')
 }
 
+export function fetchSessions() {
+  return request('/auth/sessions')
+}
+
+export function revokeSession(sessionId) {
+  return request(`/auth/sessions/${sessionId}`, { method: 'DELETE' })
+}
+
 export function fetchStats({ frameworks = [] } = {}) {
   const qs = new URLSearchParams()
   const fw = Array.isArray(frameworks) ? frameworks.filter(Boolean) : []

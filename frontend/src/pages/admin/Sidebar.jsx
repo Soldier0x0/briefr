@@ -37,56 +37,58 @@ export default function Sidebar({
 
   return (
     <nav className={`admin-sidebar ${open ? 'admin-sidebar--open' : ''}`} aria-label="Admin navigation">
-      {navConfig.map(section => (
-        <div key={section.section} className="admin-sidebar-section">
-          <div className="nav-section-label">{section.section}</div>
-          {section.items.map(item => {
-            const badge = getBadge(item)
-            const Icon = ICONS[item.icon]
-            if (item.locked) {
+      <div className="nav-scroll-area">
+        {navConfig.map(section => (
+          <div key={section.section} className="admin-sidebar-section">
+            <div className="nav-section-label">{section.section}</div>
+            {section.items.map(item => {
+              const badge = getBadge(item)
+              const Icon = ICONS[item.icon]
+              if (item.locked) {
+                return (
+                  <div
+                    key={item.id}
+                    className="nav-item nav-item-locked"
+                    onClick={() => setPage(item.id)}
+                    title={item.tooltip}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => e.key === 'Enter' && setPage(item.id)}
+                  >
+                    {Icon && <Icon className="nav-icon" size={15} strokeWidth={1.75} />}
+                    <span>{item.label}</span>
+                    <Lock className="nav-lock-icon" size={11} strokeWidth={2} />
+                    {item.tooltip && <span className="nav-item-tooltip">{item.tooltip}</span>}
+                  </div>
+                )
+              }
               return (
-                <div
+                <button
                   key={item.id}
-                  className="nav-item nav-item-locked"
+                  type="button"
+                  className={`nav-item ${activePage === item.id ? 'active' : ''}`}
                   onClick={() => setPage(item.id)}
-                  title={item.tooltip}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={e => e.key === 'Enter' && setPage(item.id)}
                 >
                   {Icon && <Icon className="nav-icon" size={15} strokeWidth={1.75} />}
                   <span>{item.label}</span>
-                  <Lock className="nav-lock-icon" size={11} strokeWidth={2} />
-                  {item.tooltip && <span className="nav-item-tooltip">{item.tooltip}</span>}
-                </div>
+                  {badge > 0 && (
+                    <span
+                      className={`nav-badge ${item.badgeKey === 'failed_auth_last_24h' ? 'nav-badge-amber' : 'nav-badge-red'}`}
+                      title={
+                        item.badgeKey === 'jobs_with_errors_count'
+                          ? `${badge} unacknowledged scheduler job failure(s)`
+                          : undefined
+                      }
+                    >
+                      {badge}
+                    </span>
+                  )}
+                </button>
               )
-            }
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className={`nav-item ${activePage === item.id ? 'active' : ''}`}
-                onClick={() => setPage(item.id)}
-              >
-                {Icon && <Icon className="nav-icon" size={15} strokeWidth={1.75} />}
-                <span>{item.label}</span>
-                {badge > 0 && (
-                  <span
-                    className={`nav-badge ${item.badgeKey === 'failed_auth_last_24h' ? 'nav-badge-amber' : 'nav-badge-red'}`}
-                    title={
-                      item.badgeKey === 'jobs_with_errors_count'
-                        ? `${badge} unacknowledged scheduler job failure(s)`
-                        : undefined
-                    }
-                  >
-                    {badge}
-                  </span>
-                )}
-              </button>
-            )
-          })}
-        </div>
-      ))}
+            })}
+          </div>
+        ))}
+      </div>
 
       <div className="admin-sidebar-footer">
         {mode === 'operator' && <StatusLegend compact />}

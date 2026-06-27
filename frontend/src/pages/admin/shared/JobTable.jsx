@@ -14,6 +14,7 @@ export function JobStatusBadge({ status, mode = 'operator' }) {
   const tone = STATUS_CLASS[status] || 'disabled'
   return (
     <span title={statusHint(status)}>
+      {status === 'LOCKED' && <span className="admin-spinner" style={{ marginRight: '0.35rem' }} />}
       <span className={`admin-job-status admin-job-status--${tone}`}>
         {statusLabel(status, mode)}
       </span>
@@ -89,7 +90,12 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
             <Fragment key={job.id}>
               <tr>
                 {showIds && <td className="mono admin-text-dim" style={{ fontSize: 11 }}>{job.id}</td>}
-                <td className="admin-table-sticky">{jobLabel(job.id, 'operator') || job.name}</td>
+                <td className="admin-table-sticky">
+                  {jobLabel(job.id, 'operator') || job.name}
+                  {job.status === 'LOCKED' && job.progress_message && (
+                    <div style={{ fontSize: '0.7rem', color: 'var(--fg3)', marginTop: '0.15rem' }}>{job.progress_message}</div>
+                  )}
+                </td>
                 <td><JobStatusBadge status={job.status} mode="operator" /></td>
                 <td className="admin-text-dim">{job.schedule_cadence || '—'}</td>
                 <td>{fmtIso(job.last_run_utc)}</td>
@@ -118,7 +124,7 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                         className="admin-btn admin-btn-ghost admin-btn--sm"
                         onClick={() => onRunNow(job.id)}
                         disabled={job.status === 'LOCKED'}
-                      >Run</button>
+                      >{job.status === 'LOCKED' ? <><span className="admin-spinner" /> Running…</> : 'Run'}</button>
                     )}
                     {onPauseResume && (
                       <button

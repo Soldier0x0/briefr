@@ -420,7 +420,7 @@ async def _recover_db_transaction(db) -> None:
 
 # ── Nightly batch job ─────────────────────────────────────
 
-async def run_nightly_correlation(db) -> dict:
+async def run_nightly_correlation(db, progress_cb=None) -> dict:
     """
     Nightly: Run all three correlation levels + v2 campaign rebuild.
     Level 3 runs once globally; Levels 1+2 run per recently-modified CVE.
@@ -440,6 +440,8 @@ async def run_nightly_correlation(db) -> dict:
     }
 
     # Level 3: global vendor volume anomaly detection
+    if progress_cb:
+        progress_cb("Level 3: detecting vendor volume temporal anomalies across CVE timeline…")
     try:
         temporal = await find_temporal_anomalies(db)
         await _store_temporal_anomalies(db, temporal)
@@ -454,7 +456,9 @@ async def run_nightly_correlation(db) -> dict:
     # Actor/sector: per-CVE for recent CVEs (infrastructure is computed
     # on-demand only — see ioc_graph.find_shared_infrastructure_v2)
     cve_ids = await get_recent_cve_ids_for_otx(db, days=7)
-    for cve_id in cve_ids:
+    for index, cve_id in enumerate(cve_ids):
+        if progress_cb:
+            progress_cb(f"Level 1/2: actor & sector correlation for {cve_id} ({index + 1}/{len(cve_ids)} recent CVEs)…")
         try:
             actor = await find_actor_sector_correlation(db, cve_id)
             if actor:
@@ -466,6 +470,8 @@ async def run_nightly_correlation(db) -> dict:
             logger.warning("Nightly correlation skip %s: %s", cve_id, exc)
             await _recover_db_transaction(db)
 
+    if progress_cb:
+        progress_cb("Building threat actor campaigns from OTX pulse clusters…")
     try:
         campaign_stats = await build_campaigns_from_pulses(db)
         stats["campaigns_built"] = campaign_stats.get("campaigns", 0)

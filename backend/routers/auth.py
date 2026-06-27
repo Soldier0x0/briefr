@@ -19,6 +19,7 @@ from auth.repo import (
     create_user,
     get_session_by_token,
     get_user_by_id,
+    list_active_sessions,
     revoke_all_sessions_for_user,
     revoke_session,
     rotate_session,
@@ -277,3 +278,60 @@ async def setup(
     await audit(request, "auth.setup_completed", user["username"])
 
     return {"username": user["username"], "role": user["role"]}
+
+
+@router.get("/sessions")
+async def get_sessions(request: Request, payload: dict = Depends(require_user)):
+    user_id = int(payload["sub"])
+    current_rt = request.cookies.get(REFRESH_COOKIE, "")
+    db = await get_db()
+    try:
+        sessions = await list_active_sessions(db, user_id)
+        user = await get_user_by_id(db, user_id)
+    finally:
+        await db.close()
+
+    from auth.tokens import hash_refresh_token as _hash_rt
+    current_hash = _hash_rt(current_rt) if current_rt else None
+
+    result = []
+    for s in sessions:
+        is_current = s["refresh_token_hash"] == current_hash
+        session_data = {k: v for k, v in s.items() if k != "refresh_token_hash"}
+        result.append({
+            **session_data,
+            "is_current": is_current,
+            "remember_me": bool(s["remember_me"]),
+        })
+
+    return {
+        "user": {
+            "username": user["username"] if user else payload.get("sub"),
+            "role": user["role"] if user else payload.get("role"),
+            "last_login_at": user["last_login_at"] if user else None,
+        },
+        "sessions": result,
+    }
+
+
+@router.delete("/sessions/{session_id}")
+async def revoke_session_endpoint(
+    session_id: int, request: Request, payload: dict = Depends(require_user)
+):
+    user_id = int(payload["sub"])
+    db = await get_db()
+    try:
+        rows = await db.execute_fetchall(
+            "SELECT id, user_id FROM sessions WHERE id = ? AND revoked_at IS NULL",
+            (session_id,),
+        )
+        if not rows:
+            raise HTTPException(status_code=404, detail="Session not found")
+        if rows[0]["user_id"] != user_id:
+            raise HTTPException(status_code=403, detail="Not your session")
+        await revoke_session(db, session_id)
+        await db.commit()
+    finally:
+        await db.close()
+    await audit(request, "auth.session_revoked", str(session_id))
+    return {"status": "revoked"}

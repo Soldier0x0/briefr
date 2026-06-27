@@ -182,7 +182,7 @@ async def extract_products_via_groq(description: str, api_key: str) -> list[dict
     return parse_products_payload(message_content(response))
 
 
-async def run_llm_product_extraction(db: aiosqlite.Connection | None = None) -> dict:
+async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, progress_cb=None) -> dict:
     """Scheduler job body: extract products for NVD-unanalyzed CVEs.
 
     Caller is responsible for the enabled() gate and the job lock. Every
@@ -221,6 +221,8 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None) -> 
 
     for index, candidate in enumerate(candidates):
         cve_id = candidate["cve_id"]
+        if progress_cb:
+            progress_cb(f"Processing CVE {index + 1} of {stats[chr(39)]candidates[chr(39)]}…")
         products = None
         while products is None:
             try:
@@ -230,7 +232,7 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None) -> 
             except CircuitOpenError as exc:
                 wait = max(1.0, exc.retry_at - time.time())
                 logger.warning(
-                    "LLM product extraction: Groq circuit open for %s â€” "
+                    "LLM product extraction: Groq circuit open for %s — "
                     "waiting %.1fs then retrying (%d/%d)",
                     cve_id,
                     wait,
@@ -240,7 +242,7 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None) -> 
                 await asyncio.sleep(wait)
             except GroqRateLimitError as exc:
                 logger.warning(
-                    "LLM product extraction: Groq rate limit for %s â€” "
+                    "LLM product extraction: Groq rate limit for %s — "
                     "waiting 60s then retrying (%d/%d): %s",
                     cve_id,
                     index + 1,

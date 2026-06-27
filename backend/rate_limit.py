@@ -213,6 +213,25 @@ def check_login_username_rate_limit(username: str) -> None:
         )
 
 
+def get_bucket_stats() -> list[dict]:
+    """Return per-bucket stats for the rate limit dashboard."""
+    buckets = [
+        ioc_bucket, refresh_bucket, wallboard_bucket,
+        login_bucket, login_username_bucket, auth_refresh_bucket,
+    ]
+    result = []
+    for b in buckets:
+        top = sorted(b._hits.items(), key=lambda x: x[1], reverse=True)[:10]
+        result.append({
+            "name": b.name,
+            "rate_per_minute": b.rate_per_minute,
+            "total_hits": b.hit_count,
+            "active_keys": len(b._buckets),
+            "top_consumers": [{"key": k, "hits": v} for k, v in top],
+        })
+    return result
+
+
 def get_top_consumers(n: int = 5) -> list[dict]:
     """Per-client hit counts per rate-limit bucket (since process start)."""
     merged: list[dict] = []
