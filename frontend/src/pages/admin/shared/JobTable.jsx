@@ -12,6 +12,7 @@ export function JobStatusBadge({ status, mode = 'operator' }) {
   }
   return (
     <span>
+      {status === 'LOCKED' && <span className="admin-spinner" style={{ marginRight: '0.35rem' }} />}
       <span className={`badge ${map[status] || 'badge-muted'}`} title={statusHint(status)}>{statusLabel(status, mode)}</span>
       {mode === 'analyst' && <span className="status-hint-text">{statusHint(status)}</span>}
     </span>
@@ -71,7 +72,12 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
             <Fragment key={job.id}>
               <tr key={job.id}>
                 {showIds && <td className="mono" style={{ fontSize: '0.7rem' }}>{job.id}</td>}
-                <td style={{ fontSize: '0.8rem' }}>{jobLabel(job.id, 'operator') || job.name}</td>
+                <td style={{ fontSize: '0.8rem' }}>
+                  {jobLabel(job.id, 'operator') || job.name}
+                  {job.status === 'LOCKED' && job.progress_message && (
+                    <div style={{ fontSize: '0.7rem', color: 'var(--fg3)', marginTop: '0.15rem' }}>{job.progress_message}</div>
+                  )}
+                </td>
                 <td><JobStatusBadge status={job.status} mode="operator" /></td>
                 <td style={{ fontSize: '0.75rem' }}>{fmtIso(job.last_run_utc)}</td>
                 <td>{fmtDur(job.last_run_duration_seconds)}</td>
@@ -98,7 +104,7 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                         style={{ fontSize: '0.8125rem', padding: '0.35rem 0.85rem' }}
                         onClick={() => onRunNow(job.id)}
                         disabled={job.status === 'LOCKED'}
-                      >Run</button>
+                      >{job.status === 'LOCKED' ? <><span className="admin-spinner" /> Running…</> : 'Run'}</button>
                     )}
                     {onPauseResume && (
                       <button
@@ -112,11 +118,11 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                   </div>
                 </td>
               </tr>
-              {expandErrors && expanded[job.id] && job.last_error_message && (
+              {expandErrors && expanded[job.id] && (
                 <tr key={`${job.id}-err`}>
                   <td colSpan={showIds ? 9 : 8} style={{ background: 'var(--bg3)', padding: '0.5rem 0.75rem' }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--red)', wordBreak: 'break-all' }}>
-                      {job.last_error_message}
+                      {job.last_error_message || 'An unknown error occurred during the last run.'}
                     </div>
                     {onRunNow && (
                       <button

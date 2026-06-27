@@ -192,13 +192,19 @@ function OperatorOverview({ system, toast }) {
         )}
         {showDiag && intResult && (
           <div style={{ marginTop: '0.5rem', fontSize: '0.8125rem' }}>
-            <span style={{ color: intResult.integrity_ok ? 'var(--green)' : 'var(--red)' }}>
-              {intResult.integrity_ok ? '✓ Integrity OK' : '✗ Integrity FAILED'}
-            </span>
-            {' — '}
-            <span style={{ color: intResult.foreign_keys_ok ? 'var(--green)' : 'var(--red)' }}>
-              {intResult.foreign_keys_ok ? '✓ FK OK' : `✗ ${intResult.foreign_key_violations} FK violations`}
-            </span>
+            {intResult.detail ? (
+              <span style={{ color: 'var(--red)' }}>Error: {intResult.detail}</span>
+            ) : (
+              <>
+                <span style={{ color: intResult.integrity_ok ? 'var(--green)' : 'var(--red)' }}>
+                  {intResult.integrity_ok ? '✓ Integrity OK' : '✗ Integrity FAILED'}
+                </span>
+                {' — '}
+                <span style={{ color: intResult.foreign_keys_ok ? 'var(--green)' : 'var(--red)' }}>
+                  {intResult.foreign_keys_ok ? '✓ FK OK' : `✗ ${intResult.foreign_key_violations ?? 0} FK violations`}
+                </span>
+              </>
+            )}
           </div>
         )}
       </div>

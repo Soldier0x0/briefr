@@ -11,10 +11,12 @@ export const NAV = [
     { id: 'scheduler', label: 'Scheduler', icon: 'Clock' },
     { id: 'webhooks', label: 'Webhooks', icon: 'Webhook' },
     { id: 'security', label: 'Security', icon: 'ShieldAlert', badgeKey: 'failed_auth_last_24h' },
+    { id: 'sessions', label: 'Login & sessions', icon: 'LogIn' },
   ]},
   { section: 'OBSERVABILITY', items: [
     { id: 'feedhealth', label: 'Feed health', icon: 'HeartPulse', badgeKey: 'open_circuit_count' },
     { id: 'ingestlog', label: 'Application logs', icon: 'ScrollText', badgeKey: 'ingest_error_count' },
+    { id: 'ratelimit', label: 'Rate limit', icon: 'Gauge' },
   ]},
   { section: 'AUDIT', items: [
     { id: 'auditlog', label: 'Audit log', icon: 'ClipboardList' },
@@ -23,9 +25,7 @@ export const NAV = [
     { id: 'display', label: 'Display', icon: 'Settings2' },
   ]},
   { section: 'COMING SOON', items: [
-    { id: 'coming-login', label: 'App login & sessions', icon: 'LogIn', locked: true, tooltip: 'Ships in V1.4 / T3-S0' },
     { id: 'coming-users', label: 'Multi-user management', icon: 'Users', locked: true, tooltip: 'Ships in V2.0' },
-    { id: 'coming-ratelimit', label: 'Rate limit dashboard', icon: 'Gauge', locked: true, tooltip: 'Ships in V1.4' },
   ]},
 ]
 
@@ -55,16 +55,8 @@ export const MANUAL_PIPELINES = [
 export const AUDIT_PREFIXES = ['backup', 'refresh', 'scheduler', 'storage', 'config', 'system', 'webhook', 'watchlist', 'feed', 'diagnostics']
 
 export const COMING_SOON_INFO = {
-  'coming-login': {
-    title: 'App login & sessions',
-    message: 'Ships in V1.4 (T3-S0). Adds built-in auth, httpOnly session cookies, login page, and audit_log.actor population.',
-  },
   'coming-users': {
     title: 'Multi-user management',
     message: 'Ships in V2.0. The users table schema is already designed (id, username, password_hash, role, is_active, created_at) and will be activated when multi-user is enabled.',
-  },
-  'coming-ratelimit': {
-    title: 'Rate limit dashboard',
-    message: 'Ships in V1.4. Will show per-IP bucket levels, top consumers, and allow per-IP block/allowlist.',
   },
 }

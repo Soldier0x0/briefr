@@ -47,7 +47,7 @@ from config_schema import (
 )
 from dependencies import audit, require_admin, trigger_graceful_restart
 from destructive_actions import list_actions, require_confirm
-from rate_limit import get_top_consumers, rate_limit_refresh
+from rate_limit import get_bucket_stats, get_top_consumers, rate_limit_refresh
 from resilient_client import get_feed_health, reset_circuit
 from settings import settings
 from structured_logging import LOG_CATEGORIES, get_log_buffer, get_known_loggers
@@ -220,6 +220,8 @@ def _build_job_info(job: Any, history: list[dict]) -> dict[str, Any]:
         status = "ACTIVE"
 
     latest = history[0] if history else {}
+    sched = _get_scheduler_module()
+    progress = getattr(sched, "_job_progress", {}).get(job.id, "")
     return {
         "id": job.id,
         "name": job.name,
@@ -227,6 +229,7 @@ def _build_job_info(job: Any, history: list[dict]) -> dict[str, Any]:
         "paused": paused,
         "lock_held": lock_held,
         "status": status,
+        "progress_message": progress,
         "last_run_utc": latest.get("last_run_utc") or latest.get("started_at"),
         "last_run_duration_seconds": latest.get("duration_seconds"),
         "last_run_records_upserted": latest.get("records_upserted"),
@@ -1829,4 +1832,12 @@ async def check_integrity(request: Request):
         "foreign_keys_ok": foreign_keys_ok,
         "message": msg,
         "foreign_key_violations": len(fk_rows),
+    }
+
+
+@router.get("/ratelimit")
+async def get_ratelimit_dashboard():
+    return {
+        "enabled": settings.rate_limit_enabled,
+        "buckets": get_bucket_stats(),
     }

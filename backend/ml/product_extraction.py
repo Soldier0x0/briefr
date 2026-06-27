@@ -192,7 +192,7 @@ async def extract_products_via_groq(description: str, api_key: str) -> list[dict
     return parse_products_payload(content)
 
 
-async def run_llm_product_extraction(db: aiosqlite.Connection) -> dict:
+async def run_llm_product_extraction(db: aiosqlite.Connection, progress_cb=None) -> dict:
     """Scheduler job body: extract products for NVD-unanalyzed CVEs.
 
     Caller is responsible for the enabled() gate and the job lock. Every
@@ -214,6 +214,8 @@ async def run_llm_product_extraction(db: aiosqlite.Connection) -> dict:
 
     for index, candidate in enumerate(candidates):
         cve_id = candidate["cve_id"]
+        if progress_cb:
+            progress_cb(f"Processing CVE {index + 1} of {stats['candidates']}…")
         try:
             products = await extract_products_via_groq(
                 candidate["description"], api_key

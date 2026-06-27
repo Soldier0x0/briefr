@@ -138,7 +138,7 @@ def _embed_texts(model, texts: list[str]) -> list[np.ndarray]:
     return [np.asarray(vec, dtype="<f4") for vec in model.embed(texts)]
 
 
-async def run_embeddings_backfill(db: aiosqlite.Connection) -> dict:
+async def run_embeddings_backfill(db: aiosqlite.Connection, progress_cb=None) -> dict:
     """Embed CVE descriptions that have no vector for the active model.
 
     Scheduler-side only. Batched + committed per batch so an interrupted run
@@ -164,8 +164,12 @@ async def run_embeddings_backfill(db: aiosqlite.Connection) -> dict:
 
     model = _get_model(model_name)
     embedded = 0
-    for offset in range(0, len(pending), EMBED_BATCH_SIZE):
+    total = len(pending)
+    total_batches = (total + EMBED_BATCH_SIZE - 1) // EMBED_BATCH_SIZE
+    for batch_num, offset in enumerate(range(0, total, EMBED_BATCH_SIZE), start=1):
         batch = pending[offset : offset + EMBED_BATCH_SIZE]
+        if progress_cb:
+            progress_cb(f"Embedding CVE descriptions with {model_name}: batch {batch_num}/{total_batches} ({min(offset + EMBED_BATCH_SIZE, total)}/{total} CVEs)…")
         texts = [(item["description"] or "")[:EMBED_TEXT_MAX_CHARS] for item in batch]
         vectors = await asyncio.to_thread(_embed_texts, model, texts)
         for item, vector in zip(batch, vectors):

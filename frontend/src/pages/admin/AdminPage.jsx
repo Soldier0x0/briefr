@@ -24,6 +24,8 @@ import IngestLogPage from './IngestLogPage.jsx'
 import AuditLogPage from './AuditLogPage.jsx'
 import DisplayPage from './DisplayPage.jsx'
 import ComingSoonPage from './ComingSoonPage.jsx'
+import SessionsPage from './SessionsPage.jsx'
+import RateLimitPage from './RateLimitPage.jsx'
 import UserMenu from '../../components/UserMenu.jsx'
 import '../AdminPage.css'
 
@@ -31,6 +33,7 @@ const ANALYST_PAGE_IDS = new Set(ANALYST_NAV.flatMap(section => section.items.ma
 const VALID_ADMIN_PAGES = new Set([
   'overview', 'backups', 'storage', 'database', 'watchlist', 'apikeys', 'scheduler',
   'webhooks', 'alerts', 'security', 'feedhealth', 'ingestlog', 'auditlog', 'display',
+  'sessions', 'ratelimit',
 ])
 
 export default function AdminPage() {
@@ -151,6 +154,8 @@ export default function AdminPage() {
     ingestlog: <IngestLogPage toast={toast} onErrorCountChange={setIngestErrorCount} active={page === 'ingestlog'} />,
     auditlog: <AuditLogPage toast={toast} />,
     display: <DisplayPage />,
+    sessions: <SessionsPage toast={toast} />,
+    ratelimit: <RateLimitPage toast={toast} />,
   }
 
   return (
