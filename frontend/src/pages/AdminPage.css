@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════════════════
    BRIEFR Admin — control-plane layout & tokens (scoped to .admin-root)
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -23,6 +23,9 @@
   --admin-danger-dim: rgba(232, 85, 51, 0.12);
   --admin-purple: #d4860a;
   --admin-purple-dim: rgba(212, 134, 10, 0.12);
+  --admin-accent-text: #f4a07a;
+  --admin-secondary-text: #f0b86a;
+  --admin-accent-hover: #c4431e;
   --admin-radius: 8px;
   --admin-radius-sm: 6px;
   --admin-radius-lg: 12px;
@@ -152,13 +155,13 @@
 .admin-status-pill--analyst {
   border-color: rgba(232, 85, 51, 0.35);
   background: var(--admin-accent-dim);
-  color: #f4a07a;
+  color: var(--admin-accent-text);
 }
 
 .admin-status-pill--operator {
   border-color: rgba(212, 134, 10, 0.35);
   background: var(--admin-purple-dim);
-  color: #f0b86a;
+  color: var(--admin-secondary-text);
 }
 
 .admin-status-dot {
@@ -236,12 +239,12 @@
 
 .admin-mode-btn--active.admin-mode-btn--analyst {
   background: var(--admin-accent-dim);
-  color: #f4a07a;
+  color: var(--admin-accent-text);
 }
 
 .admin-mode-btn--active.admin-mode-btn--operator {
   background: var(--admin-purple-dim);
-  color: #f0b86a;
+  color: var(--admin-secondary-text);
 }
 
 .admin-status-action {
@@ -488,7 +491,7 @@
 
 .admin-status-legend-tag--locked {
   background: rgba(90, 88, 80, 0.2);
-  color: #9a9890;
+  color: var(--admin-text-muted);
 }
 
 .admin-status-legend-tag--disabled {
@@ -699,7 +702,7 @@
 
 .admin-job-status--active { background: var(--admin-success-dim); color: var(--admin-success); }
 .admin-job-status--paused { background: var(--admin-warning-dim); color: var(--admin-warning); }
-.admin-job-status--locked { background: rgba(90, 88, 80, 0.2); color: #9a9890; }
+.admin-job-status--locked { background: rgba(90, 88, 80, 0.2); color: var(--admin-text-muted); }
 .admin-job-status--disabled { background: var(--admin-danger-dim); color: var(--admin-danger); }
 .admin-job-status--circuit { background: var(--admin-purple-dim); color: var(--admin-purple); }
 
@@ -914,8 +917,8 @@
 }
 
 .admin-btn--primary:hover:not(:disabled) {
-  background: #c4431e;
-  border-color: #c4431e;
+  background: var(--admin-accent-hover);
+  border-color: var(--admin-accent-hover);
 }
 
 .admin-btn--danger {
@@ -1528,12 +1531,12 @@
 
 .admin-mode-toggle-btn.active:first-child {
   background: var(--admin-accent-dim);
-  color: #f4a07a;
+  color: var(--admin-accent-text);
 }
 
 .admin-mode-toggle-btn.active:last-child {
   background: var(--admin-purple-dim);
-  color: #f0b86a;
+  color: var(--admin-secondary-text);
 }
 
 .intel-banner {
