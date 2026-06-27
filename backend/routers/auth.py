@@ -296,9 +296,11 @@ async def get_sessions(request: Request, payload: dict = Depends(require_user)):
 
     result = []
     for s in sessions:
+        is_current = s["refresh_token_hash"] == current_hash
+        session_data = {k: v for k, v in s.items() if k != "refresh_token_hash"}
         result.append({
-            **s,
-            "is_current": s["refresh_token_hash"] == current_hash,
+            **session_data,
+            "is_current": is_current,
             "remember_me": bool(s["remember_me"]),
         })
 

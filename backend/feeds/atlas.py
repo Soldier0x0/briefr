@@ -415,14 +415,22 @@ async def get_latest_atlas_release() -> str | None:
         return None
 
 
-async def refresh_atlas_data(db) -> dict[str, int]:
-    from database import replace_atlas_case_studies, replace_atlas_techniques
+async def refresh_atlas_data(db=None) -> dict[str, int]:
+    from database import get_db, replace_atlas_case_studies, replace_atlas_techniques
 
     techniques, case_studies = await download_atlas_bundle()
-    await replace_atlas_techniques(db, techniques)
-    await replace_atlas_case_studies(db, case_studies)
-    await db.commit()
-    return {
-        "techniques": len(techniques),
-        "case_studies": len(case_studies),
-    }
+
+    own_db = db is None
+    if own_db:
+        db = await get_db()
+    try:
+        await replace_atlas_techniques(db, techniques)
+        await replace_atlas_case_studies(db, case_studies)
+        await db.commit()
+        return {
+            "techniques": len(techniques),
+            "case_studies": len(case_studies),
+        }
+    finally:
+        if own_db:
+            await db.close()

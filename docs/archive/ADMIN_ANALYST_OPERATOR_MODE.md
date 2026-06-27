@@ -12,8 +12,8 @@
 1. **Read this file end-to-end** before writing code.
 2. **Also read** (in order):
    - `PRODUCT.md` — Design Principles 1–3 (visible meaning, analyst-understandable UI)
-   - `docs/AGENT_IMPLEMENTATION_GUIDE.md` — product truth, release discipline
-   - `docs/HANDOVER.md` §7 — per-PR workflow, tests, branch naming
+   - `AGENT_IMPLEMENTATION_GUIDE.md` — product truth, release discipline
+   - `sessions/HANDOVER.md` §7 — per-PR workflow, tests, branch naming
    - `frontend/src/pages/admin/` — current admin sub-app
    - `frontend/src/utils/displayPrefs.js` — localStorage prefs pattern to mirror
 3. **Models:** Use **Claude Sonnet 4.6** for implementation. Escalate to **Claude Opus 4.6** only when:

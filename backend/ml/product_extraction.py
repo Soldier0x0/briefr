@@ -24,16 +24,17 @@ import json
 import logging
 import os
 import re
+import time
 
 import aiosqlite
 
-from ai.groq_config import GROQ_MODEL, GROQ_URL
+from ai.groq_client import GroqRateLimitError, chat_completion, message_content
+from ai.groq_config import GROQ_MODEL
 from database import (
     get_cves_for_llm_product_extraction,
     set_feed_cache,
     set_llm_affected_products,
 )
-from resilient_client import CircuitOpenError, resilient_request
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,6 @@ logger = logging.getLogger(__name__)
 # candidate pool permanently because affected_products is no longer empty.
 # Errored attempts are not cached at all and retry on the next run.
 RETRY_HOURS = 168.0
-THROTTLE_SECONDS = 2.0
 MAX_PRODUCTS_PER_CVE = 10
 
 SYSTEM_PROMPT = (
@@ -76,7 +76,10 @@ def llm_product_extraction_enabled() -> bool:
 
 
 def get_extraction_max_per_run() -> int:
-    return int(os.environ.get("LLM_PRODUCT_EXTRACTION_MAX_PER_RUN", "25"))
+    try:
+        return int(os.environ.get("LLM_PRODUCT_EXTRACTION_MAX_PER_RUN", "10"))
+    except ValueError:
+        return 10
 
 
 def _normalize_token(value: str) -> str:
@@ -161,38 +164,25 @@ def products_to_affected_keys(products: list[dict]) -> list[str]:
 async def extract_products_via_groq(description: str, api_key: str) -> list[dict]:
     """One Groq call → validated product dicts. retries=0: never burn quota
     on automatic retries (same policy as VT/AbuseIPDB/GreyNoise)."""
-    response = await resilient_request(
-        "groq",
-        "POST",
-        GROQ_URL,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": GROQ_MODEL,
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": USER_PROMPT_TEMPLATE.format(
-                        description=(description or "")[:3000]
-                    ),
-                },
-            ],
-            "max_tokens": 500,
-            "temperature": 0.0,
-        },
+    response = await chat_completion(
+        api_key,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": USER_PROMPT_TEMPLATE.format(
+                    description=(description or "")[:3000]
+                ),
+            },
+        ],
+        max_tokens=500,
+        temperature=0.0,
         timeout=60.0,
-        retries=0,
     )
-    content = (
-        response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-    )
-    return parse_products_payload(content)
+    return parse_products_payload(message_content(response))
 
 
-async def run_llm_product_extraction(db: aiosqlite.Connection, progress_cb=None) -> dict:
+async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, progress_cb=None) -> dict:
     """Scheduler job body: extract products for NVD-unanalyzed CVEs.
 
     Caller is responsible for the enabled() gate and the job lock. Every
@@ -201,13 +191,30 @@ async def run_llm_product_extraction(db: aiosqlite.Connection, progress_cb=None)
     query skips it for RETRY_HOURS; successful writes set
     affected_products_source='llm'. Errors are never cached — transient
     failures retry on the next run.
+
+    When ``db`` is omitted, pool connections are held only for short read/write
+    scopes — Groq HTTP and throttle sleeps run without a connection.
     """
+    from database import get_db
+    from resilient_client import CircuitOpenError
+
     api_key = os.environ.get("GROQ_API_KEY", "").strip()
     stats = {"candidates": 0, "extracted": 0, "written": 0, "errors": 0}
 
-    candidates = await get_cves_for_llm_product_extraction(
-        db, limit=get_extraction_max_per_run(), retry_hours=RETRY_HOURS
-    )
+    async def _load_candidates(conn):
+        return await get_cves_for_llm_product_extraction(
+            conn, limit=get_extraction_max_per_run(), retry_hours=RETRY_HOURS
+        )
+
+    if db is not None:
+        candidates = await _load_candidates(db)
+    else:
+        conn = await get_db()
+        try:
+            candidates = await _load_candidates(conn)
+        finally:
+            await conn.close()
+
     stats["candidates"] = len(candidates)
     if not candidates:
         return stats
@@ -215,43 +222,66 @@ async def run_llm_product_extraction(db: aiosqlite.Connection, progress_cb=None)
     for index, candidate in enumerate(candidates):
         cve_id = candidate["cve_id"]
         if progress_cb:
-            progress_cb(f"Processing CVE {index + 1} of {stats['candidates']}…")
-        try:
-            products = await extract_products_via_groq(
-                candidate["description"], api_key
-            )
-        except CircuitOpenError:
-            logger.warning(
-                "LLM product extraction: Groq circuit open — aborting run "
-                "(%d/%d candidates processed)",
-                index,
-                len(candidates),
-            )
-            break
-        except Exception as exc:
-            stats["errors"] += 1
-            logger.error("LLM product extraction failed for %s: %s", cve_id, exc)
-            # Transient failures (timeouts, 5xx, rate limits) are NOT
-            # negative-cached — the CVE stays a candidate and is retried on
-            # the next run. Repeated provider failures trip the Groq circuit
-            # breaker, which aborts the whole run above.
+            progress_cb(f"Processing CVE {index + 1} of {stats[chr(39)]candidates[chr(39)]}�")
+        products = None
+        while products is None:
+            try:
+                products = await extract_products_via_groq(
+                    candidate["description"], api_key
+                )
+            except CircuitOpenError as exc:
+                wait = max(1.0, exc.retry_at - time.time())
+                logger.warning(
+                    "LLM product extraction: Groq circuit open for %s � "
+                    "waiting %.1fs then retrying (%d/%d)",
+                    cve_id,
+                    wait,
+                    index + 1,
+                    len(candidates),
+                )
+                await asyncio.sleep(wait)
+            except GroqRateLimitError as exc:
+                logger.warning(
+                    "LLM product extraction: Groq rate limit for %s � "
+                    "waiting 60s then retrying (%d/%d): %s",
+                    cve_id,
+                    index + 1,
+                    len(candidates),
+                    exc,
+                )
+                await asyncio.sleep(60.0)
+            except Exception as exc:
+                stats["errors"] += 1
+                logger.error("LLM product extraction failed for %s: %s", cve_id, exc)
+                break
+
+        if products is None:
             continue
 
         written = False
         keys = products_to_affected_keys(products)
-        if keys:
-            stats["extracted"] += 1
-            written = await set_llm_affected_products(db, cve_id, keys)
-            if written:
-                stats["written"] += 1
-        await set_feed_cache(
-            db,
-            f"llm_products:{cve_id.upper()}",
-            {"products": products, "model": GROQ_MODEL, "written": written},
-        )
-        await db.commit()
 
-        if index + 1 < len(candidates):
-            await asyncio.sleep(THROTTLE_SECONDS)
+        async def _persist(conn, _cve_id=cve_id, _keys=keys, _products=products):
+            nonlocal written
+            if _keys:
+                stats["extracted"] += 1
+                written = await set_llm_affected_products(conn, _cve_id, _keys)
+                if written:
+                    stats["written"] += 1
+            await set_feed_cache(
+                conn,
+                f"llm_products:{_cve_id.upper()}",
+                {"products": _products, "model": GROQ_MODEL, "written": written},
+            )
+            await conn.commit()
+
+        if db is not None:
+            await _persist(db)
+        else:
+            conn = await get_db()
+            try:
+                await _persist(conn)
+            finally:
+                await conn.close()
 
     return stats

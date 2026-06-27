@@ -74,6 +74,13 @@ def _actor_contribution(actor: list[dict]) -> tuple[float, str | None]:
     return points, sentence
 
 
+def _format_vendor_name(vendor: str) -> str:
+    v = (vendor or "").strip().replace("_", " ")
+    if not v:
+        return "This product vendor"
+    return v.title()
+
+
 def _temporal_contribution(temporal: list[dict]) -> tuple[float, str | None]:
     if not temporal:
         return 0.0, None
@@ -82,7 +89,13 @@ def _temporal_contribution(temporal: list[dict]) -> tuple[float, str | None]:
     points = round(CAP_TEMPORAL * min(1.0, score / 5.0), 1)
     if points <= 0:
         return 0.0, None
-    sentence = f"{best.get('vendor', 'This vendor')} has a {score:.1f}x CVE volume spike this week."
+    vendor = _format_vendor_name(best.get("vendor", ""))
+    week_count = int(best.get("current_week_count") or 0)
+    avg_weekly = float(best.get("average_weekly_count") or 0)
+    sentence = (
+        f"Unusual CVE volume for {vendor}: {week_count} published this week "
+        f"(~{score:.1f}× the normal weekly average of {avg_weekly:.1f})."
+    )
     return points, sentence
 
 

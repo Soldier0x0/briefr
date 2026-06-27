@@ -195,6 +195,12 @@ export function fetchCVERisk(cveId, { profile, assets } = {}) {
   })
 }
 
+/** Unified Investigation Score — fuses risk + correlation + OTX freshness. */
+export function fetchCVEInvestigationScore(cveId, { sector } = {}) {
+  const qs = sector ? `?sector=${encodeURIComponent(sector)}` : ''
+  return request(`/cves/${encodeURIComponent(cveId)}/investigation-score${qs}`)
+}
+
 export function fetchCVEsForExport(params = {}) {
   const qs = new URLSearchParams()
   if (params.severity)  qs.set('severity', params.severity)
@@ -388,12 +394,17 @@ export function clearAdminKey() {
   sessionStorage.removeItem('briefr-admin-key')
 }
 
-async function adminFetch(path, opts = {}) {
+async function adminFetch(path, opts = {}, _retried = false) {
   const key = getAdminKey()
   const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) }
   if (key) headers['X-BRIEFR-Admin-Key'] = key
   const res = await fetch(`/api/admin${path}`, { ...opts, headers, credentials: 'include' })
   if (res.status === 401) {
+    // Session-cookie auth: retry once via /auth/refresh (same as request()).
+    // Legacy X-BRIEFR-Admin-Key auth has no refresh path — fail immediately.
+    if (!key && !_retried && (await refreshAccessToken())) {
+      return adminFetch(path, opts, true)
+    }
     clearAdminKey()
     window.dispatchEvent(new CustomEvent('briefr-auth-expired'))
     throw Object.assign(new Error('Unauthorized'), { status: 401 })

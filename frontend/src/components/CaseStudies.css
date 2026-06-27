@@ -117,6 +117,29 @@
   gap: 12px;
 }
 
+/* Incidents sidebar: campaign headlines in a compact multi-column grid */
+.cs-feed-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (min-width: 1200px) {
+  .cs-feed-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .cs-feed-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cs-feed-grid .cs-card {
+  height: 100%;
+}
+
 .cs-card {
   background: var(--bg3);
   border: 1px solid var(--border);

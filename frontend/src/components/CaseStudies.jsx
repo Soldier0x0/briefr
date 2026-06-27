@@ -125,8 +125,8 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
         <p className="cs-hero-kicker mono">REAL-WORLD ATTACK CONTEXT</p>
         <h1 className="cs-hero-title">Case Studies</h1>
         <p className="cs-hero-sub">
-          Latest security news, campaign reporting, and MITRE ATLAS incident narratives —
-          how attacks happened in the wild. CVE severity and KEV deadlines stay on BRIEF.
+          Real-world attack stories from security news and MITRE ATLAS research — how incidents
+          unfolded in the wild. CVE severity, KEV deadlines, and patching stay on BRIEF and FEED.
         </p>
       </header>
 
@@ -215,7 +215,7 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
             ) : campaigns.length === 0 ? (
               <p className="cs-sidebar-empty mono">// No campaign headlines in current feeds</p>
             ) : (
-              <div className="cs-feed">
+              <div className="cs-feed cs-feed-grid">
                 {campaigns.map(card => (
                   <FeedCard key={card.id} card={card} query={debounced} />
                 ))}

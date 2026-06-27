@@ -138,7 +138,6 @@ def test_circuit_opens_after_threshold_and_fails_fast(monkeypatch):
         before = calls["n"]
         with pytest.raises(CircuitOpenError):
             await resilient_get("down", "https://example.com/api")
-        # Fail fast: no network call while the circuit is open.
         assert calls["n"] == before
 
     asyncio.run(run())
@@ -175,7 +174,23 @@ def test_circuit_closes_after_cooldown(monkeypatch):
     asyncio.run(run())
 
 
-def test_transport_errors_retry_then_record_failure(monkeypatch):
+def test_rate_limit_waits_and_retries(monkeypatch):
+    calls = {"n": 0}
+
+    def handler(request):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return httpx.Response(429, headers={"retry-after": "0"})
+        return httpx.Response(200, json={"ok": True})
+
+    _install_transport(monkeypatch, handler)
+
+    async def run():
+        response = await resilient_get("limited", "https://example.com/api", retries=0)
+        assert response.status_code == 200
+
+    asyncio.run(run())
+    assert calls["n"] == 2
     calls = {"n": 0}
 
     def handler(request):

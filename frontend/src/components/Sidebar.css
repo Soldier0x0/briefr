@@ -223,13 +223,47 @@
   background: var(--text);
 }
 
+.spark-bar-zero {
+  opacity: 0.35;
+}
+
 .sparkline-labels {
   display: flex;
   justify-content: space-between;
+  gap: 8px;
   font-family: var(--font-mono);
-  font-size: 0.5625rem;
+  font-size: 0.625rem;
   color: var(--text3);
   letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.sidebar-spark-note {
+  margin-top: 8px;
+  font-size: 0.625rem;
+  color: var(--text3);
+}
+
+.sidebar-spark-error {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-retry-btn {
+  align-self: flex-start;
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--border2);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.sidebar-retry-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 /* ── KEV Deadlines ── */

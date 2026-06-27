@@ -31,7 +31,7 @@ BRIEFR is a self-hosted CVE intelligence dashboard for security analysts, small 
 
 ## What is BRIEFR?
 
-Every morning, analysts check NVD, CISA KEV, VirusTotal, and exploit trackers to answer one question: *what broke overnight and does it affect us?* BRIEFR automates that aggregation into a single self-hosted app. No account, no cookies, no analytics — your SQLite database and API keys stay on your server.
+Every morning, analysts check NVD, CISA KEV, VirusTotal, and exploit trackers to answer one question: *what broke overnight and does it affect us?* BRIEFR automates that aggregation into a single self-hosted app. No account, no cookies, no analytics — your PostgreSQL database and API keys stay on your server.
 
 Three main tabs:
 
@@ -90,7 +90,7 @@ Three main tabs:
 | Uvicorn 0.49.0 | React Router 7.18.0 |
 | httpx 0.28.1 | Vite 8.0.16 |
 | APScheduler 3.11.2 | ExcelJS 4.4.0 |
-| aiosqlite 0.22.1 | jsPDF 4.2.1 + html2canvas |
+| asyncpg 0.30.0 + psycopg 3.2.6 (Alembic) | jsPDF 4.2.1 + html2canvas |
 | Pydantic 2.13.4 | Plain JSX + CSS (no component library) |
 | python-dotenv, PyYAML | |
 
@@ -174,13 +174,15 @@ cd /opt/briefr/backend && /opt/briefr/venv/bin/pytest tests/ -q
 
 ### Backups and restore
 
-BRIEFR backs up the SQLite database and `.env` to **`/var/lib/briefr/backups`** (outside the git tree):
+BRIEFR backs up the PostgreSQL database (`pg_dump`) and `.env` to **`/var/lib/briefr/backups`** (outside the git tree):
 
 | Mechanism | Schedule | Notes |
 |-----------|----------|-------|
-| `briefr-backup.timer` | Every **6 hours** | systemd oneshot; integrity-checked before write |
+| `briefr-pg-backup.timer` | Every **6 hours** | systemd oneshot; `pg_dump` custom format (`briefr.pgdump` in archive) |
 | `briefr-update.sh` | Before each deploy | Labelled `pre-update` in the manifest |
-| Startup | On backend boot | If `briefr.db` fails `PRAGMA integrity_check`, restores the newest valid archive |
+| Startup | On backend boot | If the database is unreachable or corrupt, restores the newest valid archive |
+
+Requires `DATABASE_URL` and host `postgresql-client` (match your Postgres major — **16** in production; see `docs/POSTGRES.md`).
 
 Defaults: keep the **newest 100** archives; rotate `backups/logs/backup.log` at 5 MB (5 gzipped generations).
 
@@ -217,8 +219,8 @@ Recent field changes: `GET /api/changes?since_hours=24` (BRIEF tab **What change
 Check coverage:
 
 ```bash
-sqlite3 backend/briefr.db \
-  "SELECT COUNT(*) AS total, SUM(epss_score IS NOT NULL) AS with_epss FROM cves;"
+psql "$DATABASE_URL" -c \
+  "SELECT COUNT(*) AS total, COUNT(epss_score) AS with_epss FROM cves;"
 ```
 
 ---
@@ -246,7 +248,9 @@ See `backend/.env.example` for the full list. Key variables:
 | `WALLBOARD_TOKEN` | Optional read-only gate for `GET /api/wallboard` + `/wallboard` UI (`X-BRIEFR-Wallboard-Token`) | — |
 | `LOG_FORMAT` | `json` structured logs with `request_id`, or `plain` | `json` |
 | `ALLOWED_ORIGINS` | CORS origins (comma-separated) | `http://localhost:3000` |
-| `DB_PATH` | SQLite file | `briefr.db` |
+| `DATABASE_URL` | PostgreSQL DSN (**required**) | `postgresql://briefr:briefr@127.0.0.1:5432/briefr` |
+| `BRIEFR_REQUIRE_POSTGRES` | Refuse startup without Postgres | `1` |
+| `DATABASE_POOL_SIZE` | asyncpg connection pool size | `10` |
 | `BACKUP_DIR` | Backup archive directory | `/var/lib/briefr/backups` |
 | `BACKUP_RETENTION_COUNT` | Max `briefr-*.tar.gz[.age]` archives kept | `100` |
 | `BACKUP_ENABLED` | Enable backups + startup auto-restore | `1` |
@@ -317,26 +321,17 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 
 ## Documentation
 
-| Document | Contents |
-|----------|----------|
-| [`docs/ONBOARDING.md`](docs/ONBOARDING.md) | **Start here** — reading order, local dev, tests, env vars, troubleshooting |
-| [`CODEBASE_CONTEXT.md`](CODEBASE_CONTEXT.md) | Single dense reference for AI assistants and contributors (architecture, flows, guardrails) |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | **Release index** — V1.2 foundation through V2.0 platform |
-| [`docs/JUPITER_VISION.md`](docs/JUPITER_VISION.md) | Jupiter project vision, beast pillars, optional ClickStack |
-| [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) | Architecture, data flows, design decisions |
-| [`Beta V1.2.md`](Beta%20V1.2.md) | Current release — refactor, auth, resilience |
-| [`Beta V1.3.md`](Beta%20V1.3.md) | Analyst beast — brief, charts, Forge MVP |
-| [`Beta V1.4.md`](Beta%20V1.4.md) | Operator beast — admin pane, webhooks, wallboard |
-| [`Beta V1.5.md`](Beta%20V1.5.md) | Threat model UI, rule proof, KEV backlog |
-| [`Beta V2.0.md`](Beta%20V2.0.md) | Docker, optional Postgres, multi-user readiness |
-| [`docs/OPERATIONS.md`](docs/OPERATIONS.md) | Backup, logs, container seams, deploy compatibility |
-| [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) | Application threat model (security design) |
-| [`API_REFERENCE.md`](API_REFERENCE.md) | Every endpoint with params and response shapes |
-| [`TECHNICAL_INVENTORY.md`](TECHNICAL_INVENTORY.md) | Schema, scheduler jobs, external APIs, feature matrix |
-| [`APPLICATION_EXECUTION_MAP.md`](APPLICATION_EXECUTION_MAP.md) | Startup sequence and request journeys |
-| [`FOLDER_STRUCTURE_GUIDE.md`](FOLDER_STRUCTURE_GUIDE.md) | File-by-file map with deprecation tags |
-| [`docs/diagrams/`](docs/diagrams/) | Mermaid architecture and flow diagrams |
-| [`SYSTEM_DESIGN.pdf`](SYSTEM_DESIGN.pdf) | Printable system design (generated from markdown) |
+**Start here:** [`docs/index.md`](docs/index.md) — four guides, pick one.
+
+| I want to… | Doc |
+|------------|-----|
+| Self-host | [`docs/SELF_HOST.md`](docs/SELF_HOST.md) |
+| Use the product | [`docs/USE.md`](docs/USE.md) |
+| Fix a problem | [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) |
+| Understand internals | [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md) |
+| Develop | [`docs/ONBOARDING.md`](docs/ONBOARDING.md) |
+
+Diagram prompts (maintainers): [`docs/IMAGE_BRIEFS.md`](docs/IMAGE_BRIEFS.md)
 
 Regenerate `SYSTEM_DESIGN.pdf` (requires network for Mermaid CDN on first run):
 
@@ -388,13 +383,13 @@ Writes `TECHNICAL_INVENTORY.xlsx` with auto-sized columns (minimum width 10).
 
 ## Privacy
 
-BRIEFR collects no personal data, uses no cookies, and runs no analytics. Tech stack and timezone preferences are stored in your browser's `localStorage` only. IOC lookups are sent to configured third-party APIs; results are cached in your server's SQLite database (6 hours for IOC, various TTLs for feed cache). See [`frontend/src/pages/PrivacyPage.jsx`](frontend/src/pages/PrivacyPage.jsx) or `/privacy` in the app.
+BRIEFR collects no personal data, uses no cookies, and runs no analytics. Tech stack and timezone preferences are stored in your browser's `localStorage` only. IOC lookups are sent to configured third-party APIs; results are cached in your PostgreSQL database (6 hours for IOC, various TTLs for feed cache). See [`frontend/src/pages/PrivacyPage.jsx`](frontend/src/pages/PrivacyPage.jsx) or `/privacy` in the app.
 
 ---
 
 ## Known limitations (v1.1 beta)
 
-- Single-user SQLite — not designed for concurrent multi-tenant writes
+- Single-node PostgreSQL — not designed for concurrent multi-tenant writes at scale without connection pooling tuning
 - No app-level authentication yet — built-in app login ships before the public self-hosted release; until then `BRIEFR_ADMIN_API_KEY` optionally gates `POST /api/refresh*`
 - Risk score v1.1b is computed server-side via `POST /api/cves/{cve_id}/risk` (`backend/scoring/risk.py`); weights for formula display are fetched at startup via `GET /api/config/risk` (`frontend/src/scoring/riskScore.js`)
 - AI/ML alerts chip requires AI/ML keywords in your saved stack or asset profile `aiSystems`

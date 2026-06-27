@@ -1,22 +1,25 @@
 import { useEffect, useRef } from 'react'
 
 const IDLE_MS = 30 * 60 * 1000
-const HIDDEN_MS = 10 * 60 * 1000
+const WARN_MS = 25 * 60 * 1000
+const HIDDEN_MS = 30 * 60 * 1000
 const TICK_MS = 60 * 1000
 
 /**
- * Clears profile when idle (30m) or tab hidden (10m).
+ * Clears My Stack when idle (30m) or tab hidden (30m).
  * lastInteraction stored in ref only — no re-renders on activity.
  */
-export function useInactivityTimeout({ enabled, onTimeout }) {
+export function useInactivityTimeout({ enabled, onTimeout, onWarning }) {
   const lastInteractionRef = useRef(Date.now())
   const hiddenSinceRef = useRef(null)
+  const warnedRef = useRef(false)
 
   useEffect(() => {
     if (!enabled) return undefined
 
     const touch = () => {
       lastInteractionRef.current = Date.now()
+      warnedRef.current = false
     }
 
     const events = ['mousedown', 'keydown', 'scroll', 'touchstart']
@@ -44,6 +47,11 @@ export function useInactivityTimeout({ enabled, onTimeout }) {
       if (now - lastInteractionRef.current >= IDLE_MS) {
         onTimeout()
         lastInteractionRef.current = now
+        return
+      }
+      if (onWarning && !warnedRef.current && now - lastInteractionRef.current >= WARN_MS) {
+        warnedRef.current = true
+        onWarning()
       }
     }, TICK_MS)
 
@@ -52,5 +60,5 @@ export function useInactivityTimeout({ enabled, onTimeout }) {
       document.removeEventListener('visibilitychange', onVisibility)
       clearInterval(interval)
     }
-  }, [enabled, onTimeout])
+  }, [enabled, onTimeout, onWarning])
 }

@@ -3,23 +3,26 @@ import { fmtIso, fmtDur } from '../formatters.js'
 import { jobLabel, statusLabel, statusHint } from '../catalog.js'
 import { getDisplayPrefs, setDisplayPrefs } from '../../../utils/displayPrefs.js'
 
+const STATUS_CLASS = {
+  ACTIVE: 'active',
+  PAUSED: 'paused',
+  LOCKED: 'locked',
+  DISABLED: 'disabled',
+}
+
 export function JobStatusBadge({ status, mode = 'operator' }) {
-  const map = {
-    ACTIVE: 'badge-ok',
-    PAUSED: 'badge-warn',
-    LOCKED: 'badge-info',
-    DISABLED: 'badge-muted',
-  }
+  const tone = STATUS_CLASS[status] || 'disabled'
   return (
-    <span>
+    <span title={statusHint(status)}>
       {status === 'LOCKED' && <span className="admin-spinner" style={{ marginRight: '0.35rem' }} />}
-      <span className={`badge ${map[status] || 'badge-muted'}`} title={statusHint(status)}>{statusLabel(status, mode)}</span>
+      <span className={`admin-job-status admin-job-status--${tone}`}>
+        {statusLabel(status, mode)}
+      </span>
       {mode === 'analyst' && <span className="status-hint-text">{statusHint(status)}</span>}
     </span>
   )
 }
 
-// Shared scheduler job table (used by Overview and Scheduler pages).
 export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors = true, mode = 'operator' }) {
   const [expanded, setExpanded] = useState({})
   const [showIds, setShowIds] = useState(() => getDisplayPrefs().showTechnicalIds)
@@ -36,17 +39,22 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
     return (
       <table className="admin-table">
         <thead>
-          <tr><th>NAME</th><th>STATUS</th><th>LAST RUN</th><th>NEXT RUN</th></tr>
+          <tr>
+            <th className="admin-table-sticky">Name</th>
+            <th>Status</th>
+            <th>Cadence</th>
+            <th>Last run</th>
+            <th>Next run</th>
+          </tr>
         </thead>
         <tbody>
           {jobs.map(job => (
             <tr key={job.id}>
-              <td style={{ fontSize: '0.8rem' }}>{jobLabel(job.id, 'analyst')}</td>
+              <td className="admin-table-sticky">{jobLabel(job.id, 'analyst')}</td>
               <td><JobStatusBadge status={job.status} mode="analyst" /></td>
-              <td style={{ fontSize: '0.75rem' }}>{fmtIso(job.last_run_utc)}</td>
-              <td style={{ fontSize: '0.75rem' }}>
-                {job.status === 'PAUSED' ? '(paused)' : fmtIso(job.next_run_time)}
-              </td>
+              <td className="admin-text-dim">{job.schedule_cadence || '—'}</td>
+              <td>{fmtIso(job.last_run_utc)}</td>
+              <td>{job.status === 'PAUSED' ? '(paused)' : fmtIso(job.next_run_time)}</td>
             </tr>
           ))}
         </tbody>
@@ -54,37 +62,49 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
     )
   }
 
+  const colCount = (showIds ? 10 : 9)
+
   return (
     <div>
-      <label className="admin-checkbox-label" style={{ fontSize: '0.75rem', marginBottom: '0.4rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+      <label className="admin-checkbox-label" style={{ fontSize: 12, marginBottom: 8, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
         <input type="checkbox" checked={showIds} onChange={e => toggleShowIds(e.target.checked)} />
         Show technical IDs
       </label>
       <table className="admin-table">
         <thead>
           <tr>
-            {showIds && <th>JOB ID</th>}<th>NAME</th><th>STATUS</th><th>LAST RUN</th>
-            <th>DURATION</th><th>RECORDS</th><th>ERROR</th><th>NEXT RUN</th><th>ACTIONS</th>
+            {showIds && <th>Job ID</th>}
+            <th className="admin-table-sticky">Name</th>
+            <th>Status</th>
+            <th>Cadence</th>
+            <th>Last run</th>
+            <th>Duration</th>
+            <th>Records</th>
+            <th>Error</th>
+            <th>Next run</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {jobs.map(job => (
             <Fragment key={job.id}>
-              <tr key={job.id}>
-                {showIds && <td className="mono" style={{ fontSize: '0.7rem' }}>{job.id}</td>}
-                <td style={{ fontSize: '0.8rem' }}>
+              <tr>
+                {showIds && <td className="mono admin-text-dim" style={{ fontSize: 11 }}>{job.id}</td>}
+                <td className="admin-table-sticky">
                   {jobLabel(job.id, 'operator') || job.name}
                   {job.status === 'LOCKED' && job.progress_message && (
                     <div style={{ fontSize: '0.7rem', color: 'var(--fg3)', marginTop: '0.15rem' }}>{job.progress_message}</div>
                   )}
                 </td>
                 <td><JobStatusBadge status={job.status} mode="operator" /></td>
-                <td style={{ fontSize: '0.75rem' }}>{fmtIso(job.last_run_utc)}</td>
+                <td className="admin-text-dim">{job.schedule_cadence || '—'}</td>
+                <td>{fmtIso(job.last_run_utc)}</td>
                 <td>{fmtDur(job.last_run_duration_seconds)}</td>
                 <td>{job.last_run_records_upserted ?? '—'}</td>
                 <td>
                   {job.last_run_had_error === true ? (
                     <button
+                      type="button"
                       className="badge badge-error"
                       style={{ cursor: expandErrors ? 'pointer' : 'default', background: 'none', border: 'none' }}
                       onClick={() => expandErrors && setExpanded(e => ({ ...e, [job.id]: !e[job.id] }))}
@@ -93,23 +113,23 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                     </button>
                   ) : job.last_run_had_error === false ? '' : '—'}
                 </td>
-                <td style={{ fontSize: '0.75rem' }} title={job.status === 'PAUSED' ? 'Job is paused — will not run until resumed' : undefined}>
+                <td title={job.status === 'PAUSED' ? 'Job is paused — will not run until resumed' : undefined}>
                   {job.status === 'PAUSED' ? '(paused)' : fmtIso(job.next_run_time)}
                 </td>
                 <td>
-                  <div style={{ display: 'flex', gap: '0.3rem' }}>
+                  <div style={{ display: 'flex', gap: 4 }}>
                     {onRunNow && (
                       <button
-                        className="admin-btn admin-btn-ghost"
-                        style={{ fontSize: '0.8125rem', padding: '0.35rem 0.85rem' }}
+                        type="button"
+                        className="admin-btn admin-btn-ghost admin-btn--sm"
                         onClick={() => onRunNow(job.id)}
                         disabled={job.status === 'LOCKED'}
                       >{job.status === 'LOCKED' ? <><span className="admin-spinner" /> Running…</> : 'Run'}</button>
                     )}
                     {onPauseResume && (
                       <button
-                        className={`admin-btn ${job.status === 'PAUSED' ? 'admin-btn-primary' : 'admin-btn-warn'}`}
-                        style={{ fontSize: '0.8125rem', padding: '0.35rem 0.85rem' }}
+                        type="button"
+                        className={`admin-btn admin-btn--sm ${job.status === 'PAUSED' ? 'admin-btn-primary' : 'admin-btn-warn'}`}
                         onClick={() => onPauseResume(job)}
                       >
                         {job.status === 'PAUSED' ? 'Resume' : 'Pause'}
@@ -119,15 +139,16 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                 </td>
               </tr>
               {expandErrors && expanded[job.id] && (
-                <tr key={`${job.id}-err`}>
-                  <td colSpan={showIds ? 9 : 8} style={{ background: 'var(--bg3)', padding: '0.5rem 0.75rem' }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--red)', wordBreak: 'break-all' }}>
+                <tr>
+                  <td colSpan={colCount} style={{ background: 'var(--bg3)', padding: '10px 12px' }}>
+                    <div className="mono" style={{ fontSize: 12, color: 'var(--red)', wordBreak: 'break-all' }}>
                       {job.last_error_message || 'An unknown error occurred during the last run.'}
                     </div>
                     {onRunNow && (
                       <button
-                        className="admin-btn admin-btn-ghost"
-                        style={{ marginTop: '0.4rem', fontSize: '0.75rem' }}
+                        type="button"
+                        className="admin-btn admin-btn-ghost admin-btn--sm"
+                        style={{ marginTop: 8 }}
                         onClick={() => onRunNow(job.id)}
                       >
                         Retry now

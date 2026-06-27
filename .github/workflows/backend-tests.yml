@@ -27,6 +27,41 @@ jobs:
       - name: Run pytest
         run: cd backend && pytest tests/ -q
 
+  test-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: briefr
+          POSTGRES_PASSWORD: briefr
+          POSTGRES_DB: briefr
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://briefr:briefr@127.0.0.1:5432/briefr
+      BRIEFR_REQUIRE_POSTGRES: "1"
+      JWT_SECRET: ci-test-jwt-secret-not-for-production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements-dev.txt
+
+      - name: Run Postgres pool integration tests
+        run: cd backend && pytest tests/test_postgres_pool.py -q
+
   dependency-audit:
     runs-on: ubuntu-latest
     steps:

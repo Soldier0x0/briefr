@@ -88,10 +88,11 @@ async def find_actor_sector_correlation(
         placeholders = ",".join("?" * len(technique_ids))
         group_rows = await db.execute_fetchall(
             f"""
-            SELECT DISTINCT mg.group_id, mg.name, mg.sectors
+            SELECT mg.group_id, mg.name, mg.sectors
             FROM group_technique_map gtm
             JOIN mitre_groups mg ON mg.group_id = gtm.group_id
             WHERE gtm.technique_id IN ({placeholders})
+            GROUP BY mg.group_id
             ORDER BY mg.name
             LIMIT 10
             """,
@@ -180,14 +181,18 @@ async def find_temporal_anomalies(db) -> list[dict]:
     Anomaly score = current_week / average_weekly; flag if ≥ 3.0.
     Returns list of {vendor, current_week_count, average_weekly_count, anomaly_score}.
     """
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%d")
     rows = await db.execute_fetchall(
         """
         SELECT cve_id, affected_products, published
         FROM cves
-        WHERE datetime(published) >= datetime('now', '-90 days')
+        WHERE published IS NOT NULL
+          AND published != ''
+          AND published >= ?
           AND affected_products IS NOT NULL
           AND affected_products != '[]'
         """,
+        (cutoff,),
     )
 
     now_utc = datetime.now(timezone.utc)
@@ -403,6 +408,16 @@ async def get_correlation_for_cve(
         }
 
 
+async def _recover_db_transaction(db) -> None:
+    """Postgres aborts the whole transaction after any failed statement."""
+    rollback = getattr(db, "rollback", None)
+    if rollback is not None:
+        try:
+            await rollback()
+        except Exception as exc:
+            logger.warning("Failed to rollback transaction during recovery: %s", exc)
+
+
 # ── Nightly batch job ─────────────────────────────────────
 
 async def run_nightly_correlation(db, progress_cb=None) -> dict:
@@ -434,6 +449,7 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
         logger.info("Temporal anomalies: %d vendors flagged", len(temporal))
     except Exception as exc:
         logger.error("Level 3 temporal correlation failed: %s", exc)
+        await _recover_db_transaction(db)
 
     stats["pruned_members"] = await prune_invalid_campaign_members(db)
 
@@ -452,6 +468,7 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
             stats["cves_processed"] += 1
         except Exception as exc:
             logger.warning("Nightly correlation skip %s: %s", cve_id, exc)
+            await _recover_db_transaction(db)
 
     if progress_cb:
         progress_cb("Building threat actor campaigns from OTX pulse clusters…")
@@ -461,6 +478,7 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
         stats["campaign_members"] = campaign_stats.get("members", 0)
     except Exception as exc:
         logger.error("Campaign build failed: %s", exc)
+        await _recover_db_transaction(db)
 
     await delete_feed_cache_prefix(db, "correlation:v2:")
     await delete_feed_cache_prefix(db, "correlation:v1:")
@@ -480,14 +498,14 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
 
 
 async def prefetch_pulse_iocs_for_nightly(
-    db, api_key: str, max_pulses: int | None = None
+    api_key: str, max_pulses: int | None = None
 ) -> int:
     """
     Pre-fetch IOC data for pulses not yet in otx_pulse_iocs.
     Called by the nightly OTX + correlation job so Level 1 has IP data.
     """
+    from database import get_db, store_otx_pulse_iocs
     from feeds.otx import fetch_pulse_iocs
-    from database import store_otx_pulse_iocs
 
     if not api_key:
         return 0
@@ -495,33 +513,45 @@ async def prefetch_pulse_iocs_for_nightly(
     if max_pulses is None:
         max_pulses = get_otx_ioc_sync_max_per_run()
 
-    missing_rows = await db.execute_fetchall(
-        """
-        SELECT DISTINCT ocp.pulse_id,
-               CASE WHEN EXISTS (
+    db = await get_db()
+    try:
+        missing_rows = await db.execute_fetchall(
+            """
+        SELECT ocp.pulse_id,
+               MAX(ocp.fetched_at) AS max_fetched_at,
+               MIN(CASE WHEN EXISTS (
                    SELECT 1 FROM otx_cve_pulses p2
                    JOIN cves c ON c.cve_id = p2.cve_id
                    WHERE p2.pulse_id = ocp.pulse_id
                      AND (COALESCE(c.is_kev, 0) = 1 OR COALESCE(c.has_poc, 0) = 1)
-               ) THEN 0 ELSE 1 END AS priority_rank
+               ) THEN 0 ELSE 1 END) AS priority_rank
         FROM otx_cve_pulses ocp
         WHERE NOT EXISTS (
             SELECT 1 FROM otx_pulse_iocs opi WHERE opi.pulse_id = ocp.pulse_id
         )
-        ORDER BY priority_rank ASC, ocp.fetched_at DESC
+        GROUP BY ocp.pulse_id
+        ORDER BY priority_rank ASC, max_fetched_at DESC
         LIMIT ?
         """,
-        (max_pulses,),
-    )
+            (max_pulses,),
+        )
+    finally:
+        await db.close()
 
     fetched = 0
     for row in missing_rows:
         pulse_id = row["pulse_id"]
         try:
             iocs = await fetch_pulse_iocs(pulse_id, api_key)
-            if iocs:
+            if not iocs:
+                continue
+            db = await get_db()
+            try:
                 await store_otx_pulse_iocs(db, pulse_id, iocs)
+                await db.commit()
                 fetched += 1
+            finally:
+                await db.close()
         except Exception as exc:
             logger.warning("IOC prefetch failed for pulse %s: %s", pulse_id, exc)
     return fetched

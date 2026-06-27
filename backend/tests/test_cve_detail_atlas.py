@@ -13,6 +13,7 @@ from database import (
     get_atlas_case_studies_for_cve,
     get_atlas_techniques_for_cve,
     init_db,
+    replace_atlas_techniques,
 )
 
 
@@ -221,3 +222,64 @@ def test_investigation_summary_endpoint_returns_200(tmp_path, monkeypatch):
     body = res.json()
     assert body["source"] == "template"
     assert "CVE-2024-0001" in body["executive_summary"]
+
+
+def test_replace_atlas_techniques_drops_stale_fk_mappings(tmp_path, monkeypatch):
+    async def run():
+        import database
+
+        db_path = str(tmp_path / "atlas-fk.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        await init_db()
+        db = await database.get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO atlas_techniques (
+                    technique_id, name, description, tactic, tactic_id, url
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "AML.T0016",
+                    "Old technique",
+                    "Stale row",
+                    "Reconnaissance",
+                    "AML.TA0001",
+                    "https://atlas.mitre.org/techniques/AML.T0016",
+                ),
+            )
+            await db.execute(
+                "INSERT INTO cve_atlas_map (cve_id, technique_id) VALUES (?, ?)",
+                ("CVE-2024-ATLAS", "AML.T0016"),
+            )
+            await db.commit()
+
+            await replace_atlas_techniques(
+                db,
+                [
+                    {
+                        "technique_id": "AML.T0040",
+                        "name": "AI Model Inference API Access",
+                        "description": "Access to inference APIs.",
+                        "tactic": "ML Attack Staging",
+                        "tactic_id": "AML.TA0002",
+                        "url": "https://atlas.mitre.org/techniques/AML.T0040",
+                    }
+                ],
+            )
+            await db.commit()
+
+            rows = await db.execute_fetchall(
+                "SELECT technique_id FROM atlas_techniques ORDER BY technique_id"
+            )
+            assert [r["technique_id"] for r in rows] == ["AML.T0040"]
+            stale = await db.execute_fetchall(
+                "SELECT 1 FROM cve_atlas_map WHERE technique_id = ?",
+                ("AML.T0016",),
+            )
+            assert stale == []
+        finally:
+            await db.close()
+
+    asyncio.run(run())

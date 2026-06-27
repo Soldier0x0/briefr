@@ -159,7 +159,7 @@ async def revoke_all_sessions_for_user(db: Any, user_id: int) -> None:
 
 async def list_active_sessions(db: Any, user_id: int) -> list[dict]:
     rows = await db.execute_fetchall(
-        """SELECT id, created_at, last_used_at, expires_at, user_agent, ip, remember_me
+        """SELECT id, refresh_token_hash, created_at, last_used_at, expires_at, user_agent, ip, remember_me
            FROM sessions
            WHERE user_id = ? AND revoked_at IS NULL
            ORDER BY last_used_at DESC""",

@@ -1,4 +1,4 @@
-import { Component, useEffect, useMemo, useRef, useState } from 'react'
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   fetchCVE,
   fetchCVECorrelation,
@@ -7,6 +7,7 @@ import {
   fetchCVEMomentum,
   fetchCVERelated,
   fetchCVERisk,
+  fetchCVEInvestigationScore,
   fetchCVESentences,
   suppressCVECorrelation,
 } from '../api.js'
@@ -208,7 +209,9 @@ function RiskScoreBar({ score }) {
   )
 }
 
-function RiskScoreBreakdown({ cve, riskScore, riskLoading, onOpenProfile, momentumData }) {
+function RiskScoreBreakdown({ cve, riskScore, riskLoading, investigationScore, onOpenProfile, momentumData }) {
+  const [scoreCopied, setScoreCopied] = useState(false)
+
   if (riskLoading) {
     return (
       <section className="drawer-section drawer-risk-section" aria-labelledby="risk-score-heading">
@@ -227,6 +230,19 @@ function RiskScoreBreakdown({ cve, riskScore, riskLoading, onOpenProfile, moment
   const totalColor = riskScoreColor(total)
   const summary = buildRiskHeroSummary(cve, riskScore)
 
+  async function copyRiskScore() {
+    const text = [
+      `BRIEFR Risk Score — ${cve.cve_id}`,
+      `Score: ${total.toFixed(1)} / 100`,
+      summary || '',
+    ].filter(Boolean).join('\n')
+    const ok = await copyToClipboard(text)
+    if (ok) {
+      setScoreCopied(true)
+      setTimeout(() => setScoreCopied(false), 1500)
+    }
+  }
+
   // Fixed display order matching v1.1b weights
   const ORDERED_KEYS = ['asset', 'kev', 'epss', 'exploit', 'cvss', 'momentum']
   const breakdownRows = ORDERED_KEYS
@@ -243,9 +259,19 @@ function RiskScoreBreakdown({ cve, riskScore, riskLoading, onOpenProfile, moment
 
   return (
     <section className="drawer-section drawer-risk-section" aria-labelledby="risk-score-heading">
-      <h3 id="risk-score-heading" className="drawer-risk-section-label mono">
-        // BRIEFR RISK SCORE
-      </h3>
+      <div className="drawer-risk-heading-row">
+        <h3 id="risk-score-heading" className="drawer-risk-section-label mono">
+          // BRIEFR RISK SCORE
+        </h3>
+        <button
+          type="button"
+          className="drawer-risk-copy-btn mono"
+          onClick={copyRiskScore}
+          aria-label="Copy risk score summary"
+        >
+          {scoreCopied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
 
       <div className="drawer-risk-hero">
         <div
@@ -264,6 +290,11 @@ function RiskScoreBreakdown({ cve, riskScore, riskLoading, onOpenProfile, moment
         </div>
         {summary && (
           <p className="drawer-risk-summary mono">{summary}</p>
+        )}
+        {investigationScore != null && investigationScore > 0 && (
+          <p className="drawer-risk-summary mono" title="Unified Investigation Score (risk + correlation + OTX)">
+            Investigation score: {investigationScore.toFixed(1)}
+          </p>
         )}
       </div>
 
@@ -591,13 +622,12 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
                   confidence={item.anomaly_score >= 5 ? 'high' : item.anomaly_score >= 3 ? 'medium' : 'low'}
                 />
                 <p className="corr-finding-text">
-                  <strong className="corr-actor-name" style={{ textTransform: 'capitalize' }}>
-                    {item.vendor}
-                  </strong>
-                  {' '}{item.current_week_count} CVE{item.current_week_count !== 1 ? 's' : ''} published
-                  this week — {(item.anomaly_score ?? 0).toFixed(1)}× the weekly average
-                  ({(item.average_weekly_count ?? 0).toFixed(1)} normally).
-                  Unusual volume may indicate coordinated research disclosure or active adversary focus.
+                  <strong className="corr-actor-name">{item.vendor ? item.vendor.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'This product'}</strong>
+                  {' '}had an unusual burst of CVEs this week:{' '}
+                  <strong>{item.current_week_count}</strong> published
+                  ({(item.anomaly_score ?? 0).toFixed(1)}× the usual weekly average of{' '}
+                  {(item.average_weekly_count ?? 0).toFixed(1)}).
+                  {' '}This often follows coordinated disclosure or increased researcher focus — not always active exploitation.
                 </p>
               </div>
             </div>
@@ -608,10 +638,10 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
   )
 }
 
-function TabOverview({ cve, riskScore, riskLoading, onOpenProfile, momentumData, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
+function TabOverview({ cve, riskScore, riskLoading, investigationScore, onOpenProfile, momentumData, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
   return (
     <>
-      <RiskScoreBreakdown cve={cve} riskScore={riskScore} riskLoading={riskLoading} onOpenProfile={onOpenProfile} momentumData={momentumData} />
+      <RiskScoreBreakdown cve={cve} riskScore={riskScore} riskLoading={riskLoading} investigationScore={investigationScore} onOpenProfile={onOpenProfile} momentumData={momentumData} />
 
       <EpssTrendSection
         cve={cve}
@@ -1125,7 +1155,7 @@ function SiemBlock({ platform, label, data }) {
   )
 }
 
-function TabDetect({ detection, loading }) {
+function TabDetect({ detection, loading, error, onRetry }) {
   if (loading) {
     return (
       <section className="drawer-section">
@@ -1134,12 +1164,23 @@ function TabDetect({ detection, loading }) {
     )
   }
 
+  if (error) {
+    return (
+      <section className="drawer-section">
+        <p className="drawer-intel-empty mono drawer-intel-error">// {error}</p>
+        {onRetry && (
+          <button type="button" className="drawer-retry-btn mono" onClick={onRetry}>
+            Retry loading rules
+          </button>
+        )}
+      </section>
+    )
+  }
+
   if (!detection) {
     return (
       <section className="drawer-section">
-        <p className="drawer-intel-empty mono">
-          // Open this tab to load detection rules and SIEM queries for this CVE
-        </p>
+        <p className="drawer-intel-empty mono">// No detection data for this CVE</p>
       </section>
     )
   }
@@ -1323,10 +1364,12 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
   const [correlationLoading, setCorrelationLoading] = useState(false)
   const [detection, setDetection] = useState(null)
   const [detectionLoading, setDetectionLoading] = useState(false)
-  const detectionFetchedRef = useRef(false)
+  const [detectionError, setDetectionError] = useState(null)
+  const activeFetchIdRef = useRef(0)
   const [momentumData, setMomentumData] = useState(null)
   const [riskScore, setRiskScore] = useState(null)
   const [riskLoading, setRiskLoading] = useState(false)
+  const [investigationScore, setInvestigationScore] = useState(null)
   const [backStack, setBackStack] = useState([])
   const [pdfModalOpen, setPdfModalOpen] = useState(false)
   const [pdfBusy, setPdfBusy] = useState(false)
@@ -1347,6 +1390,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
     if (!cve?.cve_id) {
       setRiskScore(null)
       setRiskLoading(false)
+      setInvestigationScore(null)
       return
     }
     let cancelled = false
@@ -1375,6 +1419,13 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
       })
       .finally(() => {
         if (!cancelled) setRiskLoading(false)
+      })
+    fetchCVEInvestigationScore(cve.cve_id)
+      .then(data => {
+        if (!cancelled) setInvestigationScore(data?.investigation?.total ?? null)
+      })
+      .catch(() => {
+        if (!cancelled) setInvestigationScore(null)
       })
     return () => {
       cancelled = true
@@ -1470,11 +1521,42 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
 
   // Reset detection + momentum when CVE changes
   useEffect(() => {
+    activeFetchIdRef.current += 1
     setDetection(null)
     setDetectionLoading(false)
-    detectionFetchedRef.current = false
+    setDetectionError(null)
     setMomentumData(null)
   }, [cve?.cve_id])
+
+  const loadDetection = useCallback(async () => {
+    if (!cve?.cve_id) return
+    const fetchId = ++activeFetchIdRef.current
+    setDetectionLoading(true)
+    setDetectionError(null)
+    const product = cve.affected_products?.[0]?.split(':')?.[1] || ''
+    try {
+      const data = await fetchCVEDetection(cve.cve_id, product)
+      if (fetchId === activeFetchIdRef.current) {
+        setDetection(data)
+      }
+    } catch {
+      if (fetchId === activeFetchIdRef.current) {
+        setDetection(null)
+        setDetectionError('Could not load detection rules — try again or check network')
+      }
+    } finally {
+      if (fetchId === activeFetchIdRef.current) {
+        setDetectionLoading(false)
+      }
+    }
+  }, [cve?.cve_id, cve?.affected_products])
+
+  // Detection: fetch when Detect tab is active
+  useEffect(() => {
+    if (activeTab !== 'detect' || !cve?.cve_id) return
+    if (detection || detectionLoading || detectionError) return
+    loadDetection()
+  }, [activeTab, cve?.cve_id, detection, detectionLoading, detectionError, loadDetection])
 
   // Momentum: fetch on drawer open (lazy, not on card render)
   useEffect(() => {
@@ -1493,20 +1575,6 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
       .catch(() => { /* non-critical — momentum is optional */ })
     return () => { cancelled = true }
   }, [cve?.cve_id])
-
-  // Detection: lazy-fetch when Detect tab first activated
-  useEffect(() => {
-    if (activeTab !== 'detect' || !cve?.cve_id || detectionFetchedRef.current) return
-    detectionFetchedRef.current = true
-    let cancelled = false
-    setDetectionLoading(true)
-    const product = cve.affected_products?.[0]?.split(':')?.[1] || ''
-    fetchCVEDetection(cve.cve_id, product)
-      .then(data => { if (!cancelled) setDetection(data) })
-      .catch(() => { if (!cancelled) setDetection(null) })
-      .finally(() => { if (!cancelled) setDetectionLoading(false) })
-    return () => { cancelled = true }
-  }, [activeTab, cve?.cve_id])
 
   async function handleDismissCorrelation(body) {
     if (!cve?.cve_id) return
@@ -1631,6 +1699,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
     function onKey(e) {
       const tag = document.activeElement?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (e.ctrlKey || e.metaKey || e.altKey) return
       if (e.key === 'c' || e.key === 'C') {
         e.preventDefault()
         handleCopyMarkdown()
@@ -1815,6 +1884,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
               cve={cve}
               riskScore={riskScore}
               riskLoading={riskLoading}
+              investigationScore={investigationScore}
               onOpenProfile={assetCtx?.openProfileFlow}
               momentumData={momentumData}
               products={products}
@@ -1857,7 +1927,15 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
             </DrawerTabErrorBoundary>
           )}
           {activeTab === 'detect' && (
-            <TabDetect detection={detection} loading={detectionLoading} />
+            <TabDetect
+              detection={detection}
+              loading={detectionLoading}
+              error={detectionError}
+              onRetry={() => {
+                setDetectionError(null)
+                loadDetection()
+              }}
+            />
           )}
           {activeTab === 'related' && (
             <TabRelated

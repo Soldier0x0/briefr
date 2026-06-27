@@ -13,6 +13,8 @@ const SOURCES = [
   'VirusTotal',
   'AbuseIPDB',
   'GreyNoise',
+  'MalwareBazaar',
+  'URLhaus',
   'abuse.ch',
 ]
 
@@ -51,7 +53,8 @@ export default function AboutModal({ onClose }) {
         <p className="about-description">
           BRIEFR aggregates vulnerability data from public government and
           open-source sources on a rolling schedule (NVD hourly, KEV every
-          15 minutes, EPSS every 6 hours). No account required.
+          15 minutes, EPSS every 6 hours). Runs on PostgreSQL (production: version 16+).
+          No account required.
           No cookies. No tracking.
         </p>
 

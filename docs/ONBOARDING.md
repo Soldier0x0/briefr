@@ -2,28 +2,24 @@
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
-**Purpose:** Single entry point for developers who want to understand BRIEFR, run it locally, and navigate the codebase. Use this before diving into individual reference documents.
+**Purpose:** Entry point for developers changing the code. If you only want to **use** or **self-host** BRIEFR, start at [`index.md`](index.md) instead.
 
 ---
 
 ## 1. Recommended reading order
 
-Read in this sequence the first time through. Skim what you already know; stop and run commands where indicated.
-
 | Step | Document | Why |
 |------|----------|-----|
-| 1 | [`README.md`](../README.md) | Product scope, features, quick start |
-| 2 | [`SYSTEM_DESIGN.md`](../SYSTEM_DESIGN.md) | Architecture, data flows, trade-offs |
-| 3 | [`docs/diagrams/`](../docs/diagrams/) | Visual architecture + sequence diagrams (open `.mermaid` in GitHub or VS Code) |
-| 4 | [`APPLICATION_EXECUTION_MAP.md`](../APPLICATION_EXECUTION_MAP.md) | Startup order and per-tab request journeys |
-| 5 | [`API_REFERENCE.md`](../API_REFERENCE.md) | Endpoint params and response shapes |
-| 6 | [`FOLDER_STRUCTURE_GUIDE.md`](../FOLDER_STRUCTURE_GUIDE.md) | File-by-file map — use when you need the exact module to edit |
-| 6b | [`CODEBASE_CONTEXT.md`](../CODEBASE_CONTEXT.md) | Consolidated codebase reference (WHAT/WHERE/WHY/HOW/WHEN + AI guardrails) |
-| 7 | [`TECHNICAL_INVENTORY.md`](../TECHNICAL_INVENTORY.md) | Schema (26 tables), scheduler jobs, feature matrix |
-| 8 | [`docs/ROADMAP.md`](ROADMAP.md) | Release index (V1.2–V2.0) and product positioning |
-| 9 | [`Beta V1.2.md`](../Beta%20V1.2.md) | Current release — foundation and hardening |
-| 10 | [`docs/JUPITER_VISION.md`](JUPITER_VISION.md) | Jupiter ecosystem and beast identity (optional sidecars) |
-| 11 | Source + tests | `backend/tests/` and the files named in the execution map |
+| 1 | [`index.md`](index.md) + [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) | Quick product context (5 min) |
+| 2 | [`README.md`](../README.md) | Features and local quick start |
+| 3 | [`SYSTEM_DESIGN.md`](../SYSTEM_DESIGN.md) | Architecture and trade-offs |
+| 4 | [`API_REFERENCE.md`](../API_REFERENCE.md) | Endpoints when you touch the API |
+| 5 | [`CODEBASE_CONTEXT.md`](../CODEBASE_CONTEXT.md) | Module map + AI guardrails |
+| 6 | Source + tests | `backend/tests/` and files named in [`APPLICATION_EXECUTION_MAP.md`](../APPLICATION_EXECUTION_MAP.md) |
+
+**Deep reference when needed:** [`FOLDER_STRUCTURE_GUIDE.md`](../FOLDER_STRUCTURE_GUIDE.md), [`TECHNICAL_INVENTORY.md`](../TECHNICAL_INVENTORY.md), [`OPERATIONS.md`](OPERATIONS.md), [`PRODUCT_STATUS.md`](PRODUCT_STATUS.md).
+
+**Historical planning:** [`archive/`](archive/) (beta specs, agent notes — not required reading).
 
 **Printable architecture:** [`SYSTEM_DESIGN.pdf`](../SYSTEM_DESIGN.pdf) — regenerate with `node scripts/generate_system_design_pdf.mjs` after editing `SYSTEM_DESIGN.md`.
 
@@ -50,7 +46,7 @@ cp .env.example .env    # add keys as needed
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-- SQLite database: `backend/briefr.db` (or `DB_PATH` from `.env`)
+- PostgreSQL via `DATABASE_URL` in `backend/.env` (local: `docker compose -f deploy/docker-compose.postgres.yml up -d`)
 - Interactive API docs: http://localhost:8000/api/docs
 - Health check: http://localhost:8000/api/health
 
@@ -145,7 +141,9 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `DB_PATH` | `briefr.db` | SQLite file path |
+| `DATABASE_URL` | — | **Required.** PostgreSQL DSN (`postgresql://user:pass@host:5432/dbname`) |
+| `BRIEFR_REQUIRE_POSTGRES` | `1` | Refuse startup without a Postgres connection |
+| `DATABASE_POOL_SIZE` | `10` | asyncpg pool size |
 | `BACKUP_DIR` | `/var/lib/briefr/backups` | Integrity-checked archive directory |
 | `BACKUP_RETENTION_COUNT` | `100` | Max archives kept (~25 days at 6h intervals) |
 | `BACKUP_ENABLED` | `1` | Set `0` to disable backups and startup auto-restore |
@@ -243,20 +241,22 @@ BRIEFR targets a single Debian server with **systemd + nginx**. Install path: `/
 |--------|---------|
 | [`deploy/setup.sh`](../deploy/setup.sh) | Initial install: Python, clone repo, venv, then production deploy |
 | [`deploy/briefr-update.sh`](../deploy/briefr-update.sh) | Pull, build frontend, restart backend + nginx |
-| [`deploy/briefr-backup.sh`](../deploy/briefr-backup.sh) | Manual or scheduled integrity-checked backup |
+| [`deploy/briefr-backup.sh`](../deploy/briefr-backup.sh) | Manual or scheduled PostgreSQL backup (`pg_dump`) |
+| [`deploy/briefr-pg-backup.sh`](../deploy/briefr-pg-backup.sh) | systemd entry point (`briefr-pg-backup.timer`) |
 | [`deploy/briefr-restore.sh`](../deploy/briefr-restore.sh) | List or restore archives |
 | [`deploy/check-backend.sh`](../deploy/check-backend.sh) | Health probe for monitoring |
 | [`deploy/smoke-intel.sh`](../deploy/smoke-intel.sh) | Post-deploy smoke checks |
 
-**systemd units:** `briefr-backend.service`, `briefr-backup.timer` (every 6h). Scheduled ingest (NVD, KEV, EPSS, MITRE+ATLAS, exploit sources, backup dead-man) runs inside the backend — no separate refresh scripts needed.
+**systemd units:** `briefr-backend.service`, `briefr-pg-backup.timer` (every 6h). Scheduled ingest (NVD, KEV, EPSS, MITRE+ATLAS, exploit sources, backup dead-man) runs inside the backend — no separate refresh scripts needed.
 
 **Production notes:**
+- Set `DATABASE_URL` and `BRIEFR_REQUIRE_POSTGRES=1` in `backend/.env` (see `docs/POSTGRES.md`).
 - Set `ALLOWED_ORIGINS` to your public URL (not `:5173`).
 - nginx serves `frontend/dist`; Vite dev server is not used.
 - Backups land in `/var/lib/briefr/backups` outside the git tree.
-- On startup, corrupt `briefr.db` triggers auto-restore from the newest valid archive.
+- Install `postgresql-client-16` (or matching major) on the host for `pg_dump` / `pg_restore`.
 
-See [README.md § Backups and restore](../README.md) for restore commands.
+See [README.md § Backups and restore](../README.md) and [`docs/POSTGRES.md`](POSTGRES.md) for restore commands.
 
 ---
 
@@ -285,7 +285,7 @@ See [README.md § Backups and restore](../README.md) for restore commands.
 
 | Symptom | Likely cause | What to do |
 |---------|--------------|------------|
-| Incidents tab shows `database is locked` | Parallel SQLite connections on RSS + ATLAS load | Ensure `case_study_feed.py` uses one connection; check `get_db()` sets `busy_timeout=30000` and `timeout=30` |
+| Incidents tab slow or errors on feed load | Postgres connection pool exhausted or DB unreachable | Check `GET /api/health`; verify Docker Postgres at `/opt/infra/postgres`; review `journalctl -u briefr-backend` |
 | Empty CVE feed on first run | Ingest still running or no network | Wait for bootstrap ingest; check `GET /api/health` `cve_count` |
 | IOC lookup returns empty VT/AbuseIPDB | Missing API keys | Add keys to `.env`; restart backend |
 | CORS errors in browser | Origin not allowed | Add your URL to `ALLOWED_ORIGINS` |
@@ -306,8 +306,8 @@ curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool
 # Combined incidents feed (RSS + ATLAS)
 curl -s 'http://127.0.0.1:8000/api/case-studies/feed?atlas_limit=10' | python3 -m json.tool
 
-# SQLite row counts
-sqlite3 backend/briefr.db "SELECT COUNT(*) FROM cves;"
+# PostgreSQL row counts (DATABASE_URL in backend/.env)
+psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM cves;"
 
 # Manual ingest chain
 curl -X POST http://127.0.0.1:8000/api/refresh

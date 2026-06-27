@@ -1,7 +1,8 @@
 """Admin dashboard API endpoints.
 
-All routes require the X-BRIEFR-Admin-Key header (when BRIEFR_ADMIN_API_KEY is
-configured) and share the same token-bucket rate limit as the refresh routes.
+All routes require an authenticated admin session (or legacy admin key during
+dual-auth soak). Read-only GETs use a generous token bucket; POSTs share the
+refresh ingest limit.
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
@@ -17,9 +18,12 @@ import shutil
 import tarfile
 import time
 import urllib.parse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
 import aiosqlite
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, Response, UploadFile, File
@@ -47,14 +51,14 @@ from config_schema import (
 )
 from dependencies import audit, require_admin, trigger_graceful_restart
 from destructive_actions import list_actions, require_confirm
-from rate_limit import get_bucket_stats, get_top_consumers, rate_limit_refresh
-from resilient_client import get_feed_health, reset_circuit
+from rate_limit import get_bucket_stats, get_top_consumers, rate_limit_admin
+from resilient_client import get_api_queue_status, get_feed_health, reset_circuit
 from settings import settings
 from structured_logging import LOG_CATEGORIES, get_log_buffer, get_known_loggers
 
 router = APIRouter(
     prefix="/api/admin",
-    dependencies=[Depends(require_admin), Depends(rate_limit_refresh)],
+    dependencies=[Depends(require_admin), Depends(rate_limit_admin)],
 )
 
 _BUILD_INFO_PATH = Path(__file__).resolve().parents[1] / ".build-info.json"
@@ -72,12 +76,14 @@ _JOB_LOCK_MAP: dict[str, str] = {
     "weekly_mitre_refresh": "_mitre_refresh_lock",
     "atlas_version_check": "_atlas_version_check_lock",
     "otx_nightly_correlation": "_otx_lock",
+    "otx_continuous_sync": "_otx_continuous_lock",
     "nightly_correlation": "_correlation_lock",
     "vulnrichment_snapshot_sync": "_vulnrichment_lock",
     "cvelistv5_incremental_sync": "_cvelistv5_lock",
     "embeddings_backfill": "_embeddings_lock",
     "llm_product_extraction": "_llm_extraction_lock",
     "exploit_sources_sync": "_exploit_sources_lock",
+    "scheduled_backup": "_scheduled_backup_lock",
 }
 
 # WRITABLE_CONFIG_KEYS / INTEGER_KEYS / RESTART_REQUIRED_KEYS now come from
@@ -199,6 +205,46 @@ async def _get_job_last_run(db: aiosqlite.Connection, job_id: str) -> list[dict[
         return []
 
 
+def _schedule_cadence_for_job(job: Any) -> str:
+    """Human-readable cadence from the APScheduler trigger (for admin UI)."""
+    trigger = job.trigger
+    tz = getattr(trigger, "timezone", None)
+    tz_label = str(tz) if tz is not None else "UTC"
+    if isinstance(trigger, IntervalTrigger):
+        total = int(trigger.interval.total_seconds())
+        if total >= 86400 and total % 86400 == 0:
+            days = total // 86400
+            unit = f"{days} day{'s' if days != 1 else ''}"
+        elif total >= 3600 and total % 3600 == 0:
+            hours = total // 3600
+            unit = f"{hours} hour{'s' if hours != 1 else ''}"
+        elif total >= 60 and total % 60 == 0:
+            minutes = total // 60
+            unit = f"{minutes} minute{'s' if minutes != 1 else ''}"
+        else:
+            unit = f"{int(total)} seconds"
+        return f"Every {unit} ({tz_label})"
+    if isinstance(trigger, CronTrigger):
+        fields = getattr(trigger, "fields", None)
+        if fields:
+            dow = getattr(fields, "day_of_week", None)
+            hour = getattr(fields, "hour", None)
+            minute = getattr(fields, "minute", None)
+            if dow is not None and str(dow) not in ("*", "None"):
+                hh = hour.expressions[0].values[0] if hour and hour.expressions else 0
+                mm = minute.expressions[0].values[0] if minute and minute.expressions else 0
+                return f"Weekly {str(dow).title()} {hh:02d}:{mm:02d} ({tz_label})"
+            if hour is not None and minute is not None:
+                try:
+                    hh = hour.expressions[0].values[0]
+                    mm = minute.expressions[0].values[0]
+                    return f"Daily {hh:02d}:{mm:02d} ({tz_label})"
+                except (AttributeError, IndexError, TypeError):
+                    pass
+        return f"Cron schedule ({tz_label})"
+    return "Scheduled"
+
+
 def _build_job_info(job: Any, history: list[dict]) -> dict[str, Any]:
     paused = job.next_run_time is None
     lock_held = _job_lock_held(job.id)
@@ -225,6 +271,7 @@ def _build_job_info(job: Any, history: list[dict]) -> dict[str, Any]:
     return {
         "id": job.id,
         "name": job.name,
+        "schedule_cadence": _schedule_cadence_for_job(job),
         "next_run_time": next_run,
         "paused": paused,
         "lock_held": lock_held,
@@ -302,10 +349,13 @@ async def get_system(request: Request):
             db_integrity = {"ok": integrity_ok, "message": integrity_msg}
             await set_feed_cache(db, "admin_db_integrity", db_integrity)
 
-        # Failed auth last 24h
+        # Failed auth last 24h (Python cutoff — works on SQLite TEXT and Postgres)
+        auth_cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
         auth_row = await db.execute_fetchall(
             "SELECT COUNT(*) as cnt FROM audit_log "
-            "WHERE action = 'auth.failure' AND created_at >= datetime('now', '-24 hours')"
+            "WHERE action IN ('auth.login_failed', 'auth.failure') "
+            "AND created_at >= ?",
+            (auth_cutoff,),
         )
         failed_auth = auth_row[0]["cnt"] if auth_row else 0
     finally:
@@ -382,6 +432,7 @@ async def get_system(request: Request):
             "incidents": incidents,
         },
         "open_circuit_count": open_circuit_count,
+        "api_queue": get_api_queue_status(),
         "jobs_with_errors_count": len(jobs_with_errors),
         "active_locks": active_locks,
         "recent_errors": [
@@ -921,6 +972,7 @@ def _get_config_response() -> dict[str, Any]:
             "CIRCUIT_FAILURE_THRESHOLD": _env_int("CIRCUIT_FAILURE_THRESHOLD", 3),
             "CIRCUIT_COOLDOWN_SECONDS": _env_int("CIRCUIT_COOLDOWN_SECONDS", 60),
             "NVD_SYNC_OVERLAP_MINUTES": _env_int("NVD_SYNC_OVERLAP_MINUTES", 15),
+            "SCHEDULER_DB_CONCURRENCY": _env_int("SCHEDULER_DB_CONCURRENCY", 3),
             "SCHEDULER_TIMEZONE": _env("SCHEDULER_TIMEZONE", "Asia/Kolkata"),
             "MITRE_REFRESH_HOUR": _env_int("MITRE_REFRESH_HOUR", 2),
             "MITRE_REFRESH_MINUTE": _env_int("MITRE_REFRESH_MINUTE", 0),
@@ -939,7 +991,7 @@ def _get_config_response() -> dict[str, Any]:
         "ingest": {
             "MAX_CVES_PER_FETCH": _env_int("MAX_CVES_PER_FETCH", 2000),
             "NVD_DAYS_BACK": _env_int("NVD_DAYS_BACK", 14),
-            "KEV_CROSS_FETCH_NVD": _env_int("KEV_CROSS_FETCH_NVD", 1),
+            "KEV_CROSS_FETCH_NVD": _env("KEV_CROSS_FETCH_NVD", "1"),
             "ATLAS_YAML_URL": _env("ATLAS_YAML_URL", ""),
             "MITRE_CVE_MAPPINGS_JSON_URL": _env("MITRE_CVE_MAPPINGS_JSON_URL", ""),
             "DB_PATH": _env("DB_PATH", "briefr.db"),
@@ -976,6 +1028,11 @@ def _get_config_response() -> dict[str, Any]:
             "RATE_LIMIT_ENABLED": _env("RATE_LIMIT_ENABLED", "1"),
             "RATE_LIMIT_IOC_PER_MINUTE": _env_int("RATE_LIMIT_IOC_PER_MINUTE", 30),
             "RATE_LIMIT_REFRESH_PER_MINUTE": _env_int("RATE_LIMIT_REFRESH_PER_MINUTE", 10),
+            "RATE_LIMIT_ADMIN_READ_PER_MINUTE": _env_int("RATE_LIMIT_ADMIN_READ_PER_MINUTE", 120),
+            "RATE_LIMIT_LOGIN_PER_MINUTE": _env_int("RATE_LIMIT_LOGIN_PER_MINUTE", 5),
+            "RATE_LIMIT_AUTH_REFRESH_PER_MINUTE": _env_int(
+                "RATE_LIMIT_AUTH_REFRESH_PER_MINUTE", 30
+            ),
             "DATABASE_URL": (
                 re.sub(r"://[^@]+@", "://***@", _env("DATABASE_URL"))
                 if _env("DATABASE_URL") else "not configured"
@@ -1466,6 +1523,7 @@ _JOB_RUN_MAP: dict[str, str] = {
     "weekly_mitre_refresh": "run_weekly_mitre_refresh",
     "atlas_version_check": "run_atlas_version_check",
     "otx_nightly_correlation": "run_otx_nightly_sync",
+    "otx_continuous_sync": "run_otx_continuous_sync",
     "incident_feed_refresh": "run_incident_feed_refresh",
     "nightly_correlation": "run_nightly_correlation",
     "vulnrichment_snapshot_sync": "run_vulnrichment_sync",
@@ -1667,9 +1725,12 @@ async def get_logs(
 async def get_security(request: Request):
     db = await get_db()
     try:
+        auth_cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
         row = await db.execute_fetchall(
             "SELECT COUNT(*) as cnt FROM audit_log "
-            "WHERE action = 'auth.failure' AND created_at >= datetime('now', '-24 hours')"
+            "WHERE action IN ('auth.login_failed', 'auth.failure') "
+            "AND created_at >= ?",
+            (auth_cutoff,),
         )
         failed_auth = row[0]["cnt"] if row else 0
     finally:
@@ -1681,6 +1742,9 @@ async def get_security(request: Request):
         "rate_limit_enabled": settings.rate_limit_enabled,
         "rate_limit_ioc_per_minute": settings.rate_limit_ioc_per_minute,
         "rate_limit_refresh_per_minute": settings.rate_limit_refresh_per_minute,
+        "rate_limit_admin_read_per_minute": settings.rate_limit_admin_read_per_minute,
+        "rate_limit_login_per_minute": settings.rate_limit_login_per_minute,
+        "rate_limit_auth_refresh_per_minute": settings.rate_limit_auth_refresh_per_minute,
         "top_rate_limit_consumers": get_top_consumers(5),
     }
 

@@ -72,7 +72,7 @@ async def build_campaigns_from_pulses(db) -> dict[str, int]:
         FROM otx_cve_pulses ocp
         INNER JOIN cves c ON c.cve_id = ocp.cve_id
         GROUP BY ocp.pulse_id
-        HAVING member_count >= 2
+        HAVING COUNT(DISTINCT ocp.cve_id) >= 2
         """
     )
 
@@ -116,10 +116,11 @@ async def build_campaigns_from_pulses(db) -> dict[str, int]:
 
         member_rows = await db.execute_fetchall(
             """
-            SELECT DISTINCT ocp.cve_id
+            SELECT ocp.cve_id
             FROM otx_cve_pulses ocp
             INNER JOIN cves c ON c.cve_id = ocp.cve_id
             WHERE ocp.pulse_id = ?
+            GROUP BY ocp.cve_id
             ORDER BY ocp.cve_id ASC
             """,
             (pulse_id,),

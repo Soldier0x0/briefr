@@ -19,8 +19,8 @@ This document models threats to the **BRIEFR application** (not environment thre
                                                                     │
                     ┌───────────────────────────────────────────────┼───────────────┐
                     ▼               ▼               ▼               ▼               ▼
-              briefr.db      /var/lib/briefr/    .env secrets    External APIs    (future admin)
-              (SQLite)         backups/                           NVD, VT, etc.
+         PostgreSQL (Docker)  /var/lib/briefr/    .env secrets    External APIs    admin API
+         127.0.0.1:5432        backups/                           NVD, VT, etc.
 ```
 
 **Deployment posture (2026-06-10):** the production instance is **private** — a Cloudflare Access policy gates all routes to a closed beta (3 testers). Edge authentication therefore exists today; app-level controls below assume it can also be absent (LAN path, misconfiguration).
@@ -39,7 +39,7 @@ This document models threats to the **BRIEFR application** (not environment thre
 
 | Asset | Sensitivity |
 |-------|-------------|
-| `briefr.db` | High — CVE cache, IOC cache, investigation data |
+| PostgreSQL database | High — CVE cache, IOC cache, investigation data |
 | `.env` / API keys | Critical |
 | Backup archives | High — DB + env snapshot |
 | Admin credentials / API keys | Critical |
@@ -72,7 +72,7 @@ This document models threats to the **BRIEFR application** (not environment thre
 | Admin backup/restore | **Critical** | Strong auth; confirm phrase; audit |
 | Webhook generic URL | **SSRF** | Block private IP ranges; allowlist schemes |
 | Swagger `/api/docs` | Info leak | Disable in production |
-| SQLite file perms | Local privilege escalation | `briefr` user; 750 backend dir |
+| PostgreSQL credentials / network access | Local privilege escalation | `briefr` user; 750 backend dir; DB on localhost only |
 | Supply chain | Dependency compromise | Lock files; CI tests |
 
 ---
@@ -130,7 +130,7 @@ BRIEFR calls external APIs (NVD, GitHub, VT, etc.). Threats:
 ## Related documents
 
 - [`OPERATIONS.md`](OPERATIONS.md) — backup, logs, container  
-- [`Beta V1.2.md`](../Beta%20V1.2.md) — auth and resilience  
-- [`Beta V1.4.md`](../Beta%20V1.4.md) — admin and webhooks  
+- [`beta/Beta V1.2.md`](beta/Beta%20V1.2.md) — auth and resilience  
+- [`beta/Beta V1.4.md`](beta/Beta%20V1.4.md) — admin and webhooks  
 
 Review this document when adding admin, webhooks, or container support.

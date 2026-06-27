@@ -2034,14 +2034,20 @@ async def read_otx_cve_pulses(
     ]
 
 
+_NUM_IOC_LOCKS = 64
+_pulse_ioc_locks = [asyncio.Lock() for _ in range(_NUM_IOC_LOCKS)]
+
+
+def _pulse_ioc_lock(pulse_id: str) -> asyncio.Lock:
+    """Fixed-size lock pool — avoids unbounded growth from per-pulse lock dicts."""
+    return _pulse_ioc_locks[hash(pulse_id) % _NUM_IOC_LOCKS]
+
+
 async def replace_otx_pulse_iocs(
     db: aiosqlite.Connection, pulse_id: str, iocs: list[dict]
 ) -> None:
     from correlation.ioc_normalize import normalize_ioc_row
 
-    await db.execute("DELETE FROM otx_pulse_iocs WHERE pulse_id = ?", (pulse_id,))
-    if not iocs:
-        return
     normalized_rows: list[tuple] = []
     for row in iocs:
         norm = normalize_ioc_row(row)
@@ -2056,22 +2062,49 @@ async def replace_otx_pulse_iocs(
             )
         )
     if not normalized_rows:
+        await db.execute("DELETE FROM otx_pulse_iocs WHERE pulse_id = ?", (pulse_id,))
         return
+    new_keys = {(row[1], row[2]) for row in normalized_rows}
     await db.executemany(
         """
         INSERT INTO otx_pulse_iocs (
             pulse_id, ioc_type, ioc_value, description, fetched_at
         ) VALUES (?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(pulse_id, ioc_type, ioc_value) DO UPDATE SET
+            description = excluded.description,
+            fetched_at = excluded.fetched_at
         """,
         normalized_rows,
     )
+    existing = await db.execute_fetchall(
+        """
+        SELECT ioc_type, ioc_value
+        FROM otx_pulse_iocs
+        WHERE pulse_id = ?
+        """,
+        (pulse_id,),
+    )
+    stale = [
+        (pulse_id, row["ioc_type"], row["ioc_value"])
+        for row in existing
+        if (row["ioc_type"], row["ioc_value"]) not in new_keys
+    ]
+    if stale:
+        await db.executemany(
+            """
+            DELETE FROM otx_pulse_iocs
+            WHERE pulse_id = ? AND ioc_type = ? AND ioc_value = ?
+            """,
+            stale,
+        )
 
 
 async def store_otx_pulse_iocs(
     db: aiosqlite.Connection, pulse_id: str, iocs: list[dict]
 ) -> None:
-    await replace_otx_pulse_iocs(db, pulse_id, iocs)
-    await set_feed_cache(db, f"otx:pulse:{pulse_id}", {"iocs": iocs})
+    async with _pulse_ioc_lock(pulse_id):
+        await replace_otx_pulse_iocs(db, pulse_id, iocs)
+        await set_feed_cache(db, f"otx:pulse:{pulse_id}", {"iocs": iocs})
 
 
 async def read_otx_pulse_iocs(
@@ -2165,15 +2198,111 @@ async def delete_correlation_suppression(
 async def get_recent_cve_ids_for_otx(
     db: aiosqlite.Connection, days: int = 7
 ) -> list[str]:
+    from datetime import datetime, timedelta, timezone
+
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
     rows = await db.execute_fetchall(
         """
         SELECT cve_id FROM cves
-        WHERE DATE(published) >= DATE('now', ?)
+        WHERE published IS NOT NULL
+          AND published != ''
+          AND published >= ?
         ORDER BY published DESC
         """,
-        (f"-{days} days",),
+        (cutoff,),
     )
     return [row["cve_id"] for row in rows]
+
+
+async def get_cves_missing_otx_pulses(
+    db: aiosqlite.Connection, limit: int = 200
+) -> list[str]:
+    """CVEs with no OTX pulse rows yet, tier-prioritized for continuous sync."""
+    prioritized = await get_prioritized_cve_ids_for_otx(db, backlog_cap=limit * 2)
+    if not prioritized:
+        return []
+
+    missing: list[str] = []
+    chunk = 100
+    for i in range(0, len(prioritized), chunk):
+        batch = prioritized[i : i + chunk]
+        placeholders = ",".join("?" for _ in batch)
+        rows = await db.execute_fetchall(
+            f"""
+            SELECT c.cve_id
+            FROM cves c
+            WHERE c.cve_id IN ({placeholders})
+              AND NOT EXISTS (
+                SELECT 1 FROM otx_cve_pulses o WHERE o.cve_id = c.cve_id
+              )
+            """,
+            tuple(batch),
+        )
+        have = {row["cve_id"] for row in rows}
+        for cid in batch:
+            if cid in have:
+                missing.append(cid)
+            if len(missing) >= limit:
+                return missing
+    return missing
+
+
+async def get_embedding_boosted_cve_ids_for_otx(
+    db: aiosqlite.Connection, limit: int = 150
+) -> list[dict]:
+    """
+    CVEs semantically similar to KEV/watchlist anchors that lack OTX pulses.
+    Used as P1b tier when EMBEDDINGS_ENABLED=1.
+    """
+    from ml.embeddings import embeddings_enabled, find_similar_cves
+
+    if not embeddings_enabled() or limit <= 0:
+        return []
+
+    anchors = await db.execute_fetchall(
+        """
+        SELECT c.cve_id
+        FROM cves c
+        LEFT JOIN watchlist w ON w.cve_id = c.cve_id AND w.state = 'pin'
+        WHERE COALESCE(c.is_kev, 0) = 1 OR w.cve_id IS NOT NULL
+        ORDER BY COALESCE(c.epss_score, 0) DESC
+        LIMIT 15
+        """
+    )
+    if not anchors:
+        return []
+
+    candidates: list[str] = []
+    seen: set[str] = set()
+    for row in anchors:
+        anchor_id = row["cve_id"]
+        similar = await find_similar_cves(db, anchor_id, limit=20)
+        if not similar:
+            continue
+        for item in similar:
+            cid = item.get("cve_id")
+            if cid and cid not in seen:
+                seen.add(cid)
+                candidates.append(cid)
+
+    if not candidates:
+        return []
+
+    placeholders = ",".join("?" for _ in candidates)
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT c.cve_id
+        FROM cves c
+        WHERE c.cve_id IN ({placeholders})
+          AND NOT EXISTS (
+            SELECT 1 FROM otx_cve_pulses o WHERE o.cve_id = c.cve_id
+          )
+        """,
+        tuple(candidates),
+    )
+    missing_set = {row["cve_id"] for row in rows}
+    ordered = [cid for cid in candidates if cid in missing_set]
+    return [{"cve_id": c} for c in ordered[:limit]]
 
 
 async def get_prioritized_cve_ids_for_otx(
@@ -2225,6 +2354,15 @@ async def get_prioritized_cve_ids_for_otx(
     )
     _add(p1)
 
+    try:
+        from ml.embeddings import embeddings_enabled
+
+        if embeddings_enabled():
+            p1b = await get_embedding_boosted_cve_ids_for_otx(db, limit=150)
+            _add(p1b)
+    except Exception:
+        pass
+
     p2 = await db.execute_fetchall(
         """
         SELECT cve_id FROM cves
@@ -2252,6 +2390,29 @@ async def get_prioritized_cve_ids_for_otx(
 async def get_cve_count(db: aiosqlite.Connection) -> int:
     rows = await db.execute_fetchall("SELECT COUNT(*) as cnt FROM cves")
     return rows[0]["cnt"] if rows else 0
+
+
+async def get_timeline_activity_summary(db, *, days: int = 90) -> dict:
+    """Days with at least one published CVE in the last N UTC calendar days."""
+    window = max(1, min(int(days), 365))
+    rows = await db.execute_fetchall(
+        """
+        SELECT DATE(published) AS day, COUNT(*) AS count
+        FROM cves
+        WHERE published IS NOT NULL
+          AND published != ''
+          AND DATE(published) >= DATE('now', ?)
+        GROUP BY DATE(published)
+        """,
+        (f"-{window - 1} days",),
+    )
+    days_with_data = sum(1 for r in rows if (r["count"] or 0) > 0)
+    total_cves = sum(int(r["count"] or 0) for r in rows)
+    return {
+        "days_with_data": days_with_data,
+        "total_cves": total_cves,
+        "window_days": window,
+    }
 
 
 async def get_last_updated(db: aiosqlite.Connection) -> str | None:
@@ -2370,7 +2531,20 @@ async def get_mitre_technique_count(db: aiosqlite.Connection) -> int:
 
 
 async def replace_atlas_techniques(db: aiosqlite.Connection, techniques: list[dict]) -> None:
-    await db.execute("DELETE FROM atlas_techniques")
+    incoming_ids = [t["technique_id"] for t in techniques]
+    if incoming_ids:
+        placeholders = ",".join("?" * len(incoming_ids))
+        await db.execute(
+            f"DELETE FROM cve_atlas_map WHERE technique_id NOT IN ({placeholders})",
+            tuple(incoming_ids),
+        )
+        await db.execute(
+            f"DELETE FROM atlas_techniques WHERE technique_id NOT IN ({placeholders})",
+            tuple(incoming_ids),
+        )
+    else:
+        await db.execute("DELETE FROM cve_atlas_map")
+        await db.execute("DELETE FROM atlas_techniques")
     if not techniques:
         return
     await db.executemany(
@@ -2378,6 +2552,12 @@ async def replace_atlas_techniques(db: aiosqlite.Connection, techniques: list[di
         INSERT INTO atlas_techniques (
             technique_id, name, description, tactic, tactic_id, url
         ) VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(technique_id) DO UPDATE SET
+            name = excluded.name,
+            description = excluded.description,
+            tactic = excluded.tactic,
+            tactic_id = excluded.tactic_id,
+            url = excluded.url
         """,
         [
             (

@@ -4,6 +4,7 @@ import { useAssetProfileOptional } from '../context/AssetProfileContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import ShortcutsPanel from './ShortcutsPanel.jsx'
 import UserMenu from './UserMenu.jsx'
+import ApiQueueIndicator from './ApiQueueIndicator.jsx'
 import {
   COMMON_TIMEZONES,
   formatTime,
@@ -11,8 +12,9 @@ import {
   setTimezone as persistTimezone,
 } from '../utils/timezone.js'
 import './Header.css'
+import { feedHealthLevel, feedHealthLabel } from '../utils/feedHealthStatus.js'
 
-export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClick, onTimezoneChange, showShortcuts }) {
+export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClick, onTimezoneChange, showShortcuts, feedHealth = null }) {
   const assetCtx = useAssetProfileOptional()
   const { status: authStatus } = useAuth()
   const [now, setNow]               = useState(new Date())
@@ -69,6 +71,9 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
       )
     : COMMON_TIMEZONES
 
+  const feedLevel = feedHealthLevel(feedHealth)
+  const feedLabel = feedHealthLabel(feedLevel)
+
   const TABS = [
     { id: 'brief', label: 'BRIEF', aria: 'Switch to morning brief' },
     { id: 'feed', label: 'FEED', aria: 'Switch to full CVE feed' },
@@ -92,6 +97,15 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
           </button>
           <span className="header-divider" aria-hidden="true">//</span>
           <span className="header-tagline">CVE intelligence</span>
+          {feedHealth && (
+            <span
+              className={`live-indicator live-indicator--dot-only live-indicator--${feedLevel}`}
+              aria-label={feedLabel}
+              title={feedLabel}
+            >
+              <span className="live-dot" aria-hidden="true" />
+            </span>
+          )}
         </div>
 
         {/* Center: tabs */}
@@ -143,6 +157,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
         {/* Right: legal, live dot, clock */}
         <div className="header-right">
           {showShortcuts && <ShortcutsPanel placement="header" />}
+          <ApiQueueIndicator apiQueue={feedHealth?.api_queue} />
 
           {assetCtx?.isLoaded && (
             <button
@@ -159,9 +174,9 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
               type="button"
               className="header-profile-btn mono"
               onClick={assetCtx.openProfileFlow}
-              aria-label="Open asset profile setup"
+              aria-label="Open My Stack setup"
             >
-              PROFILE
+              MY STACK
             </button>
           )}
 
@@ -199,7 +214,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
                     className="mobile-menu-item"
                     onClick={() => { setMobileMenuOpen(false); assetCtx.openProfileFlow() }}
                   >
-                    Profile
+                    My Stack
                   </button>
                 )}
                 {authStatus === 'authed' && (
@@ -226,12 +241,6 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
               </div>
             )}
           </div>
-
-          {/* Live dot */}
-          <span className="live-indicator" aria-label="Live data feed active">
-            <span className="live-dot" aria-hidden="true" />
-            LIVE
-          </span>
 
           {/* Clock — clicking opens timezone popover */}
           <div className="tz-wrap" ref={popoverRef}>

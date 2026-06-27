@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     database_url: str = ""
     db_path: str = ""
     database_pool_size: int = 10
+    database_pool_acquire_timeout_seconds: int = 10
+    database_pool_command_timeout_seconds: int = 60
     briefr_require_postgres: bool = False
 
     # §5.5 — structured logging + rate limiting (import-time config)
@@ -38,6 +40,7 @@ class Settings(BaseSettings):
     rate_limit_enabled: bool = True
     rate_limit_ioc_per_minute: int = 30
     rate_limit_refresh_per_minute: int = 10
+    rate_limit_admin_read_per_minute: int = 120
     rate_limit_wallboard_per_minute: int = 60
 
     # V1.4 Theme 4 — optional read-only kiosk token (X-BRIEFR-Wallboard-Token).

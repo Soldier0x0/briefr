@@ -49,7 +49,7 @@ export function downloadProfileJson(profile) {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = `briefr-asset-profile-${Date.now()}.json`
+  anchor.download = `briefr-my-stack-${Date.now()}.json`
   anchor.click()
   URL.revokeObjectURL(url)
 }

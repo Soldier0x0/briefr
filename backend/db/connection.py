@@ -2,19 +2,39 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass
 from typing import Any
 
 import aiosqlite
-import os
 
 from db.config import is_postgres, postgres_dsn, resolve_database_url
 from db.dialect import adapt_params, prepare_query
+from settings import settings
 
 logger = logging.getLogger(__name__)
 
 _pool: Any | None = None
+
+
+class PoolExhaustedError(RuntimeError):
+    """Raised when asyncpg pool.acquire() exceeds the configured timeout."""
+
+
+def get_pool_stats() -> dict[str, int] | None:
+    """Return asyncpg pool counters when Postgres is active."""
+    if _pool is None:
+        return None
+    size = _pool.get_size()
+    idle = _pool.get_idle_size()
+    return {
+        "size": size,
+        "idle": idle,
+        "in_use": max(0, size - idle),
+        "min": _pool.get_min_size(),
+        "max": _pool.get_max_size(),
+    }
 
 
 @dataclass
@@ -51,6 +71,9 @@ class SqliteConnection:
     async def commit(self) -> None:
         await self._conn.commit()
 
+    async def rollback(self) -> None:
+        await self._conn.rollback()
+
     async def close(self) -> None:
         await self._conn.close()
 
@@ -59,7 +82,7 @@ class PostgresConnection:
     """asyncpg-backed connection with SQLite placeholder translation."""
 
     def __init__(self, conn: Any, pool: Any) -> None:
-        self._conn = conn
+        self._conn: Any | None = conn
         self._pool = pool
         self._transaction = None
 
@@ -106,11 +129,28 @@ class PostgresConnection:
             await self._transaction.commit()
             self._transaction = None
 
-    async def close(self) -> None:
+    async def rollback(self) -> None:
         if self._transaction is not None:
-            await self._transaction.rollback()
+            try:
+                await self._transaction.rollback()
+            finally:
+                self._transaction = None
+
+    async def close(self) -> None:
+        if self._conn is None:
+            return
+        try:
+            if self._transaction is not None:
+                await self._transaction.rollback()
+        except Exception as exc:
+            logger.warning(
+                "PostgresConnection.close(): rollback failed (%s) — releasing anyway",
+                exc,
+            )
+        finally:
             self._transaction = None
-        await self._pool.release(self._conn)
+            conn, self._conn = self._conn, None
+            await self._pool.release(conn)
 
 
 async def init_pool() -> None:
@@ -123,9 +163,16 @@ async def init_pool() -> None:
     import asyncpg
 
     dsn = postgres_dsn()
-    max_size = max(1, int(os.environ.get("DATABASE_POOL_SIZE", "10")))
+    max_size = max(1, settings.database_pool_size)
+    command_timeout = max(1, settings.database_pool_command_timeout_seconds)
     try:
-        _pool = await asyncpg.create_pool(dsn=dsn, min_size=1, max_size=max_size)
+        _pool = await asyncpg.create_pool(
+            dsn=dsn,
+            min_size=1,
+            max_size=max_size,
+            command_timeout=command_timeout,
+            max_inactive_connection_lifetime=300,
+        )
     except Exception as exc:
         logger.error(
             "db/connection.py init_pool(): cannot connect to PostgreSQL at %s — %s",
@@ -133,13 +180,24 @@ async def init_pool() -> None:
             exc,
         )
         raise
-    logger.info("db/connection.py init_pool(): PostgreSQL pool ready (max_size=%d)", max_size)
+    logger.info(
+        "db/connection.py init_pool(): PostgreSQL pool ready "
+        "(max_size=%d, command_timeout=%ds)",
+        max_size,
+        command_timeout,
+    )
 
 
 async def close_pool() -> None:
     global _pool
     if _pool is not None:
-        await _pool.close()
+        try:
+            await asyncio.wait_for(_pool.close(), timeout=5.0)
+        except asyncio.TimeoutError:
+            logger.warning(
+                "db/connection.py close_pool(): timed out after 5s — "
+                "connections may still be leaked; process exit will reclaim them"
+            )
         _pool = None
 
 
@@ -154,7 +212,19 @@ async def get_connection() -> SqliteConnection | PostgresConnection:
             raise RuntimeError(
                 "PostgreSQL pool is not initialized — call init_pool() during app startup"
             )
-        raw = await _pool.acquire()
+        acquire_timeout = max(1.0, float(settings.database_pool_acquire_timeout_seconds))
+        try:
+            raw = await asyncio.wait_for(_pool.acquire(), timeout=acquire_timeout)
+        except asyncio.TimeoutError:
+            stats = get_pool_stats() or {}
+            logger.error(
+                "db/connection.py get_connection(): pool acquire timed out after %.1fs — %s",
+                acquire_timeout,
+                stats,
+            )
+            raise PoolExhaustedError(
+                f"PostgreSQL pool saturated (acquire timed out after {acquire_timeout:.0f}s)"
+            ) from None
         return PostgresConnection(raw, _pool)
 
     # Lazy import (avoids a circular import with database.py) and read the

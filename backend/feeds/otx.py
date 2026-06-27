@@ -23,6 +23,11 @@ logger = logging.getLogger(__name__)
 
 async def _otx_get(url: str, api_key: str) -> dict | None:
     """GET via the resilient client; returns None on 404, circuit-open or failure."""
+    from tracking import has_quota
+
+    if not await has_quota("otx"):
+        logger.warning("OTX hourly quota exhausted — skipping %s", url)
+        return None
     try:
         response = await resilient_get(
             "otx", url, headers=_otx_headers(api_key), timeout=30.0
@@ -371,20 +376,36 @@ async def top_pulse_ipv4s(
 
 async def run_otx_nightly_correlation(db, api_key: str, progress_cb=None) -> dict:
     """Pre-warm OTX pulse cache for prioritized CVEs."""
-    from database import get_prioritized_cve_ids_for_otx, store_otx_cve_pulses
+    from database import get_db, get_prioritized_cve_ids_for_otx, store_otx_cve_pulses
 
     if not api_key:
         return {"cves": 0, "pulses": 0}
 
-    cve_ids = await get_prioritized_cve_ids_for_otx(db)
+    passed_db = db
+    own_db = passed_db is None
+    if own_db:
+        db = await get_db()
+    try:
+        cve_ids = await get_prioritized_cve_ids_for_otx(db)
+    finally:
+        if own_db:
+            await db.close()
     total_pulses = 0
     for index, cve_id in enumerate(cve_ids):
         if progress_cb:
             progress_cb(f"Fetching OTX threat intelligence pulses: {cve_id} ({index + 1}/{len(cve_ids)})…")
         try:
             pulses = await fetch_cve_pulses(cve_id, api_key)
-            await store_otx_cve_pulses(db, cve_id, pulses)
-            total_pulses += len(pulses)
+            if not pulses:
+                continue
+            write_db = await get_db() if own_db else passed_db
+            try:
+                await store_otx_cve_pulses(write_db, cve_id, pulses)
+                await write_db.commit()
+                total_pulses += len(pulses)
+            finally:
+                if own_db:
+                    await write_db.close()
         except Exception as exc:
             logger.warning("OTX nightly skip %s: %s", cve_id, exc)
 

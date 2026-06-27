@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Menu, X } from 'lucide-react'
 import { adminApi, getAdminKey } from '../../api.js'
 import { getAdminMode, setAdminMode } from '../../utils/adminMode.js'
 import { getDisplayPrefs } from '../../utils/displayPrefs.js'
@@ -27,6 +28,8 @@ import ComingSoonPage from './ComingSoonPage.jsx'
 import SessionsPage from './SessionsPage.jsx'
 import RateLimitPage from './RateLimitPage.jsx'
 import UserMenu from '../../components/UserMenu.jsx'
+import { loadJobAcks, markAllJobErrorsRead, filterUnacknowledgedErrors } from './adminJobAck.js'
+import { jobErrorsFromSystem } from './shared/JobErrorsPanel.jsx'
 import '../AdminPage.css'
 
 const ANALYST_PAGE_IDS = new Set(ANALYST_NAV.flatMap(section => section.items.map(i => i.id)))
@@ -46,12 +49,15 @@ export default function AdminPage() {
   const setPage = useCallback((id) => {
     setVisitedPages(prev => (prev.has(id) ? prev : new Set(prev).add(id)))
     setPageRaw(id)
+    setSidebarOpen(false)
   }, [])
   const [mode, setModeState] = useState(getAdminMode)
   const [system, setSystem] = useState(null)
   const [ingestErrorCount, setIngestErrorCount] = useState(0)
   const [confirmOperatorSwitch, setConfirmOperatorSwitch] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(null)
+  const [jobAcks, setJobAcks] = useState(() => loadJobAcks())
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const { toasts, show: toast, dismiss: dismissToast } = useToast()
   const pollRef = useRef(null)
 
@@ -139,14 +145,32 @@ export default function AdminPage() {
 
   const isComingSoon = page.startsWith('coming-')
 
+  const unackJobErrorCount = useMemo(
+    () => filterUnacknowledgedErrors(jobErrorsFromSystem(system), jobAcks).length,
+    [system, jobAcks],
+  )
+
+  function handleMarkJobErrorsRead(errors) {
+    setJobAcks(markAllJobErrorsRead(errors))
+    toast('Marked job errors as read', true)
+  }
+
   const pages = {
-    overview: <OverviewPage system={system} toast={toast} mode={mode} />,
+    overview: (
+      <OverviewPage
+        system={system}
+        toast={toast}
+        mode={mode}
+        jobAcks={jobAcks}
+        onMarkJobErrorsRead={handleMarkJobErrorsRead}
+      />
+    ),
     backups: <BackupsPage toast={toast} system={system} />,
     storage: <StoragePage toast={toast} />,
     database: <DatabasePage toast={toast} active={page === 'database'} />,
     watchlist: <WatchlistPage toast={toast} mode={mode} />,
     apikeys: <ApiKeysPage toast={toast} />,
-    scheduler: <SchedulerPage toast={toast} system={system} />,
+    scheduler: <SchedulerPage toast={toast} system={system} onRunIngest={handleRunIngest} onRestart={handleRestart} onDrainRestart={handleDrainRestart} onRefreshSystem={loadSystem} />,
     webhooks: <WebhooksPage toast={toast} />,
     alerts: <AlertsPage toast={toast} />,
     security: <SecurityPage toast={toast} />,
@@ -159,7 +183,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="admin-root">
+    <div className={`admin-root admin-root--${mode}`}>
       {confirmOperatorSwitch && (
         <ConfirmModal
           title="Switch to Operator view?"
@@ -172,16 +196,33 @@ export default function AdminPage() {
       <StatusBar
         system={system}
         onRunIngest={handleRunIngest}
-        onRestart={handleRestart}
-        onDrainRestart={handleDrainRestart}
         refreshInProgress={system?.refresh_in_progress || false}
         mode={mode}
         setMode={handleModeChange}
         lastUpdated={lastUpdated}
         userMenu={<UserMenu className="user-menu-wrap--admin" />}
+        onToggleSidebar={() => setSidebarOpen(v => !v)}
+        sidebarOpen={sidebarOpen}
       />
       <div className="admin-body">
-        <Sidebar activePage={page} setPage={setPage} system={system} ingestErrorCount={ingestErrorCount} mode={mode} setMode={handleModeChange} />
+        {sidebarOpen && (
+          <button
+            type="button"
+            className="admin-sidebar-backdrop"
+            aria-label="Close navigation"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        <Sidebar
+          activePage={page}
+          setPage={setPage}
+          system={system}
+          ingestErrorCount={ingestErrorCount}
+          unackJobErrorCount={unackJobErrorCount}
+          mode={mode}
+          setMode={handleModeChange}
+          open={sidebarOpen}
+        />
         <div className="admin-content">
           {isComingSoon ? (
             <ComingSoonPage pageId={page} setPage={setPage} />

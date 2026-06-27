@@ -17,9 +17,12 @@ from database import (
     get_db,
     get_last_updated,
     get_nvd_sync_watermark,
+    get_timeline_activity_summary,
 )
+from db.config import is_postgres, resolve_database_url
+from db.connection import get_pool_stats
 from feeds.case_study_feed import get_incident_feed_status
-from resilient_client import get_feed_health
+from resilient_client import get_api_queue_status, get_feed_health
 from scheduler import (
     get_ingest_intervals,
     get_ingest_status,
@@ -29,6 +32,19 @@ from scheduler import (
 )
 
 router = APIRouter()
+
+
+def _database_meta() -> dict:
+    db_url = resolve_database_url()
+    db_host = db_url.split("@")[-1] if "@" in db_url else ("sqlite" if not is_postgres() else db_url)
+    meta: dict = {
+        "backend": "postgresql" if is_postgres() else "sqlite",
+        "host": db_host,
+    }
+    pool = get_pool_stats()
+    if pool is not None:
+        meta["pool"] = pool
+    return meta
 
 
 def format_time_in_tz(dt: datetime, tz_name: str) -> dict:
@@ -57,8 +73,13 @@ async def health(
         cve_count = await get_cve_count(db)
         last_updated = await get_last_updated(db)
         nvd_sync_watermark = await get_nvd_sync_watermark(db)
+        timeline_summary = await get_timeline_activity_summary(db, days=90)
     finally:
         await db.close()
+
+    database_meta = _database_meta()
+    database_meta["timeline_days_with_data_90d"] = timeline_summary.get("days_with_data", 0)
+    database_meta["timeline_total_cves_90d"] = timeline_summary.get("total_cves", 0)
 
     now_utc = datetime.now(timezone.utc)
     default_tz = os.environ.get("DEFAULT_TIMEZONE", "UTC")
@@ -72,7 +93,9 @@ async def health(
     response: dict = {
         "status": "ok",
         "cve_count": cve_count,
+        "database": database_meta,
         "feeds": {"incidents": incidents_status, "sources": get_feed_health()},
+        "api_queue": get_api_queue_status(),
         "last_updated": last_updated,
         "nvd_sync_watermark": nvd_sync_watermark,
         "refresh_in_progress": refresh_in_progress(),
@@ -90,3 +113,9 @@ async def health(
         "server_time_local": format_time_in_tz(now_utc, display_tz),
     }
     return response
+
+
+@router.get("/api/health/live")
+async def health_live():
+    """Liveness probe — no database access (safe when the pool is saturated)."""
+    return {"status": "ok"}

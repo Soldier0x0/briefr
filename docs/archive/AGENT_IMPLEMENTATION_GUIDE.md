@@ -8,11 +8,11 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 
 ## Start here
 
-0. Read [`HANDOVER.md`](HANDOVER.md) — **live execution state**, PR ledger, remaining V1.2 work, mandatory per-PR workflow and post-merge testing methodology.  
-1. Read [`ROADMAP.md`](ROADMAP.md) — release you are implementing.  
-2. Read the matching `Beta V1.x.md` at repo root.  
-3. Read [`ONBOARDING.md`](ONBOARDING.md) for codebase layout and tests.  
-4. Do **not** skip [`Beta V1.2.md`](../Beta%20V1.2.md) foundation if V1.2 is incomplete.
+0. Read [`sessions/HANDOVER.md`](sessions/HANDOVER.md) — **live execution state**, PR ledger, remaining V1.2 work, mandatory per-PR workflow and post-merge testing methodology.  
+1. Read [`../ROADMAP.md`](../ROADMAP.md) — release you are implementing.  
+2. Read the matching beta spec in [`beta/`](beta/).  
+3. Read [`../ONBOARDING.md`](../ONBOARDING.md) for codebase layout and tests.  
+4. Do **not** skip [`beta/Beta V1.2.md`](beta/Beta%20V1.2.md) foundation if V1.2 is incomplete.
 
 ---
 
@@ -34,7 +34,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 | **V1.5** | Threat model UI, rule proof, STIX export, IOC watchlist | ML on logs in core app |
 | **V2.0** | **Parked** (Docker compose, optional Postgres) | Multi-tenant SaaS |
 
-Approved scope and cross-release amendments: see [`ROADMAP.md`](ROADMAP.md) § Approved execution scope.
+Approved scope and cross-release amendments: see [`../ROADMAP.md`](../ROADMAP.md) § Approved execution scope.
 
 One phase per PR where possible. Update `SYSTEM_DESIGN.md` when behavior changes.
 
@@ -45,7 +45,7 @@ One phase per PR where possible. Update `SYSTEM_DESIGN.md` when behavior changes
 **Incidents & News** tab: sequential RSS fetch on cold API path causes 7s+ loads.  
 **Fix (V1.2 allowed or V1.3):** scheduler precomputes combined feed; API reads snapshot; parallel RSS in job only.
 
-See [`Beta V1.3.md`](../Beta%20V1.3.md) Theme 4 and [`OPERATIONS.md`](OPERATIONS.md).
+See [`beta/Beta V1.3.md`](beta/Beta%20V1.3.md) Theme 4 and [`../OPERATIONS.md`](../OPERATIONS.md).
 
 ---
 
@@ -60,8 +60,8 @@ See [`Beta V1.3.md`](../Beta%20V1.3.md) Theme 4 and [`OPERATIONS.md`](OPERATIONS
 
 ## Deploy compatibility
 
-Existing production: systemd + nginx + cloudflared, SQLite, `/var/lib/briefr/backups`.  
-Releases must stay **additive** — see [`OPERATIONS.md`](OPERATIONS.md).
+Existing production: systemd + nginx + cloudflared, **PostgreSQL 16** (`DATABASE_URL`), `/var/lib/briefr/backups`.  
+See [`POSTGRES.md`](POSTGRES.md) and [`OPERATIONS.md`](OPERATIONS.md).
 
 ---
 

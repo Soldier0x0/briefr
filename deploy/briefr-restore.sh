@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Restore BRIEFR database (and .env when present in archive) from a backup.
-# Handles both plaintext (.tar.gz) and age-encrypted (.tar.gz.age) archives;
-# decryption uses BACKUP_AGE_KEY_FILE (default: ${APP_HOME}/keys/backup-age.key).
+# Restore BRIEFR PostgreSQL database (and .env when present in archive) from a backup.
+# Archives contain briefr.pgdump (pg_dump custom format), plaintext (.tar.gz) or
+# age-encrypted (.tar.gz.age). Requires DATABASE_URL and pg_restore (postgresql-client).
 # Usage:
 #   bash briefr-restore.sh                 # newest valid archive
 #   bash briefr-restore.sh --list
@@ -43,6 +43,7 @@ export BACKUP_AGE_KEY_FILE="${BACKUP_AGE_KEY_FILE-${APP_HOME}/keys/backup-age.ke
 
 if [ "${LIST}" -eq 1 ]; then
   runuser -u "${APP_USER}" -- env HOME="${APP_HOME}" BACKUP_DIR="${BACKUP_DIR}" \
+    PATH="/usr/bin:/bin:${INSTALL_DIR}/venv/bin" \
     BACKUP_AGE_KEY_FILE="${BACKUP_AGE_KEY_FILE}" \
     bash -c "cd '${INSTALL_DIR}/backend' && '${INSTALL_DIR}/venv/bin/python' -m backup list"
   exit 0
@@ -56,10 +57,12 @@ FORCE_FLAG=""
 
 if [ -n "${ARCHIVE}" ]; then
   runuser -u "${APP_USER}" -- env HOME="${APP_HOME}" BACKUP_DIR="${BACKUP_DIR}" \
+    PATH="/usr/bin:/bin:${INSTALL_DIR}/venv/bin" \
     BACKUP_AGE_KEY_FILE="${BACKUP_AGE_KEY_FILE}" \
     bash -c "cd '${INSTALL_DIR}/backend' && '${INSTALL_DIR}/venv/bin/python' -m backup restore ${FORCE_FLAG} '${ARCHIVE}'"
 else
   runuser -u "${APP_USER}" -- env HOME="${APP_HOME}" BACKUP_DIR="${BACKUP_DIR}" \
+    PATH="/usr/bin:/bin:${INSTALL_DIR}/venv/bin" \
     BACKUP_AGE_KEY_FILE="${BACKUP_AGE_KEY_FILE}" \
     bash -c "cd '${INSTALL_DIR}/backend' && '${INSTALL_DIR}/venv/bin/python' -m backup restore ${FORCE_FLAG}"
 fi

@@ -1,51 +1,28 @@
-import { useState, useEffect, useRef } from 'react'
-import { createPortal } from 'react-dom'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Eye, Wrench, RefreshCw, RotateCw, Hourglass, ChevronDown, Clock } from 'lucide-react'
-import ConfirmModal from './shared/ConfirmModal.jsx'
+import { Eye, Wrench, RefreshCw, Clock, Menu, X, Shield } from 'lucide-react'
 import HelpTip from './shared/HelpTip.jsx'
+import ApiQueueIndicator from '../../components/ApiQueueIndicator.jsx'
 import { fmtAge } from './formatters.js'
 import { worstSource } from './intelStatus.js'
 
-export default function StatusBar({ system, onRunIngest, onRestart, onDrainRestart, refreshInProgress, mode, setMode, lastUpdated, userMenu }) {
-  const [restartMenu, setRestartMenu] = useState(false)
-  const [menuPos, setMenuPos] = useState(null)
-  const [confirmRestart, setConfirmRestart] = useState(null) // null | 'immediate' | 'drain'
+export default function StatusBar({
+  system,
+  onRunIngest,
+  refreshInProgress,
+  mode,
+  setMode,
+  lastUpdated,
+  userMenu,
+  onToggleSidebar,
+  sidebarOpen,
+}) {
   const [now, setNow] = useState(Date.now())
-  const menuRef = useRef(null)
-  const arrowRef = useRef(null)
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(t)
   }, [])
-
-  function handleModeClick(next) {
-    setMode(next)
-  }
-
-  useEffect(() => {
-    function onDown(e) {
-      if (
-        restartMenu &&
-        menuRef.current &&
-        !menuRef.current.contains(e.target) &&
-        !arrowRef.current?.contains(e.target)
-      ) {
-        setRestartMenu(false)
-      }
-    }
-    document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [restartMenu])
-
-  function toggleRestartMenu() {
-    if (!restartMenu && arrowRef.current) {
-      const rect = arrowRef.current.getBoundingClientRect()
-      setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
-    }
-    setRestartMenu(v => !v)
-  }
 
   const nvdAge = system?.last_nvd_sync_age_seconds
   const backupAge = system?.last_backup_age_seconds
@@ -70,54 +47,48 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
 
   const worst = mode === 'analyst' ? worstSource(system) : null
   const updatedAgo = lastUpdated ? Math.max(0, Math.round((now - lastUpdated) / 1000)) : null
-  const updatedAgoEl = updatedAgo !== null ? (
-    <>
-      <div className="sb-sep" />
-      <span className="sb-item" title="Time since the status bar last refreshed from the backend">
-        <Clock size={11} strokeWidth={2} />
-        <span className="sb-label">Updated {updatedAgo}s ago</span>
-      </span>
-    </>
-  ) : null
 
   return (
-    <>
-      {confirmRestart && (
-        <ConfirmModal
-          actionId={confirmRestart === 'drain' ? 'system.restart.drain' : 'system.restart'}
-          title={confirmRestart === 'drain' ? 'Drain then restart' : 'Restart now?'}
-          message={
-            confirmRestart === 'drain'
-              ? 'Wait for all running jobs to finish, then shut the backend down gracefully (systemd will restart it).'
-              : undefined
-          }
-          confirmWord="restart"
-          onConfirm={() => {
-            setConfirmRestart(null)
-            if (confirmRestart === 'drain') onDrainRestart()
-            else onRestart()
-          }}
-          onCancel={() => setConfirmRestart(null)}
-        />
-      )}
-      <div className="admin-statusbar">
-        <Link to="/" className="admin-brand-link mono" title="Back to BRIEFR">
+    <div className="admin-statusbar">
+      <div className="admin-status-left" style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+        {onToggleSidebar && (
+          <button
+            type="button"
+            className="admin-sidebar-toggle"
+            onClick={onToggleSidebar}
+            aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={sidebarOpen}
+          >
+            {sidebarOpen ? <X size={16} /> : <Menu size={16} />}
+          </button>
+        )}
+        <Link to="/" className="admin-brand-link" title="Back to BRIEFR">
+          <Shield size={15} strokeWidth={2.25} aria-hidden />
           BRIEFR
         </Link>
         <div className="sb-sep" />
+        <span className={`admin-status-pill admin-status-pill--${mode}`}>
+          {mode === 'analyst' ? 'Analyst' : 'Operator'}
+        </span>
+        <div className="sb-sep" />
         <div className="admin-mode-toggle-group">
-          <span className="admin-mode-toggle-label">VIEW</span>
           <div className="admin-mode-toggle" role="group" aria-label="Switch admin view mode">
             <button
+              type="button"
               className={`admin-mode-toggle-btn ${mode === 'analyst' ? 'active' : ''}`}
-              onClick={() => handleModeClick('analyst')}
+              onClick={() => setMode('analyst')}
               title="Analyst view — CVE triage, simplified language, no destructive actions"
-            ><Eye size={13} strokeWidth={2} /> Analyst</button>
+            >
+              <Eye size={13} strokeWidth={2} /> Analyst
+            </button>
             <button
+              type="button"
               className={`admin-mode-toggle-btn ${mode === 'operator' ? 'active' : ''}`}
-              onClick={() => handleModeClick('operator')}
+              onClick={() => setMode('operator')}
               title="Operator view — system management: restart, full ingest, purge, config"
-            ><Wrench size={13} strokeWidth={2} /> Operator</button>
+            >
+              <Wrench size={13} strokeWidth={2} /> Operator
+            </button>
           </div>
         </div>
         <div className="sb-sep" />
@@ -143,20 +114,6 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
                 </span>
               </>
             )}
-            {updatedAgoEl}
-            <div className="sb-actions">
-              {userMenu}
-              <button
-                className="admin-btn admin-btn-ghost"
-                onClick={onRunIngest}
-                disabled={refreshInProgress}
-                style={{ fontSize: '0.75rem' }}
-                title="Pulls the latest CVEs, KEV entries, and EPSS scores from every source right now"
-              >
-                {refreshInProgress ? <><span className="admin-spinner" /> Refreshing…</> : <><RefreshCw size={13} strokeWidth={2} /> Refresh all sources</>}
-              </button>
-              <HelpTip text="Pulls the latest CVEs, KEV entries, and EPSS scores from every configured source right now, instead of waiting for the normal schedule." />
-            </div>
           </>
         ) : (
           <>
@@ -194,16 +151,10 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
             </span>
             <div className="sb-sep" />
             <span className="sb-item">
-              <span
-                className={`pill ${discordPillClass()}`}
-                title={!discordConfigured ? 'Not configured' : discordFailed ? 'Configured but the circuit is open (failing)' : 'Configured and last delivery succeeded'}
-              >Discord</span>
+              <span className={`pill ${discordPillClass()}`} title="Discord webhook">Discord</span>
             </span>
             <span className="sb-item">
-              <span
-                className={`pill ${telegramPillClass()}`}
-                title={!telegramConfigured ? 'Not configured' : telegramFailed ? 'Configured but the circuit is open (failing)' : 'Configured and last delivery succeeded'}
-              >Telegram</span>
+              <span className={`pill ${telegramPillClass()}`} title="Telegram webhook">Telegram</span>
             </span>
             {commit && (
               <>
@@ -213,52 +164,41 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
                 </span>
               </>
             )}
-            {updatedAgoEl}
-            <div className="sb-actions">
-              {userMenu}
-              <button
-                className="admin-btn admin-btn-warn"
-                onClick={onRunIngest}
-                disabled={refreshInProgress}
-                style={{ fontSize: '0.75rem' }}
-                title="Pulls fresh data from every source: NVD, KEV, EPSS, MITRE/ATLAS, OTX, etc. — not just NVD CVEs"
-              >
-                {refreshInProgress ? <><span className="admin-spinner" /> Running…</> : <><RefreshCw size={13} strokeWidth={2} /> Run full ingest</>}
-              </button>
-              <HelpTip text="Pulls fresh data from every configured source — NVD, KEV, EPSS, MITRE/ATLAS, OTX, etc. — not just NVD CVEs." />
-              <div className="admin-split-btn" ref={menuRef}>
-                <button
-                  className="admin-btn admin-btn-ghost admin-split-btn-main"
-                  onClick={() => setConfirmRestart('immediate')}
-                  style={{ fontSize: '0.75rem' }}
-                  title="Stops the backend immediately — systemd restarts it within seconds"
-                >
-                  <RotateCw size={13} strokeWidth={2} /> Restart now
-                </button>
-                <button
-                  ref={arrowRef}
-                  className="admin-btn admin-btn-ghost admin-split-btn-arrow"
-                  onClick={toggleRestartMenu}
-                  aria-label="Restart options"
-                  style={{ fontSize: '0.75rem' }}
-                ><ChevronDown size={13} strokeWidth={2} /></button>
-                <HelpTip text="Restart now: stops the backend immediately (systemd restarts it within seconds). Drain then restart: waits for in-flight jobs to finish first, so nothing gets cut off mid-run." />
-                {restartMenu && menuPos && createPortal(
-                  <div
-                    className="admin-split-menu"
-                    ref={menuRef}
-                    style={{ top: menuPos.top, right: menuPos.right }}
-                  >
-                    <button className="admin-split-menu-item" onClick={() => { setRestartMenu(false); setConfirmRestart('immediate') }}><RotateCw size={12} strokeWidth={2} /> Restart now</button>
-                    <button className="admin-split-menu-item" onClick={() => { setRestartMenu(false); setConfirmRestart('drain') }} title="Waits for in-flight jobs to finish, then restarts — nothing gets cut off mid-run"><Hourglass size={12} strokeWidth={2} /> Drain then restart</button>
-                  </div>,
-                  document.body
-                )}
-              </div>
-            </div>
+          </>
+        )}
+        {updatedAgo !== null && (
+          <>
+            <div className="sb-sep" />
+            <span className="sb-item" title="Time since the status bar last refreshed from the backend">
+              <Clock size={11} strokeWidth={2} />
+              <span className="sb-label">Updated {updatedAgo}s ago</span>
+            </span>
           </>
         )}
       </div>
-    </>
+
+      <div className="sb-actions">
+        <ApiQueueIndicator apiQueue={system?.api_queue} className="admin-api-queue" />
+        {userMenu}
+        {mode === 'analyst' && (
+          <>
+            <button
+              type="button"
+              className="admin-btn admin-btn-ghost admin-btn--sm"
+              onClick={onRunIngest}
+              disabled={refreshInProgress}
+              title="Pulls the latest CVEs, KEV entries, and EPSS scores from every source right now"
+            >
+              {refreshInProgress ? (
+                <><span className="admin-spinner" /> Refreshing…</>
+              ) : (
+                <><RefreshCw size={13} strokeWidth={2} /> Refresh all sources</>
+              )}
+            </button>
+            <HelpTip text="Pulls the latest CVEs, KEV entries, and EPSS scores from every configured source right now, instead of waiting for the normal schedule." />
+          </>
+        )}
+      </div>
+    </div>
   )
 }

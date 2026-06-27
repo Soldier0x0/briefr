@@ -6,6 +6,11 @@ from typing import Any
 import httpx
 
 from enrichment.cve import extract_mitre_technique, has_public_poc
+from api_queue import (
+    apply_rate_limit_headers,
+    await_api_slot,
+    release_api_slot,
+)
 from resilient_client import (
     get_pooled_client,
     record_source_failure,
@@ -205,7 +210,8 @@ async def _fetch_page(
     headers = _nvd_request_headers(api_key, key_rejected=_key_rejected)
     use_key = bool(headers)
 
-    for attempt in range(5):
+    while True:
+        await await_api_slot("nvd")
         try:
             response = await client.get(
                 NVD_BASE_URL,
@@ -214,9 +220,8 @@ async def _fetch_page(
                 timeout=60.0,
             )
             if response.status_code == 429:
-                wait_time = RATE_LIMIT_WAIT * (attempt + 1)
-                logger.warning("NVD rate limited (429). Waiting %d seconds before retry %d.", wait_time, attempt + 1)
-                await asyncio.sleep(wait_time)
+                apply_rate_limit_headers("nvd", response.headers)
+                logger.warning("NVD rate limited (429) — waiting in queue before retry")
                 continue
             if response.status_code == 404 and use_key:
                 nvd_msg = response.headers.get("message", "")
@@ -227,27 +232,23 @@ async def _fetch_page(
                 )
                 return await _fetch_page(client, params, api_key, _key_rejected=True)
             response.raise_for_status()
+            apply_rate_limit_headers("nvd", response.headers)
             record_source_success("nvd")
             return response.json()
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 429:
-                wait_time = RATE_LIMIT_WAIT * (attempt + 1)
-                logger.warning("NVD rate limited. Waiting %d seconds.", wait_time)
-                await asyncio.sleep(wait_time)
+                apply_rate_limit_headers("nvd", exc.response.headers)
+                logger.warning("NVD rate limited — waiting in queue before retry")
                 continue
             logger.error("NVD HTTP error: %s", exc)
             record_source_failure("nvd", f"HTTP {exc.response.status_code}")
             raise
         except httpx.RequestError as exc:
             logger.error("NVD request error: %s", exc)
-            if attempt < 4:
-                await asyncio.sleep(2 ** attempt)
-                continue
             record_source_failure("nvd", f"{type(exc).__name__}: {exc}")
             raise
-
-    record_source_failure("nvd", "max retries exceeded")
-    raise RuntimeError("NVD API failed after maximum retries")
+        finally:
+            release_api_slot("nvd")
 
 
 def _format_nvd_datetime(dt: datetime) -> str:

@@ -69,6 +69,30 @@
   letter-spacing: 0.04em;
 }
 
+.timeline-heatmap-error {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.timeline-heatmap-retry {
+  font-size: 0.5625rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--border2);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.timeline-heatmap-empty-note {
+  font-size: 0.5625rem;
+  color: var(--text3);
+  margin: 0 0 10px;
+  letter-spacing: 0.04em;
+}
+
 .timeline-heatmap-chart {
   display: flex;
   align-items: flex-start;

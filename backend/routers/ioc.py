@@ -125,6 +125,9 @@ async def ioc_lookup(body: IocLookupRequest):
         )
         result["cached"] = False
 
+        if result.get("error") == "Invalid domain format":
+            raise HTTPException(status_code=422, detail=result["error"])
+
         await set_ioc_cache(db, value, ioc_type, result)
         await db.commit()
     finally:
