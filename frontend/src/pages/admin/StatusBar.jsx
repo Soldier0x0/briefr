@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Eye, Wrench, RefreshCw, Clock, Menu, X, Shield } from 'lucide-react'
+import { Eye, Wrench, RefreshCw, Clock, Menu, X } from 'lucide-react'
 import HelpTip from './shared/HelpTip.jsx'
 import ApiQueueIndicator from '../../components/ApiQueueIndicator.jsx'
 import { fmtAge } from './formatters.js'
@@ -63,7 +63,6 @@ export default function StatusBar({
           </button>
         )}
         <Link to="/" className="admin-brand-link" title="Back to BRIEFR">
-          <Shield size={15} strokeWidth={2.25} aria-hidden />
           BRIEFR
         </Link>
         <div className="sb-sep" />

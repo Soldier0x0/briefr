@@ -322,8 +322,7 @@
   flex-direction: column;
   background: var(--admin-surface);
   border-right: 1px solid var(--admin-border);
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .admin-sidebar-section {
