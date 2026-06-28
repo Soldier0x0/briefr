@@ -1052,13 +1052,8 @@ async def run_nightly_correlation() -> bool:
 
         db = await get_db()
         try:
-            # Pre-warm IOC data for Level 1 before running correlation
             if api_key:
                 _job_progress["nightly_correlation"] = "Pre-fetching OTX pulse IOCs to warm Level 1 infrastructure correlation…"
-                ioc_count = await prefetch_pulse_iocs_for_nightly(db, api_key)
-                if ioc_count:
-                    await db.commit()
-                    logger.info("Pre-fetched IOCs for %d pulses", ioc_count)
 
             def _corr_progress(msg: str) -> None:
                 _job_progress["nightly_correlation"] = msg
@@ -1107,6 +1102,7 @@ async def run_otx_nightly_sync() -> bool:
             logger.info("OTX_API_KEY not set — skipping nightly correlation")
             await _write_job_last_run("otx_nightly_correlation", _start)
             return False
+        db = await get_db()
         try:
             from feeds.otx import run_otx_nightly_correlation
 
