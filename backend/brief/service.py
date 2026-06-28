@@ -103,7 +103,7 @@ async def _active_campaigns_for_stack(
     return [
         {
             "campaign_id": row["campaign_id"],
-            "label": sanitize_pulse_text(row["label"]),
+            "label": sanitize_pulse_text(row["label"] or ""),
             "adversary": sanitize_pulse_text(row["adversary"] or "", 120),
             "confidence": row["confidence"],
             "member_count": row["member_count"],

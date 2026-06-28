@@ -90,7 +90,7 @@ async def find_actor_sector_correlation(
         "SELECT technique_id FROM cve_technique_map WHERE cve_id = ?",
         (cve_upper,),
     )
-    technique_ids = list({r["technique_id"] for r in tech_rows})
+    technique_ids = list({r["technique_id"] for r in tech_rows if r["technique_id"]})
 
     if technique_ids:
         placeholders = ",".join("?" * len(technique_ids))
@@ -407,8 +407,8 @@ async def get_correlation_for_cve(
             otx_status = "not_configured"
 
         boosters = {
-            "kev": sorted({cve for c in campaigns for cve in c.get("boosters", {}).get("kev", [])}),
-            "exploit": sorted({cve for c in campaigns for cve in c.get("boosters", {}).get("exploit", [])}),
+            "kev": sorted({cve for c in campaigns for cve in (c.get("boosters") or {}).get("kev", [])}),
+            "exploit": sorted({cve for c in campaigns for cve in (c.get("boosters") or {}).get("exploit", [])}),
         }
 
         result = {

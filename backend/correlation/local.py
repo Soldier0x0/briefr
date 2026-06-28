@@ -6,7 +6,7 @@ from __future__ import annotations
 def stack_terms_list() -> list[str]:
     from database import get_stack_terms
 
-    raw = get_stack_terms()
+    raw = get_stack_terms() or ""
     return [t.strip().lower() for t in raw.split(",") if t.strip()]
 
 
