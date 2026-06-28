@@ -403,4 +403,52 @@ export default function FilterBar({
       </div>
 
       {exportError && (
-  
+        <p className="export-error mono" role="alert">
+          {exportError}
+        </p>
+      )}
+      {exportSuccess && (
+        <p className="export-success mono" role="status">
+          {exportSuccess}
+        </p>
+      )}
+        </div>
+      </div>
+
+      {(active === 'all' || selectedVendors.length > 0) && (
+        <div className="vendor-filter-block">
+          <div className="vendor-filter-header">
+            <span className="vendor-filter-label mono">// COMMON VENDORS</span>
+            {selectedVendors.length > 0 && (
+              <button
+                type="button"
+                className="vendor-clear-btn mono"
+                onClick={clearVendors}
+                aria-label="Clear all vendor filters"
+              >
+                CLEAR ({selectedVendors.length})
+              </button>
+            )}
+          </div>
+          <div
+            className="vendor-filter-row"
+            role="group"
+            aria-label="Filter by vendor (multi-select)"
+          >
+            {VENDORS.map(v => (
+              <button
+                key={v}
+                type="button"
+                className={`vendor-btn${selectedVendors.includes(v) ? ' active' : ''}`}
+                onClick={() => handleVendorClick(v)}
+                aria-pressed={selectedVendors.includes(v)}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

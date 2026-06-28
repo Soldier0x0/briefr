@@ -83,4 +83,3 @@ export default function AuditLogPage({ toast }) {
     </div>
   )
 }
-            <button className="admin-btn admin-btn-ghost" disabled={offset + limit >= data.total} onClick={
