@@ -186,6 +186,11 @@ export default function CVEFeed({
     } catch (err) {
       if (!controller.signal.aborted) {
         setError(err.message)
+        if (!append) {
+          setCves([])
+          setTotal(0)
+          setShowingRange(null)
+        }
       }
     } finally {
       if (!controller.signal.aborted) {

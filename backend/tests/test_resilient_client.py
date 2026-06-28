@@ -116,6 +116,27 @@ def test_non_retryable_4xx_raises_without_tripping_circuit(monkeypatch):
     assert health["last_error"] == "HTTP 404"
 
 
+def test_optional_client_error_does_not_record_health(monkeypatch):
+    def handler(request):
+        return httpx.Response(404)
+
+    _install_transport(monkeypatch, handler)
+
+    async def run():
+        with pytest.raises(httpx.HTTPStatusError):
+            await resilient_get(
+                "osv",
+                "https://example.com/vuln",
+                retries=0,
+                record_client_error=False,
+            )
+
+    asyncio.run(run())
+
+    health = get_feed_health().get("osv")
+    assert health is None or health.get("last_error") is None
+
+
 def test_circuit_opens_after_threshold_and_fails_fast(monkeypatch):
     calls = {"n": 0}
 

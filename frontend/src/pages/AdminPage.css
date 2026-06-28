@@ -30,7 +30,7 @@
   --admin-radius-sm: 6px;
   --admin-radius-lg: 12px;
   --admin-sidebar-w: 220px;
-  --admin-status-h: 48px;
+  --admin-status-h: 52px;
   --admin-content-max: 1200px;
   --admin-font: 'DM Sans', system-ui, -apple-system, sans-serif;
   --admin-mono: 'IBM Plex Mono', 'Courier New', monospace;
@@ -1426,10 +1426,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
   height: var(--admin-status-h);
-  padding: 0 16px;
-  background: rgba(10, 10, 8, 0.92);
+  padding: 0 18px;
+  background: rgba(10, 10, 8, 0.94);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--admin-border);
@@ -1439,10 +1439,15 @@
 .admin-statusbar-scroll {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex: 1;
   min-width: 0;
   overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.admin-statusbar-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .admin-brand-link {
@@ -1471,23 +1476,35 @@
 .admin-statusbar .sb-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .admin-statusbar .sb-label {
-  font-size: 10px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--admin-text-dim);
+  letter-spacing: 0.04em;
+  color: var(--admin-text-muted);
 }
 
 .admin-statusbar .sb-value {
+  font-size: 13px;
   font-weight: 600;
   font-family: var(--admin-mono);
   color: var(--admin-text);
+}
+
+.admin-statusbar .sb-value.sb-warn {
+  color: var(--admin-warning);
+}
+
+.admin-statusbar .sb-item .sb-label.mono {
+  font-family: var(--admin-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: none;
 }
 
 .admin-statusbar .sb-actions {
@@ -1504,18 +1521,18 @@
 }
 
 .admin-mode-toggle-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--admin-text-dim);
+  letter-spacing: 0.05em;
+  color: var(--admin-text-muted);
 }
 
 .admin-mode-toggle-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 12px;
-  font-size: 11px;
+  padding: 6px 12px;
+  font-size: 12px;
   font-weight: 600;
   border: none;
   background: transparent;

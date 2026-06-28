@@ -112,6 +112,17 @@ export function riskScoreColor(score) {
   return 'var(--text3)'
 }
 
+/** Score color with severity fallback so medium/high CVEs are not flat grey. */
+export function riskScoreDisplayColor(score, severity) {
+  const byScore = riskScoreColor(score)
+  if (byScore !== 'var(--text3)') return byScore
+  const sev = String(severity || '').toUpperCase()
+  if (sev === 'CRITICAL') return 'var(--red)'
+  if (sev === 'HIGH') return 'var(--amber)'
+  if (sev === 'MEDIUM') return 'var(--accent)'
+  return byScore
+}
+
 export function componentBarColor(score) {
   if (score >= 0.7) return 'var(--red)'
   if (score >= 0.3) return 'var(--amber)'

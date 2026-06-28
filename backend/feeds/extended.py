@@ -124,6 +124,7 @@ async def fetch_sploitus_exploits(cve_id: str, limit: int = 25) -> list[dict] | 
             json=payload,
             headers=headers,
             timeout=30.0,
+            record_client_error=False,
         )
         await record_api_call("sploitus", 1)
 

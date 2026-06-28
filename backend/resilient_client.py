@@ -148,6 +148,7 @@ async def _execute_request_attempt(
     data: Any,
     timeout: float,
     retries: int,
+    record_client_error: bool,
 ) -> httpx.Response:
     """Single logical request with bounded retries for transport/5xx errors."""
     client = _get_client()
@@ -224,7 +225,8 @@ async def _execute_request_attempt(
             response.raise_for_status()
 
         if response.is_client_error:
-            _state(source)["last_error"] = f"HTTP {response.status_code}"
+            if record_client_error:
+                _state(source)["last_error"] = f"HTTP {response.status_code}"
             response.raise_for_status()
 
         _record_success(source)
@@ -247,6 +249,7 @@ async def resilient_request(
     retries: int = DEFAULT_RETRIES,
     wait_on_rate_limit: bool = True,
     wait_on_circuit: bool = False,
+    record_client_error: bool = True,
 ) -> httpx.Response:
     """Perform an HTTP request with queue pacing, retries, and circuit recovery.
 
@@ -281,6 +284,7 @@ async def resilient_request(
                 data=data,
                 timeout=timeout,
                 retries=retries,
+                record_client_error=record_client_error,
             )
         except httpx.HTTPStatusError as exc:
             is_rate_limited = exc.response.status_code == 429 or (

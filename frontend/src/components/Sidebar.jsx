@@ -189,8 +189,7 @@ export default function Sidebar({ filters, onFiltersChange }) {
 
   useEffect(() => {
     function onFocus() {
-      sidebarCache.delete('spark')
-      loadSparkline(false)
+      loadSparkline(true)
     }
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
@@ -302,7 +301,7 @@ export default function Sidebar({ filters, onFiltersChange }) {
           loading={sparkLoading}
           error={sparkError}
           onRetry={() => {
-            sidebarCache.delete('spark')
+            sidebarCache.delete('spark-v2')
             loadSparkline(false)
           }}
         />

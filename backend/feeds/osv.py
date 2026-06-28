@@ -23,6 +23,7 @@ async def _fetch_osv_record(vuln_id: str) -> dict | None:
             "osv",
             f"{OSV_VULN_URL}/{vuln_id}",
             timeout=30.0,
+            record_client_error=False,
         )
         data = response.json()
     except CircuitOpenError:
