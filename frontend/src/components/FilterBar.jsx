@@ -415,7 +415,7 @@ export default function FilterBar({
         </div>
       </div>
 
-      {active === 'all' && (
+      {(active === 'all' || selectedVendors.length > 0) && (
         <div className="vendor-filter-block">
           <div className="vendor-filter-header">
             <span className="vendor-filter-label mono">// COMMON VENDORS</span>
