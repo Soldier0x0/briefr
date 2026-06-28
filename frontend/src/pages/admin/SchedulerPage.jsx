@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react'
-import { adminApi } from '../../api.js'
+import { adminApi, getAdminRequestId } from '../../api.js'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import DangerZone from './shared/DangerZone.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import JobTable from './shared/JobTable.jsx'
+import { useOperations } from './shared/OperationTracker.jsx'
 import { MANUAL_PIPELINES } from './constants.js'
 
 const STATUS_FILTERS = ['ACTIVE', 'PAUSED', 'LOCKED', 'DISABLED']
 const PAGE_SIZE = 10
 
 export default function SchedulerPage({ toast, system }) {
+  const { runAction } = useOperations()
   const [jobs, setJobs] = useState(null)
   const [running, setRunning] = useState({})
   const [pauseAllConfirm, setPauseAllConfirm] = useState(false)
@@ -29,13 +31,35 @@ export default function SchedulerPage({ toast, system }) {
   async function runNow(jobId) {
     setRunning(r => ({ ...r, [jobId]: true }))
     try {
-      const res = await adminApi.post('/scheduler/run', { job_id: jobId })
-      const data = await res.json()
-      if (res.status === 409) { toast('Already running', false); return }
-      toast(data.ok ? `Started: ${jobId}` : data.detail || 'Failed', data.ok)
+      await runAction({
+        id: `job-${jobId}`,
+        label: `Running ${jobId.replace(/_/g, ' ')}`,
+        kind: 'job',
+        meta: { jobId },
+        successMessage: `Started: ${jobId}`,
+        execute: async () => {
+          const res = await adminApi.post('/scheduler/run', { job_id: jobId })
+          const requestId = getAdminRequestId(res)
+          const data = await res.json().catch(() => ({}))
+          if (res.status === 409) {
+            const err = new Error('Already running')
+            err.requestId = requestId
+            throw err
+          }
+          if (!res.ok || !data.ok) {
+            const err = new Error(data.detail || `HTTP ${res.status}`)
+            err.requestId = requestId
+            throw err
+          }
+          return { requestId, data }
+        },
+      })
       setTimeout(loadJobs, 1000)
-    } catch (e) { toast(String(e.message), false) }
-    setTimeout(() => setRunning(r => ({ ...r, [jobId]: false })), 2000)
+    } catch {
+      // runAction already surfaced toast + log links
+    } finally {
+      setTimeout(() => setRunning(r => ({ ...r, [jobId]: false })), 2000)
+    }
   }
 
   async function pauseResume(job) {

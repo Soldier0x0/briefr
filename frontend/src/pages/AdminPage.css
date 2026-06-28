@@ -2436,20 +2436,76 @@
 
 .admin-toast {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  border-radius: 6px;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
   font-size: 0.8125rem;
   font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  min-width: 220px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  min-width: 260px;
+  max-width: min(420px, calc(100vw - 2rem));
   animation: admin-toast-in 0.2s ease-out;
+}
+
+.admin-toast-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.admin-toast-msg {
+  line-height: 1.4;
+  color: inherit;
+}
+
+.admin-toast-request {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.6875rem;
+  opacity: 0.85;
+}
+
+.admin-toast-copy {
+  display: inline-flex;
+  padding: 0.1rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+.admin-toast-copy:hover {
+  opacity: 1;
+}
+
+.admin-toast-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  margin-top: 0.1rem;
+}
+
+.admin-toast-action {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  opacity: 0.92;
+}
+
+.admin-toast-action:hover {
+  opacity: 1;
 }
 
 .admin-toast-leaving { animation: admin-toast-out 0.18s ease-in forwards; }
 
-.admin-toast svg { flex-shrink: 0; }
+.admin-toast svg { flex-shrink: 0; margin-top: 0.1rem; }
 .admin-toast-msg { flex: 1; }
 
 .admin-toast-close {
@@ -2467,6 +2523,65 @@
 
 .admin-toast-ok    { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
 .admin-toast-error { background: var(--red-dim);   color: var(--red);   border: 1px solid var(--red); }
+.admin-toast-warn  { background: var(--amber-dim); color: var(--amber); border: 1px solid var(--amber); }
+.admin-toast-info  { background: var(--bg3); color: var(--text2); border: 1px solid var(--border2); }
+
+/* ── Operation progress strip (under status bar) ───────────────────────── */
+
+.admin-operation-strip {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-bottom: 1px solid var(--admin-border);
+  background: rgba(17, 17, 16, 0.96);
+}
+
+.admin-operation-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 18px;
+  font-size: 0.8125rem;
+  color: var(--admin-text-muted);
+  border-top: 1px solid rgba(42, 42, 37, 0.6);
+}
+
+.admin-operation-item:first-child {
+  border-top: none;
+}
+
+.admin-operation-label {
+  color: var(--admin-text);
+  font-weight: 600;
+}
+
+.admin-operation-stage {
+  color: var(--admin-text-dim);
+  font-size: 0.75rem;
+}
+
+.admin-operation-stage::before {
+  content: '· ';
+}
+
+.admin-operation-link {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--admin-accent-text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.admin-operation-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.feed-source-card--highlight {
+  box-shadow: 0 0 0 1px var(--admin-accent), 0 0 12px var(--admin-accent-glow);
+}
 
 /* ── Pagination ─────────────────────────────────────────────────────────── */
 

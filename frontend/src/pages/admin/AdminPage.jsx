@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { Menu, X } from 'lucide-react'
-import { adminApi, getAdminKey } from '../../api.js'
+import { useSearchParams } from 'react-router-dom'
+import { adminApi, getAdminKey, getAdminRequestId } from '../../api.js'
 import { getAdminMode, setAdminMode } from '../../utils/adminMode.js'
 import { getDisplayPrefs } from '../../utils/displayPrefs.js'
+import { ingestLogUrl } from '../../utils/adminLinks.js'
 import StatusBar from './StatusBar.jsx'
 import Sidebar from './Sidebar.jsx'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import ErrorBoundary from './shared/ErrorBoundary.jsx'
 import { useToast, ToastArea } from './shared/Toast.jsx'
+import { OperationProvider, OperationStrip, useOperations } from './shared/OperationTracker.jsx'
 import { ANALYST_NAV } from './constants.js'
 import OverviewPage from './OverviewPage.jsx'
 import BackupsPage from './BackupsPage.jsx'
@@ -39,7 +40,8 @@ const VALID_ADMIN_PAGES = new Set([
   'sessions', 'ratelimit',
 ])
 
-export default function AdminPage() {
+function AdminPageBody({ toast, toasts, dismissToast }) {
+  const { runAction } = useOperations()
   const [searchParams] = useSearchParams()
   const [page, setPageRaw] = useState('overview')
   // Tracks which sub-pages have ever been visited, so we only mount (and let
@@ -58,18 +60,44 @@ export default function AdminPage() {
   const [lastUpdated, setLastUpdated] = useState(null)
   const [jobAcks, setJobAcks] = useState(() => loadJobAcks())
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { toasts, show: toast, dismiss: dismissToast } = useToast()
   const pollRef = useRef(null)
+
+  const urlFilters = useMemo(() => ({
+    ingest: {
+      level: searchParams.get('level') || '',
+      category: searchParams.get('category') || '',
+      logger: searchParams.get('logger') || '',
+      requestId: searchParams.get('request_id') || '',
+    },
+    audit: {
+      actionPrefix: searchParams.get('action_prefix') || '',
+      q: searchParams.get('q') || '',
+    },
+    feedSource: searchParams.get('source') || '',
+  }), [searchParams])
 
   async function loadSystem() {
     try {
       const res = await adminApi.get('/system')
-      if (!res.ok) return
+      if (!res.ok) {
+        const requestId = getAdminRequestId(res)
+        toast({
+          message: `System status unavailable (HTTP ${res.status})`,
+          variant: 'warning',
+          actions: [{ label: 'View application log', href: ingestLogUrl({ level: 'ERROR', requestId }) }],
+          requestId,
+        })
+        return
+      }
       const data = await res.json()
       setSystem(data); setLastUpdated(Date.now())
-    } catch {
-      // Best-effort — RequireAuth already guards this route; a transient
-      // fetch failure here just leaves the previous system snapshot stale.
+    } catch (err) {
+      toast({
+        message: err?.message || 'Failed to load system status',
+        variant: 'warning',
+        actions: [{ label: 'View application log', href: ingestLogUrl({ level: 'ERROR', requestId: err?.requestId }) }],
+        requestId: err?.requestId,
+      })
     }
   }
 
@@ -118,15 +146,28 @@ export default function AdminPage() {
   }
 
   async function handleRunIngest() {
-    try {
-      const res = await fetch('/api/refresh', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'X-BRIEFR-Admin-Key': getAdminKey() },
-      })
-      if (!res.ok) throw new Error((await res.json()).detail || 'Failed')
-      toast('Full ingest started', true)
-    } catch (e) { toast(String(e.message), false) }
+    await runAction({
+      id: 'full-ingest',
+      label: 'Refreshing all sources',
+      kind: 'ingest',
+      successMessage: 'Full ingest started — sources will update as jobs complete',
+      execute: async () => {
+        const res = await fetch('/api/refresh', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', 'X-BRIEFR-Admin-Key': getAdminKey() },
+          signal: AbortSignal.timeout(60_000),
+        })
+        const requestId = getAdminRequestId(res)
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          const err = new Error(body.detail || 'Failed to start full ingest')
+          err.requestId = requestId
+          throw err
+        }
+        return { requestId }
+      },
+    })
   }
 
   async function handleRestart() {
@@ -174,9 +215,9 @@ export default function AdminPage() {
     webhooks: <WebhooksPage toast={toast} />,
     alerts: <AlertsPage toast={toast} />,
     security: <SecurityPage toast={toast} />,
-    feedhealth: <FeedHealthPage system={system} toast={toast} mode={mode} onReload={loadSystem} />,
-    ingestlog: <IngestLogPage toast={toast} onErrorCountChange={setIngestErrorCount} active={page === 'ingestlog'} />,
-    auditlog: <AuditLogPage toast={toast} />,
+    feedhealth: <FeedHealthPage system={system} toast={toast} mode={mode} onReload={loadSystem} highlightSource={urlFilters.feedSource} />,
+    ingestlog: <IngestLogPage toast={toast} onErrorCountChange={setIngestErrorCount} active={page === 'ingestlog'} urlFilters={urlFilters.ingest} />,
+    auditlog: <AuditLogPage toast={toast} urlFilters={urlFilters.audit} />,
     display: <DisplayPage />,
     sessions: <SessionsPage toast={toast} />,
     ratelimit: <RateLimitPage toast={toast} />,
@@ -204,6 +245,7 @@ export default function AdminPage() {
         onToggleSidebar={() => setSidebarOpen(v => !v)}
         sidebarOpen={sidebarOpen}
       />
+      <OperationStrip />
       <div className="admin-body">
         {sidebarOpen && (
           <button
@@ -239,5 +281,14 @@ export default function AdminPage() {
       </div>
       <ToastArea toasts={toasts} onDismiss={dismissToast} />
     </div>
+  )
+}
+
+export default function AdminPage() {
+  const { toasts, show: toast, dismiss: dismissToast } = useToast()
+  return (
+    <OperationProvider toast={toast}>
+      <AdminPageBody toast={toast} toasts={toasts} dismissToast={dismissToast} />
+    </OperationProvider>
   )
 }

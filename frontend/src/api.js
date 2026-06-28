@@ -398,7 +398,12 @@ async function adminFetch(path, opts = {}, _retried = false) {
   const key = getAdminKey()
   const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) }
   if (key) headers['X-BRIEFR-Admin-Key'] = key
-  const res = await fetch(`/api/admin${path}`, { ...opts, headers, credentials: 'include' })
+  const res = await fetch(`/api/admin${path}`, {
+    ...opts,
+    headers,
+    credentials: 'include',
+    signal: opts.signal ?? AbortSignal.timeout(60_000),
+  })
   if (res.status === 401) {
     // Session-cookie auth: retry once via /auth/refresh (same as request()).
     // Legacy X-BRIEFR-Admin-Key auth has no refresh path — fail immediately.
@@ -412,6 +417,30 @@ async function adminFetch(path, opts = {}, _retried = false) {
   return res
 }
 
+export function getAdminRequestId(res) {
+  return res?.headers?.get?.('X-Request-ID') || null
+}
+
+/** Parse admin Response; throw on HTTP error with requestId attached. */
+export async function adminJson(res) {
+  const requestId = getAdminRequestId(res)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const detail = data?.detail
+    const message = typeof detail === 'string'
+      ? detail
+      : Array.isArray(detail)
+        ? detail.map(d => d.msg || String(d)).join('; ')
+        : `HTTP ${res.status}`
+    const err = new Error(message)
+    err.status = res.status
+    err.requestId = requestId
+    err.data = data
+    throw err
+  }
+  return { data, requestId, response: res }
+}
+
 export const adminApi = {
   get: (path) => adminFetch(path),
   post: (path, body) => adminFetch(path, { method: 'POST', body: JSON.stringify(body) }),
@@ -421,4 +450,6 @@ export const adminApi = {
     headers: {},
     body: formData,
   }),
+  getJson: async (path) => adminJson(await adminFetch(path)),
+  postJson: async (path, body) => adminJson(await adminFetch(path, { method: 'POST', body: JSON.stringify(body) })),
 }
