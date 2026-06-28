@@ -1,28 +1,51 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { Eye, Wrench, RefreshCw, Clock, Menu, X } from 'lucide-react'
+import { Eye, Wrench, RefreshCw, RotateCw, Hourglass, ChevronDown, Clock } from 'lucide-react'
+import ConfirmModal from './shared/ConfirmModal.jsx'
 import HelpTip from './shared/HelpTip.jsx'
-import ApiQueueIndicator from '../../components/ApiQueueIndicator.jsx'
 import { fmtAge } from './formatters.js'
 import { worstSource } from './intelStatus.js'
 
-export default function StatusBar({
-  system,
-  onRunIngest,
-  refreshInProgress,
-  mode,
-  setMode,
-  lastUpdated,
-  userMenu,
-  onToggleSidebar,
-  sidebarOpen,
-}) {
+export default function StatusBar({ system, onRunIngest, onRestart, onDrainRestart, refreshInProgress, mode, setMode, lastUpdated, userMenu }) {
+  const [restartMenu, setRestartMenu] = useState(false)
+  const [menuPos, setMenuPos] = useState(null)
+  const [confirmRestart, setConfirmRestart] = useState(null) // null | 'immediate' | 'drain'
   const [now, setNow] = useState(Date.now())
+  const menuRef = useRef(null)
+  const arrowRef = useRef(null)
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(t)
   }, [])
+
+  function handleModeClick(next) {
+    setMode(next)
+  }
+
+  useEffect(() => {
+    function onDown(e) {
+      if (
+        restartMenu &&
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        !arrowRef.current?.contains(e.target)
+      ) {
+        setRestartMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [restartMenu])
+
+  function toggleRestartMenu() {
+    if (!restartMenu && arrowRef.current) {
+      const rect = arrowRef.current.getBoundingClientRect()
+      setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    }
+    setRestartMenu(v => !v)
+  }
 
   const nvdAge = system?.last_nvd_sync_age_seconds
   const backupAge = system?.last_backup_age_seconds
@@ -47,47 +70,54 @@ export default function StatusBar({
 
   const worst = mode === 'analyst' ? worstSource(system) : null
   const updatedAgo = lastUpdated ? Math.max(0, Math.round((now - lastUpdated) / 1000)) : null
+  const updatedAgoEl = updatedAgo !== null ? (
+    <>
+      <div className="sb-sep" />
+      <span className="sb-item" title="Time since the status bar last refreshed from the backend">
+        <Clock size={11} strokeWidth={2} />
+        <span className="sb-label">Updated {updatedAgo}s ago</span>
+      </span>
+    </>
+  ) : null
 
   return (
-    <div className="admin-statusbar">
-      <div className="admin-status-left" style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
-        {onToggleSidebar && (
-          <button
-            type="button"
-            className="admin-sidebar-toggle"
-            onClick={onToggleSidebar}
-            aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={sidebarOpen}
-          >
-            {sidebarOpen ? <X size={16} /> : <Menu size={16} />}
-          </button>
-        )}
-        <Link to="/" className="admin-brand-link" title="Back to BRIEFR">
+    <>
+      {confirmRestart && (
+        <ConfirmModal
+          actionId={confirmRestart === 'drain' ? 'system.restart.drain' : 'system.restart'}
+          title={confirmRestart === 'drain' ? 'Drain then restart' : 'Restart now?'}
+          message={
+            confirmRestart === 'drain'
+              ? 'Wait for all running jobs to finish, then shut the backend down gracefully (systemd will restart it).'
+              : undefined
+          }
+          confirmWord="restart"
+          onConfirm={() => {
+            setConfirmRestart(null)
+            if (confirmRestart === 'drain') onDrainRestart()
+            else onRestart()
+          }}
+          onCancel={() => setConfirmRestart(null)}
+        />
+      )}
+      <div className="admin-statusbar">
+        <Link to="/" className="admin-brand-link mono" title="Back to BRIEFR">
           BRIEFR
         </Link>
         <div className="sb-sep" />
-        <span className={`admin-status-pill admin-status-pill--${mode}`}>
-          {mode === 'analyst' ? 'Analyst' : 'Operator'}
-        </span>
-        <div className="sb-sep" />
         <div className="admin-mode-toggle-group">
+          <span className="admin-mode-toggle-label">VIEW</span>
           <div className="admin-mode-toggle" role="group" aria-label="Switch admin view mode">
             <button
-              type="button"
               className={`admin-mode-toggle-btn ${mode === 'analyst' ? 'active' : ''}`}
-              onClick={() => setMode('analyst')}
+              onClick={() => handleModeClick('analyst')}
               title="Analyst view — CVE triage, simplified language, no destructive actions"
-            >
-              <Eye size={13} strokeWidth={2} /> Analyst
-            </button>
+            ><Eye size={13} strokeWidth={2} /> Analyst</button>
             <button
-              type="button"
               className={`admin-mode-toggle-btn ${mode === 'operator' ? 'active' : ''}`}
-              onClick={() => setMode('operator')}
+              onClick={() => handleModeClick('operator')}
               title="Operator view — system management: restart, full ingest, purge, config"
-            >
-              <Wrench size={13} strokeWidth={2} /> Operator
-            </button>
+            ><Wrench size={13} strokeWidth={2} /> Operator</button>
           </div>
         </div>
         <div className="sb-sep" />
@@ -113,6 +143,20 @@ export default function StatusBar({
                 </span>
               </>
             )}
+            {updatedAgoEl}
+            <div className="sb-actions">
+              {userMenu}
+              <button
+                className="admin-btn admin-btn-ghost"
+                onClick={onRunIngest}
+                disabled={refreshInProgress}
+                style={{ fontSize: '0.75rem' }}
+                title="Pulls the latest CVEs, KEV entries, and EPSS scores from every source right now"
+              >
+                {refreshInProgress ? <><span className="admin-spinner" /> Refreshing…</> : <><RefreshCw size={13} strokeWidth={2} /> Refresh all sources</>}
+              </button>
+              <HelpTip text="Pulls the latest CVEs, KEV entries, and EPSS scores from every configured source right now, instead of waiting for the normal schedule." />
+            </div>
           </>
         ) : (
           <>
@@ -141,63 +185,8 @@ export default function StatusBar({
             <div className="sb-sep" />
             <span className="sb-item">
               <span className="sb-label">Circuits</span>
-              <span className={`sb-value ${openCircuits > 0 ? 'sb-warn' : ''}`}>{openCircuits} open</span>
+              <span className={`sb-value ${openCircuits > 0 ? 'sb-warn' : ''}`}>{openCircuits > 0 ? `${openCircuits} tripped` : 'OK'}</span>
             </span>
             <div className="sb-sep" />
             <span className="sb-item" title={integrityOk ? 'Last integrity check passed' : 'Last integrity check found a problem'}>
-              <span className={`dot ${integrityOk ? 'dot-ok' : 'dot-error'}`} />
-              <span className="sb-label">DB {integrityOk ? 'ok' : 'degraded'}</span>
-            </span>
-            <div className="sb-sep" />
-            <span className="sb-item">
-              <span className={`pill ${discordPillClass()}`} title="Discord webhook">Discord</span>
-            </span>
-            <span className="sb-item">
-              <span className={`pill ${telegramPillClass()}`} title="Telegram webhook">Telegram</span>
-            </span>
-            {commit && (
-              <>
-                <div className="sb-sep" />
-                <span className="sb-item">
-                  <span className="sb-label mono" style={{ fontSize: '0.6875rem' }}>{commit.slice(0, 7) || 'dev'}</span>
-                </span>
-              </>
-            )}
-          </>
-        )}
-        {updatedAgo !== null && (
-          <>
-            <div className="sb-sep" />
-            <span className="sb-item" title="Time since the status bar last refreshed from the backend">
-              <Clock size={11} strokeWidth={2} />
-              <span className="sb-label">Updated {updatedAgo}s ago</span>
-            </span>
-          </>
-        )}
-      </div>
-
-      <div className="sb-actions">
-        <ApiQueueIndicator apiQueue={system?.api_queue} className="admin-api-queue" />
-        {userMenu}
-        {mode === 'analyst' && (
-          <>
-            <button
-              type="button"
-              className="admin-btn admin-btn-ghost admin-btn--sm"
-              onClick={onRunIngest}
-              disabled={refreshInProgress}
-              title="Pulls the latest CVEs, KEV entries, and EPSS scores from every source right now"
-            >
-              {refreshInProgress ? (
-                <><span className="admin-spinner" /> Refreshing…</>
-              ) : (
-                <><RefreshCw size={13} strokeWidth={2} /> Refresh all sources</>
-              )}
-            </button>
-            <HelpTip text="Pulls the latest CVEs, KEV entries, and EPSS scores from every configured source right now, instead of waiting for the normal schedule." />
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
+              <span className={`dot ${integrityOk 

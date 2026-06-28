@@ -1,92 +1,91 @@
 import { useState, useEffect } from 'react'
-import { adminApi } from '../../api.js'
+import { AlertTriangle } from 'lucide-react'
+import { adminApi, setAdminKey } from '../../api.js'
+import HelpTip from './shared/HelpTip.jsx'
 import StatCard from './shared/StatCard.jsx'
-
-const RATE_LIMIT_BUCKET_LABELS = {
-  ioc: 'IOC lookups',
-  refresh: 'Manual refresh / ingest',
-  admin_read: 'Admin read (GET)',
-  wallboard: 'Wallboard API',
-  login: 'Login / setup (per IP)',
-  login_username: 'Login / setup (per username)',
-  auth_refresh: 'Session refresh',
-}
 
 export default function SecurityPage({ toast }) {
   const [security, setSecurity] = useState(null)
+  const [rotateOpen, setRotateOpen] = useState(false)
+  const [rotateValue, setRotateValue] = useState('')
 
   useEffect(() => {
     adminApi.get('/security').then(r => r.json()).then(setSecurity).catch(() => {})
   }, [])
 
+  function generateKey() {
+    const arr = new Uint8Array(24)
+    crypto.getRandomValues(arr)
+    return btoa(String.fromCharCode(...arr)).replace(/[+/=]/g, c => ({ '+': '-', '/': '_', '=': '' }[c]))
+  }
+
+  async function saveRotatedKey() {
+    if (!rotateValue.trim()) return
+    try {
+      const res = await adminApi.post('/config/apply-all', [{ key: 'BRIEFR_ADMIN_API_KEY', value: rotateValue }])
+      const data = await res.json()
+      if (res.ok) {
+        setAdminKey(rotateValue)
+        toast(data.message || 'Admin key rotated — took effect immediately', true)
+        setRotateOpen(false)
+      } else {
+        toast(data.detail || 'Failed to rotate key', false)
+      }
+    } catch (e) { toast(String(e.message), false) }
+  }
+
   return (
     <div>
       <h1 className="admin-page-title">Security</h1>
-      <p className="admin-page-subtitle">
-        App login activity and in-process rate-limit usage. BRIEFR uses session cookies for admin access — no separate admin API key is required.
-      </p>
+      <p className="admin-page-subtitle">Admin-key status and recent failed authentication attempts.</p>
+
+      {security && !security.admin_key_set && (
+        <div className="admin-callout admin-callout-amber">
+          <AlertTriangle size={16} strokeWidth={2} />
+          <span>Admin API key not configured — routes are unauthenticated.</span>
+        </div>
+      )}
 
       {security && (
         <>
           <div className="stat-card-row">
             <StatCard label="RATE LIMIT" value={security.rate_limit_enabled ? 'ON' : 'OFF'} colorClass={security.rate_limit_enabled ? 'color-green' : 'color-amber'} />
-            <StatCard label="LOGIN LIMIT / MIN" value={security.rate_limit_login_per_minute ?? '—'} />
-            <StatCard label="AUTH REFRESH / MIN" value={security.rate_limit_auth_refresh_per_minute ?? '—'} />
-            <StatCard label="LOGIN FAILURES (24H)" value={security.failed_auth_last_24h} colorClass={security.failed_auth_last_24h > 0 ? 'color-red' : 'color-green'} />
-          </div>
-          <div className="stat-card-row">
-            <StatCard label="IOC LIMIT / MIN" value={security.rate_limit_ioc_per_minute ?? '—'} />
-            <StatCard label="REFRESH LIMIT / MIN" value={security.rate_limit_refresh_per_minute ?? '—'} />
-            <StatCard label="ADMIN READ / MIN" value={security.rate_limit_admin_read_per_minute ?? '—'} />
+            <StatCard label="IOC LIMIT / MIN" value={security.rate_limit_ioc_per_minute} />
+            <StatCard label="REFRESH LIMIT / MIN" value={security.rate_limit_refresh_per_minute} />
+            <StatCard label="ADMIN KEY" value={security.admin_key_set ? 'SET' : 'NOT SET'} colorClass={security.admin_key_set ? 'color-green' : 'color-red'} />
+            <StatCard label="AUTH FAILURES (24H)" value={security.failed_auth_last_24h} colorClass={security.failed_auth_last_24h > 0 ? 'color-red' : 'color-green'} />
           </div>
 
           <div className="admin-card">
-            <div className="admin-card-title">Login failures (last 24h)</div>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text2)', margin: '0 0 0.75rem', lineHeight: 1.5 }}>
-              Failed username/password attempts against the built-in app login ({security.failed_auth_last_24h} in the last 24 hours).
-            </p>
-            {security.failed_auth_last_24h > 0 ? (
-              <div style={{ fontSize: '0.8125rem', color: 'var(--red)' }}>
-                {security.failed_auth_last_24h} failed login attempt(s) — check Audit log for details.
-              </div>
-            ) : (
-              <div style={{ fontSize: '0.8125rem', color: 'var(--green)' }}>
-                No failed logins in the last 24h
+            <div className="admin-card-title">Admin key</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span className={`badge ${security.admin_key_set ? 'badge-ok' : 'badge-error'}`}>
+                {security.admin_key_set ? 'SET' : 'NOT SET'}
+              </span>
+              <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.8125rem' }} onClick={() => { setRotateOpen(v => !v); setRotateValue(generateKey()) }}>
+                Rotate key
+              </button>
+            </div>
+            {rotateOpen && (
+              <div style={{ marginTop: '0.75rem' }}>
+                <div style={{ fontSize: '0.8125rem', color: 'var(--text3)', marginBottom: '0.4rem' }}>
+                  New key (edit or use generated):
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <input className="admin-input" style={{ minWidth: 300, fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}
+                    value={rotateValue} onChange={e => setRotateValue(e.target.value)} />
+                  <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.8rem' }} onClick={saveRotatedKey}>
+                    Save
+                  </button>
+                  <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.8rem' }} onClick={() => setRotateOpen(false)}>
+                    Cancel
+                  </button>
+                </div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text3)', marginTop: '0.4rem' }}>
+                  Takes effect immediately — no backend restart needed.
+                </div>
               </div>
             )}
           </div>
 
-          <div className="admin-card">
-            <div className="admin-card-title">Rate-limit usage (since backend start)</div>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text2)', margin: '0 0 0.75rem', lineHeight: 1.5 }}>
-              Each row is a client IP (or Cloudflare-attested IP behind the proxy), or a username for login throttling.
-              <strong> Hits</strong> count requests that consumed a rate-limit token — IOC lookups, manual refresh/ingest, admin reads, and auth endpoints.
-              Limits reset continuously (token bucket); high counts mean that client is busy, not that they are blocked forever.
-            </p>
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>CLIENT / USER</th>
-                  <th>ENDPOINT GROUP</th>
-                  <th>HITS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {security.top_rate_limit_consumers?.length === 0 && (
-                  <tr><td colSpan={3} className="admin-empty">No rate-limited requests recorded yet</td></tr>
-                )}
-                {security.top_rate_limit_consumers?.map((c, i) => (
-                  <tr key={i}>
-                    <td className="mono" style={{ fontSize: '0.75rem' }}>{c.key}</td>
-                    <td>{RATE_LIMIT_BUCKET_LABELS[c.bucket] || c.bucket}</td>
-                    <td>{c.hits}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
+          <div c

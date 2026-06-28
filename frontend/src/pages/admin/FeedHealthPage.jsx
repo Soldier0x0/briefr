@@ -39,44 +39,36 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
   }
 
   function FeedCard({ entryKey, s }) {
-    let statusTone = 'ok'
+    let borderColor = 'var(--border)'
     let StatusIcon = CheckCircle2
-    if (s.circuit_open) { statusTone = 'err'; StatusIcon = XCircle }
-    else if (s.consecutive_failures > 0) { statusTone = 'warn'; StatusIcon = AlertTriangle }
+    if (s.circuit_open) { borderColor = 'var(--red)'; StatusIcon = XCircle }
+    else if (s.consecutive_failures > 0) { borderColor = 'var(--amber)'; StatusIcon = AlertTriangle }
     return (
-      <div key={entryKey} className={`admin-feed-card feed-source-card admin-stat-card--${statusTone === 'ok' ? 'ok' : statusTone === 'warn' ? 'warn' : 'err'}`}>
-        <div className="admin-feed-card-header">
-          <div className="admin-feed-card-name feed-source-name">{sourceLabel(entryKey)}</div>
-          <span className={`badge ${s.circuit_open ? 'badge-error' : s.consecutive_failures > 0 ? 'badge-warn' : 'badge-ok'}`}>
-            <StatusIcon size={11} strokeWidth={2.25} style={{ marginRight: 4, verticalAlign: '-1px' }} />
-            {s.circuit_open ? (isAnalyst ? 'Paused' : 'Open') : (isAnalyst ? 'Healthy' : 'Closed')}
+      <div key={entryKey} className="feed-source-card" style={{ borderLeftColor: borderColor }}>
+        <div className="feed-source-name">{sourceLabel(entryKey)}</div>
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', margin: '0.4rem 0' }}>
+          <span className={`badge ${s.circuit_open ? 'badge-error' : 'badge-ok'}`}>
+            <StatusIcon size={11} strokeWidth={2.25} style={{ marginRight: '0.25rem', verticalAlign: '-1px' }} />
+            {s.circuit_open ? (isAnalyst ? 'PAUSED' : 'TRIPPED') : (isAnalyst ? 'Healthy' : 'OK')}
           </span>
-        </div>
-        <div className="admin-feed-card-meta">
           {!isAnalyst && s.consecutive_failures > 0 && (
-            <div className="admin-feed-card-row">
-              <span className="admin-feed-card-label">Failures</span>
-              <span className="admin-feed-card-value">{s.consecutive_failures}</span>
-            </div>
-          )}
-          {!isAnalyst && (
-            <div className="admin-feed-card-row">
-              <span className="admin-feed-card-label">Last success</span>
-              <span className="admin-feed-card-value">{s.last_success ? fmtIso(s.last_success) : 'Never'}</span>
-            </div>
-          )}
-          {!isAnalyst && s.last_error && (
-            <div className="admin-feed-card-row">
-              <span className="admin-feed-card-label">Last error</span>
-              <span className="admin-feed-card-value" style={{ color: 'var(--amber)', maxWidth: 160 }}>{s.last_error.slice(0, 60)}</span>
-            </div>
+            <span className="badge badge-warn">{s.consecutive_failures} fail{s.consecutive_failures !== 1 ? 's' : ''}</span>
           )}
         </div>
+        {!isAnalyst && (
+          <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>
+            {s.last_success ? `✓ ${fmtIso(s.last_success)}` : 'Never succeeded'}
+          </div>
+        )}
+        {!isAnalyst && s.last_error && (
+          <div style={{ fontSize: '0.7rem', color: 'var(--amber)', marginTop: '0.2rem', wordBreak: 'break-all' }}>
+            {s.last_error.slice(0, 80)}
+          </div>
+        )}
         <button
-          type="button"
-          className="admin-btn admin-btn-danger admin-btn--sm"
-          style={{ marginTop: 10 }}
-          disabled={!s?.circuit_open && !(s?.consecutive_failures > 0) && !s?.last_error}
+          className="admin-btn admin-btn-danger"
+          style={{ marginTop: '0.5rem', fontSize: '0.7rem', padding: '0.15rem 0.5rem' }}
+          disabled={!s.circuit_open}
           onClick={() => resetCircuit(entryKey)}
         >
           {isAnalyst ? 'Try again' : 'Reset circuit'}
@@ -109,10 +101,11 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
         <>
           {openCircuits.length > 0 && (
             <div style={{ marginBottom: '1.25rem' }}>
-              <div className="admin-card-title" style={{ color: 'var(--red)' }}>
-                {isAnalyst ? `Sources temporarily paused (${openCircuits.length})` : `Open circuits (${openCircuits.length})`}
+              <div className="admin-card-title" style={{ color: 'var(--red)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                {isAnalyst ? `Sources temporarily paused (${openCircuits.length})` : `Circuit tripped (${openCircuits.length})`}
+                {!isAnalyst && <HelpTip text="A circuit trips after repeated fetch failures to stop hammering an unresponsive upstream source. BRIEFR retries automatically after a cooldown, or you can force-reset below." />}
               </div>
-              <div className="admin-feed-grid feed-card-grid">
+              <div className="feed-card-grid">
                 {sortByFailures(openCircuits).map(([key, s]) => <FeedCard key={key} entryKey={key} s={s} />)}
               </div>
             </div>
@@ -120,7 +113,7 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
           {degraded.length > 0 && (
             <div style={{ marginBottom: '1.25rem' }}>
               <div className="admin-card-title" style={{ color: 'var(--amber)' }}>Degraded — recent failures ({degraded.length})</div>
-              <div className="admin-feed-grid feed-card-grid">
+              <div className="feed-card-grid">
                 {sortByFailures(degraded).map(([key, s]) => <FeedCard key={key} entryKey={key} s={s} />)}
               </div>
             </div>
@@ -128,7 +121,7 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
           {healthy.length > 0 && (
             <div style={{ marginBottom: '1.25rem' }}>
               <div className="admin-card-title" style={{ color: 'var(--green)' }}>Healthy ({healthy.length})</div>
-              <div className="admin-feed-grid feed-card-grid">
+              <div className="feed-card-grid">
                 {healthy.map(([key, s]) => <FeedCard key={key} entryKey={key} s={s} />)}
               </div>
             </div>
@@ -172,7 +165,7 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
                   ? 'Refresh one news outlet or ATLAS without rebuilding everything. ATLAS reloads from local data — run the MITRE/ATLAS job first for upstream updates.'
                   : 'Refresh a single RSS outlet or ATLAS slice. ATLAS reloads from the local DB; run Weekly MITRE ATT&CK + ATLAS Refresh for upstream YAML.'}
               </p>
-              <div className="admin-feed-grid feed-card-grid">
+              <div className="feed-card-grid">
                 {incidentSources.map(src => (
                   <div key={src.id} className="feed-source-card" style={{ borderLeftColor: src.stale ? 'var(--amber)' : 'var(--green)' }}>
                     <div className="feed-source-name">{src.label}</div>
@@ -214,3 +207,4 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
     </div>
   )
 }
+                                                                                                                                                                                                                                             
