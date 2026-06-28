@@ -4,6 +4,63 @@ import { adminApi } from '../../api.js'
 import { fmtIso, sourceLabel } from './formatters.js'
 import HelpTip from './shared/HelpTip.jsx'
 
+function FeedSourceCard({ entryKey, s, isAnalyst, onReset }) {
+  const hasError = Boolean(s.last_error)
+  const isDegraded = !s.circuit_open && (s.consecutive_failures || 0) > 0
+  let borderColor = 'var(--border)'
+  let StatusIcon = CheckCircle2
+  if (s.circuit_open) { borderColor = 'var(--red)'; StatusIcon = XCircle }
+  else if (isDegraded || hasError) { borderColor = 'var(--amber)'; StatusIcon = AlertTriangle }
+  const canReset = Boolean(s.circuit_open || isDegraded || hasError)
+  const statusLabel = s.circuit_open
+    ? (isAnalyst ? 'PAUSED' : 'TRIPPED')
+    : (hasError || isDegraded)
+      ? (isAnalyst ? 'Needs attention' : 'DEGRADED')
+      : (isAnalyst ? 'Healthy' : 'OK')
+  const badgeClass = s.circuit_open
+    ? 'badge-error'
+    : (hasError || isDegraded)
+      ? 'badge-warn'
+      : 'badge-ok'
+  return (
+    <div className="feed-source-card" style={{ borderLeftColor: borderColor }}>
+      <div className="feed-source-name">{sourceLabel(entryKey)}</div>
+      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', margin: '0.4rem 0' }}>
+        <span className={`badge ${badgeClass}`}>
+          <StatusIcon size={11} strokeWidth={2.25} style={{ marginRight: '0.25rem', verticalAlign: '-1px' }} />
+          {statusLabel}
+        </span>
+        {!isAnalyst && s.consecutive_failures > 0 && (
+          <span className="badge badge-warn">{s.consecutive_failures} fail{s.consecutive_failures !== 1 ? 's' : ''}</span>
+        )}
+      </div>
+      {!isAnalyst && (
+        <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>
+          {s.last_success ? `✓ ${fmtIso(s.last_success)}` : 'Never succeeded'}
+        </div>
+      )}
+      {!isAnalyst && s.last_error && (
+        <div style={{ fontSize: '0.7rem', color: 'var(--amber)', marginTop: '0.2rem', wordBreak: 'break-all' }} title={s.last_error}>
+          {s.last_error.slice(0, 120)}
+        </div>
+      )}
+      <button
+        className="admin-btn admin-btn-danger"
+        style={{ marginTop: '0.5rem', fontSize: '0.7rem', padding: '0.15rem 0.5rem' }}
+        disabled={!canReset}
+        onClick={() => onReset(entryKey)}
+        title={
+          canReset
+            ? (isAnalyst ? 'Clear the error state and try fetching again' : 'Reset circuit breaker and clear last error')
+            : 'No errors to clear — source is healthy'
+        }
+      >
+        {isAnalyst ? 'Try again' : 'Reset circuit'}
+      </button>
+    </div>
+  )
+}
+
 export default function FeedHealthPage({ system, toast, mode = 'operator', onReload }) {
   const isAnalyst = mode === 'analyst'
   const [refreshing, setRefreshing] = useState({})

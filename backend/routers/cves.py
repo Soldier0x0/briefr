@@ -47,6 +47,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from correlation.engine import get_correlation_for_cve
+from db.dialect import utcnow_str
 from database import (
     count_ai_ml_profile_alerts,
     get_atlas_case_studies_for_cve,
@@ -355,7 +356,7 @@ CVE_SELECT = """
             OR (w.state = 'snooze'
                 AND w.snooze_until IS NOT NULL
                 AND TRIM(w.snooze_until) != ''
-                AND w.snooze_until > datetime('now'))
+                AND datetime(w.snooze_until) > datetime('now'))
         )
 """
 
@@ -366,7 +367,7 @@ _WATCHLIST_ACTIVE_IN = """
            OR (state = 'snooze'
                AND snooze_until IS NOT NULL
                AND TRIM(snooze_until) != ''
-               AND snooze_until > datetime('now'))
+               AND datetime(snooze_until) > datetime('now'))
     )
 """
 
@@ -376,7 +377,7 @@ _ACTIVE_SNOOZE_EXCLUDE = """
         WHERE state = 'snooze'
           AND snooze_until IS NOT NULL
           AND TRIM(snooze_until) != ''
-          AND snooze_until > datetime('now')
+          AND datetime(snooze_until) > datetime('now')
     )
 """
 
@@ -445,8 +446,9 @@ def _build_cve_filters(
             "EXISTS (SELECT 1 FROM kev_deadlines k WHERE k.cve_id = c.cve_id "
             "AND k.due_date IS NOT NULL AND TRIM(k.due_date) != '' "
             "AND LENGTH(k.due_date) >= 10 "
-            "AND k.due_date < date('now'))"
+            "AND k.due_date < ?)"
         )
+        params.append(utcnow_str()[:10])
 
     if poc_only:
         conditions.append("c.has_poc = 1")
@@ -1191,8 +1193,12 @@ async def cve_detection(
 
         yara_rules = await find_yara_rules_for_cve(db, cve_upper)
 
-    except Exception:
+    except Exception as exc:
         logger.exception("Detection lookup failed for %s", cve_upper)
+        raise HTTPException(
+            status_code=500,
+            detail="Detection lookup failed",
+        ) from exc
     finally:
         await db.close()
 

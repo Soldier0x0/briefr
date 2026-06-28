@@ -115,19 +115,24 @@ def test_named_params_to_dollar():
     assert params == ("CVE-2024-1", "test", 9.8)
 
 
-def test_kev_overdue_text_date_compare():
-    sql = adapt_sql(
-        "k.due_date < date('now')",
-        backend="postgresql",
+def test_kev_overdue_bound_date_compare():
+    from db.dialect import prepare_query
+
+    sql = (
+        "EXISTS (SELECT 1 FROM kev_deadlines k WHERE k.cve_id = c.cve_id "
+        "AND k.due_date IS NOT NULL AND k.due_date < ?)"
     )
-    assert "DATE(k.due_date)" not in sql
-    assert "k.due_date <" in sql
+    adapted, params = prepare_query(sql, ("2026-06-28",), backend="postgresql")
+    assert "DATE(k.due_date)" not in adapted
+    assert "date('now')" not in adapted
+    assert "k.due_date < $1" in adapted
+    assert params == ("2026-06-28",)
 
 
-def test_snooze_until_iso_text_compare():
+def test_snooze_until_datetime_compare():
     sql = adapt_sql(
-        "snooze_until > datetime('now')",
+        "datetime(snooze_until) > datetime('now')",
         backend="postgresql",
     )
     assert "datetime(snooze_until)" not in sql
-    assert "snooze_until >" in sql
+    assert "snooze_until::timestamp >" in sql
