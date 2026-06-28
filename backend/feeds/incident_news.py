@@ -212,13 +212,11 @@ async def _fetch_rss_source_bytes(source: dict[str, str]) -> bytes:
     """Fetch RSS for a source, trying optional fallback_url after primary failure."""
     source_id = source["id"]
     urls = _source_feed_urls(source)
-    last_err: Exception | None = None
 
     for i, url in enumerate(urls):
         try:
             return await _fetch_rss_bytes(url, source_id)
         except Exception as exc:
-            last_err = exc
             if i + 1 < len(urls):
                 logger.info(
                     "RSS fetch for %s failed at %s (%s), trying fallback",
@@ -228,8 +226,6 @@ async def _fetch_rss_source_bytes(source: dict[str, str]) -> bytes:
                 )
                 continue
             raise
-
-    raise last_err or RuntimeError(f"RSS fetch for {source_id}: no URLs configured")
 
 
 def _assert_rss_bytes(raw: bytes, source_id: str) -> None:
