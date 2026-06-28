@@ -97,7 +97,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
           </thead>
           <tbody>
             {logs.length === 0 && !logData && <tr><td colSpan={6} className="admin-empty">Loading…</td></tr>}
-            {logs.length === 0 && logData && <tr><td colSpan={6} className="admin-empty">No logs in buffer</td></tr>}
+            {logs.length === 0 && logData && <tr><td colSpan={6} className="admin-empty">{level || category || loggerFilter || reqId ? 'No log entries match the current filters — try a broader level or clear the filters' : 'Log buffer is empty — backend activity will appear here once jobs run'}</td></tr>}
             {logs.map((entry, i) => (
               <tr key={i} style={rowStyle(entry)}>
                 <td className="mono" style={{ fontSize: '0.68rem', whiteSpace: 'nowrap' }}>{entry.ts}</td>
@@ -109,12 +109,4 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
                 <td style={{ fontSize: '0.8rem', wordBreak: 'break-word', maxWidth: 480, color: entry.level === 'ERROR' || entry.level === 'CRITICAL' ? 'var(--red)' : undefined }}>
                   {entry.message}
                 </td>
-                <td className="mono" style={{ fontSize: '0.68rem', color: 'var(--text3)' }}>{entry.request_id || ''}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
+                <td className="mono" sty

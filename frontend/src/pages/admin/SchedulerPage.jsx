@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { adminApi } from '../../api.js'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import DangerZone from './shared/DangerZone.jsx'
+import HelpTip from './shared/HelpTip.jsx'
 import JobTable from './shared/JobTable.jsx'
 import { MANUAL_PIPELINES } from './constants.js'
 
@@ -100,7 +101,10 @@ export default function SchedulerPage({ toast, system }) {
       <p className="admin-page-subtitle">Controls when each ingest job runs. Pausing a job stops it from running automatically until resumed — safe to pause individual jobs while debugging a feed issue.</p>
 
       <div className="admin-card">
-        <div className="admin-card-title">Manual triggers</div>
+        <div className="admin-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          Manual triggers
+          <HelpTip text="Run an individual data sync right now without waiting for the schedule. A job shows 'Running…' while active and cannot be triggered again until it finishes (LOCKED status)." />
+        </div>
         <div className="admin-action-bar" style={{ flexWrap: 'wrap' }}>
           {MANUAL_PIPELINES.map(p => {
             const job = (jobs || []).find(j => j.id === p.id)
@@ -133,7 +137,10 @@ export default function SchedulerPage({ toast, system }) {
       </DangerZone>
 
       <div className="admin-card">
-        <div className="admin-card-title">All jobs</div>
+        <div className="admin-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          All jobs
+          <HelpTip text="ACTIVE = running on schedule. PAUSED = won't run until you resume it. LOCKED = currently executing (can't be triggered again until done). DISABLED = not registered in the scheduler." />
+        </div>
         <div className="admin-filter-chips" style={{ marginBottom: '0.75rem' }}>
           <button className={`filter-chip ${statusFilter === '' ? 'active' : ''}`} onClick={() => { setStatusFilter(''); setPage(0) }}>All</button>
           {STATUS_FILTERS.map(s => (
@@ -149,10 +156,4 @@ export default function SchedulerPage({ toast, system }) {
             <span style={{ color: 'var(--text3)', fontSize: '0.8125rem' }}>
               {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filteredJobs.length)} of {filteredJobs.length}
             </span>
-            <button className="admin-btn admin-btn-ghost" disabled={(page + 1) * PAGE_SIZE >= filteredJobs.length} onClick={() => setPage(p => p + 1)}>Next →</button>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
+            <button className="ad

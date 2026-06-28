@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { adminApi } from '../../api.js'
 import DiffReviewModal from './shared/DiffReviewModal.jsx'
+import HelpTip from './shared/HelpTip.jsx'
 import ToggleSwitch from './shared/ToggleSwitch.jsx'
 import { TIMEZONES_BY_CONTINENT } from '../../utils/timezone.js'
 import { RATE_LIMIT_HINTS } from './rateLimits.js'
@@ -16,8 +17,8 @@ const SECTIONS = [
   { id: 'webhooks', title: 'Webhooks — Discord / Telegram / generic', backendKey: 'webhooks' },
   { id: 'scheduler_main', title: 'Scheduler intervals — NVD / KEV / EPSS', backendKey: 'scheduler' },
   { id: 'scheduler_cron', title: 'Scheduler intervals — cron & timezone', backendKey: 'scheduler' },
-  { id: 'ingest', title: 'Ingest tuning', backendKey: 'ingest' },
-  { id: 'ml', title: 'ML toggles', backendKey: 'ml' },
+  { id: 'ingest', title: 'Data sync tuning', backendKey: 'ingest' },
+  { id: 'ml', title: 'AI/ML enrichment', backendKey: 'ml' },
   { id: 'app', title: 'Application behaviour', backendKey: 'app' },
   { id: 'backup', title: 'Backup', backendKey: 'backup' },
 ]
@@ -211,11 +212,7 @@ export default function ApiKeysPage({ toast }) {
 
       <h1 className="admin-page-title">
         API keys & config
-        <span
-          className="info-tip"
-          tabIndex={0}
-          title="load_dotenv() is called without override=True — process env vars (systemd / Cursor Secrets) win over .env. Changes here write to .env and take effect after restart."
-        >ⓘ</span>
+        <HelpTip text="Changes here write to .env. Environment variables already set at the process level (e.g. via systemd or a secrets manager) take priority over .env — those won't be overridden. Most changes need a backend restart to take effect." />
       </h1>
       <p className="admin-page-subtitle">
         Sets secrets and tunables that the backend reads from .env. Most changes need a restart to take effect.
@@ -283,3 +280,4 @@ export default function ApiKeysPage({ toast }) {
     </div>
   )
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         

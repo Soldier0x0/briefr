@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { adminApi, setAdminKey } from '../../api.js'
+import HelpTip from './shared/HelpTip.jsx'
 import StatCard from './shared/StatCard.jsx'
 
 export default function SecurityPage({ toast }) {
@@ -87,39 +88,4 @@ export default function SecurityPage({ toast }) {
             )}
           </div>
 
-          <div className="admin-card">
-            <div className="admin-card-title">Auth failures (last 24h)</div>
-            <div className="admin-callout admin-callout-amber" style={{ fontSize: '0.8rem' }}>
-              <AlertTriangle size={16} strokeWidth={2} />
-              <span>No app login yet. Auth failure tracking will appear here in V1.4 / T3-S0.</span>
-            </div>
-            {security.failed_auth_last_24h > 0 ? (
-              <div style={{ marginTop: '0.5rem', fontSize: '0.8125rem', color: 'var(--red)' }}>
-                {security.failed_auth_last_24h} auth failure(s) in last 24h
-              </div>
-            ) : (
-              <div style={{ marginTop: '0.5rem', fontSize: '0.8125rem', color: 'var(--green)' }}>
-                No auth failures in last 24h
-              </div>
-            )}
-          </div>
-
-          <div className="admin-card">
-            <div className="admin-card-title">Top rate-limit consumers</div>
-            <table className="admin-table">
-              <thead><tr><th>CLIENT KEY</th><th>HITS</th></tr></thead>
-              <tbody>
-                {security.top_rate_limit_consumers?.length === 0 && (
-                  <tr><td colSpan={2} className="admin-empty">None recorded yet</td></tr>
-                )}
-                {security.top_rate_limit_consumers?.map((c, i) => (
-                  <tr key={i}><td className="mono" style={{ fontSize: '0.75rem' }}>{c.key}</td><td>{c.hits}</td></tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
+          <div c

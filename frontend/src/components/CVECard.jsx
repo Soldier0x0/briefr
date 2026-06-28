@@ -186,7 +186,7 @@ export default function CVECard({
           {momentumScore > 0.5 && (
             <span
               className="cve-momentum-arrow"
-              title="Rising threat momentum — open CVE for details"
+              title="Rising threat momentum — recent PoC activity, mentions, or exploitation reports are accelerating for this CVE"
               aria-label="Rising threat momentum"
             >
               ↑
@@ -231,7 +231,7 @@ export default function CVECard({
             </span>
           )}
           {exposureScore > 0 && (
-            <span className="badge badge-exposure" title="Exposure match score">
+            <span className="badge badge-exposure" title={`Exposure score ${exposureScore} — how closely this CVE matches your stack. Higher = more relevant to your environment.`}>
               {exposureScore}
             </span>
           )}
@@ -252,7 +252,7 @@ export default function CVECard({
 
       {/* EPSS bar */}
       {epss != null && epss > 0 && (
-        <div className="cve-epss" aria-label={`EPSS exploitation probability: ${(epss * 100).toFixed(1)}%`}>
+        <div className="cve-epss" title={`EPSS ${(epss * 100).toFixed(1)}% — probability this vulnerability will be exploited in the wild within 30 days (FIRST.org model)`} aria-label={`EPSS exploitation probability: ${(epss * 100).toFixed(1)}%`}>
           <div className="epss-track" role="progressbar" aria-valuenow={Math.round(epss * 100)} aria-valuemin={0} aria-valuemax={100}>
             <div
               className="epss-fill"
@@ -336,3 +336,4 @@ export default function CVECard({
     </article>
   )
 }
+                                                                                                   

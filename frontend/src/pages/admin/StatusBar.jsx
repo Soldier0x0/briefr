@@ -185,80 +185,8 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
             <div className="sb-sep" />
             <span className="sb-item">
               <span className="sb-label">Circuits</span>
-              <span className={`sb-value ${openCircuits > 0 ? 'sb-warn' : ''}`}>{openCircuits} open</span>
+              <span className={`sb-value ${openCircuits > 0 ? 'sb-warn' : ''}`}>{openCircuits > 0 ? `${openCircuits} tripped` : 'OK'}</span>
             </span>
             <div className="sb-sep" />
             <span className="sb-item" title={integrityOk ? 'Last integrity check passed' : 'Last integrity check found a problem'}>
-              <span className={`dot ${integrityOk ? 'dot-ok' : 'dot-error'}`} />
-              <span className="sb-label">DB {integrityOk ? 'ok' : 'degraded'}</span>
-            </span>
-            <div className="sb-sep" />
-            <span className="sb-item">
-              <span
-                className={`pill ${discordPillClass()}`}
-                title={!discordConfigured ? 'Not configured' : discordFailed ? 'Configured but the circuit is open (failing)' : 'Configured and last delivery succeeded'}
-              >Discord</span>
-            </span>
-            <span className="sb-item">
-              <span
-                className={`pill ${telegramPillClass()}`}
-                title={!telegramConfigured ? 'Not configured' : telegramFailed ? 'Configured but the circuit is open (failing)' : 'Configured and last delivery succeeded'}
-              >Telegram</span>
-            </span>
-            {commit && (
-              <>
-                <div className="sb-sep" />
-                <span className="sb-item">
-                  <span className="sb-label mono" style={{ fontSize: '0.6875rem' }}>{commit.slice(0, 7) || 'dev'}</span>
-                </span>
-              </>
-            )}
-            {updatedAgoEl}
-            <div className="sb-actions">
-              {userMenu}
-              <button
-                className="admin-btn admin-btn-warn"
-                onClick={onRunIngest}
-                disabled={refreshInProgress}
-                style={{ fontSize: '0.75rem' }}
-                title="Pulls fresh data from every source: NVD, KEV, EPSS, MITRE/ATLAS, OTX, etc. — not just NVD CVEs"
-              >
-                {refreshInProgress ? <><span className="admin-spinner" /> Running…</> : <><RefreshCw size={13} strokeWidth={2} /> Run full ingest</>}
-              </button>
-              <HelpTip text="Pulls fresh data from every configured source — NVD, KEV, EPSS, MITRE/ATLAS, OTX, etc. — not just NVD CVEs." />
-              <div className="admin-split-btn" ref={menuRef}>
-                <button
-                  className="admin-btn admin-btn-ghost admin-split-btn-main"
-                  onClick={() => setConfirmRestart('immediate')}
-                  style={{ fontSize: '0.75rem' }}
-                  title="Stops the backend immediately — systemd restarts it within seconds"
-                >
-                  <RotateCw size={13} strokeWidth={2} /> Restart now
-                </button>
-                <button
-                  ref={arrowRef}
-                  className="admin-btn admin-btn-ghost admin-split-btn-arrow"
-                  onClick={toggleRestartMenu}
-                  aria-label="Restart options"
-                  style={{ fontSize: '0.75rem' }}
-                ><ChevronDown size={13} strokeWidth={2} /></button>
-                <HelpTip text="Restart now: stops the backend immediately (systemd restarts it within seconds). Drain then restart: waits for in-flight jobs to finish first, so nothing gets cut off mid-run." />
-                {restartMenu && menuPos && createPortal(
-                  <div
-                    className="admin-split-menu"
-                    ref={menuRef}
-                    style={{ top: menuPos.top, right: menuPos.right }}
-                  >
-                    <button className="admin-split-menu-item" onClick={() => { setRestartMenu(false); setConfirmRestart('immediate') }}><RotateCw size={12} strokeWidth={2} /> Restart now</button>
-                    <button className="admin-split-menu-item" onClick={() => { setRestartMenu(false); setConfirmRestart('drain') }} title="Waits for in-flight jobs to finish, then restarts — nothing gets cut off mid-run"><Hourglass size={12} strokeWidth={2} /> Drain then restart</button>
-                  </div>,
-                  document.body
-                )}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    </>
-  )
-}
+              <span className={`dot ${integrityOk 

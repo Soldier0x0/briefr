@@ -58,7 +58,7 @@ export default function AuditLogPage({ toast }) {
           <thead><tr><th>ID</th><th>ACTOR</th><th>ACTION</th><th>TARGET</th><th>CREATED AT</th></tr></thead>
           <tbody>
             {data === null && <tr><td colSpan={5} className="admin-empty">Loading…</td></tr>}
-            {data?.rows?.length === 0 && <tr><td colSpan={5} className="admin-empty">No entries</td></tr>}
+            {data?.rows?.length === 0 && <tr><td colSpan={5} className="admin-empty">{search || activePrefix ? 'No audit events match your filters — try a different action type or clear the search' : 'No audit events recorded yet'}</td></tr>}
             {data?.rows?.map(r => (
               <tr key={r.id}>
                 <td style={{ fontSize: '0.75rem' }}>{r.id}</td>
@@ -76,10 +76,4 @@ export default function AuditLogPage({ toast }) {
             <span style={{ color: 'var(--text3)', fontSize: '0.8125rem' }}>
               {offset + 1}–{Math.min(offset + limit, data.total)} of {data.total}
             </span>
-            <button className="admin-btn admin-btn-ghost" disabled={offset + limit >= data.total} onClick={() => load(activePrefix, offset + limit, search)}>Load more →</button>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
+            <button className="admin-btn admin-btn-ghost" disabled={offset + limit >= data.total} onClick={

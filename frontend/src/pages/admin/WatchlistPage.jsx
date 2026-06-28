@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { adminApi } from '../../api.js'
 import DangerZone from './shared/DangerZone.jsx'
 import GuardedPurgePanel from './shared/GuardedPurgePanel.jsx'
+import HelpTip from './shared/HelpTip.jsx'
 import { fmtAge, fmtIso } from './formatters.js'
 
 export default function WatchlistPage({ toast, mode = 'operator' }) {
@@ -104,8 +105,15 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
       </p>
       {!isAnalyst && (
         <div className="admin-subtabs">
-          {[['watchlist', 'WATCHLIST'], ['ioc', 'IOC CACHE'], ['hunt', 'HUNT PACKS']].map(([id, label]) => (
-            <button key={id} className={`admin-subtab ${subtab === id ? 'active' : ''}`} onClick={() => setSubtab(id)}>{label}</button>
+          {[
+            ['watchlist', 'WATCHLIST', null],
+            ['ioc', 'IOC CACHE', 'Indicator of Compromise results cached from threat-intel APIs (OTX, etc.). Populates automatically when analysts look up IPs, hashes, or domains from a CVE detail page.'],
+            ['hunt', 'HUNT PACKS', 'Pre-computed detection packs grouped by MITRE ATT&CK technique. Created when a technique-based threat hunt is triggered from a CVE detail page.'],
+          ].map(([id, label, tip]) => (
+            <span key={id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+              <button className={`admin-subtab ${subtab === id ? 'active' : ''}`} onClick={() => setSubtab(id)}>{label}</button>
+              {tip && <HelpTip text={tip} />}
+            </span>
           ))}
         </div>
       )}
@@ -136,7 +144,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               <thead><tr><th>CVE ID</th><th>SEVERITY</th><th>EPSS</th><th>KEV</th><th>STATE</th><th>CREATED</th><th></th></tr></thead>
               <tbody>
                 {watchlistRows === null && <tr><td colSpan={7} className="admin-empty">Loading…</td></tr>}
-                {watchlistRows?.length === 0 && <tr><td colSpan={7} className="admin-empty">No entries</td></tr>}
+                {watchlistRows?.length === 0 && <tr><td colSpan={7} className="admin-empty">{watchlistState === 'snooze' ? 'No snoozed CVEs' : watchlistState === 'pin' ? 'No pinned CVEs — pin CVEs from the main feed to track them here' : 'No watchlist entries yet — pin or snooze CVEs from the main feed to see them here'}</td></tr>}
                 {watchlistRows?.map(r => (
                   <tr key={r.cve_id}>
                     <td className="mono" style={{ fontSize: '0.75rem' }}>{r.cve_id}</td>
@@ -182,7 +190,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               <thead><tr><th>VALUE</th><th>TYPE</th><th>CACHED AT</th><th>AGE</th><th></th></tr></thead>
               <tbody>
                 {iocRows === null && <tr><td colSpan={5} className="admin-empty">Loading…</td></tr>}
-                {iocRows?.length === 0 && <tr><td colSpan={5} className="admin-empty">No entries</td></tr>}
+                {iocRows?.length === 0 && <tr><td colSpan={5} className="admin-empty">{iocType || iocSearch ? 'No IOC cache entries match the current filters' : 'IOC cache is empty — lookups populate it automatically as you search indicators from CVE details'}</td></tr>}
                 {iocRows?.map((r, i) => (
                   <tr key={i}>
                     <td className="mono" style={{ fontSize: '0.7rem', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.value}</td>
@@ -214,25 +222,9 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               <thead><tr><th>PACK ID</th><th>TECHNIQUE</th><th>CVE</th><th>PRIORITY</th><th>CREATED</th><th></th></tr></thead>
               <tbody>
                 {huntRows === null && <tr><td colSpan={6} className="admin-empty">Loading…</td></tr>}
-                {huntRows?.length === 0 && <tr><td colSpan={6} className="admin-empty">No hunt packs</td></tr>}
+                {huntRows?.length === 0 && <tr><td colSpan={6} className="admin-empty">{huntTechnique ? 'No hunt packs match that technique ID' : 'No hunt packs yet — these are created when you run a technique-based threat hunt from a CVE detail page'}</td></tr>}
                 {huntRows?.map(r => (
                   <tr key={r.id}>
                     <td>{r.id}</td>
                     <td className="mono" style={{ fontSize: '0.75rem' }}>{r.technique_id}</td>
-                    <td className="mono" style={{ fontSize: '0.75rem' }}>{r.cve_id}</td>
-                    <td>{r.priority}</td>
-                    <td style={{ fontSize: '0.75rem' }}>{fmtIso(r.created_at)}</td>
-                    <td>
-                      <button className="admin-btn admin-btn-danger" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }}
-                        onClick={() => deleteHunt(r.id)}>Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+                    <td clas

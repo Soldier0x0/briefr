@@ -49,7 +49,7 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
         <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', margin: '0.4rem 0' }}>
           <span className={`badge ${s.circuit_open ? 'badge-error' : 'badge-ok'}`}>
             <StatusIcon size={11} strokeWidth={2.25} style={{ marginRight: '0.25rem', verticalAlign: '-1px' }} />
-            {s.circuit_open ? (isAnalyst ? 'PAUSED' : 'OPEN') : (isAnalyst ? 'Healthy' : 'CLOSED')}
+            {s.circuit_open ? (isAnalyst ? 'PAUSED' : 'TRIPPED') : (isAnalyst ? 'Healthy' : 'OK')}
           </span>
           {!isAnalyst && s.consecutive_failures > 0 && (
             <span className="badge badge-warn">{s.consecutive_failures} fail{s.consecutive_failures !== 1 ? 's' : ''}</span>
@@ -101,8 +101,9 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
         <>
           {openCircuits.length > 0 && (
             <div style={{ marginBottom: '1.25rem' }}>
-              <div className="admin-card-title" style={{ color: 'var(--red)' }}>
-                {isAnalyst ? `Sources temporarily paused (${openCircuits.length})` : `Open circuits (${openCircuits.length})`}
+              <div className="admin-card-title" style={{ color: 'var(--red)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                {isAnalyst ? `Sources temporarily paused (${openCircuits.length})` : `Circuit tripped (${openCircuits.length})`}
+                {!isAnalyst && <HelpTip text="A circuit trips after repeated fetch failures to stop hammering an unresponsive upstream source. BRIEFR retries automatically after a cooldown, or you can force-reset below." />}
               </div>
               <div className="feed-card-grid">
                 {sortByFailures(openCircuits).map(([key, s]) => <FeedCard key={key} entryKey={key} s={s} />)}
@@ -206,3 +207,4 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
     </div>
   )
 }
+                                                                                                                                                                                                                                             

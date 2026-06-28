@@ -22,11 +22,6 @@ export const NAV = [
   { section: 'PREFERENCES', items: [
     { id: 'display', label: 'Display', icon: 'Settings2' },
   ]},
-  { section: 'COMING SOON', items: [
-    { id: 'coming-login', label: 'App login & sessions', icon: 'LogIn', locked: true, tooltip: 'Ships in V1.4 / T3-S0' },
-    { id: 'coming-users', label: 'Multi-user management', icon: 'Users', locked: true, tooltip: 'Ships in V2.0' },
-    { id: 'coming-ratelimit', label: 'Rate limit dashboard', icon: 'Gauge', locked: true, tooltip: 'Ships in V1.4' },
-  ]},
 ]
 
 export const ANALYST_NAV = [
@@ -65,6 +60,4 @@ export const COMING_SOON_INFO = {
   },
   'coming-ratelimit': {
     title: 'Rate limit dashboard',
-    message: 'Ships in V1.4. Will show per-IP bucket levels, top consumers, and allow per-IP block/allowlist.',
-  },
-}
+    message: 'Ships in V1.4. Will show 
