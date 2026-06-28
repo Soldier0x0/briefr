@@ -3,42 +3,98 @@ import { CheckCircle2, AlertTriangle, XCircle, RefreshCw } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import { fmtIso, sourceLabel } from './formatters.js'
 import HelpTip from './shared/HelpTip.jsx'
+import { useOperations } from './shared/OperationTracker.jsx'
 
-export default function FeedHealthPage({ system, toast, mode = 'operator', onReload }) {
+export default function FeedHealthPage({ system, toast, mode = 'operator', onReload, highlightSource = '' }) {
+  const { runAction } = useOperations()
   const isAnalyst = mode === 'analyst'
   const [refreshing, setRefreshing] = useState({})
+  const [rebuilding, setRebuilding] = useState(false)
+  const [resetting, setResetting] = useState({})
   const sources = system?.feeds?.sources || {}
   const incidents = system?.feeds?.incidents
   const incidentSources = incidents?.sources || []
 
   async function resetCircuit(sourceId) {
+    setResetting(prev => ({ ...prev, [sourceId]: true }))
     try {
-      await adminApi.post(`/feeds/${encodeURIComponent(sourceId)}/reset-circuit`, {})
-      toast(isAnalyst ? 'Trying again' : `Circuit reset for ${sourceId}`, true)
-    } catch (e) { toast(String(e.message), false) }
+      await runAction({
+        id: `circuit-${sourceId}`,
+        label: `Resetting ${sourceLabel(sourceId)}`,
+        kind: 'circuit',
+        meta: { sourceId },
+        successMessage: isAnalyst ? 'Trying again' : `Circuit reset for ${sourceLabel(sourceId)}`,
+        execute: async () => {
+          const { requestId } = await adminApi.postJson(
+            `/feeds/${encodeURIComponent(sourceId)}/reset-circuit`,
+            {},
+          )
+          return { requestId }
+        },
+      })
+      onReload?.()
+    } catch {
+      // toast handled by runAction
+    } finally {
+      setResetting(prev => ({ ...prev, [sourceId]: false }))
+    }
   }
 
   async function rebuildFeed() {
+    setRebuilding(true)
     try {
-      const res = await adminApi.post('/scheduler/run', { job_id: 'incident_feed_refresh' })
-      const data = await res.json()
-      toast(data.ok ? 'Incident feed rebuild started' : data.detail || 'Failed', data.ok)
-      if (data.ok) setTimeout(() => onReload?.(), 1500)
-    } catch (e) { toast(String(e.message), false) }
+      await runAction({
+        id: 'incident-rebuild',
+        label: 'Rebuilding incidents feed',
+        kind: 'incident',
+        successMessage: 'Incident feed rebuild started',
+        execute: async () => {
+          const { data, requestId } = await adminApi.postJson('/scheduler/run', { job_id: 'incident_feed_refresh' })
+          if (!data.ok) {
+            const err = new Error(data.detail || 'Failed')
+            err.requestId = requestId
+            throw err
+          }
+          return { requestId, data }
+        },
+      })
+      setTimeout(() => onReload?.(), 1500)
+    } catch {
+      // toast handled by runAction
+    } finally {
+      setRebuilding(false)
+    }
   }
 
   async function refreshSource(sourceId) {
     setRefreshing(prev => ({ ...prev, [sourceId]: true }))
     try {
-      const res = await adminApi.post('/incidents/refresh', { sources: [sourceId] })
-      const data = await res.json()
-      toast(data.ok ? `Refreshing ${sourceId}` : data.detail || 'Failed', data.ok)
-      if (data.ok) setTimeout(() => onReload?.(), 1500)
-    } catch (e) { toast(String(e.message), false) }
-    setTimeout(() => setRefreshing(prev => ({ ...prev, [sourceId]: false })), 2000)
+      await runAction({
+        id: `incident-${sourceId}`,
+        label: `Refreshing ${sourceId}`,
+        kind: 'incident',
+        meta: { sourceId },
+        successMessage: `Refreshing ${sourceId}`,
+        execute: async () => {
+          const { data, requestId } = await adminApi.postJson('/incidents/refresh', { sources: [sourceId] })
+          if (!data.ok) {
+            const err = new Error(data.detail || 'Failed')
+            err.requestId = requestId
+            throw err
+          }
+          return { requestId, data }
+        },
+      })
+      setTimeout(() => onReload?.(), 1500)
+    } catch {
+      // toast handled by runAction
+    } finally {
+      setTimeout(() => setRefreshing(prev => ({ ...prev, [sourceId]: false })), 500)
+    }
   }
 
   function FeedCard({ entryKey, s }) {
+    const highlighted = highlightSource && entryKey === highlightSource
     const hasError = Boolean(s.last_error)
     const isDegraded = !s.circuit_open && (s.consecutive_failures || 0) > 0
     let borderColor = 'var(--border)'
@@ -57,7 +113,11 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
         ? 'badge-warn'
         : 'badge-ok'
     return (
-      <div key={entryKey} className="feed-source-card" style={{ borderLeftColor: borderColor }}>
+      <div
+        key={entryKey}
+        className={`feed-source-card${highlighted ? ' feed-source-card--highlight' : ''}`}
+        style={{ borderLeftColor: borderColor }}
+      >
         <div className="feed-source-name">{sourceLabel(entryKey)}</div>
         <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', margin: '0.4rem 0' }}>
           <span className={`badge ${badgeClass}`}>
@@ -81,7 +141,7 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
         <button
           className="admin-btn admin-btn-danger"
           style={{ marginTop: '0.5rem', fontSize: '0.7rem', padding: '0.15rem 0.5rem' }}
-          disabled={!canReset}
+          disabled={!canReset || resetting[entryKey]}
           onClick={() => resetCircuit(entryKey)}
           title={
             canReset
@@ -89,7 +149,9 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
               : 'No errors to clear — source is healthy'
           }
         >
-          {isAnalyst ? 'Try again' : 'Reset circuit'}
+          {resetting[entryKey]
+            ? <><span className="admin-spinner" /> {isAnalyst ? 'Retrying…' : 'Resetting…'}</>
+            : (isAnalyst ? 'Try again' : 'Reset circuit')}
         </button>
       </div>
     )
@@ -166,9 +228,12 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
               className="admin-btn admin-btn-ghost"
               style={{ fontSize: '0.75rem' }}
               onClick={rebuildFeed}
+              disabled={rebuilding}
               title="Rebuilds the incident/news feed snapshot — does not affect CVE, KEV, or EPSS data"
             >
-              <RefreshCw size={13} strokeWidth={2} /> Rebuild incidents feed
+              {rebuilding
+                ? <><span className="admin-spinner" /> Rebuilding…</>
+                : <><RefreshCw size={13} strokeWidth={2} /> Rebuild incidents feed</>}
             </button>
             <HelpTip text="Rebuilds the incident/news feed snapshot shown on the dashboard. Does not affect CVE, KEV, or EPSS data." />
           </div>
@@ -184,8 +249,14 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
                   : 'Refresh a single RSS outlet or ATLAS slice. ATLAS reloads from the local DB; run Weekly MITRE ATT&CK + ATLAS Refresh for upstream YAML.'}
               </p>
               <div className="feed-card-grid">
-                {incidentSources.map(src => (
-                  <div key={src.id} className="feed-source-card" style={{ borderLeftColor: src.stale ? 'var(--amber)' : 'var(--green)' }}>
+                {incidentSources.map(src => {
+                  const highlighted = highlightSource && src.id === highlightSource
+                  return (
+                  <div
+                    key={src.id}
+                    className={`feed-source-card${highlighted ? ' feed-source-card--highlight' : ''}`}
+                    style={{ borderLeftColor: src.stale ? 'var(--amber)' : 'var(--green)' }}
+                  >
                     <div className="feed-source-name">{src.label}</div>
                     <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', margin: '0.35rem 0' }}>
                       <span className={`badge ${src.stale ? 'badge-warn' : 'badge-ok'}`}>
@@ -216,7 +287,8 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
                       <RefreshCw size={12} strokeWidth={2} /> {refreshing[src.id] ? 'Refreshing…' : 'Refresh'}
                     </button>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}

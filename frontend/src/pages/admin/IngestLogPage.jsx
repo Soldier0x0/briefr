@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { adminApi } from '../../api.js'
 
-export default function IngestLogPage({ toast, onErrorCountChange, active = true }) {
+export default function IngestLogPage({ toast, onErrorCountChange, active = true, urlFilters = {} }) {
   const [logData, setLogData] = useState(null)
-  const [level, setLevel] = useState('')
-  const [category, setCategory] = useState('')
-  const [loggerFilter, setLoggerFilter] = useState('')
-  const [reqId, setReqId] = useState('')
+  const [level, setLevel] = useState(urlFilters.level || '')
+  const [category, setCategory] = useState(urlFilters.category || '')
+  const [loggerFilter, setLoggerFilter] = useState(urlFilters.logger || '')
+  const [reqId, setReqId] = useState(urlFilters.requestId || '')
   const [limit, setLimit] = useState(100)
   const [autoRefresh, setAutoRefresh] = useState(false)
   const intervalRef = useRef(null)
@@ -14,6 +14,13 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
   const logs = logData?.logs || []
   const knownLoggers = logData?.known_loggers || []
   const categories = logData?.categories || []
+
+  useEffect(() => {
+    if (urlFilters.level != null) setLevel(urlFilters.level)
+    if (urlFilters.category != null) setCategory(urlFilters.category)
+    if (urlFilters.logger != null) setLoggerFilter(urlFilters.logger)
+    if (urlFilters.requestId != null) setReqId(urlFilters.requestId)
+  }, [urlFilters.level, urlFilters.category, urlFilters.logger, urlFilters.requestId])
 
   async function loadLogs() {
     const params = new URLSearchParams({ limit })

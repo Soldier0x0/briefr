@@ -4,13 +4,24 @@ import { AUDIT_PREFIXES } from './constants.js'
 import { fmtIsoMono } from './formatters.js'
 import { auditActionLabel } from './catalog.js'
 
-export default function AuditLogPage({ toast }) {
+export default function AuditLogPage({ toast, urlFilters = {} }) {
   const [data, setData] = useState(null)
-  const [activePrefix, setActivePrefix] = useState('')
-  const [search, setSearch] = useState('')
+  const [activePrefix, setActivePrefix] = useState(urlFilters.actionPrefix || '')
+  const [search, setSearch] = useState(urlFilters.q || '')
   const [offset, setOffset] = useState(0)
   const debounceRef = useRef(null)
   const limit = 100
+
+  useEffect(() => {
+    if (urlFilters.actionPrefix != null) setActivePrefix(urlFilters.actionPrefix)
+    if (urlFilters.q != null) setSearch(urlFilters.q)
+  }, [urlFilters.actionPrefix, urlFilters.q])
+
+  useEffect(() => {
+    if (urlFilters.actionPrefix != null || urlFilters.q != null) {
+      load(urlFilters.actionPrefix || '', 0, urlFilters.q || '')
+    }
+  }, [urlFilters.actionPrefix, urlFilters.q])
 
   async function load(prefix = activePrefix, off = 0, q = search) {
     const params = new URLSearchParams({ limit, offset: off })
