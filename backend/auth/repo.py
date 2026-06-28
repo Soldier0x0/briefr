@@ -74,9 +74,10 @@ async def create_user(
 
 
 async def update_last_login(db: Any, user_id: int) -> None:
+    from db.dialect import utcnow_str
     await db.execute(
-        "UPDATE users SET last_login_at = datetime('now') WHERE id = ?",
-        (user_id,),
+        "UPDATE users SET last_login_at = ? WHERE id = ?",
+        (utcnow_str(), user_id),
     )
 
 
@@ -124,13 +125,15 @@ async def rotate_session(
     replay of the same now-stale token is detectable as reuse) and create a
     fresh session row for the rotated token, carrying forward its
     remember_me flag so cookie persistence survives rotation."""
+    from db.dialect import utcnow_str
+    now = utcnow_str()
     await db.execute(
         """
         UPDATE sessions
-        SET revoked_at = datetime('now'), last_used_at = datetime('now')
+        SET revoked_at = ?, last_used_at = ?
         WHERE id = ?
         """,
-        (old_session["id"],),
+        (now, now, old_session["id"]),
     )
     return await create_session(
         db,
@@ -144,16 +147,18 @@ async def rotate_session(
 
 
 async def revoke_session(db: Any, session_id: int) -> None:
+    from db.dialect import utcnow_str
     await db.execute(
-        "UPDATE sessions SET revoked_at = datetime('now') WHERE id = ? AND revoked_at IS NULL",
-        (session_id,),
+        "UPDATE sessions SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL",
+        (utcnow_str(), session_id),
     )
 
 
 async def revoke_all_sessions_for_user(db: Any, user_id: int) -> None:
+    from db.dialect import utcnow_str
     await db.execute(
-        "UPDATE sessions SET revoked_at = datetime('now') WHERE user_id = ? AND revoked_at IS NULL",
-        (user_id,),
+        "UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL",
+        (utcnow_str(), user_id),
     )
 
 

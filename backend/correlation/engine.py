@@ -17,6 +17,8 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from db.dialect import utcnow_str
+
 logger = logging.getLogger(__name__)
 
 from correlation.config import (
@@ -163,6 +165,7 @@ async def find_actor_sector_correlation(
 async def _store_actor_correlation(
     db, cve_id: str, findings: list[dict]
 ) -> None:
+    now = utcnow_str()
     await db.execute(
         "DELETE FROM correlation_actor WHERE cve_id = ?",
         (cve_id.upper(),),
@@ -172,7 +175,7 @@ async def _store_actor_correlation(
             """
             INSERT INTO correlation_actor
                 (cve_id, actor_name, actor_sectors, user_sector_match, confidence, detected_at)
-            VALUES (?, ?, ?, ?, ?, datetime('now'))
+            VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(cve_id, actor_name) DO UPDATE SET
                 actor_sectors     = excluded.actor_sectors,
                 user_sector_match = excluded.user_sector_match,
@@ -185,6 +188,7 @@ async def _store_actor_correlation(
                 json.dumps(f["actor_sectors"]),
                 1 if f["user_sector_match"] else 0,
                 f["confidence"],
+                now,
             ),
         )
 
@@ -263,19 +267,21 @@ async def find_temporal_anomalies(db) -> list[dict]:
 
 
 async def _store_temporal_anomalies(db, anomalies: list[dict]) -> None:
+    now = utcnow_str()
     await db.execute("DELETE FROM correlation_temporal WHERE 1=1")
     for a in anomalies:
         await db.execute(
             """
             INSERT INTO correlation_temporal
                 (vendor, current_week_count, average_weekly_count, anomaly_score, detected_at)
-            VALUES (?, ?, ?, ?, datetime('now'))
+            VALUES (?, ?, ?, ?, ?)
             """,
             (
                 a["vendor"],
                 a["current_week_count"],
                 a["average_weekly_count"],
                 a["anomaly_score"],
+                now,
             ),
         )
 
