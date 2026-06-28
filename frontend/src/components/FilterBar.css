@@ -232,7 +232,7 @@
   color: var(--text);
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-left: 3px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  border-left: 3px solid var(--border);
   padding: 8px 12px 8px 10px;
   width: 100%;
   flex: 1 1 100%;
@@ -305,6 +305,52 @@
   padding: 6px 20px;
   border-bottom: 1px solid var(--border);
   background: var(--green-dim);
+}
+
+.stack-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  font-size: 0.78rem;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.stack-hint-text {
+  flex: 1;
+}
+
+.stack-hint-label {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}
+
+.stack-hint-text code {
+  font-family: var(--font-mono);
+  color: var(--red);
+  font-size: 0.75rem;
+}
+
+.stack-hint-dismiss {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 2px;
+  transition: color 0.15s;
+}
+
+.stack-hint-dismiss:hover {
+  color: var(--text);
 }
 
 .vendor-filter-block {

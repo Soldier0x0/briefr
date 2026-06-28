@@ -7,14 +7,14 @@ import './FilterBar.css'
 const STACK_DEBOUNCE_MS = 400
 
 const QUICK_FILTERS = [
-  { id: 'all',      label: 'ALL' },
-  { id: 'watchlist', label: 'WATCHLIST' },
-  { id: 'kev',      label: 'KEV' },
-  { id: 'critical', label: 'CRITICAL' },
-  { id: 'high',     label: 'HIGH' },
-  { id: 'medium',   label: 'MEDIUM' },
-  { id: 'poc',      label: 'PoC' },
-  { id: 'kev_overdue', label: 'KEV OVERDUE' },
+  { id: 'all',         label: 'ALL' },
+  { id: 'watchlist',   label: 'WATCHLIST',   title: 'CVEs you have pinned to your watchlist' },
+  { id: 'kev',         label: 'KEV',         title: 'CISA Known Exploited Vulnerabilities — confirmed active exploitation in the wild' },
+  { id: 'critical',    label: 'CRITICAL' },
+  { id: 'high',        label: 'HIGH' },
+  { id: 'medium',      label: 'MEDIUM' },
+  { id: 'poc',         label: 'PoC',         title: 'CVEs with a public proof-of-concept exploit or reference' },
+  { id: 'kev_overdue', label: 'KEV OVERDUE', title: 'KEV entries past their CISA federal remediation deadline — immediate attention required' },
 ]
 
 export const VENDORS = [
@@ -70,6 +70,9 @@ export default function FilterBar({
 }) {
   const [localSearch, setLocalSearch] = useState(filters.search || '')
   const [localStack, setLocalStack] = useState(() => filters.stack || '')
+  const [stackHintVisible, setStackHintVisible] = useState(() => {
+    try { return localStorage.getItem('briefr_stack_hint_dismissed') !== '1' } catch { return true }
+  })
   const [exporting, setExporting] = useState(null)
   const [exportError, setExportError] = useState(null)
   const [exportSuccess, setExportSuccess] = useState(null)
@@ -143,6 +146,11 @@ export default function FilterBar({
       window.dispatchEvent(new CustomEvent('briefr-stack-change'))
       onFiltersChange({ stack: trimmed })
     }, STACK_DEBOUNCE_MS)
+  }
+
+  function handleDismissStackHint() {
+    try { localStorage.setItem('briefr_stack_hint_dismissed', '1') } catch { /* ignore */ }
+    setStackHintVisible(false)
   }
 
   function handleStackClear() {
@@ -345,6 +353,23 @@ export default function FilterBar({
           )}
         </div>
 
+        {stackHintVisible && !localStack && (
+          <div className="stack-hint" role="note" aria-label="Stack filter tip">
+            <span className="stack-hint-text">
+              <span className="stack-hint-label mono">STACK</span> narrows the feed to CVEs relevant to your environment.
+              Type the technologies you run — e.g. <code>nginx, python, openssl</code> — and only matching vulnerabilities appear.
+            </span>
+            <button
+              type="button"
+              className="stack-hint-dismiss mono"
+              onClick={handleDismissStackHint}
+              aria-label="Dismiss stack tip"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         <div className="filter-bar-search-row">
           <input
             ref={searchRef}
@@ -368,6 +393,7 @@ export default function FilterBar({
                 onClick={() => handleQuickFilter(f.id)}
                 aria-label={`Filter: ${f.label}`}
                 aria-pressed={active === f.id}
+                title={f.title}
               >
                 {f.label}
               </button>
@@ -377,52 +403,4 @@ export default function FilterBar({
       </div>
 
       {exportError && (
-        <p className="export-error mono" role="alert">
-          {exportError}
-        </p>
-      )}
-      {exportSuccess && (
-        <p className="export-success mono" role="status">
-          {exportSuccess}
-        </p>
-      )}
-        </div>
-      </div>
-
-      {active === 'all' && (
-        <div className="vendor-filter-block">
-          <div className="vendor-filter-header">
-            <span className="vendor-filter-label mono">// COMMON VENDORS</span>
-            {selectedVendors.length > 0 && (
-              <button
-                type="button"
-                className="vendor-clear-btn mono"
-                onClick={clearVendors}
-                aria-label="Clear all vendor filters"
-              >
-                CLEAR ({selectedVendors.length})
-              </button>
-            )}
-          </div>
-          <div
-            className="vendor-filter-row"
-            role="group"
-            aria-label="Filter by vendor (multi-select)"
-          >
-            {VENDORS.map(v => (
-              <button
-                key={v}
-                type="button"
-                className={`vendor-btn${selectedVendors.includes(v) ? ' active' : ''}`}
-                onClick={() => handleVendorClick(v)}
-                aria-pressed={selectedVendors.includes(v)}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+  

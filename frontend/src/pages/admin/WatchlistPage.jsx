@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react'
 import { adminApi } from '../../api.js'
 import DangerZone from './shared/DangerZone.jsx'
 import GuardedPurgePanel from './shared/GuardedPurgePanel.jsx'
-import { parseAdminListResponse } from './shared/adminListResponse.js'
-import ActionProgress from './shared/ActionProgress.jsx'
+import HelpTip from './shared/HelpTip.jsx'
 import { fmtAge, fmtIso } from './formatters.js'
 
 export default function WatchlistPage({ toast, mode = 'operator' }) {
@@ -16,14 +15,13 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
   const [iocSearch, setIocSearch] = useState('')
   const [huntRows, setHuntRows] = useState(null)
   const [huntTechnique, setHuntTechnique] = useState('')
-  const [progress, setProgress] = useState(null)
 
   useEffect(() => { if (isAnalyst) setSubtab('watchlist') }, [isAnalyst])
 
   async function loadWatchlist() {
     try {
       const res = await adminApi.get(`/watchlist?state=${watchlistState}&limit=200`)
-      setWatchlistRows(await parseAdminListResponse(res))
+      setWatchlistRows(await res.json())
     } catch { setWatchlistRows([]) }
   }
 
@@ -33,7 +31,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
     if (iocSearch) params.set('search', iocSearch)
     try {
       const res = await adminApi.get(`/ioc-cache?${params}`)
-      setIocRows(await parseAdminListResponse(res))
+      setIocRows(await res.json())
     } catch { setIocRows([]) }
   }
 
@@ -42,7 +40,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
     if (huntTechnique) params.set('technique_id', huntTechnique)
     try {
       const res = await adminApi.get(`/hunt-packs?${params}`)
-      setHuntRows(await parseAdminListResponse(res))
+      setHuntRows(await res.json())
     } catch { setHuntRows([]) }
   }
 
@@ -88,14 +86,11 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
   }
 
   async function deleteHunt(id) {
-    setProgress({ label: 'Deleting hunt pack…', stage: `Pack #${id}` })
     try {
       await adminApi.del(`/hunt-packs/${id}`)
       toast('Deleted', true)
-      setHuntRows(prev => Array.isArray(prev) ? prev.filter(r => r.id !== id) : [])
       loadHunts()
     } catch (e) { toast(String(e.message), false) }
-    setTimeout(() => setProgress(null), 1200)
   }
 
   const iocOldestAge = iocRows?.length
@@ -108,11 +103,17 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
       <p className="admin-page-subtitle">
         {isAnalyst ? 'CVEs you’ve pinned to track.' : 'Manage pinned/snoozed CVEs, inspect the IOC lookup cache, and review hunt-pack matches.'}
       </p>
-      <ActionProgress label={progress?.label} stage={progress?.stage} visible={!!progress} />
       {!isAnalyst && (
         <div className="admin-subtabs">
-          {[['watchlist', 'WATCHLIST'], ['ioc', 'IOC CACHE'], ['hunt', 'HUNT PACKS']].map(([id, label]) => (
-            <button key={id} className={`admin-subtab ${subtab === id ? 'active' : ''}`} onClick={() => setSubtab(id)}>{label}</button>
+          {[
+            ['watchlist', 'WATCHLIST', null],
+            ['ioc', 'IOC CACHE', 'Indicator of Compromise results cached from threat-intel APIs (OTX, etc.). Populates automatically when analysts look up IPs, hashes, or domains from a CVE detail page.'],
+            ['hunt', 'HUNT PACKS', 'Pre-computed detection packs grouped by MITRE ATT&CK technique. Created when a technique-based threat hunt is triggered from a CVE detail page.'],
+          ].map(([id, label, tip]) => (
+            <span key={id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+              <button className={`admin-subtab ${subtab === id ? 'active' : ''}`} onClick={() => setSubtab(id)}>{label}</button>
+              {tip && <HelpTip text={tip} />}
+            </span>
           ))}
         </div>
       )}
@@ -131,12 +132,19 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               ))}
             </div>
           </div>
+          {!isAnalyst && (
+            <DangerZone title="Clear snoozes">
+              <GuardedPurgePanel targets={[
+                { target: 'watchlist_snoozes', title: 'Clear all snoozes', desc: 'Why: snoozed CVEs are hidden from the default watchlist view until you snooze again. What happens: removes every snooze entry. After: previously snoozed CVEs reappear in the default view; pinned CVEs are unaffected.', impact: `${snoozeCount} snoozed`, confirmWord: 'clear', run: clearSnoozes },
+              ]} />
+            </DangerZone>
+          )}
           <div className="admin-card">
             <table className="admin-table">
               <thead><tr><th>CVE ID</th><th>SEVERITY</th><th>EPSS</th><th>KEV</th><th>STATE</th><th>CREATED</th><th></th></tr></thead>
               <tbody>
                 {watchlistRows === null && <tr><td colSpan={7} className="admin-empty">Loading…</td></tr>}
-                {watchlistRows?.length === 0 && <tr><td colSpan={7} className="admin-empty">No entries</td></tr>}
+                {watchlistRows?.length === 0 && <tr><td colSpan={7} className="admin-empty">{watchlistState === 'snooze' ? 'No snoozed CVEs' : watchlistState === 'pin' ? 'No pinned CVEs — pin CVEs from the main feed to track them here' : 'No watchlist entries yet — pin or snooze CVEs from the main feed to see them here'}</td></tr>}
                 {watchlistRows?.map(r => (
                   <tr key={r.cve_id}>
                     <td className="mono" style={{ fontSize: '0.75rem' }}>{r.cve_id}</td>
@@ -154,13 +162,6 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               </tbody>
             </table>
           </div>
-          {!isAnalyst && (
-            <DangerZone title="Clear snoozes">
-              <GuardedPurgePanel targets={[
-                { target: 'watchlist_snoozes', title: 'Clear all snoozes', desc: 'Why: snoozed CVEs are hidden from the default watchlist view until you snooze again. What happens: removes every snooze entry. After: previously snoozed CVEs reappear in the default view; pinned CVEs are unaffected.', impact: `${snoozeCount} snoozed`, confirmWord: 'clear', run: clearSnoozes },
-              ]} />
-            </DangerZone>
-          )}
         </div>
       )}
 
@@ -179,12 +180,17 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
             </select>
             <input className="admin-input" placeholder="Search value…" value={iocSearch} onChange={e => setIocSearch(e.target.value)} />
           </div>
+          <DangerZone title="Clear IOC cache">
+            <GuardedPurgePanel targets={[
+              { target: 'ioc_cache_all', title: 'Clear all IOC cache entries', desc: 'Why: IOC lookups are cached to avoid re-querying external threat-intel APIs on every page load. What happens: deletes every cached result below. After: the next lookup for each IOC is slower (re-fetches from the source API), but nothing is lost — the cache rebuilds itself automatically.', impact: `${iocRows?.length ?? 0} entries`, confirmWord: 'clear', run: clearAllIoc },
+            ]} />
+          </DangerZone>
           <div className="admin-card">
             <table className="admin-table">
               <thead><tr><th>VALUE</th><th>TYPE</th><th>CACHED AT</th><th>AGE</th><th></th></tr></thead>
               <tbody>
                 {iocRows === null && <tr><td colSpan={5} className="admin-empty">Loading…</td></tr>}
-                {iocRows?.length === 0 && <tr><td colSpan={5} className="admin-empty">No entries</td></tr>}
+                {iocRows?.length === 0 && <tr><td colSpan={5} className="admin-empty">{iocType || iocSearch ? 'No IOC cache entries match the current filters' : 'IOC cache is empty — lookups populate it automatically as you search indicators from CVE details'}</td></tr>}
                 {iocRows?.map((r, i) => (
                   <tr key={i}>
                     <td className="mono" style={{ fontSize: '0.7rem', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.value}</td>
@@ -200,11 +206,6 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               </tbody>
             </table>
           </div>
-          <DangerZone title="Clear IOC cache">
-            <GuardedPurgePanel targets={[
-              { target: 'ioc_cache_all', title: 'Clear all IOC cache entries', desc: 'Why: IOC lookups are cached to avoid re-querying external threat-intel APIs on every page load. What happens: deletes every cached result below. After: the next lookup for each IOC is slower (re-fetches from the source API), but nothing is lost — the cache rebuilds itself automatically.', impact: `${iocRows?.length ?? 0} entries`, confirmWord: 'clear', run: clearAllIoc },
-            ]} />
-          </DangerZone>
         </div>
       )}
 
@@ -221,7 +222,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               <thead><tr><th>PACK ID</th><th>TECHNIQUE</th><th>CVE</th><th>PRIORITY</th><th>CREATED</th><th></th></tr></thead>
               <tbody>
                 {huntRows === null && <tr><td colSpan={6} className="admin-empty">Loading…</td></tr>}
-                {huntRows?.length === 0 && <tr><td colSpan={6} className="admin-empty">No hunt packs</td></tr>}
+                {huntRows?.length === 0 && <tr><td colSpan={6} className="admin-empty">{huntTechnique ? 'No hunt packs match that technique ID' : 'No hunt packs yet — these are created when you run a technique-based threat hunt from a CVE detail page'}</td></tr>}
                 {huntRows?.map(r => (
                   <tr key={r.id}>
                     <td>{r.id}</td>
