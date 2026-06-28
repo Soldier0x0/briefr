@@ -183,6 +183,14 @@ def parse_rss_xml(xml_text: str, source: dict) -> list[dict]:
     return cards
 
 
+def _source_feed_urls(source: dict[str, str]) -> list[str]:
+    urls = [source["url"]]
+    fallback = source.get("fallback_url")
+    if fallback and fallback not in urls:
+        urls.append(fallback)
+    return urls
+
+
 async def _fetch_rss_bytes(url: str, source_id: str = "rss") -> bytes:
     # SOURCE: direct RSS/Atom feed URL (server-side; avoids browser CSP limits)
     response = await resilient_get(
@@ -198,6 +206,30 @@ async def _fetch_rss_bytes(url: str, source_id: str = "rss") -> bytes:
     raw = response.content
     _assert_rss_bytes(raw, source_id)
     return raw
+
+
+async def _fetch_rss_source_bytes(source: dict[str, str]) -> bytes:
+    """Fetch RSS for a source, trying optional fallback_url after primary failure."""
+    source_id = source["id"]
+    urls = _source_feed_urls(source)
+    last_err: Exception | None = None
+
+    for i, url in enumerate(urls):
+        try:
+            return await _fetch_rss_bytes(url, source_id)
+        except Exception as exc:
+            last_err = exc
+            if i + 1 < len(urls):
+                logger.info(
+                    "RSS fetch for %s failed at %s (%s), trying fallback",
+                    source_id,
+                    url,
+                    exc,
+                )
+                continue
+            raise
+
+    raise last_err or RuntimeError(f"RSS fetch for {source_id}: no URLs configured")
 
 
 def _assert_rss_bytes(raw: bytes, source_id: str) -> None:
@@ -278,7 +310,7 @@ async def fetch_rss_source(db, source: dict, *, force: bool = False) -> list[dic
         if cached is not None and isinstance(cached.get("items"), list):
             return _filter_news_items(cached["items"])
 
-    raw = await _fetch_rss_bytes(source["url"], source["id"])
+    raw = await _fetch_rss_source_bytes(source)
     items = parse_rss_xml(raw.decode("utf-8", errors="replace"), source)
     await set_feed_cache(db, cache_key, {"items": items})
     return items
@@ -322,7 +354,7 @@ async def fetch_all_incident_news_parallel(db) -> tuple[list[dict], list[dict]]:
             to_fetch.append(source)
 
     results = await asyncio.gather(
-        *(_fetch_rss_bytes(source["url"], source["id"]) for source in to_fetch),
+        *(_fetch_rss_source_bytes(source) for source in to_fetch),
         return_exceptions=True,
     )
 
