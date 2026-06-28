@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 from functools import lru_cache
 
 from db.config import is_postgres
+
+
+def utcnow_str() -> str:
+    """Current UTC time as 'YYYY-MM-DD HH:MM:SS' — use as a bound param instead of datetime('now')."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 # SQLite ``datetime('now')`` stores UTC-ish text timestamps in BRIEFR.
 _NOW_UTC_TEXT = (

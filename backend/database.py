@@ -8,6 +8,7 @@ from typing import Any
 
 from db.config import is_postgres
 from db.connection import get_connection
+from db.dialect import utcnow_str
 
 DB_PATH = os.environ.get("DB_PATH", "briefr.db")
 
@@ -703,13 +704,13 @@ async def upsert_watchlist_entry(
     await db.execute(
         """
         INSERT INTO watchlist (cve_id, state, snooze_until, created_at)
-        VALUES (?, ?, ?, datetime('now'))
+        VALUES (?, ?, ?, ?)
         ON CONFLICT(cve_id) DO UPDATE SET
             state = excluded.state,
             snooze_until = excluded.snooze_until,
-            created_at = datetime('now')
+            created_at = ?
         """,
-        (key, state, snooze_until),
+        (key, state, snooze_until, utcnow_str(), utcnow_str()),
     )
     rows = await db.execute_fetchall(
         "SELECT cve_id, state, snooze_until, created_at FROM watchlist WHERE cve_id = ?",
@@ -804,7 +805,7 @@ _UPSERT_CVE_SQL = """
     ) VALUES (
         :cve_id, :description, :cvss_score, :severity, :published, :modified,
         :affected_products, :mitre_technique, :summary, :is_kev, :epss_score,
-        :has_poc, :patch_available, :has_ai_context, :source_urls, :cwe_ids, datetime('now')
+        :has_poc, :patch_available, :has_ai_context, :source_urls, :cwe_ids, :updated_at
     )
     ON CONFLICT(cve_id) DO UPDATE SET
         description = excluded.description,
@@ -837,7 +838,7 @@ _UPSERT_CVE_SQL = """
         has_ai_context = excluded.has_ai_context,
         source_urls = excluded.source_urls,
         cwe_ids = excluded.cwe_ids,
-        updated_at = datetime('now')
+        updated_at = :updated_at
 """
 
 
@@ -860,6 +861,7 @@ def _cve_upsert_params(cve: dict) -> dict:
         "has_ai_context": 1 if cve.get("has_ai_context") else 0,
         "source_urls": json.dumps(cve.get("source_urls", [])),
         "cwe_ids": json.dumps(cve.get("cwe_ids", [])),
+        "updated_at": utcnow_str(),
     }
 
 
@@ -906,9 +908,9 @@ async def _insert_cve_changes_batch(
     await db.executemany(
         """
         INSERT INTO cve_change_history (cve_id, field_name, old_value, new_value, detected_at)
-        VALUES (?, ?, ?, ?, datetime('now'))
+        VALUES (?, ?, ?, ?, ?)
         """,
-        rows,
+        [(*r, utcnow_str()) for r in rows],
     )
 
 
@@ -1050,7 +1052,8 @@ async def apply_additive_cve_enrichments(
             if "affected_products" in changes:
                 set_parts.append("affected_products = :affected_products")
                 params["affected_products"] = json.dumps(changes["affected_products"])
-            set_parts.append("updated_at = datetime('now')")
+            set_parts.append("updated_at = :updated_at")
+            params["updated_at"] = utcnow_str()
             await db.execute(
                 f"UPDATE cves SET {', '.join(set_parts)} WHERE cve_id = :cve_id",
                 params,
@@ -1274,14 +1277,14 @@ async def upsert_cve_embedding(
     await db.execute(
         """
         INSERT INTO cve_embeddings (cve_id, model, dim, vector, updated_at)
-        VALUES (?, ?, ?, ?, datetime('now'))
+        VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(cve_id) DO UPDATE SET
             model = excluded.model,
             dim = excluded.dim,
             vector = excluded.vector,
-            updated_at = datetime('now')
+            updated_at = ?
         """,
-        (cve_id.upper(), model, dim, vector),
+        (cve_id.upper(), model, dim, vector, utcnow_str(), utcnow_str()),
     )
 
 
@@ -1411,11 +1414,11 @@ async def set_llm_affected_products(
         UPDATE cves
         SET affected_products = ?,
             affected_products_source = 'llm',
-            updated_at = datetime('now')
+            updated_at = ?
         WHERE cve_id = ?
           AND (affected_products IS NULL OR affected_products IN ('', '[]'))
         """,
-        (json.dumps(products), cve_id.upper()),
+        (json.dumps(products), utcnow_str(), cve_id.upper()),
     )
     return cursor.rowcount > 0
 
@@ -1582,7 +1585,7 @@ async def upsert_kev(db: aiosqlite.Connection, entry: dict) -> None:
         VALUES (
             :cve_id, :product, :short_description, :required_action, :due_date,
             :date_added, :vendor_project, :vulnerability_name, :known_ransomware,
-            :cwes, datetime('now')
+            :cwes, :updated_at
         )
         ON CONFLICT(cve_id) DO UPDATE SET
             product = excluded.product,
@@ -1594,7 +1597,7 @@ async def upsert_kev(db: aiosqlite.Connection, entry: dict) -> None:
             vulnerability_name = excluded.vulnerability_name,
             known_ransomware = excluded.known_ransomware,
             cwes = excluded.cwes,
-            updated_at = datetime('now')
+            updated_at = :updated_at
         """,
         {
             "cve_id": entry.get("cveID", ""),
@@ -1607,6 +1610,7 @@ async def upsert_kev(db: aiosqlite.Connection, entry: dict) -> None:
             "vulnerability_name": entry.get("vulnerabilityName", ""),
             "known_ransomware": entry.get("knownRansomwareCampaignUse", ""),
             "cwes": json.dumps(cwes),
+            "updated_at": utcnow_str(),
         },
     )
 
@@ -1646,12 +1650,12 @@ async def set_ioc_cache(db: aiosqlite.Connection, value: str, ioc_type: str, res
     await db.execute(
         """
         INSERT INTO ioc_cache (value, ioc_type, result, cached_at)
-        VALUES (?, ?, ?, datetime('now'))
+        VALUES (?, ?, ?, ?)
         ON CONFLICT(value) DO UPDATE SET
             result = excluded.result,
-            cached_at = datetime('now')
+            cached_at = ?
         """,
-        (value, ioc_type, json.dumps(result)),
+        (value, ioc_type, json.dumps(result), utcnow_str(), utcnow_str()),
     )
 
 
@@ -1684,12 +1688,12 @@ async def set_feed_cache(db: aiosqlite.Connection, cache_key: str, result: dict)
     await db.execute(
         """
         INSERT INTO feed_cache (cache_key, result, cached_at)
-        VALUES (?, ?, datetime('now'))
+        VALUES (?, ?, ?)
         ON CONFLICT(cache_key) DO UPDATE SET
             result = excluded.result,
-            cached_at = datetime('now')
+            cached_at = ?
         """,
-        (cache_key, json.dumps(result)),
+        (cache_key, json.dumps(result), utcnow_str(), utcnow_str()),
     )
 
 
@@ -1747,10 +1751,10 @@ async def update_cve_source_urls(
     await db.execute(
         """
         UPDATE cves
-        SET source_urls = ?, updated_at = datetime('now')
+        SET source_urls = ?, updated_at = ?
         WHERE cve_id = ?
         """,
-        (json.dumps(source_urls), cve_id.upper()),
+        (json.dumps(source_urls), utcnow_str(), cve_id.upper()),
     )
 
 
@@ -1783,7 +1787,7 @@ async def replace_cve_exploits(
             """
             INSERT INTO cve_exploits (
                 cve_id, title, type, source, url, published_date, fetched_at
-            ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 (
@@ -1793,6 +1797,7 @@ async def replace_cve_exploits(
                     exp.get("source") or "",
                     exp.get("url") or "",
                     exp.get("published_date") or "",
+                    utcnow_str(),
                 )
                 for exp in exploits
             ],
@@ -1819,7 +1824,7 @@ async def merge_cve_exploits(
             """
             INSERT OR IGNORE INTO cve_exploits (
                 cve_id, title, type, source, url, published_date, fetched_at
-            ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 key,
@@ -1828,6 +1833,7 @@ async def merge_cve_exploits(
                 exp.get("source") or "",
                 url,
                 exp.get("published_date") or "",
+                utcnow_str(),
             ),
         )
         rc = cursor.rowcount
@@ -1863,6 +1869,7 @@ async def replace_cve_exploits_by_source(
                     source,
                     url,
                     exp.get("published_date") or "",
+                    utcnow_str(),
                 )
             )
     if rows:
@@ -1870,7 +1877,7 @@ async def replace_cve_exploits_by_source(
             """
             INSERT OR IGNORE INTO cve_exploits (
                 cve_id, title, type, source, url, published_date, fetched_at
-            ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             rows,
         )
@@ -1930,7 +1937,7 @@ async def upsert_otx_pulses(
         INSERT INTO otx_pulses (
             pulse_id, pulse_name, author, created_date, adversary,
             malware_families, tags, targeted_countries, ioc_count, fetched_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(pulse_id) DO UPDATE SET
             pulse_name = excluded.pulse_name,
             author = excluded.author,
@@ -1953,6 +1960,7 @@ async def upsert_otx_pulses(
                 json.dumps(p.get("tags") or []),
                 json.dumps(p.get("targeted_countries") or []),
                 int(p.get("ioc_count") or 0),
+                utcnow_str(),
             )
             for p in pulses
             if p.get("pulse_id")
@@ -1973,7 +1981,7 @@ async def replace_otx_cve_pulses(
                 cve_id, pulse_id, pulse_name, author, created_date,
                 adversary, malware_families, ioc_count, tags, targeted_countries,
                 fetched_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 (
@@ -1987,6 +1995,7 @@ async def replace_otx_cve_pulses(
                     int(p.get("ioc_count") or 0),
                     json.dumps(p.get("tags") or []),
                     json.dumps(p.get("targeted_countries") or []),
+                    utcnow_str(),
                 )
                 for p in pulses
                 if p.get("pulse_id")
@@ -2059,6 +2068,7 @@ async def replace_otx_pulse_iocs(
                 norm.get("ioc_type") or "",
                 norm.get("ioc_value") or "",
                 norm.get("description") or "",
+                utcnow_str(),
             )
         )
     if not normalized_rows:
@@ -2069,7 +2079,7 @@ async def replace_otx_pulse_iocs(
         """
         INSERT INTO otx_pulse_iocs (
             pulse_id, ioc_type, ioc_value, description, fetched_at
-        ) VALUES (?, ?, ?, ?, datetime('now'))
+        ) VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(pulse_id, ioc_type, ioc_value) DO UPDATE SET
             description = excluded.description,
             fetched_at = excluded.fetched_at
@@ -2157,13 +2167,13 @@ async def insert_correlation_suppression(
     await db.execute(
         """
         INSERT INTO correlation_suppressions (cve_id, scope, scope_key, reason, dismissed_by, created_at)
-        VALUES (?, ?, ?, ?, ?, datetime('now'))
+        VALUES (?, ?, ?, ?, ?, ?)
         ON CONFLICT(cve_id, scope, scope_key) DO UPDATE SET
             reason = excluded.reason,
             dismissed_by = excluded.dismissed_by,
-            created_at = datetime('now')
+            created_at = ?
         """,
-        (cve_id.upper(), scope, scope_key, reason, dismissed_by),
+        (cve_id.upper(), scope, scope_key, reason, dismissed_by, utcnow_str(), utcnow_str()),
     )
     rows = await db.execute_fetchall(
         """
@@ -2693,12 +2703,12 @@ async def set_sync_state_value(db: aiosqlite.Connection, key: str, value: str) -
     await db.execute(
         """
         INSERT INTO sync_state (key, value, updated_at)
-        VALUES (?, ?, datetime('now'))
+        VALUES (?, ?, ?)
         ON CONFLICT(key) DO UPDATE SET
             value = excluded.value,
-            updated_at = datetime('now')
+            updated_at = ?
         """,
-        (key, value),
+        (key, value, utcnow_str(), utcnow_str()),
     )
 
 
@@ -2808,7 +2818,8 @@ async def update_webhook_destination(
         params.append(label)
     if not fields:
         return False
-    fields.append("updated_at = datetime('now')")
+    fields.append("updated_at = ?")
+    params.append(utcnow_str())
     params.append(destination_id)
     cursor = await db.execute(
         f"UPDATE webhook_destinations SET {', '.join(fields)} WHERE id = ?",
@@ -2917,12 +2928,12 @@ async def set_nvd_sync_watermark(db: aiosqlite.Connection, value: str) -> None:
     await db.execute(
         """
         INSERT INTO sync_state (key, value, updated_at)
-        VALUES (?, ?, datetime('now'))
+        VALUES (?, ?, ?)
         ON CONFLICT(key) DO UPDATE SET
             value = excluded.value,
-            updated_at = datetime('now')
+            updated_at = ?
         """,
-        (NVD_SYNC_WATERMARK_KEY, value),
+        (NVD_SYNC_WATERMARK_KEY, value, utcnow_str(), utcnow_str()),
     )
 
 

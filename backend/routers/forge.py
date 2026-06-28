@@ -318,6 +318,7 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
         )
         created = not existing
 
+        from db.dialect import utcnow_str
         await db.execute(
             """
             INSERT INTO hunt_packs
@@ -330,7 +331,7 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
                 sigma_yaml = excluded.sigma_yaml,
                 siem_queries = excluded.siem_queries,
                 log_patterns = excluded.log_patterns,
-                updated_at = datetime('now')
+                updated_at = ?
             """,
             (
                 technique_id,
@@ -340,6 +341,7 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
                 sigma_yaml,
                 json.dumps(siem),
                 json.dumps(log_patterns),
+                utcnow_str(),
             ),
         )
         await db.commit()
