@@ -136,7 +136,14 @@ def _item_description(item: ET.Element) -> str:
 
 
 def parse_rss_xml(xml_text: str, source: dict) -> list[dict]:
-    root = ET.fromstring(xml_text)
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError as exc:
+        preview = (xml_text or "").lstrip()[:80].replace("\n", " ")
+        raise ValueError(
+            f"RSS parse failed for {source.get('label', source.get('id', 'feed'))}: "
+            f"{exc} (response starts with: {preview!r})"
+        ) from exc
     nodes = root.findall(".//item") or root.findall(".//entry")
     cards: list[dict] = []
 

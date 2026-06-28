@@ -354,7 +354,8 @@ CVE_SELECT = """
             w.state = 'pin'
             OR (w.state = 'snooze'
                 AND w.snooze_until IS NOT NULL
-                AND datetime(w.snooze_until) > datetime('now'))
+                AND TRIM(w.snooze_until) != ''
+                AND w.snooze_until > datetime('now'))
         )
 """
 
@@ -364,7 +365,8 @@ _WATCHLIST_ACTIVE_IN = """
         WHERE state = 'pin'
            OR (state = 'snooze'
                AND snooze_until IS NOT NULL
-               AND datetime(snooze_until) > datetime('now'))
+               AND TRIM(snooze_until) != ''
+               AND snooze_until > datetime('now'))
     )
 """
 
@@ -373,7 +375,8 @@ _ACTIVE_SNOOZE_EXCLUDE = """
         SELECT cve_id FROM watchlist
         WHERE state = 'snooze'
           AND snooze_until IS NOT NULL
-          AND datetime(snooze_until) > datetime('now')
+          AND TRIM(snooze_until) != ''
+          AND snooze_until > datetime('now')
     )
 """
 
@@ -441,7 +444,8 @@ def _build_cve_filters(
         conditions.append(
             "EXISTS (SELECT 1 FROM kev_deadlines k WHERE k.cve_id = c.cve_id "
             "AND k.due_date IS NOT NULL AND TRIM(k.due_date) != '' "
-            "AND DATE(k.due_date) < DATE('now'))"
+            "AND LENGTH(k.due_date) >= 10 "
+            "AND k.due_date < date('now'))"
         )
 
     if poc_only:
@@ -1127,6 +1131,12 @@ async def cve_detection(
     github_token = os.environ.get("GITHUB_TOKEN", "")
     cve_upper = cve_id.upper()
 
+    technique_ids: list[str] = []
+    sigma_rules: list = []
+    elastic_rules: list = []
+    has_community_rules = False
+    generated_sigma = None
+    siem_queries: dict = {}
     yara_rules: list = []
     db = await get_db()
     try:
@@ -1181,6 +1191,8 @@ async def cve_detection(
 
         yara_rules = await find_yara_rules_for_cve(db, cve_upper)
 
+    except Exception:
+        logger.exception("Detection lookup failed for %s", cve_upper)
     finally:
         await db.close()
 

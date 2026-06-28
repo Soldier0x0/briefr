@@ -202,8 +202,9 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
             {commit && (
               <>
                 <div className="sb-sep" />
-                <span className="sb-item">
-                  <span className="sb-label mono" style={{ fontSize: '0.6875rem' }}>{commit.slice(0, 7) || 'dev'}</span>
+                <span className="sb-item" title={`Deployed build ${commit} — git commit short hash for support and rollback`}>
+                  <HelpTip text="Short git commit of the running backend build. Match this to the version in Admin → Overview after deploy." />
+                  <span className="sb-label mono" style={{ fontSize: '0.6875rem' }}>Build {commit.slice(0, 7)}</span>
                 </span>
               </>
             )}

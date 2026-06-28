@@ -1,4 +1,4 @@
-import { Component, useEffect, useMemo, useRef, useState } from 'react'
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   fetchCVE,
   fetchCVECorrelation,
@@ -29,7 +29,7 @@ import {
   buildRiskHeroSummary,
   componentBarColor,
   getRiskWeights,
-  riskScoreColor,
+  riskScoreDisplayColor,
   RISK_COMPONENT_LABELS,
 } from '../scoring/riskScore.js'
 import { profileToMatchAssets } from '../utils/assetProfileIo.js'
@@ -224,7 +224,7 @@ function RiskScoreBreakdown({ cve, riskScore, riskLoading, onOpenProfile, moment
   if (!riskScore || !cve) return null
 
   const { total, components, hasProfile } = riskScore
-  const totalColor = riskScoreColor(total)
+  const totalColor = riskScoreDisplayColor(total, cve?.severity)
   const summary = buildRiskHeroSummary(cve, riskScore)
 
   // Fixed display order matching v1.1b weights
@@ -1125,11 +1125,26 @@ function SiemBlock({ platform, label, data }) {
   )
 }
 
-function TabDetect({ detection, loading }) {
+function TabDetect({ detection, loading, error, onRetry }) {
   if (loading) {
     return (
       <section className="drawer-section">
         <p className="drawer-intel-empty mono">// Loading detection intelligence…</p>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section className="drawer-section">
+        <p className="drawer-intel-empty mono" role="alert">
+          // Detection lookup failed: {error}
+        </p>
+        {onRetry && (
+          <button type="button" className="drawer-risk-profile-cta-btn mono" onClick={onRetry}>
+            Retry
+          </button>
+        )}
       </section>
     )
   }
@@ -1323,6 +1338,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
   const [correlationLoading, setCorrelationLoading] = useState(false)
   const [detection, setDetection] = useState(null)
   const [detectionLoading, setDetectionLoading] = useState(false)
+  const [detectionError, setDetectionError] = useState(null)
   const detectionFetchedRef = useRef(false)
   const [momentumData, setMomentumData] = useState(null)
   const [riskScore, setRiskScore] = useState(null)
@@ -1472,6 +1488,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
   useEffect(() => {
     setDetection(null)
     setDetectionLoading(false)
+    setDetectionError(null)
     detectionFetchedRef.current = false
     setMomentumData(null)
   }, [cve?.cve_id])
@@ -1494,19 +1511,36 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
     return () => { cancelled = true }
   }, [cve?.cve_id])
 
+  const loadDetection = useCallback(() => {
+    if (!cve?.cve_id) return
+    let cancelled = false
+    setDetectionLoading(true)
+    setDetectionError(null)
+    const product = cve.affected_products?.[0]?.split(':')?.[1] || ''
+    fetchCVEDetection(cve.cve_id, product)
+      .then(data => {
+        if (!cancelled) {
+          setDetection(data)
+          setDetectionError(null)
+        }
+      })
+      .catch(err => {
+        if (!cancelled) {
+          setDetection(null)
+          setDetectionError(err?.message || 'Request failed')
+        }
+      })
+      .finally(() => { if (!cancelled) setDetectionLoading(false) })
+    return () => { cancelled = true }
+  }, [cve?.cve_id, cve?.affected_products])
+
   // Detection: lazy-fetch when Detect tab first activated
   useEffect(() => {
     if (activeTab !== 'detect' || !cve?.cve_id || detectionFetchedRef.current) return
     detectionFetchedRef.current = true
-    let cancelled = false
-    setDetectionLoading(true)
-    const product = cve.affected_products?.[0]?.split(':')?.[1] || ''
-    fetchCVEDetection(cve.cve_id, product)
-      .then(data => { if (!cancelled) setDetection(data) })
-      .catch(() => { if (!cancelled) setDetection(null) })
-      .finally(() => { if (!cancelled) setDetectionLoading(false) })
-    return () => { cancelled = true }
-  }, [activeTab, cve?.cve_id])
+    const cleanup = loadDetection()
+    return cleanup
+  }, [activeTab, cve?.cve_id, loadDetection])
 
   async function handleDismissCorrelation(body) {
     if (!cve?.cve_id) return
@@ -1858,7 +1892,15 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
             </DrawerTabErrorBoundary>
           )}
           {activeTab === 'detect' && (
-            <TabDetect detection={detection} loading={detectionLoading} />
+            <TabDetect
+              detection={detection}
+              loading={detectionLoading}
+              error={detectionError}
+              onRetry={() => {
+                detectionFetchedRef.current = true
+                loadDetection()
+              }}
+            />
           )}
           {activeTab === 'related' && (
             <TabRelated

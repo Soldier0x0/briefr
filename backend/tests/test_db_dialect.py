@@ -113,3 +113,21 @@ def test_named_params_to_dollar():
     assert ":cve_id" not in adapted
     assert "$1" in adapted and "$3" in adapted
     assert params == ("CVE-2024-1", "test", 9.8)
+
+
+def test_kev_overdue_text_date_compare():
+    sql = adapt_sql(
+        "k.due_date < date('now')",
+        backend="postgresql",
+    )
+    assert "DATE(k.due_date)" not in sql
+    assert "k.due_date <" in sql
+
+
+def test_snooze_until_iso_text_compare():
+    sql = adapt_sql(
+        "snooze_until > datetime('now')",
+        backend="postgresql",
+    )
+    assert "datetime(snooze_until)" not in sql
+    assert "snooze_until >" in sql
