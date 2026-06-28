@@ -14,7 +14,7 @@ INCIDENT_RSS_SOURCES: list[dict[str, str]] = [
     {
         "id": "krebs",
         "label": "Krebs on Security",
-        "url": "https://krebsonsecurity.com/feed/",
+        "url": "https://feeds.feedburner.com/KrebsOnSecurity",
     },
     {
         "id": "darkreading",

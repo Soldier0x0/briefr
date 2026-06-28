@@ -20,6 +20,11 @@ from resilient_client import resilient_get
 
 logger = logging.getLogger(__name__)
 
+RSS_BROWSER_UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+)
+
 TECHNIQUE_RE = re.compile(r"\b(T\d{4}(?:\.\d{3})?|AML\.T\d{4}(?:\.\d{3})?)\b", re.I)
 
 TAG_HINTS = [
@@ -186,9 +191,31 @@ async def _fetch_rss_bytes(url: str, source_id: str = "rss") -> bytes:
         timeout=30.0,
         headers={
             "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "User-Agent": RSS_BROWSER_UA,
         },
     )
-    return response.content
+    raw = response.content
+    _assert_rss_bytes(raw, source_id)
+    return raw
+
+
+def _assert_rss_bytes(raw: bytes, source_id: str) -> None:
+    stripped = raw.lstrip()
+    if not stripped:
+        raise ValueError(f"RSS fetch for {source_id}: empty response")
+    head = stripped[:256].lower()
+    if head.startswith(b"<!doctype") or head.startswith(b"<html"):
+        raise ValueError(
+            f"RSS fetch for {source_id}: upstream returned HTML instead of XML "
+            "(often bot protection or a challenge page)"
+        )
+    if stripped[:1] not in (b"<", b"\xef"):
+        preview = stripped[:80].decode("utf-8", errors="replace")
+        raise ValueError(
+            f"RSS fetch for {source_id}: response does not look like XML "
+            f"(starts with: {preview!r})"
+        )
 
 
 def rss_cache_key(source_id: str) -> str:

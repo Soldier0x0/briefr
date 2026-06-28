@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from feeds.incident_news import _filter_news_items, parse_rss_xml
+from feeds.incident_news import _assert_rss_bytes, _filter_news_items, parse_rss_xml
 
 
 def test_parse_rss_xml_excludes_name_that_toon_contest():
@@ -62,3 +62,17 @@ def test_filter_news_items_handles_malformed_cache():
 def test_filter_news_items_returns_empty_for_non_list():
     assert _filter_news_items(None) == []
     assert _filter_news_items("not a list") == []
+
+
+def test_assert_rss_bytes_rejects_html_challenge_page():
+    html = b"<!doctype html><html><head><title>Challenge</title></head></html>"
+    try:
+        _assert_rss_bytes(html, "krebs")
+        assert False, "expected ValueError"
+    except ValueError as exc:
+        assert "HTML instead of XML" in str(exc)
+
+
+def test_assert_rss_bytes_accepts_xml_payload():
+    xml = b'<?xml version="1.0"?><rss version="2.0"><channel></channel></rss>'
+    _assert_rss_bytes(xml, "hackernews")
