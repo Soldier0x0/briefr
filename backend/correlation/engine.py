@@ -19,7 +19,12 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-from correlation.config import ENGINE_VERSION, get_correlation_cache_hours, get_otx_ioc_sync_max_per_run
+from correlation.config import (
+    ENGINE_VERSION,
+    get_correlation_cache_hours,
+    get_mitre_min_overlap,
+    get_otx_ioc_sync_max_per_run,
+)
 
 # Sector keyword mapping for actor description parsing
 SECTOR_KEYWORDS: dict[str, list[str]] = {
@@ -77,28 +82,38 @@ async def find_actor_sector_correlation(
     results: list[dict] = []
     seen: set[str] = set()
 
-    # Path 1: MITRE groups linked via technique mapping
+    # Path 1: MITRE groups linked via technique mapping, scored by technique
+    # overlap (|CVE techniques ∩ group techniques| / |CVE techniques|) rather
+    # than "any shared technique" — a single shared technique out of dozens
+    # used to score the same as a strong match.
     tech_rows = await db.execute_fetchall(
         "SELECT technique_id FROM cve_technique_map WHERE cve_id = ?",
         (cve_upper,),
     )
-    technique_ids = [r["technique_id"] for r in tech_rows]
+    technique_ids = list({r["technique_id"] for r in tech_rows})
 
     if technique_ids:
         placeholders = ",".join("?" * len(technique_ids))
         group_rows = await db.execute_fetchall(
             f"""
-            SELECT mg.group_id, mg.name, mg.sectors
+            SELECT mg.group_id, mg.name, mg.sectors,
+                   COUNT(DISTINCT gtm.technique_id) AS matched
             FROM group_technique_map gtm
             JOIN mitre_groups mg ON mg.group_id = gtm.group_id
             WHERE gtm.technique_id IN ({placeholders})
             GROUP BY mg.group_id
-            ORDER BY mg.name
-            LIMIT 10
             """,
             technique_ids,
         )
+        min_overlap = get_mitre_min_overlap()
+        scored = []
         for row in group_rows:
+            overlap = row["matched"] / len(technique_ids)
+            if overlap >= min_overlap:
+                scored.append((overlap, row))
+        scored.sort(key=lambda pair: pair[0], reverse=True)
+
+        for overlap, row in scored[:3]:
             name = row["name"]
             if name in seen:
                 continue
@@ -115,8 +130,9 @@ async def find_actor_sector_correlation(
                 "actor_name": name,
                 "actor_sectors": actor_sectors,
                 "user_sector_match": sector_match,
-                "confidence": "medium",
+                "confidence": "medium" if overlap >= 0.5 else "low",
                 "source": "mitre_attack",
+                "technique_overlap": round(overlap, 2),
             })
 
     # Path 2: OTX pulse adversary attributions
@@ -265,15 +281,23 @@ async def _store_temporal_anomalies(db, anomalies: list[dict]) -> None:
 
 
 async def _get_temporal_for_cve(db, cve_id: str) -> list[dict]:
-    """Return pre-computed temporal anomalies matching this CVE's vendors."""
+    """Return pre-computed temporal anomalies matching this CVE's vendors.
+
+    Gated per §15: a vendor-volume spike is only useful to an analyst if it's
+    on their stack, or the CVE itself already carries a KEV/exploit signal —
+    otherwise it's an academic stat about an unrelated vendor.
+    """
+    from correlation.local import cve_matches_stack, stack_terms_list
+
     row = await db.execute_fetchall(
-        "SELECT affected_products FROM cves WHERE cve_id = ?",
+        "SELECT affected_products, description, is_kev, has_poc FROM cves WHERE cve_id = ?",
         (cve_id.upper(),),
     )
     if not row:
         return []
 
-    products = _parse_json_list(row[0]["affected_products"])
+    cve_row = row[0]
+    products = _parse_json_list(cve_row["affected_products"])
     vendors = {
         str(p).split(":")[0].lower().strip()
         for p in products
@@ -281,6 +305,12 @@ async def _get_temporal_for_cve(db, cve_id: str) -> list[dict]:
     }
     vendors.discard("")
     if not vendors:
+        return []
+
+    terms = stack_terms_list()
+    on_stack = cve_matches_stack(cve_id, cve_row["description"] or "", products, terms)
+    has_signal = bool(cve_row["is_kev"]) or bool(cve_row["has_poc"])
+    if terms and not on_stack and not has_signal:
         return []
 
     results = []
@@ -376,12 +406,18 @@ async def get_correlation_for_cve(
         else:
             otx_status = "not_configured"
 
+        boosters = {
+            "kev": sorted({cve for c in campaigns for cve in c.get("boosters", {}).get("kev", [])}),
+            "exploit": sorted({cve for c in campaigns for cve in c.get("boosters", {}).get("exploit", [])}),
+        }
+
         result = {
             "cve_id": cve_upper,
             "campaigns": campaigns,
             "infrastructure": infrastructure,
             "actor": actor,
             "temporal": temporal,
+            "boosters": boosters,
             "computed_at": datetime.now(timezone.utc).isoformat(),
             "otx_status": otx_status,
             "meta": {
@@ -401,6 +437,7 @@ async def get_correlation_for_cve(
             "infrastructure": [],
             "actor": [],
             "temporal": [],
+            "boosters": {"kev": [], "exploit": []},
             "otx_status": "degraded",
             "error": "correlation_unavailable",
             "priority": {"score": 0, "components": []},

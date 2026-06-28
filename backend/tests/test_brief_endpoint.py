@@ -111,7 +111,7 @@ def test_brief_endpoint_shape(tmp_path, monkeypatch):
     assert body["meta"]["stack_profile_id"] is not None
     assert "log4j" in body["meta"]["stack_terms"]
 
-    for key in ("epss_movers", "new_kev", "kev_due_soon", "stack_matches"):
+    for key in ("epss_movers", "new_kev", "kev_due_soon", "stack_matches", "active_campaigns"):
         assert key in body["sections"]
         assert "items" in body["sections"][key]
         assert "count" in body["sections"][key]
@@ -162,6 +162,58 @@ def test_brief_epss_movers_section(tmp_path, monkeypatch):
     assert any(item["cve_id"] == "CVE-2024-8002" for item in movers)
     mover = next(i for i in movers if i["cve_id"] == "CVE-2024-8002")
     assert mover["epss_delta"] == 0.1
+
+
+def test_brief_active_campaigns_section(tmp_path, monkeypatch):
+    db_path = tmp_path / "brief_campaigns.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+    _patch_app_lifecycle(monkeypatch)
+
+    asyncio.run(init_db())
+    asyncio.run(_seed_brief_db(db_path))
+
+    async def seed_campaign():
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO correlation_campaigns (
+                    campaign_id, primary_pulse_id, label, adversary, confidence,
+                    member_count, lifecycle, campaign_version, computed_at
+                ) VALUES (
+                    'camp_test1', 'pulse-1', 'Log4j wave', 'APT-X', 'high',
+                    2, 'active', '2.0.0-phase2', datetime('now')
+                )
+                """
+            )
+            await db.execute(
+                """
+                INSERT INTO correlation_campaign_members (campaign_id, cve_id, role)
+                VALUES ('camp_test1', 'CVE-2024-8001', 'member'),
+                       ('camp_test1', 'CVE-2024-9999', 'member')
+                """
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    asyncio.run(seed_campaign())
+
+    async def run() -> dict:
+        db = await get_db()
+        try:
+            return await build_morning_brief(db, stack="log4j", since_hours=24, limit=10)
+        finally:
+            await db.close()
+
+    result = asyncio.run(run())
+    items = result["sections"]["active_campaigns"]["items"]
+    assert len(items) == 1
+    assert items[0]["campaign_id"] == "camp_test1"
+    assert items[0]["label"] == "Log4j wave"
+    assert items[0]["confidence"] == "high"
+    assert all("campaign_id" not in item for item in result["action_queue"])
 
 
 def test_brief_registered_in_openapi():

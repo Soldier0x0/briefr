@@ -34,3 +34,7 @@ def get_correlation_confirm_enabled() -> bool:
 
 def get_max_campaign_members() -> int:
     return max(2, int(os.environ.get("CORRELATION_MAX_CAMPAIGN_MEMBERS", "25")))
+
+
+def get_mitre_min_overlap() -> float:
+    return max(0.0, float(os.environ.get("CORRELATION_MITRE_MIN_OVERLAP", "0.25")))

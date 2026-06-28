@@ -144,13 +144,14 @@ Each CVE object may include `kev_due_date` (`YYYY-MM-DD` from `kev_deadlines.due
     "epss_movers": { "title": "EPSS movers", "count": 2, "items": [...] },
     "new_kev": { "title": "New KEV entries", "count": 1, "items": [...] },
     "kev_due_soon": { "title": "KEV due within 14 days", "count": 3, "items": [...] },
-    "stack_matches": { "title": "Stack activity", "count": 5, "items": [...] }
+    "stack_matches": { "title": "Stack activity", "count": 5, "items": [...] },
+    "active_campaigns": { "title": "Active campaigns on your stack", "count": 1, "items": [...] }
   },
   "action_queue": [ { "cve_id": "...", "reasons": ["kev_due_soon", "stack_match"], ... } ]
 }
 ```
 
-Each item includes core card fields (`cve_id`, `severity`, `cvss_score`, `epss_score`, `is_kev`, `has_poc`, `summary`, `published`, `kev_due_date`, `reasons`) plus section-specific extras (`epss_delta`, `kev_date_added`, etc.).
+Each item includes core card fields (`cve_id`, `severity`, `cvss_score`, `epss_score`, `is_kev`, `has_poc`, `summary`, `published`, `kev_due_date`, `reasons`) plus section-specific extras (`epss_delta`, `kev_date_added`, etc.). `active_campaigns` items are cluster-level (`campaign_id`, `label`, `adversary`, `confidence`, `member_count`, `lifecycle`) rather than CVE-keyed, so they're excluded from `action_queue`.
 
 **Frontend:** BRIEF tab landing view (`MorningBrief.jsx`) — default tab on load; renders a **single unified list** from `action_queue` (reason filter chips + optional KEV due-window from histogram click; `CveDescriptionClamp` per row). Full paginated CVE list lives on the FEED tab (`FilterBar` stack field + `CVEFeed`; no Hero/StatsRow/heatmap on FEED).
 
@@ -424,6 +425,7 @@ Single-user for now — no `user_id` column. Built-in app login will add per-use
       "members": ["CVE-2024-0001", "CVE-2024-0002"],
       "confidence": "medium",
       "evidence": [{"type": "same_pulse", "pulse_id": "...", "pulse_name": "..."}],
+      "boosters": {"kev": ["CVE-2024-0002"], "exploit": []},
       "summary": "Linked to 1 other CVE(s) via OTX pulse ...",
       "attribution_conflict": false
     }
@@ -440,13 +442,25 @@ Single-user for now — no `user_id` column. Built-in app login will add per-use
       "summary": "Shares 1 hash with CVE-2024-0002 via OTX pulses."
     }
   ],
-  "actor": [],
+  "actor": [
+    {
+      "actor_name": "APT99",
+      "actor_sectors": ["finance"],
+      "user_sector_match": false,
+      "confidence": "medium",
+      "source": "mitre_attack",
+      "technique_overlap": 0.67
+    }
+  ],
   "temporal": [],
+  "boosters": {"kev": ["CVE-2024-0002"], "exploit": []},
   "otx_status": "ok",
   "meta": {"engine_version": "2.0", "cache_hit": false},
   "computed_at": "2024-01-01T00:00:00+00:00"
 }
 ```
+
+Per-campaign `boosters` reflect KEV/exploit signals among that campaign's members (excluding the anchor CVE) and bump campaign confidence one level (capped at `high`) when present; the top-level `boosters` is the union across all campaigns. `actor` matches require MITRE ATT&CK technique overlap ≥ `CORRELATION_MITRE_MIN_OVERLAP` (default 0.25); `technique_overlap` is `matched / total CVE techniques`, and confidence is `medium` at ≥0.5 else `low`.
 
 Cached 6 hours in `feed_cache` (`correlation:v2:{cve}:{sector}`). On engine error, returns empty arrays + `"error"` string.
 
