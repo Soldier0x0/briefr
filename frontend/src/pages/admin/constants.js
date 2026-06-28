@@ -63,4 +63,3 @@ export const COMING_SOON_INFO = {
     message: 'Ships in V1.4. Will show rate-limit usage statistics.',
   },
 }
-    message: 'Ships in V1.4. Will show 

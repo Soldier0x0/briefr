@@ -118,4 +118,3 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
     </div>
   )
 }
-                <td className="mono" sty
