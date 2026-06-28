@@ -1,11 +1,14 @@
 """Tests for incident/news RSS parsing and relevance filters."""
 
+import asyncio
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from feeds import incident_news
 from feeds.incident_news import _assert_rss_bytes, _filter_news_items, parse_rss_xml
+from feeds.incident_sources import INCIDENT_RSS_SOURCES
 
 
 def test_parse_rss_xml_excludes_name_that_toon_contest():
@@ -76,3 +79,60 @@ def test_assert_rss_bytes_rejects_html_challenge_page():
 def test_assert_rss_bytes_accepts_xml_payload():
     xml = b'<?xml version="1.0"?><rss version="2.0"><channel></channel></rss>'
     _assert_rss_bytes(xml, "hackernews")
+
+
+def test_krebs_source_has_direct_feed_fallback():
+    krebs = next(s for s in INCIDENT_RSS_SOURCES if s["id"] == "krebs")
+    assert krebs["url"] == "https://feeds.feedburner.com/KrebsOnSecurity"
+    assert krebs["fallback_url"] == "https://krebsonsecurity.com/feed/"
+
+
+def test_fetch_rss_source_bytes_falls_back_when_primary_fails(monkeypatch):
+    source = {
+        "id": "krebs",
+        "label": "Krebs on Security",
+        "url": "https://feeds.feedburner.com/KrebsOnSecurity",
+        "fallback_url": "https://krebsonsecurity.com/feed/",
+    }
+    calls: list[str] = []
+
+    async def fake_fetch(url: str, source_id: str = "rss") -> bytes:
+        calls.append(url)
+        if "feedburner" in url:
+            raise ValueError("RSS fetch for krebs: upstream returned HTML instead of XML")
+        return b'<?xml version="1.0"?><rss version="2.0"><channel></channel></rss>'
+
+    monkeypatch.setattr(incident_news, "_fetch_rss_bytes", fake_fetch)
+
+    async def run() -> None:
+        raw = await incident_news._fetch_rss_source_bytes(source)
+        assert b"<rss" in raw
+        assert calls == [
+            "https://feeds.feedburner.com/KrebsOnSecurity",
+            "https://krebsonsecurity.com/feed/",
+        ]
+
+    asyncio.run(run())
+
+
+def test_fetch_rss_source_bytes_raises_when_all_urls_fail(monkeypatch):
+    source = {
+        "id": "krebs",
+        "label": "Krebs on Security",
+        "url": "https://feeds.feedburner.com/KrebsOnSecurity",
+        "fallback_url": "https://krebsonsecurity.com/feed/",
+    }
+
+    async def always_fail(url: str, source_id: str = "rss") -> bytes:
+        raise ValueError(f"failed: {url}")
+
+    monkeypatch.setattr(incident_news, "_fetch_rss_bytes", always_fail)
+
+    async def run() -> None:
+        try:
+            await incident_news._fetch_rss_source_bytes(source)
+            assert False, "expected ValueError"
+        except ValueError as exc:
+            assert "krebsonsecurity.com/feed/" in str(exc)
+
+    asyncio.run(run())
