@@ -17,6 +17,8 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from db.dialect import utcnow_str
+
 logger = logging.getLogger(__name__)
 
 from correlation.config import ENGINE_VERSION, get_correlation_cache_hours, get_otx_ioc_sync_max_per_run
@@ -147,7 +149,7 @@ async def find_actor_sector_correlation(
 async def _store_actor_correlation(
     db, cve_id: str, findings: list[dict]
 ) -> None:
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    now = utcnow_str()
     await db.execute(
         "DELETE FROM correlation_actor WHERE cve_id = ?",
         (cve_id.upper(),),
@@ -249,7 +251,7 @@ async def find_temporal_anomalies(db) -> list[dict]:
 
 
 async def _store_temporal_anomalies(db, anomalies: list[dict]) -> None:
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    now = utcnow_str()
     await db.execute("DELETE FROM correlation_temporal WHERE 1=1")
     for a in anomalies:
         await db.execute(

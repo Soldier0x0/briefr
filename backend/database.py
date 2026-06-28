@@ -708,9 +708,9 @@ async def upsert_watchlist_entry(
         ON CONFLICT(cve_id) DO UPDATE SET
             state = excluded.state,
             snooze_until = excluded.snooze_until,
-            created_at = ?
+            created_at = excluded.created_at
         """,
-        (key, state, snooze_until, utcnow_str(), utcnow_str()),
+        (key, state, snooze_until, utcnow_str()),
     )
     rows = await db.execute_fetchall(
         "SELECT cve_id, state, snooze_until, created_at FROM watchlist WHERE cve_id = ?",
@@ -1282,9 +1282,9 @@ async def upsert_cve_embedding(
             model = excluded.model,
             dim = excluded.dim,
             vector = excluded.vector,
-            updated_at = ?
+            updated_at = excluded.updated_at
         """,
-        (cve_id.upper(), model, dim, vector, utcnow_str(), utcnow_str()),
+        (cve_id.upper(), model, dim, vector, utcnow_str()),
     )
 
 
@@ -1653,9 +1653,9 @@ async def set_ioc_cache(db: aiosqlite.Connection, value: str, ioc_type: str, res
         VALUES (?, ?, ?, ?)
         ON CONFLICT(value) DO UPDATE SET
             result = excluded.result,
-            cached_at = ?
+            cached_at = excluded.cached_at
         """,
-        (value, ioc_type, json.dumps(result), utcnow_str(), utcnow_str()),
+        (value, ioc_type, json.dumps(result), utcnow_str()),
     )
 
 
@@ -1691,9 +1691,9 @@ async def set_feed_cache(db: aiosqlite.Connection, cache_key: str, result: dict)
         VALUES (?, ?, ?)
         ON CONFLICT(cache_key) DO UPDATE SET
             result = excluded.result,
-            cached_at = ?
+            cached_at = excluded.cached_at
         """,
-        (cache_key, json.dumps(result), utcnow_str(), utcnow_str()),
+        (cache_key, json.dumps(result), utcnow_str()),
     )
 
 
@@ -2171,9 +2171,9 @@ async def insert_correlation_suppression(
         ON CONFLICT(cve_id, scope, scope_key) DO UPDATE SET
             reason = excluded.reason,
             dismissed_by = excluded.dismissed_by,
-            created_at = ?
+            created_at = excluded.created_at
         """,
-        (cve_id.upper(), scope, scope_key, reason, dismissed_by, utcnow_str(), utcnow_str()),
+        (cve_id.upper(), scope, scope_key, reason, dismissed_by, utcnow_str()),
     )
     rows = await db.execute_fetchall(
         """
@@ -2706,9 +2706,9 @@ async def set_sync_state_value(db: aiosqlite.Connection, key: str, value: str) -
         VALUES (?, ?, ?)
         ON CONFLICT(key) DO UPDATE SET
             value = excluded.value,
-            updated_at = ?
+            updated_at = excluded.updated_at
         """,
-        (key, value, utcnow_str(), utcnow_str()),
+        (key, value, utcnow_str()),
     )
 
 
@@ -2931,9 +2931,9 @@ async def set_nvd_sync_watermark(db: aiosqlite.Connection, value: str) -> None:
         VALUES (?, ?, ?)
         ON CONFLICT(key) DO UPDATE SET
             value = excluded.value,
-            updated_at = ?
+            updated_at = excluded.updated_at
         """,
-        (NVD_SYNC_WATERMARK_KEY, value, utcnow_str(), utcnow_str()),
+        (NVD_SYNC_WATERMARK_KEY, value, utcnow_str()),
     )
 
 

@@ -725,7 +725,7 @@ async def run_weekly_mitre_refresh() -> bool:
         except Exception as exc:
             logger.error("Weekly MITRE/ATLAS refresh failed: %s", exc)
             ok = False
-            _mitre_error_msg = (f"{type(exc).__name__}: {exc}" or repr(exc))[:500]
+            _mitre_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
         else:
             _mitre_error_msg = ""
         _job_progress.pop("weekly_mitre_refresh", None)
@@ -782,7 +782,7 @@ async def run_atlas_version_check() -> bool:
         except Exception as exc:
             logger.error("ATLAS version check failed: %s", exc)
             ok = False
-            error_msg = (f"{type(exc).__name__}: {exc}" or repr(exc))[:500]
+            error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
             return False
         finally:
             _job_progress.pop("atlas_version_check", None)
@@ -890,7 +890,7 @@ async def run_exploit_sources_sync() -> bool:
         except Exception as exc:
             logger.error("Exploit sources sync failed: %s", exc)
             _had_error = True
-            _exploit_error_msg = (f"{type(exc).__name__}: {exc}" or repr(exc))[:500]
+            _exploit_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
         else:
             _exploit_error_msg = ""
         duration = (datetime.now(timezone.utc) - start).total_seconds()
@@ -938,7 +938,7 @@ async def run_vulnrichment_sync() -> bool:
         except Exception as exc:
             logger.error("Vulnrichment sync failed: %s", exc)
             _had_error = True
-            _vuln_error_msg = (f"{type(exc).__name__}: {exc}" or repr(exc))[:500]
+            _vuln_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
         else:
             _vuln_error_msg = ""
         finally:
@@ -997,7 +997,7 @@ async def run_cvelistv5_sync() -> bool:
         except Exception as exc:
             logger.error("cvelistV5 sync failed: %s", exc)
             _had_error = True
-            _cvelist_error_msg = (f"{type(exc).__name__}: {exc}" or repr(exc))[:500]
+            _cvelist_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
         else:
             _cvelist_error_msg = ""
         finally:
@@ -1023,7 +1023,7 @@ async def run_incident_feed_refresh() -> bool:
     except Exception as exc:
         logger.error("Incident feed snapshot refresh failed: %s", exc)
         _had_error = True
-        _incident_error_msg = (f"{type(exc).__name__}: {exc}" or repr(exc))[:500]
+        _incident_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
     else:
         _incident_error_msg = ""
     await _write_job_last_run("incident_feed_refresh", _start, had_error=_had_error, error_message=_incident_error_msg)
@@ -1069,7 +1069,7 @@ async def run_nightly_correlation() -> bool:
         except Exception as exc:
             logger.error("Nightly correlation job failed: %s", exc, exc_info=True)
             _had_error = True
-            _corr_error_msg = (f"{type(exc).__name__}: {exc}" or repr(exc))[:500]
+            _corr_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
             if hasattr(db, "rollback"):
                 try:
                     await db.rollback()
@@ -1118,7 +1118,7 @@ async def run_otx_nightly_sync() -> bool:
         except Exception as exc:
             logger.error("OTX nightly correlation failed: %s", exc)
             _had_error = True
-            _otx_error_msg = (f"{type(exc).__name__}: {exc}" or repr(exc))[:500]
+            _otx_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
         else:
             _otx_error_msg = ""
         finally:
@@ -1160,7 +1160,7 @@ async def run_otx_continuous_sync() -> bool:
         except Exception as exc:
             logger.error("OTX continuous sync failed: %s", exc)
             _had_error = True
-            _otx_cont_error_msg = (f"{type(exc).__name__}: {exc}" or repr(exc))[:500]
+            _otx_cont_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
         else:
             _otx_cont_error_msg = ""
     await _write_job_last_run(
@@ -1212,7 +1212,7 @@ async def run_embeddings_sync() -> bool:
         except Exception as exc:
             logger.error("Embeddings backfill failed: %s", exc)
             _had_error = True
-            _emb_error_msg = (f"{type(exc).__name__}: {exc}" or repr(exc))[:500]
+            _emb_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
         else:
             _emb_error_msg = ""
     await _write_job_last_run(
@@ -1263,7 +1263,7 @@ async def run_llm_extraction_sync() -> bool:
         except Exception as exc:
             logger.error("LLM product extraction failed: %s", exc)
             _had_error = True
-            _llm_error_msg = (f"{type(exc).__name__}: {exc}" or repr(exc))[:500]
+            _llm_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
         else:
             _llm_error_msg = ""
     await _write_job_last_run("llm_product_extraction", _start, had_error=_had_error, error_message=_llm_error_msg)
@@ -1287,7 +1287,7 @@ async def run_scheduled_backup() -> bool:
         except Exception as exc:
             logger.error("Scheduled backup failed: %s", exc)
             _had_error = True
-            _error_msg = (f"{type(exc).__name__}: {exc}" or repr(exc))[:500]
+            _error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
         finally:
             _job_progress.pop("scheduled_backup", None)
     await _write_job_last_run("scheduled_backup", _start, had_error=_had_error, error_message=_error_msg)
@@ -1305,7 +1305,7 @@ async def run_backup_deadman_check() -> bool:
     except Exception as exc:
         logger.error("Backup dead-man check failed: %s", exc)
         _had_error = True
-        _deadman_error_msg = (f"{type(exc).__name__}: {exc}" or repr(exc))[:500]
+        _deadman_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
         return False
     finally:
         await _write_job_last_run("backup_deadman_check", _start, had_error=_had_error, error_message=_deadman_error_msg)
