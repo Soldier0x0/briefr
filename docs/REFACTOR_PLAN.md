@@ -91,25 +91,26 @@ import asyncio
 _LOCKS: dict[str, asyncio.Lock] = {}
 
 def _make_locks() -> dict[str, asyncio.Lock]:
+    # Keys must match the `id=` strings passed to scheduler.add_job() exactly
     return {
         "nvd_incremental_sync": asyncio.Lock(),
         "kev_metadata_sync": asyncio.Lock(),
-        "epss_score_update": asyncio.Lock(),
-        "mitre_atlas_refresh": asyncio.Lock(),
-        "otx_nightly_sync": asyncio.Lock(),
-        "otx_continuous_sync": asyncio.Lock(),
+        "epss_score_sync": asyncio.Lock(),          # NOT epss_score_update
+        "weekly_mitre_refresh": asyncio.Lock(),     # NOT mitre_atlas_refresh
+        "atlas_version_check": asyncio.Lock(),
+        "otx_nightly_correlation": asyncio.Lock(),
         "nightly_correlation": asyncio.Lock(),
-        "cve_intel_enrichment": asyncio.Lock(),
-        "embedding_generation": asyncio.Lock(),
+        "incident_feed_refresh": asyncio.Lock(),
+        "exploit_sources_sync": asyncio.Lock(),     # NOT exploit_sync
+        "embeddings_backfill": asyncio.Lock(),      # NOT embedding_generation
         "llm_product_extraction": asyncio.Lock(),
-        "exploit_sync": asyncio.Lock(),
-        "incident_news_sync": asyncio.Lock(),
-        "nuclei_sync": asyncio.Lock(),
+        "vulnrichment_snapshot_sync": asyncio.Lock(),
+        "cvelistv5_incremental_sync": asyncio.Lock(),
+        "scheduled_backup": asyncio.Lock(),
         "backup_deadman_check": asyncio.Lock(),
-        "poc_github_sync": asyncio.Lock(),
+        # _epss_backfill_lock has no corresponding job ID — keep as private var in scheduler.py
     }
 
-# Initialised lazily so asyncio event loop is ready
 _LOCKS = _make_locks()
 
 def get_lock(job_id: str) -> asyncio.Lock | None:
@@ -123,7 +124,7 @@ def locked_jobs() -> list[str]:
 ```
 
 **Edit** `backend/scheduler.py`:
-- Remove all 15 individual `_*_lock = asyncio.Lock()` declarations (lines 70–84)
+- Remove 14 job-keyed `_*_lock` declarations (lines 70–83); keep `_epss_backfill_lock` as a private var since it has no APScheduler job ID
 - Add `from scheduler_locks import get_lock` at top
 - Replace all `async with _nvd_lock:` → `async with get_lock("nvd_incremental_sync"):` etc.
 - Grep for all usages: `grep -n "_lock" backend/scheduler.py` to find every occurrence
@@ -145,7 +146,9 @@ pytest backend/tests/ -x
 ## Phase 3 — Split `database.py` into `db/` Package
 
 ### Context
-`backend/database.py` is 3197 lines. The `backend/db/` directory already exists with `connection.py`, `config.py`, `dialect.py`. We add domain modules to it and make `database.py` a thin re-export shim.
+`backend/database.py` is ~3197 lines. The `backend/db/` directory already exists with `connection.py`, `config.py`, `dialect.py`. We add domain modules to it and make `database.py` a thin re-export shim.
+
+> **Note on line numbers**: The function table below reflects the line numbers at plan-writing time. Recent commits (ON CONFLICT `excluded.*` fixes) shifted some numbers by a few lines. Use the line numbers as a starting search point, not an exact address — `grep -n "^async def function_name"` is authoritative.
 
 ### New File Structure
 ```
@@ -430,9 +433,10 @@ Because `index.jsx` is the default export in a folder, these imports keep workin
 ### Steps
 1. Create folder `frontend/src/components/DetailDrawer/`
 2. Copy the full current file to `index.jsx` first (ensures nothing is lost)
-3. Extract each tab's JSX into its own file, import in `index.jsx`
-4. Extract the helper functions into `helpers.js`, import in files that use them
-5. Delete `DetailDrawer.jsx` (original flat file) once all tests pass
+3. **Fix relative import paths inside `index.jsx`**: moving from `components/DetailDrawer.jsx` to `components/DetailDrawer/index.jsx` adds one level of nesting. Any `../utils/foo` imports become `../../utils/foo`, any `../hooks/bar` become `../../hooks/bar`, etc. Run `grep -n "^\s*import.*'\.\." index.jsx` to find all that need updating.
+4. Extract each tab's JSX into its own file, import in `index.jsx`
+5. Extract the helper functions into `helpers.js`, import in files that use them
+6. Delete `DetailDrawer.jsx` (original flat file) once build passes
 
 ### Verify
 ```bash
