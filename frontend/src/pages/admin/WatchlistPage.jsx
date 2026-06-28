@@ -227,4 +227,20 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
                   <tr key={r.id}>
                     <td>{r.id}</td>
                     <td className="mono" style={{ fontSize: '0.75rem' }}>{r.technique_id}</td>
-                    <td clas
+                    <td className="mono" style={{ fontSize: '0.75rem' }}>{r.cve_id}</td>
+                    <td>{r.priority}</td>
+                    <td style={{ fontSize: '0.75rem' }}>{fmtIso(r.created_at)}</td>
+                    <td>
+                      <button className="admin-btn admin-btn-danger" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }}
+                        onClick={() => deleteHunt(r.id)}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -87,5 +87,10 @@ export default function SecurityPage({ toast }) {
               </div>
             )}
           </div>
+        </>
+      )}
+    </div>
+  )
+}
 
           <div c

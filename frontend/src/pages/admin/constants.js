@@ -60,4 +60,7 @@ export const COMING_SOON_INFO = {
   },
   'coming-ratelimit': {
     title: 'Rate limit dashboard',
+    message: 'Ships in V1.4. Will show rate-limit usage statistics.',
+  },
+}
     message: 'Ships in V1.4. Will show 

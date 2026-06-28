@@ -189,4 +189,32 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
             </span>
             <div className="sb-sep" />
             <span className="sb-item" title={integrityOk ? 'Last integrity check passed' : 'Last integrity check found a problem'}>
+              <span className={`dot ${integrityOk ? 'dot-ok' : 'dot-error'}`} />
+              <span className="sb-label">DB {integrityOk ? 'ok' : 'degraded'}</span>
+            </span>
+            <div className="sb-sep" />
+            <span className="sb-item">
+              <span className={`pill ${discordPillClass()}`} title="Discord webhook">Discord</span>
+            </span>
+            <span className="sb-item">
+              <span className={`pill ${telegramPillClass()}`} title="Telegram webhook">Telegram</span>
+            </span>
+            {commit && (
+              <>
+                <div className="sb-sep" />
+                <span className="sb-item">
+                  <span className="sb-label mono" style={{ fontSize: '0.6875rem' }}>{commit.slice(0, 7) || 'dev'}</span>
+                </span>
+              </>
+            )}
+            {updatedAgoEl}
+            <div className="sb-actions">
+              {userMenu}
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  )
+}
               <span className={`dot ${integrityOk 

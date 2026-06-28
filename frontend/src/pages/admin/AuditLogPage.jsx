@@ -76,4 +76,11 @@ export default function AuditLogPage({ toast }) {
             <span style={{ color: 'var(--text3)', fontSize: '0.8125rem' }}>
               {offset + 1}–{Math.min(offset + limit, data.total)} of {data.total}
             </span>
+            <button className="admin-btn admin-btn-ghost" disabled={offset + limit >= data.total} onClick={() => load(activePrefix, offset + limit, search)}>Load more →</button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
             <button className="admin-btn admin-btn-ghost" disabled={offset + limit >= data.total} onClick={

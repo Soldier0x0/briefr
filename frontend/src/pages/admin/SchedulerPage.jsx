@@ -156,4 +156,11 @@ export default function SchedulerPage({ toast, system }) {
             <span style={{ color: 'var(--text3)', fontSize: '0.8125rem' }}>
               {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filteredJobs.length)} of {filteredJobs.length}
             </span>
+            <button className="admin-btn admin-btn-ghost" disabled={(page + 1) * PAGE_SIZE >= filteredJobs.length} onClick={() => setPage(p => p + 1)}>Next →</button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
             <button className="ad
