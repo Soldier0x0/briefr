@@ -1340,6 +1340,7 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
   const [detectionLoading, setDetectionLoading] = useState(false)
   const [detectionError, setDetectionError] = useState(null)
   const detectionFetchedRef = useRef(false)
+  const detectionCancelRef = useRef(null)
   const [momentumData, setMomentumData] = useState(null)
   const [riskScore, setRiskScore] = useState(null)
   const [riskLoading, setRiskLoading] = useState(false)
@@ -1490,6 +1491,8 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
     setDetectionLoading(false)
     setDetectionError(null)
     detectionFetchedRef.current = false
+    detectionCancelRef.current?.()
+    detectionCancelRef.current = null
     setMomentumData(null)
   }, [cve?.cve_id])
 
@@ -1512,8 +1515,11 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
   }, [cve?.cve_id])
 
   const loadDetection = useCallback(() => {
-    if (!cve?.cve_id) return
+    if (!cve?.cve_id) return undefined
+    detectionCancelRef.current?.()
     let cancelled = false
+    const cancel = () => { cancelled = true }
+    detectionCancelRef.current = cancel
     setDetectionLoading(true)
     setDetectionError(null)
     const product = cve.affected_products?.[0]?.split(':')?.[1] || ''
@@ -1530,8 +1536,11 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
           setDetectionError(err?.message || 'Request failed')
         }
       })
-      .finally(() => { if (!cancelled) setDetectionLoading(false) })
-    return () => { cancelled = true }
+      .finally(() => {
+        if (!cancelled) setDetectionLoading(false)
+        if (detectionCancelRef.current === cancel) detectionCancelRef.current = null
+      })
+    return cancel
   }, [cve?.cve_id, cve?.affected_products])
 
   // Detection: lazy-fetch when Detect tab first activated
@@ -1898,7 +1907,8 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
               error={detectionError}
               onRetry={() => {
                 detectionFetchedRef.current = true
-                loadDetection()
+                const cleanup = loadDetection()
+                detectionCancelRef.current = cleanup ?? null
               }}
             />
           )}

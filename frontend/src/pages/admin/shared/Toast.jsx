@@ -52,8 +52,10 @@ export function useToast() {
   return { toasts, show, dismiss }
 }
 
+const CLIPBOARD_AVAILABLE = typeof navigator !== 'undefined' && Boolean(navigator.clipboard?.writeText)
+
 function copyRequestId(requestId) {
-  if (!requestId || !navigator.clipboard?.writeText) return
+  if (!requestId || !CLIPBOARD_AVAILABLE) return
   navigator.clipboard.writeText(requestId).catch(() => {})
 }
 
@@ -81,14 +83,16 @@ export function ToastArea({ toasts, onDismiss }) {
               {t.requestId && (
                 <div className="admin-toast-request">
                   <span className="mono">ID {t.requestId}</span>
-                  <button
-                    type="button"
-                    className="admin-toast-copy"
-                    onClick={() => copyRequestId(t.requestId)}
-                    title="Copy request ID"
-                  >
-                    <Copy size={12} strokeWidth={2} />
-                  </button>
+                  {CLIPBOARD_AVAILABLE && (
+                    <button
+                      type="button"
+                      className="admin-toast-copy"
+                      onClick={() => copyRequestId(t.requestId)}
+                      title="Copy request ID"
+                    >
+                      <Copy size={12} strokeWidth={2} />
+                    </button>
+                  )}
                 </div>
               )}
               {t.actions?.length > 0 && (

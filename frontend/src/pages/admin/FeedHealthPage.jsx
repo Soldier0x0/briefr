@@ -5,6 +5,75 @@ import { fmtIso, sourceLabel } from './formatters.js'
 import HelpTip from './shared/HelpTip.jsx'
 import { useOperations } from './shared/OperationTracker.jsx'
 
+function FeedSourceCard({
+  entryKey,
+  s,
+  isAnalyst,
+  highlighted,
+  resetting,
+  onReset,
+}) {
+  const hasError = Boolean(s.last_error)
+  const isDegraded = !s.circuit_open && (s.consecutive_failures || 0) > 0
+  let borderColor = 'var(--border)'
+  let StatusIcon = CheckCircle2
+  if (s.circuit_open) { borderColor = 'var(--red)'; StatusIcon = XCircle }
+  else if (isDegraded || hasError) { borderColor = 'var(--amber)'; StatusIcon = AlertTriangle }
+  const canReset = Boolean(s.circuit_open || isDegraded || hasError)
+  const statusLabel = s.circuit_open
+    ? (isAnalyst ? 'PAUSED' : 'TRIPPED')
+    : (hasError || isDegraded)
+      ? (isAnalyst ? 'Needs attention' : 'DEGRADED')
+      : (isAnalyst ? 'Healthy' : 'OK')
+  const badgeClass = s.circuit_open
+    ? 'badge-error'
+    : (hasError || isDegraded)
+      ? 'badge-warn'
+      : 'badge-ok'
+  return (
+    <div
+      className={`feed-source-card${highlighted ? ' feed-source-card--highlight' : ''}`}
+      style={{ borderLeftColor: borderColor }}
+    >
+      <div className="feed-source-name">{sourceLabel(entryKey)}</div>
+      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', margin: '0.4rem 0' }}>
+        <span className={`badge ${badgeClass}`}>
+          <StatusIcon size={11} strokeWidth={2.25} style={{ marginRight: '0.25rem', verticalAlign: '-1px' }} />
+          {statusLabel}
+        </span>
+        {!isAnalyst && s.consecutive_failures > 0 && (
+          <span className="badge badge-warn">{s.consecutive_failures} fail{s.consecutive_failures !== 1 ? 's' : ''}</span>
+        )}
+      </div>
+      {!isAnalyst && (
+        <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>
+          {s.last_success ? `✓ ${fmtIso(s.last_success)}` : 'Never succeeded'}
+        </div>
+      )}
+      {!isAnalyst && s.last_error && (
+        <div style={{ fontSize: '0.7rem', color: 'var(--amber)', marginTop: '0.2rem', wordBreak: 'break-all' }} title={s.last_error}>
+          {s.last_error.slice(0, 120)}
+        </div>
+      )}
+      <button
+        className="admin-btn admin-btn-danger"
+        style={{ marginTop: '0.5rem', fontSize: '0.7rem', padding: '0.15rem 0.5rem' }}
+        disabled={!canReset || resetting}
+        onClick={() => onReset(entryKey)}
+        title={
+          canReset
+            ? (isAnalyst ? 'Clear the error state and try fetching again' : 'Reset circuit breaker and clear last error')
+            : 'No errors to clear — source is healthy'
+        }
+      >
+        {resetting
+          ? <><span className="admin-spinner" /> {isAnalyst ? 'Retrying…' : 'Resetting…'}</>
+          : (isAnalyst ? 'Try again' : 'Reset circuit')}
+      </button>
+    </div>
+  )
+}
+
 export default function FeedHealthPage({ system, toast, mode = 'operator', onReload, highlightSource = '' }) {
   const { runAction } = useOperations()
   const isAnalyst = mode === 'analyst'
@@ -93,70 +162,6 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
     }
   }
 
-  function FeedCard({ entryKey, s }) {
-    const highlighted = highlightSource && entryKey === highlightSource
-    const hasError = Boolean(s.last_error)
-    const isDegraded = !s.circuit_open && (s.consecutive_failures || 0) > 0
-    let borderColor = 'var(--border)'
-    let StatusIcon = CheckCircle2
-    if (s.circuit_open) { borderColor = 'var(--red)'; StatusIcon = XCircle }
-    else if (isDegraded || hasError) { borderColor = 'var(--amber)'; StatusIcon = AlertTriangle }
-    const canReset = Boolean(s.circuit_open || isDegraded || hasError)
-    const statusLabel = s.circuit_open
-      ? (isAnalyst ? 'PAUSED' : 'TRIPPED')
-      : (hasError || isDegraded)
-        ? (isAnalyst ? 'Needs attention' : 'DEGRADED')
-        : (isAnalyst ? 'Healthy' : 'OK')
-    const badgeClass = s.circuit_open
-      ? 'badge-error'
-      : (hasError || isDegraded)
-        ? 'badge-warn'
-        : 'badge-ok'
-    return (
-      <div
-        key={entryKey}
-        className={`feed-source-card${highlighted ? ' feed-source-card--highlight' : ''}`}
-        style={{ borderLeftColor: borderColor }}
-      >
-        <div className="feed-source-name">{sourceLabel(entryKey)}</div>
-        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', margin: '0.4rem 0' }}>
-          <span className={`badge ${badgeClass}`}>
-            <StatusIcon size={11} strokeWidth={2.25} style={{ marginRight: '0.25rem', verticalAlign: '-1px' }} />
-            {statusLabel}
-          </span>
-          {!isAnalyst && s.consecutive_failures > 0 && (
-            <span className="badge badge-warn">{s.consecutive_failures} fail{s.consecutive_failures !== 1 ? 's' : ''}</span>
-          )}
-        </div>
-        {!isAnalyst && (
-          <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>
-            {s.last_success ? `✓ ${fmtIso(s.last_success)}` : 'Never succeeded'}
-          </div>
-        )}
-        {!isAnalyst && s.last_error && (
-          <div style={{ fontSize: '0.7rem', color: 'var(--amber)', marginTop: '0.2rem', wordBreak: 'break-all' }} title={s.last_error}>
-            {s.last_error.slice(0, 120)}
-          </div>
-        )}
-        <button
-          className="admin-btn admin-btn-danger"
-          style={{ marginTop: '0.5rem', fontSize: '0.7rem', padding: '0.15rem 0.5rem' }}
-          disabled={!canReset || resetting[entryKey]}
-          onClick={() => resetCircuit(entryKey)}
-          title={
-            canReset
-              ? (isAnalyst ? 'Clear the error state and try fetching again' : 'Reset circuit breaker and clear last error')
-              : 'No errors to clear — source is healthy'
-          }
-        >
-          {resetting[entryKey]
-            ? <><span className="admin-spinner" /> {isAnalyst ? 'Retrying…' : 'Resetting…'}</>
-            : (isAnalyst ? 'Try again' : 'Reset circuit')}
-        </button>
-      </div>
-    )
-  }
-
   const entries = Object.entries(sources)
   const openCircuits = entries.filter(([, s]) => s.circuit_open)
   const degraded = entries.filter(([, s]) => !s.circuit_open && ((s.consecutive_failures || 0) > 0 || s.last_error))
@@ -186,7 +191,17 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
                 {!isAnalyst && <HelpTip text="A circuit trips after repeated fetch failures to stop hammering an unresponsive upstream source. BRIEFR retries automatically after a cooldown, or you can force-reset below." />}
               </div>
               <div className="feed-card-grid">
-                {sortByFailures(openCircuits).map(([key, s]) => <FeedCard key={key} entryKey={key} s={s} />)}
+                {sortByFailures(openCircuits).map(([key, s]) => (
+                  <FeedSourceCard
+                    key={key}
+                    entryKey={key}
+                    s={s}
+                    isAnalyst={isAnalyst}
+                    highlighted={highlightSource === key}
+                    resetting={Boolean(resetting[key])}
+                    onReset={resetCircuit}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -194,7 +209,17 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
             <div style={{ marginBottom: '1.25rem' }}>
               <div className="admin-card-title" style={{ color: 'var(--amber)' }}>Degraded — recent failures ({degraded.length})</div>
               <div className="feed-card-grid">
-                {sortByFailures(degraded).map(([key, s]) => <FeedCard key={key} entryKey={key} s={s} />)}
+                {sortByFailures(degraded).map(([key, s]) => (
+                  <FeedSourceCard
+                    key={key}
+                    entryKey={key}
+                    s={s}
+                    isAnalyst={isAnalyst}
+                    highlighted={highlightSource === key}
+                    resetting={Boolean(resetting[key])}
+                    onReset={resetCircuit}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -202,7 +227,17 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
             <div style={{ marginBottom: '1.25rem' }}>
               <div className="admin-card-title" style={{ color: 'var(--green)' }}>Healthy ({healthy.length})</div>
               <div className="feed-card-grid">
-                {healthy.map(([key, s]) => <FeedCard key={key} entryKey={key} s={s} />)}
+                {healthy.map(([key, s]) => (
+                  <FeedSourceCard
+                    key={key}
+                    entryKey={key}
+                    s={s}
+                    isAnalyst={isAnalyst}
+                    highlighted={highlightSource === key}
+                    resetting={Boolean(resetting[key])}
+                    onReset={resetCircuit}
+                  />
+                ))}
               </div>
             </div>
           )}
