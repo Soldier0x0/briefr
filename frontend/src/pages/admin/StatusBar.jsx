@@ -217,4 +217,3 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
     </>
   )
 }
-              <span className={`dot ${integrityOk 
