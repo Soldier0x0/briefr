@@ -218,9 +218,10 @@ async def get_campaigns_for_cve(
     find_shared_infrastructure_v2 (e.g. get_correlation_for_cve) pass the
     result through instead of triggering a second, identical query.
     """
-    from correlation.confidence import attribution_conflict, campaign_confidence
+    from correlation.confidence import attribution_conflict, bump_confidence, campaign_confidence
     from correlation.copy import campaign_summary, sanitize_pulse_text
     from correlation.ioc_graph import find_shared_infrastructure_v2, ioc_edges_between
+    from correlation.local import kev_exploit_boosters
     from correlation.suppressions import is_campaign_suppressed, load_suppressions
 
     cve_upper = cve_id.upper()
@@ -312,6 +313,20 @@ async def get_campaigns_for_cve(
         if conflict:
             confidence = "medium" if confidence == "high" else confidence
 
+        boosters = await kev_exploit_boosters(db, filtered, cve_upper)
+        if boosters["kev"] or boosters["exploit"]:
+            confidence = bump_confidence(confidence, 1, cap="high")
+            if boosters["kev"]:
+                evidence.append({
+                    "type": "kev_booster",
+                    "members": boosters["kev"][:5],
+                })
+            elif boosters["exploit"]:
+                evidence.append({
+                    "type": "exploit_booster",
+                    "members": boosters["exploit"][:5],
+                })
+
         results.append({
             "campaign_id": row["campaign_id"],
             "label": safe_label,
@@ -324,6 +339,7 @@ async def get_campaigns_for_cve(
             "member_count": len(filtered),
             "confidence": confidence,
             "lifecycle": row["lifecycle"] or "active",
+            "boosters": boosters,
             "evidence": evidence,
             "summary": campaign_summary(
                 safe_label,

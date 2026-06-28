@@ -426,3 +426,165 @@ def test_get_correlation_error_path_hides_exception_text(tmp_path, monkeypatch):
             await db.close()
 
     asyncio.run(run())
+
+
+def test_mitre_overlap_ranks_strong_actor_match_above_weak(tmp_path, monkeypatch):
+    """A group sharing all of the CVE's techniques should outrank one sharing
+    only a sliver — overlap%, not 'any shared technique'."""
+    from correlation.engine import find_actor_sector_correlation
+
+    async def run():
+        db_path = str(tmp_path / "corr-mitre.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        db = await _seed_db(db_path)
+        try:
+            await db.execute(
+                "INSERT INTO mitre_techniques (technique_id, name, url) VALUES "
+                "('T1001', 'T1001', 'https://attack.mitre.org/T1001'), "
+                "('T1002', 'T1002', 'https://attack.mitre.org/T1002'), "
+                "('T1003', 'T1003', 'https://attack.mitre.org/T1003')"
+            )
+            await db.execute(
+                "INSERT INTO cve_technique_map (cve_id, technique_id) VALUES "
+                "('CVE-2024-1001', 'T1001'), ('CVE-2024-1001', 'T1002'), "
+                "('CVE-2024-1001', 'T1003')"
+            )
+            await db.execute(
+                "INSERT INTO mitre_groups (group_id, name, sectors) VALUES "
+                "('G1', 'Strong Group', '[]'), ('G2', 'Weak Group', '[]')"
+            )
+            await db.execute(
+                "INSERT INTO group_technique_map (group_id, technique_id) VALUES "
+                "('G1', 'T1001'), ('G1', 'T1002'), ('G1', 'T1003'), ('G2', 'T1001')"
+            )
+            await db.commit()
+
+            results = await find_actor_sector_correlation(db, "CVE-2024-1001")
+            by_name = {r["actor_name"]: r for r in results}
+            assert by_name["Strong Group"]["technique_overlap"] == 1.0
+            assert by_name["Strong Group"]["confidence"] == "medium"
+            assert round(by_name["Weak Group"]["technique_overlap"], 2) == 0.33
+            assert by_name["Weak Group"]["confidence"] == "low"
+            assert results[0]["actor_name"] == "Strong Group"
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+
+def test_mitre_overlap_below_threshold_is_excluded(tmp_path, monkeypatch):
+    from correlation.engine import find_actor_sector_correlation
+
+    async def run():
+        db_path = str(tmp_path / "corr-mitre-min.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        db = await _seed_db(db_path)
+        try:
+            await db.execute(
+                "INSERT INTO mitre_techniques (technique_id, name, url) VALUES "
+                "('T1001', 'T1001', 'https://attack.mitre.org/T1001'), "
+                "('T1002', 'T1002', 'https://attack.mitre.org/T1002'), "
+                "('T1003', 'T1003', 'https://attack.mitre.org/T1003'), "
+                "('T1004', 'T1004', 'https://attack.mitre.org/T1004'), "
+                "('T1005', 'T1005', 'https://attack.mitre.org/T1005')"
+            )
+            await db.execute(
+                "INSERT INTO cve_technique_map (cve_id, technique_id) VALUES "
+                "('CVE-2024-1001', 'T1001'), ('CVE-2024-1001', 'T1002'), "
+                "('CVE-2024-1001', 'T1003'), ('CVE-2024-1001', 'T1004'), "
+                "('CVE-2024-1001', 'T1005')"
+            )
+            await db.execute(
+                "INSERT INTO mitre_groups (group_id, name, sectors) VALUES ('G3', 'Sliver Group', '[]')"
+            )
+            await db.execute(
+                "INSERT INTO group_technique_map (group_id, technique_id) VALUES ('G3', 'T1001')"
+            )
+            await db.commit()
+
+            results = await find_actor_sector_correlation(db, "CVE-2024-1001")
+            assert "Sliver Group" not in {r["actor_name"] for r in results}
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+
+def test_kev_booster_bumps_campaign_confidence(tmp_path, monkeypatch):
+    async def run():
+        db_path = str(tmp_path / "corr-booster.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        db = await _seed_db(db_path)
+        try:
+            pulses = [
+                {
+                    "pulse_id": "pulse-kev-booster",
+                    "pulse_name": "KEV-linked wave",
+                    "author": "analyst1",
+                    "created_date": "2024-01-10",
+                    "adversary": "",
+                    "malware_families": [],
+                    "tags": [],
+                    "targeted_countries": [],
+                    "ioc_count": 0,
+                }
+            ]
+            await replace_otx_cve_pulses(db, "CVE-2024-1001", pulses)
+            await replace_otx_cve_pulses(db, "CVE-2024-HUB1", pulses)
+            await db.commit()
+
+            await build_campaigns_from_pulses(db)
+            await db.commit()
+
+            campaigns = await get_campaigns_for_cve(db, "CVE-2024-1001")
+            assert len(campaigns) == 1
+            assert campaigns[0]["boosters"]["kev"] == ["CVE-2024-HUB1"]
+            assert campaigns[0]["confidence"] == "high"
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+
+def test_temporal_anomaly_gated_off_stack_without_signal(tmp_path, monkeypatch):
+    """§15: a vendor spike should be hidden for an unrelated, non-KEV CVE
+    when a stack is configured, but shown for a KEV/exploit CVE regardless."""
+    from correlation.engine import _get_temporal_for_cve, _store_temporal_anomalies
+
+    async def run():
+        db_path = str(tmp_path / "corr-temporal-gate.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        monkeypatch.setenv("BRIEFR_STACK_TERMS", "nginx")
+        db = await _seed_db(db_path)
+        try:
+            await db.execute(
+                "UPDATE cves SET affected_products = '[\"acme:widget\"]' "
+                "WHERE cve_id = 'CVE-2024-1001'"
+            )
+            await db.execute(
+                "UPDATE cves SET affected_products = '[\"acme:widget\"]', is_kev = 1 "
+                "WHERE cve_id = 'CVE-2024-HUB1'"
+            )
+            await db.commit()
+            await _store_temporal_anomalies(db, [{
+                "vendor": "acme",
+                "current_week_count": 9,
+                "average_weekly_count": 1.0,
+                "anomaly_score": 9.0,
+            }])
+            await db.commit()
+
+            off_stack_no_signal = await _get_temporal_for_cve(db, "CVE-2024-1001")
+            assert off_stack_no_signal == []
+
+            on_kev = await _get_temporal_for_cve(db, "CVE-2024-HUB1")
+            assert len(on_kev) == 1
+            assert on_kev[0]["vendor"] == "acme"
+        finally:
+            await db.close()
+
+    asyncio.run(run())

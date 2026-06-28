@@ -6,6 +6,7 @@ import hashlib
 from datetime import datetime, timezone
 from typing import Any
 
+from correlation.copy import sanitize_pulse_text
 from routers.cves import CVE_SELECT, _row_to_cve_dict, _stack_match_clause
 
 _ISO_DATE_LIKE = "____-__-__"
@@ -77,6 +78,39 @@ def _epss_delta(old_value: object, new_value: object) -> tuple[float, float, flo
     if delta <= 0:
         return None
     return old_v, new_v, delta
+
+
+async def _active_campaigns_for_stack(
+    db: Any, stack_clause: str, stack_clause_params: list, *, limit: int
+) -> list[dict]:
+    """OTX campaign clusters (non-stale) with at least one member on the stack."""
+    if not stack_clause:
+        return []
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT DISTINCT camp.campaign_id, camp.label, camp.adversary,
+               camp.confidence, camp.member_count, camp.lifecycle
+        FROM correlation_campaigns camp
+        INNER JOIN correlation_campaign_members m ON m.campaign_id = camp.campaign_id
+        INNER JOIN cves c ON c.cve_id = m.cve_id
+        WHERE {stack_clause}
+          AND camp.lifecycle != 'stale'
+        ORDER BY camp.member_count DESC
+        LIMIT ?
+        """,
+        [*stack_clause_params, limit],
+    )
+    return [
+        {
+            "campaign_id": row["campaign_id"],
+            "label": sanitize_pulse_text(row["label"] or ""),
+            "adversary": sanitize_pulse_text(row["adversary"] or "", 120),
+            "confidence": row["confidence"],
+            "member_count": row["member_count"],
+            "lifecycle": row["lifecycle"] or "active",
+        }
+        for row in rows
+    ]
 
 
 def _build_epss_movers(rows: list, *, limit: int) -> list[dict]:
@@ -229,6 +263,11 @@ async def build_morning_brief(
             for row in stack_rows
         ]
 
+    # ── Active OTX campaigns touching the stack ─────────────
+    campaign_items = await _active_campaigns_for_stack(
+        db, stack_clause, stack_clause_params, limit=limit
+    )
+
     sections = {
         "epss_movers": {"title": "EPSS movers", "count": len(epss_items), "items": epss_items},
         "new_kev": {"title": "New KEV entries", "count": len(new_kev_items), "items": new_kev_items},
@@ -241,6 +280,11 @@ async def build_morning_brief(
             "title": "Stack activity",
             "count": len(stack_items),
             "items": stack_items,
+        },
+        "active_campaigns": {
+            "title": "Active campaigns on your stack",
+            "count": len(campaign_items),
+            "items": campaign_items,
         },
     }
 
@@ -289,6 +333,8 @@ def _priority_score(item: dict) -> float:
 def _build_action_queue(sections: dict, *, limit: int) -> list[dict]:
     by_id: dict[str, dict] = {}
     for section_key, section in sections.items():
+        if section_key == "active_campaigns":
+            continue
         for item in section.get("items") or []:
             cve_id = item["cve_id"]
             existing = by_id.get(cve_id)
