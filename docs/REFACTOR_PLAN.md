@@ -1,8 +1,20 @@
 # BRIEFR Codebase Refactor — Execution Reference
 
-> **Purpose**: Structural refactoring across backend and frontend. Zero behavior changes.  
+> **Purpose**: Refactoring across backend and frontend for structure, performance, security, and operability.  
 > **Status**: PLAN ONLY — not started  
-> **Scope**: Both backend (Python) and frontend (React), structural depth  
+> **Scope**: Track A (Phases 1–5) is structural with zero behavior changes. Tracks B–D (Phases 6–10) are targeted hardening with small, isolated behavior changes, each independently revertable.  
+
+---
+
+## Current State Assessment (2026-07-02)
+
+Verified against `main` at `705c733`:
+
+- **Structural**: `backend/database.py` 3,197 lines, `backend/routers/admin.py` 1,907, `backend/scheduler.py` 1,603, `backend/routers/cves.py` 1,360, `frontend/src/components/DetailDrawer.jsx` 1,942. None of Phases 1–5 below have been executed (the 11 inline CVE-ID checks, flat `DetailDrawer.jsx`, and per-variable scheduler locks are all still present).
+- **Security**: good baseline — `secrets.compare_digest` for admin/wallboard keys, JWT auth with short-lived access tokens, login rate limiting, production startup fails without `jwt_secret`, nginx security-header snippets in `deploy/`. Gap: `allow_legacy_admin_key` defaults to `True` (`settings.py:54`), leaving the pre-JWT header-key path enabled unless operators opt out.
+- **Performance**: backend feeds share `resilient_client`; CVE list endpoints are paginated with bounded limits; 63 `CREATE INDEX` statements in the schema. Gaps: the frontend has no code-splitting at all — `jspdf`, `exceljs`, `html2canvas`, and `chart.js` ship in the single main bundle; embedding similarity is a brute-force cosine scan (acceptable at current scale, revisit only if measured slow).
+- **Operability**: backend CI runs pytest (87 test files), Postgres pool integration tests, pip/npm dependency audits, and a Playwright smoke. Gaps: no linter or formatter is configured for either side (no ruff, no ESLint), and the frontend has zero unit tests.
+- **Functionality**: new features are owned by `docs/ROADMAP.md` and its versioned release docs — this plan deliberately adds none. "Functionality" here means behavior preservation, enforced by the verify steps in every phase.
 
 ---
 
@@ -27,15 +39,20 @@ git branch --show-current   # must print: refactor/structural-cleanup
 
 ## Overview
 
-| Phase | What | Risk | Est. Lines Touched |
-|-------|------|------|-------------------|
-| 1 | CVE ID validator helper | Very Low | ~25 |
-| 2 | Scheduler lock consolidation | Low | ~60 |
-| 3 | Split `database.py` into `db/` package | Medium | ~3200 moved |
-| 4 | Split `DetailDrawer.jsx` into folder | Low | ~1967 moved |
-| 5 | Export util consolidation (frontend) | Low | ~400 moved |
+| Phase | Track | What | Risk | Est. Lines Touched |
+|-------|-------|------|------|-------------------|
+| 1 | A: Structure | CVE ID validator helper | Very Low | ~25 |
+| 2 | A: Structure | Scheduler lock consolidation | Low | ~60 |
+| 3 | A: Structure | Split `database.py` into `db/` package | Medium | ~3200 moved |
+| 4 | A: Structure | Split `DetailDrawer.jsx` into folder | Low | ~1967 moved |
+| 5 | A: Structure | Export util consolidation (frontend) | Low | ~400 moved |
+| 6 | B: Security | Retire legacy admin key path by default | Low | ~10 |
+| 7 | C: Performance | Frontend code-splitting (routes + export libs) | Low | ~60 |
+| 8 | D: Operability | Backend lint/format (ruff) in CI | Low | config + CI |
+| 9 | D: Operability | Frontend lint (ESLint) + unit tests (Vitest) in CI | Low | config + tests |
+| 10 | C: Performance | DB hot-path index audit | Low | ~1 migration |
 
-**Execute phases in order. Run tests after each phase before continuing.**
+**Execute phases in order within a track. Track A first (Phases 1–5) — it creates the small, testable units that Phases 8–9 lint and test. Phase 6 is independent and can run at any point. Run tests after each phase before continuing.**
 
 ---
 
@@ -479,21 +496,118 @@ npm run build
 
 ---
 
+## Phase 6 — Retire Legacy Admin Key Path by Default
+
+### Problem
+`backend/settings.py:54` sets `allow_legacy_admin_key: bool = True`. `backend/dependencies.py:74–78` therefore accepts the pre-JWT `X-Admin-Key`-style header on admin routes in every deployment unless the operator explicitly disables it. JWT auth is the intended gate; the legacy path should be opt-in, not opt-out.
+
+### Fix
+- **Edit** `backend/settings.py`: change the default to `allow_legacy_admin_key: bool = False`.
+- **Edit** docs that describe admin auth (`grep -rn "allow_legacy_admin_key" docs/ README.md` to find them): state that existing deployments relying on the admin key must set `ALLOW_LEGACY_ADMIN_KEY=true` or migrate to a user login.
+- **Add** a test in `backend/tests/` asserting that with default settings the legacy key is rejected, and that setting the flag re-enables it.
+
+This is a deliberate behavior change — call it out in the PR description as a breaking change for key-only deployments.
+
+### Verify
+```bash
+pytest backend/tests/ -k "admin or auth" -x
+grep -n "allow_legacy_admin_key" backend/settings.py   # default False
+```
+
+---
+
+## Phase 7 — Frontend Code-Splitting
+
+### Problem
+`frontend/src/App.jsx` imports every page and component statically, and `frontend/vite.config.js` has no `build` configuration. `jspdf` (~350 kB), `exceljs` (~940 kB), `html2canvas` (~200 kB), and `chart.js` all land in the single entry bundle, paid on first load by every user — including ones who never export a report.
+
+### Fix
+1. **Export libs on demand** — in `frontend/src/utils/pdfReport.js`, `investigationPdf.js`, and `exportXlsx.js`, replace top-level `import jsPDF from 'jspdf'` / `import ExcelJS from 'exceljs'` / `html2canvas` imports with `const { default: jsPDF } = await import('jspdf')` (etc.) inside the export functions. The export functions are already async or can become async; their callers are click handlers.
+2. **Lazy routes** — in `App.jsx`, wrap the non-landing routes (admin pages, Wallboard, Forge, IOC lookup) in `React.lazy(() => import(...))` with a `<Suspense>` fallback. Do this *after* Phase 4 so `DetailDrawer` is already a folder.
+3. **Chart chunk (optional)** — if `chart.js` still dominates the main chunk after steps 1–2, add `build.rollupOptions.output.manualChunks` in `vite.config.js` to split it.
+
+### Verify
+```bash
+cd frontend && npm run build   # record chunk sizes BEFORE starting, compare after
+# Main bundle should shrink by roughly the size of jspdf+exceljs+html2canvas.
+# Manually: load app, open a CVE, trigger PDF and XLSX export — both must still work
+# (network tab shows the chunks loading on demand).
+```
+
+---
+
+## Phase 8 — Backend Lint/Format (ruff) in CI
+
+### Problem
+No linter or formatter is configured for the backend. Style drift and dead imports accumulate unchecked; the CI in `.github/workflows/backend-tests.yml` runs tests and audits but no static checks.
+
+### Fix
+- **Create** `backend/ruff.toml`: `target-version = "py312"`, start with the default rule set plus `I` (import sorting). Do **not** enable formatting rules that would rewrite the whole tree in one diff.
+- Run `ruff check backend/` once; fix trivial findings (unused imports, obvious bugs) and add narrowly-scoped `per-file-ignores` for anything noisy, so the initial diff stays reviewable.
+- **Edit** `.github/workflows/backend-tests.yml`: add a `ruff check` step (or job) before pytest.
+
+### Verify
+```bash
+cd backend && ruff check .        # exits 0
+pytest tests/ -q                  # unchanged behavior
+```
+
+---
+
+## Phase 9 — Frontend Lint (ESLint) + Unit Tests (Vitest) in CI
+
+### Problem
+The frontend has no ESLint config and zero unit tests; the only coverage is the backend-driven Playwright smoke. The pure helpers extracted in Phases 4–5 (`DetailDrawer/helpers.js`, `utils/exportCommon.js`) are exactly the code unit tests are cheap for.
+
+### Fix
+- **Create** `frontend/eslint.config.js` (flat config) with `@eslint/js` recommended + `eslint-plugin-react-hooks`. Fix or locally disable existing findings — keep the initial diff mechanical.
+- **Add** Vitest as a dev dependency with a `test` script; write unit tests for the pure helpers from Phases 4–5 (severity/color mapping, date formatting, truncation).
+- **Edit** the CI workflow: add `npm run lint` and `npm test` steps to the existing frontend job.
+
+### Verify
+```bash
+cd frontend && npx eslint src/ && npm test && npm run build
+```
+
+---
+
+## Phase 10 — DB Hot-Path Index Audit
+
+### Problem
+The schema defines 63 indexes, but they were added incrementally; nobody has verified they cover the filter/sort combinations the paginated CVE list endpoints (`backend/routers/cves.py`, `CVE_SELECT` + `CVE_ORDER_BY` + dynamic `WHERE`) actually issue.
+
+### Fix
+1. Catalog the WHERE/ORDER BY combinations produced by the list endpoints and the scheduler's batch queries (`get_cves_missing_embeddings`, `get_prioritized_cve_ids_for_otx`, etc. — post-Phase-3 these live in `backend/db/`).
+2. Run `EXPLAIN QUERY PLAN` (SQLite) / `EXPLAIN ANALYZE` (Postgres) on each against a realistically-sized DB.
+3. Add only the composite indexes that measurements justify, as one Alembic migration plus the SQLite schema-parity equivalent (follow the pattern in `backend/alembic/versions/004_sqlite_schema_parity.py`).
+4. The embeddings brute-force cosine scan (`get_all_cve_embeddings`) is explicitly **out of scope** unless step 2 measures it as a problem — pgvector is a Beta V2.0 (Postgres-era) decision, per `docs/ROADMAP.md`.
+
+### Verify
+```bash
+pytest backend/tests/ -x
+python scripts/verify_db_parity.py     # SQLite/Postgres schema parity holds
+# EXPLAIN output for each cataloged query shows index usage, no full scans on cves
+```
+
+---
+
 ## Final Verification (After All Phases)
 
 ```bash
 # Backend
-pytest backend/tests/ -x --tb=short
+cd backend && ruff check . && pytest tests/ -x --tb=short
 python -c "from database import get_db, upsert_cves, get_sync_state_value; print('all ok')"
 
 # Frontend
-npm run build
+cd frontend && npx eslint src/ && npm test && npm run build
+# Compare final chunk sizes against the pre-Phase-7 baseline.
 # Run app locally and smoke test:
 # - CVE list loads
 # - DetailDrawer opens
 # - All tabs work
-# - PDF/XLSX export downloads correctly
+# - PDF/XLSX export downloads correctly (chunks load on demand)
 # - Admin scheduler page works (lock status)
+# - Admin routes reject the legacy key with default settings
 
 # Git
 git diff main --stat   # review what changed
@@ -511,6 +625,11 @@ refactor: consolidate scheduler lock management (phase 2)
 refactor: split database.py into db/ package (phase 3)
 refactor: split DetailDrawer into tab components (phase 4)
 refactor: consolidate PDF/XLSX export utilities (phase 5)
+security: disable legacy admin key path by default (phase 6)
+perf: code-split export libs and lazy-load routes (phase 7)
+ci: add ruff lint for backend (phase 8)
+ci: add ESLint and Vitest for frontend (phase 9)
+perf: add composite indexes for CVE list hot paths (phase 10)
 ```
 
-Then open a single PR from `refactor/structural-cleanup` → `main`.
+Ship Track A (Phases 1–5) as one PR from `refactor/structural-cleanup` → `main`. Phases 6–10 are each small enough to be their own PR — Phase 6 in particular should be a standalone PR so the breaking-change note is visible in its own right.
