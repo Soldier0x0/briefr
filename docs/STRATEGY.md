@@ -208,6 +208,8 @@ codebase already contains the syllabus:
 
 ## 8. Sequencing (next ~90 days)
 
+> Live execution checklist for the current month: [`SPRINT_2026-07.md`](SPRINT_2026-07.md).
+
 | Order | Work | Why first |
 |---|---|---|
 | 1 | License decision + CONTRIBUTING.md | Blocks all adoption; zero code |
