@@ -15,6 +15,8 @@ JSX/CSS, no component library), **PostgreSQL required in production**.
 - `docs/PRODUCT_STATUS.md` is the living truth — when any other doc disagrees with it or with the code, they win, not the older doc.
 - `CODEBASE_CONTEXT.md`, `FOLDER_STRUCTURE_GUIDE.md`, `APPLICATION_EXECUTION_MAP.md`, `TECHNICAL_INVENTORY.md` are periodic snapshots and may lag the code — verify against source before relying on them.
 - Historical specs live in `docs/archive/` — never edit or resurrect them.
+- Recent decisions and session context: `docs/HANDOVER.md` (newest entry
+  first). Current work queue: `docs/SPRINT_2026-07.md`.
 
 ## Danger zones — read before editing
 
