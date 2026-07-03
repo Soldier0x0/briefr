@@ -294,7 +294,7 @@ Single-user for now — no `user_id` column. Built-in app login will add per-use
 
 ### GET /api/cves/{cve_id}/related
 
-**Description:** Related CVEs. Default: shared-product heuristic (last 30 days). When `EMBEDDINGS_ENABLED=1` and both the target and candidates have stored vectors, returns semantically similar CVEs instead (NumPy brute-force cosine over `cve_embeddings` BLOBs; `sqlite-vec` accelerates the same query when importable).
+**Description:** Related CVEs. Default: shared-product heuristic (last 30 days). When `EMBEDDINGS_ENABLED=1` and both the target and candidates have stored vectors, returns semantically similar CVEs instead (NumPy brute-force cosine over `cve_embeddings` vectors).
 
 | Param | Type | Default | Description |
 |---|---|---|---|
