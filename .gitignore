@@ -20,3 +20,8 @@ Thumbs.db
 # MemPalace per-project files (issue #185)
 mempalace.yaml
 entities.json
+
+# Generated artifacts — build on demand via scripts/
+SYSTEM_DESIGN.pdf
+TECHNICAL_INVENTORY.xlsx
+architecture-map.html

@@ -1,5 +1,8 @@
 # BRIEFR Application Execution Map
 
+> **Snapshot document — may lag the code.** Regenerated periodically. When this disagrees with the code or [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md), those win.
+
+
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
 Runtime behaviour traced from source. File:function references match the codebase.

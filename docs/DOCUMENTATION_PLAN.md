@@ -28,7 +28,7 @@ docs/archive/
 └── LIGHT_THEME.md
 ```
 
-Root `Beta V*.md` stubs redirect to `docs/archive/beta/`.
+Root `Beta V*.md` stubs were removed (2026-07); archived specs live in `docs/archive/beta/`.
 
 ---
 

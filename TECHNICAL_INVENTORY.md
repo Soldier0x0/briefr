@@ -1,5 +1,8 @@
 # BRIEFR Technical Inventory
 
+> **Snapshot document — may lag the code.** Regenerated periodically. When this disagrees with the code or [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md), those win.
+
+
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
 **Version:** 1.1 beta · **Date:** 2026-06-07
@@ -501,7 +504,7 @@ Weights are read by the frontend from `GET /api/config/risk` on every app load f
 | Admin log viewer (V1.4) | Complete | In-process 500-line ring buffer; `GET /api/admin/logs` with level/logger/request_id/category filters; admin pane Application logs page |
 | Rate limiting | Complete | In-memory token bucket per client IP (`rate_limit.py`) on `/api/ioc/lookup` (30/min) + `/api/refresh*` (10/min); 429 + `Retry-After` |
 
-Spreadsheet export: [`TECHNICAL_INVENTORY.xlsx`](TECHNICAL_INVENTORY.xlsx)
+Spreadsheet export: generate with `python3 scripts/generate_technical_inventory_xlsx.py` (not committed)
 
 ### Regenerating the spreadsheet
 
