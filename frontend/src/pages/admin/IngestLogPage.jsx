@@ -1,12 +1,16 @@
 import { Fragment, useState, useEffect, useRef } from 'react'
 import { adminApi } from '../../api.js'
 
+const SEARCH_DEBOUNCE_MS = 300
+
 export default function IngestLogPage({ toast, onErrorCountChange, active = true, urlFilters = {} }) {
   const [logData, setLogData] = useState(null)
   const [level, setLevel] = useState(urlFilters.level || '')
   const [category, setCategory] = useState(urlFilters.category || '')
   const [loggerFilter, setLoggerFilter] = useState(urlFilters.logger || '')
   const [reqId, setReqId] = useState(urlFilters.requestId || '')
+  const [searchInput, setSearchInput] = useState('')
+  const [search, setSearch] = useState('')
   const [limit, setLimit] = useState(100)
   const [autoRefresh, setAutoRefresh] = useState(false)
   const [expanded, setExpanded] = useState(() => new Set())
@@ -21,6 +25,11 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
     if (urlFilters.category != null) setCategory(urlFilters.category)
     if (urlFilters.logger != null) setLoggerFilter(urlFilters.logger)
     if (urlFilters.requestId != null) setReqId(urlFilters.requestId)
+    // A deep link (e.g. "View application log" / "Filter by request ID" from
+    // other admin pages) targets a specific entry — a stale search term left
+    // over from a previous visit to this page must not hide it.
+    setSearchInput('')
+    setSearch('')
   }, [urlFilters.level, urlFilters.category, urlFilters.logger, urlFilters.requestId])
 
   async function loadLogs() {
@@ -29,6 +38,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
     if (category) params.set('category', category)
     if (loggerFilter) params.set('logger', loggerFilter)
     if (reqId) params.set('request_id', reqId)
+    if (search) params.set('search', search)
     try {
       const res = await adminApi.get(`/logs?${params}`)
       const data = await res.json()
@@ -40,7 +50,12 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
     } catch { }
   }
 
-  useEffect(() => { loadLogs() }, [level, category, loggerFilter, reqId, limit])
+  useEffect(() => { loadLogs() }, [level, category, loggerFilter, reqId, search, limit])
+
+  useEffect(() => {
+    const handler = setTimeout(() => setSearch(searchInput.trim()), SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(handler)
+  }, [searchInput])
 
   useEffect(() => {
     if (autoRefresh && active) {
@@ -49,7 +64,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
       clearInterval(intervalRef.current)
     }
     return () => clearInterval(intervalRef.current)
-  }, [autoRefresh, active, level, category, loggerFilter, reqId, limit])
+  }, [autoRefresh, active, level, category, loggerFilter, reqId, search, limit])
 
   function exportLogs() {
     const lines = logs.map(e => JSON.stringify(e)).join('\n')
@@ -81,6 +96,13 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
       <h1 className="admin-page-title">Application logs</h1>
       <p className="admin-page-subtitle">Live backend log stream, filterable by level/category/logger. Useful for tracing a specific request or recent error.</p>
       <div className="admin-filter-bar">
+        <input
+          className="admin-input"
+          placeholder="Search message / traceback…"
+          value={searchInput}
+          onChange={e => setSearchInput(e.target.value)}
+          style={{ minWidth: 220 }}
+        />
         <select className="admin-select" value={level} onChange={e => setLevel(e.target.value)}>
           <option value="">All levels</option>
           {['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'].map(l => <option key={l} value={l}>{l}</option>)}
