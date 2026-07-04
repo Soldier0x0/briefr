@@ -21,7 +21,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 
 **Historical planning:** [`archive/`](archive/) (beta specs, agent notes — not required reading).
 
-**Printable architecture:** [`SYSTEM_DESIGN.pdf`](../SYSTEM_DESIGN.pdf) — regenerate with `node scripts/generate_system_design_pdf.mjs` after editing `SYSTEM_DESIGN.md`.
+**Printable architecture:** generate `SYSTEM_DESIGN.pdf` with `node scripts/generate_system_design_pdf.mjs` (not committed).
 
 ---
 

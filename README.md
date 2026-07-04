@@ -333,7 +333,7 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 
 Diagram prompts (maintainers): [`docs/IMAGE_BRIEFS.md`](docs/IMAGE_BRIEFS.md)
 
-Regenerate `SYSTEM_DESIGN.pdf` (requires network for Mermaid CDN on first run):
+Generate `SYSTEM_DESIGN.pdf` on demand — it is not committed (requires network for Mermaid CDN on first run):
 
 ```bash
 cd frontend && npm install
@@ -363,7 +363,7 @@ pip install openpyxl
 python3 scripts/generate_technical_inventory_xlsx.py
 ```
 
-Writes `TECHNICAL_INVENTORY.xlsx` with auto-sized columns (minimum width 10).
+Writes `TECHNICAL_INVENTORY.xlsx` locally (not committed) with auto-sized columns (minimum width 10).
 
 ---
 

@@ -1,10 +1,13 @@
 # WHAT — Project Overview
 
+> **Snapshot document — may lag the code.** Regenerated periodically. When this disagrees with the code or [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md), those win.
+
+
 ## What does this project do?
 
 BRIEFR is a self-hosted CVE intelligence and threat-investigation dashboard for security analysts, small teams, and solo researchers. It aggregates vulnerability data from NVD, CISA KEV, FIRST EPSS, MITRE ATT&CK, MITRE ATLAS, and dozens of optional enrichment feeds into a single searchable dark-mode UI. Analysts use it to answer: *what broke overnight, is it exploitable, does it affect our stack, and what should we hunt for?*
 
-The backend (`backend/`) is a **FastAPI** monolith that ingests feeds on a schedule (APScheduler), stores everything in **SQLite** (`backend/briefr.db`), and exposes a REST API under `/api/*`. The frontend (`frontend/`) is **React + Vite** with plain JSX/CSS (no component library). In development, Vite on `:5173` proxies `/api` → `:8000`. In production, **nginx** serves `frontend/dist` and reverse-proxies API calls to uvicorn.
+The backend (`backend/`) is a **FastAPI** monolith that ingests feeds on a schedule (APScheduler), stores everything in **PostgreSQL** (`DATABASE_URL`; Postgres required in production), and exposes a REST API under `/api/*`. The frontend (`frontend/`) is **React + Vite** with plain JSX/CSS (no component library). In development, Vite on `:5173` proxies `/api` → `:8000`. In production, **nginx** serves `frontend/dist` and reverse-proxies API calls to uvicorn.
 
 Live demo: [briefr.projectjupiter.in](https://briefr.projectjupiter.in)
 

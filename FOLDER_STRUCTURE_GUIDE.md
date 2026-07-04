@@ -1,5 +1,8 @@
 # BRIEFR Folder Structure Guide
 
+> **Snapshot document — may lag the code.** Regenerated periodically. When this disagrees with the code or [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md), those win.
+
+
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
 Every file in the repository with a one-line purpose. Tags:
@@ -319,10 +322,10 @@ Every file in the repository with a one-line purpose. Tags:
 | `README.md` | Project overview and quick start |
 | `docs/ONBOARDING.md` | Contributor entry point: reading order, local dev, tests, env vars, deploy overview, troubleshooting |
 | `SYSTEM_DESIGN.md` | Architecture, data flows, design decisions |
-| `SYSTEM_DESIGN.pdf` | PDF export of system design (generated) |
+| `SYSTEM_DESIGN.pdf` | PDF export of system design (generated on demand, not committed) |
 | `API_REFERENCE.md` | Human-readable endpoint catalog |
 | `TECHNICAL_INVENTORY.md` | Stack, schema, scheduler, feature matrix |
-| `TECHNICAL_INVENTORY.xlsx` | Spreadsheet export of inventory tables |
+| `TECHNICAL_INVENTORY.xlsx` | Spreadsheet export of inventory tables (generated on demand, not committed) |
 | `APPLICATION_EXECUTION_MAP.md` | Startup sequence and request journeys |
 | `CODEBASE_CONTEXT.md` | Consolidated codebase reference for AI assistants and contributors |
 | `FOLDER_STRUCTURE_GUIDE.md` | This file |

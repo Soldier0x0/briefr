@@ -1,66 +1,88 @@
+# CLAUDE.md — BRIEFR project instructions
 
-# CLAUDE.md
+BRIEFR is a self-hosted CVE intelligence and detection-engineering platform.
+FastAPI backend (`backend/`), React 19 + Vite frontend (`frontend/`, plain
+JSX/CSS, no component library), **PostgreSQL required in production**.
 
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+## Commands
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+- Backend tests: `cd backend && pytest tests/ -q`
+- Frontend build (must pass before any frontend change is done): `cd frontend && npm run build`
+- Dev servers: `uvicorn main:app --port 8000` (from `backend/`); `npm run dev` (from `frontend/`, proxies `/api` → `:8000`)
 
-## 1. Think Before Coding
+## Source of truth
 
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
+- `docs/PRODUCT_STATUS.md` is the living truth — when any other doc disagrees with it or with the code, they win, not the older doc.
+- `CODEBASE_CONTEXT.md`, `FOLDER_STRUCTURE_GUIDE.md`, `APPLICATION_EXECUTION_MAP.md`, `TECHNICAL_INVENTORY.md` are periodic snapshots and may lag the code — verify against source before relying on them.
+- Historical specs live in `docs/archive/` — never edit or resurrect them.
+- Recent decisions and session context: `docs/HANDOVER.md` (newest entry
+  first). Current work queue: `docs/SPRINT_2026-07.md`.
 
-Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
+## Danger zones — read before editing
 
-## 2. Simplicity First
+1. **SQL dialect:** all SQL in `database.py` is written in SQLite dialect with
+   `?` placeholders and translated to PostgreSQL at runtime by
+   `db/dialect.py`. Never write Postgres-only syntax in shared query paths.
+   Production is Postgres-only (`BRIEFR_REQUIRE_POSTGRES=1`); most tests run
+   SQLite — a query can pass tests and still break production if the
+   translation misses it. When touching SQL, check both dialects.
+2. **Scheduler locks:** job `id=` strings in `scheduler.py` must stay in sync
+   with the lock mapping used by `routers/admin.py`.
+3. **Migrations are forward-only** (Alembic). Never edit an applied migration;
+   add a new one.
+4. **Secrets in logs:** structured logging redacts extra fields matching
+   `*_KEY/_TOKEN/_SECRET/_PASSWORD`. Never interpolate secrets into log
+   message strings — redaction only covers `extra` fields.
+5. **`deploy/` scripts run on a live production box.** Changes must stay
+   additive per the compatibility promise in `docs/ROADMAP.md` /
+   `docs/OPERATIONS.md`.
+6. **Heavy work never runs on the request path.** ML, enrichment sweeps, and
+   external syncs belong in `scheduler.py` jobs; request handlers do DB reads
+   and cached lookups.
 
-**Minimum code that solves the problem. Nothing speculative.**
+## Error-handling conventions
 
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
+- Backend: raise `HTTPException` with a short, safe, actionable `detail` for
+  expected 4xx cases. Let unexpected errors reach the global handler — it
+  returns a generic 500 with `request_id` and logs the full traceback. Never
+  put stack traces, SQL, file paths, or upstream API responses containing
+  keys into `detail`.
+- Frontend: surface the API `detail` string plus the `X-Request-ID` response
+  header ("ref: <id>") so operators can grep the logs. Never render raw
+  exception objects. Every async view needs designed loading / empty / error
+  / data states.
 
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+## UI rules
 
-## 3. Surgical Changes
+- **Density over decoration. Do NOT add large side margins or center a
+  narrow content column in a wide viewport.** Content fills the width with
+  normal gutters (~24–32px). `max-width` is for prose paragraphs only —
+  never for feeds, tables, or dashboards.
+- Dark terminal aesthetic: mono labels, existing tokens in `App.css`. No
+  gradients, no hero-marketing sections, no icon+heading+text card grids
+  (see `PRODUCT.md` anti-references).
+- Motion: 120–180ms ease-out, opacity/transform only,
+  `prefers-reduced-motion` respected (global rule exists — keep it).
+- Every status word, pill, or badge ships with a discoverable explanation
+  (tooltip/legend) — `PRODUCT.md` design principle 1.
 
-**Touch only what you must. Clean up only your own mess.**
+## Docs rules
 
-When editing existing code:
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
+- Runtime behavior changed → update `docs/PRODUCT_STATUS.md` and
+  `SYSTEM_DESIGN.md` in the same PR.
+- Endpoints changed → update `API_REFERENCE.md` in the same PR.
+- Do not create new top-level docs; extend the existing set
+  (`docs/DOCUMENTATION_PLAN.md` governs structure).
 
-When your changes create orphans:
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
+## Working style
 
-The test: Every changed line should trace directly to the user's request.
-
-## 4. Goal-Driven Execution
-
-**Define success criteria. Loop until verified.**
-
-Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
-
-For multi-step tasks, state a brief plan:
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
-```
-
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
-
----
-
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+- State assumptions explicitly; if multiple interpretations exist, ask
+  before implementing.
+- Minimum code that solves the problem — no speculative features,
+  abstractions, or configurability that wasn't requested.
+- Touch only what the task requires; match existing style; every changed
+  line should trace to the request. Remove only orphans your own change
+  created.
+- Define verification before coding: run the relevant test files and
+  `npm run build` before declaring done. For UI work, verify in the browser,
+  not just the build.

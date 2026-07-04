@@ -1,5 +1,8 @@
 # BRIEFR Technical Inventory
 
+> **Snapshot document — may lag the code.** Regenerated periodically. When this disagrees with the code or [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md), those win.
+
+
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
 **Version:** 1.1 beta · **Date:** 2026-06-07
@@ -22,7 +25,6 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 | Backup encryption | pyrage | 1.3.0 | age (X25519) archive encryption in `backup/manager.py`; interoperable with the `age` CLI |
 | Vector math | NumPy | 2.4.4 | Brute-force cosine similarity over `cve_embeddings` BLOBs (default path) |
 | Embeddings (optional) | fastembed | not pinned — install only when `EMBEDDINGS_ENABLED=1` | Local CPU ONNX embedding model (`BAAI/bge-small-en-v1.5`); never imported on the request path |
-| Vector accelerator (optional) | sqlite-vec | never a hard dependency | Used only if importable AND the Python build supports loadable extensions; NumPy path gives identical rankings |
 | UI framework | React | 18.3.1 | Analyst SPA |
 | Build tool | Vite | 5.4.1 | Dev server and production bundle |
 | Routing | react-router-dom | 7.16.0 | `/privacy`, `/terms` routes |
@@ -299,10 +301,10 @@ Known keys: `nvd_last_mod_end` (NVD incremental watermark), `epss_backfill_done`
 | cve_id | TEXT | PRIMARY KEY | CVE ID |
 | model | TEXT | NOT NULL | Embedding model name (e.g. `BAAI/bge-small-en-v1.5`) |
 | dim | INTEGER | NOT NULL | Vector dimension |
-| vector | BLOB | NOT NULL | float32 little-endian, L2-normalized (sqlite-vec compatible layout) |
+| vector | BLOB | NOT NULL | float32 little-endian, L2-normalized |
 | updated_at | TEXT | DEFAULT datetime('now') | |
 
-Index: `idx_cve_embeddings_model(model)`. Written only by the `embeddings_backfill` scheduler job (V1.3, `EMBEDDINGS_ENABLED=1`); read by `GET /api/cves/{id}/related` as a pure BLOB scan (NumPy cosine; sqlite-vec when importable). Empty table when embeddings are disabled — the endpoint then uses the shared-product heuristic.
+Index: `idx_cve_embeddings_model(model)`. Written only by the `embeddings_backfill` scheduler job (V1.3, `EMBEDDINGS_ENABLED=1`); read by `GET /api/cves/{id}/related` as a pure vector scan (NumPy cosine). Empty table when embeddings are disabled — the endpoint then uses the shared-product heuristic.
 
 ### hunt_packs
 
@@ -502,7 +504,7 @@ Weights are read by the frontend from `GET /api/config/risk` on every app load f
 | Admin log viewer (V1.4) | Complete | In-process 500-line ring buffer; `GET /api/admin/logs` with level/logger/request_id/category filters; admin pane Application logs page |
 | Rate limiting | Complete | In-memory token bucket per client IP (`rate_limit.py`) on `/api/ioc/lookup` (30/min) + `/api/refresh*` (10/min); 429 + `Retry-After` |
 
-Spreadsheet export: [`TECHNICAL_INVENTORY.xlsx`](TECHNICAL_INVENTORY.xlsx)
+Spreadsheet export: generate with `python3 scripts/generate_technical_inventory_xlsx.py` (not committed)
 
 ### Regenerating the spreadsheet
 

@@ -1,11 +1,9 @@
 """CVE description embeddings — env-gated, CPU-only, scheduler-side (V1.3).
 
-Vectors are stored as float32 little-endian BLOBs in SQLite
-(``cve_embeddings`` table). The default similarity path is exact brute-force
-cosine with NumPy — adequate at BRIEFR scale (tens of thousands of embedded
-rows). ``sqlite-vec`` is an optional accelerator used only when it is
-importable AND the Python build supports loadable extensions; it is never a
-hard dependency and the NumPy path produces identical rankings.
+Vectors are stored as float32 little-endian byte strings in the
+``cve_embeddings`` table (bytea on PostgreSQL in production; blob on the
+SQLite dev/test path). The similarity path is exact brute-force cosine with
+NumPy — adequate at BRIEFR scale (tens of thousands of embedded rows).
 
 Disabled by default (``EMBEDDINGS_ENABLED=0``): the tool stays fully
 functional without it — ``GET /api/cves/{id}/related`` falls back to the
@@ -32,7 +30,6 @@ _embeddings_cache_dir = os.environ.get("EMBEDDINGS_CACHE_DIR", "").strip()
 if _embeddings_cache_dir:
     _default_hf_home_for_cache(_embeddings_cache_dir)
 
-import aiosqlite
 import numpy as np
 
 from database import (
@@ -46,11 +43,6 @@ try:  # optional local model — only needed when EMBEDDINGS_ENABLED=1
     from fastembed import TextEmbedding
 except ImportError:  # pragma: no cover — exercised on minimal installs
     TextEmbedding = None
-
-try:  # optional accelerator ONLY — NumPy brute force is the default path
-    import sqlite_vec
-except ImportError:
-    sqlite_vec = None
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +85,7 @@ def get_embeddings_cache_dir() -> str:
 
 
 def vector_to_blob(vector) -> bytes:
-    """float32 little-endian bytes — also the layout sqlite-vec expects."""
+    """float32 little-endian bytes."""
     return np.asarray(vector, dtype="<f4").tobytes()
 
 
@@ -138,7 +130,7 @@ def _embed_texts(model, texts: list[str]) -> list[np.ndarray]:
     return [np.asarray(vec, dtype="<f4") for vec in model.embed(texts)]
 
 
-async def run_embeddings_backfill(db: aiosqlite.Connection, progress_cb=None) -> dict:
+async def run_embeddings_backfill(db, progress_cb=None) -> dict:
     """Embed CVE descriptions that have no vector for the active model.
 
     Scheduler-side only. Batched + committed per batch so an interrupted run
@@ -187,45 +179,7 @@ async def run_embeddings_backfill(db: aiosqlite.Connection, progress_cb=None) ->
     return {"embedded": embedded, "model": model_name}
 
 
-async def _sqlite_vec_similar(
-    db: aiosqlite.Connection,
-    model_name: str,
-    cve_id: str,
-    target_blob: bytes,
-    limit: int,
-) -> list[dict] | None:
-    """Optional accelerator. Returns None whenever sqlite-vec is missing or
-    the Python/SQLite build cannot load extensions — caller uses NumPy."""
-    if sqlite_vec is None:
-        return None
-    try:
-        await db.enable_load_extension(True)
-        await db.load_extension(sqlite_vec.loadable_path())
-        await db.enable_load_extension(False)
-        rows = await db.execute_fetchall(
-            """
-            SELECT cve_id, vec_distance_cosine(vector, ?) AS dist
-            FROM cve_embeddings
-            WHERE model = ? AND cve_id != ?
-            ORDER BY dist ASC
-            LIMIT ?
-            """,
-            (target_blob, model_name, cve_id.upper(), limit),
-        )
-        return [
-            {"cve_id": row["cve_id"], "similarity": round(1.0 - float(row["dist"]), 4)}
-            for row in rows
-        ]
-    except Exception as exc:
-        logger.debug(
-            "sqlite-vec accelerator unavailable (%s) — using NumPy brute force", exc
-        )
-        return None
-
-
-async def find_similar_cves(
-    db: aiosqlite.Connection, cve_id: str, limit: int = 5
-) -> list[dict] | None:
+async def find_similar_cves(db, cve_id: str, limit: int = 5) -> list[dict] | None:
     """Top-k semantically similar CVEs by cosine similarity.
 
     Returns None when the target CVE has no stored vector — the caller must
@@ -236,10 +190,6 @@ async def find_similar_cves(
     target_blob = await get_cve_embedding(db, cve_id, model_name)
     if target_blob is None:
         return None
-
-    accelerated = await _sqlite_vec_similar(db, model_name, cve_id, target_blob, limit)
-    if accelerated is not None:
-        return accelerated
 
     target = blob_to_vector(target_blob)
     rows = await get_all_cve_embeddings(db, model_name, exclude_cve_id=cve_id)
