@@ -100,7 +100,7 @@ def test_otx_nightly_correlation_owns_db_for_cve_list(tmp_path, monkeypatch):
             await conn.close()
 
         acquires["n"] = 0
-        return await run_otx_nightly_correlation("otx-test-key")
+        return await run_otx_nightly_correlation(None, "otx-test-key")
 
     stats = asyncio.run(run())
     assert stats["cves"] == 1
