@@ -12,6 +12,69 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-05 — Security architecture review; sprint gains A0/A6/F3
+
+**Session:** maintainer + AI security review. **Docs-only — no code
+changed.** Findings verified by reading `dependencies.py`, `routers/auth.py`,
+`settings.py`, `rate_limit.py`, `db/connection.py`, `utils/exportXlsx.js` —
+not from docs. Since the 2026-07-03 entry, main also picked up PR #257
+(DETECT tab 500 on Postgres — a live danger-zone-#1 hit) and PR #258
+(admin log search); branch `fix/deploy-npm-ci-not-install` (npm ci for
+production frontend builds) was open at session time.
+
+### Findings (verified against code)
+
+1. **`require_admin` fails open by default.** `allow_legacy_admin_key`
+   defaults true; with `BRIEFR_ADMIN_API_KEY` unset (the normal case since
+   built-in login shipped) every admin route is **unauthenticated** unless
+   CF Access happens to sit in front. Decision: **delete the legacy key
+   path entirely** — not gate it. Sprint A0 + Spec A0.
+2. `require_admin` never checks the JWT `role` claim — any authenticated
+   user is admin. Latent until a second user exists; folded into A0.
+3. `audit()` catches only `sqlite3.OperationalError`; the Postgres wrapper
+   raises raw asyncpg errors, so an audit-write failure can 500 a valid
+   admin action in production (danger zone #1 in exception space, not SQL
+   space). Immediate fix in A0; class fix added to the post-Track-B
+   native-SQL conversion notes.
+4. Wallboard token accepted via query string (leaks into access logs /
+   history; low severity, read-only surface). Sprinted as **A7** together
+   with the deprecated `X-XSS-Protection` header, Google-Fonts CSP
+   allowance (vendor the fonts for air-gap credibility), and the stale
+   single-worker rate-limit docstring.
+5. **Clean checks — no action:** XLSX export uses ExcelJS string cells
+   (no formula injection from upstream CVE text), no
+   `dangerouslySetInnerHTML` anywhere, webhook SSRF tests exist, refresh
+   rotation + reuse detection solid, rate-limit proxy trust solid.
+
+### Plan changes (edited `docs/SPRINT_2026-07.md` this session)
+
+- Track A: new **A0** (delete legacy key + role check + audit fix +
+  security-invariant tests; one PR, mostly deletions — do **before**
+  A2/A3), **A6** (production posture self-check), and **A7** (security
+  hygiene: wallboard header-only, drop X-XSS-Protection, vendor fonts,
+  worker-pin note). A1 ticked (PR #255).
+- After-Track-B notes: one app-level DB exception type, no `sqlite3.*`
+  handling outside `db/`, CI dump→restore round-trip for backups.
+- Track F: new **F3** pre-flip security pass (gitleaks over full history,
+  rotate any committed key, `SECURITY.md`, reconcile "All rights reserved"
+  headers with AGPL) — blocks the open-source flip.
+- Appendix: **Spec A0** with the verified removal scope.
+
+### Explicitly rejected (don't re-litigate)
+
+2FA/OIDC, CSRF tokens, Redis-backed rate limiting — wrong size for a
+single-operator self-hosted app with `SameSite=Strict` cookies and
+optional CF Access. Scoped API tokens only when a real machine consumer
+appears.
+
+### Next steps
+
+1. **A0** per Spec A0 (check the production crontab/systemd timers for
+   `X-BRIEFR-Admin-Key` callers before merging).
+2. A2+A3 per spec; A4 rides along. Then Track B unchanged.
+
+---
+
 ## 2026-07-03 — Strategy, repo cleanup, error-loop plan, July sprint
 
 **Session:** maintainer + AI planning/execution session. All output landed
