@@ -14,7 +14,6 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
   const [limit, setLimit] = useState(100)
   const [autoRefresh, setAutoRefresh] = useState(false)
   const intervalRef = useRef(null)
-  const searchDebounceRef = useRef(null)
 
   const logs = logData?.logs || []
   const knownLoggers = logData?.known_loggers || []
@@ -48,9 +47,8 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
   useEffect(() => { loadLogs() }, [level, category, loggerFilter, reqId, search, limit])
 
   useEffect(() => {
-    clearTimeout(searchDebounceRef.current)
-    searchDebounceRef.current = setTimeout(() => setSearch(searchInput.trim()), SEARCH_DEBOUNCE_MS)
-    return () => clearTimeout(searchDebounceRef.current)
+    const handler = setTimeout(() => setSearch(searchInput.trim()), SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(handler)
   }, [searchInput])
 
   useEffect(() => {

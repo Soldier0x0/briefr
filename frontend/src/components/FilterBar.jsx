@@ -20,8 +20,8 @@ const QUICK_FILTERS = [
 export const VENDORS = [
   'Adobe', 'Amazon', 'Apache', 'Apple', 'Atlassian', 'Check Point', 'Cisco',
   'Citrix', 'Dell', 'Docker', 'F5', 'Fortinet', 'GitLab', 'Google', 'HP',
-  'IBM', 'Ivanti', 'Jenkins', 'Juniper', 'Kubernetes', 'Linux', 'MongoDB',
-  'Microsoft', 'Node.js', 'Oracle', 'PHP', 'Palo Alto', 'Python', 'SAP',
+  'IBM', 'Ivanti', 'Jenkins', 'Juniper', 'Kubernetes', 'Linux', 'Microsoft',
+  'MongoDB', 'Node.js', 'Oracle', 'Palo Alto', 'PHP', 'Python', 'SAP',
   'Siemens', 'VMware', 'WordPress',
 ]
 

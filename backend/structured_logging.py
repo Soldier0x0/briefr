@@ -127,10 +127,11 @@ class _RingBufferHandler(logging.Handler):
                 continue
             if category and entry.get("category") != category:
                 continue
-            if needle and needle not in entry.get("message", "").lower() and needle not in entry.get(
-                "exc_info", ""
-            ).lower():
-                continue
+            if needle:
+                message = (entry.get("message") or "").lower()
+                exc_info = (entry.get("exc_info") or "").lower()
+                if needle not in message and needle not in exc_info:
+                    continue
             results.append(entry)
             if len(results) >= limit:
                 break
