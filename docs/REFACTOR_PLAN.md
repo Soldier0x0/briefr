@@ -499,7 +499,7 @@ npm run build
 ## Phase 6 — Retire Legacy Admin Key Path by Default
 
 ### Problem
-`backend/settings.py:54` sets `allow_legacy_admin_key: bool = True`. `backend/dependencies.py:74–78` therefore accepts the pre-JWT `X-Admin-Key`-style header on admin routes in every deployment unless the operator explicitly disables it. JWT auth is the intended gate; the legacy path should be opt-in, not opt-out.
+`backend/settings.py:54` sets `allow_legacy_admin_key: bool = True`. `backend/dependencies.py:74–78` therefore accepts the pre-JWT `X-BRIEFR-Admin-Key`-style header on admin routes in every deployment unless the operator explicitly disables it. JWT auth is the intended gate; the legacy path should be opt-in, not opt-out.
 
 ### Fix
 - **Edit** `backend/settings.py`: change the default to `allow_legacy_admin_key: bool = False`.
@@ -522,8 +522,8 @@ grep -n "allow_legacy_admin_key" backend/settings.py   # default False
 `frontend/src/App.jsx` imports every page and component statically, and `frontend/vite.config.js` has no `build` configuration. `jspdf` (~350 kB), `exceljs` (~940 kB), `html2canvas` (~200 kB), and `chart.js` all land in the single entry bundle, paid on first load by every user — including ones who never export a report.
 
 ### Fix
-1. **Export libs on demand** — in `frontend/src/utils/pdfReport.js`, `investigationPdf.js`, and `exportXlsx.js`, replace top-level `import jsPDF from 'jspdf'` / `import ExcelJS from 'exceljs'` / `html2canvas` imports with `const { default: jsPDF } = await import('jspdf')` (etc.) inside the export functions. The export functions are already async or can become async; their callers are click handlers.
-2. **Lazy routes** — in `App.jsx`, wrap the non-landing routes (admin pages, Wallboard, Forge, IOC lookup) in `React.lazy(() => import(...))` with a `<Suspense>` fallback. Do this *after* Phase 4 so `DetailDrawer` is already a folder.
+1. **Export libs on demand** — in `frontend/src/utils/pdfReport.js`, `investigationPdf.js`, and `exportXlsx.js`, replace top-level `import { jsPDF } from 'jspdf'` / `import ExcelJS from 'exceljs'` / `html2canvas` imports with `const { jsPDF } = await import('jspdf')` (for named exports) and `const { default: ExcelJS } = await import('exceljs')` (for default exports) inside the export functions. The export functions are already async or can become async; their callers are click handlers.
+2. **Lazy routes** — in `App.jsx`, wrap the non-landing routes (admin pages, Wallboard, Forge, IOC lookup) in `lazyWithReload(() => import(...))` (using the project's existing utility from `./utils/lazyWithReload.js`) with a `<Suspense>` fallback. Do this *after* Phase 4 so `DetailDrawer` is already a folder.
 3. **Chart chunk (optional)** — if `chart.js` still dominates the main chunk after steps 1–2, add `build.rollupOptions.output.manualChunks` in `vite.config.js` to split it.
 
 ### Verify
@@ -560,7 +560,7 @@ pytest tests/ -q                  # unchanged behavior
 The frontend has no ESLint config and zero unit tests; the only coverage is the backend-driven Playwright smoke. The pure helpers extracted in Phases 4–5 (`DetailDrawer/helpers.js`, `utils/exportCommon.js`) are exactly the code unit tests are cheap for.
 
 ### Fix
-- **Create** `frontend/eslint.config.js` (flat config) with `@eslint/js` recommended + `eslint-plugin-react-hooks`. Fix or locally disable existing findings — keep the initial diff mechanical.
+- **Create** `frontend/eslint.config.js` (flat config) with `@eslint/js` recommended, `eslint-plugin-react` (recommended), and `eslint-plugin-react-hooks`. Fix or locally disable existing findings — keep the initial diff mechanical.
 - **Add** Vitest as a dev dependency with a `test` script; write unit tests for the pure helpers from Phases 4–5 (severity/color mapping, date formatting, truncation).
 - **Edit** the CI workflow: add `npm run lint` and `npm test` steps to the existing frontend job.
 
@@ -599,7 +599,7 @@ cd backend && ruff check . && pytest tests/ -x --tb=short
 python -c "from database import get_db, upsert_cves, get_sync_state_value; print('all ok')"
 
 # Frontend
-cd frontend && npx eslint src/ && npm test && npm run build
+cd ../frontend && npx eslint src/ && npm test && npm run build
 # Compare final chunk sizes against the pre-Phase-7 baseline.
 # Run app locally and smoke test:
 # - CVE list loads
