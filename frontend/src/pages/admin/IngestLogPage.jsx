@@ -24,6 +24,11 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
     if (urlFilters.category != null) setCategory(urlFilters.category)
     if (urlFilters.logger != null) setLoggerFilter(urlFilters.logger)
     if (urlFilters.requestId != null) setReqId(urlFilters.requestId)
+    // A deep link (e.g. "View application log" / "Filter by request ID" from
+    // other admin pages) targets a specific entry — a stale search term left
+    // over from a previous visit to this page must not hide it.
+    setSearchInput('')
+    setSearch('')
   }, [urlFilters.level, urlFilters.category, urlFilters.logger, urlFilters.requestId])
 
   async function loadLogs() {
