@@ -776,26 +776,35 @@ shaping; only `db/` speaks SQL; only `infra` speaks sockets.
 ## D. Track E — additional phases (all behavior-preserving unless noted)
 
 ### Phase 11 — Scheduler job registry (after Phase 2)
-**Create** `backend/scheduler_jobs.py`:
+**Create** `backend/scheduler_jobs.py`. **Move** `_write_job_last_run` out of
+`scheduler.py` into this module verbatim (it depends only on `database` /
+sync-state helpers, not on scheduler state) — moving it, rather than importing
+it back from `scheduler.py`, is what keeps `scheduler.py → scheduler_jobs.py`
+a one-way dependency with no import cycle:
 ```python
-import asyncio, logging, time
+import asyncio, logging
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Awaitable, Callable
 
 logger = logging.getLogger(__name__)
 
+# _write_job_last_run(job_id, start: datetime, records=0, had_error=False,
+# error_message="") lives here now — moved unchanged from scheduler.py.
+
 @dataclass
 class Job:
     job_id: str
-    fn: Callable[[], Awaitable[None]]
+    fn: Callable[[], Awaitable[int | None]]
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 _REGISTRY: dict[str, Job] = {}
 
 def scheduled_job(job_id: str):
     """Register a job body; the wrapper owns skip-if-running, locking,
-    and job_last_run bookkeeping that today is copy-pasted 15 times."""
-    def decorate(fn: Callable[[], Awaitable[None]]):
+    and job_last_run bookkeeping that today is copy-pasted 15 times.
+    The body may return an int (records upserted) or None."""
+    def decorate(fn: Callable[[], Awaitable[int | None]]):
         job = Job(job_id=job_id, fn=fn)
         _REGISTRY[job_id] = job
 
@@ -804,17 +813,22 @@ def scheduled_job(job_id: str):
                 logger.info("%s already running — skipped", job_id)
                 return False
             async with job.lock:
-                started = time.monotonic()
-                status, error = "ok", ""
+                started = datetime.now(timezone.utc)
+                records, error = 0, ""
                 try:
-                    await fn()
+                    records = await fn() or 0
                 except Exception as exc:          # noqa: BLE001 — job boundary
-                    status, error = "error", str(exc)
+                    error = str(exc)
                     logger.exception("%s failed", job_id)
                 finally:
-                    await _write_job_last_run(job_id, status, error,
-                                              time.monotonic() - started)
-                return status == "ok"
+                    await _write_job_last_run(
+                        job_id,
+                        started,
+                        records=records,
+                        had_error=bool(error),
+                        error_message=error,
+                    )
+                return not error
         run.job = job
         return run
     return decorate
