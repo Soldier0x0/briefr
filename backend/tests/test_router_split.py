@@ -42,6 +42,7 @@ EXPECTED_ROUTES = [
     ("GET", "/api/otx/pulses/{pulse_id}/iocs"),
     ("POST", "/api/ioc/lookup"),
     ("POST", "/api/cves/{cve_id}/risk"),
+    ("GET", "/api/cves/{cve_id}/investigation-score"),
     ("GET", "/api/cves/{cve_id}/momentum"),
     ("GET", "/api/cves/{cve_id}/detection"),
     ("GET", "/api/cves/{cve_id}/correlation"),
@@ -111,6 +112,8 @@ EXPECTED_ROUTES = [
     ("GET", "/api/admin/audit-log"),
     ("POST", "/api/admin/diagnostics/smoke"),
     ("POST", "/api/admin/diagnostics/integrity"),
+    # Rate-limit admin page: appended after diagnostics routes.
+    ("GET", "/api/admin/ratelimit"),
     # V1.4 Theme 4: read-only wallboard (additive, after admin routes).
     ("GET", "/api/wallboard"),
     # Built-in app login (decision 2026-06-11): appended after wallboard
@@ -123,6 +126,9 @@ EXPECTED_ROUTES = [
     # original auth routes — additive only.
     ("GET", "/api/auth/setup-required"),
     ("POST", "/api/auth/setup"),
+    # Session management (admin sessions page): appended after setup routes.
+    ("GET", "/api/auth/sessions"),
+    ("DELETE", "/api/auth/sessions/{session_id}"),
 ]
 
 
