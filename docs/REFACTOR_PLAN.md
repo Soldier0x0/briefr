@@ -633,3 +633,279 @@ perf: add composite indexes for CVE list hot paths (phase 10)
 ```
 
 Ship Track A (Phases 1–5) as one PR from `refactor/structural-cleanup` → `main`. Phases 6–10 are each small enough to be their own PR — Phase 6 in particular should be a standalone PR so the breaking-change note is visible in its own right.
+
+---
+
+# Addendum — Architecture Review (2026-07-04)
+
+> **Status**: REVIEW + PLAN ONLY — no code changes. Verified against the
+> working tree at `1362df2`. This addendum records the system-level findings
+> an independent architecture pass surfaced *beyond* Phases 1–10 above, and
+> adds Track E (Phases 11–15). Phases 1–10 remain valid and unchanged; every
+> line-count and duplication claim in the 2026-07-02 assessment was re-verified
+> and still holds.
+
+## A. Architecture as-built (reverse-engineered data flow)
+
+```
+            ┌────────────────────────── single uvicorn worker (--workers 1) ──────────────────────────┐
+            │                                                                                          │
+ External   │  APScheduler (in-process, scheduler.py, 15 asyncio.Lock guards)                          │
+ sources ──▶│    feeds/*  (NVD, KEV, EPSS, CVEList v5, vulnrichment, OTX, ExploitDB, Metasploit,       │
+ (HTTPS)    │              Nuclei, PoC-GitHub, MITRE ATT&CK/ATLAS, incident news)                      │
+            │       │  all outbound HTTP → resilient_client.py (shared httpx, retries, breakers)       │
+            │       │                       → api_queue.py (per-source pacing, in-memory state)        │
+            │       ▼                                                                                  │
+            │  ml/ (fastembed ONNX embeddings), ai/ (LLM product extraction)  ← scheduler-side only    │
+            │       │                                                                                  │
+            │       ▼                                                                                  │
+            │  database.py (3,197 lines, ~120 fns) ── db/dialect.py (regex SQLite→PG translation)      │
+            │       │                                 db/connection.py (asyncpg pool | aiosqlite)      │
+            │       ▼                                                                                  │
+            │  PostgreSQL (prod) / SQLite (dev+tests)                                                  │
+            │       ▲                                                                                  │
+            │  routers/* (thin-ish handlers; reads + cached lookups only, per danger-zone 6)           │
+            │  correlation/ (campaigns, confidence, suppressions)   webhooks/ (alert dedupe, delivery) │
+            └──────────────────────────────────────────────────────────────────────────────────────────┘
+                     ▲ /api (nginx proxy)
+ React 19 SPA: App.jsx (~21 useState, prop-drilled) → components fetch via api.js (hand-rolled,
+ 401-refresh single-flight) — no data-fetching layer, no code-splitting except BriefCharts.
+```
+
+Write path: scheduler job → feed fetch (queued/paced) → `upsert_*`/`replace_*`
+in `database.py` → change rows (`cve_changes`) → webhook engine.
+Read path: router → `get_db()` (new connection/pool-acquire per call) →
+SQLite-dialect SQL → runtime translation → response; frontend surfaces
+`detail` + `X-Request-ID`.
+
+## B. Findings beyond Phases 1–10
+
+### E1. The runtime SQL translation layer is the largest structural risk
+`db/dialect.py` rewrites SQLite SQL to PostgreSQL with regexes at query time,
+while tests run mostly SQLite and production is Postgres-only. This inverts
+the test pyramid: the dialect the tests exercise is the one production never
+runs. CLAUDE.md danger-zone 1 documents the hazard instead of removing it.
+Direction (post-Phase-3, incremental): run the backend test suite against
+PostgreSQL in CI as a first-class matrix leg (testcontainers or the existing
+pool-integration harness), then migrate hot query paths to native Postgres SQL
+module-by-module inside the new `db/` package, shrinking `dialect.py` until it
+guards only the SQLite dev path — or is deleted when SQLite dev support is
+formally dropped.
+
+### E2. One process runs the API, the scheduler, and ML inference
+`deploy/briefr-backend.service` pins `--workers 1`, and the codebase requires
+it: APScheduler jobs, 15 module-level `asyncio.Lock`s, in-memory token buckets
+(`rate_limit.py` says so explicitly), and `api_queue.py` state are all
+process-local. Consequences: (a) zero horizontal scaling; (b) CPU-bound work
+(fastembed ONNX batches, large ingest parses) shares the event-loop process
+with request handling, so p99 latency degrades during syncs — danger-zone 6
+keeps heavy work off the *request path* but not off the *request process*.
+Phase 14 below is the unlock; it is deliberately optional/env-gated so
+single-box deployments keep today's behavior.
+
+### E3. Connection-per-call with manual lifecycle at 153 call sites
+`await get_db()` + `try/finally: close()` is repeated ~153 times (20× in
+`routers/cves.py`, 24× in `routers/admin.py` alone). No request-scoped
+dependency exists; a missed `finally` leaks a pool slot until timeout. On the
+SQLite path each call is a fresh file open + 3 PRAGMAs. Phase 12 replaces the
+boilerplate with one FastAPI dependency.
+
+### E4. Every Postgres read opens an explicit transaction
+`PostgresConnection._ensure_transaction()` starts a transaction on the first
+`execute`/`execute_fetchall`, so read-only endpoints hold an open transaction
+for the connection's lifetime — inflating pool hold time and vacuum horizon
+under load. Read-only statements could run without an explicit transaction
+(asyncpg autocommits single statements). Small, isolated, measurable — folded
+into Phase 12.
+
+### E5. `executemany` re-translates SQL once per row
+`PostgresConnection.executemany` calls `prepare_query(sql, p)` for every
+params row; `_postgres_translate_sql` (a multi-regex pass) has no cache (only
+`_colon_to_dollar` is `lru_cache`d). A 5,000-row CVE upsert runs the full
+regex pipeline 5,001 times. Fix: translate once, then adapt params per row —
+or add `@lru_cache` to `_postgres_translate_sql`. ~10 lines, pure win.
+
+### E6. Fifteen copy-pasted scheduler job wrappers
+Every `run_*` in `scheduler.py` repeats the same shape: check lock → log skip
+→ acquire lock → call `_run_*` → record `job_last_run`. Phase 2 consolidates
+the *locks*; Phase 11 consolidates the *wrapper* with a registry decorator,
+which also gives `routers/admin.py` one introspection surface.
+
+### E7. Frontend has no data layer; App.jsx is the state container
+`App.jsx` (727 lines) holds ~21 `useState`s and prop-drills filters, drawer
+state, watchlist, health, and timezone into the tree; 22 components fetch
+independently through 53 hand-written functions in `api.js`. There is no
+caching, request dedupe, or revalidation, and cross-cutting state changes
+force wide re-renders. Phase 15 extracts per-domain hooks *without* adopting a
+new library, keeping the diff mechanical.
+
+### E8. Batch/duplicate DB write variants
+`replace_cve_exploits`, `replace_cve_exploits_by_source`, and
+`merge_cve_exploits` are near-identical delete+insert shapes, as are the
+`store_/read_/replace_` OTX triplets. Not urgent — but Phase 3's `db/cache.py`
+and `db/correlation.py` moves are the moment to collapse them behind one
+parameterized helper each, while the functions are being touched anyway.
+
+### E9. Documented drift is institutionalized
+Four root-level snapshot docs (`CODEBASE_CONTEXT.md`, `FOLDER_STRUCTURE_GUIDE.md`,
+`APPLICATION_EXECUTION_MAP.MD`, `TECHNICAL_INVENTORY.md`) are declared "may lag
+the code" by CLAUDE.md. Stale-by-design docs cost every reader a verification
+pass. Recommendation (docs-only, no phase): fold what is still accurate into
+`docs/` equivalents and reduce each root snapshot to a pointer, per
+`DOCUMENTATION_PLAN.md`.
+
+## C. Target architecture (end-state after Tracks A–E)
+
+```
+backend/
+  routers/        thin HTTP: validation (deps), status codes, no SQL
+  services/       (emerges naturally: brief/, correlation/, detection/, scoring/ already are this)
+  db/             repositories per domain (Phase 3) + connection/dialect infra
+  feeds/          pull adapters — fetch/parse only, persist via db/ repos
+  scheduler/      job registry (Phase 11) + runner; extractable to its own process (Phase 14)
+  infra           resilient_client, api_queue, rate_limit, structured_logging
+frontend/src/
+  api/            request core + per-domain modules (split of api.js)
+  hooks/          data hooks owning fetch/cache/error state (Phase 15)
+  components/     presentational; DetailDrawer/ as folder (Phase 4)
+```
+
+Rule of the layering: routers never touch SQL; feeds never touch HTTP response
+shaping; only `db/` speaks SQL; only `infra` speaks sockets.
+
+## D. Track E — additional phases (all behavior-preserving unless noted)
+
+### Phase 11 — Scheduler job registry (after Phase 2)
+**Create** `backend/scheduler_jobs.py`. **Move** `_write_job_last_run` out of
+`scheduler.py` into this module verbatim (it depends only on `database` /
+sync-state helpers, not on scheduler state) — moving it, rather than importing
+it back from `scheduler.py`, is what keeps `scheduler.py → scheduler_jobs.py`
+a one-way dependency with no import cycle:
+```python
+import asyncio, logging
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Awaitable, Callable
+
+logger = logging.getLogger(__name__)
+
+# _write_job_last_run(job_id, start: datetime, records=0, had_error=False,
+# error_message="") lives here now — moved unchanged from scheduler.py.
+
+@dataclass
+class Job:
+    job_id: str
+    fn: Callable[[], Awaitable[int | None]]
+    lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+
+_REGISTRY: dict[str, Job] = {}
+
+def scheduled_job(job_id: str):
+    """Register a job body; the wrapper owns skip-if-running, locking,
+    and job_last_run bookkeeping that today is copy-pasted 15 times.
+    The body may return an int (records upserted) or None."""
+    def decorate(fn: Callable[[], Awaitable[int | None]]):
+        job = Job(job_id=job_id, fn=fn)
+        _REGISTRY[job_id] = job
+
+        async def run() -> bool:
+            if job.lock.locked():
+                logger.info("%s already running — skipped", job_id)
+                return False
+            async with job.lock:
+                started = datetime.now(timezone.utc)
+                records, error = 0, ""
+                try:
+                    records = await fn() or 0
+                except Exception as exc:          # noqa: BLE001 — job boundary
+                    error = str(exc)
+                    logger.exception("%s failed", job_id)
+                finally:
+                    await _write_job_last_run(
+                        job_id,
+                        started,
+                        records=records,
+                        had_error=bool(error),
+                        error_message=error,
+                    )
+                return not error
+        run.job = job
+        return run
+    return decorate
+
+def get_job(job_id: str) -> Job | None: return _REGISTRY.get(job_id)
+def locked_jobs() -> list[str]:
+    return [j.job_id for j in _REGISTRY.values() if j.lock.locked()]
+```
+Then each `run_*` collapses to its `_run_*` body under
+`@scheduled_job("nvd_incremental_sync")`, and `routers/admin.py` introspects
+`_REGISTRY` instead of a parallel map. Supersedes the lock-map sync hazard
+permanently. *Verify*: `pytest tests/ -k scheduler -x`; admin scheduler page
+shows identical job list/lock states.
+
+### Phase 12 — Request-scoped DB dependency (after Phase 3)
+**Add** to `backend/dependencies.py`:
+```python
+from collections.abc import AsyncIterator
+from database import get_db
+
+async def db_conn() -> AsyncIterator:
+    """Yield a connection bound to the request; always released, one place."""
+    db = await get_db()
+    try:
+        yield db
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
+    finally:
+        await db.close()
+```
+Handlers become `async def stats(db = Depends(db_conn))` — migrate router by
+router (mechanical, ~153 sites shrink as touched; no flag-day). Fold in E4
+here: give `PostgresConnection.execute_fetchall` a no-transaction fast path
+for connections that have not written. Fold in E5: hoist translation out of
+the per-row loop in `executemany`. *Verify*: full pytest + pool integration
+tests; pool `in_use` gauge flat under `ab -c 20` against `/api/cves`.
+
+### Phase 13 — Postgres-first CI (independent; do before large SQL edits)
+Add a CI matrix leg running `pytest backend/tests/` with `DATABASE_URL`
+pointing at a service-container Postgres (the pool integration harness already
+proves the plumbing). Tests that are SQLite-mechanism-specific get a skip
+marker. This turns danger-zone 1 from "reviewer vigilance" into "CI failure".
+No app code changes. *Verify*: both matrix legs green on an untouched tree.
+
+### Phase 14 — Extractable worker process (behavior change: opt-in flag)
+Goal: allow `BRIEFR_ROLE=web|worker|all` (default `all` = today's behavior).
+`worker` runs lifespan + scheduler with no HTTP; `web` skips
+`start_scheduler()`. Prerequisites created by earlier phases: job registry
+(11), no in-process lock introspection from admin (11 exposes it via DB
+`job_last_run`/lock table or Postgres advisory locks — `pg_try_advisory_lock`
+keyed by job id replaces `asyncio.Lock` when role-split is active). In-memory
+rate limits stay valid per-web-process only after documenting that `web` may
+then scale to N workers. This is the only path to multi-worker uvicorn and to
+keeping ONNX inference off the serving process. Ship dark (flag default
+`all`), soak on the beta box, then flip the deploy unit to two services.
+
+### Phase 15 — Frontend data hooks + api.js split (after Phases 4–5)
+Split `api.js` (455 lines, 53 exports) into `src/api/core.js` (request/refresh
+logic — unchanged) plus per-domain modules (`api/cves.js`, `api/admin.js`,
+`api/auth.js`, …) re-exported from `api/index.js` so existing imports keep
+working. Extract repeated component fetch patterns into hooks
+(`useApi(fetcher, deps)` returning `{data, error, loading, reload}`) and move
+App.jsx's health/stats/schedule polling into `useFeedHealth()` /
+`useStats()`. No new dependency; App.jsx shrinks toward routing + layout.
+*Verify*: `npm run build`; feed, drawer, admin pages exercise identical
+network calls (compare devtools HAR before/after).
+
+## E. Priority order (impact ÷ risk)
+
+| Order | Item | Why first |
+|-------|------|-----------|
+| 1 | Phase 13 (Postgres CI) | Cheapest insurance; de-risks every later SQL-touching phase |
+| 2 | Phases 1–2, 11 | Small, kills the two live sync hazards (CVE-ID checks, lock map) |
+| 3 | Phase 3 (db split) + E8 collapse | Unlocks ownership boundaries everything else assumes |
+| 4 | Phases 4, 5, 7, 15 | Frontend: bundle size + maintainability, all mechanical |
+| 5 | Phases 12 (incl. E4/E5), 10 | Measured DB-path wins |
+| 6 | Phases 6, 8, 9 | Hardening + guardrails once structure has settled |
+| 7 | Phase 14 | Largest payoff, largest blast radius — last, behind a flag |
