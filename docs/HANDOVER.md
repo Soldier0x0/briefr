@@ -58,7 +58,11 @@ production frontend builds) was open at session time.
 - Track F: new **F3** pre-flip security pass (gitleaks over full history,
   rotate any committed key, `SECURITY.md`, reconcile "All rights reserved"
   headers with AGPL) — blocks the open-source flip.
-- Appendix: **Spec A0** with the verified removal scope.
+- Appendix: **Spec A0** with the verified removal scope. Gemini review of
+  PR #260 caught that the legacy key is **runtime-rotatable** (SecurityPage
+  Rotate flow → `POST /config/apply-all` → `APPLY_ALL_EXTRA_KEYS`) and that
+  `api.js` still attaches `X-BRIEFR-Admin-Key` on adminApi requests — spec
+  expanded to delete the whole rotation chain, frontend included.
 
 ### Explicitly rejected (don't re-litigate)
 
