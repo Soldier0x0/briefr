@@ -22,10 +22,20 @@ def postgres_migrations():
     """Schema only — do not bind asyncpg pool to a closed event loop."""
 
     async def _boot() -> None:
-        from database import init_db, run_postgres_migrations
+        import asyncpg
+
+        from database import run_postgres_migrations
+        from db.config import postgres_dsn
 
         await run_postgres_migrations()
-        await init_db()
+        # Run the same schema fixup init_db() would do, via a direct
+        # connection — not get_db()/init_pool(), which would bind the pool
+        # to this asyncio.run() loop that's about to close.
+        conn = await asyncpg.connect(postgres_dsn(), timeout=15)
+        try:
+            await conn.execute("UPDATE cves SET epss_score = NULL WHERE epss_score = 0.0")
+        finally:
+            await conn.close()
 
     asyncio.run(_boot())
 
