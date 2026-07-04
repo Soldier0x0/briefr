@@ -56,9 +56,9 @@ templates with provenance, plus optional ML where it measurably helps" is a
 
 ### Known drift to fix
 
-`ml/embeddings.py` docstring and imports still reference SQLite/aiosqlite
-(`cve_embeddings` as float32 BLOBs) while the production path is
-Postgres-required. Audit that module for dual-path drift and align docs.
+A claims-accuracy pass on the README is still needed to ensure alignment with
+the current architecture. (Note: the SQLite/Postgres drift in
+`ml/embeddings.py` has been resolved in this PR.)
 
 ---
 
@@ -213,7 +213,7 @@ codebase already contains the syllabus:
 | Order | Work | Why first |
 |---|---|---|
 | 1 | License decision + CONTRIBUTING.md | Blocks all adoption; zero code |
-| 2 | Fix embeddings SQLite/Postgres drift; claims-accuracy pass on README | Trust and truthfulness |
+| 2 | Claims-accuracy pass on README (embeddings SQLite/Postgres drift fixed) | Trust and truthfulness |
 | 3 | Forge Level 2: Nuclei/ExploitDB artifact injection into Sigma templates | Biggest differentiation per unit effort |
 | 4 | Forge Level 3: pySigma compile validation + FP lint | Converts "generator" into "trustworthy generator" |
 | 5 | Docker compose one-command install | Adoption gate |
