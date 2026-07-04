@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { Fragment, useState, useEffect, useRef } from 'react'
 import { adminApi } from '../../api.js'
 
 export default function IngestLogPage({ toast, onErrorCountChange, active = true, urlFilters = {} }) {
@@ -9,6 +9,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
   const [reqId, setReqId] = useState(urlFilters.requestId || '')
   const [limit, setLimit] = useState(100)
   const [autoRefresh, setAutoRefresh] = useState(false)
+  const [expanded, setExpanded] = useState(() => new Set())
   const intervalRef = useRef(null)
 
   const logs = logData?.logs || []
@@ -66,6 +67,15 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
     return {}
   }
 
+  function toggleExpanded(key) {
+    setExpanded(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
   return (
     <div>
       <h1 className="admin-page-title">Application logs</h1>
@@ -105,20 +115,54 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
           <tbody>
             {logs.length === 0 && !logData && <tr><td colSpan={6} className="admin-empty">Loading…</td></tr>}
             {logs.length === 0 && logData && <tr><td colSpan={6} className="admin-empty">{level || category || loggerFilter || reqId ? 'No log entries match the current filters — try a broader level or clear the filters' : 'Log buffer is empty — backend activity will appear here once jobs run'}</td></tr>}
-            {logs.map((entry, i) => (
-              <tr key={i} style={rowStyle(entry)}>
-                <td className="mono" style={{ fontSize: '0.68rem', whiteSpace: 'nowrap' }}>{entry.ts}</td>
-                <td>
-                  <span className={`level-badge level-${entry.level}`}>{entry.level}</span>
-                </td>
-                <td style={{ fontSize: '0.72rem', color: 'var(--text3)' }}>{entry.category || 'Application'}</td>
-                <td className="mono" style={{ fontSize: '0.68rem', color: 'var(--text3)' }}>{entry.logger}</td>
-                <td style={{ fontSize: '0.8rem', wordBreak: 'break-word', maxWidth: 480, color: entry.level === 'ERROR' || entry.level === 'CRITICAL' ? 'var(--red)' : undefined }}>
-                  {entry.message}
-                </td>
-                <td className="mono" style={{ fontSize: '0.68rem', color: 'var(--text3)' }}>{entry.request_id || ''}</td>
-              </tr>
-            ))}
+            {logs.map((entry) => {
+              const hasDetail = Boolean(entry.exc_info)
+              const entryKey = `${entry.ts}-${entry.logger}-${entry.request_id}-${entry.message}`
+              const isExpanded = expanded.has(entryKey)
+              return (
+                <Fragment key={entryKey}>
+                  <tr
+                    style={{ ...rowStyle(entry), cursor: hasDetail ? 'pointer' : undefined }}
+                    onClick={hasDetail ? () => toggleExpanded(entryKey) : undefined}
+                    title={hasDetail ? 'Click for full traceback' : undefined}
+                  >
+                    <td className="mono" style={{ fontSize: '0.68rem', whiteSpace: 'nowrap' }}>{entry.ts}</td>
+                    <td>
+                      <span className={`level-badge level-${entry.level}`}>{entry.level}</span>
+                    </td>
+                    <td style={{ fontSize: '0.72rem', color: 'var(--text3)' }}>{entry.category || 'Application'}</td>
+                    <td className="mono" style={{ fontSize: '0.68rem', color: 'var(--text3)' }}>{entry.logger}</td>
+                    <td style={{ fontSize: '0.8rem', wordBreak: 'break-word', maxWidth: 480, color: entry.level === 'ERROR' || entry.level === 'CRITICAL' ? 'var(--red)' : undefined }}>
+                      {hasDetail && <span className="mono" style={{ color: 'var(--text3)', marginRight: 6 }}>{isExpanded ? '▼' : '▶'}</span>}
+                      {entry.message}
+                    </td>
+                    <td className="mono" style={{ fontSize: '0.68rem', color: 'var(--text3)' }}>{entry.request_id || ''}</td>
+                  </tr>
+                  {hasDetail && isExpanded && (
+                    <tr>
+                      <td colSpan={6} style={{ padding: 0 }}>
+                        <pre
+                          className="mono"
+                          style={{
+                            margin: 0,
+                            padding: '10px 14px',
+                            fontSize: '0.7rem',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                            background: 'rgba(232,85,51,0.04)',
+                            color: 'var(--text2)',
+                            maxHeight: 400,
+                            overflowY: 'auto',
+                          }}
+                        >
+                          {entry.exc_info}
+                        </pre>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              )
+            })}
           </tbody>
         </table>
       </div>
