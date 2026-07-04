@@ -262,7 +262,7 @@ build_frontend() {
   as_app_user bash -c "
     set -euo pipefail
     cd '${INSTALL_DIR}/frontend'
-    npm install --cache '${APP_HOME}/.npm'
+    npm ci --cache '${APP_HOME}/.npm'
     npm run build
   "
   if [ ! -f "${INSTALL_DIR}/frontend/dist/index.html" ]; then
