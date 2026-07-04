@@ -75,17 +75,24 @@ async def find_yara_rules_for_cve(
 ) -> list[dict[str, Any]]:
     """Load file hashes from OTX pulses for *cve_id* and emit YARA templates."""
     key = cve_id.upper()
+    # DISTINCT lives in the subquery so fetched_at (needed only for ordering,
+    # not in the outer SELECT list) doesn't have to appear in it — Postgres
+    # rejects an ORDER BY column that isn't part of a DISTINCT select list,
+    # unlike SQLite which allows it.
     rows = await db.execute_fetchall(
         """
-        SELECT DISTINCT opi.ioc_value, ocp.pulse_name
-        FROM otx_cve_pulses ocp
-        JOIN otx_pulse_iocs opi ON opi.pulse_id = ocp.pulse_id
-        WHERE ocp.cve_id = ?
-          AND UPPER(opi.ioc_type) IN (
-            'FILEHASH-SHA256', 'FILEHASH-SHA1', 'FILEHASH-MD5',
-            'SHA256', 'SHA1', 'MD5', 'HASH'
-          )
-        ORDER BY ocp.fetched_at DESC
+        SELECT ioc_value, pulse_name FROM (
+            SELECT DISTINCT opi.ioc_value AS ioc_value, ocp.pulse_name AS pulse_name,
+                ocp.fetched_at AS fetched_at
+            FROM otx_cve_pulses ocp
+            JOIN otx_pulse_iocs opi ON opi.pulse_id = ocp.pulse_id
+            WHERE ocp.cve_id = ?
+              AND UPPER(opi.ioc_type) IN (
+                'FILEHASH-SHA256', 'FILEHASH-SHA1', 'FILEHASH-MD5',
+                'SHA256', 'SHA1', 'MD5', 'HASH'
+              )
+        ) deduped
+        ORDER BY fetched_at DESC
         LIMIT ?
         """,
         (key, limit * 3),
@@ -95,8 +102,8 @@ async def find_yara_rules_for_cve(
 
     rules: list[dict[str, Any]] = []
     for row in rows:
-        pulse = row.get("pulse_name") or ""
-        batch = build_yara_rules_from_hashes(key, [row.get("ioc_value") or ""], pulse_name=pulse)
+        pulse = row["pulse_name"] or ""
+        batch = build_yara_rules_from_hashes(key, [row["ioc_value"] or ""], pulse_name=pulse)
         rules.extend(batch)
         if len(rules) >= limit:
             break
