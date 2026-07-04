@@ -96,6 +96,17 @@ def test_logs_endpoint_filters_by_category(admin_client):
     assert all(e["category"] == "Scheduler" for e in logs)
 
 
+def test_logs_endpoint_filters_by_search(admin_client):
+    logging.getLogger("test.admin.search").error("Detection lookup failed for CVE-2099-0001")
+    logging.getLogger("test.admin.search").info("Unrelated informational entry")
+
+    resp = admin_client.get("/api/admin/logs?search=Detection+lookup&limit=50")
+    assert resp.status_code == 200
+    logs = resp.json()["logs"]
+    assert logs
+    assert all("detection lookup" in e["message"].lower() for e in logs)
+
+
 def test_derive_log_category_mapping():
     assert derive_log_category("scheduler") == "Scheduler"
     assert derive_log_category("backup.manager") == "Backup"

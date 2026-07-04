@@ -1700,6 +1700,7 @@ async def get_logs(
     logger_name: str | None = Query(None, alias="logger"),
     request_id: str | None = Query(None),
     category: str | None = Query(None),
+    search: str | None = Query(None, max_length=200),
 ):
     logs = get_log_buffer(
         limit=limit,
@@ -1707,6 +1708,7 @@ async def get_logs(
         logger_name=logger_name,
         request_id=request_id,
         category=category,
+        search=search,
     )
     known = get_known_loggers()
 

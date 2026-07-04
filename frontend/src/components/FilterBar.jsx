@@ -18,10 +18,11 @@ const QUICK_FILTERS = [
 ]
 
 export const VENDORS = [
-  'Microsoft', 'Apache', 'Cisco', 'Google', 'Adobe', 'Linux', 'Apple', 'Oracle',
-  'Fortinet', 'Ivanti', 'VMware', 'Palo Alto', 'Amazon', 'IBM', 'Dell', 'HP',
-  'Juniper', 'Citrix', 'F5', 'Check Point', 'SAP', 'Siemens', 'MongoDB', 'Atlassian',
-  'GitLab', 'Jenkins', 'Docker', 'Kubernetes', 'WordPress', 'PHP', 'Python', 'Node.js',
+  'Adobe', 'Amazon', 'Apache', 'Apple', 'Atlassian', 'Check Point', 'Cisco',
+  'Citrix', 'Dell', 'Docker', 'F5', 'Fortinet', 'GitLab', 'Google', 'HP',
+  'IBM', 'Ivanti', 'Jenkins', 'Juniper', 'Kubernetes', 'Linux', 'MongoDB',
+  'Microsoft', 'Node.js', 'Oracle', 'PHP', 'Palo Alto', 'Python', 'SAP',
+  'Siemens', 'VMware', 'WordPress',
 ]
 
 function deriveActive(filters) {

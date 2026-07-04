@@ -114,7 +114,9 @@ class _RingBufferHandler(logging.Handler):
         logger_name: str | None = None,
         request_id: str | None = None,
         category: str | None = None,
+        search: str | None = None,
     ) -> list[dict[str, Any]]:
+        needle = search.lower().strip() if search else None
         results = []
         for entry in self._buf:
             if level and entry["level"] != level.upper():
@@ -124,6 +126,10 @@ class _RingBufferHandler(logging.Handler):
             if request_id and entry.get("request_id") != request_id:
                 continue
             if category and entry.get("category") != category:
+                continue
+            if needle and needle not in entry.get("message", "").lower() and needle not in entry.get(
+                "exc_info", ""
+            ).lower():
                 continue
             results.append(entry)
             if len(results) >= limit:
@@ -140,6 +146,7 @@ def get_log_buffer(
     logger_name: str | None = None,
     request_id: str | None = None,
     category: str | None = None,
+    search: str | None = None,
 ) -> list[dict[str, Any]]:
     return _ring_handler.get_logs(
         limit=limit,
@@ -147,6 +154,7 @@ def get_log_buffer(
         logger_name=logger_name,
         request_id=request_id,
         category=category,
+        search=search,
     )
 
 
