@@ -67,11 +67,11 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
     return {}
   }
 
-  function toggleExpanded(i) {
+  function toggleExpanded(key) {
     setExpanded(prev => {
       const next = new Set(prev)
-      if (next.has(i)) next.delete(i)
-      else next.add(i)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
       return next
     })
   }
@@ -115,13 +115,15 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
           <tbody>
             {logs.length === 0 && !logData && <tr><td colSpan={6} className="admin-empty">Loading…</td></tr>}
             {logs.length === 0 && logData && <tr><td colSpan={6} className="admin-empty">{level || category || loggerFilter || reqId ? 'No log entries match the current filters — try a broader level or clear the filters' : 'Log buffer is empty — backend activity will appear here once jobs run'}</td></tr>}
-            {logs.map((entry, i) => {
+            {logs.map((entry) => {
               const hasDetail = Boolean(entry.exc_info)
+              const entryKey = `${entry.ts}-${entry.logger}-${entry.request_id}-${entry.message}`
+              const isExpanded = expanded.has(entryKey)
               return (
-                <Fragment key={i}>
+                <Fragment key={entryKey}>
                   <tr
                     style={{ ...rowStyle(entry), cursor: hasDetail ? 'pointer' : undefined }}
-                    onClick={hasDetail ? () => toggleExpanded(i) : undefined}
+                    onClick={hasDetail ? () => toggleExpanded(entryKey) : undefined}
                     title={hasDetail ? 'Click for full traceback' : undefined}
                   >
                     <td className="mono" style={{ fontSize: '0.68rem', whiteSpace: 'nowrap' }}>{entry.ts}</td>
@@ -131,12 +133,12 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
                     <td style={{ fontSize: '0.72rem', color: 'var(--text3)' }}>{entry.category || 'Application'}</td>
                     <td className="mono" style={{ fontSize: '0.68rem', color: 'var(--text3)' }}>{entry.logger}</td>
                     <td style={{ fontSize: '0.8rem', wordBreak: 'break-word', maxWidth: 480, color: entry.level === 'ERROR' || entry.level === 'CRITICAL' ? 'var(--red)' : undefined }}>
-                      {hasDetail && <span className="mono" style={{ color: 'var(--text3)', marginRight: 6 }}>{expanded.has(i) ? '▼' : '▶'}</span>}
+                      {hasDetail && <span className="mono" style={{ color: 'var(--text3)', marginRight: 6 }}>{isExpanded ? '▼' : '▶'}</span>}
                       {entry.message}
                     </td>
                     <td className="mono" style={{ fontSize: '0.68rem', color: 'var(--text3)' }}>{entry.request_id || ''}</td>
                   </tr>
-                  {hasDetail && expanded.has(i) && (
+                  {hasDetail && isExpanded && (
                     <tr>
                       <td colSpan={6} style={{ padding: 0 }}>
                         <pre
