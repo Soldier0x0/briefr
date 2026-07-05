@@ -1,6 +1,6 @@
 """Built-in app login (decision 2026-06-11): /api/auth/login, /logout,
-/refresh, /me. Replaces the shared X-BRIEFR-Admin-Key during the dual-auth
-soak window (see settings.allow_legacy_admin_key / dependencies.require_admin).
+/refresh, /me. The sole auth mechanism — the legacy shared admin-key header
+was removed in Sprint A0 (dependencies.require_admin enforces session + role).
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """

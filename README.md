@@ -241,7 +241,6 @@ See `backend/.env.example` for the full list. Key variables:
 | `GITHUB_TOKEN` | Detection rule search rate limit | — |
 | `CIRCL_API_KEY` | vulnerability.circl.lu authenticated rate limits | — |
 | `BRIEFR_ENV` | `production` disables Swagger/OpenAPI docs | `development` |
-| `BRIEFR_ADMIN_API_KEY` | Optional `X-BRIEFR-Admin-Key` gate for `POST /api/refresh*` | — |
 | `RATE_LIMIT_ENABLED` | Token-bucket rate limiting on `/api/ioc/lookup` + `/api/refresh*` | `1` |
 | `RATE_LIMIT_IOC_PER_MINUTE` / `RATE_LIMIT_REFRESH_PER_MINUTE` | Per-client-IP budgets (429 + `Retry-After` over the limit) | `30` / `10` |
 | `RATE_LIMIT_WALLBOARD_PER_MINUTE` | Per-client-IP budget for `GET /api/wallboard` | `60` |
@@ -390,7 +389,7 @@ BRIEFR collects no personal data, uses no cookies, and runs no analytics. Tech s
 ## Known limitations (v1.1 beta)
 
 - Single-node PostgreSQL — not designed for concurrent multi-tenant writes at scale without connection pooling tuning
-- No app-level authentication yet — built-in app login ships before the public self-hosted release; until then `BRIEFR_ADMIN_API_KEY` optionally gates `POST /api/refresh*`
+- Built-in app login with server sessions; admin/refresh routes require the `admin` role (the interim shared admin-key gate was removed in Sprint A0)
 - Risk score v1.1b is computed server-side via `POST /api/cves/{cve_id}/risk` (`backend/scoring/risk.py`); weights for formula display are fetched at startup via `GET /api/config/risk` (`frontend/src/scoring/riskScore.js`)
 - AI/ML alerts chip requires AI/ML keywords in your saved stack or asset profile `aiSystems`
 

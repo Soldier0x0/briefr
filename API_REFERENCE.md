@@ -665,11 +665,11 @@ EPSS ≥ 0.5 → `high`; CVSS ≥ 7.0 or EPSS ≥ 0.1 → `medium`; else `low`.
 
 ## Scheduler & Admin
 
-**Authentication:** when `BRIEFR_ADMIN_API_KEY` is set, all `POST /api/refresh*` routes require the `X-BRIEFR-Admin-Key` header (interim control; replaced by built-in app login before public release).
+**Authentication:** all `POST /api/refresh*` routes require an authenticated session (`briefr_at` cookie) with the `admin` role — 401 without a session, 403 for non-admin roles. The legacy admin-key header was removed (Sprint A0).
 
-**Audit:** each accepted refresh writes an `audit_log` row (`action` = `refresh.full|nvd|kev|epss|mitre`; `actor` stays empty until built-in app login ships).
+**Audit:** each accepted refresh writes an `audit_log` row (`action` = `refresh.full|nvd|kev|epss|mitre`; `actor` is the logged-in username).
 
-**Rate limiting:** all `POST /api/refresh*` routes share one token bucket per client IP (`RATE_LIMIT_REFRESH_PER_MINUTE`, default 10/min). Over the limit → `429` with `Retry-After` (seconds). The bucket is consumed before the admin-key check, so unauthenticated bursts cannot bypass it.
+**Rate limiting:** all `POST /api/refresh*` routes share one token bucket per client IP (`RATE_LIMIT_REFRESH_PER_MINUTE`, default 10/min). Over the limit → `429` with `Retry-After` (seconds). The bucket is consumed before the auth check, so unauthenticated bursts cannot bypass it.
 
 ### POST /api/refresh
 
@@ -822,7 +822,7 @@ sum deviates by more than 1 × 10⁻⁶.
 
 ## Admin Dashboard — `/api/admin/*`
 
-All admin endpoints require the `X-BRIEFR-Admin-Key` header when `BRIEFR_ADMIN_API_KEY` is configured. All are rate-limited by the refresh bucket.
+All admin endpoints require an authenticated session (`briefr_at` cookie) with the `admin` role — 401 without a session, 403 for non-admin roles (Sprint A0). All are rate-limited by the refresh bucket.
 
 ### GET /api/admin/system
 Returns system health: CVE count, NVD sync age, backup age, DB integrity, scheduler jobs (with `status`, `last_error_message`, `run_history`), feed sources, active locks, recent errors, open circuit count.
@@ -890,7 +890,7 @@ Params: `limit`, `offset`, `action`, `action_prefix`, `actor`. Use `action_prefi
 
 Aggregated intel posture payload for the `/wallboard` kiosk view. Built from existing DB state and cached snapshots (`feed_cache` key `wallboard:snapshot`, ~45s TTL). No outbound HTTP on the request path; no admin data or secrets in the response.
 
-**Auth:** when `WALLBOARD_TOKEN` is set, require header `X-BRIEFR-Wallboard-Token` or query param `token` (read-only scope). When unset, the endpoint is open (same optional-gate pattern as `BRIEFR_ADMIN_API_KEY`).
+**Auth:** when `WALLBOARD_TOKEN` is set, require header `X-BRIEFR-Wallboard-Token` or query param `token` (read-only scope). When unset, the endpoint is open (optional gate — read-only kiosk data only).
 
 **Rate limit:** token bucket (`rate_limit_wallboard`) — default `RATE_LIMIT_WALLBOARD_PER_MINUTE=60` per client IP; 429 + `Retry-After` over the limit.
 

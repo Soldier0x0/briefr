@@ -47,7 +47,7 @@ These env vars must remain supported across releases (defaults preserved):
 | `BACKUP_RETENTION_COUNT` | Max archives |
 | `BACKUP_AGE_KEY_FILE` | age identity for archive encryption (empty = plaintext) |
 | `BRIEFR_ENV` | `production` / `development` |
-| `BRIEFR_ADMIN_API_KEY` | Optional admin route protection (interim until app login) |
+| `JWT_SECRET` | Signs login session tokens (required in production; admin routes need a logged-in admin) |
 | `ALLOWED_ORIGINS` | CORS |
 | `GITHUB_TOKEN`, IOC keys | Optional enrichment |
 

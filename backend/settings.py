@@ -26,7 +26,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(extra="ignore")
 
     briefr_env: str = "development"
-    briefr_admin_api_key: str = ""
     allowed_origins: str = "http://localhost:3000"
     database_url: str = ""
     db_path: str = ""
@@ -46,12 +45,11 @@ class Settings(BaseSettings):
     # V1.4 Theme 4 — optional read-only kiosk token (X-BRIEFR-Wallboard-Token).
     wallboard_token: str = ""
 
-    # Built-in app login (decision 2026-06-11) — replaces X-BRIEFR-Admin-Key.
+    # Built-in app login (decision 2026-06-11) — the only auth mechanism.
     jwt_secret: str = ""
     jwt_access_token_minutes: int = 15
     refresh_token_days: int = 30
     auth_cookie_secure: bool = True
-    allow_legacy_admin_key: bool = True
     rate_limit_login_per_minute: int = 5
     rate_limit_auth_refresh_per_minute: int = 30
 
@@ -59,11 +57,6 @@ class Settings(BaseSettings):
     @classmethod
     def _normalize_env(cls, value: str) -> str:
         return value.strip().lower()
-
-    @field_validator("briefr_admin_api_key")
-    @classmethod
-    def _strip_admin_key(cls, value: str) -> str:
-        return value.strip()
 
     @field_validator("wallboard_token")
     @classmethod

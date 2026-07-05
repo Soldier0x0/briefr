@@ -283,7 +283,7 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 ### Audit log + auth direction (V1.2 decision, 2026-06-11)
 
 - **Audit:** `audit_log` table (actor, action, target, timestamp) written by manual `POST /api/refresh*` calls, backup/restore, and all admin actions (`routers/admin.py`). Actor is `system` for backups/restores; empty for request-driven actions until app login lands. Admin pane exposes it at `GET /api/admin/audit-log` with prefix filter (V1.4 shipped).
-- **Auth direction:** BRIEFR ships as a self-hosted platform with a **built-in app login** before public release (not enterprise SSO / edge-auth based). Until then the beta runs on a trusted private network; `BRIEFR_ADMIN_API_KEY` optionally gates refresh routes. `audit_log.actor` stays empty for request-driven actions until login lands (`request.state.user_email` is the wiring hook). A Cloudflare-Access JWT middleware was prototyped and dropped — see `docs/ROADMAP.md` amendments.
+- **Auth direction:** BRIEFR ships as a self-hosted platform with a **built-in app login** (shipped; not enterprise SSO / edge-auth based). Admin and refresh routes require a session with the `admin` role — the interim shared admin-key header was removed in Sprint A0 (it failed open when unset). `audit_log.actor` is the logged-in username. A Cloudflare-Access JWT middleware was prototyped and dropped — see `docs/ROADMAP.md` amendments.
 
 ### Rate limiting + structured logging (V1.2 §5.5)
 
@@ -407,7 +407,7 @@ RSS sources defined in `feeds/incident_sources.py`: The Hacker News, Bleeping Co
 ## 7. Known Limitations — v1.1 Beta
 
 - **Single-user SQLite** — no concurrent write safety under heavy parallel writes.
-- **No app-level authentication yet** — built-in app login ships before the public self-hosted release; the beta instance runs on a trusted private network with an optional `X-BRIEFR-Admin-Key` gate on `POST /api/refresh*`.
+- ~~No app-level authentication yet~~ — **superseded:** built-in app login shipped; admin/refresh routes require a session with the `admin` role (Sprint A0 removed the interim header gate).
 - **`POST /api/investigation/summary`** — legacy route; delegates to `generate_investigation_summary` → `generate_executive_summary`. Prefer `POST /api/ai/summary` for new clients.
 - **No circuit breakers** on external APIs (timeouts only).
 - **`DetailDrawer.jsx` — ~1,500 lines** — maintenance risk; v1.2 split planned.

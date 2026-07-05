@@ -11,7 +11,7 @@
 Verified against `main` at `705c733`:
 
 - **Structural**: `backend/database.py` 3,197 lines, `backend/routers/admin.py` 1,907, `backend/scheduler.py` 1,603, `backend/routers/cves.py` 1,360, `frontend/src/components/DetailDrawer.jsx` 1,942. None of Phases 1–5 below have been executed (the 11 inline CVE-ID checks, flat `DetailDrawer.jsx`, and per-variable scheduler locks are all still present).
-- **Security**: good baseline — `secrets.compare_digest` for admin/wallboard keys, JWT auth with short-lived access tokens, login rate limiting, production startup fails without `jwt_secret`, nginx security-header snippets in `deploy/`. Gap: `allow_legacy_admin_key` defaults to `True` (`settings.py:54`), leaving the pre-JWT header-key path enabled unless operators opt out.
+- **Security**: good baseline — `secrets.compare_digest` for the wallboard token, JWT auth with short-lived access tokens, login rate limiting, production startup fails without `jwt_secret`, nginx security-header snippets in `deploy/`. The legacy admin-key gap was closed by Sprint A0 (path deleted; `require_admin` enforces the admin role).
 - **Performance**: backend feeds share `resilient_client`; CVE list endpoints are paginated with bounded limits; 63 `CREATE INDEX` statements in the schema. Gaps: the frontend has no code-splitting at all — `jspdf`, `exceljs`, `html2canvas`, and `chart.js` ship in the single main bundle; embedding similarity is a brute-force cosine scan (acceptable at current scale, revisit only if measured slow).
 - **Operability**: backend CI runs pytest (87 test files), Postgres pool integration tests, pip/npm dependency audits, and a Playwright smoke. Gaps: no linter or formatter is configured for either side (no ruff, no ESLint), and the frontend has zero unit tests.
 - **Functionality**: new features are owned by `docs/ROADMAP.md` and its versioned release docs — this plan deliberately adds none. "Functionality" here means behavior preservation, enforced by the verify steps in every phase.
@@ -46,7 +46,7 @@ git branch --show-current   # must print: refactor/structural-cleanup
 | 3 | A: Structure | Split `database.py` into `db/` package | Medium | ~3200 moved |
 | 4 | A: Structure | Split `DetailDrawer.jsx` into folder | Low | ~1967 moved |
 | 5 | A: Structure | Export util consolidation (frontend) | Low | ~400 moved |
-| 6 | B: Security | Retire legacy admin key path by default | Low | ~10 |
+| 6 | B: Security | ~~Retire legacy admin key path~~ ✅ done via Sprint A0 (deleted) | Low | ~10 |
 | 7 | C: Performance | Frontend code-splitting (routes + export libs) | Low | ~60 |
 | 8 | D: Operability | Backend lint/format (ruff) in CI | Low | config + CI |
 | 9 | D: Operability | Frontend lint (ESLint) + unit tests (Vitest) in CI | Low | config + tests |
@@ -498,21 +498,12 @@ npm run build
 
 ## Phase 6 — Retire Legacy Admin Key Path by Default
 
-### Problem
-`backend/settings.py:54` sets `allow_legacy_admin_key: bool = True`. `backend/dependencies.py:74–78` therefore accepts the pre-JWT `X-BRIEFR-Admin-Key`-style header on admin routes in every deployment unless the operator explicitly disables it. JWT auth is the intended gate; the legacy path should be opt-in, not opt-out.
-
-### Fix
-- **Edit** `backend/settings.py`: change the default to `allow_legacy_admin_key: bool = False`.
-- **Edit** docs that describe admin auth (`grep -rn "allow_legacy_admin_key" docs/ README.md` to find them): state that existing deployments relying on the admin key must set `ALLOW_LEGACY_ADMIN_KEY=true` or migrate to a user login.
-- **Add** a test in `backend/tests/` asserting that with default settings the legacy key is rejected, and that setting the flag re-enables it.
-
-This is a deliberate behavior change — call it out in the PR description as a breaking change for key-only deployments.
-
-### Verify
-```bash
-pytest backend/tests/ -k "admin or auth" -x
-grep -n "allow_legacy_admin_key" backend/settings.py   # default False
-```
+> **✅ Superseded and completed by Sprint A0 (2026-07-05).** Instead of
+> flipping the default, the legacy key path was **deleted entirely**
+> (settings, dependency gate, config rotation, frontend header plumbing),
+> `require_admin` now enforces `role == "admin"` (403 otherwise), and
+> `backend/tests/test_security_invariants.py` parametrizes 401/403 checks
+> over every admin and refresh route. See `docs/SPRINT_2026-07.md` Spec A0.
 
 ---
 
@@ -625,7 +616,6 @@ refactor: consolidate scheduler lock management (phase 2)
 refactor: split database.py into db/ package (phase 3)
 refactor: split DetailDrawer into tab components (phase 4)
 refactor: consolidate PDF/XLSX export utilities (phase 5)
-security: disable legacy admin key path by default (phase 6)
 perf: code-split export libs and lazy-load routes (phase 7)
 ci: add ruff lint for backend (phase 8)
 ci: add ESLint and Vitest for frontend (phase 9)

@@ -14,11 +14,10 @@ from database import init_db, get_db, get_sync_state_value
 
 
 @pytest.fixture
-def admin_client(tmp_path, monkeypatch):
+def admin_client(tmp_path, monkeypatch, auth_token):
     db_path = tmp_path / "scheduler.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setenv("BRIEFR_ADMIN_API_KEY", "")
 
     async def _noop_async():
         return None
@@ -36,7 +35,9 @@ def admin_client(tmp_path, monkeypatch):
     _rl.refresh_bucket._buckets.pop("testclient", None)
 
     from main import app
-    return TestClient(app, raise_server_exceptions=False)
+    client = TestClient(app, raise_server_exceptions=False)
+    client.cookies.set("briefr_at", auth_token())
+    return client
 
 
 def _make_mock_job(job_id, name="Test Job", next_run_time=None, paused=False):

@@ -1,8 +1,7 @@
 """Admin dashboard API endpoints.
 
-All routes require an authenticated admin session (or legacy admin key during
-dual-auth soak). Read-only GETs use a generous token bucket; POSTs share the
-refresh ingest limit.
+All routes require an authenticated admin session. Read-only GETs use a
+generous token bucket; POSTs share the refresh ingest limit.
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
@@ -89,10 +88,6 @@ _JOB_LOCK_MAP: dict[str, str] = {
 # WRITABLE_CONFIG_KEYS / INTEGER_KEYS / RESTART_REQUIRED_KEYS now come from
 # config_schema.py (single source of truth — see that module for the full
 # field list with help text and bounds).
-
-# Keys that are also writable via apply-all (includes BRIEFR_ADMIN_API_KEY for rotation)
-APPLY_ALL_EXTRA_KEYS = {"BRIEFR_ADMIN_API_KEY"}
-
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -1087,7 +1082,7 @@ async def set_config(request: Request, body: dict):
     key = body.get("key", "")
     value = str(body.get("value", ""))
 
-    if not key or key == "BRIEFR_ADMIN_API_KEY" or key not in WRITABLE_CONFIG_KEYS:
+    if not key or key not in WRITABLE_CONFIG_KEYS:
         raise HTTPException(400, f"Key '{key}' is not writable via this API")
 
     validation_error = validate_value(key, value)
@@ -1124,7 +1119,7 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
         raise HTTPException(400, "Body must be a JSON array of {key, value} objects")
 
     dotenv_path = str(_DOTENV_PATH.resolve())
-    allowed = WRITABLE_CONFIG_KEYS | APPLY_ALL_EXTRA_KEYS
+    allowed = WRITABLE_CONFIG_KEYS
     errors: list[str] = []
     validated: list[tuple[str, str]] = []
 
@@ -1739,7 +1734,6 @@ async def get_security(request: Request):
         await db.close()
 
     return {
-        "admin_key_set": bool(settings.briefr_admin_api_key),
         "failed_auth_last_24h": failed_auth,
         "rate_limit_enabled": settings.rate_limit_enabled,
         "rate_limit_ioc_per_minute": settings.rate_limit_ioc_per_minute,

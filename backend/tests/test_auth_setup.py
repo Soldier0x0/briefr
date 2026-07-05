@@ -19,7 +19,6 @@ def empty_client(tmp_path, monkeypatch):
     db_path = tmp_path / "auth.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setenv("BRIEFR_ADMIN_API_KEY", "")
 
     async def _noop_async():
         return None

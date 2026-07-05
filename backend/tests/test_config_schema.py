@@ -22,11 +22,10 @@ from database import init_db
 
 
 @pytest.fixture
-def admin_client(tmp_path, monkeypatch):
+def admin_client(tmp_path, monkeypatch, auth_token):
     db_path = tmp_path / "config_schema.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setenv("BRIEFR_ADMIN_API_KEY", "")
 
     async def _noop_async():
         return None
@@ -43,7 +42,9 @@ def admin_client(tmp_path, monkeypatch):
     _rl.refresh_bucket._buckets.pop("testclient", None)
 
     from main import app
-    return TestClient(app, raise_server_exceptions=False)
+    client = TestClient(app, raise_server_exceptions=False)
+    client.cookies.set("briefr_at", auth_token())
+    return client
 
 
 def test_no_duplicate_keys_in_schema():
@@ -69,9 +70,9 @@ def test_validate_value_enforces_enum():
 
 
 def test_validate_value_noop_for_unknown_key():
-    # Keys outside the schema (e.g. BRIEFR_ADMIN_API_KEY, via APPLY_ALL_EXTRA_KEYS)
-    # aren't validated here — the allowlist check happens separately.
-    assert validate_value("BRIEFR_ADMIN_API_KEY", "anything") is None
+    # Keys outside the schema aren't validated here — the allowlist check
+    # happens separately in the /api/admin/config handlers.
+    assert validate_value("NOT_A_SCHEMA_KEY", "anything") is None
 
 
 def test_validate_value_noop_for_non_enforced_types():
