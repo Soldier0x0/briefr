@@ -189,7 +189,7 @@ export default function Sidebar({ filters, onFiltersChange }) {
       })
       .catch(err => {
         if (!cancelled) {
-          setSparkError('Could not load publications — is the backend running?')
+          setSparkError(err?.message || 'Could not load publications — is the backend running?')
           setSparkErrorRequestId(err?.requestId || null)
           setSparkBars([])
           notifyApiError(err)

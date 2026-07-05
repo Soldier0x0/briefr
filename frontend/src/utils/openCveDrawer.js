@@ -49,6 +49,7 @@ export function createCveDrawerController({ fetchCVE, setSelectedCVE, setDrawerL
   function replace(full) {
     if (!full?.cve_id || activeCveId === null) return
     activeCveId = full.cve_id
+    lastCve = full
     setSelectedCVE(full)
     setDrawerLoading(false)
   }
