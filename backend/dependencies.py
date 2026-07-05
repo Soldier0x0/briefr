@@ -1,7 +1,7 @@
 """Shared route dependencies (V1.2 §5.2 router split).
 
-Moved verbatim from main.py — admin-key gate and audit-log writer used by
-the admin/refresh routes.
+Session/role gates and the audit-log writer used by the admin/refresh
+routes.
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
@@ -11,7 +11,6 @@ import logging
 import os
 import secrets
 import signal
-import sqlite3
 import time
 
 from fastapi import HTTPException, Request
@@ -34,18 +33,6 @@ async def require_wallboard_token(request: Request) -> None:
         raise HTTPException(status_code=401, detail="Wallboard token required")
 
 
-async def require_admin_key(request: Request) -> None:
-    """When BRIEFR_ADMIN_API_KEY is set, admin routes require X-BRIEFR-Admin-Key."""
-    if not settings.briefr_admin_api_key:
-        return
-    provided = request.headers.get("X-BRIEFR-Admin-Key", "")
-    if not secrets.compare_digest(provided, settings.briefr_admin_api_key):
-        from rate_limit import client_key as _client_key
-        ip = _client_key(request)
-        await audit(request, "auth.failure", ip)
-        raise HTTPException(status_code=401, detail="Admin API key required")
-
-
 async def require_user(request: Request) -> dict:
     """Built-in app login (decision 2026-06-11): require a valid `briefr_at`
     access-token cookie, and populate request.state.user_username/user_role for
@@ -66,18 +53,14 @@ async def require_user(request: Request) -> dict:
     return payload
 
 
-async def require_admin(request: Request) -> dict | None:
-    """Admin routes during the legacy-key soak window: accept EITHER a valid
-    login session OR the legacy X-BRIEFR-Admin-Key header (when configured —
-    matching require_admin_key's existing "unset key = open" dev convenience).
-    Once ALLOW_LEGACY_ADMIN_KEY is flipped off, this collapses to require_user."""
-    if settings.allow_legacy_admin_key:
-        if not settings.briefr_admin_api_key:
-            return None
-        provided = request.headers.get("X-BRIEFR-Admin-Key", "")
-        if provided and secrets.compare_digest(provided, settings.briefr_admin_api_key):
-            return None
-    return await require_user(request)
+async def require_admin(request: Request) -> dict:
+    """Admin routes require a valid login session with the admin role.
+    The legacy X-BRIEFR-Admin-Key path was removed (Sprint A0) — it failed
+    open when the key was unset."""
+    payload = await require_user(request)
+    if payload.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return payload
 
 
 async def audit(request: Request, action: str, target: str = "") -> None:
@@ -95,7 +78,9 @@ async def audit(request: Request, action: str, target: str = "") -> None:
             await db.commit()
         finally:
             await db.close()
-    except sqlite3.OperationalError as exc:
+    except Exception as exc:
+        # Broad on purpose: asyncpg errors are not sqlite3 errors, and an
+        # audit-write failure must never 500 the admin action it records.
         logger.error("Audit log write failed (%s): %s", action, exc)
 
 

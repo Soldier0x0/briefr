@@ -382,22 +382,8 @@ export function fetchWallboard() {
 
 // ── Admin API ──────────────────────────────────────────────────────────────
 
-export function getAdminKey() {
-  return sessionStorage.getItem('briefr-admin-key') || ''
-}
-
-export function setAdminKey(key) {
-  sessionStorage.setItem('briefr-admin-key', key)
-}
-
-export function clearAdminKey() {
-  sessionStorage.removeItem('briefr-admin-key')
-}
-
 async function adminFetch(path, opts = {}, _retried = false) {
-  const key = getAdminKey()
   const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) }
-  if (key) headers['X-BRIEFR-Admin-Key'] = key
   const res = await fetch(`/api/admin${path}`, {
     ...opts,
     headers,
@@ -406,11 +392,9 @@ async function adminFetch(path, opts = {}, _retried = false) {
   })
   if (res.status === 401) {
     // Session-cookie auth: retry once via /auth/refresh (same as request()).
-    // Legacy X-BRIEFR-Admin-Key auth has no refresh path — fail immediately.
-    if (!key && !_retried && (await refreshAccessToken())) {
+    if (!_retried && (await refreshAccessToken())) {
       return adminFetch(path, opts, true)
     }
-    clearAdminKey()
     window.dispatchEvent(new CustomEvent('briefr-auth-expired'))
     throw Object.assign(new Error('Unauthorized'), { status: 401 })
   }

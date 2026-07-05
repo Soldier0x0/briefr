@@ -20,6 +20,21 @@ BACKEND_DIR = REPO_ROOT / "backend"
 FRONTEND_DIR = REPO_ROOT / "frontend"
 SEED_SCRIPT = REPO_ROOT / "scripts" / "seed_screenshot_data.py"
 
+sys.path.insert(0, str(BACKEND_DIR))
+
+
+@pytest.fixture
+def auth_token():
+    """Signed access-token factory (Sprint A0). Set the returned value as the
+    `briefr_at` cookie on a TestClient to pass require_admin/require_user —
+    admin routes no longer fail open when no key is configured."""
+    from auth.tokens import create_access_token
+
+    def _make(role: str = "admin") -> str:
+        return create_access_token(1, "pytest-admin", role)
+
+    return _make
+
 BACKEND_PORT = int(os.environ.get("PLAYWRIGHT_BACKEND_PORT", "8765"))
 FRONTEND_PORT = int(os.environ.get("PLAYWRIGHT_FRONTEND_PORT", "5173"))
 BACKEND_URL = f"http://127.0.0.1:{BACKEND_PORT}"

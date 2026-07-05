@@ -13,11 +13,10 @@ from database import init_db
 
 
 @pytest.fixture
-def admin_client(tmp_path, monkeypatch):
+def admin_client(tmp_path, monkeypatch, auth_token):
     db_path = tmp_path / "system.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setenv("BRIEFR_ADMIN_API_KEY", "")
 
     async def _noop_async():
         return None
@@ -35,7 +34,9 @@ def admin_client(tmp_path, monkeypatch):
     _rl.refresh_bucket._buckets.pop("testclient", None)
 
     from main import app
-    return TestClient(app, raise_server_exceptions=False)
+    client = TestClient(app, raise_server_exceptions=False)
+    client.cookies.set("briefr_at", auth_token())
+    return client
 
 
 def test_system_returns_200_with_keys(admin_client):

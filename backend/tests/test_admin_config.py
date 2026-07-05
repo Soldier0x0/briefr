@@ -15,11 +15,10 @@ from database import init_db
 
 
 @pytest.fixture
-def admin_client(tmp_path, monkeypatch):
+def admin_client(tmp_path, monkeypatch, auth_token):
     db_path = tmp_path / "config.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setenv("BRIEFR_ADMIN_API_KEY", "")
     monkeypatch.setenv("NVD_API_KEY", "supersecretkey1234")
     monkeypatch.setenv("VIRUSTOTAL_API_KEY", "")
 
@@ -45,7 +44,9 @@ def admin_client(tmp_path, monkeypatch):
     _rl.refresh_bucket._buckets.pop("testclient", None)
 
     from main import app
-    return TestClient(app, raise_server_exceptions=False)
+    client = TestClient(app, raise_server_exceptions=False)
+    client.cookies.set("briefr_at", auth_token())
+    return client
 
 
 def test_config_api_keys_are_masked(admin_client):

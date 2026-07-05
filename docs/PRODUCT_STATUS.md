@@ -1,6 +1,6 @@
 # BRIEFR product status
 
-**Last updated:** 2026-06-24  
+**Last updated:** 2026-07-05  
 **Purpose:** Single page for “what’s true in production today.” When README or beta docs disagree, this wins.
 
 ---
@@ -10,7 +10,7 @@
 | Area | Status |
 |------|--------|
 | **Database** | **PostgreSQL required** (`DATABASE_URL`, `BRIEFR_REQUIRE_POSTGRES=1`). SQLite removed from production path. |
-| **Auth** | Built-in app login + sessions (first-run `/api/auth/setup`). Optional Cloudflare Zero Trust at **edge** (operator policy, not in app code). |
+| **Auth** | Built-in app login + sessions (first-run `/api/auth/setup`); admin/refresh routes require the **admin role** (Sprint A0). Legacy `BRIEFR_ADMIN_API_KEY` removed. Optional Cloudflare Zero Trust at **edge** (operator policy, not in app code). |
 | **Rate limits** | Token buckets on IOC, refresh, admin, auth; set `RATE_LIMIT_ENABLED=1` in production. |
 | **API queue** | Outbound API serialization (#221) for NVD/OTX/etc. |
 | **Correlation** | Engine v2 — DB-backed campaigns, nightly OTX, drawer Intel tab. |
@@ -30,8 +30,7 @@
 | Layer | What | Notes |
 |-------|------|-------|
 | **Edge (optional)** | Cloudflare Tunnel + Zero Trust email OTP | Protects public hostname; not embedded in FastAPI |
-| **Application** | Username/password + server sessions | Portable self-host; CF JWT middleware **dropped** (#93) |
-| **Interim admin** | `BRIEFR_ADMIN_API_KEY` on refresh routes | Optional until edge removed |
+| **Application** | Username/password + server sessions; admin routes check the `admin` role | Portable self-host; CF JWT middleware **dropped** (#93); legacy admin key **removed** (Sprint A0 — it failed open when unset) |
 
 ---
 

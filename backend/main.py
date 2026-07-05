@@ -146,7 +146,6 @@ app.add_middleware(
     allow_headers=[
         "Content-Type",
         "Authorization",
-        "X-BRIEFR-Admin-Key",
         "X-BRIEFR-Wallboard-Token",
     ],
 )

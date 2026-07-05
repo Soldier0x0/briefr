@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { adminApi, getAdminKey, getAdminRequestId } from '../../api.js'
+import { adminApi, getAdminRequestId } from '../../api.js'
 import { getAdminMode, setAdminMode } from '../../utils/adminMode.js'
 import { getDisplayPrefs } from '../../utils/displayPrefs.js'
 import { ingestLogUrl } from '../../utils/adminLinks.js'
@@ -155,7 +155,7 @@ function AdminPageBody({ toast, toasts, dismissToast }) {
         const res = await fetch('/api/refresh', {
           method: 'POST',
           credentials: 'include',
-          headers: { 'Content-Type': 'application/json', 'X-BRIEFR-Admin-Key': getAdminKey() },
+          headers: { 'Content-Type': 'application/json' },
           signal: AbortSignal.timeout(60_000),
         })
         const requestId = getAdminRequestId(res)
@@ -214,7 +214,7 @@ function AdminPageBody({ toast, toasts, dismissToast }) {
     scheduler: <SchedulerPage toast={toast} system={system} onRunIngest={handleRunIngest} onRestart={handleRestart} onDrainRestart={handleDrainRestart} onRefreshSystem={loadSystem} />,
     webhooks: <WebhooksPage toast={toast} />,
     alerts: <AlertsPage toast={toast} />,
-    security: <SecurityPage toast={toast} />,
+    security: <SecurityPage />,
     feedhealth: <FeedHealthPage system={system} toast={toast} mode={mode} onReload={loadSystem} highlightSource={urlFilters.feedSource} />,
     ingestlog: <IngestLogPage toast={toast} onErrorCountChange={setIngestErrorCount} active={page === 'ingestlog'} urlFilters={urlFilters.ingest} />,
     auditlog: <AuditLogPage toast={toast} urlFilters={urlFilters.audit} />,
