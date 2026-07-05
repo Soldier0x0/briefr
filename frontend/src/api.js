@@ -54,6 +54,7 @@ async function request(path, options = {}, _retried = false) {
     const body = await res.json().catch(() => ({ detail: res.statusText }))
     const err = new Error(body.detail || `HTTP ${res.status}`)
     err.status = res.status
+    err.requestId = res.headers?.get?.('X-Request-ID') || ''
     throw err
   }
   return res.json()
