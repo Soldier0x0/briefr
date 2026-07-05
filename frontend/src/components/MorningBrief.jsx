@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { fetchBrief } from '../api.js'
+import { notifyApiError } from './Toast.jsx'
 import CveDescriptionClamp from './CveDescriptionClamp.jsx'
 import {
   daysUntilDue,
@@ -119,6 +120,7 @@ export default function MorningBrief({
         if (cancelled || seq !== seqRef.current) return
         setBrief(null)
         setError(err?.message || 'Could not load morning brief.')
+        notifyApiError(err)
       })
       .finally(() => {
         if (cancelled || seq !== seqRef.current) return

@@ -35,6 +35,25 @@ function normalizeToast(input, ok = true) {
   }
 }
 
+// 401 already triggers the dedicated session-expired redirect (briefr-auth-expired
+// in api.js) and 422 is a client-input validation error analyst views already show
+// inline (e.g. IOC lookup's "Invalid domain format") — a toast on top is redundant
+// noise, not a system failure. 404 is deliberately NOT filtered here: e.g. a CVE
+// detail fetch 404ing (CVE disappeared/renumbered) is a real, previously-silent
+// failure this toast exists to surface.
+const SUPPRESSED_STATUSES = new Set([401, 422])
+
+/** Fire-and-forget API error notification, decoupled from the React tree
+    (same pattern as the 'briefr-auth-expired' event in api.js) so any
+    component can report a failed fetch without prop-drilling a toast
+    handler through intermediate views. */
+export function notifyApiError(err) {
+  if (SUPPRESSED_STATUSES.has(err?.status)) return
+  window.dispatchEvent(new CustomEvent('briefr-api-error', {
+    detail: { message: err?.message || 'Something went wrong', requestId: err?.requestId || '' },
+  }))
+}
+
 export function useToast() {
   const [toasts, setToasts] = useState([])
   const dismiss = useCallback((id) => {

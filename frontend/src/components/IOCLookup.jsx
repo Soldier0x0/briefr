@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { lookupIOC, fetchIOCUsage } from '../api.js'
+import { notifyApiError } from './Toast.jsx'
 import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
 import { extractActorTags } from '../utils/investigationActors.js'
 import { isValidDomain } from '../utils/domainValidation.js'
@@ -830,6 +831,7 @@ export default function IOCLookup({ prefill }) {
       })
     } catch (err) {
       setError(parseError(err))
+      notifyApiError(err)
     } finally {
       setLoading(false)
     }

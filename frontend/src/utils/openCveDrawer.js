@@ -1,3 +1,5 @@
+import { notifyApiError } from '../components/Toast.jsx'
+
 /**
  * Open a CVE in the detail drawer without reopening after the user closes
  * while a fetch is still in flight.
@@ -20,9 +22,10 @@ export function createCveDrawerController({ fetchCVE, setSelectedCVE, setDrawerL
           setDrawerLoading(false)
         }
       })
-      .catch(() => {
+      .catch(err => {
         if (activeCveId === cveId && seq === requestSeq) {
           setDrawerLoading(false)
+          notifyApiError(err)
         }
       })
   }
