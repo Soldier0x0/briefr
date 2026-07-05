@@ -15,15 +15,17 @@ import pytest
 from fastapi.testclient import TestClient
 
 from database import init_db
-from settings import production_posture_warnings, settings
+from settings import Settings, production_posture_warnings, settings
 
 
-def test_all_unsafe_flags_reported(monkeypatch):
-    monkeypatch.setattr(settings, "rate_limit_enabled", False)
-    monkeypatch.setattr(settings, "auth_cookie_secure", False)
-    monkeypatch.setattr(settings, "wallboard_token", "")
+def test_all_unsafe_flags_reported():
+    unsafe = Settings(
+        rate_limit_enabled=False,
+        auth_cookie_secure=False,
+        wallboard_token="",
+    )
 
-    warnings = production_posture_warnings()
+    warnings = production_posture_warnings(unsafe)
 
     flags = [w["flag"] for w in warnings]
     assert flags == [
@@ -35,12 +37,14 @@ def test_all_unsafe_flags_reported(monkeypatch):
         assert w["message"]
 
 
-def test_safe_configuration_reports_nothing(monkeypatch):
-    monkeypatch.setattr(settings, "rate_limit_enabled", True)
-    monkeypatch.setattr(settings, "auth_cookie_secure", True)
-    monkeypatch.setattr(settings, "wallboard_token", "kiosk-token")
+def test_safe_configuration_reports_nothing():
+    safe = Settings(
+        rate_limit_enabled=True,
+        auth_cookie_secure=True,
+        wallboard_token="kiosk-token",
+    )
 
-    assert production_posture_warnings() == []
+    assert production_posture_warnings(safe) == []
 
 
 @pytest.fixture

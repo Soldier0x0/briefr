@@ -109,7 +109,7 @@ if settings.is_production and not settings.jwt_secret:
     )
 
 
-def production_posture_warnings() -> list[dict]:
+def production_posture_warnings(config: Settings = settings) -> list[dict[str, str]]:
     """Unsafe-flag report for production posture (Sprint A6).
 
     Each entry: {"flag": <env var name>, "message": <operator-facing text>}.
@@ -117,8 +117,8 @@ def production_posture_warnings() -> list[dict]:
     Security panel can show posture anywhere; main.py logs the warnings at
     startup only when is_production.
     """
-    warnings: list[dict] = []
-    if not settings.rate_limit_enabled:
+    warnings: list[dict[str, str]] = []
+    if not config.rate_limit_enabled:
         warnings.append({
             "flag": "RATE_LIMIT_ENABLED=0",
             "message": (
@@ -126,7 +126,7 @@ def production_posture_warnings() -> list[dict]:
                 "throttled. Set RATE_LIMIT_ENABLED=1."
             ),
         })
-    if not settings.auth_cookie_secure:
+    if not config.auth_cookie_secure:
         warnings.append({
             "flag": "AUTH_COOKIE_SECURE=0",
             "message": (
@@ -134,7 +134,7 @@ def production_posture_warnings() -> list[dict]:
                 "Set AUTH_COOKIE_SECURE=1 behind HTTPS."
             ),
         })
-    if not settings.wallboard_token:
+    if not config.wallboard_token:
         warnings.append({
             "flag": "WALLBOARD_TOKEN unset",
             "message": (
