@@ -58,8 +58,28 @@
 }
 
 .morning-brief-error {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   color: var(--red);
   font-size: 0.8125rem;
+}
+
+.morning-brief-retry-btn {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text2);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  padding: 4px 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.morning-brief-retry-btn:hover {
+  color: var(--text);
+  border-color: var(--text3);
 }
 
 .morning-brief-filters {

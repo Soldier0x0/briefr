@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { fetchCVEs } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
+import { ingestLogUrl } from '../utils/adminLinks.js'
 import { toApiCveParams } from '../utils/cveFilters.js'
 import { scrollBehavior } from '../utils/motion.js'
 import { buildCombinedReport, copyToClipboard } from '../utils/report.js'
@@ -62,6 +63,7 @@ export default function CVEFeed({
   const [loading, setLoading] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState(null)
+  const [errorRequestId, setErrorRequestId] = useState(null)
   const [hasMore, setHasMore] = useState(true)
   const [selectedMap, setSelectedMap] = useState({})
   const [copyAllState, setCopyAllState] = useState('idle')
@@ -160,6 +162,7 @@ export default function CVEFeed({
       setLoading(true)
     }
     setError(null)
+    setErrorRequestId(null)
 
     try {
       const data = await fetchCVEs({
@@ -187,6 +190,7 @@ export default function CVEFeed({
     } catch (err) {
       if (!controller.signal.aborted) {
         setError(err.message)
+        setErrorRequestId(err.requestId || null)
         notifyApiError(err)
         if (!append) {
           setCves([])
@@ -205,6 +209,10 @@ export default function CVEFeed({
       }
     }
   }, [updateShowingRange])
+
+  const handleRetry = useCallback(() => {
+    loadPage(pageRef.current, false)
+  }, [loadPage])
 
   const loadNextPage = useCallback(() => {
     if (
@@ -425,7 +433,20 @@ export default function CVEFeed({
       {showError && (
         <div className="feed-state feed-error" role="alert">
           <span className="feed-state-icon" aria-hidden="true">!</span>
-          <span>Failed to load CVEs: {error}</span>
+          <span>
+            Failed to load CVEs: {error}
+            {errorRequestId && (
+              <>
+                {' '}
+                (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
+                  ref: {errorRequestId}
+                </a>)
+              </>
+            )}
+          </span>
+          <button type="button" className="feed-clear-btn" onClick={handleRetry}>
+            Retry
+          </button>
         </div>
       )}
 

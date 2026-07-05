@@ -135,7 +135,10 @@ async def pool_exhausted_handler(request: Request, exc: PoolExhaustedError):
         request.url.path,
         exc,
     )
-    return JSONResponse(status_code=503, content={"detail": str(exc)})
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "Server is busy — please retry in a few seconds."},
+    )
 
 
 app.add_middleware(

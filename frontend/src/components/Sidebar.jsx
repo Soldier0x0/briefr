@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { fetchStatsTimeline, fetchTopTechniques } from '../api.js'
+import { notifyApiError } from './Toast.jsx'
+import { ingestLogUrl } from '../utils/adminLinks.js'
 import { getSavedStack } from '../utils/cveFilters.js'
 import './Sidebar.css'
 
@@ -89,7 +91,7 @@ function SidebarSkeleton({ rows = 3, tall = false }) {
   )
 }
 
-function SparklineSection({ bars, loading, error, onRetry }) {
+function SparklineSection({ bars, loading, error, errorRequestId, onRetry }) {
   const sparkMax = Math.max(...bars, 1)
   const total = bars.reduce((s, v) => s + v, 0)
 
@@ -99,7 +101,17 @@ function SparklineSection({ bars, loading, error, onRetry }) {
   if (error) {
     return (
       <div className="sidebar-spark-error">
-        <p className="sidebar-empty">{error}</p>
+        <p className="sidebar-empty">
+          {error}
+          {errorRequestId && (
+            <>
+              {' '}
+              (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
+                ref: {errorRequestId}
+              </a>)
+            </>
+          )}
+        </p>
         <button type="button" className="sidebar-retry-btn mono" onClick={onRetry}>
           Retry
         </button>
@@ -140,9 +152,12 @@ function SparklineSection({ bars, loading, error, onRetry }) {
 export default function Sidebar({ filters, onFiltersChange }) {
   const [topTechniques, setTopTechniques] = useState([])
   const [techniquesLoading, setTechniquesLoading] = useState(true)
+  const [techniquesError, setTechniquesError] = useState(null)
+  const [techniquesErrorRequestId, setTechniquesErrorRequestId] = useState(null)
   const [sparkBars, setSparkBars] = useState([])
   const [sparkLoading, setSparkLoading] = useState(true)
   const [sparkError, setSparkError] = useState(null)
+  const [sparkErrorRequestId, setSparkErrorRequestId] = useState(null)
   const savedStack = getSavedStack()
 
   const loadSparkline = useCallback((useCache = true) => {
@@ -152,12 +167,14 @@ export default function Sidebar({ filters, onFiltersChange }) {
         setSparkBars(hit)
         setSparkLoading(false)
         setSparkError(null)
+        setSparkErrorRequestId(null)
         return
       }
     }
     let cancelled = false
     setSparkLoading(true)
     setSparkError(null)
+    setSparkErrorRequestId(null)
     fetchStatsTimeline(SPARKLINE_DAYS)
       .then(data => {
         if (cancelled) return
@@ -170,10 +187,12 @@ export default function Sidebar({ filters, onFiltersChange }) {
         setCached('spark-v2', bars)
         setSparkBars(bars)
       })
-      .catch(() => {
+      .catch(err => {
         if (!cancelled) {
           setSparkError('Could not load publications — is the backend running?')
+          setSparkErrorRequestId(err?.requestId || null)
           setSparkBars([])
+          notifyApiError(err)
         }
       })
       .finally(() => {
@@ -195,15 +214,21 @@ export default function Sidebar({ filters, onFiltersChange }) {
     return () => window.removeEventListener('focus', onFocus)
   }, [loadSparkline])
 
-  useEffect(() => {
-    const hit = getCached('tech')
-    if (hit !== undefined) {
-      setTopTechniques(hit)
-      setTechniquesLoading(false)
-      return
+  const loadTopTechniques = useCallback((useCache = true) => {
+    if (useCache) {
+      const hit = getCached('tech')
+      if (hit !== undefined) {
+        setTopTechniques(hit)
+        setTechniquesLoading(false)
+        setTechniquesError(null)
+        setTechniquesErrorRequestId(null)
+        return undefined
+      }
     }
     let cancelled = false
     setTechniquesLoading(true)
+    setTechniquesError(null)
+    setTechniquesErrorRequestId(null)
     fetchTopTechniques(TOP_TECHNIQUES_LIMIT)
       .then(data => {
         if (cancelled) return
@@ -211,14 +236,21 @@ export default function Sidebar({ filters, onFiltersChange }) {
         setCached('tech', rows)
         setTopTechniques(rows)
       })
-      .catch(() => {
-        if (!cancelled) setTopTechniques([])
+      .catch(err => {
+        if (!cancelled) {
+          setTopTechniques([])
+          setTechniquesError(err?.message || 'Failed to load top techniques.')
+          setTechniquesErrorRequestId(err?.requestId || null)
+          notifyApiError(err)
+        }
       })
       .finally(() => {
         if (!cancelled) setTechniquesLoading(false)
       })
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => loadTopTechniques(true), [loadTopTechniques])
 
   function handleTechniqueClick(techniqueId) {
     const next = filters.technique === techniqueId ? '' : techniqueId
@@ -300,6 +332,7 @@ export default function Sidebar({ filters, onFiltersChange }) {
           bars={sparkBars}
           loading={sparkLoading}
           error={sparkError}
+          errorRequestId={sparkErrorRequestId}
           onRetry={() => {
             sidebarCache.delete('spark-v2')
             loadSparkline(false)
@@ -311,7 +344,32 @@ export default function Sidebar({ filters, onFiltersChange }) {
       <section className="sidebar-section" aria-labelledby="techniques-heading">
         <h2 id="techniques-heading" className="sidebar-heading">// TOP TECHNIQUES THIS WEEK</h2>
         {techniquesLoading && <SidebarSkeleton rows={3} />}
-        {!techniquesLoading && topTechniques.length === 0 && (
+        {!techniquesLoading && techniquesError && (
+          <div className="sidebar-spark-error">
+            <p className="sidebar-empty">
+              {techniquesError}
+              {techniquesErrorRequestId && (
+                <>
+                  {' '}
+                  (<a href={ingestLogUrl({ level: 'ERROR', requestId: techniquesErrorRequestId })}>
+                    ref: {techniquesErrorRequestId}
+                  </a>)
+                </>
+              )}
+            </p>
+            <button
+              type="button"
+              className="sidebar-retry-btn mono"
+              onClick={() => {
+                sidebarCache.delete('tech')
+                loadTopTechniques(false)
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        {!techniquesLoading && !techniquesError && topTechniques.length === 0 && (
           <p className="sidebar-empty">No technique data yet.</p>
         )}
         <ul className="technique-list" aria-label="Most frequent ATT&CK techniques in database">

@@ -1,3 +1,4 @@
+import { ingestLogUrl } from '../utils/adminLinks.js'
 import './StatsRow.css'
 
 function StatCell({ value, label, variant, loading, onClick, interactive }) {
@@ -17,10 +18,31 @@ function StatCell({ value, label, variant, loading, onClick, interactive }) {
   )
 }
 
-export default function StatsRow({ stats, showAiAlerts, onAiAlertsClick }) {
+export default function StatsRow({ stats, error, errorRequestId, onRetry, showAiAlerts, onAiAlertsClick }) {
   const loading = !stats
   const aiCount = stats?.ai_ml_alerts ?? 0
   const showAi = showAiAlerts && (loading || aiCount > 0)
+
+  if (error && loading) {
+    return (
+      <section className="stats-row stats-row-error" aria-label="CVE statistics summary" role="alert">
+        <span>
+          {error}
+          {errorRequestId && (
+            <>
+              {' '}
+              (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
+                ref: {errorRequestId}
+              </a>)
+            </>
+          )}
+        </span>
+        <button type="button" className="stats-row-retry-btn" onClick={onRetry}>
+          Retry
+        </button>
+      </section>
+    )
+  }
 
   return (
     <section
