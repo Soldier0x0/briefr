@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { fetchCVEs } from '../api.js'
+import { notifyApiError } from './Toast.jsx'
 import { toApiCveParams } from '../utils/cveFilters.js'
 import { scrollBehavior } from '../utils/motion.js'
 import { buildCombinedReport, copyToClipboard } from '../utils/report.js'
@@ -186,6 +187,7 @@ export default function CVEFeed({
     } catch (err) {
       if (!controller.signal.aborted) {
         setError(err.message)
+        notifyApiError(err)
         if (!append) {
           setCves([])
           setTotal(0)

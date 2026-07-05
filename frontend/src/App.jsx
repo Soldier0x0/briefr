@@ -24,6 +24,7 @@ import LoginPage from './pages/LoginPage.jsx'
 import AdminPage from './pages/admin/AdminPage.jsx'
 import WallboardPage from './pages/WallboardPage.jsx'
 import RequireAuth from './components/RequireAuth.jsx'
+import { useToast, ToastArea } from './components/Toast.jsx'
 import { fetchStats, fetchHealth, fetchCVE } from './api.js'
 import { useWatchlist } from './hooks/useWatchlist.js'
 import { useAssetProfileOptional } from './context/AssetProfileContext.jsx'
@@ -35,6 +36,7 @@ import {
 import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
 import { createCveDrawerController } from './utils/openCveDrawer.js'
 import { lazyWithReload } from './utils/lazyWithReload.js'
+import { ingestLogUrl } from './utils/adminLinks.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 import './components/InvestigationPanel.css'
 
@@ -269,6 +271,23 @@ export default function App() {
   const [atlasActorFilter, setAtlasActorFilter] = useState(null)
   const assetCtx = useAssetProfileOptional()
   const watchlist = useWatchlist()
+  const { toasts, show: toast, dismiss: dismissToast } = useToast()
+
+  useEffect(() => {
+    const onApiError = (e) => {
+      const { message, requestId } = e.detail || {}
+      toast({
+        message,
+        variant: 'error',
+        actions: requestId
+          ? [{ label: 'View application log', href: ingestLogUrl({ level: 'ERROR', requestId }) }]
+          : [],
+        requestId,
+      })
+    }
+    window.addEventListener('briefr-api-error', onApiError)
+    return () => window.removeEventListener('briefr-api-error', onApiError)
+  }, [toast])
 
   const loadStats = useCallback(() => {
     const frameworks = getAiFrameworksForAlerts(assetCtx?.profile)
@@ -542,6 +561,7 @@ export default function App() {
           )}
         />
       </Routes>
+      <ToastArea toasts={toasts} onDismiss={dismissToast} />
     </InvestigationProvider>
   )
 }

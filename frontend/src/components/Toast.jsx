@@ -35,6 +35,16 @@ function normalizeToast(input, ok = true) {
   }
 }
 
+/** Fire-and-forget API error notification, decoupled from the React tree
+    (same pattern as the 'briefr-auth-expired' event in api.js) so any
+    component can report a failed fetch without prop-drilling a toast
+    handler through intermediate views. */
+export function notifyApiError(err) {
+  window.dispatchEvent(new CustomEvent('briefr-api-error', {
+    detail: { message: err?.message || 'Something went wrong', requestId: err?.requestId || '' },
+  }))
+}
+
 export function useToast() {
   const [toasts, setToasts] = useState([])
   const dismiss = useCallback((id) => {

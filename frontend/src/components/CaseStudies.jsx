@@ -6,6 +6,7 @@ import {
   loadCaseStudyFeed,
   relativeDate,
 } from '../utils/caseStudyFeed.js'
+import { notifyApiError } from './Toast.jsx'
 import './CaseStudies.css'
 
 function SkeletonCards({ count = 4 }) {
@@ -91,6 +92,7 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
       .catch(err => {
         if (!cancelled) {
           setErrors([{ source: 'Feed', message: err.message || 'Failed to load' }])
+          notifyApiError(err)
         }
       })
       .finally(() => {
