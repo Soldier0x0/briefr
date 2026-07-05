@@ -382,23 +382,28 @@ export function fetchWallboard() {
 
 // ── Admin API ──────────────────────────────────────────────────────────────
 
-async function adminFetch(path, opts = {}, _retried = false) {
-  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) }
-  const res = await fetch(`/api/admin${path}`, {
+/** Authenticated fetch returning the raw Response (callers that need headers
+    like X-Request-ID). Retries once via /auth/refresh on 401, same as
+    request(); dispatches briefr-auth-expired when the session is gone. */
+export async function authedFetch(path, opts = {}, _retried = false) {
+  const res = await fetch(`${BASE}${path}`, {
     ...opts,
-    headers,
     credentials: 'include',
     signal: opts.signal ?? AbortSignal.timeout(60_000),
   })
   if (res.status === 401) {
-    // Session-cookie auth: retry once via /auth/refresh (same as request()).
     if (!_retried && (await refreshAccessToken())) {
-      return adminFetch(path, opts, true)
+      return authedFetch(path, opts, true)
     }
     window.dispatchEvent(new CustomEvent('briefr-auth-expired'))
     throw Object.assign(new Error('Unauthorized'), { status: 401 })
   }
   return res
+}
+
+function adminFetch(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) }
+  return authedFetch(`/admin${path}`, { ...opts, headers })
 }
 
 export function getAdminRequestId(res) {
