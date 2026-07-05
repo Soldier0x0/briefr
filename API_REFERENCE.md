@@ -3,7 +3,7 @@
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
 **Base URL:** `/api` (proxied from Vite dev server at `http://localhost:5173/api` → `http://localhost:8000/api`)  
-**Auth:** None on any endpoint (v1.1 beta)  
+**Auth:** built-in app login (`briefr_at` session cookie); admin and refresh routes additionally require the `admin` role — see the per-section auth notes below (Sprint A0)  
 **Interactive docs:** `GET /api/docs` (Swagger UI), `GET /api/redoc` (ReDoc) — **unprotected; disable in production**
 
 Default error shape (FastAPI): `{"detail": "<message>"}`
@@ -880,7 +880,12 @@ Response: `{logs: [{ts, level, logger, message, request_id, category, ...}], kno
 ### GET /api/admin/audit-log
 Params: `limit`, `offset`, `action`, `action_prefix`, `actor`. Use `action_prefix=backup.` for category filters.
 
-**All other admin endpoints** (`GET/DELETE /api/admin/watchlist*`, `GET/DELETE /api/admin/ioc-cache*`, `GET/DELETE /api/admin/hunt-packs*`, `GET/POST /api/admin/config`, `POST /api/admin/config/webhook-test`, `GET/POST /api/admin/scheduler/*`, `GET/POST /api/admin/feeds/*`, `POST /api/admin/backups/*`, `GET /api/admin/backups`, `GET /api/admin/security`) remain as documented in V1.3; scheduler jobs now include `status` field (ACTIVE/PAUSED/LOCKED/DISABLED), `last_error_message`, and `run_history` (array of last 5 runs).
+### GET /api/admin/security
+Security panel readout. Response: `{failed_auth_last_24h, environment, posture_warnings: [{flag, message}], rate_limit_enabled, rate_limit_ioc_per_minute, rate_limit_refresh_per_minute, rate_limit_admin_read_per_minute, rate_limit_login_per_minute, rate_limit_auth_refresh_per_minute, top_rate_limit_consumers}`.
+
+`posture_warnings` (Sprint A6) lists every unsafe flag in the current config — `RATE_LIMIT_ENABLED=0`, `AUTH_COOKIE_SECURE=0`, `WALLBOARD_TOKEN unset` — regardless of environment; at startup the same list is logged as one warning per flag when `BRIEFR_ENV=production`.
+
+**All other admin endpoints** (`GET/DELETE /api/admin/watchlist*`, `GET/DELETE /api/admin/ioc-cache*`, `GET/DELETE /api/admin/hunt-packs*`, `GET/POST /api/admin/config`, `POST /api/admin/config/webhook-test`, `GET/POST /api/admin/scheduler/*`, `GET/POST /api/admin/feeds/*`, `POST /api/admin/backups/*`, `GET /api/admin/backups`) remain as documented in V1.3; scheduler jobs now include `status` field (ACTIVE/PAUSED/LOCKED/DISABLED), `last_error_message`, and `run_history` (array of last 5 runs).
 
 ---
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { AlertTriangle } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import StatCard from './shared/StatCard.jsx'
 
@@ -12,7 +13,14 @@ export default function SecurityPage() {
   return (
     <div>
       <h1 className="admin-page-title">Security</h1>
-      <p className="admin-page-subtitle">Rate-limit status and recent failed authentication attempts.</p>
+      <p className="admin-page-subtitle">Production posture, rate-limit status and recent failed authentication attempts.</p>
+
+      {security && security.posture_warnings?.length > 0 && security.posture_warnings.map(w => (
+        <div className="admin-callout admin-callout-amber" key={w.flag}>
+          <AlertTriangle size={16} strokeWidth={2} />
+          <span><strong>{w.flag}</strong> — {w.message}</span>
+        </div>
+      ))}
 
       {security && (
         <div className="stat-card-row">
