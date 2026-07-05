@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { fetchStatsTimeline } from '../api.js'
+import { notifyApiError } from './Toast.jsx'
+import { ingestLogUrl } from '../utils/adminLinks.js'
 import {
   buildHeatmapGrid,
   heatmapColor,
@@ -42,6 +44,8 @@ export default function TimelineHeatmap({ filters, onFiltersChange }) {
   )
   const [hovered, setHovered] = useState(null)
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
+  const [error, setError] = useState(null)
+  const [errorRequestId, setErrorRequestId] = useState(null)
   const wrapRef = useRef(null)
 
   const displayDays = isMobile ? MOBILE_DAYS : DESKTOP_DAYS
@@ -55,15 +59,22 @@ export default function TimelineHeatmap({ filters, onFiltersChange }) {
     return () => mq.removeEventListener('change', onChange)
   }, [])
 
-  useEffect(() => {
+  const loadTimeline = useCallback(() => {
     let cancelled = false
     setLoading(true)
+    setError(null)
+    setErrorRequestId(null)
     fetchStatsTimeline(DESKTOP_DAYS)
       .then(data => {
         if (!cancelled) setTimeline(Array.isArray(data) ? data : [])
       })
-      .catch(() => {
-        if (!cancelled) setTimeline([])
+      .catch(err => {
+        if (!cancelled) {
+          setTimeline([])
+          setError(err?.message || 'Failed to load activity timeline.')
+          setErrorRequestId(err?.requestId || null)
+          notifyApiError(err)
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -72,6 +83,8 @@ export default function TimelineHeatmap({ filters, onFiltersChange }) {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => loadTimeline(), [loadTimeline])
 
   const slicedTimeline = useMemo(() => {
     if (!timeline.length) return []
@@ -137,6 +150,23 @@ export default function TimelineHeatmap({ filters, onFiltersChange }) {
             <p className="timeline-heatmap-loading mono" aria-live="polite">
               Loading activity…
             </p>
+          ) : error ? (
+            <div className="timeline-heatmap-error mono" role="alert">
+              <span>
+                {error}
+                {errorRequestId && (
+                  <>
+                    {' '}
+                    (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
+                      ref: {errorRequestId}
+                    </a>)
+                  </>
+                )}
+              </span>
+              <button type="button" className="timeline-heatmap-retry" onClick={loadTimeline}>
+                Retry
+              </button>
+            </div>
           ) : (
             <>
               <div

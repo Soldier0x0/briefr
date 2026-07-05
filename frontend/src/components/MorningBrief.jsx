@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { fetchBrief } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
+import { ingestLogUrl } from '../utils/adminLinks.js'
 import CveDescriptionClamp from './CveDescriptionClamp.jsx'
 import {
   daysUntilDue,
@@ -103,32 +104,37 @@ export default function MorningBrief({
   const [brief, setBrief] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [errorRequestId, setErrorRequestId] = useState(null)
   const seqRef = useRef(0)
 
-  useEffect(() => {
+  const loadBrief = useCallback(() => {
     const seq = ++seqRef.current
-    let cancelled = false
     setLoading(true)
     setError(null)
+    setErrorRequestId(null)
 
     fetchBrief({ stack, sinceHours, limit: 10 })
       .then(data => {
-        if (cancelled || seq !== seqRef.current) return
+        if (seq !== seqRef.current) return
         setBrief(data)
       })
       .catch(err => {
-        if (cancelled || seq !== seqRef.current) return
+        if (seq !== seqRef.current) return
         setBrief(null)
         setError(err?.message || 'Could not load morning brief.')
+        setErrorRequestId(err?.requestId || null)
         notifyApiError(err)
       })
       .finally(() => {
-        if (cancelled || seq !== seqRef.current) return
+        if (seq !== seqRef.current) return
         setLoading(false)
       })
-
-    return () => { cancelled = true }
   }, [stack, sinceHours])
+
+  useEffect(() => {
+    loadBrief()
+    return () => { seqRef.current += 1 }
+  }, [loadBrief])
 
   useEffect(() => {
     if (reasonFilter === 'stack_match' && !stack?.trim()) {
@@ -178,9 +184,22 @@ export default function MorningBrief({
       )}
 
       {error && !loading && (
-        <p className="morning-brief-error mono" role="alert">
-          {error}
-        </p>
+        <div className="morning-brief-error mono" role="alert">
+          <span>
+            {error}
+            {errorRequestId && (
+              <>
+                {' '}
+                (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
+                  ref: {errorRequestId}
+                </a>)
+              </>
+            )}
+          </span>
+          <button type="button" className="morning-brief-retry-btn" onClick={loadBrief}>
+            Retry
+          </button>
+        </div>
       )}
 
       {!loading && !error && brief && (

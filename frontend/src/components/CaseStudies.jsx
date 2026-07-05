@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   filterCaseStudyCards,
   highlightParts,
@@ -7,6 +7,7 @@ import {
   relativeDate,
 } from '../utils/caseStudyFeed.js'
 import { notifyApiError } from './Toast.jsx'
+import { ingestLogUrl } from '../utils/adminLinks.js'
 import './CaseStudies.css'
 
 function SkeletonCards({ count = 4 }) {
@@ -70,6 +71,8 @@ function FeedCard({ card, query }) {
 export default function CaseStudies({ initialSearch = '', onClearFilter }) {
   const [cards, setCards] = useState([])
   const [errors, setErrors] = useState([])
+  const [feedFailed, setFeedFailed] = useState(false)
+  const [feedFailedRequestId, setFeedFailedRequestId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState(initialSearch)
   const [debounced, setDebounced] = useState(initialSearch)
@@ -80,9 +83,11 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
     setDebounced(initialSearch)
   }, [initialSearch])
 
-  useEffect(() => {
+  const loadFeed = useCallback(() => {
     let cancelled = false
     setLoading(true)
+    setFeedFailed(false)
+    setFeedFailedRequestId(null)
     loadCaseStudyFeed()
       .then(({ cards: loaded, errors: loadErrors }) => {
         if (cancelled) return
@@ -92,6 +97,8 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
       .catch(err => {
         if (!cancelled) {
           setErrors([{ source: 'Feed', message: err.message || 'Failed to load' }])
+          setFeedFailed(true)
+          setFeedFailedRequestId(err?.requestId || null)
           notifyApiError(err)
         }
       })
@@ -100,6 +107,8 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
       })
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => loadFeed(), [loadFeed])
 
   useEffect(() => {
     const id = setTimeout(() => setDebounced(search), 400)
@@ -169,9 +178,23 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
           {errors.map(err => (
             <li key={err.source} className="cs-source-error mono">
               // {err.source}: {err.message}
+              {feedFailed && feedFailedRequestId && (
+                <>
+                  {' '}
+                  (<a href={ingestLogUrl({ level: 'ERROR', requestId: feedFailedRequestId })}>
+                    ref: {feedFailedRequestId}
+                  </a>)
+                </>
+              )}
             </li>
           ))}
         </ul>
+      )}
+
+      {feedFailed && (
+        <button type="button" className="cs-retry-btn mono" onClick={loadFeed}>
+          Retry
+        </button>
       )}
 
       <div className="cs-layout">

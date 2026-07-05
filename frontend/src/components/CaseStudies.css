@@ -91,6 +91,22 @@
   color: var(--amber);
 }
 
+.cs-retry-btn {
+  font-size: 0.75rem;
+  color: var(--text2);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  padding: 4px 12px;
+  margin: 0 0 16px;
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.cs-retry-btn:hover {
+  color: var(--text);
+  border-color: var(--text3);
+}
+
 .cs-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);

@@ -116,3 +116,31 @@
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
+
+.stats-row-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--red);
+}
+
+.stats-row-retry-btn {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text2);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  padding: 5px 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.stats-row-retry-btn:hover {
+  color: var(--text);
+  border-color: var(--text3);
+}

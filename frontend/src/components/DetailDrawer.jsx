@@ -34,6 +34,7 @@ import {
 } from '../scoring/riskScore.js'
 import { profileToMatchAssets } from '../utils/assetProfileIo.js'
 import { setMomentumScore } from '../utils/momentumCache.js'
+import { ingestLogUrl } from '../utils/adminLinks.js'
 import useModalLayer from '../hooks/useModalLayer.js'
 import './DetailDrawer.css'
 
@@ -1323,7 +1324,7 @@ function TabRelated({ related, relatedMethod, loading, onSelectRelated }) {
   )
 }
 
-export default function DetailDrawer({ cve, loading = false, onClose, onCveReplace, watchlistState = null, onWatchlistChange }) {
+export default function DetailDrawer({ cve, loading = false, error = null, onRetry, onClose, onCveReplace, watchlistState = null, onWatchlistChange }) {
   const [activeTab, setActiveTab] = useState('overview')
   const [reportOpen, setReportOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -1845,6 +1846,45 @@ export default function DetailDrawer({ cve, loading = false, onClose, onCveRepla
             <div className="drawer-loading-overlay" aria-live="polite" aria-busy="true">
               <div className="drawer-loading-bar" role="progressbar" aria-label="Loading CVE details" />
               <p className="drawer-loading-text mono">Loading CVE details…</p>
+            </div>
+          )}
+
+          {error && !hasPreviewContent && (
+            <div className="drawer-error-overlay" role="alert">
+              <p className="drawer-error-text mono">{error.message}</p>
+              {error.requestId && (
+                <p className="drawer-error-ref mono">
+                  <a href={ingestLogUrl({ level: 'ERROR', requestId: error.requestId })}>
+                    ref: {error.requestId}
+                  </a>
+                </p>
+              )}
+              {onRetry && (
+                <button type="button" className="drawer-risk-profile-cta-btn mono" onClick={onRetry}>
+                  Retry
+                </button>
+              )}
+            </div>
+          )}
+
+          {error && hasPreviewContent && (
+            <div className="drawer-error-banner mono" role="alert">
+              <span>
+                Failed to load full details: {error.message}
+                {error.requestId && (
+                  <>
+                    {' '}
+                    (<a href={ingestLogUrl({ level: 'ERROR', requestId: error.requestId })}>
+                      ref: {error.requestId}
+                    </a>)
+                  </>
+                )}
+              </span>
+              {onRetry && (
+                <button type="button" className="drawer-risk-profile-cta-btn mono" onClick={onRetry}>
+                  Retry
+                </button>
+              )}
             </div>
           )}
 

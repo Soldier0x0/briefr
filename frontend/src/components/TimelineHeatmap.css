@@ -74,6 +74,9 @@
   flex-direction: column;
   gap: 8px;
   align-items: flex-start;
+  font-size: 0.5625rem;
+  color: var(--red);
+  letter-spacing: 0.04em;
 }
 
 .timeline-heatmap-retry {

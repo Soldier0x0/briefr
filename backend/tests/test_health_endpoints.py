@@ -48,4 +48,6 @@ def test_pool_exhausted_returns_503(client, monkeypatch):
 
     res = client.get("/api/health")
     assert res.status_code == 503
-    assert "saturated" in res.json()["detail"].lower()
+    # Detail is a fixed, safe message — the real exception stays in the log
+    # only (Sprint A4), never echoed back to the client.
+    assert res.json()["detail"] == "Server is busy — please retry in a few seconds."
