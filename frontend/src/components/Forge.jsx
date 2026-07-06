@@ -4,6 +4,8 @@ import {
   fetchHuntPack,
   generateHuntPack,
 } from '../api.js'
+import { notifyApiError } from './Toast.jsx'
+import { ingestLogUrl } from '../utils/adminLinks.js'
 import { useAssetProfileOptional } from '../context/AssetProfileContext.jsx'
 import { profileToMatchAssets } from '../utils/assetProfileIo.js'
 import './Forge.css'
@@ -149,21 +151,33 @@ function HuntPackPanel({ techniqueId, onPackSaved }) {
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [errorRequestId, setErrorRequestId] = useState(null)
   const [generatingCve, setGeneratingCve] = useState(null)
   const [generateError, setGenerateError] = useState(null)
+  const [generateErrorRequestId, setGenerateErrorRequestId] = useState(null)
 
-  useEffect(() => {
+  const loadHuntPack = useCallback(() => {
     if (!techniqueId) return undefined
     let cancelled = false
     setLoading(true)
     setError(null)
+    setErrorRequestId(null)
     setGenerateError(null)
+    setGenerateErrorRequestId(null)
     fetchHuntPack(techniqueId)
       .then(data => { if (!cancelled) setDetail(data) })
-      .catch(err => { if (!cancelled) setError(err.message || 'Failed to load hunt pack') })
+      .catch(err => {
+        if (!cancelled) {
+          setError(err.message || 'Failed to load hunt pack')
+          setErrorRequestId(err?.requestId || null)
+          notifyApiError(err)
+        }
+      })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [techniqueId])
+
+  useEffect(() => loadHuntPack(), [loadHuntPack])
 
   const packsByCve = useMemo(() => {
     const map = {}
@@ -183,7 +197,11 @@ function HuntPackPanel({ techniqueId, onPackSaved }) {
         })
         onPackSaved?.(techniqueId)
       })
-      .catch(err => setGenerateError(err.message || 'Pack generation failed'))
+      .catch(err => {
+        setGenerateError(err.message || 'Pack generation failed')
+        setGenerateErrorRequestId(err?.requestId || null)
+        notifyApiError(err)
+      })
       .finally(() => setGeneratingCve(null))
   }, [techniqueId, onPackSaved])
 
@@ -195,7 +213,26 @@ function HuntPackPanel({ techniqueId, onPackSaved }) {
     )
   }
   if (loading) return <SkeletonRows count={5} />
-  if (error) return <p className="fg-error mono">// {error}</p>
+  if (error) {
+    return (
+      <div className="fg-error-block">
+        <p className="fg-error mono">
+          // {error}
+          {errorRequestId && (
+            <>
+              {' '}
+              (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
+                ref: {errorRequestId}
+              </a>)
+            </>
+          )}
+        </p>
+        <button type="button" className="fg-error-retry-btn mono" onClick={loadHuntPack}>
+          Retry
+        </button>
+      </div>
+    )
+  }
   if (!detail) return null
 
   const { technique, status, packs, siem_queries: siemQueries, log_patterns: logPatterns, linked_cves: linkedCves } = detail
@@ -225,7 +262,19 @@ function HuntPackPanel({ techniqueId, onPackSaved }) {
 
       <section className="fg-section" aria-label="Linked CVEs">
         <h4 className="fg-section-label mono">LINKED CVES</h4>
-        {generateError && <p className="fg-error mono">// {generateError}</p>}
+        {generateError && (
+          <p className="fg-error mono">
+            // {generateError}
+            {generateErrorRequestId && (
+              <>
+                {' '}
+                (<a href={ingestLogUrl({ level: 'ERROR', requestId: generateErrorRequestId })}>
+                  ref: {generateErrorRequestId}
+                </a>)
+              </>
+            )}
+          </p>
+        )}
         {linkedCves.length === 0 ? (
           <p className="fg-panel-empty mono">// No CVEs mapped to this technique yet</p>
         ) : (
@@ -282,6 +331,7 @@ export default function Forge() {
   const [coverage, setCoverage] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [errorRequestId, setErrorRequestId] = useState(null)
   const [stackOnly, setStackOnly] = useState(false)
   const [selectedTechnique, setSelectedTechnique] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
@@ -303,12 +353,21 @@ export default function Forge() {
     let cancelled = false
     setLoading(true)
     setError(null)
+    setErrorRequestId(null)
     fetchForgeCoverage(stackOnly ? profileStack : '')
       .then(data => { if (!cancelled) setCoverage(data) })
-      .catch(err => { if (!cancelled) setError(err.message || 'Failed to load coverage map') })
+      .catch(err => {
+        if (!cancelled) {
+          setError(err.message || 'Failed to load coverage map')
+          setErrorRequestId(err?.requestId || null)
+          notifyApiError(err)
+        }
+      })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [stackOnly, profileStack, reloadKey])
+
+  const handleRetryCoverage = useCallback(() => setReloadKey(k => k + 1), [])
 
   // A saved pack flips the technique to "yours" — refetch keeps the map honest.
   const handlePackSaved = useCallback(() => {
@@ -358,7 +417,24 @@ export default function Forge() {
         )}
       </div>
 
-      {error && <p className="fg-error mono">// {error}</p>}
+      {error && (
+        <div className="fg-error-block">
+          <p className="fg-error mono">
+            // {error}
+            {errorRequestId && (
+              <>
+                {' '}
+                (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
+                  ref: {errorRequestId}
+                </a>)
+              </>
+            )}
+          </p>
+          <button type="button" className="fg-error-retry-btn mono" onClick={handleRetryCoverage}>
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className="fg-layout">
         <section className="fg-map" aria-label="MITRE coverage map">

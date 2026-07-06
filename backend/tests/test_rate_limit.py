@@ -200,7 +200,7 @@ def test_all_refresh_routes_return_429_when_drained():
     _reset(rate_limit.refresh_bucket)
 
 
-def test_refresh_passes_through_under_the_limit(monkeypatch):
+def test_refresh_passes_through_under_the_limit(monkeypatch, auth_token):
     from routers import refresh as refresh_router
 
     async def noop_audit(request, action, target=""):
@@ -209,9 +209,9 @@ def test_refresh_passes_through_under_the_limit(monkeypatch):
     monkeypatch.setattr(refresh_router, "refresh_in_progress", lambda: False)
     monkeypatch.setattr(refresh_router, "_spawn", lambda coro: coro.close())
     monkeypatch.setattr(refresh_router, "audit", noop_audit)
-    monkeypatch.setattr(settings, "briefr_admin_api_key", "")
 
     client = TestClient(app)
+    client.cookies.set("briefr_at", auth_token())
     _reset(rate_limit.refresh_bucket)
     resp = client.post("/api/refresh/kev")
     assert resp.status_code == 200
@@ -219,9 +219,8 @@ def test_refresh_passes_through_under_the_limit(monkeypatch):
     _reset(rate_limit.refresh_bucket)
 
 
-def test_rate_limit_consumed_before_admin_key_check(monkeypatch):
+def test_rate_limit_consumed_before_auth_check():
     """Unauthenticated bursts must not bypass the bucket."""
-    monkeypatch.setattr(settings, "briefr_admin_api_key", "secret")
     client = TestClient(app)
     _drain(rate_limit.refresh_bucket)
     resp = client.post("/api/refresh")

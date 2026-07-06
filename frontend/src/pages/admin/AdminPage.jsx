@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { adminApi, getAdminKey, getAdminRequestId } from '../../api.js'
+import { adminApi, authedFetch, getAdminRequestId } from '../../api.js'
 import { getAdminMode, setAdminMode } from '../../utils/adminMode.js'
 import { getDisplayPrefs } from '../../utils/displayPrefs.js'
 import { ingestLogUrl } from '../../utils/adminLinks.js'
@@ -8,7 +8,7 @@ import StatusBar from './StatusBar.jsx'
 import Sidebar from './Sidebar.jsx'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import ErrorBoundary from './shared/ErrorBoundary.jsx'
-import { useToast, ToastArea } from './shared/Toast.jsx'
+import { useToast, ToastArea } from '../../components/Toast.jsx'
 import { OperationProvider, OperationStrip, useOperations } from './shared/OperationTracker.jsx'
 import { ANALYST_NAV } from './constants.js'
 import OverviewPage from './OverviewPage.jsx'
@@ -152,11 +152,9 @@ function AdminPageBody({ toast, toasts, dismissToast }) {
       kind: 'ingest',
       successMessage: 'Full ingest started — sources will update as jobs complete',
       execute: async () => {
-        const res = await fetch('/api/refresh', {
+        const res = await authedFetch('/refresh', {
           method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json', 'X-BRIEFR-Admin-Key': getAdminKey() },
-          signal: AbortSignal.timeout(60_000),
+          headers: { 'Content-Type': 'application/json' },
         })
         const requestId = getAdminRequestId(res)
         if (!res.ok) {
@@ -214,7 +212,7 @@ function AdminPageBody({ toast, toasts, dismissToast }) {
     scheduler: <SchedulerPage toast={toast} system={system} onRunIngest={handleRunIngest} onRestart={handleRestart} onDrainRestart={handleDrainRestart} onRefreshSystem={loadSystem} />,
     webhooks: <WebhooksPage toast={toast} />,
     alerts: <AlertsPage toast={toast} />,
-    security: <SecurityPage toast={toast} />,
+    security: <SecurityPage />,
     feedhealth: <FeedHealthPage system={system} toast={toast} mode={mode} onReload={loadSystem} highlightSource={urlFilters.feedSource} />,
     ingestlog: <IngestLogPage toast={toast} onErrorCountChange={setIngestErrorCount} active={page === 'ingestlog'} urlFilters={urlFilters.ingest} />,
     auditlog: <AuditLogPage toast={toast} urlFilters={urlFilters.audit} />,

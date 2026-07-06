@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { fetchChanges } from '../api.js'
+import { notifyApiError } from './Toast.jsx'
+import { ingestLogUrl } from '../utils/adminLinks.js'
 import { scrollBehavior } from '../utils/motion.js'
 import './WhatChangedPanel.css'
 
@@ -68,6 +70,7 @@ export default function WhatChangedPanel({ onSelectCVE }) {
   const [changes, setChanges] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [errorRequestId, setErrorRequestId] = useState(null)
   const [collapsed, setCollapsed] = useState(false)
   const panelRef = useRef(null)
   const filtersInitialMountRef = useRef(true)
@@ -83,16 +86,11 @@ export default function WhatChangedPanel({ onSelectCVE }) {
     })
   }
 
-  useEffect(() => {
-    if (filtersInitialMountRef.current) {
-      filtersInitialMountRef.current = false
-    } else {
-      scrollPanelToTop()
-    }
-
+  const loadChanges = useCallback(() => {
     let cancelled = false
     setLoading(true)
     setError(null)
+    setErrorRequestId(null)
 
     fetchChanges({ field: fieldFilter, sinceHours, limit: 50 })
       .then(data => {
@@ -104,6 +102,8 @@ export default function WhatChangedPanel({ onSelectCVE }) {
         if (!cancelled) {
           setChanges([])
           setError(err?.message || 'Unable to load recent changes.')
+          setErrorRequestId(err?.requestId || null)
+          notifyApiError(err)
         }
       })
       .finally(() => {
@@ -114,6 +114,15 @@ export default function WhatChangedPanel({ onSelectCVE }) {
       cancelled = true
     }
   }, [fieldFilter, sinceHours])
+
+  useEffect(() => {
+    if (filtersInitialMountRef.current) {
+      filtersInitialMountRef.current = false
+    } else {
+      scrollPanelToTop()
+    }
+    return loadChanges()
+  }, [loadChanges])
 
   function handleRowClick(cveId) {
     if (!cveId || !onSelectCVE) return
@@ -179,7 +188,22 @@ export default function WhatChangedPanel({ onSelectCVE }) {
             </p>
           )}
           {!loading && error && (
-            <p className="what-changed-empty">{error}</p>
+            <div className="what-changed-error">
+              <p className="what-changed-empty">
+                {error}
+                {errorRequestId && (
+                  <>
+                    {' '}
+                    (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
+                      ref: {errorRequestId}
+                    </a>)
+                  </>
+                )}
+              </p>
+              <button type="button" className="what-changed-retry-btn" onClick={loadChanges}>
+                Retry
+              </button>
+            </div>
           )}
           {!loading && !error && changes.length === 0 && (
             <p className="what-changed-empty">No tracked field changes in this window.</p>

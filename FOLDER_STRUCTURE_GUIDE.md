@@ -18,8 +18,8 @@ Every file in the repository with a one-line purpose. Tags:
 | Path | Description |
 |---|---|
 | `backend/main.py` | FastAPI app wiring only: lifespan, CORS + security-header middleware, router includes (~200 lines; V1.2 router split complete) |
-| `backend/settings.py` | Pydantic `BaseSettings` env config (phase 1: `BRIEFR_ENV`, `BRIEFR_ADMIN_API_KEY`, `ALLOWED_ORIGINS`, rate limit + log format) |
-| `backend/dependencies.py` | Shared route dependencies: admin-key gate, audit-log writer |
+| `backend/settings.py` | Pydantic `BaseSettings` env config (phase 1: `BRIEFR_ENV`, `ALLOWED_ORIGINS`, rate limit + log format, auth/JWT settings) |
+| `backend/dependencies.py` | Shared route dependencies: session/role gates (`require_user`/`require_admin`), audit-log writer |
 | `backend/database.py` | **[V1.2-SPLIT]** SQLite schema, migrations, upserts, cache, MITRE/ATLAS/OTX persistence (~2,440 lines) |
 | `backend/scheduler.py` | APScheduler: 13 scheduled jobs + startup one-shots, ingest locks, manual refresh entry points |
 | `backend/resilient_client.py` | Shared pooled httpx client: retries, per-source circuit breakers, health registry |
@@ -329,7 +329,7 @@ Every file in the repository with a one-line purpose. Tags:
 | `APPLICATION_EXECUTION_MAP.md` | Startup sequence and request journeys |
 | `CODEBASE_CONTEXT.md` | Consolidated codebase reference for AI assistants and contributors |
 | `FOLDER_STRUCTURE_GUIDE.md` | This file |
-| `docs/diagrams/*.mermaid` | Mermaid diagrams (architecture, flows, schema, startup) |
+| `docs/diagrams/*.mermaid` | Mermaid diagrams — master `system-graph.mermaid`, `architecture.mermaid`, flows (CVE, IOC, NVD, PDF, error handling), `schema.mermaid`, `startup.mermaid` |
 | `screenshots/brief.png` | README screenshot — BRIEF tab CVE feed |
 | `screenshots/ioc-lookup.png` | README screenshot — IOC LOOKUP tab |
 | `screenshots/incidents-news.png` | README screenshot — INCIDENTS & NEWS tab |

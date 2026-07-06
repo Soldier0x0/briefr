@@ -1,6 +1,6 @@
 # BRIEFR product status
 
-**Last updated:** 2026-06-24  
+**Last updated:** 2026-07-05  
 **Purpose:** Single page for “what’s true in production today.” When README or beta docs disagree, this wins.
 
 ---
@@ -10,11 +10,11 @@
 | Area | Status |
 |------|--------|
 | **Database** | **PostgreSQL required** (`DATABASE_URL`, `BRIEFR_REQUIRE_POSTGRES=1`). SQLite removed from production path. |
-| **Auth** | Built-in app login + sessions (first-run `/api/auth/setup`). Optional Cloudflare Zero Trust at **edge** (operator policy, not in app code). |
+| **Auth** | Built-in app login + sessions (first-run `/api/auth/setup`); admin/refresh routes require the **admin role** (Sprint A0). Legacy `BRIEFR_ADMIN_API_KEY` removed. Wallboard token is **header-only** (`X-BRIEFR-Wallboard-Token`; `?token=` removed, Sprint A7). Optional Cloudflare Zero Trust at **edge** (operator policy, not in app code). |
 | **Rate limits** | Token buckets on IOC, refresh, admin, auth; set `RATE_LIMIT_ENABLED=1` in production. |
 | **API queue** | Outbound API serialization (#221) for NVD/OTX/etc. |
 | **Correlation** | Engine v2 — DB-backed campaigns, nightly OTX, drawer Intel tab. |
-| **Admin** | Security, backups, job status, config (V1.4 operator features largely shipped). |
+| **Admin** | Security, backups, job status, config (V1.4 operator features largely shipped). Production posture self-check (Sprint A6): startup logs one warning per unsafe flag (`RATE_LIMIT_ENABLED=0`, `AUTH_COOKIE_SECURE=0`, tokenless wallboard) when `BRIEFR_ENV=production`; the Security panel shows the same warnings. |
 | **Snooze** | Removed from UI (#137); future **Monitor** alerts not built. |
 | **Theme** | Dark only. |
 | **Docker compose** | Postgres compose exists; full V2.0 platform compose not shipped. |
@@ -30,8 +30,7 @@
 | Layer | What | Notes |
 |-------|------|-------|
 | **Edge (optional)** | Cloudflare Tunnel + Zero Trust email OTP | Protects public hostname; not embedded in FastAPI |
-| **Application** | Username/password + server sessions | Portable self-host; CF JWT middleware **dropped** (#93) |
-| **Interim admin** | `BRIEFR_ADMIN_API_KEY` on refresh routes | Optional until edge removed |
+| **Application** | Username/password + server sessions; admin routes check the `admin` role | Portable self-host; CF JWT middleware **dropped** (#93); legacy admin key **removed** (Sprint A0 — it failed open when unset) |
 
 ---
 

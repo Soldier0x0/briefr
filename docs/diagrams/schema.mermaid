@@ -7,12 +7,17 @@ erDiagram
   cves ||--o{ epss_history : tracks
   cves ||--o{ cve_exploits : has
   cves ||--o{ cve_change_history : changes
+  cves ||--o{ cve_embeddings : has
   cves ||--o{ otx_cve_pulses : has
   otx_cve_pulses ||--o{ otx_pulse_iocs : contains
   cves ||--o{ correlation_infrastructure : cve_id_a
   cves ||--o{ correlation_actor : has
+  cves ||--o{ correlation_campaign_members : member_of
+  correlation_campaigns ||--o{ correlation_campaign_members : contains
   mitre_groups ||--o{ group_technique_map : uses
   mitre_techniques ||--o{ group_technique_map : linked
+  users ||--o{ sessions : has
+  webhook_destinations ||--o{ webhook_delivery_log : delivers
 
   cves {
     TEXT cve_id PK
@@ -44,6 +49,29 @@ erDiagram
     TEXT updated_at
   }
 
+  users {
+    INTEGER id PK
+    TEXT username UK
+    TEXT password_hash
+    TEXT role
+    INTEGER is_active
+    TEXT created_at
+    TEXT last_login_at
+  }
+
+  sessions {
+    INTEGER id PK
+    INTEGER user_id FK
+    TEXT refresh_token_hash
+    TEXT created_at
+    TEXT last_used_at
+    TEXT expires_at
+    TEXT revoked_at
+    TEXT user_agent
+    TEXT ip
+    INTEGER remember_me
+  }
+
   feed_cache {
     TEXT cache_key PK
     TEXT result
@@ -61,4 +89,32 @@ erDiagram
     TEXT key PK
     TEXT value
     TEXT updated_at
+  }
+
+  audit_log {
+    INTEGER id PK
+    TEXT action
+    TEXT actor
+    TEXT detail
+    TEXT request_id
+    TEXT created_at
+  }
+
+  webhook_destinations {
+    TEXT id PK
+    TEXT kind
+    TEXT label
+    INTEGER enabled
+    TEXT event_types
+    TEXT config_json
+  }
+
+  webhook_delivery_log {
+    INTEGER id PK
+    TEXT destination_id FK
+    TEXT event_type
+    TEXT dedupe_key
+    TEXT status
+    TEXT error
+    TEXT attempted_at
   }

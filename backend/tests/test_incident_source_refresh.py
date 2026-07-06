@@ -21,11 +21,10 @@ def _setup_db(tmp_path, monkeypatch, name: str) -> None:
 
 
 @pytest.fixture
-def admin_client(tmp_path, monkeypatch):
+def admin_client(tmp_path, monkeypatch, auth_token):
     db_path = tmp_path / "incidents_admin.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setenv("BRIEFR_ADMIN_API_KEY", "")
 
     async def _noop_async():
         return None
@@ -44,7 +43,9 @@ def admin_client(tmp_path, monkeypatch):
 
     from main import app
 
-    return TestClient(app, raise_server_exceptions=False)
+    client = TestClient(app, raise_server_exceptions=False)
+    client.cookies.set("briefr_at", auth_token())
+    return client
 
 
 def test_refresh_unknown_source_returns_400(admin_client):

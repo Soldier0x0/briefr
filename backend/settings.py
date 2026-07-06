@@ -26,7 +26,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(extra="ignore")
 
     briefr_env: str = "development"
-    briefr_admin_api_key: str = ""
     allowed_origins: str = "http://localhost:3000"
     database_url: str = ""
     db_path: str = ""
@@ -46,12 +45,11 @@ class Settings(BaseSettings):
     # V1.4 Theme 4 — optional read-only kiosk token (X-BRIEFR-Wallboard-Token).
     wallboard_token: str = ""
 
-    # Built-in app login (decision 2026-06-11) — replaces X-BRIEFR-Admin-Key.
+    # Built-in app login (decision 2026-06-11) — the only auth mechanism.
     jwt_secret: str = ""
     jwt_access_token_minutes: int = 15
     refresh_token_days: int = 30
     auth_cookie_secure: bool = True
-    allow_legacy_admin_key: bool = True
     rate_limit_login_per_minute: int = 5
     rate_limit_auth_refresh_per_minute: int = 30
 
@@ -59,11 +57,6 @@ class Settings(BaseSettings):
     @classmethod
     def _normalize_env(cls, value: str) -> str:
         return value.strip().lower()
-
-    @field_validator("briefr_admin_api_key")
-    @classmethod
-    def _strip_admin_key(cls, value: str) -> str:
-        return value.strip()
 
     @field_validator("wallboard_token")
     @classmethod
@@ -114,3 +107,39 @@ if settings.is_production and not settings.jwt_secret:
     raise RuntimeError(
         "JWT_SECRET must be set in production (generate with `openssl rand -hex 32`)"
     )
+
+
+def production_posture_warnings(config: Settings = settings) -> list[dict[str, str]]:
+    """Unsafe-flag report for production posture (Sprint A6).
+
+    Each entry: {"flag": <env var name>, "message": <operator-facing text>}.
+    Computed from current settings regardless of environment so the admin
+    Security panel can show posture anywhere; main.py logs the warnings at
+    startup only when is_production.
+    """
+    warnings: list[dict[str, str]] = []
+    if not config.rate_limit_enabled:
+        warnings.append({
+            "flag": "RATE_LIMIT_ENABLED=0",
+            "message": (
+                "IOC, refresh, admin, wallboard, and auth endpoints are not "
+                "throttled. Set RATE_LIMIT_ENABLED=1."
+            ),
+        })
+    if not config.auth_cookie_secure:
+        warnings.append({
+            "flag": "AUTH_COOKIE_SECURE=0",
+            "message": (
+                "Auth cookies are sent over plain HTTP and can be intercepted. "
+                "Set AUTH_COOKIE_SECURE=1 behind HTTPS."
+            ),
+        })
+    if not config.wallboard_token:
+        warnings.append({
+            "flag": "WALLBOARD_TOKEN unset",
+            "message": (
+                "/api/wallboard is readable without a token. Set "
+                "WALLBOARD_TOKEN to require X-BRIEFR-Wallboard-Token."
+            ),
+        })
+    return warnings

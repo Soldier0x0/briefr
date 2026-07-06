@@ -247,7 +247,7 @@ Trade-off documented in README: **not designed for concurrent multi-tenant write
 | **Vulnrichment gap-fill** | CISA Vulnrichment fills CVSS/CWE/CPE for NVD-unanalyzed CVEs additively — never overwrites official NVD data. |
 | **Correlation is DB-only at request time** | External OTX data pre-cached by nightly job; on-demand correlation reads `correlation_*` tables + `feed_cache`. |
 | **Snooze removed from UI** | Watchlist supports `pin` only in UI; legacy snooze rows cleared via `DELETE /api/watchlist/snoozes` on load. |
-| **No app-level auth yet** | `BRIEFR_ADMIN_API_KEY` optionally gates `POST /api/refresh*` only. Built-in login planned before public release. |
+| **Built-in app login** | Sessions via `briefr_at`/`briefr_rt` cookies; `/api/admin*` and `POST /api/refresh*` require the `admin` role (legacy admin-key gate removed, Sprint A0). |
 | **Playwright smoke skips incident feed scheduler** | `PLAYWRIGHT_SMOKE=1` disables `incident_feed_refresh` job to avoid RSS network in CI. |
 
 ## Documented trade-offs and planned work
@@ -336,11 +336,11 @@ IOCLookup.jsx → POST /api/ioc/lookup
 
 ## Authentication / authorization flow
 
-**No built-in app login.** Current controls:
+**Built-in app login** (JWT access cookie + rotating refresh sessions). Current controls:
 
 | Mechanism | Scope | Implementation |
 |-----------|-------|----------------|
-| `BRIEFR_ADMIN_API_KEY` | `POST /api/refresh*` only | `dependencies.require_admin_key()` checks `X-BRIEFR-Admin-Key` header via `secrets.compare_digest` |
+| Session + admin role | `/api/admin/*`, `POST /api/refresh*` | `dependencies.require_admin()` — valid `briefr_at` cookie with `role == "admin"` (401/403 otherwise) |
 | Rate limiting | `POST /api/ioc/lookup`, `POST /api/refresh*` | `rate_limit.py` — 429 + `Retry-After` |
 | CORS | All `/api/*` | `ALLOWED_ORIGINS` env var |
 | Security headers | All responses | CSP, X-Frame-Options, etc. in `main.py` middleware |

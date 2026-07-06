@@ -12,6 +12,126 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-06 — Track A closed out (A4–A7); Track B is next
+
+**Session:** docs sync only — no code changed this session. Confirmed
+against `origin/main` (local `main` was 5 commits stale) that Track A
+finished since the 2026-07-05 entry below, via PRs #265–#267. Two more
+commits landed after that, outside the sprint tracks: #268 (Mermaid
+architecture diagrams refreshed) and #269 (graphify knowledge-graph
+integration added for Cursor — `.cursor/rules/graphify.mdc`,
+`.graphifyignore`, `graphify-out/` now committed).
+
+### What merged
+
+- **A4 + A5 — PR #265.** `PoolExhaustedError` handler now returns a fixed
+  "Server is busy..." message instead of `str(exc)` (exception stays in the
+  log only; the old test asserting `str(exc)`-in-response was updated).
+  A5 was an inventory-then-fix pass over every analyst-facing async view
+  (`CVEFeed`, `MorningBrief`, `IOCLookup`, `CaseStudies`, `DetailDrawer`/
+  `openCveDrawer.js`, `BriefCharts`, `TimelineHeatmap`, `WhatChangedPanel`,
+  `Sidebar`, `StatsRow`, `Forge`) — each now has message + `ref:<request-id>`
+  + retry, no silent failures. Full per-component before/after inventory is
+  in `docs/SPRINT_2026-07.md` under A5. Explicitly left silent:
+  `FeedRefreshStatus` and DetailDrawer's best-effort secondary tabs
+  (momentum, detection sparkline) — documented rationale, not an oversight.
+- **A6 — PR #266.** `settings.production_posture_warnings()` reports every
+  unsafe flag (`RATE_LIMIT_ENABLED=0`, `AUTH_COOKIE_SECURE=0`,
+  `WALLBOARD_TOKEN` unset) as one warning per flag at startup when
+  `BRIEFR_ENV=production`; `GET /api/admin/security` surfaces the same list
+  in the existing Security panel as amber callouts. Also fixed a stale
+  "Auth: None on any endpoint" line in `API_REFERENCE.md` left over from
+  pre-A0.
+- **A7 — PR #267.** Wallboard token now header-only
+  (`X-BRIEFR-Wallboard-Token`); `?token=` query param rejected (leaked into
+  access logs/history). Dropped the deprecated `X-XSS-Protection` header
+  from backend middleware and all nginx configs. CSP tightened to
+  self-only for `style-src`/`font-src` — fonts turned out to already be
+  self-hosted via `@fontsource` (`main.jsx`), so the Google Fonts CSP
+  allowances were dead weight, not an active dependency the item expected
+  to remove. Fixed the stale "SQLite pins us to one worker" docstring in
+  `rate_limit.py`; documented in `briefr-backend.service` that
+  `--workers 1` is deliberate (in-memory rate-limit buckets are per-worker).
+
+### Next steps
+
+Track A (A0–A7) is fully closed. Next is **Track B — structural refactor**,
+starting with **B1** (CVE ID validator helper, ~25 lines) per
+`docs/REFACTOR_PLAN.md`. Rules unchanged: one phase = one PR = one deploy,
+full `pytest` + `npm run build` green before advancing, B3 (`database.py`
+split) is the risky phase and needs a careful diff review, B4–B5
+additionally need hand verification in the browser (drawer tabs, PDF/XLSX
+export).
+
+---
+
+## 2026-07-05 — Security architecture review; sprint gains A0/A6/F3
+
+**Session:** maintainer + AI security review. **Docs-only — no code
+changed.** Findings verified by reading `dependencies.py`, `routers/auth.py`,
+`settings.py`, `rate_limit.py`, `db/connection.py`, `utils/exportXlsx.js` —
+not from docs. Since the 2026-07-03 entry, main also picked up PR #257
+(DETECT tab 500 on Postgres — a live danger-zone-#1 hit) and PR #258
+(admin log search); branch `fix/deploy-npm-ci-not-install` (npm ci for
+production frontend builds) was open at session time.
+
+### Findings (verified against code)
+
+1. **`require_admin` fails open by default.** `allow_legacy_admin_key`
+   defaults true; with `BRIEFR_ADMIN_API_KEY` unset (the normal case since
+   built-in login shipped) every admin route is **unauthenticated** unless
+   CF Access happens to sit in front. Decision: **delete the legacy key
+   path entirely** — not gate it. Sprint A0 + Spec A0.
+2. `require_admin` never checks the JWT `role` claim — any authenticated
+   user is admin. Latent until a second user exists; folded into A0.
+3. `audit()` catches only `sqlite3.OperationalError`; the Postgres wrapper
+   raises raw asyncpg errors, so an audit-write failure can 500 a valid
+   admin action in production (danger zone #1 in exception space, not SQL
+   space). Immediate fix in A0; class fix added to the post-Track-B
+   native-SQL conversion notes.
+4. Wallboard token accepted via query string (leaks into access logs /
+   history; low severity, read-only surface). Sprinted as **A7** together
+   with the deprecated `X-XSS-Protection` header, Google-Fonts CSP
+   allowance (vendor the fonts for air-gap credibility), and the stale
+   single-worker rate-limit docstring.
+5. **Clean checks — no action:** XLSX export uses ExcelJS string cells
+   (no formula injection from upstream CVE text), no
+   `dangerouslySetInnerHTML` anywhere, webhook SSRF tests exist, refresh
+   rotation + reuse detection solid, rate-limit proxy trust solid.
+
+### Plan changes (edited `docs/SPRINT_2026-07.md` this session)
+
+- Track A: new **A0** (delete legacy key + role check + audit fix +
+  security-invariant tests; one PR, mostly deletions — do **before**
+  A2/A3), **A6** (production posture self-check), and **A7** (security
+  hygiene: wallboard header-only, drop X-XSS-Protection, vendor fonts,
+  worker-pin note). A1 ticked (PR #255).
+- After-Track-B notes: one app-level DB exception type, no `sqlite3.*`
+  handling outside `db/`, CI dump→restore round-trip for backups.
+- Track F: new **F3** pre-flip security pass (gitleaks over full history,
+  rotate any committed key, `SECURITY.md`, reconcile "All rights reserved"
+  headers with AGPL) — blocks the open-source flip.
+- Appendix: **Spec A0** with the verified removal scope. Gemini review of
+  PR #260 caught that the legacy key is **runtime-rotatable** (SecurityPage
+  Rotate flow → `POST /config/apply-all` → `APPLY_ALL_EXTRA_KEYS`) and that
+  `api.js` still attaches `X-BRIEFR-Admin-Key` on adminApi requests — spec
+  expanded to delete the whole rotation chain, frontend included.
+
+### Explicitly rejected (don't re-litigate)
+
+2FA/OIDC, CSRF tokens, Redis-backed rate limiting — wrong size for a
+single-operator self-hosted app with `SameSite=Strict` cookies and
+optional CF Access. Scoped API tokens only when a real machine consumer
+appears.
+
+### Next steps
+
+1. **A0** per Spec A0 (check the production crontab/systemd timers for
+   `X-BRIEFR-Admin-Key` callers before merging).
+2. A2+A3 per spec; A4 rides along. Then Track B unchanged.
+
+---
+
 ## 2026-07-03 — Strategy, repo cleanup, error-loop plan, July sprint
 
 **Session:** maintainer + AI planning/execution session. All output landed

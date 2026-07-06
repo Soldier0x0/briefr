@@ -1,0 +1,98 @@
+flowchart TB
+  subgraph Clients["Clients"]
+    Browser["Analyst browser<br/>React SPA :5173"]
+    Kiosk["Wallboard kiosk"]
+    AdminOp["Operator /admin"]
+  end
+
+  subgraph EdgeOpt["Optional edge — operator-managed"]
+    CF["Cloudflare Tunnel + Zero Trust OTP"]
+  end
+
+  subgraph Frontend["frontend/src — React 19 + Vite"]
+    direction TB
+    Boot["main.jsx — AuthContext · AssetProfileContext"]
+    Routes["App.jsx — /login · /admin · /wallboard · tabs"]
+    Tabs["BRIEF · FEED · IOC · Incidents · FORGE<br/>hidden panels — state preserved on tab switch"]
+    Overlay["DetailDrawer · InvestigationPanel · modals"]
+    API_FE["api.js — credentials:include · 401 refresh<br/>err.requestId from X-Request-ID"]
+    UX["Toast + inline errors — detail + ref + retry"]
+    Boot --> Routes --> Tabs
+    Tabs --> API_FE
+    Overlay --> API_FE
+    API_FE -.-> UX
+  end
+
+  subgraph Proxy["nginx / Vite dev proxy"]
+    NGX["/ → static dist · /api → :8000"]
+  end
+
+  subgraph Backend["backend/ — FastAPI :8000"]
+    direction TB
+    Entry["main.py lifespan"]
+    MW["Middleware: X-Request-ID · security headers · CORS"]
+    Routers["routers/ — cves · ioc · auth · admin · brief · forge · atlas · refresh · wallboard · health"]
+    Deps["dependencies.py — require_user · require_admin(role) · audit"]
+    Domain["feeds/ · enrichment/ · correlation/ · detection/ · scoring/ · ai/ · ml/ · webhooks/"]
+    Infra["scheduler.py · resilient_client · api_queue · rate_limit · settings"]
+    Entry --> MW --> Routers
+    Routers --> Deps
+    Routers --> Domain
+    Domain --> Infra
+  end
+
+  subgraph Scheduler["APScheduler — 14 base jobs + 3 conditional"]
+    direction LR
+    Ingest["NVD · KEV · EPSS · MITRE · ATLAS · OTX · Vulnrichment · cvelistV5 · exploits"]
+    Intel["correlation nightly · embeddings · LLM extract"]
+    Ops["backup · deadman · session cleanup · incident RSS"]
+  end
+
+  subgraph Data["Data layer"]
+    PG[("PostgreSQL 16<br/>asyncpg pool")]
+    Dialect["db/dialect.py — SQLite translation for tests/dev only"]
+    DBMod["database.py — all SQL (~3k lines)"]
+    DBMod --> Dialect --> PG
+  end
+
+  subgraph External["External intel APIs"]
+    EXT["NVD · KEV · EPSS · MITRE · OTX · VT · AbuseIPDB<br/>Groq · Anthropic · GitHub · RSS · OSV · CIRCL …"]
+  end
+
+  Browser --> CF --> NGX
+  AdminOp --> NGX
+  Kiosk -->|optional WALLBOARD_TOKEN| MW
+  NGX --> Boot
+  NGX -->|/api| MW
+  API_FE -->|session cookies| MW
+
+  Ingest & Intel & Ops --> Domain
+  Ingest & Intel & Ops --> DBMod
+  Domain --> DBMod
+  Routers --> DBMod
+  Domain --> EXT
+  Routers -->|on-demand enrich| EXT
+
+  subgraph Auth["Auth layers"]
+    L1["Edge: Cloudflare Zero Trust (optional)"]
+    L2["App: JWT access + refresh cookies · role=admin for admin routes"]
+    L3["Abuse: rate_limit token buckets — IOC · refresh · login · wallboard"]
+  end
+
+  CF -.-> L1
+  Deps -.-> L2
+  Infra -.-> L3
+
+  subgraph SprintA["Sprint A — error loop (shipped)"]
+    A0["A0: legacy admin key removed · role check"]
+    A2["A2–A5: request-id · toast · error states"]
+    A6["A6: production posture warnings"]
+    A7["A7: wallboard header-only · fonts · CSP (next)"]
+  end
+
+  MW -.-> A2
+  Deps -.-> A0
+  Infra -.-> A6
+  UX -.-> A2
+
+  linkStyle default stroke:#64748b

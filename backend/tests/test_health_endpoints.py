@@ -44,8 +44,10 @@ def test_pool_exhausted_returns_503(client, monkeypatch):
     async def _saturated():
         raise PoolExhaustedError("PostgreSQL pool saturated (test)")
 
-    monkeypatch.setattr("database.get_connection", _saturated)
+    monkeypatch.setattr("db.init.get_connection", _saturated)
 
     res = client.get("/api/health")
     assert res.status_code == 503
-    assert "saturated" in res.json()["detail"].lower()
+    # Detail is a fixed, safe message — the real exception stays in the log
+    # only (Sprint A4), never echoed back to the client.
+    assert res.json()["detail"] == "Server is busy — please retry in a few seconds."

@@ -974,6 +974,22 @@
   color: var(--red);
 }
 
+.ioc-quota-retry-btn {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--text2);
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 1px 8px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+
+.ioc-quota-retry-btn:hover {
+  color: var(--text);
+  border-color: var(--text3);
+}
+
 .quota-service-block {
   padding: 10px 0;
   border-top: 1px solid var(--border);

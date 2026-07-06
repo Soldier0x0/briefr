@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { fetchKEVDeadlines, fetchChanges, fetchCVEEpssHistory } from '../api.js'
+import { notifyApiError } from './Toast.jsx'
+import { ingestLogUrl } from '../utils/adminLinks.js'
 import { loadChartJs, readChartTheme } from '../utils/chartLoader.js'
 import { prefersReducedMotion } from '../utils/motion.js'
 import { kevBucketDateRange } from '../utils/kevDeadline.js'
@@ -312,6 +314,8 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
   const [epssHistoryLoading, setEpssHistoryLoading] = useState(false)
   const [kevWindow, setKevWindow] = useState(() => defaultPresetWindow('30d'))
   const [epssWindow, setEpssWindow] = useState(() => defaultPresetWindow('7d'))
+  const [error, setError] = useState(null)
+  const [errorRequestId, setErrorRequestId] = useState(null)
 
   const kevRef = useRef(null)
   const chartsRef = useRef({ kev: null })
@@ -339,6 +343,15 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
     if (changesRes.status === 'fulfilled') {
       setEpssChanges(Array.isArray(changesRes.value?.data) ? changesRes.value.data : [])
     }
+    const failed = [kevRes, changesRes].find(r => r.status === 'rejected')
+    if (failed) {
+      setError(failed.reason?.message || 'Failed to load chart data.')
+      setErrorRequestId(failed.reason?.requestId || null)
+      notifyApiError(failed.reason)
+    } else {
+      setError(null)
+      setErrorRequestId(null)
+    }
   }, [epssHours])
 
   useEffect(() => {
@@ -346,18 +359,22 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
     let cancelled = false
     setLoading(true)
     loadData(controller.signal)
-      .catch(() => {})
       .finally(() => {
         if (!cancelled) setLoading(false)
       })
     const pollId = setInterval(() => {
-      loadData(controller.signal).catch(() => {})
+      loadData(controller.signal)
     }, POLL_MS)
     return () => {
       cancelled = true
       controller.abort()
       clearInterval(pollId)
     }
+  }, [loadData])
+
+  const handleRetry = useCallback(() => {
+    setLoading(true)
+    loadData().finally(() => setLoading(false))
   }, [loadData])
 
   useEffect(() => {
@@ -503,10 +520,46 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
             <p className="brief-charts-loading mono" aria-live="polite">
               Loading charts…
             </p>
+          ) : error && !hasData ? (
+            <div className="brief-charts-error mono" role="alert">
+              <span>
+                {error}
+                {errorRequestId && (
+                  <>
+                    {' '}
+                    (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
+                      ref: {errorRequestId}
+                    </a>)
+                  </>
+                )}
+              </span>
+              <button type="button" className="brief-charts-retry-btn" onClick={handleRetry}>
+                Retry
+              </button>
+            </div>
           ) : !hasData ? (
             <p className="brief-charts-empty mono">No chart data yet — wait for ingest.</p>
           ) : (
-            <div className="brief-charts-grid">
+            <>
+              {error && (
+                <div className="brief-charts-error mono brief-charts-error--partial" role="alert">
+                  <span>
+                    Some chart data failed to load: {error}
+                    {errorRequestId && (
+                      <>
+                        {' '}
+                        (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
+                          ref: {errorRequestId}
+                        </a>)
+                      </>
+                    )}
+                  </span>
+                  <button type="button" className="brief-charts-retry-btn" onClick={handleRetry}>
+                    Retry
+                  </button>
+                </div>
+              )}
+              <div className="brief-charts-grid">
               <article className="brief-chart-card" aria-label="KEV due-date histogram">
                 <div className="brief-chart-card-head">
                   <h3 className="brief-chart-card-title">KEV DUE DATES</h3>
@@ -541,7 +594,8 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
                     : (epssWindow.presetId || `${epssHours}h`)}
                 />
               </article>
-            </div>
+              </div>
+            </>
           )}
         </div>
       )}

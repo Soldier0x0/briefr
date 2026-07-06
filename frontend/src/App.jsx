@@ -14,7 +14,7 @@ import Sidebar from './components/Sidebar.jsx'
 import IOCLookup from './components/IOCLookup.jsx'
 import CaseStudies from './components/CaseStudies.jsx'
 import Forge from './components/Forge.jsx'
-import DetailDrawer from './components/DetailDrawer.jsx'
+import DetailDrawer from './components/DetailDrawer'
 import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
 import ToolErrorBoundary from './components/ToolErrorBoundary.jsx'
@@ -24,6 +24,7 @@ import LoginPage from './pages/LoginPage.jsx'
 import AdminPage from './pages/admin/AdminPage.jsx'
 import WallboardPage from './pages/WallboardPage.jsx'
 import RequireAuth from './components/RequireAuth.jsx'
+import { useToast, ToastArea } from './components/Toast.jsx'
 import { fetchStats, fetchHealth, fetchCVE } from './api.js'
 import { useWatchlist } from './hooks/useWatchlist.js'
 import { useAssetProfileOptional } from './context/AssetProfileContext.jsx'
@@ -35,6 +36,7 @@ import {
 import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
 import { createCveDrawerController } from './utils/openCveDrawer.js'
 import { lazyWithReload } from './utils/lazyWithReload.js'
+import { ingestLogUrl } from './utils/adminLinks.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 import './components/InvestigationPanel.css'
 
@@ -121,7 +123,7 @@ function cycleFilter(filters) {
   return { ...filters, kev_only: false, poc_only: false, severity: null }
 }
 
-function BriefView({ stats, filters, setFilters,
+function BriefView({ stats, statsError, statsErrorRequestId, onRetryStats, filters, setFilters,
                     timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
                     showAiAlerts, onAiAlertsClick, onOpenFullFeed, onSelectCVE,
                     feedHealth }) {
@@ -157,6 +159,9 @@ function BriefView({ stats, filters, setFilters,
       <Hero />
       <StatsRow
         stats={stats}
+        error={statsError}
+        errorRequestId={statsErrorRequestId}
+        onRetry={onRetryStats}
         showAiAlerts={showAiAlerts}
         onAiAlertsClick={onAiAlertsClick}
       />
@@ -252,6 +257,7 @@ export default function App() {
   const [stats, setStats]                       = useState(null)
   const [selectedCVE, setSelectedCVE]           = useState(null)
   const [drawerLoading, setDrawerLoading]       = useState(false)
+  const [drawerError, setDrawerError]           = useState(null)
   const drawerControllerRef = useRef(null)
   const [digestOpen, setDigestOpen]             = useState(false)
   const [digestCVEs, setDigestCVEs]             = useState([])
@@ -269,11 +275,48 @@ export default function App() {
   const [atlasActorFilter, setAtlasActorFilter] = useState(null)
   const assetCtx = useAssetProfileOptional()
   const watchlist = useWatchlist()
+  const { toasts, show: toast, dismiss: dismissToast } = useToast()
+
+  useEffect(() => {
+    const onApiError = (e) => {
+      const { message, requestId } = e.detail || {}
+      toast({
+        message,
+        variant: 'error',
+        actions: requestId
+          ? [{ label: 'View application log', href: ingestLogUrl({ level: 'ERROR', requestId }) }]
+          : [],
+        requestId,
+      })
+    }
+    window.addEventListener('briefr-api-error', onApiError)
+    return () => window.removeEventListener('briefr-api-error', onApiError)
+  }, [toast])
+
+  const [statsError, setStatsError] = useState(null)
+  const [statsErrorRequestId, setStatsErrorRequestId] = useState(null)
 
   const loadStats = useCallback(() => {
     const frameworks = getAiFrameworksForAlerts(assetCtx?.profile)
-    fetchStats({ frameworks }).then(setStats).catch(() => {})
-  }, [assetCtx?.profile])
+    fetchStats({ frameworks })
+      .then(data => {
+        setStats(data)
+        setStatsError(null)
+        setStatsErrorRequestId(null)
+      })
+      .catch(err => {
+        setStatsError(err?.message || 'Failed to load stats.')
+        setStatsErrorRequestId(err?.requestId || null)
+        toast({
+          message: err?.message || 'Failed to load stats.',
+          variant: 'error',
+          actions: err?.requestId
+            ? [{ label: 'View application log', href: ingestLogUrl({ level: 'ERROR', requestId: err.requestId }) }]
+            : [],
+          requestId: err?.requestId,
+        })
+      })
+  }, [assetCtx?.profile, toast])
 
   useEffect(() => {
     if (activeTab === 'feed') {
@@ -298,6 +341,7 @@ export default function App() {
       fetchCVE,
       setSelectedCVE,
       setDrawerLoading,
+      setDrawerError,
     })
   }, [])
 
@@ -311,6 +355,10 @@ export default function App() {
 
   const handleReplaceCVE = useCallback((full) => {
     drawerControllerRef.current?.replace(full)
+  }, [])
+
+  const handleRetryDrawer = useCallback(() => {
+    drawerControllerRef.current?.retry()
   }, [])
 
   useEffect(() => {
@@ -510,6 +558,9 @@ export default function App() {
               atlasActorFilter={atlasActorFilter}
               onClearAtlasFilter={() => setAtlasActorFilter(null)}
               stats={stats}
+              statsError={statsError}
+              statsErrorRequestId={statsErrorRequestId}
+              onRetryStats={loadStats}
               filters={filters}
               setFilters={setFilters}
               selectedCVE={selectedCVE}
@@ -535,6 +586,8 @@ export default function App() {
               onCloseCVE={handleCloseCVE}
               onCveReplace={handleReplaceCVE}
               drawerLoading={drawerLoading}
+              drawerError={drawerError}
+              onRetryDrawer={handleRetryDrawer}
               watchlist={watchlist}
               onWatchlistChange={handleWatchlistChange}
             />
@@ -542,6 +595,7 @@ export default function App() {
           )}
         />
       </Routes>
+      <ToastArea toasts={toasts} onDismiss={dismissToast} />
     </InvestigationProvider>
   )
 }
@@ -557,6 +611,9 @@ function AppLayout({
   atlasActorFilter,
   onClearAtlasFilter,
   stats,
+  statsError,
+  statsErrorRequestId,
+  onRetryStats,
   filters,
   setFilters,
   selectedCVE,
@@ -582,6 +639,8 @@ function AppLayout({
   onCloseCVE,
   onCveReplace,
   drawerLoading,
+  drawerError,
+  onRetryDrawer,
   watchlist,
   onWatchlistChange,
 }) {
@@ -612,6 +671,9 @@ function AppLayout({
             <ToolErrorBoundary label="Brief">
               <BriefView
                 stats={stats}
+                statsError={statsError}
+                statsErrorRequestId={statsErrorRequestId}
+                onRetryStats={onRetryStats}
                 filters={filters}
                 setFilters={setFilters}
                 timezone={timezone}
@@ -699,6 +761,8 @@ function AppLayout({
               <DetailDrawer
                 cve={selectedCVE}
                 loading={drawerLoading}
+                error={drawerError}
+                onRetry={onRetryDrawer}
                 onClose={onCloseCVE}
                 onCveReplace={onCveReplace}
                 watchlistState={

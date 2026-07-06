@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 
 load_dotenv()
 
-from settings import settings
+from settings import production_posture_warnings, settings
 from structured_logging import configure_logging, request_id_var
 
 configure_logging()
@@ -90,11 +90,11 @@ async def lifespan(app: FastAPI):
 
     await init_db()
     logger.info("main.py lifespan: database ready")
-    if settings.is_production and not settings.rate_limit_enabled:
-        logger.warning(
-            "RATE_LIMIT_ENABLED=0 in production — IOC, refresh, admin, wallboard, "
-            "and auth endpoints are not throttled. Set RATE_LIMIT_ENABLED=1."
-        )
+    if settings.is_production:
+        for posture in production_posture_warnings():
+            logger.warning(
+                "Production posture: %s — %s", posture["flag"], posture["message"]
+            )
     await sync_env_destinations_to_db()
     start_scheduler()
     await maybe_run_on_startup()
@@ -135,7 +135,10 @@ async def pool_exhausted_handler(request: Request, exc: PoolExhaustedError):
         request.url.path,
         exc,
     )
-    return JSONResponse(status_code=503, content={"detail": str(exc)})
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "Server is busy — please retry in a few seconds."},
+    )
 
 
 app.add_middleware(
@@ -146,7 +149,6 @@ app.add_middleware(
     allow_headers=[
         "Content-Type",
         "Authorization",
-        "X-BRIEFR-Admin-Key",
         "X-BRIEFR-Wallboard-Token",
     ],
 )
@@ -159,13 +161,12 @@ async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self'; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        "font-src https://fonts.gstatic.com; "
+        "style-src 'self' 'unsafe-inline'; "
+        "font-src 'self'; "
         "connect-src 'self'; "
         "img-src 'self' data:; "
         "frame-ancestors 'none'; "

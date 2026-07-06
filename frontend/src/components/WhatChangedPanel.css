@@ -83,6 +83,34 @@
   margin: 0;
 }
 
+.what-changed-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.what-changed-error .what-changed-empty {
+  color: var(--red);
+}
+
+.what-changed-retry-btn {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--text2);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  padding: 4px 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.what-changed-retry-btn:hover {
+  color: var(--text);
+  border-color: var(--text3);
+}
+
 .what-changed-list {
   list-style: none;
   margin: 0;

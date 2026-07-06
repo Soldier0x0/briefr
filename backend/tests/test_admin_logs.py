@@ -20,11 +20,10 @@ from structured_logging import (
 
 
 @pytest.fixture
-def admin_client(tmp_path, monkeypatch):
+def admin_client(tmp_path, monkeypatch, auth_token):
     db_path = tmp_path / "logs.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setenv("BRIEFR_ADMIN_API_KEY", "")
 
     async def _noop_async():
         return None
@@ -43,7 +42,9 @@ def admin_client(tmp_path, monkeypatch):
 
     from main import app
 
-    return TestClient(app, raise_server_exceptions=False)
+    client = TestClient(app, raise_server_exceptions=False)
+    client.cookies.set("briefr_at", auth_token())
+    return client
 
 
 def test_logs_endpoint_returns_structured_payload(admin_client):
@@ -140,12 +141,11 @@ def test_ring_buffer_redacts_secret_extras():
     assert "sk-1234567890abcdef" not in str(entry)
 
 
-def test_auth_failure_creates_audit_row(tmp_path, monkeypatch):
-    """When admin key is set and wrong key is sent, audit log should get auth.failure row."""
+def test_unauthenticated_admin_request_rejected(tmp_path, monkeypatch):
+    """Admin routes require a session cookie — no legacy key fallback (Sprint A0)."""
     db_path = tmp_path / "auth.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setenv("BRIEFR_ADMIN_API_KEY", "correct-secret-key")
 
     async def _noop_async():
         return None
@@ -156,20 +156,9 @@ def test_auth_failure_creates_audit_row(tmp_path, monkeypatch):
 
     asyncio.run(init_db())
 
-    import settings as settings_module
-
-    original_key = settings_module.settings.briefr_admin_api_key
-    settings_module.settings.briefr_admin_api_key = "correct-secret-key"
-
     from main import app
 
     client = TestClient(app, raise_server_exceptions=False)
 
-    try:
-        resp = client.get(
-            "/api/admin/system",
-            headers={"X-BRIEFR-Admin-Key": "wrong-key"},
-        )
-        assert resp.status_code == 401
-    finally:
-        settings_module.settings.briefr_admin_api_key = original_key
+    resp = client.get("/api/admin/system")
+    assert resp.status_code == 401

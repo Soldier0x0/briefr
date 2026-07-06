@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { lookupIOC, fetchIOCUsage } from '../api.js'
+import { notifyApiError } from './Toast.jsx'
+import { ingestLogUrl } from '../utils/adminLinks.js'
 import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
 import { extractActorTags } from '../utils/investigationActors.js'
 import { isValidDomain } from '../utils/domainValidation.js'
@@ -266,11 +268,13 @@ function IOCQuotaPanel() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [errorRequestId, setErrorRequestId] = useState(null)
 
-  useEffect(() => {
+  const loadUsage = useCallback(() => {
     let cancelled = false
     setLoading(true)
     setError(null)
+    setErrorRequestId(null)
     fetchIOCUsage()
       .then(payload => {
         if (!cancelled) setData(payload)
@@ -278,6 +282,7 @@ function IOCQuotaPanel() {
       .catch(err => {
         if (!cancelled) {
           setError(err.message || 'Could not load quota')
+          setErrorRequestId(err?.requestId || null)
           setData(null)
         }
       })
@@ -286,6 +291,8 @@ function IOCQuotaPanel() {
       })
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => loadUsage(), [loadUsage])
 
   const services = data?.services || []
 
@@ -303,7 +310,21 @@ function IOCQuotaPanel() {
           <p className="ioc-quota-loading mono">// Loading usage counters…</p>
         )}
         {error && (
-          <p className="ioc-quota-error mono" role="alert">{error}</p>
+          <p className="ioc-quota-error mono" role="alert">
+            {error}
+            {errorRequestId && (
+              <>
+                {' '}
+                (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
+                  ref: {errorRequestId}
+                </a>)
+              </>
+            )}
+            {' '}
+            <button type="button" className="ioc-quota-retry-btn" onClick={loadUsage}>
+              Retry
+            </button>
+          </p>
         )}
 
         {!loading && !error && services.length > 0 && (
@@ -739,6 +760,7 @@ export default function IOCLookup({ prefill }) {
   const [loading, setLoading]   = useState(false)
   const [result, setResult]     = useState(null)
   const [error, setError]       = useState(null)
+  const [errorRequestId, setErrorRequestId] = useState(null)
   const [copied, setCopied]     = useState(false)
   const [history, setHistory]   = useState([])   // session-only, no localStorage
   const [includeGreynoise, setIncludeGreynoise] = useState(false)
@@ -783,12 +805,14 @@ export default function IOCLookup({ prefill }) {
       setError(
         `'${raw}' is not a valid domain. Paste a full hostname (e.g. plugins.trac.wordpress.org) or URL — filenames like class-query.php cannot be looked up.`,
       )
+      setErrorRequestId(null)
       return
     }
 
     setLoading(true)
     setResult(null)
     setError(null)
+    setErrorRequestId(null)
 
     try {
       const useGreynoise = type === 'ip' && (options.greynoise ?? includeGreynoise)
@@ -830,6 +854,8 @@ export default function IOCLookup({ prefill }) {
       })
     } catch (err) {
       setError(parseError(err))
+      setErrorRequestId(err?.requestId || null)
+      notifyApiError(err)
     } finally {
       setLoading(false)
     }
@@ -1044,7 +1070,17 @@ export default function IOCLookup({ prefill }) {
       {error && (
         <div className="ioc-error-block" role="alert" aria-live="assertive">
           <span className="ioc-error-mark mono" aria-hidden="true">ERR</span>
-          <span>{error}</span>
+          <span>
+            {error}
+            {errorRequestId && (
+              <>
+                {' '}
+                (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
+                  ref: {errorRequestId}
+                </a>)
+              </>
+            )}
+          </span>
         </div>
       )}
 
