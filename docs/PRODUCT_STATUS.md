@@ -14,7 +14,7 @@
 | **Rate limits** | Token buckets on IOC, refresh, admin, auth; set `RATE_LIMIT_ENABLED=1` in production. |
 | **API queue** | Outbound API serialization (#221) for NVD/OTX/etc. |
 | **Correlation** | Engine v2 — DB-backed campaigns, nightly OTX, drawer Intel tab. |
-| **Admin** | Security, backups, job status, config (V1.4 operator features largely shipped). |
+| **Admin** | Security, backups, job status, config (V1.4 operator features largely shipped). Production posture self-check (Sprint A6): startup logs one warning per unsafe flag (`RATE_LIMIT_ENABLED=0`, `AUTH_COOKIE_SECURE=0`, tokenless wallboard) when `BRIEFR_ENV=production`; the Security panel shows the same warnings. |
 | **Snooze** | Removed from UI (#137); future **Monitor** alerts not built. |
 | **Theme** | Dark only. |
 | **Docker compose** | Postgres compose exists; full V2.0 platform compose not shipped. |

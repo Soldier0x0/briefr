@@ -52,7 +52,7 @@ from dependencies import audit, require_admin, trigger_graceful_restart
 from destructive_actions import list_actions, require_confirm
 from rate_limit import get_bucket_stats, get_top_consumers, rate_limit_admin
 from resilient_client import get_api_queue_status, get_feed_health, reset_circuit
-from settings import settings
+from settings import production_posture_warnings, settings
 from structured_logging import LOG_CATEGORIES, get_log_buffer, get_known_loggers
 
 router = APIRouter(
@@ -1735,6 +1735,8 @@ async def get_security(request: Request):
 
     return {
         "failed_auth_last_24h": failed_auth,
+        "environment": settings.briefr_env,
+        "posture_warnings": production_posture_warnings(),
         "rate_limit_enabled": settings.rate_limit_enabled,
         "rate_limit_ioc_per_minute": settings.rate_limit_ioc_per_minute,
         "rate_limit_refresh_per_minute": settings.rate_limit_refresh_per_minute,

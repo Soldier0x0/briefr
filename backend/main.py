@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 
 load_dotenv()
 
-from settings import settings
+from settings import production_posture_warnings, settings
 from structured_logging import configure_logging, request_id_var
 
 configure_logging()
@@ -90,11 +90,11 @@ async def lifespan(app: FastAPI):
 
     await init_db()
     logger.info("main.py lifespan: database ready")
-    if settings.is_production and not settings.rate_limit_enabled:
-        logger.warning(
-            "RATE_LIMIT_ENABLED=0 in production — IOC, refresh, admin, wallboard, "
-            "and auth endpoints are not throttled. Set RATE_LIMIT_ENABLED=1."
-        )
+    if settings.is_production:
+        for posture in production_posture_warnings():
+            logger.warning(
+                "Production posture: %s — %s", posture["flag"], posture["message"]
+            )
     await sync_env_destinations_to_db()
     start_scheduler()
     await maybe_run_on_startup()
