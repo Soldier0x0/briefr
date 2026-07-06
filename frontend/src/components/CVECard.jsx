@@ -199,6 +199,14 @@ export default function CVECard({
               KEV
             </span>
           )}
+          {cve.kev_ransomware_use && (
+            <span
+              className="badge badge-ransomware"
+              title="Known ransomware campaign use (CISA KEV catalog)"
+            >
+              RANSOMWARE
+            </span>
+          )}
           {isPinned && (
             <span className="badge badge-pin" title="Pinned to watchlist">
               PIN

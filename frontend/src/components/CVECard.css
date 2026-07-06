@@ -235,6 +235,13 @@
   border-color: var(--red);
 }
 
+.badge-ransomware {
+  color: var(--red);
+  background: var(--red-dim);
+  border-color: var(--red);
+  font-weight: 700;
+}
+
 .badge-pin {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 15%, var(--bg));

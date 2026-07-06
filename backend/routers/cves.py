@@ -140,6 +140,7 @@ def _row_to_cve_dict(row) -> dict:
     d["kev_date_added"] = (kev_date or "").strip() or None
     kev_due = d.get("kev_due_date")
     d["kev_due_date"] = (kev_due or "").strip() or None
+    d["kev_ransomware_use"] = bool(d.pop("kev_ransomware_use", 0))
     wl_state = d.pop("watchlist_state", None)
     wl_snooze = d.pop("watchlist_snooze_until", None)
     if wl_state:
@@ -348,6 +349,11 @@ CVE_SELECT = """
            c.summary, c.is_kev, c.epss_score, c.has_poc, c.patch_available,
            c.has_ai_context, c.source_urls, c.cwe_ids, c.updated_at,
            (SELECT due_date FROM kev_deadlines k WHERE k.cve_id = c.cve_id) AS kev_due_date,
+           EXISTS (
+               SELECT 1 FROM kev_deadlines kr
+               WHERE kr.cve_id = c.cve_id
+                 AND LOWER(TRIM(COALESCE(kr.known_ransomware, ''))) = 'known'
+           ) AS kev_ransomware_use,
            w.state AS watchlist_state,
            w.snooze_until AS watchlist_snooze_until
     FROM cves c
