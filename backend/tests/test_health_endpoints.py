@@ -44,7 +44,7 @@ def test_pool_exhausted_returns_503(client, monkeypatch):
     async def _saturated():
         raise PoolExhaustedError("PostgreSQL pool saturated (test)")
 
-    monkeypatch.setattr("database.get_connection", _saturated)
+    monkeypatch.setattr("db.init.get_connection", _saturated)
 
     res = client.get("/api/health")
     assert res.status_code == 503
