@@ -855,6 +855,7 @@
 .drawer-otx-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .drawer-otx-adversary { font-size: 0.625rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); background: var(--red-dim); padding: 2px 8px; }
 .drawer-otx-malware { font-size: 0.625rem; letter-spacing: 0.04em; color: var(--text2); background: var(--bg3); border: 1px solid var(--border2); padding: 2px 8px; }
+.drawer-otx-country { font-size: 0.625rem; letter-spacing: 0.06em; color: var(--accent); background: var(--bg); border: 1px solid var(--border); padding: 2px 8px; }
 
 .drawer-gn-sentence {
   font-size: 0.8125rem;

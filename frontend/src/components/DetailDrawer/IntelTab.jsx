@@ -308,6 +308,15 @@ function CampaignPulseRow({ pulse, cve, onInvestigatePulse }) {
           if (!label) return null
           return <span key={`${label}-${famIdx}`} className="drawer-otx-malware mono">{label}</span>
         })}
+        {(pulse.targeted_countries || []).filter(Boolean).slice(0, 6).map((cc, ccIdx) => (
+          <span
+            key={`${cc}-${ccIdx}`}
+            className="drawer-otx-country mono"
+            title="Country targeted in this OTX pulse (AlienVault OTX community intelligence)"
+          >
+            {String(cc).toUpperCase()}
+          </span>
+        ))}
       </div>
       {onInvestigatePulse && pulse.pulse_id && (
         <button type="button" className="drawer-investigate-btn" onClick={() => onInvestigatePulse(pulse, cve)}>
