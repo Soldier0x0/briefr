@@ -192,6 +192,39 @@ def _find_cisa_adp(adp_list: list) -> dict | None:
     return None
 
 
+def _extract_ssvc(metrics: Any) -> dict | None:
+    """Parse CISA SSVC decision points from CVE JSON 5.x ADP metrics."""
+    if not isinstance(metrics, list):
+        return None
+    for metric in metrics:
+        if not isinstance(metric, dict):
+            continue
+        other = metric.get("other")
+        if not isinstance(other, dict) or str(other.get("type") or "").lower() != "ssvc":
+            continue
+        content = other.get("content")
+        if not isinstance(content, dict):
+            continue
+        decisions: dict[str, str] = {}
+        for opt in content.get("options") or []:
+            if not isinstance(opt, dict):
+                continue
+            for key, value in opt.items():
+                if isinstance(value, str) and value.strip():
+                    decisions[str(key)] = value.strip()
+        computed = content.get("computed")
+        if isinstance(computed, str) and computed.strip():
+            decisions["computed"] = computed.strip()
+        if not decisions:
+            continue
+        return {
+            "decisions": decisions,
+            "version": str(content.get("version") or "").strip(),
+            "role": str(content.get("role") or "").strip(),
+        }
+    return None
+
+
 def parse_vulnrichment_record(record: dict) -> dict | None:
     """Extract CISA ADP enrichment fields; used for gap-filling before NVD analysis."""
     if not isinstance(record, dict):
@@ -215,11 +248,12 @@ def parse_vulnrichment_record(record: dict) -> dict | None:
     cvss_score, severity = _extract_cvss(cisa_adp.get("metrics"))
     cwe_ids = _extract_cwes(cisa_adp)
     affected_products = _extract_affected_products(cisa_adp)
+    ssvc = _extract_ssvc(cisa_adp.get("metrics"))
 
-    if cvss_score is None and not cwe_ids and not affected_products:
+    if cvss_score is None and not cwe_ids and not affected_products and not ssvc:
         return None
 
-    return {
+    parsed: dict[str, Any] = {
         "cve_id": cve_id,
         "cvss_score": cvss_score,
         "severity": severity if cvss_score is not None else "UNKNOWN",
@@ -229,6 +263,9 @@ def parse_vulnrichment_record(record: dict) -> dict | None:
         "modified": meta.get("dateUpdated") or "",
         "description": "",
     }
+    if ssvc:
+        parsed["ssvc"] = ssvc
+    return parsed
 
 
 def parse_cvelistv5_record(record: dict) -> dict | None:

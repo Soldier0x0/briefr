@@ -26,6 +26,46 @@ function HumanSentence({ label, text }) {
     </section>
   )
 }
+
+const SSVC_LABELS = [
+  ['Exploitation', 'Evidence of exploitation in the wild or public PoC'],
+  ['Automatable', 'Whether attackers can exploit at scale without per-target setup'],
+  ['Technical Impact', 'Worst-case technical outcome if exploited'],
+  ['Decision', 'CISA Coordinator SSVC outcome (Act / Attend / Track)'],
+]
+
+function SsvcSection({ ssvc }) {
+  const decisions = ssvc?.decisions
+  if (!decisions || typeof decisions !== 'object') return null
+  const rows = SSVC_LABELS.map(([key, explain]) => {
+    const value = decisions[key]
+    if (!value) return null
+    return (
+      <div key={key} className="drawer-ssvc-row">
+        <span className="drawer-ssvc-key mono" title={explain}>{key}</span>
+        <span className="drawer-ssvc-value mono">{value}</span>
+      </div>
+    )
+  }).filter(Boolean)
+  if (!rows.length && !decisions.computed) return null
+  return (
+    <section className="drawer-section" aria-labelledby="ssvc-heading">
+      <h3 id="ssvc-heading" className="drawer-human-label mono">CISA SSVC</h3>
+      <p className="drawer-ssvc-hint mono">
+        Stakeholder-Specific Vulnerability Categorization from CISA Vulnrichment — prioritization context, not a CVSS replacement.
+      </p>
+      <div className="drawer-ssvc-grid" aria-label="SSVC decision points">
+        {rows}
+        {decisions.computed && (
+          <p className="drawer-ssvc-computed mono" title="Compact SSVC vector from CISA">
+            {decisions.computed}
+          </p>
+        )}
+      </div>
+    </section>
+  )
+}
+
 function EpssStaticBar({ score }) {
   const pct = Math.min(score * 100, 100)
   return (
@@ -256,6 +296,8 @@ export default function TabOverview({ cve, riskScore, riskLoading, onOpenProfile
         loading={epssLoading}
         epssSparklineRef={epssSparklineRef}
       />
+
+      <SsvcSection ssvc={cve.ssvc} />
 
       {cve.description && (
         <section className="drawer-section" aria-labelledby="desc-heading">

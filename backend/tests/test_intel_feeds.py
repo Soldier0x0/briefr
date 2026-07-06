@@ -205,6 +205,68 @@ def test_fetch_cvelistv5_delta_advances_watermark():
     asyncio.run(run())
 
 
+def test_parse_vulnrichment_record_extracts_ssvc():
+    record = {
+        "cveMetadata": {"cveId": "CVE-2024-9999", "state": "PUBLISHED"},
+        "containers": {
+            "adp": [
+                {
+                    "title": "CISA ADP Vulnrichment",
+                    "metrics": [
+                        {
+                            "other": {
+                                "type": "ssvc",
+                                "content": {
+                                    "role": "CISA-Coordinator",
+                                    "version": "2.0.3",
+                                    "options": [
+                                        {"Exploitation": "active"},
+                                        {"Automatable": "yes"},
+                                        {"Technical Impact": "total"},
+                                        {"Decision": "Act"},
+                                    ],
+                                },
+                            }
+                        }
+                    ],
+                }
+            ],
+        },
+    }
+    parsed = parse_vulnrichment_record(record)
+    assert parsed is not None
+    assert parsed["ssvc"]["decisions"]["Exploitation"] == "active"
+    assert parsed["ssvc"]["decisions"]["Decision"] == "Act"
+
+
+def test_parse_vulnrichment_record_ssvc_includes_computed_with_options():
+    record = {
+        "cveMetadata": {"cveId": "CVE-2024-9998", "state": "PUBLISHED"},
+        "containers": {
+            "adp": [
+                {
+                    "title": "CISA ADP Vulnrichment",
+                    "metrics": [
+                        {
+                            "other": {
+                                "type": "ssvc",
+                                "content": {
+                                    "options": [{"Exploitation": "active"}],
+                                    "computed": "Exploitation:active/Automatable:yes/Decision:Act",
+                                },
+                            }
+                        }
+                    ],
+                }
+            ],
+        },
+    }
+    parsed = parse_vulnrichment_record(record)
+    assert parsed is not None
+    assert parsed["ssvc"]["decisions"]["Exploitation"] == "active"
+    assert parsed["ssvc"]["decisions"]["computed"] == "Exploitation:active/Automatable:yes/Decision:Act"
+
+
 def test_apply_additive_enrichment_in_db(tmp_path, monkeypatch):
     db_file = str(tmp_path / "intel_feeds.db")
     monkeypatch.setattr(db_module, "DB_PATH", db_file)
@@ -238,6 +300,63 @@ def test_apply_additive_enrichment_in_db(tmp_path, monkeypatch):
             assert row[0]["cvss_score"] == 7.8
             assert row[0]["severity"] == "HIGH"
             assert "CWE-863" in json.loads(row[0]["cwe_ids"])
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+
+def test_apply_additive_stores_ssvc_in_feed_cache(tmp_path, monkeypatch):
+    db_file = str(tmp_path / "intel_ssvc.db")
+    monkeypatch.setattr(db_module, "DB_PATH", db_file)
+    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
+    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
+
+    async def run():
+        await db_module.init_db()
+        db = await db_module.get_db()
+        try:
+            await db_module.upsert_cve(
+                db,
+                {
+                    "cve_id": "CVE-2024-9999",
+                    "description": "filled",
+                    "cvss_score": 8.0,
+                    "severity": "HIGH",
+                    "cwe_ids": ["CWE-79"],
+                    "affected_products": ["vendor:product"],
+                },
+            )
+            await db.commit()
+
+            enrichment = parse_vulnrichment_record(
+                {
+                    "cveMetadata": {"cveId": "CVE-2024-9999", "state": "PUBLISHED"},
+                    "containers": {
+                        "adp": [
+                            {
+                                "title": "CISA ADP Vulnrichment",
+                                "metrics": [
+                                    {
+                                        "other": {
+                                            "type": "ssvc",
+                                            "content": {
+                                                "options": [{"Decision": "Track"}],
+                                            },
+                                        }
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                }
+            )
+            updated = await db_module.apply_additive_cve_enrichments(db, [enrichment])
+            await db.commit()
+            assert updated == 1
+
+            cached = await db_module.get_feed_cache(db, "ssvc:CVE-2024-9999", max_age_hours=1)
+            assert cached["decisions"]["Decision"] == "Track"
         finally:
             await db.close()
 
