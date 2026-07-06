@@ -695,7 +695,7 @@ async def top_techniques(
 async def get_cve_sentences(cve_id: str):
     cve_id = require_cve_id(cve_id)
 
-    cve_key = cve_id.upper()
+    cve_key = cve_id
     db = await get_db()
     try:
         rows = await db.execute_fetchall(
@@ -767,7 +767,7 @@ async def get_cve_sentences(cve_id: str):
 async def get_cve_epss_history(cve_id: str):
     cve_id = require_cve_id(cve_id)
 
-    cve_key = cve_id.upper()
+    cve_key = cve_id
     db = await get_db()
     try:
         exists = await db.execute_fetchall(
@@ -793,7 +793,7 @@ async def get_cve_related(
     `meta.method` reports which path produced them."""
     cve_id = require_cve_id(cve_id)
 
-    cve_key = cve_id.upper()
+    cve_key = cve_id
     db = await get_db()
     try:
         exists = await db.execute_fetchall(
@@ -836,7 +836,7 @@ async def get_cve_related(
 async def get_cve(cve_id: str):
     cve_id = require_cve_id(cve_id)
 
-    cve_key = cve_id.upper()
+    cve_key = cve_id
     db = await get_db()
     try:
         rows = await db.execute_fetchall(
@@ -959,7 +959,7 @@ async def cve_risk_score(cve_id: str, body: RiskScoreRequest | None = None):
     cve_id = require_cve_id(cve_id)
 
     body = body or RiskScoreRequest()
-    cve_key = cve_id.upper()
+    cve_key = cve_id
 
     db = await get_db()
     try:
@@ -1043,7 +1043,7 @@ async def cve_investigation_score(
     """
     cve_id = require_cve_id(cve_id)
 
-    cve_key = cve_id.upper()
+    cve_key = cve_id
     db = await get_db()
     try:
         rows = await db.execute_fetchall(
@@ -1101,7 +1101,7 @@ async def cve_momentum(cve_id: str):
 
     db = await get_db()
     try:
-        result = await calculate_momentum(cve_id.upper(), db)
+        result = await calculate_momentum(cve_id, db)
     finally:
         await db.close()
     return result
@@ -1124,7 +1124,7 @@ async def cve_detection(
     cve_id = require_cve_id(cve_id)
 
     github_token = os.environ.get("GITHUB_TOKEN", "")
-    cve_upper = cve_id.upper()
+    cve_upper = cve_id
 
     technique_ids: list[str] = []
     sigma_rules: list = []
@@ -1225,7 +1225,7 @@ async def cve_correlation(
     db = await get_db()
     try:
         result = await get_correlation_for_cve(
-            db, cve_id.upper(), user_sector=sector.strip()
+            db, cve_id, user_sector=sector.strip()
         )
         await db.commit()
     finally:
@@ -1258,13 +1258,13 @@ async def suppress_correlation_finding(cve_id: str, body: CorrelationSuppressBod
     try:
         row = await add_suppression(
             db,
-            cve_id.upper(),
+            cve_id,
             body.scope.strip(),
             body.key,
             body.reason.strip(),
             body.dismissed_by.strip(),
         )
-        await delete_feed_cache_prefix(db, f"correlation:v2:{cve_id.upper()}")
+        await delete_feed_cache_prefix(db, f"correlation:v2:{cve_id}")
         await db.commit()
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -1300,10 +1300,10 @@ async def unsuppress_correlation_finding(
 
     db = await get_db()
     try:
-        removed = await remove_suppression(db, cve_id.upper(), scope, key)
+        removed = await remove_suppression(db, cve_id, scope, key)
         if not removed:
             raise HTTPException(status_code=404, detail="Suppression not found")
-        await delete_feed_cache_prefix(db, f"correlation:v2:{cve_id.upper()}")
+        await delete_feed_cache_prefix(db, f"correlation:v2:{cve_id}")
         await db.commit()
     finally:
         await db.close()
