@@ -2,8 +2,10 @@
 
 Protects the abuse-prone endpoints — `POST /api/ioc/lookup` (burns external
 API quota per miss) and `POST /api/refresh*` (kicks off heavy ingest jobs).
-SQLite pins the deployment to a single uvicorn worker, so process-local
-buckets are sufficient; no shared store needed.
+Buckets are process-local: the deployment deliberately runs a single uvicorn
+worker (`--workers 1` in `deploy/briefr-backend.service`) so one process
+holds all buckets; adding workers would silently multiply every limit by the
+worker count. Revisit with a shared store before scaling workers.
 
 Buckets are keyed per client IP. Forwarded headers are honoured **only when
 the socket peer is a loopback proxy** (nginx/cloudflared run on the same

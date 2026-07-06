@@ -22,13 +22,12 @@ logger = logging.getLogger(__name__)
 
 
 async def require_wallboard_token(request: Request) -> None:
-    """When WALLBOARD_TOKEN is set, wallboard routes require a matching token."""
+    """When WALLBOARD_TOKEN is set, wallboard routes require a matching token.
+    Header-only (Sprint A7): `?token=` was dropped because query strings leak
+    into access logs and browser history."""
     if not settings.wallboard_token:
         return
-    provided = (
-        request.headers.get("X-BRIEFR-Wallboard-Token", "")
-        or request.query_params.get("token", "")
-    )
+    provided = request.headers.get("X-BRIEFR-Wallboard-Token", "")
     if not secrets.compare_digest(provided, settings.wallboard_token):
         raise HTTPException(status_code=401, detail="Wallboard token required")
 

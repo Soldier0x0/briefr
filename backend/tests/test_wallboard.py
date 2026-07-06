@@ -153,8 +153,9 @@ def test_wallboard_token_required_when_set(tmp_path, monkeypatch):
     )
     assert ok_header.status_code == 200
 
-    ok_query = client.get("/api/wallboard?token=kiosk-secret-token")
-    assert ok_query.status_code == 200
+    # Sprint A7: query-string tokens leak into access logs — header only.
+    denied_query = client.get("/api/wallboard?token=kiosk-secret-token")
+    assert denied_query.status_code == 401
 
 
 def test_wallboard_rate_limited(tmp_path, monkeypatch):

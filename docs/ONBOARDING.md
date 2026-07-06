@@ -214,7 +214,7 @@ Configure **one or more** destinations. Alerts are scheduler-side (`kev_alert` a
 | `RATE_LIMIT_IOC_PER_MINUTE` | `30` | Per-client-IP budget for `POST /api/ioc/lookup` |
 | `RATE_LIMIT_REFRESH_PER_MINUTE` | `10` | Per-client-IP budget shared by all `POST /api/refresh*` routes |
 | `RATE_LIMIT_WALLBOARD_PER_MINUTE` | `60` | Per-client-IP budget for `GET /api/wallboard` (kiosk poll) |
-| `WALLBOARD_TOKEN` | — | Optional read-only gate for wallboard (`X-BRIEFR-Wallboard-Token` or `?token=`); unset = open |
+| `WALLBOARD_TOKEN` | — | Optional read-only gate for wallboard (`X-BRIEFR-Wallboard-Token` header); unset = open |
 | `LOG_FORMAT` | `json` | `json` = structured lines with `request_id`; `plain` = legacy human-readable format |
 
 ### ML assist (V1.3 — disabled by default, CPU-only, scheduler-side)

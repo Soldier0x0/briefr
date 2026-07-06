@@ -10,7 +10,7 @@
 | Area | Status |
 |------|--------|
 | **Database** | **PostgreSQL required** (`DATABASE_URL`, `BRIEFR_REQUIRE_POSTGRES=1`). SQLite removed from production path. |
-| **Auth** | Built-in app login + sessions (first-run `/api/auth/setup`); admin/refresh routes require the **admin role** (Sprint A0). Legacy `BRIEFR_ADMIN_API_KEY` removed. Optional Cloudflare Zero Trust at **edge** (operator policy, not in app code). |
+| **Auth** | Built-in app login + sessions (first-run `/api/auth/setup`); admin/refresh routes require the **admin role** (Sprint A0). Legacy `BRIEFR_ADMIN_API_KEY` removed. Wallboard token is **header-only** (`X-BRIEFR-Wallboard-Token`; `?token=` removed, Sprint A7). Optional Cloudflare Zero Trust at **edge** (operator policy, not in app code). |
 | **Rate limits** | Token buckets on IOC, refresh, admin, auth; set `RATE_LIMIT_ENABLED=1` in production. |
 | **API queue** | Outbound API serialization (#221) for NVD/OTX/etc. |
 | **Correlation** | Engine v2 — DB-backed campaigns, nightly OTX, drawer Intel tab. |
