@@ -12,6 +12,27 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-06 — Track C closed (C1–C3); C2 fields shipped
+
+**Session:** C3 retention/TTL audit + implementation. C2 PRs #279–#281 merged on `main`
+before this session (CAPEC drawer, SSVC parser/drawer, KEV ransomware feed badge).
+
+### What merged / shipped
+
+- **C2 — PRs #279–#281.** CIRCL `capec_ids` chips in drawer; Vulnrichment SSVC
+  parsed to `feed_cache` + drawer section; `kev_ransomware_use` on feed cards.
+- **C3 — PR pending.** Retention map in `docs/SPRINT_2026-07.md`; new
+  `backend/db/cache_retention.py` + daily `cache_retention_cleanup` scheduler job;
+  admin `change_history_old` purge fixed (`detected_at` column, was broken).
+
+### Next steps
+
+Track C (C1–C3) is complete. Next per sprint plan: **Track D — D1**
+(CWE→Sigma template mapping in `sigma_generator.py`), or interleave **Track I**
+(performance) / **Track H** (UI primitives) per maintainer preference.
+
+---
+
 ## 2026-07-06 — Track A closed out (A4–A7); Track B is next
 
 **Session:** docs sync only — no code changed this session. Confirmed

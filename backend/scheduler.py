@@ -1315,6 +1315,24 @@ async def run_session_cleanup() -> int:
         await db.close()
 
 
+async def run_cache_retention_cleanup() -> dict[str, int]:
+    """Scheduler hook: delete physically stale cache and overlay rows (Sprint C3)."""
+    from database import run_retention_cleanup
+
+    db = await get_db()
+    try:
+        stats = await run_retention_cleanup(db)
+        await db.commit()
+        if any(stats.values()):
+            logger.info("Cache retention cleanup: %s", stats)
+        return stats
+    except Exception as exc:
+        logger.error("Cache retention cleanup failed: %s", exc)
+        return {}
+    finally:
+        await db.close()
+
+
 def start_scheduler() -> AsyncIOScheduler:
     global _scheduler
 
@@ -1537,6 +1555,17 @@ def start_scheduler() -> AsyncIOScheduler:
         max_instances=1,
         coalesce=True,
         next_run_time=datetime.now(sched_tz) + timedelta(minutes=10),
+    )
+
+    scheduler.add_job(
+        run_cache_retention_cleanup,
+        trigger=IntervalTrigger(hours=24, timezone=sched_tz),
+        id="cache_retention_cleanup",
+        name="Cache Retention Cleanup",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(minutes=15),
     )
 
     scheduler.start()
