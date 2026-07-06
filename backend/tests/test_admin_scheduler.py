@@ -200,20 +200,22 @@ def test_run_unknown_job_returns_400(admin_client):
 
 
 def test_run_locked_job_returns_409(admin_client, monkeypatch):
-    import scheduler as sched_module
+    import scheduler_locks
 
     # Simulate the NVD lock being held
-    original_locked = sched_module._nvd_lock.locked
-    sched_module._nvd_lock.locked = lambda: True
+    lock = scheduler_locks.get_lock("nvd_incremental_sync")
+    original_locked = lock.locked
+    lock.locked = lambda: True
     try:
         resp = admin_client.post("/api/admin/scheduler/run", json={"job_id": "nvd_incremental_sync"})
         assert resp.status_code == 409
     finally:
-        sched_module._nvd_lock.locked = original_locked
+        lock.locked = original_locked
 
 
 def test_run_valid_job_returns_ok(admin_client, monkeypatch):
     import scheduler as sched_module
+    import scheduler_locks
 
     called = []
 
@@ -222,7 +224,7 @@ def test_run_valid_job_returns_ok(admin_client, monkeypatch):
 
     monkeypatch.setattr(sched_module, "run_nvd_incremental_sync", _mock_run)
     # Ensure lock is not held
-    sched_module._nvd_lock.locked = lambda: False
+    scheduler_locks.get_lock("nvd_incremental_sync").locked = lambda: False
 
     resp = admin_client.post("/api/admin/scheduler/run", json={"job_id": "nvd_incremental_sync"})
     assert resp.status_code == 200
