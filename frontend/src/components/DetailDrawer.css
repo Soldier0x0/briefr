@@ -511,6 +511,10 @@
   margin: 8px 0 0;
 }
 
+.drawer-epss-percentile {
+  color: var(--text3);
+}
+
 .drawer-epss-trend--rising {
   color: var(--red);
 }

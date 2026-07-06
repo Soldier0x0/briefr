@@ -93,46 +93,94 @@ async def snapshot_epss_scores(db: aiosqlite.Connection, recorded_date: str | No
     return cursor.rowcount
 
 async def update_epss_scores(db: aiosqlite.Connection, scores: dict) -> None:
+    """Apply EPSS score (and optional percentile) updates from the daily feed.
+
+    Values may be bare floats (legacy) or ``{"score": float, "percentile": float|None}``.
+    """
     if not scores:
         return
 
-    needed_list = list({cve_id.upper() for cve_id in scores})
-    existing: dict[str, float | None] = {}
+    normalized: dict[str, dict] = {}
+    for cve_id, value in scores.items():
+        if isinstance(value, dict):
+            parsed = _parse_epss_feed_record(value)
+        else:
+            parsed = _parse_epss_feed_record({"score": value})
+        if parsed is not None:
+            normalized[cve_id.upper()] = parsed
+
+    if not normalized:
+        return
+
+    needed_list = list(normalized.keys())
+    existing: dict[str, tuple[float | None, float | None]] = {}
     for i in range(0, len(needed_list), _SQLITE_IN_CHUNK):
         chunk = needed_list[i : i + _SQLITE_IN_CHUNK]
         placeholders = ",".join("?" * len(chunk))
         rows = await db.execute_fetchall(
-            f"SELECT cve_id, epss_score FROM cves WHERE cve_id IN ({placeholders})",
+            f"""
+            SELECT cve_id, epss_score, epss_percentile
+            FROM cves WHERE cve_id IN ({placeholders})
+            """,
             chunk,
         )
         for row in rows:
-            existing[row["cve_id"].upper()] = row["epss_score"]
+            existing[row["cve_id"].upper()] = (
+                row["epss_score"],
+                row["epss_percentile"],
+            )
 
     history: list[tuple[str, str, str, str]] = []
-    updates: list[tuple[float, str]] = []
-    for cve_id, score in scores.items():
-        key = cve_id.upper()
-        if key not in existing:
+    updates: list[tuple[float, float | None, str]] = []
+    for cve_id, record in normalized.items():
+        if cve_id not in existing:
             continue
-        old = existing[key]
-        if not _epss_scores_differ(old, score):
-            continue
-        history.append(
-            (
-                key,
-                "epss_score",
-                _change_value_str(old),
-                _change_value_str(score),
+        old_score, old_percentile = existing[cve_id]
+        score = record["score"]
+        percentile = record.get("percentile")
+        if not _epss_scores_differ(old_score, score):
+            if old_percentile == percentile or (
+                old_percentile is not None
+                and percentile is not None
+                and float(old_percentile) == float(percentile)
+            ):
+                continue
+        if _epss_scores_differ(old_score, score):
+            history.append(
+                (
+                    cve_id,
+                    "epss_score",
+                    _change_value_str(old_score),
+                    _change_value_str(score),
+                )
             )
-        )
-        updates.append((score, key))
+        updates.append((score, percentile, cve_id))
 
     await _insert_cve_changes_batch(db, history)
     if updates:
         await db.executemany(
-            "UPDATE cves SET epss_score = ? WHERE cve_id = ?",
+            "UPDATE cves SET epss_score = ?, epss_percentile = ? WHERE cve_id = ?",
             updates,
         )
+
+
+def _parse_epss_feed_record(value: dict) -> dict | None:
+    score = value.get("score", value.get("epss"))
+    if score is None:
+        return None
+    try:
+        parsed_score = float(score)
+    except (TypeError, ValueError):
+        return None
+    percentile = value.get("percentile")
+    if percentile is not None and percentile != "":
+        try:
+            percentile = float(percentile)
+        except (TypeError, ValueError):
+            percentile = None
+    else:
+        percentile = None
+    return {"score": parsed_score, "percentile": percentile}
 
 async def get_epss_history(
     db: aiosqlite.Connection, cve_id: str, days: int = 30
