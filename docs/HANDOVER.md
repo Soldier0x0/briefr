@@ -12,6 +12,48 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-06 — Sprint topics reconciled; Track J (deployment) added
+
+**Session:** docs only — no code changed. Four planning sessions on
+`Soldier0x0/briefr` ended abruptly; this session recovers their topics
+into `docs/SPRINT_2026-07.md` so nothing is lost. Branch
+`claude/sprint-document-topics-i1xvjp`.
+
+### What changed
+
+- **Reconciliation note** (top of the sprint doc): maps each abrupt
+  session to its track — *Codebase architecture review* → Track B
+  (closed, B1–B5), *Production performance optimization* → Track I,
+  *Production UI component architecture* → Track H, *Production
+  deployment planning* → new Track J.
+- **Track J — Production deployment / release planning** (new). Records
+  the grounded deploy surface to plan against (`deploy/` scripts +
+  systemd units + the OPERATIONS/ROADMAP compatibility promise), not
+  fabricated specs — the originating session was cut off before its
+  decisions were written down. Items: J1 update/rollback safety audit,
+  J2 backup→restore round-trip in CI, J3 post-deploy smoke gate, J4
+  release/version phasing checklist. Cross-references (not duplicated):
+  multi-worker → I Phase 3, nginx gzip → I2, CI Postgres round-trip →
+  "After Track B" note.
+
+### Verified against code (`main` @ `5713682`) before writing
+
+- Track B: `backend/database.py` is a 45-line shim, `backend/db/` split
+  is in code → B correctly closed.
+- Track H: `frontend/src/components/ui/` does not exist yet; `Toast.jsx`
+  already at `components/` → H open items stand as written.
+- Track I: `db/` files present, no gzip in `deploy/nginx-briefr.conf`
+  → I open items stand. No adjustments needed to A–I.
+
+### Next steps
+
+Track J needs a real spec once the deployment-planning session's
+decisions are recovered — until then J items are plan/audit only, per
+the doc's "verify code first" convention. Open code work per sprint:
+**Track D — D1** (CWE→Sigma mapping, spec ready) or **Track H/I** items.
+
+---
+
 ## 2026-07-06 — Track C closed (C1–C3); C2 fields shipped
 
 **Session:** C3 retention/TTL audit + implementation. C2 PRs #279–#281 merged on `main`
