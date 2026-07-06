@@ -11,3 +11,7 @@ screenshots/
 *.db
 .env
 .env.*
+
+# Test fixtures and editor config — JSON/config blobs with no extractable code nodes
+backend/tests/fixtures/
+.claude/
