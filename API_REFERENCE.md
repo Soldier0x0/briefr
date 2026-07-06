@@ -895,7 +895,7 @@ Security panel readout. Response: `{failed_auth_last_24h, environment, posture_w
 
 Aggregated intel posture payload for the `/wallboard` kiosk view. Built from existing DB state and cached snapshots (`feed_cache` key `wallboard:snapshot`, ~45s TTL). No outbound HTTP on the request path; no admin data or secrets in the response.
 
-**Auth:** when `WALLBOARD_TOKEN` is set, require header `X-BRIEFR-Wallboard-Token` or query param `token` (read-only scope). When unset, the endpoint is open (optional gate — read-only kiosk data only).
+**Auth:** when `WALLBOARD_TOKEN` is set, require header `X-BRIEFR-Wallboard-Token` (read-only scope; the `?token=` query param was removed in Sprint A7 — query strings leak into access logs). When unset, the endpoint is open (optional gate — read-only kiosk data only).
 
 **Rate limit:** token bucket (`rate_limit_wallboard`) — default `RATE_LIMIT_WALLBOARD_PER_MINUTE=60` per client IP; 429 + `Retry-After` over the limit.
 

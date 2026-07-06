@@ -7,6 +7,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
 
 import asyncio
+import hashlib
 import logging
 import os
 import secrets
@@ -22,14 +23,18 @@ logger = logging.getLogger(__name__)
 
 
 async def require_wallboard_token(request: Request) -> None:
-    """When WALLBOARD_TOKEN is set, wallboard routes require a matching token."""
+    """When WALLBOARD_TOKEN is set, wallboard routes require a matching token.
+    Header-only (Sprint A7): `?token=` was dropped because query strings leak
+    into access logs and browser history."""
     if not settings.wallboard_token:
         return
-    provided = (
-        request.headers.get("X-BRIEFR-Wallboard-Token", "")
-        or request.query_params.get("token", "")
-    )
-    if not secrets.compare_digest(provided, settings.wallboard_token):
+    provided = request.headers.get("X-BRIEFR-Wallboard-Token", "")
+    # Compare SHA-256 digests: compare_digest short-circuits on unequal
+    # lengths, which would leak the configured token's length via timing.
+    if not secrets.compare_digest(
+        hashlib.sha256(provided.encode()).digest(),
+        hashlib.sha256(settings.wallboard_token.encode()).digest(),
+    ):
         raise HTTPException(status_code=401, detail="Wallboard token required")
 
 
