@@ -971,6 +971,44 @@
   outline-offset: 1px;
 }
 
+.drawer-osv-hint {
+  font-size: 0.625rem;
+  color: var(--text3);
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+
+.drawer-osv-table-wrap {
+  overflow-x: auto;
+}
+
+.drawer-osv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+}
+
+.drawer-osv-table th,
+.drawer-osv-table td {
+  text-align: left;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.drawer-osv-table th {
+  color: var(--text3);
+  background: var(--bg2);
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.drawer-osv-table td {
+  color: var(--text2);
+  background: var(--bg);
+}
+
 /* MITRE ATLAS (Intel tab) */
 .drawer-atlas-label {
   font-size: 9px;
