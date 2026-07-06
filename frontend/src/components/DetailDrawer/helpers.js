@@ -46,3 +46,30 @@ export function capecLabel(capecId) {
   const m = String(capecId || '').trim().match(/^(?:CAPEC-)?(\d+)$/i)
   return m ? `CAPEC-${m[1]}` : String(capecId || '').trim().toUpperCase()
 }
+
+/** Flatten OSV detail API payloads into drawer table rows. */
+export function flattenOsvPackageRows(osvPackages) {
+  if (!Array.isArray(osvPackages)) return []
+  const rows = []
+  for (const entry of osvPackages) {
+    for (const eco of entry?.ecosystems || []) {
+      const ecosystem = eco?.ecosystem || ''
+      for (const pkg of eco?.packages || []) {
+        const versions = Array.isArray(pkg?.versions) ? pkg.versions : []
+        const introduced = versions.map(v => v?.introduced).filter(Boolean).pop() || null
+        const fixed = versions.map(v => v?.fixed).filter(Boolean)[0] || null
+        const rangeParts = []
+        if (introduced) rangeParts.push(`>=${introduced}`)
+        if (fixed) rangeParts.push(`<${fixed}`)
+        rows.push({
+          key: `${ecosystem}:${pkg?.name || 'unknown'}`,
+          ecosystem: ecosystem || '—',
+          name: pkg?.name || '—',
+          range: rangeParts.length ? rangeParts.join(', ') : '—',
+          fix: fixed,
+        })
+      }
+    }
+  }
+  return rows
+}

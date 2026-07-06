@@ -13,7 +13,7 @@ import {
   riskScoreDisplayColor,
   RISK_COMPONENT_LABELS,
 } from '../../scoring/riskScore.js'
-import { drawerEpssBarColor, capecHref, capecLabel } from './helpers.js'
+import { drawerEpssBarColor, capecHref, capecLabel, flattenOsvPackageRows } from './helpers.js'
 
 
 function HumanSentence({ label, text }) {
@@ -143,6 +143,41 @@ function EpssTrendSection({ cve, history, loading, epssSparklineRef }) {
       ) : (
         <p className="drawer-epss-loading mono">// No EPSS history yet</p>
       )}
+    </section>
+  )
+}
+function OsvPackagesSection({ osvPackages }) {
+  const rows = flattenOsvPackageRows(osvPackages)
+  if (!rows.length) return null
+
+  return (
+    <section className="drawer-section" aria-labelledby="osv-heading">
+      <h3 id="osv-heading" className="drawer-human-label mono">AFFECTED PACKAGES (OSV)</h3>
+      <p className="drawer-osv-hint mono">
+        Ecosystems and version ranges from OSV.dev — fetched when this drawer opens, not stored locally.
+      </p>
+      <div className="drawer-osv-table-wrap">
+        <table className="drawer-osv-table mono" aria-label="OSV affected packages">
+          <thead>
+            <tr>
+              <th scope="col">Ecosystem</th>
+              <th scope="col">Package</th>
+              <th scope="col">Affected range</th>
+              <th scope="col">Fixed in</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(row => (
+              <tr key={row.key}>
+                <td>{row.ecosystem}</td>
+                <td>{row.name}</td>
+                <td>{row.range}</td>
+                <td>{row.fix || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   )
 }
@@ -379,6 +414,8 @@ export default function TabOverview({ cve, riskScore, riskLoading, onOpenProfile
           </div>
         </section>
       )}
+
+      <OsvPackagesSection osvPackages={cve.osv_packages} />
 
       {urls.length > 0 && (
         <section className="drawer-section" aria-labelledby="refs-heading">
