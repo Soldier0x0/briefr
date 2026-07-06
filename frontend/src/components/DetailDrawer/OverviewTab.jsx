@@ -13,7 +13,7 @@ import {
   riskScoreDisplayColor,
   RISK_COMPONENT_LABELS,
 } from '../../scoring/riskScore.js'
-import { drawerEpssBarColor, capecHref } from './helpers.js'
+import { drawerEpssBarColor, capecHref, capecLabel } from './helpers.js'
 
 
 function HumanSentence({ label, text }) {
@@ -245,7 +245,7 @@ function RiskScoreBreakdown({ cve, riskScore, riskLoading, onOpenProfile, moment
     </section>
   )
 }
-export default function TabOverview({ cve, riskScore, riskLoading, onOpenProfile, momentumData, products, cwes, capecIds, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
+export default function TabOverview({ cve, riskScore, riskLoading, onOpenProfile, momentumData, products, cwes, capecIds = [], urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
   return (
     <>
       <RiskScoreBreakdown cve={cve} riskScore={riskScore} riskLoading={riskLoading} onOpenProfile={onOpenProfile} momentumData={momentumData} />
@@ -316,7 +316,7 @@ export default function TabOverview({ cve, riskScore, riskLoading, onOpenProfile
           <div className="capec-list" aria-label="CAPEC attack patterns">
             {capecIds.map(id => {
               const href = capecHref(id)
-              const label = String(id).toUpperCase()
+              const label = capecLabel(id)
               return href ? (
                 <a
                   key={id}

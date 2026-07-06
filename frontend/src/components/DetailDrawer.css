@@ -925,6 +925,11 @@
   text-decoration: underline;
 }
 
+.capec-tag:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* MITRE ATLAS (Intel tab) */
 .drawer-atlas-label {
   font-size: 9px;

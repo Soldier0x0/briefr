@@ -38,6 +38,11 @@ export function exploitTypeLabel(type) {
 
 /** MITRE CAPEC definition page for a CAPEC-### id (CIRCL enrichment). */
 export function capecHref(capecId) {
-  const m = String(capecId || '').match(/CAPEC-(\d+)/i)
+  const m = String(capecId || '').trim().match(/^(?:CAPEC-)?(\d+)$/i)
   return m ? `https://capec.mitre.org/data/definitions/${m[1]}.html` : null
+}
+
+export function capecLabel(capecId) {
+  const m = String(capecId || '').trim().match(/^(?:CAPEC-)?(\d+)$/i)
+  return m ? `CAPEC-${m[1]}` : String(capecId || '').trim().toUpperCase()
 }
