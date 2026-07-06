@@ -22,7 +22,10 @@ async def run_postgres_migrations() -> None:
     from db.config import postgres_dsn
 
     log = logging.getLogger(__name__)
-    alembic_cfg = Config(str(Path(__file__).resolve().parent / "alembic.ini"))
+    # __file__ is backend/db/init.py — alembic.ini lives in backend/, one
+    # level up from this module's own directory (it was backend/database.py
+    # before the Phase 3 split, where .parent already pointed at backend/).
+    alembic_cfg = Config(str(Path(__file__).resolve().parent.parent / "alembic.ini"))
     head = ScriptDirectory.from_config(alembic_cfg).get_current_head()
 
     current: str | None = None
