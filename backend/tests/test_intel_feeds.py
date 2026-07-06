@@ -239,6 +239,34 @@ def test_parse_vulnrichment_record_extracts_ssvc():
     assert parsed["ssvc"]["decisions"]["Decision"] == "Act"
 
 
+def test_parse_vulnrichment_record_ssvc_includes_computed_with_options():
+    record = {
+        "cveMetadata": {"cveId": "CVE-2024-9998", "state": "PUBLISHED"},
+        "containers": {
+            "adp": [
+                {
+                    "title": "CISA ADP Vulnrichment",
+                    "metrics": [
+                        {
+                            "other": {
+                                "type": "ssvc",
+                                "content": {
+                                    "options": [{"Exploitation": "active"}],
+                                    "computed": "Exploitation:active/Automatable:yes/Decision:Act",
+                                },
+                            }
+                        }
+                    ],
+                }
+            ],
+        },
+    }
+    parsed = parse_vulnrichment_record(record)
+    assert parsed is not None
+    assert parsed["ssvc"]["decisions"]["Exploitation"] == "active"
+    assert parsed["ssvc"]["decisions"]["computed"] == "Exploitation:active/Automatable:yes/Decision:Act"
+
+
 def test_apply_additive_enrichment_in_db(tmp_path, monkeypatch):
     db_file = str(tmp_path / "intel_feeds.db")
     monkeypatch.setattr(db_module, "DB_PATH", db_file)

@@ -258,7 +258,8 @@ async def apply_additive_cve_enrichments(
         if rows:
             existing = dict(rows[0])
             changes = merge_additive_cve_fields(existing, incoming) or {}
-            if not changes and not incoming.get("ssvc"):
+            ssvc = incoming.get("ssvc")
+            if not changes and not (isinstance(ssvc, dict) and ssvc.get("decisions")):
                 continue
             params = {"cve_id": cve_id}
             set_parts: list[str] = []

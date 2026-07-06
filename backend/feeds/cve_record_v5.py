@@ -212,10 +212,9 @@ def _extract_ssvc(metrics: Any) -> dict | None:
             for key, value in opt.items():
                 if isinstance(value, str) and value.strip():
                     decisions[str(key)] = value.strip()
-        if not decisions:
-            computed = content.get("computed")
-            if isinstance(computed, str) and computed.strip():
-                decisions["computed"] = computed.strip()
+        computed = content.get("computed")
+        if isinstance(computed, str) and computed.strip():
+            decisions["computed"] = computed.strip()
         if not decisions:
             continue
         return {
