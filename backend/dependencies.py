@@ -7,6 +7,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
 
 import asyncio
+import hashlib
 import logging
 import os
 import secrets
@@ -28,7 +29,12 @@ async def require_wallboard_token(request: Request) -> None:
     if not settings.wallboard_token:
         return
     provided = request.headers.get("X-BRIEFR-Wallboard-Token", "")
-    if not secrets.compare_digest(provided, settings.wallboard_token):
+    # Compare SHA-256 digests: compare_digest short-circuits on unequal
+    # lengths, which would leak the configured token's length via timing.
+    if not secrets.compare_digest(
+        hashlib.sha256(provided.encode()).digest(),
+        hashlib.sha256(settings.wallboard_token.encode()).digest(),
+    ):
         raise HTTPException(status_code=401, detail="Wallboard token required")
 
 
