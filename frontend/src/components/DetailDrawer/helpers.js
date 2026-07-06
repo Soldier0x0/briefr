@@ -51,23 +51,49 @@ export function capecLabel(capecId) {
 export function flattenOsvPackageRows(osvPackages) {
   if (!Array.isArray(osvPackages)) return []
   const rows = []
+  let counter = 0
   for (const entry of osvPackages) {
     for (const eco of entry?.ecosystems || []) {
       const ecosystem = eco?.ecosystem || ''
       for (const pkg of eco?.packages || []) {
         const versions = Array.isArray(pkg?.versions) ? pkg.versions : []
-        const introduced = versions.map(v => v?.introduced).filter(Boolean).pop() || null
-        const fixed = versions.map(v => v?.fixed).filter(Boolean)[0] || null
-        const rangeParts = []
-        if (introduced) rangeParts.push(`>=${introduced}`)
-        if (fixed) rangeParts.push(`<${fixed}`)
-        rows.push({
-          key: `${ecosystem}:${pkg?.name || 'unknown'}`,
-          ecosystem: ecosystem || '—',
-          name: pkg?.name || '—',
-          range: rangeParts.length ? rangeParts.join(', ') : '—',
-          fix: fixed,
-        })
+        const ranges = []
+        let currentIntroduced = null
+        for (const v of versions) {
+          if (v?.introduced) {
+            currentIntroduced = v.introduced
+          }
+          if (v?.fixed) {
+            ranges.push({ introduced: currentIntroduced, fixed: v.fixed })
+            currentIntroduced = null
+          }
+        }
+        if (currentIntroduced) {
+          ranges.push({ introduced: currentIntroduced, fixed: null })
+        }
+
+        if (ranges.length === 0) {
+          rows.push({
+            key: `${ecosystem}:${pkg?.name || 'unknown'}-${counter++}`,
+            ecosystem: ecosystem || '—',
+            name: pkg?.name || '—',
+            range: '—',
+            fix: null,
+          })
+        } else {
+          for (const r of ranges) {
+            const rangeParts = []
+            if (r.introduced) rangeParts.push(`>=${r.introduced}`)
+            if (r.fixed) rangeParts.push(`<${r.fixed}`)
+            rows.push({
+              key: `${ecosystem}:${pkg?.name || 'unknown'}-${counter++}`,
+              ecosystem: ecosystem || '—',
+              name: pkg?.name || '—',
+              range: rangeParts.length ? rangeParts.join(', ') : '—',
+              fix: r.fixed,
+            })
+          }
+        }
       }
     }
   }
