@@ -12,7 +12,7 @@ flowchart TD
   G -->|no| H
   G1 --> H[webhooks.destinations.sync_env_destinations_to_db]
   H --> I[scheduler.start_scheduler]
-  I --> I1[Register 17 APScheduler jobs + up to 2 conditional]
+  I --> I1[Register 14 base APScheduler jobs + up to 3 conditional]
   I1 --> I2[scheduler.start]
   I --> J[scheduler.maybe_run_on_startup]
   J --> J1{CVE count less than 10?}

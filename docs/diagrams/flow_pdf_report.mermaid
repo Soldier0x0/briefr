@@ -23,7 +23,8 @@ sequenceDiagram
   else
     AI-->>API: AI JSON (source groq or anthropic)
   end
-  API-->>PDF: executive_summary, key_findings, confidence, source
+  API-->>APIjs: executive_summary, key_findings, confidence, source
+  APIjs-->>PDF: summary JSON
   PDF->>PDF: jsPDF layout + html2canvas sparkline
   PDF->>User: browser download .pdf
 

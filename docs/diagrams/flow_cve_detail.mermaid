@@ -25,11 +25,12 @@ sequenceDiagram
   APIjs-->>Ctrl: CVE JSON
   Ctrl->>Drawer: setSelectedCVE(full) + clear loading
 
-  par Lazy tabs on drawer open
+  par Parallel fetches on drawer open
     Drawer->>APIjs: GET /api/cves/{id}/sentences
     Drawer->>APIjs: GET /api/cves/{id}/epss-history
     Drawer->>APIjs: GET /api/cves/{id}/momentum
     Drawer->>APIjs: GET /api/cves/{id}/correlation
+    Drawer->>APIjs: POST /api/cves/{id}/risk
   end
 
   opt User opens Related tab

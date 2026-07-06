@@ -41,7 +41,7 @@ flowchart TB
     Domain --> Infra
   end
 
-  subgraph Scheduler["APScheduler — 17 jobs + 2 conditional"]
+  subgraph Scheduler["APScheduler — 14 base jobs + 3 conditional"]
     direction LR
     Ingest["NVD · KEV · EPSS · MITRE · ATLAS · OTX · Vulnrichment · cvelistV5 · exploits"]
     Intel["correlation nightly · embeddings · LLM extract"]
@@ -61,13 +61,13 @@ flowchart TB
 
   Browser --> CF --> NGX
   AdminOp --> NGX
-  Kiosk -->|optional WALLBOARD_TOKEN| Backend
-  NGX --> Frontend
-  NGX -->|/api| Backend
-  Frontend -->|session cookies| Backend
+  Kiosk -->|optional WALLBOARD_TOKEN| MW
+  NGX --> Boot
+  NGX -->|/api| MW
+  API_FE -->|session cookies| MW
 
-  Scheduler --> Domain
-  Scheduler --> DBMod
+  Ingest & Intel & Ops --> Domain
+  Ingest & Intel & Ops --> DBMod
   Domain --> DBMod
   Routers --> DBMod
   Domain --> EXT

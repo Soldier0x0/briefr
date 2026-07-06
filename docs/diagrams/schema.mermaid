@@ -63,6 +63,8 @@ erDiagram
     INTEGER id PK
     INTEGER user_id FK
     TEXT refresh_token_hash
+    TEXT created_at
+    TEXT last_used_at
     TEXT expires_at
     TEXT revoked_at
     TEXT user_agent
@@ -105,4 +107,14 @@ erDiagram
     INTEGER enabled
     TEXT event_types
     TEXT config_json
+  }
+
+  webhook_delivery_log {
+    INTEGER id PK
+    TEXT destination_id FK
+    TEXT event_type
+    TEXT dedupe_key
+    TEXT status
+    TEXT error
+    TEXT attempted_at
   }
