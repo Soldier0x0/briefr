@@ -1,0 +1,143 @@
+"""Tests for cache/overlay retention sweeps (Sprint C3)."""
+
+import asyncio
+from datetime import datetime, timedelta, timezone
+
+import database as db_module
+from settings import settings
+
+
+def _force_sqlite(tmp_path, monkeypatch, db_name: str):
+    db_path = tmp_path / db_name
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
+    monkeypatch.setattr(settings, "database_url", "")
+    monkeypatch.setattr(settings, "db_path", str(db_path))
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr(db_module, "DB_PATH", str(db_path))
+    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
+    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
+    return db_path
+
+
+def _utc(days_ago: float = 0) -> str:
+    dt = datetime.now(timezone.utc) - timedelta(days=days_ago)
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def test_purge_stale_feed_cache_keeps_fresh_ssvc(tmp_path, monkeypatch):
+    _force_sqlite(tmp_path, monkeypatch, "retention.db")
+
+    async def run():
+        await db_module.init_db()
+        db = await db_module.get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO feed_cache (cache_key, result, cached_at)
+                VALUES (?, ?, ?), (?, ?, ?)
+                """,
+                (
+                    "ssvc:CVE-2024-0001",
+                    '{"decisions": {"Exploitation": "active"}}',
+                    _utc(200),
+                    "greynoise:1.2.3.4",
+                    '{"noise": true}',
+                    _utc(10),
+                ),
+            )
+            await db.commit()
+
+            deleted = await db_module.purge_stale_feed_cache(db)
+            await db.commit()
+
+            rows = await db.execute_fetchall(
+                "SELECT cache_key FROM feed_cache ORDER BY cache_key"
+            )
+            keys = [row["cache_key"] for row in rows]
+            assert deleted >= 1
+            assert "ssvc:CVE-2024-0001" in keys
+            assert "greynoise:1.2.3.4" not in keys
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+
+def test_purge_old_cve_change_history_uses_detected_at(tmp_path, monkeypatch):
+    _force_sqlite(tmp_path, monkeypatch, "change_history.db")
+
+    async def run():
+        await db_module.init_db()
+        db = await db_module.get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO cve_change_history (
+                    cve_id, field_name, old_value, new_value, detected_at
+                ) VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)
+                """,
+                (
+                    "CVE-2024-0001",
+                    "severity",
+                    "LOW",
+                    "HIGH",
+                    _utc(120),
+                    "CVE-2024-0002",
+                    "severity",
+                    "LOW",
+                    "MEDIUM",
+                    _utc(1),
+                ),
+            )
+            await db.commit()
+
+            deleted = await db_module.purge_old_cve_change_history(db, retention_days=90)
+            await db.commit()
+
+            rows = await db.execute_fetchall(
+                "SELECT cve_id FROM cve_change_history ORDER BY cve_id"
+            )
+            assert deleted == 1
+            assert [row["cve_id"] for row in rows] == ["CVE-2024-0002"]
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+
+def test_purge_stale_ioc_cache(tmp_path, monkeypatch):
+    _force_sqlite(tmp_path, monkeypatch, "ioc.db")
+
+    async def run():
+        await db_module.init_db()
+        db = await db_module.get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO ioc_cache (value, ioc_type, result, cached_at)
+                VALUES (?, ?, ?, ?), (?, ?, ?, ?)
+                """,
+                (
+                    "8.8.8.8",
+                    "ip",
+                    "{}",
+                    _utc(2),
+                    "1.1.1.1",
+                    "ip",
+                    "{}",
+                    _utc(0.01),
+                ),
+            )
+            await db.commit()
+
+            deleted = await db_module.purge_stale_ioc_cache(db, retention_hours=24)
+            await db.commit()
+
+            rows = await db.execute_fetchall("SELECT value FROM ioc_cache")
+            assert deleted == 1
+            assert [row["value"] for row in rows] == ["1.1.1.1"]
+        finally:
+            await db.close()
+
+    asyncio.run(run())

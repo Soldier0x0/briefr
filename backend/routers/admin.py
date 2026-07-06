@@ -646,15 +646,13 @@ async def purge_storage(request: Request, body: dict):
             cursor = await db.execute("DELETE FROM feed_cache")
             rows_deleted = cursor.rowcount
         elif target == "epss_history_old":
-            cursor = await db.execute(
-                "DELETE FROM epss_history WHERE DATE(recorded_date) < date('now', '-90 days')"
-            )
-            rows_deleted = cursor.rowcount
+            from database import purge_old_epss_history
+
+            rows_deleted = await purge_old_epss_history(db)
         elif target == "change_history_old":
-            cursor = await db.execute(
-                "DELETE FROM cve_change_history WHERE changed_at < datetime('now', '-90 days')"
-            )
-            rows_deleted = cursor.rowcount
+            from database import purge_old_cve_change_history
+
+            rows_deleted = await purge_old_cve_change_history(db)
         elif target == "rejected_cves":
             rows_deleted = await purge_legacy_rejected_cves(db)
         elif target == "nvd_watermark":

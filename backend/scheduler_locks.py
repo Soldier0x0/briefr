@@ -1,8 +1,9 @@
 import asyncio
 
 # Keys must match the `id=` strings passed to scheduler.add_job() exactly.
-# incident_feed_refresh, backup_deadman_check, and session_cleanup have no
-# entry here — they run without a lock today (verified against
+# incident_feed_refresh, backup_deadman_check, session_cleanup, and
+# cache_retention_cleanup have no entry here — they run without a lock today
+# (verified against
 # scheduler.py's add_job() calls and routers/admin.py's prior _JOB_LOCK_MAP;
 # this module only consolidates locks that already existed, it doesn't add
 # new ones).

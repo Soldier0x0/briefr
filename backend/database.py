@@ -18,6 +18,13 @@ from db.init import get_db, init_db, run_postgres_migrations
 from db.cve import *
 from db.enrichment import *
 from db.cache import *
+from db.cache_retention import (
+    purge_old_cve_change_history,
+    purge_old_epss_history,
+    purge_stale_feed_cache,
+    purge_stale_ioc_cache,
+    run_retention_cleanup,
+)
 from db.correlation import *
 from db.watchlist import *
 from db.sync_state import *
