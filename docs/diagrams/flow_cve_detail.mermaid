@@ -1,30 +1,46 @@
 sequenceDiagram
   participant User
-  participant App as "App.jsx"
-  participant Drawer as "DetailDrawer.jsx"
-  participant API as "FastAPI main.py"
-  participant Ext as "feeds/enrichment"
+  participant App as App.jsx
+  participant Ctrl as openCveDrawer.js
+  participant Drawer as DetailDrawer.jsx
+  participant APIjs as api.js
+  participant MW as request_context middleware
+  participant R as routers/cves.py
+  participant DB as database.py
+  participant Ext as feeds/enrichment
 
   User->>App: click CVECard
-  App->>API: "GET /api/cves/{id}"
-  API->>Ext: Sploitus, GreyNoise, OTX, OSV, CIRCL
-  Ext-->>API: enrichment fields
-  API-->>App: full CVE object (incl. ATLAS fields)
-  App->>Drawer: setSelectedCVE(full)
+  App->>Ctrl: open(cve preview)
+  Ctrl->>Drawer: setSelectedCVE + loading
+  Ctrl->>APIjs: fetchCVE(id)
+  APIjs->>MW: GET /api/cves/{id}
+  MW->>MW: assign X-Request-ID
+  MW->>R: get_cve
+  R->>DB: read row + joins
+  par on-demand enrich
+    R->>Ext: Sploitus, GreyNoise, OTX, OSV, CIRCL
+    Ext-->>R: merged fields
+  end
+  R-->>APIjs: full CVE object
+  APIjs-->>Ctrl: CVE JSON
+  Ctrl->>Drawer: setSelectedCVE(full) + clear loading
 
-  par On drawer open
-    Drawer->>API: "GET /api/cves/{id}/sentences"
-    Drawer->>API: "GET /api/cves/{id}/epss-history"
-    Drawer->>API: "GET /api/cves/{id}/momentum"
-    Drawer->>API: "GET /api/cves/{id}/correlation"
+  par Parallel fetches on drawer open
+    Drawer->>APIjs: GET /api/cves/{id}/sentences
+    Drawer->>APIjs: GET /api/cves/{id}/epss-history
+    Drawer->>APIjs: GET /api/cves/{id}/momentum
+    Drawer->>APIjs: GET /api/cves/{id}/correlation
+    Drawer->>APIjs: POST /api/cves/{id}/risk
   end
 
   opt User opens Related tab
-    Drawer->>API: "GET /api/cves/{id}/related"
+    Drawer->>APIjs: GET /api/cves/{id}/related
   end
 
   opt User opens Detect tab
-    Drawer->>API: "GET /api/cves/{id}/detection"
+    Drawer->>APIjs: GET /api/cves/{id}/detection
   end
 
   Drawer->>User: tabs render as each response arrives
+
+  Note over Ctrl,Drawer: On fetch failure (A3/A5):<br/>notifyApiError toast + blocking overlay or banner<br/>with API detail, ref link to ingest log, retry.

@@ -1,19 +1,23 @@
 sequenceDiagram
-  participant Sched as "scheduler.run_nvd_incremental_sync"
-  participant NVD as "feeds/nvd.py"
-  participant DB as "database.upsert_cves"
-  participant T as "cves table"
-  participant API as "GET /api/cves"
-  participant Feed as "CVEFeed.jsx"
-  participant Card as "CVECard.jsx"
+  participant Sched as scheduler.run_nvd_incremental_sync
+  participant NVD as feeds/nvd.py
+  participant DB as database.upsert_cves
+  participant T as cves table
+  participant API as GET /api/cves
+  participant APIjs as api.js
+  participant Feed as CVEFeed.jsx
+  participant Card as CVECard.jsx
 
-  Sched->>NVD: fetch NVD updates
+  Sched->>NVD: fetch NVD updates (via api_queue + resilient_client)
   NVD-->>Sched: parsed CVE dicts
   Sched->>DB: upsert_cves
   DB->>T: merge rows
-  Feed->>API: fetchCVEs with filters
+  Feed->>APIjs: fetchCVEs with filters
+  APIjs->>API: GET /api/cves?page&filters
   API->>T: SELECT paginated
   T-->>API: rows
-  API-->>Feed: page of CVEs
+  API-->>APIjs: page of CVEs + X-Request-ID
+  APIjs-->>Feed: CVE list
   Feed->>Card: render list
-  Note over Card: Momentum defaults to 0 until drawer opens
+
+  Note over Feed: On failure (A3/A5): inline error state<br/>with message + ref link + retry button;<br/>notifyApiError toast for transient failures.<br/>Momentum defaults to 0 until drawer opens.
