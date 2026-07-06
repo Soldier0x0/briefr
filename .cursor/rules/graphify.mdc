@@ -14,7 +14,7 @@ This applies to YOU and to every subagent you spawn. Include this rule explicitl
 
 Only use Read/Grep/Glob directly when:
 1. graphify has already oriented you and you need to modify or debug specific lines
-2. `graphify-out/graph.json` does not exist yet
+2. `graphify-out/graph.json` does not exist yet (first run `graphify update .` if the CLI is available, then query)
 
 - If `graphify-out/wiki/index.md` exists, navigate it instead of reading raw files
 - Read `graphify-out/GRAPH_REPORT.md` only for broad architecture review when query/path/explain do not surface enough context

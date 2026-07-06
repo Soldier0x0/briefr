@@ -1,9 +1,11 @@
-# Graphify scan exclusions — keeps /graphify . fast and code-focused.
-# Docs/images need a GEMINI_API_KEY for semantic extraction; code is AST-only.
+# Graphify scan exclusions — global patterns (any subdirectory).
+# Docs/images need GEMINI_API_KEY for semantic extraction; code is AST-only.
 node_modules/
-backend/.venv/
-frontend/dist/
-frontend/node_modules/
+.venv/
+venv/
+__pycache__/
+dist/
+build/
 graphify-out/
 screenshots/
 *.db
