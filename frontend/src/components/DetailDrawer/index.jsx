@@ -427,6 +427,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
 
   const products = Array.isArray(cve.affected_products) ? cve.affected_products : []
   const cwes = Array.isArray(cve.cwe_ids) ? cve.cwe_ids : []
+  const capecIds = Array.isArray(cve.capec_ids) ? cve.capec_ids.filter(Boolean) : []
   const urls = Array.isArray(cve.source_urls) ? cve.source_urls.slice(0, 5) : []
   const sevColor = severityColor(cve.severity)
   const techniques = Array.isArray(cve.techniques) ? cve.techniques : []
@@ -640,6 +641,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
               momentumData={momentumData}
               products={products}
               cwes={cwes}
+              capecIds={capecIds}
               urls={urls}
               sentences={sentences}
               sentencesLoading={sentencesLoading}

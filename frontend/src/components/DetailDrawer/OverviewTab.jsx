@@ -13,7 +13,7 @@ import {
   riskScoreDisplayColor,
   RISK_COMPONENT_LABELS,
 } from '../../scoring/riskScore.js'
-import { drawerEpssBarColor } from './helpers.js'
+import { drawerEpssBarColor, capecHref, capecLabel } from './helpers.js'
 
 
 function HumanSentence({ label, text }) {
@@ -245,7 +245,7 @@ function RiskScoreBreakdown({ cve, riskScore, riskLoading, onOpenProfile, moment
     </section>
   )
 }
-export default function TabOverview({ cve, riskScore, riskLoading, onOpenProfile, momentumData, products, cwes, urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
+export default function TabOverview({ cve, riskScore, riskLoading, onOpenProfile, momentumData, products, cwes, capecIds = [], urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
   return (
     <>
       <RiskScoreBreakdown cve={cve} riskScore={riskScore} riskLoading={riskLoading} onOpenProfile={onOpenProfile} momentumData={momentumData} />
@@ -304,6 +304,37 @@ export default function TabOverview({ cve, riskScore, riskLoading, onOpenProfile
               ))}
             </div>
           )}
+        </section>
+      )}
+
+      {capecIds.length > 0 && (
+        <section className="drawer-section" aria-labelledby="capec-heading">
+          <h3 id="capec-heading" className="drawer-human-label mono">ATTACK PATTERNS (CAPEC)</h3>
+          <p className="drawer-capec-hint mono">
+            Common attack patterns linked to this CVE via CIRCL enrichment — not the same as CWE weakness types.
+          </p>
+          <div className="capec-list" aria-label="CAPEC attack patterns">
+            {capecIds.map(id => {
+              const href = capecHref(id)
+              const label = capecLabel(id)
+              return href ? (
+                <a
+                  key={id}
+                  className="capec-tag mono"
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`${label} — MITRE Common Attack Pattern Enumeration and Classification (sourced from CIRCL)`}
+                >
+                  {label}
+                </a>
+              ) : (
+                <span key={id} className="capec-tag mono" title="CAPEC attack pattern ID from CIRCL enrichment">
+                  {label}
+                </span>
+              )
+            })}
+          </div>
         </section>
       )}
 

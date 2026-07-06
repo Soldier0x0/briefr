@@ -896,6 +896,40 @@
   padding: 2px 6px;
 }
 
+.capec-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.drawer-capec-hint {
+  font-size: 0.625rem;
+  color: var(--text3);
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+
+.capec-tag {
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+  text-decoration: none;
+}
+
+.capec-tag:hover,
+.capec-tag:focus-visible {
+  border-color: var(--accent);
+  text-decoration: underline;
+}
+
+.capec-tag:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* MITRE ATLAS (Intel tab) */
 .drawer-atlas-label {
   font-size: 9px;
