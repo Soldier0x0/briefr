@@ -6,7 +6,6 @@
  */
 export const BRAND = '#e85533'
 export const PAGE_W = 210
-export const PAGE_H = 297
 export const MARGIN = 15
 export const CONTENT_BOTTOM = 262
 export const FOOTER_Y = 285

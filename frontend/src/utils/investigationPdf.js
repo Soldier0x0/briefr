@@ -12,7 +12,6 @@ import { getReportTimestamp } from './timezone.js'
 import {
   BRAND,
   PAGE_W,
-  PAGE_H,
   MARGIN,
   CONTENT_BOTTOM,
   FOOTER_Y,
