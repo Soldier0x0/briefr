@@ -9,6 +9,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
+from scheduler_locks import any_locked, get_lock
 from database import (
     EPSS_BACKFILL_DONE_KEY,
     apply_additive_cve_enrichments,
@@ -67,21 +68,10 @@ logger = logging.getLogger(__name__)
 SCHEDULER_REFRESH_TZ = "Asia/Kolkata"
 
 _scheduler: AsyncIOScheduler | None = None
-_nvd_lock = asyncio.Lock()
-_kev_lock = asyncio.Lock()
-_epss_lock = asyncio.Lock()
+# Job-keyed locks live in scheduler_locks.py (shared with routers/admin.py so
+# the two can't drift out of sync). This one has no APScheduler job ID, so it
+# stays private here.
 _epss_backfill_lock = asyncio.Lock()
-_mitre_refresh_lock = asyncio.Lock()
-_atlas_version_check_lock = asyncio.Lock()
-_otx_lock = asyncio.Lock()
-_otx_continuous_lock = asyncio.Lock()
-_correlation_lock = asyncio.Lock()
-_vulnrichment_lock = asyncio.Lock()
-_cvelistv5_lock = asyncio.Lock()
-_embeddings_lock = asyncio.Lock()
-_llm_extraction_lock = asyncio.Lock()
-_exploit_sources_lock = asyncio.Lock()
-_scheduled_backup_lock = asyncio.Lock()
 
 # Cap concurrent background jobs that hold pool connections (Postgres).
 _SCHEDULER_DB_CONCURRENCY = max(1, int(os.environ.get("SCHEDULER_DB_CONCURRENCY", "3")))
@@ -114,13 +104,7 @@ _job_progress: dict[str, str] = {}
 
 def any_ingest_lock_held() -> bool:
     """True when any ingest-related lock is held (used by /api/admin/system)."""
-    return any(lock.locked() for lock in [
-        _nvd_lock, _kev_lock, _epss_lock, _epss_backfill_lock,
-        _mitre_refresh_lock, _atlas_version_check_lock,
-        _otx_lock, _otx_continuous_lock, _correlation_lock,
-        _vulnrichment_lock, _cvelistv5_lock, _embeddings_lock,
-        _llm_extraction_lock, _exploit_sources_lock, _scheduled_backup_lock,
-    ])
+    return any_locked() or _epss_backfill_lock.locked()
 
 
 async def _write_job_last_run(
@@ -227,7 +211,11 @@ def get_next_scheduled_refresh_utc() -> datetime:
 
 
 def ingest_in_progress() -> bool:
-    return _nvd_lock.locked() or _kev_lock.locked() or _epss_lock.locked()
+    return (
+        get_lock("nvd_incremental_sync").locked()
+        or get_lock("kev_metadata_sync").locked()
+        or get_lock("epss_score_sync").locked()
+    )
 
 
 def refresh_in_progress() -> bool:
@@ -237,17 +225,17 @@ def refresh_in_progress() -> bool:
 
 def get_ingest_status() -> dict:
     return {
-        "nvd_in_progress": _nvd_lock.locked(),
-        "kev_in_progress": _kev_lock.locked(),
-        "epss_in_progress": _epss_lock.locked(),
-        "mitre_in_progress": _mitre_refresh_lock.locked(),
+        "nvd_in_progress": get_lock("nvd_incremental_sync").locked(),
+        "kev_in_progress": get_lock("kev_metadata_sync").locked(),
+        "epss_in_progress": get_lock("epss_score_sync").locked(),
+        "mitre_in_progress": get_lock("weekly_mitre_refresh").locked(),
         "any_in_progress": ingest_in_progress(),
         "intervals": get_ingest_intervals(),
     }
 
 
 async def run_nvd_incremental_sync() -> bool:
-    if _nvd_lock.locked():
+    if get_lock("nvd_incremental_sync").locked():
         logger.warning("NVD sync already in progress — skipping")
         return False
 
@@ -255,7 +243,7 @@ async def run_nvd_incremental_sync() -> bool:
     _had_error = False
     _error_msg = ""
     try:
-        async with _nvd_lock:
+        async with get_lock("nvd_incremental_sync"):
             _job_progress["nvd_incremental_sync"] = "Resolving NVD sync watermark…"
             await _run_nvd_incremental_sync()
     except Exception as _exc:
@@ -375,7 +363,7 @@ async def _run_nvd_incremental_sync() -> None:
 
 
 async def run_kev_sync() -> bool:
-    if _kev_lock.locked():
+    if get_lock("kev_metadata_sync").locked():
         logger.warning("KEV sync already in progress — skipping")
         return False
 
@@ -383,7 +371,7 @@ async def run_kev_sync() -> bool:
     _had_error = False
     _error_msg = ""
     try:
-        async with _kev_lock:
+        async with get_lock("kev_metadata_sync"):
             _job_progress["kev_metadata_sync"] = "Fetching CISA KEV catalog from CISA.gov…"
             await _run_kev_sync()
     except Exception as _exc:
@@ -496,7 +484,7 @@ async def _cross_fetch_missing_kev_cves(kev_entries: list[dict], nvd_api_key: st
 
 
 async def run_epss_sync() -> bool:
-    if _epss_lock.locked():
+    if get_lock("epss_score_sync").locked():
         logger.warning("EPSS sync already in progress — skipping")
         return False
 
@@ -504,7 +492,7 @@ async def run_epss_sync() -> bool:
     _had_error = False
     _error_msg = ""
     try:
-        async with _epss_lock:
+        async with get_lock("epss_score_sync"):
             _job_progress["epss_score_sync"] = "Loading CVE IDs from database…"
             await _run_epss_sync()
     except Exception as _exc:
@@ -683,12 +671,12 @@ async def run_daily_refresh() -> bool:
 
 
 async def run_weekly_mitre_refresh() -> bool:
-    if _mitre_refresh_lock.locked():
+    if get_lock("weekly_mitre_refresh").locked():
         logger.warning("MITRE refresh already in progress — skipping")
         return False
 
     _start = datetime.now(timezone.utc)
-    async with _mitre_refresh_lock:
+    async with get_lock("weekly_mitre_refresh"):
         start = _start
         logger.info("Weekly MITRE ATT&CK + ATLAS refresh started at %s", start.isoformat())
         ok = True
@@ -737,12 +725,12 @@ async def run_atlas_version_check() -> bool:
     """Check upstream ATLAS releases.atom for a new version and refresh if found."""
     from database import ATLAS_UPSTREAM_VERSION_KEY, get_sync_state_value, set_sync_state_value
 
-    if _atlas_version_check_lock.locked():
+    if get_lock("atlas_version_check").locked():
         logger.warning("ATLAS version check already in progress — skipping")
         return False
 
     _start = datetime.now(timezone.utc)
-    async with _atlas_version_check_lock:
+    async with get_lock("atlas_version_check"):
         ok = True
         error_msg = ""
         try:
@@ -864,13 +852,13 @@ async def run_exploit_sources_sync() -> bool:
         logger.info("Exploit sources sync disabled (EXPLOIT_SOURCES_SYNC_ENABLED=0)")
         return False
 
-    if _exploit_sources_lock.locked():
+    if get_lock("exploit_sources_sync").locked():
         logger.warning("Exploit sources sync already in progress — skipping")
         return False
 
     _start = datetime.now(timezone.utc)
     _had_error = False
-    async with _exploit_sources_lock:
+    async with get_lock("exploit_sources_sync"):
         start = _start
         logger.info("Exploit sources sync started at %s", start.isoformat())
         try:
@@ -900,13 +888,13 @@ async def run_exploit_sources_sync() -> bool:
 
 
 async def run_vulnrichment_sync() -> bool:
-    if _vulnrichment_lock.locked():
+    if get_lock("vulnrichment_snapshot_sync").locked():
         logger.warning("Vulnrichment sync already in progress — skipping")
         return False
 
     _start = datetime.now(timezone.utc)
     _had_error = False
-    async with _vulnrichment_lock:
+    async with get_lock("vulnrichment_snapshot_sync"):
         start = _start
         logger.info("Vulnrichment snapshot sync started at %s", start.isoformat())
         try:
@@ -950,13 +938,13 @@ async def run_vulnrichment_sync() -> bool:
 
 
 async def run_cvelistv5_sync() -> bool:
-    if _cvelistv5_lock.locked():
+    if get_lock("cvelistv5_incremental_sync").locked():
         logger.warning("cvelistV5 sync already in progress — skipping")
         return False
 
     _start = datetime.now(timezone.utc)
     _had_error = False
-    async with _cvelistv5_lock:
+    async with get_lock("cvelistv5_incremental_sync"):
         start = _start
         logger.info("cvelistV5 incremental sync started at %s", start.isoformat())
         try:
@@ -1032,13 +1020,13 @@ async def run_incident_feed_refresh() -> bool:
 
 async def run_nightly_correlation() -> bool:
     """Nightly correlation engine: infrastructure, actor, and temporal analysis."""
-    if _correlation_lock.locked():
+    if get_lock("nightly_correlation").locked():
         logger.warning("Correlation job already in progress — skipping")
         return False
 
     _start = datetime.now(timezone.utc)
     _had_error = False
-    async with _correlation_lock:
+    async with get_lock("nightly_correlation"):
         from correlation.engine import (
             prefetch_pulse_iocs_for_nightly,
             run_nightly_correlation as _run_correlation,
@@ -1088,13 +1076,13 @@ async def run_nightly_correlation() -> bool:
 
 
 async def run_otx_nightly_sync() -> bool:
-    if _otx_lock.locked():
+    if get_lock("otx_nightly_correlation").locked():
         logger.warning("OTX nightly correlation already in progress — skipping")
         return False
 
     _start = datetime.now(timezone.utc)
     _had_error = False
-    async with _otx_lock:
+    async with get_lock("otx_nightly_correlation"):
         api_key = os.environ.get("OTX_API_KEY", "")
         if not api_key:
             logger.info("OTX_API_KEY not set — skipping nightly correlation")
@@ -1135,7 +1123,7 @@ async def run_otx_continuous_sync() -> bool:
 
     if not otx_continuous_enabled():
         return False
-    if _otx_continuous_lock.locked():
+    if get_lock("otx_continuous_sync").locked():
         logger.info("OTX continuous sync already in progress — skipping")
         return False
 
@@ -1146,7 +1134,7 @@ async def run_otx_continuous_sync() -> bool:
     _start = datetime.now(timezone.utc)
     _had_error = False
     _records = 0
-    async with _otx_continuous_lock:
+    async with get_lock("otx_continuous_sync"):
         try:
             stats = await _run(api_key)
             _records = int(stats.get("api_calls") or 0)
@@ -1182,14 +1170,14 @@ async def run_embeddings_sync() -> bool:
     """
     if not embeddings_enabled():
         return False
-    if _embeddings_lock.locked():
+    if get_lock("embeddings_backfill").locked():
         logger.info("Embeddings backfill already in progress — skipping")
         return False
 
     _start = datetime.now(timezone.utc)
     _had_error = False
     _embedded = 0
-    async with _embeddings_lock:
+    async with get_lock("embeddings_backfill"):
         start = _start
         logger.info("Embeddings backfill started at %s", start.isoformat())
         stats: dict = {}
@@ -1232,13 +1220,13 @@ async def run_llm_extraction_sync() -> bool:
     """
     if not llm_product_extraction_enabled():
         return False
-    if _llm_extraction_lock.locked():
+    if get_lock("llm_product_extraction").locked():
         logger.info("LLM product extraction already in progress — skipping")
         return False
 
     _start = datetime.now(timezone.utc)
     _had_error = False
-    async with _llm_extraction_lock:
+    async with get_lock("llm_product_extraction"):
         start = _start
         logger.info("LLM product extraction started at %s", start.isoformat())
         try:
@@ -1274,13 +1262,13 @@ async def run_scheduled_backup() -> bool:
     """Scheduler hook: create a backup archive and prune old ones, on
     BACKUP_INTERVAL_HOURS. run_backup() itself no-ops when BACKUP_ENABLED=0
     and applies BACKUP_RETENTION_COUNT pruning — this just wires it to a job."""
-    if _scheduled_backup_lock.locked():
+    if get_lock("scheduled_backup").locked():
         logger.info("Scheduled backup already in progress — skipping")
         return False
     _start = datetime.now(timezone.utc)
     _had_error = False
     _error_msg = ""
-    async with _scheduled_backup_lock:
+    async with get_lock("scheduled_backup"):
         try:
             _job_progress["scheduled_backup"] = "Creating database backup archive and pruning old backups…"
             await asyncio.to_thread(run_backup, reason="scheduled")

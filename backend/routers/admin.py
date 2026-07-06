@@ -52,6 +52,7 @@ from dependencies import audit, require_admin, trigger_graceful_restart
 from destructive_actions import list_actions, require_confirm
 from rate_limit import get_bucket_stats, get_top_consumers, rate_limit_admin
 from resilient_client import get_api_queue_status, get_feed_health, reset_circuit
+from scheduler_locks import get_lock, locked_jobs
 from settings import production_posture_warnings, settings
 from structured_logging import LOG_CATEGORIES, get_log_buffer, get_known_loggers
 
@@ -66,24 +67,6 @@ _DOTENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 BACKUP_DIR = os.environ.get("BACKUP_DIR", "/var/lib/briefr/backups")
 
 _backup_running = asyncio.Event()
-
-# ── Lock map for scheduler jobs ────────────────────────────────────────────
-_JOB_LOCK_MAP: dict[str, str] = {
-    "nvd_incremental_sync": "_nvd_lock",
-    "kev_metadata_sync": "_kev_lock",
-    "epss_score_sync": "_epss_lock",
-    "weekly_mitre_refresh": "_mitre_refresh_lock",
-    "atlas_version_check": "_atlas_version_check_lock",
-    "otx_nightly_correlation": "_otx_lock",
-    "otx_continuous_sync": "_otx_continuous_lock",
-    "nightly_correlation": "_correlation_lock",
-    "vulnrichment_snapshot_sync": "_vulnrichment_lock",
-    "cvelistv5_incremental_sync": "_cvelistv5_lock",
-    "embeddings_backfill": "_embeddings_lock",
-    "llm_product_extraction": "_llm_extraction_lock",
-    "exploit_sources_sync": "_exploit_sources_lock",
-    "scheduled_backup": "_scheduled_backup_lock",
-}
 
 # WRITABLE_CONFIG_KEYS / INTEGER_KEYS / RESTART_REQUIRED_KEYS now come from
 # config_schema.py (single source of truth — see that module for the full
@@ -155,11 +138,7 @@ def _get_scheduler_module():
 
 
 def _job_lock_held(job_id: str) -> bool:
-    sched = _get_scheduler_module()
-    lock_name = _JOB_LOCK_MAP.get(job_id)
-    if not lock_name:
-        return False
-    lock = getattr(sched, lock_name, None)
+    lock = get_lock(job_id)
     return lock.locked() if lock else False
 
 
@@ -300,13 +279,7 @@ async def _get_all_scheduler_jobs() -> list[dict[str, Any]]:
 
 def _get_active_locks() -> list[dict[str, Any]]:
     """Return info on jobs whose lock is currently held."""
-    sched = _get_scheduler_module()
-    result = []
-    for job_id, lock_name in _JOB_LOCK_MAP.items():
-        lock = getattr(sched, lock_name, None)
-        if lock and lock.locked():
-            result.append({"job_id": job_id, "lock_name": lock_name})
-    return result
+    return [{"job_id": job_id} for job_id in locked_jobs()]
 
 
 # ── System endpoint ────────────────────────────────────────────────────────
