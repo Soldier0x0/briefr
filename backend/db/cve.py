@@ -257,8 +257,8 @@ async def apply_additive_cve_enrichments(
 
         if rows:
             existing = dict(rows[0])
-            changes = merge_additive_cve_fields(existing, incoming)
-            if not changes:
+            changes = merge_additive_cve_fields(existing, incoming) or {}
+            if not changes and not incoming.get("ssvc"):
                 continue
             params = {"cve_id": cve_id}
             set_parts: list[str] = []
@@ -283,16 +283,25 @@ async def apply_additive_cve_enrichments(
             if "affected_products" in changes:
                 set_parts.append("affected_products = :affected_products")
                 params["affected_products"] = json.dumps(changes["affected_products"])
-            set_parts.append("updated_at = :updated_at")
-            params["updated_at"] = utcnow_str()
-            await db.execute(
-                f"UPDATE cves SET {', '.join(set_parts)} WHERE cve_id = :cve_id",
-                params,
-            )
-            updated += 1
+            if set_parts:
+                set_parts.append("updated_at = :updated_at")
+                params["updated_at"] = utcnow_str()
+                await db.execute(
+                    f"UPDATE cves SET {', '.join(set_parts)} WHERE cve_id = :cve_id",
+                    params,
+                )
+                updated += 1
         else:
             await upsert_cve(db, incoming)
             updated += 1
+
+        ssvc = incoming.get("ssvc")
+        if isinstance(ssvc, dict) and ssvc.get("decisions"):
+            from db.cache import set_feed_cache
+
+            await set_feed_cache(db, f"ssvc:{cve_id}", ssvc)
+            if rows and not changes:
+                updated += 1
 
     return updated
 

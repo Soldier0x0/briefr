@@ -882,6 +882,11 @@ async def get_cve(cve_id: str):
                 cve["kev_cwes"] = parsed_cwes if isinstance(parsed_cwes, list) else []
             except (json.JSONDecodeError, TypeError):
                 cve["kev_cwes"] = []
+        from database import get_feed_cache
+
+        ssvc_cached = await get_feed_cache(db, f"ssvc:{cve_key}", max_age_hours=24 * 365)
+        if ssvc_cached and isinstance(ssvc_cached.get("decisions"), dict):
+            cve["ssvc"] = ssvc_cached
         cve["techniques"] = await get_techniques_for_cve(db, cve_key)
         cve["atlas_techniques"] = await get_atlas_techniques_for_cve(db, cve_key)
         cve["atlas_case_studies"] = await get_atlas_case_studies_for_cve(db, cve_key)
