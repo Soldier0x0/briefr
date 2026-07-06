@@ -123,7 +123,7 @@ def _row_to_cve_dict(row) -> dict:
             # NULL/'' columns surface as a stable [] — API_REFERENCE.md
             # documents these fields as arrays, never null.
             d[field] = []
-    for num_field in ("cvss_score", "epss_score"):
+    for num_field in ("cvss_score", "epss_score", "epss_percentile"):
         if d.get(num_field) is not None:
             try:
                 d[num_field] = float(d[num_field])
@@ -346,7 +346,7 @@ CVE_ORDER_BY = """
 CVE_SELECT = """
     SELECT c.cve_id, c.description, c.cvss_score, c.severity, c.published, c.modified,
            c.affected_products, c.affected_products_source, c.mitre_technique,
-           c.summary, c.is_kev, c.epss_score, c.has_poc, c.patch_available,
+           c.summary, c.is_kev, c.epss_score, c.epss_percentile, c.has_poc, c.patch_available,
            c.has_ai_context, c.source_urls, c.cwe_ids, c.updated_at,
            (SELECT due_date FROM kev_deadlines k WHERE k.cve_id = c.cve_id) AS kev_due_date,
            EXISTS (
@@ -849,7 +849,7 @@ async def get_cve(cve_id: str):
             """
             SELECT cve_id, description, cvss_score, severity, published, modified,
                    affected_products, affected_products_source, mitre_technique,
-                   summary, is_kev, epss_score, has_poc, patch_available,
+                   summary, is_kev, epss_score, epss_percentile, has_poc, patch_available,
                    has_ai_context, source_urls, cwe_ids, updated_at
             FROM cves
             WHERE cve_id = ?
@@ -977,7 +977,7 @@ async def cve_risk_score(cve_id: str, body: RiskScoreRequest | None = None):
         rows = await db.execute_fetchall(
             """
             SELECT c.cve_id, c.description, c.cvss_score, c.severity, c.published,
-                   c.modified, c.affected_products, c.summary, c.is_kev, c.epss_score,
+                   c.modified, c.affected_products, c.summary, c.is_kev, c.epss_score, c.epss_percentile,
                    c.has_poc, c.source_urls, c.cpe_matches,
                    k.date_added AS kev_date_added,
                    k.due_date AS kev_due_date
@@ -1060,7 +1060,7 @@ async def cve_investigation_score(
         rows = await db.execute_fetchall(
             """
             SELECT c.cve_id, c.description, c.cvss_score, c.severity, c.published,
-                   c.modified, c.affected_products, c.summary, c.is_kev, c.epss_score,
+                   c.modified, c.affected_products, c.summary, c.is_kev, c.epss_score, c.epss_percentile,
                    c.has_poc, c.source_urls, c.cpe_matches,
                    k.date_added AS kev_date_added,
                    k.due_date AS kev_due_date

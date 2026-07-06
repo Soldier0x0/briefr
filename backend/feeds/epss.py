@@ -19,7 +19,23 @@ BACKFILL_BATCH_SIZE = 100
 BACKFILL_THROTTLE_SECONDS = 2.0
 
 
-async def _fetch_batch_api(cve_ids: list) -> dict[str, float]:
+def _parse_epss_fields(epss_val: object, percentile_val: object) -> dict | None:
+    if epss_val is None or epss_val == "":
+        return None
+    try:
+        score = float(epss_val)
+    except (ValueError, TypeError):
+        return None
+    percentile = None
+    if percentile_val is not None and percentile_val != "":
+        try:
+            percentile = float(percentile_val)
+        except (ValueError, TypeError):
+            percentile = None
+    return {"score": score, "percentile": percentile}
+
+
+async def _fetch_batch_api(cve_ids: list) -> dict[str, dict]:
     cve_param = ",".join(cve_ids)
     try:
         response = await resilient_get(
@@ -46,25 +62,22 @@ async def _fetch_batch_api(cve_ids: list) -> dict[str, float]:
         logger.error("EPSS unexpected error: %s", exc)
         return {}
 
-    scores: dict[str, float] = {}
+    scores: dict[str, dict] = {}
     for item in data.get("data", []):
         cve_id = item.get("cve", "")
-        epss_val = item.get("epss")
-        if cve_id and epss_val is not None:
-            try:
-                scores[cve_id.upper()] = float(epss_val)
-            except (ValueError, TypeError):
-                pass
+        parsed = _parse_epss_fields(item.get("epss"), item.get("percentile"))
+        if cve_id and parsed is not None:
+            scores[cve_id.upper()] = parsed
     return scores
 
 
-async def fetch_epss_bulk(cve_ids: set[str]) -> dict[str, float]:
+async def fetch_epss_bulk(cve_ids: set[str]) -> dict[str, dict]:
     """Load scores from the daily EPSS CSV for the given CVE IDs."""
     if not cve_ids:
         return {}
 
     needed = {c.upper() for c in cve_ids}
-    scores: dict[str, float] = {}
+    scores: dict[str, dict] = {}
 
     try:
         response = await resilient_get("epss_bulk", EPSS_CSV_URL, timeout=120.0)
@@ -88,13 +101,9 @@ async def fetch_epss_bulk(cve_ids: set[str]) -> dict[str, float]:
         cve_id = (row.get("cve") or "").upper()
         if cve_id not in needed:
             continue
-        epss_val = row.get("epss")
-        if epss_val is None or epss_val == "":
-            continue
-        try:
-            scores[cve_id] = float(epss_val)
-        except (ValueError, TypeError):
-            continue
+        parsed = _parse_epss_fields(row.get("epss"), row.get("percentile"))
+        if parsed is not None:
+            scores[cve_id] = parsed
 
     await record_api_call("epss", 1)
     logger.info(
@@ -105,13 +114,13 @@ async def fetch_epss_bulk(cve_ids: set[str]) -> dict[str, float]:
     return scores
 
 
-async def fetch_epss_api(cve_ids: list) -> dict[str, float]:
+async def fetch_epss_api(cve_ids: list) -> dict[str, dict]:
     """Fallback: per-batch API when bulk CSV is unavailable."""
     if not cve_ids:
         return {}
 
     logger.info("Fetching EPSS via API for %d CVEs", len(cve_ids))
-    all_scores: dict[str, float] = {}
+    all_scores: dict[str, dict] = {}
     batches = [cve_ids[i : i + BATCH_SIZE] for i in range(0, len(cve_ids), BATCH_SIZE)]
 
     for idx, batch in enumerate(batches):
@@ -129,7 +138,7 @@ async def fetch_epss_api(cve_ids: list) -> dict[str, float]:
     return all_scores
 
 
-async def fetch_epss(cve_ids: list) -> dict[str, float]:
+async def fetch_epss(cve_ids: list) -> dict[str, dict]:
     """Prefer bulk CSV; fall back to API batches for any still missing."""
     if not cve_ids:
         return {}

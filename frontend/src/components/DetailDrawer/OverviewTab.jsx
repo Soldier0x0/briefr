@@ -91,6 +91,10 @@ function EpssStaticBar({ score }) {
 function EpssTrendSection({ cve, history, loading, epssSparklineRef }) {
   const score =
     typeof cve.epss_score === 'number' && cve.epss_score >= 0 ? cve.epss_score : null
+  const percentile =
+    typeof cve.epss_percentile === 'number' && cve.epss_percentile >= 0
+      ? cve.epss_percentile
+      : null
   const points = buildEpssSparklinePoints(history, score)
   const polyline = epssSparklinePolyline(points)
   const trend = epssTrendLabel(history, score)
@@ -100,11 +104,24 @@ function EpssTrendSection({ cve, history, loading, epssSparklineRef }) {
   if (score == null && !points.length && !loading) return null
 
   const pctLabel = score != null ? `${(score * 100).toFixed(1)}%` : '—'
+  const percentileLabel =
+    percentile != null
+      ? `${(percentile * 100).toFixed(1)}th percentile`
+      : null
   const trendLine = (
     <p className={`drawer-epss-trend-line mono drawer-epss-trend--${trend.tone}`}>
       {trend.label}
       {'  '}
       {pctLabel}
+      {percentileLabel && (
+        <span
+          className="drawer-epss-percentile"
+          title="EPSS percentile — share of scored CVEs with a lower exploitation probability today"
+        >
+          {' · '}
+          {percentileLabel}
+        </span>
+      )}
     </p>
   )
 
