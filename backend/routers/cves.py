@@ -349,10 +349,11 @@ CVE_SELECT = """
            c.summary, c.is_kev, c.epss_score, c.has_poc, c.patch_available,
            c.has_ai_context, c.source_urls, c.cwe_ids, c.updated_at,
            (SELECT due_date FROM kev_deadlines k WHERE k.cve_id = c.cve_id) AS kev_due_date,
-           (SELECT CASE
-                WHEN LOWER(TRIM(COALESCE(kr.known_ransomware, ''))) = 'known' THEN 1
-                ELSE 0
-            END FROM kev_deadlines kr WHERE kr.cve_id = c.cve_id) AS kev_ransomware_use,
+           EXISTS (
+               SELECT 1 FROM kev_deadlines kr
+               WHERE kr.cve_id = c.cve_id
+                 AND LOWER(TRIM(COALESCE(kr.known_ransomware, ''))) = 'known'
+           ) AS kev_ransomware_use,
            w.state AS watchlist_state,
            w.snooze_until AS watchlist_snooze_until
     FROM cves c
