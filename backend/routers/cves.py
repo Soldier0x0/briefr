@@ -48,6 +48,7 @@ from pydantic import BaseModel, Field
 
 from correlation.engine import get_correlation_for_cve
 from db.dialect import utcnow_str
+from routers._validators import require_cve_id
 from database import (
     count_ai_ml_profile_alerts,
     get_atlas_case_studies_for_cve,
@@ -692,8 +693,7 @@ async def top_techniques(
 
 @detail_router.get("/api/cves/{cve_id}/sentences")
 async def get_cve_sentences(cve_id: str):
-    if not cve_id.upper().startswith("CVE-"):
-        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+    cve_id = require_cve_id(cve_id)
 
     cve_key = cve_id.upper()
     db = await get_db()
@@ -765,8 +765,7 @@ async def get_cve_sentences(cve_id: str):
 
 @detail_router.get("/api/cves/{cve_id}/epss-history")
 async def get_cve_epss_history(cve_id: str):
-    if not cve_id.upper().startswith("CVE-"):
-        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+    cve_id = require_cve_id(cve_id)
 
     cve_key = cve_id.upper()
     db = await get_db()
@@ -792,8 +791,7 @@ async def get_cve_related(
     otherwise the deterministic shared-product heuristic. Additive response:
     `data` keeps its shape; embedding results add a `similarity` field and
     `meta.method` reports which path produced them."""
-    if not cve_id.upper().startswith("CVE-"):
-        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+    cve_id = require_cve_id(cve_id)
 
     cve_key = cve_id.upper()
     db = await get_db()
@@ -836,8 +834,7 @@ async def get_cve_related(
 
 @detail_router.get("/api/cves/{cve_id}")
 async def get_cve(cve_id: str):
-    if not cve_id.upper().startswith("CVE-"):
-        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+    cve_id = require_cve_id(cve_id)
 
     cve_key = cve_id.upper()
     db = await get_db()
@@ -959,8 +956,7 @@ async def cve_risk_score(cve_id: str, body: RiskScoreRequest | None = None):
     Computes momentum server-side. Optional profile/assets personalise the asset
     component (CPE match + fuzzy graduation fallback).
     """
-    if not cve_id.upper().startswith("CVE-"):
-        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+    cve_id = require_cve_id(cve_id)
 
     body = body or RiskScoreRequest()
     cve_key = cve_id.upper()
@@ -1045,8 +1041,7 @@ async def cve_investigation_score(
     Priority, and OTX campaign freshness. Component scores remain available
     separately via /risk and /correlation.
     """
-    if not cve_id.upper().startswith("CVE-"):
-        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+    cve_id = require_cve_id(cve_id)
 
     cve_key = cve_id.upper()
     db = await get_db()
@@ -1102,8 +1097,7 @@ async def cve_momentum(cve_id: str):
     Compute momentum score (0–1) from EPSS trend and OTX pulse recency.
     Returns momentum_score and momentum_signals list for drawer breakdown.
     """
-    if not cve_id.upper().startswith("CVE-"):
-        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+    cve_id = require_cve_id(cve_id)
 
     db = await get_db()
     try:
@@ -1127,8 +1121,7 @@ async def cve_detection(
     - siem_queries: 4-platform quick-search queries (Elastic/Splunk/Sentinel/QRadar)
     - log_patterns: plain-English detection patterns from ATT&CK guidance
     """
-    if not cve_id.upper().startswith("CVE-"):
-        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+    cve_id = require_cve_id(cve_id)
 
     github_token = os.environ.get("GITHUB_TOKEN", "")
     cve_upper = cve_id.upper()
@@ -1227,8 +1220,7 @@ async def cve_correlation(
     v2: pulse-centric campaign clusters with evidence receipts.
     Results are cached for 6 hours.
     """
-    if not cve_id.upper().startswith("CVE-"):
-        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+    cve_id = require_cve_id(cve_id)
 
     db = await get_db()
     try:
@@ -1257,8 +1249,7 @@ class CorrelationSuppressBody(BaseModel):
 @intel_router.post("/api/cves/{cve_id}/correlation/suppress")
 async def suppress_correlation_finding(cve_id: str, body: CorrelationSuppressBody):
     """Dismiss a correlation finding for this CVE (persisted across rebuilds)."""
-    if not cve_id.upper().startswith("CVE-"):
-        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+    cve_id = require_cve_id(cve_id)
 
     from correlation.suppressions import add_suppression
     from database import delete_feed_cache_prefix
@@ -1292,8 +1283,7 @@ async def unsuppress_correlation_finding(
     pulse_id: str = Query(default=""),
 ):
     """Remove a correlation suppression."""
-    if not cve_id.upper().startswith("CVE-"):
-        raise HTTPException(status_code=400, detail="Invalid CVE ID format")
+    cve_id = require_cve_id(cve_id)
 
     from correlation.suppressions import remove_suppression
     from database import delete_feed_cache_prefix
