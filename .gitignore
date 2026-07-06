@@ -25,3 +25,7 @@ entities.json
 SYSTEM_DESIGN.pdf
 TECHNICAL_INVENTORY.xlsx
 architecture-map.html
+
+# Graphify generated knowledge graph (rebuild with: graphify .)
+graphify-out/
+**/graphify-out/
