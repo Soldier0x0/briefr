@@ -329,7 +329,7 @@ Every file in the repository with a one-line purpose. Tags:
 | `APPLICATION_EXECUTION_MAP.md` | Startup sequence and request journeys |
 | `CODEBASE_CONTEXT.md` | Consolidated codebase reference for AI assistants and contributors |
 | `FOLDER_STRUCTURE_GUIDE.md` | This file |
-| `docs/diagrams/*.mermaid` | Mermaid diagrams (architecture, flows, schema, startup) |
+| `docs/diagrams/*.mermaid` | Mermaid diagrams — master `system-graph.mermaid`, `architecture.mermaid`, flows (CVE, IOC, NVD, PDF, error handling), `schema.mermaid`, `startup.mermaid` |
 | `screenshots/brief.png` | README screenshot — BRIEF tab CVE feed |
 | `screenshots/ioc-lookup.png` | README screenshot — IOC LOOKUP tab |
 | `screenshots/incidents-news.png` | README screenshot — INCIDENTS & NEWS tab |

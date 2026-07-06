@@ -80,7 +80,7 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
 └──────────────┴──────────────┴──────────────┴──────────────┴───────────────┘
 ```
 
-Mermaid source: [`docs/diagrams/architecture.mermaid`](docs/diagrams/architecture.mermaid)
+Mermaid sources: master graph [`docs/diagrams/system-graph.mermaid`](docs/diagrams/system-graph.mermaid) · component view [`docs/diagrams/architecture.mermaid`](docs/diagrams/architecture.mermaid)
 
 ### DB tables → primary API readers
 
@@ -433,4 +433,4 @@ Near-future engineering and product intent lives in **[`Beta V1.2.md`](Beta%20V1
 - [`TECHNICAL_INVENTORY.md`](TECHNICAL_INVENTORY.md) — schema, scheduler, stack
 - [`APPLICATION_EXECUTION_MAP.md`](APPLICATION_EXECUTION_MAP.md) — startup and request journeys
 - [`FOLDER_STRUCTURE_GUIDE.md`](FOLDER_STRUCTURE_GUIDE.md) — file-by-file map
-- [`docs/diagrams/`](docs/diagrams/) — Mermaid diagrams (render in GitHub, VS Code, Notion)
+- [`docs/diagrams/`](docs/diagrams/) — Mermaid diagrams (render in GitHub, VS Code, Notion). Master: [`system-graph.mermaid`](docs/diagrams/system-graph.mermaid). Flows: CVE feed/detail, IOC lookup, NVD sync, PDF export, error handling (`flow_error_handling.mermaid`), startup, schema ERD.

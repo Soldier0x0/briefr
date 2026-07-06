@@ -2,6 +2,7 @@ sequenceDiagram
   participant User
   participant Drawer as DetailDrawer.jsx
   participant PDF as pdfReport.js
+  participant APIjs as api.js
   participant API as POST /api/ai/summary
   participant AI as ai/summary.py
   participant Groq as Groq API
@@ -9,8 +10,9 @@ sequenceDiagram
 
   User->>Drawer: Export PDF confirm
   Drawer->>PDF: downloadSingleCvePdf(cve, options)
-  PDF->>API: fetchCVESentences (optional enrich)
-  PDF->>API: POST /api/ai/summary
+  PDF->>APIjs: fetchCVESentences (optional enrich)
+  PDF->>APIjs: POST /api/ai/summary
+  APIjs->>API: request with session cookie
   API->>AI: generate_executive_summary
   AI->>Groq: _call_groq (if GROQ_API_KEY)
   alt Groq fails or no key
@@ -24,3 +26,5 @@ sequenceDiagram
   API-->>PDF: executive_summary, key_findings, confidence, source
   PDF->>PDF: jsPDF layout + html2canvas sparkline
   PDF->>User: browser download .pdf
+
+  Note over PDF: No API keys required for the CVE feed;<br/>AI summary section is empty until Groq or Anthropic key is set.

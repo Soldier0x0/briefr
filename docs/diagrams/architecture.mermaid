@@ -1,5 +1,5 @@
 flowchart TB
-  subgraph External["External Services"]
+  subgraph External["External services"]
     NVD[NVD API 2.0]
     KEV[CISA KEV JSON]
     EPSS[FIRST EPSS CSV/API]
@@ -17,92 +17,90 @@ flowchart TB
     GROQ[Groq API]
     ANTH[Anthropic API]
     GH[GitHub API]
-    RSS[RSS Feeds x6]
+    RSS[RSS feeds ×6]
     CVLIST[cvelistV5 GitHub]
     VULN[CISA Vulnrichment]
   end
 
-  subgraph Scheduler["APScheduler — scheduler.py (13 jobs)"]
-    J1[NVD incremental]
-    J2[KEV sync]
-    J3[EPSS sync]
-    J4[MITRE+ATLAS weekly Sun]
-    J5[OTX nightly cron]
-    J6[Incident feed every 30m]
-    J7[Correlation nightly cron]
-    J8[Vulnrichment every 6h]
-    J9[cvelistV5 every 30m]
-    J10[Exploit sources opt-in]
-    J11[Embeddings backfill opt-in]
-    J12[LLM product extract opt-in]
-    J13[Backup dead-man check]
+  subgraph Scheduler["APScheduler — scheduler.py (17 base jobs + 2 conditional)"]
+    J1[nvd_incremental_sync]
+    J2[kev_metadata_sync]
+    J3[epss_score_sync]
+    J4[weekly_mitre_refresh]
+    J5[atlas_version_check]
+    J6[otx_nightly_correlation]
+    J7[otx_continuous_sync · if enabled]
+    J8[incident_feed_refresh · if not smoke test]
+    J9[exploit_sources_sync · if enabled]
+    J10[embeddings_backfill]
+    J11[llm_product_extraction]
+    J12[nightly_correlation]
+    J13[vulnrichment_snapshot_sync]
+    J14[cvelistv5_incremental_sync]
+    J15[scheduled_backup]
+    J16[backup_deadman_check]
+    J17[session_cleanup]
   end
 
   subgraph Backend["FastAPI — main.py + routers/"]
-    API[REST /api/* ~43 routes]
+    API["REST /api/*<br/>request_id middleware · rate limits"]
+    AUTH_G["require_admin — /api/admin/* · /api/refresh*"]
+    SESS["auth — sessions + JWT cookies"]
+    POSTURE["production_posture_warnings (A6)"]
   end
 
-  subgraph SQLite["SQLite — briefr.db (26 tables)"]
-    T_cves[(cves)]
-    T_kev[(kev_deadlines)]
-    T_epss[(epss_history)]
-    T_mitre[(mitre_techniques<br/>cve_technique_map<br/>mitre_groups)]
-    T_atlas[(atlas_techniques<br/>atlas_case_studies<br/>cve_atlas_map)]
-    T_otx[(otx_cve_pulses<br/>otx_pulse_iocs)]
-    T_corr[(correlation_*)]
-    T_cache[(feed_cache<br/>ioc_cache)]
-    T_other[(cve_exploits<br/>cve_change_history<br/>watchlist<br/>hunt_packs<br/>audit_log<br/>api_usage<br/>sync_state)]
+  subgraph Database["PostgreSQL 16 — production required"]
+    direction TB
+    T_intel["Intel: cves · kev_deadlines · epss_history<br/>mitre_* · atlas_* · otx_* · correlation_*<br/>cve_exploits · cve_embeddings · hunt_packs"]
+    T_app["App: users · sessions · watchlist<br/>feed_cache · ioc_cache · sync_state<br/>audit_log · api_usage · webhook_*"]
   end
 
-  subgraph Frontend["React — frontend/src"]
-    BRIEF[BRIEF tab<br/>MorningBrief + charts]
-    FEED[FEED tab<br/>CVEFeed / CVECard]
-    DRAWER[DetailDrawer]
-    IOC[IOCLookup]
-    CASE[Incidents tab<br/>CaseStudies]
+  subgraph Frontend["React 19 — frontend/src"]
+    GATE["RequireAuth → /login"]
+    BRIEF["BRIEF — MorningBrief · BriefCharts · heatmap"]
+    FEED["FEED — CVEFeed · CVECard · Sidebar"]
+    DRAWER["DetailDrawer + openCveDrawer.js"]
+    IOC_UI[IOCLookup]
+    CASE["Incidents — CaseStudies"]
     FORGE[Forge tab]
+    ADMIN_UI["AdminPage — Security · jobs · logs"]
+    ERR["Toast + inline errors — detail + ref + retry (A3/A5)"]
     PDF[pdfReport.js]
   end
 
-  J1 --> NVD --> T_cves
-  J2 --> KEV --> T_kev
-  J2 --> T_cves
-  J3 --> EPSS --> T_cves
-  J3 --> T_epss
-  J4 --> MITRE --> T_mitre
-  J4 --> ATLAS --> T_atlas
-  J4 --> T_cves
-  J5 --> OTX --> T_otx
-  J6 --> RSS --> T_cache
-  J7 --> T_corr
-  J8 --> VULN --> T_cves
-  J9 --> CVLIST --> T_cves
-  J10 --> GH --> T_other
+  J1 --> NVD --> T_intel
+  J2 --> KEV --> T_intel
+  J3 --> EPSS --> T_intel
+  J4 --> MITRE --> T_intel
+  J4 --> ATLAS --> T_intel
+  J6 --> OTX --> T_intel
+  J7 --> OTX
+  J8 --> RSS --> T_app
+  J9 --> GH --> T_intel
+  J10 --> T_intel
+  J11 --> GROQ
+  J12 --> T_intel
+  J13 --> VULN --> T_intel
+  J14 --> CVLIST --> T_intel
+  J15 --> T_app
+  J16 --> T_app
+  J17 --> T_app
 
-  API --> T_cves
-  API --> T_kev
-  API --> T_mitre
-  API --> T_atlas
-  API --> T_otx
-  API --> T_corr
-  API --> T_cache
-  API --> SPL
-  API --> GN
-  API --> VT
-  API --> AIPDB
-  API --> OTX
-  API --> OSV
-  API --> CIRCL
-  API --> MB
-  API --> UH
-  API --> GROQ
-  API --> ANTH
-  API --> GH
-
-  BRIEF -->|GET /api/brief /stats /changes| API
-  FEED -->|GET /api/cves| API
+  GATE --> BRIEF & FEED & DRAWER & IOC_UI & CASE & FORGE
+  BRIEF -->|GET /api/brief · /stats · /changes| API
+  FEED -->|GET /api/cves · /watchlist| API
   DRAWER -->|GET /api/cves/id + sub-routes| API
-  IOC -->|POST /api/ioc/lookup| API
+  IOC_UI -->|POST /api/ioc/lookup| API
   CASE -->|GET /api/case-studies/feed| API
-  FORGE -->|GET /api/forge/coverage<br/>/api/hunt-packs/*| API
+  FORGE -->|GET /api/forge/coverage · /hunt-packs/*| API
+  ADMIN_UI --> AUTH_G
   PDF -->|POST /api/ai/summary| API
+
+  API --> T_intel & T_app
+  API --> SPL & GN & VT & AIPDB & OTX & OSV & CIRCL & MB & UH & GROQ & ANTH & GH
+  SESS --> T_app
+  AUTH_G --> SESS
+  POSTURE --> ADMIN_UI
+  API -.->|X-Request-ID on errors| ERR
+
+  Note1["SQLite + db/dialect.py translation: tests/dev only.<br/>Production: BRIEFR_REQUIRE_POSTGRES=1."]

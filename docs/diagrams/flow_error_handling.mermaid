@@ -1,0 +1,40 @@
+sequenceDiagram
+  participant UI as Analyst component
+  participant APIjs as api.js
+  participant MW as request_context middleware
+  participant R as FastAPI route
+  participant Log as structured logging
+  participant Toast as App.jsx toast tray
+  participant Admin as IngestLogPage.jsx
+
+  UI->>APIjs: fetch /api/...
+  APIjs->>MW: HTTP request
+  MW->>MW: request_id_var.set (X-Request-ID)
+  MW->>R: handle request
+
+  alt success
+    R-->>APIjs: 200 + X-Request-ID header
+    APIjs-->>UI: parsed data
+  else expected 4xx
+    R-->>Log: log with request_id
+    R-->>APIjs: 4xx JSON detail + X-Request-ID
+    APIjs->>APIjs: err.requestId = header
+    APIjs-->>UI: throw Error with message + requestId
+    opt not 401 or 422
+      UI->>Toast: notifyApiError(err)
+      Toast->>UI: toast — detail + ref link
+    end
+    UI->>UI: inline error state — message + ref + retry
+  else unexpected 5xx
+    R-->>Log: full traceback + request_id
+    R-->>APIjs: 500 generic detail + X-Request-ID
+    APIjs-->>UI: throw with requestId
+    UI->>Toast: notifyApiError(err)
+    UI->>UI: inline error state — message + ref + retry
+  end
+
+  User->>Toast: click ref link
+  Toast->>Admin: /admin?p=ingestlog&request_id=...
+  Admin->>Admin: filter logs by request_id
+
+  Note over R: PoolExhaustedError → 503<br/>"Server busy — please retry shortly" (A4)

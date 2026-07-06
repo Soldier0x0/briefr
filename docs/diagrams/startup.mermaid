@@ -1,27 +1,37 @@
 flowchart TD
   A[uvicorn starts main:app] --> B[lifespan context enters]
-  B --> C[backup.manager.ensure_db_or_restore]
-  C --> D[database.init_db]
-  D --> D1[CREATE TABLE IF NOT EXISTS x26 tables]
-  D1 --> D2[Inline ALTER migrations in init_db loop]
-  D2 --> D3[Normalize epss_score zeros to NULL]
-  D --> E[scheduler.start_scheduler]
-  E --> E1[Register 13 APScheduler jobs]
-  E1 --> E2[scheduler.start]
-  E --> F[scheduler.maybe_run_on_startup]
-  F --> F1{CVE count less than 10?}
-  F1 -->|yes| F2[asyncio.create_task run_full_ingest_sync]
-  F1 -->|no| F3[strip_auto_generated_summaries + enrich_kev_summaries]
-  F --> G[maybe_run_mitre_on_startup]
-  G --> G1{mitre or atlas count less than 10?}
-  G1 -->|yes| G2[create_task run_weekly_mitre_refresh]
-  F --> H[create_task run_epss_backfill]
-  F --> I[create_task run_exploit_sources_sync if enabled]
-  G2 --> J[FastAPI ready — /api endpoints live]
-  F2 --> J
-  F3 --> J
-  G1 -->|no| J
-  H --> J
-  I --> J
-  K[On shutdown] --> K1[scheduler.stop_scheduler]
-  K1 --> K2[resilient_client.close_client]
+  B --> C{BRIEFR_REQUIRE_POSTGRES=1?}
+  C -->|yes, no Postgres DSN| C_FAIL[RuntimeError — stop]
+  C -->|Postgres| D1[run_postgres_migrations — Alembic]
+  C -->|SQLite dev/test| D2[backup.manager.ensure_db_or_restore]
+  D1 --> E[db.connection.init_pool — asyncpg or aiosqlite]
+  D2 --> E
+  E --> F[database.init_db — schema + inline migrations]
+  F --> G{BRIEFR_ENV=production?}
+  G -->|yes| G1[production_posture_warnings — log each unsafe flag]
+  G -->|no| H
+  G1 --> H[webhooks.destinations.sync_env_destinations_to_db]
+  H --> I[scheduler.start_scheduler]
+  I --> I1[Register 17 APScheduler jobs + up to 2 conditional]
+  I1 --> I2[scheduler.start]
+  I --> J[scheduler.maybe_run_on_startup]
+  J --> J1{CVE count less than 10?}
+  J1 -->|yes| J2[asyncio.create_task run_full_ingest_sync]
+  J1 -->|no| J3[strip_auto_generated_summaries + enrich_kev_summaries]
+  J --> K[maybe_run_mitre_on_startup]
+  K --> K1{mitre or atlas count less than 10?}
+  K1 -->|yes| K2[create_task run_weekly_mitre_refresh]
+  J --> L[create_task run_epss_backfill]
+  J --> M[create_task run_exploit_sources_sync if enabled]
+  J2 --> N[FastAPI ready — /api endpoints live]
+  J3 --> N
+  K2 --> N
+  K1 -->|no| N
+  L --> N
+  M --> N
+
+  O[On shutdown] --> O1[scheduler.stop_scheduler]
+  O1 --> O2[flush_api_usage_pending]
+  O2 --> O3[close_pool]
+  O3 --> O4[resilient_client.close_client]
+  O4 --> O5[close_webhook_client]
