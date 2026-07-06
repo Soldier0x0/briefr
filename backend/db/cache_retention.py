@@ -7,6 +7,8 @@ grow without bound.
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 import aiosqlite
 
 # Physical retention >= read TTL for each key family (hours).
@@ -40,6 +42,16 @@ EPSS_HISTORY_RETENTION_DAYS = 90
 CVE_CHANGE_HISTORY_RETENTION_DAYS = 90
 
 
+def _cutoff_datetime_hours_ago(hours: float) -> str:
+    return (
+        datetime.now(timezone.utc) - timedelta(hours=hours)
+    ).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _cutoff_date_days_ago(days: int) -> str:
+    return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
+
+
 async def _rows_deleted(db: aiosqlite.Connection, cursor) -> int:
     rc = cursor.rowcount
     if rc is not None and rc >= 0:
@@ -52,26 +64,29 @@ async def purge_stale_ioc_cache(
     db: aiosqlite.Connection,
     retention_hours: float = IOC_CACHE_RETENTION_HOURS,
 ) -> int:
+    cutoff = _cutoff_datetime_hours_ago(retention_hours)
     cursor = await db.execute(
         """
         DELETE FROM ioc_cache
-        WHERE cached_at < datetime('now', ?)
+        WHERE cached_at < ?
         """,
-        (f"-{retention_hours} hours",),
+        (cutoff,),
     )
     return await _rows_deleted(db, cursor)
 
 
 async def purge_stale_feed_cache(db: aiosqlite.Connection) -> int:
     deleted = 0
+    now = datetime.now(timezone.utc)
     for prefix, hours in FEED_CACHE_PREFIX_RETENTION:
+        cutoff = (now - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
         cursor = await db.execute(
             """
             DELETE FROM feed_cache
             WHERE cache_key LIKE ?
-              AND cached_at < datetime('now', ?)
+              AND cached_at < ?
             """,
-            (f"{prefix}%", f"-{hours} hours"),
+            (f"{prefix}%", cutoff),
         )
         deleted += await _rows_deleted(db, cursor)
 
@@ -80,6 +95,9 @@ async def purge_stale_feed_cache(db: aiosqlite.Connection) -> int:
         for prefix, hours in FEED_CACHE_PREFIX_RETENTION
         if hours > DEFAULT_FEED_CACHE_RETENTION_HOURS
     ]
+    default_cutoff = (now - timedelta(hours=DEFAULT_FEED_CACHE_RETENTION_HOURS)).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
     if long_prefixes:
         not_like = " AND ".join(
             f"cache_key NOT LIKE '{prefix}%'" for prefix in long_prefixes
@@ -87,18 +105,18 @@ async def purge_stale_feed_cache(db: aiosqlite.Connection) -> int:
         cursor = await db.execute(
             f"""
             DELETE FROM feed_cache
-            WHERE cached_at < datetime('now', ?)
+            WHERE cached_at < ?
               AND {not_like}
             """,
-            (f"-{DEFAULT_FEED_CACHE_RETENTION_HOURS} hours",),
+            (default_cutoff,),
         )
     else:
         cursor = await db.execute(
             """
             DELETE FROM feed_cache
-            WHERE cached_at < datetime('now', ?)
+            WHERE cached_at < ?
             """,
-            (f"-{DEFAULT_FEED_CACHE_RETENTION_HOURS} hours",),
+            (default_cutoff,),
         )
     deleted += await _rows_deleted(db, cursor)
     return deleted
@@ -108,12 +126,13 @@ async def purge_old_epss_history(
     db: aiosqlite.Connection,
     retention_days: int = EPSS_HISTORY_RETENTION_DAYS,
 ) -> int:
+    cutoff = _cutoff_date_days_ago(retention_days)
     cursor = await db.execute(
         """
         DELETE FROM epss_history
-        WHERE DATE(recorded_date) < date('now', ?)
+        WHERE recorded_date < ?
         """,
-        (f"-{retention_days} days",),
+        (cutoff,),
     )
     return await _rows_deleted(db, cursor)
 
@@ -122,12 +141,13 @@ async def purge_old_cve_change_history(
     db: aiosqlite.Connection,
     retention_days: int = CVE_CHANGE_HISTORY_RETENTION_DAYS,
 ) -> int:
+    cutoff = _cutoff_datetime_hours_ago(retention_days * 24)
     cursor = await db.execute(
         """
         DELETE FROM cve_change_history
-        WHERE detected_at < datetime('now', ?)
+        WHERE detected_at < ?
         """,
-        (f"-{retention_days} days",),
+        (cutoff,),
     )
     return await _rows_deleted(db, cursor)
 
@@ -136,18 +156,18 @@ async def purge_stale_otx_tables(
     db: aiosqlite.Connection,
     retention_hours: float = OTX_TABLE_RETENTION_HOURS,
 ) -> dict[str, int]:
-    cutoff = f"-{retention_hours} hours"
+    cutoff = _cutoff_datetime_hours_ago(retention_hours)
     cve_cursor = await db.execute(
         """
         DELETE FROM otx_cve_pulses
-        WHERE fetched_at < datetime('now', ?)
+        WHERE fetched_at < ?
         """,
         (cutoff,),
     )
     pulse_cursor = await db.execute(
         """
         DELETE FROM otx_pulse_iocs
-        WHERE fetched_at < datetime('now', ?)
+        WHERE fetched_at < ?
         """,
         (cutoff,),
     )
