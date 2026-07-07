@@ -123,3 +123,10 @@ def test_put_stack_rejects_invalid_profile(client):
     _login(client)
     res = client.put("/api/me/stack", json={"stack_terms": "nginx", "profile": "not-an-object"})
     assert res.status_code == 422
+
+
+def test_put_stack_rejects_oversized_profile(client):
+    _login(client)
+    huge = {"version": 1, "aiSystems": ["x" * 70000]}
+    res = client.put("/api/me/stack", json={"stack_terms": "nginx", "profile": huge})
+    assert res.status_code == 422

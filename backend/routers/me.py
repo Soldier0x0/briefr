@@ -33,16 +33,14 @@ async def read_stack(payload: dict = Depends(require_user)):
 
 @router.put("/stack")
 async def write_stack(body: StackBody, payload: dict = Depends(require_user)):
+    db = await get_db()
     try:
         stack_terms = validate_stack_terms(body.stack_terms)
         profile = sanitize_profile(body.profile)
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-    db = await get_db()
-    try:
         result = await upsert_user_stack(db, int(payload["sub"]), stack_terms, profile)
         await db.commit()
         return result
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     finally:
         await db.close()

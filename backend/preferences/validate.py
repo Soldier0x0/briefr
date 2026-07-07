@@ -24,21 +24,49 @@ def sanitize_profile(data: dict | None) -> dict | None:
         return None
     if not isinstance(data, dict):
         raise ValueError("profile must be a JSON object")
+
     env = data.get("environment") if isinstance(data.get("environment"), dict) else {}
+
+    os_list = []
+    raw_os = data.get("operatingSystems")
+    if isinstance(raw_os, list):
+        for item in raw_os:
+            if isinstance(item, dict):
+                os_list.append({
+                    "product": str(item.get("product") or ""),
+                    "version": str(item.get("version") or ""),
+                    "vendor": str(item.get("vendor") or ""),
+                })
+
+    apps_list = []
+    raw_apps = data.get("applications")
+    if isinstance(raw_apps, list):
+        for item in raw_apps:
+            if isinstance(item, dict):
+                apps_list.append({
+                    "product": str(item.get("product") or ""),
+                    "cpeProduct": str(item.get("cpeProduct") or ""),
+                    "version": str(item.get("version") or ""),
+                    "vendor": str(item.get("vendor") or ""),
+                })
+
+    ai_list = []
+    raw_ai = data.get("aiSystems")
+    if isinstance(raw_ai, list):
+        for item in raw_ai:
+            if item is not None:
+                ai_list.append(str(item))
+
     return {
         "version": data.get("version") or 1,
-        "operatingSystems": data.get("operatingSystems")
-        if isinstance(data.get("operatingSystems"), list)
-        else [],
-        "applications": data.get("applications")
-        if isinstance(data.get("applications"), list)
-        else [],
+        "operatingSystems": os_list,
+        "applications": apps_list,
         "environment": {
-            "internetFacing": env.get("internetFacing") or "Some",
-            "industry": env.get("industry") or "Technology",
-            "criticality": env.get("criticality") or "Medium",
+            "internetFacing": str(env.get("internetFacing") or "Some"),
+            "industry": str(env.get("industry") or "Technology"),
+            "criticality": str(env.get("criticality") or "Medium"),
         },
-        "aiSystems": data.get("aiSystems") if isinstance(data.get("aiSystems"), list) else [],
+        "aiSystems": ai_list,
     }
 
 
