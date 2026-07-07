@@ -68,7 +68,7 @@ def build_detection_context(
     generated_at: str | None = None,
 ) -> dict:
     """Build a static DetectionContext envelope (no LLM)."""
-    normalized_cwes = normalize_cwe_ids(cwe_ids) if cwe_ids is not None else []
+    normalized_cwes = normalize_cwe_ids(cwe_ids)
     product = _first_product(affected_products)
     return {
         "cwe_ids": normalized_cwes,

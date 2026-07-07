@@ -93,9 +93,5 @@ def _resolve_detection_class(cve: dict) -> str:
     cwe_ids = cve.get("cwe_ids")
     if cwe_ids is None and cve.get("detection_context"):
         cwe_ids = cve["detection_context"].get("cwe_ids")
-    normalized = (
-        normalize_cwe_ids(cwe_ids)
-        if not isinstance(cwe_ids, list)
-        else [_normalize_cwe_id(str(c)) for c in cwe_ids if _normalize_cwe_id(str(c))]
-    )
+    normalized = normalize_cwe_ids(cwe_ids)
     return resolve_detection_class(str(technique_id), normalized)

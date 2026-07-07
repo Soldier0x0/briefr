@@ -55,5 +55,9 @@ def test_siem_class_fallback_for_sqli():
     assert any("UNION SELECT" in p for p in siem["log_patterns"])
 
 
-def test_resolve_detection_class_technique_prefix():
-    assert resolve_detection_class("T1059.003", ["CWE-78"]) == "script_execution"
+def test_siem_class_queries_are_platform_specific_not_generic():
+    siem = get_siem_queries("", cwe_ids=["CWE-78"])
+    assert siem["detection_class"] == "cmd_injection"
+    assert ";id" in siem["elastic_kql"]["query"]
+    assert ";id" in siem["splunk_spl"]["query"]
+    assert "UNION SELECT" not in siem["splunk_spl"]["query"]
