@@ -1,17 +1,50 @@
 import { useState } from 'react'
 import { copyToClipboard } from '../../utils/report.js'
 
+const BASIS_LABELS = {
+  attack_technique: 'ATT&CK technique',
+  cwe: 'CWE class',
+  generic: 'generic fallback',
+}
+
+const BASIS_TOOLTIPS = {
+  attack_technique:
+    'Hunt starter derived from a mapped MITRE ATT&CK technique template. Community Sigma/Elastic rules remain the primary deployable detections when present.',
+  cwe:
+    'Hunt starter derived from the CVE weakness class (CWE). Experimental — tune field names and keywords to your environment.',
+  generic:
+    'No ATT&CK technique or mapped CWE template matched — generic web-exploit keywords. High false-positive risk; validate before use.',
+}
+
+const EXPERIMENTAL_TOOLTIP =
+  'BRIEFR-generated rules are experimental hunt starters, not production-ready detections. Validate field names, thresholds, and false positives in your environment before deployment.'
 
 // ── Detection Rule Engine UI ──────────────────────────────
 
-function StatusBadge({ status }) {
+function StatusBadge({ status, title }) {
   const s = (status || 'experimental').toLowerCase()
   const cls =
     s === 'stable' ? 'det-badge-stable'
     : s === 'test' ? 'det-badge-test'
     : 'det-badge-experimental'
-  return <span className={`det-status-badge mono ${cls}`}>{s}</span>
+  return (
+    <span className={`det-status-badge mono ${cls}`} title={title}>
+      {s}
+    </span>
+  )
 }
+
+function BasisBadge({ basis }) {
+  const key = (basis || 'generic').toLowerCase()
+  const label = BASIS_LABELS[key] || key
+  const tip = BASIS_TOOLTIPS[key] || BASIS_TOOLTIPS.generic
+  return (
+    <span className="det-basis-badge mono" title={tip}>
+      basis: {label}
+    </span>
+  )
+}
+
 function CopyButton({ text, label = 'Copy' }) {
   const [copied, setCopied] = useState(false)
   async function handleCopy(e) {
@@ -28,6 +61,7 @@ function CopyButton({ text, label = 'Copy' }) {
     </button>
   )
 }
+
 function downloadFile(content, filename) {
   const blob = new Blob([content], { type: 'text/yaml' })
   const url = URL.createObjectURL(blob)
@@ -37,6 +71,7 @@ function downloadFile(content, filename) {
   a.click()
   URL.revokeObjectURL(url)
 }
+
 function SigmaRuleCard({ rule }) {
   return (
     <div className="det-rule-card">
@@ -71,12 +106,13 @@ function SigmaRuleCard({ rule }) {
     </div>
   )
 }
+
 function ElasticRuleCard({ rule }) {
   return (
     <div className="det-rule-card">
       <div className="det-rule-head">
         <div className="det-rule-meta">
-          <span className="det-status-badge mono det-badge-stable">elastic</span>
+          <StatusBadge status="stable" />
           <span className="det-rule-source mono">{rule.language || 'kuery'}</span>
         </div>
         <div className="det-rule-actions">
@@ -102,6 +138,7 @@ function ElasticRuleCard({ rule }) {
     </div>
   )
 }
+
 function SiemBlock({ platform, label, data }) {
   const [open, setOpen] = useState(false)
   if (!data?.query) return null
@@ -130,6 +167,64 @@ function SiemBlock({ platform, label, data }) {
     </div>
   )
 }
+
+function GeneratedSigmaSection({
+  detection,
+  generatedSigma,
+  meta,
+  hasCommunity,
+  detectionClass,
+}) {
+  const confidence = (meta?.briefr_confidence || 'MEDIUM').toUpperCase()
+  const confidenceCls = confidence === 'LOW' ? 'det-confidence-low' : 'det-confidence-badge'
+  const heading = hasCommunity
+    ? '// BRIEFR HUNT STARTER · SUPPLEMENT'
+    : '// BRIEFR HUNT STARTER'
+  const supplementNote = hasCommunity
+    ? 'Community rules above are primary — this generated template is an additional class-aware starting point.'
+    : 'No community Sigma/Elastic rules were found — use this generated template as a starting point.'
+
+  return (
+    <section className="drawer-section det-generated-section" aria-labelledby="det-generated-heading">
+      <h3 id="det-generated-heading" className="drawer-human-label mono">
+        {heading}
+      </h3>
+      <p className="det-generated-intro mono">{supplementNote}</p>
+      <div className="det-generated-meta">
+        <StatusBadge status={meta?.status || 'experimental'} title={EXPERIMENTAL_TOOLTIP} />
+        <BasisBadge basis={meta?.briefr_basis} />
+        <span className={`${confidenceCls} mono`} title="BRIEFR confidence in this template match">
+          {confidence} confidence
+        </span>
+        {(meta?.briefr_class || detectionClass) && (
+          <span
+            className="det-class-badge mono"
+            title="Detection class from the unified CWE/ATT&CK router (Sigma, SIEM, log patterns)"
+          >
+            class: {meta?.briefr_class || detectionClass}
+          </span>
+        )}
+      </div>
+      <p className="det-generated-warning mono" title={EXPERIMENTAL_TOOLTIP}>
+        ⚠ Experimental — validate field names and thresholds before deploying to production
+      </p>
+      <div className="det-code-wrap">
+        <div className="det-code-actions">
+          <CopyButton text={generatedSigma} label="Copy YAML" />
+          <button
+            type="button"
+            className="det-copy-btn mono"
+            onClick={() => downloadFile(generatedSigma, `briefr-${detection.cve_id.toLowerCase()}.yml`)}
+          >
+            Download .yml
+          </button>
+        </div>
+        <pre className="det-code-block">{generatedSigma}</pre>
+      </div>
+    </section>
+  )
+}
+
 export default function TabDetect({ detection, loading, error, onRetry }) {
   if (loading) {
     return (
@@ -168,55 +263,43 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
   const elasticRules = detection.elastic_rules || []
   const hasCommunity = detection.has_community_rules
   const generatedSigma = detection.generated_sigma
+  const generatedMeta = detection.generated_sigma_meta || {}
   const siemQueries = detection.siem_queries || {}
   const logPatterns = siemQueries.log_patterns || []
+  const detectionClass = siemQueries.detection_class || generatedMeta.briefr_class || ''
 
   return (
     <>
-      {/* Section 1: Community rules */}
+      <section className="drawer-section det-framing-section" aria-label="Detection framing">
+        <p className="det-framing-note mono">
+          Class-aware hunt starters — SIEM queries, log patterns, and a generated Sigma template
+          keyed to this CVE&apos;s weakness class. Community rules stay primary when present.
+        </p>
+      </section>
+
       <section className="drawer-section" aria-labelledby="det-community-heading">
         <h3 id="det-community-heading" className="drawer-human-label mono">
           // EXISTING COMMUNITY RULES
         </h3>
         {!hasCommunity && (
           <p className="drawer-intel-empty mono">
-            // No community rules found for this CVE — showing generated template below
+            // No community Sigma/Elastic rules found for this CVE
           </p>
         )}
         {sigmaRules.map((r, i) => <SigmaRuleCard key={r.path || i} rule={r} />)}
         {elasticRules.map((r, i) => <ElasticRuleCard key={r.path || i} rule={r} />)}
       </section>
 
-      {/* Section 2: Generated Sigma (only when no community rules) */}
-      {!hasCommunity && generatedSigma && (
-        <section className="drawer-section det-generated-section" aria-labelledby="det-generated-heading">
-          <h3 id="det-generated-heading" className="drawer-human-label mono">
-            // BRIEFR GENERATED RULE
-          </h3>
-          <div className="det-generated-meta">
-            <span className="det-status-badge mono det-badge-experimental">experimental</span>
-            <span className="det-confidence-badge mono">MEDIUM confidence</span>
-          </div>
-          <p className="det-generated-warning mono">
-            ⚠ Experimental — validate field names and thresholds before deploying to production
-          </p>
-          <div className="det-code-wrap">
-            <div className="det-code-actions">
-              <CopyButton text={generatedSigma} label="Copy YAML" />
-              <button
-                type="button"
-                className="det-copy-btn mono"
-                onClick={() => downloadFile(generatedSigma, `briefr-${detection.cve_id.toLowerCase()}.yml`)}
-              >
-                Download .yml
-              </button>
-            </div>
-            <pre className="det-code-block">{generatedSigma}</pre>
-          </div>
-        </section>
+      {generatedSigma && (
+        <GeneratedSigmaSection
+          detection={detection}
+          generatedSigma={generatedSigma}
+          meta={generatedMeta}
+          hasCommunity={hasCommunity}
+          detectionClass={detectionClass}
+        />
       )}
 
-      {/* Section 3: SIEM Quick Search */}
       <section className="drawer-section" aria-labelledby="det-siem-heading">
         <h3 id="det-siem-heading" className="drawer-human-label mono">
           // SIEM QUICK SEARCH
@@ -232,7 +315,6 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
         </div>
       </section>
 
-      {/* Section 4: Log Patterns */}
       {logPatterns.length > 0 && (
         <section className="drawer-section" aria-labelledby="det-logs-heading">
           <h3 id="det-logs-heading" className="drawer-human-label mono">

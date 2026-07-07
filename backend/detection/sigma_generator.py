@@ -594,6 +594,26 @@ def generate_sigma_rule(
     return yaml.dump(rule, default_flow_style=False, sort_keys=False, allow_unicode=True)
 
 
+def parse_sigma_rule_meta(yaml_text: str) -> dict:
+    """Extract BRIEFR metadata fields from generated Sigma YAML."""
+    try:
+        data = yaml.safe_load(yaml_text) or {}
+    except yaml.YAMLError:
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    meta: dict = {
+        "briefr_basis": data.get("briefr_basis") or "generic",
+        "briefr_confidence": data.get("briefr_confidence") or "MEDIUM",
+        "status": data.get("status") or "experimental",
+    }
+    if data.get("briefr_class"):
+        meta["briefr_class"] = data["briefr_class"]
+    if data.get("briefr_note"):
+        meta["briefr_note"] = data["briefr_note"]
+    return meta
+
+
 def _generate_rule_id(cve_id: str, technique_id: str, cwe_id: str = "") -> str:
     """Deterministic UUID-like ID from CVE + technique/CWE (stable, not a real UUID)."""
     import hashlib
