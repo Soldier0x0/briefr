@@ -33,7 +33,7 @@ TABLE_ORDER: list[str] = [
     "mitre_groups", "group_technique_map", "cve_embeddings", "hunt_packs",
     "audit_log", "watchlist", "webhook_alert_log",
     "webhook_destinations", "webhook_delivery_log",
-    "users", "sessions",
+    "users", "sessions", "user_preferences",
 ]
 
 SERIAL_ID_TABLES: list[str] = [
