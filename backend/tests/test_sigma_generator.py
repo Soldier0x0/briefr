@@ -24,6 +24,9 @@ def test_normalize_cwe_id():
     assert _normalize_cwe_id(" CWE-78 ") == "CWE-78"
     assert _normalize_cwe_id("CWE 89") == "CWE-89"
     assert _normalize_cwe_id("CWE89") == "CWE-89"
+    assert _normalize_cwe_id("CWE-022") == "CWE-22"
+    assert _normalize_cwe_id("078") == "CWE-78"
+    assert _normalize_cwe_id("CWE_89") == "CWE-89"
 
 
 def test_cwe78_cmd_injection_includes_spaced_operators():

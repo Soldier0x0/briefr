@@ -490,12 +490,12 @@ def _normalize_cwe_id(value: str) -> str:
     text = (value or "").strip()
     if not text:
         return ""
-    compact = re.sub(r"\s+", "", text.upper())
+    compact = re.sub(r"[\s_]+", "", text.upper())
     if compact.isdigit():
-        return f"CWE-{compact}"
+        return f"CWE-{int(compact)}"
     match = re.match(r"^CWE-?(\d+)$", compact)
     if match:
-        return f"CWE-{match.group(1)}"
+        return f"CWE-{int(match.group(1))}"
     return compact
 
 
