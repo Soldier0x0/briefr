@@ -12,6 +12,18 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-07 — Wave 1 PR 1: admin config Save UX (#308)
+
+**Session:** Replaced queue-based Admin → API keys & config with per-field **Save**
+/ **Save & restart**; bool toggles save inline; updated help copy. Gemini: use
+`adminApi.postJson` for error handling.
+
+### Next steps
+
+**Wave 1 PR 2** — toast policy + restart banner (H1a). Then Wave 2 stack API.
+
+---
+
 ## 2026-07-07 — Product / open-core program (PR #0)
 
 **Session:** Planning session distilled into
