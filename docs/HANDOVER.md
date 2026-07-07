@@ -12,6 +12,20 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-07 — Wave 1 PR 2: toast policy + restart banner (H1a)
+
+**Session:** Toast tray pauses auto-dismiss on hover/focus; errors/warnings persist;
+success/info 8s; max 4 toasts; copy-ref “Copied” feedback. Admin restart paths
+(config Save & restart, DATABASE_URL apply, backup schedule, manual restart/drain)
+dispatch `notifyBackendRestarting()` and show a top **RestartBanner** (polls
+`/api/health`) instead of a short restart toast.
+
+### Next steps
+
+**Wave 2 PR 3** — `user_preferences` + `GET/PUT /api/me/stack` migration.
+
+---
+
 ## 2026-07-07 — Wave 1 PR 1: admin config Save UX (#308)
 
 **Session:** Replaced queue-based Admin → API keys & config with per-field **Save**

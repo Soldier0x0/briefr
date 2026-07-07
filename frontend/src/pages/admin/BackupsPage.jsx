@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Settings2, AlertTriangle } from 'lucide-react'
 import { adminApi } from '../../api.js'
+import { notifyBackendRestarting } from '../../utils/backendRestart.js'
 import StatCard from './shared/StatCard.jsx'
 import AsyncSection from './shared/AsyncSection.jsx'
 import ToggleSwitch from './shared/ToggleSwitch.jsx'
@@ -83,7 +84,8 @@ export default function BackupsPage({ toast, system }) {
       const res = await adminApi.post('/config/apply-all', items)
       const data = await res.json()
       if (res.ok) {
-        toast(`Backup schedule updated. Restarting…`, true)
+        notifyBackendRestarting()
+        toast('Backup schedule updated', true)
         setEditingSchedule(false)
         setSchedule(s => ({
           ...s,

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { adminApi } from '../../api.js'
+import { notifyBackendRestarting } from '../../utils/backendRestart.js'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import DangerZone from './shared/DangerZone.jsx'
 import StatCard from './shared/StatCard.jsx'
@@ -73,7 +74,8 @@ export default function DatabasePage({ toast, active = true }) {
     try {
       const res = await adminApi.post('/config/apply-all', [{ key: 'DATABASE_URL', value: databaseUrl }])
       const data = await res.json()
-      toast(data.ok ? 'DATABASE_URL applied — backend restarting onto PostgreSQL' : data.detail || 'Failed', data.ok)
+      if (data.ok) notifyBackendRestarting()
+      toast(data.ok ? 'DATABASE_URL applied' : data.detail || 'Failed', data.ok)
     } catch (e) { toast(String(e.message), false) }
     setApplying(false)
   }
