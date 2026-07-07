@@ -12,6 +12,21 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-07 — D3 unified class router
+
+**Session:** Implemented **D3** — `_resolve_detection_class(cve)` in
+`class_router.py`; class-keyed SIEM/log-pattern templates in
+`class_queries.py`; wired through `sigma_generator`, `get_siem_queries`,
+detection + forge endpoints. Sigma, SIEM, and log patterns now agree on
+detection class when no ATT&CK technique is mapped.
+
+### Next steps
+
+**D4–D5** (D4 blocked on K1–K3 for LLM extract). Post-B Postgres-native
+`db/` before D4.
+
+---
+
 ## 2026-07-07 — D2 DetectionContext scaffold
 
 **Session:** Implemented **D2** — `DetectionContext` cache scaffold for the
