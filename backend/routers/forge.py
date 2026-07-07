@@ -264,7 +264,7 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
         rows = await db.execute_fetchall(
             """
             SELECT cve_id, description, affected_products, mitre_technique,
-                   is_kev, cvss_score, epss_score
+                   is_kev, cvss_score, epss_score, cwe_ids
             FROM cves WHERE cve_id = ?
             """,
             (cve_id,),
@@ -299,12 +299,22 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
         product = _first_product(cve["affected_products"])
         description = (cve["description"] or "")[:200]
         priority = _derive_priority(cve["is_kev"], cve["cvss_score"], cve["epss_score"])
+        cwe_ids: list[str] = []
+        raw_cwe = cve["cwe_ids"]
+        if raw_cwe:
+            try:
+                parsed = json.loads(raw_cwe) if isinstance(raw_cwe, str) else raw_cwe
+                if isinstance(parsed, list):
+                    cwe_ids = [str(c) for c in parsed if str(c).strip()]
+            except (json.JSONDecodeError, TypeError):
+                cwe_ids = []
 
         sigma_yaml = generate_sigma_rule(
             cve_id=cve_id,
             technique_id=technique_id,
             product=product or "Affected Product",
             description=description,
+            cwe_ids=cwe_ids,
         )
         siem = get_siem_queries(
             technique_id=technique_id, cve_id=cve_id, product=product

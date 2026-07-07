@@ -226,6 +226,283 @@ DEFAULT_TEMPLATE: dict = {
     "level": "medium",
 }
 
+_DEFAULT_BRIEFR_NOTE = (
+    "Validate before deploying to production — adjust field names and "
+    "conditions to your environment"
+)
+
+
+def _cwe_template(
+    *,
+    tactic: str,
+    logsource: dict,
+    detection: dict,
+    falsepositives: list[str],
+    level: str,
+    briefr_confidence: str = "MEDIUM",
+    briefr_note_extra: str = "",
+) -> dict:
+    return {
+        "tactic": tactic,
+        "logsource": logsource,
+        "detection": detection,
+        "falsepositives": falsepositives,
+        "level": level,
+        "briefr_confidence": briefr_confidence,
+        "briefr_note_extra": briefr_note_extra,
+    }
+
+
+_CWE_PATH_TRAVERSAL = _cwe_template(
+    tactic="initial_access",
+    logsource={"category": "webserver"},
+    detection={
+        "keywords": [
+            "../",
+            "..\\",
+            "%2e%2e%2f",
+            "%252e",
+            "/etc/passwd",
+            "boot.ini",
+            "web.config",
+        ],
+        "condition": "keywords",
+    },
+    falsepositives=["URL-encoded path normalization", "Legitimate file paths"],
+    level="high",
+)
+
+_CWE_CMD_INJECTION = _cwe_template(
+    tactic="initial_access",
+    logsource={"category": "webserver"},
+    detection={
+        "keywords": [
+            ";id",
+            "|whoami",
+            "`id`",
+            "$(",
+            "&&wget",
+            ";curl",
+            "/bin/sh",
+            "cmd.exe /c",
+        ],
+        "condition": "keywords",
+    },
+    falsepositives=["Shell tutorials in logs", "Dev tooling"],
+    level="high",
+)
+
+_CWE_SQLI = _cwe_template(
+    tactic="initial_access",
+    logsource={"category": "webserver"},
+    detection={
+        "keywords": [
+            "UNION SELECT",
+            "' OR '1'='1",
+            "SLEEP(",
+            "BENCHMARK(",
+            "information_schema",
+            "xp_cmdshell",
+        ],
+        "condition": "keywords",
+    },
+    falsepositives=["ORM debug output", "SQL in documentation requests"],
+    level="high",
+)
+
+_CWE_XSS = _cwe_template(
+    tactic="initial_access",
+    logsource={"category": "webserver"},
+    detection={
+        "keywords": ["<script", "onerror=", "javascript:", "%3Cscript"],
+        "condition": "keywords",
+    },
+    falsepositives=[
+        "Rich text editors",
+        "Marketing pages with inline scripts",
+        "Security scanners",
+    ],
+    level="low",
+    briefr_confidence="LOW",
+    briefr_note_extra="High false-positive rate — tune keywords to your apps",
+)
+
+_CWE_DESER = _cwe_template(
+    tactic="initial_access",
+    logsource={"category": "webserver"},
+    detection={
+        "keywords": [
+            "rO0AB",
+            "aced0005",
+            "TypeObject",
+            "ysoserial",
+            "__VIEWSTATE",
+        ],
+        "condition": "keywords",
+    },
+    falsepositives=["Legitimate serialized session blobs"],
+    level="high",
+)
+
+_CWE_CODE_INJECTION = _cwe_template(
+    tactic="execution",
+    logsource={"category": "webserver"},
+    detection={
+        "keywords": [
+            "eval(",
+            "assert(",
+            "base64_decode(",
+            "{{",
+            "}}",
+            "${",
+            "}",
+        ],
+        "condition": "keywords",
+    },
+    falsepositives=["Template engines in dev", "Debug endpoints"],
+    level="medium",
+)
+
+_CWE_UPLOAD = _cwe_template(
+    tactic="initial_access",
+    logsource={"category": "webserver"},
+    detection={
+        "keywords": [".jsp", ".jspx", ".php", ".aspx", ".ashx", ".war"],
+        "condition": "keywords",
+    },
+    falsepositives=["Legitimate file uploads", "Static asset paths"],
+    level="high",
+)
+
+_CWE_SSRF = _cwe_template(
+    tactic="initial_access",
+    logsource={"category": "webserver"},
+    detection={
+        "keywords": [
+            "169.254.169.254",
+            "metadata.google",
+            "localhost:",
+            "127.0.0.1",
+            "file://",
+            "gopher://",
+        ],
+        "condition": "keywords",
+    },
+    falsepositives=["Health checks", "Internal service callbacks"],
+    level="high",
+)
+
+_CWE_XXE = _cwe_template(
+    tactic="initial_access",
+    logsource={"category": "webserver"},
+    detection={
+        "keywords": ["<!ENTITY", 'SYSTEM "file://', 'SYSTEM "http://'],
+        "condition": "keywords",
+    },
+    falsepositives=["XML config parsers", "Document import features"],
+    level="high",
+)
+
+_CWE_AUTH_BYPASS = _cwe_template(
+    tactic="initial_access",
+    logsource={"category": "webserver"},
+    detection={
+        "keywords": [
+            "/admin",
+            "/api/login",
+            "/api/auth",
+            "bypass",
+            "unauthorized",
+            "privilege",
+        ],
+        "condition": "keywords",
+    },
+    falsepositives=["Legitimate admin traffic", "Auth integration tests"],
+    level="medium",
+    briefr_note_extra="Requires environment tuning — map to your admin/API paths",
+)
+
+_CWE_MEMORY_CORRUPTION = _cwe_template(
+    tactic="execution",
+    logsource={"product": "windows", "category": "application"},
+    detection={
+        "selection": {"EventID": [1000, 1001]},
+        "keywords": ["segfault", "SIGSEGV", "core dumped"],
+        "condition": "selection or keywords",
+    },
+    falsepositives=[
+        "Benign application crashes",
+        "Stability issues unrelated to exploitation",
+    ],
+    level="low",
+    briefr_confidence="LOW",
+    briefr_note_extra="Crash telemetry is not proof of exploitation — correlate with exploit activity",
+)
+
+_CWE_DEFAULT_CREDS = _cwe_template(
+    tactic="credential_access",
+    logsource={"category": "authentication"},
+    detection={
+        "keywords": ["admin", "default", "root", "password", "guest"],
+        "condition": "keywords",
+    },
+    falsepositives=["Password reset flows", "Onboarding scripts"],
+    level="medium",
+    briefr_note_extra="Fill in your product's vendor-default account names",
+)
+
+CWE_TEMPLATES: dict[str, dict] = {
+    "CWE-22": _CWE_PATH_TRAVERSAL,
+    "CWE-23": _CWE_PATH_TRAVERSAL,
+    "CWE-35": _CWE_PATH_TRAVERSAL,
+    "CWE-78": _CWE_CMD_INJECTION,
+    "CWE-89": _CWE_SQLI,
+    "CWE-79": _CWE_XSS,
+    "CWE-502": _CWE_DESER,
+    "CWE-94": _CWE_CODE_INJECTION,
+    "CWE-95": _CWE_CODE_INJECTION,
+    "CWE-434": _CWE_UPLOAD,
+    "CWE-918": _CWE_SSRF,
+    "CWE-611": _CWE_XXE,
+    "CWE-287": _CWE_AUTH_BYPASS,
+    "CWE-288": _CWE_AUTH_BYPASS,
+    "CWE-306": _CWE_AUTH_BYPASS,
+    "CWE-416": _CWE_MEMORY_CORRUPTION,
+    "CWE-787": _CWE_MEMORY_CORRUPTION,
+    "CWE-119": _CWE_MEMORY_CORRUPTION,
+    "CWE-122": _CWE_MEMORY_CORRUPTION,
+    "CWE-798": _CWE_DEFAULT_CREDS,
+}
+
+
+def _normalize_cwe_id(value: str) -> str:
+    text = (value or "").strip().upper()
+    if not text:
+        return ""
+    if text.startswith("CWE-"):
+        return text
+    if text.isdigit():
+        return f"CWE-{text}"
+    return text
+
+
+def _resolve_template(
+    technique_id: str,
+    cwe_ids: list[str] | None,
+) -> tuple[dict, str, str]:
+    """Return (template, briefr_basis, matched_cwe_id)."""
+    prefix = technique_id.strip().upper()[:5] if technique_id else ""
+    if prefix in TECHNIQUE_TEMPLATES:
+        return TECHNIQUE_TEMPLATES[prefix], "attack_technique", ""
+
+    for raw in cwe_ids or []:
+        cwe_id = _normalize_cwe_id(str(raw))
+        template = CWE_TEMPLATES.get(cwe_id)
+        if template is not None:
+            return template, "cwe", cwe_id
+
+    return DEFAULT_TEMPLATE, "generic", ""
+
 
 # ── Generator ─────────────────────────────────────────────
 
@@ -234,18 +511,23 @@ def generate_sigma_rule(
     technique_id: str,
     product: str = "",
     description: str = "",
+    cwe_ids: list[str] | None = None,
 ) -> str:
     """
     Generate a Sigma rule YAML string for a CVE/technique pair.
-    Uses technique-specific templates; falls back to DEFAULT_TEMPLATE.
+    Selection order: ATT&CK technique template → CWE class template → generic default.
     """
-    prefix = technique_id.strip().upper()[:5] if technique_id else ""
-    template = TECHNIQUE_TEMPLATES.get(prefix, DEFAULT_TEMPLATE)
+    template, briefr_basis, matched_cwe = _resolve_template(technique_id, cwe_ids)
 
     title_product = product.strip() if product else "Affected Product"
+    briefr_note = _DEFAULT_BRIEFR_NOTE
+    extra_note = (template.get("briefr_note_extra") or "").strip()
+    if extra_note:
+        briefr_note = f"{briefr_note} — {extra_note}"
+
     rule: dict = {
         "title": f"{title_product} - {cve_id} Exploitation Attempt",
-        "id": _generate_rule_id(cve_id, technique_id),
+        "id": _generate_rule_id(cve_id, technique_id, matched_cwe),
         "status": "experimental",
         "description": description.strip() or f"Detects exploitation attempt targeting {cve_id}.",
         "references": [
@@ -260,20 +542,24 @@ def generate_sigma_rule(
         "detection": template["detection"],
         "falsepositives": template["falsepositives"],
         "level": template["level"],
-        "briefr_confidence": "MEDIUM",
-        "briefr_note": "Validate before deploying to production — adjust field names and conditions to your environment",
+        "briefr_basis": briefr_basis,
+        "briefr_confidence": template.get("briefr_confidence", "MEDIUM"),
+        "briefr_note": briefr_note,
     }
 
     # Add technique and CVE tags
     if technique_id:
         rule["tags"].append(f"attack.{technique_id.lower()}")
+    if matched_cwe:
+        rule["tags"].append(matched_cwe.lower().replace("-", "."))
     rule["tags"].append(f"cve.{cve_id.lower().replace('-', '.')}")
 
     return yaml.dump(rule, default_flow_style=False, sort_keys=False, allow_unicode=True)
 
 
-def _generate_rule_id(cve_id: str, technique_id: str) -> str:
-    """Deterministic UUID-like ID from CVE + technique (not a real UUID, just stable)."""
+def _generate_rule_id(cve_id: str, technique_id: str, cwe_id: str = "") -> str:
+    """Deterministic UUID-like ID from CVE + technique/CWE (stable, not a real UUID)."""
     import hashlib
-    digest = hashlib.md5(f"{cve_id}:{technique_id}".encode()).hexdigest()
+
+    digest = hashlib.md5(f"{cve_id}:{technique_id}:{cwe_id}".encode()).hexdigest()
     return f"{digest[:8]}-{digest[8:12]}-{digest[12:16]}-{digest[16:20]}-{digest[20:32]}"
