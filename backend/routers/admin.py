@@ -146,6 +146,7 @@ _OPT_IN_DISABLED_JOBS = {
     "embeddings_backfill": ("EMBEDDINGS_ENABLED", "0"),
     "llm_product_extraction": ("LLM_PRODUCT_EXTRACTION_ENABLED", "0"),
     "detection_context_sync": ("DETECTION_CONTEXT_SYNC_ENABLED", "0"),
+    "detection_context_llm": ("DETECTION_CONTEXT_LLM_ENABLED", "0"),
     "exploit_sources_sync": ("EXPLOIT_SOURCES_SYNC_ENABLED", "1"),  # enabled=1 means NOT disabled
 }
 
@@ -1013,6 +1014,9 @@ def _get_config_response() -> dict[str, Any]:
             "GREYNOISE_API_KEY": _mask_key(_env("GREYNOISE_API_KEY")),
             "GITHUB_TOKEN": _mask_key(_env("GITHUB_TOKEN")),
             "GROQ_API_KEY": _mask_key(_env("GROQ_API_KEY")),
+            "GEMINI_API_KEY": _mask_key(_env("GEMINI_API_KEY")),
+            "CEREBRAS_API_KEY": _mask_key(_env("CEREBRAS_API_KEY")),
+            "OPENROUTER_API_KEY": _mask_key(_env("OPENROUTER_API_KEY")),
             "ANTHROPIC_API_KEY": _mask_key(_env("ANTHROPIC_API_KEY")),
             "OTX_API_KEY": _mask_key(_env("OTX_API_KEY")),
             "CIRCL_API_KEY": _mask_key(_env("CIRCL_API_KEY")),
@@ -1498,6 +1502,7 @@ _JOB_RUN_MAP: dict[str, str] = {
     "embeddings_backfill": "run_embeddings_sync",
     "llm_product_extraction": "run_llm_extraction_sync",
     "detection_context_sync": "run_detection_context_sync_job",
+    "detection_context_llm": "run_detection_context_llm_job",
     "exploit_sources_sync": "run_exploit_sources_sync",
     "backup_deadman_check": "run_backup_deadman_check",
 }

@@ -12,16 +12,35 @@ significant working session; never rewrite old entries.
 
 ---
 
-## 2026-07-07 — Track D closed (D4 held)
+## 2026-07-07 — K4 DetectionContext LLM artifact extract
 
-**Decision:** **D4 held** until Track K2–K3 (free-tier LLM router). K1 Groq
-migration remains deferred. Track D otherwise complete: D1–D3 + D5 shipped.
+**Session:** Implemented **K4** — scheduler job `detection_context_llm` extracts
+`{paths, params, keywords, method}` artifacts from CVE description + exploit
+metadata (optional Nuclei YAML fetch) into `detection_ctx:{cve_id}` via the
+LLM router (`detection_context` task chain: Groq → Gemini → OpenRouter).
+Env-gated (`DETECTION_CONTEXT_LLM_ENABLED=0` default). Vision path (Cerebras
+`gemma-4-31b`) deferred until image inputs exist.
 
-### Next steps (execution queue)
+### Next steps
 
-1. **K2–K3** — LLM router (unblocks D4 later; K1 optional/deferred)
-2. **Post-B** — Postgres-native `db/` module conversion
-3. **E / H / I / J** — interleave per sprint when not blocked
+**D4** — deterministic Nuclei parser + inject artifacts into generated Sigma
++ regen on `exploit_sync`. Post-B Postgres-native `db/` in parallel (Claude).
+
+---
+
+## 2026-07-07 — K1–K3 free-tier LLM router
+
+**Session:** Implemented **K1–K3** — Groq model migration (`openai/gpt-oss-20b` /
+`openai/gpt-oss-120b` for PDF summaries); new `ai/llm_router.py` with failover
+Groq → Gemini Flash-Lite → Cerebras → OpenRouter `:free`; wired
+`ml/product_extraction.py` and `ai/summary.py` through the router; dropped
+Anthropic from the PDF chain; `feed_cache` provenance now records
+`{provider, model}`.
+
+### Next steps
+
+**D4** unblocked for deterministic Nuclei slice; full LLM extract (K4) can follow.
+Post-B Postgres-native `db/` before D4 if not started.
 
 ---
 

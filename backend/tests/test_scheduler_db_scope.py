@@ -9,13 +9,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import database
 import ml.product_extraction as pex
+from ai.llm_router import LLMCompletion
 from database import init_db
 from feeds.otx import run_otx_nightly_correlation
 from ml.product_extraction import run_llm_product_extraction
 
 
-def test_llm_extraction_releases_db_during_groq(tmp_path, monkeypatch):
-    """Without a passed connection, Groq runs while no pool slot is held."""
+def test_llm_extraction_releases_db_during_llm_call(tmp_path, monkeypatch):
+    """Without a passed connection, LLM runs while no pool slot is held."""
     monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "llm_scope.db"))
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
 
@@ -38,11 +39,14 @@ def test_llm_extraction_releases_db_during_groq(tmp_path, monkeypatch):
 
     monkeypatch.setattr(database, "get_db", tracking_get_db)
 
-    async def fake_extract(description: str, api_key: str) -> list[dict]:
-        assert held == [], "Groq call must not run while a connection is held"
-        return [{"vendor": "acme", "product": "widget", "version_range": ""}]
+    async def fake_extract(description: str) -> tuple[list[dict], LLMCompletion] | None:
+        assert held == [], "LLM call must not run while a connection is held"
+        return (
+            [{"vendor": "acme", "product": "widget", "version_range": ""}],
+            LLMCompletion(content="{}", provider="groq", model="openai/gpt-oss-20b"),
+        )
 
-    monkeypatch.setattr(pex, "extract_products_via_groq", fake_extract)
+    monkeypatch.setattr(pex, "extract_products_via_llm", fake_extract)
 
     async def run():
         await init_db()
