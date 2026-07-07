@@ -601,6 +601,14 @@ async def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)",
             "CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(refresh_token_hash)",
             "CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)",
+            """
+            CREATE TABLE IF NOT EXISTS user_preferences (
+                user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                stack_terms TEXT NOT NULL DEFAULT '',
+                profile_json TEXT,
+                updated_at TEXT DEFAULT (datetime('now'))
+            )
+            """,
             "ALTER TABLE users RENAME COLUMN email TO username",
             "DROP INDEX IF EXISTS idx_users_email",
             "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)",

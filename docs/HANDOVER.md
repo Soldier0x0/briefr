@@ -12,6 +12,18 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-07 — Wave 1 PR 2 merged (#309); Wave 2 PR 3 in progress
+
+**Session:** Merged toast policy + restart banner (H1a). Started Wave 2 PR 3 —
+`user_preferences` table + `GET/PUT /api/me/stack` (terms + optional profile JSON
+per user).
+
+### Next steps
+
+**Wave 2 PR 4** — frontend unified stack (remove `briefr_stack` localStorage split).
+
+---
+
 ## 2026-07-07 — Wave 1 PR 2: toast policy + restart banner (H1a)
 
 **Session:** Toast tray pauses auto-dismiss on hover/focus; errors/warnings persist;

@@ -222,6 +222,57 @@ Single-user for now — no `user_id` column. Built-in app login will add per-use
 
 ---
 
+## User stack (per-user preferences)
+
+Server-backed stack terms and optional asset profile JSON, keyed by `user_id`. Replaces the analyst `briefr_stack` localStorage split (Wave 2 PR 4 wires the frontend). Requires a valid session (`briefr_at` cookie) — 401 without login.
+
+### GET /api/me/stack
+
+**Description:** Read the authenticated user's stack terms and optional asset profile.
+
+**Response:**
+
+```json
+{
+  "stack_terms": "nginx,log4j",
+  "profile": {
+    "version": 1,
+    "operatingSystems": [],
+    "applications": [],
+    "environment": {
+      "internetFacing": "Some",
+      "industry": "Technology",
+      "criticality": "Medium"
+    },
+    "aiSystems": []
+  },
+  "updated_at": "2026-07-07 12:00:00"
+}
+```
+
+When no row exists yet, `stack_terms` is `""`, `profile` is `null`, and `updated_at` is `null`.
+
+### PUT /api/me/stack
+
+**Description:** Upsert the authenticated user's stack terms and optional asset profile.
+
+**Body:**
+
+```json
+{
+  "stack_terms": "nginx, log4j",
+  "profile": { "...": "same shape as GET response profile, or null to clear" }
+}
+```
+
+**Response:** Same shape as GET (with non-null `updated_at`).
+
+**Validation:** `stack_terms` is normalized (trimmed, empty segments dropped, rejoined with commas). `profile` must be a JSON object when present; unknown keys are dropped and lists are sanitized to the asset-wizard shape. Oversized payloads → `422`.
+
+**Notes:** `BRIEFR_STACK_TERMS` in admin config remains the server-side operator default for KEV-on-stack webhooks and wallboard until Wave 2 PR 4 unifies reads. Per-user stack does not change those paths yet.
+
+---
+
 ### GET /api/changes
 
 **Description:** Recent tracked field changes (`cvss_score`, `epss_score`, `is_kev`, `has_poc`).

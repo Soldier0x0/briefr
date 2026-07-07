@@ -129,6 +129,9 @@ EXPECTED_ROUTES = [
     # Session management (admin sessions page): appended after setup routes.
     ("GET", "/api/auth/sessions"),
     ("DELETE", "/api/auth/sessions/{session_id}"),
+    # Per-user stack profile (Wave 2 PR 3): appended after auth routes.
+    ("GET", "/api/me/stack"),
+    ("PUT", "/api/me/stack"),
 ]
 
 
