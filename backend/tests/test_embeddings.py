@@ -6,7 +6,6 @@ GET /api/cves/{id}/related, and the scheduler backfill (with a fake model —
 fastembed is never required for the test suite).
 """
 
-import asyncio
 import json
 import os
 import subprocess
@@ -31,8 +30,19 @@ from ml.embeddings import (
     run_embeddings_backfill,
     vector_to_blob,
 )
+from tests.conftest import run_db_test
 
 MODEL = "BAAI/bge-small-en-v1.5"
+
+# _db_with_embeddings below builds a hand-rolled :memory: SQLite schema with
+# a SQLite-specific column default (datetime('now')) — a standalone unit
+# test of find_similar_cves() against a bespoke schema, not the app's
+# dialect-aware db/ layer. Genuinely SQLite-only; portable rewrite is
+# Post-B scope, not this CI-gate PR's (same call as test_wallboard.py).
+_requires_sqlite = pytest.mark.skipif(
+    os.environ.get("DATABASE_URL", "").startswith("postgresql"),
+    reason="_db_with_embeddings uses a hand-rolled :memory: SQLite schema",
+)
 
 
 def test_vector_blob_round_trip():
@@ -95,6 +105,7 @@ async def _db_with_embeddings() -> aiosqlite.Connection:
     return db
 
 
+@_requires_sqlite
 def test_find_similar_numpy_orders_by_cosine_and_excludes_self(monkeypatch):
     monkeypatch.setenv("EMBEDDINGS_MODEL", MODEL)
 
@@ -104,7 +115,7 @@ def test_find_similar_numpy_orders_by_cosine_and_excludes_self(monkeypatch):
         await db.close()
         return results
 
-    results = asyncio.run(run())
+    results = run_db_test(run())
     ids = [r["cve_id"] for r in results]
     assert "CVE-2024-0001" not in ids
     assert "CVE-2024-0099" not in ids  # different model excluded
@@ -115,6 +126,7 @@ def test_find_similar_numpy_orders_by_cosine_and_excludes_self(monkeypatch):
     assert sims[0] > 0.9
 
 
+@_requires_sqlite
 def test_find_similar_returns_none_without_target_vector(monkeypatch):
     """None signals the caller to use the deterministic heuristic fallback."""
     monkeypatch.setenv("EMBEDDINGS_MODEL", MODEL)
@@ -125,7 +137,7 @@ def test_find_similar_returns_none_without_target_vector(monkeypatch):
         await db.close()
         return result
 
-    assert asyncio.run(run()) is None
+    assert run_db_test(run()) is None
 
 
 class _FakeTextEmbedding:
@@ -232,7 +244,7 @@ def test_backfill_embeds_missing_cves_with_fake_model(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    stats, stats2, rows = asyncio.run(run())
+    stats, stats2, rows = run_db_test(run())
     assert stats["embedded"] == 1
     assert stats2["embedded"] == 0
     assert len(rows) == 1
@@ -261,7 +273,7 @@ def test_backfill_skips_gracefully_when_fastembed_missing(tmp_path, monkeypatch)
         finally:
             await db.close()
 
-    stats = asyncio.run(run())
+    stats = run_db_test(run())
     assert stats["embedded"] == 0
     assert stats.get("skipped") == "fastembed missing"
 
@@ -301,7 +313,7 @@ def _seed_related_db(db_path: str) -> None:
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 @pytest.fixture
@@ -310,13 +322,6 @@ def related_client(tmp_path, monkeypatch):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
     monkeypatch.setenv("EMBEDDINGS_MODEL", MODEL)
-
-    async def _noop_async() -> None:
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
 
     _seed_related_db(str(db_path))
 
@@ -349,9 +354,20 @@ def test_related_endpoint_semantic_when_embeddings_enabled(related_client, monke
             assert field in item
 
 
-def test_related_endpoint_falls_back_when_target_has_no_vector(related_client, monkeypatch):
-    """Embeddings enabled but this CVE not yet embedded → heuristic fallback."""
+def test_related_endpoint_falls_back_when_target_has_no_vector(tmp_path, monkeypatch):
+    """Embeddings enabled but this CVE not yet embedded → heuristic fallback.
+
+    Self-contained (not `related_client`): the vector deletion below must run
+    before the TestClient opens its own pool — a bare run_db_test() call
+    against an already-open fixture pool would bind to a different event
+    loop (Postgres), the same issue fixed in test_auth_setup.py."""
+    db_path = tmp_path / "related-no-vector.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+    monkeypatch.setenv("EMBEDDINGS_MODEL", MODEL)
     monkeypatch.setenv("EMBEDDINGS_ENABLED", "1")
+
+    _seed_related_db(str(db_path))
 
     async def run():
         db = await database.get_db()
@@ -363,8 +379,13 @@ def test_related_endpoint_falls_back_when_target_has_no_vector(related_client, m
         finally:
             await db.close()
 
-    asyncio.run(run())
-    body = related_client.get("/api/cves/CVE-2024-0001/related").json()
+    run_db_test(run())
+
+    from fastapi.testclient import TestClient
+    from main import app
+
+    with TestClient(app) as client:
+        body = client.get("/api/cves/CVE-2024-0001/related").json()
     assert body["meta"]["method"] == "product_heuristic"
     assert [c["cve_id"] for c in body["data"]] == ["CVE-2024-0002"]
 
@@ -373,4 +394,4 @@ def test_scheduler_embeddings_job_noop_when_disabled(monkeypatch):
     monkeypatch.setenv("EMBEDDINGS_ENABLED", "0")
     from scheduler import run_embeddings_sync
 
-    assert asyncio.run(run_embeddings_sync()) is False
+    assert run_db_test(run_embeddings_sync()) is False

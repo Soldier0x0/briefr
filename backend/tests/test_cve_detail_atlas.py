@@ -1,23 +1,22 @@
 """Tests for ATLAS fields on GET /api/cves/{id}."""
 
-import asyncio
 import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
-
 from database import (
     get_atlas_case_studies_for_cve,
     get_atlas_techniques_for_cve,
+    get_db,
     init_db,
     replace_atlas_techniques,
 )
+from tests.conftest import run_db_test
 
 
-async def _seed_atlas_cve(db: aiosqlite.Connection) -> None:
+async def _seed_atlas_cve(db) -> None:
     await db.execute(
         """
         INSERT INTO cves (
@@ -82,9 +81,7 @@ def test_cve_detail_atlas_helpers_return_linked_data(tmp_path, monkeypatch):
 
     async def run() -> None:
         await init_db()
-        db = await aiosqlite.connect(db_path)
-        db.row_factory = aiosqlite.Row
-        await db.execute("PRAGMA foreign_keys=ON")
+        db = await get_db()
         await _seed_atlas_cve(db)
 
         techniques = await get_atlas_techniques_for_cve(db, "CVE-2024-ATLAS")
@@ -105,7 +102,7 @@ def test_cve_detail_atlas_helpers_return_linked_data(tmp_path, monkeypatch):
         assert row[0]["has_ai_context"] == 1
         await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_get_cve_endpoint_includes_atlas_fields(tmp_path, monkeypatch):
@@ -113,22 +110,13 @@ def test_get_cve_endpoint_includes_atlas_fields(tmp_path, monkeypatch):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async() -> None:
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
     async def seed() -> None:
         await init_db()
-        db = await aiosqlite.connect(db_path)
-        db.row_factory = aiosqlite.Row
-        await db.execute("PRAGMA foreign_keys=ON")
+        db = await get_db()
         await _seed_atlas_cve(db)
         await db.close()
 
-    asyncio.run(seed())
+    run_db_test(seed())
 
     from fastapi.testclient import TestClient
     from main import app
@@ -151,22 +139,13 @@ def test_list_cves_includes_has_ai_context(tmp_path, monkeypatch):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async() -> None:
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
     async def seed() -> None:
         await init_db()
-        db = await aiosqlite.connect(db_path)
-        db.row_factory = aiosqlite.Row
-        await db.execute("PRAGMA foreign_keys=ON")
+        db = await get_db()
         await _seed_atlas_cve(db)
         await db.close()
 
-    asyncio.run(seed())
+    run_db_test(seed())
 
     from fastapi.testclient import TestClient
     from main import app
@@ -188,17 +167,10 @@ def test_investigation_summary_endpoint_returns_200(tmp_path, monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "")
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async() -> None:
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
     async def seed() -> None:
         await init_db()
 
-    asyncio.run(seed())
+    run_db_test(seed())
 
     from fastapi.testclient import TestClient
     from main import app
@@ -282,4 +254,4 @@ def test_replace_atlas_techniques_drops_stale_fk_mappings(tmp_path, monkeypatch)
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())

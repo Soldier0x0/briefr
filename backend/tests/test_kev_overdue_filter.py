@@ -1,14 +1,12 @@
 """KEV overdue quick filter on CVE list."""
 
-import asyncio
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
-
-from database import init_db
+from database import get_db, init_db
+from tests.conftest import run_db_test
 
 
 def test_kev_overdue_only_filter(tmp_path, monkeypatch):
@@ -16,17 +14,9 @@ def test_kev_overdue_only_filter(tmp_path, monkeypatch):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async() -> None:
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    asyncio.run(init_db())
-
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        await init_db()
+        db = await get_db()
         try:
             await db.execute(
                 """
@@ -68,7 +58,7 @@ def test_kev_overdue_only_filter(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(seed())
+    run_db_test(seed())
 
     from fastapi.testclient import TestClient
     from main import app
