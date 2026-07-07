@@ -22,6 +22,36 @@ def test_normalize_cwe_id():
     assert _normalize_cwe_id("cwe-22") == "CWE-22"
     assert _normalize_cwe_id("22") == "CWE-22"
     assert _normalize_cwe_id(" CWE-78 ") == "CWE-78"
+    assert _normalize_cwe_id("CWE 89") == "CWE-89"
+    assert _normalize_cwe_id("CWE89") == "CWE-89"
+    assert _normalize_cwe_id("CWE-022") == "CWE-22"
+    assert _normalize_cwe_id("078") == "CWE-78"
+    assert _normalize_cwe_id("CWE_89") == "CWE-89"
+
+
+def test_cwe78_cmd_injection_includes_spaced_operators():
+    rule = _load_rule(generate_sigma_rule("CVE-2024-0078", "", cwe_ids=["CWE-78"]))
+    keywords = rule["detection"]["keywords"]
+    assert "; id" in keywords
+    assert "&& wget" in keywords
+
+
+def test_cwe611_xxe_single_quoted_system():
+    rule = _load_rule(generate_sigma_rule("CVE-2024-0611", "", cwe_ids=["CWE-611"]))
+    keywords = rule["detection"]["keywords"]
+    assert "SYSTEM 'file://" in keywords
+
+
+def test_cwe416_memory_corruption_generic_logsource():
+    rule = _load_rule(generate_sigma_rule("CVE-2024-0416", "", cwe_ids=["CWE-416"]))
+    assert rule["logsource"] == {"category": "application"}
+    assert "segfault" in rule["detection"]["keywords"]
+
+
+def test_cwe22_format_variants_resolve():
+    rule = _load_rule(generate_sigma_rule("CVE-2024-0022", "", cwe_ids=["CWE 22"]))
+    assert rule["briefr_basis"] == "cwe"
+    assert "../" in rule["detection"]["keywords"]
 
 
 def test_technique_template_wins_over_cwe():
