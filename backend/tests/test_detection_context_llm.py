@@ -66,7 +66,18 @@ def test_nuclei_raw_url_from_blob():
         "https://raw.githubusercontent.com/projectdiscovery/nuclei-templates/main/"
         "http/cves/2021/CVE-2021-44228.yaml"
     )
+    raw = (
+        "https://raw.githubusercontent.com/projectdiscovery/nuclei-templates/main/"
+        "http/cves/2021/CVE-2021-44228.yaml"
+    )
+    assert nuclei_raw_url_from_blob(raw) == raw
     assert nuclei_raw_url_from_blob("https://example.com/nope") is None
+
+
+def test_parse_artifacts_payload_accepts_single_object():
+    content = json.dumps({"paths": ["/api"], "params": ["q"], "keywords": [], "method": "GET"})
+    artifacts = parse_artifacts_payload(content)
+    assert artifacts[0]["paths"] == ["/api"]
 
 
 def test_disabled_by_default(monkeypatch):

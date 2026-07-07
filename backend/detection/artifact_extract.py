@@ -107,7 +107,14 @@ def parse_artifacts_payload(content: str) -> list[dict]:
             data = json.loads(candidate)
         except json.JSONDecodeError:
             continue
-        items = data.get("artifacts") if isinstance(data, dict) else data
+        if (
+            isinstance(data, dict)
+            and "artifacts" not in data
+            and ("paths" in data or "params" in data or "keywords" in data)
+        ):
+            items = [data]
+        else:
+            items = data.get("artifacts") if isinstance(data, dict) else data
         if not isinstance(items, list):
             continue
         artifacts: list[dict] = []
@@ -123,6 +130,8 @@ def parse_artifacts_payload(content: str) -> list[dict]:
 
 def nuclei_raw_url_from_blob(url: str) -> str | None:
     blob = (url or "").strip()
+    if blob.startswith(NUCLEI_RAW_PREFIX) and blob.endswith(".yaml"):
+        return blob
     if not blob.startswith(NUCLEI_BLOB_PREFIX):
         return None
     path = blob[len(NUCLEI_BLOB_PREFIX) :].strip("/")

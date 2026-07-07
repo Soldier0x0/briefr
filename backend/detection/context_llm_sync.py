@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+from datetime import datetime, timedelta, timezone
 
 import aiosqlite
 
@@ -49,6 +50,9 @@ async def get_cves_for_detection_context_llm(
     retry_hours: float = RETRY_HOURS,
 ) -> list[dict]:
     """CVEs with exploit rows, has_poc, and no recent LLM extraction cache entry."""
+    cutoff = (
+        datetime.now(timezone.utc) - timedelta(hours=retry_hours)
+    ).strftime("%Y-%m-%d %H:%M:%S")
     rows = await db.execute_fetchall(
         """
         SELECT c.cve_id, c.description, c.affected_products, c.cwe_ids, c.mitre_technique
@@ -60,12 +64,12 @@ async def get_cves_for_detection_context_llm(
           AND NOT EXISTS (
             SELECT 1 FROM feed_cache fc
             WHERE fc.cache_key = 'detection_ctx_llm:' || c.cve_id
-              AND fc.cached_at > datetime('now', ?)
+              AND fc.cached_at > ?
           )
         ORDER BY c.is_kev DESC, c.has_poc DESC, c.published DESC
         LIMIT ?
         """,
-        (f"-{retry_hours} hours", limit),
+        (cutoff, limit),
     )
     return [dict(row) for row in rows]
 
