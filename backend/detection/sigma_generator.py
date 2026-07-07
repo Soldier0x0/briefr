@@ -525,14 +525,26 @@ def generate_sigma_rule(
     product: str = "",
     description: str = "",
     cwe_ids: list[str] | None = None,
+    detection_context: dict | None = None,
 ) -> str:
     """
     Generate a Sigma rule YAML string for a CVE/technique pair.
     Selection order: ATT&CK technique template → CWE class template → generic default.
     """
-    template, briefr_basis, matched_cwe = _resolve_template(technique_id, cwe_ids)
+    from detection.context import merge_detection_inputs
 
-    title_product = product.strip() if product else "Affected Product"
+    effective_product, effective_cwe_ids, effective_technique = merge_detection_inputs(
+        product=product,
+        cwe_ids=cwe_ids,
+        technique_id=technique_id,
+        detection_context=detection_context,
+    )
+    template, briefr_basis, matched_cwe = _resolve_template(
+        effective_technique,
+        effective_cwe_ids,
+    )
+
+    title_product = effective_product.strip() if effective_product else "Affected Product"
     briefr_note = _DEFAULT_BRIEFR_NOTE
     extra_note = (template.get("briefr_note_extra") or "").strip()
     if extra_note:
@@ -559,6 +571,10 @@ def generate_sigma_rule(
         "briefr_confidence": template.get("briefr_confidence", "MEDIUM"),
         "briefr_note": briefr_note,
     }
+
+    ctx_class = (detection_context or {}).get("class")
+    if ctx_class:
+        rule["briefr_class"] = ctx_class
 
     # Add technique and CVE tags
     if technique_id:

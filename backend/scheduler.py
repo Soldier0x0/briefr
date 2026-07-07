@@ -60,6 +60,10 @@ from ml.product_extraction import (
     llm_product_extraction_enabled,
     run_llm_product_extraction,
 )
+from detection.context_sync import (
+    detection_context_sync_enabled,
+    run_detection_context_sync,
+)
 from webhooks.alerts import check_backup_deadman, get_backup_interval_hours, process_kev_stack_alerts
 from backup.manager import run_backup
 
@@ -1258,6 +1262,59 @@ async def run_llm_extraction_sync() -> bool:
     return True
 
 
+async def run_detection_context_sync_job() -> bool:
+    """Backfill DetectionContext cache rows (Sprint D2).
+
+    No-op unless DETECTION_CONTEXT_SYNC_ENABLED=1 — static metadata only,
+    no LLM. Scheduler-side only, never on the request path.
+    """
+    if not detection_context_sync_enabled():
+        return False
+    if get_lock("detection_context_sync").locked():
+        logger.info("DetectionContext sync already in progress — skipping")
+        return False
+
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _written = 0
+    async with get_lock("detection_context_sync"):
+        start = _start
+        logger.info("DetectionContext sync started at %s", start.isoformat())
+        stats: dict = {}
+        try:
+            db = await get_db()
+            try:
+                def _progress(msg: str) -> None:
+                    _job_progress["detection_context_sync"] = msg
+
+                stats = await run_detection_context_sync(db, progress_cb=_progress)
+                _written = int(stats.get("written", 0))
+                await db.commit()
+            finally:
+                await db.close()
+                _job_progress.pop("detection_context_sync", None)
+            logger.info(
+                "DetectionContext sync complete: %d candidates, %d written in %.1fs",
+                stats.get("candidates", 0),
+                _written,
+                (datetime.now(timezone.utc) - start).total_seconds(),
+            )
+        except Exception as exc:
+            logger.error("DetectionContext sync failed: %s", exc)
+            _had_error = True
+            _ctx_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
+        else:
+            _ctx_error_msg = ""
+    await _write_job_last_run(
+        "detection_context_sync",
+        _start,
+        records=_written,
+        had_error=_had_error,
+        error_message=_ctx_error_msg,
+    )
+    return True
+
+
 async def run_scheduled_backup() -> bool:
     """Scheduler hook: create a backup archive and prune old ones, on
     BACKUP_INTERVAL_HOURS. run_backup() itself no-ops when BACKUP_ENABLED=0
@@ -1481,6 +1538,20 @@ def start_scheduler() -> AsyncIOScheduler:
         max_instances=1,
         coalesce=True,
         next_run_time=datetime.now(sched_tz) + timedelta(seconds=150),
+    )
+
+    detection_ctx_hours = int(
+        os.environ.get("DETECTION_CONTEXT_SYNC_INTERVAL_HOURS", "6")
+    )
+    scheduler.add_job(
+        run_detection_context_sync_job,
+        trigger=IntervalTrigger(hours=detection_ctx_hours, timezone=sched_tz),
+        id="detection_context_sync",
+        name="DetectionContext Cache Backfill",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=120),
     )
 
     corr_hour = int(os.environ.get("CORRELATION_HOUR", "1"))

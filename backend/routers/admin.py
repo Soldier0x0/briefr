@@ -145,6 +145,7 @@ def _job_lock_held(job_id: str) -> bool:
 _OPT_IN_DISABLED_JOBS = {
     "embeddings_backfill": ("EMBEDDINGS_ENABLED", "0"),
     "llm_product_extraction": ("LLM_PRODUCT_EXTRACTION_ENABLED", "0"),
+    "detection_context_sync": ("DETECTION_CONTEXT_SYNC_ENABLED", "0"),
     "exploit_sources_sync": ("EXPLOIT_SOURCES_SYNC_ENABLED", "1"),  # enabled=1 means NOT disabled
 }
 
@@ -1496,6 +1497,7 @@ _JOB_RUN_MAP: dict[str, str] = {
     "cvelistv5_incremental_sync": "run_cvelistv5_sync",
     "embeddings_backfill": "run_embeddings_sync",
     "llm_product_extraction": "run_llm_extraction_sync",
+    "detection_context_sync": "run_detection_context_sync_job",
     "exploit_sources_sync": "run_exploit_sources_sync",
     "backup_deadman_check": "run_backup_deadman_check",
 }

@@ -66,6 +66,7 @@ from database import (
 from detection.rule_sources import find_elastic_rules, find_sigma_rules
 from detection.siem_queries import get_siem_queries
 from detection.sigma_generator import generate_sigma_rule
+from detection.context import get_detection_context
 from feeds.extended import (
     enrich_cve_circl,
     greynoise_scans_for_cve,
@@ -1142,6 +1143,7 @@ async def cve_detection(
     elastic_rules: list = []
     has_community_rules = False
     generated_sigma = None
+    detection_context = None
     siem_queries: dict = {}
     yara_rules: list = []
     db = await get_db()
@@ -1186,7 +1188,7 @@ async def cve_detection(
         # Generate Sigma rule if no community rules found
         first_technique = technique_ids[0] if technique_ids else ""
         has_community_rules = bool(sigma_rules or elastic_rules)
-        generated_sigma = None
+        detection_context = await get_detection_context(db, cve_upper)
         if not has_community_rules:
             generated_sigma = generate_sigma_rule(
                 cve_id=cve_upper,
@@ -1194,6 +1196,7 @@ async def cve_detection(
                 product=product.strip() or "Affected Product",
                 description=cve_desc[:200] if cve_desc else "",
                 cwe_ids=cwe_ids,
+                detection_context=detection_context,
             )
 
         # SIEM queries based on primary technique
@@ -1223,6 +1226,7 @@ async def cve_detection(
         "elastic_rules": elastic_rules,
         "has_community_rules": has_community_rules,
         "generated_sigma": generated_sigma,
+        "detection_context": detection_context,
         "siem_queries": siem_queries,
         "yara_rules": yara_rules,
     }
