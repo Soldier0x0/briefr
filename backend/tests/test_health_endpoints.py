@@ -1,6 +1,5 @@
 """Health endpoint probes (live vs full readiness)."""
 
-import asyncio
 import sys
 from pathlib import Path
 
@@ -15,18 +14,8 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async() -> None:
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    from database import init_db
     from fastapi.testclient import TestClient
     from main import app
-
-    asyncio.run(init_db())
 
     with TestClient(app) as test_client:
         yield test_client

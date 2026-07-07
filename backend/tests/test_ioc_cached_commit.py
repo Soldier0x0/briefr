@@ -3,11 +3,12 @@ writes made by on-demand OTX/GreyNoise enrichment must be committed —
 otherwise they roll back on connection close and every cached hit
 re-spends API quota."""
 
-import asyncio
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from tests.conftest import run_db_test
 
 import database
 from routers import ioc as ioc_router
@@ -50,5 +51,5 @@ def test_cached_hit_commits_enrichment_writes(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    persisted = asyncio.run(_run())
+    persisted = run_db_test(_run())
     assert persisted == {"pulse_count": 0, "pulses": []}

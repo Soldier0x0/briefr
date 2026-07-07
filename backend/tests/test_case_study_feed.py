@@ -8,6 +8,8 @@ from unittest.mock import AsyncMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tests.conftest import run_db_test
+
 import aiosqlite
 
 from database import init_db
@@ -53,7 +55,7 @@ def test_build_snapshot_uses_single_db_connection(tmp_path, monkeypatch):
         assert any(card.get("kind") == "news" for card in snapshot["news"])
         assert snapshot["generated_at"]
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_get_incident_feed_serves_snapshot_with_meta(tmp_path, monkeypatch):
@@ -103,7 +105,7 @@ def test_get_incident_feed_serves_snapshot_with_meta(tmp_path, monkeypatch):
         assert [c["id"] for c in cards3 if c["kind"] == "news"] == ["n2", "n1"]
         assert meta3["refreshed_at"] == meta2["refreshed_at"]
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_snapshot_staleness_reported(tmp_path, monkeypatch):
@@ -137,7 +139,7 @@ def test_snapshot_staleness_reported(tmp_path, monkeypatch):
         assert status["stale"] is True
         assert status["last_refresh"] == old_ts
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_status_without_snapshot_is_stale(tmp_path, monkeypatch):
@@ -150,4 +152,4 @@ def test_status_without_snapshot_is_stale(tmp_path, monkeypatch):
         assert status["stale"] is True
         assert isinstance(status.get("sources"), list)
 
-    asyncio.run(run())
+    run_db_test(run())

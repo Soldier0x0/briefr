@@ -1,6 +1,6 @@
 """Tests for /api/admin/storage endpoints — disk usage, purge, export."""
 
-import asyncio
+import os
 import sys
 from pathlib import Path
 
@@ -9,7 +9,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pytest
 from fastapi.testclient import TestClient
 
-from database import init_db
+# GET /api/admin/storage/export streams a `VACUUM INTO`'d SQLite file —
+# a SQLite-only feature (Postgres backups go through pg_dump, a separate
+# script). Not a fixture-pattern gap; the Postgres equivalent is a real
+# product feature, Post-B scope, not this CI-gate PR's.
+_requires_sqlite = pytest.mark.skipif(
+    os.environ.get("DATABASE_URL", "").startswith("postgresql"),
+    reason="storage export streams a VACUUM INTO SQLite file, no Postgres equivalent yet",
+)
+
 
 
 @pytest.fixture
@@ -19,24 +27,15 @@ def admin_client(tmp_path, monkeypatch, auth_token):
     monkeypatch.setattr("database.DB_PATH", str(db_path))
     monkeypatch.setenv("BACKUP_DIR", str(tmp_path / "backups"))
 
-    async def _noop_async():
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    asyncio.run(init_db())
-
     import rate_limit as _rl
     from settings import settings as _settings
     monkeypatch.setattr(_settings, "rate_limit_enabled", False)
     _rl.refresh_bucket._buckets.pop("testclient", None)
 
     from main import app
-    client = TestClient(app, raise_server_exceptions=False)
-    client.cookies.set("briefr_at", auth_token())
-    return client
+    with TestClient(app, raise_server_exceptions=False) as client:
+        client.cookies.set("briefr_at", auth_token())
+        yield client
 
 
 def test_storage_returns_partition_info(admin_client):
@@ -123,6 +122,7 @@ def test_purge_epss_backfill_reset_no_confirm(admin_client):
     assert data["ok"] is True
 
 
+@_requires_sqlite
 def test_storage_export_returns_file(admin_client):
     resp = admin_client.get("/api/admin/storage/export")
     assert resp.status_code == 200

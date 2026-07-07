@@ -8,18 +8,26 @@ Verifies:
 - Input validation mirrors the sibling CVE endpoints (CVE- prefix, T-prefix)
 """
 
-import asyncio
+import os
 import sqlite3
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
 import pytest
 
-from database import init_db
+from database import get_db, init_db
 from routers.forge import _coverage_status, _derive_priority, _first_product
+from tests.conftest import run_db_test
+
+# PRAGMA table_info/index_list below are SQLite-only introspection — a
+# genuine dialect gap (Postgres uses information_schema/pg_catalog), not a
+# fixture-pattern issue. Portable rewrite is Post-B scope, not this PR's.
+_requires_sqlite = pytest.mark.skipif(
+    os.environ.get("DATABASE_URL", "").startswith("postgresql"),
+    reason="asserts schema via SQLite PRAGMA table_info/index_list",
+)
 
 # T1190 is in the bundled template library ("community"); T1566 (Phishing)
 # is not — it must surface as a "gap".
@@ -40,10 +48,9 @@ def forge_client(tmp_path, monkeypatch):
     monkeypatch.setattr("main.stop_scheduler", lambda: None)
     monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
 
-    asyncio.run(init_db())
-
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        await init_db()
+        db = await get_db()
         try:
             await db.executemany(
                 "INSERT INTO mitre_techniques (technique_id, name, tactic, url) "
@@ -88,7 +95,7 @@ def forge_client(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(seed())
+    run_db_test(seed())
 
     from fastapi.testclient import TestClient
     from main import app
@@ -99,12 +106,16 @@ def forge_client(tmp_path, monkeypatch):
 
 # ── Schema / migration ────────────────────────────────────
 
+@_requires_sqlite
 def test_hunt_packs_schema_and_idempotent_migration(tmp_path, monkeypatch):
     db_path = tmp_path / "schema.db"
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    asyncio.run(init_db())
-    asyncio.run(init_db())  # forward-only migration list must be re-runnable
+    async def run_twice():
+        await init_db()
+        await init_db()  # forward-only migration list must be re-runnable
+
+    run_db_test(run_twice())
 
     conn = sqlite3.connect(db_path)
     try:
@@ -215,16 +226,11 @@ def test_generate_pack_persists_link_and_is_idempotent(forge_client):
     assert second.json()["created"] is False
     assert second.json()["pack"]["id"] == pack["id"]
 
-    conn = sqlite3.connect(db_path)
-    try:
-        count = conn.execute(
-            "SELECT COUNT(*) FROM hunt_packs WHERE cve_id = 'CVE-2021-44228'"
-        ).fetchone()[0]
-    finally:
-        conn.close()
-    assert count == 1
-
-    # Pack now flips the technique's coverage status to "yours"
+    # Pack now flips the technique's coverage status to "yours" — pack_count
+    # here is the idempotency check (only 1 row, not 2, from the two POSTs
+    # above), read through the API rather than a direct DB count: a bare
+    # get_db() here would try to share the fixture's already-open pool from
+    # a different event loop (Postgres) — same issue as test_auth_setup.py.
     coverage = client.get("/api/forge/coverage").json()
     by_tid = {t["technique_id"]: t for t in coverage["techniques"]}
     assert by_tid[COMMUNITY_TID]["status"] == "yours"

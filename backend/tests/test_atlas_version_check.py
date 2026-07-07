@@ -1,11 +1,12 @@
 """ATLAS upstream release-feed version check (auto-refresh trigger)."""
 
-import asyncio
 import sys
 from pathlib import Path
 from unittest.mock import AsyncMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from tests.conftest import run_db_test
 
 from feeds import atlas
 
@@ -29,14 +30,14 @@ def test_get_latest_atlas_release_parses_first_entry_title(monkeypatch):
 
     monkeypatch.setattr(atlas, "resilient_get", AsyncMock(return_value=FakeResponse()))
 
-    latest = asyncio.run(atlas.get_latest_atlas_release())
+    latest = run_db_test(atlas.get_latest_atlas_release())
     assert latest == "v2026.05"
 
 
 def test_get_latest_atlas_release_returns_none_on_failure(monkeypatch):
     monkeypatch.setattr(atlas, "resilient_get", AsyncMock(side_effect=RuntimeError("boom")))
 
-    latest = asyncio.run(atlas.get_latest_atlas_release())
+    latest = run_db_test(atlas.get_latest_atlas_release())
     assert latest is None
 
 
@@ -47,7 +48,7 @@ def test_run_atlas_version_check_skips_refresh_when_unchanged(monkeypatch, tmp_p
     db_path = tmp_path / "atlas_check.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    asyncio.run(init_db())
+    run_db_test(init_db())
 
     monkeypatch.setattr(scheduler, "get_latest_atlas_release", AsyncMock(return_value="v2026.05"))
     refresh_mock = AsyncMock(return_value=True)
@@ -64,7 +65,7 @@ def test_run_atlas_version_check_skips_refresh_when_unchanged(monkeypatch, tmp_p
             await db.close()
         return await scheduler.run_atlas_version_check()
 
-    result = asyncio.run(seed_and_run())
+    result = run_db_test(seed_and_run())
     assert result is False
     refresh_mock.assert_not_awaited()
 
@@ -76,7 +77,7 @@ def test_run_atlas_version_check_refreshes_when_version_changes(monkeypatch, tmp
     db_path = tmp_path / "atlas_check2.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    asyncio.run(init_db())
+    run_db_test(init_db())
 
     monkeypatch.setattr(scheduler, "get_latest_atlas_release", AsyncMock(return_value="v2026.05"))
     refresh_mock = AsyncMock(return_value=True)
@@ -93,7 +94,7 @@ def test_run_atlas_version_check_refreshes_when_version_changes(monkeypatch, tmp
             await db.close()
         return await scheduler.run_atlas_version_check()
 
-    result = asyncio.run(seed_and_run())
+    result = run_db_test(seed_and_run())
     assert result is True
     refresh_mock.assert_awaited_once()
 
@@ -106,4 +107,4 @@ def test_run_atlas_version_check_refreshes_when_version_changes(monkeypatch, tmp
         finally:
             await db.close()
 
-    assert asyncio.run(read_stored()) == "v2026.05"
+    assert run_db_test(read_stored()) == "v2026.05"

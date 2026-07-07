@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import sys
 from pathlib import Path
@@ -10,6 +9,8 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from tests.conftest import run_db_test
 
 import database
 from database import init_db, upsert_cve
@@ -116,7 +117,7 @@ def test_cache_roundtrip(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(_run())
+    run_db_test(_run())
 
 
 def test_sync_backfills_missing_rows(tmp_path, monkeypatch):
@@ -155,7 +156,7 @@ def test_sync_backfills_missing_rows(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(_run())
+    run_db_test(_run())
 
 
 def test_generate_sigma_rule_uses_detection_context_product_and_class():
@@ -181,4 +182,4 @@ def test_scheduler_job_noop_when_disabled(monkeypatch):
     monkeypatch.delenv("DETECTION_CONTEXT_SYNC_ENABLED", raising=False)
     from scheduler import run_detection_context_sync_job
 
-    assert asyncio.run(run_detection_context_sync_job()) is False
+    assert run_db_test(run_detection_context_sync_job()) is False

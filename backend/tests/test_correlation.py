@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from tests.conftest import run_db_test
 
 from correlation.campaigns import (
     build_campaigns_from_pulses,
@@ -129,7 +130,7 @@ def test_pulse_cooccurrence_builds_campaign(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_hub_cve_suppression_limits_members(tmp_path, monkeypatch):
@@ -148,7 +149,7 @@ def test_hub_cve_suppression_limits_members(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_ioc_normalization_at_ingest(tmp_path, monkeypatch):
@@ -173,7 +174,7 @@ def test_ioc_normalization_at_ingest(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_get_correlation_includes_campaigns_and_v2_cache(tmp_path, monkeypatch):
@@ -197,7 +198,7 @@ def test_get_correlation_includes_campaigns_and_v2_cache(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_prune_invalid_campaign_members(tmp_path, monkeypatch):
@@ -216,7 +217,7 @@ def test_prune_invalid_campaign_members(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_targeted_countries_stored_on_pulse_dimension(tmp_path, monkeypatch):
@@ -234,7 +235,7 @@ def test_targeted_countries_stored_on_pulse_dimension(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_multi_ioc_infrastructure_has_evidence(tmp_path, monkeypatch):
@@ -255,7 +256,7 @@ def test_multi_ioc_infrastructure_has_evidence(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_suppression_hides_campaign(tmp_path, monkeypatch):
@@ -282,7 +283,7 @@ def test_suppression_hides_campaign(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_greynoise_benign_downgrades_ip_edge():
@@ -311,7 +312,7 @@ def test_related_cves_for_ioc_from_tables(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_confirmations_batch_matches_per_value_cache(tmp_path, monkeypatch):
@@ -339,7 +340,7 @@ def test_confirmations_batch_matches_per_value_cache(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_shared_hash_pulls_uncopulsed_cve_into_campaign(tmp_path, monkeypatch):
@@ -373,7 +374,7 @@ def test_shared_hash_pulls_uncopulsed_cve_into_campaign(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_compute_correlation_priority_breakdown():
@@ -425,7 +426,7 @@ def test_get_correlation_error_path_hides_exception_text(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_mitre_overlap_ranks_strong_actor_match_above_weak(tmp_path, monkeypatch):
@@ -470,7 +471,7 @@ def test_mitre_overlap_ranks_strong_actor_match_above_weak(tmp_path, monkeypatch
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_mitre_overlap_below_threshold_is_excluded(tmp_path, monkeypatch):
@@ -509,7 +510,7 @@ def test_mitre_overlap_below_threshold_is_excluded(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_kev_booster_bumps_campaign_confidence(tmp_path, monkeypatch):
@@ -546,7 +547,7 @@ def test_kev_booster_bumps_campaign_confidence(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_temporal_anomaly_gated_off_stack_without_signal(tmp_path, monkeypatch):
@@ -587,4 +588,4 @@ def test_temporal_anomaly_gated_off_stack_without_signal(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())

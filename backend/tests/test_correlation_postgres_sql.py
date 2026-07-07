@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import asyncio
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from tests.conftest import run_db_test
 
 from correlation.campaigns import build_campaigns_from_pulses
 from correlation.engine import prefetch_pulse_iocs_for_nightly
@@ -49,7 +50,7 @@ def test_prefetch_pulse_iocs_query_runs_on_sqlite(tmp_path, monkeypatch):
         count = await prefetch_pulse_iocs_for_nightly("fake-key", max_pulses=5)
         assert count == 0
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_build_campaign_members_query_runs_on_sqlite(tmp_path, monkeypatch):
@@ -88,7 +89,7 @@ def test_build_campaign_members_query_runs_on_sqlite(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_nightly_correlation_recovers_after_temporal_failure(tmp_path, monkeypatch):
@@ -118,4 +119,4 @@ def test_nightly_correlation_recovers_after_temporal_failure(tmp_path, monkeypat
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())

@@ -7,7 +7,7 @@ Verifies:
 - additive watchlist_state on list + detail responses
 """
 
-import asyncio
+import os
 import sqlite3
 import sys
 from datetime import datetime, timedelta, timezone
@@ -15,35 +15,30 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
 import pytest
 from fastapi.testclient import TestClient
 
-from database import init_db
+from database import get_db, init_db
 from main import app
+from tests.conftest import run_db_test
 
 CVE_A = "CVE-2021-44228"
 CVE_B = "CVE-2024-0001"
 CVE_C = "CVE-2024-0002"
 
+# _table_columns below asserts schema via SQLite PRAGMA table_info — genuine
+# dialect-only introspection (Postgres uses information_schema/pg_catalog),
+# not a fixture-pattern issue. Portable rewrite is Post-B scope.
+_requires_sqlite = pytest.mark.skipif(
+    os.environ.get("DATABASE_URL", "").startswith("postgresql"),
+    reason="asserts schema via SQLite PRAGMA table_info",
+)
 
-@pytest.fixture
-def watchlist_client(tmp_path, monkeypatch):
-    db_path = tmp_path / "watchlist.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async() -> None:
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    asyncio.run(init_db())
-
+def _seed_cves() -> None:
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        await init_db()
+        db = await get_db()
         try:
             await db.executemany(
                 """
@@ -61,7 +56,16 @@ def watchlist_client(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(seed())
+    run_db_test(seed())
+
+
+@pytest.fixture
+def watchlist_client(tmp_path, monkeypatch):
+    db_path = tmp_path / "watchlist.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    _seed_cves()
 
     with TestClient(app) as client:
         yield client, db_path
@@ -75,6 +79,7 @@ def _table_columns(db_path: Path, table: str) -> list[str]:
         conn.close()
 
 
+@_requires_sqlite
 def test_watchlist_schema_idempotent(watchlist_client):
     _client, db_path = watchlist_client
     cols = _table_columns(db_path, "watchlist")
@@ -82,7 +87,7 @@ def test_watchlist_schema_idempotent(watchlist_client):
     assert "state" in cols
     assert "snooze_until" in cols
     assert "created_at" in cols
-    asyncio.run(init_db())
+    run_db_test(init_db())
     assert _table_columns(db_path, "watchlist") == cols
 
 
@@ -145,14 +150,22 @@ def test_feed_pin_floats_and_snooze_hidden(watchlist_client):
     assert snoozed["watchlist_state"] == "snooze"
 
 
-def test_expired_snooze_reappears(watchlist_client):
-    client, db_path = watchlist_client
+def test_expired_snooze_reappears(tmp_path, monkeypatch):
+    # Self-contained (not `watchlist_client`): the expired-snooze insert
+    # below must run before the TestClient opens its own pool — a bare
+    # asyncio.run() DB call can't share a pool already bound to the
+    # TestClient's event loop (Postgres), same issue as test_auth_setup.py.
+    db_path = tmp_path / "watchlist-expired.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    _seed_cves()
 
     past = (datetime.now(timezone.utc) - timedelta(hours=1)).replace(microsecond=0)
     past_sql = past.strftime("%Y-%m-%d %H:%M:%S")
 
     async def insert_expired() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             await db.execute(
                 "INSERT INTO watchlist (cve_id, state, snooze_until) VALUES (?, 'snooze', ?)",
@@ -162,14 +175,15 @@ def test_expired_snooze_reappears(watchlist_client):
         finally:
             await db.close()
 
-    asyncio.run(insert_expired())
+    run_db_test(insert_expired())
 
-    feed = client.get("/api/cves?limit=50")
-    ids = [row["cve_id"] for row in feed.json()["data"]]
-    assert CVE_C in ids
+    with TestClient(app) as client:
+        feed = client.get("/api/cves?limit=50")
+        ids = [row["cve_id"] for row in feed.json()["data"]]
+        assert CVE_C in ids
 
-    wl = client.get("/api/watchlist")
-    assert CVE_C not in {e["cve_id"] for e in wl.json()["data"]}
+        wl = client.get("/api/watchlist")
+        assert CVE_C not in {e["cve_id"] for e in wl.json()["data"]}
 
 
 def test_detail_includes_watchlist_state(watchlist_client):

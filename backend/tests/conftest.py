@@ -1,7 +1,10 @@
-"""Shared pytest fixtures — Playwright smoke stack when PLAYWRIGHT_SMOKE=1."""
+"""Shared pytest fixtures — Playwright smoke stack when PLAYWRIGHT_SMOKE=1,
+and Postgres schema/isolation for running the backend suite against a live
+DATABASE_URL (Sprint Post-B: full suite on Postgres, gates module conversion)."""
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import signal
@@ -21,6 +24,111 @@ FRONTEND_DIR = REPO_ROOT / "frontend"
 SEED_SCRIPT = REPO_ROOT / "scripts" / "seed_screenshot_data.py"
 
 sys.path.insert(0, str(BACKEND_DIR))
+
+
+def _postgres_dsn_or_none() -> str | None:
+    url = os.environ.get("DATABASE_URL", "")
+    return url if url.startswith("postgresql") else None
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _postgres_schema_once():
+    """Apply Alembic migrations once per session via a standalone asyncpg
+    connection — never via the pool, which would bind it to this fixture's
+    closing event loop (see tests/test_postgres_pool.py). No-op on SQLite."""
+    if _postgres_dsn_or_none() is None:
+        yield
+        return
+
+    async def _boot() -> None:
+        from database import run_postgres_migrations
+
+        await run_postgres_migrations()
+
+    asyncio.run(_boot())
+
+    # Every `with TestClient(app)` runs FastAPI lifespan, which calls
+    # run_postgres_migrations() again — redundant once the session-level
+    # migration above has already run (Gemini review, PR #303). main.py
+    # binds its own module-level reference via `from database import
+    # run_postgres_migrations`, so both names need patching.
+    import database
+    import main
+
+    async def _noop_migrations() -> None:
+        return
+
+    database.run_postgres_migrations = _noop_migrations
+    main.run_postgres_migrations = _noop_migrations
+
+    yield
+
+
+@pytest.fixture(autouse=True)
+def _postgres_test_isolation(_postgres_schema_once):
+    """Truncate all app tables before each test when DATABASE_URL is
+    Postgres — reproduces the fresh-temp-file isolation SQLite tests get
+    from tmp_path. No-op on SQLite (the default CI/local test run)."""
+    dsn = _postgres_dsn_or_none()
+    if dsn is None:
+        yield
+        return
+
+    async def _truncate() -> None:
+        import asyncpg
+
+        conn = await asyncpg.connect(dsn, timeout=15)
+        try:
+            rows = await conn.fetch(
+                "SELECT tablename FROM pg_tables"
+                " WHERE schemaname = 'public' AND tablename != 'alembic_version'"
+            )
+            tables = ", ".join(f'"{r["tablename"]}"' for r in rows)
+            if tables:
+                await conn.execute(f"TRUNCATE TABLE {tables} RESTART IDENTITY CASCADE")
+        finally:
+            await conn.close()
+
+    asyncio.run(_truncate())
+    yield
+
+
+def run_db_test(coro):
+    """Run an async test body that calls database.get_db()/get_connection()
+    directly (no TestClient/lifespan). Opens the Postgres pool for the
+    duration of the call and closes it after — no-ops on SQLite, since
+    init_pool()/close_pool() are already dialect-aware no-ops there.
+    Drop-in replacement for `asyncio.run(coro)` in direct-db-call tests —
+    takes the coroutine object itself (mirrors asyncio.run's signature),
+    so `asyncio.run(foo(x, y))` becomes `run_db_test(foo(x, y))`."""
+    from db.connection import close_pool, init_pool
+
+    async def _wrapped():
+        await init_pool()
+        try:
+            return await coro
+        finally:
+            await close_pool()
+
+    return asyncio.run(_wrapped())
+
+
+@pytest.fixture(autouse=True)
+def _noop_scheduler(monkeypatch):
+    """Neutralize main.py lifespan's scheduler/on-startup hooks for every
+    test. Every `with TestClient(app)` usage runs real FastAPI lifespan;
+    without this, each such test would launch the actual scheduler and
+    on-startup jobs. Centralized here instead of the ~15 files that
+    previously hand-rolled the same three monkeypatch.setattr calls —
+    tests that assert real scheduler behavior test scheduler.py directly,
+    not through lifespan, so this is safe to apply unconditionally."""
+
+    async def _noop_async(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr("main.start_scheduler", lambda: None)
+    monkeypatch.setattr("main.stop_scheduler", lambda: None)
+    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
 
 
 @pytest.fixture

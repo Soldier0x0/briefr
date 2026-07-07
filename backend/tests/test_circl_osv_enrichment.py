@@ -1,11 +1,12 @@
 """Tests for CIRCL (vulnerability.circl.lu) migration and OSV by-ID lookup."""
 
-import asyncio
 import sys
 from pathlib import Path
 from unittest.mock import AsyncMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from tests.conftest import run_db_test
 
 from database import get_feed_cache, init_db
 from feeds import extended, osv
@@ -91,7 +92,7 @@ def test_circl_failure_is_negative_cached(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_circl_success_and_empty_results_are_cached(tmp_path, monkeypatch):
@@ -124,7 +125,7 @@ def test_circl_success_and_empty_results_are_cached(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_osv_parse_rejects_malformed_record():
@@ -140,7 +141,7 @@ def test_osv_parses_single_vuln_record(monkeypatch):
     monkeypatch.setattr(osv, "resilient_get", AsyncMock(return_value=FakeResponse()))
     monkeypatch.setattr(osv, "record_api_call", AsyncMock())
 
-    results = asyncio.run(osv.fetch_osv_by_cve("CVE-2021-44228"))
+    results = run_db_test(osv.fetch_osv_by_cve("CVE-2021-44228"))
     assert len(results) == 1
     assert results[0]["osv_id"] == "CVE-2021-44228"
     eco = results[0]["ecosystems"][0]
@@ -162,7 +163,7 @@ def test_osv_follows_alias_when_cve_record_has_no_packages(monkeypatch):
 
     monkeypatch.setattr(osv, "_fetch_osv_record", fake_fetch)
 
-    results = asyncio.run(osv.fetch_osv_by_cve("CVE-2021-44228"))
+    results = run_db_test(osv.fetch_osv_by_cve("CVE-2021-44228"))
     assert len(results) == 1
     assert results[0]["osv_id"] == "GHSA-jfh8-c2jp-5v3q"
     assert results[0]["ecosystems"][0]["ecosystem"] == "Maven"
@@ -178,5 +179,5 @@ def test_osv_ignores_non_list_aliases(monkeypatch):
 
     monkeypatch.setattr(osv, "_fetch_osv_record", fake_fetch)
 
-    results = asyncio.run(osv.fetch_osv_by_cve("CVE-2021-44228"))
+    results = run_db_test(osv.fetch_osv_by_cve("CVE-2021-44228"))
     assert results == []

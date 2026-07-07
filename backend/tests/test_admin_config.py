@@ -1,6 +1,5 @@
 """Tests for /api/admin/config endpoints."""
 
-import asyncio
 import re
 import sys
 from pathlib import Path
@@ -10,8 +9,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
 from fastapi.testclient import TestClient
-
-from database import init_db
 
 
 @pytest.fixture
@@ -35,18 +32,19 @@ def admin_client(tmp_path, monkeypatch, auth_token):
     import routers.admin as _admin_mod
     monkeypatch.setattr(_admin_mod, "trigger_graceful_restart", _noop_async)
 
-    asyncio.run(init_db())
-
     # Disable rate limiting so tests don't hit 429
     import rate_limit as _rl
     from settings import settings as _settings
     monkeypatch.setattr(_settings, "rate_limit_enabled", False)
     _rl.refresh_bucket._buckets.pop("testclient", None)
 
+    # Context-manager form runs FastAPI lifespan (schema init + pool
+    # open/close) scoped to this test's event loop — required on Postgres,
+    # where get_connection() needs init_pool() to have already run.
     from main import app
-    client = TestClient(app, raise_server_exceptions=False)
-    client.cookies.set("briefr_at", auth_token())
-    return client
+    with TestClient(app, raise_server_exceptions=False) as client:
+        client.cookies.set("briefr_at", auth_token())
+        yield client
 
 
 def test_config_api_keys_are_masked(admin_client):

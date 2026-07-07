@@ -1,6 +1,5 @@
 """Per-source incident feed refresh (RSS + ATLAS partial snapshot merge)."""
 
-import asyncio
 import sys
 from pathlib import Path
 from unittest.mock import AsyncMock
@@ -12,6 +11,7 @@ from fastapi.testclient import TestClient
 
 from database import init_db, set_feed_cache
 from feeds import case_study_feed
+from tests.conftest import run_db_test
 
 
 def _setup_db(tmp_path, monkeypatch, name: str) -> None:
@@ -26,15 +26,6 @@ def admin_client(tmp_path, monkeypatch, auth_token):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async():
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    asyncio.run(init_db())
-
     import rate_limit as _rl
     from settings import settings as _settings
 
@@ -43,9 +34,9 @@ def admin_client(tmp_path, monkeypatch, auth_token):
 
     from main import app
 
-    client = TestClient(app, raise_server_exceptions=False)
-    client.cookies.set("briefr_at", auth_token())
-    return client
+    with TestClient(app, raise_server_exceptions=False) as client:
+        client.cookies.set("briefr_at", auth_token())
+        yield client
 
 
 def test_refresh_unknown_source_returns_400(admin_client):
@@ -115,7 +106,7 @@ def test_partial_rss_refresh_replaces_only_that_source(tmp_path, monkeypatch):
         assert snapshot["atlas"] == [{"id": "AML.CS0001", "kind": "atlas"}]
         assert snapshot["generated_at"] != "2020-01-01T00:00:00+00:00"
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_atlas_only_refresh_keeps_rss_cards(tmp_path, monkeypatch):
@@ -161,7 +152,7 @@ def test_atlas_only_refresh_keeps_rss_cards(tmp_path, monkeypatch):
         assert [c["id"] for c in snapshot["news"]] == ["n1"]
         assert snapshot["atlas"][0]["id"] == "new-atlas"
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_admin_incidents_refresh_accepts_valid_source(admin_client, monkeypatch):

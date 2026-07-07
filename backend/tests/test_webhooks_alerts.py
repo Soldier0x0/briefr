@@ -1,6 +1,5 @@
 """Tests for KEV-on-stack and backup dead-man webhook rules."""
 
-import asyncio
 import os
 import sys
 from datetime import datetime, timedelta, timezone
@@ -8,7 +7,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from tests.conftest import run_db_test
+
 import httpx
 
 import resilient_client
@@ -34,10 +34,10 @@ def _setup_db(tmp_path, monkeypatch) -> Path:
     db_path = tmp_path / "webhooks.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    asyncio.run(init_db())
+    run_db_test(init_db())
     from webhooks.destinations import sync_env_destinations_to_db
 
-    asyncio.run(sync_env_destinations_to_db())
+    run_db_test(sync_env_destinations_to_db())
     return db_path
 
 
@@ -67,12 +67,12 @@ def _mock_webhooks(monkeypatch):
     reset_feed_health()
     from webhooks.destinations import sync_env_destinations_to_db
 
-    asyncio.run(sync_env_destinations_to_db())
+    run_db_test(sync_env_destinations_to_db())
     return calls
 
 
 async def _seed_cve(db_path: Path, cve_id: str, description: str, is_kev: int = 0):
-    db = await aiosqlite.connect(db_path)
+    db = await get_db()
     try:
         await db.execute(
             """
@@ -89,7 +89,7 @@ async def _seed_cve(db_path: Path, cve_id: str, description: str, is_kev: int = 
 def test_kev_stack_alert_sent_once(tmp_path, monkeypatch):
     db_path = _setup_db(tmp_path, monkeypatch)
     calls = _mock_webhooks(monkeypatch)
-    asyncio.run(_seed_cve(db_path, "CVE-2024-1001", "nginx reverse proxy RCE"))
+    run_db_test(_seed_cve(db_path, "CVE-2024-1001", "nginx reverse proxy RCE"))
 
     async def run():
         db = await get_db()
@@ -102,7 +102,7 @@ def test_kev_stack_alert_sent_once(tmp_path, monkeypatch):
         sent_again = await process_kev_stack_alerts(newly)
         return sent, sent_again
 
-    sent, sent_again = asyncio.run(run())
+    sent, sent_again = run_db_test(run())
     assert sent == 1
     assert sent_again == 0
     assert len(calls) == 1
@@ -111,7 +111,7 @@ def test_kev_stack_alert_sent_once(tmp_path, monkeypatch):
 def test_kev_stack_skips_non_matching(tmp_path, monkeypatch):
     db_path = _setup_db(tmp_path, monkeypatch)
     calls = _mock_webhooks(monkeypatch)
-    asyncio.run(_seed_cve(db_path, "CVE-2024-1002", "unrelated apache issue"))
+    run_db_test(_seed_cve(db_path, "CVE-2024-1002", "unrelated apache issue"))
 
     async def run():
         db = await get_db()
@@ -122,7 +122,7 @@ def test_kev_stack_skips_non_matching(tmp_path, monkeypatch):
             await db.close()
         return await process_kev_stack_alerts(newly)
 
-    assert asyncio.run(run()) == 0
+    assert run_db_test(run()) == 0
     assert calls == []
 
 
@@ -130,7 +130,7 @@ def test_kev_stack_requires_stack_terms(tmp_path, monkeypatch):
     db_path = _setup_db(tmp_path, monkeypatch)
     _mock_webhooks(monkeypatch)
     monkeypatch.delenv("BRIEFR_STACK_TERMS", raising=False)
-    asyncio.run(_seed_cve(db_path, "CVE-2024-1003", "nginx issue"))
+    run_db_test(_seed_cve(db_path, "CVE-2024-1003", "nginx issue"))
 
     async def run():
         db = await get_db()
@@ -141,7 +141,7 @@ def test_kev_stack_requires_stack_terms(tmp_path, monkeypatch):
             await db.close()
         return await process_kev_stack_alerts(newly)
 
-    assert asyncio.run(run()) == 0
+    assert run_db_test(run()) == 0
 
 
 def test_backup_deadman_alerts_when_stale(tmp_path, monkeypatch):
@@ -161,7 +161,7 @@ def test_backup_deadman_alerts_when_stale(tmp_path, monkeypatch):
         second = await check_backup_deadman()
         return first, second
 
-    first, second = asyncio.run(run())
+    first, second = run_db_test(run())
     assert first is True
     assert second is False
     assert len(calls) == 1
@@ -193,7 +193,7 @@ def test_backup_deadman_clears_after_fresh_backup(tmp_path, monkeypatch):
             await db.close()
         return res, was_sent
 
-    res, was_sent = asyncio.run(run())
+    res, was_sent = run_db_test(run())
     assert res is False
     assert was_sent is False
     assert len(calls) == 1
@@ -215,4 +215,4 @@ def test_webhook_alert_log_helpers(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    assert asyncio.run(run()) is False
+    assert run_db_test(run()) is False

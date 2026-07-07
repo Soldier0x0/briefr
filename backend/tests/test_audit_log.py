@@ -1,6 +1,5 @@
 """Tests for the audit_log table and its writers (refreshes, backups, restores)."""
 
-import asyncio
 import sqlite3
 import sys
 from pathlib import Path
@@ -9,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import database
 from backup.manager import restore_backup, run_backup
+from tests.conftest import run_db_test
 from tests.test_backup_manager import _cfg, _corrupt_db, _make_db
 
 
@@ -31,7 +31,7 @@ def test_write_audit_log_roundtrip(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    rows = asyncio.run(_run())
+    rows = run_db_test(_run())
     assert rows[0]["actor"] == "operator@example.com"
     assert rows[0]["action"] == "refresh.full"
     assert rows[0]["target"] == "nvd+kev+epss"

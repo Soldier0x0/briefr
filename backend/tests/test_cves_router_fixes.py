@@ -1,15 +1,13 @@
 """Regression tests for the PR #96 review fixes in routers/cves.py."""
 
-import asyncio
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
-
-from database import init_db
+from database import get_db, init_db
 from routers.cves import _row_to_cve_dict, _sort_by_stack_relevance
+from tests.conftest import run_db_test
 
 
 def test_sort_by_stack_relevance_handles_null_affected_products():
@@ -70,15 +68,6 @@ def test_stats_single_query_matches_legacy_counts(tmp_path, monkeypatch):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async() -> None:
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    asyncio.run(init_db())
-
     from fastapi.testclient import TestClient
     from main import app
 
@@ -94,7 +83,7 @@ def test_stats_single_query_matches_legacy_counts(tmp_path, monkeypatch):
         }
 
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             await db.executemany(
                 """
@@ -112,7 +101,7 @@ def test_stats_single_query_matches_legacy_counts(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(seed())
+    run_db_test(seed())
 
     with TestClient(app) as client:
         body = client.get("/api/stats").json()
@@ -129,15 +118,6 @@ def test_intel_endpoints_reject_malformed_cve_id(tmp_path, monkeypatch):
     db_path = tmp_path / "intel.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-
-    async def _noop_async() -> None:
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    asyncio.run(init_db())
 
     from fastapi.testclient import TestClient
     from main import app
@@ -165,16 +145,8 @@ def test_correlation_endpoint_serializes_priority_and_suppress_round_trip(tmp_pa
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async() -> None:
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    asyncio.run(init_db())
-
     async def seed() -> None:
+        await init_db()
         import database
         from correlation.campaigns import build_campaigns_from_pulses
 
@@ -209,7 +181,7 @@ def test_correlation_endpoint_serializes_priority_and_suppress_round_trip(tmp_pa
         finally:
             await db.close()
 
-    asyncio.run(seed())
+    run_db_test(seed())
 
     from fastapi.testclient import TestClient
     from main import app

@@ -1,6 +1,6 @@
 """Tests for GET /api/wallboard — Beta V1.4 Theme 4."""
 
-import asyncio
+import os
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -12,6 +12,16 @@ import pytest
 from fastapi.testclient import TestClient
 
 from database import init_db
+from tests.conftest import run_db_test
+
+# _seed_wallboard_db below writes via raw aiosqlite with SQLite-dialect SQL
+# (datetime('now', ...)) — genuinely SQLite-only, not a fixture-pattern gap.
+# A portable rewrite is Post-B (Postgres-native db/ conversion) scope, not
+# this CI-gate PR's. Skip explicitly rather than silently passing/failing.
+_requires_sqlite = pytest.mark.skipif(
+    os.environ.get("DATABASE_URL", "").startswith("postgresql"),
+    reason="_seed_wallboard_db uses raw SQLite-dialect SQL — portable rewrite is Post-B scope",
+)
 
 
 def _patch_app_lifecycle(monkeypatch) -> None:
@@ -100,13 +110,15 @@ def wallboard_client(tmp_path, monkeypatch):
     _patch_app_lifecycle(monkeypatch)
     _disable_rate_limit(monkeypatch)
 
-    asyncio.run(init_db())
-    asyncio.run(_seed_wallboard_db(db_path))
+    run_db_test(init_db())
+    run_db_test(_seed_wallboard_db(db_path))
 
     from main import app
-    return TestClient(app, raise_server_exceptions=False)
+    with TestClient(app, raise_server_exceptions=False) as client:
+        yield client
 
 
+@_requires_sqlite
 def test_wallboard_returns_six_tiles(wallboard_client):
     resp = wallboard_client.get("/api/wallboard")
     assert resp.status_code == 200
@@ -136,26 +148,24 @@ def test_wallboard_token_required_when_set(tmp_path, monkeypatch):
 
     _patch_app_lifecycle(monkeypatch)
     _disable_rate_limit(monkeypatch)
-    asyncio.run(init_db())
 
     from settings import settings as _settings
     monkeypatch.setattr(_settings, "wallboard_token", "kiosk-secret-token")
 
     from main import app
-    client = TestClient(app, raise_server_exceptions=False)
+    with TestClient(app, raise_server_exceptions=False) as client:
+        denied = client.get("/api/wallboard")
+        assert denied.status_code == 401
 
-    denied = client.get("/api/wallboard")
-    assert denied.status_code == 401
+        ok_header = client.get(
+            "/api/wallboard",
+            headers={"X-BRIEFR-Wallboard-Token": "kiosk-secret-token"},
+        )
+        assert ok_header.status_code == 200
 
-    ok_header = client.get(
-        "/api/wallboard",
-        headers={"X-BRIEFR-Wallboard-Token": "kiosk-secret-token"},
-    )
-    assert ok_header.status_code == 200
-
-    # Sprint A7: query-string tokens leak into access logs — header only.
-    denied_query = client.get("/api/wallboard?token=kiosk-secret-token")
-    assert denied_query.status_code == 401
+        # Sprint A7: query-string tokens leak into access logs — header only.
+        denied_query = client.get("/api/wallboard?token=kiosk-secret-token")
+        assert denied_query.status_code == 401
 
 
 def test_wallboard_rate_limited(tmp_path, monkeypatch):
@@ -164,7 +174,6 @@ def test_wallboard_rate_limited(tmp_path, monkeypatch):
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
     _patch_app_lifecycle(monkeypatch)
-    asyncio.run(init_db())
 
     import rate_limit as _rl
     from settings import settings as _settings
@@ -177,17 +186,17 @@ def test_wallboard_rate_limited(tmp_path, monkeypatch):
     _rl.wallboard_bucket._buckets.clear()
 
     from main import app
-    client = TestClient(app, raise_server_exceptions=False)
-
-    assert client.get("/api/wallboard").status_code == 200
-    assert client.get("/api/wallboard").status_code == 200
-    blocked = client.get("/api/wallboard")
-    assert blocked.status_code == 429
-    assert blocked.headers.get("Retry-After")
+    with TestClient(app, raise_server_exceptions=False) as client:
+        assert client.get("/api/wallboard").status_code == 200
+        assert client.get("/api/wallboard").status_code == 200
+        blocked = client.get("/api/wallboard")
+        assert blocked.status_code == 429
+        assert blocked.headers.get("Retry-After")
 
     _rl.wallboard_bucket._buckets.clear()
 
 
+@_requires_sqlite
 def test_wallboard_response_has_no_admin_keys(wallboard_client):
     body = wallboard_client.get("/api/wallboard").json()
     dumped = str(body).lower()

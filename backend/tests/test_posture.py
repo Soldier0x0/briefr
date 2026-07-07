@@ -5,7 +5,6 @@ warning per entry at startup in production, and GET /api/admin/security
 surfaces the same list in the Security panel readout.
 """
 
-import asyncio
 import sys
 from pathlib import Path
 
@@ -14,7 +13,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pytest
 from fastapi.testclient import TestClient
 
-from database import init_db
 from settings import Settings, production_posture_warnings, settings
 
 
@@ -53,20 +51,12 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async():
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    asyncio.run(init_db())
-
     monkeypatch.setattr(settings, "rate_limit_enabled", False)
 
     from main import app
 
-    return TestClient(app, raise_server_exceptions=False)
+    with TestClient(app, raise_server_exceptions=False) as client:
+        yield client
 
 
 def test_security_readout_includes_posture(client, auth_token, monkeypatch):

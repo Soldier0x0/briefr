@@ -1,6 +1,5 @@
 """Tests for /api/admin/logs and ring buffer + auth failure audit."""
 
-import asyncio
 import logging
 import sys
 from pathlib import Path
@@ -10,7 +9,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pytest
 from fastapi.testclient import TestClient
 
-from database import init_db
 from structured_logging import (
     LOG_CATEGORIES,
     _ring_handler,
@@ -25,15 +23,6 @@ def admin_client(tmp_path, monkeypatch, auth_token):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async():
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    asyncio.run(init_db())
-
     import rate_limit as _rl
     from settings import settings as _settings
 
@@ -42,9 +31,9 @@ def admin_client(tmp_path, monkeypatch, auth_token):
 
     from main import app
 
-    client = TestClient(app, raise_server_exceptions=False)
-    client.cookies.set("briefr_at", auth_token())
-    return client
+    with TestClient(app, raise_server_exceptions=False) as client:
+        client.cookies.set("briefr_at", auth_token())
+        yield client
 
 
 def test_logs_endpoint_returns_structured_payload(admin_client):
@@ -147,18 +136,8 @@ def test_unauthenticated_admin_request_rejected(tmp_path, monkeypatch):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async():
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    asyncio.run(init_db())
-
     from main import app
 
-    client = TestClient(app, raise_server_exceptions=False)
-
-    resp = client.get("/api/admin/system")
+    with TestClient(app, raise_server_exceptions=False) as client:
+        resp = client.get("/api/admin/system")
     assert resp.status_code == 401
