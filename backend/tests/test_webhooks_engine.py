@@ -1,11 +1,12 @@
 """Tests for the V1.4 webhook engine."""
 
-import asyncio
 import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from tests.conftest import run_db_test
 
 import httpx
 import pytest
@@ -29,8 +30,8 @@ def _setup_db(tmp_path, monkeypatch) -> Path:
     db_path = tmp_path / "engine.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    asyncio.run(init_db())
-    asyncio.run(sync_env_destinations_to_db())
+    run_db_test(init_db())
+    run_db_test(sync_env_destinations_to_db())
     return db_path
 
 
@@ -66,14 +67,14 @@ def test_webhooks_disabled_without_env(monkeypatch, tmp_path):
     _setup_db(tmp_path, monkeypatch)
     assert webhooks_enabled() is False
     assert configured_channels() == []
-    result = asyncio.run(send_alert("hello"))
+    result = run_db_test(send_alert("hello"))
     assert result["status"] == "skipped"
 
 
 def test_discord_only(monkeypatch, tmp_path):
     _setup_db(tmp_path, monkeypatch)
     monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
-    asyncio.run(sync_env_destinations_to_db())
+    run_db_test(sync_env_destinations_to_db())
     calls = []
 
     async def fake_resolve(_host):
@@ -87,7 +88,7 @@ def test_discord_only(monkeypatch, tmp_path):
     monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
     assert configured_channels() == ["discord"]
 
-    result = asyncio.run(send_alert("KEV alert"))
+    result = run_db_test(send_alert("KEV alert"))
     assert result["status"] == "ok"
     assert result["sent"] == ["discord"]
     assert calls[0][0] == "POST"
@@ -99,7 +100,7 @@ def test_telegram_only(monkeypatch, tmp_path):
     _setup_db(tmp_path, monkeypatch)
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123:abc")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "-100")
-    asyncio.run(sync_env_destinations_to_db())
+    run_db_test(sync_env_destinations_to_db())
     calls = []
 
     async def fake_resolve(_host):
@@ -113,7 +114,7 @@ def test_telegram_only(monkeypatch, tmp_path):
     monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
     assert configured_channels() == ["telegram"]
 
-    result = asyncio.run(send_alert("stack hit"))
+    result = run_db_test(send_alert("stack hit"))
     assert result["status"] == "ok"
     assert result["sent"] == ["telegram"]
     assert calls[0].headers["Host"] == "api.telegram.org"
@@ -123,7 +124,7 @@ def test_telegram_only(monkeypatch, tmp_path):
 def test_generic_destination_json_payload(monkeypatch, tmp_path):
     _setup_db(tmp_path, monkeypatch)
     monkeypatch.setenv("WEBHOOK_GENERIC_URL", "https://hooks.example.com/briefr")
-    asyncio.run(sync_env_destinations_to_db())
+    run_db_test(sync_env_destinations_to_db())
     calls = []
 
     async def fake_resolve(_host):
@@ -136,7 +137,7 @@ def test_generic_destination_json_payload(monkeypatch, tmp_path):
     _install_transport(monkeypatch, handler)
     monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
 
-    result = asyncio.run(
+    result = run_db_test(
         dispatch_event(EVENT_HEALTH, "health ping", dedupe_key="probe", skip_dedupe=True)
     )
     assert result["status"] == "ok"
@@ -151,7 +152,7 @@ def test_per_destination_enable_disable(monkeypatch, tmp_path):
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123:abc")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "-100")
     monkeypatch.setenv("DISCORD_WEBHOOK_ENABLED", "0")
-    asyncio.run(sync_env_destinations_to_db())
+    run_db_test(sync_env_destinations_to_db())
 
     async def fake_resolve(_host):
         return ["93.184.216.34"]
@@ -162,7 +163,7 @@ def test_per_destination_enable_disable(monkeypatch, tmp_path):
     _install_transport(monkeypatch, handler)
     monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
 
-    result = asyncio.run(send_alert("both"))
+    result = run_db_test(send_alert("both"))
     assert result["sent"] == ["telegram"]
 
 
@@ -170,7 +171,7 @@ def test_event_type_subscription_filter(monkeypatch, tmp_path):
     _setup_db(tmp_path, monkeypatch)
     monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
     monkeypatch.setenv("DISCORD_WEBHOOK_EVENTS", "backup_failure")
-    asyncio.run(sync_env_destinations_to_db())
+    run_db_test(sync_env_destinations_to_db())
 
     async def fake_resolve(_host):
         return ["93.184.216.34"]
@@ -184,11 +185,11 @@ def test_event_type_subscription_filter(monkeypatch, tmp_path):
     _install_transport(monkeypatch, handler)
     monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
 
-    skipped = asyncio.run(dispatch_event(EVENT_KEV_ALERT, "no subscribers", skip_dedupe=True))
+    skipped = run_db_test(dispatch_event(EVENT_KEV_ALERT, "no subscribers", skip_dedupe=True))
     assert skipped["status"] == "skipped"
     assert skipped["reason"] == "no_subscribers"
 
-    delivered = asyncio.run(dispatch_event(EVENT_BACKUP_FAILURE, "backup stale", skip_dedupe=True))
+    delivered = run_db_test(dispatch_event(EVENT_BACKUP_FAILURE, "backup stale", skip_dedupe=True))
     assert delivered["status"] == "ok"
     assert calls["n"] == 1
 
@@ -196,7 +197,7 @@ def test_event_type_subscription_filter(monkeypatch, tmp_path):
 def test_dedupe_records_once(monkeypatch, tmp_path):
     _setup_db(tmp_path, monkeypatch)
     monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
-    asyncio.run(sync_env_destinations_to_db())
+    run_db_test(sync_env_destinations_to_db())
 
     async def fake_resolve(_host):
         return ["93.184.216.34"]
@@ -210,8 +211,8 @@ def test_dedupe_records_once(monkeypatch, tmp_path):
     _install_transport(monkeypatch, handler)
     monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
 
-    first = asyncio.run(dispatch_event(EVENT_KEV_ALERT, "once", dedupe_key="CVE-2024-1"))
-    second = asyncio.run(dispatch_event(EVENT_KEV_ALERT, "once", dedupe_key="CVE-2024-1"))
+    first = run_db_test(dispatch_event(EVENT_KEV_ALERT, "once", dedupe_key="CVE-2024-1"))
+    second = run_db_test(dispatch_event(EVENT_KEV_ALERT, "once", dedupe_key="CVE-2024-1"))
     assert first["status"] == "ok"
     assert second["status"] == "skipped"
     assert second["reason"] == "deduped"
@@ -224,11 +225,11 @@ def test_dedupe_records_once(monkeypatch, tmp_path):
         finally:
             await db.close()
 
-    assert asyncio.run(check()) is True
+    assert run_db_test(check()) is True
 
 
 def test_send_test_message_unknown_destination(monkeypatch, tmp_path):
     _setup_db(tmp_path, monkeypatch)
-    result = asyncio.run(send_test_message("missing", "hello"))
+    result = run_db_test(send_test_message("missing", "hello"))
     assert result["ok"] is False
     assert result["error"] == "unknown destination"

@@ -15,6 +15,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tests.conftest import run_db_test
+
 import resilient_client
 from database import (
     EPSS_BACKFILL_DONE_KEY,
@@ -69,7 +71,7 @@ def test_time_series_batch_parses_response(monkeypatch):
         assert rows[0]["score"] == pytest.approx(0.975)
         assert rows[0]["date"] == "2024-01-01"
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_time_series_batch_normalises_cve_id_to_upper(monkeypatch):
@@ -85,7 +87,7 @@ def test_time_series_batch_normalises_cve_id_to_upper(monkeypatch):
         rows = await fetch_epss_time_series_batch(["cve-2021-44228"])
         assert rows[0]["cve_id"] == "CVE-2021-44228"
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_time_series_batch_skips_malformed_items(monkeypatch):
@@ -107,7 +109,7 @@ def test_time_series_batch_skips_malformed_items(monkeypatch):
         assert len(rows) == 1
         assert rows[0]["score"] == pytest.approx(0.4)
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_time_series_batch_returns_empty_on_empty_input(monkeypatch):
@@ -117,7 +119,7 @@ def test_time_series_batch_returns_empty_on_empty_input(monkeypatch):
         rows = await fetch_epss_time_series_batch([])
         assert rows == []
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_time_series_batch_returns_empty_on_circuit_open(monkeypatch):
@@ -134,7 +136,7 @@ def test_time_series_batch_returns_empty_on_circuit_open(monkeypatch):
         rows = await fetch_epss_time_series_batch(["CVE-2021-44228"])
         assert rows == []
 
-    asyncio.run(run())
+    run_db_test(run())
     resilient_client.reset_feed_health()
 
 
@@ -149,7 +151,7 @@ def test_time_series_batch_returns_empty_on_http_error(monkeypatch):
         rows = await fetch_epss_time_series_batch(["CVE-2021-44228"])
         assert rows == []
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_time_series_batch_returns_empty_on_non_dict_json(monkeypatch):
@@ -164,7 +166,7 @@ def test_time_series_batch_returns_empty_on_non_dict_json(monkeypatch):
         rows = await fetch_epss_time_series_batch(["CVE-2021-44228"])
         assert rows == []
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 # ---------------------------------------------------------------------------
@@ -193,7 +195,7 @@ def _run_in_tmp_db(coro_fn, tmp_path):
         finally:
             await db.close()
 
-    return asyncio.run(_inner())
+    return run_db_test(_inner())
 
 
 def test_insert_epss_history_rows_inserts_new_rows(tmp_path):
@@ -234,7 +236,7 @@ def test_insert_epss_history_rows_inserts_new_rows(tmp_path):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_insert_epss_history_rows_ignores_duplicates(tmp_path):
@@ -265,7 +267,7 @@ def test_insert_epss_history_rows_ignores_duplicates(tmp_path):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_insert_epss_history_rows_empty_input(tmp_path):
@@ -287,7 +289,7 @@ def test_insert_epss_history_rows_empty_input(tmp_path):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 # ---------------------------------------------------------------------------
@@ -324,7 +326,7 @@ def test_get_set_sync_state_value(tmp_path):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 # ---------------------------------------------------------------------------
@@ -363,7 +365,7 @@ def test_backfill_skipped_when_marker_set(tmp_path, monkeypatch):
         await sched_module.run_epss_backfill()
         assert called["n"] == 0
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_backfill_inserts_history_rows(tmp_path, monkeypatch):
@@ -418,7 +420,7 @@ def test_backfill_inserts_history_rows(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_backfill_is_idempotent(tmp_path, monkeypatch):
@@ -475,7 +477,7 @@ def test_backfill_is_idempotent(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_backfill_sets_marker_after_completion(tmp_path, monkeypatch):
@@ -504,7 +506,7 @@ def test_backfill_sets_marker_after_completion(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_backfill_skips_concurrent_call(tmp_path, monkeypatch):
@@ -527,4 +529,4 @@ def test_backfill_skips_concurrent_call(tmp_path, monkeypatch):
             result = await sched_module.run_epss_backfill()
             assert result is False  # skipped
 
-    asyncio.run(run())
+    run_db_test(run())

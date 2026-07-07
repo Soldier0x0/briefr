@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import database as db_module
 from database import get_db, init_db
 from main import app
+from tests.conftest import run_db_test
 
 
 @pytest.fixture()
@@ -22,8 +23,6 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr(db_module, "DB_PATH", str(db_path))
     monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "0")
-
-    import asyncio
 
     async def _setup():
         await init_db()
@@ -50,7 +49,7 @@ def client(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(_setup())
+    run_db_test(_setup())
 
     async def _fake_sigma(*_args, **_kwargs):
         return [{"path": "rules/community.yml", "title": "Community rule", "source": "SigmaHQ"}]

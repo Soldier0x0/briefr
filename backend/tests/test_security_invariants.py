@@ -7,7 +7,6 @@ Routes are enumerated from the routers themselves so new admin endpoints
 are covered automatically; never hand-list them here.
 """
 
-import asyncio
 import re
 import sys
 from pathlib import Path
@@ -16,8 +15,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
 from fastapi.testclient import TestClient
-
-from database import init_db
 
 
 def _protected_routes():
@@ -51,22 +48,14 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async():
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    asyncio.run(init_db())
-
     from settings import settings as _settings
 
     monkeypatch.setattr(_settings, "rate_limit_enabled", False)
 
     from main import app
 
-    return TestClient(app, raise_server_exceptions=False)
+    with TestClient(app, raise_server_exceptions=False) as client:
+        yield client
 
 
 @pytest.mark.parametrize("method,path", PROTECTED_ROUTES)

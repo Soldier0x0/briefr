@@ -6,13 +6,14 @@ supersede rules (official CPE replaces LLM data; empty feed payloads do not
 wipe it). No network calls — the Groq client is monkeypatched.
 """
 
-import asyncio
 import json
 import sys
 from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from tests.conftest import run_db_test
 
 import database
 import ml.product_extraction as pex
@@ -143,7 +144,7 @@ def test_set_llm_affected_products_only_writes_when_empty(tmp_path, monkeypatch)
         finally:
             await db.close()
 
-    wrote_empty, wrote_full, rows = asyncio.run(run())
+    wrote_empty, wrote_full, rows = run_db_test(run())
     assert wrote_empty is True
     assert wrote_full is False  # never overwrites a populated field
     assert json.loads(rows[0]["affected_products"]) == ["acme:widget"]
@@ -196,7 +197,7 @@ def test_upsert_supersede_rules_for_llm_products(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    after_empty, after_official = asyncio.run(run())
+    after_empty, after_official = run_db_test(run())
     assert json.loads(after_empty["affected_products"]) == ["acme:widget"]
     assert after_empty["affected_products_source"] == "llm"
     assert json.loads(after_official["affected_products"]) == ["acme:widget", "acme:gadget"]
@@ -231,7 +232,7 @@ def test_candidate_query_targets_only_unanalyzed_cves(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    candidates = asyncio.run(run())
+    candidates = run_db_test(run())
     assert [c["cve_id"] for c in candidates] == ["CVE-2024-0001"]
 
 
@@ -289,7 +290,7 @@ def test_run_extraction_writes_products_and_negative_caches(tmp_path, monkeypatc
         finally:
             await db.close()
 
-    stats, stats_second, row, cache_rows = asyncio.run(run())
+    stats, stats_second, row, cache_rows = run_db_test(run())
     assert stats == {"candidates": 2, "extracted": 1, "written": 1, "errors": 0}
     assert json.loads(row["affected_products"]) == ["acme:widget"]
     assert row["affected_products_source"] == "llm"
@@ -349,7 +350,7 @@ def test_run_extraction_errors_are_not_negative_cached(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    stats_first, cache_count, stats_second, row = asyncio.run(run())
+    stats_first, cache_count, stats_second, row = run_db_test(run())
     assert stats_first == {"candidates": 1, "extracted": 0, "written": 0, "errors": 1}
     assert cache_count == 0  # error not negative-cached
     assert stats_second == {"candidates": 1, "extracted": 1, "written": 1, "errors": 0}
@@ -385,7 +386,7 @@ def test_run_extraction_all_providers_failed_is_not_negative_cached(tmp_path, mo
         finally:
             await db.close()
 
-    stats, cache_count = asyncio.run(run())
+    stats, cache_count = run_db_test(run())
     assert stats == {"candidates": 1, "extracted": 0, "written": 0, "errors": 1}
     assert cache_count == 0
 
@@ -394,4 +395,4 @@ def test_scheduler_llm_job_noop_when_disabled(monkeypatch):
     monkeypatch.delenv("LLM_PRODUCT_EXTRACTION_ENABLED", raising=False)
     from scheduler import run_llm_extraction_sync
 
-    assert asyncio.run(run_llm_extraction_sync()) is False
+    assert run_db_test(run_llm_extraction_sync()) is False

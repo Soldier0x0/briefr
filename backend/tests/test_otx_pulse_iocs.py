@@ -6,6 +6,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tests.conftest import run_db_test
+
 import database
 from database import get_db, init_db, store_otx_pulse_iocs
 
@@ -14,7 +16,7 @@ def test_concurrent_store_otx_pulse_iocs_is_idempotent(tmp_path, monkeypatch):
     db_path = str(tmp_path / "otx_ioc.db")
     monkeypatch.setenv("DB_PATH", db_path)
     monkeypatch.setattr(database, "DB_PATH", db_path)
-    asyncio.run(init_db())
+    run_db_test(init_db())
 
     pulse_id = "pulse-concurrent-test"
     iocs = [
@@ -46,7 +48,7 @@ def test_concurrent_store_otx_pulse_iocs_is_idempotent(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    rows = asyncio.run(run_concurrent())
+    rows = run_db_test(run_concurrent())
     assert len(rows) == 2
     values = {(row["ioc_type"], row["ioc_value"]) for row in rows}
     assert ("DOMAIN", "example.com") in values
@@ -57,7 +59,7 @@ def test_replace_otx_pulse_iocs_removes_stale_rows(tmp_path, monkeypatch):
     db_path = str(tmp_path / "otx_ioc_replace.db")
     monkeypatch.setenv("DB_PATH", db_path)
     monkeypatch.setattr(database, "DB_PATH", db_path)
-    asyncio.run(init_db())
+    run_db_test(init_db())
 
     pulse_id = "pulse-replace-test"
 
@@ -86,7 +88,7 @@ def test_replace_otx_pulse_iocs_removes_stale_rows(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    rows = asyncio.run(run())
+    rows = run_db_test(run())
     assert len(rows) == 1
     assert rows[0]["ioc_value"] == "keep.example"
     assert rows[0]["description"] == "updated"

@@ -1,10 +1,11 @@
 """Tests for YARA template generation from OTX hashes."""
 
-import asyncio
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from tests.conftest import run_db_test
 
 import database
 from database import get_db, init_db, store_otx_pulse_iocs
@@ -59,6 +60,6 @@ def test_find_yara_rules_for_cve_query_runs(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    rules = asyncio.run(run())
+    rules = run_db_test(run())
     assert len(rules) == 1
     assert rules[0]["hash"] == "a" * 64

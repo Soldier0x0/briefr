@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import sys
 from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from tests.conftest import run_db_test
 
 import database
 from database import init_db, merge_cve_exploits, upsert_cve
@@ -138,7 +139,7 @@ def test_candidate_query_targets_has_poc_with_exploits(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    candidates = asyncio.run(_run())
+    candidates = run_db_test(_run())
     assert [c["cve_id"] for c in candidates] == ["CVE-2024-1001"]
 
 
@@ -200,7 +201,7 @@ def test_run_llm_sync_writes_artifacts_and_negative_cache(tmp_path, monkeypatch)
         finally:
             await db.close()
 
-    stats, stats_again, ctx, cache_rows = asyncio.run(_run())
+    stats, stats_again, ctx, cache_rows = run_db_test(_run())
     assert stats == {"candidates": 1, "extracted": 1, "written": 1, "errors": 0, "skipped": 0}
     assert ctx["artifacts"][0]["paths"] == ["/api/login"]
     assert ctx["provider"] == "groq"
@@ -213,4 +214,4 @@ def test_scheduler_job_noop_when_disabled(monkeypatch):
     monkeypatch.delenv("DETECTION_CONTEXT_LLM_ENABLED", raising=False)
     from scheduler import run_detection_context_llm_job
 
-    assert asyncio.run(run_detection_context_llm_job()) is False
+    assert run_db_test(run_detection_context_llm_job()) is False

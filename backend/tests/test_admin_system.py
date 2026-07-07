@@ -1,6 +1,5 @@
 """Tests for GET /api/admin/system."""
 
-import asyncio
 import sys
 from pathlib import Path
 
@@ -9,7 +8,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pytest
 from fastapi.testclient import TestClient
 
-from database import init_db
 
 
 @pytest.fixture
@@ -18,15 +16,6 @@ def admin_client(tmp_path, monkeypatch, auth_token):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async():
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    asyncio.run(init_db())
-
     # Disable rate limiting so tests don't hit 429
     import rate_limit as _rl
     from settings import settings as _settings
@@ -34,9 +23,9 @@ def admin_client(tmp_path, monkeypatch, auth_token):
     _rl.refresh_bucket._buckets.pop("testclient", None)
 
     from main import app
-    client = TestClient(app, raise_server_exceptions=False)
-    client.cookies.set("briefr_at", auth_token())
-    return client
+    with TestClient(app, raise_server_exceptions=False) as client:
+        client.cookies.set("briefr_at", auth_token())
+        yield client
 
 
 def test_system_returns_200_with_keys(admin_client):

@@ -1,6 +1,5 @@
 """Tests for the first-run setup flow: GET/POST /api/auth/setup-required, /setup."""
 
-import asyncio
 import sys
 from pathlib import Path
 
@@ -11,24 +10,10 @@ from fastapi.testclient import TestClient
 
 from auth.repo import create_user
 from database import get_db, init_db
+from tests.conftest import run_db_test
 
 
-@pytest.fixture
-def empty_client(tmp_path, monkeypatch):
-    """Same as test_auth_router.py's `client` fixture, but with zero users seeded."""
-    db_path = tmp_path / "auth.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
-
-    async def _noop_async():
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    asyncio.run(init_db())
-
+def _disable_rate_limiting(monkeypatch):
     import rate_limit as _rl
     from settings import settings as _settings
     monkeypatch.setattr(_settings, "rate_limit_enabled", False)
@@ -38,8 +23,19 @@ def empty_client(tmp_path, monkeypatch):
     _rl.login_username_bucket._buckets.clear()
     _rl.auth_refresh_bucket._buckets.clear()
 
+
+@pytest.fixture
+def empty_client(tmp_path, monkeypatch):
+    """Same as test_auth_router.py's `client` fixture, but with zero users seeded."""
+    db_path = tmp_path / "auth.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    _disable_rate_limiting(monkeypatch)
+
     from main import app
-    return TestClient(app, raise_server_exceptions=False)
+    with TestClient(app, raise_server_exceptions=False) as client:
+        yield client
 
 
 def test_setup_required_true_when_no_users(empty_client):
@@ -48,7 +44,17 @@ def test_setup_required_true_when_no_users(empty_client):
     assert resp.json() == {"required": True}
 
 
-def test_setup_required_false_once_user_exists(empty_client):
+def test_setup_required_false_once_user_exists(tmp_path, monkeypatch):
+    # Self-contained (not `empty_client`): seeds a user before the TestClient
+    # opens, since a direct asyncio.run() DB call can't share a pool that's
+    # already bound to the TestClient's own event loop (Postgres).
+    db_path = tmp_path / "auth.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+    _disable_rate_limiting(monkeypatch)
+
+    run_db_test(init_db())
+
     async def _seed():
         db = await get_db()
         try:
@@ -57,9 +63,11 @@ def test_setup_required_false_once_user_exists(empty_client):
         finally:
             await db.close()
 
-    asyncio.run(_seed())
+    run_db_test(_seed())
 
-    resp = empty_client.get("/api/auth/setup-required")
+    from main import app
+    with TestClient(app, raise_server_exceptions=False) as client:
+        resp = client.get("/api/auth/setup-required")
     assert resp.status_code == 200
     assert resp.json() == {"required": False}
 

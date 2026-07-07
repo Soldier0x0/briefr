@@ -19,15 +19,6 @@ def admin_client(tmp_path, monkeypatch, auth_token):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async():
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    asyncio.run(init_db())
-
     # Disable rate limiting so tests don't hit 429
     import rate_limit as _rl
     from settings import settings as _settings
@@ -35,9 +26,9 @@ def admin_client(tmp_path, monkeypatch, auth_token):
     _rl.refresh_bucket._buckets.pop("testclient", None)
 
     from main import app
-    client = TestClient(app, raise_server_exceptions=False)
-    client.cookies.set("briefr_at", auth_token())
-    return client
+    with TestClient(app, raise_server_exceptions=False) as client:
+        client.cookies.set("briefr_at", auth_token())
+        yield client
 
 
 def _make_mock_job(job_id, name="Test Job", next_run_time=None, paused=False):

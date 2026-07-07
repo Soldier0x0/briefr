@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from database import get_db, init_db
 import database as db_module
 from main import app
+from tests.conftest import run_db_test
 
 
 @pytest.fixture()
@@ -20,8 +21,6 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr(db_module, "DB_PATH", str(db_path))
     monkeypatch.setenv("PLAYWRIGHT_SMOKE", "1")
-
-    import asyncio
 
     async def _setup():
         await init_db()
@@ -57,7 +56,7 @@ def client(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(_setup())
+    run_db_test(_setup())
     with TestClient(app) as test_client:
         yield test_client
 

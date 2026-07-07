@@ -1,11 +1,12 @@
 """Scheduler background jobs should not hold DB pool slots during HTTP/sleep."""
 
-import asyncio
 import sys
 from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from tests.conftest import run_db_test
 
 import database
 import ml.product_extraction as pex
@@ -63,7 +64,7 @@ def test_llm_extraction_releases_db_during_llm_call(tmp_path, monkeypatch):
 
         return await run_llm_product_extraction()
 
-    stats = asyncio.run(run())
+    stats = run_db_test(run())
     assert stats["candidates"] == 1
     assert stats["written"] == 1
     assert held == []
@@ -106,7 +107,7 @@ def test_otx_nightly_correlation_owns_db_for_cve_list(tmp_path, monkeypatch):
         acquires["n"] = 0
         return await run_otx_nightly_correlation(None, "otx-test-key")
 
-    stats = asyncio.run(run())
+    stats = run_db_test(run())
     assert stats["cves"] == 1
     assert stats["pulses"] == 1
     # One for CVE list + one for the pulse write.

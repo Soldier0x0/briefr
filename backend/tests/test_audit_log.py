@@ -31,7 +31,7 @@ def test_write_audit_log_roundtrip(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    rows = run_db_test(_run)
+    rows = run_db_test(_run())
     assert rows[0]["actor"] == "operator@example.com"
     assert rows[0]["action"] == "refresh.full"
     assert rows[0]["target"] == "nvd+kev+epss"

@@ -93,18 +93,20 @@ def _postgres_test_isolation(_postgres_schema_once):
     yield
 
 
-def run_db_test(coro_fn):
+def run_db_test(coro):
     """Run an async test body that calls database.get_db()/get_connection()
     directly (no TestClient/lifespan). Opens the Postgres pool for the
     duration of the call and closes it after — no-ops on SQLite, since
     init_pool()/close_pool() are already dialect-aware no-ops there.
-    Use in place of `asyncio.run(coro_fn())` in direct-db-call tests."""
+    Drop-in replacement for `asyncio.run(coro)` in direct-db-call tests —
+    takes the coroutine object itself (mirrors asyncio.run's signature),
+    so `asyncio.run(foo(x, y))` becomes `run_db_test(foo(x, y))`."""
     from db.connection import close_pool, init_pool
 
     async def _wrapped():
         await init_pool()
         try:
-            return await coro_fn()
+            return await coro
         finally:
             await close_pool()
 

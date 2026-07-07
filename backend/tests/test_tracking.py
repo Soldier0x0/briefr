@@ -6,6 +6,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tests.conftest import run_db_test
+
 import pytest
 
 from database import get_db, init_db
@@ -34,7 +36,7 @@ def db_path(tmp_path, monkeypatch):
     path = tmp_path / "tracking.db"
     monkeypatch.setenv("DB_PATH", str(path))
     monkeypatch.setattr("database.DB_PATH", str(path))
-    asyncio.run(init_db())
+    run_db_test(init_db())
     return path
 
 
@@ -59,7 +61,7 @@ def test_record_api_call_batches_writes(db_path):
         assert await _usage_count("circl") == 4
         assert await _usage_count("sploitus") == 2
 
-    asyncio.run(_run())
+    run_db_test(_run())
 
 
 def test_record_api_call_schedules_background_flush(db_path, monkeypatch):
@@ -70,7 +72,7 @@ def test_record_api_call_schedules_background_flush(db_path, monkeypatch):
         await asyncio.sleep(0.15)
         assert await _usage_count("circl") == 1
 
-    asyncio.run(_run())
+    run_db_test(_run())
 
 
 def test_get_usage_stats_uses_configured_db(db_path):
@@ -81,4 +83,4 @@ def test_get_usage_stats_uses_configured_db(db_path):
         nvd = next(item for item in stats if item["service"] == "nvd")
         assert nvd["today"]["used"] == 2
 
-    asyncio.run(_run())
+    run_db_test(_run())

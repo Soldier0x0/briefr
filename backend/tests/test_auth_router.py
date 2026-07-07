@@ -1,6 +1,5 @@
 """Tests for /api/auth/login, /logout, /refresh, /me."""
 
-import asyncio
 import sys
 from pathlib import Path
 
@@ -11,6 +10,7 @@ from fastapi.testclient import TestClient
 
 from auth.repo import create_user
 from database import get_db, init_db
+from tests.conftest import run_db_test
 
 
 @pytest.fixture
@@ -19,14 +19,10 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    async def _noop_async():
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    asyncio.run(init_db())
+    # Seeding happens before the TestClient/lifespan below creates the
+    # schema, so create it explicitly first (no-op on Postgres — already
+    # migrated by the session fixture; creates tables on a fresh SQLite file).
+    run_db_test(init_db())
 
     async def _seed_user():
         db = await get_db()
@@ -36,7 +32,7 @@ def client(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(_seed_user())
+    run_db_test(_seed_user())
 
     import rate_limit as _rl
     from settings import settings as _settings
@@ -48,7 +44,8 @@ def client(tmp_path, monkeypatch):
     _rl.auth_refresh_bucket._buckets.clear()
 
     from main import app
-    return TestClient(app, raise_server_exceptions=False)
+    with TestClient(app, raise_server_exceptions=False) as client:
+        yield client
 
 
 def test_login_succeeds_with_correct_credentials(client):
