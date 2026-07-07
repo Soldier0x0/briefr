@@ -108,7 +108,7 @@ Wave 2 stable. Estimate 2–3 PRs; not open-core launch blockers.
 `cves`, `kev_deadlines`, `epss_history`, `cve_change_history`, `mitre_techniques`,
 `cve_technique_map`, `atlas_techniques`, `atlas_case_studies`, `cve_atlas_map`,
 `cve_exploits`, `feed_cache`, `otx_cve_pulses`, `otx_pulse_iocs`, `otx_pulses`,
-`correlation_infrastructure`, `correlation_actor`, `correlation_temporal`,
+`correlation_actor`, `correlation_temporal`,
 `correlation_campaigns`, `correlation_campaign_members`, `cve_embeddings`,
 `mitre_groups`, `group_technique_map`, ingest watermarks in `sync_state` (allowlist keys only).
 
