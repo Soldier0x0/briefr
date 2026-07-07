@@ -7,6 +7,7 @@ Generated rules are marked experimental with a BRIEFR confidence note.
 from __future__ import annotations
 
 from datetime import datetime
+import re
 import yaml
 
 # ── Technique templates ───────────────────────────────────
@@ -278,11 +279,15 @@ _CWE_CMD_INJECTION = _cwe_template(
     detection={
         "keywords": [
             ";id",
+            "; id",
             "|whoami",
+            "| whoami",
             "`id`",
             "$(",
             "&&wget",
+            "&& wget",
             ";curl",
+            "; curl",
             "/bin/sh",
             "cmd.exe /c",
         ],
@@ -396,7 +401,13 @@ _CWE_XXE = _cwe_template(
     tactic="initial_access",
     logsource={"category": "webserver"},
     detection={
-        "keywords": ["<!ENTITY", 'SYSTEM "file://', 'SYSTEM "http://'],
+        "keywords": [
+            "<!ENTITY",
+            'SYSTEM "file://',
+            'SYSTEM "http://',
+            "SYSTEM 'file://",
+            "SYSTEM 'http://",
+        ],
         "condition": "keywords",
     },
     falsepositives=["XML config parsers", "Document import features"],
@@ -424,7 +435,7 @@ _CWE_AUTH_BYPASS = _cwe_template(
 
 _CWE_MEMORY_CORRUPTION = _cwe_template(
     tactic="execution",
-    logsource={"product": "windows", "category": "application"},
+    logsource={"category": "application"},
     detection={
         "selection": {"EventID": [1000, 1001]},
         "keywords": ["segfault", "SIGSEGV", "core dumped"],
@@ -476,14 +487,16 @@ CWE_TEMPLATES: dict[str, dict] = {
 
 
 def _normalize_cwe_id(value: str) -> str:
-    text = (value or "").strip().upper()
+    text = (value or "").strip()
     if not text:
         return ""
-    if text.startswith("CWE-"):
-        return text
-    if text.isdigit():
-        return f"CWE-{text}"
-    return text
+    compact = re.sub(r"\s+", "", text.upper())
+    if compact.isdigit():
+        return f"CWE-{compact}"
+    match = re.match(r"^CWE-?(\d+)$", compact)
+    if match:
+        return f"CWE-{match.group(1)}"
+    return compact
 
 
 def _resolve_template(
