@@ -18,7 +18,7 @@ from resilient_client import CircuitOpenError
 
 logger = logging.getLogger(__name__)
 
-LLMTask = Literal["product_extraction", "pdf_summary"]
+LLMTask = Literal["product_extraction", "pdf_summary", "detection_context"]
 
 CEREBRAS_URL = "https://api.cerebras.ai/v1/chat/completions"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -54,6 +54,11 @@ def _openrouter_free_model(task: LLMTask) -> str:
             "OPENROUTER_MODEL_PDF",
             "google/gemini-2.0-flash-lite-001:free",
         )
+    if task == "detection_context":
+        return _env_model(
+            "OPENROUTER_MODEL_DETECTION",
+            "google/gemini-2.0-flash-lite-001:free",
+        )
     return _env_model(
         "OPENROUTER_MODEL_PRODUCT",
         "google/gemini-2.0-flash-lite-001:free",
@@ -62,6 +67,12 @@ def _openrouter_free_model(task: LLMTask) -> str:
 
 def _task_chain(task: LLMTask) -> list[ProviderStep]:
     cerebras_model = _env_model("CEREBRAS_MODEL", "gpt-oss-120b")
+    if task == "detection_context":
+        return [
+            ProviderStep("groq", GROQ_MODEL),
+            ProviderStep("gemini", gemini_model()),
+            ProviderStep("openrouter", _openrouter_free_model(task)),
+        ]
     if task == "pdf_summary":
         return [
             ProviderStep("groq", GROQ_MODEL_SUMMARY),

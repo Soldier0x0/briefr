@@ -30,6 +30,7 @@ FEED_CACHE_PREFIX_RETENTION: tuple[tuple[str, float], ...] = (
     ("greynoise:", 48),
     ("sigma:", 48),
     ("detection_ctx:", 168),
+    ("detection_ctx_llm:", 168),
     ("elastic:", 48),
     ("incident_rss:", 48),
     ("incident_feed:snapshot", 7 * 24),

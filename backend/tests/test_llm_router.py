@@ -48,6 +48,12 @@ def test_task_chain_product_extraction_uses_default_groq_model(monkeypatch):
     assert chain[0].model == "openai/gpt-oss-20b"
 
 
+def test_task_chain_detection_context_omits_cerebras(monkeypatch):
+    chain = router._task_chain("detection_context")
+    providers = [step.provider for step in chain]
+    assert providers == ["groq", "gemini", "openrouter"]
+
+
 def test_chat_completion_task_failover_skips_missing_keys(monkeypatch):
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     monkeypatch.setenv("GEMINI_API_KEY", "gem_test")

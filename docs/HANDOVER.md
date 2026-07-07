@@ -12,6 +12,22 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-07 — K4 DetectionContext LLM artifact extract
+
+**Session:** Implemented **K4** — scheduler job `detection_context_llm` extracts
+`{paths, params, keywords, method}` artifacts from CVE description + exploit
+metadata (optional Nuclei YAML fetch) into `detection_ctx:{cve_id}` via the
+LLM router (`detection_context` task chain: Groq → Gemini → OpenRouter).
+Env-gated (`DETECTION_CONTEXT_LLM_ENABLED=0` default). Vision path (Cerebras
+`gemma-4-31b`) deferred until image inputs exist.
+
+### Next steps
+
+**D4** — deterministic Nuclei parser + inject artifacts into generated Sigma
++ regen on `exploit_sync`. Post-B Postgres-native `db/` in parallel (Claude).
+
+---
+
 ## 2026-07-07 — K1–K3 free-tier LLM router
 
 **Session:** Implemented **K1–K3** — Groq model migration (`openai/gpt-oss-20b` /

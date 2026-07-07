@@ -64,6 +64,10 @@ from detection.context_sync import (
     detection_context_sync_enabled,
     run_detection_context_sync,
 )
+from detection.context_llm_sync import (
+    detection_context_llm_enabled,
+    run_detection_context_llm_sync,
+)
 from webhooks.alerts import check_backup_deadman, get_backup_interval_hours, process_kev_stack_alerts
 from backup.manager import run_backup
 
@@ -1315,6 +1319,65 @@ async def run_detection_context_sync_job() -> bool:
     return True
 
 
+async def run_detection_context_llm_job() -> bool:
+    """LLM artifact extraction into DetectionContext cache (Track K4).
+
+    No-op unless DETECTION_CONTEXT_LLM_ENABLED=1 and an LLM provider key is set.
+    Scheduler-side only, never on the request path.
+    """
+    if not detection_context_llm_enabled():
+        return False
+    if get_lock("detection_context_llm").locked():
+        logger.info("DetectionContext LLM sync already in progress — skipping")
+        return False
+
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _written = 0
+    async with get_lock("detection_context_llm"):
+        start = _start
+        logger.info("DetectionContext LLM sync started at %s", start.isoformat())
+        stats: dict = {}
+        try:
+            db = await get_db()
+            try:
+                def _progress(msg: str) -> None:
+                    _job_progress["detection_context_llm"] = msg
+
+                stats = await run_detection_context_llm_sync(db, progress_cb=_progress)
+                _written = int(stats.get("written", 0))
+                await db.commit()
+            finally:
+                await db.close()
+                _job_progress.pop("detection_context_llm", None)
+            logger.info(
+                "DetectionContext LLM sync complete: %d candidates, %d extracted, "
+                "%d written, %d errors, %d skipped in %.1fs",
+                stats.get("candidates", 0),
+                stats.get("extracted", 0),
+                _written,
+                stats.get("errors", 0),
+                stats.get("skipped", 0),
+                (datetime.now(timezone.utc) - start).total_seconds(),
+            )
+        except Exception as exc:
+            logger.error("DetectionContext LLM sync failed: %s", exc)
+            _had_error = True
+            _ctx_llm_error_msg = (
+                f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__
+            )[:500]
+        else:
+            _ctx_llm_error_msg = ""
+    await _write_job_last_run(
+        "detection_context_llm",
+        _start,
+        records=_written,
+        had_error=_had_error,
+        error_message=_ctx_llm_error_msg,
+    )
+    return True
+
+
 async def run_scheduled_backup() -> bool:
     """Scheduler hook: create a backup archive and prune old ones, on
     BACKUP_INTERVAL_HOURS. run_backup() itself no-ops when BACKUP_ENABLED=0
@@ -1553,6 +1616,21 @@ def start_scheduler() -> AsyncIOScheduler:
         coalesce=True,
         next_run_time=datetime.now(sched_tz) + timedelta(seconds=120),
     )
+
+    detection_ctx_llm_hours = int(
+        os.environ.get("DETECTION_CONTEXT_LLM_INTERVAL_HOURS", "12")
+    )
+    if detection_context_llm_enabled():
+        scheduler.add_job(
+            run_detection_context_llm_job,
+            trigger=IntervalTrigger(hours=detection_ctx_llm_hours, timezone=sched_tz),
+            id="detection_context_llm",
+            name="DetectionContext LLM Artifact Extract",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            next_run_time=datetime.now(sched_tz) + timedelta(seconds=180),
+        )
 
     corr_hour = int(os.environ.get("CORRELATION_HOUR", "1"))
     corr_minute = int(os.environ.get("CORRELATION_MINUTE", "0"))
