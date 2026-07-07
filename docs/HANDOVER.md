@@ -12,6 +12,26 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-07 — Product / open-core program (PR #0)
+
+**Session:** Planning session distilled into
+[`PROGRAM_PRODUCT_OPEN_CORE.md`](PROGRAM_PRODUCT_OPEN_CORE.md) — SaaS-grade
+admin UX (config Save, toast policy), user stack/prefs on Postgres, intel vs
+operator table split, Postgres-only database FAQ, and phased PR waves for
+open-core launch. July sprint **Track L** added as cross-links (E7, H1a, F1,
+J2); sprint closed for new scope outside D4 + Post-B + program waves.
+
+**Also:** PR #306 Gemini review — alphabetical sort fixes in Database, API
+keys, and ML sections of `.env.example`.
+
+### Next steps
+
+1. Merge **#306** (env example reorder + Gemini fixes).
+2. Merge **program doc PR #0**.
+3. **Wave 1 PR 1–2** — config Save UX + toast policy (parallel with **D4**).
+
+---
+
 ## 2026-07-07 — K4 DetectionContext LLM artifact extract
 
 **Session:** Implemented **K4** — scheduler job `detection_context_llm` extracts
