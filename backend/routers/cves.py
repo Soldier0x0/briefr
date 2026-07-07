@@ -1148,14 +1148,23 @@ async def cve_detection(
     try:
         # Get CVE metadata for context
         row = await db.execute_fetchall(
-            "SELECT description, mitre_technique FROM cves WHERE cve_id = ?",
+            "SELECT description, mitre_technique, cwe_ids FROM cves WHERE cve_id = ?",
             (cve_upper,),
         )
         cve_desc = ""
         primary_technique = ""
+        cwe_ids: list[str] = []
         if row:
             cve_desc = row[0]["description"] or ""
             primary_technique = row[0]["mitre_technique"] or ""
+            raw_cwe = row[0]["cwe_ids"]
+            if raw_cwe:
+                try:
+                    parsed = json.loads(raw_cwe) if isinstance(raw_cwe, str) else raw_cwe
+                    if isinstance(parsed, list):
+                        cwe_ids = [str(c) for c in parsed if str(c).strip()]
+                except (json.JSONDecodeError, TypeError):
+                    cwe_ids = []
 
         # Get all linked techniques
         tech_rows = await db.execute_fetchall(
@@ -1184,6 +1193,7 @@ async def cve_detection(
                 technique_id=first_technique,
                 product=product.strip() or "Affected Product",
                 description=cve_desc[:200] if cve_desc else "",
+                cwe_ids=cwe_ids,
             )
 
         # SIEM queries based on primary technique

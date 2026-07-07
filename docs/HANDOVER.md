@@ -12,6 +12,21 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-07 — Sprint doc + D1 CWE Sigma templates
+
+**Session:** Updated `docs/SPRINT_2026-07.md` with execution queue, expanded
+Track D (detection compose pipeline), Track K (free-tier LLM), Post-B
+Postgres-native note, C2 runner-up ticks. Implemented **D1**: CWE class
+templates in `sigma_generator.py`, `briefr_basis` on generated rules,
+`cwe_ids` wired through detection + forge endpoints.
+
+### Next steps
+
+Per execution queue: **K1–K3** (Groq migration + free-tier LLM router), then
+**D2–D5**. Post-B Postgres-native `db/` after D1 (before D4).
+
+---
+
 ## 2026-07-06 — Sprint topics reconciled; Track J (deployment) added
 
 **Session:** docs only — no code changed. Four planning sessions on

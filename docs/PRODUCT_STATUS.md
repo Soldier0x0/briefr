@@ -14,7 +14,8 @@
 | **Rate limits** | Token buckets on IOC, refresh, admin, auth; set `RATE_LIMIT_ENABLED=1` in production. |
 | **API queue** | Outbound API serialization (#221) for NVD/OTX/etc. |
 | **Correlation** | Engine v2 — DB-backed campaigns, nightly OTX, drawer Intel tab. |
-| **Data utilization (C2)** | Drawer **CAPEC** chips (CIRCL), **CISA SSVC** section (Vulnrichment), **KEV ransomware** badge on feed cards + drawer. |
+| **Data utilization (C2)** | Drawer **CAPEC** chips (CIRCL), **CISA SSVC** section (Vulnrichment), **KEV ransomware** badge on feed cards + drawer; OTX targeted countries; OSV drawer table; EPSS percentile. |
+| **Detection (D1)** | Generated Sigma rules use **CWE class templates** when no ATT&CK technique is mapped (`briefr_basis`: `attack_technique` \| `cwe` \| `generic`). |
 | **Cache retention (C3)** | Daily `cache_retention_cleanup` job sweeps stale `ioc_cache` / `feed_cache` rows and ages out `epss_history`, `cve_change_history`, and OTX mirror tables; read-path TTLs unchanged. Admin `change_history_old` purge fixed (`detected_at`). |
 | **Admin** | Security, backups, job status, config (V1.4 operator features largely shipped). Production posture self-check (Sprint A6): startup logs one warning per unsafe flag (`RATE_LIMIT_ENABLED=0`, `AUTH_COOKIE_SECURE=0`, tokenless wallboard) when `BRIEFR_ENV=production`; the Security panel shows the same warnings. |
 | **Snooze** | Removed from UI (#137); future **Monitor** alerts not built. |
