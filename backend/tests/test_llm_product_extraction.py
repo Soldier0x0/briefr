@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import database
 import ml.product_extraction as pex
+from ai.llm_router import LLMCompletion
 from database import (
     get_cves_for_llm_product_extraction,
     init_db,
@@ -29,17 +30,20 @@ from ml.product_extraction import (
     run_llm_product_extraction,
 )
 
-
 def test_disabled_by_default(monkeypatch):
     monkeypatch.delenv("LLM_PRODUCT_EXTRACTION_ENABLED", raising=False)
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
     assert llm_product_extraction_enabled() is False
 
 
-def test_requires_both_flag_and_groq_key(monkeypatch):
+def test_requires_flag_and_any_provider_key(monkeypatch):
     monkeypatch.setenv("LLM_PRODUCT_EXTRACTION_ENABLED", "1")
-    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    for key in ("GROQ_API_KEY", "GEMINI_API_KEY", "CEREBRAS_API_KEY", "OPENROUTER_API_KEY"):
+        monkeypatch.delenv(key, raising=False)
     assert llm_product_extraction_enabled() is False
+    monkeypatch.setenv("GEMINI_API_KEY", "gem_test")
+    assert llm_product_extraction_enabled() is True
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
     assert llm_product_extraction_enabled() is True
 
@@ -237,13 +241,19 @@ def test_run_extraction_writes_products_and_negative_caches(tmp_path, monkeypatc
 
     calls: list[str] = []
 
-    async def fake_extract(description: str, api_key: str) -> list[dict]:
+    async def fake_extract(description: str) -> tuple[list[dict], LLMCompletion] | None:
         calls.append(description)
         if "widget" in description:
-            return [{"vendor": "acme", "product": "widget", "version_range": "< 2.0"}]
-        return []  # model could not determine products
+            return (
+                [{"vendor": "acme", "product": "widget", "version_range": "< 2.0"}],
+                LLMCompletion(content="{}", provider="groq", model="openai/gpt-oss-20b"),
+            )
+        return (
+            [],
+            LLMCompletion(content="{}", provider="groq", model="openai/gpt-oss-20b"),
+        )
 
-    monkeypatch.setattr(pex, "extract_products_via_groq", fake_extract)
+    monkeypatch.setattr(pex, "extract_products_via_llm", fake_extract)
 
     async def run():
         await init_db()
@@ -289,6 +299,7 @@ def test_run_extraction_writes_products_and_negative_caches(tmp_path, monkeypatc
     cached = json.loads(cache_rows[0]["result"])
     assert cached["written"] is True
     assert cached["products"][0]["version_range"] == "< 2.0"
+    assert cached["provider"] == "groq"
     assert stats_second == {"candidates": 0, "extracted": 0, "written": 0, "errors": 0}
     assert len(calls) == 2  # one Groq call per CVE, never re-called
 
@@ -301,13 +312,16 @@ def test_run_extraction_errors_are_not_negative_cached(tmp_path, monkeypatch):
 
     attempts = {"n": 0}
 
-    async def flaky_extract(description: str, api_key: str) -> list[dict]:
+    async def flaky_extract(description: str) -> tuple[list[dict], LLMCompletion] | None:
         attempts["n"] += 1
         if attempts["n"] == 1:
             raise RuntimeError("simulated timeout")  # first run fails
-        return [{"vendor": "acme", "product": "widget", "version_range": ""}]
+        return (
+            [{"vendor": "acme", "product": "widget", "version_range": ""}],
+            LLMCompletion(content="{}", provider="groq", model="openai/gpt-oss-20b"),
+        )
 
-    monkeypatch.setattr(pex, "extract_products_via_groq", flaky_extract)
+    monkeypatch.setattr(pex, "extract_products_via_llm", flaky_extract)
 
     async def run():
         await init_db()
@@ -343,27 +357,15 @@ def test_run_extraction_errors_are_not_negative_cached(tmp_path, monkeypatch):
     assert row["affected_products_source"] == "llm"
 
 
-def test_run_extraction_retries_on_groq_rate_limit(tmp_path, monkeypatch):
-    """Rate limits must wait and retry the same CVE — never abort the run."""
-    monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "rate.db"))
+def test_run_extraction_all_providers_failed_is_not_negative_cached(tmp_path, monkeypatch):
+    """When every provider fails, the CVE stays a candidate for the next run."""
+    monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "fail.db"))
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
 
-    from ai.groq_client import GroqRateLimitError
+    async def no_providers(description: str) -> tuple[list[dict], LLMCompletion] | None:
+        return None
 
-    attempts = {"n": 0}
-    sleeps: list[float] = []
-
-    async def fake_sleep(seconds: float):
-        sleeps.append(seconds)
-
-    async def rate_limited_extract(description: str, api_key: str) -> list[dict]:
-        attempts["n"] += 1
-        if attempts["n"] == 1:
-            raise GroqRateLimitError("simulated 429")
-        return [{"vendor": "acme", "product": "widget", "version_range": ""}]
-
-    monkeypatch.setattr(pex, "extract_products_via_groq", rate_limited_extract)
-    monkeypatch.setattr(pex.asyncio, "sleep", fake_sleep)
+    monkeypatch.setattr(pex, "extract_products_via_llm", no_providers)
 
     async def run():
         await init_db()
@@ -375,14 +377,17 @@ def test_run_extraction_retries_on_groq_rate_limit(tmp_path, monkeypatch):
                 (date.today().isoformat(),),
             )
             await db.commit()
-            return await run_llm_product_extraction(db)
+            stats = await run_llm_product_extraction(db)
+            cache_rows = await db.execute_fetchall(
+                "SELECT cache_key FROM feed_cache WHERE cache_key LIKE 'llm_products:%'"
+            )
+            return stats, len(cache_rows)
         finally:
             await db.close()
 
-    stats = asyncio.run(run())
-    assert stats == {"candidates": 1, "extracted": 1, "written": 1, "errors": 0}
-    assert attempts["n"] == 2
-    assert sleeps == [60.0]
+    stats, cache_count = asyncio.run(run())
+    assert stats == {"candidates": 1, "extracted": 0, "written": 0, "errors": 1}
+    assert cache_count == 0
 
 
 def test_scheduler_llm_job_noop_when_disabled(monkeypatch):

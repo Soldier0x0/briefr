@@ -30,8 +30,8 @@ def test_split_investigation_items_maps_types():
 
 
 def test_generate_investigation_summary_returns_template_without_api_keys(monkeypatch):
-    monkeypatch.delenv("GROQ_API_KEY", raising=False)
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    for key in ("GROQ_API_KEY", "GEMINI_API_KEY", "CEREBRAS_API_KEY", "OPENROUTER_API_KEY"):
+        monkeypatch.delenv(key, raising=False)
 
     result = asyncio.run(
         generate_investigation_summary(
@@ -54,7 +54,8 @@ def test_investigation_summary_rejects_invalid_duration(tmp_path, monkeypatch):
     db_path = tmp_path / "inv.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setenv("GROQ_API_KEY", "")
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "")
+    for key in ("GEMINI_API_KEY", "CEREBRAS_API_KEY", "OPENROUTER_API_KEY"):
+        monkeypatch.setenv(key, "")
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
     async def _noop_async() -> None:

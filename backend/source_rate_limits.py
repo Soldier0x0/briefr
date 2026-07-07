@@ -7,6 +7,9 @@ pacing group (conservative defaults when docs only publish daily/monthly caps).
 References:
 - NVD: https://nvd.nist.gov/developers/start (5 req/30s w/o key, 50/30s w/ key)
 - Groq: https://console.groq.com/docs/rate-limits
+- Gemini: https://ai.google.dev/gemini-api/docs/rate-limits
+- Cerebras: https://inference-docs.cerebras.ai/
+- OpenRouter: https://openrouter.ai/docs/api-reference/limits
 - VirusTotal: https://docs.virustotal.com/reference/public-vs-premium-api
 - GitHub REST: https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api
 - AbuseIPDB: https://docs.abuseipdb.com/ (1,000 checks/day free)
@@ -51,12 +54,27 @@ PACING_PROFILES: dict[str, SourcePacing] = {
     "groq": SourcePacing(
         min_interval_seconds=15.0,
         docs_url="https://console.groq.com/docs/rate-limits",
-        notes="llama-3.1-8b-instant TPM (6K/min) is usually tighter than RPM.",
+        notes="openai/gpt-oss-20b TPM is usually tighter than RPM.",
+    ),
+    "gemini": SourcePacing(
+        min_interval_seconds=1.0,
+        docs_url="https://ai.google.dev/gemini-api/docs/rate-limits",
+        notes="Flash-Lite free tier; conservative default spacing.",
+    ),
+    "cerebras": SourcePacing(
+        min_interval_seconds=1.0,
+        docs_url="https://inference-docs.cerebras.ai/",
+        notes="Free-tier overflow; conservative default spacing.",
+    ),
+    "openrouter": SourcePacing(
+        min_interval_seconds=2.0,
+        docs_url="https://openrouter.ai/docs/api-reference/limits",
+        notes="`:free` models last resort; conservative spacing.",
     ),
     "anthropic": SourcePacing(
         min_interval_seconds=1.0,
         docs_url="https://docs.anthropic.com/en/api/rate-limits",
-        notes="Tier-dependent; conservative default spacing.",
+        notes="Legacy profile; no longer used by the LLM router.",
     ),
     "virustotal": SourcePacing(
         min_interval_seconds=15.0,

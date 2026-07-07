@@ -12,6 +12,22 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-07 — K1–K3 free-tier LLM router
+
+**Session:** Implemented **K1–K3** — Groq model migration (`openai/gpt-oss-20b` /
+`openai/gpt-oss-120b` for PDF summaries); new `ai/llm_router.py` with failover
+Groq → Gemini Flash-Lite → Cerebras → OpenRouter `:free`; wired
+`ml/product_extraction.py` and `ai/summary.py` through the router; dropped
+Anthropic from the PDF chain; `feed_cache` provenance now records
+`{provider, model}`.
+
+### Next steps
+
+**D4** unblocked for deterministic Nuclei slice; full LLM extract (K4) can follow.
+Post-B Postgres-native `db/` before D4 if not started.
+
+---
+
 ## 2026-07-07 — D5 Detect tab UI framing
 
 **Session:** Implemented **D5** — Detect tab reframed as class-aware hunt
