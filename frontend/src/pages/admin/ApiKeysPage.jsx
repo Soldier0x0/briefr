@@ -69,26 +69,21 @@ export default function ApiKeysPage({ toast }) {
     setSavingKeys(prev => new Set(prev).add(key))
     try {
       const restartRequired = Boolean(field?.restart_required)
-      let res
+      let result
       if (restartRequired) {
-        res = await adminApi.post('/config/apply-all', [{ key, value }])
+        result = await adminApi.postJson('/config/apply-all', [{ key, value }])
       } else {
-        res = await adminApi.post('/config', { key, value })
+        result = await adminApi.postJson('/config', { key, value })
       }
-      const data = await res.json()
-      if (!res.ok) {
-        const errs = data.errors || [data.detail]
-        toast(`Failed: ${[].concat(errs).join('; ')}`, false)
-        return false
-      }
+      const { data } = result
 
       setEditing(({ [key]: _, ...rest }) => rest)
       await reloadConfig()
-      const restarting = restartRequired && (data.restart_required ?? data.warning_restart_required)
+      const restarting = restartRequired && (data?.restart_required ?? data?.warning_restart_required)
       toast(saveOutcomeMessage(key, data, restarting), true)
       return true
     } catch (e) {
-      toast(String(e.message), false)
+      toast(`Failed: ${e.message || String(e)}`, false)
       return false
     } finally {
       setSavingKeys(prev => {
