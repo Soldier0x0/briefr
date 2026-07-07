@@ -1,7 +1,7 @@
 /**
  * Investigation thread PDF (browser-side jsPDF).
+ * jsPDF loads on first export via dynamic import.
  */
-import { jsPDF } from 'jspdf'
 import { enrichCveForPdf } from './pdfReport.js'
 import {
   aiFooterNoteForSource,
@@ -27,6 +27,15 @@ const T_ACTOR = 'actor'
 const T_TECHNIQUE = 'technique'
 
 const CONTENT_TOP = 20
+
+let jsPdfPromise = null
+
+function loadJsPdf() {
+  if (!jsPdfPromise) {
+    jsPdfPromise = import('jspdf').then(({ jsPDF }) => jsPDF)
+  }
+  return jsPdfPromise
+}
 
 function buildMeta(options) {
   return {
@@ -209,6 +218,7 @@ export async function downloadInvestigationPdf(items, startTime, options = {}) {
     aiFooterNote: aiFooterNoteForSource(summaryData.source),
   })
 
+  const jsPDF = await loadJsPdf()
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const ctx = { doc, y: CONTENT_TOP }
 

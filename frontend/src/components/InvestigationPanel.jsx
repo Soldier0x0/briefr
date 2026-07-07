@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useInvestigation, INV_TYPES } from '../context/InvestigationContext.jsx'
 import PdfExportModal from './PdfExportModal.jsx'
-import { downloadInvestigationPdf } from '../utils/investigationPdf.js'
 import './InvestigationPanel.css'
 
 function typeBadge(type) {
@@ -127,6 +126,7 @@ export default function InvestigationPanel() {
     setPdfBusy(true)
     setPdfError(null)
     try {
+      const { downloadInvestigationPdf } = await import('../utils/investigationPdf.js')
       await downloadInvestigationPdf(items, startTime, { analystName })
       setPdfModalOpen(false)
     } catch (err) {

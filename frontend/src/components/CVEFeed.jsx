@@ -5,7 +5,6 @@ import { ingestLogUrl } from '../utils/adminLinks.js'
 import { toApiCveParams } from '../utils/cveFilters.js'
 import { scrollBehavior } from '../utils/motion.js'
 import { buildCombinedReport, copyToClipboard } from '../utils/report.js'
-import { downloadBulkCvePdf } from '../utils/pdfReport.js'
 import PdfExportModal from './PdfExportModal.jsx'
 import FilterBar from './FilterBar.jsx'
 import CVECard from './CVECard.jsx'
@@ -401,6 +400,7 @@ export default function CVEFeed({
     setBulkPdfBusy(true)
     setBulkPdfError(null)
     try {
+      const { downloadBulkCvePdf } = await import('../utils/pdfReport.js')
       await downloadBulkCvePdf(selected, { analystName })
       setBulkPdfModalOpen(false)
     } catch (err) {

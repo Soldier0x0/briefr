@@ -1,7 +1,7 @@
 /**
  * Analyst-friendly Excel (.xlsx) export with formatting. CSV export stays in exportCsv.js.
+ * ExcelJS loads on first export via dynamic import.
  */
-import ExcelJS from 'exceljs'
 
 const HEADERS = [
   'CVE ID',
@@ -131,6 +131,7 @@ function estimateRowHeight(text, widthChars = 50) {
 }
 
 export async function buildCvesWorkbook(cves) {
+  const { default: ExcelJS } = await import('exceljs')
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'BRIEFR'
   workbook.created = new Date()
