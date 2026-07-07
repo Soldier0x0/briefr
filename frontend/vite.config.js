@@ -3,10 +3,6 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  build: {
-    // exceljs (~930 kB) is lazy-loaded on XLSX export only; jsPDF/html2canvas ditto for PDF.
-    chunkSizeWarningLimit: 1000,
-  },
   server: {
     port: 5173,
     host: '0.0.0.0',

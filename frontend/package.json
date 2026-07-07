@@ -14,13 +14,13 @@
     "@fontsource/dm-serif-display": "^5.2.8",
     "@fontsource/ibm-plex-mono": "^5.2.7",
     "chart.js": "^4.5.1",
-    "exceljs": "^4.4.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.23.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-router-dom": "^7.18.1"
+    "react-router-dom": "^7.18.1",
+    "write-excel-file": "^4.1.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.3",
@@ -29,13 +29,6 @@
   },
   "overrides": {
     "dompurify": "^3.4.11",
-    "uuid": "^11.1.1",
-    "glob": "^13.0.0",
-    "rimraf": "^5.0.10",
-    "exceljs": {
-      "archiver": "^7.0.1",
-      "fast-csv": "^5.0.5",
-      "unzipper": "^0.12.5"
-    }
+    "uuid": "^11.1.1"
   }
 }

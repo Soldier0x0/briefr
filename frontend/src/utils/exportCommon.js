@@ -1,6 +1,6 @@
 /**
  * Shared jsPDF layout constants + helpers used by pdfReport.js and
- * investigationPdf.js. exportXlsx.js uses a different library (ExcelJS) with
+ * investigationPdf.js. exportXlsx.js uses write-excel-file; CSV stays in exportCsv.js.
  * its own color/date handling — reviewed side-by-side and found no genuine
  * duplication with the PDF files worth extracting.
  */
