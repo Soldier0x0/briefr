@@ -1,12 +1,13 @@
 """LLM product extraction for NVD-unanalyzed CVEs - env-gated (V1.3).
 
 Many fresh CVEs carry no CPE data for hours or days. When
-``LLM_PRODUCT_EXTRACTION_ENABLED=1`` AND ``GROQ_API_KEY`` is set, a scheduler
-job extracts ``{vendor, product, version_range}`` from the description text
-and fills ``affected_products`` - ONLY while that field is empty - marking
-``affected_products_source='llm'`` so the data stays distinguishable.
-Official CPE data supersedes LLM output on the next NVD upsert (the upsert
-SQL clears the marker whenever a non-empty official product list arrives).
+``LLM_PRODUCT_EXTRACTION_ENABLED=1`` AND at least one LLM provider API key is
+set, a scheduler job extracts ``{vendor, product, version_range}`` from the
+description text and fills ``affected_products`` - ONLY while that field is
+empty - marking ``affected_products_source='llm'`` so the data stays
+distinguishable. Official CPE data supersedes LLM output on the next NVD upsert
+(the upsert SQL clears the marker whenever a non-empty official product list
+arrives).
 
 Scheduler-side only, never on the request path. Disabled by default; the
 tool is fully functional without it. Completed extractions (including empty
@@ -19,17 +20,14 @@ Copyright (c) 2026 Sai Harsha Vardhan. All rights reserved.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import os
 import re
-import time
 
 import aiosqlite
 
-from ai.groq_client import GroqRateLimitError, chat_completion, message_content
-from ai.groq_config import GROQ_MODEL
+from ai.llm_router import LLMCompletion, any_llm_provider_configured, chat_completion_task
 from database import (
     get_cves_for_llm_product_extraction,
     set_feed_cache,
@@ -70,9 +68,7 @@ CVE description:
 
 def llm_product_extraction_enabled() -> bool:
     flag = os.environ.get("LLM_PRODUCT_EXTRACTION_ENABLED", "0").strip().lower()
-    return flag in ("1", "true", "yes") and bool(
-        os.environ.get("GROQ_API_KEY", "").strip()
-    )
+    return flag in ("1", "true", "yes") and any_llm_provider_configured()
 
 
 def get_extraction_max_per_run() -> int:
@@ -161,11 +157,10 @@ def products_to_affected_keys(products: list[dict]) -> list[str]:
     return [f"{p['vendor']}:{p['product']}" for p in products if p.get("product")]
 
 
-async def extract_products_via_groq(description: str, api_key: str) -> list[dict]:
-    """One Groq call -> validated product dicts. retries=0: never burn quota
-    on automatic retries (same policy as VT/AbuseIPDB/GreyNoise)."""
-    response = await chat_completion(
-        api_key,
+async def extract_products_via_llm(description: str) -> tuple[list[dict], LLMCompletion] | None:
+    """One router call -> validated product dicts with provider provenance."""
+    completion = await chat_completion_task(
+        "product_extraction",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {
@@ -179,7 +174,9 @@ async def extract_products_via_groq(description: str, api_key: str) -> list[dict
         temperature=0.0,
         timeout=60.0,
     )
-    return parse_products_payload(message_content(response))
+    if not completion:
+        return None
+    return parse_products_payload(completion.content), completion
 
 
 async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, progress_cb=None) -> dict:
@@ -193,12 +190,10 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, pro
     failures retry on the next run.
 
     When ``db`` is omitted, pool connections are held only for short read/write
-    scopes - Groq HTTP and throttle sleeps run without a connection.
+    scopes - LLM HTTP and throttle sleeps run without a connection.
     """
     from database import get_db
-    from resilient_client import CircuitOpenError
 
-    api_key = os.environ.get("GROQ_API_KEY", "").strip()
     stats = {"candidates": 0, "extracted": 0, "written": 0, "errors": 0}
 
     async def _load_candidates(conn):
@@ -223,45 +218,35 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, pro
         cve_id = candidate["cve_id"]
         if progress_cb:
             progress_cb(f"Processing CVE {index + 1} of {stats['candidates']}...")
-        products = None
-        while products is None:
-            try:
-                products = await extract_products_via_groq(
-                    candidate["description"], api_key
-                )
-            except CircuitOpenError as exc:
-                wait = max(1.0, exc.retry_at - time.time())
-                logger.warning(
-                    "LLM product extraction: Groq circuit open for %s - "
-                    "waiting %.1fs then retrying (%d/%d)",
-                    cve_id,
-                    wait,
-                    index + 1,
-                    len(candidates),
-                )
-                await asyncio.sleep(wait)
-            except GroqRateLimitError as exc:
-                logger.warning(
-                    "LLM product extraction: Groq rate limit for %s - "
-                    "waiting 60s then retrying (%d/%d): %s",
-                    cve_id,
-                    index + 1,
-                    len(candidates),
-                    exc,
-                )
-                await asyncio.sleep(60.0)
-            except Exception as exc:
-                stats["errors"] += 1
-                logger.error("LLM product extraction failed for %s: %s", cve_id, exc)
-                break
 
-        if products is None:
+        try:
+            result = await extract_products_via_llm(candidate["description"])
+        except Exception as exc:
+            stats["errors"] += 1
+            logger.error("LLM product extraction failed for %s: %s", cve_id, exc)
             continue
 
+        if result is None:
+            stats["errors"] += 1
+            logger.warning(
+                "LLM product extraction: all providers failed for %s (%d/%d)",
+                cve_id,
+                index + 1,
+                len(candidates),
+            )
+            continue
+
+        products, completion = result
         written = False
         keys = products_to_affected_keys(products)
 
-        async def _persist(conn, _cve_id=cve_id, _keys=keys, _products=products):
+        async def _persist(
+            conn,
+            _cve_id=cve_id,
+            _keys=keys,
+            _products=products,
+            _completion=completion,
+        ):
             nonlocal written
             if _keys:
                 stats["extracted"] += 1
@@ -271,7 +256,12 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, pro
             await set_feed_cache(
                 conn,
                 f"llm_products:{_cve_id.upper()}",
-                {"products": _products, "model": GROQ_MODEL, "written": written},
+                {
+                    "products": _products,
+                    "provider": _completion.provider,
+                    "model": _completion.model,
+                    "written": written,
+                },
             )
             await conn.commit()
 

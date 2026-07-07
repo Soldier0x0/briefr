@@ -1,5 +1,5 @@
 """
-Executive summary for PDF reports — Groq primary, Anthropic fallback, template last.
+Executive summary for PDF reports — multi-provider LLM router, template last.
 Called only when an analyst explicitly exports a PDF (via API from the client).
 """
 
@@ -11,16 +11,10 @@ import os
 import re
 from typing import Any
 
-import httpx
-
-from ai.groq_client import chat_completion, message_content
-from ai.groq_config import GROQ_MODEL
+from ai.llm_router import any_llm_provider_configured, chat_completion_task
 from templates.intelligence import kev_sentence, severity_sentence
 
 logger = logging.getLogger(__name__)
-
-ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
-ANTHROPIC_MODEL = "claude-haiku-4-5"
 
 SYSTEM_PROMPT = (
     "You are a senior threat intelligence analyst writing an executive summary "
@@ -242,56 +236,6 @@ def _build_user_prompt(
     )
 
 
-async def _call_groq(prompt: str, api_key: str) -> str | None:
-    try:
-        response = await chat_completion(
-            api_key,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=600,
-            temperature=0.25,
-            timeout=50.0,
-        )
-        content = message_content(response).strip()
-        return content or None
-    except Exception as exc:
-        logger.error("Groq summary request failed: %s", exc)
-        return None
-
-
-async def _call_anthropic(prompt: str, api_key: str) -> str | None:
-    try:
-        from resilient_client import resilient_request
-
-        response = await resilient_request(
-            "anthropic",
-            "POST",
-            ANTHROPIC_URL,
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": ANTHROPIC_MODEL,
-                "max_tokens": 600,
-                "system": SYSTEM_PROMPT,
-                "messages": [{"role": "user", "content": prompt}],
-            },
-            timeout=60.0,
-            retries=0,
-        )
-        blocks = response.json().get("content") or []
-        parts = [b.get("text", "") for b in blocks if b.get("type") == "text"]
-        text = "".join(parts).strip()
-        return text or None
-    except Exception as exc:
-        logger.error("Anthropic summary request failed: %s", exc)
-        return None
-
-
 async def generate_executive_summary(
     cves: list[dict] | None = None,
     iocs: list[dict] | None = None,
@@ -299,8 +243,8 @@ async def generate_executive_summary(
     investigation_duration: int = 1,
 ) -> dict[str, Any]:
     """
-    Return executive_summary, key_findings, confidence, and source (groq|anthropic|template).
-    Never raises — always returns a usable summary.
+    Return executive_summary, key_findings, confidence, and source
+    (provider name or ``template``). Never raises — always returns a usable summary.
     """
     cve_list = list(cves or [])
     ioc_list = list(iocs or [])
@@ -316,32 +260,29 @@ async def generate_executive_summary(
         "source": "template",
     }
 
-    groq_key = os.environ.get("GROQ_API_KEY", "").strip()
-    anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-
-    if not groq_key and not anthropic_key:
+    if not any_llm_provider_configured():
         return template_result
 
     prompt = _build_user_prompt(cve_list, ioc_list, actor_list, duration)
 
-    if groq_key:
-        content = await _call_groq(prompt, groq_key)
-        if content:
-            parsed = _parse_ai_payload(content)
-            if parsed:
-                result = _normalize_result(parsed, "groq", cve_list, ioc_list, actor_list)
-                result["confidence"] = result.get("confidence") or "high"
-                return result
-
-    if anthropic_key:
-        content = await _call_anthropic(prompt, anthropic_key)
-        if content:
-            parsed = _parse_ai_payload(content)
-            if parsed:
-                result = _normalize_result(parsed, "anthropic", cve_list, ioc_list, actor_list)
-                if result.get("confidence") == "medium":
-                    result["confidence"] = "medium"
-                return result
+    completion = await chat_completion_task(
+        "pdf_summary",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ],
+        max_tokens=600,
+        temperature=0.25,
+        timeout=50.0,
+    )
+    if completion:
+        parsed = _parse_ai_payload(completion.content)
+        if parsed:
+            result = _normalize_result(
+                parsed, completion.provider, cve_list, ioc_list, actor_list
+            )
+            result["confidence"] = result.get("confidence") or "high"
+            return result
 
     return template_result
 

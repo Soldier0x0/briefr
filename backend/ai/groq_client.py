@@ -34,6 +34,7 @@ async def chat_completion(
     timeout: float = 60.0,
     estimated_input_tokens: int | None = None,
     source: str = "groq",
+    model: str | None = None,
 ) -> httpx.Response:
     """POST to Groq chat completions — waits in queue on rate limits, never drops."""
     limits = groq_limits()
@@ -49,7 +50,7 @@ async def chat_completion(
             "Content-Type": "application/json",
         },
         json={
-            "model": GROQ_MODEL,
+            "model": model or GROQ_MODEL,
             "messages": messages,
             "max_tokens": max_tokens,
             "temperature": temperature,

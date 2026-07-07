@@ -1220,7 +1220,7 @@ async def run_embeddings_sync() -> bool:
 async def run_llm_extraction_sync() -> bool:
     """LLM product extraction for NVD-unanalyzed CVEs (V1.3 Theme 7).
 
-    No-op unless LLM_PRODUCT_EXTRACTION_ENABLED=1 AND GROQ_API_KEY is set.
+    No-op unless LLM_PRODUCT_EXTRACTION_ENABLED=1 AND an LLM provider key is set.
     """
     if not llm_product_extraction_enabled():
         return False

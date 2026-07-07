@@ -6,7 +6,11 @@ import os
 from dataclasses import dataclass
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama-3.1-8b-instant"
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b").strip() or "openai/gpt-oss-20b"
+GROQ_MODEL_SUMMARY = (
+    os.environ.get("GROQ_MODEL_SUMMARY", "openai/gpt-oss-120b").strip()
+    or "openai/gpt-oss-120b"
+)
 
 
 @dataclass(frozen=True)
