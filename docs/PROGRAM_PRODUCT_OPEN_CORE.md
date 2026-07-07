@@ -1,0 +1,181 @@
+# Program — Product polish & open-core readiness
+
+**Status:** Active (2026-07-07)  
+**Purpose:** Single execution plan for SaaS-grade self-host UX, user data on
+Postgres, and safe intel distribution — without bloating `SPRINT_2026-07.md`.
+
+**Read order:** `CLAUDE.md` → `PRODUCT_STATUS.md` → this file → wave PR below.
+
+---
+
+## Locked decisions
+
+| Topic | Decision |
+|-------|----------|
+| Production database | **PostgreSQL 16+** required. BYO host (Docker, RDS, on-prem) OK. Not SQLite/Mongo/MySQL at runtime. |
+| Intel for open core | **Postgres snapshot first** (`pg_dump` allowlist). Portable JSONL import later. |
+| Operator production data | **Never** raw `pg_dump` of prod. Export via allowlist script only. |
+| User prefs / stack | Postgres per user; unified stack API; optional “session only vs remember on server”. |
+| Open-core economics (v1) | **Code free**; first intel snapshot **free monthly** (adoption over revenue). |
+| July sprint | **Closed for new scope** — interleave D4 + Post-B; program waves run in parallel. |
+
+---
+
+## Public promise (one sentence)
+
+> Self-hosted CVE intel ranked for your stack, with correlation and detection
+> content — your PostgreSQL, your keys, no vendor lock-in.
+
+Do not over-claim ML (see `STRATEGY.md` claims table).
+
+---
+
+## Database policy (FAQ)
+
+**Supported:** PostgreSQL 16+ on any host you control.
+
+**Not supported for production:** SQLite (single-writer, scheduler contention),
+MongoDB (wrong relational shape), MySQL (second dialect tax; Post-B removes
+translation shim for a reason).
+
+**Freedom we provide:** hosting choice, `pg_dump` export, optional portable
+intel import (later). **Freedom we do not provide:** untested alternate SQL
+engines.
+
+See `DATA_SNAPSHOT.md` (added in Wave 3) for intel bundle format.
+
+---
+
+## Execution waves
+
+One concern per PR unless noted. Browser-verify UI items. Update
+`PRODUCT_STATUS.md` when runtime behavior changes.
+
+### Wave 1 — Product feel (no schema risk) · **2 PRs**
+
+| PR | Scope | Acceptance |
+|----|-------|------------|
+| **1** | Admin config Save UX | Per-field Save; button “Save” vs “Save & restart”; fix misleading copy; stop toasting “added to queue”; bool toggles save inline |
+| **2** | Toast + restart UX | Pause on hover/focus; fewer success toasts; restart **banner** until `/api/health` OK; copy-ID feedback; notification policy in this doc § below |
+
+**Interleave with D4 / Post-B — do not block.**
+
+### Wave 2 — One stack, one truth · **3–4 PRs**
+
+| PR | Scope | Acceptance |
+|----|-------|------------|
+| **3** | Migration + `GET/PUT /api/me/stack` | Terms + optional profile JSON; keyed by `user_id` |
+| **4** | Frontend unified stack | Remove `briefr_stack` localStorage split; feed + webhooks + wallboard read same API |
+| **5** | `GET/PATCH /api/me/preferences` | Display prefs, timezone; migrate off localStorage |
+| **6** | Asset profile persistence | Toggle: session-only (default shared terminal) vs remember-on-server |
+
+Update `PrivacyPage.jsx` when 4–5 land (stack not “browser only”).
+
+Optional **7:** field-level encryption for profile blobs (`BRIEFR_DATA_KEY`) — defer
+until open-core flip unless required.
+
+### Wave 3 — Open-core data plane · **2 PRs**
+
+| PR | Scope | Acceptance |
+|----|-------|------------|
+| **8** | ADR + `DATA_SNAPSHOT.md` | INTEL vs OPERATOR table lists; F1 schema split ADR |
+| **9** | `scripts/export_intel_snapshot.py` | Allowlist export; restore docs; CI restore smoke (align Track J2) |
+
+Ops (not a code PR): publish `briefr-intel-YYYY-MM.pgdump.gz` from export script.
+
+### Wave 4 — Launch gate (after Wave 2 or parallel)
+
+Not blocking Wave 1–3 code:
+
+- Monitor / stack+KEV alerts (retention)
+- First-hour onboarding checklist in app
+- `briefr doctor` / support pack export (V1.4 spec)
+- Track **F3** — gitleaks, `SECURITY.md`, LICENSE flip
+- Docker compose “external Postgres” profile
+- Snapshot versioning + upgrade runbook
+
+### Deferred — operator settings in DB
+
+Move toggles/intervals from `.env` to `app_settings` + settings service — after
+Wave 2 stable. Estimate 2–3 PRs; not open-core launch blockers.
+
+---
+
+## INTEL vs OPERATOR tables
+
+**Include in public intel snapshot** (derived public intel + BRIEFR compute):
+
+`cves`, `kev_deadlines`, `epss_history`, `cve_change_history`, `mitre_techniques`,
+`cve_technique_map`, `atlas_techniques`, `atlas_case_studies`, `cve_atlas_map`,
+`cve_exploits`, `feed_cache`, `otx_cve_pulses`, `otx_pulse_iocs`, `otx_pulses`,
+`correlation_actor`, `correlation_temporal`,
+`correlation_campaigns`, `correlation_campaign_members`, `cve_embeddings`,
+`mitre_groups`, `group_technique_map`, ingest watermarks in `sync_state` (allowlist keys only).
+
+**Never include** (operator / sensitive):
+
+`users`, `sessions`, `watchlist`, `audit_log`, `ioc_cache`, `api_usage`,
+`webhook_destinations`, `webhook_delivery_log`, `webhook_alert_log`,
+`correlation_suppressions`, `hunt_packs`, scheduler pause flags in `sync_state`.
+
+Full spec in `DATA_SNAPSHOT.md` (Wave 3 PR 8).
+
+---
+
+## Notification policy (toast vs inline vs banner)
+
+| Event | Channel |
+|-------|---------|
+| Config saved (live) | Inline ✓ on row or single calm toast (8s, pauses on hover) |
+| “Added to queue” | **No toast** — queued badge only |
+| Backend restarting | Top **banner** + health poll; not a 4s toast |
+| API error | Persistent error toast until dismissed; actions: copy ref, view log |
+| Routine admin OK (“job paused”) | Inline table state or short toast; no bright slide-in stack |
+| Long job | Operation strip (admin) or progress UI (analyst exports) |
+
+---
+
+## Sprint cross-links
+
+| Sprint item | Program home |
+|-------------|--------------|
+| **E7** (new) | Wave 1 PR 1 — config Save UX |
+| **H1a** (new) | Wave 1 PR 2 — toast policy |
+| **F1** | Wave 3 PR 8 — intel/app ADR |
+| **J2** | Wave 3 PR 9 — snapshot restore CI |
+
+---
+
+## Parallel work (do not stop)
+
+| Track | Status |
+|-------|--------|
+| **D4** | Artifact injection — continue |
+| **Post-B** | Postgres-native `db/` — #303 merged; finish CI full-suite gate then modules |
+| **#306** | `.env.example` reorder — merge after Gemini fixes |
+
+---
+
+## Success markers
+
+| Milestone | Signal |
+|-----------|--------|
+| Wave 1 | Change API key without restart confusion; toasts feel professional |
+| Wave 2 | Stack in feed = stack for KEV alerts; survives browser change |
+| Wave 3 | Publish intel snapshot with zero operator rows |
+| Launch-ready | F3 pass + compose + free snapshot + README database FAQ |
+
+---
+
+## PR sequence (suggested)
+
+```
+PR #0  This doc + sprint/HANDOVER hooks          ← you are here
+PR #1  Config Save UX
+PR #2  Toast / restart banner
+PR #3–4  Stack API + frontend
+PR #8–9  ADR + export script (can start after PR #2)
+PR #5–6  Preferences + profile remember
+```
+
+**Total to open-core-ready:** ~8 PRs (Waves 1–3). Full SaaS settings in DB: +2–3 PRs later.
