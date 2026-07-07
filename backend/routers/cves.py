@@ -65,7 +65,7 @@ from database import (
 )
 from detection.rule_sources import find_elastic_rules, find_sigma_rules
 from detection.siem_queries import get_siem_queries
-from detection.sigma_generator import generate_sigma_rule
+from detection.sigma_generator import generate_sigma_rule_bundle
 from detection.context import get_detection_context
 from feeds.extended import (
     enrich_cve_circl,
@@ -1129,7 +1129,8 @@ async def cve_detection(
     Returns:
     - sigma_rules: community Sigma rules from SigmaHQ (cached 24h)
     - elastic_rules: community Elastic detection rules (cached 24h)
-    - generated_sigma: template-based Sigma YAML (only when no community rules)
+    - generated_sigma: template-based Sigma YAML (supplement; always generated)
+    - generated_sigma_meta: briefr_basis, briefr_class, confidence, status
     - siem_queries: 4-platform quick-search queries (Elastic/Splunk/Sentinel/QRadar)
     - log_patterns: plain-English detection patterns from ATT&CK guidance
     """
@@ -1143,6 +1144,7 @@ async def cve_detection(
     elastic_rules: list = []
     has_community_rules = False
     generated_sigma = None
+    generated_sigma_meta = None
     detection_context = None
     siem_queries: dict = {}
     yara_rules: list = []
@@ -1189,15 +1191,14 @@ async def cve_detection(
         first_technique = technique_ids[0] if technique_ids else ""
         has_community_rules = bool(sigma_rules or elastic_rules)
         detection_context = await get_detection_context(db, cve_upper)
-        if not has_community_rules:
-            generated_sigma = generate_sigma_rule(
-                cve_id=cve_upper,
-                technique_id=first_technique,
-                product=product.strip() or "Affected Product",
-                description=cve_desc[:200] if cve_desc else "",
-                cwe_ids=cwe_ids,
-                detection_context=detection_context,
-            )
+        generated_sigma, generated_sigma_meta = generate_sigma_rule_bundle(
+            cve_id=cve_upper,
+            technique_id=first_technique,
+            product=product.strip() or "Affected Product",
+            description=cve_desc[:200] if cve_desc else "",
+            cwe_ids=cwe_ids,
+            detection_context=detection_context,
+        )
 
         # SIEM queries based on primary technique
         siem_queries = get_siem_queries(
@@ -1228,6 +1229,7 @@ async def cve_detection(
         "elastic_rules": elastic_rules,
         "has_community_rules": has_community_rules,
         "generated_sigma": generated_sigma,
+        "generated_sigma_meta": generated_sigma_meta,
         "detection_context": detection_context,
         "siem_queries": siem_queries,
         "yara_rules": yara_rules,

@@ -12,6 +12,19 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-07 — D5 Detect tab UI framing
+
+**Session:** Implemented **D5** — Detect tab reframed as class-aware hunt
+starters; `generated_sigma` always returned (supplement when community rules
+exist); `generated_sigma_meta` API field; `briefr_basis` / experimental
+tooltips in `DetectTab.jsx`.
+
+### Next steps
+
+**D4** blocked on K1–K3 (LLM router). Post-B Postgres-native `db/` before D4.
+
+---
+
 ## 2026-07-07 — D3 unified class router
 
 **Session:** Implemented **D3** — `_resolve_detection_class(cve)` in

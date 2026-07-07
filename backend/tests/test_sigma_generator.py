@@ -123,6 +123,24 @@ def test_first_mapped_cwe_wins():
     assert "UNION SELECT" in rule["detection"]["keywords"]
 
 
+def test_parse_sigma_rule_meta_extracts_briefr_fields():
+    from detection.sigma_generator import (
+        build_sigma_rule_dict,
+        generate_sigma_rule,
+        parse_sigma_rule_meta,
+        sigma_rule_meta_from_dict,
+    )
+
+    rule = build_sigma_rule_dict("CVE-2024-0022", "", cwe_ids=["CWE-22"])
+    meta = sigma_rule_meta_from_dict(rule)
+    assert meta["briefr_basis"] == "cwe"
+    assert meta["briefr_class"] == "path_traversal"
+
+    yaml_text = generate_sigma_rule("CVE-2024-0022", "", cwe_ids=["CWE-22"])
+    assert parse_sigma_rule_meta(yaml_text) == meta
+    assert parse_sigma_rule_meta(None) == {}
+
+
 def test_cwe_template_registry_covers_spec_set():
     expected = {
         "CWE-22",

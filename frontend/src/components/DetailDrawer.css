@@ -1754,6 +1754,25 @@
   padding-top: 14px;
 }
 
+.det-framing-section {
+  padding-bottom: 0;
+}
+
+.det-framing-note {
+  font-size: 0.6875rem;
+  color: var(--text3);
+  margin: 0 0 4px;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+}
+
+.det-generated-intro {
+  font-size: 0.6875rem;
+  color: var(--text3);
+  margin: 0 0 10px;
+  line-height: 1.45;
+}
+
 .det-generated-meta {
   display: flex;
   align-items: center;
@@ -1769,6 +1788,28 @@
   border: 1px solid var(--amber);
   background: var(--amber-dim);
   padding: 2px 6px;
+}
+
+.det-confidence-low {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  border: 1px solid var(--border2);
+  background: transparent;
+  padding: 2px 6px;
+}
+
+.det-basis-badge,
+.det-class-badge {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text2);
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  padding: 2px 6px;
+  cursor: help;
 }
 
 .det-generated-warning {
