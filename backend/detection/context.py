@@ -13,7 +13,7 @@ import aiosqlite
 
 from db.cache import get_feed_cache, set_feed_cache
 from db.dialect import utcnow_str
-from detection.sigma_generator import _normalize_cwe_id, _resolve_template
+from detection.sigma_generator import _normalize_cwe_id
 
 DETECTION_CTX_PREFIX = "detection_ctx:"
 DETECTION_CTX_CACHE_HOURS = 168.0
@@ -116,9 +116,6 @@ def resolve_detection_class(
         if slug:
             return slug
 
-    _, basis, _ = _resolve_template(technique_id, cwe_ids)
-    if basis == "generic":
-        return "generic"
     return "generic"
 
 
@@ -131,7 +128,7 @@ def build_detection_context(
     generated_at: str | None = None,
 ) -> dict:
     """Build a static DetectionContext envelope (no LLM)."""
-    normalized_cwes = [_normalize_cwe_id(c) for c in (cwe_ids or []) if _normalize_cwe_id(c)]
+    normalized_cwes = [norm for c in (cwe_ids or []) if (norm := _normalize_cwe_id(c))]
     product = _first_product(affected_products)
     return {
         "cwe_ids": normalized_cwes,
