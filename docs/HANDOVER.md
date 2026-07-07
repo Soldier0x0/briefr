@@ -12,6 +12,19 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-07 — Track D closed (D4 held)
+
+**Decision:** **D4 held** until Track K2–K3 (free-tier LLM router). K1 Groq
+migration remains deferred. Track D otherwise complete: D1–D3 + D5 shipped.
+
+### Next steps (execution queue)
+
+1. **K2–K3** — LLM router (unblocks D4 later; K1 optional/deferred)
+2. **Post-B** — Postgres-native `db/` module conversion
+3. **E / H / I / J** — interleave per sprint when not blocked
+
+---
+
 ## 2026-07-07 — D5 Detect tab UI framing
 
 **Session:** Implemented **D5** — Detect tab reframed as class-aware hunt
