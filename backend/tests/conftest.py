@@ -46,6 +46,21 @@ def _postgres_schema_once():
         await run_postgres_migrations()
 
     asyncio.run(_boot())
+
+    # Every `with TestClient(app)` runs FastAPI lifespan, which calls
+    # run_postgres_migrations() again — redundant once the session-level
+    # migration above has already run (Gemini review, PR #303). main.py
+    # binds its own module-level reference via `from database import
+    # run_postgres_migrations`, so both names need patching.
+    import database
+    import main
+
+    async def _noop_migrations() -> None:
+        return
+
+    database.run_postgres_migrations = _noop_migrations
+    main.run_postgres_migrations = _noop_migrations
+
     yield
 
 
