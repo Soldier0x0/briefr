@@ -21,7 +21,7 @@ const EXPERIMENTAL_TOOLTIP =
 
 // ── Detection Rule Engine UI ──────────────────────────────
 
-function StatusBadge({ status, title }) {
+function StatusBadge({ status, title, children }) {
   const s = (status || 'experimental').toLowerCase()
   const cls =
     s === 'stable' ? 'det-badge-stable'
@@ -29,7 +29,7 @@ function StatusBadge({ status, title }) {
     : 'det-badge-experimental'
   return (
     <span className={`det-status-badge mono ${cls}`} title={title}>
-      {s}
+      {children || s}
     </span>
   )
 }
@@ -112,7 +112,7 @@ function ElasticRuleCard({ rule }) {
     <div className="det-rule-card">
       <div className="det-rule-head">
         <div className="det-rule-meta">
-          <StatusBadge status="stable" />
+          <StatusBadge status="stable">elastic</StatusBadge>
           <span className="det-rule-source mono">{rule.language || 'kuery'}</span>
         </div>
         <div className="det-rule-actions">

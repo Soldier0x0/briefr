@@ -519,16 +519,16 @@ def _resolve_template(
 
 # ── Generator ─────────────────────────────────────────────
 
-def generate_sigma_rule(
+def build_sigma_rule_dict(
     cve_id: str,
     technique_id: str,
     product: str = "",
     description: str = "",
     cwe_ids: list[str] | None = None,
     detection_context: dict | None = None,
-) -> str:
+) -> dict:
     """
-    Generate a Sigma rule YAML string for a CVE/technique pair.
+    Build a Sigma rule dict for a CVE/technique pair.
     Selection order: ATT&CK technique template → CWE class template → generic default.
     """
     from detection.class_router import _resolve_detection_class
@@ -584,34 +584,81 @@ def generate_sigma_rule(
     if resolved_class != "generic":
         rule["briefr_class"] = resolved_class
 
-    # Add technique and CVE tags
     if technique_id:
         rule["tags"].append(f"attack.{technique_id.lower()}")
     if matched_cwe:
         rule["tags"].append(matched_cwe.lower().replace("-", "."))
     rule["tags"].append(f"cve.{cve_id.lower().replace('-', '.')}")
 
+    return rule
+
+
+def sigma_rule_meta_from_dict(rule: dict) -> dict:
+    """Extract BRIEFR metadata fields from a generated Sigma rule dict."""
+    meta: dict = {
+        "briefr_basis": rule.get("briefr_basis") or "generic",
+        "briefr_confidence": rule.get("briefr_confidence") or "MEDIUM",
+        "status": rule.get("status") or "experimental",
+    }
+    if rule.get("briefr_class"):
+        meta["briefr_class"] = rule["briefr_class"]
+    if rule.get("briefr_note"):
+        meta["briefr_note"] = rule["briefr_note"]
+    return meta
+
+
+def generate_sigma_rule(
+    cve_id: str,
+    technique_id: str,
+    product: str = "",
+    description: str = "",
+    cwe_ids: list[str] | None = None,
+    detection_context: dict | None = None,
+) -> str:
+    """Generate a Sigma rule YAML string for a CVE/technique pair."""
+    rule = build_sigma_rule_dict(
+        cve_id=cve_id,
+        technique_id=technique_id,
+        product=product,
+        description=description,
+        cwe_ids=cwe_ids,
+        detection_context=detection_context,
+    )
     return yaml.dump(rule, default_flow_style=False, sort_keys=False, allow_unicode=True)
+
+
+def generate_sigma_rule_bundle(
+    cve_id: str,
+    technique_id: str,
+    product: str = "",
+    description: str = "",
+    cwe_ids: list[str] | None = None,
+    detection_context: dict | None = None,
+) -> tuple[str, dict]:
+    """Return (yaml_text, meta_dict) without a YAML parse round-trip."""
+    rule = build_sigma_rule_dict(
+        cve_id=cve_id,
+        technique_id=technique_id,
+        product=product,
+        description=description,
+        cwe_ids=cwe_ids,
+        detection_context=detection_context,
+    )
+    yaml_text = yaml.dump(rule, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    return yaml_text, sigma_rule_meta_from_dict(rule)
 
 
 def parse_sigma_rule_meta(yaml_text: str) -> dict:
     """Extract BRIEFR metadata fields from generated Sigma YAML."""
+    if not isinstance(yaml_text, str):
+        return {}
     try:
         data = yaml.safe_load(yaml_text) or {}
     except yaml.YAMLError:
         return {}
     if not isinstance(data, dict):
         return {}
-    meta: dict = {
-        "briefr_basis": data.get("briefr_basis") or "generic",
-        "briefr_confidence": data.get("briefr_confidence") or "MEDIUM",
-        "status": data.get("status") or "experimental",
-    }
-    if data.get("briefr_class"):
-        meta["briefr_class"] = data["briefr_class"]
-    if data.get("briefr_note"):
-        meta["briefr_note"] = data["briefr_note"]
-    return meta
+    return sigma_rule_meta_from_dict(data)
 
 
 def _generate_rule_id(cve_id: str, technique_id: str, cwe_id: str = "") -> str:

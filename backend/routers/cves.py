@@ -65,7 +65,7 @@ from database import (
 )
 from detection.rule_sources import find_elastic_rules, find_sigma_rules
 from detection.siem_queries import get_siem_queries
-from detection.sigma_generator import generate_sigma_rule, parse_sigma_rule_meta
+from detection.sigma_generator import generate_sigma_rule_bundle
 from detection.context import get_detection_context
 from feeds.extended import (
     enrich_cve_circl,
@@ -1191,7 +1191,7 @@ async def cve_detection(
         first_technique = technique_ids[0] if technique_ids else ""
         has_community_rules = bool(sigma_rules or elastic_rules)
         detection_context = await get_detection_context(db, cve_upper)
-        generated_sigma = generate_sigma_rule(
+        generated_sigma, generated_sigma_meta = generate_sigma_rule_bundle(
             cve_id=cve_upper,
             technique_id=first_technique,
             product=product.strip() or "Affected Product",
@@ -1199,7 +1199,6 @@ async def cve_detection(
             cwe_ids=cwe_ids,
             detection_context=detection_context,
         )
-        generated_sigma_meta = parse_sigma_rule_meta(generated_sigma)
 
         # SIEM queries based on primary technique
         siem_queries = get_siem_queries(
