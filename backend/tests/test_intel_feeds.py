@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import sys
 from pathlib import Path
@@ -11,6 +10,8 @@ import httpx
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from tests.conftest import run_db_test
 
 import database as db_module
 import resilient_client
@@ -188,7 +189,7 @@ def test_fetch_vulnrichment_enrichments_targeted():
         assert "vulnrichment" in health
         assert health["vulnrichment"]["circuit_open"] is False
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_fetch_cvelistv5_delta_advances_watermark():
@@ -202,7 +203,7 @@ def test_fetch_cvelistv5_delta_advances_watermark():
         health = resilient_client.get_feed_health()
         assert "cvelistv5" in health
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_parse_vulnrichment_record_extracts_ssvc():
@@ -303,7 +304,7 @@ def test_apply_additive_enrichment_in_db(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_apply_additive_stores_ssvc_in_feed_cache(tmp_path, monkeypatch):
@@ -360,7 +361,7 @@ def test_apply_additive_stores_ssvc_in_feed_cache(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_scheduler_cvelistv5_sets_sync_state(tmp_path, monkeypatch):
@@ -377,7 +378,7 @@ def test_scheduler_cvelistv5_sets_sync_state(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())
 
 
 def test_scheduler_vulnrichment_updates_gap_cve(tmp_path, monkeypatch):
@@ -415,4 +416,4 @@ def test_scheduler_vulnrichment_updates_gap_cve(tmp_path, monkeypatch):
         finally:
             await db.close()
 
-    asyncio.run(run())
+    run_db_test(run())

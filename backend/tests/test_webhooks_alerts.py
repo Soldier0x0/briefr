@@ -9,7 +9,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tests.conftest import run_db_test
 
-import aiosqlite
 import httpx
 
 import resilient_client
@@ -73,7 +72,7 @@ def _mock_webhooks(monkeypatch):
 
 
 async def _seed_cve(db_path: Path, cve_id: str, description: str, is_kev: int = 0):
-    db = await aiosqlite.connect(db_path)
+    db = await get_db()
     try:
         await db.execute(
             """

@@ -1,6 +1,5 @@
 """Tests for /api/admin/scheduler/* endpoints."""
 
-import asyncio
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -11,6 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from database import init_db, get_db, get_sync_state_value
+from tests.conftest import run_db_test
 
 
 @pytest.fixture
@@ -77,7 +77,10 @@ def test_pause_job_persists_to_sync_state(admin_client, monkeypatch, tmp_path):
         assert resp.status_code == 200
         assert resp.json()["ok"] is True
 
-        # Verify persisted in sync_state
+        # Verify persisted in sync_state. Run on the TestClient's own portal
+        # loop/thread (not a fresh asyncio.run()) — the fixture's pool is
+        # already bound there, and a separate event loop can't use it
+        # (Postgres).
         async def check():
             db = await get_db()
             try:
@@ -86,7 +89,7 @@ def test_pause_job_persists_to_sync_state(admin_client, monkeypatch, tmp_path):
             finally:
                 await db.close()
 
-        val = asyncio.run(check())
+        val = admin_client.portal.call(check)
         assert val == "1"
     finally:
         sched_module._scheduler = original
@@ -113,7 +116,7 @@ def test_resume_job_sets_key_to_zero(admin_client, monkeypatch, tmp_path):
             finally:
                 await db.close()
 
-        val = asyncio.run(check())
+        val = admin_client.portal.call(check)
         assert val == "0"
     finally:
         sched_module._scheduler = original
@@ -233,7 +236,7 @@ def test_last_five_run_history_written_and_trimmed(monkeypatch, tmp_path):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    asyncio.run(__import__("database").init_db())
+    run_db_test(init_db())
 
     import scheduler as sched_module
 
@@ -262,7 +265,7 @@ def test_last_five_run_history_written_and_trimmed(monkeypatch, tmp_path):
         # Most recent (records=6) should be first
         assert history[0]["records_upserted"] == 6
 
-    asyncio.run(_do())
+    run_db_test(_do())
 
 
 def test_last_run_history_includes_error_message(monkeypatch, tmp_path):
@@ -273,7 +276,7 @@ def test_last_run_history_includes_error_message(monkeypatch, tmp_path):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
-    asyncio.run(__import__("database").init_db())
+    run_db_test(init_db())
 
     import scheduler as sched_module
 
@@ -299,4 +302,4 @@ def test_last_run_history_includes_error_message(monkeypatch, tmp_path):
         assert entry["had_error"] is True
         assert entry["error_message"] == "Connection timeout"
 
-    asyncio.run(_do())
+    run_db_test(_do())

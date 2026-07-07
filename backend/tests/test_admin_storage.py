@@ -1,5 +1,6 @@
 """Tests for /api/admin/storage endpoints — disk usage, purge, export."""
 
+import os
 import sys
 from pathlib import Path
 
@@ -7,6 +8,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
 from fastapi.testclient import TestClient
+
+# GET /api/admin/storage/export streams a `VACUUM INTO`'d SQLite file —
+# a SQLite-only feature (Postgres backups go through pg_dump, a separate
+# script). Not a fixture-pattern gap; the Postgres equivalent is a real
+# product feature, Post-B scope, not this CI-gate PR's.
+_requires_sqlite = pytest.mark.skipif(
+    os.environ.get("DATABASE_URL", "").startswith("postgresql"),
+    reason="storage export streams a VACUUM INTO SQLite file, no Postgres equivalent yet",
+)
 
 
 
@@ -112,6 +122,7 @@ def test_purge_epss_backfill_reset_no_confirm(admin_client):
     assert data["ok"] is True
 
 
+@_requires_sqlite
 def test_storage_export_returns_file(admin_client):
     resp = admin_client.get("/api/admin/storage/export")
     assert resp.status_code == 200

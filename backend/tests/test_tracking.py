@@ -43,11 +43,11 @@ def db_path(tmp_path, monkeypatch):
 async def _usage_count(service: str) -> int:
     db = await get_db()
     try:
-        row = await db.execute_fetchall(
+        rows = await db.execute_fetchall(
             "SELECT count FROM api_usage WHERE service = ?",
             (service,),
         )
-        return row[0][0] if row else 0
+        return rows[0]["count"] if rows else 0
     finally:
         await db.close()
 
