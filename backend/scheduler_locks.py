@@ -20,6 +20,7 @@ _LOCKS: dict[str, asyncio.Lock] = {
     "cvelistv5_incremental_sync": asyncio.Lock(),
     "embeddings_backfill": asyncio.Lock(),
     "llm_product_extraction": asyncio.Lock(),
+    "detection_context_sync": asyncio.Lock(),
     "exploit_sources_sync": asyncio.Lock(),
     "scheduled_backup": asyncio.Lock(),
     # _epss_backfill_lock has no corresponding job ID — stays a private var

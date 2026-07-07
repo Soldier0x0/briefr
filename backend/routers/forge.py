@@ -35,6 +35,7 @@ from pydantic import BaseModel, Field
 
 from database import get_db
 from detection.sigma_generator import TECHNIQUE_TEMPLATES, generate_sigma_rule
+from detection.context import get_detection_context
 from detection.siem_queries import TECHNIQUE_QUERIES, get_siem_queries
 from routers.cves import _stack_match_clause
 
@@ -309,12 +310,14 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
             except (json.JSONDecodeError, TypeError):
                 cwe_ids = []
 
+        detection_context = await get_detection_context(db, cve_id)
         sigma_yaml = generate_sigma_rule(
             cve_id=cve_id,
             technique_id=technique_id,
             product=product or "Affected Product",
             description=description,
             cwe_ids=cwe_ids,
+            detection_context=detection_context,
         )
         siem = get_siem_queries(
             technique_id=technique_id, cve_id=cve_id, product=product

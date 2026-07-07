@@ -12,6 +12,23 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-07 — D2 DetectionContext scaffold
+
+**Session:** Implemented **D2** — `DetectionContext` cache scaffold for the
+detection compose pipeline. New modules `detection/context.py` and
+`detection/context_sync.py`; scheduler job `detection_context_sync`
+(env-gated, default off); `generate_sigma_rule` reads cached envelope
+(product/CWE/class); detection API returns `detection_context`; retention
+prefix `detection_ctx:` in `cache_retention.py`.
+
+### Next steps
+
+Per execution queue: **K1–K3** (Groq migration deferred by user until closer
+to Aug 2026), then **D3–D5**. Post-B Postgres-native `db/` after D1 (before
+D4).
+
+---
+
 ## 2026-07-07 — Sprint doc + D1 CWE Sigma templates
 
 **Session:** Updated `docs/SPRINT_2026-07.md` with execution queue, expanded
