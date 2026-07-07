@@ -96,20 +96,19 @@ function ToastItem({ toast, onDismiss }) {
 
   useEffect(() => {
     if (toast.duration == null) return undefined
-    remainingRef.current = toast.duration
     scheduleDismiss()
     return clearTimer
   }, [toast.duration, toast.id, scheduleDismiss])
 
   const pause = () => {
-    if (toast.duration == null) return
+    if (toast.duration == null || pausedRef.current) return
     pausedRef.current = true
     remainingRef.current = Math.max(0, deadlineRef.current - Date.now())
     clearTimer()
   }
 
   const resume = () => {
-    if (toast.duration == null) return
+    if (toast.duration == null || !pausedRef.current) return
     pausedRef.current = false
     scheduleDismiss()
   }

@@ -25,12 +25,13 @@ export default function RestartBanner() {
       if (cancelled) return
       try {
         const res = await fetch('/api/health', { cache: 'no-store' })
+        if (cancelled) return
         if (res.ok) {
           setPhase('online')
-          pollRef.current = setTimeout(() => setPhase('hidden'), BACK_MS)
           return
         }
       } catch { /* backend still down */ }
+      if (cancelled) return
       pollRef.current = setTimeout(pollHealth, POLL_MS)
     }
 
@@ -39,6 +40,12 @@ export default function RestartBanner() {
       cancelled = true
       if (pollRef.current) clearTimeout(pollRef.current)
     }
+  }, [phase])
+
+  useEffect(() => {
+    if (phase !== 'online') return undefined
+    const timer = setTimeout(() => setPhase('hidden'), BACK_MS)
+    return () => clearTimeout(timer)
   }, [phase])
 
   if (phase === 'hidden') return null
