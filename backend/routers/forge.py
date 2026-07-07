@@ -320,7 +320,11 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
             detection_context=detection_context,
         )
         siem = get_siem_queries(
-            technique_id=technique_id, cve_id=cve_id, product=product
+            technique_id=technique_id,
+            cve_id=cve_id,
+            product=product,
+            cwe_ids=cwe_ids,
+            detection_context=detection_context,
         )
         log_patterns = siem.pop("log_patterns", [])
         title = f"{cve_id} — {technique_name} hunt pack"

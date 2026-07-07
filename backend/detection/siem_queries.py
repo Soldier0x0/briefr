@@ -8,6 +8,9 @@ Common field name variations documented per platform in each query's `notes`.
 
 from __future__ import annotations
 
+from detection.class_queries import CLASS_QUERIES
+from detection.class_router import _resolve_detection_class
+
 # ── Common field name reference ───────────────────────────
 # Listed in query `notes` so analysts know what to replace.
 
@@ -511,21 +514,38 @@ def get_siem_queries(
     technique_id: str,
     cve_id: str = "",
     product: str = "",
+    cwe_ids: list[str] | None = None,
+    detection_context: dict | None = None,
 ) -> dict:
     """
-    Return SIEM queries for a given ATT&CK technique ID.
-    Falls back to DEFAULT template if technique not found.
-    Substitutes {CVE_ID} and {PRODUCT} placeholders.
+    Return SIEM queries for a CVE/technique pair.
+    Selection order: ATT&CK technique template → class template (from unified
+    router) → DEFAULT. Substitutes {CVE_ID} and {PRODUCT} placeholders.
     """
     prefix = (technique_id or "").strip().upper()[:5]
-    template = dict(TECHNIQUE_QUERIES.get(prefix, TECHNIQUE_QUERIES["DEFAULT"]))
+    detection_class = _resolve_detection_class(
+        {
+            "technique_id": technique_id,
+            "cwe_ids": cwe_ids,
+            "detection_context": detection_context,
+        }
+    )
+    if prefix in TECHNIQUE_QUERIES:
+        template = dict(TECHNIQUE_QUERIES[prefix])
+    else:
+        template = dict(
+            CLASS_QUERIES.get(detection_class, TECHNIQUE_QUERIES["DEFAULT"])
+        )
 
     subs = {
         "{CVE_ID}": cve_id or "CVE-XXXX-XXXXX",
         "{PRODUCT}": product or "affected_product",
     }
 
-    result: dict = {"title": template.get("title", "Suspicious Activity")}
+    result: dict = {
+        "title": template.get("title", "Suspicious Activity"),
+        "detection_class": detection_class,
+    }
     for platform in ("elastic_kql", "splunk_spl", "sentinel_kql", "qradar_aql"):
         q = template.get(platform, "")
         for k, v in subs.items():

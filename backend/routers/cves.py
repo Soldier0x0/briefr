@@ -1204,6 +1204,8 @@ async def cve_detection(
             technique_id=first_technique,
             cve_id=cve_upper,
             product=product.strip(),
+            cwe_ids=cwe_ids,
+            detection_context=detection_context,
         )
 
         from detection.yara_generator import find_yara_rules_for_cve

@@ -13,51 +13,22 @@ import aiosqlite
 
 from db.cache import get_feed_cache, set_feed_cache
 from db.dialect import utcnow_str
-from detection.sigma_generator import _normalize_cwe_id
+from detection.class_router import (
+    CWE_CLASS_SLUGS,
+    TECHNIQUE_CLASS_SLUGS,
+    normalize_cwe_ids,
+    resolve_detection_class,
+)
 
 DETECTION_CTX_PREFIX = "detection_ctx:"
 DETECTION_CTX_CACHE_HOURS = 168.0
 
-# CWE → stable class slug (shared by D3 unified router later).
-CWE_CLASS_SLUGS: dict[str, str] = {
-    "CWE-22": "path_traversal",
-    "CWE-23": "path_traversal",
-    "CWE-35": "path_traversal",
-    "CWE-78": "cmd_injection",
-    "CWE-89": "sqli",
-    "CWE-79": "xss",
-    "CWE-502": "deserialization",
-    "CWE-94": "code_injection",
-    "CWE-95": "code_injection",
-    "CWE-434": "unsafe_upload",
-    "CWE-918": "ssrf",
-    "CWE-611": "xxe",
-    "CWE-287": "auth_bypass",
-    "CWE-288": "auth_bypass",
-    "CWE-306": "auth_bypass",
-    "CWE-416": "memory_corruption",
-    "CWE-787": "memory_corruption",
-    "CWE-119": "memory_corruption",
-    "CWE-122": "memory_corruption",
-    "CWE-798": "default_credentials",
-}
-
-TECHNIQUE_CLASS_SLUGS: dict[str, str] = {
-    "T1190": "web_exploit",
-    "T1133": "remote_access",
-    "T1059": "script_execution",
-    "T1203": "client_execution",
-    "T1068": "privilege_escalation",
-    "T1055": "process_injection",
-    "T1027": "obfuscation",
-    "T1036": "masquerading",
-    "T1110": "brute_force",
-    "T1003": "credential_dumping",
-    "T1021": "lateral_movement",
-    "T1570": "lateral_transfer",
-    "T1071": "c2_application",
-    "T1095": "c2_non_application",
-}
+# Re-export maps for tests and callers that imported from context (D2).
+__all__ = [
+    "CWE_CLASS_SLUGS",
+    "TECHNIQUE_CLASS_SLUGS",
+    "resolve_detection_class",
+]
 
 
 def detection_context_cache_key(cve_id: str) -> str:
@@ -65,20 +36,7 @@ def detection_context_cache_key(cve_id: str) -> str:
 
 
 def _parse_cwe_ids(raw: Any) -> list[str]:
-    if not raw:
-        return []
-    try:
-        parsed = json.loads(raw) if isinstance(raw, str) else raw
-    except (json.JSONDecodeError, TypeError):
-        return []
-    if not isinstance(parsed, list):
-        return []
-    out: list[str] = []
-    for item in parsed:
-        normalized = _normalize_cwe_id(str(item))
-        if normalized:
-            out.append(normalized)
-    return out
+    return normalize_cwe_ids(raw)
 
 
 def _first_product(affected_products: Any) -> str:
@@ -101,24 +59,6 @@ def _first_product(affected_products: Any) -> str:
     return first.split(":")[-1].replace("_", " ").strip()
 
 
-def resolve_detection_class(
-    technique_id: str,
-    cwe_ids: list[str] | None,
-) -> str:
-    """Map ATT&CK technique or CWE to a stable detection class slug."""
-    prefix = (technique_id or "").strip().upper()[:5]
-    if prefix in TECHNIQUE_CLASS_SLUGS:
-        return TECHNIQUE_CLASS_SLUGS[prefix]
-
-    for raw in cwe_ids or []:
-        cwe_id = _normalize_cwe_id(str(raw))
-        slug = CWE_CLASS_SLUGS.get(cwe_id)
-        if slug:
-            return slug
-
-    return "generic"
-
-
 def build_detection_context(
     *,
     cve_id: str,
@@ -128,7 +68,7 @@ def build_detection_context(
     generated_at: str | None = None,
 ) -> dict:
     """Build a static DetectionContext envelope (no LLM)."""
-    normalized_cwes = [norm for c in (cwe_ids or []) if (norm := _normalize_cwe_id(c))]
+    normalized_cwes = normalize_cwe_ids(cwe_ids)
     product = _first_product(affected_products)
     return {
         "cwe_ids": normalized_cwes,

@@ -531,6 +531,7 @@ def generate_sigma_rule(
     Generate a Sigma rule YAML string for a CVE/technique pair.
     Selection order: ATT&CK technique template → CWE class template → generic default.
     """
+    from detection.class_router import _resolve_detection_class
     from detection.context import merge_detection_inputs
 
     effective_product, effective_cwe_ids, effective_technique = merge_detection_inputs(
@@ -549,6 +550,14 @@ def generate_sigma_rule(
     extra_note = (template.get("briefr_note_extra") or "").strip()
     if extra_note:
         briefr_note = f"{briefr_note} — {extra_note}"
+
+    resolved_class = _resolve_detection_class(
+        {
+            "technique_id": effective_technique,
+            "cwe_ids": effective_cwe_ids,
+            "detection_context": detection_context,
+        }
+    )
 
     rule: dict = {
         "title": f"{title_product} - {cve_id} Exploitation Attempt",
@@ -572,9 +581,8 @@ def generate_sigma_rule(
         "briefr_note": briefr_note,
     }
 
-    ctx_class = (detection_context or {}).get("class")
-    if ctx_class:
-        rule["briefr_class"] = ctx_class
+    if resolved_class != "generic":
+        rule["briefr_class"] = resolved_class
 
     # Add technique and CVE tags
     if technique_id:
