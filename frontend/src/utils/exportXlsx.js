@@ -1,7 +1,7 @@
 /**
  * Analyst-friendly Excel (.xlsx) export with formatting.
  * CSV export stays in exportCsv.js — separate button, plain text for integrations.
- * write-excel-file loads on first XLSX export via dynamic import.
+ * write-excel-file (sync zip) loads on first XLSX export via dynamic import.
  */
 
 const HEADERS = [
@@ -205,11 +205,36 @@ export function buildCvesSheetData(cves) {
   }
 }
 
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.rel = 'noopener'
+  link.style.display = 'none'
+  document.body.appendChild(link)
+  link.click()
+  window.setTimeout(() => {
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }, 200)
+}
+
 export async function downloadCvesXlsx(cves, filename) {
-  const writeExcelFile = (await import('write-excel-file/browser')).default
+  // write-excel-file/browser uses fflate's async zip() with Web Workers (blob: URLs).
+  // That promise can hang indefinitely in production static bundles — use sync zip instead.
+  const [
+    { generateXlsxFileSync },
+    { default: convertFileContentToUint8Array },
+  ] = await Promise.all([
+    import('write-excel-file/modules/export/writeXlsxFileUniversal.js'),
+    import('write-excel-file/modules/export/convertFileContentToUint8ArrayUniversal.js'),
+  ])
+
   const sheet = buildCvesSheetData(cves)
   const { data, ...options } = sheet
-  await writeExcelFile(data, options).toFile(filename)
+  const blob = await generateXlsxFileSync(data, options, undefined, convertFileContentToUint8Array)
+  downloadBlob(blob, filename)
 }
 
 export function exportXlsxFilename() {
