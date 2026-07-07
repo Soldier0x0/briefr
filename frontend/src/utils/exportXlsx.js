@@ -1,7 +1,8 @@
 /**
- * Analyst-friendly Excel (.xlsx) export with formatting. CSV export stays in exportCsv.js.
+ * Analyst-friendly Excel (.xlsx) export with formatting.
+ * CSV export stays in exportCsv.js — separate button, plain text for integrations.
+ * write-excel-file loads on first XLSX export via dynamic import.
  */
-import ExcelJS from 'exceljs'
 
 const HEADERS = [
   'CVE ID',
@@ -30,22 +31,29 @@ const CENTER_COLS = new Set([
   'Patch Status',
 ])
 
+const WRAP_COLS = new Set(['Description', 'References'])
+
 const COLORS = {
-  headerFill: 'FFD9D9D9',
-  altRowFill: 'FFF5F5F5',
+  headerFill: '#d9d9d9',
+  altRowFill: '#f5f5f5',
+  headerBorder: '#b0b0b0',
   severity: {
-    CRITICAL: 'FF8B0000',
-    HIGH: 'FFFF8C00',
-    MEDIUM: 'FFFFFF00',
-    LOW: 'FF90EE90',
+    CRITICAL: '#8b0000',
+    HIGH: '#ff8c00',
+    MEDIUM: '#ffff00',
+    LOW: '#90ee90',
   },
-  kevYes: 'FFFF6B6B',
+  kevYes: '#ff6b6b',
   patch: {
-    Available: 'FF90EE90',
-    'Not Available': 'FFFFA500',
-    'End of Life': 'FFFF4444',
+    Available: '#90ee90',
+    'Not Available': '#ffa500',
+    'End of Life': '#ff4444',
   },
 }
+
+const COLUMN_WIDTHS = [
+  14, 12, 8, 10, 12, 14, 16, 28, 20, 55, 40, 28, 14,
+]
 
 function parseProducts(products) {
   const vendors = new Set()
@@ -112,189 +120,96 @@ export function cveToXlsxRow(cve) {
   }
 }
 
-function columnLetter(index) {
-  let n = index
-  let s = ''
-  while (n > 0) {
-    const rem = (n - 1) % 26
-    s = String.fromCharCode(65 + rem) + s
-    n = Math.floor((n - 1) / 26)
+function headerCell(value) {
+  return {
+    value,
+    fontWeight: 'bold',
+    backgroundColor: COLORS.headerFill,
+    align: 'center',
+    alignVertical: 'center',
+    wrap: true,
+    bottomBorderColor: COLORS.headerBorder,
+    bottomBorderStyle: 'thin',
   }
-  return s
 }
 
-function estimateRowHeight(text, widthChars = 50) {
-  const len = (text || '').length
-  if (!len) return 18
-  const lines = Math.ceil(len / Math.max(12, widthChars))
-  return Math.min(180, Math.max(18, lines * 14))
+function dataCell(header, value, row, isAltRow) {
+  const opts = {
+    align: CENTER_COLS.has(header) ? 'center' : 'left',
+    alignVertical: header === 'Description' ? 'top' : 'center',
+    wrap: WRAP_COLS.has(header),
+  }
+
+  if (isAltRow) {
+    opts.backgroundColor = COLORS.altRowFill
+  }
+
+  if (header === 'Severity' && COLORS.severity[row.severity]) {
+    opts.backgroundColor = COLORS.severity[row.severity]
+  }
+  if (header === 'KEV Status' && row.kevStatus === 'Yes') {
+    opts.backgroundColor = COLORS.kevYes
+  }
+  if (header === 'Patch Status' && COLORS.patch[row.patchStatus]) {
+    opts.backgroundColor = COLORS.patch[row.patchStatus]
+  }
+
+  if (header === 'CVSS' && row.cvss != null) {
+    return { ...opts, value: row.cvss, type: Number, format: '0.0' }
+  }
+  if (header === 'EPSS' && row.epss != null) {
+    return { ...opts, value: row.epss, type: Number, format: '0.00%' }
+  }
+  if ((header === 'Published Date' || header === 'Last Modified Date') && value instanceof Date) {
+    return { ...opts, value, type: Date, format: 'yyyy-mm-dd' }
+  }
+
+  if (value == null || value === '') {
+    return Object.keys(opts).length ? { ...opts, value: null } : null
+  }
+
+  return { ...opts, value }
 }
 
-export async function buildCvesWorkbook(cves) {
-  const workbook = new ExcelJS.Workbook()
-  workbook.creator = 'BRIEFR'
-  workbook.created = new Date()
-
-  const sheet = workbook.addWorksheet('CVE Export', {
-    views: [{ state: 'frozen', ySplit: 1, xSplit: 1, topLeftCell: 'B2', activeCell: 'B2' }],
-  })
-
-  const headerRow = sheet.addRow(HEADERS)
-  headerRow.height = 22
-  headerRow.eachCell(cell => {
-    cell.font = { bold: true }
-    cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: COLORS.headerFill },
-    }
-    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
-    cell.border = {
-      bottom: { style: 'thin', color: { argb: 'FFB0B0B0' } },
-    }
-  })
-
+export function buildCvesSheetData(cves) {
   const rows = cves.map(cveToXlsxRow)
-  rows.forEach((row, idx) => {
-    const excelRow = sheet.addRow([
-      row.cveId,
-      row.severity,
-      row.cvss,
-      row.epss,
-      row.kevStatus,
-      row.published,
-      row.modified,
-      row.product,
-      row.vendor,
-      row.description,
-      row.references,
-      row.affectedTechnology,
-      row.patchStatus,
-    ])
+  const data = [
+    HEADERS.map(headerCell),
+    ...rows.map((row, idx) => {
+      const values = [
+        row.cveId,
+        row.severity,
+        row.cvss,
+        row.epss,
+        row.kevStatus,
+        row.published,
+        row.modified,
+        row.product,
+        row.vendor,
+        row.description,
+        row.references,
+        row.affectedTechnology,
+        row.patchStatus,
+      ]
+      return values.map((value, colIdx) => dataCell(HEADERS[colIdx], value, row, idx % 2 === 1))
+    }),
+  ]
 
-    const isAlt = idx % 2 === 1
-    excelRow.height = estimateRowHeight(row.description, 55)
-
-    excelRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-      const header = HEADERS[colNumber - 1]
-      const hAlign = CENTER_COLS.has(header) ? 'center' : 'left'
-      const vAlign = header === 'Description' ? 'top' : 'middle'
-
-      cell.alignment = {
-        vertical: vAlign,
-        horizontal: hAlign,
-        wrapText: header === 'Description' || header === 'References',
-      }
-
-      if (isAlt) {
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: COLORS.altRowFill },
-        }
-      }
-
-      if (header === 'CVSS' && row.cvss != null) {
-        cell.numFmt = '0.0'
-      }
-      if (header === 'EPSS' && row.epss != null) {
-        cell.numFmt = '0.00%'
-      }
-      if ((header === 'Published Date' || header === 'Last Modified Date') && cell.value instanceof Date) {
-        cell.numFmt = 'yyyy-mm-dd'
-      }
-    })
-  })
-
-  const lastCol = HEADERS.length
-  const lastRow = rows.length + 1
-  sheet.autoFilter = {
-    from: { row: 1, column: 1 },
-    to: { row: lastRow, column: lastCol },
+  return {
+    data,
+    sheet: 'CVE Export',
+    columns: COLUMN_WIDTHS.map(width => ({ width })),
+    stickyRowsCount: 1,
+    stickyColumnsCount: 1,
+    dateFormat: 'yyyy-mm-dd',
   }
-
-  sheet.columns.forEach((col, i) => {
-    const header = HEADERS[i]
-    let maxLen = header.length
-    sheet.getColumn(i + 1).eachCell({ includeEmpty: false }, cell => {
-      let len = 10
-      if (cell.value instanceof Date) {
-        len = 12
-      } else if (typeof cell.value === 'number') {
-        len = 8
-      } else if (cell.value != null) {
-        const lines = String(cell.value).split('\n')
-        len = Math.max(...lines.map(l => l.length), 0)
-      }
-      maxLen = Math.max(maxLen, Math.min(len, header === 'Description' ? 80 : 45))
-    })
-    col.width = Math.min(60, Math.max(10, maxLen + 2))
-  })
-  sheet.getColumn(HEADERS.indexOf('Description') + 1).width = 55
-  sheet.getColumn(HEADERS.indexOf('References') + 1).width = 40
-
-  if (rows.length > 0) {
-    const sevCol = columnLetter(HEADERS.indexOf('Severity') + 1)
-    const kevCol = columnLetter(HEADERS.indexOf('KEV Status') + 1)
-    const patchCol = columnLetter(HEADERS.indexOf('Patch Status') + 1)
-
-    const sevRules = Object.entries(COLORS.severity).map(([sev, color]) => ({
-      type: 'expression',
-      formulae: [`$${sevCol}2="${sev}"`],
-      style: {
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: color } },
-      },
-    }))
-    sheet.addConditionalFormatting({
-      ref: `${sevCol}2:${sevCol}${lastRow}`,
-      rules: sevRules,
-    })
-
-    sheet.addConditionalFormatting({
-      ref: `${kevCol}2:${kevCol}${lastRow}`,
-      rules: [{
-        type: 'expression',
-        formulae: [`$${kevCol}2="Yes"`],
-        style: {
-          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.kevYes } },
-        },
-      }],
-    })
-
-    const patchRules = Object.entries(COLORS.patch).map(([status, color]) => ({
-      type: 'expression',
-      formulae: [`$${patchCol}2="${status}"`],
-      style: {
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: color } },
-      },
-    }))
-    sheet.addConditionalFormatting({
-      ref: `${patchCol}2:${patchCol}${lastRow}`,
-      rules: patchRules,
-    })
-  }
-
-  return workbook
 }
 
 export async function downloadCvesXlsx(cves, filename) {
-  const workbook = await buildCvesWorkbook(cves)
-  const buffer = await workbook.xlsx.writeBuffer()
-  const blob = new Blob([buffer], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  link.rel = 'noopener'
-  link.style.display = 'none'
-  document.body.appendChild(link)
-  link.click()
-  window.setTimeout(() => {
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }, 200)
+  const writeExcelFile = (await import('write-excel-file/browser')).default
+  const sheet = buildCvesSheetData(cves)
+  const { data, ...options } = sheet
+  await writeExcelFile(data, options).toFile(filename)
 }
 
 export function exportXlsxFilename() {

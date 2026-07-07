@@ -11,7 +11,6 @@ import {
   suppressCVECorrelation,
 } from '../../api.js'
 import { buildSingleReport, copyToClipboard } from '../../utils/report.js'
-import { downloadSingleCvePdf } from '../../utils/pdfReport.js'
 import PdfExportModal from '../PdfExportModal.jsx'
 import { useInvestigationOptional } from '../../context/InvestigationContext.jsx'
 import { useAssetProfileOptional } from '../../context/AssetProfileContext.jsx'
@@ -373,6 +372,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     setPdfBusy(true)
     setPdfError(null)
     try {
+      const { downloadSingleCvePdf } = await import('../../utils/pdfReport.js')
       await downloadSingleCvePdf(cve, {
         analystName,
         sparklineElement: epssSparklineRef.current,

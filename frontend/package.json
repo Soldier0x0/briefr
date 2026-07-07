@@ -14,13 +14,13 @@
     "@fontsource/dm-serif-display": "^5.2.8",
     "@fontsource/ibm-plex-mono": "^5.2.7",
     "chart.js": "^4.5.1",
-    "exceljs": "^4.4.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.23.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-router-dom": "^7.18.1"
+    "react-router-dom": "^7.18.1",
+    "write-excel-file": "^4.1.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.3",

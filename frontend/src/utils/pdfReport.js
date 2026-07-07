@@ -1,8 +1,7 @@
 /**
  * Browser-side CVE PDF reports (jsPDF + optional html2canvas capture).
+ * Heavy PDF libs load on first export via dynamic import — not on first paint.
  */
-import { jsPDF } from 'jspdf'
-import html2canvas from 'html2canvas'
 import { fetchCVE, fetchCVECorrelation, fetchCVEDetection, fetchCVESentences } from '../api.js'
 import { appOrigin } from './appLinks.js'
 import {
@@ -24,6 +23,18 @@ import {
 } from './exportCommon.js'
 
 const CONTENT_TOP = 18
+
+let pdfLibsPromise = null
+
+function loadPdfLibs() {
+  if (!pdfLibsPromise) {
+    pdfLibsPromise = Promise.all([
+      import('jspdf'),
+      import('html2canvas'),
+    ]).then(([{ jsPDF }, { default: html2canvas }]) => ({ jsPDF, html2canvas }))
+  }
+  return pdfLibsPromise
+}
 
 const DATA_SOURCES = [
   { name: 'NVD (NIST)', url: 'https://nvd.nist.gov' },
@@ -287,6 +298,7 @@ function sourcesForCve(cve) {
 async function captureSparkline(element) {
   if (!element) return null
   try {
+    const { html2canvas } = await loadPdfLibs()
     const canvas = await html2canvas(element, {
       backgroundColor: '#ffffff',
       scale: 2,
@@ -422,6 +434,7 @@ export async function enrichCveForPdf(cve) {
 }
 
 export async function downloadSingleCvePdf(cve, options = {}) {
+  const { jsPDF } = await loadPdfLibs()
   const enriched = await enrichCveForPdf(cve)
   const summaryData = await loadPdfExecutiveSummary({
     cves: [enriched],
@@ -444,6 +457,7 @@ export async function downloadSingleCvePdf(cve, options = {}) {
 }
 
 export async function downloadBulkCvePdf(cves, options = {}) {
+  const { jsPDF } = await loadPdfLibs()
   const enrichedList = await Promise.all(cves.map(c => enrichCveForPdf(c)))
   const summaryData = await loadPdfExecutiveSummary({
     cves: enrichedList,

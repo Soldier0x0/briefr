@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from 'rea
 import { Routes, Route, useLocation, Link, useSearchParams } from 'react-router-dom'
 import { InvestigationProvider } from './context/InvestigationContext.jsx'
 import { overlayDepth } from './hooks/useModalLayer.js'
-import InvestigationPanel from './components/InvestigationPanel.jsx'
 import Header from './components/Header.jsx'
 import Hero from './components/Hero.jsx'
 import StatsRow from './components/StatsRow.jsx'
@@ -11,18 +10,12 @@ import WhatChangedPanel from './components/WhatChangedPanel.jsx'
 import MorningBrief from './components/MorningBrief.jsx'
 import CVEFeed from './components/CVEFeed.jsx'
 import Sidebar from './components/Sidebar.jsx'
-import IOCLookup from './components/IOCLookup.jsx'
-import CaseStudies from './components/CaseStudies.jsx'
-import Forge from './components/Forge.jsx'
-import DetailDrawer from './components/DetailDrawer'
 import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
 import ToolErrorBoundary from './components/ToolErrorBoundary.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
-import AdminPage from './pages/admin/AdminPage.jsx'
-import WallboardPage from './pages/WallboardPage.jsx'
 import RequireAuth from './components/RequireAuth.jsx'
 import { useToast, ToastArea } from './components/Toast.jsx'
 import { fetchStats, fetchHealth, fetchCVE } from './api.js'
@@ -38,9 +31,23 @@ import { createCveDrawerController } from './utils/openCveDrawer.js'
 import { lazyWithReload } from './utils/lazyWithReload.js'
 import { ingestLogUrl } from './utils/adminLinks.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
-import './components/InvestigationPanel.css'
 
 const BriefCharts = lazyWithReload(() => import('./components/BriefCharts.jsx'))
+const InvestigationPanel = lazyWithReload(() => import('./components/InvestigationPanel.jsx'))
+const IOCLookup = lazyWithReload(() => import('./components/IOCLookup.jsx'))
+const CaseStudies = lazyWithReload(() => import('./components/CaseStudies.jsx'))
+const Forge = lazyWithReload(() => import('./components/Forge.jsx'))
+const DetailDrawer = lazyWithReload(() => import('./components/DetailDrawer'))
+const AdminPage = lazyWithReload(() => import('./pages/admin/AdminPage.jsx'))
+const WallboardPage = lazyWithReload(() => import('./pages/WallboardPage.jsx'))
+
+function TabLoading({ label }) {
+  return (
+    <p className="brief-charts-loading mono" aria-live="polite">
+      Loading {label}…
+    </p>
+  )
+}
 
 const DEFAULT_FILTERS = {
   severity: null,
@@ -541,8 +548,20 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
-        <Route path="/admin/*" element={<RequireAuth><AdminPage /></RequireAuth>} />
-        <Route path="/wallboard" element={<ToolErrorBoundary label="Wallboard"><WallboardPage /></ToolErrorBoundary>} />
+        <Route path="/admin/*" element={
+          <RequireAuth>
+            <Suspense fallback={<TabLoading label="admin" />}>
+              <AdminPage />
+            </Suspense>
+          </RequireAuth>
+        } />
+        <Route path="/wallboard" element={
+          <ToolErrorBoundary label="Wallboard">
+            <Suspense fallback={<TabLoading label="wallboard" />}>
+              <WallboardPage />
+            </Suspense>
+          </ToolErrorBoundary>
+        } />
         <Route
           path="*"
           element={(
@@ -645,6 +664,22 @@ function AppLayout({
   onWatchlistChange,
 }) {
   const { showPanel, panelExpanded } = useInvestigation()
+  const [mountedTabs, setMountedTabs] = useState({ brief: true })
+  const [drawerMounted, setDrawerMounted] = useState(false)
+  const [invMounted, setInvMounted] = useState(false)
+
+  useEffect(() => {
+    setMountedTabs(prev => (prev[activeTab] ? prev : { ...prev, [activeTab]: true }))
+  }, [activeTab])
+
+  useEffect(() => {
+    if (selectedCVE) setDrawerMounted(true)
+  }, [selectedCVE])
+
+  useEffect(() => {
+    if (showPanel) setInvMounted(true)
+  }, [showPanel])
+
   const layoutClass = [
     'app',
     'app-layout',
@@ -654,7 +689,11 @@ function AppLayout({
 
   return (
     <div className={layoutClass}>
-      <InvestigationPanel />
+      {invMounted && (
+        <Suspense fallback={null}>
+          <InvestigationPanel />
+        </Suspense>
+      )}
       <div className="app-shell">
         <Header
           activeTab={activeTab}
@@ -689,8 +728,9 @@ function AppLayout({
             </ToolErrorBoundary>
           </div>
           <div className="app-tab-panel" hidden={activeTab !== 'feed'} aria-hidden={activeTab !== 'feed'}>
-            <ToolErrorBoundary label="Feed">
-              <FeedView
+            {mountedTabs.feed && (
+              <ToolErrorBoundary label="Feed">
+                <FeedView
                 filters={filters}
                 setFilters={setFilters}
                 selectedCVE={selectedCVE}
@@ -713,25 +753,38 @@ function AppLayout({
                 onWatchlistChange={onWatchlistChange}
                 feedHealth={feedHealth}
               />
-            </ToolErrorBoundary>
+              </ToolErrorBoundary>
+            )}
           </div>
           <div className="app-tab-panel" hidden={activeTab !== 'ioc'} aria-hidden={activeTab !== 'ioc'}>
-            <ToolErrorBoundary label="IOC Lookup">
-              <IOCLookup key={iocSessionKey} prefill={iocPrefill} />
-            </ToolErrorBoundary>
+            {mountedTabs.ioc && (
+              <Suspense fallback={<TabLoading label="IOC Lookup" />}>
+                <ToolErrorBoundary label="IOC Lookup">
+                  <IOCLookup key={iocSessionKey} prefill={iocPrefill} />
+                </ToolErrorBoundary>
+              </Suspense>
+            )}
           </div>
           <div className="app-tab-panel" hidden={activeTab !== 'atlas'} aria-hidden={activeTab !== 'atlas'}>
-            <ToolErrorBoundary label="ATLAS">
-              <CaseStudies
-                initialSearch={atlasActorFilter || ''}
-                onClearFilter={onClearAtlasFilter}
-              />
-            </ToolErrorBoundary>
+            {mountedTabs.atlas && (
+              <Suspense fallback={<TabLoading label="ATLAS" />}>
+                <ToolErrorBoundary label="ATLAS">
+                  <CaseStudies
+                    initialSearch={atlasActorFilter || ''}
+                    onClearFilter={onClearAtlasFilter}
+                  />
+                </ToolErrorBoundary>
+              </Suspense>
+            )}
           </div>
           <div className="app-tab-panel" hidden={activeTab !== 'forge'} aria-hidden={activeTab !== 'forge'}>
-            <ToolErrorBoundary label="Forge">
-              <Forge />
-            </ToolErrorBoundary>
+            {mountedTabs.forge && (
+              <Suspense fallback={<TabLoading label="Forge" />}>
+                <ToolErrorBoundary label="Forge">
+                  <Forge />
+                </ToolErrorBoundary>
+              </Suspense>
+            )}
           </div>
         </div>
 
@@ -758,20 +811,24 @@ function AppLayout({
 
 
             <ToolErrorBoundary key={selectedCVE?.cve_id || 'empty'} label="CVE detail" onReset={onCloseCVE}>
-              <DetailDrawer
-                cve={selectedCVE}
-                loading={drawerLoading}
-                error={drawerError}
-                onRetry={onRetryDrawer}
-                onClose={onCloseCVE}
-                onCveReplace={onCveReplace}
-                watchlistState={
-                  selectedCVE
-                    ? (watchlist?.getState(selectedCVE.cve_id) || selectedCVE.watchlist_state)
-                    : null
-                }
-                onWatchlistChange={onWatchlistChange}
-              />
+              {drawerMounted && (
+                <Suspense fallback={null}>
+                  <DetailDrawer
+                    cve={selectedCVE}
+                    loading={drawerLoading}
+                    error={drawerError}
+                    onRetry={onRetryDrawer}
+                    onClose={onCloseCVE}
+                    onCveReplace={onCveReplace}
+                    watchlistState={
+                      selectedCVE
+                        ? (watchlist?.getState(selectedCVE.cve_id) || selectedCVE.watchlist_state)
+                        : null
+                    }
+                    onWatchlistChange={onWatchlistChange}
+                  />
+                </Suspense>
+              )}
             </ToolErrorBoundary>
 
             {digestOpen && (
