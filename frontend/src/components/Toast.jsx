@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle2, XCircle, AlertTriangle, Info, X, Copy } from 'lucide-react'
 
@@ -10,43 +10,35 @@ const VARIANT_ICON = {
 }
 
 const DEFAULT_DURATION = {
-  success: 4500,
-  error: 10000,
-  warning: 8000,
-  info: 4500,
+  success: 8000,
+  error: null,
+  warning: null,
+  info: 8000,
 }
 
 function normalizeToast(input, ok = true) {
   if (typeof input === 'string') {
+    const variant = ok ? 'success' : 'error'
     return {
       message: input,
-      variant: ok ? 'success' : 'error',
+      variant,
       actions: [],
       requestId: null,
-      duration: ok ? DEFAULT_DURATION.success : DEFAULT_DURATION.error,
+      duration: DEFAULT_DURATION[variant],
     }
   }
+  const variant = input.variant || 'info'
   return {
     message: input.message || '',
-    variant: input.variant || 'info',
+    variant,
     actions: input.actions || [],
     requestId: input.requestId || null,
-    duration: input.duration ?? DEFAULT_DURATION[input.variant] ?? DEFAULT_DURATION.info,
+    duration: input.duration !== undefined ? input.duration : DEFAULT_DURATION[variant],
   }
 }
 
-// 401 already triggers the dedicated session-expired redirect (briefr-auth-expired
-// in api.js) and 422 is a client-input validation error analyst views already show
-// inline (e.g. IOC lookup's "Invalid domain format") — a toast on top is redundant
-// noise, not a system failure. 404 is deliberately NOT filtered here: e.g. a CVE
-// detail fetch 404ing (CVE disappeared/renumbered) is a real, previously-silent
-// failure this toast exists to surface.
 const SUPPRESSED_STATUSES = new Set([401, 422])
 
-/** Fire-and-forget API error notification, decoupled from the React tree
-    (same pattern as the 'briefr-auth-expired' event in api.js) so any
-    component can report a failed fetch without prop-drilling a toast
-    handler through intermediate views. */
 export function notifyApiError(err) {
   if (SUPPRESSED_STATUSES.has(err?.status)) return
   window.dispatchEvent(new CustomEvent('briefr-api-error', {
@@ -63,80 +55,131 @@ export function useToast() {
   const show = useCallback((msgOrOpts, ok = true) => {
     const id = Date.now() + Math.random()
     const payload = normalizeToast(msgOrOpts, ok)
-    setToasts(t => [...t, { id, ...payload, leaving: false }])
-    if (payload.variant !== 'error') {
-      setTimeout(() => dismiss(id), payload.duration)
-    }
-  }, [dismiss])
+    setToasts(t => {
+      const next = [...t, { id, ...payload, leaving: false }]
+      return next.length > 4 ? next.slice(-4) : next
+    })
+  }, [])
   return { toasts, show, dismiss }
 }
 
 const CLIPBOARD_AVAILABLE = typeof navigator !== 'undefined' && Boolean(navigator.clipboard?.writeText)
 
-function copyRequestId(requestId) {
-  if (!requestId || !CLIPBOARD_AVAILABLE) return
-  navigator.clipboard.writeText(requestId).catch(() => {})
+function ToastItem({ toast, onDismiss }) {
+  const Icon = VARIANT_ICON[toast.variant] || Info
+  const variantClass = toast.variant === 'success'
+    ? 'admin-toast-ok'
+    : toast.variant === 'error'
+      ? 'admin-toast-error'
+      : toast.variant === 'warning'
+        ? 'admin-toast-warn'
+        : 'admin-toast-info'
+  const [copied, setCopied] = useState(false)
+  const remainingRef = useRef(toast.duration ?? DEFAULT_DURATION.info ?? 8000)
+  const timerRef = useRef(null)
+  const pausedRef = useRef(false)
+  const deadlineRef = useRef(0)
+
+  const clearTimer = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+  }
+
+  const scheduleDismiss = useCallback(() => {
+    clearTimer()
+    if (toast.duration == null || pausedRef.current) return
+    deadlineRef.current = Date.now() + remainingRef.current
+    timerRef.current = setTimeout(() => onDismiss(toast.id), remainingRef.current)
+  }, [onDismiss, toast.duration, toast.id])
+
+  useEffect(() => {
+    if (toast.duration == null) return undefined
+    scheduleDismiss()
+    return clearTimer
+  }, [toast.duration, toast.id, scheduleDismiss])
+
+  const pause = () => {
+    if (toast.duration == null || pausedRef.current) return
+    pausedRef.current = true
+    remainingRef.current = Math.max(0, deadlineRef.current - Date.now())
+    clearTimer()
+  }
+
+  const resume = () => {
+    if (toast.duration == null || !pausedRef.current) return
+    pausedRef.current = false
+    scheduleDismiss()
+  }
+
+  async function copyRequestId() {
+    if (!toast.requestId || !CLIPBOARD_AVAILABLE) return
+    try {
+      await navigator.clipboard.writeText(toast.requestId)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch { /* ignore */ }
+  }
+
+  return (
+    <div
+      className={`admin-toast ${variantClass} ${toast.leaving ? 'admin-toast-leaving' : ''}`}
+      role={toast.variant === 'error' ? 'alert' : 'status'}
+      onMouseEnter={pause}
+      onMouseLeave={resume}
+      onFocus={pause}
+      onBlur={resume}
+    >
+      <Icon size={15} strokeWidth={2} />
+      <div className="admin-toast-body">
+        <span className="admin-toast-msg">{toast.message}</span>
+        {toast.requestId && (
+          <div className="admin-toast-request">
+            <span className="mono">ref {toast.requestId}</span>
+            {CLIPBOARD_AVAILABLE && (
+              <button
+                type="button"
+                className="admin-toast-copy"
+                onClick={copyRequestId}
+                title="Copy request ID"
+              >
+                <Copy size={12} strokeWidth={2} />
+                {copied ? <span className="admin-toast-copied">Copied</span> : null}
+              </button>
+            )}
+          </div>
+        )}
+        {toast.actions?.length > 0 && (
+          <div className="admin-toast-actions">
+            {toast.actions.map(action => (
+              <Link
+                key={action.href}
+                to={action.href}
+                className="admin-toast-action"
+                onClick={() => onDismiss?.(toast.id)}
+              >
+                {action.label}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+      {onDismiss && (
+        <button className="admin-toast-close" onClick={() => onDismiss(toast.id)} aria-label="Dismiss notification">
+          <X size={13} strokeWidth={2} />
+        </button>
+      )}
+    </div>
+  )
 }
 
 export function ToastArea({ toasts, onDismiss }) {
   return (
-    <div className="admin-toast-area">
-      {toasts.map(t => {
-        const Icon = VARIANT_ICON[t.variant] || Info
-        const variantClass = t.variant === 'success'
-          ? 'admin-toast-ok'
-          : t.variant === 'error'
-            ? 'admin-toast-error'
-            : t.variant === 'warning'
-              ? 'admin-toast-warn'
-              : 'admin-toast-info'
-        return (
-          <div
-            key={t.id}
-            className={`admin-toast ${variantClass} ${t.leaving ? 'admin-toast-leaving' : ''}`}
-            role={t.variant === 'error' ? 'alert' : 'status'}
-          >
-            <Icon size={15} strokeWidth={2} />
-            <div className="admin-toast-body">
-              <span className="admin-toast-msg">{t.message}</span>
-              {t.requestId && (
-                <div className="admin-toast-request">
-                  <span className="mono">ID {t.requestId}</span>
-                  {CLIPBOARD_AVAILABLE && (
-                    <button
-                      type="button"
-                      className="admin-toast-copy"
-                      onClick={() => copyRequestId(t.requestId)}
-                      title="Copy request ID"
-                    >
-                      <Copy size={12} strokeWidth={2} />
-                    </button>
-                  )}
-                </div>
-              )}
-              {t.actions?.length > 0 && (
-                <div className="admin-toast-actions">
-                  {t.actions.map(action => (
-                    <Link
-                      key={action.href}
-                      to={action.href}
-                      className="admin-toast-action"
-                      onClick={() => onDismiss?.(t.id)}
-                    >
-                      {action.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-            {onDismiss && (
-              <button className="admin-toast-close" onClick={() => onDismiss(t.id)} aria-label="Dismiss notification">
-                <X size={13} strokeWidth={2} />
-              </button>
-            )}
-          </div>
-        )
-      })}
+    <div className="admin-toast-area" aria-live="polite" aria-relevant="additions">
+      {toasts.map(t => (
+        <ToastItem key={t.id} toast={t} onDismiss={onDismiss} />
+      ))}
     </div>
   )
 }

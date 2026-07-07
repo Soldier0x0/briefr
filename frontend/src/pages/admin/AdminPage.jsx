@@ -9,6 +9,8 @@ import Sidebar from './Sidebar.jsx'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import ErrorBoundary from './shared/ErrorBoundary.jsx'
 import { useToast, ToastArea } from '../../components/Toast.jsx'
+import { notifyBackendRestarting } from '../../utils/backendRestart.js'
+import RestartBanner from './shared/RestartBanner.jsx'
 import { OperationProvider, OperationStrip, useOperations } from './shared/OperationTracker.jsx'
 import { ANALYST_NAV } from './constants.js'
 import OverviewPage from './OverviewPage.jsx'
@@ -171,14 +173,14 @@ function AdminPageBody({ toast, toasts, dismissToast }) {
   async function handleRestart() {
     try {
       await adminApi.post('/restart', { confirm_text: 'restart' })
-      toast('Backend is shutting down gracefully…', true)
+      notifyBackendRestarting()
     } catch (e) { toast(String(e.message), false) }
   }
 
   async function handleDrainRestart() {
     try {
       await adminApi.post('/restart', { drain: true, confirm_text: 'restart' })
-      toast('Drain initiated — backend will shut down gracefully when jobs complete', true)
+      notifyBackendRestarting()
     } catch (e) { toast(String(e.message), false) }
   }
 
@@ -244,6 +246,7 @@ function AdminPageBody({ toast, toasts, dismissToast }) {
         sidebarOpen={sidebarOpen}
       />
       <OperationStrip />
+      <RestartBanner />
       <div className="admin-body">
         {sidebarOpen && (
           <button

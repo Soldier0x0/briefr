@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { adminApi } from '../../api.js'
+import { notifyBackendRestarting } from '../../utils/backendRestart.js'
 import HelpTip from './shared/HelpTip.jsx'
 import ToggleSwitch from './shared/ToggleSwitch.jsx'
 import { TIMEZONES_BY_CONTINENT } from '../../utils/timezone.js'
@@ -35,9 +36,9 @@ function validateClientSide(field, value) {
   return null
 }
 
-function saveOutcomeMessage(key, data, restartRequired) {
+function saveOutcomeMessage(key, data, restarting) {
   if (data?.message) return data.message
-  if (restartRequired) return `${key} saved — backend restarting`
+  if (restarting) return `${key} saved`
   return `${key} saved — active now`
 }
 
@@ -80,6 +81,7 @@ export default function ApiKeysPage({ toast }) {
       setEditing(({ [key]: _, ...rest }) => rest)
       await reloadConfig()
       const restarting = restartRequired && (data?.restart_required ?? data?.warning_restart_required)
+      if (restarting) notifyBackendRestarting()
       toast(saveOutcomeMessage(key, data, restarting), true)
       return true
     } catch (e) {
