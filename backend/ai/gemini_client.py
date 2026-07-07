@@ -55,12 +55,15 @@ async def gemini_chat_completion(
     if system_instruction:
         payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
 
-    url = f"{GEMINI_BASE}/{model_name}:generateContent?key={api_key}"
+    url = f"{GEMINI_BASE}/{model_name}:generateContent"
     response = await resilient_request(
         "gemini",
         "POST",
         url,
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "x-goog-api-key": api_key,
+        },
         json=payload,
         timeout=timeout,
         retries=0,

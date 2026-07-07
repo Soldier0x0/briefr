@@ -81,17 +81,33 @@ def any_llm_provider_configured() -> bool:
     return bool(get_configured_providers())
 
 
+_PLACEHOLDER_KEY_MARKERS = ("your_key_here", "your_api_key_here", "your_key")
+
+
+def _is_usable_api_key(value: str) -> bool:
+    val = (value or "").strip()
+    if not val:
+        return False
+    lowered = val.lower()
+    if lowered in _PLACEHOLDER_KEY_MARKERS or lowered.startswith("your_"):
+        return False
+    if "placeholder" in lowered:
+        return False
+    return True
+
+
 def get_configured_providers() -> list[str]:
     out: list[str] = []
-    for provider, env_key in _PROVIDER_ENV_KEYS.items():
-        if os.environ.get(env_key, "").strip():
+    for provider in _PROVIDER_ENV_KEYS:
+        if _api_key(provider):
             out.append(provider)
     return out
 
 
 def _api_key(provider: str) -> str:
     env_key = _PROVIDER_ENV_KEYS.get(provider, "")
-    return os.environ.get(env_key, "").strip() if env_key else ""
+    val = os.environ.get(env_key, "").strip() if env_key else ""
+    return val if _is_usable_api_key(val) else ""
 
 
 async def _call_provider(

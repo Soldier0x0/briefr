@@ -27,6 +27,13 @@ def test_any_llm_provider_configured_false_without_keys(monkeypatch):
     assert router.any_llm_provider_configured() is False
 
 
+def test_placeholder_keys_are_ignored(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "your_key_here")
+    monkeypatch.setenv("GEMINI_API_KEY", "your_api_key_here")
+    assert router.get_configured_providers() == []
+    assert router.any_llm_provider_configured() is False
+
+
 def test_task_chain_pdf_summary_uses_summary_groq_model(monkeypatch):
     monkeypatch.setenv("GROQ_MODEL_SUMMARY", "openai/gpt-oss-120b")
     chain = router._task_chain("pdf_summary")
