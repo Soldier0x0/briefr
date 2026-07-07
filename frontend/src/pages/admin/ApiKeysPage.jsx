@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { adminApi } from '../../api.js'
-import DiffReviewModal from './shared/DiffReviewModal.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import ToggleSwitch from './shared/ToggleSwitch.jsx'
 import { TIMEZONES_BY_CONTINENT } from '../../utils/timezone.js'
@@ -36,52 +35,69 @@ function validateClientSide(field, value) {
   return null
 }
 
+function saveOutcomeMessage(key, data, restartRequired) {
+  if (data?.message) return data.message
+  if (restartRequired) return `${key} saved — backend restarting`
+  return `${key} saved — active now`
+}
+
 export default function ApiKeysPage({ toast }) {
   const [config, setConfig] = useState(null)
   const [schema, setSchema] = useState(null)
-  const [queue, setQueue] = useState({}) // {key: value}
   const [editing, setEditing] = useState({}) // {key: tempValue}
-  const [showDiff, setShowDiff] = useState(false)
-  const [applying, setApplying] = useState(false)
+  const [savingKeys, setSavingKeys] = useState(() => new Set())
 
   useEffect(() => {
     adminApi.get('/config').then(r => r.json()).then(setConfig).catch(() => {})
     adminApi.get('/config/schema').then(r => r.json()).then(setSchema).catch(() => {})
   }, [])
 
-  function addToQueue(key, value, field) {
-    const error = validateClientSide(field, value)
-    if (error) { toast(error, false); return }
-    setQueue(q => ({ ...q, [key]: value }))
-    setEditing(({ [key]: _, ...rest }) => rest)
-    toast(`Added ${key} to pending changes`, true)
-  }
-
-  function removeFromQueue(key) {
-    setQueue(({ [key]: _, ...rest }) => rest)
-  }
-
-  async function applyAll() {
-    const items = Object.entries(queue).map(([key, value]) => ({ key, value }))
-    setApplying(true)
+  async function reloadConfig() {
     try {
-      const res = await adminApi.post('/config/apply-all', items)
-      const data = await res.json()
-      if (res.ok) {
-        toast(data.message || `Applied ${data.changed_keys?.length} changes.`, true)
-        setQueue({})
+      const r = await adminApi.get('/config')
+      setConfig(await r.json())
+    } catch { /* ignore */ }
+  }
+
+  async function saveKey(key, value, field) {
+    const error = validateClientSide(field, value)
+    if (error) {
+      toast(error, false)
+      return false
+    }
+
+    setSavingKeys(prev => new Set(prev).add(key))
+    try {
+      const restartRequired = Boolean(field?.restart_required)
+      let result
+      if (restartRequired) {
+        result = await adminApi.postJson('/config/apply-all', [{ key, value }])
       } else {
-        const errs = data.errors || [data.detail]
-        toast(`Failed: ${errs.join('; ')}`, false)
+        result = await adminApi.postJson('/config', { key, value })
       }
-    } catch (e) { toast(String(e.message), false) }
-    setApplying(false)
+      const { data } = result
+
+      setEditing(({ [key]: _, ...rest }) => rest)
+      await reloadConfig()
+      const restarting = restartRequired && (data?.restart_required ?? data?.warning_restart_required)
+      toast(saveOutcomeMessage(key, data, restarting), true)
+      return true
+    } catch (e) {
+      toast(`Failed: ${e.message || String(e)}`, false)
+      return false
+    } finally {
+      setSavingKeys(prev => {
+        const next = new Set(prev)
+        next.delete(key)
+        return next
+      })
+    }
   }
 
   function ConfigRow({ envKey, value, isSecret = false, writable = true, restartRequired = false, helpText = '', field = null }) {
-    const inQueue = queue[envKey] !== undefined
     const editVal = editing[envKey]
     const isEditing = editVal !== undefined
+    const isSaving = savingKeys.has(envKey)
 
     return (
       <div className="config-row">
@@ -91,25 +107,13 @@ export default function ApiKeysPage({ toast }) {
           {RATE_LIMIT_HINTS[envKey] && <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 400, marginTop: '0.15rem' }}>{RATE_LIMIT_HINTS[envKey]}</div>}
         </div>
         <div className="config-row-value">
-          {inQueue ? (
-            <div className="config-row-value-control">
-              <span className="badge badge-warn">
-                queued: {isSecret
-                  ? '••••'
-                  : field?.type === 'bool'
-                    ? ((queue[envKey] === '1' || queue[envKey] === 'true') ? 'Enabled' : 'Disabled')
-                    : queue[envKey]}
-              </span>
-              <div className="config-row-actions">
-                <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem' }} onClick={() => removeFromQueue(envKey)}>×</button>
-              </div>
-            </div>
-          ) : !isEditing ? (
+          {!isEditing ? (
             <div className="config-row-value-control">
               {field?.type === 'bool' ? (
                 <ToggleSwitch
                   on={value === '1' || value === 'true' || value === true}
-                  onChange={v => addToQueue(envKey, v ? '1' : '0', field)}
+                  disabled={isSaving}
+                  onChange={v => saveKey(envKey, v ? '1' : '0', field)}
                 />
               ) : (
                 <span className="mono admin-input admin-input-display" title={isSecret ? undefined : (Array.isArray(value) ? value.join(', ') : String(value))}>
@@ -117,9 +121,10 @@ export default function ApiKeysPage({ toast }) {
                 </span>
               )}
               <div className="config-row-actions">
-                {restartRequired && <span className="badge badge-warn" style={{ fontSize: '0.6rem' }}>restart</span>}
+                {restartRequired && <span className="badge badge-warn" style={{ fontSize: '0.6rem' }} title="Backend restart required after save">restart</span>}
                 {writable && field?.type !== 'bool' && (
                   <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }}
+                    disabled={isSaving}
                     onClick={() => {
                       const initial = isSecret ? '' : (Array.isArray(value) ? value.join(', ') : (value === 'not configured' ? '' : String(value)))
                       setEditing(e => ({ ...e, [envKey]: initial }))
@@ -167,10 +172,14 @@ export default function ApiKeysPage({ toast }) {
               )}
               <div className="config-row-actions">
                 <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.75rem' }}
-                  onClick={() => addToQueue(envKey, editVal, field)}>
-                  Add to queue
+                  disabled={isSaving}
+                  onClick={() => saveKey(envKey, editVal, field)}>
+                  {isSaving
+                    ? <><span className="admin-spinner" /> Saving…</>
+                    : (restartRequired ? 'Save & restart' : 'Save')}
                 </button>
                 <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }}
+                  disabled={isSaving}
                   onClick={() => setEditing(({ [envKey]: _, ...rest }) => rest)}>
                   Cancel
                 </button>
@@ -182,51 +191,36 @@ export default function ApiKeysPage({ toast }) {
     )
   }
 
+  const fieldsBySection = useMemo(() => {
+    const out = {}
+    for (const f of schema || []) {
+      if (!out[f.section]) out[f.section] = []
+      out[f.section].push(f)
+    }
+    return out
+  }, [schema])
+
   if (!config || !schema) return <div className="admin-empty">Loading…</div>
 
-  const pendingCount = Object.keys(queue).length
-  const fieldsBySection = {}
-  for (const f of schema) {
-    if (!fieldsBySection[f.section]) fieldsBySection[f.section] = []
-    fieldsBySection[f.section].push(f)
-  }
   const schemaKeys = new Set(schema.map(f => f.key))
-  // A handful of writable keys live under a different backend response dict
-  // than their UI grouping (e.g. VULNRICHMENT_BRANCH/CVELISTV5_BRANCH are
-  // grouped under "Ingest tuning" but the backend returns them inside
-  // config.scheduler) — look values up across every section rather than
-  // assuming a 1:1 mapping between UI section and backend dict.
   const merged = Object.assign({}, ...SECTIONS.map(s => config[s.backendKey] || {}))
 
   return (
     <div>
-      {showDiff && pendingCount > 0 && (
-        <DiffReviewModal
-          changes={queue}
-          applying={applying}
-          onClose={() => setShowDiff(false)}
-          onDiscard={() => { setQueue({}); setShowDiff(false) }}
-          onApply={() => { setShowDiff(false); applyAll() }}
-        />
-      )}
-
       <h1 className="admin-page-title">
         API keys & config
-        <HelpTip text="Changes here write to .env. Environment variables already set at the process level (e.g. via systemd or a secrets manager) take priority over .env — those won't be overridden. Most changes need a backend restart to take effect." />
+        <HelpTip text="Changes write to backend/.env and update the running process. Keys marked restart need a backend reload — Save triggers that automatically. Process-level env vars (systemd, secrets manager) override .env and cannot be changed here." />
       </h1>
       <p className="admin-page-subtitle">
-        Sets secrets and tunables that the backend reads from .env. Most changes need a restart to take effect.
+        Edit a value and click Save. API keys and most toggles take effect immediately; rows tagged
+        <span className="badge badge-warn" style={{ fontSize: '0.6rem', margin: '0 0.25rem' }}>restart</span>
+        restart the backend after save.
       </p>
 
       {SECTIONS.map(section => {
         const fields = fieldsBySection[section.id] || []
         const backendDict = config[section.backendKey] || {}
         const fieldKeys = new Set(fields.map(f => f.key))
-        // ml/backup sections historically also surfaced a few read-only,
-        // non-writable keys (e.g. feed sync toggles, backup log rotation
-        // settings) that aren't in the schema — keep showing them
-        // (read-only, no broken Edit button) instead of silently dropping
-        // visibility into values the operator could previously see.
         const extraKeys = (section.id === 'ml' || section.id === 'backup')
           ? Object.keys(backendDict).filter(k => !fieldKeys.has(k) && !schemaKeys.has(k))
           : []
@@ -260,23 +254,6 @@ export default function ApiKeysPage({ toast }) {
           </div>
         )
       })}
-
-      {/* Pending changes sticky bar */}
-      {pendingCount > 0 && (
-        <div className="pending-bar">
-          <span className="pending-bar-info">
-            {pendingCount} pending {pendingCount === 1 ? 'change' : 'changes'}:&nbsp;
-            <span className="mono" style={{ fontSize: '0.75rem' }}>{Object.keys(queue).join(', ')}</span>
-          </span>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={() => setShowDiff(true)}>Review diff</button>
-            <button className="admin-btn admin-btn-danger" style={{ fontSize: '0.75rem' }} onClick={() => setQueue({})}>Discard</button>
-            <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.75rem' }} onClick={applyAll} disabled={applying}>
-              {applying ? <><span className="admin-spinner" /> Applying…</> : 'Write & restart'}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

@@ -1,7 +1,7 @@
 // Generic pending-changes review modal: shows a {key: value} diff, lets the
 // operator discard or apply. Used by any page with a queue/diff-review flow
 // (config apply-all today; reusable for future bulk-edit flows).
-export default function DiffReviewModal({ title = 'Review pending changes', changes, secretKeyPredicate, onApply, onDiscard, onClose, applying = false }) {
+export default function DiffReviewModal({ title = 'Review pending changes', changes, secretKeyPredicate, onApply, onDiscard, onClose, applying = false, applyLabel = 'Save changes' }) {
   const isSecret = secretKeyPredicate || (k => k.endsWith('_KEY') || k.endsWith('_TOKEN') || k.endsWith('_SECRET'))
   return (
     <div className="admin-modal-overlay">
@@ -22,7 +22,7 @@ export default function DiffReviewModal({ title = 'Review pending changes', chan
           <button className="admin-btn admin-btn-ghost" onClick={onClose}>Close</button>
           <button className="admin-btn admin-btn-danger" onClick={onDiscard}>Discard all</button>
           <button className="admin-btn admin-btn-primary" onClick={onApply} disabled={applying}>
-            Write & restart
+            {applyLabel}
           </button>
         </div>
       </div>
