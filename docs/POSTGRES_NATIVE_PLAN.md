@@ -6,8 +6,9 @@ agent with no memory of prior sessions (e.g. Cursor Composer) can pick this up
 cold. Read `CLAUDE.md` first (danger zone 1 covers this exact area).
 
 **Status as of 2026-07-08:** Phase 0 complete (#318). F3 complete (#319).
-Phase 1 in progress — `db/sync_state.py` converted (#320). **9 SQL modules
-remain** (batched into ~6 PRs — see below). Phases 2–4 not started.
+Phase 1 in progress — `db/sync_state.py` converted (#320);
+`db/watchlist.py` + `db/webhooks.py` converted (PR 2). **7 SQL modules
+remain** (batched into ~5 PRs — see below). Phases 2–4 not started.
 
 ---
 
@@ -113,15 +114,15 @@ Reference implementation: `backend/db/sync_state.py`.
 |---|--------|-------|--------|
 | 1 | `db/types.py` | 27 | **Skip** — Protocol only, no SQL |
 | 2 | `db/sync_state.py` | 82 | **Done** — #320 |
-| 3–4 | `db/watchlist.py` + `db/webhooks.py` | 78 + 147 | **Next PR** (batched) |
-| 5 | `db/cache_retention.py` | 191 | Pending |
+| 3–4 | `db/watchlist.py` + `db/webhooks.py` | 78 + 147 | **Done** — PR 2 |
+| 5 | `db/cache_retention.py` | 191 | **Next PR** |
 | 6 | `db/cache.py` | 303 | Pending |
 | 7 | `db/enrichment.py` | 430 | Pending |
 | 8–9 | `db/metadata.py` + `db/correlation.py` | 478 + 489 | Pending (batched) |
 | 10 | `db/cve.py` | 544 | Pending — **solo PR** |
 | 11 | `db/init.py` | 627 | Pending — **solo PR, last** |
 
-**~6 PRs remaining** in Phase 1 (down from 9 with batching).
+**~5 PRs remaining** in Phase 1 (down from 9 with batching).
 
 ### Legacy numbered list (same order)
 

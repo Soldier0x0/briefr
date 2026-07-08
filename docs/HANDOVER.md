@@ -12,6 +12,37 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 1 PR 2: `watchlist` + `webhooks` Postgres-native
+
+**What:** Converted `backend/db/watchlist.py` and `backend/db/webhooks.py` to
+the locked `sync_state` pattern — parallel `_SQLITE` / `_PG` constants,
+`type(db).__name__ == "PostgresConnection"` dispatch, `DbConnection` type
+hints. Added `tests/test_db_watchlist.py` and `tests/test_db_webhooks.py`.
+
+**Why:** Post-B Phase 1 batched PR per `POSTGRES_NATIVE_PLAN.md` — small,
+independent modules with no cross-module SQL dependencies.
+
+**Key decisions:**
+- Watchlist active-snooze filter: SQLite keeps `datetime(snooze_until) >
+  datetime('now')`; Postgres uses `snooze_until::timestamp > (NOW() AT TIME ZONE
+  'utc')` inline (no bound param needed for list queries).
+- Webhook alert insert: Postgres uses explicit `ON CONFLICT (alert_type, target)
+  DO NOTHING` instead of dialect regex `INSERT OR IGNORE` translation.
+- Dynamic `IN (...)` and `UPDATE ... SET` builders use `_in_placeholders()` /
+  `_placeholder()` helpers with per-dialect numbering.
+
+**Verified:** `pytest tests/test_db_watchlist.py tests/test_db_webhooks.py
+tests/test_watchlist.py tests/test_webhooks_*.py -q` (26 passed, SQLite);
+full suite `765 passed, 8 skipped` (SQLite).
+
+**Gemini fixes (pre-merge):** Postgres `enabled` bool param in
+`update_webhook_destination`; unique `destination_id` filter in delivery-log
+test; watchlist expired-snooze test cleanup in `finally`.
+
+**Next:** `db/cache_retention.py` (solo PR per plan).
+
+---
+
 ## 2026-07-08 — Session handoff: program status, agent workflow, Post-B plan
 
 **Purpose of this entry:** everything a fresh agent session needs to continue
@@ -67,12 +98,12 @@ external Postgres compose) remains deferred.
 
 | Phase | Scope | PRs left |
 |-------|-------|----------|
-| **1** | Postgres-native `db/*.py` modules | **~6** (9 modules; `sync_state` done) |
+| **1** | Postgres-native `db/*.py` modules | **~5** (`sync_state`, `watchlist`+`webhooks` done) |
 | **2** | Unify DB exception handling | 1 |
 | **3** | Delete `db/dialect.py` (+ optional SQLite drop — needs operator OK) | 1–2 |
 | **4** | CI backup dump → restore round-trip | 1 |
 
-**Phase 1 next PR:** batch `db/watchlist.py` + `db/webhooks.py`.
+**Phase 1 next PR:** `db/cache_retention.py`.
 
 **Phase 1 batching rule:** batch small independent modules; **solo PRs** for
 `cve.py` and `init.py`.
