@@ -12,6 +12,23 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Track E started: UI/UX automation (10 PRs)
+
+**Decision:** Track D closed. Post-B Phase 0–3 done. Primary code track is now
+**Track E** (10 PRs, E-PR1–E-PR10 in `docs/SPRINT_2026-07.md`).
+
+**Workflow (automated):** implement → `./scripts/verify-local.sh` → commit
+(docs + graphify in same PR) → push → PR → Gemini review (~1 min; `/gemini
+review` if silent) → fix → merge → next PR. **Do not block on GitHub Actions**
+(quota exhausted).
+
+**Scope highlights:** Intel tab missing CSS + density; GreyNoise off auto detail
+(quota UI); header de-clutter; IST/EDT/PDT timezone labels; E1–E6 per sprint.
+
+**Next:** E-PR1 sprint plan merge, then E-PR2 Intel tab fixes.
+
+---
+
 ## 2026-07-08 — Post-B Phase 3 merged to `main`: deleted `db/dialect.py`
 
 **Merged:** `cursor/delete-dialect-postgres-native-6fd2` → `main` @ `bff60a5`
