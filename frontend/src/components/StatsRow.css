@@ -57,13 +57,22 @@
 
 .stat-label {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: var(--type-meta);
   letter-spacing: 0.1em;
-  color: var(--text3);
+  color: var(--text-muted, var(--text3));
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 2px;
+}
+
+.stat-label-text {
+  cursor: help;
+  outline: none;
+}
+
+.stat-label-text:focus-visible {
+  color: var(--text-secondary);
 }
 
 /* Variants */

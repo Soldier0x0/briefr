@@ -204,6 +204,20 @@ export function suppressCVECorrelation(cveId, body) {
   })
 }
 
+export function fetchCorrelationSuppressions(cveId) {
+  return request(`/cves/${encodeURIComponent(cveId)}/correlation/suppressions`)
+}
+
+export function restoreCVECorrelation(cveId, { scope, cve_id_b = '', campaign_id = '', pulse_id = '' }) {
+  const qs = new URLSearchParams({ scope })
+  if (cve_id_b) qs.set('cve_id_b', cve_id_b)
+  if (campaign_id) qs.set('campaign_id', campaign_id)
+  if (pulse_id) qs.set('pulse_id', pulse_id)
+  return request(`/cves/${encodeURIComponent(cveId)}/correlation/suppress?${qs}`, {
+    method: 'DELETE',
+  })
+}
+
 export function fetchCVEDetection(cveId, product = '') {
   const qs = product ? `?product=${encodeURIComponent(product)}` : ''
   return request(`/cves/${encodeURIComponent(cveId)}/detection${qs}`)

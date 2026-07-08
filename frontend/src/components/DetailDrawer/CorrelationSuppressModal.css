@@ -1,0 +1,95 @@
+.corr-suppress-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.corr-suppress-modal {
+  width: min(440px, 100%);
+  padding: 20px 22px;
+  background: var(--surface-raised, var(--bg2));
+  border: 1px solid var(--border-strong, var(--border2));
+}
+
+.corr-suppress-title {
+  font-size: var(--type-heading, 0.75rem);
+  letter-spacing: 0.08em;
+  color: var(--text-heading, var(--text));
+  margin: 0 0 12px;
+}
+
+.corr-suppress-body,
+.corr-suppress-note {
+  font-size: var(--type-body, 0.875rem);
+  line-height: 1.5;
+  color: var(--text-secondary, var(--text2));
+  margin: 0 0 10px;
+}
+
+.corr-suppress-note {
+  font-size: var(--type-secondary, 0.8125rem);
+  color: var(--text-muted, var(--text3));
+  margin-bottom: 16px;
+}
+
+.corr-suppress-reason-label {
+  display: block;
+  font-size: var(--type-meta, 0.75rem);
+  letter-spacing: 0.06em;
+  color: var(--text-muted, var(--text3));
+  margin-bottom: 6px;
+}
+
+.corr-suppress-reason {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: var(--type-secondary, 0.8125rem);
+  background: var(--surface-sunken, var(--bg3));
+  border: 1px solid var(--border2);
+  color: var(--text-primary, var(--text));
+  margin-bottom: 16px;
+}
+
+.corr-suppress-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.corr-suppress-cancel,
+.corr-suppress-confirm {
+  font-size: var(--type-secondary, 0.8125rem);
+  letter-spacing: 0.04em;
+  padding: 8px 12px;
+  border: 1px solid var(--border2);
+}
+
+.corr-suppress-cancel {
+  color: var(--text-secondary, var(--text2));
+  background: transparent;
+}
+
+.corr-suppress-cancel:hover {
+  color: var(--text-primary, var(--text));
+  border-color: var(--border-strong, var(--border2));
+}
+
+.corr-suppress-confirm {
+  color: var(--on-red, #fff);
+  background: var(--red-dim);
+  border-color: var(--red);
+}
+
+.corr-suppress-confirm:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red) 25%, var(--red-dim));
+}
+
+.corr-suppress-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

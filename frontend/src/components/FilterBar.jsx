@@ -4,7 +4,7 @@ import { notifyApiError } from './Toast.jsx'
 import { toApiCveParams } from '../utils/cveFilters.js'
 import { saveUserStack } from '../utils/userStack.js'
 import { cvesToCsvRows, downloadCsv, exportFilename } from '../utils/exportCsv.js'
-import ExplainTip from './ExplainTip.jsx'
+import ControlTooltip from './ControlTooltip.jsx'
 import './FilterBar.css'
 
 const STACK_DEBOUNCE_MS = 400
@@ -386,7 +386,7 @@ export default function FilterBar({
         <div className="filter-bar-filters">
           <div className="filter-buttons" role="group" aria-label="Quick filters">
             {QUICK_FILTERS.map(f => (
-              <span key={f.id} className="filter-btn-cell">
+              <ControlTooltip key={f.id} text={f.explain}>
                 <button
                   className={`filter-btn${active === f.id ? ' active' : ''}`}
                   onClick={() => handleQuickFilter(f.id)}
@@ -395,10 +395,7 @@ export default function FilterBar({
                 >
                   {f.label}
                 </button>
-                {f.explain && (
-                  <ExplainTip text={f.explain} label={`Explain ${f.label} filter`} />
-                )}
-              </span>
+              </ControlTooltip>
             ))}
           </div>
         </div>

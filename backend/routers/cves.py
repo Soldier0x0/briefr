@@ -1334,6 +1334,22 @@ class CorrelationSuppressBody(BaseModel):
     )
 
 
+@intel_router.get("/api/cves/{cve_id}/correlation/suppressions")
+async def list_correlation_suppressions_for_cve(cve_id: str):
+    """List persisted correlation suppressions for analyst review / restore."""
+    cve_id = require_cve_id(cve_id)
+
+    from correlation.suppressions import load_suppressions
+
+    db = await get_db()
+    try:
+        rows = await load_suppressions(db, cve_id)
+    finally:
+        await db.close()
+
+    return {"cve_id": cve_id.upper(), "suppressions": rows}
+
+
 @intel_router.post("/api/cves/{cve_id}/correlation/suppress")
 async def suppress_correlation_finding(cve_id: str, body: CorrelationSuppressBody):
     """Dismiss a correlation finding for this CVE (persisted across rebuilds)."""

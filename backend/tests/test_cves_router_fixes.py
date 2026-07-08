@@ -211,6 +211,11 @@ def test_correlation_endpoint_serializes_priority_and_suppress_round_trip(tmp_pa
         assert sup.status_code == 200
         assert sup.json()["suppression"]["dismissed_by"] == "tester@example.com"
 
+        listed = client.get("/api/cves/CVE-2024-7001/correlation/suppressions")
+        assert listed.status_code == 200
+        assert len(listed.json()["suppressions"]) == 1
+        assert listed.json()["suppressions"][0]["scope"] == "campaign_id"
+
         res2 = client.get("/api/cves/CVE-2024-7001/correlation")
         assert res2.json()["campaigns"] == []
 
