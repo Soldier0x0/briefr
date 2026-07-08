@@ -12,6 +12,21 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 1 PR 4: `cache` Postgres-native
+
+**What:** Converted `backend/db/cache.py` to the locked `sync_state` pattern —
+parallel `_SQLITE` / `_PG` constants for IOC/feed cache, exploit CRUD, CIRCL
+gap query, and `mark_has_poc_additive`; TTL comparisons use Python-computed
+cutoff timestamps (replacing `datetime('now', …)` in SQL). Added
+`tests/test_db_cache.py`.
+
+**Verified:** `pytest tests/test_db_cache.py tests/test_exploit_sources.py -q`
+(23 passed, SQLite); full suite `773 passed, 8 skipped` (SQLite).
+
+**Next:** `db/enrichment.py`.
+
+---
+
 ## 2026-07-08 — Post-B Phase 1 PR 3 merged (#323): `cache_retention`
 
 **Merged:** #323 at 2026-07-08T08:22:56Z. CI green (test, test-postgres, gitleaks,
