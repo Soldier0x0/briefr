@@ -1,0 +1,21 @@
+title = "BRIEFR gitleaks"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Placeholders, fixtures, and CI/test-only secrets (not production credentials)"
+paths = [
+  '''(?:^|/)backend/\.env\.example$''',
+  '''(?:^|/)backend/tests/''',
+]
+regexes = [
+  '''your_[a-z_]+_here''',
+  '''your_key_here''',
+  '''generate_a_long_random_secret_here''',
+  '''ci-test-jwt-secret-not-for-production''',
+  '''playwright-smoke-test-jwt-secret-32b''',
+  '''smoke-test-password-32bytes!!''',
+  '''super_secret_value''',
+  '''sk-1234567890abcdef''',
+]

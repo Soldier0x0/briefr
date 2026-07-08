@@ -12,7 +12,17 @@ significant working session; never rewrite old entries.
 
 ---
 
-## 2026-07-08 — Post-B Phase 0: Postgres full-suite CI gate (logging fix)
+## 2026-07-08 — F3: pre-flip security pass (SECURITY.md + gitleaks CI)
+
+**Session:** Added root `SECURITY.md` (disclosure policy via harsha@projectjupiter.in),
+`.gitleaks.toml` allowlist for placeholders/tests, and `.github/workflows/gitleaks.yml`
+(full-history scan on push + PR). Historical scan clean except known test fixtures.
+
+### Next steps
+
+**Post-B Phases 1–4** — Postgres-native `db/` module conversion (Phase 0 gate merged in #318).
+
+---
 
 **Session:** `test-postgres` runs `pytest tests/ -q` (Phase 0 gate). CI initially
 failed six logging tests: Alembic `fileConfig` during session migrations stripped

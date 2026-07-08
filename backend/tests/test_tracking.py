@@ -69,7 +69,10 @@ def test_record_api_call_schedules_background_flush(db_path, monkeypatch):
 
     async def _run():
         await tracking.record_api_call("circl", 1)
-        await asyncio.sleep(0.15)
+        for _ in range(40):
+            if await _usage_count("circl") == 1:
+                break
+            await asyncio.sleep(0.05)
         assert await _usage_count("circl") == 1
 
     run_db_test(_run())
