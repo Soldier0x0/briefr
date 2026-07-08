@@ -8,7 +8,6 @@ description = "Placeholders, fixtures, and CI/test-only secrets (not production 
 paths = [
   '''(?:^|/)backend/\.env\.example$''',
   '''(?:^|/)backend/tests/''',
-  '''(?:^|/)scripts/''',
 ]
 regexes = [
   '''your_[a-z_]+_here''',
