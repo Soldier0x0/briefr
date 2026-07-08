@@ -12,6 +12,16 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — E-PR5: E1 states audit + BRIEF heatmap dead zone
+
+**What:** Documented BRIEF-tab component × state table in sprint (E1); fixed
+layout dead zone beside heatmap (`brief-intel-row` `align-items: flex-start`);
+wired `TimelineHeatmap` empty state (no activity in window).
+
+**Next:** E-PR6 header de-clutter + timezone labels + E5 craft fixes.
+
+---
+
 ## 2026-07-08 — E-PR4: GreyNoise on-demand (quota-safe)
 
 **What:** Removed auto GreyNoise from CVE detail; added
