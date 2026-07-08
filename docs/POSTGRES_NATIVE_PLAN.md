@@ -120,10 +120,10 @@ Reference implementation: `backend/db/sync_state.py`.
 | 6 | `db/cache.py` | 303 | **Done** — PR 4 |
 | 7 | `db/enrichment.py` | 430 | **Done** — PR 5 |
 | 8–9 | `db/metadata.py` + `db/correlation.py` | 478 + 489 | **Done** — PR 6 (#326) |
-| 10 | `db/cve.py` | 544 | **In PR 7** — solo PR |
+| 10 | `db/cve.py` | 544 | **Done** — PR 7 (#327) |
 | 11 | `db/init.py` | 627 | Pending — **solo PR, last** |
 
-**~2 PRs remaining** in Phase 1 (down from 9 with batching).
+**~1 PR remaining** in Phase 1.
 
 ### Legacy numbered list (same order)
 

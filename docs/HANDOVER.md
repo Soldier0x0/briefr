@@ -12,6 +12,15 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 1 PR 7 merged (#327): `cve`
+
+**Merged:** #327. CI green on first push (all 5 jobs). Full suite: `797 passed, 8 skipped`
+(SQLite); Postgres CI green.
+
+**Next:** solo `db/init.py` (Post-B Phase 1 PR 8 — last module).
+
+---
+
 ## 2026-07-08 — Post-B Phase 1 PR 7: `cve` Postgres-native
 
 **What:** Converted `backend/db/cve.py` to the locked `sync_state` pattern — parallel
