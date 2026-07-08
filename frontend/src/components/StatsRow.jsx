@@ -1,5 +1,5 @@
 import { ingestLogUrl } from '../utils/adminLinks.js'
-import ExplainTip from './ExplainTip.jsx'
+import ControlTooltip from './ControlTooltip.jsx'
 import './StatsRow.css'
 
 function formatDelta(delta) {
@@ -41,9 +41,12 @@ function StatCell({
         )}
       </div>
       <div className="stat-label">
-        {label}
-        {explain && (
-          <ExplainTip text={explain} label={`Explain ${label}`} />
+        {explain ? (
+          <ControlTooltip text={explain}>
+            <span tabIndex={0} className="stat-label-text">{label}</span>
+          </ControlTooltip>
+        ) : (
+          label
         )}
       </div>
     </Tag>

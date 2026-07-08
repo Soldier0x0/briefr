@@ -9,7 +9,9 @@ import {
   fetchCVERelated,
   fetchCVERisk,
   fetchCVESentences,
+  fetchCorrelationSuppressions,
   fetchIOCUsage,
+  restoreCVECorrelation,
   suppressCVECorrelation,
 } from '../../api.js'
 import { buildSingleReport, copyToClipboard } from '../../utils/report.js'
@@ -25,6 +27,7 @@ import TabOverview from './OverviewTab.jsx'
 import TabIntel from './IntelTab.jsx'
 import TabDetect from './DetectTab.jsx'
 import TabRelated from './RelatedTab.jsx'
+import CorrelationSuppressModal from './CorrelationSuppressModal.jsx'
 import '../DetailDrawer.css'
 
 
@@ -75,6 +78,9 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
   const [relatedLoading, setRelatedLoading] = useState(false)
   const [correlation, setCorrelation] = useState(null)
   const [correlationLoading, setCorrelationLoading] = useState(false)
+  const [correlationSuppressions, setCorrelationSuppressions] = useState([])
+  const [suppressModal, setSuppressModal] = useState(null)
+  const [suppressSubmitting, setSuppressSubmitting] = useState(false)
   const [greynoiseScans, setGreynoiseScans] = useState([])
   const [greynoiseLoading, setGreynoiseLoading] = useState(false)
   const [greynoiseLoaded, setGreynoiseLoaded] = useState(false)
@@ -294,15 +300,49 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     return cleanup
   }, [activeTab, cve?.cve_id, loadDetection])
 
-  async function handleDismissCorrelation(body) {
+  async function refreshCorrelation() {
     if (!cve?.cve_id) return
+    const sector = assetCtx?.profile?.environment?.industry || ''
+    const [data, supData] = await Promise.all([
+      fetchCVECorrelation(cve.cve_id, sector),
+      fetchCorrelationSuppressions(cve.cve_id).catch(() => ({ suppressions: [] })),
+    ])
+    setCorrelation(data)
+    setCorrelationSuppressions(supData?.suppressions || [])
+  }
+
+  function handleRequestSuppressCorrelation(body, peerCve) {
+    setSuppressModal({ body, peerCve: peerCve || body?.key?.cve_id_b || '' })
+  }
+
+  async function handleConfirmSuppress(bodyWithReason) {
+    if (!cve?.cve_id || !bodyWithReason) return
+    setSuppressSubmitting(true)
     try {
-      await suppressCVECorrelation(cve.cve_id, body)
-      const sector = assetCtx?.profile?.environment?.industry || ''
-      const data = await fetchCVECorrelation(cve.cve_id, sector)
-      setCorrelation(data)
+      await suppressCVECorrelation(cve.cve_id, bodyWithReason)
+      setSuppressModal(null)
+      await refreshCorrelation()
     } catch {
-      /* dismiss is best-effort */
+      /* best-effort */
+    } finally {
+      setSuppressSubmitting(false)
+    }
+  }
+
+  async function handleRestoreSuppression(suppression) {
+    if (!cve?.cve_id || !suppression) return
+    const scope = suppression.scope
+    const sk = suppression.scope_key || ''
+    try {
+      await restoreCVECorrelation(cve.cve_id, {
+        scope,
+        cve_id_b: scope === 'infrastructure' || scope === 'cve_pair' ? sk : '',
+        campaign_id: scope === 'campaign_id' ? sk : '',
+        pulse_id: scope === 'pulse_id' ? sk : '',
+      })
+      await refreshCorrelation()
+    } catch {
+      /* best-effort */
     }
   }
 
@@ -360,18 +400,27 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     if (!cve?.cve_id) {
       setCorrelation(null)
       setCorrelationLoading(false)
+      setCorrelationSuppressions([])
       return
     }
     let cancelled = false
     setCorrelation(null)
     setCorrelationLoading(true)
     const sector = assetCtx?.profile?.environment?.industry || ''
-    fetchCVECorrelation(cve.cve_id, sector)
-      .then(data => {
-        if (!cancelled) setCorrelation(data)
+    Promise.all([
+      fetchCVECorrelation(cve.cve_id, sector),
+      fetchCorrelationSuppressions(cve.cve_id).catch(() => ({ suppressions: [] })),
+    ])
+      .then(([data, supData]) => {
+        if (cancelled) return
+        setCorrelation(data)
+        setCorrelationSuppressions(supData?.suppressions || [])
       })
       .catch(() => {
-        if (!cancelled) setCorrelation(null)
+        if (!cancelled) {
+          setCorrelation(null)
+          setCorrelationSuppressions([])
+        }
       })
       .finally(() => {
         if (!cancelled) setCorrelationLoading(false)
@@ -735,7 +784,9 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
               correlation={correlation}
               correlationLoading={correlationLoading}
               onSelectCorrelatedCve={handleSelectRelated}
-              onDismissCorrelation={handleDismissCorrelation}
+              onRequestSuppressCorrelation={handleRequestSuppressCorrelation}
+              suppressions={correlationSuppressions}
+              onRestoreSuppression={handleRestoreSuppression}
             />
             </DrawerTabErrorBoundary>
           )}
@@ -775,6 +826,16 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
             setPdfError(null)
           }
         }}
+      />
+
+      <CorrelationSuppressModal
+        open={!!suppressModal}
+        body={suppressModal?.body}
+        cveId={cve?.cve_id}
+        peerCve={suppressModal?.peerCve}
+        onCancel={() => !suppressSubmitting && setSuppressModal(null)}
+        onConfirm={handleConfirmSuppress}
+        submitting={suppressSubmitting}
       />
     </>
   )

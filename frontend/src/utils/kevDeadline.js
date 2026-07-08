@@ -29,6 +29,22 @@ export function kevDueUrgencyClass(days) {
   return 'badge-neutral'
 }
 
+/** Human-readable KEV due date for display (UTC — matches CISA catalogue dates). */
+export function formatKevDueDate(dateStr) {
+  if (!dateStr) return null
+  try {
+    const d = new Date(dateStr)
+    return d.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    })
+  } catch {
+    return String(dateStr).slice(0, 10)
+  }
+}
+
 /** Analyst-facing label for KEV remediation countdown. */
 export function kevDueLabel(days) {
   if (days === null) return null

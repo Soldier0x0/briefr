@@ -61,5 +61,7 @@ describe('getAssetExposureStatus', () => {
     })
     assert.equal(status.tier, ASSET_EXPOSURE_TIERS.NOT_LOADED)
     assert.equal(status.headline, 'EXPOSURE UNKNOWN')
+    assert.match(status.detail, /Load an asset profile/)
+    assert.ok(status.formulaNote)
   })
 })

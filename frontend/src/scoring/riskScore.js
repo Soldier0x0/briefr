@@ -234,10 +234,10 @@ export function getAssetExposureStatus(riskScore) {
       label: 'ASSET DATA NOT LOADED',
       headline: 'EXPOSURE UNKNOWN',
       detail:
-        'Asset relevance cannot be calculated until an asset profile is loaded. The BRIEFR score formula uses a neutral 0.5 placeholder for the Asset Match component — this is not an organizational exposure probability.',
+        'Load an asset profile to determine whether this CVE affects your environment.',
       matchReason: null,
       showSignalBar: false,
-      formulaNote: `Formula placeholder: 0.500 × ${(weight * 100).toFixed(0)}% × 100 = ${assetPoints.toFixed(1)} pts (not exposure)`,
+      formulaNote: `Formula placeholder: 0.500 × ${(weight * 100).toFixed(0)}% × 100 = ${assetPoints.toFixed(1)} pts (neutral scoring input — not exposure probability)`,
     }
   }
 

@@ -1,5 +1,11 @@
 import { useMemo, useState } from 'react'
 import { displayText } from '../../utils/displayText.js'
+import {
+  buildConnectionPanel,
+  formatEvidenceItem,
+  linkStrengthLabel,
+} from '../../utils/correlationPresentation.js'
+import { formatSharedObservablesSummary } from '../../utils/sharedObservables.js'
 import DrawerAtlasSection from '../DrawerAtlasSection.jsx'
 import { exploitTypeLabel, techniqueLink } from './helpers.js'
 
@@ -41,8 +47,126 @@ function ConfidenceBadge({ confidence }) {
         : 'Weak or IP-only signal — verify before acting'
   return (
     <span className={`corr-confidence-badge mono ${cls}`} title={title}>
-      {level.toUpperCase()}
+      {linkStrengthLabel(confidence)}
     </span>
+  )
+}
+
+function ConnectionEvidence({ item, cveId, onSelectCve }) {
+  if (!item) return null
+
+  if (item.cve_id_b && cveId) {
+    const panel = buildConnectionPanel(item, cveId)
+    if (!panel.primary && !panel.limitedConfidence) return null
+
+    return (
+      <details className="corr-evidence">
+        <summary className="corr-view-connection-toggle mono">View connection</summary>
+        <div className="corr-connection-panel">
+          <p className="corr-connection-heading mono">{panel.title}</p>
+          {panel.primary && (
+            <>
+              <p className="corr-connection-meta">{panel.primary.heading}</p>
+              <p className="corr-connection-value mono">{panel.primary.value}</p>
+              {panel.primary.lines.map(line => (
+                <p key={line} className="corr-connection-meta">{line}</p>
+              ))}
+              {panel.primary.source && (
+                <p className="corr-connection-meta">Source: {panel.primary.source}</p>
+              )}
+            </>
+          )}
+          <p className="corr-connection-meta">Link strength: {panel.linkStrength}</p>
+          {panel.limitedConfidence && (
+            <p className="corr-connection-limited">{panel.limitedConfidence}</p>
+          )}
+          {panel.relatedCve && onSelectCve && (
+            <button
+              type="button"
+              className="corr-connection-open mono"
+              onClick={() => onSelectCve(panel.relatedCve)}
+            >
+              Open related CVE
+            </button>
+          )}
+        </div>
+      </details>
+    )
+  }
+
+  const evidence = Array.isArray(item.evidence) ? item.evidence : []
+  const formatted = evidence.map(ev => formatEvidenceItem(ev)).filter(Boolean)
+  if (!formatted.length) return null
+
+  const primary = formatted[0]
+  return (
+    <details className="corr-evidence">
+      <summary className="corr-view-connection-toggle mono">View connection</summary>
+      <div className="corr-connection-panel">
+        <p className="corr-connection-meta">{primary.heading}</p>
+        <p className="corr-connection-value mono">{primary.value}</p>
+        {primary.lines.map(line => (
+          <p key={line} className="corr-connection-meta">{line}</p>
+        ))}
+        {primary.source && (
+          <p className="corr-connection-meta">Source: {primary.source}</p>
+        )}
+        <p className="corr-connection-meta">
+          Link strength: {linkStrengthLabel(item.confidence)}
+        </p>
+      </div>
+    </details>
+  )
+}
+
+function CorrelationSuppressAction({ onRequestSuppress, body, peerCve, label = 'Mark unrelated' }) {
+  if (!onRequestSuppress) return null
+  return (
+    <button
+      type="button"
+      className="corr-mark-unrelated-btn mono"
+      onClick={() => onRequestSuppress(body, peerCve)}
+      aria-label={`${label} — suppress this correlation relationship`}
+    >
+      {label}
+    </button>
+  )
+}
+
+function SuppressedCorrelationsPanel({ suppressions, onRestore, cveId }) {
+  if (!suppressions?.length) return null
+
+  return (
+    <div className="corr-suppressed-panel" aria-label="Suppressed correlation relationships">
+      <p className="corr-suppressed-title mono">SUPPRESSED RELATIONSHIPS</p>
+      <ul className="corr-suppressed-list">
+        {suppressions.map((row, idx) => {
+          const peer = row.scope_key || 'link'
+          const label =
+            row.scope === 'campaign_id'
+              ? `Campaign ${peer}`
+              : row.scope === 'pulse_id'
+                ? `Pulse ${peer}`
+                : `Relationship to ${peer}`
+          return (
+            <li key={`${row.scope}-${peer}-${row.created_at || row.id || idx}`} className="corr-suppressed-item">
+              <span>{label}</span>
+              {row.reason && <span className="mono">({row.reason})</span>}
+              {onRestore && (
+                <button
+                  type="button"
+                  className="corr-restore-btn mono"
+                  onClick={() => onRestore(row)}
+                  aria-label={`Restore suppressed correlation for ${cveId}`}
+                >
+                  Restore
+                </button>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
 function CorrelationPriority({ priority }) {
@@ -57,60 +181,30 @@ function CorrelationPriority({ priority }) {
     </div>
   )
 }
-function CorrelationEvidence({ evidence }) {
-  const items = Array.isArray(evidence) ? evidence : []
-  if (!items.length) return null
-  return (
-    <details className="corr-evidence">
-      <summary className="corr-evidence-toggle mono">Evidence</summary>
-      <ul className="corr-evidence-list">
-        {items.map((ev, idx) => (
-          <li key={`${ev.type}-${idx}`} className="mono corr-evidence-item">
-            {ev.type === 'same_pulse' && `Same OTX pulse: ${ev.pulse_name || ev.pulse_id}`}
-            {ev.type === 'shared_indicator' && (
-              <>
-                {`Shared ${ev.ioc_type}: ${ev.value}`}
-                {ev.confirmation ? ` (${ev.confirmation})` : ''}
-              </>
-            )}
-            {ev.type === 'enrichment_confirmation' && ev.summary}
-            {!['same_pulse', 'shared_indicator', 'enrichment_confirmation'].includes(ev.type) && JSON.stringify(ev)}
-          </li>
-        ))}
-      </ul>
-    </details>
-  )
+function CorrelationEvidence({ evidence, item, cveId, onSelectCve }) {
+  if (item && cveId) {
+    return <ConnectionEvidence item={item} cveId={cveId} onSelectCve={onSelectCve} />
+  }
+  return null
 }
 
 const INFRA_PREVIEW = 3
 
-function CorrelationDismiss({ onDismiss, body, label = 'Dismiss' }) {
-  if (!onDismiss) return null
-  return (
-    <button
-      type="button"
-      className="corr-dismiss-btn mono"
-      onClick={() => onDismiss(body)}
-      title="Mark as not related — hides this link for your session"
-      aria-label={`${label} — not related to this CVE`}
-    >
-      {label}
-    </button>
-  )
-}
-
-function InfrastructureList({ items, onSelectCve, onDismiss }) {
+function InfrastructureList({ items, onSelectCve, onRequestSuppress, cveId }) {
   const [showAll, setShowAll] = useState(false)
   const visible = showAll ? items : items.slice(0, INFRA_PREVIEW)
   const hidden = Math.max(0, items.length - INFRA_PREVIEW)
 
   return (
     <>
-      <div className="corr-infra-table" role="table" aria-label="Shared infrastructure peers">
+      <p className="corr-infra-context">
+        CVEs linked through shared threat observables.
+      </p>
+      <div className="corr-infra-table" role="table" aria-label="Related threat infrastructure">
         <div className="corr-infra-head mono" role="row">
-          <span role="columnheader">Peer CVE</span>
-          <span role="columnheader">Conf.</span>
-          <span role="columnheader">IPs</span>
+          <span role="columnheader">Related CVE</span>
+          <span role="columnheader" className="corr-infra-col-strength">Link strength</span>
+          <span role="columnheader" className="corr-infra-col-observables">Shared observables</span>
           <span role="columnheader" className="corr-infra-col-actions"> </span>
         </div>
         {visible.map(item => (
@@ -125,18 +219,18 @@ function InfrastructureList({ items, onSelectCve, onDismiss }) {
                 {item.cve_id_b}
               </button>
             </span>
-            <span className="corr-infra-conf" role="cell">
+            <span className="corr-infra-conf corr-infra-col-strength" role="cell">
               <ConfidenceBadge confidence={item.confidence} />
             </span>
-            <span className="corr-infra-ips mono" role="cell">
-              {item.shared_ip_count ?? 0}
+            <span className="corr-infra-ips mono corr-infra-col-observables" role="cell">
+              {formatSharedObservablesSummary(item)}
             </span>
             <span className="corr-infra-actions" role="cell">
-              <CorrelationEvidence evidence={item.evidence} />
-              <CorrelationDismiss
-                onDismiss={onDismiss}
+              <ConnectionEvidence item={item} cveId={cveId} onSelectCve={onSelectCve} />
+              <CorrelationSuppressAction
+                onRequestSuppress={onRequestSuppress}
                 body={{ scope: 'infrastructure', key: { cve_id_b: item.cve_id_b } }}
-                label="Dismiss"
+                peerCve={item.cve_id_b}
               />
             </span>
           </div>
@@ -147,15 +241,23 @@ function InfrastructureList({ items, onSelectCve, onDismiss }) {
           type="button"
           className="corr-show-more-btn mono"
           onClick={() => setShowAll(true)}
-          aria-label={`Show ${hidden} more shared infrastructure peers`}
+          aria-label={`Show ${hidden} more related CVEs`}
         >
-          + {hidden} more peer{hidden === 1 ? '' : 's'}
+          + {hidden} more related CVE{hidden === 1 ? '' : 's'}
         </button>
       )}
     </>
   )
 }
-function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
+
+function CorrelationFindings({
+  correlation,
+  loading,
+  onSelectCve,
+  onRequestSuppress,
+  suppressions,
+  onRestoreSuppression,
+}) {
   if (loading) {
     return (
       <section className="drawer-section" aria-labelledby="corr-heading">
@@ -225,10 +327,10 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
                   ))}
                 </p>
               </div>
-              <CorrelationEvidence evidence={item.evidence} />
+              <CorrelationEvidence item={item} cveId={correlation?.cve_id} onSelectCve={onSelectCve} />
               <div className="corr-finding-foot">
-                <CorrelationDismiss
-                  onDismiss={onDismiss}
+                <CorrelationSuppressAction
+                  onRequestSuppress={onRequestSuppress}
                   body={{ scope: 'campaign_id', key: { campaign_id: item.campaign_id } }}
                 />
               </div>
@@ -238,15 +340,22 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
       )}
 
       {infra.length > 0 && (
-        <div className="corr-group" aria-label="Infrastructure correlation">
-          <p className="corr-group-label mono">// SHARED INFRASTRUCTURE</p>
+        <div className="corr-group" aria-label="Related threat infrastructure">
+          <p className="corr-group-label mono">// RELATED THREAT INFRASTRUCTURE</p>
           <InfrastructureList
             items={infra}
             onSelectCve={onSelectCve}
-            onDismiss={onDismiss}
+            onRequestSuppress={onRequestSuppress}
+            cveId={correlation?.cve_id}
           />
         </div>
       )}
+
+      <SuppressedCorrelationsPanel
+        suppressions={suppressions}
+        onRestore={onRestoreSuppression}
+        cveId={correlation?.cve_id}
+      />
 
       {/* Level 2: Actor / Sector — infra block replaced above */}
       {actor.length > 0 && (
@@ -450,7 +559,9 @@ export default function TabIntel({
   correlation,
   correlationLoading,
   onSelectCorrelatedCve,
-  onDismissCorrelation,
+  onRequestSuppressCorrelation,
+  suppressions,
+  onRestoreSuppression,
 }) {
   const exploits = Array.isArray(publicExploits) ? publicExploits : []
   const scans = Array.isArray(greynoiseScans) ? greynoiseScans : []
@@ -673,7 +784,9 @@ export default function TabIntel({
         correlation={correlation}
         loading={correlationLoading}
         onSelectCve={onSelectCorrelatedCve}
-        onDismiss={onDismissCorrelation}
+        onRequestSuppress={onRequestSuppressCorrelation}
+        suppressions={suppressions}
+        onRestoreSuppression={onRestoreSuppression}
       />
     </>
   )
