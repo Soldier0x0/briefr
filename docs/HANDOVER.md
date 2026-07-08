@@ -12,6 +12,16 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 1 PR 4 merged (#324): `cache`
+
+**Merged:** #324 at 2026-07-08T08:43:30Z. CI green (test, test-postgres, gitleaks,
+dependency-audit, playwright-smoke). Both Gemini inline comments addressed
+(chunked `get_ioc_cache_batch`; import `_insert_cve_changes_batch` from `db.cve`).
+
+**Next:** `db/enrichment.py` (Post-B Phase 1 PR 5).
+
+---
+
 ## 2026-07-08 — Post-B Phase 1 PR 4: `cache` Postgres-native
 
 **What:** Converted `backend/db/cache.py` to the locked `sync_state` pattern —
