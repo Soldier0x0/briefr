@@ -1,14 +1,37 @@
-"""DB init/bootstrap: get_db, init_db, run_postgres_migrations. Split from database.py (Phase 3)."""
+"""DB init/bootstrap: get_db, init_db, run_postgres_migrations. Split from database.py (Phase 3).
+
+Postgres-native (Post-B Phase 1): runtime fixup SQL is dialect-neutral (no placeholders);
+SQLite bootstrap DDL lives in ``_SQLITE_BOOTSTRAP_SCRIPT`` and is not translated.
+Postgres schema is applied via Alembic in ``run_postgres_migrations``.
+"""
+
+from __future__ import annotations
 
 import asyncio
 from pathlib import Path
+
 from db.config import is_postgres
 from db.connection import get_connection
+from db.types import DbConnection
+
+_NORMALIZE_EPSS_SCORES_SQL = (
+    "UPDATE cves SET epss_score = NULL WHERE epss_score = 0.0"
+)
+
+_CREATE_IDX_CVES_HAS_POC_SQL = (
+    "CREATE INDEX IF NOT EXISTS idx_cves_has_poc ON cves(has_poc)"
+)
+
+_ALEMBIC_VERSION_SQL = "SELECT version_num FROM alembic_version LIMIT 1"
 
 
-async def get_db():
+async def get_db() -> DbConnection:
     """Return a database connection (SQLite default, PostgreSQL when configured)."""
     return await get_connection()
+
+
+async def _normalize_epss_scores(db: DbConnection) -> None:
+    await db.execute(_NORMALIZE_EPSS_SCORES_SQL)
 
 async def run_postgres_migrations() -> None:
     """Apply Alembic DDL before the asyncpg pool opens (avoids migration lock waits)."""
@@ -33,7 +56,7 @@ async def run_postgres_migrations() -> None:
     try:
         conn = await asyncpg.connect(postgres_dsn(), timeout=15)
         try:
-            row = await conn.fetchrow("SELECT version_num FROM alembic_version LIMIT 1")
+            row = await conn.fetchrow(_ALEMBIC_VERSION_SQL)
             current = row["version_num"] if row else None
             skip_alembic = current == head
         except asyncpg.UndefinedTableError:
@@ -72,7 +95,7 @@ async def run_postgres_migrations() -> None:
 async def _init_postgres_schema() -> None:
     db = await get_db()
     try:
-        await db.execute("UPDATE cves SET epss_score = NULL WHERE epss_score = 0.0")
+        await _normalize_epss_scores(db)
         await db.commit()
     finally:
         await db.close()
@@ -626,16 +649,12 @@ async def init_db() -> None:
                 pass
 
         try:
-            await db.execute(
-                "CREATE INDEX IF NOT EXISTS idx_cves_has_poc ON cves(has_poc)"
-            )
+            await db.execute(_CREATE_IDX_CVES_HAS_POC_SQL)
             await db.commit()
         except Exception:
             pass
 
-        await db.execute(
-            "UPDATE cves SET epss_score = NULL WHERE epss_score = 0.0"
-        )
+        await _normalize_epss_scores(db)
         await db.commit()
     finally:
         await db.close()

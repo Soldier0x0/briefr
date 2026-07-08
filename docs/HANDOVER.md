@@ -12,6 +12,21 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 1 PR 8: `init` Postgres-native
+
+**What:** Converted `backend/db/init.py` — final Phase 1 module — runtime fixup SQL
+extracted to dialect-neutral constants (`_NORMALIZE_EPSS_SCORES_SQL`,
+`_CREATE_IDX_CVES_HAS_POC_SQL`, `_ALEMBIC_VERSION_SQL`); shared
+`_normalize_epss_scores()` helper; `DbConnection` type hints. SQLite bootstrap
+DDL unchanged (Alembic owns Postgres schema). Added `tests/test_db_init.py`.
+
+**Verified:** `pytest tests/test_db_init.py -q` (4 passed, SQLite); full suite
+`801 passed, 8 skipped` (SQLite).
+
+**Next:** open PR, CI green, merge — Phase 1 module conversion complete.
+
+---
+
 ## 2026-07-08 — Post-B Phase 1 PR 7 merged (#327): `cve`
 
 **Merged:** #327. CI green on first push (all 5 jobs). Full suite: `797 passed, 8 skipped`
