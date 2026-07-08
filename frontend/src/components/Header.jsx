@@ -10,6 +10,7 @@ import {
   formatTime,
   getTimezone,
   getTzAbbr,
+  getTzOffsetLabel,
   setTimezone as persistTimezone,
 } from '../utils/timezone.js'
 import './Header.css'
@@ -21,10 +22,11 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
   const [now, setNow]               = useState(new Date())
   const [tz, setTz]                 = useState(() => getTimezone())
   const [popoverOpen, setPopoverOpen]   = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [overflowOpen, setOverflowOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [search, setSearch]             = useState('')
   const popoverRef                      = useRef(null)
-  const mobileMenuRef                   = useRef(null)
+  const overflowRef                     = useRef(null)
 
   // Tick every second
   useEffect(() => {
@@ -39,13 +41,14 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
         setPopoverOpen(false)
         setSearch('')
       }
-      if (mobileMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
-        setMobileMenuOpen(false)
+      if (overflowOpen && overflowRef.current && !overflowRef.current.contains(e.target)) {
+        setOverflowOpen(false)
+        setShortcutsOpen(false)
       }
     }
     document.addEventListener('mousedown', onDown)
     return () => document.removeEventListener('mousedown', onDown)
-  }, [popoverOpen, mobileMenuOpen])
+  }, [popoverOpen, overflowOpen])
 
   useEffect(() => {
     const onTz = (e) => setTz(e.detail)
@@ -77,7 +80,8 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
     ? COMMON_TIMEZONES.filter(t =>
         t.tz.toLowerCase().includes(q) ||
         t.search.includes(q) ||
-        getTzAbbr(t.tz, now).toLowerCase().includes(q)
+        getTzAbbr(t.tz, now).toLowerCase().includes(q) ||
+        getTzOffsetLabel(t.tz, now).includes(q)
       )
     : COMMON_TIMEZONES
 
@@ -164,86 +168,97 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
           </nav>
         )}
 
-        {/* Right: legal, live dot, clock */}
+        {/* Right: overflow, queue, account, clock */}
         <div className="header-right">
-          {showShortcuts && <ShortcutsPanel placement="header" />}
           <ApiQueueIndicator apiQueue={feedHealth?.api_queue} />
 
-          {assetCtx?.isLoaded && (
+          {authStatus === 'authed' ? (
+            <UserMenu
+              onMyStack={assetCtx ? assetCtx.openProfileFlow : undefined}
+              onClearSession={assetCtx?.isLoaded ? assetCtx.clearProfile : undefined}
+              showClearSession={!!assetCtx?.isLoaded}
+            />
+          ) : null}
+
+          <div className="header-overflow-wrap" ref={overflowRef}>
             <button
-              type="button"
-              className="header-clear-session mono"
-              onClick={assetCtx.clearProfile}
-            >
-              Clear Session
-            </button>
-          )}
-
-          {assetCtx && (
-            <button
-              type="button"
-              className="header-profile-btn mono"
-              onClick={assetCtx.openProfileFlow}
-              aria-label="Open My Stack setup"
-            >
-              MY STACK
-            </button>
-          )}
-
-          {/* Legal links — Feed has no page footer (infinite scroll), so they
-              stay reachable here only on that tab; every other tab shows
-              them in the footer instead. */}
-          {activeTab === 'feed' && (
-            <nav className="header-legal header-legal-desktop" aria-label="Legal links">
-              <button className="header-legal-link" onClick={onAboutOpen} aria-label="About BRIEFR">
-                About
-              </button>
-              <span className="header-legal-sep" aria-hidden="true">&middot;</span>
-              <Link to="/privacy" className="header-legal-link">Privacy Policy</Link>
-              <span className="header-legal-sep" aria-hidden="true">&middot;</span>
-              <Link to="/terms" className="header-legal-link">Terms of Use</Link>
-            </nav>
-          )}
-
-          {authStatus === 'authed' && <UserMenu />}
-
-          {/* Mobile "···" menu */}
-          <div className="mobile-menu-wrap header-legal-mobile" ref={mobileMenuRef}>
-            <button
-              className="mobile-menu-btn"
-              onClick={() => setMobileMenuOpen(v => !v)}
-              aria-label="Open navigation menu"
-              aria-expanded={mobileMenuOpen}
+              className="header-overflow-btn"
+              onClick={() => {
+                setOverflowOpen(v => !v)
+                if (overflowOpen) setShortcutsOpen(false)
+              }}
+              aria-label="Open menu"
+              aria-expanded={overflowOpen}
             >
               &middot;&middot;&middot;
             </button>
-            {mobileMenuOpen && (
-              <div className="mobile-menu-dropdown">
-                {assetCtx && (
-                  <button
-                    className="mobile-menu-item"
-                    onClick={() => { setMobileMenuOpen(false); assetCtx.openProfileFlow() }}
-                  >
-                    My Stack
-                  </button>
-                )}
-                {authStatus === 'authed' && (
-                  <div className="mobile-menu-user">
-                    <UserMenu onItemClick={() => setMobileMenuOpen(false)} />
-                  </div>
-                )}
-                {activeTab === 'feed' && (
+            {overflowOpen && (
+              <div className="header-overflow-dropdown" role="menu" aria-label="More options">
+                {shortcutsOpen ? (
+                  <ShortcutsPanel
+                    listOnly
+                    onClose={() => setShortcutsOpen(false)}
+                  />
+                ) : (
                   <>
+                    {assetCtx && authStatus !== 'authed' && (
+                      <button
+                        type="button"
+                        className="header-overflow-item"
+                        role="menuitem"
+                        onClick={() => {
+                          setOverflowOpen(false)
+                          assetCtx.openProfileFlow()
+                        }}
+                      >
+                        My Stack
+                      </button>
+                    )}
+                    {assetCtx?.isLoaded && authStatus !== 'authed' && (
+                      <button
+                        type="button"
+                        className="header-overflow-item"
+                        role="menuitem"
+                        onClick={() => {
+                          setOverflowOpen(false)
+                          assetCtx.clearProfile()
+                        }}
+                      >
+                        Clear session
+                      </button>
+                    )}
+                    {showShortcuts && (
+                      <button
+                        type="button"
+                        className="header-overflow-item"
+                        role="menuitem"
+                        onClick={() => setShortcutsOpen(true)}
+                      >
+                        Keyboard shortcuts
+                      </button>
+                    )}
                     <button
-                      className="mobile-menu-item"
-                      onClick={() => { setMobileMenuOpen(false); onAboutOpen() }}
+                      type="button"
+                      className="header-overflow-item"
+                      role="menuitem"
+                      onClick={() => { setOverflowOpen(false); onAboutOpen?.() }}
                     >
                       About
                     </button>
-                    <Link to="/privacy" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                    <Link
+                      to="/privacy"
+                      className="header-overflow-item"
+                      role="menuitem"
+                      onClick={() => setOverflowOpen(false)}
+                    >
                       Privacy Policy
                     </Link>
-                    <Link to="/terms" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                    <Link
+                      to="/terms"
+                      className="header-overflow-item"
+                      role="menuitem"
+                      onClick={() => setOverflowOpen(false)}
+                    >
                       Terms of Use
                     </Link>
                   </>
@@ -286,6 +301,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
                 <ul className="tz-list" role="listbox" aria-label="Available timezones">
                   {filtered.map(t => {
                     const abbr = getTzAbbr(t.tz, now)
+                    const offset = getTzOffsetLabel(t.tz, now)
                     const time = formatTime(now, t.tz)
                     const active = tz === t.tz
                     return (
@@ -297,6 +313,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
                         onClick={() => selectTz(t.tz)}
                       >
                         <span className="tz-item-abbr mono">{abbr}</span>
+                        <span className="tz-item-offset mono">{offset}</span>
                         <span className="tz-item-time mono">{time}</span>
                         <span className="tz-item-name">{t.tz}</span>
                       </li>

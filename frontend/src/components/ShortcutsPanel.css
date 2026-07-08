@@ -102,3 +102,19 @@
   font-size: 12px;
   color: var(--text2);
 }
+
+.shortcuts-back-btn {
+  margin-top: 12px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text2);
+  background: transparent;
+  border: 1px solid var(--border2);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.shortcuts-back-btn:hover {
+  color: var(--text);
+  border-color: var(--text3);
+}

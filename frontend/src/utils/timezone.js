@@ -18,6 +18,102 @@ export const COMMON_TIMEZONES = [
   { tz: 'America/Sao_Paulo',   label: 'America/Sao Paulo',search: 'sao paulo brazil brt' },
 ]
 
+/** Fixed abbreviations (no DST). */
+const TZ_ABBR_FIXED = {
+  UTC: 'UTC',
+  'Asia/Kolkata': 'IST',
+  'Asia/Tokyo': 'JST',
+  'Asia/Singapore': 'SGT',
+  'Asia/Dubai': 'GST',
+  'Asia/Shanghai': 'CST',
+  'Asia/Hong_Kong': 'HKT',
+  'Asia/Seoul': 'KST',
+}
+
+/** [standard, daylight] abbreviations when the zone observes DST. */
+const TZ_ABBR_DST = {
+  'America/New_York': ['EST', 'EDT'],
+  'America/Los_Angeles': ['PST', 'PDT'],
+  'America/Chicago': ['CST', 'CDT'],
+  'America/Denver': ['MST', 'MDT'],
+  'America/Toronto': ['EST', 'EDT'],
+  'Europe/London': ['GMT', 'BST'],
+  'Europe/Berlin': ['CET', 'CEST'],
+  'Europe/Paris': ['CET', 'CEST'],
+  'Europe/Madrid': ['CET', 'CEST'],
+  'Europe/Rome': ['CET', 'CEST'],
+  'Australia/Sydney': ['AEST', 'AEDT'],
+  'Pacific/Auckland': ['NZST', 'NZDT'],
+}
+
+function tzOffsetMinutes(tz, date = new Date()) {
+  try {
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat('en', {
+        timeZone: tz,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      })
+        .formatToParts(date)
+        .filter(p => p.type !== 'literal')
+        .map(p => [p.type, Number(p.value)])
+    )
+    const asUtc = Date.UTC(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second
+    )
+    return Math.round((asUtc - date.getTime()) / 60000)
+  } catch {
+    return 0
+  }
+}
+
+function dstAbbr(tz, pair, date = new Date()) {
+  const year = date.getUTCFullYear()
+  const jan = tzOffsetMinutes(tz, new Date(Date.UTC(year, 0, 15, 12)))
+  const jul = tzOffsetMinutes(tz, new Date(Date.UTC(year, 6, 15, 12)))
+  const current = tzOffsetMinutes(tz, date)
+  const unique = [...new Set([jan, jul])]
+  if (unique.length < 2) return pair[0]
+  const stdOffset = Math.min(...unique)
+  return current === stdOffset ? pair[0] : pair[1]
+}
+
+/** UTC offset label, e.g. "+05:30", "-04:00", "+00:00". */
+export function getTzOffsetLabel(tz, date = new Date()) {
+  if (tz === 'UTC') return '+00:00'
+  const mins = tzOffsetMinutes(tz, date)
+  const sign = mins >= 0 ? '+' : '-'
+  const abs = Math.abs(mins)
+  const h = String(Math.floor(abs / 60)).padStart(2, '0')
+  const m = String(abs % 60).padStart(2, '0')
+  return `${sign}${h}:${m}`
+}
+
+export function getTzAbbr(tz, date = new Date()) {
+  if (TZ_ABBR_FIXED[tz]) return TZ_ABBR_FIXED[tz]
+  const pair = TZ_ABBR_DST[tz]
+  if (pair) return dstAbbr(tz, pair, date)
+  try {
+    const parts = Intl.DateTimeFormat('en', {
+      timeZone: tz,
+      timeZoneName: 'short',
+    }).formatToParts(date)
+    return parts.find(p => p.type === 'timeZoneName')?.value || tz.split('/').pop()
+  } catch {
+    return tz.split('/').pop()
+  }
+}
+
 export const TIMEZONES_BY_CONTINENT = [
   { continent: 'UTC', zones: [{ tz: 'UTC', label: 'UTC' }] },
   {
@@ -75,19 +171,6 @@ export const TIMEZONES_BY_CONTINENT = [
     ],
   },
 ]
-
-export function getTzAbbr(tz, date = new Date()) {
-  if (tz === 'UTC') return 'UTC'
-  try {
-    const parts = Intl.DateTimeFormat('en', {
-      timeZone: tz,
-      timeZoneName: 'short',
-    }).formatToParts(date)
-    return parts.find(p => p.type === 'timeZoneName')?.value || tz.split('/').pop()
-  } catch {
-    return tz.split('/').pop()
-  }
-}
 
 export function formatTime(date, tz) {
   try {
