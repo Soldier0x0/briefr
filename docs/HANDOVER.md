@@ -12,6 +12,16 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 1 PR 5 merged (#325): `enrichment`
+
+**Merged:** #325 at 2026-07-08T09:09:02Z. CI green after fix for Postgres
+`insert_epss_history_rows` rowcount on `ON CONFLICT DO NOTHING`. All three
+Gemini comments addressed (UTC dates, quote-aware placeholder renumbering).
+
+**Next:** batch `db/metadata.py` + `db/correlation.py` (Post-B Phase 1 PR 6).
+
+---
+
 ## 2026-07-08 — Post-B Phase 1 PR 5: `enrichment` Postgres-native
 
 **What:** Converted `backend/db/enrichment.py` to the locked `sync_state`
