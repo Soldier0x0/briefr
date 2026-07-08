@@ -12,6 +12,18 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Wave 3 PR 9: export_intel_snapshot.py + CI smoke
+
+**Session:** Added `scripts/export_intel_snapshot.py` (allowlisted `pg_dump`, manifest,
+operator/sync_state guards). Postgres CI job runs `test_intel_snapshot_export.py`
+round-trip restore smoke (Track J2).
+
+### Next steps
+
+**Wave 4 / parallel** — Post-B, F3 security pass, or operator settings in DB (deferred).
+
+---
+
 ## 2026-07-08 — Wave 3 PR 8: DATA_SNAPSHOT spec + ADR-001
 
 **Session:** Added `docs/DATA_SNAPSHOT.md` (INTEL vs OPERATOR table/key allowlists,
