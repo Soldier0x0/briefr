@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 
 import {
   calculateThreatScore,
+  classifyEnvironment,
   correlationEscalation,
   deriveOperationalPriority,
   inferAssetMatchSemantics,
@@ -70,6 +71,15 @@ describe('correlationEscalation', () => {
         ],
       }],
     }), true)
+  })
+})
+
+describe('classifyEnvironment parity', () => {
+  const profile = { applications: [], operatingSystems: [], aiSystems: [] }
+
+  it('maps vendor-level score to POSSIBLE tier', () => {
+    const env = classifyEnvironment({}, profile, 0, 0.75, 'Vendor match (Apache)')
+    assert.equal(env.tier, 'POSSIBLE')
   })
 })
 

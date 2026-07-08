@@ -304,7 +304,8 @@ function daysSince(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null
   const d = new Date(`${text}T00:00:00Z`)
   const now = new Date()
-  return Math.floor((now - d) / 86400000)
+  const nowUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+  return Math.floor((nowUtc - d) / 86400000)
 }
 
 function kevScoreRaw(cve) {
@@ -381,7 +382,17 @@ export function calculateThreatScore(cve, momentumScore = 0) {
   }
 }
 
-export function classifyEnvironment(cve, profile, backendMatchScore = null) {
+/**
+ * Map asset-match signals to Environment tiers (mirrors backend/scoring/environment.py).
+ * Optional assetScore + matchType come from legacy_risk_v11b / risk response when available.
+ */
+export function classifyEnvironment(
+  cve,
+  profile,
+  backendMatchScore = null,
+  assetScore = null,
+  matchType = '',
+) {
   if (!profile) {
     return {
       version: 'environment-1.0',
@@ -391,41 +402,96 @@ export function classifyEnvironment(cve, profile, backendMatchScore = null) {
       evidence_label: 'No asset profile loaded',
     }
   }
+
   const backendScore = Number(backendMatchScore || 0)
-  if (backendScore >= 100) {
-    return {
-      version: 'environment-1.0',
-      tier: 'CONFIRMED',
-      score: 1.0,
-      version_verified: true,
-      evidence_label: BACKEND_EXACT_CPE_VERSION,
+  let score = assetScore
+  let mt = String(matchType || '').trim()
+
+  if (score == null) {
+    if (backendScore >= 100) {
+      score = 1.0
+      mt = mt || BACKEND_EXACT_CPE_VERSION
+    } else if (backendScore >= 55) {
+      score = Math.max(0.55, backendScore / 100)
+      mt = mt || BACKEND_CPE_PRODUCT
+    } else if (backendScore > 0) {
+      score = backendScore / 100
+      mt = mt || 'Partial match to your asset profile'
+    } else {
+      score = 0.0
+      mt = mt || 'No matching assets in your profile'
     }
   }
-  if (backendScore === 0) {
+
+  const mtLower = mt.toLowerCase()
+  void cve
+
+  if (score === 0.0) {
     return {
       version: 'environment-1.0',
       tier: 'NO_MATCH',
       score: 0,
       version_verified: false,
-      evidence_label: 'No matching assets in your profile',
+      evidence_label: mt || 'No matching assets in your profile',
     }
   }
-  if (backendScore >= 55) {
+
+  if (backendScore >= 100) {
+    return {
+      version: 'environment-1.0',
+      tier: 'CONFIRMED',
+      score,
+      version_verified: true,
+      evidence_label: mt,
+    }
+  }
+
+  if (score >= 1.0 && mtLower.includes('exact cpe match')) {
+    return {
+      version: 'environment-1.0',
+      tier: 'CONFIRMED',
+      score,
+      version_verified: true,
+      evidence_label: mt,
+    }
+  }
+
+  if (score >= 0.9 || (score >= 0.8 && mtLower.includes('os match'))) {
     return {
       version: 'environment-1.0',
       tier: 'LIKELY',
-      score: backendScore / 100,
+      score,
       version_verified: false,
-      evidence_label: BACKEND_CPE_PRODUCT,
+      evidence_label: mt,
     }
   }
-  void cve
+
+  if (score >= 0.65) {
+    return {
+      version: 'environment-1.0',
+      tier: 'POSSIBLE',
+      score,
+      version_verified: false,
+      evidence_label: mt,
+    }
+  }
+
+  if (score >= 0.35) {
+    return {
+      version: 'environment-1.0',
+      tier: 'WEAK',
+      score,
+      version_verified: false,
+      evidence_label: mt,
+    }
+  }
+
   return {
     version: 'environment-1.0',
-    tier: 'WEAK',
-    score: backendScore / 100,
+    tier: 'NO_MATCH',
+    score,
     version_verified: false,
-    evidence_label: 'Partial match to your asset profile',
+    evidence_label: mt || 'No matching assets in your profile',
   }
 }
 
