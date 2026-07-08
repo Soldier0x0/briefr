@@ -12,6 +12,18 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Wave 2 PR 4: unified frontend stack
+
+**Session:** Feed stack reads/writes `GET/PUT /api/me/stack`; legacy `briefr_stack`
+localStorage migrates on login. KEV-on-stack + wallboard use saved user stack when
+`BRIEFR_STACK_TERMS` env is unset. Privacy copy updated.
+
+### Next steps
+
+**D4** — Nuclei parser + Sigma artifact injection (sprint Track D).
+
+---
+
 ## 2026-07-07 — Wave 1 PR 2 merged (#309); Wave 2 PR 3 in progress
 
 **Session:** Merged toast policy + restart banner (H1a). Started Wave 2 PR 3 —

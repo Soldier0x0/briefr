@@ -218,7 +218,9 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (sch
 
 1. **UI:** `Forge.jsx` (FORGE tab) loads `GET /api/forge/coverage` on mount; the
    optional "MY STACK ONLY" toggle re-fetches with the saved stack from
-   localStorage (`briefr_stack` — same terms as the BRIEF stack filter).
+   Postgres `user_preferences.stack_terms` (Feed tab, per login user). Optional
+   operator override: `BRIEFR_STACK_TERMS` in admin config. Legacy
+   `briefr_stack` localStorage migrates to the API on first login (Wave 2 PR 4).
 2. **Coverage map (`routers/forge.py`):** one grouped query over
    `cve_technique_map ⋈ cves` (stack filter as a subselect on `cves`) +
    `hunt_packs` counts + `mitre_techniques` metadata. Status per technique:

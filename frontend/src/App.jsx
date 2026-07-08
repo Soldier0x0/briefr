@@ -30,6 +30,7 @@ import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
 import { createCveDrawerController } from './utils/openCveDrawer.js'
 import { lazyWithReload } from './utils/lazyWithReload.js'
 import { ingestLogUrl } from './utils/adminLinks.js'
+import { getSavedStack } from './utils/cveFilters.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 
 const BriefCharts = lazyWithReload(() => import('./components/BriefCharts.jsx'))
@@ -381,6 +382,19 @@ export default function App() {
       window.removeEventListener('briefr-profile-change', onRefreshStats)
     }
   }, [loadStats])
+
+  useEffect(() => {
+    const existing = getSavedStack()
+    if (existing) {
+      setFilters((prev) => (prev.stack ? prev : { ...prev, stack: existing }))
+    }
+    function onStackLoaded(e) {
+      const terms = e.detail?.stack_terms || ''
+      setFilters((prev) => (prev.stack ? prev : { ...prev, stack: terms }))
+    }
+    window.addEventListener('briefr-stack-loaded', onStackLoaded)
+    return () => window.removeEventListener('briefr-stack-loaded', onStackLoaded)
+  }, [])
 
   useEffect(() => {
     loadHealth()

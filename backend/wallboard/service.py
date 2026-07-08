@@ -13,7 +13,8 @@ from datetime import datetime, timezone
 from typing import Any
 
 from brief.service import build_morning_brief
-from database import get_cve_count, get_db, get_feed_cache, get_last_updated, get_stack_terms, set_feed_cache
+from database import get_cve_count, get_db, get_feed_cache, get_last_updated, set_feed_cache
+from preferences.repo import get_effective_stack_terms
 from feeds.case_study_feed import get_incident_feed, get_incident_feed_status
 from resilient_client import get_feed_health
 from routers.cves import _row_to_cve_dict, _stack_match_clause
@@ -53,7 +54,7 @@ async def get_wallboard_payload() -> dict[str, Any]:
 
 
 async def _build_wallboard_payload(db: Any) -> dict[str, Any]:
-    stack = get_stack_terms()
+    stack = await get_effective_stack_terms(db)
     now = datetime.now(timezone.utc)
 
     kev_on_stack = await _kev_on_stack_tile(db, stack)

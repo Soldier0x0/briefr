@@ -64,14 +64,15 @@ export default function PrivacyPage() {
         contain your IP address, User-Agent string, or query parameters.
       </p>
 
-      <h2 className="legal-section-heading">3. localStorage (browser only)</h2>
+      <h2 className="legal-section-heading">3. Your stack profile (server)</h2>
       <p className="legal-p">
-        Your tech stack input is saved to your browser's localStorage under the
-        key <code>briefr_stack</code>. A timestamp of your last visit is stored
-        under <code>briefr_last_visit</code> to highlight new CVEs since your
-        previous session. This data never leaves your browser except when you
-        submit a stack filter (which is sent as a stack parameter). You can
-        clear localStorage at any time in your browser settings.
+        When you are signed in, the comma-separated stack terms you enter in the
+        Feed tab are stored in the application database under your user account
+        (<code>user_preferences</code>) — not in browser localStorage. They are
+        used to filter CVEs and, when no operator override is set, for KEV-on-stack
+        webhook alerts and the wallboard tile. A timestamp of your last visit may
+        still be stored locally under <code>briefr_last_visit</code> to highlight
+        new CVEs since your previous session.
       </p>
 
       <h2 className="legal-section-heading">4. Third-party services</h2>

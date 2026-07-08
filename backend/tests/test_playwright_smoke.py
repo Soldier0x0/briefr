@@ -134,8 +134,17 @@ def test_filter_click_anchors_to_feed(smoke_page):
     _wait_for_brief_cards(smoke_page)
     if not _feed_tab_visible(smoke_page):
         _open_full_feed(smoke_page)
-    smoke_page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-    smoke_page.wait_for_timeout(300)
+    _poll(
+        smoke_page,
+        """
+        () => {
+          window.scrollTo(0, document.body.scrollHeight);
+          const feed = document.querySelector('.cve-feed');
+          return feed ? feed.getBoundingClientRect().top < -100 : false;
+        }
+        """,
+        timeout=10.0,
+    )
 
     feed_top_before = smoke_page.evaluate(
         """

@@ -90,6 +90,18 @@ export function fetchMe() {
   return request('/auth/me')
 }
 
+export function fetchUserStack() {
+  return request('/me/stack')
+}
+
+export function saveUserStack(body) {
+  return request('/me/stack', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
 export function fetchSessions() {
   return request('/auth/sessions')
 }

@@ -65,3 +65,24 @@ async def upsert_user_stack(
         "profile": profile,
         "updated_at": updated_at,
     }
+
+
+async def get_effective_stack_terms(db: Any) -> str:
+    """Operator stack for KEV alerts / wallboard: env override, else saved user stack."""
+    from db.sync_state import get_stack_terms
+
+    env_stack = (get_stack_terms() or "").strip()
+    if env_stack:
+        return env_stack
+    rows = await db.execute_fetchall(
+        """
+        SELECT stack_terms
+        FROM user_preferences
+        WHERE TRIM(stack_terms) != ''
+        ORDER BY updated_at DESC
+        LIMIT 1
+        """
+    )
+    if not rows:
+        return ""
+    return (rows[0]["stack_terms"] or "").strip()

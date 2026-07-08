@@ -130,3 +130,39 @@ def test_put_stack_rejects_oversized_profile(client):
     huge = {"version": 1, "aiSystems": ["x" * 70000]}
     res = client.put("/api/me/stack", json={"stack_terms": "nginx", "profile": huge})
     assert res.status_code == 422
+
+
+def test_effective_stack_terms_prefers_env(client, monkeypatch):
+    from preferences.repo import get_effective_stack_terms
+    from database import get_db
+    from tests.conftest import run_db_test
+
+    monkeypatch.setenv("BRIEFR_STACK_TERMS", "env-term")
+
+    async def run():
+        db = await get_db()
+        try:
+            return await get_effective_stack_terms(db)
+        finally:
+            await db.close()
+
+    assert run_db_test(run()) == "env-term"
+
+
+def test_effective_stack_terms_falls_back_to_user_prefs(tmp_path, monkeypatch, client):
+    from preferences.repo import get_effective_stack_terms
+    from database import get_db
+    from tests.conftest import run_db_test
+
+    monkeypatch.delenv("BRIEFR_STACK_TERMS", raising=False)
+    _login(client)
+    client.put("/api/me/stack", json={"stack_terms": "saved-stack", "profile": None})
+
+    async def run():
+        db = await get_db()
+        try:
+            return await get_effective_stack_terms(db)
+        finally:
+            await db.close()
+
+    assert run_db_test(run()) == "saved-stack"

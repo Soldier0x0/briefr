@@ -77,7 +77,7 @@ function KevOnStackTile({ data, active }) {
       <p className="wallboard-tile-sub">
         {data?.stack_configured
           ? (data.stack_terms || []).join(', ') || 'stack profile'
-          : 'Set BRIEFR_STACK_TERMS'}
+          : 'Set stack in Feed (or BRIEFR_STACK_TERMS)'}
       </p>
     </article>
   )
