@@ -23,7 +23,11 @@ DDL unchanged (Alembic owns Postgres schema). Added `tests/test_db_init.py`.
 **Verified:** `pytest tests/test_db_init.py -q` (4 passed, SQLite); full suite
 `801 passed, 8 skipped` (SQLite).
 
-**Next:** open PR, CI green, merge — Phase 1 module conversion complete.
+**PR:** #328 open on `cursor/init-postgres-native-6fd2`. **CI blocked** — GitHub
+Actions monthly free-tier limit reached (jobs fail in ~3s with no steps; not a
+code regression). Re-run workflows or merge after limits reset.
+
+**Next:** CI green → merge #328 → Phase 1 complete → Post-B2 (unified exceptions).
 
 ---
 
