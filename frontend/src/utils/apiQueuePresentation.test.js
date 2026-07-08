@@ -132,6 +132,11 @@ describe('apiQueuePresentation', () => {
     assert.equal(summary.ariaLabel, '1 API request active')
   })
 
+  it('highestQueueState tolerates null requests and sources', () => {
+    assert.equal(highestQueueState(null, null), null)
+    assert.equal(highestQueueState(null, { github: { active: 1, queued: 0, paused_for_seconds: 0 } }), 'active')
+  })
+
   it('handleApiQueueDropdownKeyDown closes on Escape', () => {
     let open = true
     handleApiQueueDropdownKeyDown({ key: 'Escape' }, v => { open = v })

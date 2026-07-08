@@ -62,7 +62,8 @@ export function highestQueueState(requests = [], sources = {}) {
   let best = null
   let bestPriority = 0
 
-  for (const req of requests) {
+  const reqs = Array.isArray(requests) ? requests : []
+  for (const req of reqs) {
     const state = String(req?.state || '').toLowerCase()
     const p = STATE_PRIORITY[state] || 0
     if (p > bestPriority) {
@@ -72,7 +73,8 @@ export function highestQueueState(requests = [], sources = {}) {
   }
 
   if (!best) {
-    for (const info of Object.values(sources)) {
+    const srcMap = sources && typeof sources === 'object' ? sources : {}
+    for (const info of Object.values(srcMap)) {
       if (info?.paused_for_seconds > 0) return 'rate_limited'
       if (info?.queued > 0) return 'queued'
       if (info?.active > 0) return 'active'

@@ -279,3 +279,17 @@ def test_legacy_release_without_request_id():
     status = asyncio.run(run())
     assert status["total_active"] == 0
     aq.reset_api_queue()
+
+
+def test_invalid_request_id_does_not_corrupt_stack():
+    aq.reset_api_queue()
+
+    async def run():
+        rid = await aq.await_api_slot("rss", operation="outbound_request", context_type="task", context_id="sync")
+        aq.release_api_slot("rss", rid)
+        aq.release_api_slot("rss", rid)  # double release — must not pop another slot
+        return aq.get_api_queue_status()
+
+    status = asyncio.run(run())
+    assert status["total_active"] == 0
+    aq.reset_api_queue()

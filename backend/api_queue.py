@@ -258,17 +258,16 @@ def release_api_slot(source: str, request_id: str | None = None) -> None:
     state = _state(source)
     stack = _active_stacks.setdefault(pacing_key, [])
 
-    rid = request_id
-    if rid and rid in _requests:
-        if rid in stack:
-            stack.remove(rid)
-    elif stack:
-        rid = stack.pop()
-    else:
-        state.active = max(0, state.active - 1)
+    if request_id is not None:
+        if request_id in _requests:
+            _requests.pop(request_id, None)
+            if request_id in stack:
+                stack.remove(request_id)
+            state.active = max(0, state.active - 1)
         return
 
-    if rid:
+    if stack:
+        rid = stack.pop()
         _requests.pop(rid, None)
     state.active = max(0, state.active - 1)
 
