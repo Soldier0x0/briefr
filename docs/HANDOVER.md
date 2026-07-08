@@ -12,6 +12,34 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 1 PR 3: `cache_retention` Postgres-native
+
+**What:** Converted `backend/db/cache_retention.py` to the locked `sync_state`
+pattern — parallel `_SQLITE` / `_PG` constants for all purge queries,
+`DbConnection` type hints, Postgres-safe `_rows_deleted` (skips SQLite
+`changes()` fallback on Postgres). Added `tests/test_db_cache_retention.py`.
+
+**Verified:** `pytest tests/test_db_cache_retention.py tests/test_cache_retention.py -q`
+(7 passed, SQLite); full suite `769 passed, 8 skipped` (SQLite).
+
+**Gemini fixes (pre-merge):** unconditional placeholder assertions; native
+`$n` seed SQL in Postgres integration tests.
+
+**Next:** `db/cache.py`.
+
+---
+
+## 2026-07-08 — Post-B Phase 1 PR 2 merged (#322): `watchlist` + `webhooks`
+
+**Merged:** #322 at 2026-07-08T08:04:34Z. CI green (test, test-postgres, gitleaks,
+dependency-audit, playwright-smoke). All three Gemini inline comments addressed
+(bool `enabled` on Postgres, unique `destination_id` in delivery-log test,
+watchlist expired-snooze cleanup).
+
+**Next:** `db/cache_retention.py` (Post-B Phase 1 PR 3).
+
+---
+
 ## 2026-07-08 — Post-B Phase 1 PR 2: `watchlist` + `webhooks` Postgres-native
 
 **What:** Converted `backend/db/watchlist.py` and `backend/db/webhooks.py` to
@@ -98,12 +126,12 @@ external Postgres compose) remains deferred.
 
 | Phase | Scope | PRs left |
 |-------|-------|----------|
-| **1** | Postgres-native `db/*.py` modules | **~5** (`sync_state`, `watchlist`+`webhooks` done) |
+| **1** | Postgres-native `db/*.py` modules | **~4** (`sync_state`, `watchlist`+`webhooks`, `cache_retention` done/in-flight) |
 | **2** | Unify DB exception handling | 1 |
 | **3** | Delete `db/dialect.py` (+ optional SQLite drop — needs operator OK) | 1–2 |
 | **4** | CI backup dump → restore round-trip | 1 |
 
-**Phase 1 next PR:** `db/cache_retention.py`.
+**Phase 1 next PR:** `db/cache.py` (after `cache_retention` merges).
 
 **Phase 1 batching rule:** batch small independent modules; **solo PRs** for
 `cve.py` and `init.py`.
