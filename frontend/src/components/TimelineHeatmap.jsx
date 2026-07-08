@@ -97,6 +97,11 @@ export default function TimelineHeatmap({ filters, onFiltersChange }) {
     [slicedTimeline, displayDays, weekCount]
   )
 
+  const hasActivity = useMemo(
+    () => slicedTimeline.some(row => (row?.count ?? 0) > 0),
+    [slicedTimeline]
+  )
+
   const selectedDate = filters.published_on || ''
 
   const handleCellEnter = useCallback((cell, event) => {
@@ -167,6 +172,10 @@ export default function TimelineHeatmap({ filters, onFiltersChange }) {
                 Retry
               </button>
             </div>
+          ) : !hasActivity ? (
+            <p className="timeline-heatmap-empty-note mono">
+              No publication activity in the last {titleDays} days — wait for ingest.
+            </p>
           ) : (
             <>
               <div
