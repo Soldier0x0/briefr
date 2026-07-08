@@ -31,6 +31,7 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 | `severity` | str | null | `CRITICAL`, `HIGH`, `MEDIUM`, or `LOW` |
 | `kev_only` | bool | false | Only CISA KEV entries |
 | `poc_only` | bool | false | Only CVEs with `has_poc` |
+| `patch_only` | bool | false | Only CVEs with `patch_available` |
 | `epss_min` | float | null | Minimum EPSS (0.0–1.0) |
 | `search` | str | null | CVE ID exact match or description/summary substring (max 200) |
 | `stack` | str | null | Comma-separated product/CVE terms (max 500) |
@@ -905,7 +906,7 @@ sum deviates by more than 1 × 10⁻⁶.
 |---|---|---|---|
 | `frameworks` | str | null | Comma-separated AI/ML tokens (e.g. `tensorflow,pytorch`) for `ai_ml_alerts` count |
 
-**Response:** `critical`, `high`, `kev_count`, `patched`, `last_24h`, `ai_ml_alerts` (0 when `frameworks` omitted).
+**Response:** `critical`, `high`, `kev_count`, `patched`, `last_24h`, `ai_ml_alerts` (0 when `frameworks` omitted). Delta fields (`critical_delta`, `high_delta`, `kev_delta`, `patched_delta`) compare CVE publications in the last 24h vs the prior 24h window.
 
 ---
 

@@ -79,6 +79,10 @@ def test_stats_single_query_matches_legacy_counts(tmp_path, monkeypatch):
             "kev_count": 0,
             "patched": 0,
             "last_24h": 0,
+            "critical_delta": 0,
+            "high_delta": 0,
+            "kev_delta": 0,
+            "patched_delta": 0,
             "ai_ml_alerts": 0,
         }
 

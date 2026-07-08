@@ -198,7 +198,19 @@ async def stats(
                 SUM(CASE WHEN severity = 'HIGH' THEN 1 ELSE 0 END) AS high,
                 SUM(CASE WHEN is_kev = 1 THEN 1 ELSE 0 END) AS kev_count,
                 SUM(CASE WHEN patch_available = 1 THEN 1 ELSE 0 END) AS patched,
-                SUM(CASE WHEN published >= datetime('now', '-1 day') THEN 1 ELSE 0 END) AS last_24h
+                SUM(CASE WHEN published >= datetime('now', '-1 day') THEN 1 ELSE 0 END) AS last_24h,
+                SUM(CASE WHEN severity = 'CRITICAL' AND published >= datetime('now', '-1 day') THEN 1 ELSE 0 END)
+                  - SUM(CASE WHEN severity = 'CRITICAL' AND published >= datetime('now', '-2 days')
+                    AND published < datetime('now', '-1 day') THEN 1 ELSE 0 END) AS critical_delta,
+                SUM(CASE WHEN severity = 'HIGH' AND published >= datetime('now', '-1 day') THEN 1 ELSE 0 END)
+                  - SUM(CASE WHEN severity = 'HIGH' AND published >= datetime('now', '-2 days')
+                    AND published < datetime('now', '-1 day') THEN 1 ELSE 0 END) AS high_delta,
+                SUM(CASE WHEN is_kev = 1 AND published >= datetime('now', '-1 day') THEN 1 ELSE 0 END)
+                  - SUM(CASE WHEN is_kev = 1 AND published >= datetime('now', '-2 days')
+                    AND published < datetime('now', '-1 day') THEN 1 ELSE 0 END) AS kev_delta,
+                SUM(CASE WHEN patch_available = 1 AND published >= datetime('now', '-1 day') THEN 1 ELSE 0 END)
+                  - SUM(CASE WHEN patch_available = 1 AND published >= datetime('now', '-2 days')
+                    AND published < datetime('now', '-1 day') THEN 1 ELSE 0 END) AS patched_delta
             FROM cves
             """
         )
@@ -216,6 +228,10 @@ async def stats(
         "kev_count": stats_row.get("kev_count") or 0,
         "patched": stats_row.get("patched") or 0,
         "last_24h": stats_row.get("last_24h") or 0,
+        "critical_delta": stats_row.get("critical_delta") or 0,
+        "high_delta": stats_row.get("high_delta") or 0,
+        "kev_delta": stats_row.get("kev_delta") or 0,
+        "patched_delta": stats_row.get("patched_delta") or 0,
         "ai_ml_alerts": ai_ml_alerts,
     }
 
@@ -423,6 +439,7 @@ def _build_cve_filters(
     kev_only: bool,
     kev_overdue_only: bool,
     poc_only: bool,
+    patch_only: bool,
     epss_min: float | None,
     search: str | None,
     stack: str | None,
@@ -460,6 +477,9 @@ def _build_cve_filters(
 
     if poc_only:
         conditions.append("c.has_poc = 1")
+
+    if patch_only:
+        conditions.append("c.patch_available = 1")
 
     if epss_min is not None:
         conditions.append("c.epss_score IS NOT NULL AND c.epss_score >= ?")
@@ -553,6 +573,7 @@ async def list_cves(
     kev_only: bool = Query(default=False),
     kev_overdue_only: bool = Query(default=False),
     poc_only: bool = Query(default=False),
+    patch_only: bool = Query(default=False),
     epss_min: float | None = Query(default=None, ge=0.0, le=1.0),
     search: str | None = Query(default=None, max_length=200),
     stack: str | None = Query(default=None, max_length=500),
@@ -571,6 +592,7 @@ async def list_cves(
         kev_only,
         kev_overdue_only,
         poc_only,
+        patch_only,
         epss_min,
         search,
         stack,
@@ -638,6 +660,7 @@ async def export_cves(
     kev_only: bool = Query(default=False),
     kev_overdue_only: bool = Query(default=False),
     poc_only: bool = Query(default=False),
+    patch_only: bool = Query(default=False),
     epss_min: float | None = Query(default=None, ge=0.0, le=1.0),
     search: str | None = Query(default=None, max_length=200),
     stack: str | None = Query(default=None, max_length=500),
@@ -656,6 +679,7 @@ async def export_cves(
         kev_only,
         kev_overdue_only,
         poc_only,
+        patch_only,
         epss_min,
         search,
         stack,

@@ -55,6 +55,7 @@ const DEFAULT_FILTERS = {
   kev_only: false,
   kev_overdue_only: false,
   poc_only: false,
+  patch_only: false,
   epss_min: null,
   search: '',
   stack: '',
@@ -133,7 +134,7 @@ function cycleFilter(filters) {
 
 function BriefView({ stats, statsError, statsErrorRequestId, onRetryStats, filters, setFilters,
                     timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
-                    showAiAlerts, onAiAlertsClick, onOpenFullFeed, onSelectCVE,
+                    showAiAlerts, onAiAlertsClick, onStatTileClick, onOpenFullFeed, onSelectCVE,
                     feedHealth }) {
 
   const [queueReasonFilter, setQueueReasonFilter] = useState('all')
@@ -172,6 +173,7 @@ function BriefView({ stats, statsError, statsErrorRequestId, onRetryStats, filte
         onRetry={onRetryStats}
         showAiAlerts={showAiAlerts}
         onAiAlertsClick={onAiAlertsClick}
+        onStatTileClick={onStatTileClick}
       />
       <MorningBrief
         stack={filters.stack}
@@ -436,11 +438,42 @@ export default function App() {
       kev_only: false,
       kev_overdue_only: false,
       poc_only: false,
+      patch_only: false,
       severity: null,
       search: '',
       stack: '',
     }))
   }, [assetCtx?.profile])
+
+  const handleStatTileClick = useCallback((tile) => {
+    setActiveTab('feed')
+    const cleared = {
+      severity: null,
+      kev_only: false,
+      kev_overdue_only: false,
+      poc_only: false,
+      patch_only: false,
+      epss_min: null,
+      search: '',
+      stack: '',
+      vendors: '',
+      technique: '',
+      published_on: '',
+      watchlist_only: false,
+      ai_context_only: false,
+      ai_profile_match: false,
+      ai_profile: '',
+    }
+    if (tile === 'critical') {
+      setFilters(prev => ({ ...prev, ...cleared, severity: 'CRITICAL' }))
+    } else if (tile === 'high') {
+      setFilters(prev => ({ ...prev, ...cleared, severity: 'HIGH' }))
+    } else if (tile === 'kev') {
+      setFilters(prev => ({ ...prev, ...cleared, kev_only: true }))
+    } else if (tile === 'patched') {
+      setFilters(prev => ({ ...prev, ...cleared, patch_only: true }))
+    }
+  }, [])
 
   const openCveById = useCallback((cveId) => {
     handleOpenCVE({ cve_id: cveId })
@@ -618,6 +651,7 @@ export default function App() {
               openCveById={openCveById}
               showAiAlerts={showAiAlerts}
               onAiAlertsClick={handleAiAlertsClick}
+              onStatTileClick={handleStatTileClick}
               onSelectCVE={handleSelectCVE}
               onCloseCVE={handleCloseCVE}
               onCveReplace={handleReplaceCVE}
@@ -671,6 +705,7 @@ function AppLayout({
   openCveById,
   showAiAlerts,
   onAiAlertsClick,
+  onStatTileClick,
   onSelectCVE,
   onCloseCVE,
   onCveReplace,
@@ -738,6 +773,7 @@ function AppLayout({
                 refreshSchedule={refreshSchedule}
                 showAiAlerts={showAiAlerts}
                 onAiAlertsClick={onAiAlertsClick}
+                onStatTileClick={onStatTileClick}
                 onOpenFullFeed={() => setActiveTab('feed')}
                 onSelectCVE={onSelectCVE}
                 feedHealth={feedHealth}

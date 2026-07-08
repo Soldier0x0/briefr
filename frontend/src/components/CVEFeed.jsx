@@ -461,6 +461,7 @@ export default function CVEFeed({
               kev_only: false,
               kev_overdue_only: false,
               poc_only: false,
+              patch_only: false,
               search: '',
               epss_min: null,
               vendors: '',

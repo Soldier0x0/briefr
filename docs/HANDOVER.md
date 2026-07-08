@@ -12,6 +12,15 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — E-PR8: E2 stat tile deltas + click-to-filter
+
+**What:** `/api/stats` returns 24h-vs-prior-24h deltas; hero tiles show Δ;
+click switches to FEED with matching filter (`patch_only` added for patches tile).
+
+**Next:** E-PR9 IOC auto-detect.
+
+---
+
 ## 2026-07-08 — E-PR7: E3 tooltip/badge pass
 
 **What:** `ExplainTip` component; EXPLOITED IN WILD stat tile explain; feed quick
