@@ -12,15 +12,27 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-08 — Post-B4: CI backup round-trip
+
+**Branch:** `cursor/post-b4-backup-roundtrip-64e9`
+
+**What:** `tests/test_backup_roundtrip_postgres.py` — seeds core tables,
+runs production backup path (`run_backup` / `briefr.pgdump`), wipes DB,
+`restore_backup(..., force=True)`, asserts `cves` and `kev_deadlines`
+row counts. Dedicated step in `test-postgres` CI job.
+
+**Next:** Track **J1** (deploy update/rollback safety) or Track **I2**
+(gzip) — see sprint execution queue.
+
+---
+
 ## 2026-07-08 — Docs sync: Track E closed, Post-B4 next
 
 **What:** Sprint execution queue, E7 tick (#330–#331), I1 cancelled (Post-B3),
 `POSTGRES_NATIVE_PLAN.md` status header, HANDOVER entries for #339–#341,
 `PRODUCT_STATUS` API queue observability (#341).
 
-**Next:** **Post-B4** — CI backup round-trip (`pg_dump` → restore → row-count
-assert). Optional later: scoring-model revision after analyst review of #339/#340;
-Track **F2** (license) before open-source flip.
+**Next:** merge Post-B4 PR; then J1 or I2 per sprint queue.
 
 ---
 
