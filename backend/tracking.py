@@ -1,9 +1,9 @@
 import asyncio
 import logging
-import sqlite3
 import time
 from datetime import datetime, timedelta, timezone
 
+from db.errors import DatabaseLockedError
 from database import get_db
 from source_rate_limits import get_otx_hourly_limit
 
@@ -299,11 +299,8 @@ async def flush_api_usage_pending() -> None:
                 await db.commit()
             finally:
                 await db.close()
-        except sqlite3.OperationalError as exc:
-            if "locked" in str(exc).lower():
-                logger.warning("API usage batch deferred (database is locked)")
-            else:
-                logger.error("API usage batch deferred (write error): %s", exc)
+        except DatabaseLockedError as exc:
+            logger.warning("API usage batch deferred (database is locked): %s", exc)
             async with _API_USAGE_LOCK:
                 for key, count in batch.items():
                     _api_usage_pending[key] = _api_usage_pending.get(key, 0) + count

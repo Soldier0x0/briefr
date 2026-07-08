@@ -45,6 +45,7 @@ from backup.postgres_util import (
     write_audit_postgres,
 )
 from db.config import is_postgres, resolve_database_url
+from db.errors import DatabaseError, normalize_db_exception
 
 logger = logging.getLogger(__name__)
 
@@ -86,8 +87,10 @@ def _write_audit_sync(db_path: Path, actor: str, action: str, target: str) -> No
             conn.commit()
         finally:
             conn.close()
-    except sqlite3.Error as exc:
-        logger.warning("Audit log write failed (%s %s): %s", action, target, exc)
+    except Exception as exc:
+        db_exc = normalize_db_exception(exc)
+        if isinstance(db_exc, DatabaseError):
+            logger.warning("Audit log write failed (%s %s): %s", action, target, db_exc)
 
 
 def _safe_tar_extractall(tar: tarfile.TarFile, dest: Path) -> None:
@@ -259,10 +262,13 @@ def check_db_integrity(db_path: Path) -> tuple[bool, str]:
             return message.lower() == "ok", message
         finally:
             conn.close()
-    except sqlite3.Error as exc:
-        msg = str(exc).lower()
+    except Exception as exc:
+        db_exc = normalize_db_exception(exc)
+        msg = str(db_exc).lower()
         if "malformed" in msg or "not a database" in msg or "corrupt" in msg:
-            return False, str(exc)
+            return False, str(db_exc)
+        if isinstance(db_exc, DatabaseError):
+            raise db_exc from exc
         raise
 
 

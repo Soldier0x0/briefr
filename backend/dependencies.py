@@ -84,8 +84,8 @@ async def audit(request: Request, action: str, target: str = "") -> None:
         finally:
             await db.close()
     except Exception as exc:
-        # Broad on purpose: asyncpg errors are not sqlite3 errors, and an
-        # audit-write failure must never 500 the admin action it records.
+        # Broad on purpose: ``DatabaseError`` covers both dialects; audit-write
+        # failure must never 500 the admin action it records.
         logger.error("Audit log write failed (%s): %s", action, exc)
 
 

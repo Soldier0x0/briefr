@@ -13,6 +13,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
 
+from db.errors import DatabaseLockedError
+
 from backup.manager import (
     BackupConfig,
     _safe_tar_extractall,
@@ -95,7 +97,7 @@ def test_check_db_integrity_raises_on_transient_sqlite_error(tmp_path, monkeypat
         raise sqlite3.OperationalError("database is locked")
 
     monkeypatch.setattr(sqlite3, "connect", fake_connect)
-    with pytest.raises(sqlite3.OperationalError, match="locked"):
+    with pytest.raises(DatabaseLockedError, match="locked"):
         check_db_integrity(db)
 
 

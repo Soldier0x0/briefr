@@ -12,6 +12,19 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 2 merged: unified DB exceptions
+
+**What:** Added `db/errors.py` with `DatabaseError` / `DatabaseLockedError`;
+connection wrappers translate sqlite3/asyncpg failures at the boundary.
+Updated `scheduler.py`, `tracking.py`, `backup/manager.py` to stop catching
+`sqlite3.*` outside `db/`. Added `tests/test_db_errors.py`.
+
+**Verified:** `./scripts/verify-local.sh` green (806 passed SQLite suite).
+
+**Next:** Post-B3 — delete `db/dialect.py` (needs operator OK for SQLite path removal).
+
+---
+
 ## 2026-07-08 — Local verify replaces GitHub Actions (quota exhausted)
 
 **Decision:** GitHub Actions monthly free-tier is exhausted for the foreseeable future.

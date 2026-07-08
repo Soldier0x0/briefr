@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import sqlite3
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -9,6 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
+from db.errors import DatabaseLockedError
 from scheduler_locks import any_locked, get_lock
 from database import (
     EPSS_BACKFILL_DONE_KEY,
@@ -162,8 +162,8 @@ async def _write_job_last_run(
             finally:
                 await db.close()
             return
-        except sqlite3.OperationalError as exc:
-            if "locked" not in str(exc).lower() or attempt == 3:
+        except DatabaseLockedError as exc:
+            if attempt == 3:
                 logger.warning(
                     "Failed to write job last-run state for %s: %s", job_id, exc
                 )

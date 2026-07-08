@@ -171,23 +171,12 @@ Reference implementation: `backend/db/sync_state.py`.
 
 ## Phase 2 — Unify exception handling
 
-**After all modules in Phase 1 are converted:**
+**Done (2026-07-08):**
 
-- Give the connection wrapper (`db/connection.py`) **one app-level
-  exception type** that translates asyncpg errors (e.g. `DatabaseError`
-  wrapping whatever asyncpg raises).
-- Delete all `sqlite3.*` exception handling **outside** `db/` — these
-  currently exist in (verify against current code, this list is from a
-  2026-07 grep and may be stale):
-  - `backend/backup/manager.py`
-  - `backend/dependencies.py`
-  - `backend/scheduler.py`
-  - `backend/tracking.py`
-- Rationale: the `audit()` bug fixed in Sprint A0 (catching
-  `sqlite3.OperationalError` which never fires on Postgres, silently
-  swallowing errors) is exactly the class of bug this phase prevents from
-  recurring. The dialect layer's blast radius includes exception types,
-  not just SQL syntax.
+- `db/errors.py` — `DatabaseError`, `DatabaseLockedError`, `normalize_db_exception()`
+- `db/connection.py` — translates sqlite3/asyncpg at execute boundaries
+- Callers updated: `scheduler.py`, `tracking.py`, `backup/manager.py`
+- `dependencies.py` audit() already used broad `Exception` (correct for both dialects)
 
 ## Phase 3 — Delete `db/dialect.py`
 

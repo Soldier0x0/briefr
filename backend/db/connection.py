@@ -11,6 +11,7 @@ import aiosqlite
 
 from db.config import is_postgres, postgres_dsn, resolve_database_url
 from db.dialect import adapt_params, prepare_query
+from db.errors import reraise_db_exception
 from settings import settings
 
 logger = logging.getLogger(__name__)
@@ -49,24 +50,36 @@ class SqliteConnection:
         self._conn = conn
 
     async def execute(self, sql: str, params: tuple | list = ()) -> _ExecuteResult:
-        cursor = await self._conn.execute(sql, adapt_params(params))
-        return _ExecuteResult(rowcount=cursor.rowcount if cursor.rowcount is not None else 0)
+        try:
+            cursor = await self._conn.execute(sql, adapt_params(params))
+            return _ExecuteResult(rowcount=cursor.rowcount if cursor.rowcount is not None else 0)
+        except Exception as exc:
+            reraise_db_exception(exc)
 
     async def execute_fetchall(self, sql: str, params: tuple | list = ()) -> list[Any]:
-        cursor = await self._conn.execute(sql, adapt_params(params))
-        rows = await cursor.fetchall()
-        return list(rows)
+        try:
+            cursor = await self._conn.execute(sql, adapt_params(params))
+            rows = await cursor.fetchall()
+            return list(rows)
+        except Exception as exc:
+            reraise_db_exception(exc)
 
     async def executemany(
         self, sql: str, params_list: list[tuple | list]
     ) -> _ExecuteResult:
-        cursor = await self._conn.executemany(
-            sql, [adapt_params(p) for p in params_list]
-        )
-        return _ExecuteResult(rowcount=cursor.rowcount if cursor.rowcount is not None else 0)
+        try:
+            cursor = await self._conn.executemany(
+                sql, [adapt_params(p) for p in params_list]
+            )
+            return _ExecuteResult(rowcount=cursor.rowcount if cursor.rowcount is not None else 0)
+        except Exception as exc:
+            reraise_db_exception(exc)
 
     async def executescript(self, sql: str) -> None:
-        await self._conn.executescript(sql)
+        try:
+            await self._conn.executescript(sql)
+        except Exception as exc:
+            reraise_db_exception(exc)
 
     async def commit(self) -> None:
         await self._conn.commit()
@@ -92,32 +105,41 @@ class PostgresConnection:
             await self._transaction.start()
 
     async def execute(self, sql: str, params: tuple | list | dict = ()) -> _ExecuteResult:
-        await self._ensure_transaction()
-        adapted, bound = prepare_query(sql, params, backend="postgresql")
-        status = await self._conn.execute(adapted, *bound)
-        rowcount = 0
-        if status:
-            parts = status.split()
-            if parts and parts[-1].isdigit():
-                rowcount = int(parts[-1])
-        return _ExecuteResult(rowcount=rowcount)
+        try:
+            await self._ensure_transaction()
+            adapted, bound = prepare_query(sql, params, backend="postgresql")
+            status = await self._conn.execute(adapted, *bound)
+            rowcount = 0
+            if status:
+                parts = status.split()
+                if parts and parts[-1].isdigit():
+                    rowcount = int(parts[-1])
+            return _ExecuteResult(rowcount=rowcount)
+        except Exception as exc:
+            reraise_db_exception(exc)
 
     async def execute_fetchall(self, sql: str, params: tuple | list | dict = ()) -> list[Any]:
-        await self._ensure_transaction()
-        adapted, bound = prepare_query(sql, params, backend="postgresql")
-        records = await self._conn.fetch(adapted, *bound)
-        return [dict(record) for record in records]
+        try:
+            await self._ensure_transaction()
+            adapted, bound = prepare_query(sql, params, backend="postgresql")
+            records = await self._conn.fetch(adapted, *bound)
+            return [dict(record) for record in records]
+        except Exception as exc:
+            reraise_db_exception(exc)
 
     async def executemany(
         self, sql: str, params_list: list[tuple | list | dict]
     ) -> _ExecuteResult:
-        await self._ensure_transaction()
-        adapted, _ = prepare_query(sql, params_list[0] if params_list else (), backend="postgresql")
-        adapted_params = [
-            prepare_query(sql, p, backend="postgresql")[1] for p in params_list
-        ]
-        await self._conn.executemany(adapted, adapted_params)
-        return _ExecuteResult(rowcount=len(params_list))
+        try:
+            await self._ensure_transaction()
+            adapted, _ = prepare_query(sql, params_list[0] if params_list else (), backend="postgresql")
+            adapted_params = [
+                prepare_query(sql, p, backend="postgresql")[1] for p in params_list
+            ]
+            await self._conn.executemany(adapted, adapted_params)
+            return _ExecuteResult(rowcount=len(params_list))
+        except Exception as exc:
+            reraise_db_exception(exc)
 
     async def executescript(self, sql: str) -> None:
         raise NotImplementedError(
