@@ -12,6 +12,51 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — Architecture review + wave replan (docs-only)
+
+**What:** Repository-wide principal-architect review. New durable artifact
+[`BRIEFR_ARCHITECTURE_REVIEW_2026-07.md`](BRIEFR_ARCHITECTURE_REVIEW_2026-07.md)
+(the primary output — read it before re-investigating correlation, scoring,
+freshness, scheduler, or production). `SPRINT_2026-07.md` execution queue
+replaced with a **wave model**; the linear J→H→I→F→G queue is kept but marked
+superseded. `CORRELATION_V2_PLAN.md` given a SUPERSEDED header (code is at
+~phase 3, the plan still reads "v1").
+
+**Verdicts (evidence in the review):**
+- **Correlation = INCREMENTALLY EVOLVE.** Deterministic pipeline is mature
+  (phases 1–2 shipped, phase 3 partial). The `evidence[]/confidence/why_not_higher`
+  model already satisfies the relationship+evidence abstraction — **no generic
+  graph, no Neo4j, no `correlation_campaign_edges` persistence**. Real gaps:
+  `lifecycle` hardcoded `"active"`, no feed campaign badge, `correlation_infrastructure`
+  is dead schema. Fix via three small PRs (C-Evolve-1/2/3).
+- **Risk scoring = PRESERVE MATH, FIX PRESENTATION via ADR-002.** v1.1b is sound
+  and deterministic. The failure is the blended headline + the `0.5` asset
+  placeholder (folded into the headline, it *inverts* real weak matches — a
+  profile match of 0.45→15.75 scores below no-profile 0.5→17.5). Recommend
+  Option C **in principle**; the remedy is analyst-facing, so it is **ADR-002**,
+  not a decision this PR makes. The fused **Investigation Score** is **orphaned**
+  (backend route + `api.js` `fetchCVEInvestigationScore`, no UI caller) — ADR-002
+  decides adopt-or-delete. Do NOT wire it by default meanwhile.
+- **Scheduler = PRESERVE** (APScheduler sufficient; no Celery/Redis/Kafka).
+- **Detection = PRESERVE** (deterministic class router; LLM overlay can't author rules).
+- **Production = top priority.** `briefr-update.sh` has no Alembic step, health
+  check only warns, no rollback; smoke warn-only by default. CI round-trip ≠
+  production recovery — J1/J3/J4 + a written restore runbook (J5) are Wave 1.
+- **Track H:** Track E shipped toast/states/tooltips/tiles without `ui/`; H1/H3/H5/H6
+  are done indirectly — H-verify to close them; H2/H4 conditional; no UI rewrite.
+- **Perf:** only gzip (I2) is an unambiguous quick win; I1 obsolete; measure the rest.
+
+**Parallel-safe:** J-track (deploy) ‖ correlation lifecycle/badge (C-Evolve-1/2)
+‖ I2 gzip ‖ FR1 provenance. **Not parallel-safe:** M1 scoring-surface,
+C-Evolve-3 drawer chip, and H2/H4 all touch `DetailDrawer` — sequence them.
+
+**Frontier-reasoning outstanding:** **ADR-002** only (needs analyst-facing browser
+validation, not repo evidence). Everything else is deterministic implementation.
+
+**Next:** **J1** — Alembic + health gate + rollback in `deploy/briefr-update.sh`.
+
+---
+
 ## 2026-07-08 — Sprint queue reordered (J → H → I → F → G)
 
 **What:** `docs/SPRINT_2026-07.md` execution queue rewritten after Post-B4.

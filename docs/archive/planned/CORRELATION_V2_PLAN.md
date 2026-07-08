@@ -1,6 +1,19 @@
 # BRIEFR Correlation Engine v2 — Implementation Plan
 
-**Status:** Implementation spec (ready for Claude Code / human implementers)  
+> **⚠️ SUPERSEDED (2026-07-09) BY:**
+> [`docs/BRIEFR_ARCHITECTURE_REVIEW_2026-07.md`](../../BRIEFR_ARCHITECTURE_REVIEW_2026-07.md) **§3.**
+> This plan's "current state (v1)" framing is **materially outdated**: the code
+> is at ~phase 3 (phases 1–2 shipped, phase 3 partial). Campaigns, typed IOC
+> edges, hub suppression, IOC normalization, enrichment confirmation, analyst
+> dismiss/restore, MITRE overlap %, temporal, and a correlation priority score
+> are all **implemented**. Do **not** treat the phase checklists below as the
+> open backlog. The remaining valuable work is three small PRs (lifecycle
+> computation, feed campaign badge, drawer chip + investigation pivot); phases
+> 4–5 are **parked**; a generic graph / Neo4j / `correlation_campaign_edges`
+> persistence is on the **do-not-build** list. This file is retained for
+> historical design context only.
+
+**Status:** ~~Implementation spec (ready for Claude Code / human implementers)~~ **SUPERSEDED — historical**  
 **Last updated:** 2026-06-20  
 **Scope:** Backend correlation engine, OTX ingest, API, UI, and product integrations  
 **Companion docs:** `PRODUCT.md`, `docs/ADMIN_ANALYST_OPERATOR_MODE.md`, `SYSTEM_DESIGN.md`, `API_REFERENCE.md`
