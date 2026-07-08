@@ -8,6 +8,11 @@
 #   BRIEFR_INSTALL_DEV_DEPS=1 — install backend dev/test deps for on-box verification
 #   BRIEFR_SKIP_SMOKE=1       — skip OTX Intel smoke after deploy
 #   BRIEFR_STRICT_SMOKE=1     — fail update if Intel smoke fails (default: warn only)
+#   BRIEFR_SKIP_ROLLBACK=1    — on health-gate failure, exit without git reset (break-glass)
+#
+# Update safety (J1): records the pre-pull git commit, runs Alembic upgrade head
+# before restart (Postgres), enforces a real health gate (curl + check-backend.sh),
+# and rolls back to the prior commit when the new backend fails the gate.
 set -euo pipefail
 
 INSTALL_DIR="/opt/briefr"
@@ -23,7 +28,10 @@ fi
 # Pull first, then re-exec so we always run the latest script body (bash does not
 # re-read the file after git pull while a run is in progress).
 if [ "${BRIEFR_UPDATE_REEXECED:-}" != "1" ]; then
-  echo "==> Pulling latest from main"
+  PRE_UPDATE_COMMIT="$(git -C "${INSTALL_DIR}" rev-parse HEAD 2>/dev/null || echo "")"
+  export BRIEFR_PRE_UPDATE_COMMIT="${PRE_UPDATE_COMMIT}"
+
+  echo "==> Pulling latest from main (prior commit: ${PRE_UPDATE_COMMIT:-unknown})"
   git config --global --add safe.directory "${INSTALL_DIR}" 2>/dev/null || true
   git -C "${INSTALL_DIR}" remote set-url origin https://github.com/Soldier0x0/briefr.git 2>/dev/null || true
   restore_git_permission_drift
@@ -71,6 +79,14 @@ fi
 echo "==> Verifying backend imports"
 as_app_user bash -c "cd '${INSTALL_DIR}/backend' && '${INSTALL_DIR}/venv/bin/python' -c 'import main; print(\"import ok\")'"
 
+if ! run_alembic_upgrade; then
+  echo "FAIL: Alembic upgrade failed before backend restart."
+  if [ "${BRIEFR_SKIP_ROLLBACK:-0}" != "1" ]; then
+    rollback_failed_update "Alembic upgrade failed" || true
+  fi
+  exit 1
+fi
+
 build_frontend
 install_systemd_units
 install_nginx_site
@@ -91,30 +107,16 @@ if systemctl is-active --quiet briefr-frontend 2>/dev/null; then
   echo "         Run: systemctl stop briefr-frontend && systemctl mask briefr-frontend"
 fi
 
-echo ""
-echo "==> Health checks (retry up to 15s — backend may still be starting)"
-health_ok=0
-for _ in 1 2 3 4 5; do
-  if curl -sf "http://127.0.0.1:8000/api/health" >/dev/null; then
-    health_ok=1
-    break
+if ! verify_backend_health_gate; then
+  echo ""
+  echo "FAIL: Health gate failed — new release did not become healthy."
+  if [ "${BRIEFR_SKIP_ROLLBACK:-0}" = "1" ]; then
+    echo "       BRIEFR_SKIP_ROLLBACK=1 — leaving tree at ${GIT_COMMIT}; backend may be down."
+    echo "       Diagnose: journalctl -u briefr-backend -n 50 --no-pager"
+    exit 1
   fi
-  sleep 3
-done
-if [ "${health_ok:-0}" -eq 1 ]; then
-  echo "    Backend :8000  OK"
-else
-  echo "    Backend :8000  FAILED"
-  echo "    Diagnose: journalctl -u briefr-backend -n 50 --no-pager"
-  echo "             bash ${INSTALL_DIR}/deploy/check-backend.sh"
-fi
-if curl -sf "http://127.0.0.1/api/health" >/dev/null; then
-  echo "    Nginx /api   OK"
-else
-  echo "    Nginx /api   FAILED (backend must be up; check /etc/nginx/sites-enabled/briefr)"
-fi
-if [ -f "${INSTALL_DIR}/frontend/dist/index.html" ]; then
-  echo "    Frontend dist OK"
+  rollback_failed_update "Health gate failed after restart"
+  exit 1
 fi
 
 SMOKE_SCRIPT="${INSTALL_DIR}/deploy/smoke-intel.sh"
@@ -122,8 +124,6 @@ if [ "${BRIEFR_SKIP_SMOKE:-0}" = "1" ]; then
   echo "    Intel smoke    skipped (BRIEFR_SKIP_SMOKE=1)"
 elif [ ! -f "${SMOKE_SCRIPT}" ]; then
   echo "    Intel smoke    skipped (smoke-intel.sh not found)"
-elif [ "${health_ok:-0}" -ne 1 ]; then
-  echo "    Intel smoke    skipped (backend not healthy)"
 else
   if bash "${SMOKE_SCRIPT}"; then
     echo "    Intel smoke    OK"

@@ -2,7 +2,7 @@
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
-**Last updated:** 2026-06-24  
+**Last updated:** 2026-07-09  
 **Status:** Planning — ops contract for releases V1.2–V2.0
 
 ---
@@ -142,6 +142,40 @@ Same env vars as systemd. See [`archive/beta/Beta V2.0.md`](archive/beta/Beta%20
 3. **Auth opt-in tightening** — env flag before requiring auth on all reads.  
 4. **CLI break-glass** — backup/restore scripts always maintained.  
 5. **Defaults unchanged** — paths and ports unless migration doc provided.  
+
+---
+
+## Production update path (`briefr-update.sh`)
+
+The update script is **atomic-or-recoverable**: a failed deploy should not leave the
+box wedged on a broken release without a defined recovery path.
+
+**Sequence (Postgres production):**
+
+1. Record the current git commit (`BRIEFR_PRE_UPDATE_COMMIT`) **before** `git pull`.
+2. Pre-update backup (`briefr-backup.sh pre-update`) — see [Backup policy](#backup-policy).
+3. Stop `briefr-backend` / `briefr.target`.
+4. Pull `main`, install Python deps, verify `import main`.
+5. **`alembic upgrade head`** (forward-only, as `briefr` user from `backend/`).
+6. Build `frontend/dist`, refresh systemd/nginx units, restart backend + reload nginx.
+7. **Health gate** — retry `curl http://127.0.0.1:8000/api/health`, then run
+   `deploy/check-backend.sh`, then verify nginx `/api/health`. Any failure exits
+   non-zero.
+
+**Automatic rollback (default):** when the health gate fails after restart (or
+Alembic fails before restart), the script resets the tree to
+`BRIEFR_PRE_UPDATE_COMMIT`, reinstalls the prior release's Python deps, rebuilds
+the prior frontend bundle, and restarts backend/nginx. Set `BRIEFR_SKIP_ROLLBACK=1`
+to leave the failed commit checked out for manual diagnosis (break-glass).
+
+**Partial migration caveat:** rollback restores **code**, not database schema. If
+Alembic applied some revisions before failing, the DB may be ahead of the rolled-back
+code. In that case restore from the pre-update age-encrypted backup (J5 runbook).
+
+**Non-Postgres / dev:** Alembic is skipped when `DATABASE_URL` is not PostgreSQL.
+
+**Intel smoke:** `deploy/smoke-intel.sh` still runs after a green health gate;
+strict failure is task **J3** (warn-only by default today).
 
 ---
 
