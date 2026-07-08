@@ -12,6 +12,18 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 3 merged to `main`: deleted `db/dialect.py`
+
+**Merged:** `cursor/delete-dialect-postgres-native-6fd2` → `main` @ `bff60a5`
+(local `./scripts/verify-local.sh` green; no GitHub CI).
+
+**What:** `db/dialect.py` removed; `db/pg_adapt.py` + `db/timeutil.py` added;
+imports updated; `test_db_pg_adapt.py` replaces `test_db_dialect.py`.
+
+**Next:** optional router/auth native SQL cleanup; Post-B4 backup CI when Actions resets.
+
+---
+
 ## 2026-07-08 — Post-B Phase 2 merged: unified DB exceptions
 
 **What:** Added `db/errors.py` with `DatabaseError` / `DatabaseLockedError`;
