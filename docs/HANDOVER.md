@@ -12,6 +12,21 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 1 PR 5: `enrichment` Postgres-native
+
+**What:** Converted `backend/db/enrichment.py` to the locked `sync_state`
+pattern — parallel `_SQLITE` / `_PG` constants for audit log, KEV/EPSS
+updates, change-history queries, KEV upsert, and stack filtering; Python-computed
+date/datetime cutoffs replace `datetime('now', …)` / `DATE('now', …)` in SQL.
+Added `tests/test_db_enrichment.py`.
+
+**Verified:** `pytest tests/test_db_enrichment.py tests/test_kev_fields.py tests/test_epss_*.py tests/test_audit_log.py -q`
+(42 passed, SQLite); full suite `779 passed, 8 skipped` (SQLite).
+
+**Next:** `db/metadata.py` + `db/correlation.py` (batched PR 6).
+
+---
+
 ## 2026-07-08 — Post-B Phase 1 PR 4 merged (#324): `cache`
 
 **Merged:** #324 at 2026-07-08T08:43:30Z. CI green (test, test-postgres, gitleaks,
@@ -169,7 +184,7 @@ external Postgres compose) remains deferred.
 | **3** | Delete `db/dialect.py` (+ optional SQLite drop — needs operator OK) | 1–2 |
 | **4** | CI backup dump → restore round-trip | 1 |
 
-**Phase 1 next PR:** `db/enrichment.py` (after `cache` merges).
+**Phase 1 next PR:** batch `db/metadata.py` + `db/correlation.py` (after `enrichment` merges).
 
 **Phase 1 batching rule:** batch small independent modules; **solo PRs** for
 `cve.py` and `init.py`.

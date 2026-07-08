@@ -7,8 +7,8 @@ cold. Read `CLAUDE.md` first (danger zone 1 covers this exact area).
 
 **Status as of 2026-07-08:** Phase 0 complete (#318). F3 complete (#319).
 Phase 1 in progress — `db/sync_state.py` (#320), `db/watchlist.py` +
-`db/webhooks.py` (#322), `db/cache_retention.py` (#323) converted;
-`db/cache.py` converted (PR 4). **5 SQL modules remain** (batched into ~3 PRs).
+`db/webhooks.py` (#322), `db/cache_retention.py` (#323), `db/cache.py` (#324),
+`db/enrichment.py` converted (PR 5). **4 SQL modules remain** (batched into ~2 PRs).
 Phases 2–4 not started.
 
 ---
@@ -118,12 +118,12 @@ Reference implementation: `backend/db/sync_state.py`.
 | 3–4 | `db/watchlist.py` + `db/webhooks.py` | 78 + 147 | **Done** — PR 2 |
 | 5 | `db/cache_retention.py` | 191 | **Done** — PR 3 |
 | 6 | `db/cache.py` | 303 | **Done** — PR 4 |
-| 7 | `db/enrichment.py` | 430 | **Next PR** |
-| 8–9 | `db/metadata.py` + `db/correlation.py` | 478 + 489 | Pending (batched) |
+| 7 | `db/enrichment.py` | 430 | **Done** — PR 5 |
+| 8–9 | `db/metadata.py` + `db/correlation.py` | 478 + 489 | **Next PR** (batched) |
 | 10 | `db/cve.py` | 544 | Pending — **solo PR** |
 | 11 | `db/init.py` | 627 | Pending — **solo PR, last** |
 
-**~3 PRs remaining** in Phase 1 (down from 9 with batching).
+**~2 PRs remaining** in Phase 1 (down from 9 with batching).
 
 ### Legacy numbered list (same order)
 
