@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import os
 
-from db.config import is_postgres
 from db.dialect import utcnow_str
 from db.metadata import get_cve_count
 from db.types import DbConnection
@@ -38,29 +37,15 @@ ON CONFLICT(key) DO UPDATE SET
     updated_at = excluded.updated_at
 """
 
-_SELECT_MAX_MODIFIED_SQLITE = """
-SELECT MAX(modified) AS latest
-FROM cves
-WHERE modified IS NOT NULL AND modified != ''
-"""
-
-_SELECT_MAX_MODIFIED_PG = """
+_SELECT_MAX_MODIFIED_SQL = """
 SELECT MAX(modified) AS latest
 FROM cves
 WHERE modified IS NOT NULL AND modified != ''
 """
 
 
-def _select_value_sql() -> str:
-    return _SELECT_VALUE_PG if is_postgres() else _SELECT_VALUE_SQLITE
-
-
-def _upsert_sql() -> str:
-    return _UPSERT_PG if is_postgres() else _UPSERT_SQLITE
-
-
-def _select_max_modified_sql() -> str:
-    return _SELECT_MAX_MODIFIED_PG if is_postgres() else _SELECT_MAX_MODIFIED_SQLITE
+def _is_postgres_connection(db: DbConnection) -> bool:
+    return type(db).__name__ == "PostgresConnection"
 
 
 def get_stack_terms() -> str:
@@ -70,26 +55,32 @@ def get_stack_terms() -> str:
 
 async def get_sync_state_value(db: DbConnection, key: str) -> str | None:
     """Read any sync_state key; returns None when absent."""
-    rows = await db.execute_fetchall(_select_value_sql(), (key,))
+    sql = _SELECT_VALUE_PG if _is_postgres_connection(db) else _SELECT_VALUE_SQLITE
+    rows = await db.execute_fetchall(sql, (key,))
     return rows[0]["value"] if rows else None
 
 
 async def set_sync_state_value(db: DbConnection, key: str, value: str) -> None:
     """Upsert any sync_state key (caller commits)."""
-    await db.execute(_upsert_sql(), (key, value, utcnow_str()))
+    sql = _UPSERT_PG if _is_postgres_connection(db) else _UPSERT_SQLITE
+    await db.execute(sql, (key, value, utcnow_str()))
 
 
 async def get_nvd_sync_watermark(db: DbConnection) -> str | None:
-    rows = await db.execute_fetchall(_select_value_sql(), (NVD_SYNC_WATERMARK_KEY,))
+    rows = await db.execute_fetchall(
+        _SELECT_VALUE_PG if _is_postgres_connection(db) else _SELECT_VALUE_SQLITE,
+        (NVD_SYNC_WATERMARK_KEY,),
+    )
     return rows[0]["value"] if rows else None
 
 
 async def set_nvd_sync_watermark(db: DbConnection, value: str) -> None:
-    await db.execute(_upsert_sql(), (NVD_SYNC_WATERMARK_KEY, value, utcnow_str()))
+    sql = _UPSERT_PG if _is_postgres_connection(db) else _UPSERT_SQLITE
+    await db.execute(sql, (NVD_SYNC_WATERMARK_KEY, value, utcnow_str()))
 
 
 async def seed_nvd_watermark_from_cves(db: DbConnection) -> str | None:
-    rows = await db.execute_fetchall(_select_max_modified_sql())
+    rows = await db.execute_fetchall(_SELECT_MAX_MODIFIED_SQL)
     latest = rows[0]["latest"] if rows else None
     if not latest:
         return None
