@@ -74,7 +74,7 @@ STIX, Monitor alerts) stays parked. See §12 for the wave graph.
 | Subsystem | Verdict |
 |-----------|---------|
 | Correlation architecture | **INCREMENTALLY EVOLVE** (§3) |
-| Risk scoring architecture | **PRESERVE MATH, FIX PRESENTATION via ADR — Option C in principle** (§4) |
+| Risk scoring architecture | **PRESERVE MATH, FIX PRESENTATION via ADR-002 Option D (CLOSED)** (§4) |
 | Intelligence freshness/provenance | Source-level good; **add a minimal per-CVE provenance line** (§5) |
 | Scheduler / failure recovery | **PRESERVE**; APScheduler is sufficient — no Celery/Redis/Kafka (§6) |
 | Investigation workflow | Evidence-collection + navigation; **wire the 3–5 high-value pivots, do not build case management** (§7) |
@@ -663,9 +663,10 @@ architectural churn.
 | **ADVERSARIAL VALIDATION** | independent reasoning pass | second-model review before merge (Gemini + specs) |
 
 This review deliberately **made every architecture decision the repo has evidence
-for** so future prompts are mostly deterministic. The only remaining
-FRONTIER-REASONING item is ADR-002 (scoring surfacing), because its blocker is
-analyst-facing validation, not missing repo evidence.
+for** so future prompts are mostly deterministic. **ADR-002 (scoring surfacing)
+is CLOSED** — see [`docs/decisions/ADR-002-operational-priority.md`](decisions/ADR-002-operational-priority.md)
+(Option D, ACCEPTED 2026-07-09). Remaining scoring work is **M1** (STANDARD
+implementation of the ADR contract).
 
 ---
 
@@ -681,8 +682,8 @@ WAVE 1  Production trust (blocks trusting any upgrade)         [deploy surface]
         J1 ── J3 ── J4 ── J5(restore runbook)   (J1→J3 sequential; J4/J5 parallel-safe)
                     │
 WAVE 2  Intelligence coherence (highest product value)
-        ├─ ADR-002  scoring surfacing  ───────────────► M1 scoring surfacing impl
-        │   (FRONTIER)                                   (STANDARD, after ADR)  [OverviewTab/DetailDrawer]
+        ├─ ADR-002  scoring surfacing (CLOSED) ───────► M1 scoring surfacing impl
+        │   (decision merged)                            (STANDARD)  [OverviewTab/DetailDrawer]
         ├─ C-Evolve-1 lifecycle (STANDARD)  ── C-Evolve-2 feed badge (STANDARD) [correlation/*, feed]
         └─ I2 gzip (STANDARD, deploy)   ‖ parallel-safe with all of Wave 2
                     │
@@ -705,8 +706,8 @@ validation, PR boundary — lives in `SPRINT_2026-07.md`; summarized here):
 | **J3** | IMPLEMENTATION | STANDARD | J1 | J4, J5 | strict smoke gate default | broken build exits non-zero via smoke |
 | **J4** | IMPLEMENTATION (doc) | STANDARD | — | J1, J3, J5 | release/version phasing checklist | checklist encodes compatibility promise |
 | **J5** | IMPLEMENTATION (doc) | STANDARD | — | J1, J3, J4 | **production restore runbook** (manual break-glass) | operator can restore from age-encrypted backup on box; explicitly not CI-automated |
-| **ADR-002** | HIGH-REASONING | FRONTIER | browser review | (decision only) | decide Threat/Environment/Operational-Priority surface | ADR merged; Investigation Score adopted or deleted |
-| **M1** | IMPLEMENTATION | STANDARD | ADR-002 | I2, C-Evolve-1/2 (NOT H2/H4/C-Evolve-3) | implement ADR-002 scoring surface | Overview shows decided surface; no `0.5` folded into headline; tests |
+| **ADR-002** | HIGH-REASONING | **CLOSED** | — | (decision only) | Threat/Environment/Operational-Priority surface | ADR merged (Option D); Investigation Score deleted |
+| **M1** | IMPLEMENTATION | STANDARD | ADR-002 ✅ | I2, C-Evolve-1/2 (NOT H2/H4/C-Evolve-3) | implement ADR-002 scoring surface | Overview shows decided surface; no `0.5` folded into headline; tests |
 | **C-Evolve-1** | IMPLEMENTATION | STANDARD | — | J*, M1, I2 | lifecycle computation (§24.10) | nightly writes emerging/active/declining/stale; tests |
 | **C-Evolve-2** | IMPLEMENTATION | STANDARD | C-Evolve-1 | J*, M1, I2 | feed campaign badge + explain tooltip | feed shows badge; list API marker; build green |
 | **I2** | IMPLEMENTATION | STANDARD | — | everything (deploy surface) | nginx gzip + GZipMiddleware | `Content-Encoding: gzip` on bundle + `/api/cves` |
@@ -726,7 +727,7 @@ dialects (danger zone 1); deploy items additive-only (danger zone 5).
 |------|---------|-----|
 | Correlation v2 **phase 3 tail** (lifecycle, feed badge, drawer chip, investigation pivot) | **ACTIVATE NOW** (Wave 2/3, as C-Evolve-1/2/3) | shipped engine is under-surfaced; small high-leverage PRs |
 | Correlation v2 **phases 4–5** (clusters API, webhook/PDF/Forge enrich, admin status, metrics) | **KEEP PARKED** | no operator/analyst signal yet; depth before breadth is premature |
-| Scoring surfacing / Operational Priority | **ACTIVATE NOW as ADR-002** (FRONTIER) | top product-semantic risk; needs analyst validation |
+| Scoring surfacing / Operational Priority | **ADR-002 CLOSED → ACTIVATE M1** (STANDARD) | top product-semantic risk; ADR-002 Option D merged; implement in Wave 2 |
 | Production update/rollback safety (J1/J3/J4/J5) | **ACTIVATE NOW** (Wave 1) | top production risk; blocks trusted upgrades |
 | Freshness/provenance (FR1) | **ACTIVATE AFTER DEPENDENCY** (Wave 3) | valuable, small; not blocking |
 | Track H (ui/ layer) | **ACTIVATE H-verify NOW; H2/H4 conditional** | Track E shipped the behaviors; do not force a design system |
@@ -751,13 +752,13 @@ dialects (danger zone 1); deploy items additive-only (danger zone 5).
 | 1 | **J1 update/rollback safety** | An upgrade can currently wedge the production box | — | IMPLEMENTATION | STANDARD | trust to ship at all |
 | 2 | **J5 restore runbook** | CI round-trip ≠ recoverable box | — | IMPLEMENTATION (doc) | STANDARD | disaster recovery |
 | 3 | **J3 strict smoke default** | broken intel deploys complete silently | J1 | IMPLEMENTATION | STANDARD | deploy safety |
-| 4 | **ADR-002 scoring surfacing** | headline conflates threat+environment; `0.5` placeholder inverts real matches | browser review | HIGH-REASONING | FRONTIER | correct triage semantics |
-| 5 | **M1 scoring surface impl** | makes ADR-002 real; kills the orphaned score ambiguity | ADR-002 | IMPLEMENTATION | STANDARD | analyst decision quality |
-| 6 | **C-Evolve-1 lifecycle** | removes hardcoded `"active"`; unlocks honest brief/feed | — | IMPLEMENTATION | STANDARD | correlation honesty |
-| 7 | **C-Evolve-2 feed campaign badge** | correlation stops being drawer-only | C-Evolve-1 | IMPLEMENTATION | STANDARD | correlation visibility |
-| 8 | **I2 gzip** | 1.24 MB uncompressed bundle, one additive change | — | IMPLEMENTATION | STANDARD | load time |
-| 9 | **FR1 per-CVE provenance** | "pending" vs "no data" vs "source down" | — | IMPLEMENTATION | STANDARD | intel trust |
-| 10 | **C-Evolve-3 + investigation pivot** | correlation → a real analyst pivot | M1, H | IMPLEMENTATION | STANDARD | investigation value |
+| 4 | **M1 scoring surface impl** | makes ADR-002 (CLOSED) real; kills the orphaned score ambiguity | ADR-002 ✅ | IMPLEMENTATION | STANDARD | analyst decision quality |
+| 5 | **C-Evolve-1 lifecycle** | removes hardcoded `"active"`; unlocks honest brief/feed | — | IMPLEMENTATION | STANDARD | correlation honesty |
+| 6 | **C-Evolve-2 feed campaign badge** | correlation stops being drawer-only | C-Evolve-1 | IMPLEMENTATION | STANDARD | correlation visibility |
+| 7 | **I2 gzip** | 1.24 MB uncompressed bundle, one additive change | — | IMPLEMENTATION | STANDARD | load time |
+| 8 | **FR1 per-CVE provenance** | "pending" vs "no data" vs "source down" | — | IMPLEMENTATION | STANDARD | intel trust |
+| 9 | **C-Evolve-3 + investigation pivot** | correlation → a real analyst pivot | M1, H | IMPLEMENTATION | STANDARD | investigation value |
+| 10 | **J4 release checklist** | encodes compatibility promise before each release | — | IMPLEMENTATION (doc) | STANDARD | release discipline |
 
 ### DO NOT BUILD YET
 
@@ -786,8 +787,8 @@ dialects (danger zone 1); deploy items additive-only (danger zone 5).
 
 Each prompt is **self-contained and directly copyable** into a coding agent. It
 carries the architectural decision already made in this review so the agent does
-not re-derive it. Classification: **FRONTIER REASONING REQUIRED** (analyst-facing
-judgment) vs **STANDARD CODING AGENT SUFFICIENT** (deterministic spec). Repository
+not re-derive it. **ADR-002 is CLOSED** (Prompt 5); remaining prompts are
+**STANDARD CODING AGENT SUFFICIENT** unless marked otherwise. Repository
 conventions for all prompts: branch off fresh `origin/main`; one PR per prompt;
 verify with `cd backend && pytest tests/ -q` and, for any frontend change,
 `cd frontend && npm run build` + browser verification; read
