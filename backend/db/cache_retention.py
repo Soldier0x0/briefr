@@ -3,13 +3,16 @@
 Read paths enforce TTL via ``cached_at`` / ``fetched_at`` filters; this module
 deletes rows that are past their physical retention window so tables do not
 grow without bound.
+
+Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres
+and ``?`` on SQLite — no reliance on ``db/dialect.py`` regex translation for this module.
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-import aiosqlite
+from db.types import DbConnection
 
 # Physical retention >= read TTL for each key family (hours).
 IOC_CACHE_RETENTION_HOURS = 24
@@ -43,6 +46,84 @@ OTX_TABLE_RETENTION_HOURS = 7 * 24
 EPSS_HISTORY_RETENTION_DAYS = 90
 CVE_CHANGE_HISTORY_RETENTION_DAYS = 90
 
+_PURGE_IOC_CACHE_SQLITE = """
+DELETE FROM ioc_cache
+WHERE cached_at < ?
+"""
+
+_PURGE_IOC_CACHE_PG = """
+DELETE FROM ioc_cache
+WHERE cached_at < $1
+"""
+
+_PURGE_FEED_CACHE_PREFIX_SQLITE = """
+DELETE FROM feed_cache
+WHERE cache_key LIKE ?
+  AND cached_at < ?
+"""
+
+_PURGE_FEED_CACHE_PREFIX_PG = """
+DELETE FROM feed_cache
+WHERE cache_key LIKE $1
+  AND cached_at < $2
+"""
+
+_PURGE_FEED_CACHE_DEFAULT_SQLITE = """
+DELETE FROM feed_cache
+WHERE cached_at < ?
+"""
+
+_PURGE_FEED_CACHE_DEFAULT_PG = """
+DELETE FROM feed_cache
+WHERE cached_at < $1
+"""
+
+_PURGE_EPSS_HISTORY_SQLITE = """
+DELETE FROM epss_history
+WHERE recorded_date < ?
+"""
+
+_PURGE_EPSS_HISTORY_PG = """
+DELETE FROM epss_history
+WHERE recorded_date < $1
+"""
+
+_PURGE_CVE_CHANGE_HISTORY_SQLITE = """
+DELETE FROM cve_change_history
+WHERE detected_at < ?
+"""
+
+_PURGE_CVE_CHANGE_HISTORY_PG = """
+DELETE FROM cve_change_history
+WHERE detected_at < $1
+"""
+
+_PURGE_OTX_CVE_PULSES_SQLITE = """
+DELETE FROM otx_cve_pulses
+WHERE fetched_at < ?
+"""
+
+_PURGE_OTX_CVE_PULSES_PG = """
+DELETE FROM otx_cve_pulses
+WHERE fetched_at < $1
+"""
+
+_PURGE_OTX_PULSE_IOCS_SQLITE = """
+DELETE FROM otx_pulse_iocs
+WHERE fetched_at < ?
+"""
+
+_PURGE_OTX_PULSE_IOCS_PG = """
+DELETE FROM otx_pulse_iocs
+WHERE fetched_at < $1
+"""
+
+_CHANGES_SQLITE = "SELECT changes() AS n"
+
+
+def _is_postgres_connection(db: DbConnection) -> bool:
+    return type(db).__name__ == "PostgresConnection"
+
 
 def _cutoff_datetime_hours_ago(hours: float) -> str:
     return (
@@ -54,42 +135,37 @@ def _cutoff_date_days_ago(days: int) -> str:
     return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
 
 
-async def _rows_deleted(db: aiosqlite.Connection, cursor) -> int:
+async def _rows_deleted(db: DbConnection, cursor) -> int:
     rc = cursor.rowcount
     if rc is not None and rc >= 0:
         return rc
-    row = await db.execute_fetchall("SELECT changes() AS n")
+    if _is_postgres_connection(db):
+        return 0
+    row = await db.execute_fetchall(_CHANGES_SQLITE)
     return int(row[0]["n"] or 0)
 
 
 async def purge_stale_ioc_cache(
-    db: aiosqlite.Connection,
+    db: DbConnection,
     retention_hours: float = IOC_CACHE_RETENTION_HOURS,
 ) -> int:
     cutoff = _cutoff_datetime_hours_ago(retention_hours)
-    cursor = await db.execute(
-        """
-        DELETE FROM ioc_cache
-        WHERE cached_at < ?
-        """,
-        (cutoff,),
-    )
+    sql = _PURGE_IOC_CACHE_PG if _is_postgres_connection(db) else _PURGE_IOC_CACHE_SQLITE
+    cursor = await db.execute(sql, (cutoff,))
     return await _rows_deleted(db, cursor)
 
 
-async def purge_stale_feed_cache(db: aiosqlite.Connection) -> int:
+async def purge_stale_feed_cache(db: DbConnection) -> int:
     deleted = 0
     now = datetime.now(timezone.utc)
+    prefix_sql = (
+        _PURGE_FEED_CACHE_PREFIX_PG
+        if _is_postgres_connection(db)
+        else _PURGE_FEED_CACHE_PREFIX_SQLITE
+    )
     for prefix, hours in FEED_CACHE_PREFIX_RETENTION:
         cutoff = (now - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
-        cursor = await db.execute(
-            """
-            DELETE FROM feed_cache
-            WHERE cache_key LIKE ?
-              AND cached_at < ?
-            """,
-            (f"{prefix}%", cutoff),
-        )
+        cursor = await db.execute(prefix_sql, (f"{prefix}%", cutoff))
         deleted += await _rows_deleted(db, cursor)
 
     long_prefixes = [
@@ -104,82 +180,70 @@ async def purge_stale_feed_cache(db: aiosqlite.Connection) -> int:
         not_like = " AND ".join(
             f"cache_key NOT LIKE '{prefix}%'" for prefix in long_prefixes
         )
+        default_sql = (
+            _PURGE_FEED_CACHE_DEFAULT_PG
+            if _is_postgres_connection(db)
+            else _PURGE_FEED_CACHE_DEFAULT_SQLITE
+        )
         cursor = await db.execute(
             f"""
-            DELETE FROM feed_cache
-            WHERE cached_at < ?
+            {default_sql.rstrip()}
               AND {not_like}
             """,
             (default_cutoff,),
         )
     else:
-        cursor = await db.execute(
-            """
-            DELETE FROM feed_cache
-            WHERE cached_at < ?
-            """,
-            (default_cutoff,),
+        default_sql = (
+            _PURGE_FEED_CACHE_DEFAULT_PG
+            if _is_postgres_connection(db)
+            else _PURGE_FEED_CACHE_DEFAULT_SQLITE
         )
+        cursor = await db.execute(default_sql, (default_cutoff,))
     deleted += await _rows_deleted(db, cursor)
     return deleted
 
 
 async def purge_old_epss_history(
-    db: aiosqlite.Connection,
+    db: DbConnection,
     retention_days: int = EPSS_HISTORY_RETENTION_DAYS,
 ) -> int:
     cutoff = _cutoff_date_days_ago(retention_days)
-    cursor = await db.execute(
-        """
-        DELETE FROM epss_history
-        WHERE recorded_date < ?
-        """,
-        (cutoff,),
-    )
+    sql = _PURGE_EPSS_HISTORY_PG if _is_postgres_connection(db) else _PURGE_EPSS_HISTORY_SQLITE
+    cursor = await db.execute(sql, (cutoff,))
     return await _rows_deleted(db, cursor)
 
 
 async def purge_old_cve_change_history(
-    db: aiosqlite.Connection,
+    db: DbConnection,
     retention_days: int = CVE_CHANGE_HISTORY_RETENTION_DAYS,
 ) -> int:
     cutoff = _cutoff_datetime_hours_ago(retention_days * 24)
-    cursor = await db.execute(
-        """
-        DELETE FROM cve_change_history
-        WHERE detected_at < ?
-        """,
-        (cutoff,),
+    sql = (
+        _PURGE_CVE_CHANGE_HISTORY_PG
+        if _is_postgres_connection(db)
+        else _PURGE_CVE_CHANGE_HISTORY_SQLITE
     )
+    cursor = await db.execute(sql, (cutoff,))
     return await _rows_deleted(db, cursor)
 
 
 async def purge_stale_otx_tables(
-    db: aiosqlite.Connection,
+    db: DbConnection,
     retention_hours: float = OTX_TABLE_RETENTION_HOURS,
 ) -> dict[str, int]:
     cutoff = _cutoff_datetime_hours_ago(retention_hours)
-    cve_cursor = await db.execute(
-        """
-        DELETE FROM otx_cve_pulses
-        WHERE fetched_at < ?
-        """,
-        (cutoff,),
-    )
-    pulse_cursor = await db.execute(
-        """
-        DELETE FROM otx_pulse_iocs
-        WHERE fetched_at < ?
-        """,
-        (cutoff,),
-    )
+    pg = _is_postgres_connection(db)
+    cve_sql = _PURGE_OTX_CVE_PULSES_PG if pg else _PURGE_OTX_CVE_PULSES_SQLITE
+    pulse_sql = _PURGE_OTX_PULSE_IOCS_PG if pg else _PURGE_OTX_PULSE_IOCS_SQLITE
+    cve_cursor = await db.execute(cve_sql, (cutoff,))
+    pulse_cursor = await db.execute(pulse_sql, (cutoff,))
     return {
         "otx_cve_pulses": await _rows_deleted(db, cve_cursor),
         "otx_pulse_iocs": await _rows_deleted(db, pulse_cursor),
     }
 
 
-async def run_retention_cleanup(db: aiosqlite.Connection) -> dict[str, int]:
+async def run_retention_cleanup(db: DbConnection) -> dict[str, int]:
     """Sweep stale cache/overlay rows. Caller commits."""
     otx = await purge_stale_otx_tables(db)
     return {
