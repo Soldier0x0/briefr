@@ -12,6 +12,16 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 1 PR 3 merged (#323): `cache_retention`
+
+**Merged:** #323 at 2026-07-08T08:22:56Z. CI green (test, test-postgres, gitleaks,
+dependency-audit, playwright-smoke). All three Gemini inline comments addressed
+(unconditional placeholder assertions; native `$n` seed SQL in Postgres tests).
+
+**Next:** `db/cache.py` (Post-B Phase 1 PR 4).
+
+---
+
 ## 2026-07-08 — Post-B Phase 1 PR 3: `cache_retention` Postgres-native
 
 **What:** Converted `backend/db/cache_retention.py` to the locked `sync_state`
