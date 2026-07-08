@@ -9,9 +9,8 @@ from __future__ import annotations
 import json
 from datetime import datetime, timedelta, timezone
 
-from db.cve import _SQLITE_IN_CHUNK
+from db.cve import _SQLITE_IN_CHUNK, _insert_cve_changes_batch
 from db.dialect import utcnow_str
-from db.enrichment import _insert_cve_changes_batch
 from db.types import DbConnection
 
 _IOC_TTL_HOURS = 6
@@ -199,17 +198,22 @@ async def get_ioc_cache_batch(db: DbConnection, values: list[str]) -> dict[str, 
         return {}
     distinct = sorted(set(values))
     pg = _is_postgres_connection(db)
-    placeholders = _in_placeholders(len(distinct), pg=pg, start=1)
-    cutoff_ph = _placeholder(pg, len(distinct) + 1)
     cutoff = _cutoff_datetime_hours_ago(_IOC_TTL_HOURS)
-    rows = await db.execute_fetchall(
-        f"""
-        SELECT value, result FROM ioc_cache
-        WHERE value IN ({placeholders}) AND cached_at > {cutoff_ph}
-        """,
-        tuple(distinct) + (cutoff,),
-    )
-    return {row["value"]: json.loads(row["result"]) for row in rows}
+    results: dict[str, dict] = {}
+    for i in range(0, len(distinct), _SQLITE_IN_CHUNK):
+        chunk = distinct[i : i + _SQLITE_IN_CHUNK]
+        placeholders = _in_placeholders(len(chunk), pg=pg, start=1)
+        cutoff_ph = _placeholder(pg, len(chunk) + 1)
+        rows = await db.execute_fetchall(
+            f"""
+            SELECT value, result FROM ioc_cache
+            WHERE value IN ({placeholders}) AND cached_at > {cutoff_ph}
+            """,
+            tuple(chunk) + (cutoff,),
+        )
+        for row in rows:
+            results[row["value"]] = json.loads(row["result"])
+    return results
 
 
 async def set_ioc_cache(

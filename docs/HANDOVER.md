@@ -23,6 +23,9 @@ cutoff timestamps (replacing `datetime('now', …)` in SQL). Added
 **Verified:** `pytest tests/test_db_cache.py tests/test_exploit_sources.py -q`
 (23 passed, SQLite); full suite `773 passed, 8 skipped` (SQLite).
 
+**Gemini fixes (pre-merge):** chunk `get_ioc_cache_batch` at `_SQLITE_IN_CHUNK`;
+import `_insert_cve_changes_batch` from `db.cve` directly.
+
 **Next:** `db/enrichment.py`.
 
 ---
@@ -156,7 +159,7 @@ external Postgres compose) remains deferred.
 | **3** | Delete `db/dialect.py` (+ optional SQLite drop — needs operator OK) | 1–2 |
 | **4** | CI backup dump → restore round-trip | 1 |
 
-**Phase 1 next PR:** `db/cache.py` (after `cache_retention` merges).
+**Phase 1 next PR:** `db/enrichment.py` (after `cache` merges).
 
 **Phase 1 batching rule:** batch small independent modules; **solo PRs** for
 `cve.py` and `init.py`.
