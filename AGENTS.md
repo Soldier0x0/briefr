@@ -8,6 +8,36 @@ Read in this order before making changes:
 3. [`docs/HANDOVER.md`](docs/HANDOVER.md) — recent session context: what changed, why, decisions made
 4. [`docs/SPRINT_2026-07.md`](docs/SPRINT_2026-07.md) — current work queue with acceptance criteria
 
+## Execution contract (autonomous loop — mandatory)
+
+When HANDOVER or SPRINT names a next task, **execute it immediately**. Do not stop at
+wave/track boundaries for approval. Do not end a turn with “say the word” or optional
+next steps when the next item is already defined.
+
+**Per-PR loop (repeat until backlog empty):**
+
+1. Read HANDOVER (newest) + SPRINT unchecked items + relevant ADR/spec.
+2. Branch `cursor/<task>-64e9` off fresh `origin/main`.
+3. Implement (minimum diff; `CLAUDE.md` danger zones; match existing style).
+4. **`./scripts/verify-local.sh`** — green required (GitHub Actions quota may be
+   exhausted; local green is the merge gate). Use `--full` when Postgres/tools exist.
+5. Push → open PR → **wait ~1–2 min** → read `gemini-code-assist[bot]` (and other)
+   review comments → fix on same branch → push → re-verify locally.
+6. **Merge** when local CI is green and actionable review is addressed.
+7. Update HANDOVER + tick SPRINT + runtime docs (`PRODUCT_STATUS`, `API_REFERENCE`, etc.).
+
+**Scope (unless the maintainer narrows it):** all sprint checkboxes, then activated
+parked work (Track I Phase 3, correlation 4–5, monitor/alerts, L Wave 4, operator
+settings in DB, V1.5 tail). **Excluded:** STIX 2.1 export, V2.0 platform release.
+
+**Stop and ask only when:** missing secret/credential, destructive non-additive deploy
+outside spec, or a spec contradiction that cannot be resolved from repo docs.
+
+**Shared surfaces:** never parallelize M1, C-Evolve-3, H2, H4 (all touch DetailDrawer).
+
+**Session resume:** if context limits interrupt the loop, pull main, read HANDOVER,
+continue the next unchecked item — do not restart from scratch or ask for permission.
+
 ## Cursor Cloud specific instructions
 
 BRIEFR is a self-hosted CVE intelligence dashboard: a **FastAPI (Python) backend** in `backend/`

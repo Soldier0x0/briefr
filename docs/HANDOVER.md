@@ -12,6 +12,17 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — Autonomous execution loop activated
+
+**Scope:** Complete all sprint checkboxes, then parked items (Track I Phase 3,
+correlation phases 4–5, monitor/watchlist alerts, Track L Wave 4, operator settings
+in DB, V1.5 tail). **Excluded only:** STIX 2.1 export, V2.0 platform release.
+
+**Loop:** implement → `./scripts/verify-local.sh` → PR → Gemini review (~2 min) → fix →
+merge → docs. No pauses for approval between items. Contract in `AGENTS.md`.
+
+**Autonomous next (do not ask):** **M1** — ADR-002 scoring surface.
+
 ---
 
 ## 2026-07-09 — J4 + J5: release checklist + production restore runbook (docs)
