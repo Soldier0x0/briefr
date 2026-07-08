@@ -4,10 +4,12 @@ import {
   fetchCVECorrelation,
   fetchCVEDetection,
   fetchCVEEpssHistory,
+  fetchCVEGreynoiseScans,
   fetchCVEMomentum,
   fetchCVERelated,
   fetchCVERisk,
   fetchCVESentences,
+  fetchIOCUsage,
   suppressCVECorrelation,
 } from '../../api.js'
 import { buildSingleReport, copyToClipboard } from '../../utils/report.js'
@@ -73,6 +75,10 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
   const [relatedLoading, setRelatedLoading] = useState(false)
   const [correlation, setCorrelation] = useState(null)
   const [correlationLoading, setCorrelationLoading] = useState(false)
+  const [greynoiseScans, setGreynoiseScans] = useState([])
+  const [greynoiseLoading, setGreynoiseLoading] = useState(false)
+  const [greynoiseLoaded, setGreynoiseLoaded] = useState(false)
+  const [greynoiseQuota, setGreynoiseQuota] = useState(null)
   const [detection, setDetection] = useState(null)
   const [detectionLoading, setDetectionLoading] = useState(false)
   const [detectionError, setDetectionError] = useState(null)
@@ -299,6 +305,55 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
       /* dismiss is best-effort */
     }
   }
+
+  useEffect(() => {
+    if (!cve?.cve_id) {
+      setGreynoiseScans([])
+      setGreynoiseLoading(false)
+      setGreynoiseLoaded(false)
+      setGreynoiseQuota(null)
+      return
+    }
+    setGreynoiseScans([])
+    setGreynoiseLoading(false)
+    setGreynoiseLoaded(false)
+  }, [cve?.cve_id])
+
+  useEffect(() => {
+    if (activeTab !== 'intel' || !cve?.greynoise_configured) return
+    let cancelled = false
+    fetchIOCUsage()
+      .then(data => {
+        if (cancelled) return
+        const gn = (data?.services || []).find(s => s.service === 'greynoise')
+        setGreynoiseQuota(gn || null)
+      })
+      .catch(() => {
+        if (!cancelled) setGreynoiseQuota(null)
+      })
+    return () => { cancelled = true }
+  }, [activeTab, cve?.cve_id, cve?.greynoise_configured])
+
+  const loadGreynoiseScans = useCallback(async () => {
+    if (!cve?.cve_id) return
+    setGreynoiseLoading(true)
+    try {
+      const [data, usage] = await Promise.all([
+        fetchCVEGreynoiseScans(cve.cve_id),
+        fetchIOCUsage().catch(() => null),
+      ])
+      setGreynoiseScans(Array.isArray(data?.scans) ? data.scans : [])
+      if (usage?.services) {
+        const gn = usage.services.find(s => s.service === 'greynoise')
+        setGreynoiseQuota(gn || null)
+      }
+    } catch {
+      setGreynoiseScans([])
+    } finally {
+      setGreynoiseLoading(false)
+      setGreynoiseLoaded(true)
+    }
+  }, [cve?.cve_id])
 
   // Correlation: fetch on drawer open (Level 1 + 2 on-demand, Level 3 pre-computed)
   useEffect(() => {
@@ -655,7 +710,12 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
             <TabIntel
               techniques={techniques}
               publicExploits={cve.public_exploits}
-              greynoiseScans={cve.greynoise_scans}
+              greynoiseConfigured={cve.greynoise_configured}
+              greynoiseScans={greynoiseScans}
+              greynoiseLoading={greynoiseLoading}
+              greynoiseLoaded={greynoiseLoaded}
+              greynoiseQuota={greynoiseQuota}
+              onLoadGreynoise={loadGreynoiseScans}
               otxPulses={cve.otx_pulses}
               otxConfigured={cve.otx_configured}
               cve={cve}

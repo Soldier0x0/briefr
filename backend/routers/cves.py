@@ -911,17 +911,8 @@ async def get_cve(cve_id: str):
             cve["public_exploits"] = []
 
         greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
-        try:
-            cve["greynoise_scans"] = await greynoise_scans_for_cve(
-                db,
-                cve.get("description"),
-                cve.get("source_urls"),
-                greynoise_key,
-            )
-            await db.commit()
-        except Exception as exc:
-            logger.error("GreyNoise scan failed for %s: %s", cve_id, exc)
-            cve["greynoise_scans"] = []
+        cve["greynoise_configured"] = bool(greynoise_key)
+        cve["greynoise_scans"] = []
 
         otx_key = os.environ.get("OTX_API_KEY", "").strip()
         cve["otx_configured"] = bool(otx_key)
@@ -1261,6 +1252,46 @@ async def cve_correlation(
         await db.close()
 
     return result
+
+
+@intel_router.get("/api/cves/{cve_id}/greynoise-scans")
+async def cve_greynoise_scans(cve_id: str):
+    """
+    On-demand GreyNoise scanning context for IPs mentioned in this CVE.
+    Not called on drawer open — preserves the 50/week Community API quota.
+    """
+    cve_id = require_cve_id(cve_id)
+
+    greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
+    if not greynoise_key:
+        return {"configured": False, "scans": []}
+
+    db = await get_db()
+    try:
+        rows = await db.execute_fetchall(
+            "SELECT description, source_urls FROM cves WHERE cve_id = ?",
+            (cve_id,),
+        )
+        if not rows:
+            raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
+        row = rows[0]
+        source_urls = row["source_urls"]
+        if source_urls and isinstance(source_urls, str):
+            try:
+                source_urls = json.loads(source_urls)
+            except (json.JSONDecodeError, TypeError):
+                source_urls = []
+        scans = await greynoise_scans_for_cve(
+            db,
+            row["description"],
+            source_urls if isinstance(source_urls, list) else [],
+            greynoise_key,
+        )
+        await db.commit()
+    finally:
+        await db.close()
+
+    return {"configured": True, "scans": scans}
 
 
 class CorrelationSuppressBody(BaseModel):

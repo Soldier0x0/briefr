@@ -12,6 +12,15 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — E-PR4: GreyNoise on-demand (quota-safe)
+
+**What:** Removed auto GreyNoise from CVE detail; added
+`GET /api/cves/{cve_id}/greynoise-scans`; Intel tab load button + weekly quota.
+
+**Next:** E-PR5 states audit.
+
+---
+
 ## 2026-07-08 — E-PR3: drawer readability (exploits table, EPSS, contrast)
 
 **What:** Public exploits table; EPSS sparkline only when variation ≥0.02; drawer

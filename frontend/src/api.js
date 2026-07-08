@@ -191,6 +191,10 @@ export function fetchCVECorrelation(cveId, sector = '') {
   return request(`/cves/${encodeURIComponent(cveId)}/correlation${qs}`)
 }
 
+export function fetchCVEGreynoiseScans(cveId) {
+  return request(`/cves/${encodeURIComponent(cveId)}/greynoise-scans`)
+}
+
 export function suppressCVECorrelation(cveId, body) {
   return request(`/cves/${encodeURIComponent(cveId)}/correlation/suppress`, {
     method: 'POST',

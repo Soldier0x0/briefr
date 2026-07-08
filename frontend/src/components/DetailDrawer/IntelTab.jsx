@@ -417,7 +417,41 @@ function CampaignPulseGroups({ pulses, cve, onInvestigatePulse }) {
     </div>
   )
 }
-export default function TabIntel({ techniques, publicExploits, greynoiseScans, otxPulses, otxConfigured, cve, loading, onInvestigateIp, onInvestigatePulse, pivotNotice, correlation, correlationLoading, onSelectCorrelatedCve, onDismissCorrelation }) {
+function GreynoiseQuotaLine({ quota }) {
+  const week = quota?.this_week
+  if (!week || week.limit == null) return null
+  return (
+    <p
+      className="drawer-gn-quota mono"
+      title="GreyNoise Community API — 50 lookups per week (shared with Visualizer)"
+    >
+      GreyNoise quota: {week.used}/{week.limit} this week
+      {week.remaining != null ? ` · ${week.remaining} left` : ''}
+    </p>
+  )
+}
+
+export default function TabIntel({
+  techniques,
+  publicExploits,
+  greynoiseConfigured,
+  greynoiseScans,
+  greynoiseLoading,
+  greynoiseLoaded,
+  greynoiseQuota,
+  onLoadGreynoise,
+  otxPulses,
+  otxConfigured,
+  cve,
+  loading,
+  onInvestigateIp,
+  onInvestigatePulse,
+  pivotNotice,
+  correlation,
+  correlationLoading,
+  onSelectCorrelatedCve,
+  onDismissCorrelation,
+}) {
   const exploits = Array.isArray(publicExploits) ? publicExploits : []
   const scans = Array.isArray(greynoiseScans) ? greynoiseScans : []
   const pulses = Array.isArray(otxPulses) ? otxPulses : []
@@ -490,14 +524,44 @@ export default function TabIntel({ techniques, publicExploits, greynoiseScans, o
 
       <section className="drawer-section" aria-labelledby="scanning-heading">
         <h3 id="scanning-heading" className="drawer-human-label mono">// ACTIVE SCANNING</h3>
-        {loading && scans.length === 0 ? (
-          <p className="drawer-intel-empty mono">// Loading active scanning context…</p>
-        ) : scans.length === 0 ? (
+        {greynoiseConfigured === false ? (
           <p className="drawer-intel-empty mono">
-            // No exploitation-related IPs found in this CVE record
+            // GreyNoise not configured — set GREYNOISE_API_KEY to enable on-demand IP scanning context
           </p>
+        ) : greynoiseLoading ? (
+          <p className="drawer-intel-empty mono">// Loading GreyNoise scanning context…</p>
+        ) : !greynoiseLoaded && scans.length === 0 ? (
+          <>
+            <GreynoiseQuotaLine quota={greynoiseQuota} />
+            <p className="drawer-intel-empty mono">
+              // IPs are not looked up automatically — uses your weekly GreyNoise quota (50/week)
+            </p>
+            {onLoadGreynoise && (
+              <button
+                type="button"
+                className="drawer-gn-load-btn mono"
+                onClick={onLoadGreynoise}
+              >
+                Load GreyNoise scanning
+              </button>
+            )}
+          </>
+        ) : scans.length === 0 ? (
+          <>
+            <GreynoiseQuotaLine quota={greynoiseQuota} />
+            <p className="drawer-intel-empty mono">
+              // No exploitation-related IPs found in this CVE record
+            </p>
+            {onLoadGreynoise && (
+              <button type="button" className="drawer-gn-load-btn mono" onClick={onLoadGreynoise}>
+                Retry GreyNoise
+              </button>
+            )}
+          </>
         ) : (
-          <ul className="drawer-gn-list" aria-label="GreyNoise scanning context">
+          <>
+            <GreynoiseQuotaLine quota={greynoiseQuota} />
+            <ul className="drawer-gn-list" aria-label="GreyNoise scanning context">
             {scans.map(scan => {
               const cls = (scan.classification || 'unknown').toLowerCase()
               return (
@@ -537,6 +601,7 @@ export default function TabIntel({ techniques, publicExploits, greynoiseScans, o
               )
             })}
           </ul>
+          </>
         )}
       </section>
 

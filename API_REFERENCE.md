@@ -337,7 +337,7 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 
 - Core fields from `cves` table
 - `watchlist_state`, `watchlist_snooze_until` when the CVE is on the active watchlist (same semantics as list feed)
-- `kev_date_added`, `kev_due_date`, `kev_vendor_project`, `kev_vulnerability_name`, `kev_ransomware_use` (boolean), `kev_cwes[]`, `techniques[]`, `public_exploits[]`, `greynoise_scans[]`, `otx_pulses[]`, `otx_configured`, `osv_packages[]`
+- `kev_date_added`, `kev_due_date`, `kev_vendor_project`, `kev_vulnerability_name`, `kev_ransomware_use` (boolean), `kev_cwes[]`, `techniques[]`, `public_exploits[]`, `greynoise_configured` (boolean), `greynoise_scans[]` (always `[]` on detail — use on-demand endpoint), `otx_pulses[]`, `otx_configured`, `osv_packages[]`
 
 **Error responses:**
 
@@ -491,6 +491,32 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 ---
 
 ## Risk & Correlation
+
+### GET /api/cves/{cve_id}/greynoise-scans
+
+On-demand GreyNoise Community lookups for IPv4 addresses found in the CVE
+description and reference URLs. **Not** called by `GET /api/cves/{cve_id}` —
+preserves the 50 lookups/week free-tier quota. Intel tab loads this when the
+analyst clicks **Load GreyNoise scanning**.
+
+**Response:**
+
+```json
+{
+  "configured": true,
+  "scans": [
+    {
+      "ip": "1.2.3.4",
+      "classification": "benign",
+      "name": "...",
+      "sentence": "...",
+      "link": "https://viz.greynoise.io/ip/1.2.3.4"
+    }
+  ]
+}
+```
+
+When `GREYNOISE_API_KEY` is unset: `{"configured": false, "scans": []}`.
 
 ### GET /api/cves/{cve_id}/correlation
 

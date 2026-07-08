@@ -833,6 +833,29 @@
   margin: 0 0 6px;
 }
 
+.drawer-gn-quota {
+  font-size: 0.75rem;
+  color: var(--text2);
+  margin: 0 0 8px;
+}
+
+.drawer-gn-load-btn {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--border2);
+  padding: 6px 12px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.drawer-gn-load-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
 
 .drawer-otx-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .drawer-otx-groups { display: flex; flex-direction: column; gap: 10px; }
