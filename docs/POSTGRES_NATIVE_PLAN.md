@@ -6,10 +6,9 @@ agent with no memory of prior sessions (e.g. Cursor Composer) can pick this up
 cold. Read `CLAUDE.md` first (danger zone 1 covers this exact area).
 
 **Status as of 2026-07-08:** Phase 0 complete (#318). F3 complete (#319).
-Phase 1 in progress — `db/sync_state.py` (#320), `db/watchlist.py` +
-`db/webhooks.py` (#322), `db/cache_retention.py` (#323), `db/cache.py` (#324),
-`db/enrichment.py` converted (PR 5). **4 SQL modules remain** (batched into ~2 PRs).
-Phases 2–4 not started.
+Phase 1 complete (#320–#328). Phase 2 complete (unified `db/errors.py`).
+Phase 3 complete (`db/dialect.py` deleted; `pg_adapt.py` + `timeutil.py`).
+**Phase 4 (Post-B4) open** — CI backup dump → restore → row-count round-trip.
 
 ---
 

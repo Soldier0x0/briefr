@@ -7,14 +7,50 @@ continue without re-deriving anything. Append a new dated entry per
 significant working session; never rewrite old entries.
 
 **Read order for a fresh agent:** `CLAUDE.md` (rules) →
-`docs/PRODUCT_STATUS.md` (what's true in prod) → **this file's
-"Session handoff" entry (2026-07-08)** → `docs/SPRINT_2026-07.md` (checkboxes).
+`docs/PRODUCT_STATUS.md` (what's true in prod) → **this file's newest
+entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-08 — Analyst Overview workflow (12-point review)
+## 2026-07-08 — Docs sync: Track E closed, Post-B4 next
 
-**Branch:** `cursor/analyst-overview-improvements-d43d`
+**What:** Sprint execution queue, E7 tick (#330–#331), I1 cancelled (Post-B3),
+`POSTGRES_NATIVE_PLAN.md` status header, HANDOVER entries for #339–#341,
+`PRODUCT_STATUS` API queue observability (#341).
+
+**Next:** **Post-B4** — CI backup round-trip (`pg_dump` → restore → row-count
+assert). Optional later: scoring-model revision after analyst review of #339/#340;
+Track **F2** (license) before open-source flip.
+
+---
+
+## 2026-07-08 — #341: API queue task-level observability
+
+**Merged:** `cursor/api-queue-observability-d43d` → `main` (#341).
+
+**What:** Per-source API queue task status in admin/health; indicator redesign;
+release-stack corruption fix.
+
+**Next:** Docs sync, then Post-B4.
+
+---
+
+## 2026-07-08 — #340: UI/UX hierarchy pass
+
+**Merged:** `cursor/ui-ux-hierarchy-pass-d43d` → `main` (#340).
+
+**What:** Score placement, exploitation clarity, correlation UX, readability
+follow-ups on drawer/Overview after Track E.
+
+**Next:** #341 API queue observability.
+
+---
+
+## 2026-07-08 — #339: Analyst Overview workflow (12-point review)
+
+**Merged:** `cursor/analyst-overview-improvements-d43d` → `main` (#339).
+
+**Branch (historical):** `cursor/analyst-overview-improvements-d43d`
 
 ### Implementation plan (points → files → risk)
 
@@ -56,7 +92,8 @@ When `profile is None`, `resolve_asset_component()` → `asset_match_info()` ret
 
 **Options for future (not implemented):** KEV severity floors; compound multipliers when KEV+weaponised+high CVSS align; split Threat vs Environment scores; operational P1–P4 band from deterministic rules. Any change needs new tests and HANDOVER sign-off.
 
-**Next:** merge PR; optional follow-up PR for scoring model revision after analyst review.
+**Next:** optional follow-up PR for scoring model revision after analyst review
+of #339/#340 in the browser (formula unchanged in #339).
 
 ---
 
