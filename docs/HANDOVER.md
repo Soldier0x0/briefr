@@ -7,42 +7,140 @@ continue without re-deriving anything. Append a new dated entry per
 significant working session; never rewrite old entries.
 
 **Read order for a fresh agent:** `CLAUDE.md` (rules) →
-`docs/PRODUCT_STATUS.md` (what's true in prod) → this file's top entry
-(recent context) → `docs/SPRINT_2026-07.md` (what to do next).
+`docs/PRODUCT_STATUS.md` (what's true in prod) → **this file's
+"Session handoff" entry (2026-07-08)** → `docs/SPRINT_2026-07.md` (checkboxes).
+
+---
+
+## 2026-07-08 — Session handoff: program status, agent workflow, Post-B plan
+
+**Purpose of this entry:** everything a fresh agent session needs to continue
+as technical co-founder — mindset, automated PR workflow, what's merged, what's
+next. **Read this entry first** after `CLAUDE.md` and `PRODUCT_STATUS.md`.
+
+### Co-founder / autonomous-agent mindset
+
+1. **Execute the locked program in order** — open-core waves first where
+   incomplete, then Post-B, then deferred items. Do not invent parallel scope.
+2. **Specs over supervision** — decisions live in `PROGRAM_PRODUCT_OPEN_CORE.md`,
+   `POSTGRES_NATIVE_PLAN.md`, sprint appendix specs. If code and spec disagree,
+   verify code; if spec is stale, update the doc in the same PR.
+3. **CI + reviewers are the quality gate** — you cannot merge red. Gemini inline
+   comments are mandatory to read and address (or explicitly defer with reason).
+4. **Minimum correct diff** — match existing style; every changed line traces
+   to the task. No speculative features.
+5. **Production truth** — `docs/PRODUCT_STATUS.md` wins over older docs.
+6. **Batch small PRs only when independent** — see Post-B batching rules below.
+
+### Mandatory per-PR workflow (agreed automated process)
+
+Every code change, no exceptions:
+
+| Step | Action |
+|------|--------|
+| 1 | Branch off fresh `main`: `cursor/<descriptive-name>-6fd2` |
+| 2 | Implement; verify locally (`cd backend && pytest tests/ -q`; `cd frontend && npm run build` if UI touched) |
+| 3 | Push; open **non-draft** PR |
+| 4 | Wait for **Gemini** (`gemini-code-assist[bot]`) inline review; address each actionable comment |
+| 5 | Wait for **CI green** (`test`, `test-postgres`, `gitleaks`, `dependency-audit`, `playwright-smoke`) |
+| 6 | Update docs when runtime behavior changes (`PRODUCT_STATUS.md`, `HANDOVER.md`, sprint checkboxes) |
+| 7 | **Merge only when Gemini + CI satisfied** |
+
+Cloud-agent note: commit and push before testing; update PR after each iteration.
+
+### Program status (merged on `main`)
+
+| Area | PRs | Status |
+|------|-----|--------|
+| Wave 1 — config Save + toast/restart | #308–#309 | Merged |
+| Wave 2 — stack API, prefs, profile remember | #310–#314 | Merged |
+| Wave 3 — DATA_SNAPSHOT + export script | #315–#317 | Merged |
+| D4 — Nuclei parser + Sigma artifact injection | #312 | Merged |
+| Post-B Phase 0 — full-suite `test-postgres` gate | #318 | Merged |
+| F3 — `SECURITY.md` + gitleaks CI | #319 | Merged |
+| Post-B Phase 1 — `db/sync_state.py` native | #320 | Merged |
+
+**Waves 1–3 and D4 are complete.** Wave 4 (monitor, onboarding, `briefr doctor`,
+external Postgres compose) remains deferred.
+
+### Post-B remaining work (authoritative: `POSTGRES_NATIVE_PLAN.md`)
+
+| Phase | Scope | PRs left |
+|-------|-------|----------|
+| **1** | Postgres-native `db/*.py` modules | **~6** (9 modules; `sync_state` done) |
+| **2** | Unify DB exception handling | 1 |
+| **3** | Delete `db/dialect.py` (+ optional SQLite drop — needs operator OK) | 1–2 |
+| **4** | CI backup dump → restore round-trip | 1 |
+
+**Phase 1 next PR:** batch `db/watchlist.py` + `db/webhooks.py`.
+
+**Phase 1 batching rule:** batch small independent modules; **solo PRs** for
+`cve.py` and `init.py`.
+
+### F3 follow-ups (before open-core flip, not blocking Post-B)
+
+- [x] `SECURITY.md` + gitleaks CI (#319)
+- [ ] Optional trufflehog pass
+- [ ] F2 — AGPL decision + header/LICENSE reconciliation
+
+### Ops (non-code, when ready)
+
+Publish `briefr-intel-YYYY-MM.pgdump.gz` via `scripts/export_intel_snapshot.py`.
+
+### Fresh-session read order
+
+1. `CLAUDE.md` — rules and danger zones
+2. `docs/PRODUCT_STATUS.md` — production truth
+3. **This entry** — context and workflow
+4. `docs/POSTGRES_NATIVE_PLAN.md` — Post-B execution detail
+5. `docs/SPRINT_2026-07.md` — sprint checkboxes
+6. `docs/PROGRAM_PRODUCT_OPEN_CORE.md` — open-core waves and locked decisions
+
+### Environment reminders (Cursor Cloud)
+
+- Postgres CI: `DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5432/briefr`
+- Local SQLite tests: move `backend/.env` aside if it sets `DATABASE_URL`
+- `graphify` may be unavailable — use grep/read after oriented
+- Restart backend after secret changes (env vars win over `.env`)
 
 ---
 
 ## 2026-07-08 — Post-B Phase 1 PR 1: `db/sync_state.py` Postgres-native
 
 **Session:** First module conversion — explicit `$n` / `?` SQL per backend in
-`db/sync_state.py`; `DbConnection` typing; `tests/test_db_sync_state.py`.
+`db/sync_state.py`; `DbConnection` typing; `tests/test_db_sync_state.py`. Merged #320.
 
 ### Next steps
 
-**Post-B Phase 1 PR 2** — `db/watchlist.py` native conversion.
+**Post-B Phase 1 PR 2** — batch `db/watchlist.py` + `db/webhooks.py`.
 
 ---
+
+## 2026-07-08 — F3: pre-flip security pass (SECURITY.md + gitleaks CI)
 
 **Session:** Added root `SECURITY.md` (disclosure policy via harsha@projectjupiter.in),
 `.gitleaks.toml` allowlist for placeholders/tests, and `.github/workflows/gitleaks.yml`
 (full-history scan on push + PR). Historical scan clean except known test fixtures.
+Merged #319.
 
 ### Next steps
 
-**Post-B Phases 1–4** — Postgres-native `db/` module conversion (Phase 0 gate merged in #318).
+**Post-B Phase 1** — module conversion (#320+).
 
 ---
+
+## 2026-07-08 — Post-B Phase 0: logging ring-buffer fix (same PR as CI gate)
 
 **Session:** `test-postgres` runs `pytest tests/ -q` (Phase 0 gate). CI initially
 failed six logging tests: Alembic `fileConfig` during session migrations stripped
 BRIEFR's ring-buffer handler after collection-time `from main import app`. Fix:
 re-call `configure_logging()` after migrations in `conftest.py`, autouse ring-buffer
 isolation (`clear_log_buffer` + `ensure_ring_buffer_attached`), and
-`disable_existing_loggers=False` in `alembic/env.py`.
+`disable_existing_loggers=False` in `alembic/env.py`. Merged #318.
 
 ### Next steps
 
-**Merge PR #318** once CI green + Gemini satisfied, then **F3** (`SECURITY.md`, gitleaks CI).
+**F3** — pre-flip security pass (`SECURITY.md`, gitleaks CI).
 
 ---
 
