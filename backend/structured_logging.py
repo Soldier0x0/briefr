@@ -141,6 +141,19 @@ class _RingBufferHandler(logging.Handler):
 _ring_handler = _RingBufferHandler()
 
 
+def clear_log_buffer() -> None:
+    """Empty the in-process ring buffer (test isolation)."""
+    _ring_handler._buf.clear()
+
+
+def ensure_ring_buffer_attached() -> None:
+    """Re-attach the ring handler if Alembic fileConfig or another tool replaced root handlers."""
+    root = logging.getLogger()
+    if _ring_handler not in root.handlers:
+        _ring_handler.setLevel(logging.INFO)
+        root.addHandler(_ring_handler)
+
+
 def get_log_buffer(
     limit: int = 100,
     level: str | None = None,
@@ -201,5 +214,4 @@ def configure_logging() -> None:
         access_logger.handlers = []
         access_logger.propagate = False
 
-    _ring_handler.setLevel(logging.INFO)
-    root.addHandler(_ring_handler)
+    ensure_ring_buffer_attached()

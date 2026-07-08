@@ -61,6 +61,12 @@ def _postgres_schema_once():
     database.run_postgres_migrations = _noop_migrations
     main.run_postgres_migrations = _noop_migrations
 
+    # Alembic env.py fileConfig can run during the migration above after
+    # collection-time `from main import app` already installed handlers.
+    from structured_logging import configure_logging
+
+    configure_logging()
+
     yield
 
 
@@ -111,6 +117,17 @@ def run_db_test(coro):
             await close_pool()
 
     return asyncio.run(_wrapped())
+
+
+@pytest.fixture(autouse=True)
+def _isolate_log_ring_buffer():
+    """Clear the admin log ring buffer before each test and re-attach the
+    handler if Alembic or another library replaced root handlers mid-session."""
+    from structured_logging import clear_log_buffer, ensure_ring_buffer_attached
+
+    ensure_ring_buffer_attached()
+    clear_log_buffer()
+    yield
 
 
 @pytest.fixture(autouse=True)

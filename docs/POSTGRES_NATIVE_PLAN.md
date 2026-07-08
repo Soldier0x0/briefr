@@ -5,9 +5,8 @@ SQLite-dialect-with-Postgres-translation to Postgres-native. Written so an
 agent with no memory of prior sessions (e.g. Cursor Composer) can pick this up
 cold. Read `CLAUDE.md` first (danger zone 1 covers this exact area).
 
-**Status as of 2026-07-07:** Phase 0 (CI full-suite gate) is ~95% done on
-branch `chore/pg-full-suite-fixture` (PR #303) — merge that first. Phases
-1–4 below are **not started**.
+**Status as of 2026-07-08:** Phase 0 (CI full-suite gate) — `test-postgres` job runs
+`pytest tests/ -q` (PR Post-B Phase 0). Phases 1–4 below are **not started**.
 
 ---
 
@@ -89,6 +88,15 @@ These cost real debugging time this session — don't rediscover them.
      (dialect.py deletion) forces a rewrite.
      Files: `test_wallboard.py`, `test_embeddings.py`, `test_forge.py`,
      `test_watchlist.py`, `test_brief_endpoint.py`, `test_admin_storage.py`.
+7. **Alembic `fileConfig` wipes BRIEFR logging handlers.** Collection-time
+   `from main import app` calls `configure_logging()` (stderr JSON + ring
+   buffer). Session `_postgres_schema_once` then runs Alembic, whose
+   `env.py` calls `fileConfig` and replaces `root.handlers` with Alembic's
+   console handler only — new logs reach stderr but not the ring buffer, so
+   `test_admin_logs` / `test_structured_logging` fail late in the Postgres
+   suite. Fix: re-`configure_logging()` after migrations in `conftest.py`,
+   autouse `clear_log_buffer()` + `ensure_ring_buffer_attached()` per test,
+   and `disable_existing_loggers=False` in `alembic/env.py`.
 
 ---
 

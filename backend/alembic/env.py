@@ -17,7 +17,9 @@ from db.config import postgres_dsn  # noqa: E402
 
 config = context.config
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # Do not tear down BRIEFR's root handlers (ring buffer + JSON stderr) when
+    # migrations run after main.py has already called configure_logging().
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 target_metadata = None
 

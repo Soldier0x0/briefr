@@ -12,6 +12,32 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 0: Postgres full-suite CI gate (logging fix)
+
+**Session:** `test-postgres` runs `pytest tests/ -q` (Phase 0 gate). CI initially
+failed six logging tests: Alembic `fileConfig` during session migrations stripped
+BRIEFR's ring-buffer handler after collection-time `from main import app`. Fix:
+re-call `configure_logging()` after migrations in `conftest.py`, autouse ring-buffer
+isolation (`clear_log_buffer` + `ensure_ring_buffer_attached`), and
+`disable_existing_loggers=False` in `alembic/env.py`.
+
+### Next steps
+
+**Merge PR #318** once CI green + Gemini satisfied, then **F3** (`SECURITY.md`, gitleaks CI).
+
+---
+
+## 2026-07-08 — Post-B Phase 0: Postgres full-suite CI gate
+
+**Session:** `test-postgres` CI job now runs `pytest tests/ -q` against live
+Postgres 16 (replaces pool-only + intel smoke subset). Gates module conversion.
+
+### Next steps
+
+**F3** — pre-flip security pass (`SECURITY.md`, gitleaks CI).
+
+---
+
 ## 2026-07-08 — Wave 3 PR 9: export_intel_snapshot.py + CI smoke
 
 **Session:** Added `scripts/export_intel_snapshot.py` (allowlisted `pg_dump`, manifest,

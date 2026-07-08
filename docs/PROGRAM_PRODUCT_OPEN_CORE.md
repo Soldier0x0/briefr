@@ -151,7 +151,7 @@ Full spec in `DATA_SNAPSHOT.md` (Wave 3 PR 8).
 | Track | Status |
 |-------|--------|
 | **D4** | Artifact injection — continue |
-| **Post-B** | Postgres-native `db/` — #303 merged; finish CI full-suite gate then modules |
+| **Post-B** | Postgres-native `db/` — #303 merged; **Phase 0** full-suite Postgres CI gate enabled |
 | **#306** | `.env.example` reorder — merge after Gemini fixes |
 
 ---
