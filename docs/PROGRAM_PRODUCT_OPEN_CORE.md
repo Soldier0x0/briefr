@@ -1,10 +1,11 @@
 # Program — Product polish & open-core readiness
 
-**Status:** Active (2026-07-07)  
+**Status:** Active (2026-07-08)  
 **Purpose:** Single execution plan for SaaS-grade self-host UX, user data on
 Postgres, and safe intel distribution — without bloating `SPRINT_2026-07.md`.
 
-**Read order:** `CLAUDE.md` → `PRODUCT_STATUS.md` → this file → wave PR below.
+**Read order:** `CLAUDE.md` → `PRODUCT_STATUS.md` → `HANDOVER.md` (top entry) →
+this file → `POSTGRES_NATIVE_PLAN.md` (Post-B detail).
 
 ---
 
@@ -17,7 +18,20 @@ Postgres, and safe intel distribution — without bloating `SPRINT_2026-07.md`.
 | Operator production data | **Never** raw `pg_dump` of prod. Export via allowlist script only. |
 | User prefs / stack | Postgres per user; unified stack API; optional “session only vs remember on server”. |
 | Open-core economics (v1) | **Code free**; first intel snapshot **free monthly** (adoption over revenue). |
-| July sprint | **Closed for new scope** — interleave D4 + Post-B; program waves run in parallel. |
+| July sprint | **Closed for new scope** — interleave D4 + Post-B; program waves 1–3 **done**. |
+
+---
+
+## Agent workflow (mandatory)
+
+Same process for every PR — full detail in `HANDOVER.md` top entry (2026-07-08):
+
+1. `cursor/<name>-6fd2` branch → 2. local `pytest` / `npm run build` →
+3. push + non-draft PR → 4. address Gemini inline comments →
+5. CI green → 6. docs if behavior changed → 7. merge.
+
+**Co-founder mindset:** execute locked program order; specs over improvisation;
+CI + Gemini gate merges; minimum correct diff; `PRODUCT_STATUS.md` is truth.
 
 ---
 
@@ -51,16 +65,14 @@ See `DATA_SNAPSHOT.md` (added in Wave 3) for intel bundle format.
 One concern per PR unless noted. Browser-verify UI items. Update
 `PRODUCT_STATUS.md` when runtime behavior changes.
 
-### Wave 1 — Product feel (no schema risk) · **2 PRs**
+### Wave 1 — Product feel (no schema risk) · **2 PRs** — **DONE** (#308–#309)
 
 | PR | Scope | Acceptance |
 |----|-------|------------|
 | **1** | Admin config Save UX | Per-field Save; button “Save” vs “Save & restart”; fix misleading copy; stop toasting “added to queue”; bool toggles save inline |
 | **2** | Toast + restart UX | Pause on hover/focus; fewer success toasts; restart **banner** until `/api/health` OK; copy-ID feedback; notification policy in this doc § below |
 
-**Interleave with D4 / Post-B — do not block.**
-
-### Wave 2 — One stack, one truth · **3–4 PRs**
+### Wave 2 — One stack, one truth · **3–4 PRs** — **DONE** (#310–#314)
 
 | PR | Scope | Acceptance |
 |----|-------|------------|
@@ -74,7 +86,7 @@ Update `PrivacyPage.jsx` when 4–5 land (stack not “browser only”).
 Optional **7:** field-level encryption for profile blobs (`BRIEFR_DATA_KEY`) — defer
 until open-core flip unless required.
 
-### Wave 3 — Open-core data plane · **2 PRs**
+### Wave 3 — Open-core data plane · **2 PRs** — **DONE** (#315–#317)
 
 | PR | Scope | Acceptance |
 |----|-------|------------|
@@ -83,14 +95,14 @@ until open-core flip unless required.
 
 Ops (not a code PR): publish `briefr-intel-YYYY-MM.pgdump.gz` from export script.
 
-### Wave 4 — Launch gate (after Wave 2 or parallel)
+### Wave 4 — Launch gate (after Wave 2 or parallel) — **NOT STARTED**
 
 Not blocking Wave 1–3 code:
 
 - Monitor / stack+KEV alerts (retention)
 - First-hour onboarding checklist in app
 - `briefr doctor` / support pack export (V1.4 spec)
-- Track **F3** — gitleaks, `SECURITY.md`, LICENSE flip
+- Track **F3** — gitleaks + `SECURITY.md` shipped (#319); LICENSE flip deferred to F2
 - Docker compose “external Postgres” profile
 - Snapshot versioning + upgrade runbook
 
@@ -150,9 +162,10 @@ Full spec in `DATA_SNAPSHOT.md` (Wave 3 PR 8).
 
 | Track | Status |
 |-------|--------|
-| **D4** | Artifact injection — continue |
-| **Post-B** | Postgres-native `db/` — #303 merged; **Phase 0** full-suite Postgres CI gate enabled |
-| **#306** | `.env.example` reorder — merge after Gemini fixes |
+| **D4** | **Done** (#312) — Nuclei parser + Sigma artifact injection |
+| **Post-B** | **In progress** — Phase 0 (#318) + `sync_state` (#320) done; ~6 Phase 1 PRs left — see `POSTGRES_NATIVE_PLAN.md` |
+| **F3** | **Mostly done** (#319) — gitleaks + `SECURITY.md`; F2/LICENSE before flip |
+| **Wave 4** | Deferred — monitor, onboarding, doctor, external Postgres compose |
 
 ---
 
@@ -167,15 +180,17 @@ Full spec in `DATA_SNAPSHOT.md` (Wave 3 PR 8).
 
 ---
 
-## PR sequence (suggested)
+## PR sequence (historical — waves 1–3 complete)
 
 ```
-PR #0  This doc + sprint/HANDOVER hooks          ← you are here
-PR #1  Config Save UX
-PR #2  Toast / restart banner
-PR #3–4  Stack API + frontend
-PR #8–9  ADR + export script (can start after PR #2)
-PR #5–6  Preferences + profile remember
+✅ Wave 1  #308–#309  Config Save + toast/restart
+✅ Wave 2  #310–#314  Stack API + frontend + prefs + profile
+✅ Wave 3  #315–#317  DATA_SNAPSHOT + export script
+✅ D4      #312       Nuclei parser + Sigma wiring
+✅ Post-B  #318       Phase 0 CI gate
+✅ F3      #319       SECURITY.md + gitleaks
+✅ Post-B  #320       Phase 1 sync_state native
+→ Post-B  next        watchlist + webhooks (batched)
 ```
 
-**Total to open-core-ready:** ~8 PRs (Waves 1–3). Full SaaS settings in DB: +2–3 PRs later.
+**Total to open-core-ready:** Waves 1–3 done; Post-B Phases 1–4 + Wave 4 + F2 flip remain.

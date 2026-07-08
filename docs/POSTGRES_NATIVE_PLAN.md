@@ -5,36 +5,16 @@ SQLite-dialect-with-Postgres-translation to Postgres-native. Written so an
 agent with no memory of prior sessions (e.g. Cursor Composer) can pick this up
 cold. Read `CLAUDE.md` first (danger zone 1 covers this exact area).
 
-**Status as of 2026-07-08:** Phase 0 complete (`test-postgres` full suite green, #318).
-Phase 1 in progress — `db/sync_state.py` converted first (PR Post-B Phase 1).
-Phases 2–4 below are **not started**.
+**Status as of 2026-07-08:** Phase 0 complete (#318). F3 complete (#319).
+Phase 1 in progress — `db/sync_state.py` converted (#320). **9 SQL modules
+remain** (batched into ~6 PRs — see below). Phases 2–4 not started.
 
 ---
 
-## Phase 0 — CI full-suite gate (PR #303, finish this first)
+## Phase 0 — CI full-suite gate — **DONE** (#318)
 
-**One remaining step:** flip `.github/workflows/backend-tests.yml`'s
-`test-postgres` job from running only `tests/test_postgres_pool.py` to the
-full `pytest tests/ -q`. Everything else — Postgres isolation fixtures in
-`backend/tests/conftest.py`, ~55 converted test files — is done and merged
-(or on that branch, pending merge).
-
-```yaml
-# In the test-postgres job, replace:
-- name: Run Postgres pool integration tests
-  run: cd backend && pytest tests/test_postgres_pool.py -q
-# with:
-- name: Run full suite against Postgres
-  run: cd backend && pytest tests/ -q
-```
-
-**Verify:** push, confirm the `test-postgres` CI job goes green running the
-whole suite (should show ~720 passed, ~17 skipped, 5 pre-existing failures
-— see "Known pre-existing failures" below).
-
-**Do not skip this before starting Phase 1.** It's the safety net — a
-red full-suite-on-Postgres run is the signal that a Phase-1+ conversion
-broke something.
+`test-postgres` runs `pytest tests/ -q` (full suite, ~760 passed / ~8 skipped).
+Logging ring-buffer fix merged in same PR (Alembic `fileConfig` gotcha #7).
 
 ---
 
@@ -101,37 +81,61 @@ These cost real debugging time this session — don't rediscover them.
 
 ---
 
-## Phase 1 — Convert `db/*.py` modules to Postgres-native SQL, one module per PR
+## Phase 1 — Convert `db/*.py` modules to Postgres-native SQL
 
 **Rule (from `CLAUDE.md` danger zone 1):** all SQL today is written in
 SQLite dialect with `?` placeholders, translated to Postgres at runtime by
 `db/dialect.py`. This phase deletes that translation module-by-module by
 rewriting each module's SQL to native Postgres (`$1`/`$2` placeholders,
 Postgres-specific functions where useful) and removing its dependency on
-`db/dialect.py`'s translation path. **One module = one PR = one deploy,
-same discipline as Track B.**
+`db/dialect.py`'s regex translation for that module's queries.
 
-### Module conversion order (smallest/lowest-risk first)
+**PR sizing (agreed 2026-07-08):** default **one module = one PR = one
+deploy** for rollback clarity. **Batch only small, independent modules**
+(e.g. `watchlist` + `webhooks`). Keep **`cve.py` and `init.py` as solo PRs**
+(highest blast radius).
 
-Line counts are current size — bigger modules later once the pattern is
-proven on small ones.
+### Conversion pattern (locked in #320)
+
+Reference implementation: `backend/db/sync_state.py`.
+
+1. Define parallel SQL constants: `_FOO_SQLITE` (`?`) and `_FOO_PG` (`$n`).
+2. Pick SQL via connection type — **not** `is_postgres()` env lookup:
+   `type(db).__name__ == "PostgresConnection"`.
+3. Type hints: `DbConnection` from `db/types.py` (not `aiosqlite.Connection`).
+4. `utcnow_str()` bound params are fine on both backends; prefer them over
+   `datetime('now')` in SQL.
+5. Add or extend module tests; run **full** `pytest tests/ -q` before merge.
+
+### Module status
+
+| # | Module | Lines | Status |
+|---|--------|-------|--------|
+| 1 | `db/types.py` | 27 | **Skip** — Protocol only, no SQL |
+| 2 | `db/sync_state.py` | 82 | **Done** — #320 |
+| 3–4 | `db/watchlist.py` + `db/webhooks.py` | 78 + 147 | **Next PR** (batched) |
+| 5 | `db/cache_retention.py` | 191 | Pending |
+| 6 | `db/cache.py` | 303 | Pending |
+| 7 | `db/enrichment.py` | 430 | Pending |
+| 8–9 | `db/metadata.py` + `db/correlation.py` | 478 + 489 | Pending (batched) |
+| 10 | `db/cve.py` | 544 | Pending — **solo PR** |
+| 11 | `db/init.py` | 627 | Pending — **solo PR, last** |
+
+**~6 PRs remaining** in Phase 1 (down from 9 with batching).
+
+### Legacy numbered list (same order)
 
 1. `db/types.py` (27 lines) — **no SQL**; Protocol-only, no conversion needed.
-2. `db/sync_state.py` (82 lines) — **converted** (Post-B Phase 1 PR 1).
-3. `db/watchlist.py` (78 lines)
-4. `db/webhooks.py` (147 lines)
+2. `db/sync_state.py` (82 lines) — **converted** (#320).
+3. `db/watchlist.py` (78 lines) — batch with #4.
+4. `db/webhooks.py` (147 lines) — batch with #3.
 5. `db/cache_retention.py` (191 lines)
 6. `db/cache.py` (303 lines)
 7. `db/enrichment.py` (430 lines)
 8. `db/metadata.py` (478 lines)
 9. `db/correlation.py` (489 lines)
-10. `db/cve.py` (544 lines) — likely the riskiest single module (core CVE
-    read/write path); review its diff carefully, same rigor as the
-    Track B database.py split.
-11. `db/init.py` (627 lines) — convert **last** among the modules, since
-    it contains `run_postgres_migrations()`, `init_db()`, and the
-    SQLite/Postgres branch logic itself. This is where `dialect.py`
-    finally gets deleted (see Phase 3).
+10. `db/cve.py` (544 lines) — highest risk; solo PR.
+11. `db/init.py` (627 lines) — last; enables Phase 3.
 
 **Per-module checklist (apply to every PR in this phase):**
 
