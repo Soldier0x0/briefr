@@ -12,7 +12,20 @@ significant working session; never rewrite old entries.
 
 ---
 
-## 2026-07-08 — Post-B Phase 1 PR 6 merged (#326): `metadata` + `correlation`
+## 2026-07-08 — Post-B Phase 1 PR 7: `cve` Postgres-native
+
+**What:** Converted `backend/db/cve.py` to the locked `sync_state` pattern — parallel
+`_SQLITE` / `_PG` constants for upsert, change history, embeddings, related-CVE
+lookups, LLM product extraction, and additive enrichment updates; named-param upsert
+SQL rewritten to positional; UTC cutoffs replace `DATE('now', …)` /
+`datetime('now', …)` in SQL. Added `tests/test_db_cve.py`.
+
+**Verified:** `pytest tests/test_db_cve.py tests/test_rejected_cves.py tests/test_intel_feeds.py -q`
+(18 passed, SQLite); full suite `797 passed, 8 skipped` (SQLite).
+
+**Next:** open PR, CI green, merge; then solo `db/init.py` (PR 8).
+
+---
 
 **Merged:** #326. CI green after Postgres fix: timeline filter uses `published >= $1`
 (TEXT) instead of binding a string to `published::date >= $1` (asyncpg requires
