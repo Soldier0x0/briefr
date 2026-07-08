@@ -27,7 +27,7 @@ SELECT published::date AS day, COUNT(*) AS count
 FROM cves
 WHERE published IS NOT NULL
   AND published != ''
-  AND published::date >= $1
+  AND published >= $1
 GROUP BY published::date
 """
 
