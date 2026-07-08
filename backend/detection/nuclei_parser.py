@@ -49,7 +49,7 @@ def _query_params_from_path(raw: str) -> list[str]:
     if "?" not in token:
         return []
     query = token.split("?", 1)[1]
-    parsed = parse_qs(query, keep_blank_values=False)
+    parsed = parse_qs(query, keep_blank_values=True)
     return [key for key in parsed if key][:10]
 
 
@@ -60,9 +60,9 @@ def _matcher_words(matchers: Any) -> list[str]:
     for matcher in matchers:
         if not isinstance(matcher, dict):
             continue
-        if matcher.get("type") not in ("word", "regex"):
+        if matcher.get("type") != "word":
             continue
-        raw_words = matcher.get("words") or matcher.get("regex") or []
+        raw_words = matcher.get("words") or []
         if isinstance(raw_words, str):
             raw_words = [raw_words]
         if not isinstance(raw_words, list):
@@ -117,7 +117,10 @@ def _parse_http_entry(entry: dict) -> dict | None:
     paths.extend(raw_paths)
     params.extend(raw_params)
 
-    for raw_path in entry.get("path") or []:
+    raw_paths = entry.get("path") or []
+    if isinstance(raw_paths, str):
+        raw_paths = [raw_paths]
+    for raw_path in raw_paths:
         token = str(raw_path or "")
         normalized = _normalize_path(token)
         if normalized:

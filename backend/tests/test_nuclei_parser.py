@@ -27,3 +27,39 @@ def test_parse_nuclei_template_empty_and_invalid():
     assert parse_nuclei_template_yaml("") == []
     assert parse_nuclei_template_yaml("not: [valid") == []
     assert parse_nuclei_template_yaml("info:\n  name: no-http") == []
+
+
+def test_parse_nuclei_single_string_path():
+    yaml_text = """
+http:
+  - method: GET
+    path: "{{BaseURL}}/single/path?user={{username}}"
+    matchers:
+      - type: word
+        words:
+          - "ok"
+"""
+    artifacts = parse_nuclei_template_yaml(yaml_text)
+    assert len(artifacts) == 1
+    art = artifacts[0]
+    assert art["paths"] == ["/single/path"]
+    assert "user" in art["params"]
+    assert art["keywords"] == ["ok"]
+
+
+def test_parse_nuclei_ignores_regex_matchers():
+    yaml_text = """
+http:
+  - method: GET
+    path:
+      - "/check"
+    matchers:
+      - type: regex
+        regex:
+          - "(?i)root:.*:0:0:"
+      - type: word
+        words:
+          - "literal-hit"
+"""
+    artifacts = parse_nuclei_template_yaml(yaml_text)
+    assert artifacts[0]["keywords"] == ["literal-hit"]
