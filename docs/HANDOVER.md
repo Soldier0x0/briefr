@@ -12,6 +12,17 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 0: Postgres full-suite CI gate
+
+**Session:** `test-postgres` CI job now runs `pytest tests/ -q` against live
+Postgres 16 (replaces pool-only + intel smoke subset). Gates module conversion.
+
+### Next steps
+
+**F3** — pre-flip security pass (`SECURITY.md`, gitleaks CI).
+
+---
+
 ## 2026-07-08 — Wave 3 PR 9: export_intel_snapshot.py + CI smoke
 
 **Session:** Added `scripts/export_intel_snapshot.py` (allowlisted `pg_dump`, manifest,

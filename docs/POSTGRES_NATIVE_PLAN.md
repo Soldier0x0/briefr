@@ -5,9 +5,8 @@ SQLite-dialect-with-Postgres-translation to Postgres-native. Written so an
 agent with no memory of prior sessions (e.g. Cursor Composer) can pick this up
 cold. Read `CLAUDE.md` first (danger zone 1 covers this exact area).
 
-**Status as of 2026-07-07:** Phase 0 (CI full-suite gate) is ~95% done on
-branch `chore/pg-full-suite-fixture` (PR #303) — merge that first. Phases
-1–4 below are **not started**.
+**Status as of 2026-07-08:** Phase 0 (CI full-suite gate) — `test-postgres` job runs
+`pytest tests/ -q` (PR Post-B Phase 0). Phases 1–4 below are **not started**.
 
 ---
 
