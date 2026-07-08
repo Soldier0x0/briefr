@@ -3,6 +3,25 @@ import { displayText } from '../../utils/displayText.js'
 import DrawerAtlasSection from '../DrawerAtlasSection.jsx'
 import { exploitTypeLabel, techniqueLink } from './helpers.js'
 
+const GENERIC_EXPLOIT_TITLES = new Set([
+  'Vendor or advisory reference',
+  'Proof-of-concept published',
+  'Untitled exploit',
+])
+
+function exploitDisplayTitle(exp) {
+  const title = displayText(exp.title) || ''
+  if (title && !GENERIC_EXPLOIT_TITLES.has(title)) return title
+  if (exp.url) {
+    try {
+      return new URL(exp.url).hostname.replace(/^www\./, '')
+    } catch {
+      /* ignore */
+    }
+  }
+  return title || 'Reference'
+}
+
 
 // ── Correlation Findings (Intel tab) ─────────────────────
 
@@ -420,36 +439,47 @@ export default function TabIntel({ techniques, publicExploits, greynoiseScans, o
         ) : exploits.length === 0 ? (
           <p className="drawer-intel-empty mono">// No public exploits from Sploitus or NVD references for this CVE</p>
         ) : (
-          <ul className="drawer-exploit-list" aria-label="Public exploits from Sploitus">
-            {exploits.map((exp, idx) => (
-              <li key={exp.url || `${exp.title}-${idx}`} className="drawer-exploit-item">
-                <div className="drawer-exploit-top">
-                  <span
-                    className={`drawer-exploit-type mono drawer-exploit-type--${(exp.type || 'poc').toLowerCase()}`}
-                  >
-                    {exploitTypeLabel(exp.type)}
-                  </span>
-                  {exp.source && (
-                    <span className="drawer-exploit-source mono">{exp.source}</span>
-                  )}
-                  {exp.published_date && (
-                    <span className="drawer-exploit-date mono">{exp.published_date}</span>
-                  )}
-                </div>
-                <p className="drawer-exploit-title">{displayText(exp.title) || "Untitled exploit"}</p>
-                {exp.url && (
-                  <a
-                    className="drawer-exploit-link mono"
-                    href={exp.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    View exploit &rarr;
-                  </a>
-                )}
-              </li>
-            ))}
-          </ul>
+          <div className="drawer-exploit-table-wrap">
+            <table className="drawer-exploit-table mono" aria-label="Public exploits">
+              <thead>
+                <tr>
+                  <th scope="col">Type</th>
+                  <th scope="col">Source</th>
+                  <th scope="col">Title</th>
+                  <th scope="col">Link</th>
+                </tr>
+              </thead>
+              <tbody>
+                {exploits.map((exp, idx) => (
+                  <tr key={exp.url || `${exp.title}-${idx}`}>
+                    <td>
+                      <span
+                        className={`drawer-exploit-type mono drawer-exploit-type--${(exp.type || 'poc').toLowerCase()}`}
+                      >
+                        {exploitTypeLabel(exp.type)}
+                      </span>
+                    </td>
+                    <td className="drawer-exploit-source-cell">{exp.source || '—'}</td>
+                    <td className="drawer-exploit-title-cell">{exploitDisplayTitle(exp)}</td>
+                    <td>
+                      {exp.url ? (
+                        <a
+                          className="drawer-exploit-link mono"
+                          href={exp.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Open ↗
+                        </a>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
         {exploits.some(exp => exp.requires_terms_acceptance) && (
           <p className="drawer-intel-hint mono">

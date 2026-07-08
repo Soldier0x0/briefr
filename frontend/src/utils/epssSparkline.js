@@ -98,5 +98,12 @@ export function epssTrendLabel(points, currentScore) {
   return { label: 'Stable', tone: 'stable' }
 }
 
+/** True when the series has enough day-over-day movement to justify a sparkline. */
+export function hasMeaningfulEpssVariation(points, minDelta = 0.02) {
+  if (!Array.isArray(points) || points.length < 2) return false
+  const scores = points.map(p => p.score)
+  return Math.max(...scores) - Math.min(...scores) >= minDelta
+}
+
 export const EPSS_SPARKLINE_WIDTH = SPARK_W
 export const EPSS_SPARKLINE_HEIGHT = SPARK_H

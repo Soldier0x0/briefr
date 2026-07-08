@@ -12,6 +12,15 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — E-PR3: drawer readability (exploits table, EPSS, contrast)
+
+**What:** Public exploits table; EPSS sparkline only when variation ≥0.02; drawer
+label contrast/size; tighter section padding.
+
+**Next:** E-PR4 GreyNoise on-demand.
+
+---
+
 ## 2026-07-08 — E-PR2 merged: Intel tab CSS + compact infrastructure
 
 **What:** Missing correlation CSS; shared-infra compact table (3 + expand);

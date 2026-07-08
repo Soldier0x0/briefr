@@ -5,6 +5,7 @@ import {
   EPSS_SPARKLINE_HEIGHT,
   EPSS_SPARKLINE_WIDTH,
   hasEnoughEpssHistory,
+  hasMeaningfulEpssVariation,
 } from '../../utils/epssSparkline.js'
 import {
   buildRiskHeroSummary,
@@ -98,8 +99,9 @@ function EpssTrendSection({ cve, history, loading, epssSparklineRef }) {
   const points = buildEpssSparklinePoints(history, score)
   const polyline = epssSparklinePolyline(points)
   const trend = epssTrendLabel(history, score)
-  const showSparkline = !loading && hasEnoughEpssHistory(points) && !!polyline
-  const showStaticBar = !loading && score != null && !showSparkline
+  const meaningfulTrend = hasMeaningfulEpssVariation(points)
+  const showSparkline = !loading && hasEnoughEpssHistory(points) && !!polyline && meaningfulTrend
+  const showStaticBar = !loading && score != null && (!showSparkline || !meaningfulTrend)
 
   if (score == null && !points.length && !loading) return null
 
