@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import AssetWarning from '../components/AssetWarning.jsx'
@@ -11,22 +12,41 @@ import AssetProfileManage from '../components/AssetProfileManage.jsx'
 import AssetWizard from '../components/AssetWizard.jsx'
 import SessionLockOverlay from '../components/SessionLockOverlay.jsx'
 import SessionIdleWarning from '../components/SessionIdleWarning.jsx'
+import { notifyApiError } from '../components/Toast.jsx'
 import { fetchCveAssetMatch } from '../api.js'
+import { useAuth } from './AuthContext.jsx'
 import { useInactivityTimeout } from '../hooks/useInactivityTimeout.js'
 import { parseProfileFile, profileToMatchAssets } from '../utils/assetProfileIo.js'
+import {
+  getRememberProfileOnServer,
+  isUserPreferencesLoaded,
+  setRememberProfileOnServer,
+} from '../utils/userPreferences.js'
+import {
+  getSavedStackProfile,
+  isUserStackLoaded,
+  saveUserStackProfile,
+} from '../utils/userStack.js'
 
 const AssetProfileContext = createContext(null)
 
 export function AssetProfileProvider({ children }) {
+  const { status: authStatus } = useAuth()
   const [profile, setProfile] = useState(null)
   const [matchScores, setMatchScores] = useState({})
   const [isLocked, setIsLocked] = useState(false)
   const [sessionWarnOpen, setSessionWarnOpen] = useState(false)
   const [flow, setFlow] = useState(null)
   const [wizardProfile, setWizardProfile] = useState(null)
+  const [rememberOnServer, setRememberOnServer] = useState(() => getRememberProfileOnServer())
+  const hydratedRef = useRef(false)
 
   const isLoaded = profile !== null && !isLocked
   const assetAware = isLoaded
+
+  const syncRememberState = useCallback(() => {
+    setRememberOnServer(getRememberProfileOnServer())
+  }, [])
 
   const clearProfile = useCallback(() => {
     setProfile(null)
@@ -53,18 +73,47 @@ export function AssetProfileProvider({ children }) {
     const assets = profileToMatchAssets(nextProfile)
     if (!assets.length) {
       setMatchScores({})
-      return
+    } else {
+      try {
+        const res = await fetchCveAssetMatch(assets)
+        setMatchScores(res?.matches || {})
+      } catch {
+        setMatchScores({})
+      }
     }
-    try {
-      const res = await fetchCveAssetMatch(assets)
-      setMatchScores(res?.matches || {})
-    } catch {
-      setMatchScores({})
+    if (getRememberProfileOnServer()) {
+      try {
+        await saveUserStackProfile(nextProfile)
+      } catch (err) {
+        notifyApiError(err)
+      }
     }
     try {
       window.dispatchEvent(new CustomEvent('briefr-profile-change'))
     } catch {}
   }, [])
+
+  const tryHydrateFromServer = useCallback(async () => {
+    if (authStatus !== 'authed') return
+    if (hydratedRef.current || profile) return
+    if (!isUserStackLoaded() || !isUserPreferencesLoaded()) return
+    if (!getRememberProfileOnServer()) return
+    const saved = getSavedStackProfile()
+    if (!saved) return
+    hydratedRef.current = true
+    await applyProfile(saved)
+  }, [authStatus, profile, applyProfile])
+
+  const handleRememberChange = useCallback(async (enabled) => {
+    const previous = getRememberProfileOnServer()
+    setRememberOnServer(enabled)
+    try {
+      await setRememberProfileOnServer(enabled, enabled ? profile : null)
+    } catch (err) {
+      setRememberOnServer(previous)
+      notifyApiError(err)
+    }
+  }, [profile])
 
   const openProfileFlow = useCallback(() => {
     if (profile && !isLocked) {
@@ -92,6 +141,30 @@ export function AssetProfileProvider({ children }) {
   })
 
   useEffect(() => {
+    if (authStatus !== 'authed') {
+      hydratedRef.current = false
+    }
+    syncRememberState()
+  }, [authStatus, syncRememberState])
+
+  useEffect(() => {
+    tryHydrateFromServer()
+  }, [tryHydrateFromServer])
+
+  useEffect(() => {
+    const onData = () => {
+      syncRememberState()
+      tryHydrateFromServer()
+    }
+    window.addEventListener('briefr-stack-loaded', onData)
+    window.addEventListener('briefr-preferences-loaded', onData)
+    return () => {
+      window.removeEventListener('briefr-stack-loaded', onData)
+      window.removeEventListener('briefr-preferences-loaded', onData)
+    }
+  }, [syncRememberState, tryHydrateFromServer])
+
+  useEffect(() => {
     if (!sessionWarnOpen) return undefined
     const clear = (e) => {
       if (e.target?.closest?.('.session-idle-warning')) return
@@ -112,6 +185,7 @@ export function AssetProfileProvider({ children }) {
       isLoaded,
       assetAware,
       isLocked,
+      rememberOnServer,
       openProfileFlow,
       clearProfile,
       loadProfileFromFile,
@@ -123,6 +197,7 @@ export function AssetProfileProvider({ children }) {
       isLoaded,
       assetAware,
       isLocked,
+      rememberOnServer,
       openProfileFlow,
       clearProfile,
       loadProfileFromFile,
@@ -134,6 +209,9 @@ export function AssetProfileProvider({ children }) {
       {children}
       {flow === 'warning' && (
         <AssetWarning
+          rememberOnServer={rememberOnServer}
+          onRememberChange={handleRememberChange}
+          showRememberToggle={authStatus === 'authed'}
           onAccept={() => startWizard(null)}
           onUpload={loadProfileFromFile}
           onSkip={() => setFlow(null)}
@@ -142,6 +220,9 @@ export function AssetProfileProvider({ children }) {
       )}
       {flow === 'manage' && (
         <AssetProfileManage
+          rememberOnServer={rememberOnServer}
+          onRememberChange={handleRememberChange}
+          showRememberToggle={authStatus === 'authed'}
           onUpdate={() => startWizard(profile)}
           onUpload={loadProfileFromFile}
           onKeep={() => setFlow(null)}

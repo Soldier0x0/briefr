@@ -108,6 +108,26 @@ def test_put_stack_persists_terms_and_profile(client):
     assert saved["profile"]["operatingSystems"][0]["product"] == "Windows Server"
 
 
+def test_put_stack_preserves_profile_when_omitted(client):
+    _login(client)
+    profile = {
+        "version": 1,
+        "operatingSystems": [{"product": "Ubuntu", "version": "22.04", "vendor": "Canonical"}],
+        "applications": [],
+        "environment": {"internetFacing": "Some", "industry": "Technology", "criticality": "Medium"},
+        "aiSystems": [],
+    }
+    client.put(
+        "/api/me/stack",
+        json={"stack_terms": "nginx", "profile": profile},
+    )
+    updated = client.put("/api/me/stack", json={"stack_terms": "apache"})
+    assert updated.status_code == 200
+    body = updated.json()
+    assert body["stack_terms"] == "apache"
+    assert body["profile"]["operatingSystems"][0]["product"] == "Ubuntu"
+
+
 def test_put_stack_clear_profile(client):
     _login(client)
     client.put(

@@ -2,6 +2,7 @@
 
 import { fetchUserPreferences, patchUserPreferences } from '../api.js'
 import { applyDisplayPrefs, DISPLAY_DEFAULTS, toDisplayPrefs } from './displayPrefsCore.js'
+import { saveUserStackProfile } from './userStack.js'
 
 const LEGACY_KEYS = {
   fontScale: 'briefr_font_scale',
@@ -70,6 +71,7 @@ function fromApi(data) {
   return {
     ...toDisplayPrefs(data),
     timezone: data?.timezone || 'UTC',
+    remember_profile_on_server: !!data?.remember_profile_on_server,
     updated_at: data?.updated_at || null,
   }
 }
@@ -170,6 +172,27 @@ export async function saveUserPreferences(displayPatch = {}, timezone) {
     }
     throw err
   }
+}
+
+export function getRememberProfileOnServer() {
+  return !!getCachedUserPreferences().remember_profile_on_server
+}
+
+export async function setRememberProfileOnServer(enabled, sessionProfile = null) {
+  if (!isUserPreferencesLoaded()) {
+    return enabled
+  }
+  const data = await patchUserPreferences({ remember_profile_on_server: !!enabled })
+  cached = fromApi(data)
+  try {
+    window.dispatchEvent(new CustomEvent('briefr-preferences-loaded', { detail: cached }))
+  } catch { /* unavailable */ }
+  if (!enabled) {
+    await saveUserStackProfile(null)
+  } else if (sessionProfile) {
+    await saveUserStackProfile(sessionProfile)
+  }
+  return cached.remember_profile_on_server
 }
 
 export function clearUserPreferencesOnLogout() {

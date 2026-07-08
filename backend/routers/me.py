@@ -32,6 +32,7 @@ class PreferencesPatch(BaseModel):
     utc_time: bool | None = None
     reduce_motion: bool | None = None
     timezone: str | None = Field(default=None, max_length=64)
+    remember_profile_on_server: bool | None = None
 
 
 @router.get("/stack")
@@ -48,8 +49,15 @@ async def write_stack(body: StackBody, payload: dict = Depends(require_user)):
     db = await get_db()
     try:
         stack_terms = validate_stack_terms(body.stack_terms)
-        profile = sanitize_profile(body.profile)
-        result = await upsert_user_stack(db, int(payload["sub"]), stack_terms, profile)
+        update_profile = "profile" in body.model_fields_set
+        profile = sanitize_profile(body.profile) if update_profile else None
+        result = await upsert_user_stack(
+            db,
+            int(payload["sub"]),
+            stack_terms,
+            profile,
+            update_profile=update_profile,
+        )
         await db.commit()
         return result
     except ValueError as exc:

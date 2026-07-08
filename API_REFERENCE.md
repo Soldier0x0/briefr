@@ -267,7 +267,7 @@ When no row exists yet, `stack_terms` is `""`, `profile` is `null`, and `updated
 
 **Response:** Same shape as GET (with non-null `updated_at`).
 
-**Validation:** `stack_terms` is normalized (trimmed, empty segments dropped, rejoined with commas). `profile` must be a JSON object when present; unknown keys are dropped and lists are sanitized to the asset-wizard shape. Oversized payloads → `422`.
+**Validation:** `stack_terms` is normalized (trimmed, empty segments dropped, rejoined with commas). `profile` must be a JSON object when present; unknown keys are dropped and lists are sanitized to the asset-wizard shape. Omit `profile` to leave the saved inventory unchanged; send `null` to clear. Oversized payloads → `422`.
 
 **Notes:** `BRIEFR_STACK_TERMS` in admin config overrides the saved user stack for KEV-on-stack webhooks and the wallboard tile. When unset, the backend uses the most recently updated non-empty `user_preferences.stack_terms` row.
 
@@ -286,6 +286,7 @@ When no row exists yet, `stack_terms` is `""`, `profile` is `null`, and `updated
   "utc_time": false,
   "reduce_motion": false,
   "timezone": "UTC",
+  "remember_profile_on_server": false,
   "updated_at": "2026-07-08 12:00:00"
 }
 ```
@@ -300,7 +301,9 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 
 **Response:** Same shape as GET (with non-null `updated_at`).
 
-**Validation:** `font_scale` ∈ `xsmall|small|medium|large|xlarge`; `density` ∈ `compact|comfortable|spacious`; `poll_interval_seconds` ∈ `15|30|60|120`; booleans for `show_technical_ids`, `utc_time`, `reduce_motion`; `timezone` must be a valid IANA zone. Invalid values → `422`.
+**Validation:** `font_scale` ∈ `xsmall|small|medium|large|xlarge`; `density` ∈ `compact|comfortable|spacious`; `poll_interval_seconds` ∈ `15|30|60|120`; booleans for `show_technical_ids`, `utc_time`, `reduce_motion`, `remember_profile_on_server`; `timezone` must be a valid IANA zone. Invalid values → `422`.
+
+**Notes:** `PUT /api/me/stack` updates `profile` only when the `profile` field is present in the body; omitting it preserves the saved inventory. Send `"profile": null` to clear.
 
 ---
 

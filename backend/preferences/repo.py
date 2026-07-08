@@ -67,24 +67,44 @@ async def upsert_user_stack(
     db: Any,
     user_id: int,
     stack_terms: str,
-    profile: dict | None,
+    profile: dict | None = None,
+    *,
+    update_profile: bool = False,
 ) -> dict:
-    profile_json = encode_profile(profile)
     updated_at = utcnow_str()
+    if update_profile:
+        profile_json = encode_profile(profile)
+        await db.execute(
+            """
+            INSERT INTO user_preferences (user_id, stack_terms, profile_json, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET
+                stack_terms = excluded.stack_terms,
+                profile_json = excluded.profile_json,
+                updated_at = excluded.updated_at
+            """,
+            (user_id, stack_terms, profile_json, updated_at),
+        )
+        return {
+            "stack_terms": stack_terms,
+            "profile": profile,
+            "updated_at": updated_at,
+        }
+
     await db.execute(
         """
-        INSERT INTO user_preferences (user_id, stack_terms, profile_json, updated_at)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO user_preferences (user_id, stack_terms, updated_at)
+        VALUES (?, ?, ?)
         ON CONFLICT(user_id) DO UPDATE SET
             stack_terms = excluded.stack_terms,
-            profile_json = excluded.profile_json,
             updated_at = excluded.updated_at
         """,
-        (user_id, stack_terms, profile_json, updated_at),
+        (user_id, stack_terms, updated_at),
     )
+    saved = await get_user_stack(db, user_id)
     return {
         "stack_terms": stack_terms,
-        "profile": profile,
+        "profile": saved["profile"],
         "updated_at": updated_at,
     }
 
@@ -113,7 +133,7 @@ async def get_effective_stack_terms(db: Any) -> str:
 async def get_user_preferences(db: Any, user_id: int) -> dict:
     rows = await db.execute_fetchall(
         """
-        SELECT display_prefs_json, timezone, updated_at
+        SELECT display_prefs_json, timezone, remember_profile_on_server, updated_at
         FROM user_preferences
         WHERE user_id = ?
         """,
@@ -124,6 +144,7 @@ async def get_user_preferences(db: Any, user_id: int) -> dict:
         return {
             **prefs,
             "timezone": "UTC",
+            "remember_profile_on_server": False,
             "updated_at": None,
         }
     row = rows[0]
@@ -135,6 +156,7 @@ async def get_user_preferences(db: Any, user_id: int) -> dict:
     return {
         **prefs,
         "timezone": tz,
+        "remember_profile_on_server": bool(row["remember_profile_on_server"]),
         "updated_at": row["updated_at"],
     }
 
@@ -160,22 +182,29 @@ async def patch_user_preferences(db: Any, user_id: int, patch: dict) -> dict:
         display_patch,
     )
     timezone = validate_timezone(patch["timezone"]) if "timezone" in patch else current["timezone"]
+    remember = (
+        bool(patch["remember_profile_on_server"])
+        if "remember_profile_on_server" in patch
+        else current["remember_profile_on_server"]
+    )
     display_json = encode_display_prefs(prefs)
     updated_at = utcnow_str()
 
     await db.execute(
         """
-        INSERT INTO user_preferences (user_id, display_prefs_json, timezone, updated_at)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO user_preferences (user_id, display_prefs_json, timezone, remember_profile_on_server, updated_at)
+        VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(user_id) DO UPDATE SET
             display_prefs_json = excluded.display_prefs_json,
             timezone = excluded.timezone,
+            remember_profile_on_server = excluded.remember_profile_on_server,
             updated_at = excluded.updated_at
         """,
-        (user_id, display_json, timezone, updated_at),
+        (user_id, display_json, timezone, int(remember), updated_at),
     )
     return {
         **prefs,
         "timezone": timezone,
+        "remember_profile_on_server": remember,
         "updated_at": updated_at,
     }

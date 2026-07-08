@@ -1,7 +1,11 @@
 import { useRef } from 'react'
+import AssetRememberToggle from './AssetRememberToggle.jsx'
 import './AssetWarning.css'
 
 export default function AssetProfileManage({
+  rememberOnServer,
+  onRememberChange,
+  showRememberToggle = false,
   onUpdate,
   onUpload,
   onKeep,
@@ -42,6 +46,12 @@ You have an active My Stack in this session.
 Update My Stack to change operating systems, applications,
 or environment details. Upload a saved file to replace
 the current one. Keep current to continue without changes.`}</pre>
+        {showRememberToggle && (
+          <AssetRememberToggle
+            enabled={rememberOnServer}
+            onChange={(v) => { void onRememberChange?.(v) }}
+          />
+        )}
         <div className="asset-warning-actions">
           <button type="button" className="asset-btn asset-btn-primary mono" onClick={onUpdate}>
             Update My Stack
