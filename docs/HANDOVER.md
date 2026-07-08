@@ -12,6 +12,20 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 1 PR 8 merged (#328): `init` — Phase 1 complete
+
+**Merged:** #328 without GitHub CI (Actions monthly free-tier exhausted). Verified
+locally before merge: full SQLite suite `801 passed, 8 skipped`; init smoke tests
+34 passed; `npm run build` green. Runtime SQL extracted to dialect-neutral
+constants; `_normalize_epss_scores()` shared across dialects.
+
+**Phase 1 module conversion is complete.** All 10 SQL modules now use explicit
+`$n`/`?` dispatch — no `db/dialect.py` translation needed per module.
+
+**Next:** Post-B2 — unified DB exceptions in `db/connection.py`.
+
+---
+
 ## 2026-07-08 — Post-B Phase 1 PR 8: `init` Postgres-native
 
 **What:** Converted `backend/db/init.py` — final Phase 1 module — runtime fixup SQL

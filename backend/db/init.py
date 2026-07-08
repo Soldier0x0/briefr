@@ -1,8 +1,8 @@
 """DB init/bootstrap: get_db, init_db, run_postgres_migrations. Split from database.py (Phase 3).
 
 Postgres-native (Post-B Phase 1): runtime fixup SQL is dialect-neutral (no placeholders);
-SQLite bootstrap DDL lives in ``_SQLITE_BOOTSTRAP_SCRIPT`` and is not translated.
-Postgres schema is applied via Alembic in ``run_postgres_migrations``.
+SQLite bootstrap DDL in ``init_db`` is not translated. Postgres schema is applied via
+Alembic in ``run_postgres_migrations``.
 """
 
 from __future__ import annotations
