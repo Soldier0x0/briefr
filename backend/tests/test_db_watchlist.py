@@ -97,6 +97,8 @@ def test_expired_snooze_excluded_from_active(tmp_path, monkeypatch):
             assert await list_watchlist_entries(db) == []
             assert await get_watchlist_entry(db, CVE_SNOOZE) is None
         finally:
+            await delete_watchlist_entry(db, CVE_SNOOZE)
+            await db.commit()
             await db.close()
 
     run_db_test(_run())

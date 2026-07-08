@@ -133,7 +133,7 @@ async def update_webhook_destination(
         fields.append(f"enabled = {_placeholder(pg, pg_n)}")
         if pg:
             pg_n += 1
-        params.append(int(enabled))
+        params.append(enabled if pg else int(enabled))
     if event_types is not None:
         fields.append(f"event_types = {_placeholder(pg, pg_n)}")
         if pg:

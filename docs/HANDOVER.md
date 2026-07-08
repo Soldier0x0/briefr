@@ -35,6 +35,10 @@ independent modules with no cross-module SQL dependencies.
 tests/test_watchlist.py tests/test_webhooks_*.py -q` (26 passed, SQLite);
 full suite `765 passed, 8 skipped` (SQLite).
 
+**Gemini fixes (pre-merge):** Postgres `enabled` bool param in
+`update_webhook_destination`; unique `destination_id` filter in delivery-log
+test; watchlist expired-snooze test cleanup in `finally`.
+
 **Next:** `db/cache_retention.py` (solo PR per plan).
 
 ---

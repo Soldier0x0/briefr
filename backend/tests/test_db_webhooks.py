@@ -69,7 +69,7 @@ def test_webhook_delivery_log_list(tmp_path, monkeypatch):
         try:
             await record_webhook_delivery(
                 db,
-                destination_id="env:discord",
+                destination_id="env:discord_test_unique",
                 event_type="kev_alert",
                 dedupe_key="CVE-2024-1",
                 status="ok",
@@ -77,7 +77,7 @@ def test_webhook_delivery_log_list(tmp_path, monkeypatch):
             )
             await record_webhook_delivery(
                 db,
-                destination_id="env:discord",
+                destination_id="env:discord_test_unique",
                 event_type="backup_failure",
                 dedupe_key=None,
                 status="error",
@@ -85,12 +85,17 @@ def test_webhook_delivery_log_list(tmp_path, monkeypatch):
             )
             await db.commit()
 
-            rows, total = await list_webhook_delivery_log(db)
+            rows, total = await list_webhook_delivery_log(
+                db, destination_id="env:discord_test_unique"
+            )
             assert total == 2
             assert len(rows) == 2
 
             filtered, filtered_total = await list_webhook_delivery_log(
-                db, event_type="kev_stack", limit=10
+                db,
+                destination_id="env:discord_test_unique",
+                event_type="kev_stack",
+                limit=10,
             )
             assert filtered_total == 1
             assert filtered[0]["event_type"] == "kev_alert"
