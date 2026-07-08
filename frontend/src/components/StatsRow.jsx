@@ -1,7 +1,8 @@
 import { ingestLogUrl } from '../utils/adminLinks.js'
+import ExplainTip from './ExplainTip.jsx'
 import './StatsRow.css'
 
-function StatCell({ value, label, variant, loading, onClick, interactive }) {
+function StatCell({ value, label, variant, loading, onClick, interactive, explain }) {
   const Tag = onClick ? 'button' : 'div'
   return (
     <Tag
@@ -13,7 +14,12 @@ function StatCell({ value, label, variant, loading, onClick, interactive }) {
       <div className="stat-number">
         {loading ? <span className="stat-skeleton" aria-hidden="true" /> : (value ?? '--')}
       </div>
-      <div className="stat-label">{label}</div>
+      <div className="stat-label">
+        {label}
+        {explain && (
+          <ExplainTip text={explain} label={`Explain ${label}`} />
+        )}
+      </div>
     </Tag>
   )
 }
@@ -66,6 +72,7 @@ export default function StatsRow({ stats, error, errorRequestId, onRetry, showAi
         label="EXPLOITED IN WILD"
         variant="red"
         loading={loading}
+        explain="CVEs on CISA's Known Exploited Vulnerabilities (KEV) catalog — confirmed active exploitation in the wild, not theoretical risk alone."
       />
       <StatCell
         value={stats?.patched?.toLocaleString()}

@@ -4,19 +4,20 @@ import { notifyApiError } from './Toast.jsx'
 import { toApiCveParams } from '../utils/cveFilters.js'
 import { saveUserStack } from '../utils/userStack.js'
 import { cvesToCsvRows, downloadCsv, exportFilename } from '../utils/exportCsv.js'
+import ExplainTip from './ExplainTip.jsx'
 import './FilterBar.css'
 
 const STACK_DEBOUNCE_MS = 400
 
 const QUICK_FILTERS = [
-  { id: 'all',         label: 'ALL' },
-  { id: 'watchlist',   label: 'WATCHLIST',   title: 'CVEs you have pinned to your watchlist' },
-  { id: 'kev',         label: 'KEV',         title: 'CISA Known Exploited Vulnerabilities — confirmed active exploitation in the wild' },
-  { id: 'critical',    label: 'CRITICAL' },
-  { id: 'high',        label: 'HIGH' },
-  { id: 'medium',      label: 'MEDIUM' },
-  { id: 'poc',         label: 'PoC',         title: 'CVEs with a public proof-of-concept exploit or reference' },
-  { id: 'kev_overdue', label: 'KEV OVERDUE', title: 'KEV entries past their CISA federal remediation deadline — immediate attention required' },
+  { id: 'all',         label: 'ALL',         explain: 'All severities — no quick filter applied.' },
+  { id: 'watchlist',   label: 'WATCHLIST',   explain: 'CVEs you have pinned to your watchlist.' },
+  { id: 'kev',         label: 'KEV',         explain: 'CISA Known Exploited Vulnerabilities — confirmed active exploitation in the wild.' },
+  { id: 'critical',    label: 'CRITICAL',    explain: 'CVSS base score 9.0–10.0.' },
+  { id: 'high',        label: 'HIGH',        explain: 'CVSS base score 7.0–8.9.' },
+  { id: 'medium',      label: 'MEDIUM',      explain: 'CVSS base score 4.0–6.9.' },
+  { id: 'poc',         label: 'PoC',         explain: 'CVEs with a public proof-of-concept exploit or reference.' },
+  { id: 'kev_overdue', label: 'KEV OVERDUE', explain: 'KEV entries past their CISA federal remediation deadline — immediate attention required.' },
 ]
 
 export const VENDORS = [
@@ -384,16 +385,19 @@ export default function FilterBar({
         <div className="filter-bar-filters">
           <div className="filter-buttons" role="group" aria-label="Quick filters">
             {QUICK_FILTERS.map(f => (
-              <button
-                key={f.id}
-                className={`filter-btn${active === f.id ? ' active' : ''}`}
-                onClick={() => handleQuickFilter(f.id)}
-                aria-label={`Filter: ${f.label}`}
-                aria-pressed={active === f.id}
-                title={f.title}
-              >
-                {f.label}
-              </button>
+              <span key={f.id} className="filter-btn-cell">
+                <button
+                  className={`filter-btn${active === f.id ? ' active' : ''}`}
+                  onClick={() => handleQuickFilter(f.id)}
+                  aria-label={`Filter: ${f.label}`}
+                  aria-pressed={active === f.id}
+                >
+                  {f.label}
+                </button>
+                {f.explain && (
+                  <ExplainTip text={f.explain} label={`Explain ${f.label} filter`} />
+                )}
+              </span>
             ))}
           </div>
         </div>
