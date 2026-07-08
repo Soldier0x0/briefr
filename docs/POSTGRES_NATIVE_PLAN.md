@@ -121,9 +121,9 @@ Reference implementation: `backend/db/sync_state.py`.
 | 7 | `db/enrichment.py` | 430 | **Done** — PR 5 |
 | 8–9 | `db/metadata.py` + `db/correlation.py` | 478 + 489 | **Done** — PR 6 (#326) |
 | 10 | `db/cve.py` | 544 | **Done** — PR 7 (#327) |
-| 11 | `db/init.py` | 627 | Pending — **solo PR, last** |
+| 11 | `db/init.py` | 627 | **Done** — PR 8 (#328) |
 
-**~1 PR remaining** in Phase 1.
+**Phase 1 module conversion complete** (2026-07-08).
 
 ### Legacy numbered list (same order)
 
