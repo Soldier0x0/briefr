@@ -13,7 +13,7 @@
 | **Auth** | Built-in app login + sessions (first-run `/api/auth/setup`); admin/refresh routes require the **admin role** (Sprint A0). Legacy `BRIEFR_ADMIN_API_KEY` removed. Wallboard token is **header-only** (`X-BRIEFR-Wallboard-Token`; `?token=` removed, Sprint A7). Optional Cloudflare Zero Trust at **edge** (operator policy, not in app code). |
 | **Rate limits** | Token buckets on IOC, refresh, admin, auth; set `RATE_LIMIT_ENABLED=1` in production. |
 | **API queue** | Outbound API serialization (#221) for NVD/OTX/etc. |
-| **Correlation** | Engine v2 — DB-backed campaigns, nightly OTX, drawer Intel tab. |
+| **Correlation** | Engine v2 — DB-backed campaigns, nightly OTX, drawer Intel tab. Intel tab: compact shared-infrastructure table (E-PR2), styled dismiss/evidence controls. |
 | **Data utilization (C2)** | Drawer **CAPEC** chips (CIRCL), **CISA SSVC** section (Vulnrichment), **KEV ransomware** badge on feed cards + drawer; OTX targeted countries; OSV drawer table; EPSS percentile. |
 | **Detection (D1)** | Generated Sigma rules use **CWE class templates** when no ATT&CK technique is mapped (`briefr_basis`: `attack_technique` \| `cwe` \| `generic`). |
 | **Detection (D2)** | **`DetectionContext`** scaffold: `feed_cache` keys `detection_ctx:{cve_id}` hold `{cwe_ids, product, class, artifacts, model, provider, generated_at}`; read on detection/forge paths; written by scheduler job (`DETECTION_CONTEXT_SYNC_ENABLED=0` default). Generated rules add `briefr_class` when context is present. |

@@ -43,7 +43,7 @@ function CorrelationEvidence({ evidence }) {
   if (!items.length) return null
   return (
     <details className="corr-evidence">
-      <summary className="corr-evidence-toggle mono">Show evidence</summary>
+      <summary className="corr-evidence-toggle mono">Evidence</summary>
       <ul className="corr-evidence-list">
         {items.map((ev, idx) => (
           <li key={`${ev.type}-${idx}`} className="mono corr-evidence-item">
@@ -60,6 +60,80 @@ function CorrelationEvidence({ evidence }) {
         ))}
       </ul>
     </details>
+  )
+}
+
+const INFRA_PREVIEW = 3
+
+function CorrelationDismiss({ onDismiss, body, label = 'Dismiss' }) {
+  if (!onDismiss) return null
+  return (
+    <button
+      type="button"
+      className="corr-dismiss-btn mono"
+      onClick={() => onDismiss(body)}
+      title="Mark as not related — hides this link for your session"
+      aria-label={`${label} — not related to this CVE`}
+    >
+      {label}
+    </button>
+  )
+}
+
+function InfrastructureList({ items, onSelectCve, onDismiss }) {
+  const [showAll, setShowAll] = useState(false)
+  const visible = showAll ? items : items.slice(0, INFRA_PREVIEW)
+  const hidden = Math.max(0, items.length - INFRA_PREVIEW)
+
+  return (
+    <>
+      <div className="corr-infra-table" role="table" aria-label="Shared infrastructure peers">
+        <div className="corr-infra-head mono" role="row">
+          <span role="columnheader">Peer CVE</span>
+          <span role="columnheader">Conf.</span>
+          <span role="columnheader">IPs</span>
+          <span role="columnheader" className="corr-infra-col-actions"> </span>
+        </div>
+        {visible.map(item => (
+          <div key={item.cve_id_b} className="corr-infra-row" role="row">
+            <span className="corr-infra-peer" role="cell">
+              <button
+                type="button"
+                className="corr-cve-link mono"
+                onClick={() => onSelectCve?.(item.cve_id_b)}
+                aria-label={`Open ${item.cve_id_b} in drawer`}
+              >
+                {item.cve_id_b}
+              </button>
+            </span>
+            <span className="corr-infra-conf" role="cell">
+              <ConfidenceBadge confidence={item.confidence} />
+            </span>
+            <span className="corr-infra-ips mono" role="cell">
+              {item.shared_ip_count ?? 0}
+            </span>
+            <span className="corr-infra-actions" role="cell">
+              <CorrelationEvidence evidence={item.evidence} />
+              <CorrelationDismiss
+                onDismiss={onDismiss}
+                body={{ scope: 'infrastructure', key: { cve_id_b: item.cve_id_b } }}
+                label="Dismiss"
+              />
+            </span>
+          </div>
+        ))}
+      </div>
+      {hidden > 0 && !showAll && (
+        <button
+          type="button"
+          className="corr-show-more-btn mono"
+          onClick={() => setShowAll(true)}
+          aria-label={`Show ${hidden} more shared infrastructure peers`}
+        >
+          + {hidden} more peer{hidden === 1 ? '' : 's'}
+        </button>
+      )}
+    </>
   )
 }
 function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
@@ -133,88 +207,29 @@ function CorrelationFindings({ correlation, loading, onSelectCve, onDismiss }) {
                 </p>
               </div>
               <CorrelationEvidence evidence={item.evidence} />
-              {onDismiss && (
-                <button
-                  type="button"
-                  className="corr-dismiss-btn mono"
-                  onClick={() => onDismiss({ scope: 'campaign_id', key: { campaign_id: item.campaign_id } })}
-                >
-                  Not related
-                </button>
-              )}
+              <div className="corr-finding-foot">
+                <CorrelationDismiss
+                  onDismiss={onDismiss}
+                  body={{ scope: 'campaign_id', key: { campaign_id: item.campaign_id } }}
+                />
+              </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Level 1: Infrastructure */}
       {infra.length > 0 && (
         <div className="corr-group" aria-label="Infrastructure correlation">
           <p className="corr-group-label mono">// SHARED INFRASTRUCTURE</p>
-          {infra.map(item => (
-            <div key={item.cve_id_b} className="corr-finding">
-              <div className="corr-finding-head">
-                <ConfidenceBadge confidence={item.confidence} />
-                <p className="corr-finding-text">
-                  <span className="corr-lane-tag mono">Shared infrastructure</span>{' '}
-                  {item.summary ? (
-                    (() => {
-                      const peer = item.cve_id_b
-                      const parts = item.summary.split(peer)
-                      if (parts.length === 2) {
-                        return (
-                          <>
-                            {parts[0]}
-                            <button
-                              type="button"
-                              className="corr-cve-link mono"
-                              onClick={() => onSelectCve?.(peer)}
-                              aria-label={`Open ${peer} in drawer`}
-                            >
-                              {peer}
-                            </button>
-                            {parts[1]}
-                          </>
-                        )
-                      }
-                      return item.summary
-                    })()
-                  ) : (
-                    <>
-                      This CVE shares exploitation infrastructure with{' '}
-                      <button
-                        type="button"
-                        className="corr-cve-link mono"
-                        onClick={() => onSelectCve?.(item.cve_id_b)}
-                        aria-label={`Open ${item.cve_id_b} in drawer`}
-                      >
-                        {item.cve_id_b}
-                      </button>
-                      {' '}({item.shared_ip_count ?? 0} common IP
-                      {(item.shared_ip_count ?? 0) !== 1 ? 's' : ''}).
-                    </>
-                  )}
-                </p>
-              </div>
-              <CorrelationEvidence evidence={item.evidence} />
-              {onDismiss && (
-                <button
-                  type="button"
-                  className="corr-dismiss-btn mono"
-                  onClick={() => onDismiss({
-                    scope: 'infrastructure',
-                    key: { cve_id_b: item.cve_id_b },
-                  })}
-                >
-                  Not related
-                </button>
-              )}
-            </div>
-          ))}
+          <InfrastructureList
+            items={infra}
+            onSelectCve={onSelectCve}
+            onDismiss={onDismiss}
+          />
         </div>
       )}
 
-      {/* Level 2: Actor / Sector */}
+      {/* Level 2: Actor / Sector — infra block replaced above */}
       {actor.length > 0 && (
         <div className="corr-group" aria-label="Actor correlation">
           <p className="corr-group-label mono">// ACTOR ATTRIBUTION</p>

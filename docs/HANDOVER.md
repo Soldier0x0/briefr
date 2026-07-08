@@ -12,6 +12,15 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — E-PR2 merged: Intel tab CSS + compact infrastructure
+
+**What:** Missing correlation CSS; shared-infra compact table (3 + expand);
+`drawer-investigate-btn` in `DetailDrawer.css`; dismiss controls styled.
+
+**Next:** E-PR3 drawer readability.
+
+---
+
 ## 2026-07-08 — Track E started: UI/UX automation (10 PRs)
 
 **Decision:** Track D closed. Post-B Phase 0–3 done. Primary code track is now

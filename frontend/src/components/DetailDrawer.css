@@ -1381,6 +1381,159 @@
   background: transparent;
 }
 
+.corr-lane-tag {
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  color: var(--text2);
+  border: 1px solid var(--border2);
+  padding: 1px 5px;
+  margin-right: 4px;
+}
+
+.corr-conflict-note {
+  color: var(--amber);
+  font-size: 0.75rem;
+}
+
+.corr-finding-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.corr-dismiss-btn {
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--text2);
+  background: transparent;
+  border: 1px solid var(--border2);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.corr-dismiss-btn:hover {
+  color: var(--text);
+  border-color: var(--text3);
+  background: var(--bg2);
+}
+
+.corr-evidence {
+  margin-top: 6px;
+}
+
+.corr-evidence-toggle {
+  font-size: 0.6875rem;
+  color: var(--accent);
+  cursor: pointer;
+  list-style: none;
+}
+
+.corr-evidence-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.corr-evidence-list {
+  margin: 6px 0 0;
+  padding-left: 1rem;
+  font-size: 0.75rem;
+  color: var(--text2);
+}
+
+.corr-evidence-item {
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.corr-infra-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+}
+
+.corr-infra-head,
+.corr-infra-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) auto auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+}
+
+.corr-infra-head {
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  color: var(--text2);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+
+.corr-infra-row + .corr-infra-row {
+  border-top: 1px solid var(--border);
+}
+
+.corr-infra-peer {
+  min-width: 0;
+}
+
+.corr-infra-ips {
+  font-size: 0.75rem;
+  color: var(--text2);
+  text-align: center;
+}
+
+.corr-infra-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.corr-infra-actions .corr-evidence {
+  margin-top: 0;
+}
+
+.corr-infra-actions .corr-dismiss-btn {
+  flex-shrink: 0;
+}
+
+.corr-show-more-btn {
+  margin-top: 8px;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.corr-show-more-btn:hover {
+  color: var(--text);
+}
+
+.drawer-investigate-btn {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--red);
+  background: var(--red-dim);
+  border: 1px solid var(--red);
+  padding: 5px 10px;
+  cursor: pointer;
+  margin-top: 8px;
+  align-self: flex-start;
+}
+
+.drawer-investigate-btn:hover {
+  background: var(--bg2);
+  color: var(--text);
+}
+
 /* ── BRIEFR Risk Score breakdown (Overview tab) ──────────── */
 
 .drawer-risk-section {
