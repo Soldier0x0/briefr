@@ -1,18 +1,18 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useId } from 'react'
 import { Clock } from 'lucide-react'
+import {
+  handleApiQueueDropdownKeyDown,
+  summarizeQueue,
+} from '../utils/apiQueuePresentation.js'
 import './ApiQueueIndicator.css'
 
-function formatSourceLabel(key) {
-  return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-}
-
-export default function ApiQueueIndicator({ apiQueue, className = '' }) {
-  const [open, setOpen] = useState(false)
+export default function ApiQueueIndicator({ apiQueue, className = '', defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen)
   const ref = useRef(null)
+  const panelId = useId()
 
-  const queued = apiQueue?.total_queued ?? 0
-  const active = apiQueue?.total_active ?? 0
-  const sources = apiQueue?.sources ?? {}
+  const summary = summarizeQueue(apiQueue)
+  const { queued, active, count, tone, ariaLabel, rows } = summary
   const pending = Boolean(apiQueue?.has_pending || queued > 0 || active > 0)
 
   useEffect(() => {
@@ -20,50 +20,66 @@ export default function ApiQueueIndicator({ apiQueue, className = '' }) {
     function onDown(e) {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false)
     }
+    function onKey(e) {
+      handleApiQueueDropdownKeyDown(e, setOpen)
+    }
     document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
   }, [open])
 
   if (!pending) return null
-
-  const count = queued + active
-  const sourceEntries = Object.entries(sources)
 
   return (
     <div className={`api-queue-indicator ${className}`.trim()} ref={ref}>
       <button
         type="button"
-        className="api-queue-btn"
+        className={`api-queue-btn api-queue-btn--${tone}`}
         onClick={() => setOpen(v => !v)}
-        aria-label={`${count} API request${count === 1 ? '' : 's'} queued or in progress`}
-        title="Outbound API requests waiting on rate limits"
+        aria-expanded={open}
+        aria-controls={panelId}
+        aria-label={ariaLabel}
+        title="Outbound API request queue"
       >
         <Clock size={14} strokeWidth={2} aria-hidden="true" />
         <span className="api-queue-count mono">{count}</span>
       </button>
       {open && (
-        <div className="api-queue-dropdown" role="status">
+        <div className="api-queue-dropdown" id={panelId} role="region" aria-label="API queue details">
           <div className="api-queue-dropdown-title">API queue</div>
           <p className="api-queue-dropdown-sub">
-            Requests wait for provider rate limits — nothing is dropped.
+            Requests wait for provider limits — nothing is dropped.
           </p>
-          <div className="api-queue-summary mono">
-            <span>{queued} queued</span>
-            <span aria-hidden="true"> · </span>
-            <span>{active} active</span>
+          <div className="api-queue-summary mono" aria-live="polite">
+            <span className="api-queue-summary-stat">{queued} queued</span>
+            <span className="api-queue-summary-stat">{active} active</span>
           </div>
-          {sourceEntries.length > 0 && (
-            <ul className="api-queue-sources">
-              {sourceEntries.map(([key, info]) => (
-                <li key={key}>
-                  <span className="api-queue-source-name">{formatSourceLabel(key)}</span>
-                  <span className="api-queue-source-meta mono">
-                    {[
-                      info.queued > 0 && `${info.queued} waiting`,
-                      info.active > 0 && `${info.active} active`,
-                      info.paused_for_seconds > 0 && `${info.paused_for_seconds}s pause`,
-                    ].filter(Boolean).join(' · ')}
-                  </span>
+          {rows.length > 0 && (
+            <ul className="api-queue-requests">
+              {rows.map(row => (
+                <li
+                  key={row.key}
+                  className={`api-queue-request api-queue-request--${row.state}`}
+                >
+                  <div className="api-queue-request-head">
+                    <span className="api-queue-request-dot" aria-hidden="true">●</span>
+                    <span className="api-queue-request-source">{row.source}</span>
+                    <span className={`api-queue-request-state api-queue-request-state--${row.state}`}>
+                      {row.stateLabel}
+                    </span>
+                  </div>
+                  {row.displayLabel && (
+                    <div className="api-queue-request-label">{row.displayLabel}</div>
+                  )}
+                  {row.contextId && (
+                    <div className="api-queue-request-context mono">{row.contextId}</div>
+                  )}
+                  {row.detail && (
+                    <div className="api-queue-request-detail">{row.detail}</div>
+                  )}
                 </li>
               ))}
             </ul>

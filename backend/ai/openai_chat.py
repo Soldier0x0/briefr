@@ -17,6 +17,9 @@ async def openai_chat_completion(
     temperature: float = 0.0,
     timeout: float = 60.0,
     extra_headers: dict[str, str] | None = None,
+    queue_operation: str | None = None,
+    queue_context_type: str | None = None,
+    queue_context_id: str | None = None,
 ) -> str:
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -40,6 +43,9 @@ async def openai_chat_completion(
         retries=0,
         wait_on_rate_limit=True,
         wait_on_circuit=True,
+        queue_operation=queue_operation,
+        queue_context_type=queue_context_type,
+        queue_context_id=queue_context_id,
     )
     apply_rate_limit_headers(source, response.headers, estimated_tokens=max_tokens + 500)
     try:

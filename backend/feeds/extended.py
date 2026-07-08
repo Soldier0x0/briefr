@@ -125,6 +125,9 @@ async def fetch_sploitus_exploits(cve_id: str, limit: int = 25) -> list[dict] | 
             headers=headers,
             timeout=30.0,
             record_client_error=False,
+            queue_operation="exploit_search",
+            queue_context_type="cve",
+            queue_context_id=query,
         )
         await record_api_call("sploitus", 1)
 
@@ -196,8 +199,10 @@ async def fetch_greynoise_ip(ip: str, api_key: str) -> dict | None:
                 "Accept": "application/json",
             },
             timeout=20.0,
-            # GreyNoise free tier is 50/week — never burn quota on retries.
             retries=0,
+            queue_operation="ip_lookup",
+            queue_context_type="ip",
+            queue_context_id=ip,
         )
         await record_api_call("greynoise", 1)
         data = response.json()
@@ -245,6 +250,9 @@ async def fetch_malwarebazaar_hash(
             data={"query": "get_info", "hash": file_hash.lower()},
             headers=abusech_headers(abusech_auth_key),
             timeout=25.0,
+            queue_operation="hash_lookup",
+            queue_context_type="hash",
+            queue_context_id=file_hash.lower(),
         )
         await record_api_call("malwarebazaar", 1)
         data = response.json()
@@ -309,6 +317,9 @@ async def fetch_urlhaus_indicator(
                 json=payload,
                 headers=headers,
                 timeout=25.0,
+                queue_operation="url_lookup",
+                queue_context_type="domain",
+                queue_context_id=value.lower(),
             )
         else:
             url = value if value.startswith(("http://", "https://")) else f"http://{value}"
@@ -322,6 +333,9 @@ async def fetch_urlhaus_indicator(
                 data=form,
                 headers=headers,
                 timeout=25.0,
+                queue_operation="url_lookup",
+                queue_context_type="url",
+                queue_context_id=url,
             )
         await record_api_call("urlhaus", 1)
 
@@ -426,6 +440,9 @@ async def fetch_circl_cve(cve_id: str) -> dict | None:
             f"{CIRCL_VULN_URL}/{cve_id.upper()}",
             headers=_circl_headers(),
             timeout=25.0,
+            queue_operation="cve_lookup",
+            queue_context_type="cve",
+            queue_context_id=cve_id.upper(),
         )
         await record_api_call("circl", 1)
         record = response.json()

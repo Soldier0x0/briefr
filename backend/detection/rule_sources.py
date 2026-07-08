@@ -41,8 +41,17 @@ def _gh_headers(token: str = "") -> dict[str, str]:
     return headers
 
 
-async def _github_search(query: str, token: str = "") -> list[dict]:
+async def _github_search(
+    query: str,
+    token: str = "",
+    *,
+    cve_id: str | None = None,
+    context_type: str | None = None,
+    context_id: str | None = None,
+) -> list[dict]:
     """Search GitHub code. Returns items list or [] on hard errors."""
+    q_context_type = "cve" if cve_id else context_type
+    q_context_id = cve_id or context_id
     try:
         resp = await resilient_get(
             "github",
@@ -51,6 +60,9 @@ async def _github_search(query: str, token: str = "") -> list[dict]:
             headers=_gh_headers(token),
             timeout=15.0,
             retries=0,
+            queue_operation="detection_rule_search" if q_context_id else "exploit_search",
+            queue_context_type=q_context_type,
+            queue_context_id=q_context_id,
         )
         return resp.json().get("items", [])
     except httpx.HTTPStatusError as exc:
@@ -64,7 +76,7 @@ async def _github_search(query: str, token: str = "") -> list[dict]:
         return []
 
 
-async def _fetch_raw(url: str, token: str = "") -> str | None:
+async def _fetch_raw(url: str, token: str = "", *, cve_id: str | None = None) -> str | None:
     """Fetch raw file content from GitHub. Returns None on error."""
     try:
         resp = await resilient_get(
@@ -73,6 +85,9 @@ async def _fetch_raw(url: str, token: str = "") -> str | None:
             headers=_gh_headers(token),
             timeout=10.0,
             retries=0,
+            queue_operation="repository_lookup",
+            queue_context_type="cve" if cve_id else None,
+            queue_context_id=cve_id,
         )
         return resp.text
     except Exception as exc:
@@ -160,7 +175,7 @@ async def find_sigma_rules(
     seen_paths: set[str] = set()
 
     # Search by CVE ID first
-    items = await _github_search(f"{cve_id}+repo:{SIGMA_REPO}", github_token)
+    items = await _github_search(f"{cve_id}+repo:{SIGMA_REPO}", github_token, cve_id=cve_id)
     for item in items:
         path = item.get("path", "")
         if not path.endswith(".yml") or path in seen_paths:
@@ -182,7 +197,11 @@ async def find_sigma_rules(
         for tid in technique_ids[:3]:
             if not tid:
                 continue
-            tech_items = await _github_search(f"{tid}+repo:{SIGMA_REPO}", github_token)
+            tech_items = await _github_search(
+                f"{tid}+repo:{SIGMA_REPO}",
+                github_token,
+                cve_id=cve_id,
+            )
             for item in tech_items[:5]:
                 path = item.get("path", "")
                 if not path.endswith(".yml") or path in seen_paths:
@@ -206,7 +225,7 @@ async def find_sigma_rules(
     fetched = 0
     for rule in rules:
         if fetched < MAX_CONTENT_FETCHES:
-            content = await _fetch_raw(rule["download_url"], github_token)
+            content = await _fetch_raw(rule["download_url"], github_token, cve_id=cve_id)
             fetched += 1
             if content:
                 rule["content"] = content
@@ -243,7 +262,12 @@ async def find_elastic_rules(
     seen_paths: set[str] = set()
 
     for tid in sorted_tids[:3]:
-        items = await _github_search(f"{tid}+repo:{ELASTIC_REPO}", github_token)
+        items = await _github_search(
+            f"{tid}+repo:{ELASTIC_REPO}",
+            github_token,
+            context_type="observable",
+            context_id=tid,
+        )
         for item in items[:5]:
             path = item.get("path", "")
             if not path.endswith(".toml") or path in seen_paths:

@@ -199,7 +199,12 @@ async def safe_webhook_request(
 
     attempt = 0
     while True:
-        await await_api_slot(source)
+        slot_id = await await_api_slot(
+            source,
+            operation="webhook_delivery",
+            context_type="url",
+            context_id=pinned_url,
+        )
         try:
             try:
                 response = await client.request(
@@ -244,7 +249,7 @@ async def safe_webhook_request(
             apply_rate_limit_headers(source, response.headers)
             return response
         finally:
-            release_api_slot(source)
+            release_api_slot(source, slot_id)
 
 
 def webhook_json_payload(message: str, *, event_type: str, dedupe_key: str | None = None) -> dict[str, Any]:
