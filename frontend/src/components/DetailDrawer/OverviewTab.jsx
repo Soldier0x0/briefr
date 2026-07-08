@@ -9,12 +9,15 @@ import {
   hasMeaningfulEpssVariation,
 } from '../../utils/epssSparkline.js'
 import {
-  buildRiskHeroSummary,
+  buildOperationalHeroSummary,
   componentBarColor,
-  getAssetExposureStatus,
-  getRiskWeights,
+  environmentTierColor,
+  getEnvironmentDisplay,
+  getOperationalPriorityDisplay,
+  operationalBandColor,
   riskScoreDisplayColor,
-  RISK_COMPONENT_LABELS,
+  THREAT_COMPONENT_LABELS,
+  threatComponentRaw,
 } from '../../scoring/riskScore.js'
 import {
   buildKevRemediationDisplay,
@@ -52,7 +55,7 @@ function CriticalThreatSignals({ cve, riskScore, momentumData }) {
     })
   }
 
-  const exploitScore = riskScore?.components?.exploit?.score ?? 0
+  const exploitScore = threatComponentRaw(riskScore, 'exploit')
   if (exploitScore >= 1.0) {
     signals.push({
       key: 'msf',
@@ -79,7 +82,7 @@ function CriticalThreatSignals({ cve, riskScore, momentumData }) {
     })
   }
 
-  const mom = momentumData?.momentum_score ?? riskScore?.momentumScore ?? 0
+  const mom = momentumData?.momentum_score ?? riskScore?.momentumScore ?? threatComponentRaw(riskScore, 'momentum') ?? 0
   if (mom >= 0.5) {
     signals.push({
       key: 'momentum',
@@ -417,12 +420,12 @@ function RiskScoreBar({ score }) {
   )
 }
 
-function AssetExposureSection({ riskScore, onOpenProfile, cve }) {
-  const status = getAssetExposureStatus(riskScore)
-  if (!status) return null
+function AssetExposureSection({ riskScore, onOpenProfile }) {
+  const env = getEnvironmentDisplay(riskScore)
+  if (!env) return null
 
-  const tierClass = `drawer-asset-exposure--${status.tier.toLowerCase().replace(/_/g, '-')}`
-  const compact = status.tier === 'NOT_LOADED'
+  const tierClass = `drawer-asset-exposure--${env.tier.toLowerCase().replace(/_/g, '-')}`
+  const compact = env.tier === 'UNKNOWN'
 
   return (
     <section
@@ -430,28 +433,20 @@ function AssetExposureSection({ riskScore, onOpenProfile, cve }) {
       aria-labelledby="asset-exposure-heading"
     >
       <h4 id="asset-exposure-heading" className="drawer-asset-exposure-label mono">
-        ASSET EXPOSURE
+        ENVIRONMENT RELEVANCE
       </h4>
       <div className="drawer-asset-exposure-status">
-        <span className="drawer-asset-exposure-tier mono">{status.label}</span>
-        <span className="drawer-asset-exposure-headline mono">{status.headline}</span>
+        <span
+          className="drawer-asset-exposure-tier mono"
+          style={{ color: environmentTierColor(env.tier) }}
+        >
+          {env.label}
+        </span>
       </div>
-      <p className="drawer-asset-exposure-detail">{status.detail}</p>
-      {!compact && status.matchReason && (
-        <p className="drawer-asset-exposure-reason mono" aria-label="Match reason">
-          Match: {status.matchReason}
-        </p>
+      {env.evidence && (
+        <p className="drawer-asset-exposure-detail">{env.evidence}</p>
       )}
       {compact && onOpenProfile && (
-        <button
-          type="button"
-          className="drawer-asset-exposure-cta mono"
-          onClick={onOpenProfile}
-        >
-          Load asset profile
-        </button>
-      )}
-      {!compact && status.tier === 'NOT_LOADED' && onOpenProfile && (
         <button
           type="button"
           className="drawer-asset-exposure-cta mono"
@@ -464,149 +459,160 @@ function AssetExposureSection({ riskScore, onOpenProfile, cve }) {
   )
 }
 
-function RiskScoreBreakdownDetails({ cve, riskScore, momentumData }) {
-  const { total, components, hasProfile } = riskScore
-  const assetExposure = getAssetExposureStatus(riskScore)
+function EnvironmentTierChip({ riskScore }) {
+  const env = getEnvironmentDisplay(riskScore)
+  if (!env) return null
+  return (
+    <span
+      className="drawer-op-env-chip mono"
+      style={{ color: environmentTierColor(env.tier) }}
+      title={env.evidence || env.label}
+    >
+      {env.label}
+      {env.versionVerified ? ' ✓' : ''}
+    </span>
+  )
+}
 
-  const ORDERED_KEYS = ['asset', 'kev', 'epss', 'exploit', 'cvss', 'momentum']
-  const breakdownRows = ORDERED_KEYS
-    .filter(key => components[key] != null)
-    .map(key => ({
-      key,
-      label: RISK_COMPONENT_LABELS[key] || key,
-      ...components[key],
-    }))
+function OperationalPriorityBreakdown({ riskScore, momentumData }) {
+  const threat = riskScore?.threat
+  const env = getEnvironmentDisplay(riskScore)
+  const op = getOperationalPriorityDisplay(riskScore)
+  if (!threat) return null
 
-  const weights = riskScore.weights || getRiskWeights()
-  const pointsSum = breakdownRows.reduce((sum, row) => sum + (row.points || 0), 0)
-  const formulaParts = breakdownRows.map(row => row.points.toFixed(1))
+  const rows = Object.entries(THREAT_COMPONENT_LABELS).map(([key, label]) => ({
+    key,
+    label,
+    ...threat.components[key],
+  })).filter(row => row.raw != null)
+
+  const pointsSum = rows.reduce((sum, row) => sum + (row.points || 0), 0)
 
   return (
     <div id="risk-breakdown-details" className="drawer-risk-breakdown-inline">
       <p className="drawer-risk-methodology-hint">
-        BRIEFR Risk Score v1.1b — weighted additive model. Signal strength and score contribution below.
+        Threat Score v1.0 — asset-independent exploitation credibility. Environment tier is categorical and never folded into Threat.
       </p>
       <p className="drawer-risk-signal-legend mono">
-        Signal strength (0–1) · Contribution = signal × weight × 100
+        Signal strength (0–1) · Contribution = signal × renormalized weight × 100
       </p>
+      {env && (
+        <p className="drawer-risk-comp-sentence">
+          <span className="mono">Environment:</span> {env.label}
+          {env.evidence ? ` — ${env.evidence}` : ''}
+        </p>
+      )}
+      {op?.escalated && (
+        <p className="drawer-risk-comp-sentence">
+          Correlation escalation applied — one-band lift from {riskScore.operational_priority?.base_band}.
+        </p>
+      )}
+      {op?.rationale && (
+        <p className="drawer-risk-comp-sentence">{op.rationale}</p>
+      )}
       <div className="drawer-risk-components">
-        {breakdownRows.map(row => {
-          const isAssetWithoutProfile = row.key === 'asset' && !hasProfile
-          const maxPts = row.weight * 100
-          return (
-            <div key={row.key} className="drawer-risk-component">
-              <div className="drawer-risk-comp-header drawer-risk-comp-header--semantics">
-                <span className="drawer-risk-comp-label mono">{row.label}</span>
-                <div className="drawer-risk-signal-col">
-                  <span className="drawer-risk-signal-caption mono">Signal</span>
-                  {isAssetWithoutProfile ? (
-                    <span
-                      className="drawer-risk-comp-unknown mono"
-                      title="Asset signal unavailable until profile is loaded"
-                    >
-                      N/A
-                    </span>
-                  ) : (
-                    <>
-                      <RiskScoreBar score={row.score} />
-                      <span className="drawer-risk-signal-value mono">{row.score.toFixed(3)}</span>
-                    </>
-                  )}
-                </div>
-                <span className="drawer-risk-comp-points mono" title="Weighted contribution to BRIEFR score">
-                  {isAssetWithoutProfile
-                    ? '—'
-                    : `${row.points.toFixed(1)} / ${maxPts.toFixed(0)} pts`}
-                </span>
+        {rows.map(row => (
+          <div key={row.key} className="drawer-risk-component">
+            <div className="drawer-risk-comp-header drawer-risk-comp-header--semantics">
+              <span className="drawer-risk-comp-label mono">{row.label}</span>
+              <div className="drawer-risk-signal-col">
+                <span className="drawer-risk-signal-caption mono">Signal</span>
+                <RiskScoreBar score={row.raw} />
+                <span className="drawer-risk-signal-value mono">{row.raw.toFixed(3)}</span>
               </div>
-              <p className="drawer-risk-comp-formula mono" aria-label={`${row.label} calculation`}>
-                {isAssetWithoutProfile
-                  ? (assetExposure?.formulaNote || 'Neutral 0.5 placeholder — not exposure probability')
-                  : `${row.score.toFixed(3)} × ${(row.weight * 100).toFixed(0)}% × 100 = ${row.points.toFixed(1)} pts`}
-              </p>
-              {row.key === 'momentum' && momentumData?.momentum_signals?.length > 0 ? (
-                <ul className="drawer-risk-momentum-signals" aria-label="Momentum signals">
-                  {momentumData.momentum_signals.map((sig, i) => (
-                    <li key={i} className="drawer-risk-momentum-signal mono">
-                      {sig.description}
-                      <span className="drawer-risk-momentum-contrib">
-                        {sig.contribution > 0 ? ` (+${sig.contribution.toFixed(2)})` : ''}
-                      </span>
-                    </li>
-                  ))}
-                  <li className="drawer-risk-momentum-signal mono drawer-risk-momentum-total">
-                    Momentum score = min(1.0, Σ signals) = {(momentumData.momentum_score ?? 0).toFixed(3)}
-                  </li>
-                </ul>
-              ) : isAssetWithoutProfile ? (
-                <p className="drawer-risk-comp-sentence">
-                  The score uses a neutral 0.5 asset placeholder until a profile is loaded — this is not organizational exposure probability.
-                </p>
-              ) : row.sentence ? (
-                <p className="drawer-risk-comp-sentence">{row.sentence}</p>
-              ) : null}
+              <span className="drawer-risk-comp-points mono">
+                {row.points.toFixed(1)} / {(row.weight * 100).toFixed(0)} pts
+              </span>
             </div>
-          )
-        })}
+            <p className="drawer-risk-comp-formula mono">
+              {row.raw.toFixed(3)} × {(row.weight * 100).toFixed(1)}% × 100 = {row.points.toFixed(1)} pts
+            </p>
+          </div>
+        ))}
       </div>
-      <p className="drawer-risk-total-formula mono" aria-label="Risk score total calculation">
-        {formulaParts.join(' + ')} = {pointsSum.toFixed(1)} → score {total.toFixed(1)} / 100
-        {!hasProfile && (
-          <span className="drawer-risk-placeholder-note">
-            {' '}(includes neutral asset placeholder — not exposure)
-          </span>
-        )}
+      <p className="drawer-risk-total-formula mono">
+        Threat additive {threat.additive_score?.toFixed(1) ?? pointsSum.toFixed(1)}
+        {threat.kev_floor_applied ? ` → KEV floor ${threat.score.toFixed(1)}` : ` → ${threat.score.toFixed(1)}`}
+        {' '}/ 100 ({threat.band})
       </p>
-      <p className="drawer-risk-weights mono">
-        v1.1b weights — Asset {(weights.asset * 100).toFixed(0)}% · KEV {(weights.kev * 100).toFixed(0)}% · EPSS {(weights.epss * 100).toFixed(0)}% · Exploit {(weights.exploit * 100).toFixed(0)}% · CVSS {(weights.cvss * 100).toFixed(0)}% · Momentum {(weights.momentum * 100).toFixed(0)}%
-      </p>
+      {momentumData?.momentum_signals?.length > 0 && (
+        <ul className="drawer-risk-momentum-signals" aria-label="Momentum signals">
+          {momentumData.momentum_signals.map((sig, i) => (
+            <li key={i} className="drawer-risk-momentum-signal mono">
+              {sig.description}
+              <span className="drawer-risk-momentum-contrib">
+                {sig.contribution > 0 ? ` (+${sig.contribution.toFixed(2)})` : ''}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
 
-function RiskScoreHero({ cve, riskScore, riskLoading, momentumData }) {
+function OperationalPriorityHero({ cve, riskScore, riskLoading, momentumData }) {
   const [expanded, setExpanded] = useState(false)
 
   if (riskLoading) {
     return (
-      <section className="drawer-section drawer-risk-hero-section" aria-labelledby="risk-score-heading">
-        <h3 id="risk-score-heading" className="drawer-risk-section-label mono">
-          // BRIEFR RISK SCORE
+      <section className="drawer-section drawer-risk-hero-section" aria-labelledby="op-priority-heading">
+        <h3 id="op-priority-heading" className="drawer-risk-section-label mono">
+          // OPERATIONAL PRIORITY
         </h3>
         <p className="drawer-risk-summary mono" style={{ color: 'var(--text-muted, var(--text3))' }}>
-          Computing risk score…
+          Computing priority…
         </p>
       </section>
     )
   }
   if (!riskScore || !cve) return null
 
-  const { total, hasProfile } = riskScore
-  const totalColor = riskScoreDisplayColor(total, cve?.severity)
-  const summary = buildRiskHeroSummary(cve, riskScore)
+  const op = getOperationalPriorityDisplay(riskScore)
+  const threat = riskScore.threat
+  const env = getEnvironmentDisplay(riskScore)
+  if (!op || !threat) return null
+
+  const summary = buildOperationalHeroSummary(cve, riskScore)
+  const threatColor = riskScoreDisplayColor(threat.score, cve?.severity)
 
   return (
-    <section className="drawer-section drawer-risk-hero-section" aria-labelledby="risk-score-heading">
-      <h3 id="risk-score-heading" className="drawer-risk-section-label mono">
-        // BRIEFR RISK SCORE
+    <section className="drawer-section drawer-risk-hero-section" aria-labelledby="op-priority-heading">
+      <h3 id="op-priority-heading" className="drawer-risk-section-label mono">
+        // OPERATIONAL PRIORITY
       </h3>
-      <div className="drawer-risk-hero">
+      <div className="drawer-risk-hero drawer-op-hero">
         <div
-          className="drawer-risk-total"
-          style={{ color: totalColor }}
-          aria-label={
-            !hasProfile
-              ? `Risk score: ${total.toFixed(1)} out of 100. Asset exposure unknown until profile is loaded.`
-              : `Risk score: ${total.toFixed(1)} out of 100`
-          }
+          className="drawer-op-band mono"
+          style={{ color: operationalBandColor(op.band) }}
+          aria-label={`Operational priority ${op.band}${op.provisional ? ', provisional' : ''}`}
         >
-          {total.toFixed(1)}
-          {riskScore.momentumScore > 0.5 && (
-            <span className="drawer-risk-momentum-arrow" aria-label="Rising threat momentum">↑</span>
+          {op.band}
+          {op.provisional && (
+            <span className="drawer-op-provisional" title="Environment unknown — priority may change once a profile is loaded">
+              *
+            </span>
           )}
+        </div>
+        <div className="drawer-op-metrics">
+          <div
+            className="drawer-op-threat mono"
+            style={{ color: threatColor }}
+            aria-label={`Threat score ${threat.score} out of 100, band ${threat.band}`}
+          >
+            Threat {threat.score.toFixed(1)}
+            <span className="drawer-op-threat-band"> ({threat.band})</span>
+            {riskScore.momentumScore > 0.5 && (
+              <span className="drawer-risk-momentum-arrow" aria-label="Rising threat momentum">↑</span>
+            )}
+          </div>
+          <EnvironmentTierChip riskScore={riskScore} />
         </div>
         {summary && (
           <p className="drawer-risk-summary mono">{summary}</p>
+        )}
+        {env?.evidence && env.tier !== 'UNKNOWN' && (
+          <p className="drawer-op-env-detail mono">{env.evidence}</p>
         )}
       </div>
 
@@ -621,8 +627,7 @@ function RiskScoreHero({ cve, riskScore, riskLoading, momentumData }) {
       </button>
 
       {expanded && (
-        <RiskScoreBreakdownDetails
-          cve={cve}
+        <OperationalPriorityBreakdown
           riskScore={riskScore}
           momentumData={momentumData}
         />
@@ -649,7 +654,7 @@ export default function TabOverview({
 }) {
   return (
     <>
-      <RiskScoreHero
+      <OperationalPriorityHero
         cve={cve}
         riskScore={riskScore}
         riskLoading={riskLoading}
@@ -658,7 +663,7 @@ export default function TabOverview({
 
       {!riskLoading && riskScore && (
         <section className="drawer-section">
-          <AssetExposureSection riskScore={riskScore} onOpenProfile={onOpenProfile} cve={cve} />
+          <AssetExposureSection riskScore={riskScore} onOpenProfile={onOpenProfile} />
         </section>
       )}
 

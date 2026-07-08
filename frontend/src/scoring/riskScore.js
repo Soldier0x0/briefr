@@ -257,6 +257,352 @@ export function getAssetExposureStatus(riskScore) {
   }
 }
 
+/** Operational Priority + Threat surface (ADR-002). */
+export const THREAT_WEIGHTS = {
+  kev: 0.25 / 0.65,
+  epss: 0.15 / 0.65,
+  exploit: 0.10 / 0.65,
+  cvss: 0.10 / 0.65,
+  momentum: 0.05 / 0.65,
+}
+
+export const KEV_FLOOR = 80
+
+export const THREAT_COMPONENT_LABELS = {
+  kev: 'KEV Status',
+  epss: 'EPSS',
+  exploit: 'Exploit Avail',
+  cvss: 'CVSS',
+  momentum: 'Momentum',
+}
+
+export const ENV_TIER_LABELS = {
+  CONFIRMED: 'CONFIRMED MATCH',
+  LIKELY: 'LIKELY OVERLAP',
+  POSSIBLE: 'POSSIBLE OVERLAP',
+  WEAK: 'WEAK OVERLAP',
+  NO_MATCH: 'NO MATCH',
+  UNKNOWN: 'ENV UNKNOWN',
+}
+
+export const OP_BAND_LABELS = {
+  P1: 'P1 — ACT NOW',
+  P2: 'P2 — INVESTIGATE',
+  P3: 'P3 — SCHEDULE',
+  P4: 'P4 — INFORMATIONAL',
+}
+
+function num(value, fallback = 0) {
+  if (value == null || value === '') return fallback
+  const n = Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
+function daysSince(value) {
+  if (!value) return null
+  const text = String(value).trim().slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null
+  const d = new Date(`${text}T00:00:00Z`)
+  const now = new Date()
+  const nowUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+  return Math.floor((nowUtc - d) / 86400000)
+}
+
+function kevScoreRaw(cve) {
+  if (!boolish(cve?.is_kev)) return 0
+  const addedDays = daysSince(cve?.kev_date_added)
+  if (addedDays == null) return 0.84
+  if (addedDays <= 7) return 1.0
+  if (addedDays <= 30) return 0.94
+  if (addedDays <= 90) return 0.88
+  return 0.84
+}
+
+function exploitScoreRaw(cve) {
+  const exploits = (cve?.public_exploits || []).filter(Boolean)
+  const types = exploits.map(e => String(e?.type || '').toLowerCase())
+  const urlBlob = [
+    ...(cve?.source_urls || []),
+    ...exploits.map(e => `${e?.title || ''} ${e?.source || ''} ${e?.url || ''}`),
+  ].join(' ').toLowerCase()
+  if (types.includes('metasploit') || urlBlob.includes('metasploit')) return 1.0
+  if (
+    types.some(t => t === 'weaponised' || t === 'weaponized')
+    || ['weaponized', 'weaponised', 'in-the-wild'].some(h => urlBlob.includes(h))
+  ) return 0.88
+  if (types.includes('poc')) return 0.55
+  if (cve?.has_poc || exploits.length) return 0.35
+  return 0.0
+}
+
+export function threatBand(score) {
+  if (score >= 80) return 'CRIT'
+  if (score >= 60) return 'HIGH'
+  if (score >= 40) return 'MED'
+  return 'LOW'
+}
+
+export function calculateThreatScore(cve, momentumScore = 0) {
+  if (!cve) return null
+  const rawScores = {
+    kev: kevScoreRaw(cve),
+    epss: num(cve.epss_score, 0),
+    exploit: exploitScoreRaw(cve),
+    cvss: num(cve.cvss_score, 0) / 10,
+    momentum: Math.min(1, Math.max(0, num(momentumScore, 0))),
+  }
+  let additive = Object.entries(rawScores).reduce(
+    (sum, [k, raw]) => sum + raw * THREAT_WEIGHTS[k],
+    0,
+  ) * 100
+  additive = Math.round(additive * 10) / 10
+  let kevFloorApplied = false
+  let score = additive
+  if (boolish(cve.is_kev)) {
+    score = Math.max(additive, KEV_FLOOR)
+    kevFloorApplied = score > additive
+  }
+  score = Math.round(score * 10) / 10
+  const components = {}
+  for (const [key, raw] of Object.entries(rawScores)) {
+    const w = THREAT_WEIGHTS[key]
+    components[key] = {
+      raw,
+      weight: w,
+      points: Math.round(raw * w * 100 * 10) / 10,
+    }
+  }
+  return {
+    version: 'threat-1.0',
+    score,
+    band: threatBand(score),
+    components,
+    kev_floor_applied: kevFloorApplied,
+    additive_score: additive,
+  }
+}
+
+/**
+ * Map asset-match signals to Environment tiers (mirrors backend/scoring/environment.py).
+ * Optional assetScore + matchType come from legacy_risk_v11b / risk response when available.
+ */
+export function classifyEnvironment(
+  cve,
+  profile,
+  backendMatchScore = null,
+  assetScore = null,
+  matchType = '',
+) {
+  if (!profile) {
+    return {
+      version: 'environment-1.0',
+      tier: 'UNKNOWN',
+      score: null,
+      version_verified: false,
+      evidence_label: 'No asset profile loaded',
+    }
+  }
+
+  const backendScore = Number(backendMatchScore || 0)
+  let score = assetScore
+  let mt = String(matchType || '').trim()
+
+  if (score == null) {
+    if (backendScore >= 100) {
+      score = 1.0
+      mt = mt || BACKEND_EXACT_CPE_VERSION
+    } else if (backendScore >= 55) {
+      score = Math.max(0.55, backendScore / 100)
+      mt = mt || BACKEND_CPE_PRODUCT
+    } else if (backendScore > 0) {
+      score = backendScore / 100
+      mt = mt || 'Partial match to your asset profile'
+    } else {
+      score = 0.0
+      mt = mt || 'No matching assets in your profile'
+    }
+  }
+
+  const mtLower = mt.toLowerCase()
+  void cve
+
+  if (score === 0.0) {
+    return {
+      version: 'environment-1.0',
+      tier: 'NO_MATCH',
+      score: 0,
+      version_verified: false,
+      evidence_label: mt || 'No matching assets in your profile',
+    }
+  }
+
+  if (backendScore >= 100) {
+    return {
+      version: 'environment-1.0',
+      tier: 'CONFIRMED',
+      score,
+      version_verified: true,
+      evidence_label: mt,
+    }
+  }
+
+  if (score >= 1.0 && mtLower.includes('exact cpe match')) {
+    return {
+      version: 'environment-1.0',
+      tier: 'CONFIRMED',
+      score,
+      version_verified: true,
+      evidence_label: mt,
+    }
+  }
+
+  if (score >= 0.9 || (score >= 0.8 && mtLower.includes('os match'))) {
+    return {
+      version: 'environment-1.0',
+      tier: 'LIKELY',
+      score,
+      version_verified: false,
+      evidence_label: mt,
+    }
+  }
+
+  if (score >= 0.65) {
+    return {
+      version: 'environment-1.0',
+      tier: 'POSSIBLE',
+      score,
+      version_verified: false,
+      evidence_label: mt,
+    }
+  }
+
+  if (score >= 0.35) {
+    return {
+      version: 'environment-1.0',
+      tier: 'WEAK',
+      score,
+      version_verified: false,
+      evidence_label: mt,
+    }
+  }
+
+  return {
+    version: 'environment-1.0',
+    tier: 'NO_MATCH',
+    score,
+    version_verified: false,
+    evidence_label: mt || 'No matching assets in your profile',
+  }
+}
+
+export function correlationEscalation(correlationResult) {
+  const campaigns = correlationResult?.campaigns || []
+  for (const camp of campaigns) {
+    const lifecycle = String(camp.lifecycle || '').toLowerCase()
+    if (!['active', 'emerging'].includes(lifecycle)) continue
+    if (String(camp.confidence || '').toLowerCase() !== 'high') continue
+    if ((camp.member_count || 0) < 2) continue
+    const evidence = camp.evidence || []
+    const hasSamePulse = evidence.some(e => e.type === 'same_pulse')
+    const hasStrongIoc = evidence.some(
+      e => e.type === 'shared_indicator'
+        && ['HASH', 'DOMAIN'].includes(String(e.ioc_type || '').toUpperCase()),
+    )
+    if (hasSamePulse && hasStrongIoc) return true
+  }
+  return false
+}
+
+const OP_BASE_TABLE = {
+  CRIT: { CONFIRMED: 'P1', LIKELY: 'P1', POSSIBLE: 'P2', WEAK: 'P2', UNKNOWN: 'P1', NO_MATCH: 'P3' },
+  HIGH: { CONFIRMED: 'P1', LIKELY: 'P2', POSSIBLE: 'P2', WEAK: 'P2', UNKNOWN: 'P2', NO_MATCH: 'P3' },
+  MED: { CONFIRMED: 'P2', LIKELY: 'P2', POSSIBLE: 'P3', WEAK: 'P3', UNKNOWN: 'P3', NO_MATCH: 'P4' },
+  LOW: { CONFIRMED: 'P3', LIKELY: 'P3', POSSIBLE: 'P4', WEAK: 'P4', UNKNOWN: 'P4', NO_MATCH: 'P4' },
+}
+
+export function deriveOperationalPriority(threatBandName, envTier, corrEscalation = false) {
+  const base = OP_BASE_TABLE[threatBandName]?.[envTier]
+    ?? OP_BASE_TABLE.LOW?.[envTier]
+    ?? 'P4'
+  let band = base
+  const provisional = envTier === 'UNKNOWN'
+  let escalated = false
+  if (corrEscalation && (band === 'P2' || band === 'P3')) {
+    band = band === 'P2' ? 'P1' : 'P2'
+    escalated = band !== base
+  }
+  return {
+    version: 'operational-priority-1.0',
+    band,
+    provisional,
+    escalated_by_correlation: escalated,
+    base_band: base,
+  }
+}
+
+/** Exploit / momentum raw for sections still reading legacy component shape. */
+export function threatComponentRaw(riskScore, key) {
+  return riskScore?.threat?.components?.[key]?.raw
+    ?? riskScore?.legacy_risk_v11b?.components?.[key]?.score
+    ?? 0
+}
+
+export function getEnvironmentDisplay(riskScore) {
+  const env = riskScore?.environment
+  if (!env) return null
+  return {
+    tier: env.tier,
+    label: ENV_TIER_LABELS[env.tier] || env.tier,
+    evidence: env.evidence_label,
+    versionVerified: env.version_verified,
+  }
+}
+
+export function getOperationalPriorityDisplay(riskScore) {
+  const op = riskScore?.operational_priority
+  if (!op) return null
+  return {
+    band: op.band,
+    label: OP_BAND_LABELS[op.band] || op.band,
+    provisional: op.provisional,
+    escalated: op.escalated_by_correlation,
+    rationale: op.rationale,
+  }
+}
+
+export function buildOperationalHeroSummary(cve, riskScore) {
+  if (!cve || !riskScore?.threat) return ''
+  const parts = []
+  const op = riskScore.operational_priority
+  if (op?.provisional) parts.push('Provisional')
+  if (op?.escalated_by_correlation) parts.push('Campaign escalated')
+  if (boolish(cve?.is_kev)) parts.push('KEV listed')
+  const exploitRaw = threatComponentRaw(riskScore, 'exploit')
+  for (const tier of EXPLOIT_SUMMARY_PARTS) {
+    if (exploitRaw >= tier.min) {
+      parts.push(tier.text)
+      break
+    }
+  }
+  if (cve.cvss_score != null) parts.push(`CVSS ${Number(cve.cvss_score).toFixed(1)}`)
+  return parts.slice(0, 3).join(' · ')
+}
+
+export function operationalBandColor(band) {
+  if (band === 'P1') return 'var(--red)'
+  if (band === 'P2') return '#b84a28'
+  if (band === 'P3') return 'var(--amber)'
+  return 'var(--text3)'
+}
+
+export function environmentTierColor(tier) {
+  if (tier === 'CONFIRMED') return 'var(--red)'
+  if (tier === 'LIKELY') return 'var(--amber)'
+  if (tier === 'POSSIBLE' || tier === 'WEAK') return 'var(--accent)'
+  if (tier === 'NO_MATCH') return 'var(--text3)'
+  return 'var(--text3)'
+}
+
 export function riskScoreColor(score) {
   if (score == null || Number.isNaN(score)) return 'var(--text3)'
   if (score >= 90) return 'var(--red)'

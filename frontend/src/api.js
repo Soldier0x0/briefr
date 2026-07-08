@@ -227,7 +227,7 @@ export function fetchCVEMomentum(cveId) {
   return request(`/cves/${encodeURIComponent(cveId)}/momentum`)
 }
 
-/** Canonical Risk Score v1.1b — computed server-side. */
+/** Operational Priority surface — Threat, Environment, OP band (ADR-002). */
 export function fetchCVERisk(cveId, { profile, assets } = {}) {
   const body = {}
   if (profile) body.profile = profile
@@ -237,12 +237,6 @@ export function fetchCVERisk(cveId, { profile, assets } = {}) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-}
-
-/** Unified Investigation Score — fuses risk + correlation + OTX freshness. */
-export function fetchCVEInvestigationScore(cveId, { sector } = {}) {
-  const qs = sector ? `?sector=${encodeURIComponent(sector)}` : ''
-  return request(`/cves/${encodeURIComponent(cveId)}/investigation-score${qs}`)
 }
 
 export function fetchCVEsForExport(params = {}) {

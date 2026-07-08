@@ -42,7 +42,6 @@ EXPECTED_ROUTES = [
     ("GET", "/api/otx/pulses/{pulse_id}/iocs"),
     ("POST", "/api/ioc/lookup"),
     ("POST", "/api/cves/{cve_id}/risk"),
-    ("GET", "/api/cves/{cve_id}/investigation-score"),
     ("GET", "/api/cves/{cve_id}/momentum"),
     ("GET", "/api/cves/{cve_id}/detection"),
     ("GET", "/api/cves/{cve_id}/correlation"),
