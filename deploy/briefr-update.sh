@@ -7,7 +7,7 @@
 # Optional env:
 #   BRIEFR_INSTALL_DEV_DEPS=1 — install backend dev/test deps for on-box verification
 #   BRIEFR_SKIP_SMOKE=1       — skip OTX Intel smoke after deploy
-#   BRIEFR_STRICT_SMOKE=1     — fail update if Intel smoke fails (default: warn only)
+#   BRIEFR_STRICT_SMOKE=0     — warn-only on Intel smoke failure (default: strict / exit 1)
 #   BRIEFR_SKIP_ROLLBACK=1    — on health-gate failure, exit without git reset (break-glass)
 #
 # Update safety (J1): records the pre-pull git commit, runs Alembic upgrade head
@@ -127,11 +127,12 @@ elif [ ! -f "${SMOKE_SCRIPT}" ]; then
 else
   if bash "${SMOKE_SCRIPT}"; then
     echo "    Intel smoke    OK"
-  elif [ "${BRIEFR_STRICT_SMOKE:-0}" = "1" ]; then
-    echo "FAIL: Intel smoke check failed (BRIEFR_STRICT_SMOKE=1)"
-    exit 1
+  elif [ "${BRIEFR_STRICT_SMOKE:-1}" = "0" ]; then
+    echo "    Intel smoke    WARN (failed; BRIEFR_STRICT_SMOKE=0 — deploy completed anyway)"
   else
-    echo "    Intel smoke    WARN (failed; deploy completed — set BRIEFR_STRICT_SMOKE=1 to fail)"
+    echo "FAIL: Intel smoke check failed (strict by default)"
+    echo "       Opt out: BRIEFR_SKIP_SMOKE=1 (skip) or BRIEFR_STRICT_SMOKE=0 (warn only)"
+    exit 1
   fi
 fi
 
