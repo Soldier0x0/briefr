@@ -180,6 +180,165 @@ default (J3):** a failing smoke check exits non-zero. Opt out with
 
 ---
 
+## Pre-release checklist (J4)
+
+Run before tagging or deploying a release to production. Encodes the
+[`ROADMAP.md`](ROADMAP.md) compatibility promise — each release should be a small,
+independent phase.
+
+| Step | Check |
+|------|--------|
+| 1 | **Migrations forward-only** — new Alembic revision(s) apply cleanly on Postgres (`alembic upgrade head`); no edits to already-applied migration files. |
+| 2 | **API additive** — new response fields only (prefer `meta`); no breaking shape changes without a documented version bump. |
+| 3 | **Deploy additive** — systemd unit, nginx site, and cloudflared changes are additive; existing paths (`/opt/briefr`, `DATABASE_URL`, `BACKUP_DIR`) unchanged. |
+| 4 | **Local verify green** — `./scripts/verify-local.sh` (and `--full` when Postgres/tools available). |
+| 5 | **Backup path known** — scheduled `briefr-pg-backup.timer` active; `BACKUP_AGE_KEY_FILE` present and backed up off-host. |
+| 6 | **Update path documented** — J1 rollback + health gate behavior understood; operator knows `BRIEFR_SKIP_ROLLBACK` / smoke opt-outs. |
+| 7 | **Post-deploy smoke** — expect strict Intel smoke on production update (J3); confirm OTX key if Intel campaigns matter. |
+| 8 | **Restore runbook** — operator has read [Production restore runbook](#production-restore-runbook-j5) below. |
+
+---
+
+## Production restore runbook (J5)
+
+**Manual, break-glass only.** CI (Post-B4) proves backup bytes round-trip; this
+runbook is for an operator recovering a **live Debian box**. Do **not** automate
+destructive restore from CI.
+
+**When to use:** corrupt database, failed migration with partial schema, need to
+roll back data (not just code — code rollback is J1 `git reset`, which does not
+undo DB changes).
+
+### Prerequisites
+
+- Root shell on the production host.
+- `DATABASE_URL` in `/opt/briefr/backend/.env` (PostgreSQL).
+- Age identity at `BACKUP_AGE_KEY_FILE` (default
+  `/var/lib/briefr/keys/backup-age.key`) — **must exist on the box** to decrypt
+  `.tar.gz.age` archives.
+- `postgresql-client` on the host (`pg_restore`); `briefr-update.sh` installs this
+  when Postgres is configured.
+
+### 0. Pre-restore safety backup
+
+Even when recovering from failure, take a fresh archive of the current state:
+
+```bash
+bash /opt/briefr/deploy/briefr-pg-backup.sh manual-pre-restore
+```
+
+If the DB is too corrupt for a clean dump, copy the newest existing archive path
+from step 1 and document which file you are restoring.
+
+### 1. Choose an archive
+
+```bash
+bash /opt/briefr/deploy/briefr-restore.sh --list
+```
+
+Pick a `briefr-*.tar.gz` or `briefr-*.tar.gz.age` under `/var/lib/briefr/backups/`.
+Prefer a **pre-update** or **scheduled** archive from before the incident.
+
+Age-encrypted archives are decrypted automatically by `python -m backup restore`
+when `BACKUP_AGE_KEY_FILE` is set — no manual `age -d` step required unless you
+are copying archives off-box (decrypt on a trusted machine with the identity file).
+
+### 2. Stop services
+
+```bash
+systemctl stop briefr.target briefr-backend nginx 2>/dev/null || true
+```
+
+Stopping nginx prevents clients hitting a half-restored backend.
+
+### 3. Restore database (+ `.env` when present in archive)
+
+```bash
+bash /opt/briefr/deploy/briefr-restore.sh --force /var/lib/briefr/backups/briefr-YYYYMMDDTHHMMSSZ.tar.gz.age
+```
+
+Omit the path to restore the **newest valid** archive. `--force` overwrites a
+healthy-looking DB (required for intentional restore).
+
+The script stops `briefr-backend`, runs restore as `briefr`, and starts the
+backend — **stop it again** before migrations if the restored schema is behind
+the checked-out code:
+
+```bash
+systemctl stop briefr-backend
+```
+
+### 4. Apply pending migrations
+
+From the **currently checked-out** release (usually `main` after a deliberate
+pull, or the last known-good commit):
+
+```bash
+runuser -u briefr -- bash -c 'cd /opt/briefr/backend && /opt/briefr/venv/bin/alembic upgrade head'
+```
+
+Or run a full update (pull + migrate + health gate) once data is restored:
+
+```bash
+bash /opt/briefr/deploy/briefr-update.sh
+```
+
+### 5. Verify health and row counts
+
+```bash
+curl -sf http://127.0.0.1:8000/api/health | jq .
+bash /opt/briefr/deploy/check-backend.sh
+```
+
+Spot-check core table counts (example — adjust for your incident):
+
+```bash
+runuser -u briefr -- bash -c 'cd /opt/briefr/backend && /opt/briefr/venv/bin/python - <<PY
+import asyncio
+from db.config import postgres_dsn
+import asyncpg
+async def main():
+    conn = await asyncpg.connect(postgres_dsn())
+    for table in ("cves", "kev_deadlines", "otx_pulses"):
+        n = await conn.fetchval(f"SELECT COUNT(*) FROM {table}")
+        print(f"{table}: {n}")
+    await conn.close()
+asyncio.run(main())
+PY'
+```
+
+Compare to expectations or to a known-good backup manifest under the archive.
+
+### 6. Start services
+
+```bash
+systemctl start briefr-backend
+nginx -t && systemctl start nginx
+systemctl status briefr-backend --no-pager | head -15
+curl -sf http://127.0.0.1/api/health && echo
+```
+
+Optional Intel smoke (strict on update path; manual here):
+
+```bash
+bash /opt/briefr/deploy/smoke-intel.sh
+```
+
+### If restore fails
+
+| Symptom | What to check |
+|---------|----------------|
+| `age` / decrypt error | `BACKUP_AGE_KEY_FILE` readable by `briefr`; key matches archive recipient; off-host key copy. |
+| `pg_restore` error | Postgres container up (`/opt/infra/postgres`); `DATABASE_URL` host/port; client version ≥ server major. |
+| Backend won't start after restore | `journalctl -u briefr-backend -n 80`; schema vs code mismatch → rerun `alembic upgrade head` or restore an older archive. |
+| Health OK but empty feed | NVD sync may need time; check `/api/health` CVE count; scheduler not paused in admin. |
+| Partial J1 migration + code rollback | DB schema ahead of code — restore from pre-update backup (this runbook), not `git reset` alone. |
+
+**Escalation:** keep the pre-restore safety backup from step 0; do not delete
+archives until the box is verified stable for 24h.
+
+---
+
 ## UFW / network hardening (operator)
 
 Recommended end state (documented, not enforced by app):

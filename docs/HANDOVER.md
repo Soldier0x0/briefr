@@ -12,6 +12,25 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+---
+
+## 2026-07-09 — J4 + J5: release checklist + production restore runbook (docs)
+
+**What:** Wave 1 doc closeout in `docs/OPERATIONS.md`:
+
+- **J4** — pre-release checklist (migrations, API additive, deploy additive,
+  verify-local, backup, update/rollback path, smoke, restore runbook).
+- **J5** — manual break-glass production restore runbook (safety backup → pick
+  archive → stop services → `briefr-restore.sh` → Alembic → health/row-count
+  verify → start; failure table).
+
+**Why:** CI backup round-trip ≠ operator-recoverable box; releases need an explicit
+compatibility gate before deploy.
+
+**Next:** **Wave 2** — **M1** (ADR-002 scoring surface implementation).
+
+---
+
 ## 2026-07-09 — J3: strict Intel smoke gate default (deploy)
 
 **What:** Wave 1 **J3** — `deploy/briefr-update.sh` now **fails the update by default**
@@ -21,11 +40,11 @@ when `deploy/smoke-intel.sh` fails (after the J1 health gate passes). Opt-out:
 
 **Why:** Broken intel paths were completing deploys silently (warn-only smoke).
 
-**Next:** **J4** + **J5** (docs, parallel-safe) — release checklist + restore runbook.
+**Next:** **Wave 2 — M1** (ADR-002 scoring surface).
 
 ---
 
-## 2026-07-09 — J1: update path — Alembic + health gate + rollback (deploy)
+## 2026-07-09 — J3: strict Intel smoke gate default (deploy)
 
 **What:** Wave 1 production-trust task **J1** shipped in `deploy/briefr-update.sh`
 and `deploy/lib.sh`:
