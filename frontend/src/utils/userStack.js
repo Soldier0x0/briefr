@@ -6,6 +6,7 @@ const LEGACY_STORAGE_KEY = 'briefr_stack'
 
 let cachedTerms = ''
 let loadPromise = null
+let saveCounter = 0
 
 function readLegacyLocalStack() {
   try {
@@ -54,12 +55,26 @@ export async function loadUserStack() {
 
 export async function saveUserStack(stackTerms) {
   const trimmed = (stackTerms || '').trim()
+  const previousTerms = cachedTerms
   cachedTerms = trimmed
-  clearLegacyLocalStack()
-  const data = await apiSaveUserStack({ stack_terms: trimmed })
-  cachedTerms = (data?.stack_terms || trimmed).trim()
-  window.dispatchEvent(new CustomEvent('briefr-stack-change'))
-  return cachedTerms
+
+  saveCounter += 1
+  const currentCounter = saveCounter
+
+  try {
+    const data = await apiSaveUserStack({ stack_terms: trimmed })
+    if (currentCounter === saveCounter) {
+      cachedTerms = (data?.stack_terms || trimmed).trim()
+      clearLegacyLocalStack()
+      window.dispatchEvent(new CustomEvent('briefr-stack-change'))
+    }
+    return cachedTerms
+  } catch (err) {
+    if (currentCounter === saveCounter) {
+      cachedTerms = previousTerms
+    }
+    throw err
+  }
 }
 
 export function clearUserStackOnLogout() {
