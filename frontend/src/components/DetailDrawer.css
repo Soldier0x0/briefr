@@ -1663,6 +1663,56 @@
   margin-bottom: 14px;
 }
 
+.drawer-op-hero {
+  gap: 10px;
+}
+
+.drawer-op-band {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.drawer-op-provisional {
+  font-size: 0.55em;
+  vertical-align: super;
+  color: var(--amber);
+}
+
+.drawer-op-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+.drawer-op-threat {
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.drawer-op-threat-band {
+  font-size: 11px;
+  color: var(--text2);
+}
+
+.drawer-op-env-chip {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  padding: 4px 8px;
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+}
+
+.drawer-op-env-detail {
+  font-size: 10px;
+  color: var(--text2);
+  margin: 0;
+  line-height: 1.45;
+}
+
 .drawer-risk-total {
   font-family: var(--font-display);
   font-size: 40px;

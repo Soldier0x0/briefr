@@ -66,11 +66,17 @@ def test_risk_endpoint_returns_canonical_score(client):
     assert res.status_code == 200
     body = res.json()
     assert body["cve_id"] == "CVE-2024-RISK"
-    assert "total" in body
-    assert "components" in body
+    assert "threat" in body
+    assert "environment" in body
+    assert "operational_priority" in body
+    assert "legacy_risk_v11b" in body
     assert "momentum" in body
-    assert body["components"]["asset"]["score"] == 0.5
-    assert 0 <= body["total"] <= 100
+    assert body["environment"]["tier"] == "UNKNOWN"
+    assert body["operational_priority"]["band"] in ("P1", "P2", "P3", "P4")
+    assert 0 <= body["threat"]["score"] <= 100
+    legacy = body["legacy_risk_v11b"]
+    assert legacy["components"]["asset"]["score"] == 0.5
+    assert 0 <= legacy["total"] <= 100
 
 
 def test_risk_endpoint_invalid_id(client):
@@ -93,3 +99,4 @@ def test_risk_endpoint_with_profile(client):
     assert res.status_code == 200
     body = res.json()
     assert body["hasProfile"] is True
+    assert body["environment"]["tier"] != "UNKNOWN"

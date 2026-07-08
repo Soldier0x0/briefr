@@ -75,8 +75,10 @@ from feeds.extended import (
 from feeds.osv import fetch_osv_by_cve
 from feeds.otx import load_otx_pulses_for_cve
 from ml.embeddings import embeddings_enabled, find_similar_cves
+from scoring.environment import classify_environment
+from scoring.priority import correlation_escalation, derive_operational_priority
 from scoring.risk import calculate_momentum, calculate_risk_score
-from scoring.investigation import compute_investigation_score
+from scoring.threat import calculate_threat_score
 from templates.intelligence import (
     epss_sentence_or_fallback,
     exploit_sentence,
@@ -982,10 +984,11 @@ async def get_cve(cve_id: str):
 @intel_router.post("/api/cves/{cve_id}/risk")
 async def cve_risk_score(cve_id: str, body: RiskScoreRequest | None = None):
     """
-    Canonical BRIEFR Risk Score v1.1b for one CVE.
+    Operational Priority surface for one CVE (ADR-002).
 
-    Computes momentum server-side. Optional profile/assets personalise the asset
-    component (CPE match + fuzzy graduation fallback).
+    Returns Threat Score, Environment tier, Operational Priority band, and
+    legacy Risk Score v1.1b under ``legacy_risk_v11b``. Computes momentum and
+    optional correlation escalation server-side.
     """
     cve_id = require_cve_id(cve_id)
 
@@ -1046,79 +1049,35 @@ async def cve_risk_score(cve_id: str, body: RiskScoreRequest | None = None):
 
             backend_match = cpe_match_score_for_cve(cve, assets)
 
-        risk = calculate_risk_score(
+        mom_score = momentum.get("momentum_score", 0.0)
+        legacy_risk = calculate_risk_score(
             cve,
             profile=profile,
             backend_match_score=backend_match,
-            momentum_score=momentum.get("momentum_score", 0.0),
+            momentum_score=mom_score,
         )
-    finally:
-        await db.close()
-
-    return {
-        **risk,
-        "cve_id": cve_key,
-        "momentum": momentum,
-    }
-
-
-@intel_router.get("/api/cves/{cve_id}/investigation-score")
-async def cve_investigation_score(
-    cve_id: str,
-    sector: str = Query(default="", description="Declared industry sector for actor matching"),
-):
-    """
-    Unified Investigation Score (0–100) fusing BRIEFR Risk Score, Correlation
-    Priority, and OTX campaign freshness. Component scores remain available
-    separately via /risk and /correlation.
-    """
-    cve_id = require_cve_id(cve_id)
-
-    cve_key = cve_id
-    db = await get_db()
-    try:
-        rows = await db.execute_fetchall(
-            """
-            SELECT c.cve_id, c.description, c.cvss_score, c.severity, c.published,
-                   c.modified, c.affected_products, c.summary, c.is_kev, c.epss_score, c.epss_percentile,
-                   c.has_poc, c.source_urls, c.cpe_matches,
-                   k.date_added AS kev_date_added,
-                   k.due_date AS kev_due_date
-            FROM cves c
-            LEFT JOIN kev_deadlines k ON k.cve_id = c.cve_id
-            WHERE c.cve_id = ?
-            """,
-            (cve_key,),
-        )
-        if not rows:
-            raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
-
-        cve = _row_to_cve_dict(rows[0])
-        momentum = await calculate_momentum(cve_key, db)
-        risk = calculate_risk_score(
-            cve,
-            momentum_score=momentum.get("momentum_score", 0.0),
-        )
-        correlation = await get_correlation_for_cve(
-            db, cve_key, user_sector=sector.strip()
-        )
+        threat = calculate_threat_score(cve, momentum_score=mom_score)
+        environment = classify_environment(cve, profile, backend_match)
+        correlation = await get_correlation_for_cve(db, cve_key)
         await db.commit()
-
-        priority = correlation.get("priority") or {}
-        investigation = compute_investigation_score(
-            risk_total=risk.get("total", 0.0),
-            correlation_priority=priority.get("score", 0.0),
-            campaigns=correlation.get("campaigns") or [],
+        corr_escalate = correlation_escalation(correlation)
+        operational_priority = derive_operational_priority(
+            threat.get("band", "LOW"),
+            environment.get("tier", "UNKNOWN"),
+            corr_escalation=corr_escalate,
         )
     finally:
         await db.close()
 
     return {
         "cve_id": cve_key,
-        "investigation": investigation,
-        "risk_total": risk.get("total", 0.0),
-        "correlation_priority": priority.get("score", 0.0),
-        "risk_version": risk.get("version"),
+        "threat": threat,
+        "environment": environment,
+        "operational_priority": operational_priority,
+        "legacy_risk_v11b": legacy_risk,
+        "momentum": momentum,
+        "hasProfile": legacy_risk.get("hasProfile", False),
+        "momentumScore": mom_score,
     }
 
 
