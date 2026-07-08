@@ -105,6 +105,14 @@
   color: var(--text3);
 }
 
+.inv-panel-capture-hint {
+  font-size: 0.625rem;
+  color: var(--text3);
+  margin: 0 0 8px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
 .inv-thread-summary {
   font-size: 0.5625rem;
   color: var(--text3);

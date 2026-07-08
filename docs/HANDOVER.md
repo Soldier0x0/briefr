@@ -12,6 +12,54 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Analyst Overview workflow (12-point review)
+
+**Branch:** `cursor/analyst-overview-improvements-d43d`
+
+### Implementation plan (points → files → risk)
+
+| # | Files | Backend | Change | Regression risk |
+|---|--------|---------|--------|-----------------|
+| 1 | `OverviewTab.jsx`, `riskScore.js`, `DetailDrawer.css` | `scoring/asset_match.py`, `scoring/risk.py` (`DEFAULT_ASSET_UNKNOWN=0.5`) | UI: EXPOSURE UNKNOWN when no profile; match tiers when loaded. **Formula unchanged.** | Low — display only |
+| 2 | `docs/HANDOVER.md` (this entry) | `scoring/risk.py` | Document v1.1b math; explain 62.9 example; evaluate options (no weight change yet) | None |
+| 3 | `OverviewTab.jsx` | — | Collapse breakdown under **WHY THIS SCORE?** (default closed) | Low |
+| 4 | `OverviewTab.jsx`, `DetailDrawer.css` | — | Signal strength vs `X / max pts` contribution columns | Low |
+| 5 | `OverviewTab.jsx` | — | Reorder sections for analyst decision flow | Low — no data removed |
+| 6 | `OverviewTab.jsx`, `patchReferences.js`, `DetailDrawer.css` | `templates/intelligence.py` (`patch_sentence`) | REMEDIATION block with PATCH AVAILABLE / NO PATCH / UNKNOWN + advisory link | Low |
+| 7 | `observableExtraction.js`, `extractIndicatorsFromCve.js` | — | Staged extract→validate→classify→prioritize; filter vendor/.html false positives | Medium — IOC prefill set may shrink (intended) |
+| 8 | `InvestigationContext.jsx`, `InvestigationPanel.jsx`, `DetailDrawer/index.jsx`, `CVECard.jsx`, `App.jsx` | — | **Start investigation**, session notice, sidebar capture hint | Low |
+| 9 | `CVECard.css`, `CVECard.jsx`, `CVEFeed.jsx`, `App.jsx` | — | `cve-opened` vs `cve-selected` vs `cve-card-in-thread` | Low |
+| 10–11 | `App.css`, `DetailDrawer.css` | — | Brighter `--text2`/`--text3`; typography scale tokens | Low — global token shift |
+| 12 | All above | — | Preserve dark terminal aesthetic; no scoring formula change | — |
+
+### Point 1 — Asset match fallback (documented, not changed)
+
+When `profile is None`, `resolve_asset_component()` → `asset_match_info()` returns **`DEFAULT_ASSET_UNKNOWN = 0.5`** (`backend/scoring/asset_match.py:7`, `risk.py:16`). `calculate_risk_score()` sets `hasProfile: false` and contributes **17.5 pts** (0.5 × 35% × 100). Tests expect this (`test_risk_score_v11b.py`). UI now labels this as a **neutral formula placeholder**, not exposure probability.
+
+### Point 2 — Why BRIEFR 62.9 for a “should be urgent” CVE
+
+**Formula:** `total = round(Σ raw[k] × weight[k] × 100, 1)` — pure weighted sum, no amplification.
+
+**Example decomposition (matches user numbers):**
+
+| Component | Raw | Weight | Points |
+|-----------|-----|--------|--------|
+| Asset (no profile) | 0.500 | 35% | 17.5 |
+| KEV | 1.000 | 25% | 25.0 |
+| EPSS | ~0.007 | 15% | ~0.1 |
+| Exploit (PoC) | 0.550 | 10% | 5.5 |
+| CVSS 9.8 | 0.980 | 10% | 9.8 |
+| Momentum (maxed) | 1.000 | 5% | 5.0 |
+| **Total** | | | **62.9** |
+
+**Why it feels low:** (1) **Additive model** — KEV+CVSS+PoC do not compound; each caps at its weight slice. (2) **EPSS near zero** contributes almost nothing despite KEV. (3) **Asset placeholder** adds 17.5 without meaning exposure. (4) **Max without profile ≈ 82.5** even if every other signal is 1.0.
+
+**Options for future (not implemented):** KEV severity floors; compound multipliers when KEV+weaponised+high CVSS align; split Threat vs Environment scores; operational P1–P4 band from deterministic rules. Any change needs new tests and HANDOVER sign-off.
+
+**Next:** merge PR; optional follow-up PR for scoring model revision after analyst review.
+
+---
+
 ## 2026-07-08 — E-PR10: E6 Cmd+K command palette
 
 **What:** `CommandPalette` — ⌘/Ctrl+K for tab jump, CVE open, IOC lookup, refresh stats.

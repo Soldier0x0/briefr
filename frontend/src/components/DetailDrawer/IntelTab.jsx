@@ -594,7 +594,7 @@ export default function TabIntel({
                       className="drawer-investigate-btn"
                       onClick={() => onInvestigateIp(scan.ip, cve)}
                     >
-                      → Investigate
+                      → Add to investigation
                     </button>
                   )}
                 </li>

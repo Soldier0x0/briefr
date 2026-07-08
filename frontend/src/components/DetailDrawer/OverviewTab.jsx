@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   buildEpssSparklinePoints,
   epssSparklinePolyline,
@@ -10,12 +11,180 @@ import {
 import {
   buildRiskHeroSummary,
   componentBarColor,
+  getAssetExposureStatus,
   getRiskWeights,
   riskScoreDisplayColor,
   RISK_COMPONENT_LABELS,
 } from '../../scoring/riskScore.js'
+import { patchStatusLabel, pickPrimaryRemediationReference } from '../../utils/patchReferences.js'
 import { drawerEpssBarColor, capecHref, capecLabel, flattenOsvPackageRows } from './helpers.js'
 
+
+function CriticalThreatSignals({ cve, riskScore, momentumData }) {
+  if (!cve) return null
+  const signals = []
+
+  if (cve.is_kev) {
+    signals.push({
+      key: 'kev',
+      label: 'CISA KEV',
+      detail: 'Confirmed active exploitation — federal remediation catalogue',
+      tone: 'critical',
+    })
+  }
+  if (cve.kev_ransomware_use) {
+    signals.push({
+      key: 'ransomware',
+      label: 'RANSOMWARE USE',
+      detail: 'Known ransomware campaign association (CISA KEV)',
+      tone: 'critical',
+    })
+  }
+
+  const exploitScore = riskScore?.components?.exploit?.score ?? 0
+  if (exploitScore >= 1.0) {
+    signals.push({ key: 'msf', label: 'METASPLOIT', detail: 'Public Metasploit module available', tone: 'critical' })
+  } else if (exploitScore >= 0.55) {
+    signals.push({ key: 'poc', label: 'PUBLIC PoC', detail: 'Proof-of-concept exploit publicly available', tone: 'high' })
+  } else if (cve.has_poc) {
+    signals.push({ key: 'poc-ref', label: 'PoC REFERENCES', detail: 'Exploit references in public sources', tone: 'medium' })
+  }
+
+  const epss = typeof cve.epss_score === 'number' && cve.epss_score >= 0 ? cve.epss_score : null
+  if (epss != null && epss >= 0.5) {
+    signals.push({
+      key: 'epss',
+      label: 'HIGH EPSS',
+      detail: `${(epss * 100).toFixed(1)}% exploitation probability (FIRST EPSS)`,
+      tone: 'high',
+    })
+  }
+
+  const mom = momentumData?.momentum_score ?? riskScore?.momentumScore ?? 0
+  if (mom >= 0.5) {
+    signals.push({
+      key: 'momentum',
+      label: 'RISING MOMENTUM',
+      detail: 'Recent exploitation signals detected (EPSS trend, KEV recency, OTX)',
+      tone: 'high',
+    })
+  }
+
+  if (cve.cvss_score >= 9.0) {
+    signals.push({
+      key: 'cvss',
+      label: `CVSS ${cve.cvss_score.toFixed(1)}`,
+      detail: 'Critical technical severity rating',
+      tone: 'high',
+    })
+  }
+
+  if (!signals.length) return null
+
+  return (
+    <section className="drawer-section drawer-threat-signals" aria-labelledby="threat-signals-heading">
+      <h3 id="threat-signals-heading" className="drawer-human-label mono">CRITICAL THREAT SIGNALS</h3>
+      <ul className="drawer-threat-signal-list">
+        {signals.map(sig => (
+          <li key={sig.key} className={`drawer-threat-signal drawer-threat-signal--${sig.tone}`}>
+            <span className="drawer-threat-signal-label mono">{sig.label}</span>
+            <span className="drawer-threat-signal-detail">{sig.detail}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function PatchActionSection({ cve, sentences, urls }) {
+  if (!cve) return null
+  const status = patchStatusLabel(cve)
+  const ref = pickPrimaryRemediationReference(cve, urls)
+  const kevGuidance = sentences?.kev
+  const patchText = sentences?.patch
+  const isMitigationOnly = !cve.patch_available && kevGuidance
+
+  const statusClass =
+    status === 'PATCH AVAILABLE' ? 'patch-available'
+      : status === 'NO PATCH AVAILABLE' ? 'patch-unavailable'
+        : 'patch-unknown'
+
+  return (
+    <section className="drawer-section drawer-patch-action" aria-labelledby="patch-action-heading">
+      <h3 id="patch-action-heading" className="drawer-human-label mono">REMEDIATION</h3>
+      <div className={`drawer-patch-status drawer-patch-status--${statusClass}`}>
+        <span className="drawer-patch-status-label mono">{status}</span>
+      </div>
+      {patchText && (
+        <p className="drawer-patch-guidance">{patchText}</p>
+      )}
+      {isMitigationOnly && kevGuidance && (
+        <p className="drawer-patch-guidance drawer-patch-kev-guidance">
+          <span className="mono drawer-patch-kev-tag">CISA MITIGATION GUIDANCE</span>
+          {' '}
+          {kevGuidance}
+        </p>
+      )}
+      {ref && (
+        <a
+          className="drawer-patch-ref-link mono"
+          href={ref.url}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Open {ref.label} →
+        </a>
+      )}
+    </section>
+  )
+}
+
+function RiskScoreHero({ cve, riskScore, riskLoading }) {
+  if (riskLoading) {
+    return (
+      <section className="drawer-section drawer-risk-hero-section" aria-labelledby="risk-score-heading">
+        <h3 id="risk-score-heading" className="drawer-risk-section-label mono">
+          // BRIEFR RISK SCORE
+        </h3>
+        <p className="drawer-risk-summary mono" style={{ color: 'var(--text3)' }}>
+          Computing risk score…
+        </p>
+      </section>
+    )
+  }
+  if (!riskScore || !cve) return null
+
+  const { total, hasProfile } = riskScore
+  const totalColor = riskScoreDisplayColor(total, cve?.severity)
+  const summary = buildRiskHeroSummary(cve, riskScore)
+
+  return (
+    <section className="drawer-section drawer-risk-hero-section" aria-labelledby="risk-score-heading">
+      <h3 id="risk-score-heading" className="drawer-risk-section-label mono">
+        // BRIEFR RISK SCORE
+      </h3>
+      <div className="drawer-risk-hero">
+        <div
+          className="drawer-risk-total"
+          style={{ color: totalColor }}
+          aria-label={
+            !hasProfile
+              ? `Risk score: ${total.toFixed(1)} out of 100. Asset exposure unknown until profile is loaded.`
+              : `Risk score: ${total.toFixed(1)} out of 100`
+          }
+        >
+          {total.toFixed(1)}
+          {riskScore.momentumScore > 0.5 && (
+            <span className="drawer-risk-momentum-arrow" aria-label="Rising threat momentum">↑</span>
+          )}
+        </div>
+        {summary && (
+          <p className="drawer-risk-summary mono">{summary}</p>
+        )}
+      </div>
+    </section>
+  )
+}
 
 function HumanSentence({ label, text }) {
   if (!text) return null
@@ -213,26 +382,63 @@ function RiskScoreBar({ score }) {
     </div>
   )
 }
-function RiskScoreBreakdown({ cve, riskScore, riskLoading, onOpenProfile, momentumData }) {
-  if (riskLoading) {
-    return (
-      <section className="drawer-section drawer-risk-section" aria-labelledby="risk-score-heading">
-        <h3 id="risk-score-heading" className="drawer-risk-section-label mono">
-          // BRIEFR RISK SCORE
-        </h3>
-        <p className="drawer-risk-summary mono" style={{ color: 'var(--text3)' }}>
-          Computing risk score…
+
+function AssetExposureSection({ riskScore, onOpenProfile, cve }) {
+  const status = getAssetExposureStatus(riskScore)
+  if (!status) return null
+
+  const tierClass = `drawer-asset-exposure--${status.tier.toLowerCase().replace(/_/g, '-')}`
+
+  return (
+    <section
+      className={`drawer-asset-exposure ${tierClass}`}
+      aria-labelledby="asset-exposure-heading"
+    >
+      <h4 id="asset-exposure-heading" className="drawer-asset-exposure-label mono">
+        ASSET EXPOSURE
+      </h4>
+      <div className="drawer-asset-exposure-status">
+        <span className="drawer-asset-exposure-tier mono" title={status.detail}>
+          {status.label}
+        </span>
+        <span className="drawer-asset-exposure-headline mono">{status.headline}</span>
+      </div>
+      <p className="drawer-asset-exposure-detail">{status.detail}</p>
+      {status.matchReason && status.tier !== 'NOT_LOADED' && (
+        <p className="drawer-asset-exposure-reason mono" aria-label="Match reason">
+          Match: {status.matchReason}
         </p>
-      </section>
-    )
-  }
-  if (!riskScore || !cve) return null
+      )}
+      {status.formulaNote && (
+        <p className="drawer-asset-exposure-formula mono" aria-label="Scoring placeholder note">
+          {status.formulaNote}
+        </p>
+      )}
+      {status.tier === 'NOT_LOADED' && onOpenProfile && (
+        <button
+          type="button"
+          className="drawer-asset-exposure-cta mono"
+          onClick={onOpenProfile}
+        >
+          Load asset profile
+        </button>
+      )}
+      {status.tier === 'NOT_LOADED' && cve?.is_kev && (
+        <p className="drawer-asset-exposure-kev-note mono">
+          CISA KEV listing indicates federal remediation urgency regardless of your stack.
+        </p>
+      )}
+    </section>
+  )
+}
+function RiskScoreBreakdown({ cve, riskScore, riskLoading, momentumData }) {
+  const [expanded, setExpanded] = useState(false)
+
+  if (riskLoading || !riskScore || !cve) return null
 
   const { total, components, hasProfile } = riskScore
-  const totalColor = riskScoreDisplayColor(total, cve?.severity)
-  const summary = buildRiskHeroSummary(cve, riskScore)
+  const assetExposure = getAssetExposureStatus(riskScore)
 
-  // Fixed display order matching v1.1b weights
   const ORDERED_KEYS = ['asset', 'kev', 'epss', 'exploit', 'cvss', 'momentum']
   const breakdownRows = ORDERED_KEYS
     .filter(key => components[key] != null)
@@ -247,140 +453,164 @@ function RiskScoreBreakdown({ cve, riskScore, riskLoading, onOpenProfile, moment
   const formulaParts = breakdownRows.map(row => row.points.toFixed(1))
 
   return (
-    <section className="drawer-section drawer-risk-section" aria-labelledby="risk-score-heading">
-      <h3 id="risk-score-heading" className="drawer-risk-section-label mono">
-        // BRIEFR RISK SCORE
-      </h3>
-
-      <div className="drawer-risk-hero">
-        <div
-          className="drawer-risk-total"
-          style={{ color: totalColor }}
-          aria-label={
-            !hasProfile
-              ? `Risk score: ${total.toFixed(1)} out of 100. Asset exposure unknown until profile is loaded.`
-              : `Risk score: ${total.toFixed(1)} out of 100`
-          }
-        >
-          {total.toFixed(1)}
-          {riskScore.momentumScore > 0.5 && (
-            <span className="drawer-risk-momentum-arrow" aria-label="Rising threat momentum">↑</span>
-          )}
-        </div>
-        {summary && (
-          <p className="drawer-risk-summary mono">{summary}</p>
-        )}
-      </div>
-
-      {!hasProfile && !cve.is_kev && onOpenProfile && (
-        <div className="drawer-risk-profile-cta">
-          <p className="drawer-risk-profile-cta-text mono">
-            Load asset profile for personalised scoring
-          </p>
-          <button
-            type="button"
-            className="drawer-risk-profile-cta-btn mono"
-            onClick={onOpenProfile}
-          >
-            Set up profile
-          </button>
-        </div>
-      )}
-
-      {!hasProfile && cve.is_kev && onOpenProfile && (
+    <section className="drawer-section drawer-risk-section drawer-risk-methodology" aria-labelledby="risk-methodology-heading">
+      <div className="drawer-risk-heading-row">
+        <h3 id="risk-methodology-heading" className="drawer-risk-section-label mono">
+          // WHY THIS SCORE?
+        </h3>
         <button
           type="button"
-          className="drawer-risk-profile-link mono"
-          onClick={onOpenProfile}
+          className="drawer-risk-toggle mono"
+          onClick={() => setExpanded(v => !v)}
+          aria-expanded={expanded}
+          aria-controls="risk-breakdown-details"
         >
-          Personalise with asset profile
+          {expanded ? '▾ Hide breakdown' : '▸ Show breakdown'}
         </button>
-      )}
-
-      <div className="drawer-risk-components">
-        {breakdownRows.map(row => (
-          <div key={row.key} className="drawer-risk-component">
-            <div className="drawer-risk-comp-header">
-              <span className="drawer-risk-comp-label mono">{row.label}</span>
-              <RiskScoreBar score={row.score} />
-              <span className="drawer-risk-comp-points mono">
-                {row.points.toFixed(1)} pts
-              </span>
-            </div>
-            <p className="drawer-risk-comp-formula mono" aria-label={`${row.label} calculation`}>
-              {row.score.toFixed(3)} × {(row.weight * 100).toFixed(0)}% × 100 = {row.points.toFixed(1)} pts
-            </p>
-            {row.key === 'momentum' && momentumData?.momentum_signals?.length > 0 ? (
-              <ul className="drawer-risk-momentum-signals" aria-label="Momentum signals">
-                {momentumData.momentum_signals.map((sig, i) => (
-                  <li key={i} className="drawer-risk-momentum-signal mono">
-                    {sig.description}
-                    <span className="drawer-risk-momentum-contrib">
-                      {sig.contribution > 0 ? ` (+${sig.contribution.toFixed(2)})` : ''}
-                    </span>
-                  </li>
-                ))}
-                <li className="drawer-risk-momentum-signal mono drawer-risk-momentum-total">
-                  Momentum score = min(1.0, Σ signals) = {(momentumData.momentum_score ?? 0).toFixed(3)}
-                </li>
-              </ul>
-            ) : row.sentence ? (
-              <p className="drawer-risk-comp-sentence">{row.sentence}</p>
-            ) : null}
-          </div>
-        ))}
       </div>
-      <p className="drawer-risk-total-formula mono" aria-label="Risk score total calculation">
-        {formulaParts.join(' + ')} = {pointsSum.toFixed(1)} → score {total.toFixed(1)} / 100
+      <p className="drawer-risk-methodology-hint">
+        BRIEFR Risk Score v1.1b — weighted additive model. Expand for factor signal strength and score contribution.
       </p>
-      <p className="drawer-risk-weights mono">
-        v1.1b weights from server — Asset {(weights.asset * 100).toFixed(0)}% · KEV {(weights.kev * 100).toFixed(0)}% · EPSS {(weights.epss * 100).toFixed(0)}% · Exploit {(weights.exploit * 100).toFixed(0)}% · CVSS {(weights.cvss * 100).toFixed(0)}% · Momentum {(weights.momentum * 100).toFixed(0)}%
-      </p>
+
+      {expanded && (
+        <div id="risk-breakdown-details">
+          <p className="drawer-risk-signal-legend mono">
+            Signal strength (0–1) · Contribution = signal × weight × 100
+          </p>
+          <div className="drawer-risk-components">
+            {breakdownRows.map(row => {
+              const isAssetWithoutProfile = row.key === 'asset' && !hasProfile
+              const maxPts = row.weight * 100
+              return (
+                <div key={row.key} className="drawer-risk-component">
+                  <div className="drawer-risk-comp-header drawer-risk-comp-header--semantics">
+                    <span className="drawer-risk-comp-label mono">{row.label}</span>
+                    <div className="drawer-risk-signal-col">
+                      <span className="drawer-risk-signal-caption mono">Signal</span>
+                      {isAssetWithoutProfile ? (
+                        <span
+                          className="drawer-risk-comp-unknown mono"
+                          title="Asset signal unavailable until profile is loaded"
+                        >
+                          N/A
+                        </span>
+                      ) : (
+                        <>
+                          <RiskScoreBar score={row.score} />
+                          <span className="drawer-risk-signal-value mono">{row.score.toFixed(3)}</span>
+                        </>
+                      )}
+                    </div>
+                    <span className="drawer-risk-comp-points mono" title="Weighted contribution to BRIEFR score">
+                      {isAssetWithoutProfile
+                        ? '—'
+                        : `${row.points.toFixed(1)} / ${maxPts.toFixed(0)} pts`}
+                    </span>
+                  </div>
+                  <p className="drawer-risk-comp-formula mono" aria-label={`${row.label} calculation`}>
+                    {isAssetWithoutProfile
+                      ? (assetExposure?.formulaNote || 'Neutral 0.5 placeholder — not exposure probability')
+                      : `${row.score.toFixed(3)} × ${(row.weight * 100).toFixed(0)}% × 100 = ${row.points.toFixed(1)} pts`}
+                  </p>
+                  {row.key === 'momentum' && momentumData?.momentum_signals?.length > 0 ? (
+                    <ul className="drawer-risk-momentum-signals" aria-label="Momentum signals">
+                      {momentumData.momentum_signals.map((sig, i) => (
+                        <li key={i} className="drawer-risk-momentum-signal mono">
+                          {sig.description}
+                          <span className="drawer-risk-momentum-contrib">
+                            {sig.contribution > 0 ? ` (+${sig.contribution.toFixed(2)})` : ''}
+                          </span>
+                        </li>
+                      ))}
+                      <li className="drawer-risk-momentum-signal mono drawer-risk-momentum-total">
+                        Momentum score = min(1.0, Σ signals) = {(momentumData.momentum_score ?? 0).toFixed(3)}
+                      </li>
+                    </ul>
+                  ) : isAssetWithoutProfile ? (
+                    <p className="drawer-risk-comp-sentence">
+                      Load an asset profile to calculate whether this CVE affects your environment.
+                    </p>
+                  ) : row.sentence ? (
+                    <p className="drawer-risk-comp-sentence">{row.sentence}</p>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
+          <p className="drawer-risk-total-formula mono" aria-label="Risk score total calculation">
+            {formulaParts.join(' + ')} = {pointsSum.toFixed(1)} → score {total.toFixed(1)} / 100
+            {!hasProfile && (
+              <span className="drawer-risk-placeholder-note">
+                {' '}(includes neutral asset placeholder — not exposure)
+              </span>
+            )}
+          </p>
+          <p className="drawer-risk-weights mono">
+            v1.1b weights — Asset {(weights.asset * 100).toFixed(0)}% · KEV {(weights.kev * 100).toFixed(0)}% · EPSS {(weights.epss * 100).toFixed(0)}% · Exploit {(weights.exploit * 100).toFixed(0)}% · CVSS {(weights.cvss * 100).toFixed(0)}% · Momentum {(weights.momentum * 100).toFixed(0)}%
+          </p>
+        </div>
+      )}
     </section>
   )
 }
 export default function TabOverview({ cve, riskScore, riskLoading, onOpenProfile, momentumData, products, cwes, capecIds = [], urls, sentences, sentencesLoading, epssHistory, epssLoading, epssSparklineRef }) {
   return (
     <>
-      <RiskScoreBreakdown cve={cve} riskScore={riskScore} riskLoading={riskLoading} onOpenProfile={onOpenProfile} momentumData={momentumData} />
+      {/* 1. BRIEFR score */}
+      <RiskScoreHero cve={cve} riskScore={riskScore} riskLoading={riskLoading} />
 
+      {/* 2. Asset exposure */}
+      {!riskLoading && riskScore && (
+        <section className="drawer-section">
+          <AssetExposureSection riskScore={riskScore} onOpenProfile={onOpenProfile} cve={cve} />
+        </section>
+      )}
+
+      {/* 3. Critical threat signals */}
+      <CriticalThreatSignals cve={cve} riskScore={riskScore} momentumData={momentumData} />
+
+      {/* 4. Plain English / why this matters */}
+      {cve.summary && (
+        <section className="drawer-section" aria-labelledby="plain-heading">
+          <h3 id="plain-heading" className="drawer-human-label mono">WHY THIS MATTERS</h3>
+          <blockquote className="drawer-summary">{cve.summary}</blockquote>
+        </section>
+      )}
+
+      {/* 5. Patch status and remediation */}
+      <PatchActionSection cve={cve} sentences={sentences} urls={urls} />
+
+      {/* 6. Risk assessment */}
+      {sentencesLoading && (
+        <section className="drawer-section">
+          <p className="drawer-human-loading mono">// Loading intelligence summary...</p>
+        </section>
+      )}
+      {sentences?.risk && <HumanSentence label="RISK ASSESSMENT" text={sentences.risk} />}
+
+      {/* 7. Exploitation likelihood and momentum */}
       <EpssTrendSection
         cve={cve}
         history={epssHistory}
         loading={epssLoading}
         epssSparklineRef={epssSparklineRef}
       />
+      {sentences?.exploit_likelihood && (
+        <HumanSentence label="EXPLOIT LIKELIHOOD" text={sentences.exploit_likelihood} />
+      )}
+      {sentences?.public_exploits && (
+        <HumanSentence label="PUBLIC EXPLOITS" text={sentences.public_exploits} />
+      )}
+      {sentences?.kev && !cve.patch_available && (
+        <HumanSentence label="CISA KEV STATUS" text={sentences.kev} />
+      )}
 
-      <SsvcSection ssvc={cve.ssvc} />
-
+      {/* 8. Description and technical intelligence */}
       {cve.description && (
         <section className="drawer-section" aria-labelledby="desc-heading">
           <h3 id="desc-heading" className="drawer-human-label mono">DESCRIPTION</h3>
           <p className="drawer-description">{cve.description}</p>
         </section>
-      )}
-
-      {cve.summary && (
-        <section className="drawer-section" aria-labelledby="plain-heading">
-          <h3 id="plain-heading" className="drawer-human-label mono">PLAIN ENGLISH</h3>
-          <blockquote className="drawer-summary">{cve.summary}</blockquote>
-        </section>
-      )}
-
-      {sentencesLoading && (
-        <section className="drawer-section">
-          <p className="drawer-human-loading mono">// Loading intelligence summary...</p>
-        </section>
-      )}
-
-      {sentences && (
-        <>
-          <HumanSentence label="RISK ASSESSMENT" text={sentences.risk} />
-          <HumanSentence label="EXPLOIT LIKELIHOOD" text={sentences.exploit_likelihood} />
-          <HumanSentence label="PUBLIC EXPLOITS" text={sentences.public_exploits} />
-          <HumanSentence label="PATCH STATUS" text={sentences.patch} />
-          <HumanSentence label="CISA KEV STATUS" text={sentences.kev} />
-        </>
       )}
 
       {products.length > 0 && (
@@ -434,6 +664,7 @@ export default function TabOverview({ cve, riskScore, riskLoading, onOpenProfile
         </section>
       )}
 
+      <SsvcSection ssvc={cve.ssvc} />
       <OsvPackagesSection osvPackages={cve.osv_packages} />
 
       {urls.length > 0 && (
@@ -455,6 +686,14 @@ export default function TabOverview({ cve, riskScore, riskLoading, onOpenProfile
           </ul>
         </section>
       )}
+
+      {/* 9. Detailed scoring methodology (collapsed by default) */}
+      <RiskScoreBreakdown
+        cve={cve}
+        riskScore={riskScore}
+        riskLoading={riskLoading}
+        momentumData={momentumData}
+      />
     </>
   )
 }
