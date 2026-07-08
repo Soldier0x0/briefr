@@ -1,6 +1,6 @@
 /**
- * Select the most relevant official remediation reference for a CVE.
- * Priority: vendor advisory → CISA KEV action → NVD → project security advisory.
+ * CVE-aware remediation reference ranking.
+ * Hostname alone does not make a vendor advisory.
  */
 
 const VENDOR_HOST_HINTS = [
@@ -10,13 +10,26 @@ const VENDOR_HOST_HINTS = [
 ]
 
 const NVD_HOSTS = ['nvd.nist.gov', 'nist.gov']
-
 const CISA_HOSTS = ['cisa.gov']
 
-const PROJECT_SECURITY_HINTS = [
-  '/security/', '/advisory/', 'security-advisory', 'security bulletin',
-  'github.com', 'gitlab.com',
+const ADVISORY_PATH_RE = [
+  /\/security[-_]?(?:advisory|bulletin)s?\//i,
+  /\/security[-_]?(?:advisory|bulletin)/i,
+  /\/advisory\//i,
+  /\/advisories\//i,
+  /\/security\//i,
+  /\/vuln(?:erability)?\//i,
+  /\/cve-detail\//i,
+  /\/cve\//i,
+  /kb\d+/i,
 ]
+
+const DOC_PATH_HINTS = [
+  '/docs/', '/documentation/', '/support/', '/learn/', '/products/',
+  '/download', '/home', '/index', '/help/',
+]
+
+const GITHUB_ADVISORY_RE = /github\.com\/(?:[^/]+\/[^/]+\/security\/advisories|advisories\/)/i
 
 function hostOf(url) {
   try {
@@ -26,46 +39,109 @@ function hostOf(url) {
   }
 }
 
-function scoreReference(url, { isKev }) {
+function cveIdInUrl(url, cveId) {
+  if (!cveId) return false
+  return String(url).toUpperCase().includes(String(cveId).toUpperCase())
+}
+
+function hasAdvisoryPath(url) {
+  return ADVISORY_PATH_RE.some(re => re.test(url))
+}
+
+function isVendorHost(host) {
+  return VENDOR_HOST_HINTS.some(v => host === v || host.endsWith(`.${v}`))
+}
+
+function isNvdHost(host) {
+  return NVD_HOSTS.some(n => host.includes(n))
+}
+
+function isCisaHost(host) {
+  return CISA_HOSTS.some(c => host.includes(c))
+}
+
+function isGenericDocUrl(url) {
+  const lower = String(url).toLowerCase()
+  return DOC_PATH_HINTS.some(h => lower.includes(h))
+}
+
+/**
+ * Score and label a single reference URL.
+ * @returns {{ score: number, label: string }}
+ */
+export function classifyRemediationReference(url, { cveId, isKev = false } = {}) {
   const lower = String(url || '').toLowerCase()
   const host = hostOf(url)
-  if (!host) return -1
+  if (!host) return { score: -1, label: 'Source reference' }
 
-  if (VENDOR_HOST_HINTS.some(v => host === v || host.endsWith(`.${v}`))) return 100
-  if (CISA_HOSTS.some(c => host.includes(c)) && isKev) return 90
-  if (NVD_HOSTS.some(n => host.includes(n))) return 70
-  if (PROJECT_SECURITY_HINTS.some(h => lower.includes(h))) return 60
-  if (isKev && lower.includes('cisa')) return 85
-  return 10
+  const cveSpecific = cveIdInUrl(url, cveId)
+  const advisoryPath = hasAdvisoryPath(url)
+  const vendor = isVendorHost(host)
+  const nvd = isNvdHost(host)
+  const cisa = isCisaHost(host)
+  const githubAdvisory = GITHUB_ADVISORY_RE.test(url)
+
+  if (vendor && cveSpecific && advisoryPath) {
+    return { score: 100, label: 'Vendor advisory' }
+  }
+  if (cisa && cveSpecific) {
+    return { score: 90, label: 'CISA guidance' }
+  }
+  if (cisa && isKev && lower.includes('known-exploited')) {
+    return { score: 88, label: 'CISA guidance' }
+  }
+  if (vendor && advisoryPath) {
+    return { score: 80, label: 'Security advisory' }
+  }
+  if (githubAdvisory && cveSpecific) {
+    return { score: 65, label: 'Security advisory' }
+  }
+  if (nvd && cveSpecific) {
+    return { score: 70, label: 'NVD reference' }
+  }
+  if (advisoryPath && cveSpecific) {
+    return { score: 60, label: 'Security advisory' }
+  }
+  if (githubAdvisory) {
+    return { score: 55, label: 'Security advisory' }
+  }
+  if (nvd) {
+    return { score: 45, label: 'NVD reference' }
+  }
+  if (vendor && !isGenericDocUrl(url)) {
+    return { score: 30, label: 'Vendor reference' }
+  }
+  if (vendor) {
+    return { score: 20, label: 'Vendor reference' }
+  }
+  if (cveSpecific) {
+    return { score: 35, label: 'Source reference' }
+  }
+  return { score: 10, label: 'Source reference' }
 }
 
 /**
  * @param {object} cve
  * @param {string[]} [urls]
- * @returns {{ url: string, label: string } | null}
+ * @returns {{ url: string, label: string, score: number } | null}
  */
 export function pickPrimaryRemediationReference(cve, urls = []) {
   const list = Array.isArray(urls) ? urls : (cve?.source_urls || [])
   if (!list.length) return null
 
+  const cveId = cve?.cve_id
+  const isKev = !!cve?.is_kev
+
   const ranked = list
-    .map(url => ({ url, score: scoreReference(url, { isKev: !!cve?.is_kev }) }))
+    .map(url => {
+      const { score, label } = classifyRemediationReference(url, { cveId, isKev })
+      return { url, score, label }
+    })
     .filter(r => r.score > 0)
     .sort((a, b) => b.score - a.score)
 
   if (!ranked.length) return null
-
-  const best = ranked[0]
-  const host = hostOf(best.url)
-  let label = 'Official reference'
-  if (VENDOR_HOST_HINTS.some(v => host.includes(v))) label = 'Vendor advisory'
-  else if (CISA_HOSTS.some(c => host.includes(c))) label = 'CISA guidance'
-  else if (NVD_HOSTS.some(n => host.includes(n))) label = 'NVD reference'
-  else if (PROJECT_SECURITY_HINTS.some(h => best.url.toLowerCase().includes(h))) {
-    label = 'Security advisory'
-  }
-
-  return { url: best.url, label }
+  return ranked[0]
 }
 
 export function patchStatusLabel(cve) {

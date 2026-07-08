@@ -791,6 +791,7 @@ async def get_cve_sentences(cve_id: str):
         "public_exploits": exploit_sentence(exploit_items),
         "patch": patch_sentence(patch_available, fix),
         "kev": kev_sentence(is_kev, due_date),
+        "kev_required_action": fix or None,
     }
 
 
@@ -892,7 +893,7 @@ async def get_cve(cve_id: str):
         kev_rows = await db.execute_fetchall(
             """
             SELECT date_added, due_date, vendor_project, vulnerability_name,
-                   known_ransomware, cwes
+                   known_ransomware, cwes, required_action
             FROM kev_deadlines WHERE cve_id = ?
             """,
             (cve_key,),
@@ -901,6 +902,9 @@ async def get_cve(cve_id: str):
             kev_row = dict(kev_rows[0])
             cve["kev_date_added"] = (kev_row.get("date_added") or "").strip() or None
             cve["kev_due_date"] = (kev_row.get("due_date") or "").strip() or None
+            cve["kev_required_action"] = (
+                (kev_row.get("required_action") or "").strip() or None
+            )
             cve["kev_vendor_project"] = (kev_row.get("vendor_project") or "").strip() or None
             cve["kev_vulnerability_name"] = (
                 kev_row.get("vulnerability_name") or ""

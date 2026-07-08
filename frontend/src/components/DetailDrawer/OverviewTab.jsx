@@ -17,6 +17,7 @@ import {
   RISK_COMPONENT_LABELS,
 } from '../../scoring/riskScore.js'
 import { patchStatusLabel, pickPrimaryRemediationReference } from '../../utils/patchReferences.js'
+import { buildKevRemediationDisplay } from '../../utils/patchRemediation.js'
 import { drawerEpssBarColor, capecHref, capecLabel, flattenOsvPackageRows } from './helpers.js'
 
 
@@ -100,9 +101,11 @@ function PatchActionSection({ cve, sentences, urls }) {
   if (!cve) return null
   const status = patchStatusLabel(cve)
   const ref = pickPrimaryRemediationReference(cve, urls)
-  const kevGuidance = sentences?.kev
   const patchText = sentences?.patch
-  const isMitigationOnly = !cve.patch_available && kevGuidance
+  const kevRemediation = buildKevRemediationDisplay({ cve, sentences })
+  const showKevRemediation =
+    kevRemediation &&
+    (kevRemediation.variant === 'required-action' || !cve.patch_available)
 
   const statusClass =
     status === 'PATCH AVAILABLE' ? 'patch-available'
@@ -118,11 +121,11 @@ function PatchActionSection({ cve, sentences, urls }) {
       {patchText && (
         <p className="drawer-patch-guidance">{patchText}</p>
       )}
-      {isMitigationOnly && kevGuidance && (
+      {showKevRemediation && (
         <p className="drawer-patch-guidance drawer-patch-kev-guidance">
-          <span className="mono drawer-patch-kev-tag">CISA MITIGATION GUIDANCE</span>
+          <span className="mono drawer-patch-kev-tag">{kevRemediation.tag}</span>
           {' '}
-          {kevGuidance}
+          {kevRemediation.text}
         </p>
       )}
       {ref && (
@@ -601,7 +604,7 @@ export default function TabOverview({ cve, riskScore, riskLoading, onOpenProfile
       {sentences?.public_exploits && (
         <HumanSentence label="PUBLIC EXPLOITS" text={sentences.public_exploits} />
       )}
-      {sentences?.kev && !cve.patch_available && (
+      {sentences?.kev && cve.is_kev && (
         <HumanSentence label="CISA KEV STATUS" text={sentences.kev} />
       )}
 

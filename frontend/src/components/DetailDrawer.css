@@ -2115,9 +2115,15 @@
   border-style: dashed;
 }
 
+.drawer-asset-exposure--strong .drawer-asset-exposure-tier,
 .drawer-asset-exposure--confirmed .drawer-asset-exposure-tier {
   color: var(--red);
   border-color: var(--red);
+}
+
+.drawer-asset-exposure--high .drawer-asset-exposure-tier {
+  color: var(--amber);
+  border-color: var(--amber);
 }
 
 .drawer-asset-exposure--possible .drawer-asset-exposure-tier {

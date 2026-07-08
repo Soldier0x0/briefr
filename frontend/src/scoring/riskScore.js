@@ -107,10 +107,113 @@ export const RISK_COMPONENT_LABELS = {
 /** Analyst-facing asset exposure tiers (UI only — scoring unchanged). */
 export const ASSET_EXPOSURE_TIERS = {
   NOT_LOADED: 'NOT_LOADED',
-  CONFIRMED: 'CONFIRMED',
+  STRONG: 'STRONG',
+  HIGH: 'HIGH',
   POSSIBLE: 'POSSIBLE',
   NO_MATCH: 'NO_MATCH',
   UNKNOWN: 'UNKNOWN',
+}
+
+/** Backend CPE matcher label — version range evaluated in matching/cpe.py */
+const BACKEND_EXACT_CPE_VERSION =
+  'Your asset directly affected (exact CPE version match)'
+
+const BACKEND_CPE_PRODUCT =
+  'Your asset found in affected products (CPE product match)'
+
+/**
+ * Map backend assetMatchType to analyst-safe wording.
+ * Fuzzy matcher scores can reach 1.0 without vulnerable-version proof.
+ */
+export function inferAssetMatchSemantics(assetMatchType, assetScore) {
+  const mt = String(assetMatchType || '').trim()
+
+  if (!mt || mt === 'No matching assets in your profile' || assetScore === 0) {
+    return {
+      tier: ASSET_EXPOSURE_TIERS.NO_MATCH,
+      label: 'NO MATCH FOUND',
+      headline: 'NO PROFILE MATCH DETECTED',
+      detail:
+        'No products, vendors, operating systems, or technologies in your asset profile match this CVE\'s affected products.',
+    }
+  }
+
+  if (mt === BACKEND_EXACT_CPE_VERSION) {
+    return {
+      tier: ASSET_EXPOSURE_TIERS.STRONG,
+      label: 'STRONG MATCH',
+      headline: 'HIGH ASSET RELEVANCE',
+      detail:
+        `${mt} — CPE version evaluated against stored vulnerable version constraints.`,
+    }
+  }
+
+  if (mt === BACKEND_CPE_PRODUCT) {
+    return {
+      tier: ASSET_EXPOSURE_TIERS.HIGH,
+      label: 'HIGH ASSET RELEVANCE',
+      headline: 'PRODUCT OVERLAP DETECTED',
+      detail: `${mt} — product-level CPE overlap; exact vulnerable version not confirmed.`,
+    }
+  }
+
+  if (mt.includes('directly affected (exact CPE match)')) {
+    return {
+      tier: ASSET_EXPOSURE_TIERS.HIGH,
+      label: 'HIGH ASSET RELEVANCE',
+      headline: 'PRODUCT/VERSION OVERLAP',
+      detail:
+        `${mt} — profile product/vendor overlap; vulnerable version range not verified by CPE constraints.`,
+    }
+  }
+
+  if (
+    mt.includes('(CPE product match)')
+    || mt.includes('(OS match)')
+    || assetScore >= 0.8
+  ) {
+    return {
+      tier: ASSET_EXPOSURE_TIERS.HIGH,
+      label: 'HIGH ASSET RELEVANCE',
+      headline: 'STACK OVERLAP DETECTED',
+      detail: mt,
+    }
+  }
+
+  if (
+    mt.includes('mentioned in vulnerability description')
+    || mt.includes('referenced in vulnerability description')
+    || mt.includes('description mention')
+    || mt.includes('referenced in')
+  ) {
+    return {
+      tier: ASSET_EXPOSURE_TIERS.POSSIBLE,
+      label: 'POSSIBLE MATCH',
+      headline: 'WEAK TEXTUAL OVERLAP',
+      detail: `${mt} — mention in CVE text or partial profile overlap only.`,
+    }
+  }
+
+  if (
+    mt.includes('product match')
+    || mt.includes('vendor match')
+    || mt.includes('AI system match')
+    || (assetScore >= 0.35 && assetScore < 0.8)
+  ) {
+    return {
+      tier: ASSET_EXPOSURE_TIERS.POSSIBLE,
+      label: 'POSSIBLE MATCH',
+      headline: 'PARTIAL STACK OVERLAP',
+      detail: mt,
+    }
+  }
+
+  return {
+    tier: ASSET_EXPOSURE_TIERS.UNKNOWN,
+    label: 'UNKNOWN',
+    headline: 'MATCH STATUS UNCLEAR',
+    detail: mt || 'Unable to determine asset relevance from available profile and CVE data.',
+  }
 }
 
 /**
@@ -138,57 +241,19 @@ export function getAssetExposureStatus(riskScore) {
     }
   }
 
-  const noMatch =
-    assetScore === 0 ||
-    assetMatchType === 'No matching assets in your profile'
-
-  if (noMatch) {
-    return {
-      tier: ASSET_EXPOSURE_TIERS.NO_MATCH,
-      label: 'NO MATCH',
-      headline: 'NOT IN YOUR STACK',
-      detail:
-        'No products, vendors, operating systems, or technologies in your asset profile match this CVE\'s affected products.',
-      matchReason: assetMatchType || null,
-      showSignalBar: true,
-      signalScore: assetScore,
-    }
-  }
-
-  if (assetScore >= 0.9) {
-    return {
-      tier: ASSET_EXPOSURE_TIERS.CONFIRMED,
-      label: 'CONFIRMED MATCH',
-      headline: 'AFFECTED ASSET LIKELY',
-      detail: assetMatchType,
-      matchReason: assetMatchType,
-      showSignalBar: true,
-      signalScore: assetScore,
-    }
-  }
-
-  if (assetScore > 0) {
-    return {
-      tier: ASSET_EXPOSURE_TIERS.POSSIBLE,
-      label: 'POSSIBLE MATCH',
-      headline: 'PARTIAL STACK OVERLAP',
-      detail: assetMatchType,
-      matchReason: assetMatchType,
-      showSignalBar: true,
-      signalScore: assetScore,
-    }
-  }
+  const semantics = inferAssetMatchSemantics(assetMatchType, assetScore)
 
   return {
-    tier: ASSET_EXPOSURE_TIERS.UNKNOWN,
-    label: 'UNKNOWN',
-    headline: 'MATCH STATUS UNCLEAR',
-    detail:
-      assetMatchType ||
-      'Unable to determine asset relevance from available profile and CVE data.',
-    matchReason: assetMatchType || null,
-    showSignalBar: false,
+    tier: semantics.tier,
+    label: semantics.label,
+    headline: semantics.headline,
+    detail: semantics.detail,
+    matchReason: assetMatchType && semantics.tier !== ASSET_EXPOSURE_TIERS.NO_MATCH
+      ? assetMatchType
+      : null,
+    showSignalBar: semantics.tier !== ASSET_EXPOSURE_TIERS.NO_MATCH,
     signalScore: assetScore,
+    formulaNote: null,
   }
 }
 
