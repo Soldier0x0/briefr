@@ -119,7 +119,7 @@ Reference implementation: `backend/db/sync_state.py`.
 | 5 | `db/cache_retention.py` | 191 | **Done** — PR 3 |
 | 6 | `db/cache.py` | 303 | **Done** — PR 4 |
 | 7 | `db/enrichment.py` | 430 | **Done** — PR 5 |
-| 8–9 | `db/metadata.py` + `db/correlation.py` | 478 + 489 | **In PR 6** (batched) |
+| 8–9 | `db/metadata.py` + `db/correlation.py` | 478 + 489 | **Done** — PR 6 (#326) |
 | 10 | `db/cve.py` | 544 | Pending — **solo PR** |
 | 11 | `db/init.py` | 627 | Pending — **solo PR, last** |
 

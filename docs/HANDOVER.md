@@ -12,6 +12,17 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 1 PR 6 merged (#326): `metadata` + `correlation`
+
+**Merged:** #326. CI green after Postgres fix: timeline filter uses `published >= $1`
+(TEXT) instead of binding a string to `published::date >= $1` (asyncpg requires
+`date` objects for `::date` params). Full suite: `789 passed, 8 skipped` (SQLite);
+`780 passed, 17 skipped` (Postgres CI).
+
+**Next:** solo `db/cve.py` (Post-B Phase 1 PR 7).
+
+---
+
 ## 2026-07-08 — Post-B Phase 1 PR 6: `metadata` + `correlation` Postgres-native
 
 **What:** Converted `backend/db/metadata.py` and `backend/db/correlation.py` to
