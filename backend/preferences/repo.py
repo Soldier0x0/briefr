@@ -128,7 +128,10 @@ async def get_user_preferences(db: Any, user_id: int) -> dict:
         }
     row = rows[0]
     prefs = _decode_display_prefs(row["display_prefs_json"])
-    tz = validate_timezone(row["timezone"] or "UTC")
+    try:
+        tz = validate_timezone(row["timezone"] or "UTC")
+    except ValueError:
+        tz = "UTC"
     return {
         **prefs,
         "timezone": tz,

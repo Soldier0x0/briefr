@@ -12,11 +12,11 @@ export default function DisplayPage() {
   function update(key, value) {
     const next = { ...prefs, [key]: value }
     setPrefs(next)
-    void setDisplayPrefs(next)
+    void setDisplayPrefs(next).catch(() => setPrefs(getDisplayPrefs()))
   }
 
   function reset() {
-    void resetDisplayPrefs().then(() => setPrefs(getDisplayPrefs()))
+    void resetDisplayPrefs().finally(() => setPrefs(getDisplayPrefs()))
   }
 
   return (

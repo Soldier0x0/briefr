@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from zoneinfo import ZoneInfo
 
 FONT_SCALES = frozenset({"xsmall", "small", "medium", "large", "xlarge"})
 DENSITY_MODES = frozenset({"compact", "comfortable", "spacious"})
@@ -28,7 +28,7 @@ def validate_timezone(raw: str | None) -> str:
         raise ValueError(f"timezone must be at most {MAX_TIMEZONE_LEN} characters")
     try:
         ZoneInfo(token)
-    except ZoneInfoNotFoundError as exc:
+    except Exception as exc:
         raise ValueError("timezone is not a valid IANA zone") from exc
     return token
 

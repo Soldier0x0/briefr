@@ -132,6 +132,8 @@ EXPECTED_ROUTES = [
     # Per-user stack profile (Wave 2 PR 3): appended after auth routes.
     ("GET", "/api/me/stack"),
     ("PUT", "/api/me/stack"),
+    ("GET", "/api/me/preferences"),
+    ("PATCH", "/api/me/preferences"),
 ]
 
 
