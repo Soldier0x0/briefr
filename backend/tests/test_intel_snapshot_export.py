@@ -91,7 +91,16 @@ def test_export_intel_snapshot_round_trip(tmp_path, postgres_schema):
             for table in INTEL_TABLES:
                 counts[table] = int(await conn.fetchval(f"SELECT COUNT(*) FROM {table}"))
             for table in OPERATOR_GUARD_TABLES:
-                counts[table] = int(await conn.fetchval(f"SELECT COUNT(*) FROM {table}"))
+                exists = await conn.fetchval(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1 FROM information_schema.tables
+                        WHERE table_schema = 'public' AND table_name = $1
+                    )
+                    """,
+                    table,
+                )
+                assert not exists, f"operator table {table} must not be in intel restore"
             return counts
         finally:
             await conn.close()
@@ -99,5 +108,3 @@ def test_export_intel_snapshot_round_trip(tmp_path, postgres_schema):
     restored = asyncio.run(_counts())
     for table in INTEL_TABLES:
         assert restored[table] == manifest["row_counts"][table], table
-    for table in OPERATOR_GUARD_TABLES:
-        assert restored[table] == 0, table
