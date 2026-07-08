@@ -12,6 +12,18 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Wave 3 PR 8: DATA_SNAPSHOT spec + ADR-001
+
+**Session:** Added `docs/DATA_SNAPSHOT.md` (INTEL vs OPERATOR table/key allowlists,
+bundle format, verification rules) and `docs/decisions/ADR-001-intel-app-schema-split.md`.
+Export script is Wave 3 PR 9.
+
+### Next steps
+
+**Wave 3 PR 9** — `scripts/export_intel_snapshot.py` + CI restore smoke (Track J2).
+
+---
+
 ## 2026-07-08 — Wave 2 PR 6: asset profile persistence toggle
 
 **Session:** My Stack inventory stays session-only by default; signed-in users can
