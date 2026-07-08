@@ -12,6 +12,22 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Post-B Phase 1 PR 6: `metadata` + `correlation` Postgres-native
+
+**What:** Converted `backend/db/metadata.py` and `backend/db/correlation.py` to
+the locked `sync_state` pattern — parallel `_SQLITE` / `_PG` constants; connection-type
+dispatch; Python-computed UTC date/datetime cutoffs; explicit `ON CONFLICT` on
+Postgres for upserts/ignores; chunked dynamic `IN` lists in correlation
+prioritization queries. Added `tests/test_db_metadata.py` and
+`tests/test_db_correlation.py`.
+
+**Verified:** `pytest tests/test_db_metadata.py tests/test_db_correlation.py tests/test_cve_detail_atlas.py -q`
+(15 passed, SQLite); full suite `789 passed, 8 skipped` (SQLite).
+
+**Next:** open PR, address Gemini, CI green, merge; then solo `db/cve.py` (PR 7).
+
+---
+
 ## 2026-07-08 — Post-B Phase 1 PR 5 merged (#325): `enrichment`
 
 **Merged:** #325 at 2026-07-08T09:09:02Z. CI green after fix for Postgres
