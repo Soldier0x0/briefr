@@ -39,6 +39,9 @@ async def gemini_chat_completion(
     max_tokens: int = 500,
     temperature: float = 0.0,
     timeout: float = 60.0,
+    queue_operation: str | None = None,
+    queue_context_type: str | None = None,
+    queue_context_id: str | None = None,
 ) -> str:
     model_name = model or gemini_model()
     system_instruction, contents = _messages_to_gemini(messages)
@@ -69,6 +72,9 @@ async def gemini_chat_completion(
         retries=0,
         wait_on_rate_limit=True,
         wait_on_circuit=True,
+        queue_operation=queue_operation,
+        queue_context_type=queue_context_type,
+        queue_context_id=queue_context_id,
     )
     apply_rate_limit_headers("gemini", response.headers, estimated_tokens=max_tokens + 500)
     try:

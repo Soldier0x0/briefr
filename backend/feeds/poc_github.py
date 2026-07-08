@@ -80,13 +80,23 @@ def _cve_from_repo_path(path: str) -> str | None:
     return None
 
 
-async def _fetch_json(url: str, *, timeout: float = 30.0) -> Any | None:
+async def _fetch_json(
+    url: str,
+    *,
+    timeout: float = 30.0,
+    operation: str = "exploit_feed_sync",
+    context_type: str | None = "task",
+    context_id: str | None = "poc_github_sync",
+) -> Any | None:
     try:
         response = await resilient_get(
             "poc_github",
             url,
             headers=_github_headers(),
             timeout=timeout,
+            queue_operation=operation,
+            queue_context_type=context_type,
+            queue_context_id=context_id,
         )
         await record_api_call("poc_github", 1)
         return response.json()
@@ -167,7 +177,12 @@ async def _apply_paths(
         cve_id = _cve_from_repo_path(path)
         if not cve_id or cve_id not in known_cve_ids:
             continue
-        payload = await _fetch_json(f"{POC_GITHUB_RAW_BASE}/{path}")
+        payload = await _fetch_json(
+            f"{POC_GITHUB_RAW_BASE}/{path}",
+            operation="exploit_search",
+            context_type="cve",
+            context_id=cve_id,
+        )
         cards = parse_poc_github_json(cve_id, payload)
         if not cards:
             continue

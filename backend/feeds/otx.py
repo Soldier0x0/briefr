@@ -21,7 +21,14 @@ from tracking import record_api_call
 logger = logging.getLogger(__name__)
 
 
-async def _otx_get(url: str, api_key: str) -> dict | None:
+async def _otx_get(
+    url: str,
+    api_key: str,
+    *,
+    operation: str = "pulse_lookup",
+    context_type: str | None = None,
+    context_id: str | None = None,
+) -> dict | None:
     """GET via the resilient client; returns None on 404, circuit-open or failure."""
     from tracking import has_quota
 
@@ -30,7 +37,13 @@ async def _otx_get(url: str, api_key: str) -> dict | None:
         return None
     try:
         response = await resilient_get(
-            "otx", url, headers=_otx_headers(api_key), timeout=30.0
+            "otx",
+            url,
+            headers=_otx_headers(api_key),
+            timeout=30.0,
+            queue_operation=operation,
+            queue_context_type=context_type,
+            queue_context_id=context_id,
         )
         await record_api_call("otx", 1)
         data = response.json()
@@ -166,7 +179,13 @@ async def fetch_cve_pulses(cve_id: str, api_key: str) -> list[dict]:
         return []
 
     url = f"{OTX_BASE}/indicators/cve/{cve_id.upper()}/general"
-    data = await _otx_get(url, api_key)
+    data = await _otx_get(
+        url,
+        api_key,
+        operation="pulse_lookup",
+        context_type="cve",
+        context_id=cve_id.upper(),
+    )
     if data is None:
         return []
 
@@ -196,7 +215,13 @@ async def fetch_pulse_iocs(pulse_id: str, api_key: str) -> list[dict]:
         return []
 
     url = f"{OTX_BASE}/pulses/{pulse_id}/indicators"
-    data = await _otx_get(url, api_key)
+    data = await _otx_get(
+        url,
+        api_key,
+        operation="indicator_lookup",
+        context_type="task",
+        context_id=pulse_id,
+    )
     if data is None:
         return []
 
@@ -245,7 +270,13 @@ async def lookup_ioc_in_otx(ioc_value: str, ioc_type: str, api_key: str) -> dict
         return empty
 
     url = f"{OTX_BASE}/indicators/{path}/general"
-    data = await _otx_get(url, api_key)
+    data = await _otx_get(
+        url,
+        api_key,
+        operation="indicator_lookup",
+        context_type="observable",
+        context_id=ioc_value,
+    )
     if data is None:
         return empty
 

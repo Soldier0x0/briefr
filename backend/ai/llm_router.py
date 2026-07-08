@@ -14,6 +14,7 @@ from typing import Literal
 from ai.gemini_client import gemini_chat_completion, gemini_model
 from ai.groq_config import GROQ_MODEL, GROQ_MODEL_SUMMARY, GROQ_URL
 from ai.openai_chat import openai_chat_completion
+from api_queue_operations import LLM_TASK_OPERATIONS
 from resilient_client import CircuitOpenError
 
 logger = logging.getLogger(__name__)
@@ -128,10 +129,19 @@ async def _call_provider(
     max_tokens: int,
     temperature: float,
     timeout: float,
+    queue_operation: str,
+    queue_context_type: str | None = None,
+    queue_context_id: str | None = None,
 ) -> str:
     api_key = _api_key(step.provider)
     if not api_key:
         return ""
+
+    queue_kwargs = {
+        "queue_operation": queue_operation,
+        "queue_context_type": queue_context_type,
+        "queue_context_id": queue_context_id,
+    }
 
     if step.provider == "groq":
         return await openai_chat_completion(
@@ -143,6 +153,7 @@ async def _call_provider(
             max_tokens=max_tokens,
             temperature=temperature,
             timeout=timeout,
+            **queue_kwargs,
         )
 
     if step.provider == "gemini":
@@ -153,6 +164,7 @@ async def _call_provider(
             max_tokens=max_tokens,
             temperature=temperature,
             timeout=timeout,
+            **queue_kwargs,
         )
 
     if step.provider == "cerebras":
@@ -165,6 +177,7 @@ async def _call_provider(
             max_tokens=max_tokens,
             temperature=temperature,
             timeout=timeout,
+            **queue_kwargs,
         )
 
     if step.provider == "openrouter":
@@ -181,6 +194,7 @@ async def _call_provider(
                 "HTTP-Referer": os.environ.get("OPENROUTER_HTTP_REFERER", "https://briefr.local"),
                 "X-Title": "BRIEFR",
             },
+            **queue_kwargs,
         )
 
     return ""
@@ -193,8 +207,13 @@ async def chat_completion_task(
     max_tokens: int = 500,
     temperature: float = 0.0,
     timeout: float = 60.0,
+    cve_id: str | None = None,
 ) -> LLMCompletion | None:
     """Try providers in failover order; return first non-empty completion."""
+    queue_operation = LLM_TASK_OPERATIONS.get(task, "outbound_request")
+    queue_context_type = "cve" if cve_id else "task"
+    queue_context_id = cve_id if cve_id else task
+
     for step in _task_chain(task):
         if not _api_key(step.provider):
             continue
@@ -206,6 +225,9 @@ async def chat_completion_task(
                     max_tokens=max_tokens,
                     temperature=temperature,
                     timeout=timeout,
+                    queue_operation=queue_operation,
+                    queue_context_type=queue_context_type,
+                    queue_context_id=queue_context_id,
                 )
             ).strip()
             if content:

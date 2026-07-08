@@ -79,13 +79,24 @@ async def _quota_safe_get(
     params: dict | None = None,
     label: str = "",
     not_found_status: tuple[int, ...] = (404,),
+    queue_operation: str = "observable_lookup",
+    queue_context_type: str | None = "observable",
+    queue_context_id: str | None = None,
 ) -> dict:
     """GET through the resilient client with retries=0 — IOC enrichment APIs
     are quota-billed (VT 500/day, AbuseIPDB 1000/day), so a failed call must
     never be retried automatically. Circuit breaker still applies."""
     try:
         response = await resilient_get(
-            source, url, headers=headers, params=params, timeout=30.0, retries=0
+            source,
+            url,
+            headers=headers,
+            params=params,
+            timeout=30.0,
+            retries=0,
+            queue_operation=queue_operation,
+            queue_context_type=queue_context_type,
+            queue_context_id=queue_context_id or label,
         )
         data = response.json()
         return data if isinstance(data, dict) else {}
@@ -117,6 +128,9 @@ async def _lookup_vt_ip(ip: str, api_key: str) -> dict:
         f"{VT_BASE_URL}/ip_addresses/{ip}",
         headers={"x-apikey": api_key},
         label=f"ip {ip}",
+        queue_operation="observable_lookup",
+        queue_context_type="ip",
+        queue_context_id=ip,
     )
 
 
@@ -128,6 +142,9 @@ async def _lookup_abuseipdb(ip: str, api_key: str) -> dict:
         headers={"Key": api_key, "Accept": "application/json"},
         label=f"ip {ip}",
         not_found_status=(404, 422),
+        queue_operation="ip_lookup",
+        queue_context_type="ip",
+        queue_context_id=ip,
     )
 
 
@@ -137,6 +154,9 @@ async def _lookup_vt_hash(file_hash: str, api_key: str) -> dict:
         f"{VT_BASE_URL}/files/{file_hash}",
         headers={"x-apikey": api_key},
         label=f"hash {file_hash}",
+        queue_operation="observable_lookup",
+        queue_context_type="hash",
+        queue_context_id=file_hash,
     )
 
 
@@ -146,6 +166,9 @@ async def _lookup_vt_domain(domain: str, api_key: str) -> dict:
         f"{VT_BASE_URL}/domains/{domain}",
         headers={"x-apikey": api_key},
         label=f"domain {domain}",
+        queue_operation="observable_lookup",
+        queue_context_type="domain",
+        queue_context_id=domain,
     )
 
 

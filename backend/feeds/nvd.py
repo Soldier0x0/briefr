@@ -211,7 +211,12 @@ async def _fetch_page(
     use_key = bool(headers)
 
     while True:
-        await await_api_slot("nvd")
+        slot_id = await await_api_slot(
+            "nvd",
+            operation="cve_ingest",
+            context_type="task",
+            context_id="nvd_sync",
+        )
         try:
             response = await client.get(
                 NVD_BASE_URL,
@@ -248,7 +253,7 @@ async def _fetch_page(
             record_source_failure("nvd", f"{type(exc).__name__}: {exc}")
             raise
         finally:
-            release_api_slot("nvd")
+            release_api_slot("nvd", slot_id)
 
 
 def _format_nvd_datetime(dt: datetime) -> str:

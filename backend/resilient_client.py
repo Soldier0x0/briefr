@@ -250,6 +250,9 @@ async def resilient_request(
     wait_on_rate_limit: bool = True,
     wait_on_circuit: bool = False,
     record_client_error: bool = True,
+    queue_operation: str | None = None,
+    queue_context_type: str | None = None,
+    queue_context_id: str | None = None,
 ) -> httpx.Response:
     """Perform an HTTP request with queue pacing, retries, and circuit recovery.
 
@@ -272,7 +275,12 @@ async def resilient_request(
                 continue
             raise CircuitOpenError(source, open_until)
 
-        await await_api_slot(source)
+        slot_id = await await_api_slot(
+            source,
+            operation=queue_operation,
+            context_type=queue_context_type,
+            context_id=queue_context_id,
+        )
         try:
             return await _execute_request_attempt(
                 source,
@@ -298,7 +306,7 @@ async def resilient_request(
                 continue
             raise
         finally:
-            release_api_slot(source)
+            release_api_slot(source, slot_id)
 
 
 async def resilient_get(source: str, url: str, **kwargs: Any) -> httpx.Response:
