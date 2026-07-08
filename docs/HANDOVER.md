@@ -12,6 +12,92 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — ADR-002 CLOSED: scoring axes + Operational Priority (docs-only)
+
+**What:** `docs/decisions/ADR-002-operational-priority.md` (ACCEPTED). Resolves the
+scoring semantic failure verified in code: no-profile asset → `0.5` → **17.5
+phantom headline points**, while profile+no-match → `0.0` → 0 points, so UNKNOWN
+was fabricated positive evidence. Decision = **Option D** (rejected naive Option C's
+arbitrary weighted average):
+
+- **Threat Score** (0–100, asset-independent) = v1.1b components minus asset,
+  renormalized over the 5 non-asset weights, with a **KEV floor of 80** (confirmed
+  exploitation dominates low EPSS). Bands CRIT≥80 / HIGH 60-79 / MED 40-59 / LOW<40.
+- **Environment Relevance** = categorical tier (CONFIRMED / LIKELY / POSSIBLE /
+  WEAK / NO_MATCH / UNKNOWN), never folded into the number.
+- **Operational Priority** = deterministic **P1–P4 rule table** over (Threat band ×
+  Env tier); **Correlation** = bounded one-band escalation (active/emerging campaign
+  + high-confidence edge; weak edges never escalate). UNKNOWN → provisional off
+  Threat band (no fabricated points); proven NO_MATCH legitimately de-escalates.
+- **Investigation Score → DELETED** (orphaned; its formula is the rejected weighted
+  average; double-counts OTX recency; re-imports the placeholder via risk_total).
+
+**Verified in code:** headline `total` still banks the 17.5 even though the exposure
+*card* already shows NOT_LOADED/NO_MATCH; `fetchCVEInvestigationScore` has **zero
+component callers**; risk inputs are persisted `cves` columns (a provider blip can't
+move the score); backend/frontend weights mirror. Adversarial pass (12 challenges)
+drove the KEV floor (#1/#3) and the "P1 reserved for CONFIRMED version / genuine
+CRIT" rule (#6). Full scenario matrix S1–S10 in the ADR.
+
+**Correction:** the 2026-07-09 review's "loading a profile must never lower priority"
+claim is **superseded** — a proven NO_MATCH may de-escalate; only UNKNOWN-as-fabricated-
+evidence is forbidden. Review §4.5 updated to RESOLVED.
+
+**M1 is now DETERMINISTIC** (STANDARD coding agent) — full executable prompt in
+`BRIEFR_ARCHITECTURE_REVIEW_2026-07.md` Appendix A Prompt 6. No FRONTIER-reasoning
+scoring work remains.
+
+**Next:** **J1** (production update safety) remains the exact next execution task;
+M1 is the Wave-2 scoring implementation once picked up.
+
+---
+
+## 2026-07-09 — Architecture review + wave replan (docs-only)
+
+**What:** Repository-wide principal-architect review. New durable artifact
+[`BRIEFR_ARCHITECTURE_REVIEW_2026-07.md`](BRIEFR_ARCHITECTURE_REVIEW_2026-07.md)
+(the primary output — read it before re-investigating correlation, scoring,
+freshness, scheduler, or production). `SPRINT_2026-07.md` execution queue
+replaced with a **wave model**; the linear J→H→I→F→G queue is kept but marked
+superseded. `CORRELATION_V2_PLAN.md` given a SUPERSEDED header (code is at
+~phase 3, the plan still reads "v1").
+
+**Verdicts (evidence in the review):**
+- **Correlation = INCREMENTALLY EVOLVE.** Deterministic pipeline is mature
+  (phases 1–2 shipped, phase 3 partial). The `evidence[]/confidence/why_not_higher`
+  model already satisfies the relationship+evidence abstraction — **no generic
+  graph, no Neo4j, no `correlation_campaign_edges` persistence**. Real gaps:
+  `lifecycle` hardcoded `"active"`, no feed campaign badge, `correlation_infrastructure`
+  is dead schema. Fix via three small PRs (C-Evolve-1/2/3).
+- **Risk scoring = PRESERVE MATH, FIX PRESENTATION via ADR-002.** v1.1b is sound
+  and deterministic. The failure is the blended headline + the `0.5` asset
+  placeholder (folded into the headline, it *inverts* real weak matches — a
+  profile match of 0.45→15.75 scores below no-profile 0.5→17.5). Recommend
+  Option C **in principle**; the remedy is analyst-facing, so it is **ADR-002**,
+  not a decision this PR makes. The fused **Investigation Score** is **orphaned**
+  (backend route + `api.js` `fetchCVEInvestigationScore`, no UI caller) — ADR-002
+  decides adopt-or-delete. Do NOT wire it by default meanwhile.
+- **Scheduler = PRESERVE** (APScheduler sufficient; no Celery/Redis/Kafka).
+- **Detection = PRESERVE** (deterministic class router; LLM overlay can't author rules).
+- **Production = top priority.** `briefr-update.sh` has no Alembic step, health
+  check only warns, no rollback; smoke warn-only by default. CI round-trip ≠
+  production recovery — J1/J3/J4 + a written restore runbook (J5) are Wave 1.
+- **Track H:** Track E shipped toast/states/tooltips/tiles without `ui/`; H1/H3/H5/H6
+  are done indirectly — H-verify to close them; H2/H4 conditional; no UI rewrite.
+- **Perf:** only gzip (I2) is an unambiguous quick win; I1 obsolete; measure the rest.
+
+**Parallel-safe:** J-track (deploy) ‖ correlation lifecycle/badge (C-Evolve-1/2)
+‖ I2 gzip ‖ FR1 provenance. **Not parallel-safe:** M1 scoring-surface,
+C-Evolve-3 drawer chip, and H2/H4 all touch `DetailDrawer` — sequence them.
+
+**Frontier-reasoning outstanding:** ~~ADR-002~~ **none** — ADR-002 was **closed
+2026-07-09** (see the newer HANDOVER entry above). All remaining work is
+deterministic implementation.
+
+**Next:** **J1** — Alembic + health gate + rollback in `deploy/briefr-update.sh`.
+
+---
+
 ## 2026-07-08 — Sprint queue reordered (J → H → I → F → G)
 
 **What:** `docs/SPRINT_2026-07.md` execution queue rewritten after Post-B4.
