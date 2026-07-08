@@ -269,7 +269,7 @@ When no row exists yet, `stack_terms` is `""`, `profile` is `null`, and `updated
 
 **Validation:** `stack_terms` is normalized (trimmed, empty segments dropped, rejoined with commas). `profile` must be a JSON object when present; unknown keys are dropped and lists are sanitized to the asset-wizard shape. Oversized payloads → `422`.
 
-**Notes:** `BRIEFR_STACK_TERMS` in admin config remains the server-side operator default for KEV-on-stack webhooks and wallboard until Wave 2 PR 4 unifies reads. Per-user stack does not change those paths yet.
+**Notes:** `BRIEFR_STACK_TERMS` in admin config overrides the saved user stack for KEV-on-stack webhooks and the wallboard tile. When unset, the backend uses the most recently updated non-empty `user_preferences.stack_terms` row.
 
 ---
 

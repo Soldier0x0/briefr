@@ -383,6 +383,15 @@ export default function App() {
   }, [loadStats])
 
   useEffect(() => {
+    function onStackLoaded(e) {
+      const terms = e.detail?.stack_terms || ''
+      setFilters((prev) => (prev.stack ? prev : { ...prev, stack: terms }))
+    }
+    window.addEventListener('briefr-stack-loaded', onStackLoaded)
+    return () => window.removeEventListener('briefr-stack-loaded', onStackLoaded)
+  }, [])
+
+  useEffect(() => {
     loadHealth()
     const id = setInterval(loadHealth, 60000)
     return () => clearInterval(id)

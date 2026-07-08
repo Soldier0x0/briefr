@@ -10,10 +10,10 @@ from backup.manager import BackupConfig, list_backups
 from database import (
     filter_cves_matching_stack,
     get_db,
-    get_stack_terms,
     get_sync_state_value,
     set_sync_state_value,
 )
+from preferences.repo import get_effective_stack_terms
 from routers.cves import _stack_match_clause
 from webhooks.destinations import EVENT_BACKUP_FAILURE, EVENT_KEV_ALERT
 from webhooks.engine import clear_event_dedupe, dispatch_event
@@ -93,14 +93,14 @@ async def process_kev_stack_alerts(newly_kev_ids: list[str]) -> int:
     if not newly_kev_ids or not webhooks_enabled():
         return 0
 
-    stack = get_stack_terms()
-    clause, _, terms = _stack_match_clause(stack)
-    if not clause or not terms:
-        logger.debug("KEV stack alerts skipped: BRIEFR_STACK_TERMS unset")
-        return 0
-
     db = await get_db()
     try:
+        stack = await get_effective_stack_terms(db)
+        clause, _, terms = _stack_match_clause(stack)
+        if not clause or not terms:
+            logger.debug("KEV stack alerts skipped: no stack terms configured")
+            return 0
+
         matches = await filter_cves_matching_stack(db, newly_kev_ids, stack)
         candidates = []
         for cve in matches:

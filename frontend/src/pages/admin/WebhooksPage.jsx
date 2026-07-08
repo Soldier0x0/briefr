@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { adminApi } from '../../api.js'
+import { adminApi, fetchUserStack } from '../../api.js'
 import { fmtIso } from './formatters.js'
 
 export default function WebhooksPage({ toast }) {
   const [config, setConfig] = useState(null)
+  const [userStack, setUserStack] = useState('')
   const [results, setResults] = useState({})
   const [testing, setTesting] = useState({})
   const [log, setLog] = useState(null)
@@ -12,6 +13,7 @@ export default function WebhooksPage({ toast }) {
 
   useEffect(() => {
     adminApi.get('/config').then(r => r.json()).then(setConfig).catch(() => {})
+    fetchUserStack().then((d) => setUserStack(d?.stack_terms || '')).catch(() => {})
   }, [])
 
   async function loadLog(offset = 0) {
@@ -41,7 +43,8 @@ export default function WebhooksPage({ toast }) {
     return false
   }
 
-  const stackTerms = config?.app?.BRIEFR_STACK_TERMS || ''
+  const envStack = (config?.app?.BRIEFR_STACK_TERMS || '').trim()
+  const stackTerms = envStack || userStack
 
   return (
     <div>
@@ -97,7 +100,17 @@ export default function WebhooksPage({ toast }) {
           ) : <span style={{ color: 'var(--text3)' }}>No stack terms configured</span>}
         </div>
         <div style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
-          Set <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>BRIEFR_STACK_TERMS</code> on the <strong>API keys &amp; config</strong> page in the sidebar.
+          {envStack ? (
+            <>
+              Using operator override <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>BRIEFR_STACK_TERMS</code> from <strong>API keys &amp; config</strong>.
+              Clear it to use the stack saved in the Feed tab.
+            </>
+          ) : (
+            <>
+              Set stack terms in the <strong>Feed</strong> tab (saved to your account). Optional operator override:
+              {' '}<code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>BRIEFR_STACK_TERMS</code> on <strong>API keys &amp; config</strong>.
+            </>
+          )}
         </div>
       </div>
 

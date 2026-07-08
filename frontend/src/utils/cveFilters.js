@@ -1,14 +1,8 @@
-/** Shared CVE filter helpers (stack in localStorage, API param mapping). */
+/** Shared CVE filter helpers (stack on server via /api/me/stack, API param mapping). */
 
-export const STACK_STORAGE_KEY = 'briefr_stack'
+import { getSavedStack } from './userStack.js'
 
-export function getSavedStack() {
-  try {
-    return (localStorage.getItem(STACK_STORAGE_KEY) || '').trim()
-  } catch {
-    return ''
-  }
-}
+export { getSavedStack }
 
 /** Map UI filter state to query params for /api/cves. */
 export function toApiCveParams(filters) {

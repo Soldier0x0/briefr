@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { fetchCVEsForExport } from '../api.js'
-import { STACK_STORAGE_KEY, toApiCveParams } from '../utils/cveFilters.js'
+import { notifyApiError } from './Toast.jsx'
+import { toApiCveParams } from '../utils/cveFilters.js'
+import { saveUserStack } from '../utils/userStack.js'
 import { cvesToCsvRows, downloadCsv, exportFilename } from '../utils/exportCsv.js'
 import './FilterBar.css'
 
@@ -141,10 +143,7 @@ export default function FilterBar({
     if (stackDebounceRef.current) clearTimeout(stackDebounceRef.current)
     stackDebounceRef.current = setTimeout(() => {
       const trimmed = val.trim()
-      try {
-        localStorage.setItem(STACK_STORAGE_KEY, trimmed)
-      } catch { /* ignore */ }
-      window.dispatchEvent(new CustomEvent('briefr-stack-change'))
+      saveUserStack(trimmed).catch((err) => notifyApiError(err))
       onFiltersChange({ stack: trimmed })
     }, STACK_DEBOUNCE_MS)
   }
@@ -157,10 +156,7 @@ export default function FilterBar({
   function handleStackClear() {
     setLocalStack('')
     if (stackDebounceRef.current) clearTimeout(stackDebounceRef.current)
-    try {
-      localStorage.removeItem(STACK_STORAGE_KEY)
-    } catch { /* ignore */ }
-    window.dispatchEvent(new CustomEvent('briefr-stack-change'))
+    saveUserStack('').catch((err) => notifyApiError(err))
     onFiltersChange({ stack: '' })
   }
 
