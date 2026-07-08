@@ -37,18 +37,44 @@
 
 /* Bulk-select highlight */
 .cve-card.cve-selected {
-  background: color-mix(in srgb, var(--red-dim) 35%, var(--bg));
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg2));
+  border-left: 3px solid var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
-/* Arrow-key nav highlight */
-.cve-card.cve-nav-selected {
+/* Currently opened in detail drawer */
+.cve-card.cve-opened {
   background: var(--bg2);
-  border-left: 1px solid var(--red);
+  border-left: 3px solid var(--text);
+  box-shadow: inset 3px 0 0 0 var(--text), inset 0 0 0 1px var(--border-strong);
+}
+
+.cve-card.cve-opened .cve-id {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.cve-card.cve-opened::before {
+  content: '▸';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--text2);
+  pointer-events: none;
+}
+
+/* Arrow-key nav highlight — distinct from opened state */
+.cve-card.cve-nav-selected:not(.cve-opened) {
+  background: color-mix(in srgb, var(--bg3) 80%, var(--bg2));
+  border-left: 3px dashed var(--border-strong);
   outline: none;
 }
 
 .cve-card.cve-card-in-thread {
-  background: color-mix(in srgb, var(--red-dim) 12%, var(--bg));
+  background: color-mix(in srgb, var(--red-dim) 18%, var(--bg));
+  border-right: 2px solid color-mix(in srgb, var(--red) 35%, transparent);
 }
 
 /* ── Custom rectangular checkbox ─────────────────────────── */

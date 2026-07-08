@@ -87,9 +87,12 @@ function PanelChrome({ expanded, onToggle, onPdf, onClear, count }) {
         >
           ‹
         </button>
-        <span className="inv-panel-title mono">// INVESTIGATION</span>
+        <span className="inv-panel-title mono">// INVESTIGATION SESSION</span>
         <span className="inv-panel-count mono">{count}</span>
       </div>
+      <p className="inv-panel-capture-hint mono">
+        Analyst pivots, CVE selections, and IOC lookups are captured for PDF export.
+      </p>
       <div className="inv-panel-actions">
         <button type="button" className="inv-action-btn inv-action-pdf mono" onClick={onPdf}>
           ↓ PDF

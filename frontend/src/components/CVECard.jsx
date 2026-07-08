@@ -52,6 +52,7 @@ export default function CVECard({
   onToggleSelect,
   timezone = 'UTC',
   navSelected,
+  isOpened = false,
   cardRef,
   isNew,
   inThread = false,
@@ -126,7 +127,7 @@ export default function CVECard({
   return (
     <article
       ref={cardRef}
-      className={`cve-card ${accentClass}${selected ? ' cve-selected' : ''}${navSelected ? ' cve-nav-selected' : ''}${inThread ? ' cve-card-in-thread' : ''}${isPinned ? ' cve-card-pinned' : ''}`}
+      className={`cve-card ${accentClass}${selected ? ' cve-selected' : ''}${isOpened ? ' cve-opened' : ''}${navSelected ? ' cve-nav-selected' : ''}${inThread ? ' cve-card-in-thread' : ''}${isPinned ? ' cve-card-pinned' : ''}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}
@@ -151,8 +152,8 @@ export default function CVECard({
       </label>
 
       {inThread && (
-        <span className="cve-thread-badge mono" aria-label="In investigation thread">
-          IN THREAD
+        <span className="cve-thread-badge mono" aria-label="In investigation session">
+          IN INVESTIGATION
         </span>
       )}
 
@@ -326,7 +327,7 @@ export default function CVECard({
               disabled={inThread}
               aria-label={`Add ${cve.cve_id} to investigation`}
             >
-              {inThread ? 'In thread' : 'Investigate'}
+              {inThread ? 'In investigation' : 'Start investigation'}
             </button>
           )}
           {onLookupIoc && (
@@ -336,7 +337,7 @@ export default function CVECard({
               onClick={handleLookupIoc}
               aria-label={`Look up indicators from ${cve.cve_id} in IOC tab`}
             >
-              Lookup in IOC
+              Extract observables
             </button>
           )}
         </div>

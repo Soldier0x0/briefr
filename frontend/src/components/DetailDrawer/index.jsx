@@ -561,15 +561,15 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
                     onClick={() => investigation.startInvestigation(cve)}
                     aria-label={`Add ${cve.cve_id} to investigation`}
                   >
-                    {investigation.isCveInThread(cve.cve_id) ? 'In thread' : 'Investigate'}
+                    {investigation.isCveInThread(cve.cve_id) ? 'In investigation' : 'Start investigation'}
                   </button>
                   <button
                     type="button"
                     className="drawer-inv-btn drawer-inv-btn-secondary mono"
                     onClick={() => investigation.pivotToIocFromCve(cve)}
-                    aria-label={`Look up indicators from ${cve.cve_id}`}
+                    aria-label={`Extract observables from ${cve.cve_id}`}
                   >
-                    Lookup IOC
+                    Extract observables
                   </button>
                 </>
               )}

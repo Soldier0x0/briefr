@@ -424,7 +424,7 @@
 
 .drawer-human-label {
   font-family: var(--font-mono);
-  font-size: 0.625rem;
+  font-size: var(--type-heading);
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -433,20 +433,20 @@
 }
 
 .drawer-human-text {
-  font-size: 0.875rem;
+  font-size: var(--type-body);
   color: var(--text2);
   line-height: 1.65;
   margin: 0;
 }
 
 .drawer-human-loading {
-  font-size: 0.75rem;
+  font-size: var(--type-secondary);
   color: var(--text3);
   margin: 0;
 }
 
 .drawer-description {
-  font-size: 0.875rem;
+  font-size: var(--type-body);
   color: var(--text2);
   line-height: 1.65;
   margin: 0;
@@ -456,7 +456,7 @@
   border-left: 3px solid var(--accent);
   padding: 10px 14px;
   background: var(--bg3);
-  font-size: 0.875rem;
+  font-size: var(--type-body);
   color: var(--text);
   line-height: 1.6;
   font-style: normal;
@@ -1760,6 +1760,11 @@
   word-break: break-word;
 }
 
+.drawer-risk-placeholder-note {
+  color: var(--text3);
+  font-size: 0.625rem;
+}
+
 .drawer-risk-momentum-total {
   margin-top: 0.25rem;
   color: var(--text2);
@@ -1786,9 +1791,164 @@
 
 .drawer-risk-comp-header {
   display: grid;
-  grid-template-columns: 6.5rem 1fr 4rem;
+  grid-template-columns: 6.5rem 1fr 5.5rem;
   align-items: center;
   gap: 10px;
+}
+
+.drawer-risk-comp-header--semantics {
+  grid-template-columns: 5.5rem 1fr 5.5rem;
+  align-items: start;
+}
+
+.drawer-risk-signal-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.drawer-risk-signal-caption {
+  font-size: var(--type-micro);
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  text-transform: uppercase;
+}
+
+.drawer-risk-signal-value {
+  font-size: var(--type-micro);
+  color: var(--text3);
+  font-variant-numeric: tabular-nums;
+}
+
+.drawer-risk-signal-legend {
+  font-size: var(--type-micro);
+  color: var(--text3);
+  margin: 0 0 10px;
+  letter-spacing: 0.04em;
+}
+
+.drawer-risk-methodology-hint {
+  font-size: var(--type-secondary);
+  color: var(--text2);
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+
+.drawer-risk-methodology .drawer-risk-toggle {
+  margin: 0;
+}
+
+.drawer-risk-hero-section {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+}
+
+/* Threat signals */
+.drawer-threat-signal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.drawer-threat-signal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+}
+
+.drawer-threat-signal-label {
+  font-size: var(--type-micro);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.drawer-threat-signal-detail {
+  font-size: var(--type-secondary);
+  color: var(--text2);
+  line-height: 1.4;
+}
+
+.drawer-threat-signal--critical .drawer-threat-signal-label {
+  color: var(--red);
+  border: 1px solid color-mix(in srgb, var(--red) 40%, var(--border2));
+  padding: 1px 5px;
+}
+
+.drawer-threat-signal--high .drawer-threat-signal-label {
+  color: var(--amber);
+}
+
+.drawer-threat-signal--medium .drawer-threat-signal-label {
+  color: var(--accent);
+}
+
+/* Patch / remediation action block */
+.drawer-patch-action {
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  padding: 14px;
+}
+
+.drawer-patch-status {
+  margin-bottom: 10px;
+}
+
+.drawer-patch-status-label {
+  font-size: var(--type-micro);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  padding: 4px 8px;
+  border: 1px solid;
+  display: inline-block;
+}
+
+.drawer-patch-status--patch-available .drawer-patch-status-label {
+  color: var(--green);
+  border-color: var(--green);
+}
+
+.drawer-patch-status--patch-unavailable .drawer-patch-status-label {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+.drawer-patch-status--patch-unknown .drawer-patch-status-label {
+  color: var(--text3);
+  border-color: var(--border2);
+  border-style: dashed;
+}
+
+.drawer-patch-guidance {
+  font-size: var(--type-body);
+  color: var(--text2);
+  line-height: 1.5;
+  margin: 0 0 8px;
+}
+
+.drawer-patch-kev-tag {
+  font-size: var(--type-micro);
+  color: var(--amber);
+  letter-spacing: 0.06em;
+}
+
+.drawer-patch-ref-link {
+  font-size: var(--type-secondary);
+  color: var(--link);
+  letter-spacing: 0.04em;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.drawer-patch-ref-link:hover {
+  color: var(--text);
 }
 
 .drawer-risk-comp-label {
@@ -1865,6 +2025,127 @@
 .drawer-risk-momentum-contrib {
   color: var(--red);
   font-weight: 500;
+}
+
+/* Asset exposure status (Overview — analyst-facing, separate from score bar) */
+.drawer-asset-exposure {
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.drawer-asset-exposure-label {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  margin: 0 0 8px;
+  font-weight: 400;
+}
+
+.drawer-asset-exposure-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  margin-bottom: 6px;
+}
+
+.drawer-asset-exposure-tier {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+}
+
+.drawer-asset-exposure-headline {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+.drawer-asset-exposure-detail {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text2);
+  margin: 0 0 6px;
+}
+
+.drawer-asset-exposure-reason {
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--text2);
+  margin: 0 0 4px;
+}
+
+.drawer-asset-exposure-formula {
+  font-size: 9px;
+  letter-spacing: 0.03em;
+  color: var(--text3);
+  margin: 4px 0 0;
+  line-height: 1.4;
+}
+
+.drawer-asset-exposure-cta {
+  margin-top: 8px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.drawer-asset-exposure-cta:hover {
+  background: var(--bg2);
+}
+
+.drawer-asset-exposure-kev-note {
+  font-size: 10px;
+  color: var(--text3);
+  margin: 8px 0 0;
+  line-height: 1.4;
+}
+
+.drawer-asset-exposure--not-loaded .drawer-asset-exposure-tier {
+  color: var(--text3);
+  border-style: dashed;
+}
+
+.drawer-asset-exposure--strong .drawer-asset-exposure-tier,
+.drawer-asset-exposure--confirmed .drawer-asset-exposure-tier {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.drawer-asset-exposure--high .drawer-asset-exposure-tier {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+.drawer-asset-exposure--possible .drawer-asset-exposure-tier {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+.drawer-asset-exposure--no-match .drawer-asset-exposure-tier {
+  color: var(--green);
+  border-color: var(--green);
+}
+
+.drawer-risk-comp-unknown {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  border: 1px dashed var(--border2);
+  padding: 2px 6px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── Detection Rule Engine (Detect tab) ──────────────── */

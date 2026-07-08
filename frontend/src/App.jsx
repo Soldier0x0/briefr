@@ -249,6 +249,7 @@ function FeedView({ filters, setFilters, selectedCVE, setSelectedCVE,
           searchFocusTrigger={searchFocusTrigger}
           timezone={timezone}
           overlayOpen={!!selectedCVE || digestOpen || aboutOpen}
+          openedCveId={selectedCVE?.cve_id || null}
           watchlistVersion={watchlist?.version ?? 0}
           watchlist={watchlist}
           onWatchlistChange={onWatchlistChange}
@@ -564,7 +565,7 @@ export default function App() {
       const display = q.length > 40 ? `${q.slice(0, 40)}…` : q
       items.unshift({
         id: 'ioc-lookup',
-        label: `Lookup IOC: ${display}`,
+        label: `Extract observables: ${display}`,
         hint: 'ioc',
         run: () => {
           setActiveTab('ioc')

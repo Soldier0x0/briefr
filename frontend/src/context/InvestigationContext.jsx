@@ -121,10 +121,15 @@ export function InvestigationProvider({ children, navigation }) {
 
   const startInvestigation = useCallback((cve) => {
     if (!cve?.cve_id) return
+    const wasEmpty = itemsRef.current.length === 0
     if (!itemsRef.current.some(i => i.type === INV_TYPES.CVE && i.id === cve.cve_id)) {
       ensureCveInThread(cve, INV_SOURCES.FEED)
     }
     setPanelExpanded(true)
+    setMobileSheetOpen(true)
+    if (wasEmpty) {
+      setPivotNotice('Investigation session started — pivots and lookups will be captured for your report.')
+    }
     navigation?.clearIocPrefill?.()
     navigation?.resetIocSession?.()
   }, [ensureCveInThread, navigation])

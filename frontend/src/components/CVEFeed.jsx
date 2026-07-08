@@ -44,6 +44,7 @@ export default function CVEFeed({
   searchFocusTrigger,
   timezone,
   overlayOpen = false,
+  openedCveId = null,
   watchlistVersion = 0,
   watchlist,
   onWatchlistChange,
@@ -500,6 +501,7 @@ export default function CVEFeed({
             selected={!!selectedMap[cve.cve_id]}
             onToggleSelect={handleToggleSelect}
             timezone={timezone || 'UTC'}
+            isOpened={openedCveId === cve.cve_id}
             navSelected={selectedIndex === idx}
             isNew={isNewSinceVisit(cve)}
             cardRef={el => { cardRefs.current[idx] = el }}
