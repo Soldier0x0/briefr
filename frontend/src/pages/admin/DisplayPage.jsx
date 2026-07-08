@@ -12,18 +12,17 @@ export default function DisplayPage() {
   function update(key, value) {
     const next = { ...prefs, [key]: value }
     setPrefs(next)
-    setDisplayPrefs(next)
+    void setDisplayPrefs(next)
   }
 
   function reset() {
-    resetDisplayPrefs()
-    setPrefs(getDisplayPrefs())
+    void resetDisplayPrefs().then(() => setPrefs(getDisplayPrefs()))
   }
 
   return (
     <div>
       <h1 className="admin-page-title">Display</h1>
-      <p className="admin-page-subtitle">Per-browser display preferences, saved locally — no effect on other operators or devices.</p>
+      <p className="admin-page-subtitle">Display preferences saved to your account when signed in — synced across devices on this instance.</p>
 
       <div className="admin-card">
         <div className="admin-card-title">Font size</div>

@@ -102,6 +102,18 @@ export function saveUserStack(body) {
   })
 }
 
+export function fetchUserPreferences() {
+  return request('/me/preferences')
+}
+
+export function patchUserPreferences(body) {
+  return request('/me/preferences', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
 export function fetchSessions() {
   return request('/auth/sessions')
 }

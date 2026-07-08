@@ -14,6 +14,7 @@ import {
   setupAccount,
 } from '../api.js'
 import { clearUserStackOnLogout, loadUserStack } from '../utils/userStack.js'
+import { clearUserPreferencesOnLogout, loadUserPreferences } from '../utils/userPreferences.js'
 
 const AuthContext = createContext(null)
 
@@ -28,6 +29,7 @@ export function AuthProvider({ children }) {
       setUser(me)
       setStatus('authed')
       await loadUserStack()
+      await loadUserPreferences()
       return me
     } catch {
       // Access cookie may have expired while a persistent refresh cookie remains.
@@ -38,6 +40,7 @@ export function AuthProvider({ children }) {
           setUser(me)
           setStatus('authed')
           await loadUserStack()
+          await loadUserPreferences()
           return me
         }
       } catch {
@@ -46,6 +49,7 @@ export function AuthProvider({ children }) {
       setUser(null)
       setStatus('anon')
       clearUserStackOnLogout()
+      clearUserPreferencesOnLogout()
       return null
     }
   }, [])
@@ -62,6 +66,7 @@ export function AuthProvider({ children }) {
       setUser(null)
       setStatus('anon')
       clearUserStackOnLogout()
+      clearUserPreferencesOnLogout()
     }
     window.addEventListener('briefr-auth-expired', handleExpired)
     return () => window.removeEventListener('briefr-auth-expired', handleExpired)
@@ -72,6 +77,7 @@ export function AuthProvider({ children }) {
     setUser(me)
     setStatus('authed')
     await loadUserStack()
+    await loadUserPreferences()
     return me
   }, [])
 
@@ -82,6 +88,7 @@ export function AuthProvider({ children }) {
       setUser(null)
       setStatus('anon')
       clearUserStackOnLogout()
+      clearUserPreferencesOnLogout()
     }
   }, [])
 
@@ -91,6 +98,7 @@ export function AuthProvider({ children }) {
     setStatus('authed')
     setSetupRequired(false)
     await loadUserStack()
+    await loadUserPreferences()
     return me
   }, [])
 
