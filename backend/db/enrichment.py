@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 from db.cve import (
     _SQLITE_IN_CHUNK,
@@ -182,7 +182,7 @@ def _cve_id_filter_clause(
 
 
 def _cutoff_date_days_ago(days: int) -> str:
-    return (date.today() - timedelta(days=days)).isoformat()
+    return (datetime.now(timezone.utc).date() - timedelta(days=days)).isoformat()
 
 
 def _cutoff_datetime_hours_ago(hours: float) -> str:
@@ -197,12 +197,22 @@ def _renumber_qmark_placeholders(sql: str, start: int) -> str:
     n = start
     i = 0
     while i < len(sql):
-        if sql[i] == "?":
+        ch = sql[i]
+        if ch == "?":
             out.append(f"${n}")
             n += 1
             i += 1
+        elif ch in ("'", '"'):
+            out.append(ch)
+            i += 1
+            while i < len(sql):
+                out.append(sql[i])
+                if sql[i] == ch and sql[i - 1] != "\\":
+                    i += 1
+                    break
+                i += 1
         else:
-            out.append(sql[i])
+            out.append(ch)
             i += 1
     return "".join(out)
 
@@ -283,7 +293,7 @@ async def mark_cves_as_kev(db: DbConnection, cve_ids: list) -> list[str]:
 
 async def snapshot_epss_scores(db: DbConnection, recorded_date: str | None = None) -> int:
     """Persist current EPSS scores before a bulk update (one row per CVE per day)."""
-    day = recorded_date or date.today().isoformat()
+    day = recorded_date or datetime.now(timezone.utc).date().isoformat()
     sql = _SNAPSHOT_EPSS_PG if _is_postgres_connection(db) else _SNAPSHOT_EPSS_SQLITE
     cursor = await db.execute(sql, (day,))
     return cursor.rowcount
@@ -578,5 +588,8 @@ async def insert_epss_history_rows(db: DbConnection, rows: list[dict]) -> int:
     if not tuples:
         return 0
     sql = _INSERT_EPSS_HISTORY_PG if _is_postgres_connection(db) else _INSERT_EPSS_HISTORY_SQLITE
-    cursor = await db.executemany(sql, tuples)
-    return cursor.rowcount
+    inserted = 0
+    for tup in tuples:
+        cursor = await db.execute(sql, tup)
+        inserted += cursor.rowcount or 0
+    return inserted

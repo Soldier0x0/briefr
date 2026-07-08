@@ -23,6 +23,10 @@ Added `tests/test_db_enrichment.py`.
 **Verified:** `pytest tests/test_db_enrichment.py tests/test_kev_fields.py tests/test_epss_*.py tests/test_audit_log.py -q`
 (42 passed, SQLite); full suite `779 passed, 8 skipped` (SQLite).
 
+**Gemini fixes (pre-merge):** UTC dates in `_cutoff_date_days_ago` / `snapshot_epss_scores`;
+quote-aware `_renumber_qmark_placeholders`; per-row execute in
+`insert_epss_history_rows` for accurate Postgres rowcount on conflict.
+
 **Next:** `db/metadata.py` + `db/correlation.py` (batched PR 6).
 
 ---
