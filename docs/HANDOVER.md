@@ -12,6 +12,18 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — D4: Nuclei parser + Sigma artifact injection
+
+**Session:** Added deterministic `nuclei_parser.py`; `exploit_sync` enriches
+`detection_ctx` for Nuclei-touched CVEs; generated Sigma merges artifact
+keywords/paths (`briefr_artifacts`). Tests: parser fixture, sigma injection.
+
+### Next steps
+
+**Wave 2 PR 5** — `GET/PATCH /api/me/preferences` (display prefs migration).
+
+---
+
 ## 2026-07-08 — Wave 2 PR 4: unified frontend stack
 
 **Session:** Feed stack reads/writes `GET/PUT /api/me/stack`; legacy `briefr_stack`

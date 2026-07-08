@@ -1,0 +1,22 @@
+id: CVE-2024-TEST-001
+info:
+  name: Sample login SQLi check
+  severity: high
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/api/login"
+      - "{{BaseURL}}/admin/login.php"
+    matchers:
+      - type: word
+        words:
+          - "syntax error"
+          - "mysql_fetch"
+    extractors:
+      - type: regex
+        regex:
+          - "user_id=([0-9]+)"
+  - raw:
+      - |
+        GET /search?q=test HTTP/1.1
+        Host: {{Hostname}}

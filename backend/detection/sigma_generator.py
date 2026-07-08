@@ -519,6 +519,47 @@ def _resolve_template(
 
 # ── Generator ─────────────────────────────────────────────
 
+def _apply_artifacts_to_sigma_rule(rule: dict, detection_context: dict | None) -> None:
+    """Augment generated Sigma with cached DetectionContext artifacts (D4)."""
+    artifacts = (detection_context or {}).get("artifacts") or []
+    if not artifacts:
+        return
+
+    rule["briefr_artifacts"] = artifacts[:8]
+    detection = rule.get("detection")
+    if not isinstance(detection, dict):
+        return
+
+    extra_keywords: list[str] = []
+    extra_paths: list[str] = []
+    for art in artifacts:
+        if not isinstance(art, dict):
+            continue
+        extra_keywords.extend(art.get("keywords") or [])
+        extra_paths.extend(art.get("paths") or [])
+
+    if detection.get("condition") == "keywords" and isinstance(detection.get("keywords"), list):
+        existing = list(detection["keywords"])
+        seen = {str(k).lower() for k in existing}
+        for kw in extra_keywords:
+            token = str(kw or "").strip()
+            if not token:
+                continue
+            key = token.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            existing.append(token)
+            if len(existing) >= 30:
+                break
+        detection["keywords"] = existing
+
+    if extra_paths:
+        path_hint = ", ".join(list(dict.fromkeys(extra_paths))[:3])
+        note = rule.get("briefr_note") or _DEFAULT_BRIEFR_NOTE
+        rule["briefr_note"] = f"{note} — Nuclei paths: {path_hint}"
+
+
 def build_sigma_rule_dict(
     cve_id: str,
     technique_id: str,
@@ -590,6 +631,8 @@ def build_sigma_rule_dict(
         rule["tags"].append(matched_cwe.lower().replace("-", "."))
     rule["tags"].append(f"cve.{cve_id.lower().replace('-', '.')}")
 
+    _apply_artifacts_to_sigma_rule(rule, detection_context)
+
     return rule
 
 
@@ -604,6 +647,8 @@ def sigma_rule_meta_from_dict(rule: dict) -> dict:
         meta["briefr_class"] = rule["briefr_class"]
     if rule.get("briefr_note"):
         meta["briefr_note"] = rule["briefr_note"]
+    if rule.get("briefr_artifacts"):
+        meta["briefr_artifacts"] = rule["briefr_artifacts"]
     return meta
 
 
