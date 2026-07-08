@@ -22,6 +22,9 @@ pattern — parallel `_SQLITE` / `_PG` constants for all purge queries,
 **Verified:** `pytest tests/test_db_cache_retention.py tests/test_cache_retention.py -q`
 (7 passed, SQLite); full suite `769 passed, 8 skipped` (SQLite).
 
+**Gemini fixes (pre-merge):** unconditional placeholder assertions; native
+`$n` seed SQL in Postgres integration tests.
+
 **Next:** `db/cache.py`.
 
 ---

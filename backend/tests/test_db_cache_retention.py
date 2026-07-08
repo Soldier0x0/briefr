@@ -24,13 +24,11 @@ def _utc(days_ago: float = 0) -> str:
 
 
 def test_cache_retention_sql_uses_native_placeholders():
-    if is_postgres():
-        assert "$1" in cache_retention_mod._PURGE_IOC_CACHE_PG
-        assert "$2" in cache_retention_mod._PURGE_FEED_CACHE_PREFIX_PG
-        assert "$1" in cache_retention_mod._PURGE_EPSS_HISTORY_PG
-    else:
-        assert "?" in cache_retention_mod._PURGE_IOC_CACHE_SQLITE
-        assert "?" in cache_retention_mod._PURGE_FEED_CACHE_PREFIX_SQLITE
+    assert "$1" in cache_retention_mod._PURGE_IOC_CACHE_PG
+    assert "$2" in cache_retention_mod._PURGE_FEED_CACHE_PREFIX_PG
+    assert "$1" in cache_retention_mod._PURGE_EPSS_HISTORY_PG
+    assert "?" in cache_retention_mod._PURGE_IOC_CACHE_SQLITE
+    assert "?" in cache_retention_mod._PURGE_FEED_CACHE_PREFIX_SQLITE
 
 
 def test_purge_stale_ioc_cache_round_trip(tmp_path, monkeypatch):
@@ -43,10 +41,15 @@ def test_purge_stale_ioc_cache_round_trip(tmp_path, monkeypatch):
         await init_db()
         db = await get_db()
         try:
+            placeholders = (
+                "$1, $2, $3, $4), ($5, $6, $7, $8"
+                if is_postgres()
+                else "?, ?, ?, ?), (?, ?, ?, ?"
+            )
             await db.execute(
-                """
+                f"""
                 INSERT INTO ioc_cache (value, ioc_type, result, cached_at)
-                VALUES (?, ?, ?, ?), (?, ?, ?, ?)
+                VALUES ({placeholders})
                 """,
                 (
                     "8.8.8.8",
@@ -110,11 +113,16 @@ def test_purge_old_cve_change_history_round_trip(tmp_path, monkeypatch):
         await init_db()
         db = await get_db()
         try:
+            placeholders = (
+                "$1, $2, $3, $4, $5), ($6, $7, $8, $9, $10"
+                if is_postgres()
+                else "?, ?, ?, ?, ?), (?, ?, ?, ?, ?"
+            )
             await db.execute(
-                """
+                f"""
                 INSERT INTO cve_change_history (
                     cve_id, field_name, old_value, new_value, detected_at
-                ) VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)
+                ) VALUES ({placeholders})
                 """,
                 (
                     "CVE-2024-0001",
