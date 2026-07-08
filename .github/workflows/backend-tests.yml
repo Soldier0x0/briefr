@@ -59,8 +59,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements-dev.txt
 
+      - name: Install PostgreSQL client tools
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
       - name: Run Postgres pool integration tests
         run: cd backend && pytest tests/test_postgres_pool.py -q
+
+      - name: Intel snapshot export round-trip smoke
+        run: cd backend && pytest tests/test_intel_snapshot_export.py -q
 
   dependency-audit:
     runs-on: ubuntu-latest
