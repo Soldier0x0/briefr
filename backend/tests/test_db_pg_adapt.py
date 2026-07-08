@@ -1,11 +1,11 @@
-"""Tests for SQL dialect adaptation."""
+"""Tests for PostgreSQL SQL adaptation (legacy router SQL at connection boundary)."""
 
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from db.dialect import adapt_sql
+from db.pg_adapt import adapt_sql, prepare_query
 
 
 def test_qmark_to_dollar():
@@ -107,8 +107,6 @@ def test_date_dotted_column():
 
 
 def test_named_params_to_dollar():
-    from db.dialect import prepare_query
-
     sql = """
         INSERT INTO cves (cve_id, description, cvss_score)
         VALUES (:cve_id, :description, :cvss_score)
@@ -124,8 +122,6 @@ def test_named_params_to_dollar():
 
 
 def test_kev_overdue_bound_date_compare():
-    from db.dialect import prepare_query
-
     sql = (
         "EXISTS (SELECT 1 FROM kev_deadlines k WHERE k.cve_id = c.cve_id "
         "AND k.due_date IS NOT NULL AND k.due_date < ?)"

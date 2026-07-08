@@ -12,7 +12,7 @@ from typing import Any
 import aiosqlite
 
 from db.cache import get_feed_cache, set_feed_cache
-from db.dialect import utcnow_str
+from db.timeutil import utcnow_str
 from detection.class_router import (
     CWE_CLASS_SLUGS,
     TECHNIQUE_CLASS_SLUGS,

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from db.dialect import utcnow_str
+from db.timeutil import utcnow_str
 
 from preferences.display_validate import (
     DEFAULT_DISPLAY_PREFS,

@@ -18,7 +18,7 @@ from brief.service import (
     _stack_profile_id,
 )
 from database import get_db, init_db
-from db.dialect import adapt_sql
+from db.pg_adapt import adapt_sql
 
 # _seed_brief_db / _seed_brief_bad_epss_db below use raw aiosqlite with
 # SQLite-specific SQL (datetime('now', '-2 days')) — genuinely SQLite-only,

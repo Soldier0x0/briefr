@@ -17,7 +17,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from db.dialect import utcnow_str
+from db.timeutil import utcnow_str
 
 logger = logging.getLogger(__name__)
 

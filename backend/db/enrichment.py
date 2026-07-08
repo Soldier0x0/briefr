@@ -15,7 +15,7 @@ from db.cve import (
     _change_value_str,
     _insert_cve_changes_batch,
 )
-from db.dialect import utcnow_str
+from db.timeutil import utcnow_str
 from db.types import DbConnection
 
 _ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}")

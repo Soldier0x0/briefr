@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import os
 
-from db.dialect import utcnow_str
+from db.timeutil import utcnow_str
 from db.metadata import get_cve_count
 from db.types import DbConnection
 

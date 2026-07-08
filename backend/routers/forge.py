@@ -335,7 +335,7 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
         )
         created = not existing
 
-        from db.dialect import utcnow_str
+        from db.timeutil import utcnow_str
         await db.execute(
             """
             INSERT INTO hunt_packs

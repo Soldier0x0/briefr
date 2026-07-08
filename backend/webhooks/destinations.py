@@ -159,7 +159,7 @@ async def sync_env_destinations_to_db() -> None:
     env_dests = {dest.id: dest for dest in load_env_destinations()}
     db = await get_db()
     try:
-        from db.dialect import utcnow_str
+        from db.timeutil import utcnow_str
         now = utcnow_str()
         for dest in env_dests.values():
             await db.execute(

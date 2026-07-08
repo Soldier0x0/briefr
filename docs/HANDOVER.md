@@ -21,7 +21,19 @@ Updated `scheduler.py`, `tracking.py`, `backup/manager.py` to stop catching
 
 **Verified:** `./scripts/verify-local.sh` green (806 passed SQLite suite).
 
-**Next:** Post-B3 — delete `db/dialect.py` (needs operator OK for SQLite path removal).
+**Next:** convert router/auth SQL to native `$n`/`?` (optional cleanup); Post-B4 backup CI when Actions resets.
+
+---
+
+## 2026-07-08 — Post-B Phase 3: deleted `db/dialect.py`
+
+**What:** Removed `db/dialect.py`. Translation for legacy router SQL now lives in
+`db/pg_adapt.py` (used only by `PostgresConnection`). `utcnow_str()` moved to
+`db/timeutil.py`. All `db/*.py` modules already use native SQL constants.
+
+**SQLite dev path retained** — only the standalone dialect module is gone.
+
+**Verified:** `./scripts/verify-local.sh` green.
 
 ---
 

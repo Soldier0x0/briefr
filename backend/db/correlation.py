@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 
 from db.cache import set_feed_cache
 from db.cve import _SQLITE_IN_CHUNK
-from db.dialect import utcnow_str
+from db.timeutil import utcnow_str
 from db.metadata import _parse_json_list
 from db.types import DbConnection
 

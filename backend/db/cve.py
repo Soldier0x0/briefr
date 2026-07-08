@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timedelta, timezone
 
-from db.dialect import utcnow_str
+from db.timeutil import utcnow_str
 from db.types import DbConnection
 
 TRACKED_CVE_FIELDS = frozenset({"cvss_score", "epss_score", "is_kev", "has_poc"})

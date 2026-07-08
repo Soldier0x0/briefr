@@ -62,7 +62,7 @@ With Postgres validated you may run multiple workers (`--workers 2`); connection
 |-------|------------|
 | Runtime driver | **asyncpg** pool (`db/connection.py`) |
 | Migrations | **Alembic** + **psycopg** (sync, migration-time) |
-| SQL compatibility | `db/dialect.py` translates legacy SQL idioms for Postgres |
+| SQL compatibility | `db/pg_adapt.py` adapts legacy router SQL at the Postgres connection boundary |
 | Embeddings search | NumPy cosine (no pgvector required today) |
 
 ## Backups

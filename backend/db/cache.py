@@ -10,7 +10,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from db.cve import _SQLITE_IN_CHUNK, _insert_cve_changes_batch
-from db.dialect import utcnow_str
+from db.timeutil import utcnow_str
 from db.types import DbConnection
 
 _IOC_TTL_HOURS = 6

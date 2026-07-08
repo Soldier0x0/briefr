@@ -180,19 +180,16 @@ Reference implementation: `backend/db/sync_state.py`.
 
 ## Phase 3 — Delete `db/dialect.py`
 
-Only after **every** module using it has been converted (Phase 1 complete)
-and exception handling is unified (Phase 2 complete). At this point:
+**Done (2026-07-08):**
 
-- Delete `db/dialect.py` entirely.
-- Delete the SQLite code path from `db/connection.py`'s
-  `get_connection()` if the product has fully moved to
-  `BRIEFR_REQUIRE_POSTGRES=1` in all supported environments — **confirm
-  this with the user first**, this is a bigger decision (drops SQLite
-  support entirely) than the rest of this plan and isn't pre-approved.
-- Resolve the 6 skip-marked test files listed in gotcha #6 — with
-  `dialect.py` gone, `is_postgres()` may not even be meaningfully
-  toggleable the same way, so those tests need redesigning, not just
-  unskipping.
+- Deleted `backend/db/dialect.py`
+- Legacy SQLite→Postgres regex translation moved to `db/pg_adapt.py` (connection boundary only)
+- `utcnow_str()` moved to `db/timeutil.py`
+- Routers/auth still emit SQLite SQL; `PostgresConnection` adapts via `pg_adapt`
+- **SQLite dev/test path retained** — dropping it entirely still needs operator OK
+
+**Follow-up (optional):** convert `routers/`, `auth/repo.py`, `tracking.py` SQL to
+native constants like `db/*.py` modules, then shrink `pg_adapt.py`.
 
 ## Phase 4 — CI backup verification
 

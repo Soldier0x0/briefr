@@ -6,7 +6,7 @@ and ``?`` on SQLite — no reliance on ``db/dialect.py`` regex translation for t
 
 from __future__ import annotations
 
-from db.dialect import utcnow_str
+from db.timeutil import utcnow_str
 from db.types import DbConnection
 
 _WATCHLIST_ACTIVE_SQLITE = """

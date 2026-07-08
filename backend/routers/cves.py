@@ -47,7 +47,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from correlation.engine import get_correlation_for_cve
-from db.dialect import utcnow_str
+from db.timeutil import utcnow_str
 from routers._validators import require_cve_id
 from database import (
     count_ai_ml_profile_alerts,
