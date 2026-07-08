@@ -182,17 +182,30 @@ export async function setRememberProfileOnServer(enabled, sessionProfile = null)
   if (!isUserPreferencesLoaded()) {
     return enabled
   }
-  const data = await patchUserPreferences({ remember_profile_on_server: !!enabled })
-  cached = fromApi(data)
+  const previousRemember = !!cached?.remember_profile_on_server
   try {
-    window.dispatchEvent(new CustomEvent('briefr-preferences-loaded', { detail: cached }))
-  } catch { /* unavailable */ }
-  if (!enabled) {
-    await saveUserStackProfile(null)
-  } else if (sessionProfile) {
-    await saveUserStackProfile(sessionProfile)
+    if (enabled && sessionProfile) {
+      await saveUserStackProfile(sessionProfile)
+    }
+    const data = await patchUserPreferences({ remember_profile_on_server: !!enabled })
+    cached = fromApi(data)
+    if (!enabled) {
+      await saveUserStackProfile(null)
+    }
+    try {
+      window.dispatchEvent(new CustomEvent('briefr-preferences-loaded', { detail: cached }))
+    } catch { /* unavailable */ }
+    return cached.remember_profile_on_server
+  } catch (err) {
+    try {
+      const rolled = await patchUserPreferences({
+        remember_profile_on_server: previousRemember,
+      })
+      cached = fromApi(rolled)
+      window.dispatchEvent(new CustomEvent('briefr-preferences-loaded', { detail: cached }))
+    } catch { /* best-effort rollback */ }
+    throw err
   }
-  return cached.remember_profile_on_server
 }
 
 export function clearUserPreferencesOnLogout() {
