@@ -144,8 +144,9 @@ export function validateObservable(candidate) {
     const octets = value.split('.')
     if (octets.length !== 4) return null
     if (!octets.every(o => {
-      const n = Number(o)
-      return Number.isInteger(n) && n >= 0 && n <= 255
+      if (!/^\d+$/.test(o)) return false
+      const n = parseInt(o, 10)
+      return n >= 0 && n <= 255
     })) return null
     return { type: OBSERVABLE_TYPES.IPV4, value }
   }
