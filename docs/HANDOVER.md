@@ -12,7 +12,16 @@ significant working session; never rewrite old entries.
 
 ---
 
-## 2026-07-08 — F3: pre-flip security pass (SECURITY.md + gitleaks CI)
+## 2026-07-08 — Post-B Phase 1 PR 1: `db/sync_state.py` Postgres-native
+
+**Session:** First module conversion — explicit `$n` / `?` SQL per backend in
+`db/sync_state.py`; `DbConnection` typing; `tests/test_db_sync_state.py`.
+
+### Next steps
+
+**Post-B Phase 1 PR 2** — `db/watchlist.py` native conversion.
+
+---
 
 **Session:** Added root `SECURITY.md` (disclosure policy via harsha@projectjupiter.in),
 `.gitleaks.toml` allowlist for placeholders/tests, and `.github/workflows/gitleaks.yml`

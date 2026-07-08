@@ -5,8 +5,9 @@ SQLite-dialect-with-Postgres-translation to Postgres-native. Written so an
 agent with no memory of prior sessions (e.g. Cursor Composer) can pick this up
 cold. Read `CLAUDE.md` first (danger zone 1 covers this exact area).
 
-**Status as of 2026-07-08:** Phase 0 (CI full-suite gate) — `test-postgres` job runs
-`pytest tests/ -q` (PR Post-B Phase 0). Phases 1–4 below are **not started**.
+**Status as of 2026-07-08:** Phase 0 complete (`test-postgres` full suite green, #318).
+Phase 1 in progress — `db/sync_state.py` converted first (PR Post-B Phase 1).
+Phases 2–4 below are **not started**.
 
 ---
 
@@ -115,9 +116,8 @@ same discipline as Track B.**
 Line counts are current size — bigger modules later once the pattern is
 proven on small ones.
 
-1. `db/types.py` (27 lines) — check first: likely no SQL at all, may not
-   need conversion. Verify before spending a PR on it.
-2. `db/sync_state.py` (82 lines)
+1. `db/types.py` (27 lines) — **no SQL**; Protocol-only, no conversion needed.
+2. `db/sync_state.py` (82 lines) — **converted** (Post-B Phase 1 PR 1).
 3. `db/watchlist.py` (78 lines)
 4. `db/webhooks.py` (147 lines)
 5. `db/cache_retention.py` (191 lines)
