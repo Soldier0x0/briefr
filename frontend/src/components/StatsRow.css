@@ -45,6 +45,10 @@
   font-size: 0.6875rem;
   letter-spacing: 0.1em;
   color: var(--text3);
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
 }
 
 /* Variants */

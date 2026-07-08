@@ -12,6 +12,15 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — E-PR7: E3 tooltip/badge pass
+
+**What:** `ExplainTip` component; EXPLOITED IN WILD stat tile explain; feed quick
+filter chips use discoverable ? tooltips (not raw `title=`).
+
+**Next:** E-PR8 stat tile deltas.
+
+---
+
 ## 2026-07-08 — E-PR6: header de-clutter + timezone labels + E5 craft
 
 **What:** My Stack moved to user menu (overflow when logged out); shortcuts/legal

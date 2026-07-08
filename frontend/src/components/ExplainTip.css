@@ -1,0 +1,56 @@
+.explain-tip-wrap {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.explain-tip-btn {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--text3);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+  cursor: help;
+  flex-shrink: 0;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.explain-tip-btn:hover,
+.explain-tip-btn:focus-visible {
+  color: var(--text);
+  border-color: var(--text3);
+  outline: none;
+}
+
+.explain-tip-bubble {
+  display: none;
+  position: absolute;
+  z-index: 300;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 220px;
+  padding: 6px 8px;
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  text-align: left;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: normal;
+}
+
+.explain-tip-wrap:hover .explain-tip-bubble,
+.explain-tip-wrap:focus-within .explain-tip-bubble {
+  display: block;
+}

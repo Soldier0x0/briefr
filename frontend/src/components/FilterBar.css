@@ -203,6 +203,12 @@
   min-width: 0;
 }
 
+.filter-btn-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .filter-btn {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
