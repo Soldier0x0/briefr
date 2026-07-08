@@ -12,6 +12,34 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+---
+
+## 2026-07-09 — J1: update path — Alembic + health gate + rollback (deploy)
+
+**What:** Wave 1 production-trust task **J1** shipped in `deploy/briefr-update.sh`
+and `deploy/lib.sh`:
+
+- Records `BRIEFR_PRE_UPDATE_COMMIT` before `git pull` (survives re-exec).
+- Runs forward-only `alembic upgrade head` as `briefr` while backend is stopped
+  (Postgres deployments only).
+- Enforces a real **health gate**: curl retries + `deploy/check-backend.sh` +
+  nginx `/api/health`; exits non-zero on failure.
+- **Automatic rollback** on Alembic or health-gate failure: `git reset --hard` to
+  prior commit, reinstall deps, rebuild frontend, restart services. Opt-out:
+  `BRIEFR_SKIP_ROLLBACK=1`. Documented partial-migration caveat in
+  `docs/OPERATIONS.md`.
+
+**Also merged:** PR #345 (architecture review + ADR-002 Option D CLOSED) with stale
+§0/§11–§14 sections aligned to the ADR.
+
+**Why:** Top production risk — upgrades could wedge the box with no Alembic step,
+warn-only health checks, and no rollback path.
+
+**Next:** **J3** — strict smoke gate default (`BRIEFR_STRICT_SMOKE=1` behavior as
+default). J4/J5 (docs) parallel-safe.
+
+---
+
 ## 2026-07-09 — ADR-002 CLOSED: scoring axes + Operational Priority (docs-only)
 
 **What:** `docs/decisions/ADR-002-operational-priority.md` (ACCEPTED). Resolves the

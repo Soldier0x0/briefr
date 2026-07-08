@@ -285,3 +285,110 @@ run_pre_update_backup() {
     fi
   fi
 }
+
+# Forward-only Alembic migrations — run while backend is stopped (Postgres only).
+run_alembic_upgrade() {
+  if ! is_postgres_deployment; then
+    echo "==> Skipping Alembic (no PostgreSQL DATABASE_URL in backend/.env)"
+    return 0
+  fi
+  echo "==> Running Alembic migrations (forward-only upgrade head)"
+  as_app_user bash -c "
+    set -euo pipefail
+    cd '${INSTALL_DIR}/backend'
+    '${INSTALL_DIR}/venv/bin/alembic' upgrade head
+  "
+  echo "    Alembic OK"
+}
+
+# Restore the pre-pull git commit and rebuild the prior release after a failed deploy.
+rollback_failed_update() {
+  local reason="${1:-update failed}"
+  local prior_commit="${BRIEFR_PRE_UPDATE_COMMIT:-}"
+
+  if [ -z "${prior_commit}" ]; then
+    echo "ERROR: ${reason} — no BRIEFR_PRE_UPDATE_COMMIT recorded; cannot auto-rollback."
+    echo "       Backend may be stopped. Diagnose: journalctl -u briefr-backend -n 50 --no-pager"
+    echo "       Restore manually: git -C ${INSTALL_DIR} reset --hard <known-good-commit>"
+    echo "       Then: bash ${INSTALL_DIR}/deploy/briefr-update.sh"
+    return 1
+  fi
+
+  echo ""
+  echo "==> ROLLBACK: ${reason}"
+  echo "    Restoring git commit ${prior_commit}"
+
+  systemctl stop briefr-backend briefr.target 2>/dev/null || true
+
+  git -C "${INSTALL_DIR}" reset --hard "${prior_commit}"
+
+  fix_tree_permissions
+
+  echo "==> Reinstalling Python dependencies (prior release)"
+  as_app_user "${INSTALL_DIR}/venv/bin/pip" install -r "${INSTALL_DIR}/backend/requirements.txt"
+
+  build_frontend
+  install_systemd_units
+  install_nginx_site
+
+  echo "==> Starting backend (prior release)"
+  systemctl enable briefr-backend
+  systemctl restart briefr-backend
+  nginx -t
+  systemctl reload nginx
+
+  echo ""
+  echo "ROLLBACK complete — running prior release at ${prior_commit}."
+  echo "Database schema may still reflect partial migrations from the failed update."
+  echo "If the app fails to start, restore from the pre-update backup (see docs/OPERATIONS.md)."
+  return 1
+}
+
+# Retry curl /api/health, then run check-backend.sh — exit non-zero when unhealthy.
+verify_backend_health_gate() {
+  local health_ok=0
+  local check_script="${INSTALL_DIR}/deploy/check-backend.sh"
+
+  echo ""
+  echo "==> Health gate (retry up to 15s — backend may still be starting)"
+  for _ in 1 2 3 4 5; do
+    if curl -sf "http://127.0.0.1:8000/api/health" >/dev/null; then
+      health_ok=1
+      break
+    fi
+    sleep 3
+  done
+
+  if [ "${health_ok}" -eq 1 ]; then
+    echo "    Backend :8000  OK (curl)"
+  else
+    echo "    Backend :8000  FAILED (curl)"
+    if [ -f "${check_script}" ]; then
+      echo "    Running ${check_script} ..."
+      bash "${check_script}" || true
+    fi
+    return 1
+  fi
+
+  if [ -f "${check_script}" ]; then
+    if bash "${check_script}"; then
+      echo "    check-backend.sh OK"
+    else
+      echo "    check-backend.sh FAILED"
+      return 1
+    fi
+  fi
+
+  if curl -sf "http://127.0.0.1/api/health" >/dev/null; then
+    echo "    Nginx /api   OK"
+  else
+    echo "    Nginx /api   FAILED (backend must be up; check /etc/nginx/sites-enabled/briefr)"
+    return 1
+  fi
+
+  if [ -f "${INSTALL_DIR}/frontend/dist/index.html" ]; then
+    echo "    Frontend dist OK"
+  fi
+
+  return 0
+}
