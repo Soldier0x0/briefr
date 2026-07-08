@@ -386,40 +386,49 @@ Points = `raw × weight × 100`. "No profile" ⇒ asset 0.5 ⇒ 17.5.
   repo already half-built** (Correlation Priority + the orphaned Investigation
   Score). *Recommended — in principle.*
 
-### 4.5 Why this is an ADR, not a decision this review makes
+### 4.5 Resolution — ADR-002 (CLOSED 2026-07-09)
 
-The math is sound; the remedy is **analyst-facing** and the repo's own discipline
-(#339) deliberately left the formula unchanged pending browser review. The
-orphaned Investigation Score is a **pivot signal, not a to-do**: it may be an
-oversight *or* a deliberately-parked experiment (a triage headline that weights
-community-OTX correlation at 40% is semantically aggressive, since most CVEs have
-no correlation and the number then collapses to risk). Declaring "wire it up" in
-a docs PR would override a decision that needs validation, not more repo evidence.
+> **RESOLVED by [`docs/decisions/ADR-002-operational-priority.md`](decisions/ADR-002-operational-priority.md)
+> (ACCEPTED).** The decision was made from repository evidence and did not require
+> browser validation; browser validation now only tunes presentation and threshold
+> constants.
 
-**Required ADR (`docs/decisions/ADR-002-operational-priority.md`):**
+The decision is **Option D**, not the naive Option C this review floated. Naive
+Option C (deriving one priority number as `Threat·0.4 + Env·0.4 + Corr·0.2`) is the
+arbitrary weighted average the semantics forbid — it recreates the v1.1b
+conflation. Option D:
 
-> **Question:** When an asset profile is loaded, and when it is not, what single
-> deterministic number should the analyst Overview headline show, and how is it
-> derived from the Threat axis (v1.1b minus asset), the Environment axis (asset
-> match), and Correlation Priority — such that (a) "environment unknown" is never
-> encoded as a misleading numeric contribution, and (b) loading a profile can
-> never lower a CVE's operational priority relative to not loading one?
->
-> **Required evidence:** browser review of #339/#340 Overview with the score
-> variants side by side; a decision on whether the fused Investigation Score
-> direction is adopted or formally rejected (and if rejected, delete the orphaned
-> route + `api.js` stub); the score distribution across the live corpus with and
-> without a profile (to confirm the inversion and the no-profile inflation
-> empirically). No weight tweaking without new tests + HANDOVER sign-off.
+- **Threat Score (0–100, asset-independent, KEV-floored)** is the honest headline
+  number — v1.1b components minus asset, renormalized, with a **KEV floor of 80**
+  so confirmed exploitation dominates a low EPSS.
+- **Environment Relevance is a categorical tier** (CONFIRMED / LIKELY / POSSIBLE /
+  WEAK / NO_MATCH / UNKNOWN), never a number folded into Threat.
+- **Operational Priority is a deterministic P1–P4 rule table** over
+  (Threat band × Environment tier), with **Correlation as a bounded one-band
+  escalation qualifier** (active/emerging campaign + high-confidence edge; many
+  weak edges never escalate).
+- **UNKNOWN** contributes zero and yields a *provisional* priority off the Threat
+  band — no fabricated `0.5`/17.5 points.
+- **Investigation Score → DELETED** (its formula is the rejected weighted average;
+  it re-imports the placeholder via `risk_total`, double-counts OTX recency, and
+  is orphaned). Its intent survives as Operational Priority.
 
-### RISK SCORING ARCHITECTURE VERDICT: **PRESERVE THE MATH, FIX THE PRESENTATION (Option C in principle, via ADR-002)**
+**Correction to an earlier claim in this review:** §4.3 framed "loading a profile
+can *lower* the score" as the defect. ADR-002 refines this — a **proven NO_MATCH
+legitimately de-escalates** priority (scenario S3). The actual defect is narrower:
+**UNKNOWN is encoded as fabricated positive evidence** (17.5 phantom points that
+NO_MATCH does not get). ADR-002's requirement is "unknown is never a misleading
+numeric contribution," **not** "loading a profile can never lower priority."
 
-Risk Score v1.1b is deterministic, explainable, versioned, tested, and
-LLM-independent — architecturally sound. The failure is presentation: a single
-blended headline plus a `0.5` asset placeholder that inflates no-profile scores
-and inverts weak real matches. Recommend Option C, decided in **ADR-002** with
-analyst-facing validation, not in this PR. Do not tweak weights; do not re-derive
-EPSS; hold the orphaned Investigation Score open pending the ADR.
+### RISK SCORING ARCHITECTURE VERDICT: **PRESERVE THE MATH — DECIDED IN ADR-002 (Option D)**
+
+Risk Score v1.1b's per-component math is deterministic, explainable, versioned,
+tested, LLM-independent — sound, and reused as-is for the Threat axis. The failure
+was presentation (a blended headline + the `0.5` UNKNOWN placeholder). Resolved by
+ADR-002: Threat Score (number) + Environment Relevance (tier) + Operational
+Priority (P1–P4 rule band), Correlation as a bounded escalation qualifier,
+Investigation Score deleted. No weight tweaking; EPSS never re-derived.
+Implementation is the now-deterministic task **M1**.
 
 ---
 
@@ -841,31 +850,46 @@ DoD: an operator can restore from an age-encrypted backup by following the runbo
 PR: title "docs: J5 production restore runbook".
 ```
 
-### Prompt 5 — ADR-002: operational priority / scoring surface — FRONTIER REASONING REQUIRED
+### Prompt 5 — ADR-002: scoring axes / Operational Priority — CLOSED (ACCEPTED 2026-07-09)
+
+**No longer an open prompt.** ADR-002 is decided:
+[`docs/decisions/ADR-002-operational-priority.md`](decisions/ADR-002-operational-priority.md)
+(ACCEPTED, Option D). Decision summary: Threat Score (0–100, asset-independent,
+KEV floor 80) is the headline number; Environment Relevance is a categorical tier;
+Operational Priority is a deterministic P1–P4 rule table; Correlation is a bounded
+one-band escalation qualifier; the Investigation Score is DELETED. The
+implementation is Prompt 6 (M1), now fully deterministic.
+
+### Prompt 6 — M1: Threat / Environment / Operational Priority surface — STANDARD CODING AGENT SUFFICIENT
 
 ```
-Repo: Soldier0x0/briefr. This is a DECISION task (ADR doc), not an implementation. Read docs/BRIEFR_ARCHITECTURE_REVIEW_2026-07.md §4 in full first.
-Objective: Decide what single deterministic number the analyst Overview headline shows, with and without an asset profile, derived from Threat (Risk v1.1b minus the asset component), Environment (asset match), and Correlation Priority.
-Inspect: backend/scoring/risk.py, backend/scoring/asset_match.py (DEFAULT_ASSET_UNKNOWN=0.5; note asset_match_info returns 0.0 for loaded-but-unmatched), backend/scoring/investigation.py (the ORPHANED fused Investigation Score — route exists, frontend api.js fetchCVEInvestigationScore has NO caller), frontend OverviewTab.jsx, riskScore.js, docs/HANDOVER.md 2026-07-08 #339 entry point 2.
-Known decision (constraints, not the answer): (a) keep Risk v1.1b deterministic/versioned/tested — do NOT change weights without new tests + HANDOVER sign-off; (b) EPSS is consumed, never re-derived; (c) the specific semantic failure to fix is that "environment unknown" is folded into the headline as 17.5 pts (0.5*35%), AND a loaded-but-unmatched profile yields 0 asset pts — so a headline must never let "unknown environment" masquerade as a numeric contribution, and loading a profile must never LOWER operational priority vs no profile; (d) LLMs never influence the score.
-Required deliverable: docs/decisions/ADR-002-operational-priority.md answering the exact question in review §4.5, choosing among Option A (one blended score), B (three visible scores), C (internal axes → one derived Operational Priority — recommended in principle by the review). Explicitly decide adopt-or-DELETE the orphaned Investigation Score (route + api.js stub). List the required analyst-facing browser evidence gathered/needed.
-Non-goals: no runtime code (that is the M1 follow-up); no weight tweaks in this PR.
-DoD: ADR-002 merged with a clear decision + the follow-up implementation contract for M1.
-PR: title "docs: ADR-002 operational priority scoring surface".
-```
+Repo: Soldier0x0/briefr (self-hosted CVE/threat-intel analyst pane; FastAPI backend, React/Vite frontend, PostgreSQL-required prod). Read CLAUDE.md.
+Prerequisite: docs/decisions/ADR-002-operational-priority.md (ACCEPTED). Implement EXACTLY its contract. You make ZERO scoring-architecture decisions — every semantic, threshold, floor, tier, and rule is fixed in the ADR.
+Objective: Replace the blended BRIEFR Risk Score v1.1b headline with the ADR-002 surface: Threat Score (number) + Environment Relevance (tier) + Operational Priority (P1–P4 band); delete the orphaned Investigation Score.
+Inspect: backend/scoring/risk.py, backend/scoring/asset_match.py (resolve_asset_component: profile None → 0.5; profile + no match → 0.0), backend/scoring/investigation.py (DELETE), backend/routers/cves.py (risk route + /investigation-score route to DELETE + /correlation), frontend/src/scoring/riskScore.js, frontend/src/api.js (fetchCVEInvestigationScore to DELETE), frontend/src/components/DetailDrawer/OverviewTab.jsx.
 
-### Prompt 6 — M1: scoring surface implementation — STANDARD CODING AGENT SUFFICIENT (blocked on ADR-002)
+BACKEND — add pure functions (new backend/scoring/threat.py + backend/scoring/priority.py, or extend risk.py):
+1. calculate_threat_score(cve, momentum_score) -> {version:"threat-1.0", score(0-100), band, components{kev,epss,exploit,cvss,momentum:{raw,weight,points}}, kev_floor_applied:bool}. Reuse v1.1b raws (_kev_score_v11b, _exploit_score_v11b, epss=_num(epss_score,0.0), cvss=cvss/10, momentum). Renormalize the 5 NON-asset weights over 0.65: kev .3846, epss .2308, exploit .1538, cvss .1538, momentum .0769. threat_additive = 100*Σ(w*raw). If is_kev: Threat = max(threat_additive, 80). Bands: CRIT≥80, HIGH 60-79, MED 40-59, LOW<40. EPSS/exploit missing → 0 (never fabricate, never re-derive EPSS).
+2. classify_environment(cve, profile, backend_match_score) -> {tier, score, version_verified:bool, evidence_label}. Reuse resolve_asset_component/asset_match_info. Map: profile None → UNKNOWN; profile & score 0 → NO_MATCH; exact CPE version (1.0) → CONFIRMED; CPE product 0.9 / OS 0.8 → LIKELY; product 0.75 / vendor 0.65 → POSSIBLE; 0.35–0.55 text → WEAK.
+3. derive_operational_priority(threat_band, env_tier, corr_escalation:bool) -> {band("P1".."P4"), provisional:bool, escalated_by_correlation:bool, rationale}. Pure rule table (ADR §Operational Priority): 
+   CONFIRMED: CRIT→P1,HIGH→P1,MED→P2,LOW→P3;  LIKELY: CRIT→P1,HIGH→P2,MED→P2,LOW→P3;  POSSIBLE/WEAK: CRIT→P2,HIGH→P2,MED→P3,LOW→P4;  UNKNOWN(provisional=true): CRIT→P1,HIGH→P2,MED→P3,LOW→P4;  NO_MATCH: CRIT→P3,HIGH→P3,MED→P4,LOW→P4.
+   Then if corr_escalation and base∈{P2,P3}: lift one band (P2→P1, P3→P2), cap P1, never lift P4.
+4. correlation_escalation(correlation_result) -> bool: true iff a campaign with lifecycle in (active,emerging) AND ≥1 high-confidence edge (same-pulse + shared hash/domain). Read from the correlation result already fetched on the detail path — do NOT add a new request-path correlation compute.
+5. API: risk/overview response ADDS threat, environment, operational_priority (additive). Retain v1.1b total/components for ONE release as legacy_risk_v11b (external-consumer compat) but it is NOT displayed. DELETE the GET /api/cves/{id}/investigation-score route.
 
-```
-Repo: Soldier0x0/briefr. Prerequisite: docs/decisions/ADR-002-operational-priority.md must be merged; implement exactly what it decided. Read it + review §4.
-Objective: Implement the ADR-002 scoring surface in the analyst Overview/drawer.
-Inspect: backend/scoring/risk.py, scoring/asset_match.py, scoring/investigation.py, routers/cves.py (risk + investigation_score routes), frontend OverviewTab.jsx, riskScore.js, DetailDrawer.
-Known decision: from ADR-002. The `0.5` asset placeholder must not be folded into a no-profile headline; loading a profile must never lower operational priority.
-Required behavior: per ADR-002 — e.g. show Threat as the headline when no profile + Environment as an explicit "unknown" state (not a number), and/or a derived Operational Priority. Keep backend↔frontend score parity. If ADR-002 deleted the Investigation Score, remove the route + api.js fetchCVEInvestigationScore stub in this PR.
-Non-goals: no case management; NOT parallel-safe with H2/H4 or C-Evolve-3 (shared DetailDrawer) — do not run those concurrently.
-Testing: extend backend/tests/test_risk_score_v11b.py (or a new test) to lock the no-profile / loaded-unmatched behavior; npm run build; browser-verify Overview with and without a profile.
-DoD: headline matches ADR-002; the scenario-6 inversion is gone; tests green.
-PR: title "feat(scoring): M1 operational-priority surface per ADR-002".
+FRONTEND:
+6. riskScore.js mirrors calculate_threat_score + classify_environment + derive_operational_priority deterministically (parity with backend).
+7. OverviewTab headline: Operational Priority band (primary chip) + Threat Score (0-100) + Environment tier chip. "WHY THIS SCORE" shows Threat components + Environment tier + correlation-escalation reason. Remove the blended v1.1b total from display. Delete api.js fetchCVEInvestigationScore.
+
+UNKNOWN behavior: contributes 0 to Threat (no 17.5 placeholder); Operational Priority uses Threat band as provisional (provisional=true). NO_MATCH: de-escalates per table. Fuzzy (POSSIBLE/WEAK/LIKELY-unverified): never P1 on match alone — P1 needs CONFIRMED exact version or genuine CRIT threat or a correlation-escalated HIGH. Correlation: escalation qualifier only, never a Threat input, never a weighted term.
+
+Non-goals: do NOT change v1.1b weights; do NOT re-derive EPSS; no LLM influence on any axis; no case management; no SQL/scheduler/deploy changes. NOT parallel-safe with H2/H4 or C-Evolve-3 (shared DetailDrawer) — sequence them.
+
+Testing: backend/tests/test_threat_score.py (KEV floor ⇒ ≥80; CVSS-only ⇒ LOW; medium-CVSS+KEV+metasploit ⇒ CRIT; EPSS pass-through; missing EPSS/exploit ⇒ 0), test_environment_tiers.py (UNKNOWN vs NO_MATCH distinct; fuzzy caps at POSSIBLE/WEAK), test_operational_priority.py (full matrix + correlation escalation + provisional + sorting). Assert all of ADR-002 scenarios S1–S10. Frontend riskScore.test.js parity for the matrix. npm run build. Browser-verify Overview for S1/S2/S3/S4/S6/S9 (no phantom 17.5; UNKNOWN provisional; NO_MATCH de-escalates).
+Compatibility: additive API; v1.1b endpoint unchanged; investigation-score deletion is safe (zero callers, verified).
+Versioning: emit threat-1.0 / environment-1.0 / operational-priority-1.0.
+DoD: headline shows Threat + Environment tier + P1–P4 band per ADR-002; no fabricated 17.5 for UNKNOWN; NO_MATCH de-escalates; S1–S10 pass backend + frontend; Investigation Score route + stub deleted; update PRODUCT_STATUS.md CVE-Overview row to the shipped surface in the same PR.
+PR: one PR, title "feat(scoring): M1 Threat/Environment/Operational-Priority per ADR-002".
 ```
 
 ### Prompt 7 — C-Evolve-1: correlation lifecycle computation — STANDARD CODING AGENT SUFFICIENT
