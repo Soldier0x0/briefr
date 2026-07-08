@@ -75,7 +75,15 @@ export default function PrivacyPage() {
         new CVEs since your previous session.
       </p>
 
-      <h2 className="legal-section-heading">4. Third-party services</h2>
+      <h2 className="legal-section-heading">4. Display preferences (server)</h2>
+      <p className="legal-p">
+        When you are signed in, display settings (font size, density, poll interval,
+        UTC timestamps, reduced motion, scheduler table IDs) and your selected timezone
+        are stored in <code>user_preferences</code> under your user account — not in
+        browser localStorage. They follow you across devices on this instance.
+      </p>
+
+      <h2 className="legal-section-heading">5. Third-party services</h2>
       <ul className="legal-ul">
         <li>NVD/NIST — CVE data — server-side, once daily</li>
         <li>CISA — exploited vuln list — server-side, once daily</li>
@@ -93,7 +101,7 @@ export default function PrivacyPage() {
         or any other typography CDN.
       </p>
 
-      <h2 className="legal-section-heading">5. Your rights</h2>
+      <h2 className="legal-section-heading">6. Your rights</h2>
       <p className="legal-p">
         Sai Harsha Vardhan, sole operator of projectjupiter.in, is the Data
         Fiduciary for this hosted instance. Because no persistent personal
@@ -106,13 +114,13 @@ export default function PrivacyPage() {
         harsha@projectjupiter.in.
       </p>
 
-      <h2 className="legal-section-heading">6. Children</h2>
+      <h2 className="legal-section-heading">7. Children</h2>
       <p className="legal-p">
         BRIEFR is a technical security tool intended for professionals and
         researchers. It is not directed at children under the age of 13.
       </p>
 
-      <h2 className="legal-section-heading">7. License and self-hosting</h2>
+      <h2 className="legal-section-heading">8. License and self-hosting</h2>
       <p className="legal-p">
         BRIEFR's source code is licensed under the Business Source License
         1.1 — see the Terms of Service for details. Copyright &copy; 2026

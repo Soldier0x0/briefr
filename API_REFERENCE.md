@@ -271,6 +271,37 @@ When no row exists yet, `stack_terms` is `""`, `profile` is `null`, and `updated
 
 **Notes:** `BRIEFR_STACK_TERMS` in admin config overrides the saved user stack for KEV-on-stack webhooks and the wallboard tile. When unset, the backend uses the most recently updated non-empty `user_preferences.stack_terms` row.
 
+### GET /api/me/preferences
+
+**Description:** Read the authenticated user's display preferences and timezone.
+
+**Response:**
+
+```json
+{
+  "font_scale": "medium",
+  "density": "comfortable",
+  "show_technical_ids": false,
+  "poll_interval_seconds": 30,
+  "utc_time": false,
+  "reduce_motion": false,
+  "timezone": "UTC",
+  "updated_at": "2026-07-08 12:00:00"
+}
+```
+
+When no row exists yet, fields use defaults and `updated_at` is `null`.
+
+### PATCH /api/me/preferences
+
+**Description:** Partially update display preferences and/or timezone. At least one field is required.
+
+**Body:** Any subset of the GET fields (snake_case). Omitted fields are unchanged.
+
+**Response:** Same shape as GET (with non-null `updated_at`).
+
+**Validation:** `font_scale` ∈ `xsmall|small|medium|large|xlarge`; `density` ∈ `compact|comfortable|spacious`; `poll_interval_seconds` ∈ `15|30|60|120`; booleans for `show_technical_ids`, `utc_time`, `reduce_motion`; `timezone` must be a valid IANA zone. Invalid values → `422`.
+
 ---
 
 ### GET /api/changes

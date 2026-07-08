@@ -1,5 +1,7 @@
 // Timezone utilities shared across Header, CVECard, and report generators
 
+import { getCachedUserPreferences, saveUserPreferences } from './userPreferences.js'
+
 export const COMMON_TIMEZONES = [
   { tz: 'UTC',                 label: 'UTC',              search: 'utc' },
   { tz: 'Asia/Kolkata',        label: 'Asia/Kolkata',     search: 'india kolkata ist' },
@@ -143,7 +145,7 @@ export function formatAbsolute(isoString, tz) {
 // For copy-report and digest: "2026-06-01 00:03:01 IST (18:33:01 UTC)"
 export function getReportTimestamp() {
   const now = new Date()
-  const tz = localStorage.getItem('briefr_timezone') || 'UTC'
+  const tz = getTimezone()
   if (tz === 'UTC') {
     return formatDateTime(now, 'UTC') + ' UTC'
   }
@@ -154,7 +156,10 @@ export function getReportTimestamp() {
 }
 
 // Dispatch when timezone changes so App can propagate via props
-export function setTimezone(tz) {
-  localStorage.setItem('briefr_timezone', tz)
-  window.dispatchEvent(new CustomEvent('briefr-timezone-change', { detail: tz }))
+export function getTimezone() {
+  return getCachedUserPreferences().timezone || 'UTC'
+}
+
+export async function setTimezone(tz) {
+  await saveUserPreferences({}, tz)
 }

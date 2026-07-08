@@ -8,6 +8,7 @@ import ApiQueueIndicator from './ApiQueueIndicator.jsx'
 import {
   COMMON_TIMEZONES,
   formatTime,
+  getTimezone,
   getTzAbbr,
   setTimezone as persistTimezone,
 } from '../utils/timezone.js'
@@ -18,9 +19,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
   const assetCtx = useAssetProfileOptional()
   const { status: authStatus } = useAuth()
   const [now, setNow]               = useState(new Date())
-  const [tz, setTz]                 = useState(() => {
-    try { return localStorage.getItem('briefr_timezone') || 'UTC' } catch { return 'UTC' }
-  })
+  const [tz, setTz]                 = useState(() => getTimezone())
   const [popoverOpen, setPopoverOpen]   = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [search, setSearch]             = useState('')
@@ -47,6 +46,17 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
     document.addEventListener('mousedown', onDown)
     return () => document.removeEventListener('mousedown', onDown)
   }, [popoverOpen, mobileMenuOpen])
+
+  useEffect(() => {
+    const onTz = (e) => setTz(e.detail)
+    const onLoaded = (e) => setTz(e.detail?.timezone || getTimezone())
+    window.addEventListener('briefr-timezone-change', onTz)
+    window.addEventListener('briefr-preferences-loaded', onLoaded)
+    return () => {
+      window.removeEventListener('briefr-timezone-change', onTz)
+      window.removeEventListener('briefr-preferences-loaded', onLoaded)
+    }
+  }, [])
 
   function selectTz(newTz) {
     setTz(newTz)

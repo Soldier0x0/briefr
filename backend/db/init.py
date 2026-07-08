@@ -606,9 +606,13 @@ async def init_db() -> None:
                 user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
                 stack_terms TEXT NOT NULL DEFAULT '',
                 profile_json TEXT,
+                display_prefs_json TEXT,
+                timezone TEXT NOT NULL DEFAULT 'UTC',
                 updated_at TEXT DEFAULT (datetime('now'))
             )
             """,
+            "ALTER TABLE user_preferences ADD COLUMN display_prefs_json TEXT",
+            "ALTER TABLE user_preferences ADD COLUMN timezone TEXT NOT NULL DEFAULT 'UTC'",
             "ALTER TABLE users RENAME COLUMN email TO username",
             "DROP INDEX IF EXISTS idx_users_email",
             "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)",

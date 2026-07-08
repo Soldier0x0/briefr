@@ -12,6 +12,18 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Wave 2 PR 5: user preferences API + frontend migration
+
+**Session:** Added `GET/PATCH /api/me/preferences` (display prefs + timezone);
+migration `007_user_display_prefs`; frontend `userPreferences.js` migrates legacy
+`briefr_*` localStorage on login. Privacy + Display admin copy updated.
+
+### Next steps
+
+**Wave 2 PR 6** — asset profile persistence (remember-on-server toggle).
+
+---
+
 ## 2026-07-08 — D4: Nuclei parser + Sigma artifact injection
 
 **Session:** Added deterministic `nuclei_parser.py`; `exploit_sync` enriches

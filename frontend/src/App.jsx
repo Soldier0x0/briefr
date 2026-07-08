@@ -26,7 +26,7 @@ import {
   getAiFrameworksForAlerts,
   hasDeclaredAiAssets,
 } from './utils/aiAssets.js'
-import { formatAbsolute, getTzAbbr } from './utils/timezone.js'
+import { formatAbsolute, getTimezone, getTzAbbr } from './utils/timezone.js'
 import { createCveDrawerController } from './utils/openCveDrawer.js'
 import { lazyWithReload } from './utils/lazyWithReload.js'
 import { ingestLogUrl } from './utils/adminLinks.js'
@@ -271,9 +271,7 @@ export default function App() {
   const [digestCVEs, setDigestCVEs]             = useState([])
   const [searchFocusTrigger, setSearchFocusTrigger] = useState(0)
   const [aboutOpen, setAboutOpen]               = useState(false)
-  const [timezone, setTimezone]                 = useState(() => {
-    try { return localStorage.getItem('briefr_timezone') || 'UTC' } catch { return 'UTC' }
-  })
+  const [timezone, setTimezone]                 = useState(() => getTimezone())
   const [lastUpdated, setLastUpdated]           = useState(null)
   const [feedHealth, setFeedHealth]             = useState(null)
   const [nextRefreshUtc, setNextRefreshUtc]     = useState(null)
@@ -402,11 +400,16 @@ export default function App() {
     return () => clearInterval(id)
   }, [loadHealth])
 
-  // Keep timezone state in sync when Header dispatches changes
+  // Keep timezone state in sync when Header or server prefs dispatch changes
   useEffect(() => {
-    const handler = (e) => setTimezone(e.detail)
-    window.addEventListener('briefr-timezone-change', handler)
-    return () => window.removeEventListener('briefr-timezone-change', handler)
+    const onTz = (e) => setTimezone(e.detail)
+    const onLoaded = (e) => setTimezone(e.detail?.timezone || getTimezone())
+    window.addEventListener('briefr-timezone-change', onTz)
+    window.addEventListener('briefr-preferences-loaded', onLoaded)
+    return () => {
+      window.removeEventListener('briefr-timezone-change', onTz)
+      window.removeEventListener('briefr-preferences-loaded', onLoaded)
+    }
   }, [])
 
   const handleGenerateDigest = useCallback((cves) => {
