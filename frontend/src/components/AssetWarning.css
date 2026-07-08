@@ -33,6 +33,24 @@
   gap: 10px;
 }
 
+.asset-remember-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--text2);
+  margin-bottom: 12px;
+}
+
+.asset-remember-hint {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--text3);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
 .asset-btn {
   font-size: 10px;
   letter-spacing: 0.06em;

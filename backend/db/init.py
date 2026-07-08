@@ -608,11 +608,13 @@ async def init_db() -> None:
                 profile_json TEXT,
                 display_prefs_json TEXT,
                 timezone TEXT NOT NULL DEFAULT 'UTC',
+                remember_profile_on_server INTEGER NOT NULL DEFAULT 0,
                 updated_at TEXT DEFAULT (datetime('now'))
             )
             """,
             "ALTER TABLE user_preferences ADD COLUMN display_prefs_json TEXT",
             "ALTER TABLE user_preferences ADD COLUMN timezone TEXT NOT NULL DEFAULT 'UTC'",
+            "ALTER TABLE user_preferences ADD COLUMN remember_profile_on_server INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE users RENAME COLUMN email TO username",
             "DROP INDEX IF EXISTS idx_users_email",
             "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)",

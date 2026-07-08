@@ -70,9 +70,16 @@ export default function PrivacyPage() {
         Feed tab are stored in the application database under your user account
         (<code>user_preferences</code>) — not in browser localStorage. They are
         used to filter CVEs and, when no operator override is set, for KEV-on-stack
-        webhook alerts and the wallboard tile. A timestamp of your last visit may
-        still be stored locally under <code>briefr_last_visit</code> to highlight
-        new CVEs since your previous session.
+        webhook alerts and the wallboard tile.
+      </p>
+      <p className="legal-p">
+        My Stack inventory (operating systems, applications, environment) is
+        session-only by default on shared terminals. If you enable
+        &quot;Remember on server&quot; while signed in, that inventory JSON is also
+        stored under your account and restored on your next sign-in. CVE matching
+        still uses <code>POST /api/cves/match</code> at apply time. A timestamp of
+        your last visit may still be stored locally under <code>briefr_last_visit</code>
+        to highlight new CVEs since your previous session.
       </p>
 
       <h2 className="legal-section-heading">4. Display preferences (server)</h2>

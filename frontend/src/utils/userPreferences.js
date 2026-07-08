@@ -2,6 +2,7 @@
 
 import { fetchUserPreferences, patchUserPreferences } from '../api.js'
 import { applyDisplayPrefs, DISPLAY_DEFAULTS, toDisplayPrefs } from './displayPrefsCore.js'
+import { saveUserStackProfile } from './userStack.js'
 
 const LEGACY_KEYS = {
   fontScale: 'briefr_font_scale',
@@ -70,6 +71,7 @@ function fromApi(data) {
   return {
     ...toDisplayPrefs(data),
     timezone: data?.timezone || 'UTC',
+    remember_profile_on_server: !!data?.remember_profile_on_server,
     updated_at: data?.updated_at || null,
   }
 }
@@ -168,6 +170,40 @@ export async function saveUserPreferences(displayPatch = {}, timezone) {
       cached = previous
       applyCached(previous)
     }
+    throw err
+  }
+}
+
+export function getRememberProfileOnServer() {
+  return !!getCachedUserPreferences().remember_profile_on_server
+}
+
+export async function setRememberProfileOnServer(enabled, sessionProfile = null) {
+  if (!isUserPreferencesLoaded()) {
+    return enabled
+  }
+  const previousRemember = !!cached?.remember_profile_on_server
+  try {
+    if (enabled && sessionProfile) {
+      await saveUserStackProfile(sessionProfile)
+    }
+    const data = await patchUserPreferences({ remember_profile_on_server: !!enabled })
+    cached = fromApi(data)
+    if (!enabled) {
+      await saveUserStackProfile(null)
+    }
+    try {
+      window.dispatchEvent(new CustomEvent('briefr-preferences-loaded', { detail: cached }))
+    } catch { /* unavailable */ }
+    return cached.remember_profile_on_server
+  } catch (err) {
+    try {
+      const rolled = await patchUserPreferences({
+        remember_profile_on_server: previousRemember,
+      })
+      cached = fromApi(rolled)
+      window.dispatchEvent(new CustomEvent('briefr-preferences-loaded', { detail: cached }))
+    } catch { /* best-effort rollback */ }
     throw err
   }
 }

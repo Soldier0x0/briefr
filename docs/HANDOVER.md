@@ -12,6 +12,18 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Wave 2 PR 6: asset profile persistence toggle
+
+**Session:** My Stack inventory stays session-only by default; signed-in users can
+toggle “Remember on server” (`remember_profile_on_server` on preferences). Server
+profile hydrates on login; `PUT /api/me/stack` preserves `profile` when omitted.
+
+### Next steps
+
+**Wave 3 PR 8** — `DATA_SNAPSHOT.md` ADR + intel/operator table split.
+
+---
+
 ## 2026-07-08 — Wave 2 PR 5: user preferences API + frontend migration
 
 **Session:** Added `GET/PATCH /api/me/preferences` (display prefs + timezone);

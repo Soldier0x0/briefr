@@ -79,6 +79,7 @@ def test_get_preferences_defaults(client):
     assert body["utc_time"] is False
     assert body["reduce_motion"] is False
     assert body["timezone"] == "UTC"
+    assert body["remember_profile_on_server"] is False
     assert body["updated_at"] is None
 
 
@@ -118,6 +119,19 @@ def test_patch_preferences_rejects_invalid_timezone(client):
     _login(client)
     res = client.patch("/api/me/preferences", json={"timezone": "Not/A/Zone"})
     assert res.status_code == 422
+
+
+def test_patch_preferences_remembers_profile_toggle(client):
+    _login(client)
+    patch = client.patch(
+        "/api/me/preferences",
+        json={"remember_profile_on_server": True},
+    )
+    assert patch.status_code == 200
+    assert patch.json()["remember_profile_on_server"] is True
+
+    get = client.get("/api/me/preferences")
+    assert get.json()["remember_profile_on_server"] is True
 
 
 def test_patch_preferences_rejects_invalid_font_scale(client):
