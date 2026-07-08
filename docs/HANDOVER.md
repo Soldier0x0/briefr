@@ -12,6 +12,16 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-08 — Sprint queue reordered (J → H → I → F → G)
+
+**What:** `docs/SPRINT_2026-07.md` execution queue rewritten after Post-B4.
+Delivery first: **J** deploy → **H** ui/ (audit, H2/H4) → **I** perf.
+**F** license/open-core and **G** learning/onboarding **last**.
+
+**Next:** **J1** — update path + Alembic + health gate + rollback.
+
+---
+
 ## 2026-07-08 — Post-B4: CI backup round-trip
 
 **Branch:** `cursor/post-b4-backup-roundtrip-64e9`
@@ -21,8 +31,7 @@ runs production backup path (`run_backup` / `briefr.pgdump`), wipes DB,
 `restore_backup(..., force=True)`, asserts `cves` and `kev_deadlines`
 row counts. Dedicated step in `test-postgres` CI job.
 
-**Next:** Track **J1** (deploy update/rollback safety) or Track **I2**
-(gzip) — see sprint execution queue.
+**Next:** **J1** per reordered sprint queue (see HANDOVER 2026-07-08 reorder entry).
 
 ---
 
