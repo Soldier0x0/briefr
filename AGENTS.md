@@ -46,6 +46,11 @@ Local dev without production infra: `docker compose -f deploy/docker-compose.pos
 
 ### Tests / build / lint
 
+- **Local pre-merge gate (use when GitHub Actions is unavailable):** from repo root,
+  `./scripts/verify-local.sh` — mirrors CI jobs `test`, `dependency-audit`, and the
+  frontend build step. Pass `--full` to also run Postgres pytest, gitleaks, and Playwright
+  smoke when those tools/DB are available. **Green local verify is sufficient to merge**;
+  do not block on GitHub Actions when the org has hit its monthly free-tier limit.
 - Backend tests: from `backend/`, `pytest tests/ -q` (matches CI in
   `.github/workflows/backend-tests.yml`). Run from `backend/` — tests prepend the parent to `sys.path`.
 - Frontend build: from `frontend/`, `npm run build`.

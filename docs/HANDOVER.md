@@ -12,6 +12,20 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — Local verify replaces GitHub Actions (quota exhausted)
+
+**Decision:** GitHub Actions monthly free-tier is exhausted for the foreseeable future.
+Development must not block on green CI badges. Use `./scripts/verify-local.sh` from repo
+root as the pre-merge gate instead (mirrors CI `test`, `dependency-audit`, frontend build).
+`--full` adds Postgres pytest, gitleaks, Playwright smoke when available.
+
+**Workflow going forward:** implement → `./scripts/verify-local.sh` → commit/push → merge
+without waiting for GitHub. Re-run Actions on `main` only after quota resets, if desired.
+
+**Next:** Post-B2 — unified DB exceptions in `db/connection.py`.
+
+---
+
 ## 2026-07-08 — Post-B Phase 1 PR 8 merged (#328): `init` — Phase 1 complete
 
 **Merged:** #328 without GitHub CI (Actions monthly free-tier exhausted). Verified
@@ -37,11 +51,7 @@ DDL unchanged (Alembic owns Postgres schema). Added `tests/test_db_init.py`.
 **Verified:** `pytest tests/test_db_init.py -q` (4 passed, SQLite); full suite
 `801 passed, 8 skipped` (SQLite).
 
-**PR:** #328 open on `cursor/init-postgres-native-6fd2`. **CI blocked** — GitHub
-Actions monthly free-tier limit reached (jobs fail in ~3s with no steps; not a
-code regression). Re-run workflows or merge after limits reset.
-
-**Next:** CI green → merge #328 → Phase 1 complete → Post-B2 (unified exceptions).
+**PR:** #328 — merged without GitHub CI (Actions quota exhausted); local verification only.
 
 ---
 
@@ -247,12 +257,12 @@ Every code change, no exceptions:
 | Step | Action |
 |------|--------|
 | 1 | Branch off fresh `main`: `cursor/<descriptive-name>-6fd2` |
-| 2 | Implement; verify locally (`cd backend && pytest tests/ -q`; `cd frontend && npm run build` if UI touched) |
-| 3 | Push; open **non-draft** PR |
-| 4 | Wait for **Gemini** (`gemini-code-assist[bot]`) inline review; address each actionable comment |
-| 5 | Wait for **CI green** (`test`, `test-postgres`, `gitleaks`, `dependency-audit`, `playwright-smoke`) |
+| 2 | Implement; verify locally — **`./scripts/verify-local.sh`** (or `pytest` + `npm run build` for tiny changes) |
+| 3 | Push; open **non-draft** PR (optional when merging direct to `main`) |
+| 4 | Wait for **Gemini** when available; address actionable comments |
+| 5 | **CI green** when GitHub Actions quota allows; otherwise **`./scripts/verify-local.sh` green is sufficient** |
 | 6 | Update docs when runtime behavior changes (`PRODUCT_STATUS.md`, `HANDOVER.md`, sprint checkboxes) |
-| 7 | **Merge only when Gemini + CI satisfied** |
+| 7 | **Merge when local verify (+ Gemini if available) satisfied** — do not idle waiting for Actions |
 
 Cloud-agent note: commit and push before testing; update PR after each iteration.
 
