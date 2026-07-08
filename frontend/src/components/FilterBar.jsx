@@ -55,6 +55,7 @@ export function hasActiveFilters(filters) {
     filters.kev_only ||
     filters.kev_overdue_only ||
     filters.poc_only ||
+    filters.patch_only ||
     filters.epss_min != null ||
     filters.severity ||
     filters.published_on ||
