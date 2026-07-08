@@ -1,4 +1,4 @@
-import { cloneElement, useId } from 'react'
+import { cloneElement, isValidElement, useId } from 'react'
 import './ControlTooltip.css'
 
 /**
@@ -9,9 +9,11 @@ export default function ControlTooltip({ text, children, className = '' }) {
   const id = useId()
   if (!text) return children
 
-  const child = cloneElement(children, {
-    'aria-describedby': [children.props['aria-describedby'], id].filter(Boolean).join(' ') || id,
-  })
+  const child = isValidElement(children)
+    ? cloneElement(children, {
+        'aria-describedby': [children.props?.['aria-describedby'], id].filter(Boolean).join(' ') || id,
+      })
+    : children
 
   return (
     <span className={`control-tooltip-wrap ${className}`.trim()}>

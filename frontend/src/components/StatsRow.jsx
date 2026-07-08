@@ -41,7 +41,7 @@ function StatCell({
         )}
       </div>
       <div className="stat-label">
-        {onClick && explain ? (
+        {explain ? (
           <ControlTooltip text={explain}>
             <span tabIndex={0} className="stat-label-text">{label}</span>
           </ControlTooltip>

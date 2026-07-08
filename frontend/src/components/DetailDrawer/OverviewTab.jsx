@@ -22,20 +22,11 @@ import {
   pickCisaRemediationReference,
   pickVendorRemediationReference,
 } from '../../utils/patchRemediation.js'
+import { formatKevDueDate } from '../../utils/kevDeadline.js'
 import { buildReferenceRows } from '../../utils/referenceRows.js'
 import { buildExploitationDisplay } from '../../utils/exploitationDisplay.js'
 import { drawerEpssBarColor, capecHref, capecLabel, flattenOsvPackageRows } from './helpers.js'
 
-
-function formatKevDueDate(dateStr) {
-  if (!dateStr) return null
-  try {
-    const d = new Date(dateStr)
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-  } catch {
-    return String(dateStr).slice(0, 10)
-  }
-}
 
 function CriticalThreatSignals({ cve, riskScore, momentumData }) {
   if (!cve) return null

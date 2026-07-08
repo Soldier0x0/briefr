@@ -140,7 +140,7 @@ function SuppressedCorrelationsPanel({ suppressions, onRestore, cveId }) {
     <div className="corr-suppressed-panel" aria-label="Suppressed correlation relationships">
       <p className="corr-suppressed-title mono">SUPPRESSED RELATIONSHIPS</p>
       <ul className="corr-suppressed-list">
-        {suppressions.map(row => {
+        {suppressions.map((row, idx) => {
           const peer = row.scope_key || 'link'
           const label =
             row.scope === 'campaign_id'
@@ -149,7 +149,7 @@ function SuppressedCorrelationsPanel({ suppressions, onRestore, cveId }) {
                 ? `Pulse ${peer}`
                 : `Relationship to ${peer}`
           return (
-            <li key={`${row.scope}-${peer}-${row.created_at || row.id || ''}`} className="corr-suppressed-item">
+            <li key={`${row.scope}-${peer}-${row.created_at || row.id || idx}`} className="corr-suppressed-item">
               <span>{label}</span>
               {row.reason && <span className="mono">({row.reason})</span>}
               {onRestore && (
