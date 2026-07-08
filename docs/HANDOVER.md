@@ -12,6 +12,15 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — E-PR9: E4 IOC paste auto-detect
+
+**What:** Removed manual IP/hash/domain tabs from IOC lookup; type auto-detected
+on paste/input with detected-type badge; lookup disabled until type resolves.
+
+**Next:** E-PR10 Cmd+K palette.
+
+---
+
 ## 2026-07-08 — E-PR8: E2 stat tile deltas + click-to-filter
 
 **What:** `/api/stats` returns 24h-vs-prior-24h deltas; hero tiles show Δ;

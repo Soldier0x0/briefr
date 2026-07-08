@@ -148,6 +148,16 @@
 }
 
 /* Type selector */
+.ioc-detected-badge {
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  color: var(--text2);
+  padding: 4px 8px;
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  align-self: center;
+}
+
 .ioc-type-selector {
   display: flex;
   flex: 1;

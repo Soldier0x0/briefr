@@ -82,39 +82,13 @@ function parseError(err) {
   return err.message || 'Lookup failed — unknown error'
 }
 
-// ── Sub-components ────────────────────────────────────────
-const IOC_TYPES = [
-  { id: 'ip',     label: 'IP ADDRESS' },
-  { id: 'hash',   label: 'FILE HASH'  },
-  { id: 'domain', label: 'DOMAIN'     },
-]
-
-function TypeSelector({ selected, onChange, detected }) {
-  return (
-    <div className="ioc-type-selector" role="group" aria-label="IOC type">
-      {IOC_TYPES.map(t => (
-        <button
-          key={t.id}
-          className={[
-            'ioc-type-btn',
-            selected === t.id ? 'selected' : '',
-            detected === t.id && selected !== t.id ? 'detected' : '',
-          ].filter(Boolean).join(' ')}
-          onClick={() => onChange(t.id)}
-          aria-pressed={selected === t.id}
-          aria-label={`Set type to ${t.label}`}
-          title={detected === t.id ? 'Auto-detected' : undefined}
-        >
-          {t.label}
-          {detected === t.id && (
-            <span className="detected-mark" aria-label="auto-detected">*</span>
-          )}
-        </button>
-      ))}
-    </div>
-  )
+const TYPE_LABELS = {
+  ip: 'IP ADDRESS',
+  hash: 'FILE HASH',
+  domain: 'DOMAIN',
 }
 
+// ── Sub-components ────────────────────────────────────────
 function ThreatBar({ malicious, total }) {
   const { label, color, pct } = verdictInfo(malicious, total)
   const fillPct = Math.min(pct * 100, 100)
@@ -755,8 +729,7 @@ function HistoryItem({ item, onRerun }) {
 export default function IOCLookup({ prefill }) {
   const investigation = useInvestigationOptional()
   const [value, setValue]       = useState('')
-  const [iocType, setIocType]   = useState('ip')
-  const [detected, setDetected] = useState(null)
+  const [detectedType, setDetectedType] = useState(null)
   const [loading, setLoading]   = useState(false)
   const [result, setResult]     = useState(null)
   const [error, setError]       = useState(null)
@@ -776,17 +749,27 @@ export default function IOCLookup({ prefill }) {
   const [fromCveId, setFromCveId] = useState(null)
   const pivotFromRef = useRef(null)
 
-  // Auto-detect type after 500ms pause
+  const applyDetection = useCallback((val) => {
+    const t = detectType(val)
+    setDetectedType(t)
+    return t
+  }, [])
+
+  // Auto-detect type after 300ms pause (paste triggers immediate detect)
   const handleValueChange = useCallback((e) => {
     const val = e.target.value
     setValue(val)
     if (detectDebounce.current) clearTimeout(detectDebounce.current)
     detectDebounce.current = setTimeout(() => {
-      const t = detectType(val)
-      setDetected(t)
-      if (t) setIocType(t)
-    }, 500)
-  }, [])
+      applyDetection(val)
+    }, 300)
+  }, [applyDetection])
+
+  const handlePaste = useCallback((e) => {
+    const pasted = e.clipboardData?.getData('text') || ''
+    const next = `${value}${pasted}`
+    setTimeout(() => applyDetection(next), 0)
+  }, [value, applyDetection])
 
   // Clean up debounce on unmount
   useEffect(() => () => {
@@ -795,8 +778,13 @@ export default function IOCLookup({ prefill }) {
 
   async function runLookup(lookupValue, lookupType, options = {}) {
     const raw = (lookupValue ?? value).trim()
-    const type = lookupType ?? iocType
+    const type = lookupType ?? detectedType ?? detectType(raw)
     if (!raw) return
+    if (!type) {
+      setError('Unrecognized indicator — paste an IPv4 address, file hash (MD5/SHA1/SHA256), or domain/URL.')
+      setErrorRequestId(null)
+      return
+    }
     const trimmed = normalizeIocValue(raw, type)
 
     if (type === 'domain' && !isValidDomain(trimmed)) {
@@ -881,8 +869,7 @@ export default function IOCLookup({ prefill }) {
 
     setValue(first.value)
     const t = first.type === 'domain' ? 'domain' : first.type === 'hash' ? 'hash' : 'ip'
-    setIocType(t)
-    setDetected(t)
+    setDetectedType(t)
     // Analyst reviews chips first; prefill input only (no auto-lookup blast)
   }, [prefill?.trigger, prefill?.value, prefill?.indicators, prefill?.fromCveId, prefill?.pivotFrom])
 
@@ -890,14 +877,12 @@ export default function IOCLookup({ prefill }) {
     if (!ind?.value) return
     const t = ind.type === 'domain' ? 'domain' : ind.type === 'hash' ? 'hash' : 'ip'
     setValue(ind.value)
-    setIocType(t)
-    setDetected(t)
+    setDetectedType(t)
   }
 
   function clearLookup() {
     setValue('')
-    setIocType('ip')
-    setDetected(null)
+    setDetectedType(null)
     setResult(null)
     setError(null)
     setCopied(false)
@@ -921,9 +906,9 @@ export default function IOCLookup({ prefill }) {
 
   function handleRerun(item) {
     setValue(item.value)
-    setIocType(item.iocType)
-    setDetected(detectType(item.value))
-    runLookup(item.value, item.iocType)
+    const t = item.iocType || detectType(item.value)
+    setDetectedType(t)
+    runLookup(item.value, t)
   }
 
   async function copyReport() {
@@ -1009,6 +994,7 @@ export default function IOCLookup({ prefill }) {
           className="ioc-value-input mono"
           value={value}
           onChange={handleValueChange}
+          onPaste={handlePaste}
           onKeyDown={handleKeyDown}
           placeholder="8.8.8.8  /  d41d8cd98f00b204e9800998ecf8427e  /  example.com or https://example.com/path"
           aria-label="Enter IOC value — IP address, file hash, or domain"
@@ -1020,12 +1006,12 @@ export default function IOCLookup({ prefill }) {
         />
 
         <div className="ioc-controls">
-          <TypeSelector
-            selected={iocType}
-            onChange={setIocType}
-            detected={detected}
-          />
-          {iocType === 'ip' && (
+          {detectedType && (
+            <span className="ioc-detected-badge mono" aria-live="polite">
+              Detected: {TYPE_LABELS[detectedType] || detectedType.toUpperCase()}
+            </span>
+          )}
+          {detectedType === 'ip' && (
             <label className="ioc-greynoise-opt mono">
               <input
                 type="checkbox"
@@ -1038,7 +1024,7 @@ export default function IOCLookup({ prefill }) {
           <button
             className="ioc-lookup-btn"
             onClick={() => runLookup()}
-            disabled={loading || !value.trim()}
+            disabled={loading || !value.trim() || !detectedType}
             aria-label="Run IOC lookup"
           >
             {loading ? (
