@@ -174,8 +174,9 @@ code. In that case restore from the pre-update age-encrypted backup (J5 runbook)
 
 **Non-Postgres / dev:** Alembic is skipped when `DATABASE_URL` is not PostgreSQL.
 
-**Intel smoke:** `deploy/smoke-intel.sh` still runs after a green health gate;
-strict failure is task **J3** (warn-only by default today).
+**Intel smoke:** `deploy/smoke-intel.sh` runs after a green health gate. **Strict by
+default (J3):** a failing smoke check exits non-zero. Opt out with
+`BRIEFR_SKIP_SMOKE=1` (skip entirely) or `BRIEFR_STRICT_SMOKE=0` (warn only).
 
 ---
 
