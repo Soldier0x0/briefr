@@ -3,6 +3,7 @@ import useModalLayer from '../hooks/useModalLayer.js'
 import './ShortcutsPanel.css'
 
 const SHORTCUTS = [
+  { key: '⌘K',    desc: 'Command palette' },
   { key: '/',     desc: 'Focus search' },
   { key: 'F',     desc: 'Cycle filters' },
   { key: 'Esc',   desc: 'Close drawer or modal' },

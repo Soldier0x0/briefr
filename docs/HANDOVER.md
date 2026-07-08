@@ -12,6 +12,14 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — E-PR10: E6 Cmd+K command palette
+
+**What:** `CommandPalette` — ⌘/Ctrl+K for tab jump, CVE open, IOC lookup, refresh stats.
+
+**Next:** Track E complete (E-PR1–10).
+
+---
+
 ## 2026-07-08 — E-PR9: E4 IOC paste auto-detect
 
 **What:** Removed manual IP/hash/domain tabs from IOC lookup; type auto-detected

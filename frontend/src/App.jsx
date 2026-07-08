@@ -13,6 +13,7 @@ import Sidebar from './components/Sidebar.jsx'
 import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
 import ToolErrorBoundary from './components/ToolErrorBoundary.jsx'
+import CommandPalette from './components/CommandPalette.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
@@ -273,6 +274,7 @@ export default function App() {
   const [digestCVEs, setDigestCVEs]             = useState([])
   const [searchFocusTrigger, setSearchFocusTrigger] = useState(0)
   const [aboutOpen, setAboutOpen]               = useState(false)
+  const [paletteOpen, setPaletteOpen]           = useState(false)
   const [timezone, setTimezone]                 = useState(() => getTimezone())
   const [lastUpdated, setLastUpdated]           = useState(null)
   const [feedHealth, setFeedHealth]             = useState(null)
@@ -517,6 +519,77 @@ export default function App() {
     },
   }), [openCveById])
 
+  const getPaletteCommands = useCallback((query) => {
+    const q = query.trim()
+    const ql = q.toLowerCase()
+    const items = [
+      { id: 'tab-brief', label: 'Go to BRIEF', hint: 'tab', keywords: ['brief'], run: () => setActiveTab('brief') },
+      { id: 'tab-feed', label: 'Go to FEED', hint: 'tab', keywords: ['feed'], run: () => setActiveTab('feed') },
+      { id: 'tab-ioc', label: 'Go to IOC LOOKUP', hint: 'tab', keywords: ['ioc', 'lookup'], run: () => setActiveTab('ioc') },
+      { id: 'tab-atlas', label: 'Go to INCIDENTS & NEWS', hint: 'tab', keywords: ['incidents', 'news', 'atlas'], run: () => setActiveTab('atlas') },
+      { id: 'tab-forge', label: 'Go to FORGE', hint: 'tab', keywords: ['forge'], run: () => setActiveTab('forge') },
+      {
+        id: 'refresh-stats',
+        label: 'Refresh dashboard stats',
+        hint: 'action',
+        keywords: ['refresh', 'reload', 'stats'],
+        run: () => {
+          loadStats()
+          loadHealth()
+        },
+      },
+    ]
+
+    const cve = q.toUpperCase()
+    if (/^CVE-\d{4}-\d+$/.test(cve)) {
+      items.unshift({
+        id: `open-${cve}`,
+        label: `Open ${cve}`,
+        hint: 'cve',
+        run: () => {
+          setActiveTab('feed')
+          openCveById(cve)
+        },
+      })
+    }
+
+    const looksLikeIoc = q.length >= 3
+      && !/^CVE-/i.test(q)
+      && (
+        /^(\d{1,3}\.){3}\d{1,3}$/.test(q)
+        || /^[0-9a-fA-F]{32}$|^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$/.test(q)
+        || (q.includes('.') && !q.includes(' '))
+      )
+    if (looksLikeIoc) {
+      const display = q.length > 40 ? `${q.slice(0, 40)}…` : q
+      items.unshift({
+        id: 'ioc-lookup',
+        label: `Lookup IOC: ${display}`,
+        hint: 'ioc',
+        run: () => {
+          setActiveTab('ioc')
+          investigationNav.setIocPrefill(q)
+        },
+      })
+    }
+
+    if (!ql) return items
+    return items.filter(cmd =>
+      cmd.label.toLowerCase().includes(ql)
+      || cmd.keywords?.some(k => k.includes(ql) || ql.includes(k))
+    )
+  }, [investigationNav, loadHealth, loadStats, openCveById])
+
+  useEffect(() => {
+    function onPaletteKey(e) {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'k') return
+      e.preventDefault()
+      setPaletteOpen(open => !open)
+    }
+    document.addEventListener('keydown', onPaletteKey)
+    return () => document.removeEventListener('keydown', onPaletteKey)
+  }, [])
+
   // ── Global keyboard shortcuts ─────────────────────────────
   useEffect(() => {
     let gPending = false
@@ -665,6 +738,11 @@ export default function App() {
           )}
         />
       </Routes>
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        getCommands={getPaletteCommands}
+      />
       <ToastArea toasts={toasts} onDismiss={dismissToast} />
     </InvestigationProvider>
   )
