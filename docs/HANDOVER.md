@@ -12,6 +12,17 @@ significant working session; never rewrite old entries.
 
 ---
 
+## 2026-07-08 — E-PR6: header de-clutter + timezone labels + E5 craft
+
+**What:** My Stack moved to user menu (overflow when logged out); shortcuts/legal
+in header ··· overflow; timezone popover shows IST/EDT/PDT + UTC offset column;
+heatmap legend accessible; removed dead light-theme toggle CSS; tighter nav tabs
+on medium viewports.
+
+**Next:** E-PR7 tooltip/badge pass.
+
+---
+
 ## 2026-07-08 — E-PR5: E1 states audit + BRIEF heatmap dead zone
 
 **What:** Documented BRIEF-tab component × state table in sprint (E1); fixed

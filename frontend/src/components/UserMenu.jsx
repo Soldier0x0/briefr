@@ -1,10 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronDown, Home, LayoutDashboard, LogOut, Settings } from 'lucide-react'
+import { Layers, LogOut, Settings, Home, LayoutDashboard, ChevronDown } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
 import './UserMenu.css'
 
-export default function UserMenu({ className = '', onItemClick }) {
+export default function UserMenu({
+  className = '',
+  onItemClick,
+  onMyStack,
+  onClearSession,
+  showClearSession = false,
+}) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -75,6 +81,12 @@ export default function UserMenu({ className = '', onItemClick }) {
             </div>
           </div>
           <div className="user-menu-group">
+            {onMyStack && (
+              <button type="button" className="user-menu-item" role="menuitem" onClick={() => { close(); onMyStack() }}>
+                <Layers size={14} aria-hidden="true" />
+                <span>My Stack</span>
+              </button>
+            )}
             {onAdmin ? (
               <Link to="/" className="user-menu-item" role="menuitem" onClick={close}>
                 <Home size={14} aria-hidden="true" />
@@ -91,6 +103,13 @@ export default function UserMenu({ className = '', onItemClick }) {
               <span>Preferences</span>
             </Link>
           </div>
+          {(showClearSession && onClearSession) && (
+            <div className="user-menu-group">
+              <button type="button" className="user-menu-item" role="menuitem" onClick={() => { close(); onClearSession() }}>
+                <span>Clear session</span>
+              </button>
+            </div>
+          )}
           <div className="user-menu-group">
             <button type="button" className="user-menu-item user-menu-item-danger" role="menuitem" onClick={handleLogout}>
               <LogOut size={14} aria-hidden="true" />

@@ -243,7 +243,11 @@ export default function TimelineHeatmap({ filters, onFiltersChange }) {
                 </div>
               </div>
 
-              <div className="timeline-heatmap-legend" aria-hidden="true">
+              <div
+                className="timeline-heatmap-legend"
+                title="Cell colour intensity maps to CVE count published that day (0 = none, darker = more)."
+                aria-label="Heatmap legend: lighter cells mean fewer CVEs published that day"
+              >
                 <span className="timeline-legend-label mono">Less</span>
                 <div className="timeline-legend-cells">
                   {HEATMAP_LEGEND_COUNTS.map(n => (
