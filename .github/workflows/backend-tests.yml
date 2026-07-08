@@ -62,6 +62,9 @@ jobs:
       - name: Install PostgreSQL client tools
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
+      - name: Postgres backup round-trip smoke (Post-B4)
+        run: cd backend && pytest tests/test_backup_roundtrip_postgres.py -q
+
       - name: Run full suite against Postgres
         run: cd backend && pytest tests/ -q
 

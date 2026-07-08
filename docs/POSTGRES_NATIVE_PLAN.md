@@ -8,7 +8,8 @@ cold. Read `CLAUDE.md` first (danger zone 1 covers this exact area).
 **Status as of 2026-07-08:** Phase 0 complete (#318). F3 complete (#319).
 Phase 1 complete (#320–#328). Phase 2 complete (unified `db/errors.py`).
 Phase 3 complete (`db/dialect.py` deleted; `pg_adapt.py` + `timeutil.py`).
-**Phase 4 (Post-B4) open** — CI backup dump → restore → row-count round-trip.
+**Phase 4 (Post-B4) — DONE:** CI backup round-trip smoke
+(`tests/test_backup_roundtrip_postgres.py` in the `test-postgres` job).
 
 ---
 
@@ -190,14 +191,13 @@ Reference implementation: `backend/db/sync_state.py`.
 **Follow-up (optional):** convert `routers/`, `auth/repo.py`, `tracking.py` SQL to
 native constants like `db/*.py` modules, then shrink `pg_adapt.py`.
 
-## Phase 4 — CI backup verification
+## Phase 4 — CI backup verification — **DONE**
 
-Add a dump → restore → row-count round-trip to the CI Postgres job:
-run `deploy/briefr-pg-backup.sh` then `deploy/briefr-restore.sh` against
-the CI Postgres container, assert restored row counts match source for
-the core tables (`cves`, `kev_deadlines`, at minimum). This was flagged
-in the original Track B "After Track B" notes and in Sprint J2 — verify
-it hasn't been done by some other track before starting.
+Postgres CI job runs `tests/test_backup_roundtrip_postgres.py`: seed
+`cves` / `kev_deadlines`, `python -m backup run` (same path as
+`deploy/briefr-pg-backup.sh`), wipe tables, `restore_backup(...,
+force=True)`, assert row counts match. Requires `postgresql-client` on
+the runner (already installed in `test-postgres`).
 
 ---
 
