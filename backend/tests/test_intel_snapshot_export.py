@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlparse, urlunparse
 
 import pytest
 
@@ -41,6 +42,7 @@ def test_export_intel_snapshot_round_trip(tmp_path, postgres_schema):
     database_url = os.environ["DATABASE_URL"]
     from export_intel_snapshot import export_snapshot, INTEL_TABLES, OPERATOR_GUARD_TABLES
     from backup.postgres_util import parse_postgres_url, run_pg_restore
+    from db.config import postgres_dsn
 
     output = tmp_path / "briefr-intel.pgdump.gz"
     manifest = export_snapshot(database_url, output, allow_operator_seed=True)
@@ -53,7 +55,8 @@ def test_export_intel_snapshot_round_trip(tmp_path, postgres_schema):
 
     params = parse_postgres_url(database_url)
     restore_db = f"{params['dbname']}_intel_restore"
-    admin_url = database_url.rsplit("/", 1)[0] + "/postgres"
+    parsed = urlparse(postgres_dsn(database_url))
+    admin_url = urlunparse(parsed._replace(path="/postgres"))
     admin_params = parse_postgres_url(admin_url)
 
     create_cmd = [
@@ -78,7 +81,7 @@ def test_export_intel_snapshot_round_trip(tmp_path, postgres_schema):
         env["PGPASSWORD"] = str(admin_params["password"])
     subprocess.run(create_cmd, env=env, check=True, capture_output=True, text=True)
 
-    restore_url = database_url.rsplit("/", 1)[0] + f"/{restore_db}"
+    restore_url = urlunparse(parsed._replace(path=f"/{restore_db}"))
     run_pg_restore(restore_url, staging)
 
     async def _counts() -> dict[str, int]:

@@ -18,10 +18,13 @@ import asyncio
 import gzip
 import json
 import os
+import re
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse, urlunparse
 
 _REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO / "backend"))
@@ -161,6 +164,9 @@ def _run_pg_dump(database_url: str, destination: Path) -> None:
         raise RuntimeError(f"pg_dump failed (exit {proc.returncode}): {detail}")
 
 
+_RESTORE_LIST_TABLE_RE = re.compile(r"^\d+;\s+\d+\s+\d+\s+TABLE(?: DATA)?\s+(?:public\s+)?(\S+)\s")
+
+
 def _verify_dump_tables(dump_path: Path) -> None:
     """List tables in the archive; fail if a forbidden name appears."""
     cmd = [_pg_tool("pg_restore"), "--list", str(dump_path)]
@@ -169,9 +175,12 @@ def _verify_dump_tables(dump_path: Path) -> None:
         detail = (proc.stderr or proc.stdout or "").strip()
         raise RuntimeError(f"pg_restore --list failed: {detail}")
     for line in proc.stdout.splitlines():
-        for forbidden in FORBIDDEN_TABLES:
-            if f"TABLE public {forbidden}" in line or f"TABLE {forbidden}" in line:
-                raise RuntimeError(f"forbidden table {forbidden} found in dump catalog")
+        match = _RESTORE_LIST_TABLE_RE.match(line)
+        if not match:
+            continue
+        table_name = match.group(1)
+        if table_name in FORBIDDEN_TABLES:
+            raise RuntimeError(f"forbidden table {table_name} found in dump catalog")
 
 
 def export_snapshot(
@@ -191,7 +200,7 @@ def export_snapshot(
             raise RuntimeError(f"dump verification failed: {msg}")
         _verify_dump_tables(staging)
         with staging.open("rb") as src, gzip.open(output_path, "wb") as dst:
-            dst.writelines(src)
+            shutil.copyfileobj(src, dst)
         manifest_path = output_path.with_suffix(".manifest.json")
         manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         return manifest
