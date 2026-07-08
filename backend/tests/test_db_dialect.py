@@ -13,6 +13,14 @@ def test_qmark_to_dollar():
     assert sql == "SELECT * FROM cves WHERE cve_id = $1"
 
 
+def test_native_dollar_sql_unchanged():
+    sql = adapt_sql(
+        "SELECT value FROM sync_state WHERE key = $1",
+        backend="postgresql",
+    )
+    assert sql == "SELECT value FROM sync_state WHERE key = $1"
+
+
 def test_datetime_now_replaced():
     sql = adapt_sql(
         "INSERT INTO watchlist (cve_id, created_at) VALUES (?, datetime('now'))",
