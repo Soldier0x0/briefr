@@ -22,7 +22,6 @@ import {
   pickCisaRemediationReference,
   pickVendorRemediationReference,
 } from '../../utils/patchRemediation.js'
-import { patchStatusLabel } from '../../utils/patchReferences.js'
 import { buildReferenceRows } from '../../utils/referenceRows.js'
 import { buildExploitationDisplay } from '../../utils/exploitationDisplay.js'
 import { drawerEpssBarColor, capecHref, capecLabel, flattenOsvPackageRows } from './helpers.js'
