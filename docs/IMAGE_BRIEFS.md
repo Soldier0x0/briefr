@@ -273,10 +273,10 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 
 | # | Filename | Priority | Done |
 |---|----------|----------|------|
-| 1 | production-architecture.png | **P0** | [ ] |
-| 5 | correlation-pipeline.png | **P0** | [ ] |
+| 1 | production-architecture.svg | **P0** | [x] |
+| 5 | correlation-pipeline.svg | **P0** | [x] |
 | 6 | ingest-pipeline.png | **P0** | [ ] |
-| 8 | auth-layers.png | **P0** | [ ] |
+| 8 | auth-layers.svg | **P0** | [x] |
 | 9 | rate-limits-and-queue.png | **P1** | [ ] |
 | 3 | backup-restore-flow.png | **P1** | [ ] |
 | 11–15 | ui-*.png | **P1** (screenshots OK) | [ ] |
