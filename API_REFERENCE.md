@@ -163,6 +163,8 @@ Each CVE object may include `kev_due_date` (`YYYY-MM-DD` from `kev_deadlines.due
 - `member_of_campaign` — `true` when the CVE is a member of a nightly-built OTX pulse campaign cluster; `false` otherwise
 - `campaign_lifecycle` — `"active"`, `"emerging"`, `"declining"`, or `"stale"` when `member_of_campaign` is `true`; omitted otherwise (cheapest lifecycle when multiple campaigns apply)
 
+**Default sort:** pinned watchlist CVEs first; then CVEs that share a campaign cluster with a pinned peer; then `published` DESC, severity (CRITICAL→LOW), EPSS DESC. When `stack` is set, an additional client-side exposure sort may apply in the feed UI.
+
 **Error responses:**
 
 - `400` — invalid `severity`, `technique`, or `published_on`

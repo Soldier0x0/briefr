@@ -12,6 +12,14 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — Correlation phase-4 tail (un-parked)
+
+**Branch:** `cursor/correlation-phase4-tail-489a` — feed sort boosts CVEs linked to pinned campaign peers; Forge **Campaigns** tab (`GET /api/correlation/clusters`); PDF THREAT INTELLIGENCE campaign paragraph; `watchlist_alert` webhooks append campaign link when pinned CVE is in a cluster.
+
+**Autonomous next (do not ask):** merge extended IOC alerts PR; parked Wave 4 / STIX / security tail optional.
+
+---
+
 ## 2026-07-09 — BRIEFR product voice (#385)
 
 **Merged:** #385 — analyst communication model: layered copy, confidence language,

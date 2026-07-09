@@ -68,15 +68,15 @@
 | Shipped | Planned / open |
 |---------|----------------|
 | Postgres, auth, rate limits, API queue | Full `docker-compose.yml` (V2.0) |
-| Correlation v2 core (campaigns, typed IOC edges, hub suppression, dismiss, priority, lifecycle, feed badge, drawer chip) + **Phase 4–5** cluster list + admin correlation status (#364) | Correlation phase-4 tail (Forge/PDF/webhook enrichments, watchlist sort in feed) — see sprint Phase B |
+| Correlation v2 core (campaigns, typed IOC edges, hub suppression, dismiss, priority, lifecycle, feed badge, drawer chip) + **Phase 4–5** cluster list + admin correlation status (#364) + **phase-4 tail** (feed watchlist-peer boost, Forge **Campaigns** tab, PDF campaign paragraph, `watchlist_alert` campaign line) | STIX export (excluded from current loop) |
 | Admin ops, webhooks, wallboard | STIX export (excluded from current loop) |
 | **Forge threat scenarios (V1.5 Phase 1)** | STIX export (excluded from current loop) |
 | **Rule proof bench (V1.5 Phase 2)** — `POST /api/proof/run`; Forge hunt pack panel paste-and-run against saved Sigma | Wave 4 / open-core (parked) |
-| **KEV detection backlog (V1.5 Phase 3)** — `GET /api/detection-backlog`; KEV sync + weekly reconcile; Forge **Backlog** tab; optional `kev_backlog` webhook | Correlation phase-4 tail (Phase B) |
-| **IOC watchlist depth (V1.5 Phase 5)** — `ioc_watchlist` + ThreatFox mirror + retro-match job; IOC tab watchlist UI; optional `ioc_watchlist_hit` webhook (OTX campaign + ThreatFox confidence in message body); VulnCheck exploited tier (`is_vulncheck_exploited`) | Correlation phase-4 tail (Forge/PDF/webhook enrichments, watchlist sort in feed) |
+| **KEV detection backlog (V1.5 Phase 3)** — `GET /api/detection-backlog`; KEV sync + weekly reconcile; Forge **Backlog** tab; optional `kev_backlog` webhook | Wave 4 / open-core (parked) |
+| **IOC watchlist depth (V1.5 Phase 5)** — `ioc_watchlist` + ThreatFox mirror + retro-match job; IOC tab watchlist UI; optional `ioc_watchlist_hit` webhook (OTX campaign + ThreatFox confidence in message body); VulnCheck exploited tier (`is_vulncheck_exploited`) | STIX export (excluded from current loop) |
 | **V1.5 ship housekeeping** — version 1.5.0, PDF/xlsx regen scripts verified, security audit (no critical/high) | STIX export (excluded) |
 | **Track I performance** — I4 scroll, I6 detail pool, I7 list query, I10 bulk upsert (#378–#382) | Wave 4 / open-core (parked) |
-| Embeddings optional (fastembed) | Correlation phase-4 tail (Forge/PDF/webhook enrichments, watchlist sort in feed) |
+| Embeddings optional (fastembed) | Wave 4 / open-core (parked) |
 | Chart.js admin dashboard partial | Logrotate deploy artifacts (V1.4 theme) |
 
 Details: [`ROADMAP.md`](ROADMAP.md). Historical beta specs → `docs/archive/` (phase 2).

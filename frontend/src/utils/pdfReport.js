@@ -283,6 +283,30 @@ function formatActorIntel(correlation) {
     .join('\n')
 }
 
+function formatCampaignIntel(correlation) {
+  const campaigns = correlation?.campaigns
+  if (!Array.isArray(campaigns) || !campaigns.length) {
+    return ''
+  }
+  const sorted = [...campaigns].sort((a, b) => {
+    const countA = a.member_count ?? (a.members?.length ?? 0)
+    const countB = b.member_count ?? (b.members?.length ?? 0)
+    return countB - countA
+  })
+  const primary = sorted[0]
+  const label = (primary.label || primary.campaign_id || 'Campaign cluster').trim()
+  const lifecycle = (primary.lifecycle || 'active').trim()
+  const confidence = (primary.confidence || 'medium').trim()
+  const members = Array.isArray(primary.members) ? primary.members : []
+  const memberNote = members.length ? `${members.length} linked CVEs` : 'linked CVEs'
+  const pulse = (primary.primary_pulse_id || primary.pulse_id || '').trim()
+  const pulseNote = pulse ? ` OTX pulse: ${pulse}.` : ''
+  return (
+    `Campaign link: ${label} (${lifecycle}, ${memberNote}, ${confidence} confidence).${pulseNote} `
+    + 'Grouped from shared OTX pulse intelligence — validate before action.'
+  )
+}
+
 function sourcesForCve(cve) {
   const urls = new Set(DATA_SOURCES.map(s => s.url))
   const list = [...DATA_SOURCES]
@@ -364,6 +388,7 @@ function renderSingleCvePages(doc, ctx, cve, meta, sparklineDataUrl, { newPage =
       ? scans.map(s => `• ${s.ip}: ${s.classification || 'unknown'}${s.sentence ? ` — ${s.sentence}` : ''}`).join('\n')
       : '',
     formatActorIntel(cve.correlation),
+    formatCampaignIntel(cve.correlation),
   ].filter(Boolean)
   drawSection(ctx, 'THREAT INTELLIGENCE', intelParts.join('\n\n'), border)
 
