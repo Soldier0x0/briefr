@@ -12,6 +12,15 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — C-Evolve-3 shipped; continuing perf quick wins
+
+**Merged:** #360 C-Evolve-3 — drawer `LINKED · N CVEs` campaign chip, "Add campaign"
+header action, Intel tab per-row pivot, `pivotToCampaign` in InvestigationContext.
+
+**Autonomous next (do not ask):** **I3/I5/I8/I9** perf quick wins → Phase B backlog.
+
+---
+
 ## 2026-07-09 — H2 + H4 shipped; continuing Wave 3
 
 **Merged:** #357 H2 — `ui/` primitives (Button, Badge, Tooltip, Skeleton,
