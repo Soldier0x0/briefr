@@ -379,6 +379,22 @@ export function lookupIOC(value, type, options = {}) {
   })
 }
 
+export function fetchIocWatchlist() {
+  return request('/ioc/watchlist')
+}
+
+export function addIocWatchlist({ value, type, label = '' }) {
+  return request('/ioc/watchlist', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ value, type, label }),
+  })
+}
+
+export function removeIocWatchlist(entryId) {
+  return request(`/ioc/watchlist/${entryId}`, { method: 'DELETE' })
+}
+
 export function fetchOTXPulseIocs(pulseId, limit = 10) {
   return request(`/otx/pulses/${encodeURIComponent(pulseId)}/iocs?limit=${limit}`)
 }

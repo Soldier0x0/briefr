@@ -41,6 +41,9 @@ EXPECTED_ROUTES = [
     ("GET", "/api/cves/{cve_id}"),
     ("GET", "/api/otx/pulses/{pulse_id}/iocs"),
     ("POST", "/api/ioc/lookup"),
+    ("GET", "/api/ioc/watchlist"),
+    ("POST", "/api/ioc/watchlist"),
+    ("DELETE", "/api/ioc/watchlist/{entry_id}"),
     ("POST", "/api/cves/{cve_id}/risk"),
     ("GET", "/api/cves/{cve_id}/momentum"),
     ("GET", "/api/cves/{cve_id}/detection"),
@@ -217,6 +220,7 @@ def test_moved_endpoints_live_in_routers():
     assert by_path["/api/threat-model/scenarios"] == "routers.threat_model"
     assert by_path["/api/proof/run"] == "routers.proof"
     assert by_path["/api/detection-backlog"] == "routers.detection_backlog"
+    assert by_path["/api/ioc/watchlist"] == "routers.ioc"
     assert by_path["/api/watchlist"] == "routers.watchlist"
     assert by_path["/api/admin/system"] == "routers.admin"
     # main.py owns only app wiring now (V1.2 exit criterion: <300 lines)

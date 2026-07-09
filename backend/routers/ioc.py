@@ -12,11 +12,17 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 import os
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from database import get_db, get_ioc_cache, set_ioc_cache
+from db.ioc_watchlist import (
+    delete_ioc_watchlist_entry,
+    list_ioc_watchlist,
+    upsert_ioc_watchlist_entry,
+)
+from dependencies import require_user
 from rate_limit import rate_limit_ioc
-from enrichment.ioc import lookup_ioc
+from enrichment.ioc import lookup_ioc, normalize_ioc_value
 from feeds.extended import greynoise_for_ip
 from feeds.otx import load_pulse_iocs, lookup_otx_for_ioc, top_pulse_ipv4s
 from templates.intelligence import greynoise_sentence, otx_sentence
@@ -28,6 +34,12 @@ class IocLookupRequest(BaseModel):
     value: str
     type: str
     greynoise: bool = False
+
+
+class IocWatchlistBody(BaseModel):
+    value: str = Field(min_length=1, max_length=512)
+    type: str
+    label: str = Field(default="", max_length=200)
 
 
 @router.get("/api/otx/pulses/{pulse_id}/iocs")
@@ -134,3 +146,53 @@ async def ioc_lookup(body: IocLookupRequest):
         await db.close()
 
     return result
+
+
+@router.get("/api/ioc/watchlist")
+async def get_ioc_watchlist(payload: dict = Depends(require_user)):
+    db = await get_db()
+    try:
+        items = await list_ioc_watchlist(db, int(payload["sub"]))
+    finally:
+        await db.close()
+    return {"items": items}
+
+
+@router.post("/api/ioc/watchlist")
+async def post_ioc_watchlist(body: IocWatchlistBody, payload: dict = Depends(require_user)):
+    ioc_type = body.type.strip().lower()
+    if ioc_type not in ("ip", "hash", "domain"):
+        raise HTTPException(400, "type must be ip, hash, or domain")
+    normalized = normalize_ioc_value(body.value.strip(), ioc_type)
+    if not normalized:
+        raise HTTPException(400, "value is required")
+
+    db = await get_db()
+    try:
+        try:
+            item = await upsert_ioc_watchlist_entry(
+                db,
+                int(payload["sub"]),
+                ioc_type,
+                normalized,
+                label=body.label.strip(),
+            )
+            await db.commit()
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+    finally:
+        await db.close()
+    return {"item": item}
+
+
+@router.delete("/api/ioc/watchlist/{entry_id}")
+async def delete_ioc_watchlist(entry_id: int, payload: dict = Depends(require_user)):
+    db = await get_db()
+    try:
+        deleted = await delete_ioc_watchlist_entry(db, int(payload["sub"]), entry_id)
+        if not deleted:
+            raise HTTPException(404, "Watchlist entry not found")
+        await db.commit()
+    finally:
+        await db.close()
+    return {"deleted": True, "id": entry_id}

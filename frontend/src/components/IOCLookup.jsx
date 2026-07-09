@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { lookupIOC, fetchIOCUsage } from '../api.js'
+import { lookupIOC, fetchIOCUsage, fetchIocWatchlist, addIocWatchlist, removeIocWatchlist } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
 import { ingestLogUrl } from '../utils/adminLinks.js'
 import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
 import { extractActorTags } from '../utils/investigationActors.js'
 import { isValidDomain } from '../utils/domainValidation.js'
 import './IOCLookup.css'
@@ -678,7 +679,7 @@ function EnrichmentBlock({ heading, sentence, children }) {
   )
 }
 
-function ActionRow({ result, onCopy, copied }) {
+function ActionRow({ result, onCopy, copied, onSaveWatchlist, watchlistSaving, watchlistSaved }) {
   const hasVTLink = !!result.vt_link
 
   return (
@@ -694,6 +695,17 @@ function ActionRow({ result, onCopy, copied }) {
           View on VirusTotal &rarr;
         </a>
       )}
+      {onSaveWatchlist && (
+        <button
+          type="button"
+          className="action-btn"
+          onClick={onSaveWatchlist}
+          disabled={watchlistSaving || watchlistSaved}
+          title="Save to your persistent IOC watchlist for nightly retro-match against OTX and ThreatFox mirrors"
+        >
+          {watchlistSaved ? 'ON WATCHLIST ✓' : watchlistSaving ? 'SAVING…' : 'SAVE TO WATCHLIST'}
+        </button>
+      )}
       <button
         className={`action-btn${copied ? ' action-btn-copied' : ''}`}
         onClick={onCopy}
@@ -701,6 +713,80 @@ function ActionRow({ result, onCopy, copied }) {
       >
         {copied ? 'Copied!' : 'Copy report'}
       </button>
+    </div>
+  )
+}
+
+function WatchlistPanel({ items, loading, error, errorRequestId, onRemove, removingId, onRerun, authed }) {
+  if (!authed) {
+    return (
+      <div className="ioc-watchlist ioc-watchlist-anon">
+        <h2 className="ioc-history-heading mono">// WATCHLIST</h2>
+        <p className="ioc-watchlist-hint mono">Sign in to save IOCs for nightly retro-match against local OTX + ThreatFox feeds.</p>
+      </div>
+    )
+  }
+  if (loading && !items.length) {
+    return (
+      <div className="ioc-watchlist">
+        <h2 className="ioc-history-heading mono">// WATCHLIST</h2>
+        <p className="ioc-watchlist-hint mono">Loading saved IOCs…</p>
+      </div>
+    )
+  }
+  if (error) {
+    return (
+      <div className="ioc-watchlist">
+        <h2 className="ioc-history-heading mono">// WATCHLIST</h2>
+        <p className="ioc-watchlist-hint mono">
+          // {error}
+          {errorRequestId && (
+            <>
+              {' '}
+              (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
+                ref: {errorRequestId}
+              </a>)
+            </>
+          )}
+        </p>
+      </div>
+    )
+  }
+  return (
+    <div className="ioc-watchlist" aria-label="Saved IOC watchlist">
+      <h2 className="ioc-history-heading mono">// WATCHLIST ({items.length})</h2>
+      <p className="ioc-watchlist-hint mono" title="Nightly job matches saved IOCs against local OTX pulse IOCs and ThreatFox mirror — no per-IOC enrichment API calls.">
+        Saved IOCs retro-match nightly against OTX + ThreatFox mirrors on this server.
+      </p>
+      {items.length === 0 ? (
+        <p className="ioc-watchlist-empty mono">// No saved IOCs yet — run a lookup and choose Save to watchlist</p>
+      ) : (
+        <ul className="ioc-watchlist-list">
+          {items.map(item => (
+            <li key={item.id} className="ioc-watchlist-row">
+              <button
+                type="button"
+                className="history-item ioc-watchlist-item"
+                onClick={() => onRerun({ value: item.ioc_value, iocType: item.ioc_type, malicious: 0, total: 0 })}
+              >
+                <span className="history-value mono">{item.ioc_value}</span>
+                <div className="history-badges">
+                  <span className="history-type-badge mono">{item.ioc_type.toUpperCase()}</span>
+                  {item.label && <span className="ioc-watchlist-label mono">{item.label}</span>}
+                </div>
+              </button>
+              <button
+                type="button"
+                className="ioc-watchlist-remove mono"
+                onClick={() => onRemove(item.id)}
+                disabled={removingId === item.id}
+              >
+                {removingId === item.id ? '…' : 'REMOVE'}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
@@ -728,6 +814,8 @@ function HistoryItem({ item, onRerun }) {
 // ── Main component ────────────────────────────────────────
 export default function IOCLookup({ prefill }) {
   const investigation = useInvestigationOptional()
+  const { status: authStatus } = useAuth()
+  const authed = authStatus === 'authed'
   const [value, setValue]       = useState('')
   const [detectedType, setDetectedType] = useState(null)
   const [loading, setLoading]   = useState(false)
@@ -737,6 +825,12 @@ export default function IOCLookup({ prefill }) {
   const [copied, setCopied]     = useState(false)
   const [history, setHistory]   = useState([])   // session-only, no localStorage
   const [includeGreynoise, setIncludeGreynoise] = useState(false)
+  const [watchlistItems, setWatchlistItems] = useState([])
+  const [watchlistLoading, setWatchlistLoading] = useState(false)
+  const [watchlistError, setWatchlistError] = useState(null)
+  const [watchlistErrorRequestId, setWatchlistErrorRequestId] = useState(null)
+  const [watchlistSaving, setWatchlistSaving] = useState(false)
+  const [watchlistRemovingId, setWatchlistRemovingId] = useState(null)
 
   const detectDebounce = useRef(null)
   const copiedTimerRef = useRef(null)
@@ -775,6 +869,49 @@ export default function IOCLookup({ prefill }) {
   useEffect(() => () => {
     if (detectDebounce.current) clearTimeout(detectDebounce.current)
   }, [])
+
+  const loadWatchlist = useCallback(() => {
+    if (!authed) {
+      setWatchlistItems([])
+      return undefined
+    }
+    setWatchlistLoading(true)
+    setWatchlistError(null)
+    setWatchlistErrorRequestId(null)
+    return fetchIocWatchlist()
+      .then(data => setWatchlistItems(data.items || []))
+      .catch(err => {
+        setWatchlistError(err.message || 'Failed to load IOC watchlist')
+        setWatchlistErrorRequestId(err?.requestId || null)
+        notifyApiError(err)
+      })
+      .finally(() => setWatchlistLoading(false))
+  }, [authed])
+
+  useEffect(() => {
+    loadWatchlist()
+  }, [loadWatchlist])
+
+  const watchlistSaved = result && watchlistItems.some(
+    item => item.ioc_type === result.type && item.ioc_value === result.value,
+  )
+
+  const handleSaveWatchlist = useCallback(() => {
+    if (!result?.value || !result?.type || !authed) return
+    setWatchlistSaving(true)
+    addIocWatchlist({ value: result.value, type: result.type })
+      .then(() => loadWatchlist())
+      .catch(err => notifyApiError(err))
+      .finally(() => setWatchlistSaving(false))
+  }, [result, authed, loadWatchlist])
+
+  const handleRemoveWatchlist = useCallback((entryId) => {
+    setWatchlistRemovingId(entryId)
+    removeIocWatchlist(entryId)
+      .then(() => loadWatchlist())
+      .catch(err => notifyApiError(err))
+      .finally(() => setWatchlistRemovingId(null))
+  }, [loadWatchlist])
 
   async function runLookup(lookupValue, lookupType, options = {}) {
     const raw = (lookupValue ?? value).trim()
@@ -1164,9 +1301,27 @@ export default function IOCLookup({ prefill }) {
 
           {result.type !== 'ip' && (<OtxEnrichment result={result} onOpenCve={investigation?.openCveById} />)}
 
-          <ActionRow result={result} onCopy={copyReport} copied={copied} />
+          <ActionRow
+            result={result}
+            onCopy={copyReport}
+            copied={copied}
+            onSaveWatchlist={authed ? handleSaveWatchlist : null}
+            watchlistSaving={watchlistSaving}
+            watchlistSaved={watchlistSaved}
+          />
         </div>
       )}
+
+      <WatchlistPanel
+        items={watchlistItems}
+        loading={watchlistLoading}
+        error={watchlistError}
+        errorRequestId={watchlistErrorRequestId}
+        onRemove={handleRemoveWatchlist}
+        removingId={watchlistRemovingId}
+        onRerun={handleRerun}
+        authed={authed}
+      />
 
       {/* ── History ── */}
       {history.length > 0 && (

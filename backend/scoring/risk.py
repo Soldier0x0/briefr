@@ -264,18 +264,20 @@ def _num(value: Any, fallback: float = 0.0) -> float:
 
 def _kev_score_v11b(cve: dict) -> float:
     """KEV recency tiers — matches frontend calculateKevScore()."""
-    if not _boolish(cve.get("is_kev")):
-        return 0.0
-    added_days = _days_since(cve.get("kev_date_added"))
-    if added_days is None:
+    if _boolish(cve.get("is_kev")):
+        added_days = _days_since(cve.get("kev_date_added"))
+        if added_days is None:
+            return 0.84
+        if added_days <= 7:
+            return 1.0
+        if added_days <= 30:
+            return 0.94
+        if added_days <= 90:
+            return 0.88
         return 0.84
-    if added_days <= 7:
-        return 1.0
-    if added_days <= 30:
-        return 0.94
-    if added_days <= 90:
-        return 0.88
-    return 0.84
+    if _boolish(cve.get("is_vulncheck_exploited")):
+        return 0.72
+    return 0.0
 
 
 def _exploit_score_v11b(cve: dict) -> float:

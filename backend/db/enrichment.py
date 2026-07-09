@@ -593,3 +593,20 @@ async def insert_epss_history_rows(db: DbConnection, rows: list[dict]) -> int:
         cursor = await db.execute(sql, tup)
         inserted += cursor.rowcount or 0
     return inserted
+
+
+async def sync_vulncheck_exploited_flags(db: DbConnection, cve_ids: list[str]) -> int:
+    """Mark CVEs present in VulnCheck KEV catalog (resets prior flags)."""
+    await db.execute("UPDATE cves SET is_vulncheck_exploited = 0 WHERE is_vulncheck_exploited = 1")
+    updated = 0
+    for cve_id in cve_ids:
+        cve_id = (cve_id or "").strip().upper()
+        if not cve_id:
+            continue
+        cursor = await db.execute(
+            "UPDATE cves SET is_vulncheck_exploited = 1 WHERE cve_id = ?",
+            (cve_id,),
+        )
+        if cursor.rowcount:
+            updated += 1
+    return updated

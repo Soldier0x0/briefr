@@ -17,6 +17,7 @@ from webhooks.destinations import (
     EVENT_HEALTH,
     EVENT_KEV_ALERT,
     EVENT_KEV_BACKLOG,
+    EVENT_IOC_WATCHLIST_HIT,
     EVENT_WATCHLIST_ALERT,
     WebhookDestination,
     load_destinations,
@@ -130,6 +131,7 @@ async def dispatch_event(
     if normalized not in {
         EVENT_KEV_ALERT,
         EVENT_KEV_BACKLOG,
+        EVENT_IOC_WATCHLIST_HIT,
         EVENT_BACKUP_FAILURE,
         EVENT_HEALTH,
         EVENT_WATCHLIST_ALERT,

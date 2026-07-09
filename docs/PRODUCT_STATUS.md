@@ -69,7 +69,8 @@
 | Admin ops, webhooks, wallboard | STIX export (excluded from current loop) |
 | **Forge threat scenarios (V1.5 Phase 1)** | IOC watchlist depth |
 | **Rule proof bench (V1.5 Phase 2)** — `POST /api/proof/run`; Forge hunt pack panel paste-and-run against saved Sigma | STIX export (excluded from current loop) |
-| **KEV detection backlog (V1.5 Phase 3)** — `GET /api/detection-backlog`; KEV sync + weekly reconcile; Forge **Backlog** tab; optional `kev_backlog` webhook | IOC watchlist depth |
+| **KEV detection backlog (V1.5 Phase 3)** — `GET /api/detection-backlog`; KEV sync + weekly reconcile; Forge **Backlog** tab; optional `kev_backlog` webhook | V1.5 ship housekeeping |
+| **IOC watchlist depth (V1.5 Phase 5)** — `ioc_watchlist` + ThreatFox mirror + retro-match job; IOC tab watchlist UI; optional `ioc_watchlist_hit` webhook; VulnCheck exploited tier (`is_vulncheck_exploited`) | STIX export (excluded from current loop) |
 | Embeddings optional (fastembed) | Extended watchlist alert signals (campaign join, severity) |
 | Chart.js admin dashboard partial | Logrotate deploy artifacts (V1.4 theme) |
 
