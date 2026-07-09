@@ -12,9 +12,9 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-09 — Wave 4 onboarding + external Postgres (#TBD)
+## 2026-07-09 — Wave 4 onboarding + external Postgres (#371)
 
-**Merged:** #TBD — first-hour onboarding checklist (`GET /api/admin/onboarding`, dismiss);
+**Merged:** #371 — first-hour onboarding checklist (`GET /api/admin/onboarding`, dismiss);
 Admin Overview banner; `deploy/external-postgres.env.example` + POSTGRES.md external mode.
 
 **Autonomous next (do not ask):** V1.5 tail / remaining Wave 4 (snapshot versioning, upgrade runbook).
