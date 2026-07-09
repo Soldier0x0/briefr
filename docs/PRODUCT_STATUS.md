@@ -66,7 +66,8 @@
 |---------|----------------|
 | Postgres, auth, rate limits, API queue | Full `docker-compose.yml` (V2.0) |
 | Correlation v2 core (campaigns, typed IOC edges, hub suppression, dismiss, priority, lifecycle, feed badge, drawer chip) + **Phase 4–5** cluster list + admin correlation status (#364) | Correlation phase-4 tail (Forge/PDF/webhook enrichments, watchlist sort in feed) — see sprint Phase B |
-| Admin ops, webhooks, wallboard | V1.5 threat-model UI depth, STIX |
+| Admin ops, webhooks, wallboard | STIX export (excluded from current loop) |
+| **Forge threat scenarios (V1.5 Phase 1)** | Rule proof bench, KEV backlog UI, IOC watchlist depth |
 | Embeddings optional (fastembed) | Extended watchlist alert signals (campaign join, severity) |
 | Chart.js admin dashboard partial | Logrotate deploy artifacts (V1.4 theme) |
 

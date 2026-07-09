@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   fetchForgeCoverage,
   fetchHuntPack,
+  fetchThreatModelScenarios,
   generateHuntPack,
 } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
@@ -327,7 +328,125 @@ function HuntPackPanel({ techniqueId, onPackSaved }) {
   )
 }
 
+function ThreatScenariosPanel({
+  profileStack,
+  selectedTechnique,
+  onSelectTechnique,
+  onGeneratePack,
+  generatingCve,
+}) {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [errorRequestId, setErrorRequestId] = useState(null)
+
+  useEffect(() => {
+    if (!profileStack) {
+      setData(null)
+      return undefined
+    }
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    setErrorRequestId(null)
+    fetchThreatModelScenarios(profileStack)
+      .then(payload => { if (!cancelled) setData(payload) })
+      .catch(err => {
+        if (!cancelled) {
+          setError(err.message || 'Failed to load threat scenarios')
+          setErrorRequestId(err?.requestId || null)
+          notifyApiError(err)
+        }
+      })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [profileStack])
+
+  if (!profileStack) {
+    return (
+      <p className="fg-panel-empty mono">
+        // Load an asset profile to see environment threat scenarios for your stack
+      </p>
+    )
+  }
+  if (loading) return <SkeletonRows count={6} />
+  if (error) {
+    return (
+      <div className="fg-error-block">
+        <p className="fg-error mono">// {error}</p>
+      </div>
+    )
+  }
+  if (!data?.scenarios?.length) {
+    return (
+      <p className="fg-panel-empty mono">
+        // No ATT&amp;CK techniques linked to CVEs matching your stack yet
+      </p>
+    )
+  }
+
+  return (
+    <ul className="fg-scenario-list">
+      {data.scenarios.map(scenario => (
+        <li key={scenario.technique_id}>
+          <article
+            className={`fg-scenario-card${selectedTechnique === scenario.technique_id ? ' fg-scenario-card-active' : ''}`}
+          >
+            <button
+              type="button"
+              className="fg-scenario-head"
+              onClick={() => onSelectTechnique(scenario.technique_id)}
+            >
+              <span className="fg-scenario-id mono">{scenario.technique_id}</span>
+              <span className="fg-scenario-name">{scenario.name}</span>
+              <StatusChip status={scenario.coverage_status} />
+            </button>
+            <p className="fg-scenario-body">{scenario.scenario}</p>
+            {scenario.evidence_cves?.length > 0 && (
+              <div className="fg-scenario-evidence">
+                <span className="fg-section-label mono">CVE EVIDENCE</span>
+                <ul className="fg-scenario-cves">
+                  {scenario.evidence_cves.map(cve => (
+                    <li key={cve.cve_id} className="mono">
+                      {cve.cve_id}
+                      {cve.is_kev && <span className="fg-kev-badge">KEV</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {scenario.mitigations?.length > 0 && (
+              <div className="fg-scenario-actions">
+                {scenario.mitigations.map((action, idx) => (
+                  <button
+                    key={`${action.type}-${action.cve_id || idx}`}
+                    type="button"
+                    className="admin-btn admin-btn-ghost fg-scenario-action mono"
+                    disabled={action.type === 'hunt_pack' && generatingCve === action.cve_id}
+                    onClick={() => {
+                      if (action.type === 'hunt_pack' && action.cve_id) {
+                        onGeneratePack(action.cve_id, action.technique_id)
+                      } else {
+                        onSelectTechnique(action.technique_id || scenario.technique_id)
+                      }
+                    }}
+                  >
+                    {action.type === 'hunt_pack' && generatingCve === action.cve_id
+                      ? 'GENERATING…'
+                      : action.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </article>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export default function Forge() {
+  const [viewMode, setViewMode] = useState('coverage')
   const [coverage, setCoverage] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -335,6 +454,7 @@ export default function Forge() {
   const [stackOnly, setStackOnly] = useState(false)
   const [selectedTechnique, setSelectedTechnique] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [generatingFromScenario, setGeneratingFromScenario] = useState(null)
   const assetCtx = useAssetProfileOptional()
 
   const profileStack = useMemo(() => {
@@ -374,6 +494,15 @@ export default function Forge() {
     setReloadKey(k => k + 1)
   }, [])
 
+  const handleScenarioGenerate = useCallback((cveId, techniqueId) => {
+    setGeneratingFromScenario(cveId)
+    setSelectedTechnique(techniqueId)
+    generateHuntPack(cveId, techniqueId)
+      .then(() => handlePackSaved())
+      .catch(err => notifyApiError(err))
+      .finally(() => setGeneratingFromScenario(null))
+  }, [handlePackSaved])
+
   const byTactic = useMemo(() => {
     const groups = new Map()
     for (const technique of coverage?.techniques || []) {
@@ -392,12 +521,33 @@ export default function Forge() {
         <p className="fg-hero-kicker mono">DETECTION ENGINEERING</p>
         <h1 className="fg-hero-title">Forge</h1>
         <p className="fg-hero-sub">
-          See which ATT&amp;CK techniques your feed CVEs map to, find community detection rules,
-          and export Sigma and SIEM hunt templates per CVE. Rules are starting points — validate before production.
+          See which ATT&amp;CK techniques your feed CVEs map to, review environment threat scenarios
+          for your stack, find community detection rules, and export Sigma and SIEM hunt templates per CVE.
+          Rules are starting points — validate before production.
         </p>
       </header>
 
       <div className="fg-toolbar">
+        <div className="fg-view-toggle mono" role="tablist" aria-label="Forge view">
+          <button
+            type="button"
+            role="tab"
+            className={`fg-view-btn${viewMode === 'coverage' ? ' active' : ''}`}
+            aria-selected={viewMode === 'coverage'}
+            onClick={() => setViewMode('coverage')}
+          >
+            Coverage map
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={`fg-view-btn${viewMode === 'scenarios' ? ' active' : ''}`}
+            aria-selected={viewMode === 'scenarios'}
+            onClick={() => setViewMode('scenarios')}
+          >
+            Threat scenarios
+          </button>
+        </div>
         {counts && (
           <div className="fg-counts" role="status" aria-label="Coverage summary">
             <span className="fg-count mono"><StatusChip status="gap" /> {counts.gap}</span>
@@ -437,32 +587,44 @@ export default function Forge() {
       )}
 
       <div className="fg-layout">
-        <section className="fg-map" aria-label="MITRE coverage map">
-          <h2 className="fg-section-label mono">COVERAGE MAP</h2>
-          {loading ? (
-            <SkeletonRows count={10} />
-          ) : byTactic.length === 0 ? (
-            <p className="fg-panel-empty mono">
-              {stackOnly
-                ? '// No techniques linked to CVEs matching your stack'
-                : '// No techniques mapped yet — wait for the MITRE feed to populate'}
-            </p>
+        <section className="fg-map" aria-label={viewMode === 'coverage' ? 'MITRE coverage map' : 'Threat scenarios'}>
+          <h2 className="fg-section-label mono">
+            {viewMode === 'coverage' ? 'COVERAGE MAP' : 'THREAT SCENARIOS'}
+          </h2>
+          {viewMode === 'coverage' ? (
+            loading ? (
+              <SkeletonRows count={10} />
+            ) : byTactic.length === 0 ? (
+              <p className="fg-panel-empty mono">
+                {stackOnly
+                  ? '// No techniques linked to CVEs matching your stack'
+                  : '// No techniques mapped yet — wait for the MITRE feed to populate'}
+              </p>
+            ) : (
+              byTactic.map(([tactic, techniques]) => (
+                <div key={tactic} className="fg-tactic-group">
+                  <h3 className="fg-tactic-label mono">{tactic.toUpperCase()}</h3>
+                  <ul className="fg-tech-list">
+                    {techniques.map(technique => (
+                      <CoverageRow
+                        key={technique.technique_id}
+                        technique={technique}
+                        active={selectedTechnique === technique.technique_id}
+                        onSelect={setSelectedTechnique}
+                      />
+                    ))}
+                  </ul>
+                </div>
+              ))
+            )
           ) : (
-            byTactic.map(([tactic, techniques]) => (
-              <div key={tactic} className="fg-tactic-group">
-                <h3 className="fg-tactic-label mono">{tactic.toUpperCase()}</h3>
-                <ul className="fg-tech-list">
-                  {techniques.map(technique => (
-                    <CoverageRow
-                      key={technique.technique_id}
-                      technique={technique}
-                      active={selectedTechnique === technique.technique_id}
-                      onSelect={setSelectedTechnique}
-                    />
-                  ))}
-                </ul>
-              </div>
-            ))
+            <ThreatScenariosPanel
+              profileStack={profileStack}
+              selectedTechnique={selectedTechnique}
+              onSelectTechnique={setSelectedTechnique}
+              onGeneratePack={handleScenarioGenerate}
+              generatingCve={generatingFromScenario}
+            />
           )}
         </section>
 

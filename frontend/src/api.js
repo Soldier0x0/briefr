@@ -288,6 +288,12 @@ export function fetchForgeCoverage(stack = '') {
   return request(`/forge/coverage${qs}`)
 }
 
+/** V1.5: stack-scoped ATT&CK threat scenario cards. */
+export function fetchThreatModelScenarios(stack = '') {
+  const qs = stack ? `?stack=${encodeURIComponent(stack)}` : ''
+  return request(`/threat-model/scenarios${qs}`)
+}
+
 /** Forge: hunt pack content for one ATT&CK technique. */
 export function fetchHuntPack(techniqueId) {
   return request(`/hunt-packs/${encodeURIComponent(techniqueId)}`)

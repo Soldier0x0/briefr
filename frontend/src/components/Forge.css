@@ -487,6 +487,105 @@
   }
 }
 
+/* ── Threat scenarios (V1.5) ───────────────────────── */
+
+.fg-view-toggle {
+  display: inline-flex;
+  gap: 4px;
+  border: 1px solid var(--border);
+  padding: 2px;
+}
+
+.fg-view-btn {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.65rem;
+  background: transparent;
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+}
+
+.fg-view-btn.active {
+  background: var(--bg3);
+  color: var(--text);
+}
+
+.fg-scenario-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fg-scenario-card {
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  padding: 12px 14px;
+}
+
+.fg-scenario-card-active {
+  border-color: var(--accent);
+}
+
+.fg-scenario-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+
+.fg-scenario-id {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
+.fg-scenario-name {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.fg-scenario-body {
+  margin: 10px 0 0;
+  font-size: 0.8125rem;
+  color: var(--text2);
+  line-height: 1.55;
+}
+
+.fg-scenario-evidence {
+  margin-top: 10px;
+}
+
+.fg-scenario-cves {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+
+.fg-scenario-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.fg-scenario-action {
+  font-size: 0.7rem !important;
+  padding: 0.2rem 0.5rem !important;
+}
+
 @keyframes fg-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }

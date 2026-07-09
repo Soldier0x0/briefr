@@ -760,6 +760,48 @@ is supplied. 400 on malformed CVE ID, 404 when the CVE is not in the database.
 Pack priority is derived from the CVE: KEV → `critical`; CVSS ≥ 9.0 or
 EPSS ≥ 0.5 → `high`; CVSS ≥ 7.0 or EPSS ≥ 0.1 → `medium`; else `low`.
 
+### GET /api/threat-model/scenarios
+
+**Description:** V1.5 environment threat scenarios — stack-scoped ATT&CK technique
+cards with plain-language scenario text, CVE evidence, coverage status (same
+semantics as Forge), and suggested mitigation actions (patch KEV, generate hunt pack,
+close detection gap).
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `stack` | str | — | Comma-separated stack terms (asset profile products / feed stack); required for non-empty results |
+
+**Response:**
+
+```json
+{
+  "scenarios": [
+    {
+      "technique_id": "T1190",
+      "name": "Exploit Public-Facing Application",
+      "tactic": "initial-access",
+      "url": "https://attack.mitre.org/techniques/T1190/",
+      "coverage_status": "gap",
+      "community_template": true,
+      "cve_count": 3,
+      "kev_count": 1,
+      "scenario": "An adversary may use …",
+      "evidence_cves": [{ "cve_id": "CVE-…", "is_kev": true, "epss_score": 0.5 }],
+      "mitigations": [{ "type": "patch", "label": "…", "cve_id": "CVE-…", "technique_id": "T1190" }]
+    }
+  ],
+  "meta": {
+    "generated_at": "2026-07-09T09:00:00Z",
+    "stack_terms": ["nginx"],
+    "profile_required": false,
+    "technique_total": 12,
+    "gap_count": 4
+  }
+}
+```
+
+UI: Forge tab → **Threat scenarios** view (requires loaded asset profile).
+
 ---
 
 ## AI Summary
