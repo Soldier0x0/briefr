@@ -37,6 +37,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
 """
 
 import asyncio
+import hashlib
 import json
 import logging
 import os
@@ -385,12 +386,11 @@ CVE_SELECT = """
            c.affected_products, c.affected_products_source, c.mitre_technique,
            c.summary, c.is_kev, c.epss_score, c.epss_percentile, c.has_poc, c.patch_available,
            c.has_ai_context, c.source_urls, c.cwe_ids, c.updated_at,
-           (SELECT due_date FROM kev_deadlines k WHERE k.cve_id = c.cve_id) AS kev_due_date,
-           EXISTS (
-               SELECT 1 FROM kev_deadlines kr
-               WHERE kr.cve_id = c.cve_id
-                 AND LOWER(TRIM(COALESCE(kr.known_ransomware, ''))) = 'known'
-           ) AS kev_ransomware_use,
+           k.due_date AS kev_due_date,
+           CASE
+               WHEN LOWER(TRIM(COALESCE(k.known_ransomware, ''))) = 'known' THEN 1
+               ELSE 0
+           END AS kev_ransomware_use,
            w.state AS watchlist_state,
            w.snooze_until AS watchlist_snooze_until,
            EXISTS (
@@ -412,6 +412,7 @@ CVE_SELECT = """
                LIMIT 1
            ) AS campaign_lifecycle
     FROM cves c
+    LEFT JOIN kev_deadlines k ON k.cve_id = c.cve_id
     LEFT JOIN watchlist w ON w.cve_id = c.cve_id
         AND (
             w.state = 'pin'
@@ -421,6 +422,12 @@ CVE_SELECT = """
                 AND datetime(w.snooze_until) > datetime('now'))
         )
 """
+
+
+def _cve_count_cache_key(where_clause: str, params: list) -> str:
+    raw = where_clause + "\0" + repr(tuple(params))
+    return "cves_count:" + hashlib.sha256(raw.encode()).hexdigest()[:32]
+
 
 _WATCHLIST_ACTIVE_IN = """
     c.cve_id IN (
@@ -652,11 +659,15 @@ async def list_cves(
 
     db = await get_db()
     try:
-        count_rows = await db.execute_fetchall(
-            f"SELECT COUNT(*) as cnt FROM cves c {where_clause}",
-            params,
-        )
-        total = count_rows[0]["cnt"] if count_rows else 0
+        async def _fetch_total() -> int:
+            count_rows = await db.execute_fetchall(
+                f"SELECT COUNT(*) as cnt FROM cves c {where_clause}",
+                params,
+            )
+            return count_rows[0]["cnt"] if count_rows else 0
+
+        cache_key = _cve_count_cache_key(where_clause, params)
+        total = await cached_read(cache_key, 45.0, _fetch_total)
 
         rows = await db.execute_fetchall(
             f"{CVE_SELECT} {where_clause} {CVE_ORDER_BY} LIMIT ? OFFSET ?",
