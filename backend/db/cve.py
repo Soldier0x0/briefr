@@ -480,12 +480,17 @@ async def upsert_cves(db: DbConnection, cves: list[dict]) -> None:
     from feeds.ai_context import analyze_cve_ai_context
 
     sql = _UPSERT_CVE_PG if _is_postgres_connection(db) else _UPSERT_CVE_SQLITE
+    params_batch: list[tuple] = []
     for cve in valid:
         cve_id = (cve.get("cve_id") or "").upper()
         has_ai, _atlas_tids = analyze_cve_ai_context(cve)
         cve["has_ai_context"] = has_ai
         _append_upsert_change_rows(cve_id, cve, snapshots.get(cve_id), history)
-        await db.execute(sql, _cve_upsert_params(cve))
+        params_batch.append(_cve_upsert_params(cve))
+
+    chunk_size = 500
+    for i in range(0, len(params_batch), chunk_size):
+        await db.executemany(sql, params_batch[i : i + chunk_size])
 
     await _insert_cve_changes_batch(db, history)
 
