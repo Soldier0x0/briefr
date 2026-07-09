@@ -1027,7 +1027,7 @@ Optional webhook event: `kev_backlog`.
 
 **Description:** Deployed application version. `commit` and `built_at` are stamped into `backend/.build-info.json` by `deploy/briefr-update.sh` at deploy time (both `null` in dev).
 
-**Response:** `{"version": "1.0.0", "commit": "abc1234", "built_at": "2026-06-10T19:00:00Z"}`
+**Response:** `{"version": "1.5.0", "commit": "abc1234", "built_at": "2026-06-10T19:00:00Z"}`
 
 ---
 

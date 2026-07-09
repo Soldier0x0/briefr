@@ -9,6 +9,7 @@
 
 | Area | Status |
 |------|--------|
+| **Release** | **v1.5.0** — V1.5 product phases 1–3 + 5 shipped (#373–#376); Phase 4 STIX excluded |
 | **Database** | **PostgreSQL required** (`DATABASE_URL`, `BRIEFR_REQUIRE_POSTGRES=1`). SQLite removed from production path. **Intel snapshot:** `scripts/export_intel_snapshot.py` exports allowlisted tables per `docs/DATA_SNAPSHOT.md` with versioned manifest (`format_version: 1`); `scripts/verify_intel_snapshot.py` and `scripts/import_intel_snapshot.py` validate/import bundles; upgrade steps in `docs/OPERATIONS.md`. Postgres CI runs export→restore smoke (`test_intel_snapshot_export.py`). **Backup round-trip:** Postgres CI runs `test_backup_roundtrip_postgres.py` (`run_backup` → wipe → `restore_backup`, row-count assert on `cves` / `kev_deadlines`). |
 | **Auth** | Built-in app login + sessions (first-run `/api/auth/setup`); admin/refresh routes require the **admin role** (Sprint A0). Legacy `BRIEFR_ADMIN_API_KEY` removed. Wallboard token is **header-only** (`X-BRIEFR-Wallboard-Token`; `?token=` removed, Sprint A7). Optional Cloudflare Zero Trust at **edge** (operator policy, not in app code). |
 | **Rate limits** | Token buckets on IOC, refresh, admin, auth; set `RATE_LIMIT_ENABLED=1` in production. |
@@ -67,10 +68,11 @@
 | Postgres, auth, rate limits, API queue | Full `docker-compose.yml` (V2.0) |
 | Correlation v2 core (campaigns, typed IOC edges, hub suppression, dismiss, priority, lifecycle, feed badge, drawer chip) + **Phase 4–5** cluster list + admin correlation status (#364) | Correlation phase-4 tail (Forge/PDF/webhook enrichments, watchlist sort in feed) — see sprint Phase B |
 | Admin ops, webhooks, wallboard | STIX export (excluded from current loop) |
-| **Forge threat scenarios (V1.5 Phase 1)** | IOC watchlist depth |
-| **Rule proof bench (V1.5 Phase 2)** — `POST /api/proof/run`; Forge hunt pack panel paste-and-run against saved Sigma | STIX export (excluded from current loop) |
-| **KEV detection backlog (V1.5 Phase 3)** — `GET /api/detection-backlog`; KEV sync + weekly reconcile; Forge **Backlog** tab; optional `kev_backlog` webhook | V1.5 ship housekeeping |
-| **IOC watchlist depth (V1.5 Phase 5)** — `ioc_watchlist` + ThreatFox mirror + retro-match job; IOC tab watchlist UI; optional `ioc_watchlist_hit` webhook; VulnCheck exploited tier (`is_vulncheck_exploited`) | STIX export (excluded from current loop) |
+| **Forge threat scenarios (V1.5 Phase 1)** | STIX export (excluded from current loop) |
+| **Rule proof bench (V1.5 Phase 2)** — `POST /api/proof/run`; Forge hunt pack panel paste-and-run against saved Sigma | Wave 4 / open-core (parked) |
+| **KEV detection backlog (V1.5 Phase 3)** — `GET /api/detection-backlog`; KEV sync + weekly reconcile; Forge **Backlog** tab; optional `kev_backlog` webhook | Correlation phase-4 tail (Phase B) |
+| **IOC watchlist depth (V1.5 Phase 5)** — `ioc_watchlist` + ThreatFox mirror + retro-match job; IOC tab watchlist UI; optional `ioc_watchlist_hit` webhook; VulnCheck exploited tier (`is_vulncheck_exploited`) | Extended watchlist alert signals (campaign join, severity) |
+| **V1.5 ship housekeeping** — version 1.5.0, PDF/xlsx regen scripts verified, security audit (no critical/high) | STIX export (excluded) |
 | Embeddings optional (fastembed) | Extended watchlist alert signals (campaign join, severity) |
 | Chart.js admin dashboard partial | Logrotate deploy artifacts (V1.4 theme) |
 
