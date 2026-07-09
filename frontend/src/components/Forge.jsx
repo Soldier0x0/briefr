@@ -623,23 +623,26 @@ function CampaignsPanel({ profileStack }) {
   const [error, setError] = useState(null)
   const [errorRequestId, setErrorRequestId] = useState(null)
 
-  const loadClusters = useCallback(() => {
+  const reloadClusters = useCallback((isActive = () => true) => {
     setLoading(true)
     setError(null)
     setErrorRequestId(null)
     return fetchCorrelationClusters({ stack: profileStack || '', limit: 25 })
-      .then(payload => setData(payload))
+      .then(payload => { if (isActive()) setData(payload) })
       .catch(err => {
+        if (!isActive()) return
         setError(err.message || 'Failed to load campaign clusters')
         setErrorRequestId(err?.requestId || null)
         notifyApiError(err)
       })
-      .finally(() => setLoading(false))
+      .finally(() => { if (isActive()) setLoading(false) })
   }, [profileStack])
 
   useEffect(() => {
-    loadClusters()
-  }, [loadClusters])
+    let active = true
+    reloadClusters(() => active)
+    return () => { active = false }
+  }, [reloadClusters])
 
   if (loading && !data) return <SkeletonRows count={4} />
   if (error) {
@@ -656,7 +659,7 @@ function CampaignsPanel({ profileStack }) {
             </>
           )}
         </p>
-        <button type="button" className="fg-error-retry-btn mono" onClick={loadClusters}>
+        <button type="button" className="fg-error-retry-btn mono" onClick={() => reloadClusters()}>
           Retry
         </button>
       </div>
