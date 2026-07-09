@@ -298,7 +298,8 @@ function formatCampaignIntel(correlation) {
   const lifecycle = (primary.lifecycle || 'active').trim()
   const confidence = (primary.confidence || 'medium').trim()
   const members = Array.isArray(primary.members) ? primary.members : []
-  const memberNote = members.length ? `${members.length} linked CVEs` : 'linked CVEs'
+  const count = primary.member_count ?? members.length
+  const memberNote = count ? `${count} linked CVEs` : 'linked CVEs'
   const pulse = (primary.primary_pulse_id || primary.pulse_id || '').trim()
   const pulseNote = pulse ? ` OTX pulse: ${pulse}.` : ''
   return (

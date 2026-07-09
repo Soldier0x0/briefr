@@ -370,15 +370,14 @@ def _stack_match_clause(stack: str | None) -> tuple[str, list, list[str]]:
 CVE_ORDER_BY = """
     ORDER BY
         CASE WHEN w.state = 'pin' THEN 0 ELSE 1 END,
-        CASE WHEN EXISTS (
-            SELECT 1
+        CASE WHEN c.cve_id IN (
+            SELECT cm_self.cve_id
             FROM correlation_campaign_members cm_self
             INNER JOIN correlation_campaign_members cm_peer
                 ON cm_peer.campaign_id = cm_self.campaign_id
             INNER JOIN watchlist wl_peer
                 ON wl_peer.cve_id = cm_peer.cve_id AND wl_peer.state = 'pin'
-            WHERE cm_self.cve_id = c.cve_id
-              AND cm_peer.cve_id != c.cve_id
+            WHERE cm_peer.cve_id != cm_self.cve_id
         ) THEN 0 ELSE 1 END,
         c.published DESC,
         CASE c.severity
