@@ -5,6 +5,7 @@ import { toApiCveParams } from '../utils/cveFilters.js'
 import { saveUserStack } from '../utils/userStack.js'
 import { cvesToCsvRows, downloadCsv, exportFilename } from '../utils/exportCsv.js'
 import ControlTooltip from './ControlTooltip.jsx'
+import FeedVisibleRange from './FeedVisibleRange.jsx'
 import './FilterBar.css'
 
 const STACK_DEBOUNCE_MS = 400
@@ -69,7 +70,8 @@ export default function FilterBar({
   filters,
   onFiltersChange,
   total,
-  showingRange,
+  feedListRef,
+  feedCardCount = 0,
   onGenerateDigest,
   searchFocusTrigger,
 }) {
@@ -242,20 +244,11 @@ export default function FilterBar({
                       ? `${total.toLocaleString()} matches`
                       : total.toLocaleString()}
                   </span>
-                  {showingRange && showingRange.end > 0 && (
-                    <>
-                      <span className="filter-meta-sep" aria-hidden="true">
-                        {' '}
-                        ·
-                        {' '}
-                      </span>
-                      <span
-                        className="filter-showing"
-                        aria-label={`Showing ${showingRange.start} through ${showingRange.end}`}
-                      >
-                        Showing {showingRange.start}-{showingRange.end}
-                      </span>
-                    </>
+                  {feedListRef && feedCardCount > 0 && (
+                    <FeedVisibleRange
+                      listRootRef={feedListRef}
+                      cardCount={feedCardCount}
+                    />
                   )}
                 </>
               )}
