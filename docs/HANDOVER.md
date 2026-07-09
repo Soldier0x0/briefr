@@ -12,13 +12,14 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-09 — BRIEFR product voice (#TBD)
+## 2026-07-09 — BRIEFR product voice (#385)
 
-**Branch:** `cursor/briefr-product-voice-419e` — analyst communication model: layered
-copy, confidence language, BRIEFR-specific tooltips; `docs/BRIEFR_PRODUCT_VOICE.md`;
-frontend + backend sentence templates (no scoring/correlation logic changes).
+**Merged:** #385 — analyst communication model: layered copy, confidence language,
+BRIEFR-specific tooltips; `docs/BRIEFR_PRODUCT_VOICE.md`; frontend + backend sentence
+templates; Gemini review fixes (IOC not-found, Morning Brief grammar, Detect confidence
+casing); investigation technique taxonomy helper. No scoring/correlation logic changes.
 
-**Sprint position:** Independent of PR #345 / ADR-002 — copy-only; does not reorder wave queue.
+**Autonomous next (do not ask):** parked items only unless explicitly un-parked.
 
 ---
 
