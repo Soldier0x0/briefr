@@ -89,13 +89,45 @@ These env vars must remain supported across releases (defaults preserved):
 
 | Log | Rotation |
 |-----|----------|
-| **briefr-backend** | systemd journal + `journalctl` vacuum policy |
-| **App file log (optional)** | `deploy/logrotate-briefr.conf` (V1.4) |
-| **Backup run logs** | `/var/lib/briefr/backups/logs/` — size/count cap |
+| **briefr-backend** | systemd journal — see [journald policy](#journald-vacuum-policy) below |
+| **App file log (optional)** | `deploy/logrotate-briefr.conf` → `/etc/logrotate.d/briefr` when using `/var/lib/briefr/logs/*.log` |
+| **Backup run logs** | In-process rotation via `BACKUP_LOG_MAX_BYTES` / `BACKUP_LOG_BACKUP_COUNT` (default 5 MiB × 5 files); optional OS logrotate stanza in the same deploy file |
 | **nginx** | OS logrotate — not managed by BRIEFR UI |
 | **Webhook delivery log** | DB TTL purge ~90d (V1.4) |
 
 **Container (V2.0):** JSON logs to stdout; optional file on volume; no dependency on `journalctl` inside container.
+
+### journald vacuum policy
+
+Default production ships `briefr-backend` with `StandardOutput=journal` / `StandardError=journal`. Operators should cap journal disk use on the app host:
+
+```bash
+# One-off trim (keeps last ~500 MiB of all journals)
+sudo journalctl --vacuum-size=500M
+
+# Persistent cap — /etc/systemd/journald.conf
+SystemMaxUse=500M
+SystemKeepFree=1G
+MaxRetentionSec=30day
+```
+
+After editing `journald.conf`, run `sudo systemctl restart systemd-journald`.
+
+**Tail backend logs:** `journalctl -u briefr-backend -f` (or Admin → Application logs for the in-process ring buffer).
+
+### Optional file logs + logrotate install
+
+Only needed when stdout/stderr are redirected to files (not the default systemd setup):
+
+```bash
+sudo mkdir -p /var/lib/briefr/logs
+sudo chown briefr:briefr /var/lib/briefr/logs
+sudo cp /opt/briefr/deploy/logrotate-briefr.conf /etc/logrotate.d/briefr
+sudo chmod 0644 /etc/logrotate.d/briefr
+sudo logrotate -d /etc/logrotate.d/briefr   # dry-run
+```
+
+The deploy file rotates `/var/lib/briefr/logs/*.log` daily (14 generations, compressed) and includes a weekly stanza for `/var/lib/briefr/backups/logs/*.log` as a belt-and-suspenders complement to the in-app backup log rotator.
 
 ---
 
