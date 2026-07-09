@@ -6,6 +6,7 @@ import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { extractActorTags } from '../utils/investigationActors.js'
 import { isValidDomain } from '../utils/domainValidation.js'
+import { IOC_NOT_FOUND_IN_DATABASES } from '../utils/iocLookupMessages.js'
 import './IOCLookup.css'
 
 // ── Type detection ────────────────────────────────────────
@@ -78,7 +79,7 @@ function parseError(err) {
   if (err.status === 0) return 'Could not reach the server. Check your connection and try again.'
   if (err.status === 403) return 'Threat-intelligence API key missing or invalid on this server. Ask your administrator.'
   if (err.status === 429) return 'Rate limit reached — try again in 60 seconds'
-  if (err.status === 404) return 'Not found in configured threat databases'
+  if (err.status === 404) return IOC_NOT_FOUND_IN_DATABASES
   if (err.status === 422) return err.message || 'Invalid input — use a full hostname, not a filename or path'
   return err.message || 'Lookup failed — existing session results remain available'
 }
@@ -949,7 +950,7 @@ export default function IOCLookup({ prefill }) {
         if (msg.includes('auth') || msg.includes('key')) {
           setError('Threat-intelligence API key missing or invalid on this server. Ask your administrator.')
         } else if (msg.includes('not found') || msg.includes('404')) {
-          setError('Not found in threat databases')
+          setError(IOC_NOT_FOUND_IN_DATABASES)
         } else {
           // Show result even if there's a partial error
           setResult(data)

@@ -10,6 +10,7 @@ import {
   kevDueDateInWindow,
   kevBucketFilterLabel,
 } from '../utils/kevDeadline.js'
+import { formatSinceHoursLabel } from '../utils/morningBriefFormat.js'
 import './MorningBrief.css'
 
 const REASON_LABELS = {
@@ -170,9 +171,7 @@ export default function MorningBrief({
         <div>
           <h2 className="morning-brief-heading mono">// MORNING BRIEF</h2>
           <p className="morning-brief-sub">
-            Prioritized CVEs from the last
-            {brief?.meta?.since_hours ? ` ${brief.meta.since_hours}` : ' 24'}
-            {brief?.meta?.since_hours ? ' hours' : ' hours'}, based on KEV deadlines, EPSS movement, and stack overlap.
+            Prioritized CVEs from the last {formatSinceHoursLabel(brief?.meta?.since_hours)}, based on KEV deadlines, EPSS movement, and stack overlap.
           </p>
         </div>
         {onOpenFullFeed && (

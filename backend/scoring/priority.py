@@ -54,7 +54,7 @@ _RATIONALE: dict[tuple[str, str], str] = {
     ("CRIT", "WEAK"): "Strong exploitation signals; weak textual overlap only — verify version.",
     ("CRIT", "UNKNOWN"): "Strong exploitation signals; environment not assessed — provisional priority.",
     ("CRIT", "NO_MATCH"): "Strong exploitation signals but no My Stack match — lower urgency for your environment.",
-    ("HIGH", "CONFIRMED"): "High exploitation signals with confirmed version match — investigate if product is in your environment.",
+    ("HIGH", "CONFIRMED"): "High exploitation signals with a confirmed vulnerable version match in My Stack — investigate exposure.",
     ("HIGH", "LIKELY"): "High threat with unverified product overlap.",
     ("HIGH", "POSSIBLE"): "High threat with partial overlap — verify version.",
     ("HIGH", "WEAK"): "High threat with weak overlap — verify relevance.",

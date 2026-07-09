@@ -20,6 +20,7 @@ import {
   FOOTER_COPYRIGHT,
   hexToRgb,
 } from './exportCommon.js'
+import { techniquePdfSectionTitle } from './investigationLabels.js'
 
 const T_CVE = 'cve'
 const T_IOC = 'ioc'
@@ -306,7 +307,7 @@ export async function downloadInvestigationPdf(items, startTime, options = {}) {
   if (techniques.length || items.some(i => i.source === 'atlas')) {
     const atlasLines = techniques.map(t => t.title)
     if (!atlasLines.length) atlasLines.push('See ATLAS case studies in application for technique mappings.')
-    drawSectionBody(ctx, 'AI THREAT CONTEXT', atlasLines)
+    drawSectionBody(ctx, techniquePdfSectionTitle(items), atlasLines)
   }
 
   doc.addPage()

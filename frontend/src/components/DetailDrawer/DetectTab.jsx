@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { copyToClipboard } from '../../utils/report.js'
 
+import { confidenceMatchLabel } from '../../utils/detectLabels.js'
 import IntelProvenanceLine from './IntelProvenanceLine.jsx'
 
 const BASIS_LABELS = {
@@ -196,7 +197,7 @@ function GeneratedSigmaSection({
         <StatusBadge status={meta?.status || 'experimental'} title={EXPERIMENTAL_TOOLTIP} />
         <BasisBadge basis={meta?.briefr_basis} />
         <span className={`${confidenceCls} mono`} title="BRIEFR confidence in this template match">
-          {confidence === 'MEDIUM' ? 'Medium confidence match' : `${confidence} confidence match`}
+          {confidenceMatchLabel(confidence)}
         </span>
         {(meta?.briefr_class || detectionClass) && (
           <span

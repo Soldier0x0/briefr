@@ -8,6 +8,12 @@ import {
 } from 'react'
 import { extractIndicatorsFromCve } from '../utils/extractIndicatorsFromCve.js'
 import { fetchOTXPulseIocs } from '../api.js'
+import {
+  INV_TYPE_TECHNIQUE,
+  investigationPivotBadge,
+  techniqueSummaryParts,
+  TECHNIQUE_TAXONOMY,
+} from '../utils/investigationLabels.js'
 
 export const INV_TYPES = {
   CVE: 'cve',
@@ -27,10 +33,7 @@ const InvestigationContext = createContext(null)
 
 function pivotLabel(item) {
   if (!item) return null
-  const badge = item.type === INV_TYPES.CVE ? 'CVE'
-    : item.type === INV_TYPES.IOC ? 'IOC'
-      : item.type === INV_TYPES.ACTOR ? 'ACTOR'
-        : 'AI'
+  const badge = investigationPivotBadge(item)
   return `${badge} ${item.id}`
 }
 
@@ -46,7 +49,8 @@ function buildThreadSummary(items) {
   if (counts.cve) parts.push(`${counts.cve} CVE${counts.cve > 1 ? 's' : ''}`)
   if (counts.ioc) parts.push(`${counts.ioc} IOC${counts.ioc > 1 ? 's' : ''}`)
   if (counts.actor) parts.push(`${counts.actor} actor${counts.actor > 1 ? 's' : ''}`)
-  if (counts.technique) parts.push(`${counts.technique} AI technique${counts.technique > 1 ? 's' : ''}`)
+  const techniqueParts = techniqueSummaryParts(items)
+  if (techniqueParts.length) parts.push(...techniqueParts)
   return parts.join(' · ') || 'No items'
 }
 
@@ -278,6 +282,7 @@ export function InvestigationProvider({ children, navigation }) {
       description: 'MITRE ATLAS technique',
       source: INV_SOURCES.ATLAS,
       pivotFrom: from,
+      meta: { taxonomy: TECHNIQUE_TAXONOMY.ATLAS },
     })
   }, [recordItem])
 

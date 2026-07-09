@@ -399,6 +399,10 @@ def test_compute_correlation_priority_breakdown():
     assert priority["components"][0]["signal"] == "campaign"
     signals = {c["signal"] for c in priority["components"]}
     assert signals == {"campaign", "infrastructure", "actor", "temporal"}
+    actor = next(c for c in priority["components"] if c["signal"] == "actor")
+    assert "threat intel link" not in actor["sentence"].lower()
+    assert "historically associated" in actor["sentence"].lower()
+    assert "verify relevance" in actor["sentence"].lower()
 
     empty = compute_correlation_priority({})
     assert empty == {"score": 0, "components": []}
