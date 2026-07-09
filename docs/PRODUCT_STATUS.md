@@ -10,6 +10,8 @@
 | Area | Status |
 |------|--------|
 | **Release** | **v1.5.0** — V1.5 product phases 1–3 + 5 shipped (#373–#376); Phase 4 STIX excluded |
+| **Performance (Track I)** | **Complete** (#378–#382): feed scroll isolation (`FeedVisibleRange`), CVE detail enrichments parallel off pool, bulk CVE upsert (`executemany`), `/api/cves` KEV JOIN + 45s count cache + Postgres `pg_trgm` indexes (Alembic `012`). |
+| **Security tail** | CGNAT SSRF block (`100.64.0.0/10`) + refresh rejects past `sessions.expires_at` (#381). JWT role revalidation and LLM summary auth remain open. |
 | **Database** | **PostgreSQL required** (`DATABASE_URL`, `BRIEFR_REQUIRE_POSTGRES=1`). SQLite removed from production path. **Intel snapshot:** `scripts/export_intel_snapshot.py` exports allowlisted tables per `docs/DATA_SNAPSHOT.md` with versioned manifest (`format_version: 1`); `scripts/verify_intel_snapshot.py` and `scripts/import_intel_snapshot.py` validate/import bundles; upgrade steps in `docs/OPERATIONS.md`. Postgres CI runs export→restore smoke (`test_intel_snapshot_export.py`). **Backup round-trip:** Postgres CI runs `test_backup_roundtrip_postgres.py` (`run_backup` → wipe → `restore_backup`, row-count assert on `cves` / `kev_deadlines`). |
 | **Auth** | Built-in app login + sessions (first-run `/api/auth/setup`); admin/refresh routes require the **admin role** (Sprint A0). Legacy `BRIEFR_ADMIN_API_KEY` removed. Wallboard token is **header-only** (`X-BRIEFR-Wallboard-Token`; `?token=` removed, Sprint A7). Optional Cloudflare Zero Trust at **edge** (operator policy, not in app code). |
 | **Rate limits** | Token buckets on IOC, refresh, admin, auth; set `RATE_LIMIT_ENABLED=1` in production. |
@@ -73,6 +75,7 @@
 | **KEV detection backlog (V1.5 Phase 3)** — `GET /api/detection-backlog`; KEV sync + weekly reconcile; Forge **Backlog** tab; optional `kev_backlog` webhook | Correlation phase-4 tail (Phase B) |
 | **IOC watchlist depth (V1.5 Phase 5)** — `ioc_watchlist` + ThreatFox mirror + retro-match job; IOC tab watchlist UI; optional `ioc_watchlist_hit` webhook; VulnCheck exploited tier (`is_vulncheck_exploited`) | Extended watchlist alert signals (campaign join, severity) |
 | **V1.5 ship housekeeping** — version 1.5.0, PDF/xlsx regen scripts verified, security audit (no critical/high) | STIX export (excluded) |
+| **Track I performance** — I4 scroll, I6 detail pool, I7 list query, I10 bulk upsert (#378–#382) | Wave 4 / open-core (parked) |
 | Embeddings optional (fastembed) | Extended watchlist alert signals (campaign join, severity) |
 | Chart.js admin dashboard partial | Logrotate deploy artifacts (V1.4 theme) |
 

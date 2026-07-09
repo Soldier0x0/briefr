@@ -145,17 +145,17 @@ drawer open.
 ### A. CVE lifecycle
 
 1. **Ingest:** `scheduler.run_nvd_incremental_sync` → `feeds/nvd.py:fetch_nvd_cve_updates` (NVD REST 2.0, watermark in `sync_state`).
-2. **Persist:** `database.upsert_cves` → `cves` table (`ON CONFLICT DO UPDATE`), optional `cve_change_history` rows.
+2. **Persist:** `database.upsert_cves` → `cves` table (`ON CONFLICT DO UPDATE`), optional `cve_change_history` rows. Ingest batches upserts via `executemany` in 500-row chunks (`db/cve.py`).
 3. **Post-process:** strip auto-summaries, backfill display fields, `enrich_cves_extended` (Sploitus/CIRCL).
-4. **List:** `GET /api/cves` builds SQL from `_build_cve_filters`, paginates (`page`, `limit` max **50**).
-5. **UI:** `CVEFeed.jsx:loadPage` → `fetchCVEs` → `CVECard.jsx` renders each row.
+4. **List:** `GET /api/cves` builds SQL from `_build_cve_filters`, paginates (`page`, `limit` max **50**). `CVE_SELECT` uses a `LEFT JOIN kev_deadlines` (no correlated KEV subquery). `total` is cached 45s per filter set (`read_cache.py`). Postgres search benefits from Alembic `012_cve_trgm_search` GIN indexes on description/summary/affected_products.
+5. **UI:** `CVEFeed.jsx:loadPage` → `fetchCVEs` → `CVECard.jsx` renders each row. Scroll “Showing X–Y” is tracked by leaf component `FeedVisibleRange.jsx` (rAF-throttled) so scrolling does not re-render the card list (`React.memo` on `CVECard`).
 
 Sequence diagram: [`docs/diagrams/flow_cve_feed.mermaid`](docs/diagrams/flow_cve_feed.mermaid)
 
 ### B. CVE detail drill-down
 
 1. **Card click:** `App.jsx:handleSelectCVE` sets list CVE, then `fetchCVE(cve_id)` → `GET /api/cves/{id}`.
-2. **Server enrichment (serial awaits in handler):** `cve_exploits` rows (scheduler-fed sources first), on-demand Sploitus fallback, GreyNoise scans, OTX pulses, OSV packages, CIRCL merge (`routers/cves.py:get_cve`).
+2. **Server path:** `_load_cve_detail_from_db` reads core rows and releases the pool connection; Sploitus, OTX, OSV, and CIRCL enrich via `asyncio.gather` with short-lived connections per task (`routers/cves.py:get_cve`). GreyNoise remains on-demand only (`GET /api/cves/{id}/greynoise-scans`).
 3. **Drawer opens** with enriched CVE; parallel client fetches on `cve_id` change:
    - `POST /api/cves/{id}/risk` (immediate — canonical score; optional profile body)
    - `GET /api/cves/{id}/sentences` (immediate)
@@ -332,7 +332,7 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 
 - **Engine:** `webhooks/engine.py` dispatches events (`kev_alert`, `backup_failure`, `health`, `watchlist_alert`, `kev_backlog`, `ioc_watchlist_hit`) to one or more **destinations** loaded from env vars and the `webhook_destinations` table. Env seeds are upserted on startup (`sync_env_destinations_to_db`); per-destination `enabled` and `event_types` can be overridden in SQLite via admin API.
 - **Built-in destinations:** Discord (`DISCORD_WEBHOOK_URL`), Telegram (`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`), optional generic HTTPS POST (`WEBHOOK_GENERIC_URL`). Each channel can be independently enabled/disabled (`*_WEBHOOK_ENABLED`) and subscribed to event types (`*_WEBHOOK_EVENTS`).
-- **Transport:** outbound webhook HTTP uses `webhooks/ssrf.py` — **https only**, DNS resolve + block private/reserved ranges (RFC1918, 127.0.0.0/8, ::1, 169.254.0.0/16, 0.0.0.0, unique-local IPv6), connect to resolved IP with original `Host` header (DNS-rebinding safe), **no redirect following**, 10s timeout, no internal API keys on outbound headers. Failures recorded via `resilient_client` health (`webhook.{destination_id}`).
+- **Transport:** outbound webhook HTTP uses `webhooks/ssrf.py` — **https only**, DNS resolve + block private/reserved ranges (RFC1918, RFC 6598 CGNAT `100.64.0.0/10`, 127.0.0.0/8, ::1, 169.254.0.0/16, 0.0.0.0, unique-local IPv6), connect to resolved IP with original `Host` header (DNS-rebinding safe), **no redirect following**, 10s timeout, no internal API keys on outbound headers. Failures recorded via `resilient_client` health (`webhook.{destination_id}`).
 - **Dedupe:** `webhook_alert_log` stores one row per `(event_type, target)`; `webhook_delivery_log` records every delivery attempt (destination, status, error).
 - **KEV-on-stack:** after each `kev_metadata_sync`, newly flagged KEV CVEs matching `BRIEFR_STACK_TERMS` dispatch `kev_alert` (deduped per CVE).
 - **IOC watchlist hits:** after each `ioc_retro_match`, local OTX/ThreatFox mirror matches dispatch `ioc_watchlist_hit` (deduped per user/value/source).
