@@ -5,6 +5,7 @@ import JobTable from './shared/JobTable.jsx'
 import { fmtIso, fmtAge, ageColor, sourceLabel } from './formatters.js'
 import { overallHealth, analystScheduleJobs } from './intelStatus.js'
 import { jobLabel } from './catalog.js'
+import OpsCharts from './shared/OpsCharts.jsx'
 
 function AnalystOverview({ system, toast }) {
   const [running, setRunning] = useState({})
@@ -233,6 +234,8 @@ function OperatorOverview({ system, toast }) {
         <StatCard label="TRIPPED CIRCUITS" value={system.open_circuit_count ?? 0} colorClass={system.open_circuit_count > 0 ? 'color-red' : 'color-green'} />
         <StatCard label="JOBS WITH ERRORS" value={system.jobs_with_errors_count ?? 0} colorClass={system.jobs_with_errors_count > 0 ? 'color-red' : 'color-green'} />
       </div>
+
+      <OpsCharts schedulerJobs={scheduler_jobs} />
 
       <div className="admin-card">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: showDiag ? '0.75rem' : 0 }}>

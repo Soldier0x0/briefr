@@ -1872,6 +1872,27 @@
 
 .admin-two-col > * { flex: 1; min-width: 0; }
 
+.admin-ops-charts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-ops-chart-card { min-width: 0; }
+
+.admin-ops-chart-wrap {
+  position: relative;
+  height: 200px;
+}
+
+.admin-ops-chart-empty {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* ── Tables ─────────────────────────────────────────────────────────────── */
 
 .admin-table {
@@ -2727,6 +2748,7 @@
 @media (max-width: 900px) {
   .admin-sidebar { width: 180px; }
   .admin-two-col { flex-direction: column; }
+  .admin-ops-charts { grid-template-columns: 1fr; }
   .stat-card-row { grid-template-columns: repeat(3, 1fr); }
 }
 
