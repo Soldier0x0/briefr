@@ -1,24 +1,12 @@
 .pdf-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  background: rgba(0, 0, 0, 0.65);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  /* Overlay shell owned by ui/Modal — keep hook for PdfExportModal-specific stacking if needed */
 }
 
 .pdf-modal {
-  width: 100%;
-  max-width: 420px;
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  padding: 20px 22px 18px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  /* Inner dialog sizing matches legacy pdf modal */
 }
 
-.pdf-modal-title {
+.pdf-modal .ui-modal-title {
   font-size: 0.75rem;
   letter-spacing: 0.1em;
   color: var(--red);
@@ -58,7 +46,7 @@
   background: var(--bg3);
   border: 1px solid var(--border);
   padding: 8px 10px;
-  margin-bottom: 18px;
+  margin-bottom: 0;
 }
 
 .pdf-modal-input:focus {
@@ -66,40 +54,17 @@
   border-color: var(--accent);
 }
 
-.pdf-modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+.pdf-modal .ui-modal-footer {
+  margin-top: 18px;
 }
 
-.pdf-modal-btn {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.08em;
-  padding: 8px 14px;
-  border: 1px solid var(--border2);
-  background: var(--bg3);
-  color: var(--text2);
-  cursor: pointer;
-}
-
-.pdf-modal-btn:hover:not(:disabled) {
-  color: var(--text);
-  border-color: var(--text3);
-}
-
-.pdf-modal-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.pdf-modal-btn-primary {
+.pdf-modal .ui-btn--primary {
   background: var(--red);
   border-color: var(--red);
   color: #fff;
 }
 
-.pdf-modal-btn-primary:hover:not(:disabled) {
+.pdf-modal .ui-btn--primary:hover:not(:disabled) {
   background: #fff;
   color: var(--bg);
 }

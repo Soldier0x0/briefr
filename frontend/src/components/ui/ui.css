@@ -216,3 +216,80 @@
 .ui-async-body--refreshing {
   opacity: 0.65;
 }
+
+/* Modal (Spec H §4) */
+.ui-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.ui-modal {
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  padding: 20px 22px 18px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  outline: none;
+}
+
+.ui-modal--sm { max-width: 360px; }
+.ui-modal--lg { max-width: 560px; }
+
+.ui-modal-title {
+  font-family: var(--font-mono);
+  font-size: var(--type-heading);
+  letter-spacing: 0.1em;
+  color: var(--red);
+  margin: 0 0 8px;
+}
+
+.ui-modal-body {
+  font-size: var(--type-secondary);
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.ui-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.ui-confirm-message {
+  margin: 0;
+}
+
+.ui-confirm-gate {
+  margin-top: 1rem;
+}
+
+.ui-confirm-label {
+  display: block;
+  font-size: var(--type-secondary);
+  color: var(--text2);
+  margin-bottom: 0.4rem;
+}
+
+.ui-confirm-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: var(--type-body);
+  color: var(--text);
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+}
+
+.ui-confirm-input:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-color: var(--accent);
+}

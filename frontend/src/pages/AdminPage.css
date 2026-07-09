@@ -2404,6 +2404,47 @@
   justify-content: flex-end;
 }
 
+/* ui/Modal bridge — admin ConfirmModal keeps legacy skin via className hooks */
+.admin-modal .ui-modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: var(--text);
+  letter-spacing: normal;
+}
+
+.admin-modal .ui-modal-body {
+  font-size: 0.875rem;
+  color: var(--text2);
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.admin-modal .ui-modal-footer {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  justify-content: flex-end;
+}
+
+.admin-modal .ui-confirm-input {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  padding: 0.45rem 0.6rem;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-modal .ui-confirm-input:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px var(--red-dim);
+  outline: none;
+}
+
+
 /* ── Spinner ────────────────────────────────────────────────────────────── */
 
 @keyframes admin-spin { to { transform: rotate(360deg); } }
