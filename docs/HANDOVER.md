@@ -12,6 +12,14 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — Extended IOC alerts + correlation phase-4 tail (#387–#390)
+
+**Merged:** #387 package-lock 1.5.0 sync · #388 IOC watchlist hit webhooks (OTX campaign + ThreatFox confidence; Gemini fixes on member_count/tf_conf) · #389 correlation tail (feed watchlist-peer boost, Forge Campaigns tab, PDF campaign paragraph, watchlist_alert campaign line) · #390 Gemini follow-up (IN subquery sort, Forge fetch cancellation, PDF member_count fallback).
+
+**Autonomous next (do not ask):** parked Wave 4 / STIX; optional security tail (JWT revalidation, LLM summary auth).
+
+---
+
 ## 2026-07-09 — Correlation phase-4 tail (un-parked)
 
 **Branch:** `cursor/correlation-phase4-tail-489a` — feed sort boosts CVEs linked to pinned campaign peers; Forge **Campaigns** tab (`GET /api/correlation/clusters`); PDF THREAT INTELLIGENCE campaign paragraph; `watchlist_alert` webhooks append campaign link when pinned CVE is in a cluster.
