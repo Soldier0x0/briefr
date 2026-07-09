@@ -68,7 +68,13 @@ from detection.context_llm_sync import (
     detection_context_llm_enabled,
     run_detection_context_llm_sync,
 )
-from webhooks.alerts import check_backup_deadman, get_backup_interval_hours, process_kev_stack_alerts
+from webhooks.alerts import (
+    check_backup_deadman,
+    get_backup_interval_hours,
+    process_kev_stack_alerts,
+    process_watchlist_kev_alerts,
+    process_watchlist_monitor_alerts,
+)
 from backup.manager import run_backup
 
 logger = logging.getLogger(__name__)
@@ -428,6 +434,9 @@ async def _run_kev_sync() -> None:
                 alerted = await process_kev_stack_alerts(newly_kev)
                 if alerted:
                     logger.info("KEV-on-stack alerts sent: %d", alerted)
+                watchlist_kev = await process_watchlist_kev_alerts(newly_kev)
+                if watchlist_kev:
+                    logger.info("Watchlist KEV alerts sent: %d", watchlist_kev)
             except Exception as exc:
                 logger.error("KEV-on-stack alert processing failed: %s", exc)
 
@@ -1419,6 +1428,30 @@ async def run_backup_deadman_check() -> bool:
         await _write_job_last_run("backup_deadman_check", _start, had_error=_had_error, error_message=_deadman_error_msg)
 
 
+async def run_watchlist_monitor_alerts() -> bool:
+    """Scheduler hook: webhook alerts for significant pinned-CVE changes."""
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _error_msg = ""
+    try:
+        sent = await process_watchlist_monitor_alerts()
+        if sent:
+            logger.info("Watchlist monitor alerts sent: %d", sent)
+        return sent > 0
+    except Exception as exc:
+        logger.error("Watchlist monitor alert job failed: %s", exc)
+        _had_error = True
+        _error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
+        return False
+    finally:
+        await _write_job_last_run(
+            "watchlist_monitor_alerts",
+            _start,
+            had_error=_had_error,
+            error_message=_error_msg,
+        )
+
+
 async def run_session_cleanup() -> int:
     """Scheduler hook: purge expired built-in-login sessions (decision 2026-06-11)."""
     from auth.repo import purge_expired_sessions
@@ -1693,6 +1726,16 @@ def start_scheduler() -> AsyncIOScheduler:
         max_instances=1,
         coalesce=True,
         next_run_time=datetime.now(sched_tz) + timedelta(minutes=5),
+    )
+    scheduler.add_job(
+        run_watchlist_monitor_alerts,
+        trigger=IntervalTrigger(hours=1, timezone=sched_tz),
+        id="watchlist_monitor_alerts",
+        name="Watchlist Monitor Alerts",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(minutes=8),
     )
 
     scheduler.add_job(

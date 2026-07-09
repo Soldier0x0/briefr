@@ -16,6 +16,7 @@ from webhooks.destinations import (
     EVENT_BACKUP_FAILURE,
     EVENT_HEALTH,
     EVENT_KEV_ALERT,
+    EVENT_WATCHLIST_ALERT,
     WebhookDestination,
     load_destinations,
     normalize_event_type,
@@ -125,7 +126,12 @@ async def dispatch_event(
 ) -> dict[str, Any]:
     """Send an event to every enabled destination subscribed to event_type."""
     normalized = normalize_event_type(event_type)
-    if normalized not in {EVENT_KEV_ALERT, EVENT_BACKUP_FAILURE, EVENT_HEALTH}:
+    if normalized not in {
+        EVENT_KEV_ALERT,
+        EVENT_BACKUP_FAILURE,
+        EVENT_HEALTH,
+        EVENT_WATCHLIST_ALERT,
+    }:
         return {
             "status": "failed",
             "reason": "unknown_event_type",

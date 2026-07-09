@@ -24,9 +24,12 @@ from resilient_client import reset_feed_health
 from webhooks.alerts import (
     ALERT_BACKUP_DEADMAN,
     ALERT_KEV_STACK,
+    ALERT_WATCHLIST,
     BACKUP_DEADMAN_TARGET,
     check_backup_deadman,
     process_kev_stack_alerts,
+    process_watchlist_kev_alerts,
+    process_watchlist_monitor_alerts,
 )
 
 
@@ -197,6 +200,81 @@ def test_backup_deadman_clears_after_fresh_backup(tmp_path, monkeypatch):
     assert res is False
     assert was_sent is False
     assert len(calls) == 1
+
+
+def test_watchlist_kev_alert_for_pinned_cve(tmp_path, monkeypatch):
+    db_path = _setup_db(tmp_path, monkeypatch)
+    calls = _mock_webhooks(monkeypatch)
+    run_db_test(_seed_cve(db_path, "CVE-2024-2001", "nginx issue"))
+
+    async def run():
+        db = await get_db()
+        try:
+            await db.execute(
+                "INSERT INTO watchlist (cve_id, state) VALUES ('CVE-2024-2001', 'pin')"
+            )
+            newly = await mark_cves_as_kev(db, ["CVE-2024-2001"])
+            await db.commit()
+        finally:
+            await db.close()
+        sent = await process_watchlist_kev_alerts(newly)
+        sent_again = await process_watchlist_kev_alerts(newly)
+        return sent, sent_again
+
+    sent, sent_again = run_db_test(run())
+    assert sent == 1
+    assert sent_again == 0
+    assert len(calls) == 1
+
+
+def test_watchlist_kev_alert_skips_unpinned(tmp_path, monkeypatch):
+    db_path = _setup_db(tmp_path, monkeypatch)
+    calls = _mock_webhooks(monkeypatch)
+    run_db_test(_seed_cve(db_path, "CVE-2024-2002", "nginx issue"))
+
+    async def run():
+        db = await get_db()
+        try:
+            newly = await mark_cves_as_kev(db, ["CVE-2024-2002"])
+            await db.commit()
+        finally:
+            await db.close()
+        return await process_watchlist_kev_alerts(newly)
+
+    assert run_db_test(run()) == 0
+    assert calls == []
+
+
+def test_watchlist_monitor_epss_and_poc_alerts(tmp_path, monkeypatch):
+    db_path = _setup_db(tmp_path, monkeypatch)
+    calls = _mock_webhooks(monkeypatch)
+    run_db_test(_seed_cve(db_path, "CVE-2024-2003", "pinned target"))
+
+    async def seed_changes():
+        db = await get_db()
+        try:
+            await db.execute(
+                "INSERT INTO watchlist (cve_id, state) VALUES ('CVE-2024-2003', 'pin')"
+            )
+            await db.execute(
+                """
+                INSERT INTO cve_change_history (
+                    cve_id, field_name, old_value, new_value, detected_at
+                ) VALUES
+                    ('CVE-2024-2003', 'epss_score', '0.05', '0.20', datetime('now', '-1 hour')),
+                    ('CVE-2024-2003', 'has_poc', '0', '1', datetime('now', '-30 minutes'))
+                """
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(seed_changes())
+    sent = run_db_test(process_watchlist_monitor_alerts())
+    assert sent == 2
+    assert len(calls) == 2
+    sent_again = run_db_test(process_watchlist_monitor_alerts())
+    assert sent_again == 0
 
 
 def test_webhook_alert_log_helpers(tmp_path, monkeypatch):
