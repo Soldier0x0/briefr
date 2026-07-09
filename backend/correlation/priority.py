@@ -68,7 +68,7 @@ def _actor_contribution(actor: list[dict]) -> tuple[float, str | None]:
     if points <= 0:
         return 0.0, None
     if sector_matches:
-        sentence = f"{best.get('actor_name', 'An actor')} targets your declared sector."
+        sentence = f"{best.get('actor_name', 'An actor')} has historically targeted your declared sector (threat intel link — verify applicability)."
     else:
         sentence = f"Linked to {best.get('actor_name', 'an actor')} via {best.get('source', 'OTX')}."
     return points, sentence

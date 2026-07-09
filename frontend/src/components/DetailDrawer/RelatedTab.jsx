@@ -64,7 +64,7 @@ export default function TabRelated({ related, relatedMethod, loading, onSelectRe
                   )}
                   {semantic && item.similarity != null && (
                     <span className="drawer-related-sim mono">
-                      {Math.round(Number(item.similarity) * 100)}% MATCH
+                      {Math.round(Number(item.similarity) * 100)}% description similarity
                     </span>
                   )}
                 </div>

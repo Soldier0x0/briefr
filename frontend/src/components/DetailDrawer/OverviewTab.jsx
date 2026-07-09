@@ -17,6 +17,8 @@ import {
   operationalBandColor,
   riskScoreDisplayColor,
   THREAT_COMPONENT_LABELS,
+  THREAT_COMPONENT_TOOLTIPS,
+  OP_BAND_TOOLTIPS,
   threatComponentRaw,
 } from '../../scoring/riskScore.js'
 import {
@@ -31,7 +33,7 @@ import { buildExploitationDisplay } from '../../utils/exploitationDisplay.js'
 import { drawerEpssBarColor, capecHref, capecLabel, flattenOsvPackageRows } from './helpers.js'
 
 
-function CriticalThreatSignals({ cve, riskScore, momentumData }) {
+function KeyExploitationSignals({ cve, riskScore, momentumData }) {
   if (!cve) return null
   const signals = []
 
@@ -68,8 +70,8 @@ function CriticalThreatSignals({ cve, riskScore, momentumData }) {
     signals.push({
       key: 'poc',
       label: 'PUBLIC PoC',
-      state: 'EXPLOIT AVAILABLE',
-      meta: 'Proof-of-concept publicly available',
+      state: 'PUBLIC PoC AVAILABLE',
+      meta: 'Proof-of-concept exists — not the same as confirmed in-the-wild use',
       tone: 'high',
     })
   } else if (cve.has_poc) {
@@ -115,7 +117,7 @@ function CriticalThreatSignals({ cve, riskScore, momentumData }) {
 
   return (
     <section className="drawer-section drawer-threat-signals" aria-labelledby="threat-signals-heading">
-      <h3 id="threat-signals-heading" className="drawer-human-label mono">CRITICAL THREAT SIGNALS</h3>
+      <h3 id="threat-signals-heading" className="drawer-human-label mono">KEY EXPLOITATION SIGNALS</h3>
       <ul className="drawer-threat-signals-grid">
         {signals.map(sig => (
           <li key={sig.key} className={`drawer-threat-signal-card drawer-threat-signal-card--${sig.tone}`}>
@@ -168,7 +170,7 @@ function PatchActionSection({ cve, sentences, urls }) {
 
       {kevRemediation && kevRemediation.variant === 'required-action' && (
         <div className="drawer-patch-block">
-          <p className="drawer-patch-cisa-heading mono">CISA REQUIRED ACTION</p>
+          <p className="drawer-patch-cisa-heading mono">CISA KEV REMEDIATION GUIDANCE</p>
           <p className="drawer-patch-guidance">{kevRemediation.text}</p>
           {cisaRef && (
             <a
@@ -452,7 +454,7 @@ function AssetExposureSection({ riskScore, onOpenProfile }) {
           className="drawer-asset-exposure-cta mono"
           onClick={onOpenProfile}
         >
-          Load asset profile
+          Load My Stack
         </button>
       )}
     </section>
@@ -491,10 +493,7 @@ function OperationalPriorityBreakdown({ riskScore, momentumData }) {
   return (
     <div id="risk-breakdown-details" className="drawer-risk-breakdown-inline">
       <p className="drawer-risk-methodology-hint">
-        Threat Score v1.0 — asset-independent exploitation credibility. Environment tier is categorical and never folded into Threat.
-      </p>
-      <p className="drawer-risk-signal-legend mono">
-        Signal strength (0–1) · Contribution = signal × renormalized weight × 100
+        Threat Score reflects exploitation signals only. Environment relevance is shown separately and does not change Threat.
       </p>
       {env && (
         <p className="drawer-risk-comp-sentence">
@@ -504,7 +503,7 @@ function OperationalPriorityBreakdown({ riskScore, momentumData }) {
       )}
       {op?.escalated && (
         <p className="drawer-risk-comp-sentence">
-          Correlation escalation applied — one-band lift from {riskScore.operational_priority?.base_band}.
+          Priority raised one level because this CVE is linked to a campaign with strong shared indicators (from {riskScore.operational_priority?.base_band}).
         </p>
       )}
       {op?.rationale && (
@@ -514,7 +513,7 @@ function OperationalPriorityBreakdown({ riskScore, momentumData }) {
         {rows.map(row => (
           <div key={row.key} className="drawer-risk-component">
             <div className="drawer-risk-comp-header drawer-risk-comp-header--semantics">
-              <span className="drawer-risk-comp-label mono">{row.label}</span>
+              <span className="drawer-risk-comp-label mono" title={THREAT_COMPONENT_TOOLTIPS[row.key] || undefined}>{row.label}</span>
               <div className="drawer-risk-signal-col">
                 <span className="drawer-risk-signal-caption mono">Signal</span>
                 <RiskScoreBar score={row.raw} />
@@ -557,7 +556,11 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, momentumData }) 
   if (riskLoading) {
     return (
       <section className="drawer-section drawer-risk-hero-section" aria-labelledby="op-priority-heading">
-        <h3 id="op-priority-heading" className="drawer-risk-section-label mono">
+        <h3
+          id="op-priority-heading"
+          className="drawer-risk-section-label mono"
+          title="BRIEFR's rule-based P1–P4 band from threat signals and environment relevance. Separate from CVSS."
+        >
           // OPERATIONAL PRIORITY
         </h3>
         <p className="drawer-risk-summary mono" style={{ color: 'var(--text-muted, var(--text3))' }}>
@@ -578,7 +581,11 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, momentumData }) 
 
   return (
     <section className="drawer-section drawer-risk-hero-section" aria-labelledby="op-priority-heading">
-      <h3 id="op-priority-heading" className="drawer-risk-section-label mono">
+      <h3
+        id="op-priority-heading"
+        className="drawer-risk-section-label mono"
+        title="BRIEFR's rule-based P1–P4 band from threat signals and environment relevance. Separate from CVSS."
+      >
         // OPERATIONAL PRIORITY
       </h3>
       <div className="drawer-risk-hero drawer-op-hero">
@@ -589,7 +596,7 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, momentumData }) 
         >
           {op.band}
           {op.provisional && (
-            <span className="drawer-op-provisional" title="Environment unknown — priority may change once a profile is loaded">
+            <span className="drawer-op-provisional" title="No My Stack profile loaded — priority is provisional and may change once environment relevance is known">
               *
             </span>
           )}
@@ -667,7 +674,7 @@ export default function TabOverview({
         </section>
       )}
 
-      <CriticalThreatSignals cve={cve} riskScore={riskScore} momentumData={momentumData} />
+      <KeyExploitationSignals cve={cve} riskScore={riskScore} momentumData={momentumData} />
 
       {cve.summary && (
         <section className="drawer-section" aria-labelledby="plain-heading">
@@ -683,7 +690,12 @@ export default function TabOverview({
           <p className="drawer-human-loading mono">// Loading intelligence summary...</p>
         </section>
       )}
-      {sentences?.risk && <HumanSentence label="RISK ASSESSMENT" text={sentences.risk} />}
+      {sentences?.risk && (
+        <HumanSentence
+          label="SEVERITY CONTEXT (CVSS)"
+          text={sentences.risk}
+        />
+      )}
 
       <ExploitationSection
         cve={cve}

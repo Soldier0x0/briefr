@@ -265,7 +265,6 @@ export default function CVEFeed({
     setSelectedIndex(null)
     initialLoadDoneRef.current = false
     sentinelVisibleRef.current = false
-    setShowingRange(null)
 
     if (filtersInitialMountRef.current) {
       filtersInitialMountRef.current = false

@@ -22,8 +22,8 @@ export default class AppErrorBoundary extends Component {
       return (
         <div className="app-crash">
           <div className="app-crash-box">
-            <h1>Something went wrong</h1>
-            <p>{String(this.state.error.message || this.state.error)}</p>
+            <h1>Application error</h1>
+            <p>The interface could not render. {String(this.state.error.message || this.state.error)}</p>
             <button
               type="button"
               className="app-crash-retry"

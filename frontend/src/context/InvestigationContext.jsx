@@ -128,7 +128,7 @@ export function InvestigationProvider({ children, navigation }) {
     setPanelExpanded(true)
     setMobileSheetOpen(true)
     if (wasEmpty) {
-      setPivotNotice('Investigation session started — pivots and lookups will be captured for your report.')
+      setPivotNotice('Investigation started — CVEs, IOC lookups, and links you follow will be included in the PDF export.')
     }
     navigation?.clearIocPrefill?.()
     navigation?.resetIocSession?.()

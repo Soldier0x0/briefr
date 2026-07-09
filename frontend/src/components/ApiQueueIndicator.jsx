@@ -42,16 +42,16 @@ export default function ApiQueueIndicator({ apiQueue, className = '', defaultOpe
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={ariaLabel}
-        title="Outbound API request queue"
+        title="Background enrichment queue — external API calls wait for provider limits"
       >
         <Clock size={14} strokeWidth={2} aria-hidden="true" />
         <span className="api-queue-count mono">{count}</span>
       </button>
       {open && (
         <div className="api-queue-dropdown" id={panelId} role="region" aria-label="API queue details">
-          <div className="api-queue-dropdown-title">API queue</div>
+          <div className="api-queue-dropdown-title">Background sync</div>
           <p className="api-queue-dropdown-sub">
-            Requests wait for provider limits — nothing is dropped.
+            External API calls are queued so nothing is dropped when providers throttle.
           </p>
           <div className="api-queue-summary mono" aria-live="polite">
             <span className="api-queue-summary-stat">{queued} queued</span>

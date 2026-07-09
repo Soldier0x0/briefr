@@ -12,7 +12,15 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-09 — Full doc + graph sync (#384)
+## 2026-07-09 — BRIEFR product voice (#TBD)
+
+**Branch:** `cursor/briefr-product-voice-419e` — analyst communication model: layered
+copy, confidence language, BRIEFR-specific tooltips; `docs/BRIEFR_PRODUCT_VOICE.md`;
+frontend + backend sentence templates (no scoring/correlation logic changes).
+
+**Sprint position:** Independent of PR #345 / ADR-002 — copy-only; does not reorder wave queue.
+
+---
 
 **Merged:** #384 — `API_REFERENCE.md` auth section; `TECHNICAL_INVENTORY.md` v1.5.0 refresh;
 `SYSTEM_DESIGN.md` auth/refresh notes; `graphify-out/` rebuilt (`5923` nodes, `11523` edges);

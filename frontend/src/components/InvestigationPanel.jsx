@@ -8,7 +8,7 @@ function typeBadge(type) {
     case INV_TYPES.CVE: return 'CVE'
     case INV_TYPES.IOC: return 'IOC'
     case INV_TYPES.ACTOR: return 'ACTOR'
-    case INV_TYPES.TECHNIQUE: return 'AI'
+    case INV_TYPES.TECHNIQUE: return 'ATLAS'
     default: return '—'
   }
 }
@@ -91,14 +91,14 @@ function PanelChrome({ expanded, onToggle, onPdf, onClear, count }) {
         <span className="inv-panel-count mono">{count}</span>
       </div>
       <p className="inv-panel-capture-hint mono">
-        Analyst pivots, CVE selections, and IOC lookups are captured for PDF export.
+        CVEs, IOC lookups, and links you follow will be included in the PDF export.
       </p>
       <div className="inv-panel-actions">
         <button type="button" className="inv-action-btn inv-action-pdf mono" onClick={onPdf}>
           ↓ PDF
         </button>
         <button type="button" className="inv-action-btn mono" onClick={onClear}>
-          Clear
+          End investigation
         </button>
       </div>
     </div>

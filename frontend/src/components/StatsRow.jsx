@@ -112,7 +112,7 @@ export default function StatsRow({
       />
       <StatCell
         value={stats?.kev_count?.toLocaleString()}
-        label="EXPLOITED IN WILD"
+        label="KEV (EXPLOITED)"
         variant="red"
         loading={loading}
         delta={stats?.kev_delta}
@@ -132,9 +132,10 @@ export default function StatsRow({
       {showAi && (
         <StatCell
           value={aiCount.toLocaleString()}
-          label="AI/ML ALERTS"
+          label="AI/ML IN STACK"
           variant="ai"
           loading={loading}
+          explain="CVE count matching AI/ML frameworks in your My Stack. Click to filter the feed."
           onClick={onAiAlertsClick}
           interactive
         />

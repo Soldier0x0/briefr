@@ -18,7 +18,7 @@ const QUICK_FILTERS = [
   { id: 'high',        label: 'HIGH',        explain: 'CVSS base score 7.0–8.9.' },
   { id: 'medium',      label: 'MEDIUM',      explain: 'CVSS base score 4.0–6.9.' },
   { id: 'poc',         label: 'PoC',         explain: 'CVEs with a public proof-of-concept exploit or reference.' },
-  { id: 'kev_overdue', label: 'KEV OVERDUE', explain: 'KEV entries past their CISA federal remediation deadline — immediate attention required.' },
+  { id: 'kev_overdue', label: 'KEV OVERDUE', explain: 'KEV entries past their CISA federal remediation deadline. Prioritize if affected products are in your environment.' },
 ]
 
 export const VENDORS = [
@@ -348,8 +348,8 @@ export default function FilterBar({
         {stackHintVisible && !localStack && (
           <div className="stack-hint" role="note" aria-label="Stack filter tip">
             <span className="stack-hint-text">
-              <span className="stack-hint-label mono">STACK</span> narrows the feed to CVEs relevant to your environment.
-              Type the technologies you run — e.g. <code>nginx, python, openssl</code> — and only matching vulnerabilities appear.
+              <span className="stack-hint-label mono">MY STACK FILTER</span> narrows the feed to CVEs that mention technologies in your stack filter.
+              Type products you run — e.g. <code>nginx, python, openssl</code> — or load My Stack from the header for version-aware matching.
             </span>
             <button
               type="button"

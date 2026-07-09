@@ -73,7 +73,7 @@ export default function CorrelationSuppressModal({
               className="corr-suppress-confirm mono"
               disabled={submitting}
             >
-              {submitting ? 'Suppressing…' : 'Suppress relationship'}
+              {submitting ? 'Hiding…' : 'Hide this link'}
             </button>
           </div>
         </form>

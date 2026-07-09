@@ -176,7 +176,11 @@ function CorrelationPriority({ priority }) {
   if (score <= 0 || !top) return null
   const level = score >= 50 ? 'high' : score >= 25 ? 'medium' : 'low'
   return (
-    <div className={`corr-priority corr-priority-${level}`}>
+    <div
+      className={`corr-priority corr-priority-${level}`}
+      title="BRIEFR's deterministic prioritization of relationship evidence. Separate from vulnerability severity."
+    >
+      <span className="corr-priority-label mono">Correlation strength</span>
       <span className="corr-priority-score mono">{score.toFixed(0)}</span>
       <p className="corr-priority-reason mono">{top.sentence}</p>
     </div>
@@ -199,7 +203,7 @@ function InfrastructureList({ items, onSelectCve, onRequestSuppress, cveId }) {
   return (
     <>
       <p className="corr-infra-context">
-        CVEs linked through shared threat observables.
+        Other CVEs that share IPs, domains, or hashes in OTX pulses — suggestive, not proof of the same attacker.
       </p>
       <div className="corr-infra-table" role="table" aria-label="Related threat infrastructure">
         <div className="corr-infra-head mono" role="row">
@@ -292,13 +296,13 @@ function CorrelationFindings({
 
       {!hasFindings && otxStatus === 'not_configured' && (
         <p className="drawer-intel-empty mono">
-          // Infrastructure correlation requires an OTX API key
+          Campaign and infrastructure linking needs OTX intelligence — not configured on this server.
         </p>
       )}
 
       {!hasFindings && otxStatus !== 'not_configured' && (
         <p className="drawer-intel-empty mono">
-          // No correlation signals detected for this CVE
+          No correlation signals detected for this CVE in configured sources.
         </p>
       )}
 
@@ -355,7 +359,7 @@ function CorrelationFindings({
 
       {infra.length > 0 && (
         <div className="corr-group" aria-label="Related threat infrastructure">
-          <p className="corr-group-label mono">// RELATED THREAT INFRASTRUCTURE</p>
+          <p className="corr-group-label mono">// SHARED INDICATOR LINKS</p>
           <InfrastructureList
             items={infra}
             onSelectCve={onSelectCve}
@@ -393,7 +397,7 @@ function CorrelationFindings({
                   )}
                   {item.user_sector_match && (
                     <span className="corr-sector-match">
-                      {' '}Your declared sector — elevated risk.
+                      {' '}Matches your declared sector — verify relevance to your environment.
                     </span>
                   )}
                 </p>
@@ -420,7 +424,7 @@ function CorrelationFindings({
                   {' '}{item.current_week_count} CVE{item.current_week_count !== 1 ? 's' : ''} published
                   this week — {(item.anomaly_score ?? 0).toFixed(1)}× the weekly average
                   ({(item.average_weekly_count ?? 0).toFixed(1)} normally).
-                  Unusual volume may indicate coordinated research disclosure or active adversary focus.
+                  Unusual volume — may reflect disclosure timing, researcher attention, or campaign activity. Treat as a signal, not a verdict.
                 </p>
               </div>
             </div>
@@ -477,7 +481,7 @@ function CampaignPulseRow({ pulse, cve, onInvestigatePulse }) {
       </div>
       {onInvestigatePulse && pulse.pulse_id && (
         <button type="button" className="drawer-investigate-btn" onClick={() => onInvestigatePulse(pulse, cve)}>
-          → Investigate IOCs
+          Add to investigation
         </button>
       )}
     </li>
@@ -654,7 +658,7 @@ export default function TabIntel({
         <h3 id="scanning-heading" className="drawer-human-label mono">// ACTIVE SCANNING</h3>
         {greynoiseConfigured === false ? (
           <p className="drawer-intel-empty mono">
-            // GreyNoise not configured — set GREYNOISE_API_KEY to enable on-demand IP scanning context
+            GreyNoise is not configured on this server — on-demand IP context is unavailable.
           </p>
         ) : greynoiseLoading ? (
           <p className="drawer-intel-empty mono">// Loading GreyNoise scanning context…</p>

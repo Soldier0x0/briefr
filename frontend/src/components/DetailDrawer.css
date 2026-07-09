@@ -1369,6 +1369,14 @@
   margin-bottom: 14px;
 }
 
+.corr-priority-label {
+  font-size: 0.6875rem;
+  color: var(--text3);
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .corr-priority-score {
   font-size: 1.125rem;
   font-weight: 600;
