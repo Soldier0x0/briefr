@@ -37,6 +37,7 @@ from backup.postgres_util import (  # noqa: E402
     verify_pg_dump,
 )
 from db.config import postgres_dsn  # noqa: E402
+from snapshot_version import BUNDLE_KIND, SNAPSHOT_FORMAT_VERSION  # noqa: E402
 
 INTEL_TABLES: tuple[str, ...] = (
     "cves",
@@ -97,6 +98,15 @@ SYNC_STATE_ALLOWLIST: frozenset[str] = frozenset({
 })
 
 
+def _alembic_head_revision() -> str:
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
+
+    alembic_cfg = Config(str(_REPO / "backend" / "alembic.ini"))
+    head = ScriptDirectory.from_config(alembic_cfg).get_current_head()
+    return head or "unknown"
+
+
 async def _preflight(database_url: str, *, allow_operator_seed: bool) -> dict:
     import asyncpg
 
@@ -124,11 +134,31 @@ async def _preflight(database_url: str, *, allow_operator_seed: bool) -> dict:
         for table in INTEL_TABLES:
             counts[table] = int(await conn.fetchval(f"SELECT COUNT(*) FROM {table}"))
 
+        schema_revision = None
+        try:
+            schema_revision = await conn.fetchval("SELECT version_num FROM alembic_version LIMIT 1")
+        except asyncpg.UndefinedTableError:
+            schema_revision = None
+
+        alembic_head = _alembic_head_revision()
+        build_info: dict = {}
+        build_path = _REPO / "backend" / ".build-info.json"
+        if build_path.is_file():
+            try:
+                build_info = json.loads(build_path.read_text(encoding="utf-8"))
+            except Exception:
+                build_info = {}
+
         return {
+            "format_version": SNAPSHOT_FORMAT_VERSION,
+            "bundle_kind": BUNDLE_KIND,
+            "schema_revision": schema_revision,
+            "alembic_head_at_export": alembic_head,
+            "briefr_commit": build_info.get("commit") or build_info.get("git_commit"),
             "tables": list(INTEL_TABLES),
             "row_counts": counts,
             "sync_state_keys": sorted(keys),
-            "exported_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "exported_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
     finally:
         await conn.close()

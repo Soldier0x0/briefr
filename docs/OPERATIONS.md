@@ -339,6 +339,105 @@ archives until the box is verified stable for 24h.
 
 ---
 
+## Intel snapshot import and upgrade runbook
+
+**Purpose:** bootstrap or refresh **intel-only** data from a published
+`briefr-intel-YYYY-MM.pgdump.gz` bundle (open-core monthly snapshot). This is
+**not** a substitute for the [production restore runbook](#production-restore-runbook-j5)
+— operator backups include `.env`, users, watchlist, and webhooks.
+
+**When to use:**
+
+| Scenario | Path |
+|----------|------|
+| New self-host / greenfield intel DB | Import into empty Postgres, then point BRIEFR at it |
+| Dev fixture / CI | Same as greenfield (see `test_intel_snapshot_export.py`) |
+| Monthly intel refresh on a **seed** DB | `--replace-intel` on a DB with **zero** operator rows |
+| Production operator instance | **Do not import** — ingest via scheduler instead |
+
+### Prerequisites
+
+- Postgres **16+** and matching `postgresql-client` (`pg_dump` / `pg_restore`).
+- Bundle + sidecar manifest from `scripts/export_intel_snapshot.py`.
+- Target `DATABASE_URL` pointing at a dedicated database (not shared prod with users).
+
+### 1. Verify the bundle
+
+```bash
+python3 scripts/verify_intel_snapshot.py briefr-intel-2026-07.pgdump.gz
+```
+
+Expect `OK: snapshot verified` and `format_version: 1`. Refuse unknown format
+versions until BRIEFR release notes document an upgrade path.
+
+### 2. Greenfield import
+
+Create an empty database, then import:
+
+```bash
+createdb briefr_intel   # or docker compose Postgres — see POSTGRES.md
+export DATABASE_URL=postgresql://briefr:pass@127.0.0.1:5432/briefr_intel
+
+python3 scripts/import_intel_snapshot.py \
+  --input briefr-intel-2026-07.pgdump.gz \
+  --database-url "$DATABASE_URL"
+```
+
+The import script:
+
+1. Validates manifest + dump catalog (no forbidden operator tables).
+2. Refuses targets where `users`, `sessions`, or `user_preferences` have rows.
+3. `pg_restore`s the allowlisted tables.
+4. Runs `alembic upgrade head` so schema matches the **current** BRIEFR code
+   (required when the bundle's `schema_revision` is behind `alembic_head_at_export`).
+
+Point BRIEFR at the database (`backend/.env`), restart, and verify:
+
+```bash
+curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool | grep cve_count
+bash deploy/briefr-doctor.sh
+```
+
+### 3. Upgrade to a newer monthly snapshot (intel seed only)
+
+On a **non-production** database that already holds intel tables but no operator
+data:
+
+```bash
+python3 scripts/import_intel_snapshot.py \
+  --input briefr-intel-2026-08.pgdump.gz \
+  --database-url "$DATABASE_URL" \
+  --replace-intel
+```
+
+`--replace-intel` truncates allowlisted intel tables before restore. **Never**
+use this against a database with watchlist, users, or webhook configuration.
+
+### 4. Upgrade BRIEFR app version after snapshot import
+
+Snapshot import brings **data** to the schema revision embedded in the bundle.
+When the installed BRIEFR release is newer:
+
+1. Import snapshot (steps 1–2) **or** restore operator backup (J5 runbook).
+2. Run production update: `bash /opt/briefr/deploy/briefr-update.sh` (runs Alembic + health gate).
+3. If update fails after partial Alembic, restore from pre-update backup (J5) — code rollback alone does not downgrade schema.
+
+Published snapshots lag the latest migration by design; `import_intel_snapshot.py`
+always runs `alembic upgrade head` after restore unless `--skip-migrations` is passed
+(advanced debugging only).
+
+### If import fails
+
+| Symptom | What to check |
+|---------|----------------|
+| `unsupported format_version` | Upgrade BRIEFR or wait for release supporting that bundle version |
+| `operator table … has rows` | Wrong database — use empty seed DB or greenfield |
+| `row count mismatch` | Partial restore — retry on clean DB; verify gzip integrity |
+| `alembic upgrade head failed` | `DATABASE_URL` credentials; migration logs in stderr |
+| Backend empty feed after import | Normal if bundle has low CVE count; wait for NVD sync or use fresher snapshot |
+
+---
+
 ## UFW / network hardening (operator)
 
 Recommended end state (documented, not enforced by app):

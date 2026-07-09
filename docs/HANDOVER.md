@@ -12,6 +12,15 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — Snapshot versioning + upgrade runbook (#TBD)
+
+**Merged:** #TBD — manifest `format_version: 1`; `verify_intel_snapshot.py` /
+`import_intel_snapshot.py`; OPERATIONS.md intel import & upgrade runbook.
+
+**Autonomous next (do not ask):** V1.5 product items (threat model UI, proof bench) remain parked per sprint.
+
+---
+
 ## 2026-07-09 — Wave 4 onboarding + external Postgres (#371)
 
 **Merged:** #371 — first-hour onboarding checklist (`GET /api/admin/onboarding`, dismiss);
