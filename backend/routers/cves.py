@@ -47,6 +47,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from correlation.engine import get_correlation_for_cve
+from read_cache import DEFAULT_TTL_SECONDS, cached_read
 from db.timeutil import utcnow_str
 from routers._validators import require_cve_id
 from database import (
@@ -198,54 +199,56 @@ async def stats(
         description="Comma-separated AI/ML framework tokens for ai_ml_alerts count",
     ),
 ):
-    db = await get_db()
-    try:
-        # Single conditional-aggregation scan instead of five COUNT(*) scans
-        # (PR #96 review). SUM(CASE ...) is NULL on an empty table, hence
-        # the `or 0` below.
-        rows = await db.execute_fetchall(
-            """
-            SELECT
-                SUM(CASE WHEN severity = 'CRITICAL' THEN 1 ELSE 0 END) AS critical,
-                SUM(CASE WHEN severity = 'HIGH' THEN 1 ELSE 0 END) AS high,
-                SUM(CASE WHEN is_kev = 1 THEN 1 ELSE 0 END) AS kev_count,
-                SUM(CASE WHEN patch_available = 1 THEN 1 ELSE 0 END) AS patched,
-                SUM(CASE WHEN published >= datetime('now', '-1 day') THEN 1 ELSE 0 END) AS last_24h,
-                SUM(CASE WHEN severity = 'CRITICAL' AND published >= datetime('now', '-1 day') THEN 1 ELSE 0 END)
-                  - SUM(CASE WHEN severity = 'CRITICAL' AND published >= datetime('now', '-2 days')
-                    AND published < datetime('now', '-1 day') THEN 1 ELSE 0 END) AS critical_delta,
-                SUM(CASE WHEN severity = 'HIGH' AND published >= datetime('now', '-1 day') THEN 1 ELSE 0 END)
-                  - SUM(CASE WHEN severity = 'HIGH' AND published >= datetime('now', '-2 days')
-                    AND published < datetime('now', '-1 day') THEN 1 ELSE 0 END) AS high_delta,
-                SUM(CASE WHEN is_kev = 1 AND published >= datetime('now', '-1 day') THEN 1 ELSE 0 END)
-                  - SUM(CASE WHEN is_kev = 1 AND published >= datetime('now', '-2 days')
-                    AND published < datetime('now', '-1 day') THEN 1 ELSE 0 END) AS kev_delta,
-                SUM(CASE WHEN patch_available = 1 AND published >= datetime('now', '-1 day') THEN 1 ELSE 0 END)
-                  - SUM(CASE WHEN patch_available = 1 AND published >= datetime('now', '-2 days')
-                    AND published < datetime('now', '-1 day') THEN 1 ELSE 0 END) AS patched_delta
-            FROM cves
-            """
-        )
-        stats_row = dict(rows[0]) if rows else {}
-        fw_list = _parse_framework_list(frameworks)
-        ai_ml_alerts = (
-            await count_ai_ml_profile_alerts(db, fw_list) if fw_list else 0
-        )
-    finally:
-        await db.close()
+    cache_key = f"stats:{frameworks or ''}"
 
-    return {
-        "critical": stats_row.get("critical") or 0,
-        "high": stats_row.get("high") or 0,
-        "kev_count": stats_row.get("kev_count") or 0,
-        "patched": stats_row.get("patched") or 0,
-        "last_24h": stats_row.get("last_24h") or 0,
-        "critical_delta": stats_row.get("critical_delta") or 0,
-        "high_delta": stats_row.get("high_delta") or 0,
-        "kev_delta": stats_row.get("kev_delta") or 0,
-        "patched_delta": stats_row.get("patched_delta") or 0,
-        "ai_ml_alerts": ai_ml_alerts,
-    }
+    async def build():
+        db = await get_db()
+        try:
+            rows = await db.execute_fetchall(
+                """
+                SELECT
+                    SUM(CASE WHEN severity = 'CRITICAL' THEN 1 ELSE 0 END) AS critical,
+                    SUM(CASE WHEN severity = 'HIGH' THEN 1 ELSE 0 END) AS high,
+                    SUM(CASE WHEN is_kev = 1 THEN 1 ELSE 0 END) AS kev_count,
+                    SUM(CASE WHEN patch_available = 1 THEN 1 ELSE 0 END) AS patched,
+                    SUM(CASE WHEN published >= datetime('now', '-1 day') THEN 1 ELSE 0 END) AS last_24h,
+                    SUM(CASE WHEN severity = 'CRITICAL' AND published >= datetime('now', '-1 day') THEN 1 ELSE 0 END)
+                      - SUM(CASE WHEN severity = 'CRITICAL' AND published >= datetime('now', '-2 days')
+                        AND published < datetime('now', '-1 day') THEN 1 ELSE 0 END) AS critical_delta,
+                    SUM(CASE WHEN severity = 'HIGH' AND published >= datetime('now', '-1 day') THEN 1 ELSE 0 END)
+                      - SUM(CASE WHEN severity = 'HIGH' AND published >= datetime('now', '-2 days')
+                        AND published < datetime('now', '-1 day') THEN 1 ELSE 0 END) AS high_delta,
+                    SUM(CASE WHEN is_kev = 1 AND published >= datetime('now', '-1 day') THEN 1 ELSE 0 END)
+                      - SUM(CASE WHEN is_kev = 1 AND published >= datetime('now', '-2 days')
+                        AND published < datetime('now', '-1 day') THEN 1 ELSE 0 END) AS kev_delta,
+                    SUM(CASE WHEN patch_available = 1 AND published >= datetime('now', '-1 day') THEN 1 ELSE 0 END)
+                      - SUM(CASE WHEN patch_available = 1 AND published >= datetime('now', '-2 days')
+                        AND published < datetime('now', '-1 day') THEN 1 ELSE 0 END) AS patched_delta
+                FROM cves
+                """
+            )
+            stats_row = dict(rows[0]) if rows else {}
+            fw_list = _parse_framework_list(frameworks)
+            ai_ml_alerts = (
+                await count_ai_ml_profile_alerts(db, fw_list) if fw_list else 0
+            )
+        finally:
+            await db.close()
+
+        return {
+            "critical": stats_row.get("critical") or 0,
+            "high": stats_row.get("high") or 0,
+            "kev_count": stats_row.get("kev_count") or 0,
+            "patched": stats_row.get("patched") or 0,
+            "last_24h": stats_row.get("last_24h") or 0,
+            "critical_delta": stats_row.get("critical_delta") or 0,
+            "high_delta": stats_row.get("high_delta") or 0,
+            "kev_delta": stats_row.get("kev_delta") or 0,
+            "patched_delta": stats_row.get("patched_delta") or 0,
+            "ai_ml_alerts": ai_ml_alerts,
+        }
+
+    return await cached_read(cache_key, DEFAULT_TTL_SECONDS, build)
 
 
 @list_router.get("/api/stats/timeline")
@@ -253,53 +256,58 @@ async def stats_timeline(
     days: int = Query(default=90, ge=1, le=365),
 ):
     """Daily CVE counts grouped by published date (calendar day, UTC)."""
-    db = await get_db()
-    try:
-        rows = await db.execute_fetchall(
-            """
-            SELECT DATE(published) AS date,
-                   COUNT(*) AS count,
-                   SUM(CASE WHEN severity = 'CRITICAL' THEN 1 ELSE 0 END) AS critical,
-                   SUM(CASE WHEN is_kev = 1 THEN 1 ELSE 0 END) AS kev
-            FROM cves
-            WHERE published IS NOT NULL
-              AND published != ''
-              AND DATE(published) >= DATE('now', ?)
-            GROUP BY DATE(published)
-            ORDER BY date ASC
-            """,
-            (f"-{days - 1} days",),
-        )
-    finally:
-        await db.close()
+    cache_key = f"stats_timeline:{days}"
 
-    by_date: dict[str, dict] = {}
-    for row in rows:
-        key = _timeline_date_key(row["date"])
-        if not key:
-            continue
-        by_date[key] = {
-            "date": key,
-            "count": row["count"],
-            "critical": row["critical"],
-            "kev": row["kev"],
-        }
+    async def build():
+        db = await get_db()
+        try:
+            rows = await db.execute_fetchall(
+                """
+                SELECT DATE(published) AS date,
+                       COUNT(*) AS count,
+                       SUM(CASE WHEN severity = 'CRITICAL' THEN 1 ELSE 0 END) AS critical,
+                       SUM(CASE WHEN is_kev = 1 THEN 1 ELSE 0 END) AS kev
+                FROM cves
+                WHERE published IS NOT NULL
+                  AND published != ''
+                  AND DATE(published) >= DATE('now', ?)
+                GROUP BY DATE(published)
+                ORDER BY date ASC
+                """,
+                (f"-{days - 1} days",),
+            )
+        finally:
+            await db.close()
 
-    end = datetime.now(timezone.utc).date()
-    start = end - timedelta(days=days - 1)
-    timeline: list[dict] = []
-    cursor = start
-    while cursor <= end:
-        key = cursor.isoformat()
-        entry = by_date.get(key)
-        timeline.append(
-            entry
-            if entry
-            else {"date": key, "count": 0, "critical": 0, "kev": 0}
-        )
-        cursor += timedelta(days=1)
+        by_date: dict[str, dict] = {}
+        for row in rows:
+            key = _timeline_date_key(row["date"])
+            if not key:
+                continue
+            by_date[key] = {
+                "date": key,
+                "count": row["count"],
+                "critical": row["critical"],
+                "kev": row["kev"],
+            }
 
-    return timeline
+        end = datetime.now(timezone.utc).date()
+        start = end - timedelta(days=days - 1)
+        timeline: list[dict] = []
+        cursor = start
+        while cursor <= end:
+            key = cursor.isoformat()
+            entry = by_date.get(key)
+            timeline.append(
+                entry
+                if entry
+                else {"date": key, "count": 0, "critical": 0, "kev": 0}
+            )
+            cursor += timedelta(days=1)
+
+        return timeline
+
+    return await cached_read(cache_key, DEFAULT_TTL_SECONDS, build)
 
 
 def _timeline_date_key(value) -> str:
@@ -1426,37 +1434,45 @@ async def unsuppress_correlation_finding(
 @intel_router.get("/api/kev/deadlines")
 async def kev_deadlines(
     sort: str = Query(default="recent", description="Sort order: recent (by dateAdded DESC) or urgent (by dueDate ASC)"),
+    limit: int = Query(default=500, ge=1, le=2000, description="Maximum rows returned"),
 ):
     order_clause = (
         "ORDER BY date_added DESC"
         if sort == "recent"
         else "ORDER BY due_date ASC"
     )
-    db = await get_db()
-    try:
-        rows = await db.execute_fetchall(
-            f"""
-            SELECT cve_id, product, short_description, required_action, due_date,
-                   date_added, vendor_project, vulnerability_name,
-                   known_ransomware, cwes, updated_at
-            FROM kev_deadlines
-            {order_clause}
-            """
-        )
-    finally:
-        await db.close()
+    cache_key = f"kev_deadlines:{sort}:{limit}"
 
-    entries = []
-    for row in rows:
-        entry = dict(row)
+    async def build():
+        db = await get_db()
         try:
-            parsed_cwes = json.loads(entry.get("cwes") or "[]")
-            entry["cwes"] = parsed_cwes if isinstance(parsed_cwes, list) else []
-        except (json.JSONDecodeError, TypeError):
-            entry["cwes"] = []
-        entry["ransomware_use"] = (
-            str(entry.get("known_ransomware") or "").strip().lower() == "known"
-        )
-        entries.append(entry)
+            rows = await db.execute_fetchall(
+                f"""
+                SELECT cve_id, product, short_description, required_action, due_date,
+                       date_added, vendor_project, vulnerability_name,
+                       known_ransomware, cwes, updated_at
+                FROM kev_deadlines
+                {order_clause}
+                LIMIT ?
+                """,
+                (limit,),
+            )
+        finally:
+            await db.close()
 
-    return {"data": entries}
+        entries = []
+        for row in rows:
+            entry = dict(row)
+            try:
+                parsed_cwes = json.loads(entry.get("cwes") or "[]")
+                entry["cwes"] = parsed_cwes if isinstance(parsed_cwes, list) else []
+            except (json.JSONDecodeError, TypeError):
+                entry["cwes"] = []
+            entry["ransomware_use"] = (
+                str(entry.get("known_ransomware") or "").strip().lower() == "known"
+            )
+            entries.append(entry)
+
+        return {"data": entries}
+
+    return await cached_read(cache_key, DEFAULT_TTL_SECONDS, build)

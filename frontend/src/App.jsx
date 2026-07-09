@@ -5,10 +5,6 @@ import { overlayDepth } from './hooks/useModalLayer.js'
 import Header from './components/Header.jsx'
 import Hero from './components/Hero.jsx'
 import StatsRow from './components/StatsRow.jsx'
-import TimelineHeatmap from './components/TimelineHeatmap.jsx'
-import WhatChangedPanel from './components/WhatChangedPanel.jsx'
-import MorningBrief from './components/MorningBrief.jsx'
-import CVEFeed from './components/CVEFeed.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
@@ -33,8 +29,13 @@ import { lazyWithReload } from './utils/lazyWithReload.js'
 import { ingestLogUrl } from './utils/adminLinks.js'
 import { getSavedStack } from './utils/cveFilters.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
+import useVisibilityAwareInterval from './hooks/useVisibilityAwareInterval.js'
 
 const BriefCharts = lazyWithReload(() => import('./components/BriefCharts.jsx'))
+const MorningBrief = lazyWithReload(() => import('./components/MorningBrief.jsx'))
+const TimelineHeatmap = lazyWithReload(() => import('./components/TimelineHeatmap.jsx'))
+const WhatChangedPanel = lazyWithReload(() => import('./components/WhatChangedPanel.jsx'))
+const CVEFeed = lazyWithReload(() => import('./components/CVEFeed.jsx'))
 const InvestigationPanel = lazyWithReload(() => import('./components/InvestigationPanel.jsx'))
 const IOCLookup = lazyWithReload(() => import('./components/IOCLookup.jsx'))
 const CaseStudies = lazyWithReload(() => import('./components/CaseStudies.jsx'))
@@ -90,12 +91,9 @@ function formatScheduleLabel(schedule) {
   return `${hh}:${mm} ${getTzAbbr(schedule.timezone)}`
 }
 
-function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSchedule, feedHealth }) {
+function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSchedule, feedHealth, tickEnabled = true }) {
   const [, tick] = useState(0)
-  useEffect(() => {
-    const id = setInterval(() => tick(n => n + 1), 60000)
-    return () => clearInterval(id)
-  }, [])
+  useVisibilityAwareInterval(() => tick(n => n + 1), 60000, { enabled: tickEnabled })
 
   const lastLabel = timeAgoMinutes(lastUpdated)
   const nextUtcLabel = nextRefreshUtc ? formatAbsolute(nextRefreshUtc, 'UTC') : null
@@ -133,7 +131,7 @@ function cycleFilter(filters) {
   return { ...filters, kev_only: false, poc_only: false, severity: null }
 }
 
-function BriefView({ stats, statsError, statsErrorRequestId, onRetryStats, filters, setFilters,
+function BriefView({ isActive, stats, statsError, statsErrorRequestId, onRetryStats, filters, setFilters,
                     timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
                     showAiAlerts, onAiAlertsClick, onStatTileClick, onOpenFullFeed, onSelectCVE,
                     feedHealth }) {
@@ -176,15 +174,22 @@ function BriefView({ stats, statsError, statsErrorRequestId, onRetryStats, filte
         onAiAlertsClick={onAiAlertsClick}
         onStatTileClick={onStatTileClick}
       />
-      <MorningBrief
-        stack={filters.stack}
-        onSelectCVE={onSelectCVE}
-        onOpenFullFeed={onOpenFullFeed}
-        reasonFilter={queueReasonFilter}
-        onReasonFilterChange={handleReasonFilterChange}
-        dueWindow={queueDueWindow}
-        onDueWindowClear={handleDueWindowClear}
-      />
+      <Suspense
+        fallback={
+          <p className="brief-charts-loading mono" aria-live="polite">Loading morning brief…</p>
+        }
+      >
+        <MorningBrief
+          stack={filters.stack}
+          onSelectCVE={onSelectCVE}
+          onOpenFullFeed={onOpenFullFeed}
+          reasonFilter={queueReasonFilter}
+          onReasonFilterChange={handleReasonFilterChange}
+          dueWindow={queueDueWindow}
+          onDueWindowClear={handleDueWindowClear}
+          fetchEnabled={isActive}
+        />
+      </Suspense>
       <Suspense
         fallback={
           <p className="brief-charts-loading mono" aria-live="polite">
@@ -192,11 +197,23 @@ function BriefView({ stats, statsError, statsErrorRequestId, onRetryStats, filte
           </p>
         }
       >
-        <BriefCharts onSelectCVE={onSelectCVE} onBucketClick={handleBucketClick} />
+        <BriefCharts
+          onSelectCVE={onSelectCVE}
+          onBucketClick={handleBucketClick}
+          pollEnabled={isActive}
+        />
       </Suspense>
       <div className="brief-intel-row">
-        <TimelineHeatmap filters={filters} onFiltersChange={handleFiltersChange} />
-        <WhatChangedPanel onSelectCVE={onSelectCVE} />
+        <Suspense fallback={null}>
+          <TimelineHeatmap
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            fetchEnabled={isActive}
+          />
+        </Suspense>
+        <Suspense fallback={null}>
+          <WhatChangedPanel onSelectCVE={onSelectCVE} fetchEnabled={isActive} />
+        </Suspense>
       </div>
       <FeedRefreshStatus
         lastUpdated={lastUpdated}
@@ -204,12 +221,13 @@ function BriefView({ stats, statsError, statsErrorRequestId, onRetryStats, filte
         timezone={timezone}
         refreshSchedule={refreshSchedule}
         feedHealth={feedHealth}
+        tickEnabled={isActive}
       />
     </>
   )
 }
 
-function FeedView({ filters, setFilters, selectedCVE, setSelectedCVE,
+function FeedView({ isActive, filters, setFilters, selectedCVE, setSelectedCVE,
                    digestOpen, setDigestOpen, digestCVEs, setDigestCVEs,
                    searchFocusTrigger, setSearchFocusTrigger, aboutOpen, setAboutOpen,
                    timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
@@ -238,8 +256,10 @@ function FeedView({ filters, setFilters, selectedCVE, setSelectedCVE,
         timezone={timezone}
         refreshSchedule={refreshSchedule}
         feedHealth={feedHealth}
+        tickEnabled={isActive}
       />
       <div className="content-grid">
+        <Suspense fallback={<TabLoading label="feed" />}>
         <CVEFeed
           filters={filters}
           onFiltersChange={handleFiltersChange}
@@ -254,6 +274,7 @@ function FeedView({ filters, setFilters, selectedCVE, setSelectedCVE,
           watchlist={watchlist}
           onWatchlistChange={onWatchlistChange}
         />
+        </Suspense>
         <Sidebar filters={filters} onFiltersChange={handleFiltersChange} />
       </div>
     </>
@@ -401,9 +422,9 @@ export default function App() {
 
   useEffect(() => {
     loadHealth()
-    const id = setInterval(loadHealth, 60000)
-    return () => clearInterval(id)
   }, [loadHealth])
+
+  useVisibilityAwareInterval(loadHealth, 60000)
 
   // Keep timezone state in sync when Header or server prefs dispatch changes
   useEffect(() => {
@@ -840,6 +861,7 @@ function AppLayout({
           <div className="app-tab-panel" hidden={activeTab !== 'brief'} aria-hidden={activeTab !== 'brief'}>
             <ToolErrorBoundary label="Brief">
               <BriefView
+                isActive={activeTab === 'brief'}
                 stats={stats}
                 statsError={statsError}
                 statsErrorRequestId={statsErrorRequestId}
@@ -863,6 +885,7 @@ function AppLayout({
             {mountedTabs.feed && (
               <ToolErrorBoundary label="Feed">
                 <FeedView
+                isActive={activeTab === 'feed'}
                 filters={filters}
                 setFilters={setFilters}
                 selectedCVE={selectedCVE}

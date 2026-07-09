@@ -107,6 +107,10 @@ def test_stats_single_query_matches_legacy_counts(tmp_path, monkeypatch):
 
     run_db_test(seed())
 
+    from read_cache import clear_read_cache
+
+    clear_read_cache()
+
     with TestClient(app) as client:
         body = client.get("/api/stats").json()
         assert body["critical"] == 1

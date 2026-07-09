@@ -23,6 +23,7 @@ from db.config import is_postgres, resolve_database_url
 from db.connection import get_pool_stats
 from feeds.case_study_feed import get_incident_feed_status
 from resilient_client import get_api_queue_status, get_feed_health
+from read_cache import DEFAULT_TTL_SECONDS, cached_read
 from scheduler import (
     get_ingest_intervals,
     get_ingest_status,
@@ -68,51 +69,55 @@ async def health(
         description="IANA timezone name for local time display (e.g. Asia/Kolkata, America/New_York)",
     ),
 ):
-    db = await get_db()
-    try:
-        cve_count = await get_cve_count(db)
-        last_updated = await get_last_updated(db)
-        nvd_sync_watermark = await get_nvd_sync_watermark(db)
-        timeline_summary = await get_timeline_activity_summary(db, days=90)
-    finally:
-        await db.close()
+    cache_key = f"health:{tz or ''}"
 
-    database_meta = _database_meta()
-    database_meta["timeline_days_with_data_90d"] = timeline_summary.get("days_with_data", 0)
-    database_meta["timeline_total_cves_90d"] = timeline_summary.get("total_cves", 0)
+    async def build():
+        db = await get_db()
+        try:
+            cve_count = await get_cve_count(db)
+            last_updated = await get_last_updated(db)
+            nvd_sync_watermark = await get_nvd_sync_watermark(db)
+            timeline_summary = await get_timeline_activity_summary(db, days=90)
+        finally:
+            await db.close()
 
-    now_utc = datetime.now(timezone.utc)
-    default_tz = os.environ.get("DEFAULT_TIMEZONE", "UTC")
-    display_tz = tz or default_tz
+        database_meta = _database_meta()
+        database_meta["timeline_days_with_data_90d"] = timeline_summary.get("days_with_data", 0)
+        database_meta["timeline_total_cves_90d"] = timeline_summary.get("total_cves", 0)
 
-    next_refresh_utc = get_next_scheduled_refresh_utc()
-    refresh_schedule = get_refresh_schedule()
-    ingest = get_ingest_status()
-    incidents_status = await get_incident_feed_status()
+        now_utc = datetime.now(timezone.utc)
+        default_tz = os.environ.get("DEFAULT_TIMEZONE", "UTC")
+        display_tz = tz or default_tz
 
-    response: dict = {
-        "status": "ok",
-        "cve_count": cve_count,
-        "database": database_meta,
-        "feeds": {"incidents": incidents_status, "sources": get_feed_health()},
-        "api_queue": get_api_queue_status(),
-        "last_updated": last_updated,
-        "nvd_sync_watermark": nvd_sync_watermark,
-        "refresh_in_progress": refresh_in_progress(),
-        "ingest": ingest,
-        "next_nvd_sync_at_utc": next_refresh_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "next_nvd_sync_in_user_tz": format_time_in_tz(next_refresh_utc, display_tz),
-        "ingest_intervals": get_ingest_intervals(),
-        "next_refresh_at_utc": next_refresh_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "next_refresh_in_user_tz": format_time_in_tz(next_refresh_utc, display_tz),
-        "next_refresh_in_scheduler_tz": format_time_in_tz(
-            next_refresh_utc, refresh_schedule["timezone"]
-        ),
-        "refresh_schedule": refresh_schedule,
-        "server_time_utc": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "server_time_local": format_time_in_tz(now_utc, display_tz),
-    }
-    return response
+        next_refresh_utc = get_next_scheduled_refresh_utc()
+        refresh_schedule = get_refresh_schedule()
+        ingest = get_ingest_status()
+        incidents_status = await get_incident_feed_status()
+
+        return {
+            "status": "ok",
+            "cve_count": cve_count,
+            "database": database_meta,
+            "feeds": {"incidents": incidents_status, "sources": get_feed_health()},
+            "api_queue": get_api_queue_status(),
+            "last_updated": last_updated,
+            "nvd_sync_watermark": nvd_sync_watermark,
+            "refresh_in_progress": refresh_in_progress(),
+            "ingest": ingest,
+            "next_nvd_sync_at_utc": next_refresh_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "next_nvd_sync_in_user_tz": format_time_in_tz(next_refresh_utc, display_tz),
+            "ingest_intervals": get_ingest_intervals(),
+            "next_refresh_at_utc": next_refresh_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "next_refresh_in_user_tz": format_time_in_tz(next_refresh_utc, display_tz),
+            "next_refresh_in_scheduler_tz": format_time_in_tz(
+                next_refresh_utc, refresh_schedule["timezone"]
+            ),
+            "refresh_schedule": refresh_schedule,
+            "server_time_utc": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "server_time_local": format_time_in_tz(now_utc, display_tz),
+        }
+
+    return await cached_read(cache_key, DEFAULT_TTL_SECONDS, build)
 
 
 @router.get("/api/health/live")
