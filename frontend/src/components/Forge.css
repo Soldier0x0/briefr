@@ -590,3 +590,144 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }
 }
+
+/* ── Rule proof bench (V1.5) ───────────────────────── */
+
+.fg-proof-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.fg-proof-head .fg-section-label {
+  margin: 0;
+}
+
+.fg-proof-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 0.625rem;
+  color: var(--text3);
+  border: 1px solid var(--border);
+  cursor: help;
+}
+
+.fg-proof-pack-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 0.6875rem;
+  color: var(--text2);
+}
+
+.fg-proof-select {
+  flex: 1;
+  max-width: 320px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 0.6875rem;
+}
+
+.fg-proof-lines-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.fg-proof-textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 0.6875rem;
+  line-height: 1.6;
+}
+
+.fg-proof-textarea:focus {
+  outline: none;
+  border-color: var(--border2);
+}
+
+.fg-proof-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.fg-proof-pack-hint {
+  font-size: 0.6875rem;
+  color: var(--text3);
+}
+
+.fg-proof-result {
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  padding: 10px 12px;
+}
+
+.fg-proof-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 0.6875rem;
+}
+
+.fg-proof-stat-hit {
+  color: var(--green);
+}
+
+.fg-proof-stat-miss {
+  color: var(--text3);
+}
+
+.fg-proof-fp {
+  margin-bottom: 10px;
+}
+
+.fg-proof-hit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fg-proof-hit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+}
+
+.fg-proof-hit-line {
+  font-size: 0.625rem;
+  color: var(--text3);
+}
+
+.fg-proof-hit-text {
+  font-size: 0.6875rem;
+  color: var(--text);
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.fg-proof-hit-pat {
+  font-size: 0.625rem;
+  color: var(--accent);
+}

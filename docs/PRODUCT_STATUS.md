@@ -1,6 +1,6 @@
 # BRIEFR product status
 
-**Last updated:** 2026-07-08  
+**Last updated:** 2026-07-09  
 **Purpose:** Single page for “what’s true in production today.” When README or beta docs disagree, this wins.
 
 ---
@@ -67,7 +67,8 @@
 | Postgres, auth, rate limits, API queue | Full `docker-compose.yml` (V2.0) |
 | Correlation v2 core (campaigns, typed IOC edges, hub suppression, dismiss, priority, lifecycle, feed badge, drawer chip) + **Phase 4–5** cluster list + admin correlation status (#364) | Correlation phase-4 tail (Forge/PDF/webhook enrichments, watchlist sort in feed) — see sprint Phase B |
 | Admin ops, webhooks, wallboard | STIX export (excluded from current loop) |
-| **Forge threat scenarios (V1.5 Phase 1)** | Rule proof bench, KEV backlog UI, IOC watchlist depth |
+| **Forge threat scenarios (V1.5 Phase 1)** | KEV backlog UI, IOC watchlist depth |
+| **Rule proof bench (V1.5 Phase 2)** — `POST /api/proof/run`; Forge hunt pack panel paste-and-run against saved Sigma | STIX export (excluded from current loop) |
 | Embeddings optional (fastembed) | Extended watchlist alert signals (campaign join, severity) |
 | Chart.js admin dashboard partial | Logrotate deploy artifacts (V1.4 theme) |
 

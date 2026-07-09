@@ -12,6 +12,15 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — V1.5 rule proof bench Phase 2 (#374)
+
+**Merged:** #374 — `POST /api/proof/run` (file-based Sigma proof); Forge hunt pack
+panel **Rule proof bench** (paste log lines, hit/miss report, FP hints).
+
+**Autonomous next (do not ask):** V1.5 Phase 3 KEV delta backlog job + UI.
+
+---
+
 ## 2026-07-09 — V1.5 threat model UI Phase 1 (#373)
 
 **Merged:** #373 — `GET /api/threat-model/scenarios`; Forge **Threat scenarios** view

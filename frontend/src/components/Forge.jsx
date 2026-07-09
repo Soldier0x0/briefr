@@ -4,8 +4,10 @@ import {
   fetchHuntPack,
   fetchThreatModelScenarios,
   generateHuntPack,
+  runProofBench,
 } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
+import Tooltip from './ui/Tooltip.jsx'
 import { ingestLogUrl } from '../utils/adminLinks.js'
 import { useAssetProfileOptional } from '../context/AssetProfileContext.jsx'
 import { profileToMatchAssets } from '../utils/assetProfileIo.js'
@@ -120,6 +122,166 @@ function LinkedCveRow({ cve, pack, generating, onGenerate }) {
         </button>
       )}
     </li>
+  )
+}
+
+function ProofBenchSection({ packs }) {
+  const [selectedPackId, setSelectedPackId] = useState(packs[0]?.id ?? null)
+  const [lines, setLines] = useState('')
+  const [result, setResult] = useState(null)
+  const [running, setRunning] = useState(false)
+  const [error, setError] = useState(null)
+  const [errorRequestId, setErrorRequestId] = useState(null)
+
+  const selectedPack = useMemo(
+    () => packs.find(p => p.id === selectedPackId) || packs[0],
+    [packs, selectedPackId],
+  )
+
+  useEffect(() => {
+    setSelectedPackId(packs[0]?.id ?? null)
+    setLines('')
+    setResult(null)
+    setError(null)
+    setErrorRequestId(null)
+  }, [packs])
+
+  const handleRun = useCallback(() => {
+    const splitLines = lines.split('\n')
+    if (!splitLines.some(l => l.trim())) {
+      setError('Paste at least one log line')
+      setErrorRequestId(null)
+      return
+    }
+    if (!selectedPack?.sigma_yaml) {
+      setError('Selected pack has no Sigma rule')
+      setErrorRequestId(null)
+      return
+    }
+    setRunning(true)
+    setError(null)
+    setErrorRequestId(null)
+    setResult(null)
+    runProofBench({ lines: splitLines, sigmaYaml: selectedPack.sigma_yaml })
+      .then(setResult)
+      .catch(err => {
+        setError(err.message || 'Proof run failed')
+        setErrorRequestId(err?.requestId || null)
+        notifyApiError(err)
+      })
+      .finally(() => setRunning(false))
+  }, [lines, selectedPack])
+
+  if (!packs.length) return null
+
+  const hitRatePct = result ? Math.round((result.hit_rate || 0) * 100) : 0
+
+  return (
+    <section className="fg-section" aria-label="Rule proof bench">
+      <div className="fg-proof-head">
+        <h4 className="fg-section-label mono">RULE PROOF BENCH</h4>
+        <Tooltip text="Paste sample log lines and run the pack's Sigma keywords/selection strings against them — file-based, no live SIEM. Hit rate counts lines matching any extracted pattern.">
+          <span className="fg-proof-help mono" tabIndex={-1}>?</span>
+        </Tooltip>
+      </div>
+      {packs.length > 1 && (
+        <label className="fg-proof-pack-select">
+          <span className="mono">PACK</span>
+          <select
+            className="fg-proof-select mono"
+            value={selectedPack?.id ?? ''}
+            onChange={e => setSelectedPackId(Number(e.target.value))}
+          >
+            {packs.map(pack => (
+              <option key={pack.id} value={pack.id}>{pack.title}</option>
+            ))}
+          </select>
+        </label>
+      )}
+      <label className="fg-proof-lines-label">
+        <span className="fg-siem-label mono">LOG LINES (one per row)</span>
+        <textarea
+          className="fg-proof-textarea mono"
+          rows={6}
+          value={lines}
+          onChange={e => setLines(e.target.value)}
+          placeholder="// Paste nginx, auth, or app logs to test the Sigma rule…"
+          spellCheck={false}
+        />
+      </label>
+      <div className="fg-proof-actions">
+        <button
+          type="button"
+          className="fg-generate-btn mono"
+          onClick={handleRun}
+          disabled={running || !lines.trim()}
+        >
+          {running ? 'RUNNING…' : 'RUN PROOF'}
+        </button>
+        {selectedPack && (
+          <span className="fg-proof-pack-hint mono">{selectedPack.title}</span>
+        )}
+      </div>
+      {error && (
+        <p className="fg-error mono">
+          // {error}
+          {errorRequestId && (
+            <>
+              {' '}
+              (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
+                ref: {errorRequestId}
+              </a>)
+            </>
+          )}
+        </p>
+      )}
+      {result && (
+        <div className="fg-proof-result">
+          <div className="fg-proof-stats mono">
+            <Tooltip text="Lines in the paste that matched at least one Sigma keyword or selection string.">
+              <span className="fg-proof-stat fg-proof-stat-hit">
+                HITS {result.hit_count}/{result.total_lines}
+              </span>
+            </Tooltip>
+            <Tooltip text="Non-empty lines with no pattern match in this run.">
+              <span className="fg-proof-stat fg-proof-stat-miss">
+                MISSES {result.miss_count}
+              </span>
+            </Tooltip>
+            <Tooltip text="hit_count ÷ total non-empty lines.">
+              <span className="fg-proof-stat">
+                RATE {hitRatePct}%
+              </span>
+            </Tooltip>
+          </div>
+          {result.false_positive_hints?.length > 0 && (
+            <div className="fg-proof-fp">
+              <span className="fg-siem-label mono">FALSE POSITIVE HINTS</span>
+              <ul className="fg-pattern-list">
+                {result.false_positive_hints.map((hint, i) => (
+                  <li key={i} className="fg-pattern">{hint}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {result.sample_hits?.length > 0 ? (
+            <ul className="fg-proof-hit-list">
+              {result.sample_hits.map(hit => (
+                <li key={hit.line_number} className="fg-proof-hit">
+                  <span className="fg-proof-hit-line mono">L{hit.line_number}</span>
+                  <code className="fg-proof-hit-text mono">{hit.line}</code>
+                  <span className="fg-proof-hit-pat mono">
+                    matched: {(hit.matched_patterns || []).join(', ')}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="fg-panel-empty mono">// No hits — try different log lines or check Sigma keywords</p>
+          )}
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -301,6 +463,8 @@ function HuntPackPanel({ techniqueId, onPackSaved }) {
           ))}
         </section>
       )}
+
+      {packs.length > 0 && <ProofBenchSection packs={packs} />}
 
       <section className="fg-section" aria-label="SIEM quick-search queries">
         <h4 className="fg-section-label mono">SIEM QUICK SEARCHES</h4>
