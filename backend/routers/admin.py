@@ -1895,6 +1895,26 @@ async def check_integrity(request: Request):
     }
 
 
+@router.get("/diagnostics/support-pack")
+async def export_support_pack(
+    request: Request,
+    log_limit: int = Query(200, ge=1, le=500),
+):
+    """Export a redacted support pack (health + logs, no secrets) for operators."""
+    from diagnostics.support_pack import build_support_pack
+
+    payload = await build_support_pack(log_limit=log_limit)
+    await audit(request, "diagnostics.support_pack", "export")
+    stamp = payload.get("generated_at", "unknown").replace(":", "").replace("-", "")
+    filename = f"briefr-support-pack-{stamp}.json"
+    body = json.dumps(payload, indent=2, default=str, ensure_ascii=False)
+    return Response(
+        content=body,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.get("/ratelimit")
 async def get_ratelimit_dashboard():
     return {

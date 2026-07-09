@@ -1022,6 +1022,13 @@ Response: `{ok, checks: [{name, passed, detail}], duration_ms}`.
 Runs `PRAGMA integrity_check` and `PRAGMA foreign_key_check`.
 Response: `{ok, integrity_ok, foreign_keys_ok, message, foreign_key_violations}`.
 
+### GET /api/admin/diagnostics/support-pack
+Admin-gated export of a redacted operator support pack (health + logs, no secrets). Suitable for attaching to support tickets or saving via `deploy/briefr-doctor.sh --support-pack`.
+
+Params: `log_limit` (1–500, default 200) — number of ring-buffer log lines to include.
+
+Response: JSON attachment (`Content-Disposition: attachment`) with `{support_pack_version, generated_at, version, environment, health, database, security, correlation, diagnostics: {smoke, integrity}, scheduler, logs}`. Database URLs and log `extra` fields matching secret patterns are redacted. Audit: `diagnostics.support_pack`.
+
 ### POST /api/admin/restart
 Body `{drain?: bool}`. When `drain=true`: waits up to 120s for all job locks to clear before restarting. Returns `{status: "draining"|"restarting"}`.
 
