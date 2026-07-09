@@ -340,7 +340,7 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 
 - Core fields from `cves` table
 - `watchlist_state`, `watchlist_snooze_until` when the CVE is on the active watchlist (same semantics as list feed)
-- `kev_date_added`, `kev_due_date`, `kev_vendor_project`, `kev_vulnerability_name`, `kev_ransomware_use` (boolean), `kev_cwes[]`, `techniques[]`, `public_exploits[]`, `greynoise_configured` (boolean), `greynoise_scans[]` (always `[]` on detail — use on-demand endpoint), `otx_pulses[]`, `otx_configured`, `osv_packages[]`
+- `kev_date_added`, `kev_due_date`, `kev_vendor_project`, `kev_vulnerability_name`, `kev_ransomware_use` (boolean), `kev_cwes[]`, `techniques[]`, `public_exploits[]`, `exploit_provenance` (object — see below), `greynoise_configured` (boolean), `greynoise_scans[]` (always `[]` on detail — use on-demand endpoint), `otx_pulses[]`, `otx_configured`, `osv_packages[]`
 
 **Error responses:**
 

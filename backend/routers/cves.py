@@ -76,6 +76,12 @@ from feeds.osv import fetch_osv_by_cve
 from feeds.otx import load_otx_pulses_for_cve
 from ml.embeddings import embeddings_enabled, find_similar_cves
 from scoring.environment import classify_environment
+from intel.provenance import (
+    derive_correlation_provenance,
+    derive_detection_provenance,
+    derive_exploit_provenance,
+    otx_configured_from_env,
+)
 from scoring.priority import correlation_escalation, derive_operational_priority
 from scoring.risk import calculate_momentum, calculate_risk_score
 from scoring.threat import calculate_threat_score
@@ -942,6 +948,7 @@ async def get_cve(cve_id: str):
             except (json.JSONDecodeError, TypeError):
                 cve["kev_cwes"] = []
         from database import get_feed_cache
+        from db.cache import get_cve_exploits_latest_fetched_at, get_feed_cache_timestamp
 
         ssvc_cached = await get_feed_cache(db, f"ssvc:{cve_key}", max_age_hours=24 * 365)
         if ssvc_cached and isinstance(ssvc_cached.get("decisions"), dict):
@@ -957,10 +964,18 @@ async def get_cve(cve_id: str):
                 has_poc=bool(cve.get("has_poc")),
                 source_urls=cve.get("source_urls"),
             )
+            cve["exploit_provenance"] = await derive_exploit_provenance(
+                db,
+                cve_key,
+                used_nvd_fallback=bool(cve["public_exploits"])
+                and not await get_cve_exploits_latest_fetched_at(db, cve_key)
+                and not await get_feed_cache_timestamp(db, f"sploitus:{cve_key}"),
+            )
             await db.commit()
         except Exception as exc:
             logger.error("Sploitus load failed for %s: %s", cve_id, exc)
             cve["public_exploits"] = []
+            cve["exploit_provenance"] = await derive_exploit_provenance(db, cve_key)
 
         greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
         cve["greynoise_configured"] = bool(greynoise_key)
@@ -1148,6 +1163,7 @@ async def cve_detection(
     detection_context = None
     siem_queries: dict = {}
     yara_rules: list = []
+    detection_provenance = None
     db = await get_db()
     try:
         # Get CVE metadata for context
@@ -1213,6 +1229,12 @@ async def cve_detection(
 
         yara_rules = await find_yara_rules_for_cve(db, cve_upper)
 
+        detection_provenance = await derive_detection_provenance(
+            db,
+            cve_upper,
+            technique_ids=technique_ids,
+        )
+
     except Exception as exc:
         logger.exception("Detection lookup failed for %s", cve_upper)
         raise HTTPException(
@@ -1233,6 +1255,7 @@ async def cve_detection(
         "detection_context": detection_context,
         "siem_queries": siem_queries,
         "yara_rules": yara_rules,
+        "provenance": detection_provenance,
     }
 
 
@@ -1255,6 +1278,10 @@ async def cve_correlation(
     try:
         result = await get_correlation_for_cve(
             db, cve_id, user_sector=sector.strip()
+        )
+        result["provenance"] = derive_correlation_provenance(
+            result,
+            otx_configured=otx_configured_from_env(),
         )
         await db.commit()
     finally:
