@@ -52,10 +52,48 @@ def client(tmp_path, monkeypatch):
 
     monkeypatch.setattr(_settings, "rate_limit_enabled", False)
 
+    from database import get_db, init_db
+    from tests.conftest import run_db_test
+
+    run_db_test(init_db())
+
+    async def seed_user() -> None:
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO users (id, username, password_hash, role, is_active)
+                VALUES (1, 'pytest-admin', 'hash', 'admin', 1)
+                """
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(seed_user())
+
     from main import app
 
     with TestClient(app, raise_server_exceptions=False) as client:
         yield client
+
+
+@pytest.fixture(autouse=True)
+def _reset_user_role(client):
+    from database import get_db
+    from tests.conftest import run_db_test
+
+    async def reset() -> None:
+        db = await get_db()
+        try:
+            await db.execute(
+                "UPDATE users SET role = 'admin', is_active = 1 WHERE id = 1"
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(reset())
 
 
 @pytest.mark.parametrize("method,path", PROTECTED_ROUTES)
@@ -66,9 +104,40 @@ def test_admin_routes_reject_unauthenticated(client, method, path):
 
 @pytest.mark.parametrize("method,path", PROTECTED_ROUTES)
 def test_admin_routes_reject_non_admin_role(client, auth_token, method, path):
+    from database import get_db
+    from tests.conftest import run_db_test
+
+    async def demote() -> None:
+        db = await get_db()
+        try:
+            await db.execute("UPDATE users SET role = 'analyst' WHERE id = 1")
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(demote())
     client.cookies.set("briefr_at", auth_token(role="analyst"))
     resp = client.request(method, path, json={})
     assert resp.status_code == 403, f"{method} {path} returned {resp.status_code}, want 403"
+
+
+def test_admin_routes_reject_demoted_admin_jwt(client, auth_token):
+    """JWT may still claim admin after DB role demotion — must 403 immediately."""
+    from database import get_db
+    from tests.conftest import run_db_test
+
+    async def demote() -> None:
+        db = await get_db()
+        try:
+            await db.execute("UPDATE users SET role = 'analyst' WHERE id = 1")
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(demote())
+    client.cookies.set("briefr_at", auth_token(role="admin"))
+    resp = client.get("/api/admin/system")
+    assert resp.status_code == 403
 
 
 def test_login_failure_body_stays_generic(client):

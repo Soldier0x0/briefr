@@ -61,11 +61,31 @@ async def require_user(request: Request) -> dict:
 async def require_admin(request: Request) -> dict:
     """Admin routes require a valid login session with the admin role.
     The legacy X-BRIEFR-Admin-Key path was removed (Sprint A0) — it failed
-    open when the key was unset."""
+    open when the key was unset. Role is re-read from the users table so
+    demotions take effect without waiting for JWT expiry."""
     payload = await require_user(request)
-    if payload.get("role") != "admin":
+    try:
+        user_id = int(payload.get("sub") or 0)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if user_id <= 0:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    from auth.repo import get_user_by_id
+
+    db = await get_db()
+    try:
+        user = await get_user_by_id(db, user_id)
+    finally:
+        await db.close()
+
+    if not user or not user.get("is_active", 1):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
-    return payload
+
+    request.state.user_role = user["role"]
+    return {**payload, "role": user["role"]}
 
 
 async def audit(request: Request, action: str, target: str = "") -> None:
