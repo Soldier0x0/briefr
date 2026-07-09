@@ -87,6 +87,15 @@ async def list_watchlist_entries(db: DbConnection) -> list[dict]:
     return [dict(row) for row in rows]
 
 
+async def list_pinned_cve_ids(db: DbConnection) -> list[str]:
+    """Return CVE IDs pinned on the watchlist (excludes snoozed rows)."""
+    sql = (
+        "SELECT cve_id FROM watchlist WHERE state = 'pin' ORDER BY cve_id ASC"
+    )
+    rows = await db.execute_fetchall(sql)
+    return [row["cve_id"] for row in rows]
+
+
 async def get_watchlist_entry(db: DbConnection, cve_id: str) -> dict | None:
     """Return one active watchlist row, or None."""
     active = _active_sql(db)

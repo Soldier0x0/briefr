@@ -1000,7 +1000,7 @@ Audit: `scheduler.run.{job_id}`.
 Body `[{key, value}, ...]`. Writes all keys to `.env` and triggers a restart. Returns `400` if any key is not in the allowlist. Audit: `config.apply`.
 
 ### GET /api/admin/webhooks/log
-Params: `event_type`, `limit`, `offset`. Returns dedupe log `{rows: [{alert_type, target, alerted_at}], total}`. `event_type` accepts canonical names (`kev_alert`, `backup_failure`) and legacy aliases.
+Params: `event_type`, `limit`, `offset`. Returns dedupe log `{rows: [{alert_type, target, alerted_at}], total}`. `event_type` accepts canonical names (`kev_alert`, `backup_failure`, `watchlist_alert`) and legacy aliases.
 
 ### GET /api/admin/webhooks/destinations
 Returns `{destinations: [{id, kind, label, enabled, event_types, source, health_source}]}` — merged env + DB config (secrets not included).

@@ -25,7 +25,7 @@
 | **LLM detection context (K4)** | Scheduler job `detection_context_llm` extracts `{paths, params, keywords, method}` artifacts from CVE/exploit text into `detection_ctx:{cve_id}` via LLM router (`DETECTION_CONTEXT_LLM_ENABLED=0` default). Vision (Cerebras `gemma-4-31b`) deferred until image inputs exist. |
 | **Cache retention (C3)** | Daily `cache_retention_cleanup` job sweeps stale `ioc_cache` / `feed_cache` rows and ages out `epss_history`, `cve_change_history`, and OTX mirror tables; read-path TTLs unchanged. Admin `change_history_old` purge fixed (`detected_at`). |
 | **Admin** | Security, backups, job status, config (V1.4 operator features largely shipped). **Config editor:** per-field Save on Admin → API keys & config — immediate save for API keys/toggles; rows tagged `restart` use Save & restart (Wave 1). **Notifications:** shared toast tray pauses auto-dismiss on hover/focus; errors/warnings persist until dismissed; success/info auto-dismiss in 8s; max 4 visible; copy-ref shows “Copied” feedback; backend restart shows a top banner (health poll) instead of a transient restart toast (Wave 1 PR 2 / H1a). **User stack:** Feed stack input persists via `GET/PUT /api/me/stack` (Wave 2 PR 3–4); legacy `briefr_stack` localStorage migrates on login. KEV-on-stack webhooks and wallboard use `BRIEFR_STACK_TERMS` when set, otherwise the newest saved user stack. **Display prefs:** Admin → Display settings and header timezone persist via `GET/PATCH /api/me/preferences` (Wave 2 PR 5); legacy `briefr_*` display/timezone localStorage migrates on login. **My Stack inventory:** session-only by default; optional “Remember on server” toggle (Wave 2 PR 6) stores asset profile JSON on `user_preferences` and restores on sign-in. Production posture self-check (Sprint A6): startup logs one warning per unsafe flag (`RATE_LIMIT_ENABLED=0`, `AUTH_COOKIE_SECURE=0`, tokenless wallboard) when `BRIEFR_ENV=production`; the Security panel shows the same warnings. |
-| **Snooze** | Removed from UI (#137); future **Monitor** alerts not built. |
+| **Snooze** | Removed from UI (#137). **Watchlist monitor alerts** ship via `watchlist_alert` webhooks when pinned CVEs enter KEV or show EPSS/PoC changes (scheduler job `watchlist_monitor_alerts`). |
 | **Theme** | Dark only. |
 | **Docker compose** | Postgres compose exists; full V2.0 platform compose not shipped. |
 
@@ -67,7 +67,7 @@
 | Postgres, auth, rate limits, API queue | Full `docker-compose.yml` (V2.0) |
 | Correlation v2 core (campaigns, typed IOC edges, hub suppression, dismiss, priority, lifecycle, feed badge, drawer chip) + **Phase 4–5** cluster list + admin correlation status (#364) | Correlation phase-4 tail (Forge/PDF/webhook enrichments, watchlist sort in feed) — see sprint Phase B |
 | Admin ops, webhooks, wallboard | V1.5 threat-model UI depth, STIX |
-| Embeddings optional (fastembed) | Monitor/watchlist **alerts** (product idea) |
+| Embeddings optional (fastembed) | Extended watchlist alert signals (campaign join, severity) |
 | Chart.js admin dashboard partial | Logrotate deploy artifacts (V1.4 theme) |
 
 Details: [`ROADMAP.md`](ROADMAP.md). Historical beta specs → `docs/archive/` (phase 2).
