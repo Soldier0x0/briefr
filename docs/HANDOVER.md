@@ -14,13 +14,7 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ## 2026-07-09 — Visual/ops UX audit: execution order + cross-surface methodology
 
-**Docs:** `docs/planning/BRIEFR_VISUAL_OPERATIONAL_UX_AUDIT.md` updated with **approved PR sequence**:
-
-`PR1 → PR3 → PR4 → PR2 → PR10 → PR7 → PR5 → PR6 → PR9 → PR11 → PR8`
-
-PR12 (multi-webhook) and PR13 (DB explorer) explicitly **deferred**.
-
-**Methodology:** Each PR fixes a named **invariant** everywhere the pattern appears (grep/graphify sweep + guardrail test), not only screenshot surfaces. New doc sections: Cross-Surface Correction Methodology, Codebase-Wide Pattern Inventory.
+**Docs:** `docs/planning/BRIEFR_VISUAL_OPERATIONAL_UX_AUDIT.md` updated with **approved PR sequence**, **product SWOT**, **implementation pass SWOT**, cross-surface methodology, and pattern inventory.
 
 **Next implementation PR:** PR1 (scheduler state + catalog) on branch `cursor/scheduler-state-catalog-489a`.
 

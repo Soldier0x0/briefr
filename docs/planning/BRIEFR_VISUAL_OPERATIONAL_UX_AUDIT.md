@@ -29,6 +29,57 @@ The 36 observed issues are **real product-quality gaps**, not documentation drif
 
 ---
 
+## Product SWOT (2026-07-09)
+
+Strategic snapshot of **BRIEFR as a whole** — codebase, product, and operator experience — at audit time. Informs *why* the correction pass prioritizes trust and coherence over new features.
+
+### Strengths
+
+| Area | Notes |
+|------|-------|
+| **Positioning** | Self-hosted CVE intelligence + detection-engineering workflow — clear niche vs generic SIEM dashboards |
+| **Architecture** | FastAPI + PostgreSQL, APScheduler ingest mesh, correlation engine, resilient API client, admin control plane |
+| **Depth** | NVD / KEV / EPSS / MITRE / OTX / incidents, detail drawer, IOC, watchlist, backups, support pack |
+| **Product identity** | Dark ops aesthetic, density-first UI, `PRODUCT_STATUS.md` as runtime source of truth |
+| **Recent hardening** | JWT role revalidation, EPSS webhook dedupe, ops charts, deploy/logrotate docs (#391–#396) |
+
+### Weaknesses
+
+| Area | Notes |
+|------|-------|
+| **Ops UX coherence** | State semantics, labels, tooltips, toasts contradict backend truth — erodes trust before core value lands |
+| **Metadata fragmentation** | `catalog.js`, queue ops, config schema, audit labels incomplete vs scheduler/backend reality |
+| **False health signals** | Postgres integrity stubbed to always OK; green posture beside real warnings |
+| **Test / QA gaps** | No frontend unit suite; limited Playwright/visual coverage — UI regressions are manual |
+| **Dialect dual-path** | Shared SQL via SQLite placeholders + PG adapt — prod-only breakage risk |
+| **Doc / graph drift** | Periodic snapshots and `graphify-out/` lag `main` |
+
+### Opportunities
+
+| Area | Notes |
+|------|-------|
+| **Operator spine** | Complete catalog + honest diagnostics + structured logs → credible daily-driver for security teams |
+| **Differentiation** | Detection context, correlation, hunt packs — strong if env-enabled and UX-polished |
+| **Enterprise-adjacent** | Wallboard, support pack, admin ops — without full V2 platform scope |
+| **Correction pass ROI** | Fix perception and trust cheaply before large feature investment |
+| **Self-hosted story** | Integrated workflow beats raw CVE volume from free NVD alone |
+
+### Threats
+
+| Area | Notes |
+|------|-------|
+| **Upstream instability** | NVD 503s, rate limits — users blame product, not NIST |
+| **Self-hosted misconfig** | Config apply / restart / CORS mistakes (PR8-class) damage trust fast |
+| **Scope creep** | Multi-webhook, DB explorer, STIX, V2 — stall core morning-brief experience |
+| **Competition** | Commercial TI + free feeds — must win on integrated analyst workflow |
+| **Maintainer bandwidth** | 11 PRs + sprint backlog — risk of half-finished surfaces |
+
+### SWOT conclusion
+
+BRIEFR is **technically substantive** with a **distinct product identity**, but **weaker on operational polish and trust signals** than on backend capability. The approved 11-PR pass targets the largest weakness cluster without blocking on HIGH-risk optional work (PR12/PR13).
+
+---
+
 ## Audit Scope
 
 | In scope | Out of scope |
@@ -878,6 +929,19 @@ Solid arrows = hard dependency. PR10 and PR2 have **no** upstream deps; executio
 **Explicitly deferred (do not interrupt this pass):** PR12 multi-webhook endpoints, PR13 DB explorer — both HIGH risk / LARGE scope.
 
 **Why this order:** Screenshots showed **symptoms**; the first four PRs remove contradictions users see on every visit (DISABLED+Pause, raw ids, sticky tooltips, bad toasts, opaque queue rows). PR10 fixes **misleading health signals** before investing in chart readability. PR7 gives operators a failure drill-down path before PR5–PR9 touch more surfaces. PR8 stays last because restart/reschedule/CORS blast radius is highest and benefits from PR1 labels, PR10 honest checks, and PR7 structured logs.
+
+### Implementation pass SWOT (11 PRs)
+
+SWOT on the **approved correction pass itself** — not a second product review.
+
+| | |
+|--|--|
+| **Strengths** | Fixes root themes (7 shared causes), not 36 one-offs; trust-first ordering (PR10, PR7); PR12/PR13 deferred; cross-surface sweeps + guardrail tests per PR |
+| **Weaknesses** | Still 11 sequential PRs; KEV chart needs runtime DB validation; tooltip/toast unification touches many files; graphify graph stale until `graphify update .` |
+| **Opportunities** | PR1 catalog becomes SSOT for all operator copy; PR7+PR10 make support pack and health trustworthy on Postgres; shared primitives speed future admin work |
+| **Threats** | **PR8** highest blast radius (restart/CORS/reschedule); **PR2** broad feed call-site audit; DISABLED semantics may surface “new” confusion before copy improves; chart/responsive fixes lack automated visual regression |
+
+**Verdict:** Proceed — start **PR1** (low risk, highest visible leverage). Treat **PR8** as a mini-project with extra verification; **PR6** may split data validation vs chart replacement if prod `due_date` is malformed.
 
 ---
 
