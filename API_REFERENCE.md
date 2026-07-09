@@ -79,6 +79,8 @@ Each CVE object may include `kev_due_date` (`YYYY-MM-DD` from `kev_deadlines.due
 
 - `watchlist_state` — `"pin"`, `"snooze"`, or omitted when not on the watchlist
 - `watchlist_snooze_until` — UTC `YYYY-MM-DD HH:MM:SS` when `watchlist_state` is `"snooze"`, otherwise omitted
+- `member_of_campaign` — `true` when the CVE is a member of a nightly-built OTX pulse campaign cluster; `false` otherwise
+- `campaign_lifecycle` — `"active"`, `"emerging"`, `"declining"`, or `"stale"` when `member_of_campaign` is `true`; omitted otherwise (cheapest lifecycle when multiple campaigns apply)
 
 **Error responses:**
 

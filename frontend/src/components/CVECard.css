@@ -319,6 +319,25 @@
   border-color: var(--border);
 }
 
+.badge-campaign {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.badge-campaign-emerging {
+  color: var(--amber);
+  background: var(--amber-dim);
+  border-color: color-mix(in srgb, var(--amber) 45%, var(--border));
+}
+
+.badge-campaign-declining,
+.badge-campaign-stale {
+  color: var(--text2);
+  background: var(--bg3);
+  border-color: var(--border);
+}
+
 .badge-patch {
   color: var(--green);
   background: var(--green-dim);

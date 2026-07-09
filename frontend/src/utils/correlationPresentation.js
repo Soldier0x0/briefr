@@ -15,6 +15,50 @@ const CONFIRMATION_LABELS = {
   urlhaus_active: 'URLhaus active distribution',
 }
 
+/** Analyst-facing lifecycle labels for feed campaign badges (C-Evolve-2). */
+export const CAMPAIGN_LIFECYCLE_LABELS = {
+  active: 'Active campaign',
+  emerging: 'Emerging campaign',
+  declining: 'Declining campaign',
+  stale: 'Stale campaign',
+}
+
+/**
+ * Discoverable tooltip for the feed "Campaign" badge (PRODUCT.md principle 1).
+ * @param {string | null | undefined} lifecycle
+ * @returns {string}
+ */
+export function campaignBadgeTooltip(lifecycle) {
+  const key = String(lifecycle || 'active').toLowerCase()
+  const label = CAMPAIGN_LIFECYCLE_LABELS[key] || 'Campaign cluster'
+  if (key === 'active') {
+    return `${label} — this CVE is grouped with related vulnerabilities in an OTX pulse cluster with recent KEV, PoC, or EPSS activity. Open the drawer for full correlation details.`
+  }
+  if (key === 'emerging') {
+    return `${label} — newly linked to an OTX pulse cluster within the last week. Open the drawer for full correlation details.`
+  }
+  if (key === 'declining') {
+    return `${label} — grouped in an OTX pulse cluster with no recent member activity (30+ days). Open the drawer for full correlation details.`
+  }
+  if (key === 'stale') {
+    return `${label} — grouped in an older OTX pulse cluster (12+ months) without KEV or PoC boosters. Open the drawer for full correlation details.`
+  }
+  return `${label} — BRIEFR grouped this CVE with related vulnerabilities from shared OTX pulse intelligence. Open the drawer for full correlation details.`
+}
+
+/**
+ * CSS modifier for lifecycle-specific badge styling.
+ * @param {string | null | undefined} lifecycle
+ * @returns {string}
+ */
+export function campaignLifecycleClass(lifecycle) {
+  const key = String(lifecycle || 'active').toLowerCase()
+  if (key === 'emerging') return 'badge-campaign-emerging'
+  if (key === 'declining') return 'badge-campaign-declining'
+  if (key === 'stale') return 'badge-campaign-stale'
+  return 'badge-campaign-active'
+}
+
 export const SUPPRESSION_REASONS = [
   { id: 'shared_hosting', label: 'Shared hosting / CDN' },
   { id: 'known_scanner', label: 'Known scanner' },
