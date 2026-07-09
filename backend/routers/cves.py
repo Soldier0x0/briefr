@@ -902,11 +902,10 @@ async def get_cve_related(
     return {"data": related, "meta": {"method": method}}
 
 
-@detail_router.get("/api/cves/{cve_id}")
-async def get_cve(cve_id: str):
-    cve_id = require_cve_id(cve_id)
+async def _load_cve_detail_from_db(cve_key: str) -> dict:
+    """Fast path: DB reads only so the pool connection is not held during I/O."""
+    from database import get_feed_cache
 
-    cve_key = cve_id
     db = await get_db()
     try:
         rows = await db.execute_fetchall(
@@ -921,7 +920,7 @@ async def get_cve(cve_id: str):
             (cve_key,),
         )
         if not rows:
-            raise HTTPException(status_code=404, detail=f"CVE {cve_id} not found")
+            raise HTTPException(status_code=404, detail=f"CVE {cve_key} not found")
 
         cve = _row_to_cve_dict(rows[0])
         wl = await get_watchlist_entry(db, cve_key)
@@ -955,73 +954,115 @@ async def get_cve(cve_id: str):
                 cve["kev_cwes"] = parsed_cwes if isinstance(parsed_cwes, list) else []
             except (json.JSONDecodeError, TypeError):
                 cve["kev_cwes"] = []
-        from database import get_feed_cache
-        from db.cache import get_cve_exploits_latest_fetched_at, get_feed_cache_timestamp
-
         ssvc_cached = await get_feed_cache(db, f"ssvc:{cve_key}", max_age_hours=24 * 365)
         if ssvc_cached and isinstance(ssvc_cached.get("decisions"), dict):
             cve["ssvc"] = ssvc_cached
         cve["techniques"] = await get_techniques_for_cve(db, cve_key)
         cve["atlas_techniques"] = await get_atlas_techniques_for_cve(db, cve_key)
         cve["atlas_case_studies"] = await get_atlas_case_studies_for_cve(db, cve_key)
+        return cve
+    finally:
+        await db.close()
 
+
+async def _detail_enrich_exploits(cve_key: str, cve: dict) -> dict:
+    from db.cache import get_cve_exploits_latest_fetched_at, get_feed_cache_timestamp
+
+    db = await get_db()
+    try:
         try:
-            cve["public_exploits"] = await load_public_exploits_for_cve(
+            public_exploits = await load_public_exploits_for_cve(
                 db,
                 cve_key,
                 has_poc=bool(cve.get("has_poc")),
                 source_urls=cve.get("source_urls"),
             )
-            cve["exploit_provenance"] = await derive_exploit_provenance(
+            provenance = await derive_exploit_provenance(
                 db,
                 cve_key,
-                used_nvd_fallback=bool(cve["public_exploits"])
+                used_nvd_fallback=bool(public_exploits)
                 and not await get_cve_exploits_latest_fetched_at(db, cve_key)
                 and not await get_feed_cache_timestamp(db, f"sploitus:{cve_key}"),
             )
             await db.commit()
+            return {"public_exploits": public_exploits, "exploit_provenance": provenance}
         except Exception as exc:
-            logger.error("Sploitus load failed for %s: %s", cve_id, exc)
-            cve["public_exploits"] = []
-            cve["exploit_provenance"] = await derive_exploit_provenance(db, cve_key)
-
-        greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
-        cve["greynoise_configured"] = bool(greynoise_key)
-        cve["greynoise_scans"] = []
-
-        otx_key = os.environ.get("OTX_API_KEY", "").strip()
-        cve["otx_configured"] = bool(otx_key)
-        try:
-            cve["otx_pulses"] = await load_otx_pulses_for_cve(db, cve_key, otx_key)
-            await db.commit()
-        except Exception as exc:
-            logger.error("OTX pulse load failed for %s: %s", cve_id, exc)
-            cve["otx_pulses"] = []
+            logger.error("Sploitus load failed for %s: %s", cve_key, exc)
+            provenance = await derive_exploit_provenance(db, cve_key)
+            return {"public_exploits": [], "exploit_provenance": provenance}
     finally:
         await db.close()
 
+
+async def _detail_enrich_otx(cve_key: str, otx_key: str) -> dict:
+    if not otx_key:
+        return {"otx_pulses": []}
+    db = await get_db()
+    try:
+        try:
+            pulses = await load_otx_pulses_for_cve(db, cve_key, otx_key)
+            await db.commit()
+            return {"otx_pulses": pulses}
+        except Exception as exc:
+            logger.error("OTX pulse load failed for %s: %s", cve_key, exc)
+            return {"otx_pulses": []}
+    finally:
+        await db.close()
+
+
+async def _detail_enrich_osv(cve_key: str, existing_summary: str | None) -> dict:
     try:
         osv_data = await fetch_osv_by_cve(cve_key)
-        cve["osv_packages"] = osv_data
-        if not cve.get("summary"):
+        out: dict = {"osv_packages": osv_data}
+        if not (existing_summary or "").strip():
             for entry in osv_data:
                 osv_summary = (entry.get("summary") or "").strip()
                 if osv_summary:
-                    cve["summary"] = osv_summary
+                    out["summary"] = osv_summary
                     break
+        return out
     except Exception as exc:
-        logger.error("OSV lookup failed for %s: %s", cve_id, exc)
-        cve["osv_packages"] = []
+        logger.error("OSV lookup failed for %s: %s", cve_key, exc)
+        return {"osv_packages": []}
 
+
+async def _detail_enrich_circl(cve: dict) -> dict:
+    db = await get_db()
     try:
-        db = await get_db()
-        try:
-            cve = await enrich_cve_circl(db, cve)
-            await db.commit()
-        finally:
-            await db.close()
+        enriched = await enrich_cve_circl(db, dict(cve))
+        await db.commit()
+        return enriched
     except Exception as exc:
-        logger.error("CIRCL enrichment failed for %s: %s", cve_id, exc)
+        logger.error("CIRCL enrichment failed for %s: %s", cve.get("cve_id"), exc)
+        return {}
+    finally:
+        await db.close()
+
+
+@detail_router.get("/api/cves/{cve_id}")
+async def get_cve(cve_id: str):
+    cve_id = require_cve_id(cve_id)
+    cve_key = cve_id
+
+    cve = await _load_cve_detail_from_db(cve_key)
+
+    greynoise_key = os.environ.get("GREYNOISE_API_KEY", "")
+    cve["greynoise_configured"] = bool(greynoise_key)
+    cve["greynoise_scans"] = []
+
+    otx_key = os.environ.get("OTX_API_KEY", "").strip()
+    cve["otx_configured"] = bool(otx_key)
+
+    exploit_patch, otx_patch, osv_patch, circl_patch = await asyncio.gather(
+        _detail_enrich_exploits(cve_key, cve),
+        _detail_enrich_otx(cve_key, otx_key),
+        _detail_enrich_osv(cve_key, cve.get("summary")),
+        _detail_enrich_circl(cve),
+    )
+    cve.update(exploit_patch)
+    cve.update(otx_patch)
+    cve.update(osv_patch)
+    cve.update(circl_patch)
 
     return cve
 
