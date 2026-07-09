@@ -1544,6 +1544,12 @@ async def run_scheduler_job(request: Request, body: dict):
     if _job_lock_held(job_id):
         raise HTTPException(409, f"Job '{job_id}' is already running (lock held)")
 
+    if _job_is_disabled(job_id):
+        raise HTTPException(
+            400,
+            f"Job '{job_id}' is disabled in configuration. Enable the required setting under API keys & config.",
+        )
+
     sched = _get_scheduler_module()
     fn_name = _JOB_RUN_MAP[job_id]
     fn = getattr(sched, fn_name, None)

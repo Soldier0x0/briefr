@@ -5,6 +5,7 @@ import JobTable from './shared/JobTable.jsx'
 import { fmtIso, fmtAge, ageColor, sourceLabel } from './formatters.js'
 import { overallHealth, analystScheduleJobs } from './intelStatus.js'
 import { jobLabel } from './catalog.js'
+import { pauseResumeAction } from './jobActions.js'
 import OpsCharts from './shared/OpsCharts.jsx'
 
 function AnalystOverview({ system, toast }) {
@@ -140,11 +141,12 @@ function OperatorOverview({ system, toast }) {
   }
 
   async function pauseResume(job) {
-    const action = job.status === 'PAUSED' ? 'resume' : 'pause'
+    const action = pauseResumeAction(job.status)
+    if (!action) return
     try {
       const res = await adminApi.post(`/scheduler/${action}`, { job_id: job.id })
       const data = await res.json()
-      toast(data.ok ? `Job ${action}d` : 'Failed', data.ok)
+      toast(data.ok ? `${jobLabel(job.id, 'operator')} ${action === 'pause' ? 'paused' : 'resumed'}` : 'Failed', data.ok)
     } catch (e) { toast(String(e.message), false) }
   }
 

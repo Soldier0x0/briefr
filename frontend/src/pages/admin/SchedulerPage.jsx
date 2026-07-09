@@ -6,6 +6,8 @@ import HelpTip from './shared/HelpTip.jsx'
 import JobTable from './shared/JobTable.jsx'
 import { useOperations } from './shared/OperationTracker.jsx'
 import { MANUAL_PIPELINES } from './constants.js'
+import { jobLabel } from './catalog.js'
+import { canRunNow, pauseResumeAction } from './jobActions.js'
 
 const STATUS_FILTERS = ['ACTIVE', 'PAUSED', 'LOCKED', 'DISABLED']
 const PAGE_SIZE = 10
@@ -33,10 +35,10 @@ export default function SchedulerPage({ toast, system }) {
     try {
       await runAction({
         id: `job-${jobId}`,
-        label: `Running ${jobId.replace(/_/g, ' ')}`,
+        label: `Running ${jobLabel(jobId, 'operator')}`,
         kind: 'job',
         meta: { jobId },
-        successMessage: `Started: ${jobId}`,
+        successMessage: `Started: ${jobLabel(jobId, 'operator')}`,
         execute: async () => {
           const res = await adminApi.post('/scheduler/run', { job_id: jobId })
           const requestId = getAdminRequestId(res)
@@ -63,10 +65,11 @@ export default function SchedulerPage({ toast, system }) {
   }
 
   async function pauseResume(job) {
-    const action = job.status === 'PAUSED' ? 'resume' : 'pause'
+    const action = pauseResumeAction(job.status)
+    if (!action) return
     try {
       await adminApi.post(`/scheduler/${action}`, { job_id: job.id })
-      toast(`Job ${action}d`, true)
+      toast(`${jobLabel(job.id, 'operator')} ${action === 'pause' ? 'paused' : 'resumed'}`, true)
       loadJobs()
     } catch (e) { toast(String(e.message), false) }
   }
@@ -133,13 +136,14 @@ export default function SchedulerPage({ toast, system }) {
           {MANUAL_PIPELINES.map(p => {
             const job = (jobs || []).find(j => j.id === p.id)
             const locked = job?.status === 'LOCKED' || running[p.id]
+            const disabled = job?.status === 'DISABLED'
             return (
               <button
                 key={p.id}
                 className="admin-btn admin-btn-ghost"
                 style={{ fontSize: '0.8125rem' }}
                 onClick={() => runNow(p.id)}
-                disabled={locked}
+                disabled={locked || disabled || !canRunNow(job?.status ?? 'ACTIVE')}
               >
                 {locked ? <><span className="admin-spinner" /> Running…</> : p.label}
               </button>
@@ -148,7 +152,7 @@ export default function SchedulerPage({ toast, system }) {
         </div>
         {activeLocks.length > 0 && (
           <div style={{ fontSize: '0.75rem', color: 'var(--amber)', marginTop: '0.5rem' }}>
-            {activeLocks.map(l => l.job_id).join(', ')} currently running
+            {activeLocks.map(l => jobLabel(l.job_id, 'operator')).join(', ')} currently running
           </div>
         )}
       </div>
@@ -163,7 +167,7 @@ export default function SchedulerPage({ toast, system }) {
       <div className="admin-card">
         <div className="admin-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           All jobs
-          <HelpTip text="ACTIVE = running on schedule. PAUSED = won't run until you resume it. LOCKED = currently executing (can't be triggered again until done). DISABLED = not registered in the scheduler." />
+          <HelpTip text="ACTIVE = running on schedule. PAUSED = won't run until you resume it. LOCKED = currently executing (can't be triggered again until done). DISABLED = registered but turned off in configuration — enable the matching setting under API keys & config." />
         </div>
         <div className="admin-filter-chips" style={{ marginBottom: '0.75rem' }}>
           <button className={`filter-chip ${statusFilter === '' ? 'active' : ''}`} onClick={() => { setStatusFilter(''); setPage(0) }}>All</button>

@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react'
 import { fmtIso, fmtDur } from '../formatters.js'
 import { jobLabel, statusLabel, statusHint } from '../catalog.js'
+import { canPauseResume, canRunNow, nextRunCell, nextRunTitle } from '../jobActions.js'
 import { getDisplayPrefs, setDisplayPrefs } from '../../../utils/displayPrefs.js'
 
 export function JobStatusBadge({ status, mode = 'operator' }) {
@@ -44,7 +45,7 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
               <td><JobStatusBadge status={job.status} mode="analyst" /></td>
               <td style={{ fontSize: '0.75rem' }}>{fmtIso(job.last_run_utc)}</td>
               <td style={{ fontSize: '0.75rem' }}>
-                {job.status === 'PAUSED' ? '(paused)' : fmtIso(job.next_run_time)}
+                {nextRunCell(job.status, job.next_run_time, fmtIso)}
               </td>
             </tr>
           ))}
@@ -87,8 +88,8 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                     </button>
                   ) : job.last_run_had_error === false ? '' : '—'}
                 </td>
-                <td style={{ fontSize: '0.75rem' }} title={job.status === 'PAUSED' ? 'Job is paused — will not run until resumed' : undefined}>
-                  {job.status === 'PAUSED' ? '(paused)' : fmtIso(job.next_run_time)}
+                <td style={{ fontSize: '0.75rem' }} title={nextRunTitle(job.status)}>
+                  {nextRunCell(job.status, job.next_run_time, fmtIso)}
                 </td>
                 <td>
                   <div style={{ display: 'flex', gap: '0.3rem' }}>
@@ -97,10 +98,10 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                         className="admin-btn admin-btn-ghost"
                         style={{ fontSize: '0.8125rem', padding: '0.35rem 0.85rem' }}
                         onClick={() => onRunNow(job.id)}
-                        disabled={job.status === 'LOCKED'}
+                        disabled={!canRunNow(job.status)}
                       >Run</button>
                     )}
-                    {onPauseResume && (
+                    {onPauseResume && canPauseResume(job.status) && (
                       <button
                         className={`admin-btn ${job.status === 'PAUSED' ? 'admin-btn-primary' : 'admin-btn-warn'}`}
                         style={{ fontSize: '0.8125rem', padding: '0.35rem 0.85rem' }}

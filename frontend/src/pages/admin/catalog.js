@@ -114,6 +114,69 @@ export const JOB_CATALOG = {
     analystDescription: 'Creates a backup archive and prunes old ones, on BACKUP_INTERVAL_HOURS.',
     refreshButton: 'Run backup',
   },
+  kev_backlog_reconcile: {
+    label: 'KEV detection backlog',
+    short: 'KEV backlog',
+    operatorName: 'Weekly KEV Detection Backlog Reconcile',
+    analystDescription: 'Reconciles KEV detection backlog items on a weekly schedule.',
+    refreshButton: 'Run KEV backlog reconcile',
+  },
+  threatfox_sync: {
+    label: 'ThreatFox IOC mirror',
+    short: 'ThreatFox',
+    operatorName: 'ThreatFox IOC Mirror Sync',
+    analystDescription: 'Mirrors Abuse.ch ThreatFox IOC feeds for correlation and watchlist matching.',
+    refreshButton: 'Refresh ThreatFox',
+  },
+  vulncheck_kev_sync: {
+    label: 'VulnCheck KEV tier',
+    short: 'VulnCheck KEV',
+    operatorName: 'VulnCheck KEV Tier Sync',
+    analystDescription: 'Syncs supplemental KEV tier metadata from VulnCheck when configured.',
+    refreshButton: 'Refresh VulnCheck KEV',
+  },
+  ioc_retro_match: {
+    label: 'IOC watchlist retro-match',
+    short: 'IOC retro',
+    operatorName: 'IOC Watchlist Retro-Match',
+    analystDescription: 'Matches cached IOC lookups against watchlisted CVEs on a nightly schedule.',
+    refreshButton: 'Run IOC retro-match',
+  },
+  detection_context_sync: {
+    label: 'Detection context sync',
+    short: 'Detection ctx',
+    operatorName: 'Detection Context Sync',
+    analystDescription: 'Extracts detection-relevant context from CVE records when enabled in configuration.',
+    refreshButton: 'Run detection context sync',
+  },
+  detection_context_llm: {
+    label: 'Detection context (LLM)',
+    short: 'Detection LLM',
+    operatorName: 'Detection Context LLM Enrichment',
+    analystDescription: 'Uses an LLM pass for detection context when DETECTION_CONTEXT_LLM_ENABLED is on.',
+    refreshButton: 'Run detection LLM pass',
+  },
+  watchlist_monitor_alerts: {
+    label: 'Watchlist monitor alerts',
+    short: 'Watchlist alerts',
+    operatorName: 'Watchlist Monitor Alerts',
+    analystDescription: 'Evaluates watchlist rules and sends configured webhook alerts.',
+    refreshButton: 'Run watchlist monitor',
+  },
+  session_cleanup: {
+    label: 'Session cleanup',
+    short: 'Sessions',
+    operatorName: 'Session Cleanup',
+    analystDescription: 'Purges expired login sessions from the database.',
+    refreshButton: 'Run session cleanup',
+  },
+  cache_retention_cleanup: {
+    label: 'Cache retention cleanup',
+    short: 'Cache cleanup',
+    operatorName: 'Cache Retention Cleanup',
+    analystDescription: 'Prunes aged feed cache and housekeeping rows per retention policy.',
+    refreshButton: 'Run cache cleanup',
+  },
 }
 
 export function jobLabel(id, mode = 'operator') {
@@ -149,7 +212,7 @@ export const STATUS_CATALOG = {
   DISABLED: {
     analyst: 'Turned off',
     operator: 'DISABLED',
-    hint: 'Disabled in configuration',
+    hint: 'Registered but gated off in configuration — enable the matching setting under API keys & config',
   },
 }
 

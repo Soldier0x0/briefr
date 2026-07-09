@@ -67,9 +67,7 @@ export default function JobErrorsPanel({
             {visible.map(e => (
               <tr key={`${e.job_id}-${e.last_run_utc}`}>
                 <td style={{ fontSize: '0.8rem' }}>
-                  {mode === 'analyst' ? jobLabel(e.job_id, 'analyst') : (
-                    <span className="mono" style={{ fontSize: '0.75rem' }}>{e.job_id}</span>
-                  )}
+                  {mode === 'analyst' ? jobLabel(e.job_id, 'analyst') : jobLabel(e.job_id, 'operator')}
                 </td>
                 <td style={{ fontSize: '0.75rem', maxWidth: 360, wordBreak: 'break-word' }}>
                   {e.error || '—'}
