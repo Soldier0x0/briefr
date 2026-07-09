@@ -236,8 +236,10 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (sch
    `hunt_packs` (`UNIQUE(technique_id, cve_id)` — idempotent regeneration).
    The UI refetches coverage so the technique flips to `yours`.
 5. **Boundary:** community-rule *search* (SigmaHQ/Elastic over GitHub) stays on
-   `GET /api/cves/{cve_id}/detection` (drawer Detect tab). Rule proof on live
-   logs and HyperDX provisioning are out of scope until V1.5/V1.4.
+   `GET /api/cves/{cve_id}/detection` (drawer Detect tab). **V1.5 rule proof
+   bench** (`POST /api/proof/run`, Forge hunt pack panel) validates saved Sigma
+   rules against pasted log lines — file-based, no live SIEM. HyperDX
+   provisioning remains out of scope.
 
 ### F. Watchlist — pin / snooze (V1.3)
 

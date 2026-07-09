@@ -294,6 +294,18 @@ export function fetchThreatModelScenarios(stack = '') {
   return request(`/threat-model/scenarios${qs}`)
 }
 
+/** V1.5: run Sigma rule against pasted log lines (file-based proof bench). */
+export function runProofBench({ lines, sigmaYaml, patterns, maxSamples = 10 }) {
+  const body = { lines, max_samples: maxSamples }
+  if (sigmaYaml) body.sigma_yaml = sigmaYaml
+  if (patterns?.length) body.patterns = patterns
+  return request('/proof/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
 /** Forge: hunt pack content for one ATT&CK technique. */
 export function fetchHuntPack(techniqueId) {
   return request(`/hunt-packs/${encodeURIComponent(techniqueId)}`)

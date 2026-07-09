@@ -802,6 +802,44 @@ close detection gap).
 
 UI: Forge tab → **Threat scenarios** view (requires loaded asset profile).
 
+### POST /api/proof/run
+
+**Description:** V1.5 file-based rule proof bench — run a Sigma rule (or explicit
+patterns) against pasted log lines. No live SIEM or ClickHouse required.
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `lines` | string[] | yes | Log lines (1–5000); empty lines ignored in counts |
+| `sigma_yaml` | string | one of | Sigma rule YAML; keywords/selection strings extracted for matching |
+| `patterns` | string[] | one of | Explicit substring patterns (case-insensitive) |
+| `max_samples` | int | no | Max sample hits returned (default 10, max 50) |
+
+**Response:**
+
+```json
+{
+  "total_lines": 3,
+  "hit_count": 1,
+  "miss_count": 2,
+  "hit_rate": 0.3333,
+  "patterns": ["../", "/etc/passwd"],
+  "false_positive_hints": ["Vulnerability scanners"],
+  "sample_hits": [
+    {
+      "line_number": 2,
+      "line": "GET /../../etc/passwd HTTP/1.1",
+      "matched_patterns": ["../"]
+    }
+  ]
+}
+```
+
+400 when neither `sigma_yaml` nor `patterns` is provided, or when no match
+patterns can be extracted. UI: Forge → hunt pack panel → **Rule proof bench**
+(after a pack is saved).
+
 ---
 
 ## AI Summary
