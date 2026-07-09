@@ -63,6 +63,8 @@ EXPECTED_ROUTES = [
     ("GET", "/api/hunt-packs/{technique_id}"),
     # V1.3 Theme 1: morning brief (additive, appended after Forge routes).
     ("GET", "/api/brief"),
+    # Correlation Phase 4: cluster list (additive, appended after brief routes).
+    ("GET", "/api/correlation/clusters"),
     # Watchlist (V1.3): pin/snooze — additive, appended after brief routes.
     ("GET", "/api/watchlist"),
     ("POST", "/api/watchlist"),
@@ -70,6 +72,7 @@ EXPECTED_ROUTES = [
     ("DELETE", "/api/watchlist/{cve_id}"),
     # Admin dashboard (V1.4): appended after watchlist routes.
     ("GET", "/api/admin/system"),
+    ("GET", "/api/admin/correlation/status"),
     ("GET", "/api/admin/backups"),
     ("POST", "/api/admin/backups/verify/{filename}"),
     ("POST", "/api/admin/backups/run"),

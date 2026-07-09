@@ -420,6 +420,18 @@ async def get_system(request: Request):
     }
 
 
+@router.get("/correlation/status")
+async def get_correlation_status():
+    """Operator diagnostics: last campaign build, OTX IOC coverage, backlog."""
+    from correlation.status import get_correlation_admin_status
+
+    db = await get_db()
+    try:
+        return await get_correlation_admin_status(db)
+    finally:
+        await db.close()
+
+
 # ── Backups ────────────────────────────────────────────────────────────────
 
 

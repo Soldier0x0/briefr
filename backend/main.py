@@ -34,6 +34,7 @@ from routers import atlas as atlas_router
 from routers import auth as auth_router
 from routers import me as me_router
 from routers import brief as brief_router
+from routers import correlation as correlation_router
 from routers import config as config_router
 from routers import cves as cves_router
 from routers import forge as forge_router
@@ -252,6 +253,7 @@ app.include_router(meta_router.router)
 app.include_router(config_router.router)
 app.include_router(forge_router.router)
 app.include_router(brief_router.router)
+app.include_router(correlation_router.router)
 app.include_router(watchlist_router.router)
 app.include_router(admin_router.router)
 app.include_router(wallboard_router.router)
