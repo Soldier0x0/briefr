@@ -12,6 +12,16 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — V1.5 KEV detection backlog Phase 3 (#375)
+
+**Merged:** #375 — `detection_backlog` table; KEV sync + weekly reconcile jobs;
+`GET /api/detection-backlog`, dismiss endpoint; Forge **Backlog** tab;
+optional `kev_backlog` webhook event.
+
+**Autonomous next (do not ask):** V1.5 Phase 5 IOC watchlist + ThreatFox (Phase 4 STIX excluded).
+
+---
+
 ## 2026-07-09 — V1.5 rule proof bench Phase 2 (#374)
 
 **Merged:** #374 — `POST /api/proof/run` (file-based Sigma proof); Forge hunt pack

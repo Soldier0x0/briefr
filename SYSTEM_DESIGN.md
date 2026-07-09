@@ -238,8 +238,11 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (sch
 5. **Boundary:** community-rule *search* (SigmaHQ/Elastic over GitHub) stays on
    `GET /api/cves/{cve_id}/detection` (drawer Detect tab). **V1.5 rule proof
    bench** (`POST /api/proof/run`, Forge hunt pack panel) validates saved Sigma
-   rules against pasted log lines — file-based, no live SIEM. HyperDX
-   provisioning remains out of scope.
+   rules against pasted log lines — file-based, no live SIEM. **V1.5 KEV detection
+   backlog** (`GET /api/detection-backlog`, Forge Backlog tab) surfaces stack-matched
+   KEV CVEs whose ATT&CK techniques are coverage gaps; rows are created on KEV sync
+   and weekly reconcile; optional `kev_backlog` webhook. HyperDX provisioning
+   remains out of scope.
 
 ### F. Watchlist — pin / snooze (V1.3)
 

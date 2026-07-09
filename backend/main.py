@@ -41,6 +41,7 @@ from routers import forge as forge_router
 from routers import health as health_router
 from routers import ioc as ioc_router
 from routers import meta as meta_router
+from routers import detection_backlog as detection_backlog_router
 from routers import proof as proof_router
 from routers import refresh as refresh_router
 from routers import threat_model as threat_model_router
@@ -259,6 +260,7 @@ app.include_router(config_router.router)
 app.include_router(forge_router.router)
 app.include_router(threat_model_router.router)
 app.include_router(proof_router.router)
+app.include_router(detection_backlog_router.router)
 app.include_router(brief_router.router)
 app.include_router(correlation_router.router)
 app.include_router(watchlist_router.router)

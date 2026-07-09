@@ -1,1 +1,1 @@
-"""BRIEFR Detection Rule Engine — community rules, generated Sigma, SIEM queries."""
+"""Detection engineering helpers (V1.5 backlog, coverage)."""

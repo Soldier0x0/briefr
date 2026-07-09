@@ -20,6 +20,7 @@ from routers.cves import _stack_match_clause
 from webhooks.destinations import (
     EVENT_BACKUP_FAILURE,
     EVENT_KEV_ALERT,
+    EVENT_KEV_BACKLOG,
     EVENT_WATCHLIST_ALERT,
 )
 from webhooks.engine import clear_event_dedupe, dispatch_event
@@ -281,6 +282,40 @@ async def process_kev_stack_alerts(newly_kev_ids: list[str]) -> int:
             continue
         sent += 1
         logger.info("KEV stack alert sent for %s", cve_id)
+    return sent
+
+
+def _format_kev_backlog_alert(item: dict) -> str:
+    cve_id = item.get("cve_id", "")
+    technique_id = item.get("technique_id", "")
+    technique_name = item.get("technique_name") or technique_id
+    priority = (item.get("priority") or "high").upper()
+    return (
+        f"Detection backlog: new KEV gap on your stack — {cve_id} maps to "
+        f"{technique_id} ({technique_name}) with no saved or community rule. "
+        f"Priority: {priority}. Open Forge → Backlog to generate a hunt pack."
+    )
+
+
+async def process_kev_backlog_webhooks(items: list[dict]) -> int:
+    """Notify subscribed destinations when new KEV gap backlog rows are created."""
+    if not items or not webhooks_enabled():
+        return 0
+
+    sent = 0
+    for item in items:
+        cve_id = item.get("cve_id", "")
+        technique_id = item.get("technique_id", "")
+        if not cve_id or not technique_id:
+            continue
+        result = await dispatch_event(
+            EVENT_KEV_BACKLOG,
+            _format_kev_backlog_alert(item),
+            dedupe_key=f"{cve_id}:{technique_id}",
+        )
+        if result.get("sent"):
+            sent += 1
+            logger.info("KEV backlog webhook sent for %s / %s", cve_id, technique_id)
     return sent
 
 

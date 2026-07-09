@@ -12,12 +12,14 @@ import aiosqlite
 from database import get_db
 
 EVENT_KEV_ALERT = "kev_alert"
+EVENT_KEV_BACKLOG = "kev_backlog"
 EVENT_BACKUP_FAILURE = "backup_failure"
 EVENT_HEALTH = "health"
 EVENT_WATCHLIST_ALERT = "watchlist_alert"
 
 ALL_EVENT_TYPES = (
     EVENT_KEV_ALERT,
+    EVENT_KEV_BACKLOG,
     EVENT_BACKUP_FAILURE,
     EVENT_HEALTH,
     EVENT_WATCHLIST_ALERT,

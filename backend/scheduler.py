@@ -437,6 +437,14 @@ async def _run_kev_sync() -> None:
                 watchlist_kev = await process_watchlist_kev_alerts(newly_kev)
                 if watchlist_kev:
                     logger.info("Watchlist KEV alerts sent: %d", watchlist_kev)
+                from detection.backlog import process_new_kev_backlog
+                from webhooks.alerts import process_kev_backlog_webhooks
+
+                backlog_items = await process_new_kev_backlog(newly_kev)
+                if backlog_items:
+                    backlog_alerts = await process_kev_backlog_webhooks(backlog_items)
+                    if backlog_alerts:
+                        logger.info("KEV backlog webhooks sent: %d", backlog_alerts)
             except Exception as exc:
                 logger.error("KEV-on-stack alert processing failed: %s", exc)
 
@@ -668,6 +676,31 @@ async def _run_epss_backfill() -> None:
             total_batches,
             exc,
         )
+
+
+async def run_kev_backlog_reconcile() -> bool:
+    if get_lock("kev_backlog_reconcile").locked():
+        logger.warning("KEV backlog reconcile already in progress — skipping")
+        return False
+
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _error_msg = ""
+    try:
+        async with get_lock("kev_backlog_reconcile"):
+            from detection.backlog import reconcile_kev_backlog
+
+            _job_progress["kev_backlog_reconcile"] = "Reconciling KEV detection backlog gaps for operator stack…"
+            created = await reconcile_kev_backlog()
+            logger.info("KEV backlog reconcile complete: %d new item(s)", created)
+    except Exception as _exc:
+        _had_error = True
+        _error_msg = str(_exc)[:500]
+        raise
+    finally:
+        _job_progress.pop("kev_backlog_reconcile", None)
+        await _write_job_last_run("kev_backlog_reconcile", _start, had_error=_had_error, error_message=_error_msg)
+    return True
 
 
 async def run_full_ingest_sync() -> bool:
@@ -1535,6 +1568,22 @@ def start_scheduler() -> AsyncIOScheduler:
         ),
         id="weekly_mitre_refresh",
         name="Weekly MITRE ATT&CK + ATLAS Refresh",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    backlog_hour = int(os.environ.get("KEV_BACKLOG_RECONCILE_HOUR", "3"))
+    backlog_minute = int(os.environ.get("KEV_BACKLOG_RECONCILE_MINUTE", "30"))
+    scheduler.add_job(
+        run_kev_backlog_reconcile,
+        trigger=CronTrigger(
+            day_of_week="mon",
+            hour=backlog_hour,
+            minute=backlog_minute,
+            timezone=sched_tz,
+        ),
+        id="kev_backlog_reconcile",
+        name="Weekly KEV Detection Backlog Reconcile",
         replace_existing=True,
         max_instances=1,
     )
