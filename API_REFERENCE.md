@@ -1070,7 +1070,7 @@ Optional webhook event: `kev_backlog`.
 
 **Response:** `{"status": "ok", "message": "..."}`
 
-**Error responses:** `401` — invalid admin key (when configured); `409` — ingest already running; `429` — rate limit exceeded (`Retry-After` header)
+**Error responses:** `401` — not authenticated; `403` — admin role required; `409` — ingest already running; `429` — rate limit exceeded (`Retry-After` header)
 
 ---
 
@@ -1080,7 +1080,7 @@ Optional webhook event: `kev_backlog`.
 
 ### POST /api/refresh/epss
 
-**Error responses:** `401` — invalid admin key (when configured); `409` — ingest already running; `429` — rate limit exceeded (`Retry-After` header)
+**Error responses:** `401` — not authenticated; `403` — admin role required; `409` — ingest already running; `429` — rate limit exceeded (`Retry-After` header)
 
 ---
 
@@ -1090,7 +1090,7 @@ Optional webhook event: `kev_backlog`.
 
 **Response:** `{"status": "ok", "message": "MITRE ATT&CK + ATLAS refresh started in background"}`
 
-**Error responses:** `401` — invalid admin key (when configured); `429` — rate limit exceeded (`Retry-After` header)
+**Error responses:** `401` — not authenticated; `403` — admin role required; `429` — rate limit exceeded (`Retry-After` header)
 
 ---
 

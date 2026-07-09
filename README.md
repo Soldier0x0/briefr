@@ -31,7 +31,7 @@ BRIEFR is a self-hosted CVE intelligence dashboard for security analysts, small 
 
 ## What is BRIEFR?
 
-Every morning, analysts check NVD, CISA KEV, VirusTotal, and exploit trackers to answer one question: *what broke overnight and does it affect us?* BRIEFR automates that aggregation into a single self-hosted app. No account, no cookies, no analytics — your PostgreSQL database and API keys stay on your server.
+Every morning, analysts check NVD, CISA KEV, VirusTotal, and exploit trackers to answer one question: *what broke overnight and does it affect us?* BRIEFR automates that aggregation into a single self-hosted app. Built-in login with httpOnly session cookies; no third-party analytics — your PostgreSQL database and API keys stay on your server.
 
 Three main tabs:
 
@@ -382,7 +382,7 @@ Writes `TECHNICAL_INVENTORY.xlsx` locally (not committed) with auto-sized column
 
 ## Privacy
 
-BRIEFR collects no personal data, uses no cookies, and runs no analytics. Tech stack and timezone preferences are stored in your browser's `localStorage` only. IOC lookups are sent to configured third-party APIs; results are cached in your PostgreSQL database (6 hours for IOC, various TTLs for feed cache). See [`frontend/src/pages/PrivacyPage.jsx`](frontend/src/pages/PrivacyPage.jsx) or `/privacy` in the app.
+BRIEFR collects no personal data beyond your self-hosted login account, uses httpOnly session cookies for authentication (no tracking cookies), and runs no analytics. Display and timezone preferences persist in PostgreSQL when signed in (`/api/me/preferences`); legacy keys may still exist in browser `localStorage` until migrated. IOC lookups are sent to configured third-party APIs; results are cached in your PostgreSQL database (6 hours for IOC, various TTLs for feed cache). See [`frontend/src/pages/PrivacyPage.jsx`](frontend/src/pages/PrivacyPage.jsx) or `/privacy` in the app.
 
 ---
 
