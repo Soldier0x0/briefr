@@ -9,6 +9,10 @@ import {
   kevDueUrgencyClass,
   kevDueLabel,
 } from '../utils/kevDeadline.js'
+import {
+  campaignBadgeTooltip,
+  campaignLifecycleClass,
+} from '../utils/correlationPresentation.js'
 import CveDescriptionClamp from './CveDescriptionClamp.jsx'
 import './CVECard.css'
 
@@ -224,6 +228,14 @@ export default function CVECard({
           {cve.has_poc && (
             <span className="badge badge-poc" title="Public exploit or PoC reference in NVD">
               PoC
+            </span>
+          )}
+          {cve.member_of_campaign && (
+            <span
+              className={`badge badge-campaign ${campaignLifecycleClass(cve.campaign_lifecycle)}`}
+              title={campaignBadgeTooltip(cve.campaign_lifecycle)}
+            >
+              Campaign
             </span>
           )}
           {cve.cvss_score != null && (

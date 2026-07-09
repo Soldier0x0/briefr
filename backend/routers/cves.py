@@ -139,6 +139,10 @@ def _row_to_cve_dict(row) -> dict:
         d["affected_products_source"] = d.get("affected_products_source") or ""
     d["patch_available"] = bool(d.get("patch_available", 0))
     d["has_ai_context"] = bool(d.get("has_ai_context", 0))
+    d["member_of_campaign"] = bool(d.pop("member_of_campaign", 0))
+    lifecycle = d.pop("campaign_lifecycle", None)
+    if d["member_of_campaign"] and lifecycle:
+        d["campaign_lifecycle"] = str(lifecycle).strip() or None
     kev_date = d.get("kev_date_added")
     d["kev_date_added"] = (kev_date or "").strip() or None
     kev_due = d.get("kev_due_date")
@@ -374,7 +378,25 @@ CVE_SELECT = """
                  AND LOWER(TRIM(COALESCE(kr.known_ransomware, ''))) = 'known'
            ) AS kev_ransomware_use,
            w.state AS watchlist_state,
-           w.snooze_until AS watchlist_snooze_until
+           w.snooze_until AS watchlist_snooze_until,
+           EXISTS (
+               SELECT 1 FROM correlation_campaign_members cm
+               WHERE cm.cve_id = c.cve_id
+           ) AS member_of_campaign,
+           (
+               SELECT cc.lifecycle
+               FROM correlation_campaign_members cm
+               INNER JOIN correlation_campaigns cc ON cc.campaign_id = cm.campaign_id
+               WHERE cm.cve_id = c.cve_id
+               ORDER BY CASE cc.lifecycle
+                   WHEN 'active' THEN 1
+                   WHEN 'emerging' THEN 2
+                   WHEN 'declining' THEN 3
+                   WHEN 'stale' THEN 4
+                   ELSE 5
+               END
+               LIMIT 1
+           ) AS campaign_lifecycle
     FROM cves c
     LEFT JOIN watchlist w ON w.cve_id = c.cve_id
         AND (
