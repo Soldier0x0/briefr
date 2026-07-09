@@ -75,10 +75,10 @@ export default function CVEFeed({
   const [selectedIndex, setSelectedIndex] = useState(null)
   const [lastVisit, setLastVisit] = useState(null)
   const [visitReady, setVisitReady] = useState(false)
-  const [showingRange, setShowingRange] = useState(null)
   const sentinelRef = useRef(null)
   const abortRef = useRef(null)
   const cardRefs = useRef([])
+  const listRootRef = useRef(null)
   const pageRef = useRef(1)
   const feedRootRef = useRef(null)
   const listAnchorRef = useRef(null)
@@ -124,32 +124,25 @@ export default function CVEFeed({
   isLoadingMoreRef.current = isLoadingMore
   hasMoreRef.current = hasMore
 
-  const updateShowingRange = useCallback(() => {
-    const cards = cardRefs.current.filter(Boolean)
-    if (!cards.length) {
-      setShowingRange(null)
-      return
-    }
-
-    const viewportH = window.innerHeight
-    let first = null
-    let last = null
-
-    cards.forEach((el, idx) => {
-      const rect = el.getBoundingClientRect()
-      if (rect.bottom > 0 && rect.top < viewportH) {
-        if (first === null) first = idx
-        last = idx
+  const handleToggleSelect = useCallback((cve) => {
+    setSelectedMap(prev => {
+      const next = { ...prev }
+      if (next[cve.cve_id]) {
+        delete next[cve.cve_id]
+      } else {
+        next[cve.cve_id] = cve
       }
+      return next
     })
-
-    if (first === null) {
-      first = 0
-      last = Math.min(cards.length - 1, 0)
-    }
-
-    setShowingRange({ start: first + 1, end: last + 1 })
   }, [])
+
+  const handleInvestigate = useCallback((c) => {
+    investigation?.startInvestigation?.(c)
+  }, [investigation])
+
+  const handleLookupIoc = useCallback((c) => {
+    investigation?.pivotToIocFromCve?.(c)
+  }, [investigation])
 
   const loadPage = useCallback(async (pageNum, append) => {
     if (abortRef.current) abortRef.current.abort()
@@ -180,11 +173,7 @@ export default function CVEFeed({
       const pageRows = assetAwareRef.current
         ? sortByExposure(data.data, getMatchScoreRef.current)
         : data.data
-      setCves(prev => {
-        const next = append ? [...prev, ...pageRows] : pageRows
-        requestAnimationFrame(() => updateShowingRange())
-        return next
-      })
+      setCves(prev => (append ? [...prev, ...pageRows] : pageRows))
       pageRef.current = pageNum
       setPage(pageNum)
     } catch (err) {
@@ -195,7 +184,6 @@ export default function CVEFeed({
         if (!append) {
           setCves([])
           setTotal(0)
-          setShowingRange(null)
         }
       }
     } finally {
@@ -208,7 +196,7 @@ export default function CVEFeed({
         }
       }
     }
-  }, [updateShowingRange])
+  }, [])
 
   const handleRetry = useCallback(() => {
     loadPage(pageRef.current, false)
@@ -232,16 +220,6 @@ export default function CVEFeed({
       if (onGenerateDigest && cves.length) onGenerateDigest(cves)
     })
   }, [onDigestRequest, onGenerateDigest, cves])
-
-  useEffect(() => {
-    updateShowingRange()
-    window.addEventListener('scroll', updateShowingRange, { passive: true })
-    window.addEventListener('resize', updateShowingRange, { passive: true })
-    return () => {
-      window.removeEventListener('scroll', updateShowingRange)
-      window.removeEventListener('resize', updateShowingRange)
-    }
-  }, [cves, updateShowingRange])
 
   function scrollFeedToTop() {
     // Scroll so the list starts below the sticky header + filter toolbar — never
@@ -355,18 +333,6 @@ export default function CVEFeed({
     return () => observer.disconnect()
   }, [loadNextPage])
 
-  function handleToggleSelect(cve) {
-    setSelectedMap(prev => {
-      const next = { ...prev }
-      if (next[cve.cve_id]) {
-        delete next[cve.cve_id]
-      } else {
-        next[cve.cve_id] = cve
-      }
-      return next
-    })
-  }
-
   useEffect(() => {
     if (!bulkMenuOpen) return
     function onDocClick(e) {
@@ -425,7 +391,8 @@ export default function CVEFeed({
         filters={filters}
         onFiltersChange={onFiltersChange}
         total={total}
-        showingRange={showingRange}
+        feedListRef={listRootRef}
+        feedCardCount={cves.length}
         onGenerateDigest={() => onGenerateDigest && onGenerateDigest(cves)}
         searchFocusTrigger={searchFocusTrigger}
       />
@@ -488,6 +455,7 @@ export default function CVEFeed({
       <div ref={listAnchorRef} className="cve-list-anchor" aria-hidden="true" />
 
       <div
+        ref={listRootRef}
         aria-live="polite"
         aria-atomic="false"
         className={`cve-list${isRefreshing ? ' feed-refreshing' : ''}`}
@@ -506,16 +474,8 @@ export default function CVEFeed({
             isNew={isNewSinceVisit(cve)}
             cardRef={el => { cardRefs.current[idx] = el }}
             inThread={investigation?.isCveInThread?.(cve.cve_id)}
-            onInvestigate={
-              investigation
-                ? (c) => investigation.startInvestigation(c)
-                : undefined
-            }
-            onLookupIoc={
-              investigation
-                ? (c) => investigation.pivotToIocFromCve(c)
-                : undefined
-            }
+            onInvestigate={investigation ? handleInvestigate : undefined}
+            onLookupIoc={investigation ? handleLookupIoc : undefined}
             exposureScore={assetAware ? getMatchScore(cve.cve_id) : 0}
             watchlistState={
               watchlist?.getState(cve.cve_id) || cve.watchlist_state || null

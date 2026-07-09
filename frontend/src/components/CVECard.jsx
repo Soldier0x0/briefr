@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { copyToClipboard } from '../utils/report.js'
 import { formatAbsolute } from '../utils/timezone.js'
 import { publishedAgeClass } from '../utils/cveAge.js'
@@ -49,7 +49,7 @@ function cvssBadgeClass(score, severity) {
   return 'unknown'
 }
 
-export default function CVECard({
+export default memo(function CVECard({
   cve,
   onSelect,
   selected,
@@ -356,4 +356,4 @@ export default function CVECard({
       )}
     </article>
   )
-}
+})
