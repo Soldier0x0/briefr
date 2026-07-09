@@ -28,6 +28,7 @@ _RETRO_MATCH_SQL = """
            NULL AS threatfox_first_seen
     FROM ioc_watchlist w
     INNER JOIN otx_pulse_iocs o
+        -- LOWER() on both sides: OTX mirror keeps upstream IOC casing (e.g. DOMAIN).
         ON LOWER(o.ioc_value) = LOWER(w.ioc_value)
     LEFT JOIN correlation_campaigns camp
         ON camp.primary_pulse_id = o.pulse_id

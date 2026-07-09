@@ -338,14 +338,17 @@ def _format_ioc_watchlist_hit(match: dict) -> str:
         camp_label = (match.get("campaign_label") or campaign_id).strip()
         lifecycle = (match.get("campaign_lifecycle") or "active").strip()
         confidence = (match.get("campaign_confidence") or "medium").strip()
-        member_count = int(match.get("campaign_member_count") or 0)
+        try:
+            member_count = int(match.get("campaign_member_count") or 0)
+        except (TypeError, ValueError):
+            member_count = 0
         member_note = f"{member_count} linked CVEs" if member_count else "linked CVEs"
         lines.append(
             f"Campaign: {camp_label} ({lifecycle}, {member_note}, {confidence} confidence)"
         )
 
     tf_conf = match.get("threatfox_confidence")
-    if tf_conf is not None and str(tf_conf).strip() != "":
+    if tf_conf is not None:
         try:
             conf_val = int(tf_conf)
             lines.append(f"ThreatFox confidence: {conf_val}/100")
