@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from correlation.config import CAMPAIGN_ALGORITHM_VERSION, get_max_campaign_members
+from correlation.lifecycle import compute_campaign_lifecycle, fetch_member_lifecycle_inputs
 from correlation.hub_suppress import filter_campaign_members
 
 logger = logging.getLogger(__name__)
@@ -81,7 +82,8 @@ async def build_campaigns_from_pulses(db) -> dict[str, int]:
 
     campaigns_written = 0
     members_written = 0
-    now = datetime.now(timezone.utc).isoformat()
+    now_dt = datetime.now(timezone.utc)
+    now = now_dt.isoformat()
 
     for prow in pulse_rows:
         pulse_id = prow["pulse_id"]
@@ -131,6 +133,16 @@ async def build_campaigns_from_pulses(db) -> dict[str, int]:
             continue
 
         confidence = _confidence_for_pulse(len(members))
+        member_inputs, link_fetched = await fetch_member_lifecycle_inputs(
+            db, pulse_id, members
+        )
+        pulse_created = meta.get("created_date") or ""
+        lifecycle = compute_campaign_lifecycle(
+            pulse_created_date=pulse_created,
+            members=member_inputs,
+            member_link_fetched_at=link_fetched,
+            now=now_dt,
+        )
         await db.execute(
             """
             INSERT INTO correlation_campaigns (
@@ -149,7 +161,7 @@ async def build_campaigns_from_pulses(db) -> dict[str, int]:
                 json.dumps(countries),
                 confidence,
                 len(members),
-                "active",
+                lifecycle,
                 CAMPAIGN_ALGORITHM_VERSION,
                 now,
             ),
