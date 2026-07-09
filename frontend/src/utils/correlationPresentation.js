@@ -59,6 +59,31 @@ export function campaignLifecycleClass(lifecycle) {
   return 'badge-campaign-active'
 }
 
+/**
+ * Primary campaign row for drawer header chip (C-Evolve-3).
+ * @param {object | null | undefined} correlation
+ * @param {string} cveId
+ * @returns {{ campaign: object, linkedCount: number, lifecycle: string } | null}
+ */
+export function primaryCampaignChip(correlation, cveId) {
+  const campaigns = correlation?.campaigns
+  if (!Array.isArray(campaigns) || !campaigns.length || !cveId) return null
+  const sorted = [...campaigns].sort((a, b) => {
+    const countA = a.member_count ?? (a.members?.length ?? 0)
+    const countB = b.member_count ?? (b.members?.length ?? 0)
+    return countB - countA
+  })
+  const primary = sorted[0]
+  const members = Array.isArray(primary.members) ? primary.members : []
+  const linkedCount = members.filter(id => id && id !== cveId).length
+  if (linkedCount <= 0) return null
+  return {
+    campaign: primary,
+    linkedCount,
+    lifecycle: primary.lifecycle || 'active',
+  }
+}
+
 export const SUPPRESSION_REASONS = [
   { id: 'shared_hosting', label: 'Shared hosting / CDN' },
   { id: 'known_scanner', label: 'Known scanner' },

@@ -209,6 +209,36 @@ export function InvestigationProvider({ children, navigation }) {
     }
   }, [ensureCveInThread, navigation])
 
+  const pivotToCampaign = useCallback((campaign, anchorCve) => {
+    if (!campaign) return
+    setPivotNotice(null)
+    const anchor = ensureCveInThread(anchorCve, INV_SOURCES.DRAWER)
+    if (!anchor) return
+    const anchorId = typeof anchorCve === 'string' ? anchorCve : anchorCve?.cve_id
+    const memberIds = (campaign.members || []).filter(id => id && id !== anchorId)
+    let added = 0
+    for (const cveId of memberIds) {
+      if (itemsRef.current.some(i => i.type === INV_TYPES.CVE && i.id === cveId)) continue
+      recordItem({
+        type: INV_TYPES.CVE,
+        id: cveId,
+        title: cveId,
+        description: campaign.summary || campaign.label || `Campaign cluster ${campaign.campaign_id || ''}`.trim(),
+        source: INV_SOURCES.DRAWER,
+        pivotFrom: anchor,
+        meta: { campaign_id: campaign.campaign_id, lifecycle: campaign.lifecycle },
+      })
+      added += 1
+    }
+    setPanelExpanded(true)
+    setMobileSheetOpen(true)
+    if (added === 0) {
+      setPivotNotice('All linked CVEs from this campaign are already in the investigation.')
+    } else {
+      setPivotNotice(`Added ${added} linked CVE${added === 1 ? '' : 's'} from campaign cluster.`)
+    }
+  }, [ensureCveInThread, recordItem])
+
   const openCveById = useCallback((cveId) => { if (!cveId) return; navigation?.openCve?.(cveId) }, [navigation])
 
   const pivotToAtlasActor = useCallback((actorName, fromItem) => {
@@ -271,6 +301,7 @@ export function InvestigationProvider({ children, navigation }) {
     pivotToIoc,
     pivotToIocFromCve,
     pivotToOtxPulse,
+    pivotToCampaign,
     openCveById,
     pivotToAtlasActor,
     pivotToCveFromAtlas,
@@ -296,6 +327,7 @@ export function InvestigationProvider({ children, navigation }) {
     pivotToIoc,
     pivotToIocFromCve,
     pivotToOtxPulse,
+    pivotToCampaign,
     openCveById,
     pivotToAtlasActor,
     pivotToCveFromAtlas,
