@@ -20,7 +20,7 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 **Order:** PR1 → PR3 → PR4 → PR2 → PR10 → PR7 → PR5 → PR6 → PR9 → PR11 → PR8. PR12/PR13 deferred.
 
-**In progress:** PR1 `cursor/ux-audit-pr1-scheduler-catalog-489a`.
+**In progress:** PR1 draft **#398** pushed (`cursor/ux-audit-pr1-scheduler-catalog-489a`) — local verify green; **not merged**. Next: PR3 off `main`.
 
 ---
 
