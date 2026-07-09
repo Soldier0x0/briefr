@@ -137,7 +137,23 @@ def test_retro_match_local_join(tmp_path, monkeypatch):
                 "INSERT INTO otx_pulse_iocs (pulse_id, ioc_type, ioc_value) VALUES ('p1', 'DOMAIN', 'evil.example')"
             )
             await db.execute(
-                "INSERT INTO threatfox_iocs (ioc_id, ioc_type, ioc_value, raw_ioc) VALUES ('t1', 'domain', 'evil.example', 'evil.example')"
+                """
+                INSERT INTO correlation_campaigns (
+                    campaign_id, primary_pulse_id, label, confidence,
+                    member_count, lifecycle
+                ) VALUES ('camp_p1', 'p1', 'Evil pulse cluster', 'high', 4, 'active')
+                """
+            )
+            await db.execute(
+                """
+                INSERT INTO threatfox_iocs (
+                    ioc_id, ioc_type, ioc_value, raw_ioc, malware, threat_type,
+                    confidence_level, first_seen
+                ) VALUES (
+                    't1', 'domain', 'evil.example', 'evil.example',
+                    'vidar', 'botnet_cc', 90, '2024-06-01'
+                )
+                """
             )
             await db.commit()
         finally:
@@ -154,6 +170,111 @@ def test_retro_match_local_join(tmp_path, monkeypatch):
     matches = run_db_test(check())
     sources = {m["source"] for m in matches}
     assert sources == {"otx", "threatfox"}
+
+    otx = next(m for m in matches if m["source"] == "otx")
+    assert otx["campaign_id"] == "camp_p1"
+    assert otx["campaign_label"] == "Evil pulse cluster"
+    assert otx["campaign_lifecycle"] == "active"
+    assert otx["campaign_confidence"] == "high"
+    assert otx["campaign_member_count"] == 4
+
+    tf = next(m for m in matches if m["source"] == "threatfox")
+    assert tf["threatfox_confidence"] == 90
+    assert tf["threatfox_malware"] == "vidar"
+    assert tf["threatfox_threat_type"] == "botnet_cc"
+    assert tf["threatfox_first_seen"] == "2024-06-01"
+
+
+def test_ioc_watchlist_hit_webhook_format(tmp_path, monkeypatch):
+    from webhooks.alerts import _format_ioc_watchlist_hit, process_ioc_watchlist_hit_webhooks
+
+    otx_msg = _format_ioc_watchlist_hit(
+        {
+            "ioc_value": "evil.example",
+            "ioc_type": "domain",
+            "source": "otx",
+            "label": "c2",
+            "detail": "OTX pulse hit",
+            "campaign_id": "camp_p1",
+            "campaign_label": "Evil pulse cluster",
+            "campaign_lifecycle": "active",
+            "campaign_confidence": "high",
+            "campaign_member_count": 4,
+        }
+    )
+    assert "IOC watchlist hit (OTX)" in otx_msg
+    assert "Campaign: Evil pulse cluster" in otx_msg
+    assert "4 linked CVEs" in otx_msg
+
+    tf_msg = _format_ioc_watchlist_hit(
+        {
+            "ioc_value": "evil.example",
+            "ioc_type": "domain",
+            "source": "threatfox",
+            "detail": "vidar",
+            "threatfox_confidence": 90,
+            "threatfox_malware": "vidar",
+            "threatfox_threat_type": "botnet_cc",
+            "threatfox_first_seen": "2024-06-01",
+        }
+    )
+    assert "ThreatFox confidence: 90/100" in tf_msg
+    assert "Threat type: botnet_cc" in tf_msg
+    assert "First seen: 2024-06-01" in tf_msg
+
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(204)
+
+    import httpx
+    import resilient_client
+    from webhooks.destinations import sync_env_destinations_to_db
+
+    db_path = tmp_path / "ioc_webhook.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+    run_db_test(init_db())
+    run_db_test(sync_env_destinations_to_db())
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    monkeypatch.setattr(resilient_client, "_client", client)
+    monkeypatch.setattr("webhooks.ssrf._webhook_client", client)
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
+
+    async def fake_resolve(_host):
+        return ["93.184.216.34"]
+
+    monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
+
+    async def no_sleep(_seconds):
+        return None
+
+    monkeypatch.setattr(resilient_client.asyncio, "sleep", no_sleep)
+    resilient_client.reset_feed_health()
+    run_db_test(sync_env_destinations_to_db())
+
+    sent = run_db_test(
+        process_ioc_watchlist_hit_webhooks(
+            [
+                {
+                    "user_id": 1,
+                    "ioc_value": "evil.example",
+                    "source": "otx",
+                    "ioc_type": "domain",
+                    "campaign_id": "camp_p1",
+                    "campaign_label": "Evil pulse cluster",
+                    "campaign_lifecycle": "active",
+                    "campaign_confidence": "high",
+                    "campaign_member_count": 2,
+                }
+            ]
+        )
+    )
+    assert sent == 1
+    assert len(calls) == 1
+    assert "Campaign: Evil pulse cluster" in calls[0].content.decode()
 
 
 def test_vulncheck_kev_tier_score():
