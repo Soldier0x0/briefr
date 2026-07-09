@@ -310,7 +310,7 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 ### Audit log + auth direction (V1.2 decision, 2026-06-11)
 
 - **Audit:** `audit_log` table (actor, action, target, timestamp) written by manual `POST /api/refresh*` calls, backup/restore, and all admin actions (`routers/admin.py`). Actor is `system` for backups/restores; empty for request-driven actions until app login lands. Admin pane exposes it at `GET /api/admin/audit-log` with prefix filter (V1.4 shipped).
-- **Auth direction:** BRIEFR ships as a self-hosted platform with a **built-in app login** (shipped; not enterprise SSO / edge-auth based). Admin and refresh routes require a session with the `admin` role — the interim shared admin-key header was removed in Sprint A0 (it failed open when unset). `audit_log.actor` is the logged-in username. A Cloudflare-Access JWT middleware was prototyped and dropped — see `docs/ROADMAP.md` amendments.
+- **Auth direction:** BRIEFR ships built-in app login (shipped). Admin and **ingest** `POST /api/refresh*` routes require an `admin` role session. **`POST /api/auth/refresh`** is available to any signed-in user and rejects sessions past `sessions.expires_at` or with token reuse (revokes all user sessions). The legacy shared admin-key header was removed in Sprint A0.
 
 ### Rate limiting + structured logging (V1.2 §5.5)
 

@@ -5,7 +5,11 @@
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
-**Version:** 1.1 beta · **Date:** 2026-06-07
+**Version:** 1.5.0 · **Date:** 2026-07-09
+
+**Production:** PostgreSQL 16 required (`BRIEFR_REQUIRE_POSTGRES=1`). SQLite remains for local pytest only.
+
+**Recent:** V1.5 product (#373–#377), Track I performance (#378–#382), graphify knowledge graph refreshed (`graphify-out/`, commit `b32ff26+`).
 
 ---
 
@@ -16,8 +20,9 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 | API framework | FastAPI | 0.136.3 | REST API, OpenAPI, validation |
 | ASGI server | uvicorn | 0.48.0 | Production HTTP server |
 | HTTP client | httpx | 0.28.1 | Async external API calls |
-| Scheduler | APScheduler | 3.11.2 | 11 background ingest/correlation/ML jobs (+ opt-in exploit sources) |
-| Database | SQLite + aiosqlite | 0.22.1 | Local persistence (`briefr.db`) |
+| Scheduler | APScheduler | 3.11.2 | ~20+ recurring jobs (+ opt-in gates) in `scheduler.py` |
+| Database (prod) | PostgreSQL 16 + asyncpg | — | Required in production (`DATABASE_URL`) |
+| Database (tests) | SQLite + aiosqlite | 0.22.1 | Local pytest only |
 | Validation | Pydantic | 2.13.4 | Request/response models |
 | Config | python-dotenv | 1.2.2 | `.env` loading |
 | YAML | PyYAML | 6.0.2 | ATLAS feed parsing |
@@ -25,7 +30,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 | Backup encryption | pyrage | 1.3.0 | age (X25519) archive encryption in `backup/manager.py`; interoperable with the `age` CLI |
 | Vector math | NumPy | 2.4.4 | Brute-force cosine similarity over `cve_embeddings` BLOBs (default path) |
 | Embeddings (optional) | fastembed | not pinned — install only when `EMBEDDINGS_ENABLED=1` | Local CPU ONNX embedding model (`BAAI/bge-small-en-v1.5`); never imported on the request path |
-| UI framework | React | 18.3.1 | Analyst SPA |
+| UI framework | React | 19.x | Analyst SPA (Vite 8) |
 | Build tool | Vite | 5.4.1 | Dev server and production bundle |
 | Routing | react-router-dom | 7.16.0 | `/privacy`, `/terms` routes |
 | PDF export | jsPDF + html2canvas | 4.2.1 / 1.4.1 | Client-side CVE PDF reports |
@@ -346,7 +351,28 @@ Indexes: `idx_audit_log_created(created_at)`, `idx_audit_log_action(action)`. Wr
 | snooze_until | TEXT | nullable | UTC `YYYY-MM-DD HH:MM:SS`; set when `state='snooze'` |
 | created_at | TEXT | DEFAULT datetime('now') | Last pin/snooze action |
 
-Indexes: `idx_watchlist_state(state)`, `idx_watchlist_snooze_until(snooze_until)`. Written by `POST /api/watchlist`; removed by `DELETE /api/watchlist/{cve_id}`. Read by watchlist API, `GET /api/cves` (join for sort/filter), and `GET /api/cves/{id}` (detail enrichment). Single-user now — nullable `user_id` deferred to app login / V2.0.
+Indexes: `idx_watchlist_state(state)`, `idx_watchlist_snooze_until(snooze_until)`. CVE pin/snooze feed integration.
+
+### ioc_watchlist (V1.5)
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | INTEGER | PRIMARY KEY | |
+| user_id | INTEGER | NOT NULL FK → users | Owner |
+| ioc_type | TEXT | NOT NULL | `ip`, `hash`, `domain` |
+| ioc_value | TEXT | NOT NULL | Normalized IOC value |
+| label | TEXT | DEFAULT '' | Optional analyst label |
+| created_at | TEXT | DEFAULT datetime('now') | |
+
+Unique `(user_id, ioc_type, ioc_value)`. API: `GET/POST/DELETE /api/ioc/watchlist` (auth required).
+
+### threatfox_iocs (V1.5)
+
+Local mirror of Abuse.ch ThreatFox IOCs for retro-match (`threatfox_sync` job). Indexed on `ioc_value`.
+
+### detection_backlog (V1.5)
+
+KEV-driven detection gap rows for Forge Backlog tab. Populated on KEV sync + `kev_backlog_reconcile`.
 
 ---
 
@@ -369,6 +395,15 @@ All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default ti
 | `embeddings_backfill` | Every `EMBEDDINGS_SYNC_INTERVAL_HOURS` (default 6h; first run ~90s after boot) | Local CPU model (fastembed/ONNX) — no network after model download | `cve_embeddings` | **No-op unless `EMBEDDINGS_ENABLED=1`**; clear warning if `fastembed` missing; log error otherwise | Yes — only missing vectors embedded, commit per batch |
 | `llm_product_extraction` | Every `LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS` (default 6h; first run ~150s after boot) | Groq API (via `resilient_client`, `retries=0`) | `cves.affected_products` (only while empty) + `affected_products_source='llm'`, `feed_cache` (`llm_products:*`) | **No-op unless `LLM_PRODUCT_EXTRACTION_ENABLED=1` AND `GROQ_API_KEY` set**; circuit-open aborts run; per-CVE errors retried next run (not cached) | Yes — completed extractions negative-cached 7d; write guarded on empty field |
 | `backup_deadman_check` | Every `max(1, BACKUP_INTERVAL_HOURS // 2)` (default 3h; first run ~5m after boot) | Local backup archive mtimes | `webhook_alert_log`, `webhook_delivery_log`, `sync_state.backup_deadman_baseline_utc` | **No-op unless `BACKUP_ENABLED=1` and a webhook destination is configured**; log on delivery failure | Yes — one alert per stale period |
+| `threatfox_sync` | Every `THREATFOX_SYNC_INTERVAL_HOURS` (default 24h) | Abuse.ch ThreatFox | `threatfox_iocs` | Skipped without `ABUSECH_AUTH_KEY` | Yes — upsert mirror |
+| `vulncheck_kev_sync` | Every `VULNCHECK_KEV_SYNC_INTERVAL_HOURS` (default 24h) | VulnCheck KEV API | `cves.is_vulncheck_exploited` | No-op without `VULNCHECK_API_KEY` | Yes — flag sync |
+| `ioc_retro_match` | Cron `IOC_RETRO_MATCH_HOUR:MINUTE` (default 04:00) | Local OTX + ThreatFox mirrors | `ioc_watchlist_hit` webhooks | Log error | Yes — deduped alerts |
+| `kev_backlog_reconcile` | Weekly cron | Local DB | `detection_backlog` | Log error | Yes |
+| `watchlist_monitor_alerts` | Interval | Pinned CVE change detection | `watchlist_alert` webhooks | Log error | Yes |
+| `session_cleanup` | Daily | — | purges expired `sessions` | Log error | Yes |
+| `cache_retention_cleanup` | Daily | — | stale `ioc_cache` / `feed_cache`, aged history | Log error | Yes |
+| `detection_context_sync` | Interval (`DETECTION_CONTEXT_SYNC_ENABLED`) | Local CVE/exploit text | `feed_cache` detection_ctx | No-op when disabled | Yes |
+| `detection_context_llm` | Interval (`DETECTION_CONTEXT_LLM_ENABLED`) | LLM router | `feed_cache` detection_ctx | No-op when disabled | Yes |
 
 ---
 
@@ -390,7 +425,7 @@ Primary key `(alert_type, target)` — dedupes events until cleared (backup dead
 | `kind` | TEXT | `discord`, `telegram`, `generic` |
 | `label` | TEXT | Display name |
 | `enabled` | INTEGER | 1 = active |
-| `event_types` | TEXT | JSON array: `kev_alert`, `backup_failure`, `health` |
+| `event_types` | TEXT | JSON array: `kev_alert`, `backup_failure`, `health`, `watchlist_alert`, `kev_backlog`, `ioc_watchlist_hit` |
 | `config_json` | TEXT | Channel config (URL, token, chat_id) — env-seeded rows refresh config on startup |
 | `source` | TEXT | `env` or `db` |
 
@@ -483,8 +518,8 @@ Weights are read by the frontend from `GET /api/config/risk` on every app load f
 | EPSS sync + history | Complete | Snapshot before update |
 | MITRE ATT&CK mapping | Complete | Weekly Sunday job |
 | MITRE ATLAS feed | Complete | Weekly with MITRE job |
-| CVE feed + filters | Complete | Pagination max 50/page |
-| CVE detail enrichment | Complete | Sploitus/GN/OTX/OSV/CIRCL + ATLAS per-CVE fields on `GET /api/cves/{id}` |
+| CVE detail enrichment | Complete | Parallel off pool (#379): Sploitus/OTX/OSV/CIRCL; GreyNoise on-demand only |
+| CVE feed + filters | Complete | Pagination max 50/page; 45s count cache; Postgres `pg_trgm` (Alembic `012`) |
 | IOC lookup multi-source | Complete | 6h cache |
 | Risk score v1.1b | Complete | Client-side; momentum lazy |
 | Correlation engine | Complete | 3 levels; 6h on-demand cache |
@@ -496,10 +531,11 @@ Weights are read by the frontend from `GET /api/config/risk` on every app load f
 | Case Studies / RSS | Complete | 6 feeds, 30min cache |
 | API usage quotas UI | Complete | `/api/usage/ioc` |
 | Backup encryption (age) | Complete | `briefr-*.tar.gz.age`; key `BACKUP_AGE_KEY_FILE` outside `BACKUP_DIR` (enforced); restore + startup auto-restore decrypt transparently |
-| Authentication | Not implemented | Planned Beta V1.2 — see `Beta V1.2.md` |
-| `POST /api/investigation/summary` | Complete | Legacy alias → `generate_executive_summary` |
-| Repository / DI layer | Not implemented | Planned Beta V1.2 |
-| Circuit breakers | Not implemented | Timeouts only |
+| Authentication | Complete | Built-in login + sessions; admin role for ingest/admin; refresh rotation + expiry (#381) |
+| V1.5 Forge extensions | Complete | Threat scenarios, rule proof bench, KEV backlog, IOC watchlist (#373–#376) |
+| Track I performance | Complete | Feed scroll (#378), detail pool (#379), bulk upsert (#380), list query (#382) |
+| Repository / DI layer | Partial | `db/` package + router split; not full DI |
+| Circuit breakers | Complete | Per-source in `resilient_client.py` |
 | Structured logging | Complete | JSON lines with `request_id` (`structured_logging.py`); `X-Request-ID` response header; `LOG_FORMAT=plain` opt-out |
 | Admin log viewer (V1.4) | Complete | In-process 500-line ring buffer; `GET /api/admin/logs` with level/logger/request_id/category filters; admin pane Application logs page |
 | Rate limiting | Complete | In-memory token bucket per client IP (`rate_limit.py`) on `/api/ioc/lookup` (30/min) + `/api/refresh*` (10/min); 429 + `Retry-After` |
