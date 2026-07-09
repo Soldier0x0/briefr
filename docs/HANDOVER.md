@@ -12,6 +12,15 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — V1.5 threat model UI Phase 1 (#TBD)
+
+**Merged:** #TBD — `GET /api/threat-model/scenarios`; Forge **Threat scenarios** view
+(stack-scoped ATT&CK cards, CVE evidence, mitigation actions).
+
+**Autonomous next (do not ask):** V1.5 Phase 2 rule proof bench (file-based).
+
+---
+
 ## 2026-07-09 — Snapshot versioning + upgrade runbook (#372)
 
 **Merged:** #372 — manifest `format_version: 1`; `verify_intel_snapshot.py` /

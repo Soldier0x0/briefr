@@ -42,6 +42,7 @@ from routers import health as health_router
 from routers import ioc as ioc_router
 from routers import meta as meta_router
 from routers import refresh as refresh_router
+from routers import threat_model as threat_model_router
 from routers import wallboard as wallboard_router
 from routers import watchlist as watchlist_router
 from scheduler import (
@@ -255,6 +256,7 @@ app.include_router(cves_router.intel_router)
 app.include_router(meta_router.router)
 app.include_router(config_router.router)
 app.include_router(forge_router.router)
+app.include_router(threat_model_router.router)
 app.include_router(brief_router.router)
 app.include_router(correlation_router.router)
 app.include_router(watchlist_router.router)
