@@ -12,16 +12,12 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-09 — C-Evolve-2 + I2 shipped; continuing Wave 2
+## 2026-07-09 — FR1 provenance shipped; continuing Wave 3
 
-**Merged:** #352 C-Evolve-2 feed campaign badge (`member_of_campaign` +
-`campaign_lifecycle` on list/export; Campaign badge + tooltip on feed cards).
-#353 I2 gzip (nginx snippet + `GZipMiddleware` fallback).
+**Merged:** #355 FR1 — per-section provenance (`exploit_provenance`, detection/correlation
+`provenance`) with drawer `IntelProvenanceLine` + tooltips.
 
-**Also on main from prior turns:** #350 M1 ADR-002 scoring, #351 C-Evolve-1 lifecycle,
-#346–#349 Track J wave.
-
-**Autonomous next (do not ask):** **FR1** — per-CVE intel provenance lines in drawer.
+**Autonomous next (do not ask):** **H-verify** → C-Evolve-3 → I3/I5/I8/I9 → Phase B backlog.
 
 ---
 
