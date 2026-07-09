@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Dependency-safe copy order (parents before children).
 TABLE_ORDER: list[str] = [
-    "cves", "ioc_cache", "kev_deadlines", "api_usage", "sync_state",
+    "cves", "ioc_cache", "kev_deadlines", "api_usage", "sync_state", "app_settings",
     "mitre_techniques", "cve_technique_map", "atlas_techniques",
     "atlas_case_studies", "cve_atlas_map", "epss_history", "cve_exploits",
     "feed_cache", "cve_change_history", "otx_cve_pulses", "otx_pulse_iocs", "otx_pulses",
