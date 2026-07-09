@@ -12,6 +12,14 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — Full doc + graph sync (#384)
+
+**Merged:** #384 — `API_REFERENCE.md` auth section; `TECHNICAL_INVENTORY.md` v1.5.0 refresh;
+`SYSTEM_DESIGN.md` auth/refresh notes; `graphify-out/` rebuilt (`5923` nodes, `11523` edges);
+regenerated `SYSTEM_DESIGN.pdf` + `TECHNICAL_INVENTORY.xlsx` (on-demand, gitignored).
+
+---
+
 ## 2026-07-09 — Track I performance + security housekeeping (#378–#382)
 
 **Merged:** #378 I4 feed scroll · #379 I6 detail pool · #380 I10 bulk upsert ·

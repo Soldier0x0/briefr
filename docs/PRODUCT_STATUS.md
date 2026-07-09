@@ -88,6 +88,8 @@ Details: [`ROADMAP.md`](ROADMAP.md). Historical beta specs → `docs/archive/` (
 | Phase | Status |
 |-------|--------|
 | Doc structure + image briefs | In progress |
+| Living API / architecture docs | Current — `API_REFERENCE.md`, `SYSTEM_DESIGN.md`, `TECHNICAL_INVENTORY.md`, `docs/PRODUCT_STATUS.md` synced through Track I (#383) |
+| Graphify knowledge graph | Current — `graphify-out/graph.json` + `GRAPH_REPORT.md` (5923 nodes; HTML viz omitted when >5000 nodes) |
 | Archive beta root `.md` files | Pending |
 | MkDocs site | Pending |
 | Stale README / API_REFERENCE auth claims | Pending |

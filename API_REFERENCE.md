@@ -3,14 +3,95 @@
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
 **Base URL:** `/api` (proxied from Vite dev server at `http://localhost:5173/api` → `http://localhost:8000/api`)  
-**Auth:** built-in app login (`briefr_at` session cookie); admin and refresh routes additionally require the `admin` role — see the per-section auth notes below (Sprint A0)  
+**Auth:** built-in app login (`briefr_at` / `briefr_rt` cookies). **Ingest** `POST /api/refresh*` and all `/api/admin/*` routes require the `admin` role. See [Authentication](#authentication) below.  
 **Interactive docs:** `GET /api/docs` (Swagger UI), `GET /api/redoc` (ReDoc) — **unprotected; disable in production**
 
 Default error shape (FastAPI): `{"detail": "<message>"}`
 
 **Request IDs:** every response carries an `X-Request-ID` header (echoed from the request when a well-formed `X-Request-ID` is supplied, generated otherwise). The same ID appears as `request_id` in the backend's JSON log lines.
 
-**Rate limiting:** `POST /api/ioc/lookup` and all `POST /api/refresh*` routes are token-bucket rate limited per client IP (defaults: 30/min and 10/min — `RATE_LIMIT_IOC_PER_MINUTE`, `RATE_LIMIT_REFRESH_PER_MINUTE`; `RATE_LIMIT_ENABLED=0` disables). Over the limit → `429` with a `Retry-After` header (whole seconds).
+**Rate limiting:** `POST /api/ioc/lookup` and all `POST /api/refresh*` routes are token-bucket rate limited per client IP (defaults: 30/min and 10/min — `RATE_LIMIT_IOC_PER_MINUTE`, `RATE_LIMIT_REFRESH_PER_MINUTE`; `RATE_LIMIT_ENABLED=0` disables). Over the limit → `429` with a `Retry-After` header (whole seconds). Auth routes use separate buckets (`RATE_LIMIT_LOGIN_PER_MINUTE`, `RATE_LIMIT_AUTH_REFRESH_PER_MINUTE`).
+
+---
+
+## Authentication
+
+Built-in app login (Sprint A0). Sessions use HttpOnly cookies:
+
+| Cookie | Path | Purpose |
+|--------|------|---------|
+| `briefr_at` | `/` | Short-lived JWT access token |
+| `briefr_rt` | `/api/auth` | Rotating refresh token (stored hashed in `sessions`) |
+
+**Roles:** `admin` (full admin/ingest routes) and standard users. Admin-only routes return `403` for non-admin sessions.
+
+### GET /api/auth/setup-required
+
+**Description:** First-run bootstrap probe — `true` when no users exist.
+
+**Auth:** None
+
+**Response:** `{"required": true|false}`
+
+### POST /api/auth/setup
+
+**Description:** Create the first admin account (once only). Permanently disabled after any user row exists — not self-service signup.
+
+**Auth:** None (rate-limited like login)
+
+**Body:** `{"username": "...", "password": "..."}`
+
+**Response:** `{"username": "...", "role": "admin"}` — sets auth cookies.
+
+**Error responses:** `409` when setup already completed; `400` weak username/password.
+
+### POST /api/auth/login
+
+**Body:** `{"username": "...", "password": "...", "remember_me": false}`
+
+**Response:** `{"username": "...", "role": "admin"|"user"}` — sets auth cookies.
+
+**Error responses:** `401` generic invalid credentials (timing-safe dummy verify on unknown users).
+
+### POST /api/auth/logout
+
+**Description:** Revokes the current refresh session and clears cookies.
+
+**Auth:** Optional (revokes when `briefr_rt` present)
+
+**Response:** `{"status": "ok"}`
+
+### POST /api/auth/refresh
+
+**Description:** Rotate refresh token and issue a new access JWT.
+
+**Auth:** Valid `briefr_rt` cookie (any active user — not admin-only)
+
+**Response:** `{"username": "...", "role": "..."}` — new cookies.
+
+**Error responses:** `401` when cookie missing, session revoked, user inactive, **`sessions.expires_at` in the past**, or refresh-token reuse detected (reuse revokes all sessions for the user).
+
+### GET /api/auth/me
+
+**Auth:** Required (`briefr_at`)
+
+**Response:** `{"username": "...", "role": "...", "last_login_at": "..."}`
+
+### GET /api/auth/sessions
+
+**Description:** List active refresh sessions for the signed-in user.
+
+**Auth:** Required
+
+**Response:** `{"user": {...}, "sessions": [{id, created_at, last_used_at, expires_at, user_agent, ip, remember_me, is_current}, ...]}`
+
+### DELETE /api/auth/sessions/{session_id}
+
+**Description:** Revoke one session owned by the signed-in user.
+
+**Auth:** Required
+
+**Response:** `{"status": "revoked"}` — `404` / `403` when not found or not owned.
 
 ---
 
