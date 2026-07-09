@@ -584,7 +584,7 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 | `vulncheck_kev_sync` | Every 24h (`VULNCHECK_KEV_SYNC_INTERVAL_HOURS`) | `VULNCHECK_API_KEY` | `cves.is_vulncheck_exploited` |
 | `ioc_retro_match` | Daily cron (`IOC_RETRO_MATCH_HOUR`/`MINUTE`, default 04:00) | — | dispatches `ioc_watchlist_hit` webhooks |
 
-Retro-match joins `ioc_watchlist` against local `otx_pulse_iocs` and `threatfox_iocs` (no live IOC lookup). Optional webhook event: `ioc_watchlist_hit` (dedupe key `{user_id}:{ioc_value}:{source}`).
+Retro-match joins `ioc_watchlist` against local `otx_pulse_iocs` and `threatfox_iocs` (no live IOC lookup). Optional webhook event: `ioc_watchlist_hit` (dedupe key `{user_id}:{ioc_value}:{source}`). Message body includes OTX **campaign** context when the pulse maps to `correlation_campaigns` (label, lifecycle, linked CVE count, confidence) and ThreatFox **severity** fields (`confidence_level`, malware, threat type, first seen) when present.
 
 ---
 

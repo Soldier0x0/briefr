@@ -364,7 +364,40 @@ def _format_ioc_watchlist_hit(match: dict) -> str:
         head += f" [{label}]"
     if detail:
         head += f" — {detail[:200]}"
-    return head
+
+    lines = [head]
+    campaign_id = (match.get("campaign_id") or "").strip()
+    if campaign_id:
+        camp_label = (match.get("campaign_label") or campaign_id).strip()
+        lifecycle = (match.get("campaign_lifecycle") or "active").strip()
+        confidence = (match.get("campaign_confidence") or "medium").strip()
+        try:
+            member_count = int(match.get("campaign_member_count") or 0)
+        except (TypeError, ValueError):
+            member_count = 0
+        member_note = f"{member_count} linked CVEs" if member_count else "linked CVEs"
+        lines.append(
+            f"Campaign: {camp_label} ({lifecycle}, {member_note}, {confidence} confidence)"
+        )
+
+    tf_conf = match.get("threatfox_confidence")
+    if tf_conf is not None:
+        try:
+            conf_val = int(tf_conf)
+            lines.append(f"ThreatFox confidence: {conf_val}/100")
+        except (TypeError, ValueError):
+            pass
+    malware = (match.get("threatfox_malware") or "").strip()
+    threat_type = (match.get("threatfox_threat_type") or "").strip()
+    if malware and malware.lower() not in detail.lower():
+        lines.append(f"Malware: {malware[:120]}")
+    if threat_type and threat_type.lower() not in detail.lower():
+        lines.append(f"Threat type: {threat_type[:120]}")
+    first_seen = (match.get("threatfox_first_seen") or "").strip()
+    if first_seen:
+        lines.append(f"First seen: {first_seen[:32]}")
+
+    return "\n".join(lines)
 
 
 async def process_ioc_watchlist_hit_webhooks(matches: list[dict]) -> int:
