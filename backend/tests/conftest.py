@@ -157,6 +157,40 @@ def _clear_read_cache_between_tests():
     clear_read_cache()
 
 
+def seed_pytest_auth_user_if_missing(
+    *,
+    user_id: int = 1,
+    username: str = "pytest-admin",
+    role: str = "admin",
+) -> None:
+    """Insert the JWT test user when absent. Does not overwrite an existing row
+    so demotion/revocation tests can change DB role after seeding."""
+
+    async def _seed() -> None:
+        from database import get_db
+
+        db = await get_db()
+        try:
+            rows = await db.execute_fetchall(
+                "SELECT id FROM users WHERE id = ?",
+                (user_id,),
+            )
+            if rows:
+                return
+            await db.execute(
+                """
+                INSERT INTO users (id, username, password_hash, role, is_active)
+                VALUES (?, ?, 'hash', ?, 1)
+                """,
+                (user_id, username, role),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_seed())
+
+
 @pytest.fixture
 def auth_token():
     """Signed access-token factory (Sprint A0). Set the returned value as the
@@ -165,6 +199,7 @@ def auth_token():
     from auth.tokens import create_access_token
 
     def _make(role: str = "admin") -> str:
+        seed_pytest_auth_user_if_missing(role=role)
         return create_access_token(1, "pytest-admin", role)
 
     return _make
