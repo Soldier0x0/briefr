@@ -12,16 +12,16 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-09 — Autonomous execution loop activated
+## 2026-07-09 — C-Evolve-2 + I2 shipped; continuing Wave 2
 
-**Scope:** Complete all sprint checkboxes, then parked items (Track I Phase 3,
-correlation phases 4–5, monitor/watchlist alerts, Track L Wave 4, operator settings
-in DB, V1.5 tail). **Excluded only:** STIX 2.1 export, V2.0 platform release.
+**Merged:** #352 C-Evolve-2 feed campaign badge (`member_of_campaign` +
+`campaign_lifecycle` on list/export; Campaign badge + tooltip on feed cards).
+#353 I2 gzip (nginx snippet + `GZipMiddleware` fallback).
 
-**Loop:** implement → `./scripts/verify-local.sh` → PR → Gemini review (~2 min) → fix →
-merge → docs. No pauses for approval between items. Contract in `AGENTS.md`.
+**Also on main from prior turns:** #350 M1 ADR-002 scoring, #351 C-Evolve-1 lifecycle,
+#346–#349 Track J wave.
 
-**Autonomous next (do not ask):** **M1** — ADR-002 scoring surface.
+**Autonomous next (do not ask):** **FR1** — per-CVE intel provenance lines in drawer.
 
 ---
 
