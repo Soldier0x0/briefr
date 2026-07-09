@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { adminApi } from '../../api.js'
 import StatCard from './shared/StatCard.jsx'
 import JobTable from './shared/JobTable.jsx'
@@ -104,6 +104,28 @@ function OperatorOverview({ system, toast }) {
   const [intResult, setIntResult] = useState(null)
   const [running, setRunning] = useState({})
   const [showDiag, setShowDiag] = useState(false)
+  const [onboarding, setOnboarding] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    adminApi.get('/onboarding')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (!cancelled) setOnboarding(data) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  async function dismissOnboarding() {
+    setRunning(r => ({ ...r, onboardingDismiss: true }))
+    try {
+      const res = await adminApi.post('/onboarding/dismiss', {})
+      if (res.ok) {
+        setOnboarding(prev => prev ? { ...prev, dismissed: true } : prev)
+        toast('Checklist dismissed', true)
+      }
+    } catch (e) { toast(String(e.message), false) }
+    setRunning(r => ({ ...r, onboardingDismiss: false }))
+  }
 
   async function runNow(jobId) {
     setRunning(r => ({ ...r, [jobId]: true }))
@@ -176,6 +198,32 @@ function OperatorOverview({ system, toast }) {
     <div>
       <h1 className="admin-page-title">System health</h1>
       <p className="admin-page-subtitle">At-a-glance status: DB integrity, sync ages, active locks, and recent job errors.</p>
+
+      {onboarding && !onboarding.dismissed && !onboarding.complete && (
+        <div className="admin-card" style={{ borderColor: 'var(--amber)', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <span className="admin-card-title" style={{ marginBottom: 0 }}>First-hour checklist</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
+              {onboarding.done_count}/{onboarding.total_count} complete
+            </span>
+            <button
+              className="admin-btn admin-btn-ghost"
+              style={{ fontSize: '0.7rem', marginLeft: 'auto' }}
+              onClick={dismissOnboarding}
+              disabled={running.onboardingDismiss}
+            >
+              Dismiss
+            </button>
+          </div>
+          {onboarding.items.map(item => (
+            <div key={item.id} style={{ fontSize: '0.8125rem', display: 'flex', gap: '0.5rem', padding: '0.25rem 0' }}>
+              <span style={{ color: item.done ? 'var(--green)' : 'var(--amber)' }}>{item.done ? '✓' : '○'}</span>
+              <span style={{ minWidth: 160 }}><strong>{item.title}</strong></span>
+              <span style={{ color: 'var(--text3)', flex: 1 }}>{item.detail}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="stat-card-row">
         <StatCard label="CVE COUNT" value={system.cve_count?.toLocaleString()} />

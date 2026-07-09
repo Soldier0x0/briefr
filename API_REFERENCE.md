@@ -1029,6 +1029,12 @@ Params: `log_limit` (1–500, default 200) — number of ring-buffer log lines t
 
 Response: JSON attachment (`Content-Disposition: attachment`) with `{support_pack_version, generated_at, version, environment, health, database, security, correlation, diagnostics: {smoke, integrity}, scheduler, logs}`. Database URLs and log `extra` fields matching secret patterns are redacted. Audit: `diagnostics.support_pack`.
 
+### GET /api/admin/onboarding
+First-hour operator checklist with live completion state. Response: `{items: [{id, title, detail, done, hint}], done_count, total_count, complete, dismissed, dismissed_at}`.
+
+### POST /api/admin/onboarding/dismiss
+Hide the checklist banner (stored in `sync_state`). Response: `{ok, dismissed_at}`. Audit: `onboarding.dismiss`.
+
 ### POST /api/admin/restart
 Body `{drain?: bool}`. When `drain=true`: waits up to 120s for all job locks to clear before restarting. Returns `{status: "draining"|"restarting"}`.
 

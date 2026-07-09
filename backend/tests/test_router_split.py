@@ -117,6 +117,8 @@ EXPECTED_ROUTES = [
     ("POST", "/api/admin/diagnostics/smoke"),
     ("POST", "/api/admin/diagnostics/integrity"),
     ("GET", "/api/admin/diagnostics/support-pack"),
+    ("GET", "/api/admin/onboarding"),
+    ("POST", "/api/admin/onboarding/dismiss"),
     # Rate-limit admin page: appended after diagnostics routes.
     ("GET", "/api/admin/ratelimit"),
     # V1.4 Theme 4: read-only wallboard (additive, after admin routes).
