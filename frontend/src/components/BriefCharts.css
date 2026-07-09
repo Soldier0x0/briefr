@@ -54,22 +54,8 @@
   gap: 14px;
 }
 
-.brief-charts-loading,
-.brief-charts-empty {
-  font-family: var(--font-mono);
-  font-size: 0.5625rem;
-  color: var(--text3);
-  letter-spacing: 0.04em;
-}
-
-.brief-charts-error {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  color: var(--red);
+.brief-charts-skeleton {
+  max-width: 180px;
 }
 
 .brief-charts-error--partial {
@@ -77,23 +63,6 @@
   margin-bottom: 4px;
   background: var(--red-dim);
   border: 1px solid var(--border2);
-}
-
-.brief-charts-retry-btn {
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  color: var(--text2);
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  padding: 3px 10px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: color 0.1s, border-color 0.1s;
-}
-
-.brief-charts-retry-btn:hover {
-  color: var(--text);
-  border-color: var(--text3);
 }
 
 .brief-charts-grid {
