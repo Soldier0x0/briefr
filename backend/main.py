@@ -119,7 +119,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="BRIEFR CVE Intelligence API",
-    version="1.0.0",
+    version="1.5.0",
     description=(
         "Proprietary CVE intelligence API. "
         "Copyright © 2026 Sai Harsha Vardhan. All rights reserved."

@@ -12,6 +12,18 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — V1.5 ship housekeeping (#377)
+
+**Merged:** #377 — app version **1.5.0** (`main.py`, frontend package); regenerated
+`SYSTEM_DESIGN.pdf` + `TECHNICAL_INVENTORY.xlsx` (on-demand, gitignored); security
+audit pass (no critical/high findings — medium backlog: CGNAT SSRF range, session
+`expires_at` on refresh, JWT role revalidation, unauthenticated LLM summary routes).
+
+**Autonomous next (do not ask):** Wave 4 remains parked; Phase B correlation tail or
+Post-B items per sprint when explicitly un-parked.
+
+---
+
 ## 2026-07-09 — V1.5 IOC watchlist Phase 5 (#376)
 
 **Merged:** #376 — persistent `ioc_watchlist` CRUD; ThreatFox mirror sync;
