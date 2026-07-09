@@ -63,6 +63,8 @@ EXPECTED_ROUTES = [
     ("GET", "/api/hunt-packs/{technique_id}"),
     ("GET", "/api/threat-model/scenarios"),
     ("POST", "/api/proof/run"),
+    ("GET", "/api/detection-backlog"),
+    ("POST", "/api/detection-backlog/{item_id}/dismiss"),
     # V1.3 Theme 1: morning brief (additive, appended after Forge routes).
     ("GET", "/api/brief"),
     # Correlation Phase 4: cluster list (additive, appended after brief routes).
@@ -214,6 +216,7 @@ def test_moved_endpoints_live_in_routers():
     assert by_path["/api/brief"] == "routers.brief"
     assert by_path["/api/threat-model/scenarios"] == "routers.threat_model"
     assert by_path["/api/proof/run"] == "routers.proof"
+    assert by_path["/api/detection-backlog"] == "routers.detection_backlog"
     assert by_path["/api/watchlist"] == "routers.watchlist"
     assert by_path["/api/admin/system"] == "routers.admin"
     # main.py owns only app wiring now (V1.2 exit criterion: <300 lines)

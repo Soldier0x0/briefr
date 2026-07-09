@@ -486,6 +486,25 @@ async def init_db() -> None:
                 ON watchlist(state);
             CREATE INDEX IF NOT EXISTS idx_watchlist_snooze_until
                 ON watchlist(snooze_until);
+
+            CREATE TABLE IF NOT EXISTS detection_backlog (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                cve_id TEXT NOT NULL,
+                technique_id TEXT NOT NULL,
+                reason TEXT NOT NULL DEFAULT 'kev_gap',
+                priority TEXT NOT NULL DEFAULT 'high',
+                status TEXT NOT NULL DEFAULT 'open',
+                stack_terms TEXT NOT NULL DEFAULT '',
+                technique_name TEXT NOT NULL DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now')),
+                dismissed_at TEXT,
+                UNIQUE (cve_id, technique_id, reason)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_detection_backlog_status
+                ON detection_backlog(status);
+            CREATE INDEX IF NOT EXISTS idx_detection_backlog_cve
+                ON detection_backlog(cve_id);
         """)
         await db.commit()
 
@@ -648,6 +667,23 @@ async def init_db() -> None:
                 updated_at TEXT DEFAULT (datetime('now'))
             )
             """,
+            """
+            CREATE TABLE IF NOT EXISTS detection_backlog (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                cve_id TEXT NOT NULL,
+                technique_id TEXT NOT NULL,
+                reason TEXT NOT NULL DEFAULT 'kev_gap',
+                priority TEXT NOT NULL DEFAULT 'high',
+                status TEXT NOT NULL DEFAULT 'open',
+                stack_terms TEXT NOT NULL DEFAULT '',
+                technique_name TEXT NOT NULL DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now')),
+                dismissed_at TEXT,
+                UNIQUE (cve_id, technique_id, reason)
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_detection_backlog_status ON detection_backlog(status)",
+            "CREATE INDEX IF NOT EXISTS idx_detection_backlog_cve ON detection_backlog(cve_id)",
         ):
             try:
                 await db.execute(migration)

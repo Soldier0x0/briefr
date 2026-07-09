@@ -306,6 +306,17 @@ export function runProofBench({ lines, sigmaYaml, patterns, maxSamples = 10 }) {
   })
 }
 
+/** V1.5: KEV-driven detection backlog (gap items on operator stack). */
+export function fetchDetectionBacklog({ status = 'open', stack = '' } = {}) {
+  const params = new URLSearchParams({ status })
+  if (stack) params.set('stack', stack)
+  return request(`/detection-backlog?${params}`)
+}
+
+export function dismissDetectionBacklogItem(itemId) {
+  return request(`/detection-backlog/${itemId}/dismiss`, { method: 'POST' })
+}
+
 /** Forge: hunt pack content for one ATT&CK technique. */
 export function fetchHuntPack(techniqueId) {
   return request(`/hunt-packs/${encodeURIComponent(techniqueId)}`)

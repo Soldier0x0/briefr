@@ -840,6 +840,34 @@ patterns) against pasted log lines. No live SIEM or ClickHouse required.
 patterns can be extracted. UI: Forge → hunt pack panel → **Rule proof bench**
 (after a pack is saved).
 
+### GET /api/detection-backlog
+
+**Description:** V1.5 KEV-driven detection backlog — open items where a stack-matched
+KEV CVE maps to an ATT&CK technique with **gap** coverage (no saved hunt pack and
+no bundled community template).
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `status` | str | `open` | `open`, `dismissed`, or `all` |
+| `stack` | str | — | Comma-separated stack terms; defaults to operator effective stack |
+
+**Response:** `{ "items": [...], "meta": { "count", "stack_terms", "generated_at" } }`
+
+Each item includes `cve_id`, `technique_id`, `technique_name`, `priority`,
+`status`, `kev_due_date`, and CVE severity scores.
+
+UI: Forge tab → **Backlog** view (requires asset profile / stack).
+
+### POST /api/detection-backlog/{item_id}/dismiss
+
+Soft-dismiss a backlog row. Dismissed items are not recreated on later KEV sync.
+
+**Response:** `{ "item": { ... } }` — 404 when the id does not exist.
+
+Backlog rows are created by the KEV metadata sync job when CVEs newly enter KEV
+and match the operator stack, and by the weekly `kev_backlog_reconcile` job.
+Optional webhook event: `kev_backlog`.
+
 ---
 
 ## AI Summary

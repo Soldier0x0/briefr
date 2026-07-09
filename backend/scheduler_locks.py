@@ -10,6 +10,7 @@ import asyncio
 _LOCKS: dict[str, asyncio.Lock] = {
     "nvd_incremental_sync": asyncio.Lock(),
     "kev_metadata_sync": asyncio.Lock(),
+    "kev_backlog_reconcile": asyncio.Lock(),
     "epss_score_sync": asyncio.Lock(),
     "weekly_mitre_refresh": asyncio.Lock(),
     "atlas_version_check": asyncio.Lock(),

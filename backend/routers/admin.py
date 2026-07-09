@@ -1509,6 +1509,7 @@ async def get_scheduler_history(request: Request):
 _JOB_RUN_MAP: dict[str, str] = {
     "nvd_incremental_sync": "run_nvd_incremental_sync",
     "kev_metadata_sync": "run_kev_sync",
+    "kev_backlog_reconcile": "run_kev_backlog_reconcile",
     "epss_score_sync": "run_epss_sync",
     "weekly_mitre_refresh": "run_weekly_mitre_refresh",
     "atlas_version_check": "run_atlas_version_check",
