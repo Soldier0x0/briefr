@@ -77,7 +77,8 @@
 | **V1.5 ship housekeeping** — version 1.5.0, PDF/xlsx regen scripts verified, security audit (no critical/high) | STIX export (excluded) |
 | **Track I performance** — I4 scroll, I6 detail pool, I7 list query, I10 bulk upsert (#378–#382) | Wave 4 / open-core (parked) |
 | Embeddings optional (fastembed) | Wave 4 / open-core (parked) |
-| Chart.js admin dashboard partial | Logrotate deploy artifacts (V1.4 theme) |
+| **Chart.js admin ops dashboard (V1.4)** — Operator Overview: ingest last-run durations, backup sizes, webhook delivery success/fail (7d) | Architecture diagram assets (`IMAGE_BRIEFS` phase A) |
+| **Logrotate deploy artifacts (V1.4)** — `deploy/logrotate-briefr.conf` + `OPERATIONS.md` journald policy | Architecture diagram assets (`IMAGE_BRIEFS` phase A) |
 
 Details: [`ROADMAP.md`](ROADMAP.md). Historical beta specs → `docs/archive/` (phase 2).
 
