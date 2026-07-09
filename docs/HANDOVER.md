@@ -12,6 +12,17 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — Correlation phases 4–5 shipped (#364)
+
+**Merged:** #364 — `GET /api/correlation/clusters` (stack + watchlist-ranked
+campaign clusters) and `GET /api/admin/correlation/status` (last run, coverage,
+OTX IOC backlog). Tests + `API_REFERENCE.md`.
+
+**Autonomous next (do not ask):** monitor/watchlist alerts → operator settings
+in DB → Track L Wave 4 → V1.5 tail.
+
+---
+
 ## 2026-07-09 — I3/I5/I8/I9 perf quick wins shipped
 
 **Merged:** #362 — TTL cache for hot reads, lazy brief/feed chunks, visibility-aware polling.

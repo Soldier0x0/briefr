@@ -65,7 +65,7 @@
 | Shipped | Planned / open |
 |---------|----------------|
 | Postgres, auth, rate limits, API queue | Full `docker-compose.yml` (V2.0) |
-| Correlation v2 core (campaigns, typed IOC edges, hub suppression, dismiss, priority) | Correlation phase-3 tail (lifecycle, feed badge) + phases 4–5 parked — see `BRIEFR_ARCHITECTURE_REVIEW_2026-07.md` §3 |
+| Correlation v2 core (campaigns, typed IOC edges, hub suppression, dismiss, priority, lifecycle, feed badge, drawer chip) + **Phase 4–5** cluster list + admin correlation status (#364) | Correlation phase-4 tail (Forge/PDF/webhook enrichments, watchlist sort in feed) — see sprint Phase B |
 | Admin ops, webhooks, wallboard | V1.5 threat-model UI depth, STIX |
 | Embeddings optional (fastembed) | Monitor/watchlist **alerts** (product idea) |
 | Chart.js admin dashboard partial | Logrotate deploy artifacts (V1.4 theme) |
