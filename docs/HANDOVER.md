@@ -12,9 +12,9 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-09 — Snapshot versioning + upgrade runbook (#TBD)
+## 2026-07-09 — Snapshot versioning + upgrade runbook (#372)
 
-**Merged:** #TBD — manifest `format_version: 1`; `verify_intel_snapshot.py` /
+**Merged:** #372 — manifest `format_version: 1`; `verify_intel_snapshot.py` /
 `import_intel_snapshot.py`; OPERATIONS.md intel import & upgrade runbook.
 
 **Autonomous next (do not ask):** V1.5 product items (threat model UI, proof bench) remain parked per sprint.
