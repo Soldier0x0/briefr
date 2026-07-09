@@ -12,6 +12,17 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — `briefr doctor` / support pack shipped (#TBD)
+
+**Merged:** #TBD — `GET /api/admin/diagnostics/support-pack` (redacted health + logs JSON
+export); `backend/diagnostics/support_pack.py`; `deploy/briefr-doctor.sh` CLI; Admin
+Overview “Export support pack” button.
+
+**Autonomous next (do not ask):** Wave 4 remainder — first-hour onboarding checklist,
+external Postgres compose profile → V1.5 tail.
+
+---
+
 ## 2026-07-09 — Operator settings in DB shipped (#368)
 
 **Merged:** #368 — `app_settings` table; admin config Save persists to DB; startup

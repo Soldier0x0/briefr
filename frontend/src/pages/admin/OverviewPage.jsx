@@ -147,6 +147,27 @@ function OperatorOverview({ system, toast }) {
     setRunning(r => ({ ...r, integrity: false }))
   }
 
+  async function exportSupportPack() {
+    setRunning(r => ({ ...r, supportPack: true }))
+    try {
+      const res = await adminApi.get('/diagnostics/support-pack')
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toast(data.detail || `Export failed (${res.status})`, false)
+        return
+      }
+      const blob = await res.blob()
+      const stamp = new Date().toISOString().replace(/[:.]/g, '').slice(0, 15)
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `briefr-support-pack-${stamp}.json`
+      a.click()
+      URL.revokeObjectURL(a.href)
+      toast('Support pack downloaded', true)
+    } catch (e) { toast(String(e.message), false) }
+    setRunning(r => ({ ...r, supportPack: false }))
+  }
+
   const { db_integrity, scheduler_jobs, active_locks, recent_errors } = system
   const nvdAgeColorClass = ageColor(system.last_nvd_sync_age_seconds, 7200, 14400)
   const backupAgeColorClass = ageColor(system.last_backup_age_seconds, 28800, 43200)
@@ -173,6 +194,15 @@ function OperatorOverview({ system, toast }) {
           </button>
           <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={runIntegrity} disabled={running.integrity}>
             {running.integrity ? <><span className="admin-spinner" /> Checking…</> : 'Check DB integrity'}
+          </button>
+          <button
+            className="admin-btn admin-btn-ghost"
+            style={{ fontSize: '0.75rem' }}
+            onClick={exportSupportPack}
+            disabled={running.supportPack}
+            title="Download redacted health + logs bundle for support (no secrets)"
+          >
+            {running.supportPack ? <><span className="admin-spinner" /> Exporting…</> : 'Export support pack'}
           </button>
           {showDiag && <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem' }} onClick={() => setShowDiag(false)}>Hide</button>}
         </div>
