@@ -226,60 +226,58 @@ async def process_watchlist_monitor_alerts(*, since_hours: int = 24) -> int:
         if not pinned:
             return 0
         changes = await get_recent_cve_changes(db, since_hours=since_hours, limit=500)
-    finally:
-        await db.close()
 
-    sent = 0
-    for change in changes:
-        cve_id = (change.get("cve_id") or "").upper()
-        if cve_id not in pinned:
-            continue
-        field = change.get("field_name") or ""
-        old_val = change.get("old_value")
-        new_val = change.get("new_value")
+        sent = 0
+        for change in changes:
+            cve_id = (change.get("cve_id") or "").upper()
+            if cve_id not in pinned:
+                continue
+            field = change.get("field_name") or ""
+            old_val = change.get("old_value")
+            new_val = change.get("new_value")
 
-        reason = ""
-        detail = ""
-        if field == "epss_score":
-            old_score = _parse_score(old_val)
-            new_score = _parse_score(new_val)
-            if old_score is None or new_score is None:
+            reason = ""
+            detail = ""
+            dedupe_suffix = ""
+            if field == "epss_score":
+                old_score = _parse_score(old_val)
+                new_score = _parse_score(new_val)
+                if old_score is None or new_score is None:
+                    continue
+                delta = new_score - old_score
+                if delta < WATCHLIST_EPSS_MIN_DELTA:
+                    continue
+                reason = "EPSS increased"
+                detail = f"EPSS {old_score:.3f} → {new_score:.3f} (+{delta:.3f})"
+                dedupe_suffix = str(new_val)
+            elif field == "has_poc":
+                if _truthy_value(old_val) or not _truthy_value(new_val):
+                    continue
+                reason = "proof-of-concept surfaced"
+                detail = "Public exploit or PoC reference detected for this pinned CVE."
+                dedupe_suffix = "1"
+            else:
                 continue
-            delta = new_score - old_score
-            if delta < WATCHLIST_EPSS_MIN_DELTA:
-                continue
-            reason = "EPSS increased"
-            detail = f"EPSS {old_score:.3f} → {new_score:.3f} (+{delta:.3f})"
-        elif field == "has_poc":
-            if _truthy_value(old_val) or not _truthy_value(new_val):
-                continue
-            reason = "proof-of-concept surfaced"
-            detail = "Public exploit or PoC reference detected for this pinned CVE."
-        else:
-            continue
 
-        db = await get_db()
-        try:
             description = await _fetch_cve_blurb(db, cve_id)
             campaign_hint = await _campaign_hint_for_cve(db, cve_id)
-        finally:
-            await db.close()
-
-        result = await dispatch_event(
-            EVENT_WATCHLIST_ALERT,
-            _format_watchlist_alert(
-                cve_id=cve_id,
-                reason=reason,
-                detail=detail,
-                description=description,
-                campaign_hint=campaign_hint,
-            ),
-            dedupe_key=f"{cve_id}:{field}",
-        )
-        if result.get("sent"):
-            sent += 1
-            logger.info("Watchlist monitor alert sent for %s (%s)", cve_id, field)
-    return sent
+            result = await dispatch_event(
+                EVENT_WATCHLIST_ALERT,
+                _format_watchlist_alert(
+                    cve_id=cve_id,
+                    reason=reason,
+                    detail=detail,
+                    description=description,
+                    campaign_hint=campaign_hint,
+                ),
+                dedupe_key=f"{cve_id}:{field}:{dedupe_suffix}",
+            )
+            if result.get("sent"):
+                sent += 1
+                logger.info("Watchlist monitor alert sent for %s (%s)", cve_id, field)
+        return sent
+    finally:
+        await db.close()
 
 
 async def process_kev_stack_alerts(newly_kev_ids: list[str]) -> int:
