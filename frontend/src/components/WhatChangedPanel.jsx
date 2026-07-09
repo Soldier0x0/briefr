@@ -64,7 +64,7 @@ function isVisibleChange(row) {
   )
 }
 
-export default function WhatChangedPanel({ onSelectCVE }) {
+export default function WhatChangedPanel({ onSelectCVE, fetchEnabled = true }) {
   const [fieldFilter, setFieldFilter] = useState(null)
   const [sinceHours, setSinceHours] = useState(24)
   const [changes, setChanges] = useState([])
@@ -116,13 +116,14 @@ export default function WhatChangedPanel({ onSelectCVE }) {
   }, [fieldFilter, sinceHours])
 
   useEffect(() => {
+    if (!fetchEnabled) return undefined
     if (filtersInitialMountRef.current) {
       filtersInitialMountRef.current = false
     } else {
       scrollPanelToTop()
     }
     return loadChanges()
-  }, [loadChanges])
+  }, [loadChanges, fetchEnabled])
 
   function handleRowClick(cveId) {
     if (!cveId || !onSelectCVE) return

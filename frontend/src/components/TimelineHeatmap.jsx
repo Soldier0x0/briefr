@@ -35,7 +35,7 @@ function formatTooltipDate(isoDate) {
   })
 }
 
-export default function TimelineHeatmap({ filters, onFiltersChange }) {
+export default function TimelineHeatmap({ filters, onFiltersChange, fetchEnabled = true }) {
   const [timeline, setTimeline] = useState([])
   const [loading, setLoading] = useState(true)
   const [collapsed, setCollapsed] = useState(false)
@@ -84,7 +84,10 @@ export default function TimelineHeatmap({ filters, onFiltersChange }) {
     }
   }, [])
 
-  useEffect(() => loadTimeline(), [loadTimeline])
+  useEffect(() => {
+    if (!fetchEnabled) return undefined
+    return loadTimeline()
+  }, [loadTimeline, fetchEnabled])
 
   const slicedTimeline = useMemo(() => {
     if (!timeline.length) return []

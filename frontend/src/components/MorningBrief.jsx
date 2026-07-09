@@ -100,6 +100,7 @@ export default function MorningBrief({
   onReasonFilterChange,
   dueWindow = null,
   onDueWindowClear,
+  fetchEnabled = true,
 }) {
   const [brief, setBrief] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -132,9 +133,10 @@ export default function MorningBrief({
   }, [stack, sinceHours])
 
   useEffect(() => {
+    if (!fetchEnabled) return undefined
     loadBrief()
     return () => { seqRef.current += 1 }
-  }, [loadBrief])
+  }, [loadBrief, fetchEnabled])
 
   useEffect(() => {
     if (reasonFilter === 'stack_match' && !stack?.trim()) {

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { fetchKEVDeadlines, fetchChanges, fetchCVEEpssHistory } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
 import useAsync from '../hooks/useAsync.js'
+import useVisibilityAwareInterval from '../hooks/useVisibilityAwareInterval.js'
 import { AsyncState, ErrorState, Skeleton } from './ui/index.js'
 import { loadChartJs, readChartTheme } from '../utils/chartLoader.js'
 import { prefersReducedMotion } from '../utils/motion.js'
@@ -306,7 +307,7 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel 
   )
 }
 
-export default function BriefCharts({ onSelectCVE, onBucketClick }) {
+export default function BriefCharts({ onSelectCVE, onBucketClick, pollEnabled = true }) {
   const [collapsed, setCollapsed] = useState(false)
   const [epssHistories, setEpssHistories] = useState({})
   const [epssHistoryLoading, setEpssHistoryLoading] = useState(false)
@@ -352,10 +353,7 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
     return { kevEntries, epssChanges, partialError: null }
   }, [epssHours])
 
-  useEffect(() => {
-    const pollId = setInterval(retry, POLL_MS)
-    return () => clearInterval(pollId)
-  }, [retry])
+  useVisibilityAwareInterval(retry, POLL_MS, { enabled: pollEnabled })
 
   const kevEntries = data?.kevEntries ?? []
   const epssChanges = data?.epssChanges ?? []

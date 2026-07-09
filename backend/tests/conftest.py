@@ -148,6 +148,15 @@ def _noop_scheduler(monkeypatch):
     monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
 
 
+@pytest.fixture(autouse=True)
+def _clear_read_cache_between_tests():
+    from read_cache import clear_read_cache
+
+    clear_read_cache()
+    yield
+    clear_read_cache()
+
+
 @pytest.fixture
 def auth_token():
     """Signed access-token factory (Sprint A0). Set the returned value as the
