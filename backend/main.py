@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 load_dotenv()
@@ -153,6 +154,8 @@ app.add_middleware(
         "X-BRIEFR-Wallboard-Token",
     ],
 )
+
+app.add_middleware(GZipMiddleware, minimum_size=256)
 
 app.include_router(refresh_router.router)
 
