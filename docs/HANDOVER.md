@@ -12,6 +12,18 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — Track I performance + security housekeeping (#378–#382)
+
+**Merged:** #378 I4 feed scroll · #379 I6 detail pool · #380 I10 bulk upsert ·
+#381 security (CGNAT SSRF + refresh expiry) · #382 I7 CVE query (JOIN + count cache +
+pg_trgm). Tracks J/H were already shipped (#346–#358). Wave 4 / STIX / Phase B tail
+remain parked.
+
+**Autonomous next (do not ask):** parked items only unless explicitly un-parked;
+optional security tail (JWT role revalidation, LLM summary auth).
+
+---
+
 ## 2026-07-09 — V1.5 ship housekeeping (#377)
 
 **Merged:** #377 — app version **1.5.0** (`main.py`, frontend package); regenerated
