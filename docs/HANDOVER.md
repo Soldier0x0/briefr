@@ -12,9 +12,9 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-09 — V1.5 threat model UI Phase 1 (#TBD)
+## 2026-07-09 — V1.5 threat model UI Phase 1 (#373)
 
-**Merged:** #TBD — `GET /api/threat-model/scenarios`; Forge **Threat scenarios** view
+**Merged:** #373 — `GET /api/threat-model/scenarios`; Forge **Threat scenarios** view
 (stack-scoped ATT&CK cards, CVE evidence, mitigation actions).
 
 **Autonomous next (do not ask):** V1.5 Phase 2 rule proof bench (file-based).
