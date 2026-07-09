@@ -189,3 +189,78 @@ def test_logout_clears_cookies_and_revokes_session(client):
 
     refresh_resp = client.post("/api/auth/refresh")
     assert refresh_resp.status_code == 401
+
+
+def test_refresh_rejects_expired_session(client):
+    from datetime import datetime, timedelta, timezone
+
+    from auth.tokens import hash_refresh_token
+
+    client.post(
+        "/api/auth/login",
+        json={"username": "ops", "password": "correct-horse-battery"},
+    )
+    refresh_cookie = client.cookies.get("briefr_rt")
+
+    async def _expire():
+        db = await get_db()
+        try:
+            expired = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+            await db.execute(
+                "UPDATE sessions SET expires_at = ? WHERE refresh_token_hash = ?",
+                (expired, hash_refresh_token(refresh_cookie)),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_expire())
+    assert client.post("/api/auth/refresh").status_code == 401
+
+
+def test_refresh_rejects_malformed_expires_at(client):
+    from auth.tokens import hash_refresh_token
+
+    client.post(
+        "/api/auth/login",
+        json={"username": "ops", "password": "correct-horse-battery"},
+    )
+    refresh_cookie = client.cookies.get("briefr_rt")
+
+    async def _corrupt():
+        db = await get_db()
+        try:
+            await db.execute(
+                "UPDATE sessions SET expires_at = ? WHERE refresh_token_hash = ?",
+                ("not-a-timestamp", hash_refresh_token(refresh_cookie)),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_corrupt())
+    assert client.post("/api/auth/refresh").status_code == 401
+
+
+def test_refresh_rejects_empty_expires_at(client):
+    from auth.tokens import hash_refresh_token
+
+    client.post(
+        "/api/auth/login",
+        json={"username": "ops", "password": "correct-horse-battery"},
+    )
+    refresh_cookie = client.cookies.get("briefr_rt")
+
+    async def _clear():
+        db = await get_db()
+        try:
+            await db.execute(
+                "UPDATE sessions SET expires_at = ? WHERE refresh_token_hash = ?",
+                ("", hash_refresh_token(refresh_cookie)),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_clear())
+    assert client.post("/api/auth/refresh").status_code == 401

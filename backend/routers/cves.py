@@ -536,8 +536,10 @@ def _build_cve_filters(
             conditions.append("c.cve_id = ?")
             params.append(search_stripped.upper())
         else:
-            conditions.append("(c.cve_id LIKE ? OR c.description LIKE ? OR c.summary LIKE ?)")
-            search_term = f"%{search_stripped}%"
+            conditions.append(
+                "(LOWER(c.cve_id) LIKE ? OR LOWER(c.description) LIKE ? OR LOWER(c.summary) LIKE ?)"
+            )
+            search_term = f"%{search_stripped.lower()}%"
             params.extend([search_term, search_term, search_term])
 
     stack_clause, stack_params, stack_products = _stack_match_clause(stack)
@@ -979,46 +981,68 @@ async def _load_cve_detail_from_db(cve_key: str) -> dict:
 async def _detail_enrich_exploits(cve_key: str, cve: dict) -> dict:
     from db.cache import get_cve_exploits_latest_fetched_at, get_feed_cache_timestamp
 
-    db = await get_db()
+    pending_provenance = {
+        "status": "pending",
+        "source": "Sploitus + BRIEFR exploit index",
+        "as_of": None,
+    }
     try:
+        db = await get_db()
         try:
-            public_exploits = await load_public_exploits_for_cve(
-                db,
-                cve_key,
-                has_poc=bool(cve.get("has_poc")),
-                source_urls=cve.get("source_urls"),
-            )
-            provenance = await derive_exploit_provenance(
-                db,
-                cve_key,
-                used_nvd_fallback=bool(public_exploits)
-                and not await get_cve_exploits_latest_fetched_at(db, cve_key)
-                and not await get_feed_cache_timestamp(db, f"sploitus:{cve_key}"),
-            )
-            await db.commit()
-            return {"public_exploits": public_exploits, "exploit_provenance": provenance}
-        except Exception as exc:
-            logger.error("Sploitus load failed for %s: %s", cve_key, exc)
-            provenance = await derive_exploit_provenance(db, cve_key)
-            return {"public_exploits": [], "exploit_provenance": provenance}
-    finally:
-        await db.close()
+            try:
+                public_exploits = await load_public_exploits_for_cve(
+                    db,
+                    cve_key,
+                    has_poc=bool(cve.get("has_poc")),
+                    source_urls=cve.get("source_urls"),
+                )
+                provenance = await derive_exploit_provenance(
+                    db,
+                    cve_key,
+                    used_nvd_fallback=bool(public_exploits)
+                    and not await get_cve_exploits_latest_fetched_at(db, cve_key)
+                    and not await get_feed_cache_timestamp(db, f"sploitus:{cve_key}"),
+                )
+                await db.commit()
+                return {"public_exploits": public_exploits, "exploit_provenance": provenance}
+            except Exception as exc:
+                logger.error("Sploitus load failed for %s: %s", cve_key, exc)
+                try:
+                    await db.rollback()
+                except Exception:
+                    pass
+                try:
+                    provenance = await derive_exploit_provenance(db, cve_key)
+                except Exception:
+                    provenance = pending_provenance
+                return {"public_exploits": [], "exploit_provenance": provenance}
+        finally:
+            await db.close()
+    except Exception as outer_exc:
+        logger.error(
+            "Failed to acquire DB or process exploits for %s: %s", cve_key, outer_exc
+        )
+        return {"public_exploits": [], "exploit_provenance": pending_provenance}
 
 
 async def _detail_enrich_otx(cve_key: str, otx_key: str) -> dict:
     if not otx_key:
         return {"otx_pulses": []}
-    db = await get_db()
     try:
+        db = await get_db()
         try:
-            pulses = await load_otx_pulses_for_cve(db, cve_key, otx_key)
-            await db.commit()
-            return {"otx_pulses": pulses}
-        except Exception as exc:
-            logger.error("OTX pulse load failed for %s: %s", cve_key, exc)
-            return {"otx_pulses": []}
-    finally:
-        await db.close()
+            try:
+                pulses = await load_otx_pulses_for_cve(db, cve_key, otx_key)
+                await db.commit()
+                return {"otx_pulses": pulses}
+            except Exception as exc:
+                logger.error("OTX pulse load failed for %s: %s", cve_key, exc)
+                return {"otx_pulses": []}
+        finally:
+            await db.close()
+    except Exception as outer_exc:
+        logger.error("Failed to acquire DB or process OTX for %s: %s", cve_key, outer_exc)
+        return {"otx_pulses": []}
 
 
 async def _detail_enrich_osv(cve_key: str, existing_summary: str | None) -> dict:
@@ -1037,17 +1061,36 @@ async def _detail_enrich_osv(cve_key: str, existing_summary: str | None) -> dict
         return {"osv_packages": []}
 
 
+def _circl_enrichment_patch(enriched: dict) -> dict:
+    """Return only CIRCL-owned fields so concurrent enrichments are not overwritten."""
+    patch: dict = {}
+    if "circl" in enriched:
+        patch["circl"] = enriched["circl"]
+    if "capec_ids" in enriched:
+        patch["capec_ids"] = enriched["capec_ids"]
+    if "source_urls" in enriched:
+        patch["source_urls"] = enriched["source_urls"]
+    return patch
+
+
 async def _detail_enrich_circl(cve: dict) -> dict:
-    db = await get_db()
     try:
-        enriched = await enrich_cve_circl(db, dict(cve))
-        await db.commit()
-        return enriched
-    except Exception as exc:
-        logger.error("CIRCL enrichment failed for %s: %s", cve.get("cve_id"), exc)
+        db = await get_db()
+        try:
+            try:
+                enriched = await enrich_cve_circl(db, dict(cve))
+                await db.commit()
+                return _circl_enrichment_patch(enriched)
+            except Exception as exc:
+                logger.error("CIRCL enrichment failed for %s: %s", cve.get("cve_id"), exc)
+                return {}
+        finally:
+            await db.close()
+    except Exception as outer_exc:
+        logger.error(
+            "Failed to acquire DB or process CIRCL for %s: %s", cve.get("cve_id"), outer_exc
+        )
         return {}
-    finally:
-        await db.close()
 
 
 @detail_router.get("/api/cves/{cve_id}")

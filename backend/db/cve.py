@@ -483,6 +483,7 @@ async def upsert_cves(db: DbConnection, cves: list[dict]) -> None:
     params_batch: list[tuple] = []
     for cve in valid:
         cve_id = (cve.get("cve_id") or "").upper()
+        cve["cve_id"] = cve_id
         has_ai, _atlas_tids = analyze_cve_ai_context(cve)
         cve["has_ai_context"] = has_ai
         _append_upsert_change_rows(cve_id, cve, snapshots.get(cve_id), history)

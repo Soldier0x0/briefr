@@ -14,6 +14,20 @@ When HANDOVER or SPRINT names a next task, **execute it immediately**. Do not st
 wave/track boundaries for approval. Do not end a turn with “say the word” or optional
 next steps when the next item is already defined.
 
+### Automated inline review disposition (mandatory)
+
+Before merging or recommending merge of a PR:
+
+1. Inspect all available inline review threads on the PR.
+2. Inspect Gemini and other automated reviewer inline comments.
+3. Validate every substantive finding against the PR HEAD (not mergeable status alone).
+4. Fix or technically disposition every substantive finding (fix, false positive, obsolete, duplicate).
+5. Do not assume mergeable means review complete.
+6. Do not assume an outdated thread means fixed — trace the code on HEAD.
+7. If an asynchronous reviewer is configured and review is still pending, do not auto-merge immediately.
+
+Use `./scripts/verify-local.sh` as the local merge gate when GitHub Actions quota is unavailable.
+
 **Per-PR loop (repeat until backlog empty):**
 
 1. Read HANDOVER (newest) + SPRINT unchecked items + relevant ADR/spec.
