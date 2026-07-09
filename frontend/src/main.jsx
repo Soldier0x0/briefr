@@ -19,6 +19,7 @@ import '@fontsource/ibm-plex-mono/300.css'
 import '@fontsource/ibm-plex-mono/400.css'
 import '@fontsource/ibm-plex-mono/500.css'
 import './App.css'
+import './components/ui/ui.css'
 
 // Warm the risk-weights cache from the backend once at startup.
 // Falls back to bundled constants on any error — no user impact.

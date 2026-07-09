@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { fetchKEVDeadlines, fetchChanges, fetchCVEEpssHistory } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
-import { ingestLogUrl } from '../utils/adminLinks.js'
+import useAsync from '../hooks/useAsync.js'
+import { AsyncState, ErrorState, Skeleton } from './ui/index.js'
 import { loadChartJs, readChartTheme } from '../utils/chartLoader.js'
 import { prefersReducedMotion } from '../utils/motion.js'
 import { kevBucketDateRange } from '../utils/kevDeadline.js'
@@ -307,15 +308,10 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel 
 
 export default function BriefCharts({ onSelectCVE, onBucketClick }) {
   const [collapsed, setCollapsed] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [kevEntries, setKevEntries] = useState([])
-  const [epssChanges, setEpssChanges] = useState([])
   const [epssHistories, setEpssHistories] = useState({})
   const [epssHistoryLoading, setEpssHistoryLoading] = useState(false)
   const [kevWindow, setKevWindow] = useState(() => defaultPresetWindow('30d'))
   const [epssWindow, setEpssWindow] = useState(() => defaultPresetWindow('7d'))
-  const [error, setError] = useState(null)
-  const [errorRequestId, setErrorRequestId] = useState(null)
 
   const kevRef = useRef(null)
   const chartsRef = useRef({ kev: null })
@@ -323,59 +319,54 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
   const lastFetchedIdsRef = useRef('')
   onBucketClickRef.current = onBucketClick
 
+  const epssHours = hoursFromWindow(epssWindow)
+
+  const { data, error, loading, refreshing, retry } = useAsync(async (signal) => {
+    const [kevRes, changesRes] = await Promise.allSettled([
+      fetchKEVDeadlines('urgent'),
+      fetchChanges({ field: 'epss_score', since_hours: epssHours, limit: 50 }),
+    ])
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+
+    const kevEntries = kevRes.status === 'fulfilled' && Array.isArray(kevRes.value?.data)
+      ? kevRes.value.data
+      : []
+    const epssChanges = changesRes.status === 'fulfilled' && Array.isArray(changesRes.value?.data)
+      ? changesRes.value.data
+      : []
+
+    const failed = [kevRes, changesRes].find(r => r.status === 'rejected')
+    if (failed) {
+      notifyApiError(failed.reason)
+      const reason = failed.reason
+      const err = reason instanceof Error
+        ? reason
+        : Object.assign(new Error(reason?.message || 'Failed to load chart data.'), {
+            requestId: reason?.requestId ?? null,
+          })
+      const hasAny = kevEntries.length > 0 || buildEpssMovers(epssChanges).length > 0
+      if (!hasAny) throw err
+      return { kevEntries, epssChanges, partialError: err }
+    }
+
+    return { kevEntries, epssChanges, partialError: null }
+  }, [epssHours])
+
+  useEffect(() => {
+    const pollId = setInterval(retry, POLL_MS)
+    return () => clearInterval(pollId)
+  }, [retry])
+
+  const kevEntries = data?.kevEntries ?? []
+  const epssChanges = data?.epssChanges ?? []
+  const partialError = data?.partialError ?? null
+
   const filteredKevEntries = useMemo(
     () => filterKevByTimeWindow(kevEntries, kevWindow),
     [kevEntries, kevWindow]
   )
   const kevHistogram = useMemo(() => buildKevHistogram(filteredKevEntries), [filteredKevEntries])
   const epssMovers = useMemo(() => buildEpssMovers(epssChanges), [epssChanges])
-  const epssHours = hoursFromWindow(epssWindow)
-
-  const loadData = useCallback(async (signal) => {
-    const [kevRes, changesRes] = await Promise.allSettled([
-      fetchKEVDeadlines('urgent'),
-      fetchChanges({ field: 'epss_score', since_hours: epssHours, limit: 50 }),
-    ])
-    if (signal?.aborted) return
-    if (kevRes.status === 'fulfilled') {
-      setKevEntries(Array.isArray(kevRes.value?.data) ? kevRes.value.data : [])
-    }
-    if (changesRes.status === 'fulfilled') {
-      setEpssChanges(Array.isArray(changesRes.value?.data) ? changesRes.value.data : [])
-    }
-    const failed = [kevRes, changesRes].find(r => r.status === 'rejected')
-    if (failed) {
-      setError(failed.reason?.message || 'Failed to load chart data.')
-      setErrorRequestId(failed.reason?.requestId || null)
-      notifyApiError(failed.reason)
-    } else {
-      setError(null)
-      setErrorRequestId(null)
-    }
-  }, [epssHours])
-
-  useEffect(() => {
-    const controller = new AbortController()
-    let cancelled = false
-    setLoading(true)
-    loadData(controller.signal)
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    const pollId = setInterval(() => {
-      loadData(controller.signal)
-    }, POLL_MS)
-    return () => {
-      cancelled = true
-      controller.abort()
-      clearInterval(pollId)
-    }
-  }, [loadData])
-
-  const handleRetry = useCallback(() => {
-    setLoading(true)
-    loadData().finally(() => setLoading(false))
-  }, [loadData])
 
   useEffect(() => {
     const currentIds = epssMovers.map(m => m.cve_id).join(',')
@@ -516,50 +507,26 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
 
       {!collapsed && (
         <div id="brief-charts-body" className="brief-charts-body">
-          {loading ? (
-            <p className="brief-charts-loading mono" aria-live="polite">
-              Loading charts…
-            </p>
-          ) : error && !hasData ? (
-            <div className="brief-charts-error mono" role="alert">
-              <span>
-                {error}
-                {errorRequestId && (
-                  <>
-                    {' '}
-                    (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
-                      ref: {errorRequestId}
-                    </a>)
-                  </>
+          <AsyncState
+            loading={loading}
+            refreshing={refreshing}
+            error={error}
+            onRetry={retry}
+            empty={!hasData}
+            emptyTitle="No chart data yet — wait for ingest."
+            skeleton={<Skeleton variant="text" className="brief-charts-skeleton" />}
+          >
+            {() => (
+              <>
+                {partialError && (
+                  <ErrorState
+                    error={partialError}
+                    onRetry={retry}
+                    compact
+                    className="brief-charts-error--partial"
+                  />
                 )}
-              </span>
-              <button type="button" className="brief-charts-retry-btn" onClick={handleRetry}>
-                Retry
-              </button>
-            </div>
-          ) : !hasData ? (
-            <p className="brief-charts-empty mono">No chart data yet — wait for ingest.</p>
-          ) : (
-            <>
-              {error && (
-                <div className="brief-charts-error mono brief-charts-error--partial" role="alert">
-                  <span>
-                    Some chart data failed to load: {error}
-                    {errorRequestId && (
-                      <>
-                        {' '}
-                        (<a href={ingestLogUrl({ level: 'ERROR', requestId: errorRequestId })}>
-                          ref: {errorRequestId}
-                        </a>)
-                      </>
-                    )}
-                  </span>
-                  <button type="button" className="brief-charts-retry-btn" onClick={handleRetry}>
-                    Retry
-                  </button>
-                </div>
-              )}
-              <div className="brief-charts-grid">
+                <div className="brief-charts-grid">
               <article className="brief-chart-card" aria-label="KEV due-date histogram">
                 <div className="brief-chart-card-head">
                   <h3 className="brief-chart-card-title">KEV DUE DATES</h3>
@@ -594,9 +561,10 @@ export default function BriefCharts({ onSelectCVE, onBucketClick }) {
                     : (epssWindow.presetId || `${epssHours}h`)}
                 />
               </article>
-              </div>
-            </>
-          )}
+                </div>
+              </>
+            )}
+          </AsyncState>
         </div>
       )}
     </section>
