@@ -277,6 +277,51 @@ def test_watchlist_monitor_epss_and_poc_alerts(tmp_path, monkeypatch):
     assert sent_again == 0
 
 
+def test_watchlist_monitor_second_epss_jump_alerts(tmp_path, monkeypatch):
+    db_path = _setup_db(tmp_path, monkeypatch)
+    calls = _mock_webhooks(monkeypatch)
+    run_db_test(_seed_cve(db_path, "CVE-2024-2004", "pinned epss ladder"))
+
+    async def seed_first_jump():
+        db = await get_db()
+        try:
+            await db.execute(
+                "INSERT INTO watchlist (cve_id, state) VALUES ('CVE-2024-2004', 'pin')"
+            )
+            await db.execute(
+                """
+                INSERT INTO cve_change_history (
+                    cve_id, field_name, old_value, new_value, detected_at
+                ) VALUES ('CVE-2024-2004', 'epss_score', '0.05', '0.20', datetime('now', '-2 hour'))
+                """
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(seed_first_jump())
+    assert run_db_test(process_watchlist_monitor_alerts()) == 1
+    assert len(calls) == 1
+
+    async def seed_second_jump():
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO cve_change_history (
+                    cve_id, field_name, old_value, new_value, detected_at
+                ) VALUES ('CVE-2024-2004', 'epss_score', '0.20', '0.40', datetime('now', '-1 hour'))
+                """
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(seed_second_jump())
+    assert run_db_test(process_watchlist_monitor_alerts()) == 1
+    assert len(calls) == 2
+
+
 def test_webhook_alert_log_helpers(tmp_path, monkeypatch):
     _setup_db(tmp_path, monkeypatch)
 
