@@ -56,6 +56,25 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 With Postgres validated you may run multiple workers (`--workers 2`); connection pooling is via asyncpg.
 
+## External Postgres (no bundled container)
+
+When Postgres is already running (production `/opt/infra/postgres`, managed cloud DB, or a team-shared instance), **do not** start `deploy/docker-compose.postgres.yml`. Point BRIEFR at the server with `DATABASE_URL` only:
+
+```bash
+cp deploy/external-postgres.env.example backend/.env
+# edit DATABASE_URL, then:
+cd backend && source .venv/bin/activate
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Requirements:
+
+- Postgres **16+** (match production major for `pg_dump` / restore)
+- Network reachability from the BRIEFR host to the DB port
+- Alembic migrations run on backend startup (`init_db()`)
+
+Verify: `curl -s http://127.0.0.1:8000/api/health` → `"backend": "postgresql"`.
+
 ## Architecture
 
 | Layer | Technology |

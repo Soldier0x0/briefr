@@ -1915,6 +1915,57 @@ async def export_support_pack(
     )
 
 
+# ── Onboarding ─────────────────────────────────────────────────────────────
+
+
+@router.get("/onboarding")
+async def get_onboarding_checklist():
+    """First-hour operator checklist with live completion state."""
+    from onboarding.checklist import ONBOARDING_DISMISS_KEY, build_onboarding_checklist
+
+    db = await get_db()
+    try:
+        checklist = await build_onboarding_checklist(db)
+        dismissed_row = await db.execute_fetchall(
+            "SELECT value FROM sync_state WHERE key = ?",
+            (ONBOARDING_DISMISS_KEY,),
+        )
+        dismissed_at = dismissed_row[0]["value"] if dismissed_row else None
+    finally:
+        await db.close()
+
+    return {
+        **checklist,
+        "dismissed": bool(dismissed_at),
+        "dismissed_at": dismissed_at,
+    }
+
+
+@router.post("/onboarding/dismiss")
+async def dismiss_onboarding_checklist(request: Request):
+    """Hide the first-hour checklist until items change (operator ack)."""
+    from onboarding.checklist import ONBOARDING_DISMISS_KEY
+
+    from db.timeutil import utcnow_str
+
+    stamp = utcnow_str()
+    db = await get_db()
+    try:
+        await db.execute(
+            """
+            INSERT INTO sync_state (key, value) VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            """,
+            (ONBOARDING_DISMISS_KEY, stamp),
+        )
+        await db.commit()
+    finally:
+        await db.close()
+
+    await audit(request, "onboarding.dismiss", stamp)
+    return {"ok": True, "dismissed_at": stamp}
+
+
 @router.get("/ratelimit")
 async def get_ratelimit_dashboard():
     return {

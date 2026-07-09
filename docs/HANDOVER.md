@@ -12,9 +12,18 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-09 — `briefr doctor` / support pack shipped (#TBD)
+## 2026-07-09 — Wave 4 onboarding + external Postgres (#TBD)
 
-**Merged:** #TBD — `GET /api/admin/diagnostics/support-pack` (redacted health + logs JSON
+**Merged:** #TBD — first-hour onboarding checklist (`GET /api/admin/onboarding`, dismiss);
+Admin Overview banner; `deploy/external-postgres.env.example` + POSTGRES.md external mode.
+
+**Autonomous next (do not ask):** V1.5 tail / remaining Wave 4 (snapshot versioning, upgrade runbook).
+
+---
+
+## 2026-07-09 — `briefr doctor` / support pack shipped (#370)
+
+**Merged:** #370 — `GET /api/admin/diagnostics/support-pack` (redacted health + logs JSON
 export); `backend/diagnostics/support_pack.py`; `deploy/briefr-doctor.sh` CLI; Admin
 Overview “Export support pack” button.
 
