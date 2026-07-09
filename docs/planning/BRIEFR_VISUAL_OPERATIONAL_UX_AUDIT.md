@@ -25,7 +25,58 @@ The 36 observed issues are **real product-quality gaps**, not documentation drif
 - Postgres **integrity/smoke checks are stubbed** (`PRAGMA` → always OK) — operators may believe DB is healthy when checks are no-ops.
 - Toast hover **should** resume dismissal (`Toast.jsx` `onMouseLeave` → `resume()`), but **focus-within** on filter buttons and **error toasts with `duration: null`** explain reported “stuck” behavior — **PARTIALLY CONFIRMED**.
 
-**Recommended delivery:** **11 PRs** in dependency order (see [Recommended PR Plan](#recommended-pr-plan)), smallest correct fixes first (state semantics + labels), then observability spine, then larger config/webhook surfaces.
+**Recommended delivery:** **11 PRs** in the [approved execution order](#recommended-execution-order) below. Screenshots surfaced **examples** of systemic gaps — each PR fixes the **shared rule** everywhere that pattern appears (frontend, backend, diagnostics), not only the one row or panel photographed. PR12/PR13 are explicitly **out of scope** for this correction pass.
+
+---
+
+## Product SWOT (2026-07-09)
+
+Strategic snapshot of **BRIEFR as a whole** — codebase, product, and operator experience — at audit time. Informs *why* the correction pass prioritizes trust and coherence over new features.
+
+### Strengths
+
+| Area | Notes |
+|------|-------|
+| **Positioning** | Self-hosted CVE intelligence + detection-engineering workflow — clear niche vs generic SIEM dashboards |
+| **Architecture** | FastAPI + PostgreSQL, APScheduler ingest mesh, correlation engine, resilient API client, admin control plane |
+| **Depth** | NVD / KEV / EPSS / MITRE / OTX / incidents, detail drawer, IOC, watchlist, backups, support pack |
+| **Product identity** | Dark ops aesthetic, density-first UI, `PRODUCT_STATUS.md` as runtime source of truth |
+| **Recent hardening** | JWT role revalidation, EPSS webhook dedupe, ops charts, deploy/logrotate docs (#391–#396) |
+
+### Weaknesses
+
+| Area | Notes |
+|------|-------|
+| **Ops UX coherence** | State semantics, labels, tooltips, toasts contradict backend truth — erodes trust before core value lands |
+| **Metadata fragmentation** | `catalog.js`, queue ops, config schema, audit labels incomplete vs scheduler/backend reality |
+| **False health signals** | Postgres integrity stubbed to always OK; green posture beside real warnings |
+| **Test / QA gaps** | No frontend unit suite; limited Playwright/visual coverage — UI regressions are manual |
+| **Dialect dual-path** | Shared SQL via SQLite placeholders + PG adapt — prod-only breakage risk |
+| **Doc / graph drift** | Periodic snapshots and `graphify-out/` lag `main` |
+
+### Opportunities
+
+| Area | Notes |
+|------|-------|
+| **Operator spine** | Complete catalog + honest diagnostics + structured logs → credible daily-driver for security teams |
+| **Differentiation** | Detection context, correlation, hunt packs — strong if env-enabled and UX-polished |
+| **Enterprise-adjacent** | Wallboard, support pack, admin ops — without full V2 platform scope |
+| **Correction pass ROI** | Fix perception and trust cheaply before large feature investment |
+| **Self-hosted story** | Integrated workflow beats raw CVE volume from free NVD alone |
+
+### Threats
+
+| Area | Notes |
+|------|-------|
+| **Upstream instability** | NVD 503s, rate limits — users blame product, not NIST |
+| **Self-hosted misconfig** | Config apply / restart / CORS mistakes (PR8-class) damage trust fast |
+| **Scope creep** | Multi-webhook, DB explorer, STIX, V2 — stall core morning-brief experience |
+| **Competition** | Commercial TI + free feeds — must win on integrated analyst workflow |
+| **Maintainer bandwidth** | 11 PRs + sprint backlog — risk of half-finished surfaces |
+
+### SWOT conclusion
+
+BRIEFR is **technically substantive** with a **distinct product identity**, but **weaker on operational polish and trust signals** than on backend capability. The approved 11-PR pass targets the largest weakness cluster without blocking on HIGH-risk optional work (PR12/PR13).
 
 ---
 
@@ -587,17 +638,29 @@ The 36 observed issues are **real product-quality gaps**, not documentation drif
 
 ```mermaid
 flowchart TD
-  A[PR1: State semantics + catalog] --> B[PR2: Scheduler UX dedupe + filters]
-  A --> C[PR3: Toast + notification copy]
-  D[PR4: Portaled tooltip primitive] --> E[PR5: Filter + HelpTip consumers]
-  D --> F[PR6: OpsCharts responsive + units]
-  G[PR7: Config schema apply_strategy] --> H[PR8: Save/Apply + sticky bar]
-  I[PR9: Log structured context + expand rows] --> J[PR10: Failure drill-down links]
-  G --> I
-  K[PR11: KEV/vendor chart + pipeline] --> F
-  L[PR12: Webhooks multi-endpoint] -.optional later.-> H
-  M[PR13: DB explorer] -.optional later.-> A
+  A[PR1: State semantics + catalog]
+  D[PR3: Portaled tooltip primitive]
+  C[PR4: Toast lifecycle + copy]
+  B[PR2: API queue metadata]
+  J[PR10: Diagnostics honesty]
+  I[PR7: Structured logging spine]
+  E[PR5: OpsCharts readability]
+  F[PR6: KEV/vendor chart]
+  H[PR9: Admin density + danger hierarchy]
+  K[PR11: IOC + feed responsive]
+  G[PR8: Config apply lifecycle]
+  L[PR12: Multi-webhook] -.deferred.-> G
+  M[PR13: DB explorer] -.deferred.-> A
+
+  A --> C
+  A --> I
+  D --> E
+  D --> K
+  E --> F
+  E --> H
 ```
+
+Solid arrows = hard dependency. PR10 and PR2 have **no** upstream deps; execution order places PR10 and PR7 **before** chart PRs for ops-trust reasons (see below), not because PR5 blocks them.
 
 ---
 
@@ -847,19 +910,107 @@ flowchart TD
 
 ## Recommended Execution Order
 
-1. **PR1** — Unblocks correct scheduler UX and copy everywhere.
-2. **PR3** — Tooltip portal fixes feed + admin clipping (parallel-safe with PR1).
-3. **PR4** — Toast copy/lifecycle (depends PR1 labels).
-4. **PR2** — Queue metadata (independent).
-5. **PR5** — OpsCharts (depends PR3 for HelpTip).
-6. **PR10** — Diagnostics honesty (quick win, ops trust).
-7. **PR7** — Logging spine (depends PR1 job ids in UI).
-8. **PR6** — KEV/vendor charts (depends PR5 helpers).
-9. **PR9** — Admin density + security (depends PR5 empty states).
-10. **PR11** — IOC + feed responsive (depends PR3).
-11. **PR8** — Config lifecycle (largest; benefits from stable admin shell).
+**Approved sequence (2026-07-09):**
 
-**Why:** State semantics and tooltips remove contradictions users see immediately; observability spine before config overhaul; config last because it touches restart/reschedule and needs accurate metadata from PR8 prerequisites.
+| Step | PR | Rationale |
+|------|-----|-----------|
+| 1 | **PR1** | Scheduler state semantics + full job catalog — unblocks correct copy everywhere |
+| 2 | **PR3** | Portaled tooltip primitive — parallel-safe with PR1; feed + admin clipping |
+| 3 | **PR4** | Toast lifecycle + copy (depends PR1 labels) |
+| 4 | **PR2** | API queue metadata + panel density (independent) |
+| 5 | **PR10** | **Diagnostics honesty** — false-green Postgres integrity is a trust bug; before chart polish |
+| 6 | **PR7** | **Observability spine** — `job_id`/run context + log drill-down before more ops UI churn |
+| 7 | **PR5** | OpsCharts readability (depends PR3 HelpTip) |
+| 8 | **PR6** | KEV pipeline + vendor chart (depends PR5 chart helpers) |
+| 9 | **PR9** | Admin density + danger-zone hierarchy (depends PR5 empty states) |
+| 10 | **PR11** | IOC + feed responsive (depends PR3) |
+| 11 | **PR8** | Config apply lifecycle (largest; last — needs honest diagnostics + stable admin shell) |
+
+**Explicitly deferred (do not interrupt this pass):** PR12 multi-webhook endpoints, PR13 DB explorer — both HIGH risk / LARGE scope.
+
+**Why this order:** Screenshots showed **symptoms**; the first four PRs remove contradictions users see on every visit (DISABLED+Pause, raw ids, sticky tooltips, bad toasts, opaque queue rows). PR10 fixes **misleading health signals** before investing in chart readability. PR7 gives operators a failure drill-down path before PR5–PR9 touch more surfaces. PR8 stays last because restart/reschedule/CORS blast radius is highest and benefits from PR1 labels, PR10 honest checks, and PR7 structured logs.
+
+### Implementation pass SWOT (11 PRs)
+
+SWOT on the **approved correction pass itself** — not a second product review.
+
+| | |
+|--|--|
+| **Strengths** | Fixes root themes (7 shared causes), not 36 one-offs; trust-first ordering (PR10, PR7); PR12/PR13 deferred; cross-surface sweeps + guardrail tests per PR |
+| **Weaknesses** | Still 11 sequential PRs; KEV chart needs runtime DB validation; tooltip/toast unification touches many files; graphify graph stale until `graphify update .` |
+| **Opportunities** | PR1 catalog becomes SSOT for all operator copy; PR7+PR10 make support pack and health trustworthy on Postgres; shared primitives speed future admin work |
+| **Threats** | **PR8** highest blast radius (restart/CORS/reschedule); **PR2** broad feed call-site audit; DISABLED semantics may surface “new” confusion before copy improves; chart/responsive fixes lack automated visual regression |
+
+**Verdict:** Proceed — start **PR1** (low risk, highest visible leverage). Treat **PR8** as a mini-project with extra verification; **PR6** may split data validation vs chart replacement if prod `due_date` is malformed.
+
+---
+
+## Cross-Surface Correction Methodology
+
+The 36 screenshot issues are **samples**, not an exhaustive bug list. The same broken **rules** recur in code the reviewer has not opened yet (backend jobs, support pack, analyst `title=` tooltips, bulk feed syncs). Each PR must fix the **invariant**, not patch the one component in the screenshot.
+
+### Per-PR rule (mandatory for implementers)
+
+1. **Name the invariant** — one sentence: what must always be true after the PR (e.g. “every scheduler job id has a catalog entry”; “every `await_api_slot` call passes a non-default `operation`”).
+2. **Sweep before merge** — `grep`/graphify for the anti-pattern across `frontend/`, `backend/`, `deploy/`; list all hits in the PR description.
+3. **Prefer one shared primitive** — new logic lives in the existing SSOT (`catalog.js`, `config_schema.py`, `api_queue_operations.py`, shared `jobActions()`, portaled `Tooltip.jsx`, `chartOptions.js`) so the next surface imports it instead of re-deriving.
+4. **Add a guardrail test** — CI check or pytest that fails when the invariant regresses (catalog ⊆ scheduler ids; no raw `jobId` in toast strings; Postgres integrity not stubbed; etc.).
+5. **Update runtime docs** — `PRODUCT_STATUS.md` / `API_REFERENCE.md` when behavior visible to operators changes.
+
+### Sweep map by PR (non-exhaustive — run fresh grep each PR)
+
+| PR | Invariant to enforce | Sweep beyond screenshot surfaces |
+|----|----------------------|----------------------------------|
+| **PR1** | Valid actions per `ACTIVE`/`PAUSED`/`LOCKED`/`DISABLED`; every `add_job(id=…)` in `scheduler.py` has `JOB_CATALOG` entry | `JobTable.jsx`, `SchedulerPage.jsx`, `OverviewPage.jsx`, `RunningJobsPanel.jsx`, `JobErrorsPanel.jsx`, `intelStatus.js` (raw `err.job_id`), `OpsCharts.jsx` `INGEST_JOB_IDS`, `MANUAL_PIPELINES`, HelpTip copy; optional `admin.py` 400 on run-disabled |
+| **PR2** | Queue rows always carry `operation` + safe `context_id`; panel scroll-capped; summary vocabulary matches row states | All `resilient_get`/`resilient_request`/`await_api_slot` in `backend/feeds/*`, `enrichment/`, `detection/`, `ai/`; `apiQueuePresentation.js` `formatSourceLabel` vs feed catalog; `ApiQueueIndicator` in **analyst header + admin StatusBar** |
+| **PR3** | Single portaled tooltip; filter controls do not stick open via `:focus-within` | `HelpTip`, `ControlTooltip`, `ExplainTip`, `ui-tooltip`; `FilterBar`, `StatsRow`, admin HelpTips; follow-up backlog: analyst `title=` on `CVECard` / `DetailDrawer` (migrate incrementally) |
+| **PR4** | Lifecycle-aware toast copy; single toast provider; timed resume after hover | `App.jsx` + `AdminPage.jsx` dual stacks; `SchedulerPage`, `OverviewPage`, `OperationTracker`, `FeedHealthPage`, `WatchlistPage`, all `toast(\`Job ${action}d\`)` sites |
+| **PR10** | Postgres integrity/smoke checks are **real or honestly labeled unsupported** — never silent `ok` | `db/pg_adapt.py`, `routers/admin.py` (`/system`, `/diagnostics/*`), `diagnostics/support_pack.py`, `onboarding/checklist.py`; UI copy on Overview, StatusBar, Backups |
+| **PR7** | Scheduler/feed failures log structured `job_id` (+ optional `run_id`); log UI surfaces them | `scheduler.py` job wrappers, `feeds/cvelistv5.py` and other sync `logger.error` sites, `structured_logging.py`, `IngestLogPage.jsx`, `/api/admin/logs`; link from `JobTable` error expand → filtered log view |
+| **PR5** | Chart axes show units; empty wells collapse; long labels don’t overlap | `OpsCharts.jsx`, extract shared options from `BriefCharts.jsx` / `chartLoader.js`, `AdminPage.css` 200px wells |
+| **PR6** | One `daysUntilDue` implementation; KEV chart empty-state honest; vendor aggregate grounded in CPE | `BriefCharts.jsx` duplicate math vs `kevDeadline.js`; `feeds/kev.py` / `db/enrichment.py` `due_date` path; Morning Brief + feed chips consistency |
+| **PR9** | Destructive controls below operational content; compact empties | `DangerZone` on Scheduler, Watchlist, Storage, Database; `admin-empty` in chart wells; `SecurityPage` wallboard copy |
+| **PR11** | IOC single-line primary workflow; feed/drawer usable ≤960px | `IOCLookup.css` `resize: vertical`; `FilterBar.css`, `DetailDrawer` widths |
+| **PR8** | Every config key declares correct `apply_strategy` + `restart_required`; UI shows pending restart/reschedule | Full `CONFIG_SCHEMA` audit (`ALLOWED_ORIGINS` de facto restart); `ApiKeysPage.jsx` save/apply; scheduler interval hot-update vs reschedule |
+
+### Out of scope for this pass
+
+- **PR12** — multi-webhook destination CRUD (schema migration, HIGH risk).
+- **PR13** — read-only DB explorer (auth + SQL allowlist, HIGH risk).
+- **Notification center** — durable toast history (Issue 8); defer unless PR4 exposes hooks only.
+- **Chart configurability** (Issue 5) — widget registry; defer past PR6.
+
+### How we catch “invisible” backend gaps
+
+| Technique | When |
+|-----------|------|
+| `graphify query/path` after each PR | Cross-file callers graphify finds that grep misses |
+| Catalog ⊆ scheduler id pytest | PR1 |
+| `await_api_slot` call-site audit test | PR2 |
+| Postgres integrity integration test (non-stub) | PR10 |
+| Structured log `extra` assertion on forced sync failure | PR7 |
+| `./scripts/verify-local.sh --full` | Every PR before merge |
+
+---
+
+## Codebase-Wide Pattern Inventory (static scan, 2026-07-09)
+
+Confirmed instances of audit themes **beyond** the photographed UI. Use as PR sweep checklist; re-grep on `main` before each implementation PR.
+
+| Theme | Additional locations found |
+|-------|---------------------------|
+| **A — State / catalog** | 9 missing `JOB_CATALOG` entries; `status === 'PAUSED'` without `DISABLED` in 3 files; wrong Scheduler HelpTip; `intelStatus.js` raw job ids in health issues |
+| **B — API queue** | ~15 feed modules call `resilient_get` without `queue_operation`; no `max-height` on `.api-queue-requests`; `formatSourceLabel` underscore title-case only |
+| **C — Tooltips** | 5 `:focus-within` tooltip CSS implementations; 40+ native `title=` on analyst components |
+| **D — Toasts** | Dual `useToast` in `App.jsx` + `AdminPage.jsx`; errors `duration: null`; generic strings on Scheduler/Overview/Watchlist |
+| **E — Charts** | Duplicate `baseOptions` + duplicate `daysUntilDue`; fixed 200px wells with full-height empties |
+| **F — Postgres integrity** | `pg_adapt.py` PRAGMA stub; 6+ surfaces show green from stubbed check |
+| **G — Config lifecycle** | `ALLOWED_ORIGINS` `restart_required=false`; no `apply_strategy` field; interval keys update env without reschedule |
+| **H — Danger zone placement** | Above primary tables on Scheduler, Watchlist (IOC), Storage |
+| **I — Audit labels** | `AUDIT_ACTION_LABELS` covers ~12 actions; backend emits 30+ distinct `audit()` action strings |
+| **J — Webhooks** | Fixed discord/telegram/generic only — no CRUD (PR12) |
+
+`graphify-out/graph.json` last built **2026-07-09 15:10 UTC** — stale vs post-#396 `main`; run `graphify update .` when implementing.
 
 ---
 
@@ -913,4 +1064,4 @@ flowchart TD
 
 ---
 
-*End of audit document. No production code was modified. Open a PR for this file only when the maintainer approves the plan.*
+*End of audit document. Planning-only — production fixes follow the approved execution order above. PR12/PR13 deferred.*

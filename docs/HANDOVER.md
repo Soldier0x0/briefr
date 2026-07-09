@@ -12,6 +12,14 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — Visual/ops UX audit: execution order + cross-surface methodology
+
+**Docs:** `docs/planning/BRIEFR_VISUAL_OPERATIONAL_UX_AUDIT.md` updated with **approved PR sequence**, **product SWOT**, **implementation pass SWOT**, cross-surface methodology, and pattern inventory.
+
+**Next implementation PR:** PR1 (scheduler state + catalog) on branch `cursor/scheduler-state-catalog-489a`.
+
+---
+
 ## 2026-07-09 — July batch: EPSS dedupe, JWT revalidation, V1.4 ops tail, docs (#391–#396)
 
 **Merged (local verify gate; GitHub Actions quota exhausted; Gemini daily quota hit — no inline review):**
