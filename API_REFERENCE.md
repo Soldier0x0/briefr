@@ -87,7 +87,7 @@ Each CVE object may include `kev_due_date` (`YYYY-MM-DD` from `kev_deadlines.due
 - `400` — invalid `severity`, `technique`, or `published_on`
 - `422` — invalid query param types (FastAPI validation)
 
-**Notes:** Pinned CVEs sort first (`watchlist.state = 'pin'`), then `published DESC`, severity, EPSS. Active snoozes (`state = 'snooze'` with `snooze_until > now`) are excluded from the default feed; `watchlist_only=true` shows the watchlist including snoozed rows. Stack filter re-sorts page by relevance.
+**Notes:** Pinned CVEs sort first (`watchlist.state = 'pin'`), then `published DESC`, severity, EPSS. Active snoozes (`state = 'snooze'` with `snooze_until > now`) are excluded from the default feed; `watchlist_only=true` shows the watchlist including snoozed rows. Stack filter re-sorts page by relevance. The `total` field is served from a 45-second in-process cache keyed by the active filter set (same filters → same total within TTL). On PostgreSQL, text search uses `pg_trgm` GIN indexes (Alembic migration `012_cve_trgm_search`).
 
 ---
 
@@ -334,7 +334,7 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 
 ### GET /api/cves/{cve_id}
 
-**Description:** Full CVE detail with live enrichment (scheduler-fed exploits, Sploitus fallback, GreyNoise, OTX, OSV, CIRCL).
+**Description:** Full CVE detail with live enrichment (scheduler-fed exploits, Sploitus fallback, OTX, OSV, CIRCL). Core DB reads complete before outbound I/O; enrichments run in parallel with short-lived pool connections (GreyNoise excluded — on-demand only).
 
 **Response:** Bare CVE object (no `data` wrapper), including:
 
