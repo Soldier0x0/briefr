@@ -243,6 +243,31 @@
   flex-shrink: 0;
 }
 
+.drawer-campaign-badge {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border: 1px solid;
+  flex-shrink: 0;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.drawer-campaign-badge.badge-campaign-emerging {
+  color: var(--amber);
+  background: var(--amber-dim);
+  border-color: color-mix(in srgb, var(--amber) 45%, var(--border));
+}
+
+.drawer-campaign-badge.badge-campaign-declining,
+.drawer-campaign-badge.badge-campaign-stale {
+  color: var(--text2);
+  background: var(--bg3);
+  border-color: var(--border);
+}
+
 .drawer-header-actions {
   display: flex;
   align-items: center;

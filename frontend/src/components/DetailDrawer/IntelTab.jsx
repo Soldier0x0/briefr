@@ -258,6 +258,8 @@ function CorrelationFindings({
   onRequestSuppress,
   suppressions,
   onRestoreSuppression,
+  cve,
+  onInvestigateCampaign,
 }) {
   if (loading) {
     return (
@@ -332,6 +334,15 @@ function CorrelationFindings({
               </div>
               <CorrelationEvidence item={item} cveId={correlation?.cve_id} onSelectCve={onSelectCve} />
               <div className="corr-finding-foot">
+                {onInvestigateCampaign && (item.members || []).some(id => id && id !== correlation?.cve_id) && (
+                  <button
+                    type="button"
+                    className="drawer-investigate-btn"
+                    onClick={() => onInvestigateCampaign(item, cve)}
+                  >
+                    Add to investigation
+                  </button>
+                )}
                 <CorrelationSuppressAction
                   onRequestSuppress={onRequestSuppress}
                   body={{ scope: 'campaign_id', key: { campaign_id: item.campaign_id } }}
@@ -559,6 +570,7 @@ export default function TabIntel({
   loading,
   onInvestigateIp,
   onInvestigatePulse,
+  onInvestigateCampaign,
   pivotNotice,
   correlation,
   correlationLoading,
@@ -792,6 +804,8 @@ export default function TabIntel({
         onRequestSuppress={onRequestSuppressCorrelation}
         suppressions={suppressions}
         onRestoreSuppression={onRestoreSuppression}
+        cve={cve}
+        onInvestigateCampaign={onInvestigateCampaign}
       />
     </>
   )

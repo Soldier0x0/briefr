@@ -21,6 +21,7 @@ import { useAssetProfileOptional } from '../../context/AssetProfileContext.jsx'
 import { profileToMatchAssets } from '../../utils/assetProfileIo.js'
 import { setMomentumScore } from '../../utils/momentumCache.js'
 import { ingestLogUrl } from '../../utils/adminLinks.js'
+import { campaignBadgeTooltip, campaignLifecycleClass, primaryCampaignChip } from '../../utils/correlationPresentation.js'
 import useModalLayer from '../../hooks/useModalLayer.js'
 import { severityColor } from './helpers.js'
 import TabOverview from './OverviewTab.jsx'
@@ -534,6 +535,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
   const capecIds = Array.isArray(cve.capec_ids) ? cve.capec_ids.filter(Boolean) : []
   const urls = Array.isArray(cve.source_urls) ? cve.source_urls.slice(0, 5) : []
   const sevColor = severityColor(cve.severity)
+  const campaignChip = !correlationLoading ? primaryCampaignChip(correlation, cve.cve_id) : null
   const techniques = Array.isArray(cve.techniques) ? cve.techniques : []
   const canGoBack = backStack.length > 0
   const isPinned = watchlistState === 'pin'
@@ -589,6 +591,14 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
                   RANSOMWARE
                 </span>
               )}
+              {campaignChip && (
+                <span
+                  className={`drawer-campaign-badge mono ${campaignLifecycleClass(campaignChip.lifecycle)}`}
+                  title={campaignBadgeTooltip(campaignChip.lifecycle)}
+                >
+                  LINKED · {campaignChip.linkedCount} CVE{campaignChip.linkedCount === 1 ? '' : 's'}
+                </span>
+              )}
             </div>
             <div className="drawer-header-actions">
               {onWatchlistChange && (
@@ -620,6 +630,16 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
                   >
                     Extract observables
                   </button>
+                  {campaignChip && investigation.pivotToCampaign && (
+                    <button
+                      type="button"
+                      className="drawer-inv-btn drawer-inv-btn-secondary mono"
+                      onClick={() => investigation.pivotToCampaign(campaignChip.campaign, cve)}
+                      aria-label={`Add ${campaignChip.linkedCount} linked campaign CVEs to investigation`}
+                    >
+                      Add campaign
+                    </button>
+                  )}
                 </>
               )}
               <div className="drawer-report-wrap" ref={reportRef}>
@@ -781,6 +801,11 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
                   : undefined
               }
               onInvestigatePulse={investigation?.pivotToOtxPulse ? (pulse, cveCtx) => investigation.pivotToOtxPulse(pulse, cveCtx) : undefined}
+              onInvestigateCampaign={
+                investigation?.pivotToCampaign
+                  ? (item, cveCtx) => investigation.pivotToCampaign(item, cveCtx)
+                  : undefined
+              }
               pivotNotice={investigation?.pivotNotice}
               correlation={correlation}
               correlationLoading={correlationLoading}
