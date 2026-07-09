@@ -12,6 +12,15 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — Watchlist monitor alerts shipped (#366)
+
+**Merged:** #366 — `watchlist_alert` webhooks for pinned CVEs (KEV entry, EPSS
+jump ≥0.05, PoC surfaced); hourly `watchlist_monitor_alerts` job; KEV sync hook.
+
+**Autonomous next (do not ask):** operator settings in DB → Track L Wave 4 → V1.5 tail.
+
+---
+
 ## 2026-07-09 — Correlation phases 4–5 shipped (#364)
 
 **Merged:** #364 — `GET /api/correlation/clusters` (stack + watchlist-ranked
