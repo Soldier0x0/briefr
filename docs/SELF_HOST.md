@@ -6,9 +6,9 @@ One guide for installing and running BRIEFR on your server.
 
 ## At a glance
 
-![Production architecture — pending](assets/placeholder-diagram.svg)
+![Production architecture](assets/production-architecture.svg)
 
-> **Add diagram:** `assets/production-architecture.png` — prompt in [IMAGE_BRIEFS §1](IMAGE_BRIEFS.md#1-production-architecture)
+> **Diagram:** [`assets/production-architecture.svg`](assets/production-architecture.svg) — [IMAGE_BRIEFS §1](IMAGE_BRIEFS.md#1-production-architecture)
 
 | Piece | What |
 |-------|------|

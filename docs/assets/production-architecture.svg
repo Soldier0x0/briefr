@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 640" role="img" aria-label="BRIEFR production architecture">
+  <defs>
+    <style>
+      .bg { fill: #0a0a08; }
+      .zone { fill: #111110; stroke: #2a2a25; stroke-width: 1; }
+      .title { fill: #c8b88a; font: 600 13px 'IBM Plex Mono', monospace; }
+      .label { fill: #e8e6df; font: 500 12px 'IBM Plex Sans', system-ui, sans-serif; }
+      .sub { fill: #9a9890; font: 400 11px 'IBM Plex Sans', system-ui, sans-serif; }
+      .chip { fill: #1a1a17; stroke: #3d3d38; }
+      .arrow { stroke: #c8b88a; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .db { fill: #4a9e6a; }
+    </style>
+    <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#c8b88a"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="920" height="640"/>
+  <text x="24" y="32" class="title">BRIEFR  self-hosted production architecture</text>
+
+  <rect class="zone" x="24" y="48" width="872" height="88" rx="6"/>
+  <text x="40" y="72" class="title">01 CLIENT</text>
+  <text x="120" y="72" class="label">Analyst browser</text>
+  <text x="120" y="92" class="sub">React SPA (Vite build) · session cookie briefr_at</text>
+  <rect class="chip" x="120" y="102" width="120" height="22" rx="4"/>
+  <text x="132" y="117" class="sub">Feed · Drawer · Admin</text>
+
+  <line class="arrow" x1="460" y1="136" x2="460" y2="156"/>
+
+  <rect class="zone" x="24" y="156" width="872" height="88" rx="6"/>
+  <text x="40" y="180" class="title">02 EDGE (optional)</text>
+  <text x="160" y="180" class="label">Cloudflare Tunnel · nginx :80 ’ :8000</text>
+  <text x="160" y="200" class="sub">TLS termination · optional Zero Trust at hostname</text>
+  <rect class="chip" x="160" y="210" width="100" height="22" rx="4"/>
+  <text x="172" y="225" class="sub">static + /api proxy</text>
+
+  <line class="arrow" x1="460" y1="244" x2="460" y2="264"/>
+
+  <rect class="zone" x="24" y="264" width="872" height="108" rx="6"/>
+  <text x="40" y="288" class="title">03 APPLICATION  /opt/briefr</text>
+  <rect class="chip" x="160" y="276" width="150" height="36" rx="4"/>
+  <text x="172" y="298" class="label">FastAPI / Uvicorn</text>
+  <rect class="chip" x="330" y="276" width="150" height="36" rx="4"/>
+  <text x="342" y="298" class="label">APScheduler</text>
+  <text x="342" y="314" class="sub">13+ ingest jobs</text>
+  <rect class="chip" x="500" y="276" width="150" height="36" rx="4"/>
+  <text x="512" y="298" class="label">Admin console</text>
+  <text x="160" y="348" class="sub">asyncpg pool · API queue · webhooks · structured JSON logs</text>
+
+  <line class="arrow" x1="460" y1="372" x2="460" y2="392"/>
+
+  <rect class="zone" x="24" y="392" width="872" height="108" rx="6"/>
+  <text x="40" y="416" class="title">04 DATA PLANE</text>
+  <circle class="db" cx="200" cy="450" r="28"/>
+  <text x="172" y="455" class="label" fill="#0a0a08">PG16</text>
+  <text x="250" y="442" class="label">PostgreSQL 16</text>
+  <text x="250" y="462" class="sub">127.0.0.1:5432 · Docker at /opt/infra/postgres</text>
+  <rect class="chip" x="250" y="472" width="200" height="22" rx="4"/>
+  <text x="262" y="487" class="sub">pg_dump backups ’ /var/lib/briefr/backups</text>
+  <rect class="chip" x="470" y="432" width="180" height="36" rx="4"/>
+  <text x="482" y="454" class="label">Model cache (optional)</text>
+  <text x="482" y="470" class="sub">/var/lib/briefr/models</text>
+
+  <line class="arrow" x1="460" y1="500" x2="460" y2="520"/>
+
+  <rect class="zone" x="24" y="520" width="872" height="96" rx="6"/>
+  <text x="40" y="544" class="title">05 EXTERNAL INTEL (outbound)</text>
+  <g class="sub">
+    <rect class="chip" x="160" y="552" width="72" height="24" rx="4"/><text x="172" y="568" class="sub">NVD</text>
+    <rect class="chip" x="240" y="552" width="72" height="24" rx="4"/><text x="252" y="568" class="sub">KEV</text>
+    <rect class="chip" x="320" y="552" width="72" height="24" rx="4"/><text x="332" y="568" class="sub">EPSS</text>
+    <rect class="chip" x="400" y="552" width="72" height="24" rx="4"/><text x="412" y="568" class="sub">OTX</text>
+    <rect class="chip" x="480" y="552" width="88" height="24" rx="4"/><text x="492" y="568" class="sub">VirusTotal</text>
+    <rect class="chip" x="576" y="552" width="96" height="24" rx="4"/><text x="588" y="568" class="sub">AbuseIPDB</text>
+    <rect class="chip" x="680" y="552" width="88" height="24" rx="4"/><text x="692" y="568" class="sub">GreyNoise</text>
+    <rect class="chip" x="776" y="552" width="96" height="24" rx="4"/><text x="788" y="568" class="sub">MITRE&</text>
+  </g>
+  <text x="160" y="598" class="sub">Schedulers pull intel into PostgreSQL  UI reads precomputed data, not live upstream on every click</text>
+</svg>

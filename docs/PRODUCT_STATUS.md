@@ -11,7 +11,7 @@
 |------|--------|
 | **Release** | **v1.5.0** — V1.5 product phases 1–3 + 5 shipped (#373–#376); Phase 4 STIX excluded |
 | **Performance (Track I)** | **Complete** (#378–#382): feed scroll isolation (`FeedVisibleRange`), CVE detail enrichments parallel off pool, bulk CVE upsert (`executemany`), `/api/cves` KEV JOIN + 45s count cache + Postgres `pg_trgm` indexes (Alembic `012`). |
-| **Security tail** | CGNAT SSRF block (`100.64.0.0/10`) + refresh rejects past `sessions.expires_at` (#381). JWT role revalidation and LLM summary auth remain open. |
+| **Security tail** | CGNAT SSRF block (`100.64.0.0/10`) + refresh rejects past `sessions.expires_at` (#381). **JWT role revalidation** shipped (#392). LLM summary auth remains open. |
 | **Database** | **PostgreSQL required** (`DATABASE_URL`, `BRIEFR_REQUIRE_POSTGRES=1`). SQLite removed from production path. **Intel snapshot:** `scripts/export_intel_snapshot.py` exports allowlisted tables per `docs/DATA_SNAPSHOT.md` with versioned manifest (`format_version: 1`); `scripts/verify_intel_snapshot.py` and `scripts/import_intel_snapshot.py` validate/import bundles; upgrade steps in `docs/OPERATIONS.md`. Postgres CI runs export→restore smoke (`test_intel_snapshot_export.py`). **Backup round-trip:** Postgres CI runs `test_backup_roundtrip_postgres.py` (`run_backup` → wipe → `restore_backup`, row-count assert on `cves` / `kev_deadlines`). |
 | **Auth** | Built-in app login + sessions (first-run `/api/auth/setup`); admin/refresh routes require the **admin role** (Sprint A0). Legacy `BRIEFR_ADMIN_API_KEY` removed. Wallboard token is **header-only** (`X-BRIEFR-Wallboard-Token`; `?token=` removed, Sprint A7). Optional Cloudflare Zero Trust at **edge** (operator policy, not in app code). |
 | **Rate limits** | Token buckets on IOC, refresh, admin, auth; set `RATE_LIMIT_ENABLED=1` in production. |
@@ -36,9 +36,9 @@
 
 ## Auth layers (two independent)
 
-![Auth layers — pending](assets/placeholder-diagram.svg)
+![Auth layers](assets/auth-layers.svg)
 
-> **Asset:** [`assets/auth-layers.png`](assets/auth-layers.png) — see [IMAGE_BRIEFS §8](IMAGE_BRIEFS.md#8-auth-layers)
+> **Asset:** [`assets/auth-layers.svg`](assets/auth-layers.svg) — see [IMAGE_BRIEFS §8](IMAGE_BRIEFS.md#8-auth-layers)
 
 | Layer | What | Notes |
 |-------|------|-------|
@@ -49,9 +49,9 @@
 
 ## Deployment reference
 
-![Production architecture — pending](assets/placeholder-diagram.svg)
+![Production architecture](assets/production-architecture.svg)
 
-> **Asset:** [`assets/production-architecture.png`](assets/production-architecture.png) — see [IMAGE_BRIEFS §1](IMAGE_BRIEFS.md#1-production-architecture)
+> **Asset:** [`assets/production-architecture.svg`](assets/production-architecture.svg) — see [IMAGE_BRIEFS §1](IMAGE_BRIEFS.md#1-production-architecture)
 
 | Item | Value |
 |------|--------|
@@ -77,8 +77,9 @@
 | **V1.5 ship housekeeping** — version 1.5.0, PDF/xlsx regen scripts verified, security audit (no critical/high) | STIX export (excluded) |
 | **Track I performance** — I4 scroll, I6 detail pool, I7 list query, I10 bulk upsert (#378–#382) | Wave 4 / open-core (parked) |
 | Embeddings optional (fastembed) | Wave 4 / open-core (parked) |
-| **Chart.js admin ops dashboard (V1.4)** — Operator Overview: ingest last-run durations, backup sizes, webhook delivery success/fail (7d) | Architecture diagram assets (`IMAGE_BRIEFS` phase A) |
-| **Logrotate deploy artifacts (V1.4)** — `deploy/logrotate-briefr.conf` + `OPERATIONS.md` journald policy | Architecture diagram assets (`IMAGE_BRIEFS` phase A) |
+| **Chart.js admin ops dashboard (V1.4)** — Operator Overview: ingest last-run durations, backup sizes, webhook delivery success/fail (7d) | Remaining `IMAGE_BRIEFS` assets (ingest, UI screenshots) |
+| **Logrotate deploy artifacts (V1.4)** — `deploy/logrotate-briefr.conf` + `OPERATIONS.md` journald policy | Remaining `IMAGE_BRIEFS` assets |
+| **Architecture diagrams (phase A)** — `production-architecture.svg`, `auth-layers.svg`, `correlation-pipeline.svg` wired into docs | Ingest pipeline + UI screenshot assets |
 
 Details: [`ROADMAP.md`](ROADMAP.md). Historical beta specs → `docs/archive/` (phase 2).
 
