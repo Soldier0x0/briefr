@@ -12,6 +12,15 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — I3/I5/I8/I9 perf quick wins shipped
+
+**Merged:** #362 — TTL cache for hot reads, lazy brief/feed chunks, visibility-aware polling.
+**I3 verified:** PDF already lazy; entry chunk 350 kB raw / 110 kB gzip.
+
+**Autonomous next (do not ask):** Phase B backlog (correlation 4–5, monitor alerts, operator settings, L Wave 4, V1.5 tail).
+
+---
+
 ## 2026-07-09 — C-Evolve-3 shipped; continuing perf quick wins
 
 **Merged:** #360 C-Evolve-3 — drawer `LINKED · N CVEs` campaign chip, "Add campaign"
