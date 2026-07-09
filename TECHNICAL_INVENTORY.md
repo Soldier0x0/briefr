@@ -31,7 +31,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 | Vector math | NumPy | 2.4.4 | Brute-force cosine similarity over `cve_embeddings` BLOBs (default path) |
 | Embeddings (optional) | fastembed | not pinned — install only when `EMBEDDINGS_ENABLED=1` | Local CPU ONNX embedding model (`BAAI/bge-small-en-v1.5`); never imported on the request path |
 | UI framework | React | 19.x | Analyst SPA (Vite 8) |
-| Build tool | Vite | 5.4.1 | Dev server and production bundle |
+| Build tool | Vite | 8.x | Dev server and production bundle |
 | Routing | react-router-dom | 7.16.0 | `/privacy`, `/terms` routes |
 | PDF export | jsPDF + html2canvas | 4.2.1 / 1.4.1 | Client-side CVE PDF reports |
 | Spreadsheet export | exceljs | 4.4.0 | CVE XLSX export from feed |
