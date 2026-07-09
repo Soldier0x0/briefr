@@ -12,12 +12,23 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — H2 + H4 shipped; continuing Wave 3
+
+**Merged:** #357 H2 — `ui/` primitives (Button, Badge, Tooltip, Skeleton,
+ErrorState, EmptyState, AsyncState) + `useAsync`; BriefCharts proof-of-fit.
+**Merged:** #358 H4 — `ui/Modal` + `ui/ConfirmModal`; PdfExportModal + admin
+ConfirmModal rebased.
+
+**Autonomous next (do not ask):** **C-Evolve-3** → I3/I5/I8/I9 → Phase B backlog.
+
+---
+
 ## 2026-07-09 — FR1 provenance shipped; continuing Wave 3
 
 **Merged:** #355 FR1 — per-section provenance (`exploit_provenance`, detection/correlation
 `provenance`) with drawer `IntelProvenanceLine` + tooltips.
 
-**Autonomous next (do not ask):** **H-verify** → C-Evolve-3 → I3/I5/I8/I9 → Phase B backlog.
+**Autonomous next (do not ask):** ~~H-verify~~ ✅ → ~~H2/H4~~ ✅ → **C-Evolve-3** → I3/I5/I8/I9 → Phase B backlog.
 
 ---
 
