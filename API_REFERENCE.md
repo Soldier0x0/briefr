@@ -598,6 +598,44 @@ Scopes: `campaign_id`, `cve_pair`, `pulse_id`, `infrastructure`.
 
 Query params: `scope` plus `campaign_id`, `cve_id_b`, or `pulse_id` depending on scope.
 
+### GET /api/correlation/clusters
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `stack` | str | `null` | Comma-separated stack terms (same matching as `/api/cves`) |
+| `limit` | int | `20` | Max clusters (1–100) |
+| `include_stale` | bool | `false` | Include `lifecycle=stale` campaigns |
+
+**Response:**
+
+```json
+{
+  "meta": {
+    "stack_terms": ["log4j"],
+    "limit": 20,
+    "include_stale": false,
+    "count": 1
+  },
+  "clusters": [
+    {
+      "campaign_id": "camp_abc123",
+      "primary_pulse_id": "pulse-1",
+      "label": "Ransomware wave",
+      "adversary": "APT-TEST",
+      "confidence": "medium",
+      "lifecycle": "active",
+      "member_count": 3,
+      "stack_member_count": 2,
+      "watchlisted_member_count": 1,
+      "members_on_stack": ["CVE-2024-0001", "CVE-2024-0002"],
+      "watchlisted_members": ["CVE-2024-0002"]
+    }
+  ]
+}
+```
+
+Clusters rank by stack overlap, then watchlisted members, then size and lifecycle.
+
 ---
 
 ## Detection
@@ -940,6 +978,9 @@ All admin endpoints require an authenticated session (`briefr_at` cookie) with t
 
 ### GET /api/admin/system
 Returns system health: CVE count, NVD sync age, backup age, DB integrity, scheduler jobs (with `status`, `last_error_message`, `run_history`), feed sources, active locks, recent errors, open circuit count.
+
+### GET /api/admin/correlation/status
+Operator diagnostics for the correlation engine: `last_run`, `build_watermark`, campaign totals (`by_lifecycle`, `avg_members`), CVE campaign coverage %, OTX pulse IOC coverage %, IOC sync backlog (`ioc_sync_pending_pulses`), and `suppressions_count`.
 
 ### GET /api/admin/storage
 Returns disk partition info (`db_partition`, `backup_partition` with free/total/used bytes), DB file size, table row counts, archive count. **Fixes the NaN% bug from V1.3.**
