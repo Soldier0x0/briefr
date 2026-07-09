@@ -183,6 +183,17 @@ async def refresh(
         if session is None:
             raise HTTPException(status_code=401, detail="Not authenticated")
 
+        expires_raw = (session.get("expires_at") or "").strip()
+        if expires_raw:
+            try:
+                exp = datetime.fromisoformat(expires_raw.replace("Z", "+00:00"))
+                if exp.tzinfo is None:
+                    exp = exp.replace(tzinfo=timezone.utc)
+                if exp < datetime.now(timezone.utc):
+                    raise HTTPException(status_code=401, detail="Not authenticated")
+            except ValueError:
+                pass
+
         if session["revoked_at"] is not None:
             # Replay of an already-rotated (or logged-out) token: treat as
             # theft and kill every session for this user.
