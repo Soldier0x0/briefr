@@ -192,6 +192,15 @@ export function fetchCVECorrelation(cveId, sector = '') {
   return request(`/cves/${encodeURIComponent(cveId)}/correlation${qs}`)
 }
 
+export function fetchCorrelationClusters({ stack = '', limit = 20, includeStale = false } = {}) {
+  const qs = new URLSearchParams()
+  if (stack) qs.set('stack', stack)
+  qs.set('limit', String(limit))
+  if (includeStale) qs.set('include_stale', 'true')
+  const query = qs.toString()
+  return request(`/correlation/clusters${query ? `?${query}` : ''}`)
+}
+
 export function fetchCVEGreynoiseScans(cveId) {
   return request(`/cves/${encodeURIComponent(cveId)}/greynoise-scans`)
 }

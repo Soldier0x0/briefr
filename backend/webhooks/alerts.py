@@ -120,6 +120,7 @@ def _format_watchlist_alert(
     reason: str,
     detail: str,
     description: str = "",
+    campaign_hint: str = "",
 ) -> str:
     lines = [
         f"BRIEFR watchlist alert: {cve_id} — {reason}",
@@ -130,7 +131,35 @@ def _format_watchlist_alert(
         desc = desc[:277] + "..."
     if desc:
         lines.append(desc)
+    hint = (campaign_hint or "").strip()
+    if hint:
+        lines.append(hint)
     return "\n".join(lines)
+
+
+async def _campaign_hint_for_cve(db, cve_id: str) -> str:
+    """One-line campaign context for pinned-CVE watchlist webhooks."""
+    rows = await db.execute_fetchall(
+        """
+        SELECT camp.label, camp.lifecycle, camp.member_count
+        FROM correlation_campaign_members m
+        INNER JOIN correlation_campaigns camp ON camp.campaign_id = m.campaign_id
+        WHERE m.cve_id = ?
+        ORDER BY camp.member_count DESC, camp.label ASC
+        LIMIT 1
+        """,
+        (cve_id.upper(),),
+    )
+    if not rows:
+        return ""
+    row = dict(rows[0])
+    label = (row.get("label") or "").strip()
+    if not label:
+        return ""
+    lifecycle = (row.get("lifecycle") or "active").strip()
+    count = int(row.get("member_count") or 0)
+    count_note = f"{count} linked CVEs" if count else "linked CVEs"
+    return f"Campaign link: {label} ({lifecycle}, {count_note})"
 
 
 async def _fetch_cve_blurb(db, cve_id: str) -> str:
@@ -166,6 +195,7 @@ async def process_watchlist_kev_alerts(newly_kev_ids: list[str]) -> int:
         db = await get_db()
         try:
             description = await _fetch_cve_blurb(db, cve_id)
+            campaign_hint = await _campaign_hint_for_cve(db, cve_id)
         finally:
             await db.close()
         result = await dispatch_event(
@@ -175,6 +205,7 @@ async def process_watchlist_kev_alerts(newly_kev_ids: list[str]) -> int:
                 reason="added to CISA KEV",
                 detail="Pinned CVE is now on the Known Exploited Vulnerabilities catalog.",
                 description=description,
+                campaign_hint=campaign_hint,
             ),
             dedupe_key=f"{cve_id}:kev",
         )
@@ -230,6 +261,7 @@ async def process_watchlist_monitor_alerts(*, since_hours: int = 24) -> int:
         db = await get_db()
         try:
             description = await _fetch_cve_blurb(db, cve_id)
+            campaign_hint = await _campaign_hint_for_cve(db, cve_id)
         finally:
             await db.close()
 
@@ -240,6 +272,7 @@ async def process_watchlist_monitor_alerts(*, since_hours: int = 24) -> int:
                 reason=reason,
                 detail=detail,
                 description=description,
+                campaign_hint=campaign_hint,
             ),
             dedupe_key=f"{cve_id}:{field}",
         )
