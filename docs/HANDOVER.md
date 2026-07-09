@@ -12,6 +12,23 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — July batch: EPSS dedupe, JWT revalidation, V1.4 ops tail, docs (#391–#396)
+
+**Merged (local verify gate; GitHub Actions quota exhausted; Gemini daily quota hit — no inline review):**
+
+| PR | Branch | What |
+|----|--------|------|
+| **#391** | `cursor/epss-watchlist-dedupe-489a` | EPSS watchlist webhook dedupe (`dedupe_key` includes jump value); single DB conn in monitor loop |
+| **#392** | `cursor/jwt-role-revalidation-489a` | `require_admin` re-reads live role from `users`; `auth_token` seeds test user when missing |
+| **#393** | `cursor/logrotate-deploy-489a` | `deploy/logrotate-briefr.conf` + `OPERATIONS.md` journald/logrotate install |
+| **#394** | `cursor/admin-ops-charts-489a` | Chart.js ops dashboard on Admin Overview (operator): ingest duration, backup sizes, webhook deliveries |
+| **#395** | `cursor/architecture-diagrams-489a` | Phase A SVGs: `production-architecture`, `auth-layers`, `correlation-pipeline` |
+| **#396** | `cursor/docs-sweep-489a` | README session-cookie accuracy; `API_REFERENCE` refresh auth errors; `PRODUCT_STATUS` doc rollout |
+
+**Autonomous next (do not ask):** parked Wave 4 / STIX; optional LLM summary auth tail; remaining `IMAGE_BRIEFS` (ingest pipeline, UI screenshots).
+
+---
+
 ## 2026-07-09 — Extended IOC alerts + correlation phase-4 tail (#387–#390)
 
 **Merged:** #387 package-lock 1.5.0 sync · #388 IOC watchlist hit webhooks (OTX campaign + ThreatFox confidence; Gemini fixes on member_count/tf_conf) · #389 correlation tail (feed watchlist-peer boost, Forge Campaigns tab, PDF campaign paragraph, watchlist_alert campaign line) · #390 Gemini follow-up (IN subquery sort, Forge fetch cancellation, PDF member_count fallback).

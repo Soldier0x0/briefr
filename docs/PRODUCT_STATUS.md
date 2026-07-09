@@ -89,11 +89,11 @@ Details: [`ROADMAP.md`](ROADMAP.md). Historical beta specs → `docs/archive/` (
 
 | Phase | Status |
 |-------|--------|
-| Doc structure + image briefs | In progress |
-| Living API / architecture docs | Current — `API_REFERENCE.md`, `SYSTEM_DESIGN.md`, `TECHNICAL_INVENTORY.md`, `docs/PRODUCT_STATUS.md` synced through Track I (#383) |
+| Doc structure + image briefs | Phase A diagrams shipped (`production-architecture`, `auth-layers`, `correlation-pipeline` SVGs) |
+| Living API / architecture docs | Current — `API_REFERENCE.md`, `SYSTEM_DESIGN.md`, `TECHNICAL_INVENTORY.md`, `docs/PRODUCT_STATUS.md` synced through July 2026 batch (#391–#396) |
 | Graphify knowledge graph | Current — `graphify-out/graph.json` + `GRAPH_REPORT.md` (5923 nodes; HTML viz omitted when >5000 nodes) |
-| Archive beta root `.md` files | Pending |
+| Archive beta root `.md` files | Pending (do not edit `docs/archive/beta/*`) |
 | MkDocs site | Pending |
-| Stale README / API_REFERENCE auth claims | Pending |
+| Stale README / API_REFERENCE auth claims | **Done** — session-cookie auth + refresh route errors updated |
 
 Plan: [`DOCUMENTATION_PLAN.md`](DOCUMENTATION_PLAN.md).
