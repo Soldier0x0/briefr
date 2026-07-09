@@ -12,6 +12,15 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — Operator settings in DB shipped (#368)
+
+**Merged:** #368 — `app_settings` table; admin config Save persists to DB; startup
+hydrate (process env > DB > `.env`); Alembic 009.
+
+**Autonomous next (do not ask):** Track L Wave 4 → V1.5 tail.
+
+---
+
 ## 2026-07-09 — Watchlist monitor alerts shipped (#366)
 
 **Merged:** #366 — `watchlist_alert` webhooks for pinned CVEs (KEV entry, EPSS
