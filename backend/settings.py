@@ -17,6 +17,9 @@ from dotenv import load_dotenv, set_key
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Keys present before `.env` load — real process env (systemd, secrets) wins over DB.
+PROCESS_ENV_KEYS: frozenset[str] = frozenset(os.environ.keys())
+
 load_dotenv()
 
 logger = logging.getLogger(__name__)

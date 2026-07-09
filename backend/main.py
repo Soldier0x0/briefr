@@ -92,6 +92,9 @@ async def lifespan(app: FastAPI):
         raise
 
     await init_db()
+    from operator_settings import bootstrap_operator_settings
+
+    await bootstrap_operator_settings()
     logger.info("main.py lifespan: database ready")
     if settings.is_production:
         for posture in production_posture_warnings():

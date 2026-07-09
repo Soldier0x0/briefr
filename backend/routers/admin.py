@@ -548,7 +548,7 @@ _STORAGE_TABLES = [
     "cve_change_history", "ioc_cache", "feed_cache",
     "correlation_actor", "correlation_temporal", "correlation_campaigns",
     "correlation_campaign_members", "correlation_suppressions", "cve_embeddings", "api_usage",
-    "audit_log", "sync_state", "watchlist", "hunt_packs", "webhook_alert_log",
+    "audit_log", "sync_state", "app_settings", "watchlist", "hunt_packs", "webhook_alert_log",
 ]
 
 
@@ -1082,6 +1082,10 @@ async def set_config(request: Request, body: dict):
     os.environ[key] = value
     _propagate_to_settings(key, value)
 
+    from operator_settings import persist_operator_setting
+
+    await persist_operator_setting(key, value)
+
     await audit(request, f"config.set.{key}", value[:100])
 
     masked = _mask_key(value) if key in {"DISCORD_WEBHOOK_URL", "TELEGRAM_BOT_TOKEN", "WEBHOOK_GENERIC_URL"} else value
@@ -1136,10 +1140,13 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
 
     # Pass 2: write only after full validation passes
     changed_keys: list[str] = []
+    from operator_settings import persist_operator_setting
+
     for key, value in validated:
         dotenv_set_key(dotenv_path, key, value)
         os.environ[key] = value
         _propagate_to_settings(key, value)
+        await persist_operator_setting(key, value)
         changed_keys.append(key)
 
     if not changed_keys:
