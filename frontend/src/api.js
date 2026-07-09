@@ -31,8 +31,8 @@ async function doFetch(path, options) {
     const timedOut = e?.name === 'TimeoutError'
     const err = new Error(
       timedOut
-        ? 'Request timed out — the backend may be overloaded.'
-        : 'Network error — is the backend running?',
+        ? 'Request timed out — the server may be overloaded. Try again in a moment.'
+        : 'Could not reach the server. Check your connection and try again.',
     )
     err.status = 0
     throw err

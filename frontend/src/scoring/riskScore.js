@@ -234,7 +234,7 @@ export function getAssetExposureStatus(riskScore) {
       label: 'ASSET DATA NOT LOADED',
       headline: 'EXPOSURE UNKNOWN',
       detail:
-        'Load an asset profile to determine whether this CVE affects your environment.',
+        'No My Stack profile is loaded, so environment relevance cannot be determined.',
       matchReason: null,
       showSignalBar: false,
       formulaNote: `Formula placeholder: 0.500 × ${(weight * 100).toFixed(0)}% × 100 = ${assetPoints.toFixed(1)} pts (neutral scoring input — not exposure probability)`,
@@ -276,17 +276,32 @@ export const THREAT_COMPONENT_LABELS = {
   momentum: 'Momentum',
 }
 
+export const THREAT_COMPONENT_TOOLTIPS = {
+  kev: 'CISA Known Exploited Vulnerabilities catalogue status.',
+  epss: 'Probability of exploitation in the next 30 days (FIRST EPSS model).',
+  exploit: 'Public exploit or PoC availability — not confirmed in-the-wild use unless KEV-listed.',
+  cvss: 'NVD CVSS base score — technical severity, not exploitation status.',
+  momentum: 'Recent movement in exploitation signals (KEV timing, EPSS change, OTX activity).',
+}
+
+export const OP_BAND_TOOLTIPS = {
+  P1: 'BRIEFR rule-based band: address first given threat signals and environment relevance.',
+  P2: 'Investigate when environment overlap or exploitation signals warrant attention.',
+  P3: 'Schedule review — moderate signals or weak environment overlap.',
+  P4: 'Informational — low active threat or no stack match.',
+}
+
 export const ENV_TIER_LABELS = {
   CONFIRMED: 'CONFIRMED MATCH',
   LIKELY: 'LIKELY OVERLAP',
   POSSIBLE: 'POSSIBLE OVERLAP',
   WEAK: 'WEAK OVERLAP',
   NO_MATCH: 'NO MATCH',
-  UNKNOWN: 'ENV UNKNOWN',
+  UNKNOWN: 'ENVIRONMENT NOT ASSESSED',
 }
 
 export const OP_BAND_LABELS = {
-  P1: 'P1 — ACT NOW',
+  P1: 'P1 — Address first',
   P2: 'P2 — INVESTIGATE',
   P3: 'P3 — SCHEDULE',
   P4: 'P4 — INFORMATIONAL',

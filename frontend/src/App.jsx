@@ -586,7 +586,7 @@ export default function App() {
       const display = q.length > 40 ? `${q.slice(0, 40)}…` : q
       items.unshift({
         id: 'ioc-lookup',
-        label: `Extract observables: ${display}`,
+        label: `Review indicators: ${display}`,
         hint: 'ioc',
         run: () => {
           setActiveTab('ioc')

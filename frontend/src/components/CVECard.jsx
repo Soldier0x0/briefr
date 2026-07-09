@@ -349,7 +349,7 @@ export default memo(function CVECard({
               onClick={handleLookupIoc}
               aria-label={`Look up indicators from ${cve.cve_id} in IOC tab`}
             >
-              Extract observables
+              Review indicators
             </button>
           )}
         </div>

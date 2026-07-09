@@ -6,6 +6,7 @@ import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { extractActorTags } from '../utils/investigationActors.js'
 import { isValidDomain } from '../utils/domainValidation.js'
+import { IOC_NOT_FOUND_IN_DATABASES } from '../utils/iocLookupMessages.js'
 import './IOCLookup.css'
 
 // ── Type detection ────────────────────────────────────────
@@ -56,7 +57,7 @@ function verdictInfo(malicious, total) {
   const pct = malicious / total
   if (pct < 0.1) return { label: 'clean',      color: 'var(--green)', pct }
   if (pct < 0.5) return { label: 'suspicious', color: 'var(--amber)', pct }
-  return               { label: 'malicious',   color: 'var(--red)',   pct }
+  return               { label: 'likely malicious', color: 'var(--red)',   pct }
 }
 
 function abuseScoreColor(score) {
@@ -75,12 +76,12 @@ function enginePillClass(category) {
 
 // ── Error message mapping ─────────────────────────────────
 function parseError(err) {
-  if (err.status === 0)   return 'Network error — is the backend running?'
-  if (err.status === 403) return 'Invalid API key — check your .env file'
+  if (err.status === 0) return 'Could not reach the server. Check your connection and try again.'
+  if (err.status === 403) return 'Threat-intelligence API key missing or invalid on this server. Ask your administrator.'
   if (err.status === 429) return 'Rate limit reached — try again in 60 seconds'
-  if (err.status === 404) return 'Not found in threat databases'
+  if (err.status === 404) return IOC_NOT_FOUND_IN_DATABASES
   if (err.status === 422) return err.message || 'Invalid input — use a full hostname, not a filename or path'
-  return err.message || 'Lookup failed — unknown error'
+  return err.message || 'Lookup failed — existing session results remain available'
 }
 
 const TYPE_LABELS = {
@@ -463,7 +464,7 @@ function IPResultBody({ result, onViewActorTechniques, onOpenCve }) {
     <>
       {(result.sources_missing?.length > 0) && (
         <p className="ioc-sources-hint mono" role="status">
-          // Missing API keys: {result.sources_missing.join(', ')} — add to backend/.env
+          Some enrichment sources are not configured: {result.sources_missing.join(', ')}. Results may be partial.
         </p>
       )}
 
@@ -488,7 +489,7 @@ function IPResultBody({ result, onViewActorTechniques, onOpenCve }) {
       {abuseScore != null && (
         <div className="ioc-abuse-section">
           <div className="ioc-abuse-label">
-            <span>ABUSE CONFIDENCE</span>
+            <span title="Community-reported abuse score for this IP, separate from VirusTotal">AbuseIPDB confidence</span>
             <span className="ioc-abuse-score-num" style={{ color: abuseScoreColor(abuseScore) }}>
               {abuseScore}%
             </span>
@@ -701,9 +702,9 @@ function ActionRow({ result, onCopy, copied, onSaveWatchlist, watchlistSaving, w
           className="action-btn"
           onClick={onSaveWatchlist}
           disabled={watchlistSaving || watchlistSaved}
-          title="Save to your persistent IOC watchlist for nightly retro-match against OTX and ThreatFox mirrors"
+          title="Nightly job checks saved IOCs against local OTX and ThreatFox data on this server"
         >
-          {watchlistSaved ? 'ON WATCHLIST ✓' : watchlistSaving ? 'SAVING…' : 'SAVE TO WATCHLIST'}
+          {watchlistSaved ? 'ON WATCHLIST ✓' : watchlistSaving ? 'SAVING…' : 'SAVE FOR NIGHTLY MATCH'}
         </button>
       )}
       <button
@@ -947,9 +948,9 @@ export default function IOCLookup({ prefill }) {
       if (data.error) {
         const msg = data.error.toLowerCase()
         if (msg.includes('auth') || msg.includes('key')) {
-          setError('Invalid API key — check your .env file')
+          setError('Threat-intelligence API key missing or invalid on this server. Ask your administrator.')
         } else if (msg.includes('not found') || msg.includes('404')) {
-          setError('Not found in threat databases')
+          setError(IOC_NOT_FOUND_IN_DATABASES)
         } else {
           // Show result even if there's a partial error
           setResult(data)
@@ -1183,7 +1184,7 @@ export default function IOCLookup({ prefill }) {
 
         <p className="ioc-privacy-notice mono" role="note">
           {'// Lookups are sent to third-party enrichment APIs (see Privacy Policy).'}<br />
-          {'// Results cached locally (6h IOC, 1h GreyNoise). No user accounts.'}
+          {'// Results cached on this server (6h IOC, 1h GreyNoise). Sign in to save IOCs to your watchlist.'}
         </p>
 
         <IOCQuotaPanel />

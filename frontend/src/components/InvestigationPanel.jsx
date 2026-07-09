@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { useInvestigation, INV_TYPES } from '../context/InvestigationContext.jsx'
+import { techniqueBadgeLabel } from '../utils/investigationLabels.js'
 import PdfExportModal from './PdfExportModal.jsx'
 import './InvestigationPanel.css'
 
-function typeBadge(type) {
-  switch (type) {
+function typeBadge(item) {
+  switch (item.type) {
     case INV_TYPES.CVE: return 'CVE'
     case INV_TYPES.IOC: return 'IOC'
     case INV_TYPES.ACTOR: return 'ACTOR'
-    case INV_TYPES.TECHNIQUE: return 'AI'
+    case INV_TYPES.TECHNIQUE: return techniqueBadgeLabel(item)
     default: return '—'
   }
 }
@@ -35,7 +36,7 @@ function ThreadList({ items, startTime, pivotLabel }) {
           )}
           <div className="inv-thread-card">
             <div className="inv-thread-top">
-              <span className={`inv-type-badge inv-type-${item.type}`}>{typeBadge(item.type)}</span>
+              <span className={`inv-type-badge inv-type-${item.type}`}>{typeBadge(item)}</span>
               <span className="inv-thread-time mono">
                 +{formatElapsed(item.timestamp, startTime)}
               </span>
@@ -91,14 +92,14 @@ function PanelChrome({ expanded, onToggle, onPdf, onClear, count }) {
         <span className="inv-panel-count mono">{count}</span>
       </div>
       <p className="inv-panel-capture-hint mono">
-        Analyst pivots, CVE selections, and IOC lookups are captured for PDF export.
+        CVEs, IOC lookups, and links you follow will be included in the PDF export.
       </p>
       <div className="inv-panel-actions">
         <button type="button" className="inv-action-btn inv-action-pdf mono" onClick={onPdf}>
           ↓ PDF
         </button>
         <button type="button" className="inv-action-btn mono" onClick={onClear}>
-          Clear
+          End investigation
         </button>
       </div>
     </div>

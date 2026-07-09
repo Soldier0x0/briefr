@@ -48,13 +48,13 @@ _BASE_TABLE: dict[str, dict[str, str]] = {
 }
 
 _RATIONALE: dict[tuple[str, str], str] = {
-    ("CRIT", "CONFIRMED"): "Critical threat with confirmed vulnerable version in your stack.",
-    ("CRIT", "LIKELY"): "Critical threat; product overlap — verify exact version.",
-    ("CRIT", "POSSIBLE"): "Critical threat; partial stack overlap — verify before treating as in-scope.",
-    ("CRIT", "WEAK"): "Critical threat; weak textual overlap only — verify version.",
-    ("CRIT", "UNKNOWN"): "Critical threat; environment unknown — provisional priority.",
-    ("CRIT", "NO_MATCH"): "Critical threat but no asset profile match — lower urgency for your stack.",
-    ("HIGH", "CONFIRMED"): "High threat with confirmed version match — investigate immediately.",
+    ("CRIT", "CONFIRMED"): "Strong exploitation signals with confirmed vulnerable version in My Stack.",
+    ("CRIT", "LIKELY"): "Strong exploitation signals; product overlap — verify exact version.",
+    ("CRIT", "POSSIBLE"): "Strong exploitation signals; partial stack overlap — verify before treating as in-scope.",
+    ("CRIT", "WEAK"): "Strong exploitation signals; weak textual overlap only — verify version.",
+    ("CRIT", "UNKNOWN"): "Strong exploitation signals; environment not assessed — provisional priority.",
+    ("CRIT", "NO_MATCH"): "Strong exploitation signals but no My Stack match — lower urgency for your environment.",
+    ("HIGH", "CONFIRMED"): "High exploitation signals with a confirmed vulnerable version match in My Stack — investigate exposure.",
     ("HIGH", "LIKELY"): "High threat with unverified product overlap.",
     ("HIGH", "POSSIBLE"): "High threat with partial overlap — verify version.",
     ("HIGH", "WEAK"): "High threat with weak overlap — verify relevance.",

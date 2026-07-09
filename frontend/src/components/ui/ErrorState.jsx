@@ -2,9 +2,9 @@ import { ingestLogUrl } from '../../utils/adminLinks.js'
 import Button from './Button.jsx'
 
 function errorMessage(error) {
-  if (!error) return 'Something went wrong.'
+  if (!error) return 'Request could not be completed.'
   if (typeof error === 'string') return error
-  return error.message || 'Something went wrong.'
+  return error.message || 'Request could not be completed.'
 }
 
 /**

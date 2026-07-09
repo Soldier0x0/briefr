@@ -18,7 +18,8 @@ from templates.intelligence import (
 def test_severity_critical():
     text = severity_sentence("CRITICAL", 9.8)
     assert "9.8" in text
-    assert "CRITICAL" in text
+    assert "Critical" in text
+    assert "emergency" not in text.lower()
 
 
 def test_epss_kev_suffix():

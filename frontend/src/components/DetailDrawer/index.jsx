@@ -50,7 +50,7 @@ class DrawerTabErrorBoundary extends Component {
     if (this.state.error) {
       return (
         <p className="drawer-intel-empty mono">
-          // This tab failed to render. Close and reopen the CVE, or refresh the page.
+          This section could not be displayed. Close and reopen the CVE, or refresh the page.
         </p>
       )
     }
@@ -596,7 +596,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
                   className={`drawer-campaign-badge mono ${campaignLifecycleClass(campaignChip.lifecycle)}`}
                   title={campaignBadgeTooltip(campaignChip.lifecycle)}
                 >
-                  LINKED · {campaignChip.linkedCount} CVE{campaignChip.linkedCount === 1 ? '' : 's'}
+                  Campaign · {campaignChip.linkedCount} linked CVE{campaignChip.linkedCount === 1 ? '' : 's'}
                 </span>
               )}
             </div>
@@ -626,9 +626,9 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
                     type="button"
                     className="drawer-inv-btn drawer-inv-btn-secondary mono"
                     onClick={() => investigation.pivotToIocFromCve(cve)}
-                    aria-label={`Extract observables from ${cve.cve_id}`}
+                    aria-label={`Review indicators from ${cve.cve_id}`}
                   >
-                    Extract observables
+                    Review indicators
                   </button>
                   {campaignChip && investigation.pivotToCampaign && (
                     <button

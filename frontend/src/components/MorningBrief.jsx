@@ -10,6 +10,7 @@ import {
   kevDueDateInWindow,
   kevBucketFilterLabel,
 } from '../utils/kevDeadline.js'
+import { formatSinceHoursLabel } from '../utils/morningBriefFormat.js'
 import './MorningBrief.css'
 
 const REASON_LABELS = {
@@ -17,6 +18,13 @@ const REASON_LABELS = {
   new_kev: 'New KEV',
   kev_due_soon: 'KEV due soon',
   stack_match: 'Stack match',
+}
+
+const REASON_TOOLTIPS = {
+  epss_mover: 'EPSS probability rose materially in this window.',
+  new_kev: 'Newly added to CISA KEV catalog.',
+  kev_due_soon: 'CISA federal remediation deadline is approaching.',
+  stack_match: 'Mentions products in your stack filter or My Stack.',
 }
 
 const REASON_FILTERS = [
@@ -28,7 +36,7 @@ const REASON_FILTERS = [
 ]
 
 const EMPTY_HINTS = {
-  all: 'No actionable CVEs in this window — check back after the next ingest.',
+  all: 'No prioritized CVEs in the last 24 hours — check back after the next ingest.',
   kev_due_soon: 'No KEV remediation deadlines in the next window.',
   epss_mover: 'No material EPSS increases tracked in this window.',
   new_kev: 'No new CISA KEV catalogue entries in this window.',
@@ -163,8 +171,7 @@ export default function MorningBrief({
         <div>
           <h2 className="morning-brief-heading mono">// MORNING BRIEF</h2>
           <p className="morning-brief-sub">
-            Ranked action queue since your last visit window
-            {brief?.meta?.since_hours ? ` (${brief.meta.since_hours}h)` : ''}.
+            Prioritized CVEs from the last {formatSinceHoursLabel(brief?.meta?.since_hours)}, based on KEV deadlines, EPSS movement, and stack overlap.
           </p>
         </div>
         {onOpenFullFeed && (
@@ -258,6 +265,7 @@ export default function MorningBrief({
                               <span
                                 key={label}
                                 className={`morning-brief-reason-chip mono ${reasonChipClass(reason)}`}
+                                title={REASON_TOOLTIPS[reason] || undefined}
                               >
                                 {label}
                               </span>

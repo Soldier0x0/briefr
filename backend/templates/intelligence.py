@@ -17,9 +17,8 @@ def severity_sentence(severity: str, cvss: float) -> str:
     score = float(cvss) if cvss is not None else 0.0
     if sev == "CRITICAL" or score >= 9.0:
         return (
-            f"This vulnerability carries a CVSS score of {score} and is rated"
-            f" CRITICAL, representing an immediate risk requiring emergency"
-            f" response. Do not delay remediation."
+            f"CVSS {score} (Critical). High technical severity — prioritize if the"
+            f" affected product is in your environment."
         )
     if sev == "HIGH" or score >= 7.0:
         return (
@@ -57,7 +56,7 @@ def epss_sentence(score: float, kev: bool) -> str:
     if kev:
         return base + " CISA has confirmed active exploitation in the wild."
     if pct >= 70:
-        return base + " Exploitation is considered highly likely in the near term."
+        return base + " EPSS ranks this among the more likely CVEs to be exploited in the next 30 days (model estimate)."
     if pct >= 30:
         return base + " Exploitation is plausible given public technical details."
     return base + " Active exploitation remains unlikely at this time."
@@ -80,11 +79,10 @@ def kev_sentence(
         return (
             base
             + f" Federal agencies are required to remediate by {due_date}."
-            + " Treat this as highest priority."
         )
     if date_added:
-        return base + f" Added to the catalogue on {date_added}. Treat as highest priority."
-    return base + " Treat as highest priority for remediation."
+        return base + f" Added to the catalogue on {date_added}."
+    return base + " Prioritize if you run affected products."
 
 
 def exploit_sentence(exploits: list) -> str:
@@ -95,8 +93,8 @@ def exploit_sentence(exploits: list) -> str:
     poc = [e for e in exploits if e.get("type") == "poc"]
     if metasploit:
         return (
-            "A Metasploit module is publicly available, meaning any attacker"
-            " with basic skills can exploit this vulnerability with minimal effort."
+            "A Metasploit module is publicly available — lowers the skill bar"
+            " for exploitation."
         )
     if weaponised:
         return (
@@ -319,7 +317,7 @@ def greynoise_sentence(gn: dict | None) -> str:
         detail = f" ({name})" if name else ""
         return (
             f"GreyNoise classifies {ip} as malicious internet scanning activity"
-            f"{detail}. Treat associated traffic as hostile."
+            f"{detail}. Investigate context before blocking."
         )
     if classification == "benign":
         detail = f" — {name}" if name else ""

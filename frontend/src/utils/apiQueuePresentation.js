@@ -135,7 +135,7 @@ export function buildQueueRows(apiQueue) {
       source: formatSourceLabel(key),
       state,
       stateLabel: STATE_LABELS[state] || state.toUpperCase(),
-      displayLabel: meta || 'Outbound API activity',
+      displayLabel: meta || 'Background sync in progress',
       contextId: null,
       detail: formatWaitDetail(null, state, info.paused_for_seconds, null),
       fallback: true,

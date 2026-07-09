@@ -42,7 +42,7 @@ const SUPPRESSED_STATUSES = new Set([401, 422])
 export function notifyApiError(err) {
   if (SUPPRESSED_STATUSES.has(err?.status)) return
   window.dispatchEvent(new CustomEvent('briefr-api-error', {
-    detail: { message: err?.message || 'Something went wrong', requestId: err?.requestId || '' },
+    detail: { message: err?.message || 'Request could not be completed', requestId: err?.requestId || '' },
   }))
 }
 

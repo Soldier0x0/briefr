@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { copyToClipboard } from '../../utils/report.js'
 
+import { confidenceMatchLabel } from '../../utils/detectLabels.js'
 import IntelProvenanceLine from './IntelProvenanceLine.jsx'
 
 const BASIS_LABELS = {
@@ -42,7 +43,7 @@ function BasisBadge({ basis }) {
   const tip = BASIS_TOOLTIPS[key] || BASIS_TOOLTIPS.generic
   return (
     <span className="det-basis-badge mono" title={tip}>
-      basis: {label}
+      Based on {label}
     </span>
   )
 }
@@ -196,19 +197,19 @@ function GeneratedSigmaSection({
         <StatusBadge status={meta?.status || 'experimental'} title={EXPERIMENTAL_TOOLTIP} />
         <BasisBadge basis={meta?.briefr_basis} />
         <span className={`${confidenceCls} mono`} title="BRIEFR confidence in this template match">
-          {confidence} confidence
+          {confidenceMatchLabel(confidence)}
         </span>
         {(meta?.briefr_class || detectionClass) && (
           <span
             className="det-class-badge mono"
-            title="Detection class from the unified CWE/ATT&CK router (Sigma, SIEM, log patterns)"
+            title="Detection pattern from the unified CWE/ATT&CK router (Sigma, SIEM, log patterns)"
           >
-            class: {meta?.briefr_class || detectionClass}
+            Pattern: {(meta?.briefr_class || detectionClass).replace(/_/g, ' ')}
           </span>
         )}
       </div>
       <p className="det-generated-warning mono" title={EXPERIMENTAL_TOOLTIP}>
-        ⚠ Experimental — validate field names and thresholds before deploying to production
+        Experimental hunt starter — tune fields and test in your SIEM before production use.
       </p>
       <div className="det-code-wrap">
         <div className="det-code-actions">
@@ -240,7 +241,7 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
     return (
       <section className="drawer-section">
         <p className="drawer-intel-empty mono" role="alert">
-          // Detection lookup failed: {error}
+          Could not load detection content. {error}
         </p>
         {onRetry && (
           <button type="button" className="drawer-risk-profile-cta-btn mono" onClick={onRetry}>
@@ -255,7 +256,7 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
     return (
       <section className="drawer-section">
         <p className="drawer-intel-empty mono">
-          // Open this tab to load detection rules and SIEM queries for this CVE
+          Detection content is loading for this CVE.
         </p>
       </section>
     )
