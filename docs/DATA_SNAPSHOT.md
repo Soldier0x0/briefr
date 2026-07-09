@@ -16,10 +16,31 @@ implement this spec.
 | Field | Value |
 |-------|--------|
 | Container | `briefr-intel-YYYY-MM.pgdump.gz` (gzip of custom-format `pg_dump`) |
+| Sidecar | `briefr-intel-YYYY-MM.manifest.json` (or `*.pgdump.manifest.json` next to export) |
+| `format_version` | **1** — increment when table allowlist or manifest schema changes |
+| `bundle_kind` | `briefr-intel` |
 | Dump scope | Allowlisted tables + filtered `sync_state` rows only |
 | Operator rows | **Zero** — verified by export script exit code + row-count guards |
 | Restore target | Empty Postgres 16+ database; `pg_restore --no-owner --no-acl` |
-| Schema | Current Alembic head at export time (bundle is not a substitute for migrations on upgrade) |
+| Schema | `schema_revision` + `alembic_head_at_export` in manifest; run `alembic upgrade head` after restore when importing into a newer BRIEFR release |
+
+Manifest fields (v1):
+
+| Key | Purpose |
+|-----|---------|
+| `format_version` | Bundle format semver (integer) |
+| `bundle_kind` | Always `briefr-intel` |
+| `schema_revision` | `alembic_version.version_num` at export time (may be absent on empty DB) |
+| `alembic_head_at_export` | Alembic head revision baked into the exporting BRIEFR release |
+| `briefr_commit` | Optional git commit from `backend/.build-info.json` |
+| `exported_at` | UTC ISO timestamp |
+| `tables` / `row_counts` / `sync_state_keys` | Allowlist verification |
+
+Verify before import: `python scripts/verify_intel_snapshot.py briefr-intel-YYYY-MM.pgdump.gz`
+
+Import (greenfield / intel seed): `python scripts/import_intel_snapshot.py --input … --database-url …`
+
+Full operator steps: `docs/OPERATIONS.md` § Intel snapshot import and upgrade.
 
 Future v2 may add portable JSONL per-table exports; v1 is Postgres-native for
 adoption speed and fidelity with BRIEFR compute columns (`cve_embeddings`, etc.).
@@ -130,12 +151,13 @@ Restore smoke (CI):
 
 ## Restore operator runbook (summary)
 
-Full steps land in `docs/OPERATIONS.md` when PR 9 ships. Minimum path:
+Full steps: `docs/OPERATIONS.md` § Intel snapshot import and upgrade.
+
+Minimum path:
 
 ```bash
-createdb briefr_intel_restore
-pg_restore --no-owner --no-acl -d briefr_intel_restore briefr-intel-YYYY-MM.pgdump
-# Point a throwaway BRIEFR instance at briefr_intel_restore for validation only.
+python3 scripts/verify_intel_snapshot.py briefr-intel-YYYY-MM.pgdump.gz
+python3 scripts/import_intel_snapshot.py --input briefr-intel-YYYY-MM.pgdump.gz --database-url "$DATABASE_URL"
 ```
 
 Do not overwrite a production operator database with an intel bundle.
