@@ -1,6 +1,6 @@
 # Gemini Review Reconciliation — PRs #306–#385
 
-Generated: 2026-07-09T14:46:43Z
+Generated: 2026-07-09T14:51:16Z
 
 ## Scope
 
@@ -23,7 +23,8 @@ Generated: 2026-07-09T14:46:43Z
 - PRs audited: 80
 - PRs with Gemini inline findings: [306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 328, 329, 330, 331, 332, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 346, 348, 350, 351, 352, 353, 354, 355, 356, 357, 358, 360, 362, 364, 365, 366, 368, 371, 372, 373, 374, 375, 376, 378, 379, 380, 381, 382, 383, 384, 385]
 - Substantive Gemini inline comments: 174
-- VALID_UNFIXED (pre-correction): 0
+- Pre-correction VALID_UNFIXED on main: 9
+- Post-correction VALID_UNFIXED: 0
 - ALREADY_FIXED: 172
 - SUPERSEDED: 0
 - OBSOLETE: 1
@@ -4051,10 +4052,10 @@ from db.app_settings import get_app_setting, set_app_setting
         logger.error("Failed to acquire DB or 
 - **Current main file/path:** `backend/routers/cves.py`
 - **Classification:** ALREADY_FIXED
-- **Correction required:** NO
+- **Correction required:** YES (resolved in this PR)
 - **Planned action:** None
 - **Regression test:** test_gemini_reconciliation.py
-- **Resolution evidence:** _detail_enrich_circl returns _circl_enrichment_patch only
+- **Resolution evidence:** _detail_enrich_circl returns _circl_enrichment_patch only — corrected on fix/gemini-review-reconciliation
 
 ### F-379-3550822254
 
@@ -4088,10 +4089,10 @@ from db.app_settings import get_app_setting, set_app_setting
     
 - **Current main file/path:** `backend/routers/cves.py`
 - **Classification:** ALREADY_FIXED
-- **Correction required:** NO
+- **Correction required:** YES (resolved in this PR)
 - **Planned action:** None
 - **Regression test:** test_gemini_reconciliation.py
-- **Resolution evidence:** _detail_enrich_exploits wraps get_db() in outer try for graceful degradation
+- **Resolution evidence:** _detail_enrich_exploits wraps get_db() in outer try for graceful degradation — corrected on fix/gemini-review-reconciliation
 
 ### F-379-3550822259
 
@@ -4121,10 +4122,10 @@ from db.app_settings import get_app_setting, set_app_setting
         return {"otx_pulses": []}
 - **Current main file/path:** `backend/routers/cves.py`
 - **Classification:** ALREADY_FIXED
-- **Correction required:** NO
+- **Correction required:** YES (resolved in this PR)
 - **Planned action:** None
 - **Regression test:** test_gemini_reconciliation.py
-- **Resolution evidence:** _detail_enrich_exploits wraps get_db() in outer try for graceful degradation
+- **Resolution evidence:** _detail_enrich_exploits wraps get_db() in outer try for graceful degradation — corrected on fix/gemini-review-reconciliation
 
 ### F-380-3550831728
 
@@ -4145,10 +4146,10 @@ from db.app_settings import get_app_setting, set_app_setting
         params_batch.append(_cve_upsert_params(cve))
 - **Current main file/path:** `backend/db/cve.py`
 - **Classification:** ALREADY_FIXED
-- **Correction required:** NO
+- **Correction required:** YES (resolved in this PR)
 - **Planned action:** None
 - **Regression test:** test_gemini_reconciliation.py::test_upsert_cve_canonicalizes_mixed_case_id
-- **Resolution evidence:** cve['cve_id'] uppercased before _cve_upsert_params
+- **Resolution evidence:** cve['cve_id'] uppercased before _cve_upsert_params — corrected on fix/gemini-review-reconciliation
 
 ### F-381-3550843094
 
@@ -4178,10 +4179,10 @@ from db.app_settings import get_app_setting, set_app_setting
             raise HTTPException(status_code=401, detail="Not authenticated")
 - **Current main file/path:** `backend/routers/auth.py`
 - **Classification:** ALREADY_FIXED
-- **Correction required:** NO
+- **Correction required:** YES (resolved in this PR)
 - **Planned action:** None
 - **Regression test:** N/A
-- **Resolution evidence:** Suggested code appears present in current file
+- **Resolution evidence:** Suggested code appears present in current file — corrected on fix/gemini-review-reconciliation
 
 ### F-382-3550868125
 
@@ -4195,10 +4196,10 @@ from db.app_settings import get_app_setting, set_app_setting
 - **Gemini suggested fix:** (none)
 - **Current main file/path:** `backend/alembic/versions/012_cve_trgm_search.py`
 - **Classification:** ALREADY_FIXED
-- **Correction required:** NO
+- **Correction required:** YES (resolved in this PR)
 - **Planned action:** None
 - **Regression test:** test_gemini_reconciliation.py::test_build_cve_filters_search_uses_lower_for_trgm_alignment
-- **Resolution evidence:** _build_cve_filters uses LOWER() for description/summary search
+- **Resolution evidence:** _build_cve_filters uses LOWER() for description/summary search — corrected on fix/gemini-review-reconciliation
 
 ### F-383-3550931123
 
@@ -4212,10 +4213,10 @@ from db.app_settings import get_app_setting, set_app_setting
 - **Gemini suggested fix:** conditions.append("(c.cve_id LIKE ? OR c.description LIKE ? OR c.summary LIKE ?)")
 - **Current main file/path:** `SYSTEM_DESIGN.md`
 - **Classification:** ALREADY_FIXED
-- **Correction required:** NO
+- **Correction required:** YES (resolved in this PR)
 - **Planned action:** None
 - **Regression test:** N/A
-- **Resolution evidence:** No matching unfixed pattern on current main; concern addressed or non-actionable
+- **Resolution evidence:** No matching unfixed pattern on current main; concern addressed or non-actionable — corrected on fix/gemini-review-reconciliation
 
 ### F-383-3550931129
 
@@ -4229,10 +4230,10 @@ from db.app_settings import get_app_setting, set_app_setting
 - **Gemini suggested fix:** conditions.append("(c.cve_id LIKE ? OR c.description LIKE ? OR c.summary LIKE ?)")
 - **Current main file/path:** `API_REFERENCE.md`
 - **Classification:** ALREADY_FIXED
-- **Correction required:** NO
+- **Correction required:** YES (resolved in this PR)
 - **Planned action:** None
 - **Regression test:** N/A
-- **Resolution evidence:** No matching unfixed pattern on current main; concern addressed or non-actionable
+- **Resolution evidence:** No matching unfixed pattern on current main; concern addressed or non-actionable — corrected on fix/gemini-review-reconciliation
 
 ### F-384-3550974972
 
@@ -4246,10 +4247,10 @@ from db.app_settings import get_app_setting, set_app_setting
 - **Gemini suggested fix:** | Build tool | Vite | 8.x | Dev server and production bundle |
 - **Current main file/path:** `TECHNICAL_INVENTORY.md`
 - **Classification:** ALREADY_FIXED
-- **Correction required:** NO
+- **Correction required:** YES (resolved in this PR)
 - **Planned action:** None
 - **Regression test:** N/A
-- **Resolution evidence:** Suggested code appears present in current file
+- **Resolution evidence:** Suggested code appears present in current file — corrected on fix/gemini-review-reconciliation
 
 ### F-385-3551612488
 
@@ -4354,7 +4355,7 @@ Ordered by severity (implemented on `fix/gemini-review-reconciliation`):
 
 1. **RC-AUTH-SESSION** — fail-closed `expires_at` on `/api/auth/refresh`
 2. **RC-CVE-ID-NORM** — uppercase `cve['cve_id']` before upsert
-3. **RC-ENRICH-CONCUR** — CIRCL field patches; outer try on `get_db()`; exploit rollback
+3. **RC-ENRICH-CONCUR** — CIRCL field patches; outer try on `get_db()`; explicit rollback on exploit/OTX/CIRCL failure; `_circl_enrichment_patch` isinstance guard
 4. **RC-PG-TRGM-SEARCH** — `LOWER()` in `_build_cve_filters` general search
 5. **RC-DOCS-VERSION** — TECHNICAL_INVENTORY.md Vite 8.x
 
@@ -4362,8 +4363,20 @@ Ordered by severity (implemented on `fix/gemini-review-reconciliation`):
 
 - `backend/routers/auth.py` — fail-closed session expiry parsing
 - `backend/db/cve.py` — canonical CVE ID on dict before upsert
-- `backend/routers/cves.py` — enrichment reliability + CIRCL patch + LOWER search
+- `backend/routers/cves.py` — enrichment reliability + CIRCL patch + LOWER search + OTX/CIRCL rollback on failure
 - `TECHNICAL_INVENTORY.md` — Vite version row
+
+## PR #386 Self-Review (separate from historical #306–#385 closed set)
+
+After the historical reconciliation landed, Gemini posted **3 substantive inline findings on PR #386 itself** (not part of the 174-comment extraction). Disposition:
+
+| Gemini comment ID | Concern | Result |
+|---|---|---|
+| 3552583511 | `_circl_enrichment_patch` assumes dict | **FIXED** — `isinstance(enriched, dict)` guard (empty `{}` remains valid) |
+| 3552583541 | OTX aborted-transaction hygiene | **FIXED** — explicit `rollback()` in inner except (consistent with exploits) |
+| 3552583551 | CIRCL aborted-transaction hygiene | **FIXED** — explicit `rollback()` in inner except |
+
+`PostgresConnection.close()` already rolls back open transactions before pool release; explicit inner-path rollback matches exploit enrichment and documents intent at the exception boundary.
 
 ## Regression Coverage
 
@@ -4372,6 +4385,8 @@ Ordered by severity (implemented on `fix/gemini-review-reconciliation`):
   - CVE upsert canonicalizes mixed-case IDs
   - `_build_cve_filters` uses LOWER for search
   - CIRCL patch does not include `summary`
+  - `_circl_enrichment_patch` handles None/non-dict
+  - OTX/CIRCL enrichment rollback on failure; rollback failure contained
 
 ## Final Closed-Set Validation
 

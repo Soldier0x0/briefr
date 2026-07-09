@@ -1037,6 +1037,10 @@ async def _detail_enrich_otx(cve_key: str, otx_key: str) -> dict:
                 return {"otx_pulses": pulses}
             except Exception as exc:
                 logger.error("OTX pulse load failed for %s: %s", cve_key, exc)
+                try:
+                    await db.rollback()
+                except Exception:
+                    pass
                 return {"otx_pulses": []}
         finally:
             await db.close()
@@ -1061,8 +1065,10 @@ async def _detail_enrich_osv(cve_key: str, existing_summary: str | None) -> dict
         return {"osv_packages": []}
 
 
-def _circl_enrichment_patch(enriched: dict) -> dict:
+def _circl_enrichment_patch(enriched: dict | None) -> dict:
     """Return only CIRCL-owned fields so concurrent enrichments are not overwritten."""
+    if not isinstance(enriched, dict):
+        return {}
     patch: dict = {}
     if "circl" in enriched:
         patch["circl"] = enriched["circl"]
@@ -1083,6 +1089,10 @@ async def _detail_enrich_circl(cve: dict) -> dict:
                 return _circl_enrichment_patch(enriched)
             except Exception as exc:
                 logger.error("CIRCL enrichment failed for %s: %s", cve.get("cve_id"), exc)
+                try:
+                    await db.rollback()
+                except Exception:
+                    pass
                 return {}
         finally:
             await db.close()
