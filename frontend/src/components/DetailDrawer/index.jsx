@@ -759,6 +759,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
             <TabIntel
               techniques={techniques}
               publicExploits={cve.public_exploits}
+              exploitProvenance={cve.exploit_provenance}
               greynoiseConfigured={cve.greynoise_configured}
               greynoiseScans={greynoiseScans}
               greynoiseLoading={greynoiseLoading}

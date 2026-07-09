@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { copyToClipboard } from '../../utils/report.js'
 
+import IntelProvenanceLine from './IntelProvenanceLine.jsx'
+
 const BASIS_LABELS = {
   attack_technique: 'ATT&CK technique',
   cwe: 'CWE class',
@@ -270,6 +272,8 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
 
   return (
     <>
+      <IntelProvenanceLine provenance={detection.provenance} />
+
       <section className="drawer-section det-framing-section" aria-label="Detection framing">
         <p className="det-framing-note mono">
           Class-aware hunt starters — SIEM queries, log patterns, and a generated Sigma template

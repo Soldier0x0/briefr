@@ -7,6 +7,7 @@ import {
 } from '../../utils/correlationPresentation.js'
 import { formatSharedObservablesSummary } from '../../utils/sharedObservables.js'
 import DrawerAtlasSection from '../DrawerAtlasSection.jsx'
+import IntelProvenanceLine from './IntelProvenanceLine.jsx'
 import { exploitTypeLabel, techniqueLink } from './helpers.js'
 
 const GENERIC_EXPLOIT_TITLES = new Set([
@@ -283,6 +284,8 @@ function CorrelationFindings({
         // CORRELATION FINDINGS
       </h3>
 
+      <IntelProvenanceLine provenance={correlation?.provenance} />
+
       <CorrelationPriority priority={priority} />
 
       {!hasFindings && otxStatus === 'not_configured' && (
@@ -543,6 +546,7 @@ function GreynoiseQuotaLine({ quota }) {
 export default function TabIntel({
   techniques,
   publicExploits,
+  exploitProvenance,
   greynoiseConfigured,
   greynoiseScans,
   greynoiseLoading,
@@ -579,6 +583,7 @@ export default function TabIntel({
             {exploits.length}
           </span>
         </div>
+        <IntelProvenanceLine provenance={exploitProvenance} />
         {loading && exploits.length === 0 ? (
           <p className="drawer-intel-empty mono">// Loading public exploit intelligence…</p>
         ) : exploits.length === 0 ? (

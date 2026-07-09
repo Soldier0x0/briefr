@@ -73,6 +73,22 @@ ON CONFLICT(cache_key) DO UPDATE SET
     cached_at = excluded.cached_at
 """
 
+_GET_FEED_CACHE_TIMESTAMP_SQLITE = """
+SELECT cached_at FROM feed_cache WHERE cache_key = ?
+"""
+
+_GET_FEED_CACHE_TIMESTAMP_PG = """
+SELECT cached_at FROM feed_cache WHERE cache_key = $1
+"""
+
+_MAX_CVE_EXPLOITS_FETCHED_SQLITE = """
+SELECT MAX(fetched_at) AS fetched_at FROM cve_exploits WHERE cve_id = ?
+"""
+
+_MAX_CVE_EXPLOITS_FETCHED_PG = """
+SELECT MAX(fetched_at) AS fetched_at FROM cve_exploits WHERE cve_id = $1
+"""
+
 _READ_CVE_EXPLOITS_SQLITE = """
 SELECT title, type, source, url, published_date
 FROM cve_exploits
@@ -243,6 +259,33 @@ async def get_feed_cache(
     if row:
         return json.loads(row[0]["result"])
     return None
+
+
+async def get_feed_cache_timestamp(db: DbConnection, cache_key: str) -> str | None:
+    """Return cached_at for a feed_cache row regardless of TTL."""
+    sql = (
+        _GET_FEED_CACHE_TIMESTAMP_PG
+        if _is_postgres_connection(db)
+        else _GET_FEED_CACHE_TIMESTAMP_SQLITE
+    )
+    row = await db.execute_fetchall(sql, (cache_key,))
+    if not row:
+        return None
+    ts = dict(row[0]).get("cached_at")
+    return str(ts).strip() if ts else None
+
+
+async def get_cve_exploits_latest_fetched_at(db: DbConnection, cve_id: str) -> str | None:
+    sql = (
+        _MAX_CVE_EXPLOITS_FETCHED_PG
+        if _is_postgres_connection(db)
+        else _MAX_CVE_EXPLOITS_FETCHED_SQLITE
+    )
+    row = await db.execute_fetchall(sql, (cve_id.upper(),))
+    if not row:
+        return None
+    ts = dict(row[0]).get("fetched_at")
+    return str(ts).strip() if ts else None
 
 
 async def set_feed_cache(db: DbConnection, cache_key: str, result: dict) -> None:
