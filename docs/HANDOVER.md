@@ -12,6 +12,16 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — V1.5 IOC watchlist Phase 5 (#376)
+
+**Merged:** #376 — persistent `ioc_watchlist` CRUD; ThreatFox mirror sync;
+nightly retro-match vs OTX + ThreatFox; `ioc_watchlist_hit` webhook;
+VulnCheck KEV tier flag + scoring; IOC tab watchlist UI.
+
+**Autonomous next (do not ask):** V1.5 ship housekeeping (version bump, PDFs, security audit).
+
+---
+
 ## 2026-07-09 — V1.5 KEV detection backlog Phase 3 (#375)
 
 **Merged:** #375 — `detection_backlog` table; KEV sync + weekly reconcile jobs;

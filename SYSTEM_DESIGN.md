@@ -41,7 +41,7 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
        │              │              │              │                │
        ▼              ▼              ▼              ▼                ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ APScheduler (scheduler.py) — 13 recurring jobs (+ opt-in gates) + startup one-shots │
+│ APScheduler (scheduler.py) — 16 recurring jobs (+ opt-in gates) + startup one-shots │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ 1. NVD incremental      → cves, sync_state, cve_change_history, feed_cache  │
 │ 2. KEV metadata         → kev_deadlines, cves.is_kev, webhook_alert_log       │
@@ -56,6 +56,9 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
 │ 11. LLM product extract → cves.affected_products(+_source), feed_cache      │
 │ 12. Exploit sources (opt-in) → cve_exploits, cves.has_poc                   │
 │ 13. Backup dead-man     → webhook_alert_log (when webhooks configured)      │
+│ 14. ThreatFox mirror    → threatfox_iocs (ABUSECH_AUTH_KEY)                 │
+│ 15. VulnCheck KEV tier  → cves.is_vulncheck_exploited (VULNCHECK_API_KEY)   │
+│ 16. IOC retro-match     → ioc_watchlist_hit webhooks (OTX + ThreatFox join)   │
 │ (startup one-shot) EPSS history backfill → epss_history, sync_state marker  │
 └──────────────────────────────────┬──────────────────────────────────────────┘
                                    ▼
@@ -100,6 +103,7 @@ Mermaid sources: master graph [`docs/diagrams/system-graph.mermaid`](docs/diagra
 | `audit_log` | Written by `POST /api/refresh*`, backup/restore, all admin actions | `GET /api/admin/audit-log` |
 | `hunt_packs` (+ `mitre_techniques`, `cve_technique_map`) | `GET /api/forge/coverage`, `GET /api/hunt-packs/{technique_id}`, `POST /api/hunt-packs/generate` | Forge tab (coverage map + hunt pack panel) |
 | `watchlist` | `GET/POST/DELETE /api/watchlist`, `DELETE /api/watchlist/snoozes`; join on `GET /api/cves` for sort/filter | CVECard + DetailDrawer pin; WATCHLIST feed filter |
+| `ioc_watchlist`, `threatfox_iocs` | `GET/POST/DELETE /api/ioc/watchlist`; scheduler `threatfox_sync`, `ioc_retro_match` | IOCLookup watchlist panel |
 | `scoring/risk.py` + `POST /api/cves/{id}/risk` | Canonical Risk Score v1.1b | `DetailDrawer.jsx` via `fetchCVERisk()` |
 | `scoring/risk.py` constants | `GET /api/config/risk` — v1.1b weights, no DB | `riskScore.js` formula display (startup prefetch) |
 
@@ -126,6 +130,10 @@ summary text) — it does **not** compute scores.
 | Exploit availability | 0.10 |
 | CVSS | 0.10 |
 | Momentum | 0.05 |
+
+KEV component raw score uses CISA KEV recency tiers when `is_kev`; when not on
+CISA KEV, `is_vulncheck_exploited` (VulnCheck sync) contributes **0.72** — below
+full KEV tiers but above zero.
 
 **Momentum (card arrows):** `GET /api/cves/{id}/momentum` remains available for
 the momentum tab/signals; cached in `momentumCache.js` for CVECard arrows after
@@ -175,6 +183,13 @@ Sequence diagram: [`docs/diagrams/flow_cve_detail.mermaid`](docs/diagrams/flow_c
 5. **UI:** per-source result cards and template sentences from `templates/intelligence.py`.
 
 Sequence diagram: [`docs/diagrams/flow_ioc_lookup.mermaid`](docs/diagrams/flow_ioc_lookup.mermaid)
+
+### C2. IOC watchlist + retro-match (V1.5 Phase 5)
+
+1. **UI:** `IOCLookup.jsx` watchlist panel — signed-in users save IPs/hashes/domains with optional labels via `POST /api/ioc/watchlist`; list/remove via `GET` / `DELETE`.
+2. **ThreatFox mirror:** `threatfox_sync` (interval, default 24h) fetches the Abuse.ch ThreatFox export when `ABUSECH_AUTH_KEY` is set → `threatfox_iocs` local mirror (`feeds/threatfox.py`, `db/threatfox.py`).
+3. **Retro-match:** `ioc_retro_match` (nightly cron, default 04:00) joins `ioc_watchlist` against local `otx_pulse_iocs` and `threatfox_iocs` (`ioc/retro_match.py`) — no outbound IOC enrichment on the match path.
+4. **Alerts:** matches dispatch optional `ioc_watchlist_hit` webhooks (dedupe `{user_id}:{ioc_value}:{source}`).
 
 ### D. Risk scoring (v1.1b)
 
@@ -241,7 +256,12 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (sch
    rules against pasted log lines — file-based, no live SIEM. **V1.5 KEV detection
    backlog** (`GET /api/detection-backlog`, Forge Backlog tab) surfaces stack-matched
    KEV CVEs whose ATT&CK techniques are coverage gaps; rows are created on KEV sync
-   and weekly reconcile; optional `kev_backlog` webhook. HyperDX provisioning
+   and weekly reconcile; optional `kev_backlog` webhook. **V1.5 IOC watchlist**
+   (`GET/POST/DELETE /api/ioc/watchlist`, IOC tab panel) persists per-user IOCs;
+   nightly retro-match vs OTX + ThreatFox mirrors; optional `ioc_watchlist_hit`
+   webhook. **VulnCheck exploited tier** (`vulncheck_kev_sync` when
+   `VULNCHECK_API_KEY` set) sets `cves.is_vulncheck_exploited` for risk v1.1b KEV
+   component scoring below CISA KEV. HyperDX provisioning
    remains out of scope.
 
 ### F. Watchlist — pin / snooze (V1.3)
@@ -310,11 +330,12 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 
 ### Push notifications (V1.3 Theme 8 → V1.4 engine)
 
-- **Engine:** `webhooks/engine.py` dispatches events (`kev_alert`, `backup_failure`, `health`) to one or more **destinations** loaded from env vars and the `webhook_destinations` table. Env seeds are upserted on startup (`sync_env_destinations_to_db`); per-destination `enabled` and `event_types` can be overridden in SQLite via admin API.
+- **Engine:** `webhooks/engine.py` dispatches events (`kev_alert`, `backup_failure`, `health`, `watchlist_alert`, `kev_backlog`, `ioc_watchlist_hit`) to one or more **destinations** loaded from env vars and the `webhook_destinations` table. Env seeds are upserted on startup (`sync_env_destinations_to_db`); per-destination `enabled` and `event_types` can be overridden in SQLite via admin API.
 - **Built-in destinations:** Discord (`DISCORD_WEBHOOK_URL`), Telegram (`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`), optional generic HTTPS POST (`WEBHOOK_GENERIC_URL`). Each channel can be independently enabled/disabled (`*_WEBHOOK_ENABLED`) and subscribed to event types (`*_WEBHOOK_EVENTS`).
 - **Transport:** outbound webhook HTTP uses `webhooks/ssrf.py` — **https only**, DNS resolve + block private/reserved ranges (RFC1918, 127.0.0.0/8, ::1, 169.254.0.0/16, 0.0.0.0, unique-local IPv6), connect to resolved IP with original `Host` header (DNS-rebinding safe), **no redirect following**, 10s timeout, no internal API keys on outbound headers. Failures recorded via `resilient_client` health (`webhook.{destination_id}`).
 - **Dedupe:** `webhook_alert_log` stores one row per `(event_type, target)`; `webhook_delivery_log` records every delivery attempt (destination, status, error).
 - **KEV-on-stack:** after each `kev_metadata_sync`, newly flagged KEV CVEs matching `BRIEFR_STACK_TERMS` dispatch `kev_alert` (deduped per CVE).
+- **IOC watchlist hits:** after each `ioc_retro_match`, local OTX/ThreatFox mirror matches dispatch `ioc_watchlist_hit` (deduped per user/value/source).
 - **Backup dead-man:** `backup_deadman_check` dispatches `backup_failure` when the newest archive is older than `2 × BACKUP_INTERVAL_HOURS`. Clears dedupe when a fresh backup appears.
 - **Admin:** `GET /api/admin/webhooks/destinations`, `PATCH /api/admin/webhooks/destinations/{id}`, `GET /api/admin/webhooks/delivery-log`, `GET /api/admin/webhooks/log` (dedupe log).
 
@@ -390,6 +411,8 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 | CIRCL (vulnerability.circl.lu) | `feeds/extended.py` | Extra refs, CAPEC (CVE 5.x records) | `CIRCL_API_KEY` optional (`X-API-KEY`) | Rate-limited; 7d hit cache + 24h negative cache | No merge |
 | MalwareBazaar | `feeds/extended.py` | Hash metadata | `ABUSECH_AUTH_KEY` | Fair use | `None` |
 | URLhaus | `feeds/extended.py` | Domain malware URLs | `ABUSECH_AUTH_KEY` | Fair use | `None` |
+| ThreatFox | `feeds/threatfox.py`, scheduler | IOC mirror for retro-match | `ABUSECH_AUTH_KEY` | Fair use | Skip sync; prior rows retained |
+| VulnCheck KEV | `feeds/vulncheck_kev.py`, scheduler | Exploited-in-the-wild tier | `VULNCHECK_API_KEY` | API key required | Job no-op; flags unchanged |
 | Groq | `ai/summary.py`, `ml/product_extraction.py` | Executive summary; LLM product extraction | `GROQ_API_KEY` | Console quota | Model: `llama-3.1-8b-instant`; summary falls back to Anthropic/template |
 | Anthropic | `ai/summary.py` | Executive summary | `ANTHROPIC_API_KEY` | Console quota | Falls back to template |
 | GitHub | `detection/rule_sources.py` | Sigma/Elastic rule search | `GITHUB_TOKEN` (optional) | 60/hr anon | `[]` rules |

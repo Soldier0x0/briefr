@@ -453,6 +453,56 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 - `422` — body validation
 - `429` — rate limit exceeded (`RATE_LIMIT_IOC_PER_MINUTE`, default 30/min per client IP); `Retry-After` header gives seconds until the next allowed request
 
+### GET /api/ioc/watchlist
+
+**Description:** List the signed-in user's saved IOC watchlist entries.
+
+**Auth:** Required (`require_user` session).
+
+**Response:** `{ "items": [{ "id", "user_id", "ioc_type", "ioc_value", "label", "created_at" }] }`
+
+### POST /api/ioc/watchlist
+
+**Description:** Add or update a watchlist entry (upsert on `(user_id, ioc_type, ioc_value)`).
+
+**Auth:** Required.
+
+**Body:**
+
+```json
+{
+  "value": "evil.example",
+  "type": "domain",
+  "label": "Phishing C2"
+}
+```
+
+`type` must be `ip`, `hash`, or `domain`. `value` max 512 chars; `label` optional (max 200).
+
+**Response:** `{ "item": { ... } }`
+
+**Error responses:** `400` — invalid type/value
+
+### DELETE /api/ioc/watchlist/{entry_id}
+
+**Description:** Remove one watchlist row owned by the signed-in user.
+
+**Auth:** Required.
+
+**Response:** `{ "deleted": true, "id": <entry_id> }` — `404` when not found.
+
+**UI:** IOC tab → watchlist panel (save from lookup result; list/remove when signed in).
+
+**Scheduler (local mirrors + retro-match):**
+
+| Job id | Default schedule | Env gates | Writes |
+|---|---|---|---|
+| `threatfox_sync` | Every 24h (`THREATFOX_SYNC_INTERVAL_HOURS`) | `ABUSECH_AUTH_KEY` | `threatfox_iocs` |
+| `vulncheck_kev_sync` | Every 24h (`VULNCHECK_KEV_SYNC_INTERVAL_HOURS`) | `VULNCHECK_API_KEY` | `cves.is_vulncheck_exploited` |
+| `ioc_retro_match` | Daily cron (`IOC_RETRO_MATCH_HOUR`/`MINUTE`, default 04:00) | — | dispatches `ioc_watchlist_hit` webhooks |
+
+Retro-match joins `ioc_watchlist` against local `otx_pulse_iocs` and `threatfox_iocs` (no live IOC lookup). Optional webhook event: `ioc_watchlist_hit` (dedupe key `{user_id}:{ioc_value}:{source}`).
+
 ---
 
 ## ATLAS & Case Studies
@@ -1108,7 +1158,7 @@ Audit: `scheduler.run.{job_id}`.
 Body `[{key, value}, ...]`. Writes all keys to `.env` and triggers a restart. Returns `400` if any key is not in the allowlist. Audit: `config.apply`.
 
 ### GET /api/admin/webhooks/log
-Params: `event_type`, `limit`, `offset`. Returns dedupe log `{rows: [{alert_type, target, alerted_at}], total}`. `event_type` accepts canonical names (`kev_alert`, `backup_failure`, `watchlist_alert`) and legacy aliases.
+Params: `event_type`, `limit`, `offset`. Returns dedupe log `{rows: [{alert_type, target, alerted_at}], total}`. `event_type` accepts canonical names (`kev_alert`, `backup_failure`, `watchlist_alert`, `kev_backlog`, `ioc_watchlist_hit`) and legacy aliases.
 
 ### GET /api/admin/webhooks/destinations
 Returns `{destinations: [{id, kind, label, enabled, event_types, source, health_source}]}` — merged env + DB config (secrets not included).

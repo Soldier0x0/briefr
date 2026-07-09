@@ -213,7 +213,9 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
     ConfigField("CIRCL_API_KEY", "api_keys", "secret",
                 help_text="Optional — used for extended CVE references and CAPEC mapping."),
     ConfigField("ABUSECH_AUTH_KEY", "api_keys", "secret",
-                help_text="Used for MalwareBazaar/URLhaus hash and domain malware context."),
+                help_text="Used for MalwareBazaar, URLhaus, and ThreatFox IOC mirror sync."),
+    ConfigField("VULNCHECK_API_KEY", "api_keys", "secret",
+                help_text="Optional — VulnCheck community KEV catalog for exploited-not-yet-CISA tier."),
 )
 
 _BY_KEY: dict[str, ConfigField] = {f.key: f for f in CONFIG_SCHEMA}

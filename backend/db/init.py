@@ -505,6 +505,38 @@ async def init_db() -> None:
                 ON detection_backlog(status);
             CREATE INDEX IF NOT EXISTS idx_detection_backlog_cve
                 ON detection_backlog(cve_id);
+
+            CREATE TABLE IF NOT EXISTS ioc_watchlist (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                ioc_type TEXT NOT NULL,
+                ioc_value TEXT NOT NULL,
+                label TEXT NOT NULL DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now')),
+                UNIQUE (user_id, ioc_type, ioc_value)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_ioc_watchlist_value
+                ON ioc_watchlist(ioc_value);
+            CREATE INDEX IF NOT EXISTS idx_ioc_watchlist_user
+                ON ioc_watchlist(user_id);
+
+            CREATE TABLE IF NOT EXISTS threatfox_iocs (
+                ioc_id TEXT PRIMARY KEY,
+                ioc_type TEXT NOT NULL,
+                ioc_value TEXT NOT NULL,
+                raw_ioc TEXT NOT NULL DEFAULT '',
+                malware TEXT NOT NULL DEFAULT '',
+                threat_type TEXT NOT NULL DEFAULT '',
+                confidence_level INTEGER NOT NULL DEFAULT 0,
+                first_seen TEXT NOT NULL DEFAULT '',
+                fetched_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_threatfox_iocs_value
+                ON threatfox_iocs(ioc_value);
+            CREATE INDEX IF NOT EXISTS idx_threatfox_iocs_type_value
+                ON threatfox_iocs(ioc_type, ioc_value);
         """)
         await db.commit()
 
@@ -684,6 +716,36 @@ async def init_db() -> None:
             """,
             "CREATE INDEX IF NOT EXISTS idx_detection_backlog_status ON detection_backlog(status)",
             "CREATE INDEX IF NOT EXISTS idx_detection_backlog_cve ON detection_backlog(cve_id)",
+            """
+            CREATE TABLE IF NOT EXISTS ioc_watchlist (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                ioc_type TEXT NOT NULL,
+                ioc_value TEXT NOT NULL,
+                label TEXT NOT NULL DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now')),
+                UNIQUE (user_id, ioc_type, ioc_value)
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_ioc_watchlist_value ON ioc_watchlist(ioc_value)",
+            "CREATE INDEX IF NOT EXISTS idx_ioc_watchlist_user ON ioc_watchlist(user_id)",
+            """
+            CREATE TABLE IF NOT EXISTS threatfox_iocs (
+                ioc_id TEXT PRIMARY KEY,
+                ioc_type TEXT NOT NULL,
+                ioc_value TEXT NOT NULL,
+                raw_ioc TEXT NOT NULL DEFAULT '',
+                malware TEXT NOT NULL DEFAULT '',
+                threat_type TEXT NOT NULL DEFAULT '',
+                confidence_level INTEGER NOT NULL DEFAULT 0,
+                first_seen TEXT NOT NULL DEFAULT '',
+                fetched_at TEXT DEFAULT (datetime('now'))
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_threatfox_iocs_value ON threatfox_iocs(ioc_value)",
+            "CREATE INDEX IF NOT EXISTS idx_threatfox_iocs_type_value ON threatfox_iocs(ioc_type, ioc_value)",
+            "ALTER TABLE cves ADD COLUMN is_vulncheck_exploited INTEGER DEFAULT 0",
+            "CREATE INDEX IF NOT EXISTS idx_cves_vulncheck_exploited ON cves(is_vulncheck_exploited)",
         ):
             try:
                 await db.execute(migration)

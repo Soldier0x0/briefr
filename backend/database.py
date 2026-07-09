@@ -27,6 +27,7 @@ from db.cache_retention import (
 )
 from db.correlation import *
 from db.watchlist import *
+from db.ioc_watchlist import *
 from db.sync_state import *
 from db.app_settings import *
 from db.metadata import *

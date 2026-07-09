@@ -703,6 +703,113 @@ async def run_kev_backlog_reconcile() -> bool:
     return True
 
 
+async def run_threatfox_sync() -> bool:
+    if get_lock("threatfox_sync").locked():
+        logger.warning("ThreatFox sync already in progress — skipping")
+        return False
+
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _error_msg = ""
+    try:
+        async with get_lock("threatfox_sync"):
+            import os
+
+            from db.threatfox import upsert_threatfox_iocs
+            from feeds.threatfox import fetch_threatfox_iocs, threatfox_sync_days
+
+            auth_key = os.environ.get("ABUSECH_AUTH_KEY", "")
+            if not auth_key.strip():
+                logger.debug("ThreatFox sync skipped: ABUSECH_AUTH_KEY not set")
+                return True
+
+            _job_progress["threatfox_sync"] = "Fetching ThreatFox IOC catalog…"
+            rows = await fetch_threatfox_iocs(auth_key, days=threatfox_sync_days())
+            db = await get_db()
+            try:
+                written = await upsert_threatfox_iocs(db, rows)
+                await db.commit()
+            finally:
+                await db.close()
+            logger.info("ThreatFox sync complete: %d IOC(s)", written)
+    except Exception as _exc:
+        _had_error = True
+        _error_msg = str(_exc)[:500]
+        raise
+    finally:
+        _job_progress.pop("threatfox_sync", None)
+        await _write_job_last_run("threatfox_sync", _start, had_error=_had_error, error_message=_error_msg)
+    return True
+
+
+async def run_vulncheck_kev_sync() -> bool:
+    if get_lock("vulncheck_kev_sync").locked():
+        logger.warning("VulnCheck KEV sync already in progress — skipping")
+        return False
+
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _error_msg = ""
+    try:
+        async with get_lock("vulncheck_kev_sync"):
+            import os
+
+            from db.enrichment import sync_vulncheck_exploited_flags
+            from feeds.vulncheck_kev import fetch_vulncheck_kev_cve_ids, vulncheck_enabled
+
+            if not vulncheck_enabled():
+                logger.debug("VulnCheck sync skipped: VULNCHECK_API_KEY not set")
+                return True
+
+            api_key = os.environ.get("VULNCHECK_API_KEY", "")
+            _job_progress["vulncheck_kev_sync"] = "Fetching VulnCheck KEV catalog…"
+            cve_ids = await fetch_vulncheck_kev_cve_ids(api_key)
+            db = await get_db()
+            try:
+                updated = await sync_vulncheck_exploited_flags(db, cve_ids)
+                await db.commit()
+            finally:
+                await db.close()
+            logger.info("VulnCheck KEV sync complete: %d CVE flag(s) updated", updated)
+    except Exception as _exc:
+        _had_error = True
+        _error_msg = str(_exc)[:500]
+        raise
+    finally:
+        _job_progress.pop("vulncheck_kev_sync", None)
+        await _write_job_last_run("vulncheck_kev_sync", _start, had_error=_had_error, error_message=_error_msg)
+    return True
+
+
+async def run_ioc_retro_match() -> bool:
+    if get_lock("ioc_retro_match").locked():
+        logger.warning("IOC retro-match already in progress — skipping")
+        return False
+
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _error_msg = ""
+    try:
+        async with get_lock("ioc_retro_match"):
+            from ioc.retro_match import run_ioc_retro_match as _retro
+            from webhooks.alerts import process_ioc_watchlist_hit_webhooks
+
+            _job_progress["ioc_retro_match"] = "Matching IOC watchlist against local OTX + ThreatFox mirrors…"
+            matches = await _retro()
+            if matches:
+                sent = await process_ioc_watchlist_hit_webhooks(matches)
+                if sent:
+                    logger.info("IOC watchlist webhooks sent: %d", sent)
+    except Exception as _exc:
+        _had_error = True
+        _error_msg = str(_exc)[:500]
+        raise
+    finally:
+        _job_progress.pop("ioc_retro_match", None)
+        await _write_job_last_run("ioc_retro_match", _start, had_error=_had_error, error_message=_error_msg)
+    return True
+
+
 async def run_full_ingest_sync() -> bool:
     """Run NVD, KEV, and EPSS pipelines sequentially (manual / bootstrap)."""
     if ingest_in_progress():
@@ -1586,6 +1693,46 @@ def start_scheduler() -> AsyncIOScheduler:
         name="Weekly KEV Detection Backlog Reconcile",
         replace_existing=True,
         max_instances=1,
+    )
+
+    threatfox_hours = int(os.environ.get("THREATFOX_SYNC_INTERVAL_HOURS", "24"))
+    scheduler.add_job(
+        run_threatfox_sync,
+        trigger=IntervalTrigger(hours=max(1, threatfox_hours), timezone=sched_tz),
+        id="threatfox_sync",
+        name="ThreatFox IOC Mirror Sync",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=90),
+    )
+
+    vulncheck_hours = int(os.environ.get("VULNCHECK_KEV_SYNC_INTERVAL_HOURS", "24"))
+    scheduler.add_job(
+        run_vulncheck_kev_sync,
+        trigger=IntervalTrigger(hours=max(1, vulncheck_hours), timezone=sched_tz),
+        id="vulncheck_kev_sync",
+        name="VulnCheck KEV Tier Sync",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=120),
+    )
+
+    retro_hour = int(os.environ.get("IOC_RETRO_MATCH_HOUR", "4"))
+    retro_minute = int(os.environ.get("IOC_RETRO_MATCH_MINUTE", "0"))
+    scheduler.add_job(
+        run_ioc_retro_match,
+        trigger=CronTrigger(
+            hour=retro_hour,
+            minute=retro_minute,
+            timezone=sched_tz,
+        ),
+        id="ioc_retro_match",
+        name="IOC Watchlist Retro-Match",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
     )
 
     scheduler.add_job(

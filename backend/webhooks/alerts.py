@@ -21,6 +21,7 @@ from webhooks.destinations import (
     EVENT_BACKUP_FAILURE,
     EVENT_KEV_ALERT,
     EVENT_KEV_BACKLOG,
+    EVENT_IOC_WATCHLIST_HIT,
     EVENT_WATCHLIST_ALERT,
 )
 from webhooks.engine import clear_event_dedupe, dispatch_event
@@ -316,6 +317,41 @@ async def process_kev_backlog_webhooks(items: list[dict]) -> int:
         if result.get("sent"):
             sent += 1
             logger.info("KEV backlog webhook sent for %s / %s", cve_id, technique_id)
+    return sent
+
+
+def _format_ioc_watchlist_hit(match: dict) -> str:
+    ioc_value = match.get("ioc_value", "")
+    ioc_type = (match.get("ioc_type") or "").upper()
+    source = (match.get("source") or "").upper()
+    detail = (match.get("detail") or "").strip()
+    label = (match.get("label") or "").strip()
+    head = f"IOC watchlist hit ({source}): {ioc_type} {ioc_value}"
+    if label:
+        head += f" [{label}]"
+    if detail:
+        head += f" — {detail[:200]}"
+    return head
+
+
+async def process_ioc_watchlist_hit_webhooks(matches: list[dict]) -> int:
+    if not matches or not webhooks_enabled():
+        return 0
+
+    sent = 0
+    for match in matches:
+        user_id = match.get("user_id")
+        ioc_value = match.get("ioc_value", "")
+        source = match.get("source", "")
+        if not user_id or not ioc_value or not source:
+            continue
+        result = await dispatch_event(
+            EVENT_IOC_WATCHLIST_HIT,
+            _format_ioc_watchlist_hit(match),
+            dedupe_key=f"{user_id}:{ioc_value}:{source}",
+        )
+        if result.get("sent"):
+            sent += 1
     return sent
 
 
