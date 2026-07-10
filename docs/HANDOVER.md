@@ -12,6 +12,18 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — UX audit PR4 + PR2 merged
+
+**Merged:**
+| PR | Item |
+|----|------|
+| **#400** | PR4 toast provider + lifecycle copy |
+| **#401** | PR2 API queue metadata + panel density (feed `queue_operation` sweep, AST guardrail, grouped scroll-capped indicator) |
+
+**Next:** PR10 Postgres integrity honesty off `main`.
+
+---
+
 ## 2026-07-10 — UX audit PR4 merged; PR2 in progress
 
 **Merged:**
