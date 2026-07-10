@@ -12,11 +12,11 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-10 — AI-2 Admin AI Operations page (in progress)
+## 2026-07-10 — AI-2 Admin AI Operations page (#417)
 
-**Scope:** `/api/admin/ai/operations/{overview,providers,activity}` + `AiOperationsPage.jsx` (Overview / Providers / Models / Usage / Activity).
+**Merged:** `/api/admin/ai/operations/{overview,providers,activity}` + `AiOperationsPage.jsx` (Overview / Providers / Models / Usage / Activity). Provider health from `resilient_client`; usage rollups from `ai_operations`.
 
-**Next after merge:** PR13 — read-only DB explorer.
+**Next:** PR13 — read-only DB explorer.
 
 ---
 
