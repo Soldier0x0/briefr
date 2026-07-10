@@ -132,19 +132,12 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               ))}
             </div>
           </div>
-          {!isAnalyst && (
-            <DangerZone title="Clear snoozes">
-              <GuardedPurgePanel targets={[
-                { target: 'watchlist_snoozes', title: 'Clear all snoozes', desc: 'Why: snoozed CVEs are hidden from the default watchlist view until you snooze again. What happens: removes every snooze entry. After: previously snoozed CVEs reappear in the default view; pinned CVEs are unaffected.', impact: `${snoozeCount} snoozed`, confirmWord: 'clear', run: clearSnoozes },
-              ]} />
-            </DangerZone>
-          )}
           <div className="admin-card">
             <table className="admin-table">
               <thead><tr><th>CVE ID</th><th>SEVERITY</th><th>EPSS</th><th>KEV</th><th>STATE</th><th>CREATED</th><th></th></tr></thead>
               <tbody>
-                {watchlistRows === null && <tr><td colSpan={7} className="admin-empty">Loading…</td></tr>}
-                {watchlistRows?.length === 0 && <tr><td colSpan={7} className="admin-empty">{watchlistState === 'snooze' ? 'No snoozed CVEs' : watchlistState === 'pin' ? 'No pinned CVEs — pin CVEs from the main feed to track them here' : 'No watchlist entries yet — pin or snooze CVEs from the main feed to see them here'}</td></tr>}
+                {watchlistRows === null && <tr><td colSpan={7} className="admin-empty admin-empty--compact">Loading…</td></tr>}
+                {watchlistRows?.length === 0 && <tr><td colSpan={7} className="admin-empty admin-empty--compact">{watchlistState === 'snooze' ? 'No snoozed CVEs' : watchlistState === 'pin' ? 'No pinned CVEs — pin CVEs from the main feed to track them here' : 'No watchlist entries yet — pin or snooze CVEs from the main feed to see them here'}</td></tr>}
                 {watchlistRows?.map(r => (
                   <tr key={r.cve_id}>
                     <td className="mono" style={{ fontSize: '0.75rem' }}>{r.cve_id}</td>
@@ -162,6 +155,13 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               </tbody>
             </table>
           </div>
+          {!isAnalyst && snoozeCount > 0 && (
+            <DangerZone title="Clear snoozes" subdued>
+              <GuardedPurgePanel targets={[
+                { target: 'watchlist_snoozes', title: 'Clear all snoozes', desc: 'Why: snoozed CVEs are hidden from the default watchlist view until you snooze again. What happens: removes every snooze entry. After: previously snoozed CVEs reappear in the default view; pinned CVEs are unaffected.', impact: `${snoozeCount} snoozed`, confirmWord: 'clear', run: clearSnoozes },
+              ]} />
+            </DangerZone>
+          )}
         </div>
       )}
 
@@ -180,17 +180,12 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
             </select>
             <input className="admin-input" placeholder="Search value…" value={iocSearch} onChange={e => setIocSearch(e.target.value)} />
           </div>
-          <DangerZone title="Clear IOC cache">
-            <GuardedPurgePanel targets={[
-              { target: 'ioc_cache_all', title: 'Clear all IOC cache entries', desc: 'Why: IOC lookups are cached to avoid re-querying external threat-intel APIs on every page load. What happens: deletes every cached result below. After: the next lookup for each IOC is slower (re-fetches from the source API), but nothing is lost — the cache rebuilds itself automatically.', impact: `${iocRows?.length ?? 0} entries`, confirmWord: 'clear', run: clearAllIoc },
-            ]} />
-          </DangerZone>
           <div className="admin-card">
             <table className="admin-table">
               <thead><tr><th>VALUE</th><th>TYPE</th><th>CACHED AT</th><th>AGE</th><th></th></tr></thead>
               <tbody>
-                {iocRows === null && <tr><td colSpan={5} className="admin-empty">Loading…</td></tr>}
-                {iocRows?.length === 0 && <tr><td colSpan={5} className="admin-empty">{iocType || iocSearch ? 'No IOC cache entries match the current filters' : 'IOC cache is empty — lookups populate it automatically as you search indicators from CVE details'}</td></tr>}
+                {iocRows === null && <tr><td colSpan={5} className="admin-empty admin-empty--compact">Loading…</td></tr>}
+                {iocRows?.length === 0 && <tr><td colSpan={5} className="admin-empty admin-empty--compact">{iocType || iocSearch ? 'No IOC cache entries match the current filters' : 'IOC cache is empty — lookups populate it automatically as you search indicators from CVE details'}</td></tr>}
                 {iocRows?.map((r, i) => (
                   <tr key={i}>
                     <td className="mono" style={{ fontSize: '0.7rem', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.value}</td>
@@ -206,6 +201,13 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               </tbody>
             </table>
           </div>
+          {(iocRows?.length ?? 0) > 0 && (
+            <DangerZone title="Clear IOC cache" subdued>
+              <GuardedPurgePanel targets={[
+                { target: 'ioc_cache_all', title: 'Clear all IOC cache entries', desc: 'Why: IOC lookups are cached to avoid re-querying external threat-intel APIs on every page load. What happens: deletes every cached result below. After: the next lookup for each IOC is slower (re-fetches from the source API), but nothing is lost — the cache rebuilds itself automatically.', impact: `${iocRows?.length ?? 0} entries`, confirmWord: 'clear', run: clearAllIoc },
+              ]} />
+            </DangerZone>
+          )}
         </div>
       )}
 
