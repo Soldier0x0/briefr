@@ -68,7 +68,11 @@ export default function SchedulerPage({ toast, system }) {
     const action = pauseResumeAction(job.status)
     if (!action) return
     try {
-      await adminApi.post(`/scheduler/${action}`, { job_id: job.id })
+      const res = await adminApi.post(`/scheduler/${action}`, { job_id: job.id })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.detail || `HTTP ${res.status}`)
+      }
       toast(`${jobLabel(job.id, 'operator')} ${action === 'pause' ? 'paused' : 'resumed'}`, true)
       loadJobs()
     } catch (e) { toast(String(e.message), false) }
@@ -143,7 +147,7 @@ export default function SchedulerPage({ toast, system }) {
                 className="admin-btn admin-btn-ghost"
                 style={{ fontSize: '0.8125rem' }}
                 onClick={() => runNow(p.id)}
-                disabled={locked || disabled || !canRunNow(job?.status ?? 'ACTIVE')}
+                disabled={jobs === null || locked || disabled || !canRunNow(job?.status ?? 'ACTIVE')}
               >
                 {locked ? <><span className="admin-spinner" /> Running…</> : p.label}
               </button>

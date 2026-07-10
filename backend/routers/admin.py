@@ -1529,6 +1529,8 @@ _JOB_RUN_MAP: dict[str, str] = {
     "exploit_sources_sync": "run_exploit_sources_sync",
     "backup_deadman_check": "run_backup_deadman_check",
     "watchlist_monitor_alerts": "run_watchlist_monitor_alerts",
+    "session_cleanup": "run_session_cleanup",
+    "cache_retention_cleanup": "run_cache_retention_cleanup",
 }
 
 

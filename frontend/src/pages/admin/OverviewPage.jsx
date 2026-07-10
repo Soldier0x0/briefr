@@ -145,8 +145,11 @@ function OperatorOverview({ system, toast }) {
     if (!action) return
     try {
       const res = await adminApi.post(`/scheduler/${action}`, { job_id: job.id })
-      const data = await res.json()
-      toast(data.ok ? `${jobLabel(job.id, 'operator')} ${action === 'pause' ? 'paused' : 'resumed'}` : 'Failed', data.ok)
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || data.ok === false) {
+        throw new Error(data.detail || `HTTP ${res.status}`)
+      }
+      toast(`${jobLabel(job.id, 'operator')} ${action === 'pause' ? 'paused' : 'resumed'}`, true)
     } catch (e) { toast(String(e.message), false) }
   }
 
