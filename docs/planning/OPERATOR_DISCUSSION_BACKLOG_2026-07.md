@@ -229,7 +229,7 @@ PR8 #408; PR12 #413–415; AI-1/2 #416–417; retention #418; AI filters #419; t
 
 ## Quick answer: “Where did the admin UI plans go?”
 
-They live in **`BRIEFR_VISUAL_OPERATIONAL_UX_AUDIT.md`** (Issues 20, 25, 26).
+They live in **BRIEFR_VISUAL_OPERATIONAL_UX_AUDIT.md** (Issues 20, 25, 26).
 PR8 delivered the **backend apply lifecycle** and **per-field save**, but **not**
 the **collapsible sections** or **sticky apply bar**. Those are **O-1 / O-2**
 above — intentionally **not** in the M/N/security docs you saw last.

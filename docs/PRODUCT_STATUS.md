@@ -88,7 +88,7 @@ Details: [`ROADMAP.md`](ROADMAP.md). Historical beta specs → `docs/archive/` (
 |-------|--------|
 | Doc structure + image briefs | Phase A diagrams shipped (`production-architecture`, `auth-layers`, `correlation-pipeline` SVGs) |
 | Living API / architecture docs | Current — synced through **#420** (retention, AI filters, token capture) |
-| Graphify knowledge graph | Current — `graphify-out/graph.json` + `GRAPH_REPORT.md` (5923 nodes; HTML viz omitted when >5000 nodes) |
+| Graphify knowledge graph | **Stale** — `graphify-out/graph.json` + `GRAPH_REPORT.md` last built **2026-07-09** (`5923` nodes); `graphify` CLI not available in this environment — run `graphify update .` after the next code PR (docs-only changes do not require a graph rebuild) |
 | Archive beta root `.md` files | Pending (do not edit `docs/archive/beta/*`) |
 | MkDocs site | Pending |
 | Stale README / API_REFERENCE auth claims | **Done** — session-cookie auth + refresh route errors updated |
