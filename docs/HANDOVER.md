@@ -12,33 +12,81 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-10 — F2 merged (#423); G0–G4 deferred to end of lifecycle
+## 2026-07-10 — Docs reconciled to `main` (#421); operator backlog added
 
-**Merged:** F2 AGPL-3.0-or-later `LICENSE`, `CONTRIBUTING.md`, `.github/FUNDING.yml`,
-SPDX headers (#423). Sprint queue updated: **G0–G4 (learning path / onboarding
-docs) moved to the complete bottom** — run only after all product/code work
-stabilizes so docs reflect the final shipped system.
+**Context:** Operator session inventory found stale docs (HANDOVER stopped at #417;
+sprint parked list still named shipped items; PROGRAM Wave 4 table outdated).
+
+**This PR:** Reconciles HANDOVER, PRODUCT_STATUS, PROGRAM, sprint to current `main`
+(#418–#423, #425); adds `docs/planning/OPERATOR_DISCUSSION_BACKLOG_2026-07.md`
+and M/N security/wallboard planning docs.
+
+**On `main` (documented here):**
+| PR | Item |
+|----|------|
+| **#418** | Operator table retention — `cache_retention_cleanup` ages `ai_operations` (30d), `webhook_delivery_log` (30d), `audit_log` (365d); `api_usage` excluded |
+| **#419** | AI Operations Activity tab — Task/Provider filter dropdowns + clear; filter bar outside empty state |
+| **#420** | AI token capture — provider `usage` → `ai_operations` token columns; Usage/Activity tabs show totals; cost left NULL (AI-3 gated) |
+| **#422** | PR13 read-only DB explorer — admin Storage table browser |
+| **#423** | F2 AGPL-3.0 license + CONTRIBUTING + FUNDING + SPDX headers |
+| **#425** | G0–G4 learning/onboarding deferred to end of lifecycle |
 
 **Next (live queue):**
 1. **AI-3** — quota/health/routing automation — **only if** `ai_operations` data
-   from AI-1 shows real fallback/quota pressure (otherwise skip).
-2. **Quality watchlist** — verify then queue: entry bundle regression (~1,705 kB
-   raw vs I8 ≤500 kB target), Windows backup-test `skipif` for honest local gate.
-3. **Parked** — Wave 4, Track I Phase 3, STIX export, etc. — explicit maintainer
-   signal required.
+   shows real fallback/quota pressure (otherwise skip).
+2. **Quality watchlist** — entry bundle regression, Windows backup-test `skipif`.
+3. **Parked** — Wave 4, Track I Phase 3, STIX export — explicit maintainer signal.
+
+**Discussion-only (no code until go-ahead):** Tracks **K5**, **M**, **N**, **O** — see
+`docs/planning/OPERATOR_DISCUSSION_BACKLOG_2026-07.md` §I.
 
 **Do not start G0** until the maintainer activates the end-of-lifecycle block in
 `SPRINT_2026-07.md`.
 
 ---
 
-## 2026-07-10 — PR13 merged (#422); F2 AGPL license (PR open)
+## 2026-07-10 — F2 merged (#423); G0–G4 deferred to end of lifecycle (#425)
+
+**Merged:** F2 AGPL-3.0-or-later `LICENSE`, `CONTRIBUTING.md`, `.github/FUNDING.yml`,
+SPDX headers (#423). Sprint queue updated: **G0–G4 moved to the complete bottom**.
+
+**Next after F2 merge:** ~~G0~~ — deferred to end of lifecycle (see entry above).
+
+---
+
+## 2026-07-10 — PR13 merged (#422)
 
 **Merged:** PR13 read-only DB explorer — `db/explorer_*`, Storage table browser, Gemini fixes (pg_class counts, native `$n` SQL).
 
-**F2 (this branch):** AGPL-3.0-or-later `LICENSE`, `CONTRIBUTING.md`, `.github/FUNDING.yml`, SPDX headers on backend/frontend/scripts sources, README + OpenAPI license metadata.
+**Next after PR13:** F2 AGPL license.
 
-**Next after F2 merge:** ~~G0~~ — deferred to end of lifecycle (see entry above).
+---
+
+## 2026-07-10 — AI token capture (#420)
+
+**Merged:** OpenAI-compatible + Gemini usage normalized into `ai_operations.input_tokens` /
+`output_tokens` / `total_tokens` on successful `chat_completion_task` attempts; Usage rollups
+and Activity tab Tokens column. `estimated_cost_usd` intentionally NULL (no price SSOT).
+
+**Next:** PR13 — read-only DB explorer. AI-3 automation remains data-gated.
+
+---
+
+## 2026-07-10 — AI Operations Activity filters (#419)
+
+**Merged:** Activity tab Task + Provider dropdowns (catalog SSOT); filter bar stays visible on
+empty results; Clear resets pagination.
+
+**Next:** PR13 — read-only DB explorer.
+
+---
+
+## 2026-07-10 — Operator table retention (#418)
+
+**Merged:** Daily `cache_retention_cleanup` sweeps `ai_operations` (30d), `webhook_delivery_log`
+(30d), `audit_log` (365d). Closes C3 watchlist gap left by AI-1 (#416).
+
+**Next:** PR13 — read-only DB explorer.
 
 ---
 

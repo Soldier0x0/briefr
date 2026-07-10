@@ -1,6 +1,6 @@
 # Program — Product polish & open-core readiness
 
-**Status:** Active (2026-07-08)  
+**Status:** Active (2026-07-10)  
 **Purpose:** Single execution plan for SaaS-grade self-host UX, user data on
 Postgres, and safe intel distribution — without bloating `SPRINT_2026-07.md`.
 
@@ -95,21 +95,19 @@ until open-core flip unless required.
 
 Ops (not a code PR): publish `briefr-intel-YYYY-MM.pgdump.gz` from export script.
 
-### Wave 4 — Launch gate (after Wave 2 or parallel) — **NOT STARTED**
+### Wave 4 — Launch gate — **DONE** (#366–#372)
 
-Not blocking Wave 1–3 code:
+| Item | PR / note |
+|------|-----------|
+| Watchlist monitor alerts (`watchlist_alert` webhooks) | #366 |
+| Operator settings in DB (`app_settings`) | #368 |
+| `briefr doctor` / support pack export | #370 |
+| First-hour onboarding checklist + external Postgres profile | #371 |
+| Intel snapshot versioning + upgrade runbook | #372 |
 
-- Monitor / stack+KEV alerts (retention)
-- First-hour onboarding checklist in app
-- `briefr doctor` / support pack export (V1.4 spec)
-- Track **F3** — gitleaks + `SECURITY.md` shipped (#319); LICENSE flip deferred to F2
-- Docker compose “external Postgres” profile
-- Snapshot versioning + upgrade runbook
-
-### Deferred — operator settings in DB
-
-Move toggles/intervals from `.env` to `app_settings` + settings service — after
-Wave 2 stable. Estimate 2–3 PRs; not open-core launch blockers.
+**Still open for open-core flip:** Track **F2** (AGPL `LICENSE` + `CONTRIBUTING` +
+`FUNDING.yml` + F3-tail header reconciliation). Full V2.0 platform compose remains
+parked per `ROADMAP.md`.
 
 ---
 
@@ -163,9 +161,9 @@ Full spec in `DATA_SNAPSHOT.md` (Wave 3 PR 8).
 | Track | Status |
 |-------|--------|
 | **D4** | **Done** (#312) — Nuclei parser + Sigma artifact injection |
-| **Post-B** | **In progress** — Phase 0 (#318) + `sync_state` (#320) done; ~6 Phase 1 PRs left — see `POSTGRES_NATIVE_PLAN.md` |
+| **Post-B** | **Done** (#318–#328, #343) — Postgres-native `db/`, dialect deleted |
 | **F3** | **Mostly done** (#319) — gitleaks + `SECURITY.md`; F2/LICENSE before flip |
-| **Wave 4** | Deferred — monitor, onboarding, doctor, external Postgres compose |
+| **Wave 4** | **Done** (#366–#372) — see table above |
 
 ---
 
@@ -186,11 +184,10 @@ Full spec in `DATA_SNAPSHOT.md` (Wave 3 PR 8).
 ✅ Wave 1  #308–#309  Config Save + toast/restart
 ✅ Wave 2  #310–#314  Stack API + frontend + prefs + profile
 ✅ Wave 3  #315–#317  DATA_SNAPSHOT + export script
+✅ Wave 4  #366–#372  Monitor alerts, operator settings, doctor, onboarding, snapshot versioning
 ✅ D4      #312       Nuclei parser + Sigma wiring
-✅ Post-B  #318       Phase 0 CI gate
+✅ Post-B  #318–#343  Postgres-native db/ + CI backup round-trip
 ✅ F3      #319       SECURITY.md + gitleaks
-✅ Post-B  #320       Phase 1 sync_state native
-→ Post-B  next        watchlist + webhooks (batched)
 ```
 
-**Total to open-core-ready:** Waves 1–3 done; Post-B Phases 1–4 + Wave 4 + F2 flip remain.
+**Total to open-core-ready:** Waves 1–4 + Post-B + F3 done; **F2** license flip remains.
