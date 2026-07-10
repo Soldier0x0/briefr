@@ -138,6 +138,8 @@ EXPECTED_ROUTES = [
     # Rate-limit admin page: appended after diagnostics routes.
     ("GET", "/api/admin/ratelimit"),
     # V1.4 Theme 4: read-only wallboard (additive, after admin routes).
+    ("POST", "/api/wallboard/session"),
+    ("DELETE", "/api/wallboard/session"),
     ("GET", "/api/wallboard"),
     # Built-in app login (decision 2026-06-11): appended after wallboard
     # routes — additive only.

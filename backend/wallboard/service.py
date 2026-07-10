@@ -32,6 +32,10 @@ _HEADLINE_LIMIT = 12
 _GAP_PREVIEW = 5
 
 
+def _is_postgres_connection(db: Any) -> bool:
+    return type(db).__name__ == "PostgresConnection"
+
+
 def _default_timezone() -> str:
     return os.environ.get("DEFAULT_TIMEZONE", "UTC").strip() or "UTC"
 
@@ -60,23 +64,34 @@ async def _build_wallboard_payload(db: Any) -> dict[str, Any]:
 
     kev_on_stack = await _kev_on_stack_tile(db, stack)
     changes_24h = await _changes_24h_tile(db, stack)
-    top_risk = await _top_risk_tile(db)
+    top_risk = await _top_risk_tile(db, stack)
     ingest_health = await _ingest_health_tile(db)
+    ingest_strip = _ingest_strip_tile(ingest_health)
     coverage_gaps = await _coverage_gaps_tile(db, stack)
     headlines = await _headlines_tile()
+    kev_due_soon = await _kev_due_soon_tile(db, stack, changes_24h)
+    epss_movers = await _epss_movers_tile(db, stack, changes_24h)
+    campaigns = await _campaigns_tile(db)
+    source_health = _source_health_table(ingest_health)
 
     return {
         "meta": {
             "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "timezone": _default_timezone(),
             "stack_terms": _stack_match_clause(stack)[2],
+            "stack_configured": bool(_stack_match_clause(stack)[0]),
             "cached": False,
         },
         "kev_on_stack": kev_on_stack,
+        "kev_due_soon": kev_due_soon,
         "changes_24h": changes_24h,
         "top_risk": top_risk,
         "ingest_health": ingest_health,
+        "ingest_strip": ingest_strip,
         "coverage_gaps": coverage_gaps,
+        "epss_movers": epss_movers,
+        "campaigns": campaigns,
+        "source_health": source_health,
         "headlines": headlines,
     }
 
@@ -129,7 +144,14 @@ async def _changes_24h_tile(db: Any, stack: str) -> dict[str, Any]:
     }
 
 
-async def _top_risk_tile(db: Any) -> dict[str, Any]:
+async def _top_risk_tile(db: Any, stack: str = "") -> dict[str, Any]:
+    stack_clause, stack_params, stack_terms = _stack_match_clause(stack)
+    where_extra = ""
+    params: list[Any] = []
+    if stack_clause:
+        where_extra = f" AND {stack_clause}"
+        params = list(stack_params)
+
     rows = await db.execute_fetchall(
         f"""
         SELECT c.cve_id, c.description, c.cvss_score, c.severity, c.published,
@@ -141,16 +163,16 @@ async def _top_risk_tile(db: Any) -> dict[str, Any]:
                k.due_date AS kev_due_date
         FROM cves c
         LEFT JOIN kev_deadlines k ON k.cve_id = c.cve_id
-        WHERE c.is_kev = 1
+        WHERE (c.is_kev = 1
            OR c.epss_score >= 0.05
-           OR c.cvss_score >= 7.0
+           OR c.cvss_score >= 7.0){where_extra}
         ORDER BY
           CASE WHEN c.is_kev = 1 THEN 0 ELSE 1 END,
           CASE WHEN c.epss_score IS NOT NULL THEN c.epss_score ELSE -1 END DESC,
           CASE WHEN c.cvss_score IS NOT NULL THEN c.cvss_score ELSE -1 END DESC
         LIMIT ?
         """,
-        (_TOP_RISK_CANDIDATES,),
+        (*params, _TOP_RISK_CANDIDATES),
     )
 
     scored: list[dict[str, Any]] = []
@@ -174,7 +196,7 @@ async def _top_risk_tile(db: Any) -> dict[str, Any]:
         })
 
     scored.sort(key=lambda item: item["risk_score"], reverse=True)
-    return {"items": scored[:_TOP_RISK_RETURN]}
+    return {"items": scored[:_TOP_RISK_RETURN], "stack_filtered": bool(stack_clause), "stack_terms": stack_terms}
 
 
 async def _ingest_health_tile(db: Any) -> dict[str, Any]:
@@ -204,6 +226,126 @@ async def _ingest_health_tile(db: Any) -> dict[str, Any]:
         },
         "ingest": ingest,
     }
+
+
+def _ingest_strip_tile(ingest_health: dict[str, Any]) -> dict[str, Any]:
+    ingest = ingest_health.get("ingest") or {}
+    status = "SYNCING" if ingest_health.get("refresh_in_progress") else (
+        "DEGRADED" if (ingest_health.get("open_circuit_count") or 0) > 0 else "OK"
+    )
+    return {
+        "status": status,
+        "cve_count": ingest_health.get("cve_count"),
+        "open_circuits": ingest_health.get("open_circuit_count"),
+        "nvd_age_hours": ingest.get("nvd_age_hours"),
+        "kev_age_hours": ingest.get("kev_age_hours"),
+        "epss_age_hours": ingest.get("epss_age_hours"),
+    }
+
+
+def _source_health_table(ingest_health: dict[str, Any]) -> dict[str, Any]:
+    sources = ingest_health.get("feeds", {}).get("sources") or {}
+    rows = []
+    for name, meta in sorted(sources.items()):
+        rows.append({
+            "source": name,
+            "circuit_open": bool(meta.get("circuit_open")),
+            "last_success": meta.get("last_success"),
+            "last_error": (meta.get("last_error") or "")[:120] or None,
+        })
+    return {"rows": rows, "open_count": ingest_health.get("open_circuit_count", 0)}
+
+
+async def _kev_due_soon_tile(
+    db: Any,
+    stack: str,
+    changes_24h: dict[str, Any],
+) -> dict[str, Any]:
+    clause, params, terms = _stack_match_clause(stack)
+    if not clause:
+        return {"count": 0, "items": [], "stack_configured": False, "stack_terms": []}
+
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT c.cve_id, k.due_date, c.summary, c.description
+        FROM cves c
+        JOIN kev_deadlines k ON k.cve_id = c.cve_id
+        WHERE c.is_kev = 1
+          AND k.due_date IS NOT NULL
+          AND k.due_date <= {"CURRENT_DATE + INTERVAL '7 days'" if _is_postgres_connection(db) else "date('now', '+7 days')"}
+          AND {clause}
+        ORDER BY k.due_date ASC
+        LIMIT 5
+        """,
+        params,
+    )
+    items = [{
+        "cve_id": r["cve_id"],
+        "due_date": r["due_date"],
+        "summary": (r["summary"] or r["description"] or "")[:120],
+    } for r in rows]
+    return {
+        "count": int((changes_24h.get("section_counts") or {}).get("kev_due_soon") or len(items)),
+        "items": items,
+        "stack_configured": True,
+        "stack_terms": terms,
+    }
+
+
+async def _epss_movers_tile(
+    db: Any,
+    stack: str,
+    changes_24h: dict[str, Any],
+) -> dict[str, Any]:
+    brief_section = (changes_24h.get("section_counts") or {}).get("epss_movers", 0)
+    clause, params, _ = _stack_match_clause(stack)
+    if clause:
+        where = f"WHERE {clause}"
+        from_table = "cves c"
+    else:
+        where = ""
+        from_table = "cves"
+    order = "epss_score DESC NULLS LAST" if _is_postgres_connection(db) else "epss_score DESC"
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT cve_id, epss_score, summary, description
+        FROM {from_table}
+        {where}
+        ORDER BY {order}
+        LIMIT 5
+        """,
+        params if clause else [],
+    )
+    items = [{
+        "cve_id": r["cve_id"],
+        "epss_score": r["epss_score"],
+        "summary": (r["summary"] or r["description"] or "")[:120],
+    } for r in rows if r["epss_score"] is not None]
+    return {"count": int(brief_section or len(items)), "items": items[:5]}
+
+
+async def _campaigns_tile(db: Any) -> dict[str, Any]:
+    try:
+        rows = await db.execute_fetchall(
+            """
+            SELECT campaign_id, label, member_count, confidence
+            FROM correlation_campaigns
+            WHERE lifecycle = 'active' OR lifecycle IS NULL OR lifecycle = ''
+            ORDER BY member_count DESC, label ASC
+            LIMIT 5
+            """
+        )
+    except Exception:
+        return {"active_count": 0, "items": []}
+    items = [{
+        "campaign_id": r["campaign_id"],
+        "name": r["label"] or r["campaign_id"],
+        "member_count": int(r["member_count"] or 0),
+        "confidence": r["confidence"],
+    } for r in rows]
+    count_row = await db.execute_fetchall("SELECT COUNT(*) AS n FROM correlation_campaigns")
+    active = int(count_row[0]["n"] or 0) if count_row else len(items)
+    return {"active_count": active, "items": items}
 
 
 async def _coverage_gaps_tile(db: Any, stack: str) -> dict[str, Any]:

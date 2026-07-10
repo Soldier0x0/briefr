@@ -1,39 +1,73 @@
 .wallboard-page {
-  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
   background: var(--bg);
   color: var(--text);
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 2rem 0;
+  padding: 1rem 1.5rem 0;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .wallboard-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 1rem 1.25rem;
+  margin-bottom: 0.85rem;
 }
 
 .wallboard-brand {
-  font-family: var(--font-display);
-  font-size: clamp(2rem, 4vw, 3.5rem);
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: clamp(1.25rem, 2.5vw, 2rem);
+  letter-spacing: 0.12em;
   color: var(--accent);
+  text-transform: uppercase;
+}
+
+.wallboard-header-stack {
+  font-size: clamp(0.75rem, 1.2vw, 0.95rem);
+  color: var(--text2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .wallboard-header-meta {
-  font-size: clamp(0.9rem, 1.4vw, 1.2rem);
+  font-size: clamp(0.7rem, 1.1vw, 0.9rem);
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+.wallboard-page-controls {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.wallboard-page-btn {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.5rem;
+  background: var(--bg2);
+  border: 1px solid var(--border);
   color: var(--text2);
+  cursor: pointer;
+}
+
+.wallboard-page-btn--active {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .wallboard-banner {
   padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   border: 1px solid var(--border);
   background: var(--bg2);
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 .wallboard-banner--error {
@@ -41,90 +75,133 @@
   color: var(--red);
 }
 
-.wallboard-grid {
+.wallboard-body {
   flex: 1;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  gap: 1.25rem;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.wallboard-page1,
+.wallboard-page2 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+  flex: 1;
+}
+
+.wallboard-hero-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.wallboard-secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.wallboard-ingest-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  font-size: clamp(0.7rem, 1.1vw, 0.85rem);
+  color: var(--text2);
 }
 
 .wallboard-tile {
   background: var(--bg2);
-  border: 2px solid var(--border);
-  border-radius: 4px;
-  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 0.75rem 0.9rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+  gap: 0.35rem;
+  min-height: 0;
+  overflow: hidden;
+  transition: border-color 0.15s ease-out;
 }
 
 .wallboard-tile--active {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.wallboard-tile--wide {
+  grid-column: 1 / -1;
 }
 
 .wallboard-tile-label {
   margin: 0;
-  font-size: clamp(1rem, 1.8vw, 1.5rem);
+  font-family: var(--font-mono);
+  font-size: clamp(0.65rem, 1vw, 0.8rem);
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text2);
+  letter-spacing: 0.1em;
+  color: var(--text3);
   font-weight: 500;
 }
 
 .wallboard-tile-metric {
   margin: 0;
-  font-size: clamp(3rem, 8vw, 6.5rem);
+  font-family: var(--font-mono);
+  font-size: clamp(1.75rem, 4vw, 3rem);
   line-height: 1;
   color: var(--text);
 }
 
-.wallboard-tile-cve {
-  margin: 0;
-  font-size: clamp(1.2rem, 2.2vw, 2rem);
-  color: var(--accent);
-}
-
-.wallboard-tile-headline {
-  margin: 0;
-  font-size: clamp(1.25rem, 2.4vw, 2.2rem);
-  line-height: 1.25;
-}
-
 .wallboard-tile-sub {
   margin: 0;
-  font-size: clamp(0.95rem, 1.5vw, 1.25rem);
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
   color: var(--text2);
   line-height: 1.35;
 }
 
 .wallboard-mini-list {
   list-style: none;
-  margin: 0.25rem 0 0;
+  margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  font-size: clamp(0.9rem, 1.3vw, 1.1rem);
+  gap: 0.25rem;
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
   color: var(--text2);
+  overflow: auto;
 }
 
 .wallboard-mini-list li {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: baseline;
+  gap: 0.35rem;
+  flex-wrap: wrap;
 }
 
 .wallboard-chip {
   font-family: var(--font-mono);
-  font-size: 0.75em;
-  padding: 0.1rem 0.35rem;
+  font-size: 0.7em;
+  padding: 0.05rem 0.3rem;
   border: 1px solid var(--red);
   color: var(--red);
   border-radius: 2px;
+}
+
+.wallboard-cve-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .wallboard-status-ok { color: var(--green); }
@@ -132,20 +209,39 @@
 .wallboard-status-syncing { color: var(--accent); }
 .wallboard-status-unknown { color: var(--text3); }
 
+.wallboard-table-wrap {
+  overflow: auto;
+  max-height: 28vh;
+}
+
+.wallboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.wallboard-table th,
+.wallboard-table td {
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
 .wallboard-ticker {
-  margin-top: 1rem;
+  margin-top: 0.5rem;
   border-top: 1px solid var(--border);
   overflow: hidden;
-  padding: 0.85rem 0;
+  padding: 0.55rem 0;
   background: var(--bg2);
+  flex-shrink: 0;
 }
 
 .wallboard-ticker-track {
   display: flex;
-  gap: 3rem;
+  gap: 2rem;
   width: max-content;
   animation: wallboard-scroll 80s linear infinite;
-  font-size: clamp(1rem, 1.8vw, 1.6rem);
+  font-size: clamp(0.8rem, 1.4vw, 1.1rem);
 }
 
 .wallboard-ticker-item {
@@ -167,7 +263,7 @@
     animation: none;
     flex-wrap: wrap;
     width: auto;
-    gap: 1rem 2rem;
+    gap: 0.75rem 1.25rem;
   }
 }
 
@@ -190,13 +286,14 @@
 
 .wallboard-token-dialog h2 {
   margin: 0 0 0.5rem;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
+  font-family: var(--font-mono);
 }
 
 .wallboard-token-dialog p {
   margin: 0 0 1rem;
   color: var(--text2);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .wallboard-token-input {
@@ -226,20 +323,28 @@
   font-family: var(--font-mono);
 }
 
-@media (max-width: 1100px) {
-  .wallboard-grid {
+@media (max-width: 1200px) {
+  .wallboard-hero-row,
+  .wallboard-secondary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(3, minmax(0, 1fr));
+  }
+
+  .wallboard-header {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
 @media (max-width: 720px) {
   .wallboard-page {
-    padding: 1rem;
+    padding: 0.75rem;
   }
 
-  .wallboard-grid {
+  .wallboard-hero-row,
+  .wallboard-secondary-grid {
     grid-template-columns: 1fr;
-    grid-template-rows: auto;
+  }
+
+  .wallboard-header {
+    grid-template-columns: 1fr;
   }
 }

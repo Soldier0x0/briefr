@@ -266,6 +266,7 @@ app.include_router(brief_router.router)
 app.include_router(correlation_router.router)
 app.include_router(watchlist_router.router)
 app.include_router(admin_router.router)
+app.include_router(wallboard_router.public_router)
 app.include_router(wallboard_router.router)
 # Built-in app login (decision 2026-06-11): appended after wallboard_router —
 # additive only, see test_router_split.py's EXPECTED_ROUTES comment.
