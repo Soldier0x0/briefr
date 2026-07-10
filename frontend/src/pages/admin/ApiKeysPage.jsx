@@ -77,7 +77,12 @@ export default function ApiKeysPage({ toast }) {
   const [expandedSections, setExpandedSections] = useState(() => {
     try {
       const raw = localStorage.getItem(SECTION_EXPAND_KEY)
-      if (raw) return JSON.parse(raw)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          return parsed
+        }
+      }
     } catch { /* ignore */ }
     return { api_keys: true }
   })
@@ -115,8 +120,17 @@ export default function ApiKeysPage({ toast }) {
   }, [schema])
 
   async function applyPendingChanges(pending = editing) {
-    const entries = Object.entries(pending)
-    if (!entries.length) return
+    const entries = Object.entries(pending).filter(([key, value]) => {
+      const field = fieldByKey[key]
+      if (field?.type === 'secret' && String(value).trim() === '') {
+        return false
+      }
+      return true
+    })
+    if (!entries.length) {
+      toast('No changes to apply (blank secret fields are skipped)', false)
+      return
+    }
 
     for (const [key, value] of entries) {
       const err = validateClientSide(fieldByKey[key], value)
@@ -338,7 +352,12 @@ export default function ApiKeysPage({ toast }) {
               role="button"
               tabIndex={0}
               onClick={() => toggleSection(section.id)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSection(section.id) }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  toggleSection(section.id)
+                }
+              }}
             >
               <div className="admin-card-title" style={{ margin: 0 }}>{section.title}</div>
               <span className="config-section-chevron" aria-hidden>{sectionOpen(section.id) ? '▼' : '▶'}</span>

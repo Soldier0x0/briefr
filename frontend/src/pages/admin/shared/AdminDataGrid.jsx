@@ -45,22 +45,32 @@ export default function AdminDataGrid({
     [columns],
   )
 
-  const [visibleIds, setVisibleIds] = useState(defaultVisible)
-  const [wrapCells, setWrapCells] = useState(false)
-  const [centerCells, setCenterCells] = useState(false)
-  const [widths, setWidths] = useState({})
+  const [visibleIds, setVisibleIds] = useState(() => {
+    const prefs = loadPrefs(gridId, columnIds)
+    return prefs?.visible?.length ? prefs.visible : defaultVisible
+  })
+  const [wrapCells, setWrapCells] = useState(() => {
+    const prefs = loadPrefs(gridId, columnIds)
+    return prefs ? prefs.wrap : false
+  })
+  const [centerCells, setCenterCells] = useState(() => {
+    const prefs = loadPrefs(gridId, columnIds)
+    return prefs ? prefs.center : false
+  })
+  const [widths, setWidths] = useState(() => {
+    const prefs = loadPrefs(gridId, columnIds)
+    return prefs ? prefs.widths : {}
+  })
   const [showColumns, setShowColumns] = useState(false)
   const resizeRef = useRef({ colId: null, startX: 0, startW: 0 })
 
   useEffect(() => {
     const prefs = loadPrefs(gridId, columnIds)
-    if (prefs?.visible?.length) setVisibleIds(prefs.visible)
-    if (prefs) {
-      setWrapCells(prefs.wrap)
-      setCenterCells(prefs.center)
-      setWidths(prefs.widths)
-    }
-  }, [gridId, columnIds])
+    setVisibleIds(prefs?.visible?.length ? prefs.visible : defaultVisible)
+    setWrapCells(prefs ? prefs.wrap : false)
+    setCenterCells(prefs ? prefs.center : false)
+    setWidths(prefs ? prefs.widths : {})
+  }, [gridId, defaultVisible])
 
   useEffect(() => {
     savePrefs(gridId, { visible: visibleIds, wrap: wrapCells, center: centerCells, widths })
@@ -83,6 +93,11 @@ export default function AdminDataGrid({
     window.removeEventListener('mousemove', onResizeMove)
     window.removeEventListener('mouseup', onResizeEnd)
   }, [onResizeMove])
+
+  useEffect(() => () => {
+    window.removeEventListener('mousemove', onResizeMove)
+    window.removeEventListener('mouseup', onResizeEnd)
+  }, [onResizeMove, onResizeEnd])
 
   function startResize(colId, e) {
     e.preventDefault()
@@ -184,7 +199,7 @@ export default function AdminDataGrid({
             {rows.map((row, index) => (
               <tr key={rowKey(row, index)}>
                 {visibleColumns.map((col) => (
-                  <td key={col.id} style={cellStyle(col)} title={col.title?.(row) ?? undefined}>
+                  <td key={col.id} style={cellStyle(col)} title={typeof col.title === 'function' ? col.title(row) : (col.title || undefined)}>
                     {col.render ? col.render(row) : String(row[col.id] ?? '—')}
                   </td>
                 ))}

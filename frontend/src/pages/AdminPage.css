@@ -2944,6 +2944,7 @@
   background: color-mix(in srgb, var(--admin-bg) 92%, transparent);
   border-top: 1px solid var(--admin-border);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: space-between;
