@@ -72,6 +72,17 @@ class TokenBucket:
         self._hits[key] = self._hits.get(key, 0) + 1
         if now is None:
             now = time.monotonic()
+
+        from rate_limit_store import shared_acquire, shared_store_enabled
+
+        if shared_store_enabled():
+            return shared_acquire(
+                self.name or "default",
+                key,
+                rate_per_minute=self.rate_per_minute,
+                now=now,
+            )
+
         tokens, last = self._buckets.get(key, (self.capacity, now))
         tokens = min(self.capacity, tokens + (now - last) * self.refill_per_second)
         if tokens >= 1.0:
