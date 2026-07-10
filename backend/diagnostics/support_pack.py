@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from database import get_cve_count, get_db, get_last_updated, get_nvd_sync_watermark
+from db.integrity import run_integrity_check
 from db.config import is_postgres, resolve_database_url
 from db.connection import get_pool_stats
 from correlation.status import get_correlation_admin_status
@@ -66,19 +67,17 @@ async def _run_smoke_checks() -> dict[str, Any]:
             cve_count = cve_row[0]["cnt"] if cve_row else 0
             kev_row = await db.execute_fetchall("SELECT COUNT(*) as cnt FROM kev_deadlines")
             kev_count = kev_row[0]["cnt"] if kev_row else 0
-            ic_rows = await db.execute_fetchall("PRAGMA integrity_check")
-            integrity_ok = len(ic_rows) == 1 and ic_rows[0]["integrity_check"].lower() == "ok"
+            result = await run_integrity_check(db)
+            integrity_ok = result.integrity_ok
         finally:
             await db.close()
         checks.append({"name": "cves > 0", "passed": cve_count > 0, "detail": f"{cve_count} CVEs"})
         checks.append({"name": "kev_deadlines > 0", "passed": kev_count > 0, "detail": f"{kev_count} KEV entries"})
-        checks.append(
-            {
-                "name": "db integrity_check",
-                "passed": integrity_ok,
-                "detail": ic_rows[0]["integrity_check"] if ic_rows else "?",
-            }
-        )
+        checks.append({
+            "name": "db integrity_check",
+            "passed": integrity_ok,
+            "detail": result.message,
+        })
     except Exception as exc:
         checks.append({"name": "db checks", "passed": False, "detail": str(exc)[:200]})
 
@@ -108,21 +107,10 @@ async def _run_smoke_checks() -> dict[str, Any]:
 async def _run_integrity_check() -> dict[str, Any]:
     db = await get_db()
     try:
-        ic_rows = await db.execute_fetchall("PRAGMA integrity_check")
-        fk_rows = await db.execute_fetchall("PRAGMA foreign_key_check")
+        result = await run_integrity_check(db)
     finally:
         await db.close()
-
-    integrity_ok = len(ic_rows) == 1 and ic_rows[0]["integrity_check"].lower() == "ok"
-    foreign_keys_ok = len(fk_rows) == 0
-    msg = ic_rows[0]["integrity_check"] if ic_rows else "unknown"
-    return {
-        "ok": integrity_ok and foreign_keys_ok,
-        "integrity_ok": integrity_ok,
-        "foreign_keys_ok": foreign_keys_ok,
-        "message": msg,
-        "foreign_key_violations": len(fk_rows),
-    }
+    return result.as_dict()
 
 
 async def build_support_pack(*, log_limit: int = 200) -> dict[str, Any]:

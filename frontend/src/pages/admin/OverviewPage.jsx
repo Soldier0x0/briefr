@@ -290,6 +290,11 @@ function OperatorOverview({ system, toast }) {
         )}
         {showDiag && intResult && (
           <div style={{ marginTop: '0.5rem', fontSize: '0.8125rem' }}>
+            <div style={{ marginBottom: '0.25rem', color: 'var(--text3)' }}>
+              Method: {intResult.method || 'pragma'}
+              {intResult.backend ? ` · ${intResult.backend}` : ''}
+              {intResult.message ? ` — ${intResult.message}` : ''}
+            </div>
             <span style={{ color: intResult.integrity_ok ? 'var(--green)' : 'var(--red)' }}>
               {intResult.integrity_ok ? '✓ Integrity OK' : '✗ Integrity FAILED'}
             </span>

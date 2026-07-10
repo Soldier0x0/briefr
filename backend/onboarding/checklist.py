@@ -10,6 +10,7 @@ import time
 from typing import Any
 
 from database import get_db, get_nvd_sync_watermark
+from db.integrity import run_integrity_check
 from db.sync_state import get_stack_terms
 from preferences.repo import get_effective_stack_terms
 from resilient_client import get_feed_health
@@ -63,8 +64,8 @@ async def build_onboarding_checklist(db: Any) -> dict[str, Any]:
 
     feed_health = get_feed_health()
     open_circuits = sum(1 for v in feed_health.values() if v.get("circuit_open"))
-    ic_rows = await db.execute_fetchall("PRAGMA integrity_check")
-    integrity_ok = len(ic_rows) == 1 and ic_rows[0]["integrity_check"].lower() == "ok"
+    result = await run_integrity_check(db)
+    integrity_ok = result.ok
 
     backup_ok, backup_detail = await _backup_recent_enough()
     posture = production_posture_warnings()

@@ -18,10 +18,8 @@ _NOW_UTC_TEXT = "(TO_CHAR((NOW() AT TIME ZONE 'utc'), 'YYYY-MM-DD HH24:MI:SS'))"
 def _postgres_translate_sql(text: str) -> str:
     """SQLite-oriented SQL → PostgreSQL syntax (placeholders handled separately)."""
     upper = text.upper()
-    if upper.startswith("PRAGMA INTEGRITY_CHECK"):
-        return "SELECT 'ok' AS integrity_check"
-    if upper.startswith("PRAGMA FOREIGN_KEY_CHECK"):
-        return "SELECT '' AS foreign_key_check WHERE FALSE"
+    if upper.startswith("PRAGMA INTEGRITY_CHECK") or upper.startswith("PRAGMA FOREIGN_KEY_CHECK"):
+        return text.strip()
 
     def _datetime_compare(match: re.Match[str]) -> str:
         col, op, interval = match.group(1), match.group(2), match.group(3)
