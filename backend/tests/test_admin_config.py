@@ -108,6 +108,48 @@ def test_config_set_allowlisted_key(admin_client, tmp_path, monkeypatch):
     data = resp.json()
     assert data["ok"] is True
     assert data["key"] == "NVD_SYNC_INTERVAL_HOURS"
+    assert data["apply_strategy"] == "scheduler_reschedule"
+
+
+def test_config_set_allowed_origins_warns_restart(admin_client, tmp_path, monkeypatch):
+    dotenv_path = tmp_path / ".env"
+    dotenv_path.write_text("")
+    import routers.admin as admin_mod
+    monkeypatch.setattr(admin_mod, "_DOTENV_PATH", dotenv_path)
+
+    with patch("dotenv.set_key"):
+        resp = admin_client.post(
+            "/api/admin/config",
+            json={"key": "ALLOWED_ORIGINS", "value": "http://localhost:5173"},
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["apply_strategy"] == "restart"
+    assert data["warning_restart_required"] is True
+
+
+def test_config_set_reschedules_scheduler_job(admin_client, tmp_path, monkeypatch):
+    dotenv_path = tmp_path / ".env"
+    dotenv_path.write_text("")
+    import routers.admin as admin_mod
+    monkeypatch.setattr(admin_mod, "_DOTENV_PATH", dotenv_path)
+
+    with patch("dotenv.set_key"), patch(
+        "scheduler.reschedule_jobs_for_keys",
+        return_value={
+            "rescheduled": ["nvd_incremental_sync"],
+            "skipped": [],
+            "scheduler_running": True,
+        },
+    ) as mock_reschedule:
+        resp = admin_client.post(
+            "/api/admin/config",
+            json={"key": "NVD_SYNC_INTERVAL_HOURS", "value": "2"},
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    mock_reschedule.assert_called_once_with(["NVD_SYNC_INTERVAL_HOURS"])
+    assert data["rescheduled_jobs"] == ["nvd_incremental_sync"]
 
 
 def test_config_set_non_integer_for_integer_key(admin_client):
@@ -154,17 +196,33 @@ def test_apply_all_writes_allowed_key(admin_client, tmp_path, monkeypatch):
     import routers.admin as admin_mod
     monkeypatch.setattr(admin_mod, "_DOTENV_PATH", dotenv_path)
 
-    with patch("dotenv.set_key") as mock_set_key:
-        # We expect a restart to be triggered too, but background_tasks won't actually run in test
+    with patch("dotenv.set_key"):
         resp = admin_client.post(
             "/api/admin/config/apply-all",
             json=[{"key": "NVD_SYNC_INTERVAL_HOURS", "value": "3"}],
         )
-    # Should return 202 (accepted, restart queued) or 200
     assert resp.status_code in (200, 202)
     data = resp.json()
     assert data["ok"] is True
     assert "NVD_SYNC_INTERVAL_HOURS" in data["changed_keys"]
+    assert data["restart_required"] is False
+
+
+def test_apply_all_restart_for_allowed_origins(admin_client, tmp_path, monkeypatch):
+    dotenv_path = tmp_path / ".env"
+    dotenv_path.write_text("")
+    import routers.admin as admin_mod
+    monkeypatch.setattr(admin_mod, "_DOTENV_PATH", dotenv_path)
+
+    with patch("dotenv.set_key"):
+        resp = admin_client.post(
+            "/api/admin/config/apply-all",
+            json=[{"key": "ALLOWED_ORIGINS", "value": "http://example.com"}],
+        )
+    assert resp.status_code in (200, 202)
+    data = resp.json()
+    assert data["restart_required"] is True
+    assert "ALLOWED_ORIGINS" in data["changed_keys"]
 
 
 def test_apply_all_empty_body_returns_no_changes(admin_client, tmp_path, monkeypatch):

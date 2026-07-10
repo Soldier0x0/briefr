@@ -12,6 +12,19 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — UX audit PR8 merged; approved queue complete
+
+**Merged:**
+| PR | # | Item |
+|----|---|------|
+| **PR8** | **#408** | Config apply lifecycle — `apply_strategy`, `display_label`, `unit`; `ALLOWED_ORIGINS` restart honesty; scheduler reschedule on interval save |
+
+**Approved UX audit queue:** PR1–PR11 + PR8 all merged. PR12/PR13 remain deferred.
+
+**Branch:** `cursor/ux-audit-pr8-config-apply-489a`
+
+---
+
 ## 2026-07-10 — UX audit PR11 merged; PR8 config apply next
 
 **Merged this session (continuous loop, Gemini gate — no inline comments received; merged on green local verify):**

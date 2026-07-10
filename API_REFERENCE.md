@@ -1251,8 +1251,14 @@ Streams `briefr.db` as `application/octet-stream` download. Audit: `storage.db_e
 Body `{job_id}`. Triggers a scheduler job immediately. Returns `409` if job lock is held, `400` if job_id unknown.
 Audit: `scheduler.run.{job_id}`.
 
+### GET /api/admin/config/schema
+Returns field metadata for every writable config key: `section`, `type`, bounds, `help_text`, `restart_required`, `apply_strategy` (`immediate` | `scheduler_reschedule` | `restart`), `display_label`, and `unit` (e.g. `h`, `min` for scheduler intervals).
+
+### POST /api/admin/config
+Body `{key, value}`. Writes one key to `.env` and `os.environ`. For `scheduler_reschedule` keys, reschedules affected APScheduler jobs without a full restart. Response includes `apply_strategy`, `warning_restart_required` (when strategy is `restart`), `rescheduled_jobs`, and `message`. Use `POST /config/apply-all` for keys that require a backend restart.
+
 ### POST /api/admin/config/apply-all
-Body `[{key, value}, ...]`. Writes all keys to `.env` and triggers a restart. Returns `400` if any key is not in the allowlist. Audit: `config.apply`.
+Body `[{key, value}, ...]`. Writes all keys to `.env`, reschedules scheduler interval/cron jobs when applicable, and triggers a graceful backend restart when any changed key has `apply_strategy: restart` (includes `ALLOWED_ORIGINS` / CORS). Returns `400` if any key is not in the allowlist. Response: `{ok, changed_keys, restart_required, rescheduled_jobs, message}`. Audit: `config.apply`.
 
 ### GET /api/admin/webhooks/log
 Params: `event_type`, `limit`, `offset`. Returns dedupe log `{rows: [{alert_type, target, alerted_at}], total}`. `event_type` accepts canonical names (`kev_alert`, `backup_failure`, `watchlist_alert`, `kev_backlog`, `ioc_watchlist_hit`) and legacy aliases.

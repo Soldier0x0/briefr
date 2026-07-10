@@ -2019,6 +2019,133 @@ def start_scheduler() -> AsyncIOScheduler:
     return scheduler
 
 
+_CONFIG_KEY_TO_JOBS: dict[str, tuple[str, ...]] = {
+    "NVD_SYNC_INTERVAL_HOURS": ("nvd_incremental_sync",),
+    "KEV_SYNC_INTERVAL_MINUTES": ("kev_metadata_sync",),
+    "EPSS_SYNC_INTERVAL_HOURS": ("epss_score_sync",),
+    "INCIDENT_FEED_REFRESH_MINUTES": ("incident_feed_refresh",),
+    "VULNRICHMENT_SYNC_INTERVAL_HOURS": ("vulnrichment_snapshot_sync",),
+    "CVELISTV5_SYNC_INTERVAL_MINUTES": ("cvelistv5_incremental_sync",),
+    "MITRE_REFRESH_HOUR": ("weekly_mitre_refresh",),
+    "MITRE_REFRESH_MINUTE": ("weekly_mitre_refresh",),
+    "CORRELATION_HOUR": ("nightly_correlation",),
+    "CORRELATION_MINUTE": ("nightly_correlation",),
+    "OTX_CORRELATION_HOUR": ("otx_nightly_correlation",),
+    "OTX_CORRELATION_MINUTE": ("otx_nightly_correlation",),
+    "EXPLOIT_SOURCES_SYNC_INTERVAL_HOURS": ("exploit_sources_sync",),
+    "EMBEDDINGS_SYNC_INTERVAL_HOURS": ("embeddings_backfill",),
+    "LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS": ("llm_product_extraction",),
+    "BACKUP_INTERVAL_HOURS": ("scheduled_backup", "backup_deadman_check"),
+}
+
+
+def jobs_for_config_keys(keys: list[str]) -> list[str]:
+    seen: set[str] = set()
+    out: list[str] = []
+    for key in keys:
+        for job_id in _CONFIG_KEY_TO_JOBS.get(key, ()):
+            if job_id not in seen:
+                seen.add(job_id)
+                out.append(job_id)
+    return out
+
+
+def _trigger_for_job(job_id: str) -> IntervalTrigger | CronTrigger | None:
+    sched_tz = ZoneInfo(get_scheduler_timezone())
+    if job_id == "nvd_incremental_sync":
+        hours = int(os.environ.get("NVD_SYNC_INTERVAL_HOURS", "1"))
+        return IntervalTrigger(hours=hours, timezone=sched_tz)
+    if job_id == "kev_metadata_sync":
+        minutes = int(os.environ.get("KEV_SYNC_INTERVAL_MINUTES", "15"))
+        return IntervalTrigger(minutes=minutes, timezone=sched_tz)
+    if job_id == "epss_score_sync":
+        hours = int(os.environ.get("EPSS_SYNC_INTERVAL_HOURS", "6"))
+        return IntervalTrigger(hours=hours, timezone=sched_tz)
+    if job_id == "incident_feed_refresh":
+        minutes = get_incident_feed_refresh_minutes()
+        return IntervalTrigger(minutes=minutes, timezone=sched_tz)
+    if job_id == "vulnrichment_snapshot_sync":
+        hours = get_vulnrichment_sync_interval_hours()
+        return IntervalTrigger(hours=hours, timezone=sched_tz)
+    if job_id == "cvelistv5_incremental_sync":
+        minutes = get_cvelistv5_sync_interval_minutes()
+        return IntervalTrigger(minutes=minutes, timezone=sched_tz)
+    if job_id == "weekly_mitre_refresh":
+        hour = int(os.environ.get("MITRE_REFRESH_HOUR", "2"))
+        minute = int(os.environ.get("MITRE_REFRESH_MINUTE", "0"))
+        return CronTrigger(
+            day_of_week="sun",
+            hour=hour,
+            minute=minute,
+            timezone=sched_tz,
+        )
+    if job_id == "nightly_correlation":
+        hour = int(os.environ.get("CORRELATION_HOUR", "1"))
+        minute = int(os.environ.get("CORRELATION_MINUTE", "0"))
+        corr_tz = ZoneInfo(os.environ.get("CORRELATION_TIMEZONE", "Asia/Kolkata"))
+        return CronTrigger(hour=hour, minute=minute, timezone=corr_tz)
+    if job_id == "otx_nightly_correlation":
+        hour = int(os.environ.get("OTX_CORRELATION_HOUR", "2"))
+        minute = int(os.environ.get("OTX_CORRELATION_MINUTE", "0"))
+        otx_tz = ZoneInfo(os.environ.get("OTX_CORRELATION_TIMEZONE", "Asia/Kolkata"))
+        return CronTrigger(hour=hour, minute=minute, timezone=otx_tz)
+    if job_id == "exploit_sources_sync":
+        hours = get_exploit_sources_interval_hours()
+        return IntervalTrigger(hours=hours, timezone=sched_tz)
+    if job_id == "embeddings_backfill":
+        hours = int(os.environ.get("EMBEDDINGS_SYNC_INTERVAL_HOURS", "6"))
+        return IntervalTrigger(hours=hours, timezone=sched_tz)
+    if job_id == "llm_product_extraction":
+        hours = int(os.environ.get("LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS", "6"))
+        return IntervalTrigger(hours=hours, timezone=sched_tz)
+    if job_id == "scheduled_backup":
+        hours = max(1, get_backup_interval_hours())
+        return IntervalTrigger(hours=hours, timezone=sched_tz)
+    if job_id == "backup_deadman_check":
+        hours = max(1, get_backup_interval_hours() // 2)
+        return IntervalTrigger(hours=hours, timezone=sched_tz)
+    return None
+
+
+def reschedule_jobs_for_keys(keys: list[str]) -> dict[str, list[str] | bool]:
+    """Reschedule APScheduler jobs affected by saved config keys."""
+    target_jobs = jobs_for_config_keys(keys)
+    if not target_jobs:
+        return {"rescheduled": [], "skipped": [], "scheduler_running": False}
+
+    if not _scheduler or not _scheduler.running:
+        return {
+            "rescheduled": [],
+            "skipped": target_jobs,
+            "scheduler_running": False,
+        }
+
+    rescheduled: list[str] = []
+    skipped: list[str] = []
+    for job_id in target_jobs:
+        job = _scheduler.get_job(job_id)
+        if not job:
+            skipped.append(job_id)
+            continue
+        trigger = _trigger_for_job(job_id)
+        if trigger is None:
+            skipped.append(job_id)
+            continue
+        try:
+            job.reschedule(trigger)
+            rescheduled.append(job_id)
+            logger.info("Rescheduled job %s after config change", job_id)
+        except Exception as exc:
+            logger.warning("Failed to reschedule job %s: %s", job_id, exc)
+            skipped.append(job_id)
+
+    return {
+        "rescheduled": rescheduled,
+        "skipped": skipped,
+        "scheduler_running": True,
+    }
+
+
 def stop_scheduler() -> None:
     global _scheduler
     if _scheduler and _scheduler.running:

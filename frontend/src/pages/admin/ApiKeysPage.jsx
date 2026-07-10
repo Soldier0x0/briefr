@@ -36,10 +36,34 @@ function validateClientSide(field, value) {
   return null
 }
 
-function saveOutcomeMessage(key, data, restarting) {
+function saveOutcomeMessage(key, data, restarting, field) {
   if (data?.message) return data.message
-  if (restarting) return `${key} saved`
-  return `${key} saved — active now`
+  if (restarting) return `${field?.display_label || key} saved — restarting backend`
+  if (field?.apply_strategy === 'scheduler_reschedule' && data?.rescheduled_jobs?.length) {
+    return `${field?.display_label || key} saved — scheduler rescheduled`
+  }
+  if (field?.apply_strategy === 'scheduler_reschedule') {
+    return `${field?.display_label || key} saved — takes effect after backend restart`
+  }
+  return `${field?.display_label || key} saved — active now`
+}
+
+function applyStrategyBadge(strategy) {
+  if (strategy === 'restart') {
+    return (
+      <span className="badge badge-warn" style={{ fontSize: '0.6rem' }} title="Backend restart required after save">
+        restart
+      </span>
+    )
+  }
+  if (strategy === 'scheduler_reschedule') {
+    return (
+      <span className="badge badge-info" style={{ fontSize: '0.6rem' }} title="APScheduler job trigger is rescheduled on save (no full restart)">
+        reschedule
+      </span>
+    )
+  }
+  return null
 }
 
 export default function ApiKeysPage({ toast }) {
@@ -69,7 +93,8 @@ export default function ApiKeysPage({ toast }) {
 
     setSavingKeys(prev => new Set(prev).add(key))
     try {
-      const restartRequired = Boolean(field?.restart_required)
+      const strategy = field?.apply_strategy || (field?.restart_required ? 'restart' : 'immediate')
+      const restartRequired = strategy === 'restart'
       let result
       if (restartRequired) {
         result = await adminApi.postJson('/config/apply-all', [{ key, value }])
@@ -82,7 +107,7 @@ export default function ApiKeysPage({ toast }) {
       await reloadConfig()
       const restarting = restartRequired && (data?.restart_required ?? data?.warning_restart_required)
       if (restarting) notifyBackendRestarting()
-      toast(saveOutcomeMessage(key, data, restarting), true)
+      toast(saveOutcomeMessage(key, data, restarting, field), true)
       return true
     } catch (e) {
       toast(`Failed: ${e.message || String(e)}`, false)
@@ -96,15 +121,26 @@ export default function ApiKeysPage({ toast }) {
     }
   }
 
-  function ConfigRow({ envKey, value, isSecret = false, writable = true, restartRequired = false, helpText = '', field = null }) {
+  function ConfigRow({ envKey, value, isSecret = false, writable = true, field = null }) {
     const editVal = editing[envKey]
     const isEditing = editVal !== undefined
     const isSaving = savingKeys.has(envKey)
+    const label = field?.display_label || envKey
+    const strategy = field?.apply_strategy || (field?.restart_required ? 'restart' : 'immediate')
+    const restartRequired = strategy === 'restart'
+    const helpText = field?.help_text || ''
+    const displayValue = (() => {
+      const raw = Array.isArray(value) ? value.join(', ') : String(value)
+      if (field?.type === 'int' && field?.unit && raw && raw !== 'not configured') {
+        return `${raw} ${field.unit}`
+      }
+      return raw
+    })()
 
     return (
       <div className="config-row">
         <div className="config-row-key mono">
-          {envKey}
+          <span title={envKey}>{label}</span>
           {helpText && <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 400, marginTop: '0.15rem' }}>{helpText}</div>}
           {RATE_LIMIT_HINTS[envKey] && <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 400, marginTop: '0.15rem' }}>{RATE_LIMIT_HINTS[envKey]}</div>}
         </div>
@@ -118,12 +154,12 @@ export default function ApiKeysPage({ toast }) {
                   onChange={v => saveKey(envKey, v ? '1' : '0', field)}
                 />
               ) : (
-                <span className="mono admin-input admin-input-display" title={isSecret ? undefined : (Array.isArray(value) ? value.join(', ') : String(value))}>
-                  {Array.isArray(value) ? value.join(', ') : String(value)}
+                <span className="mono admin-input admin-input-display" title={isSecret ? undefined : displayValue}>
+                  {displayValue}
                 </span>
               )}
               <div className="config-row-actions">
-                {restartRequired && <span className="badge badge-warn" style={{ fontSize: '0.6rem' }} title="Backend restart required after save">restart</span>}
+                {applyStrategyBadge(strategy)}
                 {writable && field?.type !== 'bool' && (
                   <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }}
                     disabled={isSaving}
@@ -211,12 +247,16 @@ export default function ApiKeysPage({ toast }) {
     <div>
       <h1 className="admin-page-title">
         API keys & config
-        <HelpTip text="Changes write to backend/.env and update the running process. Keys marked restart need a backend reload — Save triggers that automatically. Process-level env vars (systemd, secrets manager) override .env and cannot be changed here." />
+        <HelpTip text="Changes write to backend/.env and update the running process. Rows tagged restart reload the backend (CORS, DB pool, rate limits). Rows tagged reschedule update APScheduler job triggers without a full restart. Process-level env vars (systemd, secrets manager) override .env and cannot be changed here." />
       </h1>
       <p className="admin-page-subtitle">
-        Edit a value and click Save. API keys and most toggles take effect immediately; rows tagged
+        Edit a value and click Save. Most API keys and toggles are
+        <span className="badge badge-muted" style={{ fontSize: '0.6rem', margin: '0 0.25rem' }}>immediate</span>.
+        Scheduler intervals show
+        <span className="badge badge-info" style={{ fontSize: '0.6rem', margin: '0 0.25rem' }}>reschedule</span>
+        when the job trigger updates on save. Infrastructure keys show
         <span className="badge badge-warn" style={{ fontSize: '0.6rem', margin: '0 0.25rem' }}>restart</span>
-        restart the backend after save.
+        and restart the backend after save.
       </p>
 
       {SECTIONS.map(section => {
@@ -239,8 +279,6 @@ export default function ApiKeysPage({ toast }) {
                   envKey={f.key}
                   value={merged[f.key] ?? ''}
                   isSecret={f.type === 'secret'}
-                  restartRequired={f.restart_required}
-                  helpText={f.help_text}
                   field={f}
                 />
               ))}

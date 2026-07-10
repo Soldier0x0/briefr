@@ -43,10 +43,15 @@ from database import (
 )
 from db.integrity import run_integrity_check
 from config_schema import (
+    APPLY_RESTART,
+    APPLY_SCHEDULER_RESCHEDULE,
     INTEGER_KEYS,
     RESTART_REQUIRED_KEYS,
+    SCHEDULER_RESCHEDULE_KEYS,
     WRITABLE_CONFIG_KEYS,
+    get_field,
     list_schema,
+    resolved_apply_strategy,
     validate_value,
 )
 from dependencies import audit, require_admin, trigger_graceful_restart
@@ -101,7 +106,10 @@ def _mask_url(value: str) -> str:
 def _propagate_to_settings(key: str, value: str) -> None:
     """Push a freshly-written env value into the live `settings` object so
     non-restart-required keys take effect immediately instead of only on
-    next process start (settings is read from os.environ once at import)."""
+    next process start (settings is read from os.environ once at import).
+
+    Note: CORS middleware reads `settings.allowed_origins_list` at startup —
+    ALLOWED_ORIGINS changes still require a backend restart."""
     attr = key.lower()
     if not hasattr(settings, attr):
         return
@@ -115,6 +123,43 @@ def _propagate_to_settings(key: str, value: str) -> None:
             setattr(settings, attr, value)
     except Exception:
         pass
+
+
+def _apply_config_side_effects(keys: list[str]) -> dict[str, Any]:
+    """Reschedule scheduler jobs for interval/cron keys after env write."""
+    reschedule_keys = [k for k in keys if k in SCHEDULER_RESCHEDULE_KEYS]
+    if not reschedule_keys:
+        return {"rescheduled_jobs": [], "skipped_jobs": [], "scheduler_running": False}
+    sched = _get_scheduler_module()
+    result = sched.reschedule_jobs_for_keys(reschedule_keys)
+    return {
+        "rescheduled_jobs": result.get("rescheduled", []),
+        "skipped_jobs": result.get("skipped", []),
+        "scheduler_running": result.get("scheduler_running", False),
+    }
+
+
+def _config_apply_message(
+    keys: list[str],
+    *,
+    restart_needed: bool,
+    side_effects: dict[str, Any],
+) -> str:
+    reschedule_keys = [k for k in keys if k in SCHEDULER_RESCHEDULE_KEYS]
+    rescheduled = side_effects.get("rescheduled_jobs") or []
+    if restart_needed:
+        return f"Applied {len(keys)} key(s); restarting backend"
+    if reschedule_keys and rescheduled:
+        return (
+            f"Applied {len(keys)} key(s) — scheduler jobs rescheduled "
+            f"({', '.join(rescheduled[:5])}{'…' if len(rescheduled) > 5 else ''})"
+        )
+    if reschedule_keys:
+        return (
+            f"Applied {len(keys)} key(s) — saved; scheduler will pick up intervals "
+            "on next backend restart"
+        )
+    return f"Applied {len(keys)} key(s) — active now"
 
 
 def _age_seconds(ts: float | None) -> float | None:
@@ -1086,12 +1131,23 @@ async def set_config(request: Request, body: dict):
 
     await audit(request, f"config.set.{key}", value[:100])
 
+    field = get_field(key)
+    strategy = resolved_apply_strategy(field) if field else APPLY_RESTART
+    side_effects = _apply_config_side_effects([key]) if strategy == APPLY_SCHEDULER_RESCHEDULE else {}
+
     masked = _mask_key(value) if key in {"DISCORD_WEBHOOK_URL", "TELEGRAM_BOT_TOKEN", "WEBHOOK_GENERIC_URL"} else value
     return {
         "ok": True,
         "key": key,
         "masked_value": masked,
-        "warning_restart_required": key in RESTART_REQUIRED_KEYS,
+        "apply_strategy": strategy,
+        "warning_restart_required": strategy == APPLY_RESTART,
+        "rescheduled_jobs": side_effects.get("rescheduled_jobs", []),
+        "message": _config_apply_message(
+            [key],
+            restart_needed=False,
+            side_effects=side_effects,
+        ),
     }
 
 
@@ -1153,17 +1209,25 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
     changed_summary = ", ".join(changed_keys[:10])
     await audit(request, "config.apply", changed_summary)
 
-    restart_needed = any(key in RESTART_REQUIRED_KEYS for key in changed_keys)
+    restart_needed = any(
+        (get_field(k) and resolved_apply_strategy(get_field(k)) == APPLY_RESTART)
+        or k in RESTART_REQUIRED_KEYS
+        for k in changed_keys
+    )
+    side_effects = _apply_config_side_effects(changed_keys)
     if restart_needed:
         background_tasks.add_task(trigger_graceful_restart)
-        message = f"Applied {len(changed_keys)} key(s); restarting backend"
-    else:
-        message = f"Applied {len(changed_keys)} key(s) — took effect immediately, no restart needed"
+    message = _config_apply_message(
+        changed_keys,
+        restart_needed=restart_needed,
+        side_effects=side_effects,
+    )
 
     return {
         "ok": True,
         "changed_keys": changed_keys,
         "restart_required": restart_needed,
+        "rescheduled_jobs": side_effects.get("rescheduled_jobs", []),
         "message": message,
     }
 
