@@ -15,6 +15,31 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 
+# How a saved value takes effect in the running process.
+APPLY_IMMEDIATE = "immediate"
+APPLY_SCHEDULER_RESCHEDULE = "scheduler_reschedule"
+APPLY_RESTART = "restart"
+
+_SCHEDULER_RESCHEDULE_KEYS: frozenset[str] = frozenset({
+    "NVD_SYNC_INTERVAL_HOURS",
+    "KEV_SYNC_INTERVAL_MINUTES",
+    "EPSS_SYNC_INTERVAL_HOURS",
+    "INCIDENT_FEED_REFRESH_MINUTES",
+    "VULNRICHMENT_SYNC_INTERVAL_HOURS",
+    "CVELISTV5_SYNC_INTERVAL_MINUTES",
+    "MITRE_REFRESH_HOUR",
+    "MITRE_REFRESH_MINUTE",
+    "CORRELATION_HOUR",
+    "CORRELATION_MINUTE",
+    "OTX_CORRELATION_HOUR",
+    "OTX_CORRELATION_MINUTE",
+    "EXPLOIT_SOURCES_SYNC_INTERVAL_HOURS",
+    "EMBEDDINGS_SYNC_INTERVAL_HOURS",
+    "LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS",
+    "BACKUP_INTERVAL_HOURS",
+})
+
+
 @dataclass(frozen=True)
 class ConfigField:
     key: str
@@ -25,43 +50,58 @@ class ConfigField:
     enum_values: tuple[str, ...] = field(default_factory=tuple)
     help_text: str = ""
     restart_required: bool = False
+    apply_strategy: str = ""  # empty = derive from restart_required / scheduler map
+    display_label: str = ""
+    unit: str = ""
 
 
 CONFIG_SCHEMA: tuple[ConfigField, ...] = (
     # ── Scheduler intervals — NVD / KEV / EPSS ──────────────────────────────
     ConfigField("NVD_SYNC_INTERVAL_HOURS", "scheduler_main", "int", min=1, max=24,
-                help_text="How often the NVD incremental sync job runs."),
+                help_text="How often the NVD incremental sync job runs.",
+                display_label="NVD sync interval", unit="h"),
     ConfigField("KEV_SYNC_INTERVAL_MINUTES", "scheduler_main", "int", min=1, max=1440,
-                help_text="How often the CISA KEV catalog is re-fetched."),
+                help_text="How often the CISA KEV catalog is re-fetched.",
+                display_label="KEV sync interval", unit="min"),
     ConfigField("EPSS_SYNC_INTERVAL_HOURS", "scheduler_main", "int", min=1, max=24,
-                help_text="How often FIRST EPSS scores are re-fetched."),
+                help_text="How often FIRST EPSS scores are re-fetched.",
+                display_label="EPSS sync interval", unit="h"),
     ConfigField("INCIDENT_FEED_REFRESH_MINUTES", "scheduler_main", "int", min=1, max=1440,
-                help_text="How often the incident/news RSS snapshot is rebuilt."),
+                help_text="How often the incident/news RSS snapshot is rebuilt.",
+                display_label="Incident feed refresh", unit="min"),
     ConfigField("VULNRICHMENT_SYNC_INTERVAL_HOURS", "scheduler_main", "int", min=1, max=24,
-                help_text="How often the CISA Vulnrichment gap-fill sync runs."),
+                help_text="How often the CISA Vulnrichment gap-fill sync runs.",
+                display_label="Vulnrichment sync interval", unit="h"),
     ConfigField("CVELISTV5_SYNC_INTERVAL_MINUTES", "scheduler_main", "int", min=1, max=1440,
-                help_text="How often the CVE List V5 (GitHub) delta sync runs."),
+                help_text="How often the CVE List V5 (GitHub) delta sync runs.",
+                display_label="CVE List V5 sync interval", unit="min"),
     ConfigField("SCHEDULER_DB_CONCURRENCY", "scheduler_main", "int", min=1, max=10,
                 help_text="Max concurrent background scheduler jobs that may hold DB pool connections.",
-                restart_required=True),
+                restart_required=True, display_label="Scheduler DB concurrency"),
 
     # ── Scheduler intervals — cron & timezone ───────────────────────────────
     ConfigField("SCHEDULER_TIMEZONE", "scheduler_cron", "str", restart_required=True,
                 help_text="IANA timezone (e.g. Asia/Kolkata) the weekly MITRE refresh is scheduled in."),
     ConfigField("MITRE_REFRESH_HOUR", "scheduler_cron", "int", min=0, max=23,
-                help_text="Hour (0-23, SCHEDULER_TIMEZONE) the weekly MITRE/ATLAS refresh runs."),
+                help_text="Hour (0-23, SCHEDULER_TIMEZONE) the weekly MITRE/ATLAS refresh runs.",
+                display_label="MITRE refresh hour", unit="h"),
     ConfigField("MITRE_REFRESH_MINUTE", "scheduler_cron", "int", min=0, max=59,
-                help_text="Minute (0-59) the weekly MITRE/ATLAS refresh runs."),
+                help_text="Minute (0-59) the weekly MITRE/ATLAS refresh runs.",
+                display_label="MITRE refresh minute", unit="min"),
     ConfigField("CORRELATION_HOUR", "scheduler_cron", "int", min=0, max=23,
-                help_text="Hour (0-23, CORRELATION_TIMEZONE) the nightly correlation job runs."),
+                help_text="Hour (0-23, CORRELATION_TIMEZONE) the nightly correlation job runs.",
+                display_label="Correlation hour", unit="h"),
     ConfigField("CORRELATION_MINUTE", "scheduler_cron", "int", min=0, max=59,
-                help_text="Minute (0-59) the nightly correlation job runs."),
+                help_text="Minute (0-59) the nightly correlation job runs.",
+                display_label="Correlation minute", unit="min"),
     ConfigField("CORRELATION_TIMEZONE", "scheduler_cron", "str", restart_required=True,
                 help_text="IANA timezone the nightly correlation job is scheduled in."),
     ConfigField("OTX_CORRELATION_HOUR", "scheduler_cron", "int", min=0, max=23,
-                help_text="Hour (0-23, OTX_CORRELATION_TIMEZONE) the OTX correlation job runs."),
+                help_text="Hour (0-23, OTX_CORRELATION_TIMEZONE) the OTX correlation job runs.",
+                display_label="OTX correlation hour", unit="h"),
     ConfigField("OTX_CORRELATION_MINUTE", "scheduler_cron", "int", min=0, max=59,
-                help_text="Minute (0-59) the OTX correlation job runs."),
+                help_text="Minute (0-59) the OTX correlation job runs.",
+                display_label="OTX correlation minute", unit="min"),
     ConfigField("OTX_CORRELATION_TIMEZONE", "scheduler_cron", "str", restart_required=True,
                 help_text="IANA timezone the OTX correlation job is scheduled in."),
     ConfigField("CACHE_REFRESH_HOUR", "scheduler_cron", "int", min=0, max=23,
@@ -91,7 +131,8 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
     ConfigField("EXPLOIT_SOURCES_SYNC_ENABLED", "ingest", "bool",
                 help_text="Enable the PoC-in-GitHub/ExploitDB/Metasploit/Nuclei exploit-availability sync."),
     ConfigField("EXPLOIT_SOURCES_SYNC_INTERVAL_HOURS", "ingest", "int", min=1,
-                help_text="How often the exploit-availability sync runs, when enabled."),
+                help_text="How often the exploit-availability sync runs, when enabled.",
+                display_label="Exploit sources sync interval", unit="h"),
     ConfigField("EXPLOIT_SOURCES_THROTTLE_SECONDS", "ingest", "int", min=0,
                 help_text="Delay between exploit-source requests, to stay polite to upstream APIs."),
     ConfigField("ATLAS_YAML_URL", "ingest", "url",
@@ -103,7 +144,8 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
     ConfigField("EMBEDDINGS_ENABLED", "ml", "bool", restart_required=True,
                 help_text="Enable local ONNX embeddings for semantic 'related CVEs'."),
     ConfigField("EMBEDDINGS_SYNC_INTERVAL_HOURS", "ml", "int", min=1,
-                help_text="How often the embeddings backfill job runs, when enabled."),
+                help_text="How often the embeddings backfill job runs, when enabled.",
+                display_label="Embeddings sync interval", unit="h"),
     ConfigField("EMBEDDINGS_MAX_PER_RUN", "ml", "int", min=1,
                 help_text="Maximum CVEs embedded per backfill run."),
     ConfigField("EMBEDDINGS_MODEL", "ml", "str",
@@ -113,7 +155,8 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
     ConfigField("LLM_PRODUCT_EXTRACTION_ENABLED", "ml", "bool", restart_required=True,
                 help_text="Enable Groq-powered affected-product extraction for NVD-unanalyzed CVEs."),
     ConfigField("LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS", "ml", "int", min=1,
-                help_text="How often the LLM product-extraction job runs, when enabled."),
+                help_text="How often the LLM product-extraction job runs, when enabled.",
+                display_label="LLM product extraction interval", unit="h"),
     ConfigField("LLM_PRODUCT_EXTRACTION_MAX_PER_RUN", "ml", "int", min=1,
                 help_text="Maximum CVEs processed per LLM product-extraction run."),
 
@@ -123,7 +166,8 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
     ConfigField("BACKUP_RETENTION_COUNT", "backup", "int", min=1,
                 help_text="Number of backup archives to keep before pruning the oldest."),
     ConfigField("BACKUP_INTERVAL_HOURS", "backup", "int", min=1,
-                help_text="How often the scheduled backup runs."),
+                help_text="How often the scheduled backup runs.",
+                display_label="Backup interval", unit="h"),
     ConfigField("BACKUP_DIR", "backup", "str",
                 help_text="Directory backup archives are written to."),
     ConfigField("BACKUP_AGE_KEY_FILE", "backup", "str",
@@ -147,7 +191,9 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
     ConfigField("RATE_LIMIT_AUTH_REFRESH_PER_MINUTE", "app", "int", min=1, restart_required=True,
                 help_text="Max session refresh requests per minute per client IP."),
     ConfigField("ALLOWED_ORIGINS", "app", "str",
-                help_text="Comma-separated CORS origins allowed to call the API."),
+                help_text="Comma-separated CORS origins allowed to call the API.",
+                restart_required=True,
+                display_label="Allowed CORS origins"),
     ConfigField("DEFAULT_TIMEZONE", "app", "str",
                 help_text="IANA timezone used for displaying dates/times when no client timezone is known."),
     ConfigField("BRIEFR_ENV", "app", "enum", enum_values=("development", "production"),
@@ -223,6 +269,24 @@ _BY_KEY: dict[str, ConfigField] = {f.key: f for f in CONFIG_SCHEMA}
 WRITABLE_CONFIG_KEYS: frozenset[str] = frozenset(_BY_KEY)
 INTEGER_KEYS: frozenset[str] = frozenset(f.key for f in CONFIG_SCHEMA if f.type == "int")
 RESTART_REQUIRED_KEYS: frozenset[str] = frozenset(f.key for f in CONFIG_SCHEMA if f.restart_required)
+SCHEDULER_RESCHEDULE_KEYS: frozenset[str] = _SCHEDULER_RESCHEDULE_KEYS
+
+
+def resolved_apply_strategy(field: ConfigField) -> str:
+    """Return the effective apply strategy for a schema field."""
+    if field.apply_strategy:
+        return field.apply_strategy
+    if field.restart_required:
+        return APPLY_RESTART
+    if field.key in _SCHEDULER_RESCHEDULE_KEYS:
+        return APPLY_SCHEDULER_RESCHEDULE
+    return APPLY_IMMEDIATE
+
+
+def resolved_display_label(field: ConfigField) -> str:
+    if field.display_label:
+        return field.display_label
+    return field.key.replace("_", " ").title()
 
 
 def get_field(key: str) -> ConfigField | None:
@@ -271,6 +335,9 @@ def list_schema() -> list[dict]:
             "enum_values": list(f.enum_values),
             "help_text": f.help_text,
             "restart_required": f.restart_required,
+            "apply_strategy": resolved_apply_strategy(f),
+            "display_label": resolved_display_label(f),
+            "unit": f.unit,
         }
         for f in CONFIG_SCHEMA
     ]

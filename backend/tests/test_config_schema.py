@@ -9,12 +9,17 @@ import pytest
 from fastapi.testclient import TestClient
 
 from config_schema import (
+    APPLY_IMMEDIATE,
+    APPLY_RESTART,
+    APPLY_SCHEDULER_RESCHEDULE,
     CONFIG_SCHEMA,
     INTEGER_KEYS,
     RESTART_REQUIRED_KEYS,
+    SCHEDULER_RESCHEDULE_KEYS,
     WRITABLE_CONFIG_KEYS,
     get_field,
     list_schema,
+    resolved_apply_strategy,
     validate_value,
 )
 
@@ -78,6 +83,47 @@ def test_list_schema_shape():
     assert sample["min"] == 1
     assert sample["max"] == 24
     assert sample["help_text"]
+    assert sample["apply_strategy"] == APPLY_SCHEDULER_RESCHEDULE
+    assert sample["display_label"] == "NVD sync interval"
+    assert sample["unit"] == "h"
+
+
+@pytest.mark.parametrize(
+    "key,expected_strategy",
+    [
+        ("NVD_API_KEY", APPLY_IMMEDIATE),
+        ("NVD_SYNC_INTERVAL_HOURS", APPLY_SCHEDULER_RESCHEDULE),
+        ("DATABASE_POOL_SIZE", APPLY_RESTART),
+        ("ALLOWED_ORIGINS", APPLY_RESTART),
+        ("MAX_CVES_PER_FETCH", APPLY_IMMEDIATE),
+        ("CACHE_REFRESH_HOUR", APPLY_IMMEDIATE),
+    ],
+)
+def test_resolved_apply_strategy_matrix(key, expected_strategy):
+    field = get_field(key)
+    assert field is not None
+    assert resolved_apply_strategy(field) == expected_strategy
+
+
+def test_allowed_origins_requires_restart():
+    field = get_field("ALLOWED_ORIGINS")
+    assert field is not None
+    assert field.restart_required is True
+    assert resolved_apply_strategy(field) == APPLY_RESTART
+
+
+def test_scheduler_reschedule_keys_subset_of_writable():
+    assert SCHEDULER_RESCHEDULE_KEYS.issubset(WRITABLE_CONFIG_KEYS)
+
+
+def test_every_schema_field_has_apply_strategy_in_list():
+    for item in list_schema():
+        assert item["apply_strategy"] in {
+            APPLY_IMMEDIATE,
+            APPLY_SCHEDULER_RESCHEDULE,
+            APPLY_RESTART,
+        }
+        assert item["display_label"]
 
 
 def test_config_schema_endpoint(admin_client):
