@@ -12,6 +12,19 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — UX audit PR9 merged; PR11 responsive in progress
+
+**Merged:**
+| PR | Item |
+|----|------|
+| **#406** | PR9 admin density + danger hierarchy |
+
+**In progress:** PR11 IOC + feed responsive (`cursor/ux-audit-pr11-responsive-489a`).
+
+**Next:** PR8 config apply lifecycle (largest remaining item).
+
+---
+
 ## 2026-07-10 — UX audit PR6 merged; PR9 admin density in progress
 
 **Merged:**

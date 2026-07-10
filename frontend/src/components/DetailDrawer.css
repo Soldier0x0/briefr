@@ -140,15 +140,15 @@
   }
 }
 
-/* Tablet: 75vw */
+/* Tablet / half-screen: widen drawer usable area */
 @media (min-width: 1024px) and (max-width: 1279px) {
   .drawer-panel {
     top: 0;
     right: 0;
     bottom: 0;
     left: auto;
-    width: 75vw;
-    max-width: 75vw;
+    width: min(85vw, 960px);
+    max-width: min(85vw, 960px);
     border-left: 1px solid var(--border);
     transform: translateX(100%);
   }
