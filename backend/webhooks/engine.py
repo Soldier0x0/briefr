@@ -144,7 +144,7 @@ async def dispatch_event(
             "errors": {},
         }
 
-    if not webhooks_enabled():
+    if not await webhooks_enabled():
         return {
             "status": "skipped",
             "reason": "no_webhook_destinations",

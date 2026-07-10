@@ -65,8 +65,8 @@ def _clean(monkeypatch):
 
 def test_webhooks_disabled_without_env(monkeypatch, tmp_path):
     _setup_db(tmp_path, monkeypatch)
-    assert webhooks_enabled() is False
-    assert configured_channels() == []
+    assert run_db_test(webhooks_enabled()) is False
+    assert run_db_test(configured_channels()) == []
     result = run_db_test(send_alert("hello"))
     assert result["status"] == "skipped"
 
@@ -86,7 +86,7 @@ def test_discord_only(monkeypatch, tmp_path):
 
     _install_transport(monkeypatch, handler)
     monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
-    assert configured_channels() == ["discord"]
+    assert run_db_test(configured_channels()) == ["discord"]
 
     result = run_db_test(send_alert("KEV alert"))
     assert result["status"] == "ok"
@@ -112,7 +112,7 @@ def test_telegram_only(monkeypatch, tmp_path):
 
     _install_transport(monkeypatch, handler)
     monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
-    assert configured_channels() == ["telegram"]
+    assert run_db_test(configured_channels()) == ["telegram"]
 
     result = run_db_test(send_alert("stack hit"))
     assert result["status"] == "ok"
@@ -233,3 +233,24 @@ def test_send_test_message_unknown_destination(monkeypatch, tmp_path):
     result = run_db_test(send_test_message("missing", "hello"))
     assert result["ok"] is False
     assert result["error"] == "unknown destination"
+
+
+def test_webhooks_enabled_uses_db_enabled_state(monkeypatch, tmp_path):
+    """Guard helpers must await load_destinations(), not env-only builders."""
+    _setup_db(tmp_path, monkeypatch)
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
+    run_db_test(sync_env_destinations_to_db())
+
+    async def disable_in_db():
+        db = await get_db()
+        try:
+            await db.execute(
+                "UPDATE webhook_destinations SET enabled = 0 WHERE id = 'discord'"
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(disable_in_db())
+    assert run_db_test(webhooks_enabled()) is False
+    assert run_db_test(configured_channels()) == []
