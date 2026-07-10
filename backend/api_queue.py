@@ -169,6 +169,13 @@ def apply_rate_limit_headers(
         except ValueError:
             pass
 
+    try:
+        from ai.quota import record_quota_snapshot
+
+        record_quota_snapshot(source, headers)
+    except Exception:
+        pass
+
 
 async def await_api_slot(
     source: str,
