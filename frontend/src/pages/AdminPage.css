@@ -2670,23 +2670,10 @@
 .help-tip-wrap { position: relative; display: inline-flex; }
 
 .help-tip-bubble {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  border-radius: 4px;
-  padding: 0.4rem 0.6rem;
   font-size: 0.75rem;
+  line-height: 1.4;
   color: var(--text2);
-  width: 220px;
-  display: none;
-  z-index: 50;
 }
-
-.help-tip-wrap:hover .help-tip-bubble,
-.help-tip-wrap:focus-within .help-tip-bubble { display: block; }
 
 /* ── Job status hint (visible, not hover-only, in analyst mode) ─────────── */
 

@@ -104,13 +104,7 @@
 }
 
 .ui-tooltip-bubble {
-  position: absolute;
-  z-index: calc(var(--z-drawer) + 100);
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
   min-width: 140px;
-  max-width: min(280px, calc(100vw - 2rem));
   padding: 6px 8px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border2);
@@ -124,14 +118,30 @@
   letter-spacing: normal;
   white-space: normal;
   pointer-events: none;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.ui-tooltip-bubble--portal {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Legacy non-portaled bubbles (unused after PR3 migration) */
+.ui-tooltip-wrap:not(:has(.ui-tooltip-bubble--portal)) .ui-tooltip-bubble {
+  position: absolute;
+  z-index: calc(var(--z-drawer) + 100);
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(280px, calc(100vw - 2rem));
   opacity: 0;
   visibility: hidden;
   transition: opacity var(--motion-fast), transform var(--motion-fast);
 }
 
-.ui-tooltip-wrap:hover .ui-tooltip-bubble,
-.ui-tooltip-wrap:focus-within .ui-tooltip-bubble,
-.ui-tooltip-wrap.ui-tooltip-wrap--open .ui-tooltip-bubble {
+.ui-tooltip-wrap:hover .ui-tooltip-bubble:not(.ui-tooltip-bubble--portal),
+.ui-tooltip-wrap:focus-within .ui-tooltip-bubble:not(.ui-tooltip-bubble--portal),
+.ui-tooltip-wrap.ui-tooltip-wrap--open .ui-tooltip-bubble:not(.ui-tooltip-bubble--portal) {
   opacity: 1;
   visibility: visible;
 }
