@@ -238,8 +238,9 @@ BASE = {"HASH": 0.9, "DOMAIN": 0.6, "URL": 0.65, "IP": 0.3}
 degree_factor(d) = 1.0 if d <= 3 else 1.0 / (1.0 + log2(d / 3))
     # d = distinct CVEs sharing this IOC (from ioc_degree, §14)
 
-freshness(t, age_days) = max(0.25, 0.5 ** (age_days / HALF_LIFE[t]))
+freshness(t, age_days) = max(0.25, 0.5 ** (max(0, age_days) / HALF_LIFE[t]))
     # age from observed_at; fallback ingested_at (flagged in the receipt)
+    # max(0, ·) guards clock skew / future-dated feed entries — never > 1.0
     HALF_LIFE = {"IP": 30, "URL": 60, "DOMAIN": 120, "HASH": 365}
     # hash identity never expires; its contextual weight does
 
@@ -260,6 +261,10 @@ score -= 0.20 if pulse ioc_count > hub cap or member_count > 15   # hubbiness
 score -= 0.20 while an attribution conflict is unresolved          # §11
 # KEV/exploit boosters: REMOVED from confidence → priority-only
 # (they already have CAP_CAMPAIGN/CAP_INFRASTRUCTURE room in priority.py)
+
+campaign_level = HIGH if score >= 0.75, MEDIUM if score >= 0.45, else LOW
+# same three-level mapping as edge_level — explicit thresholds so backend
+# and frontend cannot drift apart on where LOW/MEDIUM/HIGH begin
 ```
 
 API shape (additive): `"confidence": "medium", "confidence_factors":
@@ -328,7 +333,9 @@ a learned reputation would be noise wearing a model's coat.
 - **Pulse families.** Two pulses belong to one family when their normalized non-hub
   IOC sets (each ≥ 3 IOCs) have Jaccard ≥ 0.7, **or** their CVE member sets and
   normalized pulse names are identical. Families = connected components; family id =
-  hash of the lexically-first member pulse id (stable). Computed nightly,
+  hash of the **oldest member pulse id** (by `created_date`/`observed_at`, not
+  lexical order — a newly ingested pulse is highly unlikely to predate the oldest
+  member, so the id stays stable as families grow). Computed nightly,
   incrementally for new/changed pulses, bounded by generating candidate pairs only
   through shared non-hub IOCs.
 - **Campaign = family.** N mirrored pulses collapse into one campaign whose
