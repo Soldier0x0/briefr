@@ -1,6 +1,7 @@
 # PR12 & PR13 — Implementation plan (planning only)
 
-**Status:** Draft for review — **no implementation in this document**  
+**Status:** Plan of record — amended per maintainer review (PR #409 comment, 2026-07-10) —
+**no implementation in this document**  
 **Date:** 2026-07-10  
 **Source:** UX audit (`docs/planning/BRIEFR_VISUAL_OPERATIONAL_UX_AUDIT.md`) Issues 18 & 22  
 **Deferred from:** Approved 11-PR UX correction pass (PR1–PR11 + PR8 merged 2026-07-10)
@@ -14,14 +15,26 @@ implementation PRs are opened.
 
 | PR | Name | User value | Risk | Scope | DB migration |
 |----|------|------------|------|-------|--------------|
-| **PR12** | Multi-webhook endpoints | Daily ops — multiple alert channels | HIGH | LARGE | Likely (Alembic) |
-| **PR13** | Read-only DB explorer | Occasional debugging without `psql` | HIGH | LARGE | No (registry-only MVP) |
+| **PR12** (3 PRs: 12a/12b/12c) | Multi-webhook endpoints | Daily ops — multiple alert channels | HIGH | LARGE | Yes — Alembic **013** |
+| **PR13** | ~~Read-only DB explorer~~ → **Storage sample-rows MVP** | Occasional debugging without `psql` | LOW (MVP) | SMALL (MVP) | No |
 
-**Recommended order:** PR12 Phase A first (existing webhook engine + table); PR13 Phase A second
-(security-sensitive, no rush).
+**Recommended order:** PR12 series first (existing webhook engine + table); PR13 MVP second.
 
 **Do not parallelize** with shared-surface work (DetailDrawer, etc.). Admin-only but large blast
 radius.
+
+### Sequencing vs sprint queue (maintainer review §3, corrected 2026-07-10)
+
+Verified against `main` at head: **D4 and Post-B are complete** (`db/dialect.py` deleted in
+Post-B Phase 3 — `db/` is Postgres-native now), the wave-model queue in
+`docs/SPRINT_2026-07.md` is closed through Wave 3 with Wave 4 parked, and the UX audit pass
+PR1–PR11 is merged. Nothing blocks this work; **PR12a–c is the next implementation queue**,
+in this order: PR-A cleanup (#411) → PR12a → 12b → 12c → AI-1/AI-2 (#410 plan) → PR13-MVP.
+
+New CRUD queries are written **Postgres-native** per the post-Post-B `db/` convention — the
+SQLite-dialect + `db/dialect.py` rule in `CLAUDE.md` is stale (flagged for its own doc fix).
+Migration numbering is serialized with the AI ops plan (#410): the repo has migrations
+001–012, so PR12 takes **013**, AI ops takes **014**.
 
 ---
 
@@ -62,12 +75,18 @@ Let admins **create, name, enable, test, and delete multiple webhook destination
 type**, with honest delivery logging and **no regression** to SSRF protections or legacy env-based
 setups.
 
-## Phased delivery
+## Phased delivery — three PRs (maintainer review §4)
 
-### Phase A — Multi-destination CRUD (MVP) — **implement first**
+### PR 12a — Async refactor (no behavior change)
 
-**In scope**
+- `async def webhooks_enabled()` / `configured_channels()` → `await load_destinations()`
+  (Option 1 from the async refactor note below, confirmed).
+- Call-site sweep: `webhooks/engine.py`, `webhooks/alerts.py`, `webhooks/sender.py`, tests.
+- Zero behavior change, independently reviewable. Lands first.
 
+### PR 12b — Migration + CRUD API + per-destination dedupe
+
+- Alembic migration **013** (see DB migration section)
 - `POST /api/admin/webhooks/destinations` — create destination
 - `DELETE /api/admin/webhooks/destinations/{id}` — delete (typed confirm via destructive-actions
   pattern or inline confirm word)
@@ -75,33 +94,43 @@ setups.
 - Multiple rows per `kind`: `discord`, `telegram`, `generic`
 - Generated IDs: `{kind}-{short-uuid}` or validated operator slug `^[a-z0-9-]{3,64}$`
 - Legacy env destinations (`discord` / `telegram` / `generic`) keep working unchanged
+- **Per-destination dedupe** — record sent-state per `(destination_id, event_type, dedupe_key)`.
+  Verified current behavior (`engine.py`: `was_webhook_alert_sent` guard ~L159, `record_webhook_alert`
+  ~L219): the dedupe check runs once per event **before** the destination loop, and the key is
+  recorded when **any** destination succeeds. Consequences under multi-destination: a destination that fails while another
+  succeeds is permanently skipped for that key (no retry), and a destination added after an
+  event fired never receives that keyed event. Multi-destination delivery **is** the feature —
+  this ships in 12b, not a follow-up.
 - Audit every create / update / delete / test
-- Rebuild **WebhooksPage** around `GET /webhooks/destinations` (not raw ApiKeys config keys)
 - Admin **test send** may target a **disabled** destination (verify credentials before enable) —
   `send_test_message` today returns `destination disabled` when `enabled=false` (see Gemini §2)
-- Tests: CRUD, SSRF rejection on write, multi-delivery, env+DB merge, no secret leakage in API,
-  test-while-disabled for admin only
+- Masking on GET (no secrets returned after save)
+- Tests: CRUD, SSRF rejection on write, multi-delivery, per-destination dedupe, env+DB merge,
+  no secret leakage in API, test-while-disabled for admin only
 
-**Out of scope (Phase A)**
+### PR 12c — WebhooksPage rewrite
 
-- Removing `.env` webhook vars entirely
+- Rebuild **WebhooksPage** around `GET /webhooks/destinations` (not raw ApiKeys config keys)
+- Legacy notice on ApiKeysPage webhook fields
+- `env` vs `db` source badge per destination
+
+**Out of scope (all of PR12)**
+
+- Removing or deprecating `.env` webhook vars — env destinations stay **forever** as bootstrap
+  (decision, see Open questions). The previous "Phase B env deprecation" is dropped: churn with
+  no operator value.
 - Encrypting `config_json` at rest
 - New provider kinds beyond existing `generic` HTTPS JSON
 - Per-destination retry policy changes
-- Per-destination dedupe (see risks below)
 
-### Phase B — Env deprecation & polish (follow-up PR)
+### Possible follow-up (only if operators ask)
 
-- Deprecate `DISCORD_WEBHOOK_URL` / `TELEGRAM_*` / `WEBHOOK_GENERIC_*` on ApiKeysPage
-  (migrate-on-first-save or read-only legacy panel)
-- Optional encryption for secrets in `config_json`
 - Destination health from `webhook_delivery_log` (last success / last error)
-- Document dedupe semantics when multiple destinations subscribe to same event
 
 ## DB migration (what it means for PR12)
 
-The **table already exists**. A new **Alembic forward-only** revision (`013_…py`) is still
-likely because:
+The **table already exists**. A new **Alembic forward-only** revision (**`013_…py`** — the repo
+has migrations 001–012; 014 is reserved for the AI ops plan in #410) is still likely because:
 
 | Change | Reason |
 |--------|--------|
@@ -109,22 +138,24 @@ likely because:
 | Optional new columns | `description`, `sort_order`, `created_by_user_id`, `deleted_at` |
 | Constraints | `CHECK (kind IN (...))`, optional unique `(kind, label)` |
 | Data backfill | Preserve existing rows + `webhook_delivery_log.destination_id` consistency |
+| Per-destination dedupe | New sent-state keyed by `(destination_id, event_type, dedupe_key)` — new table or column on the existing dedupe store |
 
 **Minimal path:** no new columns — only allow multiple rows + generated IDs; migration may still
 add indexes/constraints + backfill script.
 
-**Rules:** never edit applied migrations; SQLite parity if shared query paths touch new columns.
+**Rules:** never edit applied migrations; new query paths follow the Postgres-native `db/`
+convention (Post-B), with test fixtures per Post-B part 1 (#303).
 
 ## Architecture decisions (resolve before coding)
 
 | # | Decision | Recommendation |
 |---|----------|----------------|
-| 1 | Source of truth | DB for user-created; env for legacy bootstrap until Phase B |
+| 1 | Source of truth | DB for user-created; env for legacy bootstrap — **permanently** (env deprecation dropped) |
 | 2 | ID format | `{kind}-{short-uuid}` or validated slug; reserve `discord`/`telegram`/`generic` for env |
 | 3 | Secrets in API | Never return full URL/token after save — mask like `GET /api/admin/config` |
-| 4 | Config UI location | **Webhooks page** primary; ApiKeysPage legacy notice only (Phase A) |
+| 4 | Config UI location | **Webhooks page** primary; ApiKeysPage legacy notice only (12c) |
 | 5 | Delete env-backed row | Disable only — env re-syncs on boot |
-| 6 | Max destinations | Cap per kind (e.g. 20) — TBD by maintainer |
+| 6 | Max destinations | **20 per kind** (decided) |
 
 ## Security threats & mitigations (PR12)
 
@@ -135,7 +166,7 @@ add indexes/constraints + backfill script.
 | Secrets in `audit_log` | High | Audit `destination_id` + action only; no URL/token in detail |
 | Compromised admin session spam | Medium | `require_admin` + rate limit POST/test; destination cap |
 | Telegram token in URL path / errors | Medium | Truncate/redact token in delivery errors and logs |
-| SQL dialect breakage | Medium | Shared SQL via `?` placeholders + `db/dialect.py` (CLAUDE.md danger zone) |
+| SQL drift vs tests | Medium | Write Postgres-native SQL per post-Post-B `db/` convention (`db/dialect.py` is deleted; the CLAUDE.md dialect rule is stale) |
 
 ## What can go wrong
 
@@ -145,7 +176,7 @@ add indexes/constraints + backfill script.
 | `webhooks_enabled()` ignores DB-only destinations | High |
 | Duplicate config on ApiKeysPage + WebhooksPage | Medium |
 | Orphan `destination_id` in delivery log after delete | Medium |
-| Dedupe is global per `(event_type, dedupe_key)` — second destination may not fire for same key | Medium — document or fix in Phase B |
+| Dedupe is global per `(event_type, dedupe_key)` — a failed or later-added destination is **permanently skipped** for a recorded key | High — **fixed in 12b** (per-destination dedupe) |
 
 ## What will go wrong (expected operator issues)
 
@@ -155,9 +186,11 @@ add indexes/constraints + backfill script.
 4. Env vs DB `source` confusion — UI must show `env` vs `db` badge.
 5. Generic receivers expect custom JSON — document `webhook_json_payload` shape.
 
-## Acceptance criteria (Phase A)
+## Acceptance criteria (12a–12c combined)
 
 - [ ] Create 2+ Discord destinations; both receive test when subscribed to same event
+- [ ] **Per-destination dedupe:** with a recorded dedupe key, a destination that failed the
+      first dispatch (or was added later) still receives the event on the next dispatch
 - [ ] Legacy `.env` single Discord works with zero migration steps
 - [ ] SSRF tests pass for create/update paths
 - [ ] GET destinations never returns full secrets
@@ -178,46 +211,63 @@ becoming `async`. Call sites today include:
 | `webhooks/sender.py` | sync `discord_configured()` / `telegram_configured()` wrappers |
 | Tests | `test_webhooks_engine.py`, `test_webhooks_sender.py` |
 
-**Implementation options (pick one in Phase A):**
+**Implementation options:**
 
-1. **Async helpers (recommended):** `async def webhooks_enabled()` → `await load_destinations()`;
+1. **Async helpers (decided):** `async def webhooks_enabled()` → `await load_destinations()`;
    update all call sites to `await`. Straightforward; touches alerts + engine + tests.
-2. **Sync cache:** refresh in-memory destination snapshot on CRUD / startup / TTL; keep sync API.
-   Fewer call-site edits; risk stale reads if cache invalidation is missed.
-
-Plan default: **Option 1** unless profiling shows alert-path hot-loop concern.
+   This is **PR 12a** in its entirety.
+2. ~~Sync cache~~ — rejected: stale-read risk if cache invalidation is missed.
 
 ## Suggested implementation order (PR12)
 
-1. Refactor `webhooks_enabled()` / `configured_channels()` (async + call-site sweep)
-2. Alembic migration (if needed) + backfill test
-3. POST / DELETE / extended PATCH + SSRF on write
-4. Masking on GET + audit hardening
-5. WebhooksPage rewrite
-6. Legacy notice on ApiKeysPage webhook fields
-7. Integration tests + docs
+1. **PR 12a** — async refactor + call-site sweep (no behavior change)
+2. **PR 12b** — Alembic 013 + backfill test; POST / DELETE / extended PATCH + SSRF on write;
+   per-destination dedupe; masking on GET + audit hardening
+3. **PR 12c** — WebhooksPage rewrite; legacy notice on ApiKeysPage webhook fields
+4. Integration tests + docs land inside each PR, not as a trailing step
 
 ## Files likely touched (PR12)
 
 - `backend/webhooks/destinations.py`, `engine.py`, `ssrf.py`
 - `backend/db/webhooks.py`, `backend/routers/admin.py`
-- `backend/alembic/versions/013_*.py` (if schema changes)
+- `backend/alembic/versions/013_*.py`
 - `frontend/src/pages/admin/WebhooksPage.jsx`, possibly `ApiKeysPage.jsx` (notice only)
 - `backend/tests/test_webhooks_*.py`, new CRUD tests
 - `API_REFERENCE.md`, `docs/PRODUCT_STATUS.md`
 
 ---
 
-# PR13 — Read-only DB explorer
+# PR13 — DB visibility
 
-## Goal
+## Decision (maintainer review): ship the sample-rows MVP, defer the full explorer
+
+The full read-only explorer below is **HIGH risk / LARGE scope** for "occasional debugging
+without `psql`", with a security model where one missing deny-list entry exposes credentials.
+The MVP that solves the actual debugging need:
+
+**PR13-MVP — Storage sample rows**
+
+- Extend the existing `GET /api/admin/storage` surface with a sample-rows endpoint for
+  **Tier 1 intel tables only** (hardcoded allowlist from `docs/DATA_SNAPSHOT.md`).
+- Server-defined ordering, `LIMIT 50`, **no filters, no pagination params, no operator tables
+  queryable at all** — Tier 2/3 tables simply do not exist to this endpoint (404).
+- Rendered as a sub-view of the existing Storage page — no new admin nav item.
+- This deletes the entire Tier 2/3 masking problem: nothing sensitive is ever queryable.
+
+**Build the full explorer below only if operators concretely ask for filtered browsing
+afterward.** Everything from here to the PR13 open questions is retained as the deferred
+design of record, with decisions pre-answered (see Open questions).
+
+---
+
+## Deferred design — full read-only DB explorer (reference only)
+
+### Goal
 
 Give admins a **safe, read-only browser** for allowlisted PostgreSQL tables — paginated rows,
 masked columns, **no arbitrary SQL** — for debugging without `psql`.
 
-## Phased delivery
-
-### Phase A — Table catalog + row browser (MVP)
+### Phase A — Table catalog + row browser
 
 **In scope**
 
@@ -264,11 +314,8 @@ correlation tables, etc.
 `hunt_packs`, `alembic_version`
 
 **`sync_state` — special case**  
-High risk (may contain operator keys). Options:
-
-- **Option A (safer):** deny entire table in MVP
-- **Option B:** allow with key prefix allowlist only (`scheduler.last_run.*`, NVD watermark keys)
-- **Decision required before implementation**
+High risk (may contain operator keys). **Decided: Option A — deny entirely** (key-prefix
+allowlists are a standing audit burden for marginal debugging value).
 
 Default rule: **deny** — table not in registry → 404.
 
@@ -342,21 +389,26 @@ Default rule: **deny** — table not in registry → 404.
 
 ---
 
-## Open questions (maintainer / Cloud Code validation)
+## Open questions — **decided** (maintainer review, PR #409 comment, 2026-07-10)
 
 ### PR12
 
-1. Keep env `discord`/`telegram`/`generic` forever or deprecate in Phase B?
-2. Max destinations per `kind`?
-3. Is duplicate delivery to all subscribed destinations on same event **desired**?
-4. Should dedupe become per-destination in Phase B?
+1. Keep env `discord`/`telegram`/`generic` forever or deprecate? → **Keep forever** as
+   bootstrap; env deprecation dropped entirely (churn with no operator value).
+2. Max destinations per `kind`? → **20**.
+3. Is duplicate delivery to all subscribed destinations on same event desired? → **Yes,
+   intended behavior.**
+4. Should dedupe become per-destination? → **Yes, in PR 12b** (not deferred — see the verified
+   failure mode in the 12b scope).
 
 ### PR13
 
-1. `sync_state`: deny entirely (Option A) or key allowlist (Option B)?
-2. Require a filter for `cves` browse in MVP?
-3. New admin nav item vs tab under Storage?
-4. Include `audit_log` in Tier 2 or deny?
+1. `sync_state`: deny entirely (Option A) or key allowlist (Option B)? → **Option A, deny.**
+2. Require a filter for `cves` browse? → **Yes** (deferred design only; the MVP has no
+   filters and caps at 50 rows).
+3. New admin nav item vs tab under Storage? → **Storage sub-view**, no new nav item.
+4. Include `audit_log` in Tier 2 or deny? → **Deferred with the full explorer** — the MVP
+   exposes Tier 1 intel tables only.
 
 ---
 
@@ -369,6 +421,19 @@ Default rule: **deny** — table not in registry → 404.
 | 3 | Masking should target allowed-table columns, not denied-table columns | **Valid** | Rewrote Phase A mask list; Tier 3 deny list unchanged |
 
 No Gemini inline comments rejected. CodeRabbit skipped (draft PR).
+
+---
+
+## Maintainer review reconciliation (PR #409 comment, 2026-07-10)
+
+| # | Point | Action |
+|---|-------|--------|
+| 1 | Migration numbering — the review comment claimed 006/007 based on a **stale checkout**; the repo actually has migrations 001–012, so this plan's original 013 was correct | **013** confirmed for PR12; **014** reserved for AI ops plan (#410) |
+| 2 | Per-destination dedupe belongs in scope, not Phase B — verified `engine.py` (`was_webhook_alert_sent` ~L159, `record_webhook_alert` ~L219): key recorded when **any** destination succeeds, so failed/later-added destinations are permanently skipped | Moved into **PR 12b** scope + acceptance criteria; risk raised to High |
+| 3 | Sequencing — the review comment said "queue after D4/Post-B", also from the stale checkout; D4 and Post-B are in fact **complete** and the wave queue is drained | Corrected sequencing section: PR12a–c is the next implementation queue after PR-A (#411) |
+| 4 | Split Phase A into three PRs; answer open questions with defaults | Restructured as 12a/12b/12c; all open questions decided |
+| 5 | PR13 oversized for its value — cut to lazy MVP | PR13-MVP = Storage sample rows, Tier 1 only; full explorer deferred |
+| 6 | `db/dialect.py` references (this plan + CLAUDE.md) are stale — deleted in Post-B Phase 3 | SQL risk row updated to Postgres-native convention; CLAUDE.md fix flagged as its own task |
 
 ---
 
