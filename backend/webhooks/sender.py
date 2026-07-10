@@ -22,12 +22,12 @@ __all__ = [
 ]
 
 
-def discord_configured() -> bool:
-    return "discord" in configured_channels()
+async def discord_configured() -> bool:
+    return "discord" in await configured_channels()
 
 
-def telegram_configured() -> bool:
-    return "telegram" in configured_channels()
+async def telegram_configured() -> bool:
+    return "telegram" in await configured_channels()
 
 
 async def send_test_message(channel: str, message: str) -> dict:

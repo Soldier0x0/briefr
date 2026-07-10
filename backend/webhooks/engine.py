@@ -22,7 +22,6 @@ from webhooks.destinations import (
     WebhookDestination,
     load_destinations,
     normalize_event_type,
-    webhooks_enabled,
 )
 from webhooks.ssrf import (
     SSRFError,
@@ -144,7 +143,8 @@ async def dispatch_event(
             "errors": {},
         }
 
-    if not webhooks_enabled():
+    active = destinations if destinations is not None else await load_destinations()
+    if not any(dest.enabled for dest in active):
         return {
             "status": "skipped",
             "reason": "no_webhook_destinations",
@@ -168,7 +168,6 @@ async def dispatch_event(
         finally:
             await db.close()
 
-    active = destinations or await load_destinations()
     targets = [dest for dest in active if dest.subscribes_to(normalized)]
     if not targets:
         return {

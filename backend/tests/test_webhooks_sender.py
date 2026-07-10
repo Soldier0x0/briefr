@@ -59,8 +59,8 @@ def _clean(monkeypatch):
 
 def test_webhooks_disabled_without_env(monkeypatch, tmp_path):
     _setup_db(tmp_path, monkeypatch)
-    assert webhooks_enabled() is False
-    assert configured_channels() == []
+    assert run_db_test(webhooks_enabled()) is False
+    assert run_db_test(configured_channels()) == []
     result = run_db_test(send_alert("hello"))
     assert result["status"] == "skipped"
 
@@ -76,7 +76,7 @@ def test_discord_only(monkeypatch, tmp_path):
         return httpx.Response(204)
 
     _install_transport(monkeypatch, handler)
-    assert configured_channels() == ["discord"]
+    assert run_db_test(configured_channels()) == ["discord"]
 
     result = run_db_test(send_alert("KEV alert"))
     assert result["status"] == "ok"
@@ -97,7 +97,7 @@ def test_telegram_only(monkeypatch, tmp_path):
         return httpx.Response(200, json={"ok": True})
 
     _install_transport(monkeypatch, handler)
-    assert configured_channels() == ["telegram"]
+    assert run_db_test(configured_channels()) == ["telegram"]
 
     result = run_db_test(send_alert("stack hit"))
     assert result["status"] == "ok"

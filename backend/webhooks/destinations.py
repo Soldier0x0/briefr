@@ -235,9 +235,10 @@ async def load_destinations() -> list[WebhookDestination]:
     return sorted(merged.values(), key=lambda d: d.id)
 
 
-def webhooks_enabled() -> bool:
-    return any(dest.enabled for dest in load_env_destinations())
+async def webhooks_enabled() -> bool:
+    destinations = await load_destinations()
+    return any(dest.enabled for dest in destinations)
 
 
-def configured_channels() -> list[str]:
-    return [dest.id for dest in load_env_destinations() if dest.enabled]
+async def configured_channels() -> list[str]:
+    return [dest.id for dest in await load_destinations() if dest.enabled]

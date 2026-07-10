@@ -175,7 +175,7 @@ async def _fetch_cve_blurb(db, cve_id: str) -> str:
 
 async def process_watchlist_kev_alerts(newly_kev_ids: list[str]) -> int:
     """Alert when a pinned CVE enters CISA KEV."""
-    if not newly_kev_ids or not webhooks_enabled():
+    if not newly_kev_ids or not await webhooks_enabled():
         return 0
 
     db = await get_db()
@@ -217,7 +217,7 @@ async def process_watchlist_kev_alerts(newly_kev_ids: list[str]) -> int:
 
 async def process_watchlist_monitor_alerts(*, since_hours: int = 24) -> int:
     """Alert on significant changes to pinned CVEs (EPSS jump, PoC surfaced)."""
-    if not webhooks_enabled():
+    if not await webhooks_enabled():
         return 0
 
     db = await get_db()
@@ -282,7 +282,7 @@ async def process_watchlist_monitor_alerts(*, since_hours: int = 24) -> int:
 
 async def process_kev_stack_alerts(newly_kev_ids: list[str]) -> int:
     """Send one alert per CVE the first time it enters KEV and matches the stack."""
-    if not newly_kev_ids or not webhooks_enabled():
+    if not newly_kev_ids or not await webhooks_enabled():
         return 0
 
     db = await get_db()
@@ -331,7 +331,7 @@ def _format_kev_backlog_alert(item: dict) -> str:
 
 async def process_kev_backlog_webhooks(items: list[dict]) -> int:
     """Notify subscribed destinations when new KEV gap backlog rows are created."""
-    if not items or not webhooks_enabled():
+    if not items or not await webhooks_enabled():
         return 0
 
     sent = 0
@@ -399,7 +399,7 @@ def _format_ioc_watchlist_hit(match: dict) -> str:
 
 
 async def process_ioc_watchlist_hit_webhooks(matches: list[dict]) -> int:
-    if not matches or not webhooks_enabled():
+    if not matches or not await webhooks_enabled():
         return 0
 
     sent = 0
@@ -421,7 +421,7 @@ async def process_ioc_watchlist_hit_webhooks(matches: list[dict]) -> int:
 
 async def check_backup_deadman() -> bool:
     """Warn when no successful backup exists within 2× BACKUP_INTERVAL_HOURS."""
-    if not _backup_enabled() or not webhooks_enabled():
+    if not _backup_enabled() or not await webhooks_enabled():
         return False
 
     threshold = get_backup_deadman_threshold()
