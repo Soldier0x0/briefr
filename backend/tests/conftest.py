@@ -39,22 +39,9 @@ def _postgres_is_live() -> bool:
     global _postgres_live
     if _postgres_live is not None:
         return _postgres_live
-    dsn = _postgres_dsn_or_none()
-    if dsn is None:
-        _postgres_live = False
-        return False
+    from backup.postgres_util import postgres_server_live
 
-    async def _ping() -> None:
-        import asyncpg
-
-        conn = await asyncpg.connect(dsn, timeout=5)
-        await conn.close()
-
-    try:
-        asyncio.run(_ping())
-        _postgres_live = True
-    except Exception:
-        _postgres_live = False
+    _postgres_live = postgres_server_live()
     return _postgres_live
 
 

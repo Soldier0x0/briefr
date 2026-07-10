@@ -18,7 +18,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from backup.postgres_util import postgres_backup_tools_available
+from backup.postgres_util import postgres_backup_tools_available, postgres_server_live
 
 _SKIP_REASON: str | None = None
 if not os.environ.get("DATABASE_URL", "").startswith("postgresql"):
@@ -30,6 +30,14 @@ pytestmark = pytest.mark.skipif(
     _SKIP_REASON is not None,
     reason=_SKIP_REASON or "",
 )
+
+
+@pytest.fixture(autouse=True)
+def _ensure_postgres_live():
+    """Skip at runtime when DATABASE_URL is set but the server is down."""
+    if os.environ.get("DATABASE_URL", "").startswith("postgresql") and not postgres_server_live():
+        pytest.skip("PostgreSQL server is not live")
+
 
 CORE_TABLES = ("cves", "kev_deadlines")
 
