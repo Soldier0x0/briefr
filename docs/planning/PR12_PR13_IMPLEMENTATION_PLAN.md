@@ -268,7 +268,7 @@ for debugging and data visibility without `psql`.
   - **No** client `ORDER BY`, no joins, no free-text SQL
 - Admin UI (**Database section** — Storage page evolves): table **dropdown** → column
   headers → paginated rows; filter values entered via a plain input bound to one
-  allowlisted column — never a query string
+  allowlisted column — never a raw SQL query string
 - **Required filter for `cves`** (decided) — the widest table cannot be full-scanned
 - Column mask list focused on **allowed Tier 1/2 tables** (Tier 3 tables are denied — masking
   `password_hash` / `refresh_token_hash` there is moot). Priority masks:

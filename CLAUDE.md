@@ -22,7 +22,9 @@ JSX/CSS, no component library), **PostgreSQL required in production**.
 
 1. **SQL:** the `db/` package is **Postgres-native** (Post-B, 2026-07;
    `db/dialect.py` was deleted — do not reintroduce a translation layer).
-   Write new SQL Postgres-native. Production is Postgres-only
+   Write new SQL Postgres-native (using parallel `_SQLITE` / `_PG` constants
+   where SQLite compatibility is required to keep the default test suite green).
+   Production is Postgres-only
    (`BRIEFR_REQUIRE_POSTGRES=1`); SQLite survives **only** as the
    zero-config test/dev fallback in `db/connection.py` (`db/pg_adapt.py`
    adapts for it). Tests default to SQLite — a query can pass the default
