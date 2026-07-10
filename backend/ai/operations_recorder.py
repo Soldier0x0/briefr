@@ -58,6 +58,9 @@ async def record_llm_attempt(
     error_class: str | None = None,
     fallback_from_provider: str | None = None,
     fallback_from_model: str | None = None,
+    input_tokens: int | None = None,
+    output_tokens: int | None = None,
+    total_tokens: int | None = None,
 ) -> None:
     if not recording_enabled():
         return
@@ -75,6 +78,9 @@ async def record_llm_attempt(
             model=model,
             success=success,
             error_class=error_class,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=total_tokens,
             fallback_from_provider=fallback_from_provider,
             fallback_from_model=fallback_from_model,
             retry_index=retry_index,

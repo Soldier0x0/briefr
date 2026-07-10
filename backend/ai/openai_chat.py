@@ -20,6 +20,7 @@ async def openai_chat_completion(
     queue_operation: str | None = None,
     queue_context_type: str | None = None,
     queue_context_id: str | None = None,
+    usage_out: dict | None = None,
 ) -> str:
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -51,6 +52,11 @@ async def openai_chat_completion(
     try:
         data = response.json()
         if isinstance(data, dict):
+            if usage_out is not None and isinstance(data.get("usage"), dict):
+                u = data["usage"]
+                usage_out["input_tokens"] = u.get("prompt_tokens")
+                usage_out["output_tokens"] = u.get("completion_tokens")
+                usage_out["total_tokens"] = u.get("total_tokens")
             return (
                 data.get("choices", [{}])[0]
                 .get("message", {})

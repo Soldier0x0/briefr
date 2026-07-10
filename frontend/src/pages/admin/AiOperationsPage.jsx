@@ -270,9 +270,15 @@ function UsageTab({ overview }) {
                 </table>
               </div>
             </div>
-            {!u.tokens_recorded && (
+            {u.tokens_recorded ? (
               <p style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '0.75rem' }}>
-                Token counts are not recorded yet — request/latency/fallback metrics only.
+                Tokens: {(u.total_tokens ?? 0).toLocaleString()} total
+                {' '}({(u.input_tokens ?? 0).toLocaleString()} in · {(u.output_tokens ?? 0).toLocaleString()} out).
+                {' '}Only providers that return usage are counted; cost is not estimated.
+              </p>
+            ) : (
+              <p style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '0.75rem' }}>
+                Token counts appear once a provider that reports usage runs in this window — request/latency/fallback metrics only so far.
               </p>
             )}
           </div>
@@ -325,6 +331,7 @@ function ActivityTab({ toast }) {
                   <th>Model</th>
                   <th>Result</th>
                   <th>Latency</th>
+                  <th>Tokens</th>
                   <th>Context</th>
                 </tr>
               </thead>
@@ -347,6 +354,11 @@ function ActivityTab({ toast }) {
                       )}
                     </td>
                     <td>{row.latency_ms != null ? `${row.latency_ms}ms` : '—'}</td>
+                    <td style={{ fontSize: '0.72rem', whiteSpace: 'nowrap' }}>
+                      {row.total_tokens != null
+                        ? row.total_tokens.toLocaleString()
+                        : <span style={{ color: 'var(--text3)' }}>—</span>}
+                    </td>
                     <td style={{ fontSize: '0.72rem', fontFamily: 'monospace' }}>
                       {row.context_id || '—'}
                     </td>
