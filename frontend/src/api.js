@@ -470,11 +470,31 @@ export function clearWallboardToken() {
   sessionStorage.removeItem('briefr-wallboard-token')
 }
 
+export async function createWallboardSession(token) {
+  const res = await fetch('/api/wallboard/session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ token }),
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    const err = new Error(data.detail || res.statusText || 'Session failed')
+    err.status = res.status
+    throw err
+  }
+  return res.json()
+}
+
+export async function clearWallboardSession() {
+  await fetch('/api/wallboard/session', { method: 'DELETE', credentials: 'include' })
+}
+
 export function fetchWallboard() {
   const token = getWallboardToken()
   const headers = {}
   if (token) headers['X-BRIEFR-Wallboard-Token'] = token
-  return request('/wallboard', { headers })
+  return request('/wallboard', { headers, credentials: 'include' })
 }
 
 // ── Admin API ──────────────────────────────────────────────────────────────

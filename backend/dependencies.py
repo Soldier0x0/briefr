@@ -25,9 +25,13 @@ logger = logging.getLogger(__name__)
 
 async def require_wallboard_token(request: Request) -> None:
     """When WALLBOARD_TOKEN is set, wallboard routes require a matching token.
-    Header-only (Sprint A7): `?token=` was dropped because query strings leak
-    into access logs and browser history."""
+    Accepts signed httpOnly session cookie (briefr_wb) or X-BRIEFR-Wallboard-Token header."""
     if not settings.wallboard_token:
+        return
+    from wallboard.session import COOKIE_NAME, verify_session_token
+
+    cookie = request.cookies.get(COOKIE_NAME, "")
+    if cookie and verify_session_token(cookie):
         return
     provided = request.headers.get("X-BRIEFR-Wallboard-Token", "")
     # Compare SHA-256 digests: compare_digest short-circuits on unequal

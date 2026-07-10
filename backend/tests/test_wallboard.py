@@ -33,6 +33,21 @@ def _patch_app_lifecycle(monkeypatch) -> None:
     monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
 
 
+def _use_sqlite_backend(monkeypatch, db_path: Path) -> None:
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "0")
+    from settings import settings as _settings
+    monkeypatch.setattr(_settings, "database_url", "")
+    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
+    monkeypatch.setattr(_settings, "db_path", str(db_path))
+    sqlite_url = f"sqlite+aiosqlite:///{db_path}"
+    monkeypatch.setattr("db.config.resolve_database_url", lambda: sqlite_url)
+    monkeypatch.setattr("db.config.is_postgres", lambda url=None: False)
+    monkeypatch.setattr("db.connection._pool", None)
+
+
 def _disable_rate_limit(monkeypatch) -> None:
     import rate_limit as _rl
     from settings import settings as _settings
@@ -102,8 +117,7 @@ async def _seed_wallboard_db(db_path: Path) -> None:
 @pytest.fixture
 def wallboard_client(tmp_path, monkeypatch):
     db_path = tmp_path / "wallboard.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
+    _use_sqlite_backend(monkeypatch, db_path)
     monkeypatch.setenv("BRIEFR_STACK_TERMS", "log4j")
     monkeypatch.setenv("WALLBOARD_TOKEN", "")
 
@@ -119,17 +133,22 @@ def wallboard_client(tmp_path, monkeypatch):
 
 
 @_requires_sqlite
-def test_wallboard_returns_six_tiles(wallboard_client):
+def test_wallboard_returns_v2_payload(wallboard_client):
     resp = wallboard_client.get("/api/wallboard")
     assert resp.status_code == 200
     body = resp.json()
     for key in (
         "meta",
         "kev_on_stack",
+        "kev_due_soon",
         "changes_24h",
         "top_risk",
         "ingest_health",
+        "ingest_strip",
         "coverage_gaps",
+        "epss_movers",
+        "campaigns",
+        "source_health",
         "headlines",
     ):
         assert key in body
@@ -138,12 +157,12 @@ def test_wallboard_returns_six_tiles(wallboard_client):
     assert body["top_risk"]["items"]
     assert body["ingest_health"]["status"] == "ok"
     assert "gap_count" in body["coverage_gaps"]
+    assert "status" in body["ingest_strip"]
 
 
 def test_wallboard_token_required_when_set(tmp_path, monkeypatch):
     db_path = tmp_path / "wallboard-auth.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
+    _use_sqlite_backend(monkeypatch, db_path)
     monkeypatch.setenv("WALLBOARD_TOKEN", "kiosk-secret-token")
 
     _patch_app_lifecycle(monkeypatch)
@@ -151,6 +170,7 @@ def test_wallboard_token_required_when_set(tmp_path, monkeypatch):
 
     from settings import settings as _settings
     monkeypatch.setattr(_settings, "wallboard_token", "kiosk-secret-token")
+    monkeypatch.setattr(_settings, "auth_cookie_secure", False)
 
     from main import app
     with TestClient(app, raise_server_exceptions=False) as client:
@@ -167,11 +187,18 @@ def test_wallboard_token_required_when_set(tmp_path, monkeypatch):
         denied_query = client.get("/api/wallboard?token=kiosk-secret-token")
         assert denied_query.status_code == 401
 
+        session_resp = client.post(
+            "/api/wallboard/session",
+            json={"token": "kiosk-secret-token"},
+        )
+        assert session_resp.status_code == 200
+        cookie_ok = client.get("/api/wallboard")
+        assert cookie_ok.status_code == 200
+
 
 def test_wallboard_rate_limited(tmp_path, monkeypatch):
     db_path = tmp_path / "wallboard-rl.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
+    _use_sqlite_backend(monkeypatch, db_path)
 
     _patch_app_lifecycle(monkeypatch)
 
