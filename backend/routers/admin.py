@@ -480,6 +480,33 @@ async def get_correlation_status():
         await db.close()
 
 
+@router.get("/api-keys/health")
+async def get_api_keys_health():
+    """Configured provider key suffixes and last health ping results."""
+    from monitoring.api_key_health import build_api_key_health_payload
+
+    db = await get_db()
+    try:
+        return await build_api_key_health_payload(db)
+    finally:
+        await db.close()
+
+
+@router.post("/api-keys/health/run")
+async def run_api_keys_health(request: Request):
+    """Trigger an immediate API key health ping sweep."""
+    from monitoring.api_key_health import build_api_key_health_payload, run_api_key_health_checks
+
+    db = await get_db()
+    try:
+        stats = await run_api_key_health_checks(db)
+        payload = await build_api_key_health_payload(db)
+    finally:
+        await db.close()
+    await audit(request, "api_keys.health.run", f"checked={stats.get('checked', 0)}")
+    return {"ok": True, "stats": stats, **payload}
+
+
 # ── Backups ────────────────────────────────────────────────────────────────
 
 
@@ -1808,6 +1835,7 @@ _JOB_RUN_MAP: dict[str, str] = {
     "exploit_sources_sync": "run_exploit_sources_sync",
     "backup_deadman_check": "run_backup_deadman_check",
     "watchlist_monitor_alerts": "run_watchlist_monitor_alerts",
+    "api_key_health_check": "run_api_key_health_check",
     "session_cleanup": "run_session_cleanup",
     "cache_retention_cleanup": "run_cache_retention_cleanup",
 }

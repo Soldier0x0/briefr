@@ -1581,13 +1581,52 @@ async def run_watchlist_monitor_alerts() -> bool:
             logger.info("Watchlist monitor alerts sent: %d", sent)
         return sent > 0
     except Exception as exc:
-        logger.error("Watchlist monitor alert job failed: %s", exc)
+        logger.error(
+            "Watchlist monitor alert job failed: %s",
+            exc,
+            extra={"monitor": "watchlist_alerts"},
+        )
         _had_error = True
         _error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
         return False
     finally:
         await _write_job_last_run(
             "watchlist_monitor_alerts",
+            _start,
+            had_error=_had_error,
+            error_message=_error_msg,
+        )
+
+
+async def run_api_key_health_check() -> bool:
+    """Scheduler hook: lightweight provider key health pings."""
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _error_msg = ""
+    db = await get_db()
+    try:
+        from monitoring.api_key_health import run_api_key_health_checks
+
+        stats = await run_api_key_health_checks(db)
+        logger.info(
+            "API key health check complete: %d configured keys checked, %d healthy",
+            stats.get("checked", 0),
+            stats.get("healthy", 0),
+        )
+        return stats.get("checked", 0) > 0
+    except Exception as exc:
+        logger.error(
+            "API key health check failed: %s",
+            exc,
+            extra={"monitor": "api_key_health"},
+        )
+        _had_error = True
+        _error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
+        return False
+    finally:
+        await db.close()
+        await _write_job_last_run(
+            "api_key_health_check",
             _start,
             had_error=_had_error,
             error_message=_error_msg,
@@ -1951,6 +1990,16 @@ def start_scheduler() -> AsyncIOScheduler:
         max_instances=1,
         coalesce=True,
         next_run_time=datetime.now(sched_tz) + timedelta(minutes=8),
+    )
+    scheduler.add_job(
+        run_api_key_health_check,
+        trigger=IntervalTrigger(hours=6, timezone=sched_tz),
+        id="api_key_health_check",
+        name="API Key Health Check",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(minutes=12),
     )
 
     scheduler.add_job(

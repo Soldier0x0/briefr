@@ -81,6 +81,8 @@ EXPECTED_ROUTES = [
     # Admin dashboard (V1.4): appended after watchlist routes.
     ("GET", "/api/admin/system"),
     ("GET", "/api/admin/correlation/status"),
+    ("GET", "/api/admin/api-keys/health"),
+    ("POST", "/api/admin/api-keys/health/run"),
     ("GET", "/api/admin/backups"),
     ("POST", "/api/admin/backups/verify/{filename}"),
     ("POST", "/api/admin/backups/run"),
