@@ -18,38 +18,25 @@ class GroqLimits:
     rpm: int
     tpm: int
     estimated_tokens_per_request: int
+    headroom_pct: int
     min_interval_seconds: float
 
 
 def groq_limits() -> GroqLimits:
     """Limits for the configured model — override via env for other tiers/models."""
-    try:
-        rpm = int(os.environ.get("GROQ_RPM_LIMIT", "30"))
-    except ValueError:
-        rpm = 30
-    try:
-        tpm = int(os.environ.get("GROQ_TPM_LIMIT", "6000"))
-    except ValueError:
-        tpm = 6000
-    try:
-        est_tokens = int(os.environ.get("GROQ_ESTIMATED_TOKENS_PER_REQUEST", "1500"))
-    except ValueError:
-        est_tokens = 1500
+    from ai.llm_pacing import limits_from_env
 
-    min_from_rpm = 60.0 / max(rpm, 1)
-    min_from_tpm = (60.0 * est_tokens) / max(tpm, 1)
-    default_interval = max(min_from_rpm, min_from_tpm, 2.0)
-
-    try:
-        interval = float(
-            os.environ.get("GROQ_MIN_REQUEST_INTERVAL_SECONDS", str(default_interval))
-        )
-    except ValueError:
-        interval = default_interval
-
+    limits = limits_from_env(
+        "GROQ",
+        default_rpm=30,
+        default_tpm=8000,
+        default_est_tokens=1500,
+        floor_seconds=0.5,
+    )
     return GroqLimits(
-        rpm=rpm,
-        tpm=tpm,
-        estimated_tokens_per_request=est_tokens,
-        min_interval_seconds=max(interval, 0.5),
+        rpm=limits.rpm,
+        tpm=limits.tpm,
+        estimated_tokens_per_request=limits.estimated_tokens_per_request,
+        headroom_pct=limits.headroom_pct,
+        min_interval_seconds=limits.min_interval_seconds,
     )

@@ -178,6 +178,27 @@ def get_source_pacing(source: str) -> SourcePacing:
             interval = groq_limits().min_interval_seconds
         except Exception:
             pass
+    elif key == "gemini":
+        try:
+            from ai.llm_pacing import gemini_limits
+
+            interval = gemini_limits().min_interval_seconds
+        except Exception:
+            pass
+    elif key == "cerebras":
+        try:
+            from ai.llm_pacing import cerebras_limits
+
+            interval = cerebras_limits().min_interval_seconds
+        except Exception:
+            pass
+    elif key == "openrouter":
+        try:
+            from ai.llm_pacing import openrouter_limits
+
+            interval = openrouter_limits().min_interval_seconds
+        except Exception:
+            pass
     return SourcePacing(
         min_interval_seconds=max(interval, 0.0),
         max_concurrent=profile.max_concurrent,

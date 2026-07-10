@@ -21,9 +21,7 @@ SYSTEM_PROMPT = (
     "for a security investigation report. Respond with valid JSON only (no markdown fences)."
 )
 
-USER_PROMPT_TEMPLATE = """You are a senior threat intelligence analyst writing an
-executive summary for a security investigation report.
-Write exactly 4 sentences in the executive_summary field (one paragraph).
+USER_PROMPT_TEMPLATE = """Write exactly 4 sentences in the executive_summary field (one paragraph).
 Sentence 1: What triggered the investigation and severity.
 Sentence 2: Key threat intelligence findings (exploitation,
             actor attribution if any).
