@@ -282,10 +282,12 @@ function UsageTab({ overview }) {
   )
 }
 
-function ActivityTab({ toast }) {
+function ActivityTab({ toast, providerOptions }) {
   const [rows, setRows] = useState(null)
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
+  const [taskFilter, setTaskFilter] = useState('')
+  const [providerFilter, setProviderFilter] = useState('')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
   const limit = 50
@@ -293,7 +295,10 @@ function ActivityTab({ toast }) {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const { data } = await adminApi.getJson(`/ai/operations/activity?limit=${limit}&offset=${offset}`)
+      const params = new URLSearchParams({ limit: String(limit), offset: String(offset) })
+      if (taskFilter) params.set('task_class', taskFilter)
+      if (providerFilter) params.set('provider', providerFilter)
+      const { data } = await adminApi.getJson(`/ai/operations/activity?${params}`)
       setRows(data.rows || [])
       setTotal(data.total || 0)
       setError(null)
@@ -303,72 +308,125 @@ function ActivityTab({ toast }) {
     } finally {
       setLoading(false)
     }
-  }, [offset, toast])
+  }, [offset, taskFilter, providerFilter, toast])
 
   useEffect(() => { load() }, [load])
 
+  // Reset to the first page whenever a filter narrows the result set.
+  function changeFilter(setter, value) {
+    setOffset(0)
+    setter(value)
+  }
+
   return (
-    <AsyncSection data={rows} error={error} loading={loading} onRetry={load} emptyMessage="No AI operations recorded yet">
-      {() => (
-        <div className="admin-card">
-          <div className="admin-card-title">
-            Recent operations
-            <HelpTip text="Redacted attempt log — no prompts or completions. Newest first." />
-          </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Task</th>
-                  <th>Provider</th>
-                  <th>Model</th>
-                  <th>Result</th>
-                  <th>Latency</th>
-                  <th>Context</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(row => (
-                  <tr key={row.operation_id}>
-                    <td style={{ fontSize: '0.78rem', whiteSpace: 'nowrap' }}>{fmtIso(row.started_at)}</td>
-                    <td>{TASK_LABELS[row.task_class] || row.task_class}</td>
-                    <td>{row.provider}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{row.model}</td>
-                    <td>
-                      {successBadge(row.success)}
-                      {row.error_class && !row.success && (
-                        <span style={{ marginLeft: '0.35rem', fontSize: '0.72rem', color: 'var(--text3)' }}>{row.error_class}</span>
-                      )}
-                      {row.fallback_from_provider && (
-                        <span style={{ display: 'block', fontSize: '0.68rem', color: 'var(--text3)' }}>
-                          fallback from {row.fallback_from_provider}
-                        </span>
-                      )}
-                    </td>
-                    <td>{row.latency_ms != null ? `${row.latency_ms}ms` : '—'}</td>
-                    <td style={{ fontSize: '0.72rem', fontFamily: 'monospace' }}>
-                      {row.context_id || '—'}
-                    </td>
+    <div className="admin-card">
+      <div className="admin-card-title">
+        Recent operations
+        <HelpTip text="Redacted attempt log — no prompts or completions. Newest first." />
+      </div>
+      <div className="admin-filter-bar" style={{ marginBottom: '0.75rem', gap: '0.75rem' }}>
+        <label style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>
+          Task
+          <select
+            className="admin-select"
+            style={{ marginLeft: '0.35rem' }}
+            value={taskFilter}
+            onChange={e => changeFilter(setTaskFilter, e.target.value)}
+          >
+            <option value="">All</option>
+            {Object.entries(TASK_LABELS).map(([id, label]) => (
+              <option key={id} value={id}>{label}</option>
+            ))}
+          </select>
+        </label>
+        <label style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>
+          Provider
+          <select
+            className="admin-select"
+            style={{ marginLeft: '0.35rem' }}
+            value={providerFilter}
+            onChange={e => changeFilter(setProviderFilter, e.target.value)}
+          >
+            <option value="">All</option>
+            {(providerOptions || []).map(p => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </label>
+        {(taskFilter || providerFilter) && (
+          <button
+            className="admin-btn admin-btn-ghost"
+            style={{ fontSize: '0.75rem' }}
+            onClick={() => { setOffset(0); setTaskFilter(''); setProviderFilter('') }}
+          >
+            Clear
+          </button>
+        )}
+      </div>
+      <AsyncSection
+        data={rows}
+        error={error}
+        loading={loading}
+        onRetry={load}
+        emptyMessage={taskFilter || providerFilter ? 'No operations match these filters' : 'No AI operations recorded yet'}
+      >
+        {() => (
+          <>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Task</th>
+                    <th>Provider</th>
+                    <th>Model</th>
+                    <th>Result</th>
+                    <th>Latency</th>
+                    <th>Context</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', alignItems: 'center' }}>
-            <button className="admin-btn admin-btn-ghost" disabled={offset === 0} onClick={() => setOffset(o => Math.max(0, o - limit))}>
-              Previous
-            </button>
-            <button className="admin-btn admin-btn-ghost" disabled={offset + limit >= total} onClick={() => setOffset(o => o + limit)}>
-              Next
-            </button>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
-              {offset + 1}–{Math.min(offset + limit, total)} of {total}
-            </span>
-          </div>
-        </div>
-      )}
-    </AsyncSection>
+                </thead>
+                <tbody>
+                  {rows.map(row => (
+                    <tr key={row.operation_id}>
+                      <td style={{ fontSize: '0.78rem', whiteSpace: 'nowrap' }}>{fmtIso(row.started_at)}</td>
+                      <td>{TASK_LABELS[row.task_class] || row.task_class}</td>
+                      <td>{row.provider}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{row.model}</td>
+                      <td>
+                        {successBadge(row.success)}
+                        {row.error_class && !row.success && (
+                          <span style={{ marginLeft: '0.35rem', fontSize: '0.72rem', color: 'var(--text3)' }}>{row.error_class}</span>
+                        )}
+                        {row.fallback_from_provider && (
+                          <span style={{ display: 'block', fontSize: '0.68rem', color: 'var(--text3)' }}>
+                            fallback from {row.fallback_from_provider}
+                          </span>
+                        )}
+                      </td>
+                      <td>{row.latency_ms != null ? `${row.latency_ms}ms` : '—'}</td>
+                      <td style={{ fontSize: '0.72rem', fontFamily: 'monospace' }}>
+                        {row.context_id || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', alignItems: 'center' }}>
+              <button className="admin-btn admin-btn-ghost" disabled={offset === 0} onClick={() => setOffset(o => Math.max(0, o - limit))}>
+                Previous
+              </button>
+              <button className="admin-btn admin-btn-ghost" disabled={offset + limit >= total} onClick={() => setOffset(o => o + limit)}>
+                Next
+              </button>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
+                {offset + 1}–{Math.min(offset + limit, total)} of {total}
+              </span>
+            </div>
+          </>
+        )}
+      </AsyncSection>
+    </div>
   )
 }
 
@@ -430,7 +488,7 @@ export default function AiOperationsPage({ toast, setPage }) {
           loading={loading}
           onRetry={loadCore}
         >
-          {() => (
+          {(list) => (
             <>
               {tab === 'overview' && <OverviewTab overview={overview} setPage={setPage} />}
               {tab === 'providers' && <ProvidersTab providers={providers} />}
@@ -441,7 +499,7 @@ export default function AiOperationsPage({ toast, setPage }) {
         </AsyncSection>
       )}
 
-      {tab === 'activity' && <ActivityTab toast={toast} />}
+      {tab === 'activity' && <ActivityTab toast={toast} providerOptions={models?.providers || []} />}
     </div>
   )
 }
