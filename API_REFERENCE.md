@@ -1199,7 +1199,21 @@ sum deviates by more than 1 × 10⁻⁶.
 
 **Response:** Raw array of `{date, count, critical, kev}` per calendar day (UTC).
 
-**Frontend:** `TimelineHeatmap.jsx` (90-day SVG heatmap; all seven weekday row labels S–S). Chart.js is used only in `BriefCharts.jsx` for the KEV histogram (lazy-loaded Vite chunk; CSP `script-src 'self'` — no CDN).
+---
+
+### GET /api/stats/top-vendors
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `limit` | int | 10 | 1–25 vendors returned |
+
+**Response:** `{data: [{vendor, kev_count}], total_kev}` — aggregates `kev_deadlines` by `vendor_project` (falls back to `product`, then `Unknown vendor`). Cached 45s.
+
+**Frontend:** `BriefCharts.jsx` horizontal bar chart (replaces KEV due-date histogram).
+
+---
+
+**Frontend:** `TimelineHeatmap.jsx` (90-day SVG heatmap; all seven weekday row labels S–S). Chart.js is used in `BriefCharts.jsx` and admin `OpsCharts.jsx` (lazy-loaded Vite chunk; CSP `script-src 'self'` — no CDN).
 
 ---
 

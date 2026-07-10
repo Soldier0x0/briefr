@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { fetchKEVDeadlines, fetchChanges, fetchCVEEpssHistory } from '../api.js'
+import { fetchTopVendors, fetchChanges, fetchCVEEpssHistory } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
 import useAsync from '../hooks/useAsync.js'
 import useVisibilityAwareInterval from '../hooks/useVisibilityAwareInterval.js'
 import { AsyncState, ErrorState, Skeleton } from './ui/index.js'
 import { loadChartJs, readChartTheme } from '../utils/chartLoader.js'
-import { baseChartOptions } from '../utils/chartOptions.js'
-import { kevBucketDateRange } from '../utils/kevDeadline.js'
+import { axisTitle, baseChartOptions } from '../utils/chartOptions.js'
 import {
   buildEpssSparklinePoints,
   epssSparklinePolyline,
@@ -21,59 +20,7 @@ import './BriefCharts.css'
 
 const POLL_MS = 5 * 60 * 1000
 const EPSS_MOVERS_LIMIT = 10
-
-const KEV_BUCKETS = [
-  { key: 'overdue', label: 'Overdue' },
-  { key: '0-7', label: '0–7d' },
-  { key: '8-14', label: '8–14d' },
-  { key: '15-30', label: '15–30d' },
-  { key: '31+', label: '31d+' },
-]
-
-function parseDueDate(dueDate) {
-  if (!dueDate) return null
-  const raw = dueDate.includes('T') ? dueDate : `${dueDate}T12:00:00Z`
-  const due = new Date(raw)
-  return Number.isNaN(due.getTime()) ? null : due
-}
-
-function filterKevByTimeWindow(entries, window) {
-  if (!window) return entries
-  if (window.mode === 'custom') {
-    const since = window.since ? new Date(window.since) : null
-    const until = window.until ? new Date(window.until) : new Date()
-    return entries.filter(row => {
-      const due = parseDueDate(row.due_date)
-      if (!due) return false
-      if (since && due < since) return false
-      if (until && due > until) return false
-      return true
-    })
-  }
-  const days = Math.max(1, Math.ceil((window.hours || 168) / 24))
-  const today = new Date()
-  today.setUTCHours(12, 0, 0, 0)
-  const minDue = new Date(today)
-  minDue.setUTCDate(minDue.getUTCDate() - days)
-  const maxDue = new Date(today)
-  maxDue.setUTCDate(maxDue.getUTCDate() + days)
-  return entries.filter(row => {
-    const due = parseDueDate(row.due_date)
-    if (!due) return false
-    return due >= minDue && due <= maxDue
-  })
-}
-
-function windowSummaryLabel(window) {
-  if (!window) return ''
-  if (window.mode === 'custom') {
-    const since = window.since ? shortDateLabel(window.since.slice(0, 10)) : 'any'
-    const until = window.until ? shortDateLabel(window.until.slice(0, 10)) : 'now'
-    return `Due dates from ${since} through ${until}`
-  }
-  const preset = window.presetId || `${window.hours}h`
-  return `Due dates ±${preset} from today`
-}
+const TOP_VENDOR_LIMIT = 10
 
 function epssDeltaClass(delta) {
   if (delta >= 0.2) return 'badge-epss-delta--high'
@@ -81,49 +28,9 @@ function epssDeltaClass(delta) {
   return 'badge-epss-delta--low'
 }
 
-function shortDateLabel(isoDate) {
-  if (!isoDate) return ''
-  const d = new Date(`${isoDate}T12:00:00Z`)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })
-}
-
-function daysUntilDue(dueDate) {
-  if (!dueDate) return null
-  const raw = dueDate.includes('T') ? dueDate : `${dueDate}T12:00:00Z`
-  const due = new Date(raw)
-  if (Number.isNaN(due.getTime())) return null
-  const today = new Date()
-  today.setUTCHours(12, 0, 0, 0)
-  return Math.round((due.getTime() - today.getTime()) / 86400000)
-}
-
-function kevDueBucket(days) {
-  if (days == null) return '31+'
-  if (days < 0) return 'overdue'
-  if (days <= 7) return '0-7'
-  if (days <= 14) return '8-14'
-  if (days <= 30) return '15-30'
-  return '31+'
-}
-
-function buildKevHistogram(entries) {
-  const counts = Object.fromEntries(KEV_BUCKETS.map(b => [b.key, 0]))
-  for (const row of entries) {
-    const bucket = kevDueBucket(daysUntilDue(row.due_date))
-    counts[bucket] = (counts[bucket] || 0) + 1
-  }
-  return KEV_BUCKETS.map(b => counts[b.key] || 0)
-}
-
-function kevBucketColors(theme) {
-  return [
-    theme.red,
-    theme.red,
-    theme.amber,
-    theme.textMuted,
-    theme.textMuted,
-  ]
+function shortVendorLabel(name) {
+  if (!name) return 'Unknown'
+  return name.length > 28 ? `${name.slice(0, 28)}…` : name
 }
 
 function epssDelta(row) {
@@ -250,36 +157,33 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel 
   )
 }
 
-export default function BriefCharts({ onSelectCVE, onBucketClick, pollEnabled = true }) {
+export default function BriefCharts({ onSelectCVE, pollEnabled = true }) {
   const [collapsed, setCollapsed] = useState(false)
   const [epssHistories, setEpssHistories] = useState({})
   const [epssHistoryLoading, setEpssHistoryLoading] = useState(false)
-  const [kevWindow, setKevWindow] = useState(() => defaultPresetWindow('30d'))
   const [epssWindow, setEpssWindow] = useState(() => defaultPresetWindow('7d'))
 
-  const kevRef = useRef(null)
-  const chartsRef = useRef({ kev: null })
-  const onBucketClickRef = useRef(onBucketClick)
+  const vendorRef = useRef(null)
+  const chartsRef = useRef({ vendor: null })
   const lastFetchedIdsRef = useRef('')
-  onBucketClickRef.current = onBucketClick
 
   const epssHours = hoursFromWindow(epssWindow)
 
   const { data, error, loading, refreshing, retry } = useAsync(async (signal) => {
-    const [kevRes, changesRes] = await Promise.allSettled([
-      fetchKEVDeadlines('urgent'),
+    const [vendorRes, changesRes] = await Promise.allSettled([
+      fetchTopVendors(TOP_VENDOR_LIMIT),
       fetchChanges({ field: 'epss_score', since_hours: epssHours, limit: 50 }),
     ])
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
-    const kevEntries = kevRes.status === 'fulfilled' && Array.isArray(kevRes.value?.data)
-      ? kevRes.value.data
-      : []
+    const vendorPayload = vendorRes.status === 'fulfilled' ? vendorRes.value : null
+    const vendorRows = Array.isArray(vendorPayload?.data) ? vendorPayload.data : []
+    const totalKev = Number(vendorPayload?.total_kev) || 0
     const epssChanges = changesRes.status === 'fulfilled' && Array.isArray(changesRes.value?.data)
       ? changesRes.value.data
       : []
 
-    const failed = [kevRes, changesRes].find(r => r.status === 'rejected')
+    const failed = [vendorRes, changesRes].find(r => r.status === 'rejected')
     if (failed) {
       notifyApiError(failed.reason)
       const reason = failed.reason
@@ -288,25 +192,21 @@ export default function BriefCharts({ onSelectCVE, onBucketClick, pollEnabled = 
         : Object.assign(new Error(reason?.message || 'Failed to load chart data.'), {
             requestId: reason?.requestId ?? null,
           })
-      const hasAny = kevEntries.length > 0 || buildEpssMovers(epssChanges).length > 0
+      const hasAny = vendorRows.length > 0 || buildEpssMovers(epssChanges).length > 0
       if (!hasAny) throw err
-      return { kevEntries, epssChanges, partialError: err }
+      return { vendorRows, totalKev, epssChanges, partialError: err }
     }
 
-    return { kevEntries, epssChanges, partialError: null }
+    return { vendorRows, totalKev, epssChanges, partialError: null }
   }, [epssHours])
 
   useVisibilityAwareInterval(retry, POLL_MS, { enabled: pollEnabled })
 
-  const kevEntries = data?.kevEntries ?? []
+  const vendorRows = data?.vendorRows ?? []
+  const totalKev = data?.totalKev ?? 0
   const epssChanges = data?.epssChanges ?? []
   const partialError = data?.partialError ?? null
 
-  const filteredKevEntries = useMemo(
-    () => filterKevByTimeWindow(kevEntries, kevWindow),
-    [kevEntries, kevWindow]
-  )
-  const kevHistogram = useMemo(() => buildKevHistogram(filteredKevEntries), [filteredKevEntries])
   const epssMovers = useMemo(() => buildEpssMovers(epssChanges), [epssChanges])
 
   useEffect(() => {
@@ -352,78 +252,83 @@ export default function BriefCharts({ onSelectCVE, onBucketClick, pollEnabled = 
   }, [epssMovers])
 
   useEffect(() => {
-    if (collapsed || loading) return undefined
+    if (collapsed || loading || !vendorRows.length) return undefined
 
     let cancelled = false
-    let Chart = null
 
-    async function renderKevChart() {
-      Chart = await loadChartJs()
-      if (cancelled || !kevRef.current) return
+    async function renderVendorChart() {
+      const Chart = await loadChartJs()
+      if (cancelled || !vendorRef.current) return
 
       const theme = readChartTheme()
       const shared = baseChartOptions(theme, { animationDuration: 400, maxRotation: 0 })
 
-      chartsRef.current.kev?.destroy()
-      chartsRef.current.kev = new Chart(kevRef.current, {
+      chartsRef.current.vendor?.destroy()
+      chartsRef.current.vendor = new Chart(vendorRef.current, {
         type: 'bar',
         data: {
-          labels: KEV_BUCKETS.map(b => b.label),
-          datasets: [
-            {
-              label: 'KEV entries',
-              data: kevHistogram,
-              backgroundColor: kevBucketColors(theme),
-              borderWidth: 0,
-              borderRadius: 0,
-            },
-          ],
+          labels: vendorRows.map(row => shortVendorLabel(row.vendor)),
+          datasets: [{
+            label: 'KEV entries',
+            data: vendorRows.map(row => row.kev_count),
+            backgroundColor: theme.accent,
+            borderWidth: 0,
+            borderRadius: 0,
+          }],
         },
         options: {
           ...shared,
+          indexAxis: 'y',
           plugins: {
             ...shared.plugins,
             legend: { display: false },
             tooltip: {
               ...shared.plugins.tooltip,
               callbacks: {
-                afterLabel(ctx) {
-                  const bucket = KEV_BUCKETS[ctx.dataIndex]
-                  if (!bucket) return ''
-                  const range = kevBucketDateRange(bucket.key)
-                  const start = range.start ? shortDateLabel(range.start) : 'any'
-                  const end = range.end ? shortDateLabel(range.end) : 'any'
-                  return `Due ${start} – ${end}`
+                title(ctx) {
+                  const row = vendorRows[ctx[0]?.dataIndex]
+                  return row?.vendor || ctx[0]?.label || ''
+                },
+                label(ctx) {
+                  const count = ctx.parsed.x
+                  return `${count} KEV ${count === 1 ? 'entry' : 'entries'}`
                 },
               },
             },
           },
-          onClick(_event, elements) {
-            if (!elements.length) return
-            const bucket = KEV_BUCKETS[elements[0].index]
-            if (!bucket) return
-            onBucketClickRef.current?.(kevBucketDateRange(bucket.key))
-          },
-          onHover(event, elements) {
-            const target = event.native?.target
-            if (target) {
-              target.style.cursor = elements.length ? 'pointer' : 'default'
-            }
+          scales: {
+            x: {
+              ...shared.scales.x,
+              ticks: {
+                ...shared.scales.x.ticks,
+                precision: 0,
+              },
+              title: axisTitle(theme, 'KEV count'),
+            },
+            y: {
+              ...shared.scales.y,
+              ticks: {
+                ...shared.scales.y.ticks,
+                autoSkip: false,
+                maxRotation: 0,
+                minRotation: 0,
+              },
+            },
           },
         },
       })
     }
 
-    renderKevChart().catch(() => {})
+    renderVendorChart().catch(() => {})
 
     return () => {
       cancelled = true
-      chartsRef.current.kev?.destroy()
-      chartsRef.current.kev = null
+      chartsRef.current.vendor?.destroy()
+      chartsRef.current.vendor = null
     }
-  }, [collapsed, loading, kevHistogram])
+  }, [collapsed, loading, vendorRows])
 
-  const hasData = filteredKevEntries.length > 0 || epssMovers.length > 0
+  const hasData = vendorRows.length > 0 || epssMovers.length > 0
 
   return (
     <section
@@ -468,20 +373,22 @@ export default function BriefCharts({ onSelectCVE, onBucketClick, pollEnabled = 
                   />
                 )}
                 <div className="brief-charts-grid">
-              <article className="brief-chart-card" aria-label="KEV due-date histogram">
+              <article className="brief-chart-card" aria-label="Top KEV vendors">
                 <div className="brief-chart-card-head">
-                  <h3 className="brief-chart-card-title">KEV DUE DATES</h3>
-                  <TimeWindowPicker
-                    value={kevWindow}
-                    onChange={setKevWindow}
-                    ariaLabel="KEV due date window"
-                    presetIds={['6h', '12h', '24h', '2d', '7d', '30d', '90d']}
-                  />
+                  <h3 className="brief-chart-card-title">TOP KEV VENDORS</h3>
                 </div>
-                <p className="brief-chart-card-hint mono">{windowSummaryLabel(kevWindow)}</p>
-                <div className="brief-chart-canvas-wrap brief-chart-canvas-wrap--kev">
-                  <canvas ref={kevRef} role="img" aria-label="KEV remediation deadline histogram" />
-                </div>
+                <p className="brief-chart-card-hint mono">
+                  {totalKev > 0
+                    ? `${totalKev} catalogued KEV ${totalKev === 1 ? 'entry' : 'entries'} grouped by vendor`
+                    : 'No KEV catalog entries yet — wait for ingest.'}
+                </p>
+                {vendorRows.length === 0 ? (
+                  <div className="brief-chart-empty mono">No vendor breakdown available</div>
+                ) : (
+                  <div className="brief-chart-canvas-wrap brief-chart-canvas-wrap--kev">
+                    <canvas ref={vendorRef} role="img" aria-label="Top KEV vendors by entry count" />
+                  </div>
+                )}
               </article>
               <article className="brief-chart-card brief-chart-card--table" aria-label="Top EPSS movers">
                 <div className="brief-chart-card-head">

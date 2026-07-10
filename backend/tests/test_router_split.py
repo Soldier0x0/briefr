@@ -27,6 +27,7 @@ EXPECTED_ROUTES = [
     ("GET", "/api/time"),
     ("GET", "/api/stats"),
     ("GET", "/api/stats/timeline"),
+    ("GET", "/api/stats/top-vendors"),
     ("GET", "/api/cves"),
     ("POST", "/api/cves/match"),
     ("GET", "/api/cves/export"),
