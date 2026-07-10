@@ -2,7 +2,8 @@
 (V1.2 §5.2 router split). One robustness fix on top of the verbatim move:
 spawned ingest tasks are kept strongly referenced (review finding on PR #94).
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
+Copyright © 2026 Sai Harsha Vardhan
+SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
 import asyncio

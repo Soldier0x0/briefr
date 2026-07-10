@@ -121,13 +121,14 @@ app = FastAPI(
     title="BRIEFR CVE Intelligence API",
     version="1.5.0",
     description=(
-        "Proprietary CVE intelligence API. "
-        "Copyright © 2026 Sai Harsha Vardhan. All rights reserved."
+        "CVE intelligence API for BRIEFR. "
+        "Licensed under AGPL-3.0-or-later. "
+        "Copyright © 2026 Sai Harsha Vardhan."
     ),
     contact={"name": "BRIEFR", "url": "https://projectjupiter.in"},
     license_info={
-        "name": "Proprietary — All Rights Reserved",
-        "url": "https://projectjupiter.in/terms",
+        "name": "AGPL-3.0-or-later",
+        "url": "https://www.gnu.org/licenses/agpl-3.0.html",
     },
     docs_url=None if settings.is_production else "/api/docs",
     redoc_url=None if settings.is_production else "/api/redoc",

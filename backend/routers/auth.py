@@ -2,7 +2,8 @@
 /refresh, /me. The sole auth mechanism — the legacy shared admin-key header
 was removed in Sprint A0 (dependencies.require_admin enforces session + role).
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
+Copyright © 2026 Sai Harsha Vardhan
+SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
 from __future__ import annotations

@@ -33,7 +33,8 @@ Four review fixes on top of the verbatim move (PR #96 review):
   API_REFERENCE.md; only legacy rows ever hit this path (ingest always
   writes JSON, column default is '[]').
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
+Copyright © 2026 Sai Harsha Vardhan
+SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
 import asyncio

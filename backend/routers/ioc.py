@@ -6,7 +6,8 @@ finding on PR #95): the cached-hit path now commits, so the feed_cache
 writes made by on-demand GreyNoise/OTX enrichment are no longer rolled
 back on connection close.
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
+Copyright © 2026 Sai Harsha Vardhan
+SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
 import os

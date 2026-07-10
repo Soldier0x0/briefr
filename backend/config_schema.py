@@ -7,7 +7,8 @@ so the frontend can render labels/help text and pre-validate without a
 second hand-maintained copy of the same key list, and adding a new
 writable key is a one-line addition here instead of three.
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
+Copyright © 2026 Sai Harsha Vardhan
+SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
 from __future__ import annotations

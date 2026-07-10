@@ -10,6 +10,7 @@
 | Area | Status |
 |------|--------|
 | **Release** | **v1.5.0** — V1.5 product phases 1–3 + 5 shipped (#373–#376); Phase 4 STIX excluded |
+| **License** | **AGPL-3.0-or-later** (`LICENSE`, `CONTRIBUTING.md`). Active source trees carry SPDX headers; public GitHub flip still gated on beta feedback (Track F). |
 | **Performance (Track I)** | **Complete** (#378–#382): feed scroll isolation (`FeedVisibleRange`), CVE detail enrichments parallel off pool, bulk CVE upsert (`executemany`), `/api/cves` KEV JOIN + 45s count cache + Postgres `pg_trgm` indexes (Alembic `012`). |
 | **Security tail** | CGNAT SSRF block (`100.64.0.0/10`) + refresh rejects past `sessions.expires_at` (#381). **JWT role revalidation** shipped (#392). LLM summary auth remains open. |
 | **Database** | **PostgreSQL required** (`DATABASE_URL`, `BRIEFR_REQUIRE_POSTGRES=1`). SQLite removed from production path. **Intel snapshot:** `scripts/export_intel_snapshot.py` exports allowlisted tables per `docs/DATA_SNAPSHOT.md` with versioned manifest (`format_version: 1`); `scripts/verify_intel_snapshot.py` and `scripts/import_intel_snapshot.py` validate/import bundles; upgrade steps in `docs/OPERATIONS.md`. Postgres CI runs export→restore smoke (`test_intel_snapshot_export.py`). **Backup round-trip:** Postgres CI runs `test_backup_roundtrip_postgres.py` (`run_backup` → wipe → `restore_backup`, row-count assert on `cves` / `kev_deadlines`). |

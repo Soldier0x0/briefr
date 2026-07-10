@@ -13,7 +13,8 @@ sequence so the OpenAPI route list stays byte-identical:
 module-level `app` object (same value, no shape change). `format_time_in_tz`
 stays in routers/health.py (its primary consumer) and is imported here.
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
+Copyright © 2026 Sai Harsha Vardhan
+SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
 import asyncio

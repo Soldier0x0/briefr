@@ -2,7 +2,7 @@
 # BRIEFR
 ### CVE Intelligence & Threat Investigation for Security Analysts
 
-![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)
+![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)
 ![React 19](https://img.shields.io/badge/React-19.2-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.137-green.svg)
@@ -397,13 +397,14 @@ BRIEFR collects no personal data beyond your self-hosted login account, uses htt
 
 ## License
 
-BRIEFR is currently proprietary software.
+BRIEFR is licensed under the **GNU Affero General Public License v3.0 or later**
+(AGPL-3.0-or-later). See [`LICENSE`](LICENSE) for the full text.
 
 Copyright © 2026 Sai Harsha Vardhan.
 
-All rights reserved.
-
-Source code is not licensed for redistribution, modification, or commercial use. See [`LICENSE`](LICENSE).
+Contributions are governed by [`CONTRIBUTING.md`](CONTRIBUTING.md). The repository
+flip to public GitHub is planned after beta feedback; the license applies to
+source in this tree today.
 
 ---
 

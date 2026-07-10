@@ -15,7 +15,8 @@ ones) are negative-cached in ``feed_cache`` so quota is never burned twice
 on the same CVE within the retry window; errors are not cached and retry on
 the next run.
 
-Copyright (c) 2026 Sai Harsha Vardhan. All rights reserved.
+Copyright © 2026 Sai Harsha Vardhan
+SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
 from __future__ import annotations

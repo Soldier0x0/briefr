@@ -12,11 +12,13 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-10 — PR13 read-only DB explorer (#422)
+## 2026-07-10 — PR13 merged (#422); F2 AGPL license (PR open)
 
-**PR open:** deny-by-default `db/explorer_registry.py` + `db/explorer.py`; `GET /api/admin/db-explorer/tables` and `GET /api/admin/db-explorer/tables/{table}/rows`; Admin → **Storage** table browser (`DbExplorerPanel.jsx`); tests `test_db_explorer.py`.
+**Merged:** PR13 read-only DB explorer — `db/explorer_*`, Storage table browser, Gemini fixes (pg_class counts, native `$n` SQL).
 
-**Next after merge:** F2 — LICENSE + CONTRIBUTING + FUNDING.yml.
+**F2 (this branch):** AGPL-3.0-or-later `LICENSE`, `CONTRIBUTING.md`, `.github/FUNDING.yml`, SPDX headers on backend/frontend/scripts sources, README + OpenAPI license metadata.
+
+**Next after F2 merge:** G0 — refresh `LEARNING_PATH` / `ONBOARDING`.
 
 ---
 

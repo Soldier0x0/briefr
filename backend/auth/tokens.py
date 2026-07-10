@@ -5,7 +5,8 @@ tokens are opaque random strings; only their SHA-256 hash is ever persisted
 (see auth/repo.py's `sessions` table) so a DB leak doesn't hand out usable
 tokens.
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
+Copyright © 2026 Sai Harsha Vardhan
+SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
 import hashlib
