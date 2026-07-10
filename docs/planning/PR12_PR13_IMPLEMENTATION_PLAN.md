@@ -40,8 +40,9 @@ radius.
   - `POST /api/admin/config/webhook-test` — test send
 - **Gap:** no `POST`/`DELETE` for new destinations; secrets still primarily in `.env`; UI
   (`WebhooksPage.jsx`) reads config env keys, not destinations API as primary UX.
-- `webhooks_enabled()` currently derives from **env** destinations only — must be fixed before
-  DB-only endpoints work.
+- `webhooks_enabled()` and `configured_channels()` are **synchronous** and read **env only**
+  (`load_env_destinations()`). DB-backed destinations require an explicit refactor before
+  DB-only endpoints work (see **Gemini review §1** below).
 
 ### DB visibility (PR13 baseline)
 
@@ -76,7 +77,10 @@ setups.
 - Legacy env destinations (`discord` / `telegram` / `generic`) keep working unchanged
 - Audit every create / update / delete / test
 - Rebuild **WebhooksPage** around `GET /webhooks/destinations` (not raw ApiKeys config keys)
-- Tests: CRUD, SSRF rejection on write, multi-delivery, env+DB merge, no secret leakage in API
+- Admin **test send** may target a **disabled** destination (verify credentials before enable) —
+  `send_test_message` today returns `destination disabled` when `enabled=false` (see Gemini §2)
+- Tests: CRUD, SSRF rejection on write, multi-delivery, env+DB merge, no secret leakage in API,
+  test-while-disabled for admin only
 
 **Out of scope (Phase A)**
 
@@ -157,14 +161,35 @@ add indexes/constraints + backfill script.
 - [ ] Legacy `.env` single Discord works with zero migration steps
 - [ ] SSRF tests pass for create/update paths
 - [ ] GET destinations never returns full secrets
-- [ ] CRUD/test audited without secrets in detail
+- [ ] Admin test send works on a **disabled** destination (connectivity check before enable)
 - [ ] WebhooksPage is primary management surface
 - [ ] `./scripts/verify-local.sh` green; `--full` when Postgres available
 - [ ] `PRODUCT_STATUS.md`, `API_REFERENCE.md`, `OPERATIONS.md` updated in implementation PR
 
+## Async refactor note (PR12 — Gemini §1, validated)
+
+`webhooks_enabled()` / `configured_channels()` cannot simply call `load_destinations()` without
+becoming `async`. Call sites today include:
+
+| Location | Pattern |
+|----------|---------|
+| `webhooks/engine.py` | `dispatch_event` — async, sync `webhooks_enabled()` guard |
+| `webhooks/alerts.py` | multiple async alert processors, sync guard |
+| `webhooks/sender.py` | sync `discord_configured()` / `telegram_configured()` wrappers |
+| Tests | `test_webhooks_engine.py`, `test_webhooks_sender.py` |
+
+**Implementation options (pick one in Phase A):**
+
+1. **Async helpers (recommended):** `async def webhooks_enabled()` → `await load_destinations()`;
+   update all call sites to `await`. Straightforward; touches alerts + engine + tests.
+2. **Sync cache:** refresh in-memory destination snapshot on CRUD / startup / TTL; keep sync API.
+   Fewer call-site edits; risk stale reads if cache invalidation is missed.
+
+Plan default: **Option 1** unless profiling shows alert-path hot-loop concern.
+
 ## Suggested implementation order (PR12)
 
-1. Fix `webhooks_enabled()` + `load_destinations()` for DB-only destinations
+1. Refactor `webhooks_enabled()` / `configured_channels()` (async + call-site sweep)
 2. Alembic migration (if needed) + backfill test
 3. POST / DELETE / extended PATCH + SSRF on write
 4. Masking on GET + audit hardening
@@ -202,8 +227,12 @@ masked columns, **no arbitrary SQL** — for debugging without `psql`.
   - Optional **single-column equality filter** on allowlisted columns only (e.g. `cve_id`, `key`)
   - **No** client `ORDER BY`, no joins, no free-text SQL
 - Admin UI: table picker → headers → paginated rows
-- Column mask list (truncate or redact): `password_hash`, `refresh_token_hash`, `config_json`,
-  `profile_json`, large JSON blobs
+- Column mask list focused on **allowed Tier 1/2 tables** (Tier 3 tables are denied — masking
+  `password_hash` / `refresh_token_hash` there is moot). Priority masks:
+  - `sync_state.value` (if Option B key allowlist — may hold operator settings)
+  - `webhook_delivery_log.error` (may echo webhook URLs/tokens from upstream)
+  - `audit_log` detail fields that could contain config snippets
+  - Large JSON/TEXT blobs (truncate ~2 KB, `truncated: true`)
 - **Hard deny tables:** `users`, `sessions`, `webhook_destinations`, `app_settings`,
   `alembic_version` (and others per registry)
 - Audit: `db.explorer.browse.{table}` with filter summary — **no row body**
@@ -331,12 +360,26 @@ Default rule: **deny** — table not in registry → 404.
 
 ---
 
+## Gemini review reconciliation (PR #409, 2026-07-10)
+
+| # | Comment | Verdict | Action |
+|---|---------|---------|--------|
+| 1 | `webhooks_enabled()` must become async (or use cache) for DB destinations | **Valid** | Added async refactor note + call-site table; default Option 1 |
+| 2 | Allow admin test of **disabled** destinations before enable | **Valid** | Added to Phase A scope; `send_test_message` guard is real (engine.py L258–264) |
+| 3 | Masking should target allowed-table columns, not denied-table columns | **Valid** | Rewrote Phase A mask list; Tier 3 deny list unchanged |
+
+No Gemini inline comments rejected. CodeRabbit skipped (draft PR).
+
+---
+
 ## Validation checklist (for Cloud Code / review on this plan)
 
 - [ ] Phase boundaries are clear; no scope creep into V2 platform
 - [ ] PR12 migration needs match actual `webhook_destinations` schema
 - [ ] PR13 allowlist aligns with `DATA_SNAPSHOT.md` OPERATOR exclusions
 - [ ] Security mitigations are testable (named pytest files)
+- [ ] PR12 async refactor approach chosen (Option 1 vs 2)
+- [ ] PR12 test-while-disabled scoped to admin test endpoint only
 - [ ] Acceptance criteria are measurable
 - [ ] Open questions answered or explicitly deferred with default
 - [ ] No contradiction with `CLAUDE.md` danger zones (SQL dialect, migrations forward-only)
