@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import glob
 import logging
 import os
@@ -57,6 +58,44 @@ def _versioned_pg_tool_paths(name: str) -> list[str]:
 
     paths = glob.glob(f"/usr/lib/postgresql/*/bin/{name}")
     return sorted(paths, key=_version_key, reverse=True)
+
+
+def postgres_server_live(url: str | None = None) -> bool:
+    """True when ``url`` (or ``DATABASE_URL``) points at a reachable Postgres server."""
+    raw = url if url is not None else os.environ.get("DATABASE_URL", "")
+    if not raw.startswith("postgresql"):
+        return False
+
+    async def _ping() -> None:
+        import asyncpg
+
+        conn = await asyncpg.connect(postgres_dsn(raw), timeout=5)
+        await conn.close()
+
+    try:
+        asyncio.run(_ping())
+        return True
+    except Exception:
+        return False
+
+
+def pg_dump_available() -> bool:
+    """True when ``pg_dump`` is on PATH or in a Debian versioned client dir."""
+    try:
+        _pg_tool("pg_dump")
+        return True
+    except RuntimeError:
+        return False
+
+
+def postgres_backup_tools_available() -> bool:
+    """Live Postgres backup round-trip needs both ``pg_dump`` and ``pg_restore``."""
+    try:
+        _pg_tool("pg_dump")
+        _pg_tool("pg_restore")
+        return True
+    except RuntimeError:
+        return False
 
 
 def _pg_tool(name: str) -> str:

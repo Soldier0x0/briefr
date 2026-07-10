@@ -31,12 +31,28 @@ def _postgres_dsn_or_none() -> str | None:
     return url if url.startswith("postgresql") else None
 
 
+_postgres_live: bool | None = None
+
+
+def _postgres_is_live() -> bool:
+    """True when DATABASE_URL points at Postgres and the server accepts connections."""
+    global _postgres_live
+    if _postgres_live is not None:
+        return _postgres_live
+    from backup.postgres_util import postgres_server_live
+
+    _postgres_live = postgres_server_live()
+    return _postgres_live
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _postgres_schema_once():
     """Apply Alembic migrations once per session via a standalone asyncpg
     connection — never via the pool, which would bind it to this fixture's
-    closing event loop (see tests/test_postgres_pool.py). No-op on SQLite."""
-    if _postgres_dsn_or_none() is None:
+    closing event loop (see tests/test_postgres_pool.py). No-op on SQLite or
+    when Postgres is configured but unreachable (common on Windows dev boxes
+    with DATABASE_URL in .env but no local server)."""
+    if not _postgres_is_live():
         yield
         return
 
@@ -73,12 +89,15 @@ def _postgres_schema_once():
 @pytest.fixture(autouse=True)
 def _postgres_test_isolation(_postgres_schema_once):
     """Truncate all app tables before each test when DATABASE_URL is
-    Postgres — reproduces the fresh-temp-file isolation SQLite tests get
-    from tmp_path. No-op on SQLite (the default CI/local test run)."""
-    dsn = _postgres_dsn_or_none()
-    if dsn is None:
+    Postgres and the server is reachable — reproduces the fresh-temp-file
+    isolation SQLite tests get from tmp_path. No-op on SQLite (the default
+    CI/local test run) or when Postgres is configured but down."""
+    if not _postgres_is_live():
         yield
         return
+
+    dsn = _postgres_dsn_or_none()
+    assert dsn is not None
 
     async def _truncate() -> None:
         import asyncpg

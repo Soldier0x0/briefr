@@ -12,6 +12,19 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — Quality watchlist: bundle audit + Windows backup skipif
+
+**Verified:** Entry bundle **317 kB raw** (under I8 ≤500 kB target). ~1.7 MB was total
+lazy JS, not entry — splitting intact.
+
+**Shipped:** `conftest.py` degrades to SQLite when `DATABASE_URL` points at unreachable
+Postgres; backup round-trip skips when `pg_dump`/`pg_restore` missing
+(`backup.postgres_util.postgres_backup_tools_available`).
+
+**Next (live queue):** AI-3 (data-gated) or activate a parked track.
+
+---
+
 ## 2026-07-10 — Docs reconciled to `main` (#421); operator backlog added
 
 **Context:** Operator session inventory found stale docs (HANDOVER stopped at #417;
@@ -34,7 +47,7 @@ and M/N security/wallboard planning docs.
 **Next (live queue):**
 1. **AI-3** — quota/health/routing automation — **only if** `ai_operations` data
    shows real fallback/quota pressure (otherwise skip).
-2. **Quality watchlist** — entry bundle regression, Windows backup-test `skipif`.
+2. **Quality watchlist** — entry bundle verified; Windows backup-test skipif shipped (see entry above).
 3. **Parked** — Wave 4, Track I Phase 3, STIX export — explicit maintainer signal.
 
 **Discussion-only (no code until go-ahead):** Tracks **K5**, **M**, **N**, **O** — see
