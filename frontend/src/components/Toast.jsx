@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle2, XCircle, AlertTriangle, Info, X, Copy } from 'lucide-react'
 
@@ -54,7 +54,7 @@ export function notifyApiError(err) {
 
 function useToastState() {
   const [toasts, setToasts] = useState([])
-  const lastShownRef = useRef({ message: '', at: 0 })
+  const lastShownRef = useRef({ message: '', variant: '', requestId: null, at: 0 })
 
   const dismiss = useCallback((id) => {
     setToasts(t => t.map(x => (x.id === id ? { ...x, leaving: true } : x)))
@@ -67,11 +67,18 @@ function useToastState() {
     if (
       payload.message
       && payload.message === lastShownRef.current.message
+      && payload.variant === lastShownRef.current.variant
+      && payload.requestId === lastShownRef.current.requestId
       && now - lastShownRef.current.at < DEDUPE_WINDOW_MS
     ) {
       return
     }
-    lastShownRef.current = { message: payload.message, at: now }
+    lastShownRef.current = {
+      message: payload.message,
+      variant: payload.variant,
+      requestId: payload.requestId,
+      at: now,
+    }
 
     const id = now + Math.random()
     setToasts(t => {
@@ -84,11 +91,12 @@ function useToastState() {
 }
 
 export function ToastProvider({ children }) {
-  const api = useToastState()
+  const { toasts, show, dismiss } = useToastState()
+  const api = useMemo(() => ({ show, dismiss }), [show, dismiss])
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <ToastArea toasts={api.toasts} onDismiss={api.dismiss} />
+      <ToastArea toasts={toasts} onDismiss={dismiss} />
     </ToastContext.Provider>
   )
 }
