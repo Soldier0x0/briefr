@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ai import llm_router as router
 from ai.llm_router import LLMCompletion, chat_completion_task
+from db.config import is_postgres
 from resilient_client import CircuitOpenError
 
 
@@ -150,3 +151,50 @@ def test_chat_completion_task_returns_none_when_all_fail(monkeypatch):
         )
 
     assert asyncio.run(run()) is None
+
+
+def test_chat_completion_task_records_operations(tmp_path, monkeypatch):
+    if not is_postgres():
+        db_path = tmp_path / "llm_router_ops.db"
+        monkeypatch.setenv("DB_PATH", str(db_path))
+        monkeypatch.setattr("database.DB_PATH", str(db_path))
+    monkeypatch.setenv("AI_OPERATIONS_RECORD", "1")
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
+    monkeypatch.setenv("GEMINI_API_KEY", "gem_test")
+
+    async def fake_call(step, **_kwargs):
+        if step.provider == "groq":
+            raise RuntimeError("groq down")
+        if step.provider == "gemini":
+            return "backup answer"
+        return ""
+
+    monkeypatch.setattr(router, "_call_provider", fake_call)
+
+    async def run():
+        from database import count_ai_operations, get_db, init_db, list_ai_operations
+
+        await init_db()
+        result = await chat_completion_task(
+            "product_extraction",
+            messages=[{"role": "user", "content": "hi"}],
+            cve_id="CVE-2024-9999",
+        )
+        db = await get_db()
+        try:
+            count = await count_ai_operations(db)
+            rows = await list_ai_operations(db, limit=10)
+        finally:
+            await db.close()
+        return result, count, rows
+
+    result, count, rows = asyncio.run(run())
+    assert result is not None
+    assert result.provider == "gemini"
+    assert count == 2
+    by_provider = {row["provider"]: row for row in rows}
+    assert by_provider["groq"]["success"] in (False, 0)
+    assert by_provider["groq"]["error_class"] == "unknown"
+    assert by_provider["gemini"]["success"] in (True, 1)
+    assert by_provider["gemini"]["retry_index"] == 1
+

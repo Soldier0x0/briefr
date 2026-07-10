@@ -32,6 +32,7 @@ from db.sync_state import *
 from db.app_settings import *
 from db.metadata import *
 from db.webhooks import *
+from db.ai_operations import *
 
 # Re-export constants (also covered by the star-imports above; explicit here
 # for discoverability, per docs/REFACTOR_PLAN.md's shim template).

@@ -590,6 +590,9 @@ async def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_webhook_delivery_log_event ON webhook_delivery_log(event_type)",
             "CREATE TABLE IF NOT EXISTS webhook_destination_dedupe (destination_id TEXT NOT NULL, event_type TEXT NOT NULL, dedupe_key TEXT NOT NULL, recorded_at TEXT DEFAULT (datetime('now')), PRIMARY KEY (destination_id, event_type, dedupe_key))",
             "CREATE INDEX IF NOT EXISTS idx_webhook_dest_dedupe_event ON webhook_destination_dedupe(event_type, dedupe_key)",
+            "CREATE TABLE IF NOT EXISTS ai_operations (id INTEGER PRIMARY KEY AUTOINCREMENT, operation_id TEXT NOT NULL, request_id TEXT, started_at TEXT DEFAULT (datetime('now')), latency_ms INTEGER, feature TEXT NOT NULL, task_class TEXT NOT NULL, provider TEXT NOT NULL, model TEXT NOT NULL, success INTEGER NOT NULL DEFAULT 0, error_class TEXT, input_tokens INTEGER, output_tokens INTEGER, total_tokens INTEGER, estimated_cost_usd REAL, fallback_from_provider TEXT, fallback_from_model TEXT, retry_index INTEGER NOT NULL DEFAULT 0, context_type TEXT, context_id TEXT)",
+            "CREATE INDEX IF NOT EXISTS idx_ai_operations_started ON ai_operations(started_at)",
+            "CREATE INDEX IF NOT EXISTS idx_ai_operations_task_provider ON ai_operations(task_class, provider)",
             # Correlation v2 Phase 1
             """
             CREATE TABLE IF NOT EXISTS otx_pulses (
