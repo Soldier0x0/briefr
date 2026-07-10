@@ -66,6 +66,16 @@ def embeddings_enabled() -> bool:
     )
 
 
+def embeddings_auto_on_ingest_enabled() -> bool:
+    return embeddings_enabled() and os.environ.get(
+        "EMBEDDINGS_AUTO_ON_INGEST", "0"
+    ).strip().lower() in ("1", "true", "yes")
+
+
+def get_embeddings_ingest_max_per_run() -> int:
+    return int(os.environ.get("EMBEDDINGS_INGEST_MAX_PER_RUN", "25"))
+
+
 def get_embeddings_model_name() -> str:
     return (
         os.environ.get("EMBEDDINGS_MODEL", DEFAULT_EMBEDDINGS_MODEL).strip()
@@ -131,18 +141,31 @@ def _embed_texts(model, texts: list[str]) -> list[np.ndarray]:
     return [np.asarray(vec, dtype="<f4") for vec in model.embed(texts)]
 
 
-async def run_embeddings_backfill(db, progress_cb=None) -> dict:
+async def run_embeddings_backfill(
+    db,
+    progress_cb=None,
+    *,
+    cve_id_filter: set[str] | None = None,
+) -> dict:
     """Embed CVE descriptions that have no vector for the active model.
 
     Scheduler-side only. Batched + committed per batch so an interrupted run
-    resumes where it left off; capped per run by EMBEDDINGS_MAX_PER_RUN.
+    resumes where it left off; capped per run by EMBEDDINGS_MAX_PER_RUN (or
+    EMBEDDINGS_INGEST_MAX_PER_RUN when ``cve_id_filter`` is set).
     """
     global _missing_dep_logged
 
     model_name = get_embeddings_model_name()
-    pending = await get_cves_missing_embeddings(
-        db, model_name, limit=get_embeddings_max_per_run()
+    cap = (
+        get_embeddings_ingest_max_per_run()
+        if cve_id_filter
+        else get_embeddings_max_per_run()
     )
+    pending = await get_cves_missing_embeddings(db, model_name, limit=cap * 4)
+    if cve_id_filter:
+        pending = [row for row in pending if row["cve_id"] in cve_id_filter][:cap]
+    else:
+        pending = pending[:cap]
     if not pending:
         return {"embedded": 0, "model": model_name}
 
