@@ -12,11 +12,23 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-09 — UX audit implementation: no-merge until Gemini review
+
+**Maintainer directive:** Implement all 11 audit PRs in approved order; **do not merge** any PR until Gemini inline review quota returns (~24h). GitHub Actions will fail (quota exhausted) — **`./scripts/verify-local.sh` is the only merge gate** when merging later.
+
+**Workflow per PR:** branch off `main` → implement + cross-surface sweep → local verify green → push → **draft PR** → next PR (do not merge).
+
+**Order:** PR1 → PR3 → PR4 → PR2 → PR10 → PR7 → PR5 → PR6 → PR9 → PR11 → PR8. PR12/PR13 deferred.
+
+**In progress:** PR1 draft **#398** pushed (`cursor/ux-audit-pr1-scheduler-catalog-489a`) — local verify green; **not merged**. Next: PR3 off `main`.
+
+---
+
 ## 2026-07-09 — Visual/ops UX audit: execution order + cross-surface methodology
 
 **Docs:** `docs/planning/BRIEFR_VISUAL_OPERATIONAL_UX_AUDIT.md` updated with **approved PR sequence**, **product SWOT**, **implementation pass SWOT**, cross-surface methodology, and pattern inventory.
 
-**Next implementation PR:** PR1 (scheduler state + catalog) on branch `cursor/scheduler-state-catalog-489a`.
+**Next implementation PR:** PR1 — branch `cursor/ux-audit-pr1-scheduler-catalog-489a` (see no-merge workflow entry above).
 
 ---
 

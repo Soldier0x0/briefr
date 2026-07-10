@@ -1,6 +1,7 @@
 // Pure derivation helpers for the Analyst "Intel status" view.
 import { sourceLabel } from './formatters.js'
 import { fmtAge } from './formatters.js'
+import { jobLabel } from './catalog.js'
 
 export const ANALYST_SCHEDULE_TABLE_JOB_IDS = [
   'nvd_incremental_sync',
@@ -55,7 +56,7 @@ export function collectHealthIssues(system) {
     issues.push('Incident news feed — snapshot is stale')
   }
   for (const err of system.recent_errors || []) {
-    issues.push(`Scheduler job failed — ${err.job_id}`)
+    issues.push(`Scheduler job failed — ${jobLabel(err.job_id, 'analyst')}`)
   }
   if (system.db_integrity?.ok === false) {
     issues.push('Database integrity check failed on last startup')
