@@ -27,7 +27,7 @@ export default function GuardedPurgePanel({ targets }) {
   if (!target) return null
 
   return (
-    <div className="purge-panel">
+    <div className="purge-panel purge-panel--compact">
       <select className="admin-select" value={selected} onChange={e => selectTarget(e.target.value)}>
         {targets.map(t => <option key={t.target} value={t.target}>{t.title}</option>)}
       </select>

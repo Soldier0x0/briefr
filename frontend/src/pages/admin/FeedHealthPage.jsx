@@ -3,6 +3,7 @@ import { CheckCircle2, AlertTriangle, XCircle, RefreshCw } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import { fmtIso, sourceLabel } from './formatters.js'
 import HelpTip from './shared/HelpTip.jsx'
+import AdminDataGrid from './shared/AdminDataGrid.jsx'
 import { useOperations } from './shared/OperationTracker.jsx'
 
 function FeedSourceCard({
@@ -224,21 +225,25 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
             </div>
           )}
           {healthy.length > 0 && (
-            <div style={{ marginBottom: '1.25rem' }}>
+            <div className="feed-health-table-wrap" style={{ marginBottom: '1.25rem' }}>
               <div className="admin-card-title" style={{ color: 'var(--green)' }}>Healthy ({healthy.length})</div>
-              <div className="feed-card-grid">
-                {healthy.map(([key, s]) => (
-                  <FeedSourceCard
-                    key={key}
-                    entryKey={key}
-                    s={s}
-                    isAnalyst={isAnalyst}
-                    highlighted={highlightSource === key}
-                    resetting={Boolean(resetting[key])}
-                    onReset={resetCircuit}
-                  />
-                ))}
-              </div>
+              <AdminDataGrid
+                gridId="feed-health-healthy"
+                emptyMessage="No healthy sources"
+                columns={[
+                  { id: 'source', label: 'Source', defaultVisible: true, minWidth: 140, render: (r) => sourceLabel(r.id) },
+                  { id: 'status', label: 'Status', defaultVisible: true, width: 100, render: () => (
+                    <span className="badge badge-ok">OK</span>
+                  ) },
+                  { id: 'last_success', label: 'Last check', defaultVisible: true, minWidth: 160, render: (r) => (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
+                      {r.last_success ? fmtIso(r.last_success) : 'Never succeeded'}
+                    </span>
+                  ) },
+                ]}
+                rows={healthy.map(([key, s]) => ({ id: key, last_success: s.last_success }))}
+                rowKey={(r) => r.id}
+              />
             </div>
           )}
         </>
