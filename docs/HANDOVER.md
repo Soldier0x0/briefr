@@ -12,6 +12,14 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — AI-1 ai_operations + model catalog (#TBD)
+
+**Merged:** Alembic 014 `ai_operations`, recorder on `chat_completion_task`, `ai/model_catalog.py` SSOT, `GET /api/admin/ai/operations/models`. Recording gated by `AI_OPERATIONS_RECORD` (default on); no prompt text stored.
+
+**Next:** AI-2 — Admin AI Operations page (read-only overview/providers/activity).
+
+---
+
 ## 2026-07-10 — PR12 series complete (#413–#415); next AI-1
 
 **Merged:** #413 PR12a, #414 PR12b, #415 PR12c — full multi-webhook stack (async guards, CRUD API, per-destination dedupe, Webhooks admin UI).

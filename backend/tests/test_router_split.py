@@ -120,6 +120,7 @@ EXPECTED_ROUTES = [
     ("POST", "/api/admin/incidents/refresh"),
     ("GET", "/api/admin/webhooks/log"),
     ("GET", "/api/admin/webhooks/delivery-log"),
+    ("GET", "/api/admin/ai/operations/models"),
     ("GET", "/api/admin/logs"),
     ("GET", "/api/admin/security"),
     ("POST", "/api/admin/restart"),

@@ -11,9 +11,11 @@ import os
 from dataclasses import dataclass
 from typing import Literal
 
-from ai.gemini_client import gemini_chat_completion, gemini_model
-from ai.groq_config import GROQ_MODEL, GROQ_MODEL_SUMMARY, GROQ_URL
+from ai.gemini_client import gemini_chat_completion
+from ai.groq_config import GROQ_URL
+from ai.model_catalog import ProviderStep, gemini_model, task_chain
 from ai.openai_chat import openai_chat_completion
+from ai.operations_recorder import AttemptTimer, classify_llm_error, record_llm_attempt
 from api_queue_operations import LLM_TASK_OPERATIONS
 from resilient_client import CircuitOpenError
 
@@ -33,60 +35,15 @@ _PROVIDER_ENV_KEYS = {
 
 
 @dataclass(frozen=True)
-class ProviderStep:
-    provider: str
-    model: str
-
-
-@dataclass(frozen=True)
 class LLMCompletion:
     content: str
     provider: str
     model: str
 
 
-def _env_model(key: str, default: str) -> str:
-    return os.environ.get(key, default).strip() or default
-
-
-def _openrouter_free_model(task: LLMTask) -> str:
-    if task == "pdf_summary":
-        return _env_model(
-            "OPENROUTER_MODEL_PDF",
-            "google/gemini-2.0-flash-lite-001:free",
-        )
-    if task == "detection_context":
-        return _env_model(
-            "OPENROUTER_MODEL_DETECTION",
-            "google/gemini-2.0-flash-lite-001:free",
-        )
-    return _env_model(
-        "OPENROUTER_MODEL_PRODUCT",
-        "google/gemini-2.0-flash-lite-001:free",
-    )
-
-
 def _task_chain(task: LLMTask) -> list[ProviderStep]:
-    cerebras_model = _env_model("CEREBRAS_MODEL", "gpt-oss-120b")
-    if task == "detection_context":
-        return [
-            ProviderStep("groq", GROQ_MODEL),
-            ProviderStep("gemini", gemini_model()),
-            ProviderStep("openrouter", _openrouter_free_model(task)),
-        ]
-    if task == "pdf_summary":
-        return [
-            ProviderStep("groq", GROQ_MODEL_SUMMARY),
-            ProviderStep("gemini", gemini_model()),
-            ProviderStep("cerebras", cerebras_model),
-            ProviderStep("openrouter", _openrouter_free_model(task)),
-        ]
-    return [
-        ProviderStep("groq", GROQ_MODEL),
-        ProviderStep("gemini", gemini_model()),
-        ProviderStep("cerebras", cerebras_model),
-        ProviderStep("openrouter", _openrouter_free_model(task)),
-    ]
+    """Backward-compatible alias — SSOT is ai.model_catalog.task_chain."""
+    return task_chain(task)
 
 
 def any_llm_provider_configured() -> bool:
@@ -200,6 +157,34 @@ async def _call_provider(
     return ""
 
 
+async def _record_attempt(
+    *,
+    task: LLMTask,
+    step: ProviderStep,
+    timer: AttemptTimer,
+    success: bool,
+    retry_index: int,
+    queue_context_type: str,
+    queue_context_id: str,
+    error_class: str | None = None,
+    fallback_from_provider: str | None = None,
+    fallback_from_model: str | None = None,
+) -> None:
+    await record_llm_attempt(
+        task=task,
+        provider=step.provider,
+        model=step.model,
+        success=success,
+        latency_ms=timer.elapsed_ms(),
+        retry_index=retry_index,
+        context_type=queue_context_type,
+        context_id=queue_context_id,
+        error_class=error_class,
+        fallback_from_provider=fallback_from_provider,
+        fallback_from_model=fallback_from_model,
+    )
+
+
 async def chat_completion_task(
     task: LLMTask,
     *,
@@ -214,9 +199,14 @@ async def chat_completion_task(
     queue_context_type = "cve" if cve_id else "task"
     queue_context_id = cve_id if cve_id else task
 
+    attempt_index = 0
+    last_failed_provider: str | None = None
+    last_failed_model: str | None = None
+
     for step in _task_chain(task):
         if not _api_key(step.provider):
             continue
+        timer = AttemptTimer()
         try:
             content = (
                 await _call_provider(
@@ -231,12 +221,36 @@ async def chat_completion_task(
                 )
             ).strip()
             if content:
+                await _record_attempt(
+                    task=task,
+                    step=step,
+                    timer=timer,
+                    success=True,
+                    retry_index=attempt_index,
+                    queue_context_type=queue_context_type,
+                    queue_context_id=queue_context_id,
+                    fallback_from_provider=last_failed_provider,
+                    fallback_from_model=last_failed_model,
+                )
                 return LLMCompletion(
                     content=content,
                     provider=step.provider,
                     model=step.model,
                 )
             logger.warning("LLM %s returned empty content for task %s", step.provider, task)
+            await _record_attempt(
+                task=task,
+                step=step,
+                timer=timer,
+                success=False,
+                retry_index=attempt_index,
+                queue_context_type=queue_context_type,
+                queue_context_id=queue_context_id,
+                error_class=classify_llm_error(None, empty=True),
+            )
+            last_failed_provider = step.provider
+            last_failed_model = step.model
+            attempt_index += 1
         except CircuitOpenError as exc:
             logger.warning(
                 "LLM circuit open for %s (task %s) — trying next provider: %s",
@@ -244,6 +258,19 @@ async def chat_completion_task(
                 task,
                 exc,
             )
+            await _record_attempt(
+                task=task,
+                step=step,
+                timer=timer,
+                success=False,
+                retry_index=attempt_index,
+                queue_context_type=queue_context_type,
+                queue_context_id=queue_context_id,
+                error_class=classify_llm_error(exc),
+            )
+            last_failed_provider = step.provider
+            last_failed_model = step.model
+            attempt_index += 1
         except Exception as exc:
             logger.warning(
                 "LLM %s failed for task %s — trying next provider: %s",
@@ -251,4 +278,17 @@ async def chat_completion_task(
                 task,
                 exc,
             )
+            await _record_attempt(
+                task=task,
+                step=step,
+                timer=timer,
+                success=False,
+                retry_index=attempt_index,
+                queue_context_type=queue_context_type,
+                queue_context_id=queue_context_id,
+                error_class=classify_llm_error(exc),
+            )
+            last_failed_provider = step.provider
+            last_failed_model = step.model
+            attempt_index += 1
     return None

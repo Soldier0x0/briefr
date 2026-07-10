@@ -1900,6 +1900,13 @@ async def get_webhooks_delivery_log(
     }
 
 
+@router.get("/ai/operations/models")
+async def get_ai_operations_models(request: Request):
+    from ai.model_catalog import models_catalog_payload
+
+    return models_catalog_payload()
+
+
 # ── Logs ───────────────────────────────────────────────────────────────────
 
 

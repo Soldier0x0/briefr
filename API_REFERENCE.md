@@ -1278,6 +1278,9 @@ Query `confirm_text=delete` (see `GET /api/admin/destructive-actions`). Deletes 
 ### GET /api/admin/webhooks/delivery-log
 Params: `destination_id`, `event_type`, `limit`, `offset`. Returns `{rows: [{id, destination_id, event_type, dedupe_key, status, error, attempted_at}], total}`.
 
+### GET /api/admin/ai/operations/models
+Read-only model catalog SSOT for LLM task failover chains. Returns `{providers: string[], tasks: {task: [{provider, model, order}]}, env_keys: object}` — no secrets.
+
 ### POST /api/admin/config/webhook-test
 Body `{destination_id}` or legacy `{channel}` (`discord` / `telegram` / `generic`). Sends a test message via the SSRF-safe webhook client. **Works on disabled destinations** (connectivity check before enable). Audit: `webhook.test.{destination_id}`.
 
