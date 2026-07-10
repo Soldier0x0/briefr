@@ -98,4 +98,9 @@ async def get_correlation_admin_status(db: Any) -> dict[str, Any]:
             "ioc_sync_pending_pulses": ioc_backlog_pulses,
         },
         "suppressions_count": suppressions_count,
+        "features": {
+            "clusters_api": "/api/correlation/clusters",
+            "feed_campaign_sort_boost": True,
+            "cve_cluster_filter": True,
+        },
     }

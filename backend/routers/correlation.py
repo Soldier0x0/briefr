@@ -15,6 +15,11 @@ async def correlation_clusters(
         max_length=500,
         description="Comma-separated stack terms (same matching as /api/cves stack filter)",
     ),
+    cve_id: str | None = Query(
+        default=None,
+        max_length=32,
+        description="Return only campaigns that include this CVE",
+    ),
     limit: int = Query(default=20, ge=1, le=100),
     include_stale: bool = Query(
         default=False,
@@ -27,6 +32,7 @@ async def correlation_clusters(
         return await list_correlation_clusters(
             db,
             stack=stack,
+            cve_id=cve_id,
             limit=limit,
             include_stale=include_stale,
         )

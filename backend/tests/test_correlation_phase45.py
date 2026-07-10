@@ -210,6 +210,19 @@ def test_correlation_clusters_registered_in_openapi():
     assert ("GET", "/api/correlation/clusters") in routes
 
 
+def test_correlation_clusters_cve_id_filter(client):
+    res = client.get(
+        "/api/correlation/clusters",
+        params={"cve_id": "CVE-2026-CLU-002", "limit": 10},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["meta"]["cve_id"] == "CVE-2026-CLU-002"
+    labels = {cluster["label"] for cluster in body["clusters"]}
+    assert "Log4j campaign" in labels
+    assert "Nginx campaign" not in labels
+
+
 def test_admin_correlation_status(admin_client):
     res = admin_client.get("/api/admin/correlation/status")
     assert res.status_code == 200
@@ -217,6 +230,7 @@ def test_admin_correlation_status(admin_client):
     assert body["last_run"]
     assert body["build_watermark"]
     assert body["campaigns"]["total"] >= 2
+    assert body["features"]["feed_campaign_sort_boost"] is True
     assert body["coverage"]["cves_total"] == 4
     assert body["coverage"]["otx_pulses_linked"] == 2
     assert body["coverage"]["otx_pulses_with_iocs"] == 1
