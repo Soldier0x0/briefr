@@ -38,6 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
 import asyncio
+import base64
 import hashlib
 import json
 import logging
@@ -409,6 +410,23 @@ def _stack_match_clause(stack: str | None) -> tuple[str, list, list[str]]:
     return "(" + " OR ".join(parts) + ")", params, terms
 
 
+CVE_KEYSET_ORDER_BY = """
+    ORDER BY c.published DESC, c.cve_id DESC
+"""
+
+
+def _encode_feed_cursor(published: str, cve_id: str) -> str:
+    raw = f"{published or ''}\t{cve_id}"
+    return base64.urlsafe_b64encode(raw.encode()).decode().rstrip("=")
+
+
+def _decode_feed_cursor(cursor: str) -> tuple[str, str]:
+    pad = "=" * (-len(cursor) % 4)
+    decoded = base64.urlsafe_b64decode((cursor + pad).encode()).decode()
+    published, cve_id = decoded.split("\t", 1)
+    return published, cve_id
+
+
 CVE_ORDER_BY = """
     ORDER BY
         CASE WHEN w.state = 'pin' THEN 0 ELSE 1 END,
@@ -684,6 +702,15 @@ async def list_cves(
     watchlist_only: bool = Query(default=False),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=50),
+    pagination: str | None = Query(
+        default=None,
+        description="Set to 'keyset' for cursor-based feed pagination (chronological order).",
+    ),
+    cursor: str | None = Query(
+        default=None,
+        max_length=256,
+        description="Keyset cursor (published+cve_id). Use with pagination=keyset.",
+    ),
 ):
     conditions, params, stack_products = _build_cve_filters(
         severity,
@@ -708,36 +735,71 @@ async def list_cves(
     if conditions:
         where_clause = "WHERE " + " AND ".join(conditions)
 
-    offset = (page - 1) * limit
+    keyset_mode = (pagination or "").strip().lower() == "keyset"
+    cursor_params: list = []
+    if keyset_mode:
+        order_by = CVE_KEYSET_ORDER_BY
+        fetch_limit = limit + 1
+        offset = 0
+        page = 1
+        if (cursor or "").strip():
+            try:
+                cursor_published, cursor_cve_id = _decode_feed_cursor(cursor.strip())
+            except (ValueError, UnicodeDecodeError) as exc:
+                raise HTTPException(status_code=400, detail="Invalid feed cursor") from exc
+            cursor_predicate = (
+                " AND (c.published < ? OR (c.published = ? AND c.cve_id < ?))"
+            )
+            if where_clause:
+                where_clause += cursor_predicate
+            else:
+                where_clause = "WHERE 1=1" + cursor_predicate
+            cursor_params = [cursor_published, cursor_published, cursor_cve_id]
+    else:
+        offset = (page - 1) * limit
+        order_by = CVE_ORDER_BY
+        fetch_limit = limit
 
     db = await get_db()
     try:
         async def _fetch_total() -> int:
             count_rows = await db.execute_fetchall(
                 f"SELECT COUNT(*) as cnt FROM cves c {where_clause}",
-                params,
+                params + cursor_params,
             )
             return count_rows[0]["cnt"] if count_rows else 0
 
-        cache_key = _cve_count_cache_key(where_clause, params)
-        total = await cached_read(cache_key, 45.0, _fetch_total)
+        cache_key = _cve_count_cache_key(where_clause, params + cursor_params)
+        total = await cached_read(cache_key, 45.0, _fetch_total) if not keyset_mode else None
 
         rows = await db.execute_fetchall(
-            f"{CVE_SELECT} {where_clause} {CVE_ORDER_BY} LIMIT ? OFFSET ?",
-            params + [limit, offset],
+            f"{CVE_SELECT} {where_clause} {order_by} LIMIT ? OFFSET ?",
+            params + cursor_params + [fetch_limit, offset],
         )
     finally:
         await db.close()
 
     cve_list = _sort_by_stack_relevance([_row_to_cve_dict(row) for row in rows], stack_products)
+    next_cursor = None
+    if keyset_mode:
+        has_more = len(rows) > limit
+        if has_more:
+            cve_list = cve_list[:limit]
+        if has_more and cve_list:
+            last = cve_list[-1]
+            next_cursor = _encode_feed_cursor(last.get("published") or "", last["cve_id"])
 
-    return {
+    payload = {
         "total": total,
         "page": page,
         "limit": limit,
-        "pages": (total + limit - 1) // limit if total > 0 else 0,
+        "pages": (total + limit - 1) // limit if total and total > 0 else 0,
         "data": cve_list,
     }
+    if keyset_mode:
+        payload["pagination"] = "keyset"
+        payload["next_cursor"] = next_cursor
+    return payload
 
 
 @list_router.post("/api/cves/match")
@@ -964,6 +1026,140 @@ async def get_cve_related(
         await db.close()
 
     return {"data": related, "meta": {"method": method}}
+
+
+async def _drawer_sentences_payload(db, cve_key: str) -> dict:
+    rows = await db.execute_fetchall(
+        """
+        SELECT cve_id, cvss_score, severity, is_kev, epss_score,
+               has_poc, patch_available, source_urls
+        FROM cves
+        WHERE cve_id = ?
+        """,
+        (cve_key,),
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail=f"CVE {cve_key} not found")
+
+    row = dict(rows[0])
+    is_kev = bool(row.get("is_kev", 0))
+    has_poc = bool(row.get("has_poc", 0))
+    patch_available = bool(row.get("patch_available", 0))
+
+    source_urls = row.get("source_urls") or "[]"
+    if isinstance(source_urls, str):
+        try:
+            source_urls = json.loads(source_urls)
+        except (json.JSONDecodeError, TypeError):
+            source_urls = []
+
+    kev_rows = await db.execute_fetchall(
+        """
+        SELECT due_date, required_action
+        FROM kev_deadlines
+        WHERE cve_id = ?
+        """,
+        (cve_key,),
+    )
+
+    sploitus_exploits = await load_public_exploits_for_cve(
+        db,
+        cve_key,
+        has_poc=bool(row.get("has_poc")),
+        source_urls=source_urls,
+    )
+
+    due_date = ""
+    fix = ""
+    if kev_rows:
+        kev_row = dict(kev_rows[0])
+        due_date = (kev_row.get("due_date") or "").strip()
+        fix = (kev_row.get("required_action") or "").strip()
+
+    exploit_items = [{"type": e.get("type", "poc")} for e in sploitus_exploits]
+    if not exploit_items:
+        exploit_items = exploits_from_cve(has_poc, source_urls)
+    cvss = row.get("cvss_score")
+
+    return {
+        "cve_id": cve_key,
+        "risk": severity_sentence(row.get("severity"), cvss),
+        "exploit_likelihood": epss_sentence_or_fallback(row.get("epss_score"), is_kev),
+        "public_exploits": exploit_sentence(exploit_items),
+        "patch": patch_sentence(patch_available, fix),
+        "kev": kev_sentence(is_kev, due_date),
+        "kev_required_action": fix or None,
+    }
+
+
+async def _drawer_related_payload(db, cve_key: str, *, limit: int = 5) -> dict:
+    related: list[dict] = []
+    method = "product_heuristic"
+    if embeddings_enabled():
+        try:
+            similar = await find_similar_cves(db, cve_key, limit=limit)
+        except Exception as exc:
+            logger.error("Embedding similarity failed for %s: %s", cve_key, exc)
+            similar = None
+        if similar:
+            summaries = await get_cve_summaries_by_ids(db, [s["cve_id"] for s in similar])
+            for s in similar:
+                base = summaries.get(s["cve_id"])
+                if base:
+                    related.append({**base, "similarity": s["similarity"]})
+            if related:
+                method = "embeddings"
+
+    if not related:
+        related = await get_related_cves(db, cve_key, limit=limit)
+        method = "product_heuristic"
+
+    return {"data": related, "meta": {"method": method}}
+
+
+async def _build_cve_drawer_bundle(db, cve_key: str, *, sector: str = "") -> dict:
+    exists = await db.execute_fetchall("SELECT 1 FROM cves WHERE cve_id = ?", (cve_key,))
+    if not exists:
+        raise HTTPException(status_code=404, detail=f"CVE {cve_key} not found")
+
+    sentences, epss_history, related, correlation, momentum = await asyncio.gather(
+        _drawer_sentences_payload(db, cve_key),
+        get_epss_history(db, cve_key, days=30),
+        _drawer_related_payload(db, cve_key, limit=5),
+        get_correlation_for_cve(db, cve_key, user_sector=sector.strip()),
+        calculate_momentum(cve_key, db),
+    )
+    correlation["provenance"] = derive_correlation_provenance(
+        correlation,
+        otx_configured=otx_configured_from_env(),
+    )
+    return {
+        "cve_id": cve_key,
+        "sentences": sentences,
+        "epss_history": epss_history,
+        "related": related,
+        "correlation": correlation,
+        "momentum": momentum,
+    }
+
+
+@detail_router.get("/api/cves/{cve_id}/drawer")
+async def get_cve_drawer_bundle(
+    cve_id: str,
+    sector: str = Query(default="", description="User industry sector for correlation actor matching"),
+):
+    """Aggregate drawer on-open payloads (sentences, EPSS, related, correlation, momentum)."""
+    cve_id = require_cve_id(cve_id)
+    cve_key = cve_id
+
+    db = await get_db()
+    try:
+        bundle = await _build_cve_drawer_bundle(db, cve_key, sector=sector)
+        await db.commit()
+    finally:
+        await db.close()
+
+    return bundle
 
 
 async def _load_cve_detail_from_db(cve_key: str) -> dict:
