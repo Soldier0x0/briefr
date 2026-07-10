@@ -310,7 +310,7 @@ function OperatorOverview({ system, toast }) {
         <div className="admin-card" style={{ flex: 1 }}>
           <div className="admin-card-title">Active locks</div>
           {(!active_locks || active_locks.length === 0) ? (
-            <div className="admin-empty">No jobs running</div>
+            <div className="admin-empty admin-empty--compact">No jobs running</div>
           ) : (
             <table className="admin-table">
               <thead><tr><th>JOB ID</th><th>LOCK</th></tr></thead>
@@ -328,7 +328,7 @@ function OperatorOverview({ system, toast }) {
         <div className="admin-card" style={{ flex: 1 }}>
           <div className="admin-card-title">Recent errors</div>
           {(!recent_errors || recent_errors.length === 0) ? (
-            <div className="admin-empty" style={{ color: 'var(--green)' }}>All jobs clean</div>
+            <div className="admin-empty admin-empty--compact" style={{ color: 'var(--green)' }}>All jobs clean</div>
           ) : (
             <table className="admin-table">
               <thead><tr><th>JOB ID</th><th>ERROR</th><th>LAST RUN</th><th></th></tr></thead>

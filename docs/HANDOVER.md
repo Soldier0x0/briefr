@@ -12,6 +12,19 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — UX audit PR6 merged; PR9 admin density in progress
+
+**Merged:**
+| PR | Item |
+|----|------|
+| **#405** | PR6 KEV vendor chart + unified `kevDeadline.js` day math |
+
+**In progress:** PR9 admin density (`cursor/ux-audit-pr9-admin-density-489a`) — compact empties, subdued danger zones below tables, Security wallboard explainer.
+
+**Next after PR9 merge:** PR11 IOC + feed responsive, then PR8 config apply lifecycle.
+
+---
+
 ## 2026-07-10 — UX audit PR5 merged; PR6 KEV vendor chart in progress
 
 **Merged:**

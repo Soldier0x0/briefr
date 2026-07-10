@@ -95,7 +95,7 @@ export default function StoragePage({ toast }) {
       </AsyncSection>
 
 
-      <DangerZone title="Purge controls">
+      <DangerZone title="Purge controls" subdued>
         <p style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '-0.25rem', marginBottom: '0.75rem' }}>
           Pick what to clear, read what it does, then type "clear" to enable the button. Nothing fires on a single click.
         </p>

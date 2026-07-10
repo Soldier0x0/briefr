@@ -544,10 +544,11 @@
 }
 
 .admin-page-subtitle {
-  margin: 0;
-  font-size: 13px;
-  color: var(--admin-text-muted);
-  max-width: 56ch;
+  margin: 0 0 1rem;
+  font-size: 0.8125rem;
+  color: var(--text2);
+  line-height: 1.45;
+  max-width: 72ch;
 }
 
 /* ── Cards & panels ───────────────────────────────────────────────────────── */
@@ -965,8 +966,19 @@
 .admin-danger-zone-desc {
   margin: 0 0 14px;
   font-size: 12px;
-  color: var(--admin-text-muted);
-  max-width: 60ch;
+  color: var(--text3);
+  line-height: 1.45;
+}
+
+.admin-danger-zone--subdued {
+  margin-top: 1.25rem;
+  padding: 14px 16px;
+  background: transparent;
+  border-color: rgba(232, 85, 51, 0.22);
+}
+
+.admin-danger-zone--subdued .admin-danger-zone-desc {
+  margin-bottom: 10px;
 }
 
 /* Purge panels */
@@ -2552,7 +2564,7 @@
 /* ── Empty state ────────────────────────────────────────────────────────── */
 
 .admin-empty {
-  padding: 1.5rem 1rem;
+  padding: 0.65rem 0.75rem;
   color: var(--text3);
   font-size: 0.8125rem;
   text-align: center;
@@ -2560,6 +2572,11 @@
   flex-direction: column;
   align-items: center;
   gap: 0.3rem;
+}
+
+.admin-empty--compact {
+  padding: 0.45rem 0.5rem;
+  min-height: 0;
 }
 
 .admin-empty-icon { opacity: 0.55; }
