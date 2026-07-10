@@ -8,6 +8,12 @@ import { useOperations } from './shared/OperationTracker.jsx'
 import { MANUAL_PIPELINES } from './constants.js'
 import { jobLabel } from './catalog.js'
 import { canRunNow, pauseResumeAction } from './jobActions.js'
+import {
+  schedulerJobManualRun,
+  schedulerJobPaused,
+  schedulerJobResumed,
+  schedulerJobRetry,
+} from './toastCopy.js'
 
 const STATUS_FILTERS = ['ACTIVE', 'PAUSED', 'LOCKED', 'DISABLED']
 const PAGE_SIZE = 10
@@ -30,7 +36,7 @@ export default function SchedulerPage({ toast, system }) {
 
   useEffect(() => { loadJobs() }, [])
 
-  async function runNow(jobId) {
+  async function runNow(jobId, { retry = false } = {}) {
     setRunning(r => ({ ...r, [jobId]: true }))
     try {
       await runAction({
@@ -38,7 +44,9 @@ export default function SchedulerPage({ toast, system }) {
         label: `Running ${jobLabel(jobId, 'operator')}`,
         kind: 'job',
         meta: { jobId },
-        successMessage: `Started: ${jobLabel(jobId, 'operator')}`,
+        successMessage: retry
+          ? schedulerJobRetry(jobId, 'operator')
+          : schedulerJobManualRun(jobId, 'operator'),
         execute: async () => {
           const res = await adminApi.post('/scheduler/run', { job_id: jobId })
           const requestId = getAdminRequestId(res)
@@ -73,7 +81,7 @@ export default function SchedulerPage({ toast, system }) {
         const data = await res.json().catch(() => ({}))
         throw new Error(data.detail || `HTTP ${res.status}`)
       }
-      toast(`${jobLabel(job.id, 'operator')} ${action === 'pause' ? 'paused' : 'resumed'}`, true)
+      toast(action === 'pause' ? schedulerJobPaused(job.id, 'operator') : schedulerJobResumed(job.id, 'operator'), true)
       loadJobs()
     } catch (e) { toast(String(e.message), false) }
   }
