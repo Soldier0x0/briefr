@@ -460,7 +460,7 @@ providers above reserve — never blocks template fallbacks for narratives.
 | `fallback_from_provider` | text nullable | |
 | `fallback_from_model` | text nullable | |
 | `retry_index` | int | 0 = first provider tried |
-| `context_type` | text nullable |/cve/task |
+| `context_type` | text nullable | `cve` or `task` |
 | `context_id` | text nullable | Safe id only |
 
 **Not stored:** raw prompts, raw completions, CVE description text.
@@ -844,6 +844,14 @@ Architecture leaves extension points: `task_class` registry, provider adapter in
 | `detection_context_sync` | **No AI** — deterministic cache |
 
 Proposed: `ai_model_catalog_refresh` (weekly).
+
+---
+
+## Appendix C — Gemini review reconciliation (PR #410)
+
+| # | Comment | Verdict | Action |
+|---|---------|---------|--------|
+| 1 | Formatting typo `context_type` Notes column (`/cve/task`) | **Valid** | Fixed to `` `cve` or `task` `` |
 
 ---
 
