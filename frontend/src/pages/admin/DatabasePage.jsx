@@ -5,6 +5,7 @@ import { notifyBackendRestarting } from '../../utils/backendRestart.js'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import DangerZone from './shared/DangerZone.jsx'
 import StatCard from './shared/StatCard.jsx'
+import DbExplorerPanel from './DbExplorerPanel.jsx'
 import { fmtBytes } from './formatters.js'
 
 // PostgreSQL connection: test target DSN, copy data into Postgres, apply DATABASE_URL + restart.
@@ -111,7 +112,7 @@ export default function DatabasePage({ toast, active = true }) {
       )}
 
       <h1 className="admin-page-title">Database</h1>
-      <p className="admin-page-subtitle">PostgreSQL connection and health. Production uses Postgres 16+ via <code>DATABASE_URL</code>; see <code>docs/POSTGRES.md</code>.</p>
+      <p className="admin-page-subtitle">PostgreSQL connection, health, and read-only table browser. Production uses Postgres 16+ via <code>DATABASE_URL</code>; see <code>docs/POSTGRES.md</code>.</p>
 
       <div className="stat-card-row">
         <StatCard label="ENGINE" value={info?.engine === 'postgresql' ? 'PostgreSQL' : 'Not connected'} colorClass={needsPostgres ? 'color-amber' : 'color-green'} />
@@ -227,6 +228,7 @@ export default function DatabasePage({ toast, active = true }) {
           </span>
         </div>
       )}
+      <DbExplorerPanel toast={toast} />
     </div>
   )
 }

@@ -238,6 +238,37 @@ def test_apply_all_empty_body_returns_no_changes(admin_client, tmp_path, monkeyp
     assert data["changed_keys"] == []
 
 
+def test_config_set_secret_masks_response_and_audit(admin_client, tmp_path, monkeypatch):
+    dotenv_path = tmp_path / ".env"
+    dotenv_path.write_text("")
+    import routers.admin as admin_mod
+    monkeypatch.setattr(admin_mod, "_DOTENV_PATH", dotenv_path)
+
+    async def _noop_persist(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr("operator_settings.persist_operator_setting", _noop_persist)
+
+    secret = "supersecretgroqkey9999"
+    with patch("dotenv.set_key"):
+        resp = admin_client.post(
+            "/api/admin/config",
+            json={"key": "GROQ_API_KEY", "value": secret},
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["ok"] is True
+    assert secret not in data["masked_value"]
+    assert data["masked_value"] == "supe…9999"
+
+    audit_resp = admin_client.get("/api/admin/audit-log?limit=5&action_prefix=config.set.")
+    assert audit_resp.status_code == 200
+    rows = audit_resp.json().get("rows", [])
+    config_rows = [r for r in rows if r.get("action") == "config.set.GROQ_API_KEY"]
+    assert config_rows
+    assert secret not in (config_rows[0].get("target") or "")
+
+
 def test_api_keys_never_returned_full_value(admin_client):
     """No API key should be returned in cleartext — only masked or not configured."""
     resp = admin_client.get("/api/admin/config")
