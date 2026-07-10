@@ -1,6 +1,7 @@
 # BRIEFR AI Operations & Routing Architecture
 
-**Status:** Planning only — **no implementation in this document**  
+**Status:** Plan of record — amended per maintainer review (PR #410 comment, 2026-07-10) —
+**no implementation in this document**  
 **Date:** 2026-07-10  
 **Audit basis:** Direct codebase trace on `main` (commit family post-PR8, 2026-07-10).  
 `graphify-out/` used only as supporting context — **not** source of truth (stale vs `main`).
@@ -40,9 +41,12 @@ providers (only IOC/feed services). Frontend PDF footer copy is **stale** (refer
 Anthropic; router no longer uses it).
 
 **Recommendation:** **Evolve** `llm_router.py` into a thin **AI Operations facade** —
-do **not** replace with an external gateway (OmniRoute) or a rewrite. Deliver in **8–10
-small PRs**: catalog + operation log first, routing policy extraction second, admin UI
-third. Quota-aware routing starts **advisory** (operator warnings), not automated
+do **not** replace with an external gateway (OmniRoute) or a rewrite. Deliver in **three
+implementation PRs plus one immediate cleanup PR** (maintainer review — see §23): the
+cleanup (stale copy + dead `groq_client`) is already open as **PR #411**; then **AI-1**
+(operation log + model catalog), **AI-2** (admin page), and **AI-3**
+(quota/health/routing automation) — AI-3 **only if AI-1's collected data justifies it**.
+Quota-aware routing starts **advisory** (operator warnings), not automated
 deprioritization. Keep **embeddings** operationally separate from generative routing but
 visible on the same Admin page.
 
@@ -603,7 +607,7 @@ logs. A single Admin page prevents misconfiguration of env model vars and demyst
 
 | Object | Change | Migration |
 |--------|--------|-----------|
-| `ai_operations` | **New table** | Alembic `014_ai_operations.py` |
+| `ai_operations` | **New table** | Alembic `014_ai_operations.py` (repo has 001–012; **013** is reserved for the PR12 webhook migration, #409 plan) |
 | `sync_state` keys `ai.health.*`, `ai.quota.*`, `ai.catalog.*` | Additive JSON blobs | No migration (existing table) |
 | `app_settings` optional AI quota overrides | Additive keys | No schema change |
 | `api_usage` | Optional later merge | Prefer separate table first |
@@ -639,19 +643,38 @@ SQLite + Postgres parity required per `CLAUDE.md` danger zone.
 
 ## 22. Migration strategy
 
-1. **Phase 0 (docs only):** This document + ADR drafts.
-2. **Phase 1 (observability):** `ai_operations` + record from `llm_router` — no routing behaviour change.
-3. **Phase 2 (catalog):** `model_catalog.py` reads env defaults; admin read API.
-4. **Phase 3 (admin UI):** Overview + providers + activity.
-5. **Phase 4 (health job):** Scheduler catalog refresh + warnings.
-6. **Phase 5 (routing policy):** Extract `_task_chain` to data; advisory quota sort.
-7. **Phase 6 (cleanup):** Deprecate `groq_client` prod exports; fix stale copy.
+1. **Phase 0 (cleanup — done first, not last):** fix stale copy; remove dead `groq_client`
+   prod path — **open as PR #411**.
+2. **Phase 1 (observability):** `ai_operations` + record from `llm_router` + `model_catalog.py`
+   SSOT — no routing behaviour change (**AI-1**).
+3. **Phase 2 (admin UI):** Overview + providers + models + activity (**AI-2**).
+4. **Phase 3 (conditional automation):** health job, quota snapshots, routing policy
+   extraction (**AI-3**) — only if Phase 1 data justifies it.
 
 Backward compatibility: all env vars continue to work; new tables additive.
 
 ---
 
-## 23. Dependency-ordered PR plan
+## 23. Dependency-ordered PR plan — **condensed to 3 PRs + cleanup (maintainer review)**
+
+**Delivery restructure:** the ten PR-AI-N slices below are retained as the work breakdown,
+but they ship as **four PRs**:
+
+| Ship as | Contains | Status / gate |
+|---------|----------|---------------|
+| **PR-A** | PR-AI-9 + PR-AI-10 (stale copy fix, dead `groq_client` removal) | **Open as PR #411** — fixes a live production bug (wrong AI attribution in PDF footers); depends on nothing |
+| **AI-1** | PR-AI-1 + PR-AI-2 (`ai_operations` table via Alembic **014**, recorder hook, `model_catalog.py` SSOT) | After the PR12 series (#409 plan; Alembic 013) |
+| **AI-2** | PR-AI-3 + PR-AI-4 + PR-AI-5 (provider health snapshot, admin page, usage/activity tabs) | After AI-1 |
+| **AI-3** | PR-AI-6 + PR-AI-7 + PR-AI-8 (quota snapshots, catalog refresh job, routing policy extraction) | **Conditional** — build only after AI-1 has collected a few weeks of real operation data showing fallbacks or quota pressure actually occur. If the static chain just works, AI-3 is never built. |
+
+**Sequencing (verified against `main` head, 2026-07-10):** D4 and Post-B are complete
+(`db/dialect.py` deleted — new SQL is Postgres-native), the wave-model queue in
+`docs/SPRINT_2026-07.md` is closed through Wave 3, and the UX audit PR1–PR11 pass is merged.
+The execution queue (recorded in `SPRINT_2026-07.md` via PR #409) is:
+PR-A (#411) → PR12a–c → **AI-1 → AI-2** → PR13-MVP, with AI-3 data-gated.
+
+The original per-slice detail follows (boundaries and acceptance criteria still apply
+within their combined PRs).
 
 ### PR-AI-1 — AI operations schema + completion recorder
 
@@ -728,7 +751,7 @@ Backward compatibility: all env vars continue to work; new tables additive.
 | **Acceptance** | Existing failover tests pass; new tests for headroom sort |
 | **Risk** | Medium — behaviour change behind env flag default off |
 
-### PR-AI-9 — PDF footer + API response alignment
+### PR-AI-9 — PDF footer + API response alignment — **shipped in PR #411** (footer + docstring + API_REFERENCE; `provider`/`model` response fields deferred to AI-1)
 
 | Field | Value |
 |-------|-------|
@@ -736,7 +759,7 @@ Backward compatibility: all env vars continue to work; new tables additive.
 | **Files** | `pdfAiSummary.js`, `routers/meta.py`, `PRODUCT_STATUS.md` |
 | **Acceptance** | Footer matches actual router provider |
 
-### PR-AI-10 — Cleanup: groq_client + anthropic remnants
+### PR-AI-10 — Cleanup: groq_client + anthropic remnants — **shipped in PR #411**
 
 | Field | Value |
 |-------|-------|
@@ -744,7 +767,8 @@ Backward compatibility: all env vars continue to work; new tables additive.
 | **Files** | `groq_client.py` shrink or test-only, config_schema help text |
 | **Acceptance** | Production path single transport |
 
-**Estimated PR count:** 10 incremental PRs — **not** one mega PR.
+**Estimated PR count:** ~~10 incremental PRs~~ → **4 PRs** (PR-A shipped as #411; AI-1/AI-2;
+AI-3 conditional) — see the condensed table at the top of this section.
 
 ---
 
@@ -852,6 +876,21 @@ Proposed: `ai_model_catalog_refresh` (weekly).
 | # | Comment | Verdict | Action |
 |---|---------|---------|--------|
 | 1 | Formatting typo `context_type` Notes column (`/cve/task`) | **Valid** | Fixed to `` `cve` or `task` `` |
+
+---
+
+## Appendix D — Maintainer review reconciliation (PR #410 comment, 2026-07-10)
+
+| # | Point | Action |
+|---|-------|--------|
+| 1 | Migration numbering — the review comment claimed 007 based on a **stale checkout**; the repo actually has migrations 001–012, so this plan's original 014 was correct | **014** confirmed; 013 reserved for PR12 (#409 plan) |
+| 2 | 10 PRs over-sliced for 3 task classes × 4 providers | Condensed to PR-A + AI-1 + AI-2 + AI-3; AI-3 gated on real AI-1 data (§23) |
+| 3 | PR-AI-9 is a live production bug buried at position 9; PR-AI-10 is independent cleanup | Both pulled to the front and **shipped as PR #411** |
+| 4 | Sequencing — the review comment said "queue after D4/Post-B", also from the stale checkout; both are in fact **complete** and the wave queue is closed through Wave 3 | Corrected sequencing in §23: PR-A → PR12a–c → AI-1/AI-2 → PR13-MVP; AI-3 conditional |
+
+Analysis sections (§1–§21, §24–§27) were validated against `main` head and stand unchanged:
+`LLMTask` still has exactly 3 values, `tracking.API_LIMITS` still omits all LLM providers,
+`groq_client.py` was still present until #411.
 
 ---
 
