@@ -107,6 +107,13 @@ export const JOB_CATALOG = {
     analystDescription: 'Confirms backups are still running on schedule.',
     refreshButton: 'Check backups',
   },
+  api_key_health_check: {
+    label: 'API key health',
+    short: 'Keys',
+    operatorName: 'API Key Health Check',
+    analystDescription: 'Lightweight ping against configured provider API keys.',
+    refreshButton: 'Check API keys',
+  },
   scheduled_backup: {
     label: 'Scheduled backup',
     short: 'Backup',
