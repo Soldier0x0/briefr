@@ -5,11 +5,12 @@ import HelpTip from './shared/HelpTip.jsx'
 
 const EXPLORER_ACK_KEY = 'briefr-db-explorer-ack'
 
+const PREVIEW_MAX = 120
+
 function cellPreview(value) {
   if (value == null || value === '') return '—'
-  if (typeof value === 'object') return JSON.stringify(value)
-  const text = String(value)
-  return text.length > 120 ? `${text.slice(0, 120)}…` : text
+  const text = typeof value === 'object' ? JSON.stringify(value) : String(value)
+  return text.length > PREVIEW_MAX ? `${text.slice(0, PREVIEW_MAX)}…` : text
 }
 
 export default function DbExplorerPanel({ toast }) {
@@ -47,10 +48,14 @@ export default function DbExplorerPanel({ toast }) {
     }
     if (tableMeta.required_filter) {
       setFilterColumn(tableMeta.required_filter)
-    } else if (!filterColumn || !tableMeta.filter_columns.includes(filterColumn)) {
-      setFilterColumn(tableMeta.filter_columns[0] || '')
+      return
     }
-  }, [tableMeta, filterColumn])
+    setFilterColumn((prev) => (
+      prev && tableMeta.filter_columns.includes(prev)
+        ? prev
+        : (tableMeta.filter_columns[0] || '')
+    ))
+  }, [tableMeta])
 
   async function loadRows(nextOffset = 0) {
     if (!selectedTable) return

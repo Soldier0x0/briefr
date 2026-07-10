@@ -19,6 +19,37 @@ from db.explorer_registry import (
 _CVE_ID_RE = re.compile(r"^CVE-\d{4}-\d{4,7}$", re.IGNORECASE)
 _URL_RE = re.compile(r"https?://\S+", re.IGNORECASE)
 
+_COUNT_ALL_SQLITE = "SELECT COUNT(*) AS cnt FROM {table}"
+_COUNT_ALL_PG = "SELECT COUNT(*) AS cnt FROM {table}"
+_COUNT_FILTER_SQLITE = "SELECT COUNT(*) AS cnt FROM {table} WHERE {column} = ?"
+_COUNT_FILTER_PG = "SELECT COUNT(*) AS cnt FROM {table} WHERE {column} = $1"
+_SELECT_ROWS_SQLITE = (
+    "SELECT {columns} FROM {table}{where} ORDER BY {order_by} LIMIT ? OFFSET ?"
+)
+_SELECT_ROWS_PG = (
+    "SELECT {columns} FROM {table}{where} ORDER BY {order_by} LIMIT $1 OFFSET $2"
+)
+_SELECT_ROWS_FILTER_SQLITE = (
+    "SELECT {columns} FROM {table} WHERE {column} = ?"
+    " ORDER BY {order_by} LIMIT ? OFFSET ?"
+)
+_SELECT_ROWS_FILTER_PG = (
+    "SELECT {columns} FROM {table} WHERE {column} = $1"
+    " ORDER BY {order_by} LIMIT $2 OFFSET $3"
+)
+_PG_CLASS_COUNTS_SQL = """
+SELECT c.relname AS name, GREATEST(0, c.reltuples::bigint) AS cnt
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public'
+  AND c.relkind = 'r'
+  AND c.relname = ANY($1::text[])
+"""
+
+
+def _is_postgres_connection(db: Any) -> bool:
+    return type(db).__name__ == "PostgresConnection"
+
 
 def _clamp_limit(limit: int | None) -> int:
     if limit is None:
@@ -102,17 +133,28 @@ def _row_to_dict(row: Any, spec: TableSpec) -> dict[str, Any]:
 
 async def fetch_table_catalog(db: Any) -> list[dict[str, Any]]:
     catalog: list[dict[str, Any]] = []
-    for spec in list_table_specs():
-        count_rows = await db.execute_fetchall(
-            f"SELECT COUNT(*) AS cnt FROM {spec.name}"
-        )
-        row_count = int(count_rows[0]["cnt"]) if count_rows else 0
+    specs = list_table_specs()
+    counts: dict[str, int] = {}
+
+    if _is_postgres_connection(db):
+        names = [spec.name for spec in specs]
+        rows = await db.execute_fetchall(_PG_CLASS_COUNTS_SQL, (names,))
+        counts = {row["name"]: int(row["cnt"]) for row in rows}
+    else:
+        for spec in specs:
+            count_rows = await db.execute_fetchall(
+                _COUNT_ALL_SQLITE.format(table=spec.name)
+            )
+            counts[spec.name] = int(count_rows[0]["cnt"]) if count_rows else 0
+
+    for spec in specs:
         catalog.append(
             {
                 "name": spec.name,
                 "label": spec.label,
                 "tier": spec.tier,
-                "row_count": row_count,
+                "row_count": counts.get(spec.name, 0),
+                "row_count_estimated": _is_postgres_connection(db),
                 "columns": list(spec.columns),
                 "filter_columns": sorted(spec.filter_columns),
                 "required_filter": spec.required_filter,
@@ -160,19 +202,38 @@ async def fetch_table_rows(
 
     where_sql = ""
     params: list[Any] = []
+    pg = _is_postgres_connection(db)
     if f_col and f_val:
-        where_sql = f" WHERE {f_col} = ?"
+        count_sql = (
+            _COUNT_FILTER_PG if pg else _COUNT_FILTER_SQLITE
+        ).format(table=spec.name, column=f_col)
         params.append(f_val)
+    else:
+        count_sql = (_COUNT_ALL_PG if pg else _COUNT_ALL_SQLITE).format(table=spec.name)
 
-    count_sql = f"SELECT COUNT(*) AS cnt FROM {spec.name}{where_sql}"
     count_rows = await db.execute_fetchall(count_sql, tuple(params))
     total = int(count_rows[0]["cnt"]) if count_rows else 0
 
-    select_sql = (
-        f"SELECT {_select_list(spec)} FROM {spec.name}{where_sql}"
-        f" ORDER BY {spec.order_by} LIMIT ? OFFSET ?"
-    )
-    query_params = tuple([*params, row_limit, row_offset])
+    select_columns = _select_list(spec)
+    if f_col and f_val:
+        select_sql = (
+            _SELECT_ROWS_FILTER_PG if pg else _SELECT_ROWS_FILTER_SQLITE
+        ).format(
+            columns=select_columns,
+            table=spec.name,
+            column=f_col,
+            order_by=spec.order_by,
+        )
+        query_params = tuple([f_val, row_limit, row_offset])
+    else:
+        select_sql = (_SELECT_ROWS_PG if pg else _SELECT_ROWS_SQLITE).format(
+            columns=select_columns,
+            table=spec.name,
+            where="",
+            order_by=spec.order_by,
+        )
+        query_params = (row_limit, row_offset)
+
     rows = await db.execute_fetchall(select_sql, query_params)
 
     return {
