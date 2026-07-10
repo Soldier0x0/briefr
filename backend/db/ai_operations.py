@@ -107,7 +107,7 @@ async def list_ai_operations(
     return [dict(row) for row in rows]
 
 
-def _hours_ago_iso(hours: int) -> str:
+def _hours_ago_str(hours: int) -> str:
     from datetime import datetime, timedelta, timezone
 
     # Rows store started_at via utcnow_str() = "%Y-%m-%d %H:%M:%S"; the cutoff must
@@ -121,7 +121,7 @@ async def ai_operations_usage_since(
     *,
     hours: int,
 ) -> dict:
-    since = _hours_ago_iso(hours)
+    since = _hours_ago_str(hours)
     pg = _is_postgres_connection(db)
     since_ph = "$1" if pg else "?"
 

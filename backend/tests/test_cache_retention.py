@@ -100,6 +100,89 @@ def test_purge_old_ai_operations_uses_started_at(tmp_path, monkeypatch):
     asyncio.run(run())
 
 
+def test_purge_old_webhook_delivery_log_uses_attempted_at(tmp_path, monkeypatch):
+    _force_sqlite(tmp_path, monkeypatch, "webhook_delivery_retention.db")
+
+    async def run():
+        await db_module.init_db()
+        db = await db_module.get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO webhook_delivery_log (
+                    destination_id, event_type, dedupe_key, status, error, attempted_at
+                ) VALUES (?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "db:old",
+                    "kev_alert",
+                    "CVE-2024-1",
+                    "ok",
+                    None,
+                    _utc(45),
+                    "db:recent",
+                    "kev_alert",
+                    "CVE-2024-2",
+                    "ok",
+                    None,
+                    _utc(2),
+                ),
+            )
+            await db.commit()
+
+            deleted = await db_module.purge_old_webhook_delivery_log(db, retention_days=30)
+            await db.commit()
+
+            rows = await db.execute_fetchall(
+                "SELECT destination_id FROM webhook_delivery_log ORDER BY destination_id"
+            )
+            assert deleted == 1
+            assert [row["destination_id"] for row in rows] == ["db:recent"]
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+
+def test_purge_old_audit_log_uses_created_at(tmp_path, monkeypatch):
+    _force_sqlite(tmp_path, monkeypatch, "audit_log_retention.db")
+
+    async def run():
+        await db_module.init_db()
+        db = await db_module.get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO audit_log (actor, action, target, created_at)
+                VALUES (?, ?, ?, ?), (?, ?, ?, ?)
+                """,
+                (
+                    "admin",
+                    "test.old",
+                    "t1",
+                    _utc(400),
+                    "admin",
+                    "test.recent",
+                    "t2",
+                    _utc(10),
+                ),
+            )
+            await db.commit()
+
+            deleted = await db_module.purge_old_audit_log(db, retention_days=365)
+            await db.commit()
+
+            rows = await db.execute_fetchall(
+                "SELECT target FROM audit_log ORDER BY target"
+            )
+            assert deleted == 1
+            assert [row["target"] for row in rows] == ["t2"]
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+
 def test_run_retention_cleanup_includes_operator_tables(tmp_path, monkeypatch):
     _force_sqlite(tmp_path, monkeypatch, "retention_all.db")
 
