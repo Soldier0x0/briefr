@@ -1887,7 +1887,8 @@
 }
 
 .admin-ops-chart-empty {
-  min-height: 120px;
+  min-height: 0;
+  padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
   justify-content: center;

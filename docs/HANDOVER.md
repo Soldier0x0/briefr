@@ -12,6 +12,19 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — UX audit PR7 merged; PR5 OpsCharts in progress
+
+**Merged:**
+| PR | Item |
+|----|------|
+| **#403** | PR7 structured logging spine (`job_log_context`, log filters, JobTable deep link) |
+
+**In progress:** PR5 OpsCharts readability (`cursor/ux-audit-pr5-opscharts-489a`) — horizontal ingest bars, fmtDur/fmtBytes axis units, backup sparkline, shared `chartOptions.js`, compact empty wells.
+
+**Next after PR5 merge:** PR6 KEV/vendor chart.
+
+---
+
 ## 2026-07-10 — UX audit PR10 merged; PR7 structured logging
 
 **Merged:**
