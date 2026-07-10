@@ -10,6 +10,7 @@ export const NAV = [
     { id: 'apikeys', label: 'API keys & config', icon: 'KeyRound' },
     { id: 'scheduler', label: 'Scheduler', icon: 'Clock' },
     { id: 'webhooks', label: 'Webhooks', icon: 'Webhook' },
+    { id: 'aiops', label: 'AI operations', icon: 'Sparkles' },
     { id: 'security', label: 'Security', icon: 'ShieldAlert', badgeKey: 'failed_auth_last_24h' },
   ]},
   { section: 'OBSERVABILITY', items: [

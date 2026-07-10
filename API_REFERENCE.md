@@ -1281,6 +1281,15 @@ Params: `destination_id`, `event_type`, `limit`, `offset`. Returns `{rows: [{id,
 ### GET /api/admin/ai/operations/models
 Read-only model catalog SSOT for LLM task failover chains. Returns `{providers: string[], tasks: {task: [{provider, model, order}]}, env_keys: object}` — no secrets.
 
+### GET /api/admin/ai/operations/overview
+Summary for the Admin AI Operations page: recording flag, configured provider count, active LLM circuits, 24h/7d usage rollups from `ai_operations`, feature enablement flags, embeddings vector count. No secrets.
+
+### GET /api/admin/ai/operations/providers
+Per-provider health snapshot (`circuit_open`, `last_success`, `last_failure`, `last_error`, `consecutive_failures`) plus `configured` from env keys. Sources: `resilient_client` + `get_configured_providers()`.
+
+### GET /api/admin/ai/operations/activity
+Params: `limit`, `offset`, optional `task_class`, `provider`. Paginated redacted rows from `ai_operations` — `{rows, total, limit, offset}`. No prompt text.
+
 ### POST /api/admin/config/webhook-test
 Body `{destination_id}` or legacy `{channel}` (`discord` / `telegram` / `generic`). Sends a test message via the SSRF-safe webhook client. **Works on disabled destinations** (connectivity check before enable). Audit: `webhook.test.{destination_id}`.
 
