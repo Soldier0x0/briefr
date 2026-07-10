@@ -370,7 +370,7 @@ function ActivityTab({ toast, providerOptions }) {
         onRetry={load}
         emptyMessage={taskFilter || providerFilter ? 'No operations match these filters' : 'No AI operations recorded yet'}
       >
-        {(list) => (
+        {() => (
           <>
             <div style={{ overflowX: 'auto' }}>
               <table className="admin-table">
@@ -386,7 +386,7 @@ function ActivityTab({ toast, providerOptions }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {list.map(row => (
+                  {rows.map(row => (
                     <tr key={row.operation_id}>
                       <td style={{ fontSize: '0.78rem', whiteSpace: 'nowrap' }}>{fmtIso(row.started_at)}</td>
                       <td>{TASK_LABELS[row.task_class] || row.task_class}</td>
@@ -488,7 +488,7 @@ export default function AiOperationsPage({ toast, setPage }) {
           loading={loading}
           onRetry={loadCore}
         >
-          {() => (
+          {(list) => (
             <>
               {tab === 'overview' && <OverviewTab overview={overview} setPage={setPage} />}
               {tab === 'providers' && <ProvidersTab providers={providers} />}
