@@ -164,7 +164,7 @@ Orphaned: `threatfox_iocs` (ingested, used only for watchlist retro-match).
 | D5 | **Member count → confidence** (≥ 4 members = high) | `campaigns.py:26-31` | Rewards exactly the promiscuous roundup pulses hub suppression distrusts; inverted signal |
 | D6 | **KEV/exploit boosters raise confidence** | `campaigns.py:328-331` | Category error: a peer being exploited says nothing about whether the *link* is real. Severity laundered into truth; double-counted with priority caps |
 | D7 | **Attribution conflict is substring matching** while `mitre_groups.aliases` sits unused | `confidence.py:115-128` | "Fancy Bear" vs "APT28" flagged as a conflict; real multi-pulse conflicts unchecked |
-| D8 | `correlation_infrastructure` table dead; IOC observation timestamps (OTX indicator `created`) dropped at ingest | `db/init.py:381`, `feeds/otx.py:228-240` | Schema debt; temporal data permanently lost at ingest |
+| D8 | `correlation_infrastructure` table dead (written by no correlation code) but still referenced by the intel-snapshot exporter, admin DB explorer, and `DATA_SNAPSHOT.md`; IOC observation timestamps (OTX indicator `created`) dropped at ingest | `db/init.py:381`, `scripts/export_intel_snapshot.py:61`, `db/explorer_registry.py:269`, `feeds/otx.py:228-240` | Schema debt with live tooling dependents that must be updated together, not just schema; temporal data permanently lost at ingest |
 | D9 | Feed campaign-peer-of-pinned boost ignores campaign confidence and lifecycle | `routers/cves.py:414-422` | One pinned CVE inside a 25-member hub pulse boosts 24 possibly-unrelated CVEs |
 | D10 | Composite lookup for the hot self-join relies on single-column `(ioc_value)` index | `alembic/versions/001:287` | Avoidable cost on the most-run correlation query |
 
@@ -532,10 +532,21 @@ Compat/perf risk: none (output-order change only).
 Accept: existing tests green; new test proves strong-peer retention.
 
 **PR-2 — Composite index + drop `correlation_infrastructure` (Phase 0).**
-Invariant: no code path references the dropped table (verified: schema/migration only).
-Modify: Alembic 015, `db/init.py`, `migration/sqlite_to_postgres.py`.
-Tests: migration up on both engines. Accept: `EXPLAIN` on the `_shared_ioc_rows`
-self-join uses the composite index on PG.
+Invariant: no live reference to the table survives the drop — this is broader than
+schema/migrations. Confirmed live references beyond `db/init.py` and
+`migration/sqlite_to_postgres.py`: the intel-snapshot export allowlist and its
+`_preflight()` row-count gate (`scripts/export_intel_snapshot.py:42,61,110-171`, which
+would fail the export if the table vanished out from under it), the admin DB explorer
+table registry (`backend/db/explorer_registry.py:269`), and the table's entry in
+`docs/DATA_SNAPSHOT.md`'s INTEL table list. All four must be updated in the same PR,
+not just the two originally scoped.
+Modify: Alembic 015, `db/init.py`, `migration/sqlite_to_postgres.py`,
+`scripts/export_intel_snapshot.py` (remove from `INTEL_TABLES`),
+`backend/db/explorer_registry.py` (remove registry entry), `docs/DATA_SNAPSHOT.md`.
+Tests: migration up on both engines; `export_intel_snapshot.py` preflight/export run
+clean post-drop; admin DB explorer table list no longer offers the dropped table.
+Accept: `EXPLAIN` on the `_shared_ioc_rows` self-join uses the composite index on PG;
+repo-wide grep for `correlation_infrastructure` returns only the migration history.
 
 **PR-3 — `ioc_degree` table + degree-penalized edge confidence (Phase 1).**
 Invariant: rebuild idempotent, single `INSERT…SELECT`; degree only ever lowers
