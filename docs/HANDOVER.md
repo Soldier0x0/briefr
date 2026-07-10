@@ -12,6 +12,20 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — UX audit implementation loop (Gemini gate + merge)
+
+**Workflow:** Implement → `./scripts/verify-local.sh` green → push PR → wait ~1–2 min for **Gemini** inline review → fix all comments → re-verify → **merge to main** → next PR. GitHub Actions CI expected red (quota).
+
+**Merged:**
+| PR | Item |
+|----|------|
+| **#398** | PR1 scheduler state + catalog (Gemini: `_JOB_RUN_MAP`, pause/resume `res.ok`, loading disables manual triggers) |
+| **#399** | PR3 portaled tooltip (Gemini: coordinator `activeTooltipId`, redundant ternary) |
+
+**Next:** PR4 toast lifecycle + copy off `main`.
+
+---
+
 ## 2026-07-09 — UX audit implementation: no-merge until Gemini review
 
 **Maintainer directive:** Implement all 11 audit PRs in approved order; **do not merge** any PR until Gemini inline review quota returns (~24h). GitHub Actions will fail (quota exhausted) — **`./scripts/verify-local.sh` is the only merge gate** when merging later.
