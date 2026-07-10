@@ -102,6 +102,8 @@ EXPECTED_ROUTES = [
     ("POST", "/api/admin/config/apply-all"),
     ("POST", "/api/admin/config/webhook-test"),
     ("GET", "/api/admin/webhooks/destinations"),
+    ("POST", "/api/admin/webhooks/destinations"),
+    ("DELETE", "/api/admin/webhooks/destinations/{destination_id}"),
     ("PATCH", "/api/admin/webhooks/destinations/{destination_id}"),
     ("GET", "/api/admin/database"),
     ("POST", "/api/admin/database/test-connection"),

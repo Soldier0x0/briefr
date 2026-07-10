@@ -12,7 +12,7 @@ import httpx
 import pytest
 
 import resilient_client
-from database import get_db, init_db, was_webhook_alert_sent
+from database import get_db, init_db, was_webhook_destination_sent
 from resilient_client import reset_feed_health
 from webhooks.destinations import (
     EVENT_BACKUP_FAILURE,
@@ -221,7 +221,9 @@ def test_dedupe_records_once(monkeypatch, tmp_path):
     async def check():
         db = await get_db()
         try:
-            return await was_webhook_alert_sent(db, EVENT_KEV_ALERT, "CVE-2024-1")
+            return await was_webhook_destination_sent(
+                db, "discord", EVENT_KEV_ALERT, "CVE-2024-1"
+            )
         finally:
             await db.close()
 

@@ -76,6 +76,10 @@ DESTRUCTIVE_ACTIONS: tuple[DestructiveAction, ...] = (
         "Copies every row from the current SQLite database into the target "
         "PostgreSQL database, replacing any existing data there.",
     ),
+    DestructiveAction(
+        "webhook.destination.delete", "delete",
+        "Permanently removes a database-backed webhook destination.",
+    ),
 )
 
 _BY_ID: dict[str, DestructiveAction] = {a.id: a for a in DESTRUCTIVE_ACTIONS}
