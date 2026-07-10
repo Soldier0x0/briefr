@@ -8,6 +8,7 @@ from typing import Any
 from ai.llm_router import any_llm_provider_configured, get_configured_providers
 from ai.model_catalog import PROVIDER_ENV_KEYS, models_catalog_payload
 from ai.operations_recorder import recording_enabled
+from ai.quota import get_quota_snapshot, quota_warnings
 from resilient_client import get_feed_health
 
 
@@ -31,6 +32,7 @@ def _provider_health_rows() -> list[dict[str, Any]]:
                 "last_failure": health.get("last_failure"),
                 "last_error": health.get("last_error"),
                 "consecutive_failures": int(health.get("consecutive_failures") or 0),
+                "quota": get_quota_snapshot(provider),
             }
         )
     return rows
@@ -91,6 +93,7 @@ def build_providers_payload() -> dict[str, Any]:
     return {
         "providers": _provider_health_rows(),
         "configured": get_configured_providers(),
+        "quota_warnings": quota_warnings(),
     }
 
 
