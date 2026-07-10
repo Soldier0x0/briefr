@@ -12,7 +12,7 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-10 — AI-1 ai_operations + model catalog (#TBD)
+## 2026-07-10 — AI-1 ai_operations + model catalog (#416)
 
 **Merged:** Alembic 014 `ai_operations`, recorder on `chat_completion_task`, `ai/model_catalog.py` SSOT, `GET /api/admin/ai/operations/models`. Recording gated by `AI_OPERATIONS_RECORD` (default on); no prompt text stored.
 
