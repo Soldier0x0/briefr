@@ -1,26 +1,23 @@
-import { cloneElement, isValidElement, useId } from 'react'
+import Tooltip from './ui/Tooltip.jsx'
 import './ControlTooltip.css'
 
 /**
- * Accessible tooltip on the control itself (hover + keyboard focus).
- * Reuses ExplainTip bubble styling without a separate "?" button.
+ * Accessible tooltip on the control itself.
+ * Default trigger is hover-only so filter buttons do not stick open after click.
  */
-export default function ControlTooltip({ text, children, className = '' }) {
-  const id = useId()
+export default function ControlTooltip({ text, children, className = '', trigger = 'hover' }) {
   if (!text) return children
 
-  const child = isValidElement(children)
-    ? cloneElement(children, {
-        'aria-describedby': [children.props?.['aria-describedby'], id].filter(Boolean).join(' ') || id,
-      })
-    : children
-
   return (
-    <span className={`control-tooltip-wrap ${className}`.trim()}>
-      {child}
-      <span role="tooltip" id={id} className="control-tooltip-bubble">
-        {text}
-      </span>
-    </span>
+    <Tooltip
+      text={text}
+      asChild
+      trigger={trigger}
+      className={`control-tooltip-wrap ${className}`.trim()}
+      bubbleClassName="control-tooltip-bubble"
+      maxWidth={240}
+    >
+      {children}
+    </Tooltip>
   )
 }

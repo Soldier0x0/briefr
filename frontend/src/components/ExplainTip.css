@@ -28,29 +28,7 @@
 }
 
 .explain-tip-bubble {
-  display: none;
-  position: absolute;
-  z-index: 300;
-  left: 50%;
-  bottom: calc(100% + 6px);
-  transform: translateX(-50%);
-  width: max-content;
-  max-width: 220px;
-  padding: 6px 8px;
-  font-family: var(--font-body);
   font-size: 0.6875rem;
   line-height: 1.4;
   color: var(--text);
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
-  text-align: left;
-  letter-spacing: normal;
-  text-transform: none;
-  white-space: normal;
-}
-
-.explain-tip-wrap:hover .explain-tip-bubble,
-.explain-tip-wrap:focus-within .explain-tip-bubble {
-  display: block;
 }
