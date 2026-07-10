@@ -12,13 +12,33 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — F2 merged (#423); G0–G4 deferred to end of lifecycle
+
+**Merged:** F2 AGPL-3.0-or-later `LICENSE`, `CONTRIBUTING.md`, `.github/FUNDING.yml`,
+SPDX headers (#423). Sprint queue updated: **G0–G4 (learning path / onboarding
+docs) moved to the complete bottom** — run only after all product/code work
+stabilizes so docs reflect the final shipped system.
+
+**Next (live queue):**
+1. **AI-3** — quota/health/routing automation — **only if** `ai_operations` data
+   from AI-1 shows real fallback/quota pressure (otherwise skip).
+2. **Quality watchlist** — verify then queue: entry bundle regression (~1,705 kB
+   raw vs I8 ≤500 kB target), Windows backup-test `skipif` for honest local gate.
+3. **Parked** — Wave 4, Track I Phase 3, STIX export, etc. — explicit maintainer
+   signal required.
+
+**Do not start G0** until the maintainer activates the end-of-lifecycle block in
+`SPRINT_2026-07.md`.
+
+---
+
 ## 2026-07-10 — PR13 merged (#422); F2 AGPL license (PR open)
 
 **Merged:** PR13 read-only DB explorer — `db/explorer_*`, Storage table browser, Gemini fixes (pg_class counts, native `$n` SQL).
 
 **F2 (this branch):** AGPL-3.0-or-later `LICENSE`, `CONTRIBUTING.md`, `.github/FUNDING.yml`, SPDX headers on backend/frontend/scripts sources, README + OpenAPI license metadata.
 
-**Next after F2 merge:** G0 — refresh `LEARNING_PATH` / `ONBOARDING`.
+**Next after F2 merge:** ~~G0~~ — deferred to end of lifecycle (see entry above).
 
 ---
 
