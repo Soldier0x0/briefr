@@ -46,7 +46,14 @@ def parse_kev_catalog(data: dict) -> list[dict]:
 async def fetch_kev() -> list[dict]:
     try:
         logger.info("Fetching CISA KEV catalog from %s", KEV_URL)
-        response = await resilient_get("kev", KEV_URL, timeout=60.0)
+        response = await resilient_get(
+            "kev",
+            KEV_URL,
+            timeout=60.0,
+            queue_operation="cve_ingest",
+            queue_context_type="task",
+            queue_context_id="kev_sync",
+        )
         data = response.json()
     except CircuitOpenError:
         logger.warning("KEV circuit open — skipping catalog fetch")

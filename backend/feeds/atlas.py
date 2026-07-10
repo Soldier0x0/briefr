@@ -82,7 +82,14 @@ def extract_cve_ids(*texts: str | None) -> list[str]:
 
 
 async def _fetch_bytes(url: str, timeout: float = 180.0) -> bytes:
-    response = await resilient_get("atlas", url, timeout=timeout)
+    response = await resilient_get(
+        "atlas",
+        url,
+        timeout=timeout,
+        queue_operation="cve_ingest",
+        queue_context_type="task",
+        queue_context_id="atlas_sync",
+    )
     return response.content
 
 

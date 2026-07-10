@@ -12,6 +12,19 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — UX audit PR4 merged; PR2 in progress
+
+**Merged:**
+| PR | Item |
+|----|------|
+| **#400** | PR4 toast provider + lifecycle copy (Gemini: `useMemo` context, dedupe key, `displayName` fallback) |
+
+**In progress:** PR2 API queue metadata + panel density (`cursor/ux-audit-pr2-api-queue-489a`).
+
+**Next after PR2 merge:** PR10 Postgres integrity honesty.
+
+---
+
 ## 2026-07-10 — UX audit implementation loop (Gemini gate + merge)
 
 **Workflow:** Implement → `./scripts/verify-local.sh` green → push PR → wait ~1–2 min for **Gemini** inline review → fix all comments → re-verify → **merge to main** → next PR. GitHub Actions CI expected red (quota).

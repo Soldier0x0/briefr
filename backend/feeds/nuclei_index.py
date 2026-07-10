@@ -57,7 +57,14 @@ def parse_nuclei_cves_index(text: str) -> dict[str, list[dict]]:
 
 async def fetch_nuclei_cves_index() -> str | None:
     try:
-        response = await resilient_get("nuclei", NUCLEI_CVES_URL, timeout=180.0)
+        response = await resilient_get(
+            "nuclei",
+            NUCLEI_CVES_URL,
+            timeout=180.0,
+            queue_operation="exploit_feed_sync",
+            queue_context_type="task",
+            queue_context_id="nuclei_sync",
+        )
         await record_api_call("nuclei", 1)
         return response.text
     except CircuitOpenError:

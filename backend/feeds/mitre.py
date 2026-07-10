@@ -106,7 +106,14 @@ def _split_technique_field(value: str) -> list[str]:
 
 
 async def _fetch_bytes(url: str, timeout: float = 180.0) -> bytes:
-    response = await resilient_get("mitre", url, timeout=timeout)
+    response = await resilient_get(
+        "mitre",
+        url,
+        timeout=timeout,
+        queue_operation="cve_ingest",
+        queue_context_type="task",
+        queue_context_id="mitre_sync",
+    )
     return response.content
 
 

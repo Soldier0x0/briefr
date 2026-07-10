@@ -42,13 +42,32 @@ def get_vulnrichment_branch() -> str:
     return os.environ.get("VULNRICHMENT_BRANCH", DEFAULT_BRANCH).strip() or DEFAULT_BRANCH
 
 
+async def _vulnrichment_get(
+    url: str,
+    *,
+    operation: str = "cve_ingest",
+    context_type: str | None = "task",
+    context_id: str | None = "vulnrichment_sync",
+    timeout: float = 60.0,
+    params: dict | None = None,
+) -> httpx.Response:
+    return await resilient_get(
+        "vulnrichment",
+        url,
+        headers=github_headers(),
+        timeout=timeout,
+        params=params,
+        queue_operation=operation,
+        queue_context_type=context_type,
+        queue_context_id=context_id,
+    )
+
+
 async def _fetch_repo_tree(branch: str) -> list[str]:
     url = f"{GITHUB_API}/repos/{REPO_OWNER}/{REPO_NAME}/git/trees/{branch}"
     try:
-        response = await resilient_get(
-            "vulnrichment",
+        response = await _vulnrichment_get(
             url,
-            headers=github_headers(),
             params={"recursive": "1"},
             timeout=120.0,
         )
@@ -76,11 +95,13 @@ async def _fetch_repo_tree(branch: str) -> list[str]:
 
 async def _fetch_record(path: str, branch: str) -> dict | None:
     url = raw_repo_url(REPO_OWNER, REPO_NAME, branch, path)
+    cve_id = cve_id_from_repo_path(path)
     try:
-        response = await resilient_get(
-            "vulnrichment",
+        response = await _vulnrichment_get(
             url,
-            headers=github_headers(),
+            operation="cve_lookup",
+            context_type="cve" if cve_id else "task",
+            context_id=cve_id or path[:48],
             timeout=45.0,
         )
         record = response.json()

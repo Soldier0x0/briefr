@@ -18,12 +18,16 @@ MAX_ALIAS_FOLLOWS = 3
 
 
 async def _fetch_osv_record(vuln_id: str) -> dict | None:
+    cve_id = vuln_id.upper() if vuln_id.upper().startswith("CVE-") else None
     try:
         response = await resilient_get(
             "osv",
             f"{OSV_VULN_URL}/{vuln_id}",
             timeout=30.0,
             record_client_error=False,
+            queue_operation="osv_lookup",
+            queue_context_type="cve" if cve_id else "task",
+            queue_context_id=cve_id or vuln_id[:48],
         )
         data = response.json()
     except CircuitOpenError:

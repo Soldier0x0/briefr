@@ -21,6 +21,8 @@ from api_queue_operations import (
 def test_operation_label_known_operations():
     assert operation_label("exploit_search") == "Searching public exploit references"
     assert operation_label("cve_ingest") == "Syncing NVD vulnerability feed"
+    assert operation_label("news_feed_sync") == "Syncing incident news feed"
+    assert operation_label("threat_intel_sync") == "Syncing ThreatFox indicators"
     assert operation_label("unknown_op") == OPERATION_LABELS["outbound_request"]
 
 

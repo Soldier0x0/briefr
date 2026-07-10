@@ -61,6 +61,9 @@ async def fetch_metasploit_metadata() -> dict | None:
             "metasploit",
             METASPLOIT_METADATA_URL,
             timeout=180.0,
+            queue_operation="exploit_feed_sync",
+            queue_context_type="task",
+            queue_context_id="metasploit_sync",
         )
         await record_api_call("metasploit", 1)
         return response.json()

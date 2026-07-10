@@ -97,10 +97,50 @@
 }
 
 .api-queue-requests {
-  list-style: none;
   margin: 0;
   padding: 0;
   border-top: 1px solid var(--border);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.api-queue-provider-group {
+  border-bottom: 1px solid var(--border);
+}
+
+.api-queue-provider-group:last-child {
+  border-bottom: none;
+}
+
+.api-queue-provider-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0 0.25rem;
+  position: sticky;
+  top: 0;
+  background: var(--bg2);
+  z-index: 1;
+}
+
+.api-queue-provider-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+
+.api-queue-provider-count {
+  font-size: 0.625rem;
+  color: var(--text3);
+}
+
+.api-queue-provider-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .api-queue-request {
@@ -149,6 +189,8 @@
   text-transform: uppercase;
   color: var(--text);
 }
+
+/* legacy row source label — grouped view uses provider head */
 
 .api-queue-request-state {
   font-size: 0.625rem;
