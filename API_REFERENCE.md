@@ -1247,6 +1247,12 @@ Response: `{ok, rows_deleted, target}`.
 ### GET /api/admin/storage/export
 Streams `briefr.db` as `application/octet-stream` download. Audit: `storage.db_export`.
 
+### GET /api/admin/db-explorer/tables
+Read-only allowlist catalog: `{read_only: true, tables: [{name, label, tier, row_count, columns, filter_columns, required_filter, order_by}]}`. Denied tables are omitted (not 403). Rate limit: 30/min (`db_explorer` bucket) in addition to admin read limits.
+
+### GET /api/admin/db-explorer/tables/{table_name}/rows
+Paginated read-only rows for one allowlisted table. Params: `limit` (1–100, default 50), `offset` (0–10000), optional `filter_column` + `filter_value` (single-column equality only — no client SQL). `cves` requires `filter_column=cve_id` with a valid CVE ID. Large text/JSON fields may truncate (~2 KB); Tier-2 tables mask sensitive columns (`audit_log.target`, `webhook_delivery_log.error`). Unknown or forbidden tables return **404**. Audit: `db.explorer.browse.{table}` with filter summary — no row bodies.
+
 ### POST /api/admin/scheduler/run
 Body `{job_id}`. Triggers a scheduler job immediately. Returns `409` if job lock is held, `400` if job_id unknown.
 Audit: `scheduler.run.{job_id}`.

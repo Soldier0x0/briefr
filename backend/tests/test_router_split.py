@@ -86,6 +86,8 @@ EXPECTED_ROUTES = [
     ("POST", "/api/admin/backups/run"),
     ("POST", "/api/admin/backups/upload"),
     ("GET", "/api/admin/storage"),
+    ("GET", "/api/admin/db-explorer/tables"),
+    ("GET", "/api/admin/db-explorer/tables/{table_name}/rows"),
     ("GET", "/api/admin/destructive-actions"),
     ("POST", "/api/admin/storage/purge"),
     ("GET", "/api/admin/storage/export"),

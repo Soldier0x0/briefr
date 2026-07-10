@@ -275,5 +275,9 @@ export const AUDIT_ACTION_LABELS = {
 }
 
 export function auditActionLabel(action) {
+  if (action.startsWith('db.explorer.browse.')) {
+    const table = action.slice('db.explorer.browse.'.length)
+    return `Browsed DB table ${table}`
+  }
   return AUDIT_ACTION_LABELS[action] || action
 }

@@ -12,6 +12,16 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — PR13 read-only DB explorer (PR open)
+
+**Branch:** `cursor/pr13-db-explorer-9446`
+
+**Shipped:** deny-by-default `db/explorer_registry.py` + `db/explorer.py`; `GET /api/admin/db-explorer/tables` and `GET /api/admin/db-explorer/tables/{table}/rows` (parameterized filters, pagination cap 100, `cves` requires `cve_id` filter, Tier-2 masking on `audit_log`/`webhook_delivery_log`/`ai_operations` browse); 30/min `db_explorer` rate limit; audit `db.explorer.browse.{table}` without row bodies. Admin → **Storage** gains **Table browser** (`DbExplorerPanel.jsx`). Tests: `test_db_explorer.py`.
+
+**Next:** F2 — LICENSE + CONTRIBUTING + FUNDING.yml.
+
+---
+
 ## 2026-07-10 — AI-2 Admin AI Operations page (#417)
 
 **Merged:** `/api/admin/ai/operations/{overview,providers,activity}` + `AiOperationsPage.jsx` (Overview / Providers / Models / Usage / Activity). Provider health from `resilient_client`; usage rollups from `ai_operations`.
