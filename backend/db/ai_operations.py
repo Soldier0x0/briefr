@@ -110,8 +110,10 @@ async def list_ai_operations(
 def _hours_ago_iso(hours: int) -> str:
     from datetime import datetime, timedelta, timezone
 
+    # Rows store started_at via utcnow_str() = "%Y-%m-%d %H:%M:%S"; the cutoff must
+    # match that format or string comparison drops rows on the boundary date.
     ts = datetime.now(timezone.utc) - timedelta(hours=hours)
-    return ts.strftime("%Y-%m-%dT%H:%M:%SZ")
+    return ts.strftime("%Y-%m-%d %H:%M:%S")
 
 
 async def ai_operations_usage_since(

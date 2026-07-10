@@ -46,6 +46,15 @@ OTX_TABLE_RETENTION_HOURS = 7 * 24
 EPSS_HISTORY_RETENTION_DAYS = 90
 CVE_CHANGE_HISTORY_RETENTION_DAYS = 90
 
+# Operator append-only tables (C3 follow-up). ai_operations / webhook_delivery_log
+# are high-frequency per-event logs — a month is plenty for observability. audit_log
+# is compliance-sensitive, so it keeps a conservative year. api_usage is intentionally
+# excluded: it is a (service, date_utc) aggregate (~1 row/service/day), effectively
+# bounded, and purging it would drop usage history for negligible space.
+AI_OPERATIONS_RETENTION_DAYS = 30
+WEBHOOK_DELIVERY_LOG_RETENTION_DAYS = 30
+AUDIT_LOG_RETENTION_DAYS = 365
+
 _PURGE_IOC_CACHE_SQLITE = """
 DELETE FROM ioc_cache
 WHERE cached_at < ?
@@ -116,6 +125,36 @@ WHERE fetched_at < ?
 _PURGE_OTX_PULSE_IOCS_PG = """
 DELETE FROM otx_pulse_iocs
 WHERE fetched_at < $1
+"""
+
+_PURGE_AI_OPERATIONS_SQLITE = """
+DELETE FROM ai_operations
+WHERE started_at < ?
+"""
+
+_PURGE_AI_OPERATIONS_PG = """
+DELETE FROM ai_operations
+WHERE started_at < $1
+"""
+
+_PURGE_WEBHOOK_DELIVERY_LOG_SQLITE = """
+DELETE FROM webhook_delivery_log
+WHERE attempted_at < ?
+"""
+
+_PURGE_WEBHOOK_DELIVERY_LOG_PG = """
+DELETE FROM webhook_delivery_log
+WHERE attempted_at < $1
+"""
+
+_PURGE_AUDIT_LOG_SQLITE = """
+DELETE FROM audit_log
+WHERE created_at < ?
+"""
+
+_PURGE_AUDIT_LOG_PG = """
+DELETE FROM audit_log
+WHERE created_at < $1
 """
 
 _CHANGES_SQLITE = "SELECT changes() AS n"
@@ -243,6 +282,44 @@ async def purge_stale_otx_tables(
     }
 
 
+async def purge_old_ai_operations(
+    db: DbConnection,
+    retention_days: int = AI_OPERATIONS_RETENTION_DAYS,
+) -> int:
+    cutoff = _cutoff_datetime_hours_ago(retention_days * 24)
+    sql = (
+        _PURGE_AI_OPERATIONS_PG
+        if _is_postgres_connection(db)
+        else _PURGE_AI_OPERATIONS_SQLITE
+    )
+    cursor = await db.execute(sql, (cutoff,))
+    return await _rows_deleted(db, cursor)
+
+
+async def purge_old_webhook_delivery_log(
+    db: DbConnection,
+    retention_days: int = WEBHOOK_DELIVERY_LOG_RETENTION_DAYS,
+) -> int:
+    cutoff = _cutoff_datetime_hours_ago(retention_days * 24)
+    sql = (
+        _PURGE_WEBHOOK_DELIVERY_LOG_PG
+        if _is_postgres_connection(db)
+        else _PURGE_WEBHOOK_DELIVERY_LOG_SQLITE
+    )
+    cursor = await db.execute(sql, (cutoff,))
+    return await _rows_deleted(db, cursor)
+
+
+async def purge_old_audit_log(
+    db: DbConnection,
+    retention_days: int = AUDIT_LOG_RETENTION_DAYS,
+) -> int:
+    cutoff = _cutoff_datetime_hours_ago(retention_days * 24)
+    sql = _PURGE_AUDIT_LOG_PG if _is_postgres_connection(db) else _PURGE_AUDIT_LOG_SQLITE
+    cursor = await db.execute(sql, (cutoff,))
+    return await _rows_deleted(db, cursor)
+
+
 async def run_retention_cleanup(db: DbConnection) -> dict[str, int]:
     """Sweep stale cache/overlay rows. Caller commits."""
     otx = await purge_stale_otx_tables(db)
@@ -251,5 +328,8 @@ async def run_retention_cleanup(db: DbConnection) -> dict[str, int]:
         "feed_cache": await purge_stale_feed_cache(db),
         "epss_history": await purge_old_epss_history(db),
         "cve_change_history": await purge_old_cve_change_history(db),
+        "ai_operations": await purge_old_ai_operations(db),
+        "webhook_delivery_log": await purge_old_webhook_delivery_log(db),
+        "audit_log": await purge_old_audit_log(db),
         **otx,
     }

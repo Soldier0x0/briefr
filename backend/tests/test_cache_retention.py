@@ -64,6 +64,59 @@ def test_purge_stale_feed_cache_keeps_fresh_ssvc(tmp_path, monkeypatch):
     asyncio.run(run())
 
 
+def test_purge_old_ai_operations_uses_started_at(tmp_path, monkeypatch):
+    _force_sqlite(tmp_path, monkeypatch, "ai_ops_retention.db")
+
+    async def run():
+        await db_module.init_db()
+        db = await db_module.get_db()
+        try:
+            for op_id, days_ago in (("old-op", 45), ("recent-op", 2)):
+                await db_module.insert_ai_operation(
+                    db,
+                    operation_id=op_id,
+                    request_id=None,
+                    started_at=_utc(days_ago),
+                    latency_ms=10,
+                    feature="pdf_summary",
+                    task_class="pdf_summary",
+                    provider="groq",
+                    model="m",
+                    success=True,
+                )
+            await db.commit()
+
+            deleted = await db_module.purge_old_ai_operations(db, retention_days=30)
+            await db.commit()
+
+            rows = await db.execute_fetchall(
+                "SELECT operation_id FROM ai_operations ORDER BY operation_id"
+            )
+            assert deleted == 1
+            assert [row["operation_id"] for row in rows] == ["recent-op"]
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+
+def test_run_retention_cleanup_includes_operator_tables(tmp_path, monkeypatch):
+    _force_sqlite(tmp_path, monkeypatch, "retention_all.db")
+
+    async def run():
+        await db_module.init_db()
+        db = await db_module.get_db()
+        try:
+            stats = await db_module.run_retention_cleanup(db)
+            await db.commit()
+            for key in ("ai_operations", "webhook_delivery_log", "audit_log"):
+                assert key in stats
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+
 def test_purge_old_cve_change_history_uses_detected_at(tmp_path, monkeypatch):
     _force_sqlite(tmp_path, monkeypatch, "change_history.db")
 
