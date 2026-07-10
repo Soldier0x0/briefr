@@ -12,6 +12,35 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — Sprint doc refresh: single merge gate, live queue on top, PR13 full explorer confirmed
+
+**Merged this session:** #409 (PR12/PR13 plan, amended), #410 (AI ops plan,
+condensed to 3 PRs + cleanup), #411 (PR-A: stale Anthropic copy + dead
+`groq_client` removed).
+
+**This PR (docs only):**
+- `SPRINT_2026-07.md` restructured: live execution queue at the top
+  (PR12a→12b→12c → AI-1→AI-2 → PR13 → F2 → G0; AI-3 data-gated); wave
+  model + UX audit recorded as closed programs; **one merge gate stated
+  once** — local verification (`verify-local.sh` / pytest + npm build);
+  CI badges advisory only (Actions billing-blocked); Gemini review-wait
+  workflow codified in the DoD with its **2026-07-17 sunset** flagged as
+  a pending decision; Spec I guardrail 1 updated to Postgres-native.
+- `CLAUDE.md` danger zone 1 rewritten: `db/` is Postgres-native,
+  `db/dialect.py` deleted (Post-B3), SQLite = test/dev fallback only.
+- **PR13 decision (maintainer):** full read-only DB explorer confirmed —
+  admin Database section (Storage page evolves), dropdown-driven table
+  browsing, never typed SQL, deny-by-default tiers/masking binding.
+  Plan doc updated; the earlier sample-rows-only MVP cut is overridden.
+- Quality watchlist added to the sprint: entry-bundle regression
+  (~1,705 kB raw vs I8's ≤500 kB target), Windows backup-test skipif
+  (local gate honesty), retention for `audit_log`/`api_usage`/
+  `webhook_delivery_log`.
+
+**Next:** PR12a (webhooks async refactor, no behavior change).
+
+---
+
 ## 2026-07-10 — UX audit PR8 merged; approved queue complete
 
 **Merged:**
