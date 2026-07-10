@@ -45,6 +45,9 @@ def test_storage_returns_partition_info(admin_client):
     # Must return structured partition objects
     assert "db_partition" in data
     assert "backup_partition" in data
+    assert "table_sizes" in data
+    assert "growth_estimate" in data
+    assert "disk_io" in data
     db_part = data["db_partition"]
     assert "total" in db_part
     assert "free" in db_part
@@ -70,6 +73,17 @@ def test_storage_disk_pct_not_nan(admin_client):
     assert total > 0
     pct = used / total * 100
     assert pct == pct  # NaN check: NaN != NaN
+
+
+def test_storage_returns_table_sizes_and_growth(admin_client):
+    resp = admin_client.get("/api/admin/storage")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "table_sizes" in data
+    assert isinstance(data["table_sizes"], list)
+    assert "growth_estimate" in data
+    assert "disk_io" in data
+    assert "available" in data["disk_io"]
 
 
 def test_purge_ioc_cache_requires_confirm(admin_client):

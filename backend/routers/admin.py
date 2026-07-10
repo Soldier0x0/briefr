@@ -97,6 +97,12 @@ def _mask_key(value: str) -> str:
     return f"…{value[-6:]}"
 
 
+def _mask_config_response_value(key: str, value: str) -> str:
+    from redact import mask_config_value
+
+    return mask_config_value(key, value)
+
+
 def _mask_url(value: str) -> str:
     """Show first 30 chars + '[masked]' or 'not configured'."""
     if not value:
@@ -598,7 +604,14 @@ _STORAGE_TABLES = [
 
 @router.get("/storage")
 async def get_storage(request: Request):
+    from storage_metrics import (
+        estimate_growth_bytes_per_day,
+        fetch_table_sizes,
+        read_host_disk_io,
+    )
+
     db = await get_db()
+    table_sizes: list[dict[str, Any]] = []
     try:
         counts: dict[str, int] = {}
         for table in _STORAGE_TABLES:
@@ -607,6 +620,7 @@ async def get_storage(request: Request):
                 counts[table] = rows[0]["cnt"] if rows else 0
             except Exception:
                 counts[table] = -1
+        table_sizes = await fetch_table_sizes(db)
     finally:
         await db.close()
 
@@ -652,8 +666,14 @@ async def get_storage(request: Request):
     except Exception:
         pass
 
+    growth_estimate = estimate_growth_bytes_per_day(db_size_bytes, backup_dir)
+    disk_io = read_host_disk_io(db_path)
+
     return {
         "tables": counts,
+        "table_sizes": table_sizes,
+        "growth_estimate": growth_estimate,
+        "disk_io": disk_io,
         "db_size_bytes": db_size_bytes,
         "db_path": db_path,
         # legacy flat fields for backward compat
@@ -1183,13 +1203,15 @@ async def set_config(request: Request, body: dict):
 
     await persist_operator_setting(key, value)
 
-    await audit(request, f"config.set.{key}", value[:100])
+    from redact import redact_audit_target
+
+    await audit(request, f"config.set.{key}", redact_audit_target(f"config.set.{key}", key, value))
 
     field = get_field(key)
     strategy = resolved_apply_strategy(field) if field else APPLY_RESTART
     side_effects = _apply_config_side_effects([key]) if strategy == APPLY_SCHEDULER_RESCHEDULE else {}
 
-    masked = _mask_key(value) if key in {"DISCORD_WEBHOOK_URL", "TELEGRAM_BOT_TOKEN", "WEBHOOK_GENERIC_URL"} else value
+    masked = _mask_config_response_value(key, value)
     return {
         "ok": True,
         "key": key,
