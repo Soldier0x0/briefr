@@ -12,6 +12,14 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — PR12 series complete (#413–#415); next AI-1
+
+**Merged:** #413 PR12a, #414 PR12b, #415 PR12c — full multi-webhook stack (async guards, CRUD API, per-destination dedupe, Webhooks admin UI).
+
+**Next:** AI-1 — `ai_operations` table (Alembic 014) + recorder hook + model catalog SSOT.
+
+---
+
 ## 2026-07-10 — PR12c WebhooksPage rewrite (PR open)
 
 **Merged earlier this session:** #413 (PR12a), #414 (PR12b).
