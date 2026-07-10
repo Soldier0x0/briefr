@@ -55,7 +55,11 @@ from feeds.exploit_sync import (
     get_exploit_sources_interval_hours,
     sync_all_exploit_sources,
 )
-from ml.embeddings import embeddings_enabled, run_embeddings_backfill
+from ml.embeddings import (
+    embeddings_auto_on_ingest_enabled,
+    embeddings_enabled,
+    run_embeddings_backfill,
+)
 from ml.product_extraction import (
     llm_product_extraction_enabled,
     run_llm_product_extraction,
@@ -358,6 +362,20 @@ async def _run_nvd_incremental_sync() -> None:
                     ext_stats.get("sploitus", 0),
                     ext_stats.get("circl", 0),
                 )
+            if updated_ids and embeddings_auto_on_ingest_enabled():
+                _job_progress["nvd_incremental_sync"] = (
+                    f"Embedding up to {len(updated_ids)} ingested CVE descriptions…"
+                )
+                emb_stats = await run_embeddings_backfill(
+                    db,
+                    cve_id_filter={cid.upper() for cid in updated_ids},
+                )
+                if emb_stats.get("embedded"):
+                    logger.info(
+                        "Embeddings ingest tail: embedded %d CVE(s) with %s",
+                        emb_stats.get("embedded", 0),
+                        emb_stats.get("model", ""),
+                    )
             await db.commit()
             logger.info(
                 "NVD post-process: stripped %d summaries, %d display fields, %d PoC flags",

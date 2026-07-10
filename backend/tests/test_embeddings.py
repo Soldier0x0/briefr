@@ -255,6 +255,16 @@ def test_backfill_embeds_missing_cves_with_fake_model(tmp_path, monkeypatch):
     assert abs(float(np.linalg.norm(vec)) - 1.0) < 1e-5  # stored normalized
 
 
+def test_embeddings_auto_on_ingest_requires_both_flags(monkeypatch):
+    from ml import embeddings as emb
+
+    monkeypatch.setenv("EMBEDDINGS_ENABLED", "1")
+    monkeypatch.setenv("EMBEDDINGS_AUTO_ON_INGEST", "0")
+    assert emb.embeddings_auto_on_ingest_enabled() is False
+    monkeypatch.setenv("EMBEDDINGS_AUTO_ON_INGEST", "1")
+    assert emb.embeddings_auto_on_ingest_enabled() is True
+
+
 def test_backfill_skips_gracefully_when_fastembed_missing(tmp_path, monkeypatch):
     monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "nofe.db"))
     monkeypatch.setattr(emb, "TextEmbedding", None)
