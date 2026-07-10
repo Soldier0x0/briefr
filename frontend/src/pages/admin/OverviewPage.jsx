@@ -6,6 +6,13 @@ import { fmtIso, fmtAge, ageColor, sourceLabel } from './formatters.js'
 import { overallHealth, analystScheduleJobs } from './intelStatus.js'
 import { jobLabel } from './catalog.js'
 import { pauseResumeAction } from './jobActions.js'
+import {
+  schedulerJobManualRun,
+  schedulerJobPaused,
+  schedulerJobRefresh,
+  schedulerJobResumed,
+  schedulerJobRetry,
+} from './toastCopy.js'
 import OpsCharts from './shared/OpsCharts.jsx'
 
 function AnalystOverview({ system, toast }) {
@@ -17,7 +24,7 @@ function AnalystOverview({ system, toast }) {
       const res = await adminApi.post('/scheduler/run', { job_id: jobId })
       const data = await res.json()
       if (res.status === 409) { toast('Already updating', false); setRunning(r => ({ ...r, [jobId]: false })); return }
-      toast(data.ok ? `${jobLabel(jobId, 'analyst')} refresh started` : data.detail, data.ok)
+      toast(data.ok ? schedulerJobRefresh(jobId, 'analyst') : data.detail, data.ok)
     } catch (e) { toast(String(e.message), false) }
     setTimeout(() => setRunning(r => ({ ...r, [jobId]: false })), 2000)
   }
@@ -129,13 +136,18 @@ function OperatorOverview({ system, toast }) {
     setRunning(r => ({ ...r, onboardingDismiss: false }))
   }
 
-  async function runNow(jobId) {
+  async function runNow(jobId, { retry = false } = {}) {
     setRunning(r => ({ ...r, [jobId]: true }))
     try {
       const res = await adminApi.post('/scheduler/run', { job_id: jobId })
       const data = await res.json()
       if (res.status === 409) { toast('Already running — check active locks', false); setRunning(r => ({ ...r, [jobId]: false })); return }
-      toast(data.ok ? `Job started: ${jobLabel(jobId, 'operator')}` : data.detail, data.ok)
+      toast(
+        data.ok
+          ? (retry ? schedulerJobRetry(jobId, 'operator') : schedulerJobManualRun(jobId, 'operator'))
+          : data.detail,
+        data.ok,
+      )
     } catch (e) { toast(String(e.message), false) }
     setTimeout(() => setRunning(r => ({ ...r, [jobId]: false })), 2000)
   }
@@ -149,7 +161,7 @@ function OperatorOverview({ system, toast }) {
       if (!res.ok || data.ok === false) {
         throw new Error(data.detail || `HTTP ${res.status}`)
       }
-      toast(`${jobLabel(job.id, 'operator')} ${action === 'pause' ? 'paused' : 'resumed'}`, true)
+      toast(action === 'pause' ? schedulerJobPaused(job.id, 'operator') : schedulerJobResumed(job.id, 'operator'), true)
     } catch (e) { toast(String(e.message), false) }
   }
 
@@ -321,7 +333,7 @@ function OperatorOverview({ system, toast }) {
                     <td className="mono" style={{ fontSize: '0.75rem' }}>{e.job_id}</td>
                     <td style={{ fontSize: '0.75rem', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.error || '—'}</td>
                     <td style={{ fontSize: '0.75rem' }}>{fmtIso(e.last_run_utc)}</td>
-                    <td><button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }} onClick={() => runNow(e.job_id)}>Retry</button></td>
+                    <td><button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }} onClick={() => runNow(e.job_id, { retry: true })}>Retry</button></td>
                   </tr>
                 ))}
               </tbody>

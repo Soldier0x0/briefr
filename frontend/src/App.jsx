@@ -14,7 +14,7 @@ import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import RequireAuth from './components/RequireAuth.jsx'
-import { useToast, ToastArea } from './components/Toast.jsx'
+import { useToast } from './components/Toast.jsx'
 import { fetchStats, fetchHealth, fetchCVE } from './api.js'
 import { useWatchlist } from './hooks/useWatchlist.js'
 import { useAssetProfileOptional } from './context/AssetProfileContext.jsx'
@@ -307,7 +307,7 @@ export default function App() {
   const [atlasActorFilter, setAtlasActorFilter] = useState(null)
   const assetCtx = useAssetProfileOptional()
   const watchlist = useWatchlist()
-  const { toasts, show: toast, dismiss: dismissToast } = useToast()
+  const { show: toast } = useToast()
 
   useEffect(() => {
     const onApiError = (e) => {
@@ -765,7 +765,6 @@ export default function App() {
         onClose={() => setPaletteOpen(false)}
         getCommands={getPaletteCommands}
       />
-      <ToastArea toasts={toasts} onDismiss={dismissToast} />
     </InvestigationProvider>
   )
 }

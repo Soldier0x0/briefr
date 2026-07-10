@@ -1,6 +1,8 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle2, XCircle, AlertTriangle, Info, X, Copy } from 'lucide-react'
+
+const ToastContext = createContext(null)
 
 const VARIANT_ICON = {
   success: CheckCircle2,
@@ -15,6 +17,10 @@ const DEFAULT_DURATION = {
   warning: null,
   info: 8000,
 }
+
+const HOVER_RESUME_GRACE_MS = 400
+const DEDUPE_WINDOW_MS = 2000
+const MAX_VISIBLE = 4
 
 function normalizeToast(input, ok = true) {
   if (typeof input === 'string') {
@@ -46,21 +52,53 @@ export function notifyApiError(err) {
   }))
 }
 
-export function useToast() {
+function useToastState() {
   const [toasts, setToasts] = useState([])
+  const lastShownRef = useRef({ message: '', at: 0 })
+
   const dismiss = useCallback((id) => {
     setToasts(t => t.map(x => (x.id === id ? { ...x, leaving: true } : x)))
     setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 180)
   }, [])
+
   const show = useCallback((msgOrOpts, ok = true) => {
-    const id = Date.now() + Math.random()
     const payload = normalizeToast(msgOrOpts, ok)
+    const now = Date.now()
+    if (
+      payload.message
+      && payload.message === lastShownRef.current.message
+      && now - lastShownRef.current.at < DEDUPE_WINDOW_MS
+    ) {
+      return
+    }
+    lastShownRef.current = { message: payload.message, at: now }
+
+    const id = now + Math.random()
     setToasts(t => {
       const next = [...t, { id, ...payload, leaving: false }]
-      return next.length > 4 ? next.slice(-4) : next
+      return next.length > MAX_VISIBLE ? next.slice(-MAX_VISIBLE) : next
     })
   }, [])
+
   return { toasts, show, dismiss }
+}
+
+export function ToastProvider({ children }) {
+  const api = useToastState()
+  return (
+    <ToastContext.Provider value={api}>
+      {children}
+      <ToastArea toasts={api.toasts} onDismiss={api.dismiss} />
+    </ToastContext.Provider>
+  )
+}
+
+export function useToast() {
+  const ctx = useContext(ToastContext)
+  if (!ctx) {
+    throw new Error('useToast must be used within ToastProvider')
+  }
+  return ctx
 }
 
 const CLIPBOARD_AVAILABLE = typeof navigator !== 'undefined' && Boolean(navigator.clipboard?.writeText)
@@ -79,11 +117,19 @@ function ToastItem({ toast, onDismiss }) {
   const timerRef = useRef(null)
   const pausedRef = useRef(false)
   const deadlineRef = useRef(0)
+  const resumeGraceRef = useRef(null)
 
   const clearTimer = () => {
     if (timerRef.current) {
       clearTimeout(timerRef.current)
       timerRef.current = null
+    }
+  }
+
+  const clearResumeGrace = () => {
+    if (resumeGraceRef.current) {
+      clearTimeout(resumeGraceRef.current)
+      resumeGraceRef.current = null
     }
   }
 
@@ -97,11 +143,15 @@ function ToastItem({ toast, onDismiss }) {
   useEffect(() => {
     if (toast.duration == null) return undefined
     scheduleDismiss()
-    return clearTimer
+    return () => {
+      clearTimer()
+      clearResumeGrace()
+    }
   }, [toast.duration, toast.id, scheduleDismiss])
 
   const pause = () => {
     if (toast.duration == null || pausedRef.current) return
+    clearResumeGrace()
     pausedRef.current = true
     remainingRef.current = Math.max(0, deadlineRef.current - Date.now())
     clearTimer()
@@ -110,7 +160,15 @@ function ToastItem({ toast, onDismiss }) {
   const resume = () => {
     if (toast.duration == null || !pausedRef.current) return
     pausedRef.current = false
-    scheduleDismiss()
+    clearResumeGrace()
+    resumeGraceRef.current = setTimeout(() => {
+      resumeGraceRef.current = null
+      if (!pausedRef.current) scheduleDismiss()
+    }, HOVER_RESUME_GRACE_MS)
+  }
+
+  const handleBlur = (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) resume()
   }
 
   async function copyRequestId() {
@@ -129,7 +187,7 @@ function ToastItem({ toast, onDismiss }) {
       onMouseEnter={pause}
       onMouseLeave={resume}
       onFocus={pause}
-      onBlur={resume}
+      onBlur={handleBlur}
     >
       <Icon size={15} strokeWidth={2} />
       <div className="admin-toast-body">

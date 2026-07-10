@@ -123,7 +123,7 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                       <button
                         className="admin-btn admin-btn-ghost"
                         style={{ marginTop: '0.4rem', fontSize: '0.75rem' }}
-                        onClick={() => onRunNow(job.id)}
+                        onClick={() => onRunNow(job.id, { retry: true })}
                       >
                         Retry now
                       </button>

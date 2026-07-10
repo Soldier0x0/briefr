@@ -8,7 +8,7 @@ import StatusBar from './StatusBar.jsx'
 import Sidebar from './Sidebar.jsx'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import ErrorBoundary from './shared/ErrorBoundary.jsx'
-import { useToast, ToastArea } from '../../components/Toast.jsx'
+import { useToast } from '../../components/Toast.jsx'
 import { notifyBackendRestarting } from '../../utils/backendRestart.js'
 import RestartBanner from './shared/RestartBanner.jsx'
 import { OperationProvider, OperationStrip, useOperations } from './shared/OperationTracker.jsx'
@@ -42,7 +42,7 @@ const VALID_ADMIN_PAGES = new Set([
   'sessions', 'ratelimit',
 ])
 
-function AdminPageBody({ toast, toasts, dismissToast }) {
+function AdminPageBody({ toast }) {
   const { runAction } = useOperations()
   const [searchParams] = useSearchParams()
   const [page, setPageRaw] = useState('overview')
@@ -280,16 +280,15 @@ function AdminPageBody({ toast, toasts, dismissToast }) {
           )}
         </div>
       </div>
-      <ToastArea toasts={toasts} onDismiss={dismissToast} />
     </div>
   )
 }
 
 export default function AdminPage() {
-  const { toasts, show: toast, dismiss: dismissToast } = useToast()
+  const { show: toast } = useToast()
   return (
     <OperationProvider toast={toast}>
-      <AdminPageBody toast={toast} toasts={toasts} dismissToast={dismissToast} />
+      <AdminPageBody toast={toast} />
     </OperationProvider>
   )
 }
