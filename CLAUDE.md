@@ -20,12 +20,14 @@ JSX/CSS, no component library), **PostgreSQL required in production**.
 
 ## Danger zones — read before editing
 
-1. **SQL dialect:** all SQL in `database.py` is written in SQLite dialect with
-   `?` placeholders and translated to PostgreSQL at runtime by
-   `db/dialect.py`. Never write Postgres-only syntax in shared query paths.
-   Production is Postgres-only (`BRIEFR_REQUIRE_POSTGRES=1`); most tests run
-   SQLite — a query can pass tests and still break production if the
-   translation misses it. When touching SQL, check both dialects.
+1. **SQL:** the `db/` package is **Postgres-native** (Post-B, 2026-07;
+   `db/dialect.py` was deleted — do not reintroduce a translation layer).
+   Write new SQL Postgres-native. Production is Postgres-only
+   (`BRIEFR_REQUIRE_POSTGRES=1`); SQLite survives **only** as the
+   zero-config test/dev fallback in `db/connection.py` (`db/pg_adapt.py`
+   adapts for it). Tests default to SQLite — a query can pass the default
+   suite and still break production, so for any `db/`-layer change run the
+   suite both ways: default, and with `DATABASE_URL` pointing at Postgres.
 2. **Scheduler locks:** job `id=` strings in `scheduler.py` must stay in sync
    with the lock mapping used by `routers/admin.py`.
 3. **Migrations are forward-only** (Alembic). Never edit an applied migration;

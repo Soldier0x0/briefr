@@ -671,7 +671,7 @@ but they ship as **four PRs**:
 (`db/dialect.py` deleted — new SQL is Postgres-native), the wave-model queue in
 `docs/SPRINT_2026-07.md` is closed through Wave 3, and the UX audit PR1–PR11 pass is merged.
 The execution queue (recorded in `SPRINT_2026-07.md` via PR #409) is:
-PR-A (#411) → PR12a–c → **AI-1 → AI-2** → PR13-MVP, with AI-3 data-gated.
+PR-A (#411) → PR12a–c → **AI-1 → AI-2** → PR13 (full explorer — maintainer decision 2026-07-10), with AI-3 data-gated.
 
 The original per-slice detail follows (boundaries and acceptance criteria still apply
 within their combined PRs).
@@ -886,7 +886,7 @@ Proposed: `ai_model_catalog_refresh` (weekly).
 | 1 | Migration numbering — the review comment claimed 007 based on a **stale checkout**; the repo actually has migrations 001–012, so this plan's original 014 was correct | **014** confirmed; 013 reserved for PR12 (#409 plan) |
 | 2 | 10 PRs over-sliced for 3 task classes × 4 providers | Condensed to PR-A + AI-1 + AI-2 + AI-3; AI-3 gated on real AI-1 data (§23) |
 | 3 | PR-AI-9 is a live production bug buried at position 9; PR-AI-10 is independent cleanup | Both pulled to the front and **shipped as PR #411** |
-| 4 | Sequencing — the review comment said "queue after D4/Post-B", also from the stale checkout; both are in fact **complete** and the wave queue is closed through Wave 3 | Corrected sequencing in §23: PR-A → PR12a–c → AI-1/AI-2 → PR13-MVP; AI-3 conditional |
+| 4 | Sequencing — the review comment said "queue after D4/Post-B", also from the stale checkout; both are in fact **complete** and the wave queue is closed through Wave 3 | Corrected sequencing in §23: PR-A → PR12a–c → AI-1/AI-2 → PR13; AI-3 conditional |
 
 Analysis sections (§1–§21, §24–§27) were validated against `main` head and stand unchanged:
 `LLMTask` still has exactly 3 values, `tracking.API_LIMITS` still omits all LLM providers,

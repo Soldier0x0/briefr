@@ -16,7 +16,7 @@ implementation PRs are opened.
 | PR | Name | User value | Risk | Scope | DB migration |
 |----|------|------------|------|-------|--------------|
 | **PR12** (3 PRs: 12a/12b/12c) | Multi-webhook endpoints | Daily ops — multiple alert channels | HIGH | LARGE | Yes — Alembic **013** |
-| **PR13** | ~~Read-only DB explorer~~ → **Storage sample-rows MVP** | Occasional debugging without `psql` | LOW (MVP) | SMALL (MVP) | No |
+| **PR13** | Read-only DB explorer (admin Database section, dropdown-driven) | Admin quality of life — data visibility without `psql` | HIGH (mitigated by deny-by-default registry) | LARGE | No (registry-only) |
 
 **Recommended order:** PR12 series first (existing webhook engine + table); PR13 MVP second.
 
@@ -29,7 +29,7 @@ Verified against `main` at head: **D4 and Post-B are complete** (`db/dialect.py`
 Post-B Phase 3 — `db/` is Postgres-native now), the wave-model queue in
 `docs/SPRINT_2026-07.md` is closed through Wave 3 with Wave 4 parked, and the UX audit pass
 PR1–PR11 is merged. Nothing blocks this work; **PR12a–c is the next implementation queue**,
-in this order: PR-A cleanup (#411) → PR12a → 12b → 12c → AI-1/AI-2 (#410 plan) → PR13-MVP.
+in this order: PR-A cleanup (#411) → PR12a → 12b → 12c → AI-1/AI-2 (#410 plan) → PR13.
 
 New CRUD queries are written **Postgres-native** per the post-Post-B `db/` convention — the
 SQLite-dialect + `db/dialect.py` rule in `CLAUDE.md` is stale (flagged for its own doc fix).
@@ -237,35 +237,25 @@ becoming `async`. Call sites today include:
 
 ---
 
-# PR13 — DB visibility
+# PR13 — Read-only DB explorer (admin Database section)
 
-## Decision (maintainer review): ship the sample-rows MVP, defer the full explorer
+## Decision (maintainer, 2026-07-10): build the full explorer
 
-The full read-only explorer below is **HIGH risk / LARGE scope** for "occasional debugging
-without `psql`", with a security model where one missing deny-list entry exposes credentials.
-The MVP that solves the actual debugging need:
-
-**PR13-MVP — Storage sample rows**
-
-- Extend the existing `GET /api/admin/storage` surface with a sample-rows endpoint for
-  **Tier 1 intel tables only** (hardcoded allowlist from `docs/DATA_SNAPSHOT.md`).
-- Server-defined ordering, `LIMIT 50`, **no filters, no pagination params, no operator tables
-  queryable at all** — Tier 2/3 tables simply do not exist to this endpoint (404).
-- Rendered as a sub-view of the existing Storage page — no new admin nav item.
-- This deletes the entire Tier 2/3 masking problem: nothing sensitive is ever queryable.
-
-**Build the full explorer below only if operators concretely ask for filtered browsing
-afterward.** Everything from here to the PR13 open questions is retained as the deferred
-design of record, with decisions pre-answered (see Open questions).
-
----
-
-## Deferred design — full read-only DB explorer (reference only)
+The earlier review pass cut PR13 to a sample-rows-only MVP; the **maintainer overrode
+that** — the wanted feature is a real quality-of-life surface: an admin **Database
+section** (the existing Storage page evolves into it) where the admin **selects a table
+from a dropdown** and browses rows — **never types SQL**. Every interaction maps to a
+pre-built, parameterized query against a static allowlist registry. The security posture
+below is non-negotiable: deny-by-default, sensitive tables invisible (404, not 403),
+masked columns on allowed tables, hard row caps, rate limit, audit on every browse —
+"not everything is visible from the read-only section" is a design requirement, not a
+side effect.
 
 ### Goal
 
-Give admins a **safe, read-only browser** for allowlisted PostgreSQL tables — paginated rows,
-masked columns, **no arbitrary SQL** — for debugging without `psql`.
+Give admins a **safe, read-only browser** for allowlisted PostgreSQL tables — dropdown
+table picker, paginated rows, masked columns, **no arbitrary SQL, no typed queries** —
+for debugging and data visibility without `psql`.
 
 ### Phase A — Table catalog + row browser
 
@@ -276,10 +266,12 @@ masked columns, **no arbitrary SQL** — for debugging without `psql`.
   - `limit` max 100; offset or keyset cursor
   - Optional **single-column equality filter** on allowlisted columns only (e.g. `cve_id`, `key`)
   - **No** client `ORDER BY`, no joins, no free-text SQL
-- Admin UI: table picker → headers → paginated rows
+- Admin UI (**Database section** — Storage page evolves): table **dropdown** → column
+  headers → paginated rows; filter values entered via a plain input bound to one
+  allowlisted column — never a query string
+- **Required filter for `cves`** (decided) — the widest table cannot be full-scanned
 - Column mask list focused on **allowed Tier 1/2 tables** (Tier 3 tables are denied — masking
   `password_hash` / `refresh_token_hash` there is moot). Priority masks:
-  - `sync_state.value` (if Option B key allowlist — may hold operator settings)
   - `webhook_delivery_log.error` (may echo webhook URLs/tokens from upstream)
   - `audit_log` detail fields that could contain config snippets
   - Large JSON/TEXT blobs (truncate ~2 KB, `truncated: true`)
@@ -298,7 +290,6 @@ masked columns, **no arbitrary SQL** — for debugging without `psql`.
 
 - CSV export for INTEL-only tables (reuse `DATA_SNAPSHOT.md` allowlist)
 - Postgres `information_schema` fast path; SQLite stubs for tests
-- Optional “must provide filter” for wide tables (`cves`)
 
 ## Allowlist tiers (seed from `docs/DATA_SNAPSHOT.md`)
 
@@ -329,7 +320,7 @@ Default rule: **deny** — table not in registry → 404.
 | 4 | Large columns | Truncate TEXT/JSON (~2 KB) with `truncated: true` |
 | 5 | Auth | `require_admin` only |
 | 6 | Rate limit | Stricter than default admin GET (e.g. 30/min) |
-| 7 | UI placement | TBD: new Admin nav item vs Storage sub-tab |
+| 7 | UI placement | **Decided:** Storage page evolves into the Database section |
 
 ## Security threats & mitigations (PR13)
 
@@ -401,14 +392,13 @@ Default rule: **deny** — table not in registry → 404.
 4. Should dedupe become per-destination? → **Yes, in PR 12b** (not deferred — see the verified
    failure mode in the 12b scope).
 
-### PR13
+### PR13 (updated 2026-07-10 — full explorer confirmed by maintainer)
 
 1. `sync_state`: deny entirely (Option A) or key allowlist (Option B)? → **Option A, deny.**
-2. Require a filter for `cves` browse? → **Yes** (deferred design only; the MVP has no
-   filters and caps at 50 rows).
-3. New admin nav item vs tab under Storage? → **Storage sub-view**, no new nav item.
-4. Include `audit_log` in Tier 2 or deny? → **Deferred with the full explorer** — the MVP
-   exposes Tier 1 intel tables only.
+2. Require a filter for `cves` browse? → **Yes, in Phase A.**
+3. New admin nav item vs tab under Storage? → **The Storage page evolves into the
+   Database section** — one surface for counts + browsing, no duplicate nav entry.
+4. Include `audit_log` in Tier 2 or deny? → **Tier 2 with heavy masking**, as designed.
 
 ---
 
@@ -432,7 +422,7 @@ No Gemini inline comments rejected. CodeRabbit skipped (draft PR).
 | 2 | Per-destination dedupe belongs in scope, not Phase B — verified `engine.py` (`was_webhook_alert_sent` ~L159, `record_webhook_alert` ~L219): key recorded when **any** destination succeeds, so failed/later-added destinations are permanently skipped | Moved into **PR 12b** scope + acceptance criteria; risk raised to High |
 | 3 | Sequencing — the review comment said "queue after D4/Post-B", also from the stale checkout; D4 and Post-B are in fact **complete** and the wave queue is drained | Corrected sequencing section: PR12a–c is the next implementation queue after PR-A (#411) |
 | 4 | Split Phase A into three PRs; answer open questions with defaults | Restructured as 12a/12b/12c; all open questions decided |
-| 5 | PR13 oversized for its value — cut to lazy MVP | PR13-MVP = Storage sample rows, Tier 1 only; full explorer deferred |
+| 5 | PR13 oversized for its value — cut to lazy MVP | **Overridden by maintainer 2026-07-10:** full explorer confirmed (dropdown-driven Database section, deny-by-default). The security tiers/masking from the original design are binding |
 | 6 | `db/dialect.py` references (this plan + CLAUDE.md) are stale — deleted in Post-B Phase 3 | SQL risk row updated to Postgres-native convention; CLAUDE.md fix flagged as its own task |
 
 ---
