@@ -95,6 +95,9 @@ def test_run_retention_cleanup_returns_counts(tmp_path, monkeypatch):
                 "cve_change_history",
                 "otx_cve_pulses",
                 "otx_pulse_iocs",
+                "ai_operations",
+                "webhook_delivery_log",
+                "audit_log",
             }
             assert all(isinstance(v, int) for v in counts.values())
         finally:
