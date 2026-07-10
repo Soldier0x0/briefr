@@ -5,7 +5,8 @@ main.py read at module import time; per-request `os.environ.get` reads
 elsewhere keep their current call-time semantics and move here in later
 router-split phases.
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
+Copyright © 2026 Sai Harsha Vardhan
+SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
 import logging

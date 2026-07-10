@@ -154,14 +154,9 @@ proposes; pySigma disposes.
 A tool becomes "must-have" through installs and word of mouth, not features.
 Current blockers, in order:
 
-1. **License.** The repo is proprietary ("all rights reserved") while the
-   stated goal is open-sourcing for the community. Security practitioners
-   do not adopt, recommend, or contribute to proprietary personal projects.
-   **Decision needed:** pick an OSI license — Apache-2.0 (maximum adoption,
-   corporate-friendly) or AGPL-3.0 (adoption plus protection against
-   closed-source SaaS resellers). Either is defensible; not choosing is the
-   only losing move. Recommendation: **AGPL-3.0** for a solo maintainer who
-   wants recognition and protection.
+1. **License.** **Decided 2026-07-10 (Track F2):** **AGPL-3.0-or-later**
+   (`LICENSE`, `CONTRIBUTING.md`, SPDX headers). Repo flip to public GitHub
+   remains gated on beta feedback; the license is in force in-tree now.
 2. **Install friction.** `docker compose up` must work, first try, on a
    clean machine, in under 10 minutes, with sensible no-API-key defaults.
    V2.0's compose work was parked "while the deployment is private" — the

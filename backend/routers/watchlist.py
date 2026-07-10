@@ -9,7 +9,8 @@ Endpoints:
 - DELETE /api/watchlist/snoozes     — clear all snoozed rows (UI migration)
 - DELETE /api/watchlist/{cve_id}     — remove from watchlist
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
+Copyright © 2026 Sai Harsha Vardhan
+SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
 from __future__ import annotations

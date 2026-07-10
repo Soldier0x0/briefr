@@ -5,5 +5,6 @@ disabled by default, never on the request path (model inference runs in
 scheduler jobs only), and a deterministic fallback keeps the tool fully
 functional when ML is off.
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
+Copyright © 2026 Sai Harsha Vardhan
+SPDX-License-Identifier: AGPL-3.0-or-later
 """

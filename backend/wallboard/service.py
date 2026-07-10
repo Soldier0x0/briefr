@@ -3,7 +3,8 @@
 Read-only intel posture tiles built from existing DB state and cached
 snapshots — no outbound HTTP, no admin data, no secrets.
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
+Copyright © 2026 Sai Harsha Vardhan
+SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
 from __future__ import annotations

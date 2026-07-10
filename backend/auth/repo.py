@@ -3,7 +3,8 @@
 Mirrors the free-function-taking-a-db-connection style used throughout
 database.py. Callers own the connection lifecycle (acquire, commit, close).
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
+Copyright © 2026 Sai Harsha Vardhan
+SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
 from __future__ import annotations

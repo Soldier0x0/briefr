@@ -9,7 +9,8 @@ a well-formed `X-Request-ID` arrives on the request.
 
 `LOG_FORMAT=plain` restores the previous human-readable format for local dev.
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved.
+Copyright © 2026 Sai Harsha Vardhan
+SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
 import collections
