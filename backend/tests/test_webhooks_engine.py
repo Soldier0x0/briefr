@@ -242,11 +242,11 @@ def test_webhooks_enabled_uses_db_enabled_state(monkeypatch, tmp_path):
     run_db_test(sync_env_destinations_to_db())
 
     async def disable_in_db():
+        from database import update_webhook_destination
+
         db = await get_db()
         try:
-            await db.execute(
-                "UPDATE webhook_destinations SET enabled = 0 WHERE id = 'discord'"
-            )
+            await update_webhook_destination(db, "discord", enabled=False)
             await db.commit()
         finally:
             await db.close()
