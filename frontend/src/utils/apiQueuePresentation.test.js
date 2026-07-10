@@ -3,7 +3,9 @@ import assert from 'node:assert/strict'
 
 import {
   buildQueueRows,
+  formatSourceLabel,
   formatWaitDetail,
+  groupQueueRows,
   handleApiQueueDropdownKeyDown,
   highestQueueState,
   indicatorTone,
@@ -52,7 +54,7 @@ describe('apiQueuePresentation', () => {
       ],
     })
     assert.equal(rows.length, 1)
-    assert.equal(rows[0].source, 'Github')
+    assert.equal(rows[0].source, 'GitHub API')
     assert.equal(rows[0].stateLabel, 'ACTIVE')
     assert.equal(rows[0].contextId, 'CVE-2026-48282')
     assert.match(rows[0].detail, /Running/)
@@ -105,6 +107,42 @@ describe('apiQueuePresentation', () => {
     assert.equal(rows.length, 1)
     assert.equal(rows[0].fallback, true)
     assert.equal(rows[0].stateLabel, 'QUEUED')
+  })
+
+  it('formatSourceLabel uses catalog labels for known providers', () => {
+    assert.equal(formatSourceLabel('poc_github'), 'PoC-in-GitHub')
+    assert.equal(formatSourceLabel('github'), 'GitHub API')
+    assert.equal(formatSourceLabel('rss:darkreading'), 'RSS · darkreading')
+  })
+
+  it('groupQueueRows clusters rows by provider', () => {
+    const rows = buildQueueRows({
+      requests: [
+        { request_id: '1', source: 'github', state: 'queued', display_label: 'A' },
+        { request_id: '2', source: 'github', state: 'waiting', display_label: 'B' },
+        { request_id: '3', source: 'virustotal', state: 'active', display_label: 'C' },
+      ],
+    })
+    const groups = groupQueueRows(rows)
+    assert.equal(groups.length, 2)
+    assert.equal(groups[0].rows.length, 2)
+    assert.equal(groups[1].sourceLabel, 'VirusTotal')
+  })
+
+  it('summarizeQueue separates waiting and queued counts', () => {
+    const summary = summarizeQueue({
+      total_queued: 2,
+      total_active: 0,
+      requests: [
+        { request_id: '1', source: 'github', state: 'queued' },
+        { request_id: '2', source: 'github', state: 'waiting' },
+      ],
+    })
+    assert.equal(summary.waitingCount, 1)
+    assert.equal(summary.queuedCount, 1)
+    assert.match(summary.ariaLabel, /1 API request waiting/)
+    assert.match(summary.ariaLabel, /1 API request queued/)
+    assert.equal(summary.summaryStats.length, 2)
   })
 
   it('summarizeQueue builds accessible aria label', () => {

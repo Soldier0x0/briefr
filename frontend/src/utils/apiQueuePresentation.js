@@ -1,5 +1,7 @@
 /** Presentation helpers for API queue indicator — state priority and analyst copy. */
 
+import { SOURCE_DISPLAY } from '../pages/admin/formatters.js'
+
 export const STATE_PRIORITY = {
   'rate_limited': 4,
   waiting: 3,
@@ -12,6 +14,25 @@ export const STATE_LABELS = {
   queued: 'QUEUED',
   waiting: 'WAITING',
   rate_limited: 'RATE LIMITED',
+}
+
+const QUEUE_SOURCE_ALIASES = {
+  github: 'GitHub API',
+  rss: 'RSS feeds',
+  epss_bulk: 'FIRST EPSS',
+  virustotal: 'VirusTotal',
+  greynoise: 'GreyNoise',
+  abuseipdb: 'AbuseIPDB',
+  threatfox: 'ThreatFox',
+  vulncheck: 'VulnCheck',
+  sploitus: 'Sploitus',
+  circl: 'CIRCL',
+  malwarebazaar: 'MalwareBazaar',
+  urlhaus: 'URLhaus',
+  groq: 'Groq',
+  gemini: 'Google Gemini',
+  openrouter: 'OpenRouter',
+  cerebras: 'Cerebras',
 }
 
 const WAIT_REASON_FALLBACK = 'Waiting for provider slot'
@@ -53,7 +74,15 @@ export function formatElapsed(seconds) {
 }
 
 export function formatSourceLabel(key) {
-  return String(key || '')
+  const raw = String(key || '')
+  const base = raw.replace(/^rss:/, '')
+  if (SOURCE_DISPLAY[base]) return SOURCE_DISPLAY[base]
+  if (QUEUE_SOURCE_ALIASES[base]) return QUEUE_SOURCE_ALIASES[base]
+  if (raw.startsWith('rss:')) {
+    const feedId = base.replace(/_/g, ' ')
+    return feedId ? `RSS · ${feedId}` : 'RSS feeds'
+  }
+  return base
     .replace(/_/g, ' ')
     .replace(/\b\w/g, c => c.toUpperCase())
 }
@@ -103,6 +132,7 @@ export function buildQueueRows(apiQueue) {
   if (Array.isArray(requests) && requests.length > 0) {
     return requests.map(req => ({
       key: req.request_id || `${req.source}-${req.operation}-${req.context_id}`,
+      sourceKey: String(req.source || ''),
       source: formatSourceLabel(req.source),
       state: String(req.state || 'queued').toLowerCase(),
       stateLabel: STATE_LABELS[req.state] || String(req.state || '').toUpperCase(),
@@ -132,6 +162,7 @@ export function buildQueueRows(apiQueue) {
 
     return {
       key,
+      sourceKey: key,
       source: formatSourceLabel(key),
       state,
       stateLabel: STATE_LABELS[state] || state.toUpperCase(),
@@ -143,38 +174,80 @@ export function buildQueueRows(apiQueue) {
   })
 }
 
+export function groupQueueRows(rows = []) {
+  const groups = []
+  const index = new Map()
+
+  for (const row of rows) {
+    const key = row.sourceKey || row.source
+    if (!index.has(key)) {
+      const group = { sourceKey: key, sourceLabel: row.source, rows: [] }
+      index.set(key, group)
+      groups.push(group)
+    }
+    index.get(key).rows.push(row)
+  }
+
+  return groups
+}
+
+function countRowsByState(rows, state) {
+  return rows.filter(r => r.state === state).length
+}
+
 export function summarizeQueue(apiQueue) {
   const queued = apiQueue?.total_queued ?? 0
   const active = apiQueue?.total_active ?? 0
   const count = queued + active
   const rows = buildQueueRows(apiQueue)
+  const groups = groupQueueRows(rows)
   const toneState = highestQueueState(apiQueue?.requests, apiQueue?.sources)
 
-  const parts = []
-  const waitingCount = rows.filter(r => r.state === 'queued' || r.state === 'waiting').length
-  const throttledCount = rows.filter(r => r.state === 'rate_limited').length
+  const waitingCount = countRowsByState(rows, 'waiting')
+  const queuedCount = countRowsByState(rows, 'queued')
+  const activeCount = countRowsByState(rows, 'active')
+  const throttledCount = countRowsByState(rows, 'rate_limited')
 
+  const parts = []
   if (throttledCount > 0) {
     parts.push(`${throttledCount} API request${throttledCount === 1 ? '' : 's'} rate limited`)
   }
   if (waitingCount > 0) {
     parts.push(`${waitingCount} API request${waitingCount === 1 ? '' : 's'} waiting`)
   }
-  if (active > 0) {
-    parts.push(`${active} API request${active === 1 ? '' : 's'} active`)
+  if (queuedCount > 0) {
+    parts.push(`${queuedCount} API request${queuedCount === 1 ? '' : 's'} queued`)
+  }
+  if (activeCount > 0) {
+    parts.push(`${activeCount} API request${activeCount === 1 ? '' : 's'} active`)
   }
   if (!parts.length && count > 0) {
     parts.push(`${count} API request${count === 1 ? '' : 's'} queued or in progress`)
+  }
+
+  const summaryStats = []
+  if (waitingCount > 0) summaryStats.push({ label: 'waiting', count: waitingCount })
+  if (queuedCount > 0) summaryStats.push({ label: 'queued', count: queuedCount })
+  if (activeCount > 0) summaryStats.push({ label: 'active', count: activeCount })
+  if (throttledCount > 0) summaryStats.push({ label: 'rate limited', count: throttledCount })
+  if (!summaryStats.length && count > 0) {
+    summaryStats.push({ label: 'in progress', count })
   }
 
   return {
     queued,
     active,
     count,
+    waitingCount,
+    queuedCount,
+    activeCount,
+    throttledCount,
     toneState,
     tone: indicatorTone(toneState),
     ariaLabel: parts.join(', ') || 'API queue idle',
+    summaryStats,
     rows,
+    groups,
   }
 }
 

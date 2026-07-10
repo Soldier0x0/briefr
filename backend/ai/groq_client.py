@@ -59,6 +59,9 @@ async def chat_completion(
         retries=0,
         wait_on_rate_limit=True,
         wait_on_circuit=True,
+        queue_operation="report_summary",
+        queue_context_type="task",
+        queue_context_id="groq_chat",
     )
     apply_rate_limit_headers(
         source, response.headers, estimated_tokens=token_budget

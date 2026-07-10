@@ -50,15 +50,31 @@ def get_cvelistv5_initial_since_days() -> int:
     return int(os.environ.get("CVELISTV5_INITIAL_SINCE_DAYS", str(DEFAULT_INITIAL_SINCE_DAYS)))
 
 
+async def _cvelistv5_get(
+    url: str,
+    *,
+    operation: str = "cve_ingest",
+    context_type: str | None = "task",
+    context_id: str | None = "cvelistv5_sync",
+    timeout: float = 60.0,
+    params: dict | None = None,
+) -> httpx.Response:
+    return await resilient_get(
+        "cvelistv5",
+        url,
+        headers=github_headers(),
+        timeout=timeout,
+        params=params,
+        queue_operation=operation,
+        queue_context_type=context_type,
+        queue_context_id=context_id,
+    )
+
+
 async def _fetch_head_sha(branch: str) -> str | None:
     url = f"{GITHUB_API}/repos/{REPO_OWNER}/{REPO_NAME}/commits/{branch}"
     try:
-        response = await resilient_get(
-            "cvelistv5",
-            url,
-            headers=github_headers(),
-            timeout=60.0,
-        )
+        response = await _cvelistv5_get(url)
         data = response.json()
     except CircuitOpenError:
         logger.warning("cvelistV5 circuit open — skipping head lookup")
@@ -78,12 +94,9 @@ async def _fetch_bootstrap_base_sha(branch: str, since_days: int) -> str | None:
     )
     url = f"{GITHUB_API}/repos/{REPO_OWNER}/{REPO_NAME}/commits"
     try:
-        response = await resilient_get(
-            "cvelistv5",
+        response = await _cvelistv5_get(
             url,
-            headers=github_headers(),
             params={"sha": branch, "since": since, "per_page": 100},
-            timeout=60.0,
         )
         commits = response.json()
     except CircuitOpenError:
@@ -124,12 +137,7 @@ def _filter_cve_paths(files: list) -> list[str]:
 async def _compare_commits(base_sha: str, head_sha: str) -> list[str]:
     url = f"{GITHUB_API}/repos/{REPO_OWNER}/{REPO_NAME}/compare/{base_sha}...{head_sha}"
     try:
-        response = await resilient_get(
-            "cvelistv5",
-            url,
-            headers=github_headers(),
-            timeout=120.0,
-        )
+        response = await _cvelistv5_get(url, timeout=120.0)
         data = response.json()
     except CircuitOpenError:
         logger.warning("cvelistV5 circuit open — skipping compare")
@@ -153,11 +161,13 @@ async def _compare_commits(base_sha: str, head_sha: str) -> list[str]:
 
 async def _fetch_record(path: str, branch: str) -> tuple[dict | None, str | None]:
     url = raw_repo_url(REPO_OWNER, REPO_NAME, branch, path)
+    cve_id = cve_id_from_repo_path(path)
     try:
-        response = await resilient_get(
-            "cvelistv5",
+        response = await _cvelistv5_get(
             url,
-            headers=github_headers(),
+            operation="cve_lookup",
+            context_type="cve" if cve_id else "task",
+            context_id=cve_id or path[:48],
             timeout=45.0,
         )
         record = response.json()

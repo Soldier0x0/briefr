@@ -59,6 +59,9 @@ async def fetch_vulncheck_kev_cve_ids(api_key: str, *, limit: int = 5000) -> lis
                 headers=headers,
                 params={"page": page, "limit": per_page},
                 timeout=60.0,
+                queue_operation="cve_ingest",
+                queue_context_type="task",
+                queue_context_id="vulncheck_sync",
             )
             record_api_call("vulncheck")
         except CircuitOpenError:

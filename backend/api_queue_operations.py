@@ -50,6 +50,9 @@ OPERATION_LABELS: dict[str, str] = {
     "pdf_summary": "Generating report summary",
     "cve_ingest": "Syncing NVD vulnerability feed",
     "exploit_feed_sync": "Syncing public exploit index",
+    "news_feed_sync": "Syncing incident news feed",
+    "threat_intel_sync": "Syncing ThreatFox indicators",
+    "osv_lookup": "Fetching OSV vulnerability record",
     "outbound_request": "Outbound API request",
     "webhook_delivery": "Delivering webhook notification",
 }

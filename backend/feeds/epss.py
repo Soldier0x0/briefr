@@ -43,6 +43,9 @@ async def _fetch_batch_api(cve_ids: list) -> dict[str, dict]:
             EPSS_API_URL,
             params={"cve": cve_param},
             timeout=30.0,
+            queue_operation="cve_lookup",
+            queue_context_type="cve",
+            queue_context_id=cve_ids[0].upper(),
         )
         data = response.json()
     except CircuitOpenError:
@@ -80,7 +83,14 @@ async def fetch_epss_bulk(cve_ids: set[str]) -> dict[str, dict]:
     scores: dict[str, dict] = {}
 
     try:
-        response = await resilient_get("epss_bulk", EPSS_CSV_URL, timeout=120.0)
+        response = await resilient_get(
+            "epss_bulk",
+            EPSS_CSV_URL,
+            timeout=120.0,
+            queue_operation="cve_ingest",
+            queue_context_type="task",
+            queue_context_id="epss_bulk_sync",
+        )
         raw = gzip.decompress(response.content)
     except CircuitOpenError:
         logger.warning("EPSS bulk circuit open — skipping CSV download")
@@ -172,6 +182,9 @@ async def fetch_epss_time_series_batch(cve_ids: list[str]) -> list[dict]:
             EPSS_API_URL,
             params={"cve": cve_param, "scope": "time-series"},
             timeout=30.0,
+            queue_operation="cve_lookup",
+            queue_context_type="cve",
+            queue_context_id=cve_ids[0].upper(),
         )
         data = response.json()
     except CircuitOpenError:

@@ -109,6 +109,9 @@ async def fetch_threatfox_iocs(auth_key: str, *, days: int = 7) -> list[dict[str
             headers=headers,
             json=payload,
             timeout=120.0,
+            queue_operation="threat_intel_sync",
+            queue_context_type="task",
+            queue_context_id="threatfox_sync",
         )
         record_api_call("threatfox")
     except CircuitOpenError:

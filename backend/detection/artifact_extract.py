@@ -161,7 +161,14 @@ async def fetch_nuclei_template_text(url: str) -> str:
     try:
         from resilient_client import resilient_get
 
-        response = await resilient_get("nuclei", raw_url, timeout=30.0)
+        response = await resilient_get(
+            "nuclei",
+            raw_url,
+            timeout=30.0,
+            queue_operation="detection_rule_search",
+            queue_context_type="task",
+            queue_context_id="nuclei_template",
+        )
         text = (response.text or "").strip()
         return text[:4000] if text else ""
     except Exception as exc:

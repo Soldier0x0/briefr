@@ -12,7 +12,7 @@ export default function ApiQueueIndicator({ apiQueue, className = '', defaultOpe
   const panelId = useId()
 
   const summary = summarizeQueue(apiQueue)
-  const { queued, active, count, tone, ariaLabel, rows } = summary
+  const { queued, active, count, tone, ariaLabel, groups, summaryStats } = summary
   const pending = Boolean(apiQueue?.has_pending || queued > 0 || active > 0)
 
   useEffect(() => {
@@ -53,36 +53,50 @@ export default function ApiQueueIndicator({ apiQueue, className = '', defaultOpe
           <p className="api-queue-dropdown-sub">
             External API calls are queued so nothing is dropped when providers throttle.
           </p>
-          <div className="api-queue-summary mono" aria-live="polite">
-            <span className="api-queue-summary-stat">{queued} queued</span>
-            <span className="api-queue-summary-stat">{active} active</span>
-          </div>
-          {rows.length > 0 && (
-            <ul className="api-queue-requests">
-              {rows.map(row => (
-                <li
-                  key={row.key}
-                  className={`api-queue-request api-queue-request--${row.state}`}
-                >
-                  <div className="api-queue-request-head">
-                    <span className="api-queue-request-dot" aria-hidden="true">●</span>
-                    <span className="api-queue-request-source">{row.source}</span>
-                    <span className={`api-queue-request-state api-queue-request-state--${row.state}`}>
-                      {row.stateLabel}
-                    </span>
-                  </div>
-                  {row.displayLabel && (
-                    <div className="api-queue-request-label">{row.displayLabel}</div>
-                  )}
-                  {row.contextId && (
-                    <div className="api-queue-request-context mono">{row.contextId}</div>
-                  )}
-                  {row.detail && (
-                    <div className="api-queue-request-detail">{row.detail}</div>
-                  )}
-                </li>
+          {summaryStats.length > 0 && (
+            <div className="api-queue-summary mono" aria-live="polite">
+              {summaryStats.map(stat => (
+                <span key={stat.label} className="api-queue-summary-stat">
+                  {stat.count} {stat.label}
+                </span>
               ))}
-            </ul>
+            </div>
+          )}
+          {groups.length > 0 && (
+            <div className="api-queue-requests">
+              {groups.map(group => (
+                <section key={group.sourceKey} className="api-queue-provider-group">
+                  <div className="api-queue-provider-head">
+                    <span className="api-queue-provider-label">{group.sourceLabel}</span>
+                    <span className="api-queue-provider-count mono">{group.rows.length}</span>
+                  </div>
+                  <ul className="api-queue-provider-list">
+                    {group.rows.map(row => (
+                      <li
+                        key={row.key}
+                        className={`api-queue-request api-queue-request--${row.state}`}
+                      >
+                        <div className="api-queue-request-head">
+                          <span className="api-queue-request-dot" aria-hidden="true">●</span>
+                          <span className={`api-queue-request-state api-queue-request-state--${row.state}`}>
+                            {row.stateLabel}
+                          </span>
+                        </div>
+                        {row.displayLabel && (
+                          <div className="api-queue-request-label">{row.displayLabel}</div>
+                        )}
+                        {row.contextId && (
+                          <div className="api-queue-request-context mono">{row.contextId}</div>
+                        )}
+                        {row.detail && (
+                          <div className="api-queue-request-detail">{row.detail}</div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
           )}
         </div>
       )}

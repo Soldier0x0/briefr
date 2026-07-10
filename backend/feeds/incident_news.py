@@ -202,6 +202,9 @@ async def _fetch_rss_bytes(url: str, source_id: str = "rss") -> bytes:
             "Accept-Language": "en-US,en;q=0.9",
             "User-Agent": RSS_BROWSER_UA,
         },
+        queue_operation="news_feed_sync",
+        queue_context_type="task",
+        queue_context_id=source_id,
     )
     raw = response.content
     _assert_rss_bytes(raw, source_id)
