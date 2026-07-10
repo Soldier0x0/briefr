@@ -258,7 +258,7 @@ export async function downloadInvestigationPdf(items, startTime, options = {}) {
     doc.setFontSize(7)
     doc.setTextColor(120, 120, 120)
     doc.text(
-      '(Template summary — set GROQ_API_KEY or ANTHROPIC_API_KEY for AI-generated text)',
+      '(Template summary — configure an LLM provider API key for AI-generated text)',
       MARGIN,
       ctx.y,
     )

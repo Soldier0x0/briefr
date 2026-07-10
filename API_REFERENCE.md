@@ -1031,7 +1031,7 @@ Optional webhook event: `kev_backlog`.
 }
 ```
 
-`source` is `groq`, `anthropic`, or `template`. Never raises — always returns usable text.
+`source` is the provider that produced the summary (`groq`, `gemini`, `cerebras`, `openrouter`) or `template`. Never raises — always returns usable text.
 
 ---
 
@@ -1045,7 +1045,7 @@ Optional webhook event: `kev_backlog`.
 
 ### POST /api/investigation/summary
 
-**Description:** Legacy investigation PDF summary. Maps `items[]` to CVE/IOC/actor payloads and delegates to the same Groq → Anthropic → template pipeline as `POST /api/ai/summary`.
+**Description:** Legacy investigation PDF summary. Maps `items[]` to CVE/IOC/actor payloads and delegates to the same multi-provider LLM router (template fallback) as `POST /api/ai/summary`.
 
 **Request body:** `{ "items": [{ "type": "cve|ioc|actor|technique", "id": "...", "description": "...", "pivotFrom": null }], "duration_minutes": 1 }`  
 **Validation:** `duration_minutes` must be `1`–`10080` (same range as `POST /api/ai/summary` `investigation_duration`).
