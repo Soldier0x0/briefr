@@ -38,6 +38,22 @@
   flex-wrap: wrap;
 }
 
+@media (max-width: 960px) {
+  .filter-bar {
+    padding: 10px 14px;
+  }
+
+  .filter-bar-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .filter-bar-bottom {
+    width: 100%;
+  }
+}
+
 @media (max-width: 640px) {
   .filter-toolbar {
     top: 0;

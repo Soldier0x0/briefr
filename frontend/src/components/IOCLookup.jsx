@@ -1136,7 +1136,7 @@ export default function IOCLookup({ prefill }) {
           onKeyDown={handleKeyDown}
           placeholder="8.8.8.8  /  d41d8cd98f00b204e9800998ecf8427e  /  example.com or https://example.com/path"
           aria-label="Enter IOC value — IP address, file hash, or domain"
-          rows={3}
+          rows={1}
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="off"

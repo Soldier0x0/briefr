@@ -101,10 +101,12 @@
   background: var(--bg2);
   border: 1px solid var(--border);
   border-left: 3px solid var(--border);
-  padding: 16px 18px 16px 16px;
-  resize: vertical;
-  min-height: 88px;
-  line-height: 1.6;
+  padding: 12px 18px 12px 16px;
+  resize: none;
+  min-height: 48px;
+  max-height: 48px;
+  overflow: hidden;
+  line-height: 1.4;
   transition: border-color 0.12s, border-left-color 0.12s;
 }
 
@@ -1142,4 +1144,37 @@
 .ioc-watchlist-remove:hover {
   color: var(--text);
   border-color: var(--border2);
+}
+
+@media (max-width: 960px) {
+  .ioc-lookup {
+    max-width: none;
+    margin: 0;
+    padding: 28px 16px 56px;
+  }
+
+  .ioc-page-header {
+    text-align: left;
+  }
+
+  .ioc-page-header .ioc-page-sub {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .ioc-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ioc-greynoise-opt {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding: 10px 14px;
+  }
+
+  .ioc-lookup-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
