@@ -3,6 +3,7 @@ import { adminApi } from '../../api.js'
 import AsyncSection from './shared/AsyncSection.jsx'
 import DangerZone from './shared/DangerZone.jsx'
 import GuardedPurgePanel from './shared/GuardedPurgePanel.jsx'
+import DbExplorerPanel from './DbExplorerPanel.jsx'
 import { fmtBytes, diskPct, diskBarColor } from './formatters.js'
 
 export default function StoragePage({ toast }) {
@@ -52,7 +53,7 @@ export default function StoragePage({ toast }) {
   return (
     <div>
       <h1 className="admin-page-title">Storage</h1>
-      <p className="admin-page-subtitle">Disk usage breakdown and cache/log purge tools. Purges are destructive and cannot be undone.</p>
+      <p className="admin-page-subtitle">Disk usage, read-only table browser, and cache/log purge tools. Purges are destructive and cannot be undone.</p>
 
       <div className="admin-action-bar" style={{ justifyContent: 'flex-end' }}>
         <button className="admin-btn admin-btn-ghost" onClick={exportDb} title={`DB: ${fmtBytes(storage?.db_size_bytes)}`}>
@@ -94,6 +95,7 @@ export default function StoragePage({ toast }) {
         )}
       </AsyncSection>
 
+      <DbExplorerPanel toast={toast} />
 
       <DangerZone title="Purge controls" subdued>
         <p style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '-0.25rem', marginBottom: '0.75rem' }}>

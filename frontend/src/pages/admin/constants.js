@@ -48,7 +48,7 @@ export const MANUAL_PIPELINES = [
   { id: 'nightly_correlation', label: 'Correlation' },
 ]
 
-export const AUDIT_PREFIXES = ['backup', 'refresh', 'scheduler', 'storage', 'config', 'system', 'webhook', 'watchlist', 'feed', 'diagnostics']
+export const AUDIT_PREFIXES = ['backup', 'refresh', 'scheduler', 'storage', 'config', 'system', 'webhook', 'watchlist', 'feed', 'diagnostics', 'db']
 
 export const COMING_SOON_INFO = {
   'coming-login': {

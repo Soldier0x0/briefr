@@ -12,6 +12,14 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — PR13 read-only DB explorer (#422)
+
+**PR open:** deny-by-default `db/explorer_registry.py` + `db/explorer.py`; `GET /api/admin/db-explorer/tables` and `GET /api/admin/db-explorer/tables/{table}/rows`; Admin → **Storage** table browser (`DbExplorerPanel.jsx`); tests `test_db_explorer.py`.
+
+**Next after merge:** F2 — LICENSE + CONTRIBUTING + FUNDING.yml.
+
+---
+
 ## 2026-07-10 — AI-2 Admin AI Operations page (#417)
 
 **Merged:** `/api/admin/ai/operations/{overview,providers,activity}` + `AiOperationsPage.jsx` (Overview / Providers / Models / Usage / Activity). Provider health from `resilient_client`; usage rollups from `ai_operations`.

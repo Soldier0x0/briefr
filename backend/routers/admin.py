@@ -56,7 +56,7 @@ from config_schema import (
 )
 from dependencies import audit, require_admin, trigger_graceful_restart
 from destructive_actions import list_actions, require_confirm
-from rate_limit import get_bucket_stats, get_top_consumers, rate_limit_admin
+from rate_limit import get_bucket_stats, get_top_consumers, rate_limit_admin, rate_limit_db_explorer
 from resilient_client import get_api_queue_status, get_feed_health, reset_circuit
 from scheduler_locks import get_lock, locked_jobs
 from settings import production_posture_warnings, settings
@@ -664,6 +664,59 @@ async def get_storage(request: Request):
         "archive_count": archive_count,
         "backup_dir": backup_dir,
     }
+
+
+# ── DB explorer (read-only, deny-by-default) ─────────────────────────────────
+
+@router.get("/db-explorer/tables", dependencies=[Depends(rate_limit_db_explorer)])
+async def get_db_explorer_tables(request: Request):
+    """Allowlisted tables with row counts and column metadata — no arbitrary SQL."""
+    from db.explorer import fetch_table_catalog
+
+    db = await get_db()
+    try:
+        tables = await fetch_table_catalog(db)
+    finally:
+        await db.close()
+    return {"tables": tables, "read_only": True}
+
+
+@router.get("/db-explorer/tables/{table_name}/rows", dependencies=[Depends(rate_limit_db_explorer)])
+async def get_db_explorer_rows(
+    request: Request,
+    table_name: str,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0, le=10_000),
+    filter_column: str | None = Query(None),
+    filter_value: str | None = Query(None),
+):
+    """Paginated read-only rows for one allowlisted table."""
+    from db.explorer import fetch_table_rows
+
+    db = await get_db()
+    try:
+        try:
+            payload = await fetch_table_rows(
+                db,
+                table_name,
+                limit=limit,
+                offset=offset,
+                filter_column=filter_column,
+                filter_value=filter_value,
+            )
+        except LookupError:
+            raise HTTPException(status_code=404, detail="Table not found")
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+    finally:
+        await db.close()
+
+    audit_target = table_name
+    if filter_column and filter_value:
+        audit_target = f"{table_name}:{filter_column}={filter_value[:80]}"
+    await audit(request, f"db.explorer.browse.{table_name}", audit_target)
+
+    return payload
 
 
 _PURGE_TARGETS = frozenset({

@@ -120,6 +120,7 @@ login_username_bucket = TokenBucket(settings.rate_limit_login_per_minute, name="
 auth_refresh_bucket = TokenBucket(
     settings.rate_limit_auth_refresh_per_minute, name="auth_refresh"
 )
+db_explorer_bucket = TokenBucket(30, name="db_explorer")
 
 
 def client_key(request: Request) -> str:
@@ -198,6 +199,11 @@ def rate_limit_login(request: Request) -> None:
 def rate_limit_auth_refresh(request: Request) -> None:
     """Route dependency: token bucket for POST /api/auth/refresh."""
     _enforce(auth_refresh_bucket, request)
+
+
+def rate_limit_db_explorer(request: Request) -> None:
+    """Stricter bucket for read-only DB explorer (30/min)."""
+    _enforce(db_explorer_bucket, request)
 
 
 def check_login_username_rate_limit(username: str) -> None:
