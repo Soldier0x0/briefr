@@ -1,10 +1,13 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { adminApi } from '../../api.js'
 import { notifyBackendRestarting } from '../../utils/backendRestart.js'
 import HelpTip from './shared/HelpTip.jsx'
 import ToggleSwitch from './shared/ToggleSwitch.jsx'
+import DiffReviewModal from './shared/DiffReviewModal.jsx'
 import { TIMEZONES_BY_CONTINENT } from '../../utils/timezone.js'
 import { RATE_LIMIT_HINTS } from './rateLimits.js'
+
+const SECTION_EXPAND_KEY = 'briefr-config-sections'
 
 const TIMEZONE_KEYS = new Set(['SCHEDULER_TIMEZONE', 'CORRELATION_TIMEZONE', 'OTX_CORRELATION_TIMEZONE', 'DEFAULT_TIMEZONE'])
 
@@ -71,6 +74,27 @@ export default function ApiKeysPage({ toast }) {
   const [schema, setSchema] = useState(null)
   const [editing, setEditing] = useState({}) // {key: tempValue}
   const [savingKeys, setSavingKeys] = useState(() => new Set())
+  const [expandedSections, setExpandedSections] = useState(() => {
+    try {
+      const raw = localStorage.getItem(SECTION_EXPAND_KEY)
+      if (raw) return JSON.parse(raw)
+    } catch { /* ignore */ }
+    return { api_keys: true }
+  })
+  const [showReview, setShowReview] = useState(false)
+  const [applyingAll, setApplyingAll] = useState(false)
+
+  const sectionOpen = useCallback((sectionId) => (
+    expandedSections[sectionId] ?? (sectionId === 'api_keys')
+  ), [expandedSections])
+
+  const toggleSection = useCallback((sectionId) => {
+    setExpandedSections((prev) => {
+      const next = { ...prev, [sectionId]: !(prev[sectionId] ?? (sectionId === 'api_keys')) }
+      try { localStorage.setItem(SECTION_EXPAND_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
 
   useEffect(() => {
     adminApi.get('/config').then(r => r.json()).then(setConfig).catch(() => {})
@@ -83,6 +107,44 @@ export default function ApiKeysPage({ toast }) {
       setConfig(await r.json())
     } catch { /* ignore */ }
   }
+
+  const fieldByKey = useMemo(() => {
+    const map = {}
+    for (const f of schema || []) map[f.key] = f
+    return map
+  }, [schema])
+
+  async function applyPendingChanges(pending = editing) {
+    const entries = Object.entries(pending)
+    if (!entries.length) return
+
+    for (const [key, value] of entries) {
+      const err = validateClientSide(fieldByKey[key], value)
+      if (err) {
+        toast(err, false)
+        return
+      }
+    }
+
+    setApplyingAll(true)
+    try {
+      const body = entries.map(([key, value]) => ({ key, value }))
+      const { data } = await adminApi.postJson('/config/apply-all', body)
+      setEditing({})
+      await reloadConfig()
+      if (data?.restart_required ?? data?.warning_restart_required) {
+        notifyBackendRestarting()
+      }
+      toast(data?.message || `Applied ${entries.length} change(s)`, true)
+      setShowReview(false)
+    } catch (e) {
+      toast(`Apply failed: ${e.message || String(e)}`, false)
+    } finally {
+      setApplyingAll(false)
+    }
+  }
+
+  const pendingCount = Object.keys(editing).length
 
   async function saveKey(key, value, field) {
     const error = validateClientSide(field, value)
@@ -271,8 +333,18 @@ export default function ApiKeysPage({ toast }) {
 
         return (
           <div className="admin-card" key={section.id}>
-            <div className="admin-card-title">{section.title}</div>
-            <div className="config-grid">
+            <div
+              className="config-section-header"
+              role="button"
+              tabIndex={0}
+              onClick={() => toggleSection(section.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSection(section.id) }}
+            >
+              <div className="admin-card-title" style={{ margin: 0 }}>{section.title}</div>
+              <span className="config-section-chevron" aria-hidden>{sectionOpen(section.id) ? '▼' : '▶'}</span>
+            </div>
+            {sectionOpen(section.id) && (
+            <div className="config-grid" style={{ marginTop: '0.75rem' }}>
               {fields.map(f => (
                 <ConfigRow
                   key={f.key}
@@ -286,7 +358,8 @@ export default function ApiKeysPage({ toast }) {
                 <ConfigRow key={k} envKey={k} value={backendDict[k]} writable={false} />
               ))}
             </div>
-            {section.id === 'webhooks' && (
+            )}
+            {sectionOpen(section.id) && section.id === 'webhooks' && (
               <div style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '0.5rem', padding: '0.5rem 0.65rem', border: '1px solid var(--border)', borderRadius: '4px' }}>
                 <strong>Legacy bootstrap:</strong> values here seed the default <code className="mono">discord</code>, <code className="mono">telegram</code>, and <code className="mono">generic</code> destinations at startup.
                 Add more endpoints, edit event subscriptions, and run delivery tests on the <strong>Webhooks</strong> admin tab.
@@ -295,6 +368,41 @@ export default function ApiKeysPage({ toast }) {
           </div>
         )
       })}
+
+      {pendingCount > 0 && (
+        <div className="config-apply-bar" role="region" aria-label="Pending configuration changes">
+          <span style={{ fontSize: '0.8125rem', color: 'var(--text2)' }}>
+            <strong>{pendingCount}</strong> pending change{pendingCount !== 1 ? 's' : ''}
+          </span>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button type="button" className="admin-btn admin-btn-ghost" disabled={applyingAll}
+              onClick={() => setEditing({})}>
+              Discard
+            </button>
+            <button type="button" className="admin-btn admin-btn-ghost" disabled={applyingAll}
+              onClick={() => setShowReview(true)}>
+              Review
+            </button>
+            <button type="button" className="admin-btn admin-btn-primary" disabled={applyingAll}
+              onClick={() => applyPendingChanges()}>
+              {applyingAll ? <><span className="admin-spinner" /> Applying…</> : 'Apply all'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showReview && (
+        <DiffReviewModal
+          title="Review pending configuration changes"
+          changes={editing}
+          secretKeyPredicate={(k) => fieldByKey[k]?.type === 'secret'}
+          applying={applyingAll}
+          applyLabel="Apply all"
+          onApply={() => applyPendingChanges()}
+          onDiscard={() => { setEditing({}); setShowReview(false) }}
+          onClose={() => setShowReview(false)}
+        />
+      )}
     </div>
   )
 }

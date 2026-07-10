@@ -31,7 +31,8 @@
   --admin-radius-lg: 12px;
   --admin-sidebar-w: 220px;
   --admin-status-h: 52px;
-  --admin-content-max: 1200px;
+  --admin-content-max: none;
+  --admin-gutter: 28px;
   --admin-font: 'DM Sans', system-ui, -apple-system, sans-serif;
   --admin-mono: 'IBM Plex Mono', 'Courier New', monospace;
   --admin-ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -514,9 +515,11 @@
 }
 
 .admin-page {
-  max-width: var(--admin-content-max);
-  margin: 0 auto;
-  padding: 24px 28px 48px;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 24px var(--admin-gutter) 48px;
+  box-sizing: border-box;
   animation: admin-page-in 0.25s var(--admin-ease);
 }
 
@@ -1324,9 +1327,11 @@
 }
 
 .admin-content > div:not([hidden]) > div {
-  max-width: var(--admin-content-max);
-  margin: 0 auto;
-  padding: 24px 28px 48px;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 24px var(--admin-gutter) 48px;
+  box-sizing: border-box;
 }
 
 /* Legacy nav → new sidebar mapping */
@@ -2811,3 +2816,151 @@
 }
 
 .reduce-motion .admin-btn:active { transform: none !important; }
+
+/* ── AdminDataGrid + config apply bar (Operator UX P1) ─────────────────── */
+
+.admin-data-grid {
+  width: 100%;
+}
+
+.admin-data-grid-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.admin-data-grid-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+.admin-data-grid-btn {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.admin-data-grid-col-picker {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.65rem;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 160px;
+  max-height: 240px;
+  overflow-y: auto;
+  box-shadow: var(--admin-shadow-md);
+}
+
+.admin-data-grid-col-option {
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.admin-data-grid-toggle {
+  font-size: 0.7rem;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+}
+
+.admin-data-grid-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.admin-data-grid-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.admin-data-grid-th {
+  position: relative;
+  user-select: none;
+}
+
+.admin-data-grid-th-label {
+  display: block;
+  padding-right: 0.5rem;
+}
+
+.admin-data-grid-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  opacity: 0;
+  transition: opacity 0.12s ease-out;
+}
+
+.admin-data-grid-th:hover .admin-data-grid-resize-handle {
+  opacity: 1;
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.config-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.config-section-header:hover .admin-card-title {
+  color: var(--accent);
+}
+
+.config-section-chevron {
+  font-size: 0.75rem;
+  color: var(--text3);
+}
+
+.config-apply-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  margin: 1rem calc(-1 * var(--admin-gutter)) -48px;
+  padding: 0.75rem var(--admin-gutter);
+  background: color-mix(in srgb, var(--admin-bg) 92%, transparent);
+  border-top: 1px solid var(--admin-border);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.purge-panel--compact .purge-card-desc {
+  font-size: 0.72rem;
+  max-height: 3.6em;
+  overflow: hidden;
+}
+
+.purge-panel--compact .purge-card {
+  padding: 0.5rem 0.65rem;
+}
+
+.feed-health-table-wrap {
+  margin-bottom: 1rem;
+}

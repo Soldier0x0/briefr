@@ -98,10 +98,15 @@ export default function StoragePage({ toast }) {
       <DbExplorerPanel toast={toast} />
 
       <DangerZone title="Purge controls" subdued>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '-0.25rem', marginBottom: '0.75rem' }}>
-          Pick what to clear, read what it does, then type "clear" to enable the button. Nothing fires on a single click.
-        </p>
-        <GuardedPurgePanel targets={purgeCards} />
+        <details className="admin-collapse">
+          <summary style={{ cursor: 'pointer', fontSize: '0.8125rem', color: 'var(--text2)', marginBottom: '0.5rem' }}>
+            Expand purge targets ({purgeCards.length})
+          </summary>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '0.25rem', marginBottom: '0.75rem' }}>
+            Pick what to clear, read what it does, then type &quot;clear&quot; to enable the button.
+          </p>
+          <GuardedPurgePanel targets={purgeCards} />
+        </details>
       </DangerZone>
     </div>
   )
