@@ -89,6 +89,7 @@ async def _call_provider(
     queue_operation: str,
     queue_context_type: str | None = None,
     queue_context_id: str | None = None,
+    usage_out: dict | None = None,
 ) -> str:
     api_key = _api_key(step.provider)
     if not api_key:
@@ -98,6 +99,7 @@ async def _call_provider(
         "queue_operation": queue_operation,
         "queue_context_type": queue_context_type,
         "queue_context_id": queue_context_id,
+        "usage_out": usage_out,
     }
 
     if step.provider == "groq":
@@ -169,7 +171,9 @@ async def _record_attempt(
     error_class: str | None = None,
     fallback_from_provider: str | None = None,
     fallback_from_model: str | None = None,
+    usage: dict | None = None,
 ) -> None:
+    usage = usage or {}
     await record_llm_attempt(
         task=task,
         provider=step.provider,
@@ -182,6 +186,9 @@ async def _record_attempt(
         error_class=error_class,
         fallback_from_provider=fallback_from_provider,
         fallback_from_model=fallback_from_model,
+        input_tokens=usage.get("input_tokens"),
+        output_tokens=usage.get("output_tokens"),
+        total_tokens=usage.get("total_tokens"),
     )
 
 
@@ -207,6 +214,7 @@ async def chat_completion_task(
         if not _api_key(step.provider):
             continue
         timer = AttemptTimer()
+        usage: dict = {}
         try:
             content = (
                 await _call_provider(
@@ -218,6 +226,7 @@ async def chat_completion_task(
                     queue_operation=queue_operation,
                     queue_context_type=queue_context_type,
                     queue_context_id=queue_context_id,
+                    usage_out=usage,
                 )
             ).strip()
             if content:
@@ -231,6 +240,7 @@ async def chat_completion_task(
                     queue_context_id=queue_context_id,
                     fallback_from_provider=last_failed_provider,
                     fallback_from_model=last_failed_model,
+                    usage=usage,
                 )
                 return LLMCompletion(
                     content=content,

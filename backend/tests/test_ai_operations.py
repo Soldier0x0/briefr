@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 import db.ai_operations as ai_ops_mod
 from ai.model_catalog import models_catalog_payload, task_chain
 from db.config import is_postgres
+from db.timeutil import utcnow_str
 from database import count_ai_operations, get_db, init_db, insert_ai_operation, list_ai_operations
 from tests.conftest import run_db_test
 
@@ -98,6 +99,47 @@ def test_insert_and_list_ai_operations(tmp_path, monkeypatch):
             await db.close()
 
     run_db_test(_run())
+
+
+def test_usage_since_sums_tokens(tmp_path, monkeypatch):
+    if not is_postgres():
+        db_path = tmp_path / "ai_ops_tokens.db"
+        monkeypatch.setenv("DB_PATH", str(db_path))
+        monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    async def _run():
+        from database import ai_operations_usage_since
+
+        await init_db()
+        db = await get_db()
+        try:
+            for i, (inp, out, tot) in enumerate([(10, 4, 14), (20, 6, 26)]):
+                await insert_ai_operation(
+                    db,
+                    operation_id=f"tok-{i}",
+                    request_id=None,
+                    started_at=utcnow_str(),
+                    latency_ms=10,
+                    feature="pdf_summary",
+                    task_class="pdf_summary",
+                    provider="groq",
+                    model="m",
+                    success=True,
+                    input_tokens=inp,
+                    output_tokens=out,
+                    total_tokens=tot,
+                )
+            await db.commit()
+            usage = await ai_operations_usage_since(db, hours=24)
+        finally:
+            await db.close()
+        return usage
+
+    usage = run_db_test(_run())
+    assert usage["total_tokens"] == 40
+    assert usage["input_tokens"] == 30
+    assert usage["output_tokens"] == 10
+    assert usage["tokens_recorded"] is True
 
 
 def test_models_catalog_payload_structure():

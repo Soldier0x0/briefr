@@ -97,6 +97,7 @@ async def list_ai_operations(
         f"""
         SELECT operation_id, task_class, provider, model, success, error_class,
                latency_ms, retry_index, started_at, context_type, context_id,
+               input_tokens, output_tokens, total_tokens,
                fallback_from_provider, fallback_from_model
         FROM ai_operations
         ORDER BY id DESC
@@ -132,7 +133,10 @@ async def ai_operations_usage_since(
             SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) AS successes,
             SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) AS failures,
             SUM(CASE WHEN fallback_from_provider IS NOT NULL AND success = 1
-                THEN 1 ELSE 0 END) AS fallback_successes
+                THEN 1 ELSE 0 END) AS fallback_successes,
+            SUM(input_tokens) AS input_tokens,
+            SUM(output_tokens) AS output_tokens,
+            SUM(total_tokens) AS total_tokens
         FROM ai_operations
         WHERE started_at >= {since_ph}
         """,
@@ -144,6 +148,9 @@ async def ai_operations_usage_since(
     failures = int(row.get("failures") or 0)
     fallback_successes = int(row.get("fallback_successes") or 0)
     failure_rate = round(failures / total, 4) if total else 0.0
+    input_tokens = int(row.get("input_tokens") or 0)
+    output_tokens = int(row.get("output_tokens") or 0)
+    total_tokens = int(row.get("total_tokens") or 0)
 
     by_provider_rows = await db.execute_fetchall(
         f"""
@@ -180,7 +187,10 @@ async def ai_operations_usage_since(
         "fallback_successes": fallback_successes,
         "by_provider": [dict(r) for r in by_provider_rows],
         "by_task": [dict(r) for r in by_task_rows],
-        "tokens_recorded": False,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "total_tokens": total_tokens,
+        "tokens_recorded": total_tokens > 0,
     }
 
 
@@ -225,6 +235,7 @@ async def list_ai_operations_page(
         f"""
         SELECT operation_id, task_class, provider, model, success, error_class,
                latency_ms, retry_index, started_at, context_type, context_id,
+               input_tokens, output_tokens, total_tokens,
                fallback_from_provider, fallback_from_model
         FROM ai_operations
         {where}

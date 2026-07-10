@@ -42,6 +42,7 @@ async def gemini_chat_completion(
     queue_operation: str | None = None,
     queue_context_type: str | None = None,
     queue_context_id: str | None = None,
+    usage_out: dict | None = None,
 ) -> str:
     model_name = model or gemini_model()
     system_instruction, contents = _messages_to_gemini(messages)
@@ -79,6 +80,11 @@ async def gemini_chat_completion(
     apply_rate_limit_headers("gemini", response.headers, estimated_tokens=max_tokens + 500)
     try:
         data = response.json()
+        if usage_out is not None and isinstance(data.get("usageMetadata"), dict):
+            m = data["usageMetadata"]
+            usage_out["input_tokens"] = m.get("promptTokenCount")
+            usage_out["output_tokens"] = m.get("candidatesTokenCount")
+            usage_out["total_tokens"] = m.get("totalTokenCount")
         candidates = data.get("candidates") or []
         if candidates:
             parts = candidates[0].get("content", {}).get("parts") or []

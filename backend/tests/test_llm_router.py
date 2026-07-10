@@ -153,6 +153,116 @@ def test_chat_completion_task_returns_none_when_all_fail(monkeypatch):
     assert asyncio.run(run()) is None
 
 
+class _FakeResponse:
+    def __init__(self, payload):
+        self._payload = payload
+        self.headers = {}
+
+    def json(self):
+        return self._payload
+
+
+def test_openai_chat_populates_usage_out(monkeypatch):
+    import ai.openai_chat as oc
+
+    async def fake_request(*_a, **_k):
+        return _FakeResponse(
+            {
+                "choices": [{"message": {"content": "hello"}}],
+                "usage": {"prompt_tokens": 12, "completion_tokens": 5, "total_tokens": 17},
+            }
+        )
+
+    monkeypatch.setattr(oc, "resilient_request", fake_request)
+    monkeypatch.setattr(oc, "apply_rate_limit_headers", lambda *a, **k: None)
+
+    usage: dict = {}
+
+    async def run():
+        return await oc.openai_chat_completion(
+            source="groq",
+            url="http://x",
+            api_key="k",
+            model="m",
+            messages=[{"role": "user", "content": "hi"}],
+            usage_out=usage,
+        )
+
+    content = asyncio.run(run())
+    assert content == "hello"
+    assert usage == {"input_tokens": 12, "output_tokens": 5, "total_tokens": 17}
+
+
+def test_gemini_chat_populates_usage_out(monkeypatch):
+    import ai.gemini_client as gc
+
+    async def fake_request(*_a, **_k):
+        return _FakeResponse(
+            {
+                "candidates": [{"content": {"parts": [{"text": "hi there"}]}}],
+                "usageMetadata": {
+                    "promptTokenCount": 8,
+                    "candidatesTokenCount": 3,
+                    "totalTokenCount": 11,
+                },
+            }
+        )
+
+    monkeypatch.setattr(gc, "resilient_request", fake_request)
+    monkeypatch.setattr(gc, "apply_rate_limit_headers", lambda *a, **k: None)
+
+    usage: dict = {}
+
+    async def run():
+        return await gc.gemini_chat_completion(
+            "k",
+            messages=[{"role": "user", "content": "hi"}],
+            usage_out=usage,
+        )
+
+    content = asyncio.run(run())
+    assert content == "hi there"
+    assert usage == {"input_tokens": 8, "output_tokens": 3, "total_tokens": 11}
+
+
+def test_chat_completion_task_records_token_usage(tmp_path, monkeypatch):
+    if not is_postgres():
+        db_path = tmp_path / "llm_router_tokens.db"
+        monkeypatch.setenv("DB_PATH", str(db_path))
+        monkeypatch.setattr("database.DB_PATH", str(db_path))
+    monkeypatch.setenv("AI_OPERATIONS_RECORD", "1")
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
+
+    async def fake_call(step, **kwargs):
+        out = kwargs.get("usage_out")
+        if out is not None:
+            out.update({"input_tokens": 30, "output_tokens": 12, "total_tokens": 42})
+        return "answer"
+
+    monkeypatch.setattr(router, "_call_provider", fake_call)
+
+    async def run():
+        from database import get_db, init_db, list_ai_operations
+
+        await init_db()
+        await chat_completion_task(
+            "product_extraction",
+            messages=[{"role": "user", "content": "hi"}],
+        )
+        db = await get_db()
+        try:
+            rows = await list_ai_operations(db, limit=5)
+        finally:
+            await db.close()
+        return rows
+
+    rows = asyncio.run(run())
+    assert len(rows) == 1
+    assert rows[0]["total_tokens"] == 42
+    assert rows[0]["input_tokens"] == 30
+    assert rows[0]["output_tokens"] == 12
+
+
 def test_chat_completion_task_records_operations(tmp_path, monkeypatch):
     if not is_postgres():
         db_path = tmp_path / "llm_router_ops.db"
