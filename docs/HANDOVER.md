@@ -12,6 +12,16 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — PR12c WebhooksPage rewrite (PR open)
+
+**Merged earlier this session:** #413 (PR12a), #414 (PR12b).
+
+**PR12c:** Rebuilt `WebhooksPage` around `GET /api/admin/webhooks/destinations` — create/delete db destinations, enable toggle, event editor, config update, per-destination test, env/db badges. `ApiKeysPage` webhooks section now shows legacy-bootstrap notice. Extended `adminApi` with `patch` / `patchJson` / `delJson`.
+
+**Next after merge:** AI-1 (`ai_operations` table + recorder).
+
+---
+
 ## 2026-07-10 — PR12a merged; PR12b webhook CRUD + per-destination dedupe (PR open)
 
 **Merged:** #413 — PR12a async `webhooks_enabled()` / `configured_channels()`.

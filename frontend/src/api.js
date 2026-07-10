@@ -530,7 +530,14 @@ export async function adminJson(res) {
 export const adminApi = {
   get: (path) => adminFetch(path),
   post: (path, body) => adminFetch(path, { method: 'POST', body: JSON.stringify(body) }),
-  del: (path) => adminFetch(path, { method: 'DELETE' }),
+  patch: (path, body) => adminFetch(path, { method: 'PATCH', body: JSON.stringify(body) }),
+  del: (path, params) => {
+    let url = path
+    if (params && Object.keys(params).length) {
+      url += `?${new URLSearchParams(params)}`
+    }
+    return adminFetch(url, { method: 'DELETE' })
+  },
   postForm: (path, formData) => adminFetch(path, {
     method: 'POST',
     headers: {},
@@ -538,4 +545,12 @@ export const adminApi = {
   }),
   getJson: async (path) => adminJson(await adminFetch(path)),
   postJson: async (path, body) => adminJson(await adminFetch(path, { method: 'POST', body: JSON.stringify(body) })),
+  patchJson: async (path, body) => adminJson(await adminFetch(path, { method: 'PATCH', body: JSON.stringify(body) })),
+  delJson: async (path, params) => {
+    let url = path
+    if (params && Object.keys(params).length) {
+      url += `?${new URLSearchParams(params)}`
+    }
+    return adminJson(await adminFetch(url, { method: 'DELETE' }))
+  },
 }

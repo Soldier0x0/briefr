@@ -287,8 +287,9 @@ export default function ApiKeysPage({ toast }) {
               ))}
             </div>
             {section.id === 'webhooks' && (
-              <div style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '0.5rem' }}>
-                After setting a URL/token here, use the Test button on the Webhooks page to confirm delivery.
+              <div style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '0.5rem', padding: '0.5rem 0.65rem', border: '1px solid var(--border)', borderRadius: '4px' }}>
+                <strong>Legacy bootstrap:</strong> values here seed the default <code className="mono">discord</code>, <code className="mono">telegram</code>, and <code className="mono">generic</code> destinations at startup.
+                Add more endpoints, edit event subscriptions, and run delivery tests on the <strong>Webhooks</strong> admin tab.
               </div>
             )}
           </div>
