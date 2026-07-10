@@ -19,8 +19,9 @@ export function fmtBytes(bytes) {
 
 export function fmtDur(sec) {
   if (sec === null || sec === undefined) return '—'
-  if (sec < 60) return `${sec.toFixed(1)}s`
-  return `${(sec / 60).toFixed(1)}m`
+  if (sec < 60) return `${sec.toFixed(1)} s`
+  if (sec < 3600) return `${(sec / 60).toFixed(1)} min`
+  return `${(sec / 3600).toFixed(1)} h`
 }
 
 export function fmtIso(iso) {

@@ -5,7 +5,7 @@ import useAsync from '../hooks/useAsync.js'
 import useVisibilityAwareInterval from '../hooks/useVisibilityAwareInterval.js'
 import { AsyncState, ErrorState, Skeleton } from './ui/index.js'
 import { loadChartJs, readChartTheme } from '../utils/chartLoader.js'
-import { prefersReducedMotion } from '../utils/motion.js'
+import { baseChartOptions } from '../utils/chartOptions.js'
 import { kevBucketDateRange } from '../utils/kevDeadline.js'
 import {
   buildEpssSparklinePoints,
@@ -164,63 +164,6 @@ function severityDotClass(severity) {
   if (s === 'medium') return 'sev-dot-medium'
   if (s === 'low') return 'sev-dot-low'
   return 'sev-dot-neutral'
-}
-
-function chartAnimationOptions() {
-  if (prefersReducedMotion()) {
-    return { duration: 0 }
-  }
-  return { duration: 400 }
-}
-
-function baseOptions(theme) {
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: chartAnimationOptions(),
-    layout: {
-      padding: { left: 4, right: 8, top: 4, bottom: 4 },
-    },
-    plugins: {
-      legend: {
-        labels: {
-          color: theme.textSecondary,
-          font: { family: theme.mono, size: 10 },
-          boxWidth: 10,
-        },
-      },
-      tooltip: {
-        backgroundColor: theme.panel,
-        titleColor: theme.text,
-        bodyColor: theme.textSecondary,
-        borderColor: theme.grid,
-        borderWidth: 1,
-        titleFont: { family: theme.mono, size: 11 },
-        bodyFont: { family: theme.mono, size: 11 },
-      },
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: theme.textMuted,
-          font: { family: theme.mono, size: 9 },
-          maxRotation: 0,
-        },
-        grid: { color: theme.grid },
-        border: { color: theme.grid },
-      },
-      y: {
-        ticks: {
-          color: theme.textMuted,
-          font: { family: theme.mono, size: 9 },
-          precision: 0,
-        },
-        grid: { color: theme.grid },
-        border: { color: theme.grid },
-        beginAtZero: true,
-      },
-    },
-  }
 }
 
 function EpssSparklineCell({ history, currentScore }) {
@@ -419,7 +362,7 @@ export default function BriefCharts({ onSelectCVE, onBucketClick, pollEnabled = 
       if (cancelled || !kevRef.current) return
 
       const theme = readChartTheme()
-      const shared = baseOptions(theme)
+      const shared = baseChartOptions(theme, { animationDuration: 400, maxRotation: 0 })
 
       chartsRef.current.kev?.destroy()
       chartsRef.current.kev = new Chart(kevRef.current, {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useMemo, useState } from 'react'
 import { adminApi } from '../../../api.js'
 import { loadChartJs, readChartTheme } from '../../../utils/chartLoader.js'
-import { prefersReducedMotion } from '../../../utils/motion.js'
+import { axisTitle, baseChartOptions } from '../../../utils/chartOptions.js'
 import HelpTip from './HelpTip.jsx'
 import { jobLabel } from '../catalog.js'
 import { fmtBytes, fmtDur } from '../formatters.js'
@@ -15,58 +15,6 @@ const INGEST_JOB_IDS = [
   'exploit_sources_sync',
   'vulnrichment_snapshot_sync',
 ]
-
-function chartAnimationOptions() {
-  return prefersReducedMotion() ? false : { duration: 160, easing: 'easeOutQuad' }
-}
-
-function baseOptions(theme) {
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: chartAnimationOptions(),
-    layout: { padding: { left: 4, right: 8, top: 4, bottom: 4 } },
-    plugins: {
-      legend: {
-        labels: {
-          color: theme.textSecondary,
-          font: { family: theme.mono, size: 10 },
-          boxWidth: 10,
-        },
-      },
-      tooltip: {
-        backgroundColor: theme.panel,
-        titleColor: theme.text,
-        bodyColor: theme.textSecondary,
-        borderColor: theme.grid,
-        borderWidth: 1,
-        titleFont: { family: theme.mono, size: 11 },
-        bodyFont: { family: theme.mono, size: 11 },
-      },
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: theme.textMuted,
-          font: { family: theme.mono, size: 9 },
-          maxRotation: 45,
-          minRotation: 0,
-        },
-        grid: { color: theme.grid },
-        border: { color: theme.grid },
-      },
-      y: {
-        beginAtZero: true,
-        ticks: {
-          color: theme.textMuted,
-          font: { family: theme.mono, size: 9 },
-        },
-        grid: { color: theme.grid },
-        border: { color: theme.grid },
-      },
-    },
-  }
-}
 
 function ingestDurationRows(schedulerJobs) {
   const byId = new Map((schedulerJobs || []).map(j => [j.id, j]))
@@ -95,6 +43,12 @@ function backupSizeRows(backups) {
     .reverse()
 }
 
+function backupSparklineLabel(row) {
+  const name = (row?.filename || '').replace(/^briefr-backup-/, '').replace(/\.tar\.gz$/, '')
+  if (!name) return 'backup'
+  return name.length > 12 ? `${name.slice(0, 12)}…` : name
+}
+
 function webhookDayBuckets(rows) {
   const buckets = new Map()
   for (const row of rows || []) {
@@ -111,6 +65,14 @@ function webhookDayBuckets(rows) {
     ok: buckets.get(day)?.ok || 0,
     failed: buckets.get(day)?.failed || 0,
   }))
+}
+
+function ingestScaleMax(secondsList) {
+  if (!secondsList.length) return undefined
+  const sorted = [...secondsList].sort((a, b) => a - b)
+  const p75 = sorted[Math.floor(sorted.length * 0.75)] || sorted[sorted.length - 1]
+  const cap = Math.max(p75 * 1.25, sorted[0])
+  return cap > 0 ? cap : undefined
 }
 
 export default function OpsCharts({ schedulerJobs }) {
@@ -157,17 +119,19 @@ export default function OpsCharts({ schedulerJobs }) {
       const Chart = await loadChartJs()
       if (cancelled) return
       const theme = readChartTheme()
-      const shared = baseOptions(theme)
+      const shared = baseChartOptions(theme)
 
       chartsRef.current.ingest?.destroy()
       if (ingestRef.current && ingestRows.length) {
+        const durations = ingestRows.map(r => r.seconds)
+        const scaleMax = ingestScaleMax(durations)
         chartsRef.current.ingest = new Chart(ingestRef.current, {
           type: 'bar',
           data: {
             labels: ingestRows.map(r => r.label),
             datasets: [{
-              label: 'Last run (seconds)',
-              data: ingestRows.map(r => r.seconds),
+              label: 'Last run duration',
+              data: durations,
               backgroundColor: ingestRows.map(r => (
                 r.hadError ? theme.redDim : theme.accent
               )),
@@ -177,17 +141,42 @@ export default function OpsCharts({ schedulerJobs }) {
           },
           options: {
             ...shared,
+            indexAxis: 'y',
             plugins: {
               ...shared.plugins,
               legend: { display: false },
               tooltip: {
                 ...shared.plugins.tooltip,
                 callbacks: {
+                  title(ctx) {
+                    const row = ingestRows[ctx[0]?.dataIndex]
+                    return row?.label || ctx[0]?.label || ''
+                  },
                   label(ctx) {
                     const row = ingestRows[ctx.dataIndex]
                     const err = row?.hadError ? ' (last run errored)' : ''
-                    return `${fmtDur(ctx.parsed.y)}${err}`
+                    return `${fmtDur(ctx.parsed.x)}${err}`
                   },
+                },
+              },
+            },
+            scales: {
+              x: {
+                ...shared.scales.x,
+                suggestedMax: scaleMax,
+                ticks: {
+                  ...shared.scales.x.ticks,
+                  callback: (v) => fmtDur(Number(v)),
+                },
+                title: axisTitle(theme, 'Duration'),
+              },
+              y: {
+                ...shared.scales.y,
+                ticks: {
+                  ...shared.scales.y.ticks,
+                  autoSkip: false,
+                  maxRotation: 0,
+                  minRotation: 0,
                 },
               },
             },
@@ -198,16 +187,19 @@ export default function OpsCharts({ schedulerJobs }) {
       chartsRef.current.backup?.destroy()
       if (backupRef.current && backupRows.length) {
         chartsRef.current.backup = new Chart(backupRef.current, {
-          type: 'bar',
+          type: 'line',
           data: {
-            labels: backupRows.map(b => (b.filename || '').replace(/^briefr-backup-/, '').slice(0, 14)),
+            labels: backupRows.map(backupSparklineLabel),
             datasets: [{
               label: 'Archive size',
               data: backupRows.map(b => b.size_bytes || 0),
-              backgroundColor: theme.greenDim,
               borderColor: theme.green,
-              borderWidth: 1,
-              borderRadius: 0,
+              backgroundColor: theme.greenDim,
+              fill: true,
+              tension: 0.25,
+              pointRadius: 3,
+              pointHoverRadius: 4,
+              borderWidth: 2,
             }],
           },
           options: {
@@ -218,6 +210,10 @@ export default function OpsCharts({ schedulerJobs }) {
               tooltip: {
                 ...shared.plugins.tooltip,
                 callbacks: {
+                  title(ctx) {
+                    const row = backupRows[ctx[0]?.dataIndex]
+                    return row?.filename || ctx[0]?.label || ''
+                  },
                   label(ctx) {
                     return fmtBytes(ctx.parsed.y)
                   },
@@ -226,6 +222,24 @@ export default function OpsCharts({ schedulerJobs }) {
                     return row?.created_at ? String(row.created_at).slice(0, 19) : ''
                   },
                 },
+              },
+            },
+            scales: {
+              x: {
+                ...shared.scales.x,
+                ticks: {
+                  ...shared.scales.x.ticks,
+                  maxRotation: 0,
+                },
+                title: axisTitle(theme, 'Newest →'),
+              },
+              y: {
+                ...shared.scales.y,
+                ticks: {
+                  ...shared.scales.y.ticks,
+                  callback: (v) => fmtBytes(Number(v)),
+                },
+                title: axisTitle(theme, 'Size'),
               },
             },
           },
@@ -266,8 +280,20 @@ export default function OpsCharts({ schedulerJobs }) {
             },
             scales: {
               ...shared.scales,
-              x: { ...shared.scales.x, stacked: true },
-              y: { ...shared.scales.y, stacked: true },
+              x: {
+                ...shared.scales.x,
+                stacked: true,
+                title: axisTitle(theme, 'Day (UTC)'),
+              },
+              y: {
+                ...shared.scales.y,
+                stacked: true,
+                ticks: {
+                  ...shared.scales.y.ticks,
+                  precision: 0,
+                },
+                title: axisTitle(theme, 'Deliveries'),
+              },
             },
           },
         })
@@ -300,7 +326,7 @@ export default function OpsCharts({ schedulerJobs }) {
       <div className="admin-card admin-ops-chart-card">
         <div className="admin-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           Backup archive sizes
-          <HelpTip text="Size of the eight most recent encrypted backup archives on disk (newest on the right)." />
+          <HelpTip text="Trend of the eight most recent encrypted backup archives on disk (oldest left, newest right)." />
         </div>
         {backupRows.length === 0 ? (
           <div className="admin-empty admin-ops-chart-empty">{extraLoaded ? 'No backups listed yet' : 'Loading…'}</div>

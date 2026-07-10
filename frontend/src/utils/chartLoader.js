@@ -10,6 +10,10 @@ export function loadChartJs() {
         mod.LinearScale,
         mod.BarController,
         mod.BarElement,
+        mod.LineController,
+        mod.LineElement,
+        mod.PointElement,
+        mod.Filler,
         mod.Legend,
         mod.Tooltip,
       )
