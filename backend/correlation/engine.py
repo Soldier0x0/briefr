@@ -491,7 +491,11 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
         stats["temporal_anomalies"] = len(temporal)
         logger.info("Temporal anomalies: %d vendors flagged", len(temporal))
     except Exception as exc:
-        logger.error("Level 3 temporal correlation failed: %s", exc)
+        logger.error(
+            "Level 3 temporal correlation failed: %s",
+            exc,
+            extra={"correlation_phase": "level3_temporal"},
+        )
         await _recover_db_transaction(db)
 
     stats["pruned_members"] = await prune_invalid_campaign_members(db)
@@ -520,7 +524,11 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
         stats["campaigns_built"] = campaign_stats.get("campaigns", 0)
         stats["campaign_members"] = campaign_stats.get("members", 0)
     except Exception as exc:
-        logger.error("Campaign build failed: %s", exc)
+        logger.error(
+            "Campaign build failed: %s",
+            exc,
+            extra={"correlation_phase": "campaign_build"},
+        )
         await _recover_db_transaction(db)
 
     await delete_feed_cache_prefix(db, "correlation:v2:")

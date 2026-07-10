@@ -30,12 +30,25 @@ async def list_correlation_clusters(
     db: Any,
     *,
     stack: str | None = None,
+    cve_id: str | None = None,
     limit: int = 20,
     include_stale: bool = False,
 ) -> dict[str, Any]:
     """Return campaign clusters ranked for stack + watchlist relevance."""
+    cve_filter = (cve_id or "").strip().upper()
     stack_clause, stack_params, stack_terms = _stack_match_clause(stack)
     stale_filter = "" if include_stale else "AND camp.lifecycle != 'stale'"
+    campaign_scope_sql = ""
+    campaign_scope_params: list[Any] = []
+    if cve_filter:
+        campaign_scope_sql = """
+          AND EXISTS (
+              SELECT 1 FROM correlation_campaign_members m0
+              WHERE m0.campaign_id = camp.campaign_id
+                AND m0.cve_id = ?
+          )
+        """
+        campaign_scope_params.append(cve_filter)
 
     rows = await db.execute_fetchall(
         f"""
@@ -44,10 +57,11 @@ async def list_correlation_clusters(
         FROM correlation_campaigns camp
         WHERE camp.member_count >= 2
           {stale_filter}
+          {campaign_scope_sql}
         ORDER BY camp.member_count DESC, camp.label ASC
         LIMIT ?
         """,
-        (max(limit * 5, limit),),
+        (*campaign_scope_params, max(limit * 5, limit)),
     )
 
     watchlist_rows = await db.execute_fetchall(
@@ -118,6 +132,7 @@ async def list_correlation_clusters(
     return {
         "meta": {
             "stack_terms": stack_terms,
+            "cve_id": cve_filter or None,
             "limit": limit,
             "include_stale": include_stale,
             "count": len(clusters),
