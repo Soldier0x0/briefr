@@ -107,11 +107,13 @@ async def list_ai_operations(
     return [dict(row) for row in rows]
 
 
-def _hours_ago_iso(hours: int) -> str:
+def _hours_ago_str(hours: int) -> str:
     from datetime import datetime, timedelta, timezone
 
+    # Rows store started_at via utcnow_str() = "%Y-%m-%d %H:%M:%S"; the cutoff must
+    # match that format or string comparison drops rows on the boundary date.
     ts = datetime.now(timezone.utc) - timedelta(hours=hours)
-    return ts.strftime("%Y-%m-%dT%H:%M:%SZ")
+    return ts.strftime("%Y-%m-%d %H:%M:%S")
 
 
 async def ai_operations_usage_since(
@@ -119,7 +121,7 @@ async def ai_operations_usage_since(
     *,
     hours: int,
 ) -> dict:
-    since = _hours_ago_iso(hours)
+    since = _hours_ago_str(hours)
     pg = _is_postgres_connection(db)
     since_ph = "$1" if pg else "?"
 
