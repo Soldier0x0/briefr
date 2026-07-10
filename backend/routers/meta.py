@@ -132,7 +132,7 @@ async def api_usage_ioc():
 
 @router.post("/api/ai/summary")
 async def ai_summary(body: AiSummaryRequest):
-    """AI executive summary for PDF export (Groq → Anthropic → template)."""
+    """AI executive summary for PDF export (multi-provider LLM router, template fallback)."""
     return await generate_executive_summary(
         cves=body.cves,
         iocs=body.iocs,
