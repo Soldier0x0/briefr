@@ -175,6 +175,11 @@ export function fetchCveAssetMatch(assets) {
   })
 }
 
+export function fetchCVEDrawerBundle(cveId, sector = '') {
+  const qs = sector ? `?sector=${encodeURIComponent(sector)}` : ''
+  return request(`/cves/${encodeURIComponent(cveId)}/drawer${qs}`)
+}
+
 export function fetchCVESentences(cveId) {
   return request(`/cves/${encodeURIComponent(cveId)}/sentences`)
 }

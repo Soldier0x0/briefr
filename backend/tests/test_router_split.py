@@ -39,6 +39,7 @@ EXPECTED_ROUTES = [
     ("GET", "/api/cves/{cve_id}/sentences"),
     ("GET", "/api/cves/{cve_id}/epss-history"),
     ("GET", "/api/cves/{cve_id}/related"),
+    ("GET", "/api/cves/{cve_id}/drawer"),
     ("GET", "/api/cves/{cve_id}"),
     ("GET", "/api/otx/pulses/{pulse_id}/iocs"),
     ("POST", "/api/ioc/lookup"),

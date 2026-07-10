@@ -1,14 +1,11 @@
 import { Component, useCallback, useEffect, useRef, useState } from 'react'
 import {
   fetchCVE,
+  fetchCVEDrawerBundle,
   fetchCVECorrelation,
   fetchCVEDetection,
-  fetchCVEEpssHistory,
   fetchCVEGreynoiseScans,
-  fetchCVEMomentum,
-  fetchCVERelated,
   fetchCVERisk,
-  fetchCVESentences,
   fetchCorrelationSuppressions,
   fetchIOCUsage,
   restoreCVECorrelation,
@@ -161,67 +158,62 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
       setRelated([])
       setRelatedMethod('')
       setRelatedLoading(false)
+      setCorrelation(null)
+      setCorrelationLoading(false)
+      setCorrelationSuppressions([])
+      setMomentumData(null)
       return
     }
     let cancelled = false
     setSentences(null)
     setSentencesLoading(true)
-    fetchCVESentences(cve.cve_id)
-      .then(data => {
-        if (!cancelled) setSentences(data)
-      })
-      .catch(() => {
-        if (!cancelled) setSentences(null)
-      })
-      .finally(() => {
-        if (!cancelled) setSentencesLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [cve?.cve_id])
-
-  useEffect(() => {
-    if (!cve?.cve_id) {
-      setEpssHistory([])
-      setEpssLoading(false)
-      return
-    }
-    let cancelled = false
     setEpssLoading(true)
-    fetchCVEEpssHistory(cve.cve_id)
-      .then(data => {
-        if (!cancelled) setEpssHistory(Array.isArray(data) ? data : [])
-      })
-      .catch(() => {
-        if (!cancelled) setEpssHistory([])
-      })
-      .finally(() => {
-        if (!cancelled) setEpssLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [cve?.cve_id])
-
-  useEffect(() => {
-    if (!cve?.cve_id || activeTab !== 'related') return
-    let cancelled = false
     setRelatedLoading(true)
-    fetchCVERelated(cve.cve_id, 5)
-      .then(data => {
-        if (!cancelled) {
-          setRelated(data.data || [])
-          setRelatedMethod(data.meta?.method || '')
+    setCorrelation(null)
+    setCorrelationLoading(true)
+    const sector = assetCtx?.profile?.environment?.industry || ''
+    Promise.all([
+      fetchCVEDrawerBundle(cve.cve_id, sector),
+      fetchCorrelationSuppressions(cve.cve_id).catch(() => ({ suppressions: [] })),
+    ])
+      .then(([bundle, supData]) => {
+        if (cancelled) return
+        setSentences(bundle.sentences || null)
+        setEpssHistory(Array.isArray(bundle.epss_history) ? bundle.epss_history : [])
+        const relatedPayload = bundle.related || {}
+        setRelated(relatedPayload.data || [])
+        setRelatedMethod(relatedPayload.meta?.method || '')
+        setCorrelation(bundle.correlation || null)
+        setCorrelationSuppressions(supData?.suppressions || [])
+        const momentum = bundle.momentum
+        if (momentum && typeof momentum.momentum_score === 'number') {
+          setMomentumData(momentum)
+          setMomentumScore(cve.cve_id, momentum.momentum_score)
+        } else {
+          setMomentumData(momentum || null)
         }
       })
       .catch(() => {
         if (!cancelled) {
+          setSentences(null)
+          setEpssHistory([])
           setRelated([])
           setRelatedMethod('')
+          setCorrelation(null)
+          setCorrelationSuppressions([])
+          setMomentumData(null)
         }
       })
       .finally(() => {
-        if (!cancelled) setRelatedLoading(false)
+        if (!cancelled) {
+          setSentencesLoading(false)
+          setEpssLoading(false)
+          setRelatedLoading(false)
+          setCorrelationLoading(false)
+        }
       })
     return () => { cancelled = true }
-  }, [cve?.cve_id, activeTab])
+  }, [cve?.cve_id, assetCtx?.profile?.environment?.industry])
 
   useEffect(() => {
     if (!isOpen) {
@@ -244,24 +236,6 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     detectionCancelRef.current?.()
     detectionCancelRef.current = null
     setMomentumData(null)
-  }, [cve?.cve_id])
-
-  // Momentum: fetch on drawer open (lazy, not on card render)
-  useEffect(() => {
-    if (!cve?.cve_id) return
-    let cancelled = false
-    fetchCVEMomentum(cve.cve_id)
-      .then(data => {
-        if (!cancelled) {
-          setMomentumData(data)
-          // Publish to momentumCache so CVECard arrows update reactively
-          if (data && typeof data.momentum_score === 'number') {
-            setMomentumScore(cve.cve_id, data.momentum_score)
-          }
-        }
-      })
-      .catch(() => { /* non-critical — momentum is optional */ })
-    return () => { cancelled = true }
   }, [cve?.cve_id])
 
   const loadDetection = useCallback(() => {
@@ -395,39 +369,6 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
       setGreynoiseLoaded(true)
     }
   }, [cve?.cve_id])
-
-  // Correlation: fetch on drawer open (Level 1 + 2 on-demand, Level 3 pre-computed)
-  useEffect(() => {
-    if (!cve?.cve_id) {
-      setCorrelation(null)
-      setCorrelationLoading(false)
-      setCorrelationSuppressions([])
-      return
-    }
-    let cancelled = false
-    setCorrelation(null)
-    setCorrelationLoading(true)
-    const sector = assetCtx?.profile?.environment?.industry || ''
-    Promise.all([
-      fetchCVECorrelation(cve.cve_id, sector),
-      fetchCorrelationSuppressions(cve.cve_id).catch(() => ({ suppressions: [] })),
-    ])
-      .then(([data, supData]) => {
-        if (cancelled) return
-        setCorrelation(data)
-        setCorrelationSuppressions(supData?.suppressions || [])
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCorrelation(null)
-          setCorrelationSuppressions([])
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setCorrelationLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [cve?.cve_id, assetCtx?.profile?.environment?.industry])
 
   useEffect(() => {
     if (isOpen) {
