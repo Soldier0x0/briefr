@@ -12,6 +12,21 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — UX audit PR11 merged; PR8 config apply next
+
+**Merged this session (continuous loop, Gemini gate — no inline comments received; merged on green local verify):**
+| PR | # | Item |
+|----|---|------|
+| PR7 | **#403** | Structured logging spine |
+| PR5 | **#404** | OpsCharts readability |
+| PR6 | **#405** | KEV vendor chart |
+| PR9 | **#406** | Admin density + danger hierarchy |
+| PR11 | **#407** | IOC single-line + 960px responsive |
+
+**Remaining in approved queue:** **PR8** config apply lifecycle (largest — `apply_strategy`, `ALLOWED_ORIGINS` restart honesty, scheduler reschedule UI). PR12/PR13 deferred.
+
+---
+
 ## 2026-07-10 — UX audit PR9 merged; PR11 responsive in progress
 
 **Merged:**
