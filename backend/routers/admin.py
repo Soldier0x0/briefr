@@ -90,24 +90,22 @@ def _read_build_info() -> dict[str, Any]:
         return {}
 
 
+from redact import mask_secret_value, mask_url_value
+
+
 def _mask_key(value: str) -> str:
-    """Show last 6 chars or 'not configured'."""
-    if not value:
-        return "not configured"
-    return f"…{value[-6:]}"
+    """Mask secrets for GET /config display (first4…last4)."""
+    return mask_secret_value(value)
+
+
+def _mask_url(value: str) -> str:
+    return mask_url_value(value)
 
 
 def _mask_config_response_value(key: str, value: str) -> str:
     from redact import mask_config_value
 
     return mask_config_value(key, value)
-
-
-def _mask_url(value: str) -> str:
-    """Show first 30 chars + '[masked]' or 'not configured'."""
-    if not value:
-        return "not configured"
-    return value[:30] + "…[masked]"
 
 
 def _propagate_to_settings(key: str, value: str) -> None:

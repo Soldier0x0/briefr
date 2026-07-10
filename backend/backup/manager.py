@@ -18,6 +18,7 @@ Both backends:
 
 from __future__ import annotations
 
+import contextlib
 import gzip
 import hashlib
 import json
@@ -27,6 +28,7 @@ import shutil
 import sqlite3
 import tarfile
 import tempfile
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -183,6 +185,7 @@ class BackupConfig:
     enabled: bool = True
     age_key_path: Path | None = None
     database_url: str | None = None
+    interval_hours: int = 6
 
     @classmethod
     def from_env(cls, *, backend_dir: Path | None = None) -> BackupConfig:
@@ -221,6 +224,7 @@ class BackupConfig:
             "no",
             "off",
         }
+        interval_hours = int(os.environ.get("BACKUP_INTERVAL_HOURS", "6"))
 
         database_url = resolve_database_url() if is_postgres() else None
 
@@ -235,6 +239,7 @@ class BackupConfig:
             enabled=enabled,
             age_key_path=_resolve_age_key_path(base),
             database_url=database_url,
+            interval_hours=max(1, interval_hours),
         )
 
 
@@ -586,33 +591,92 @@ def _append_log(cfg: BackupConfig, message: str) -> None:
     )
 
 
+_INTERVAL_BYPASS_REASONS = frozenset({
+    "manual",
+    "manual-admin",
+    "pre-update",
+    "pre-restore",
+    "test",
+    "enc",
+    "seed",
+    "plain",
+})
+
+
+def _newest_archive_mtime(backup_dir: Path) -> float | None:
+    newest: float | None = None
+    if not backup_dir.is_dir():
+        return None
+    for archive in _iter_archives(backup_dir):
+        try:
+            mtime = archive.stat().st_mtime
+        except OSError:
+            continue
+        newest = mtime if newest is None else max(newest, mtime)
+    return newest
+
+
+def _interval_guard_blocks(cfg: BackupConfig, reason: str) -> bool:
+    if reason in _INTERVAL_BYPASS_REASONS:
+        return False
+    latest = _newest_archive_mtime(cfg.backup_dir)
+    if latest is None:
+        return False
+    age_hours = (time.time() - latest) / 3600.0
+    return age_hours < cfg.interval_hours
+
+
+@contextlib.contextmanager
+def _backup_file_lock(backup_dir: Path):
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    lock_path = backup_dir / ".backup.lock"
+    try:
+        import fcntl
+    except ImportError:
+        yield
+        return
+    with lock_path.open("w", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
 def run_backup(*, reason: str = "scheduled", config: BackupConfig | None = None) -> dict[str, Any]:
     cfg = config or BackupConfig.from_env()
     if not cfg.enabled:
         return {"status": "skipped", "reason": "BACKUP_ENABLED=0"}
 
-    try:
-        archive = _create_archive_bundle(cfg, reason=reason)
-        removed = prune_backups(cfg.backup_dir, cfg.retention_count)
-        result = {
-            "status": "ok",
-            "archive": str(archive),
-            "encrypted": archive.name.endswith(ENCRYPTED_ARCHIVE_SUFFIX),
-            "reason": reason,
-            "pruned": [str(p) for p in removed],
-            "retention": cfg.retention_count,
+    if _interval_guard_blocks(cfg, reason):
+        return {
+            "status": "skipped",
+            "reason": f"interval_guard ({cfg.interval_hours}h)",
         }
-        _append_log(cfg, f"OK reason={reason} archive={archive.name} pruned={len(removed)}")
-        if cfg.database_url and is_postgres(cfg.database_url):
-            write_audit_postgres(
-                cfg.database_url, "system", "backup.run", f"{archive.name} reason={reason}"
-            )
-        else:
-            _write_audit_sync(
-                cfg.db_path, "system", "backup.run", f"{archive.name} reason={reason}"
-            )
-        logger.info("Backup created: %s", archive)
-        return result
+
+    try:
+        with _backup_file_lock(cfg.backup_dir):
+            archive = _create_archive_bundle(cfg, reason=reason)
+            removed = prune_backups(cfg.backup_dir, cfg.retention_count)
+            result = {
+                "status": "ok",
+                "archive": str(archive),
+                "encrypted": archive.name.endswith(ENCRYPTED_ARCHIVE_SUFFIX),
+                "reason": reason,
+                "pruned": [str(p) for p in removed],
+                "retention": cfg.retention_count,
+            }
+            _append_log(cfg, f"OK reason={reason} archive={archive.name} pruned={len(removed)}")
+            if cfg.database_url and is_postgres(cfg.database_url):
+                write_audit_postgres(
+                    cfg.database_url, "system", "backup.run", f"{archive.name} reason={reason}"
+                )
+            else:
+                _write_audit_sync(
+                    cfg.db_path, "system", "backup.run", f"{archive.name} reason={reason}"
+                )
+            logger.info("Backup created: %s", archive)
+            return result
     except Exception as exc:
         _append_log(cfg, f"FAIL reason={reason} error={exc}")
         logger.error("Backup failed: %s", exc)

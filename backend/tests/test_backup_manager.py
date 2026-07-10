@@ -142,6 +142,24 @@ def test_run_backup_refuses_corrupt_source(tmp_path):
         run_backup(reason="test", config=cfg)
 
 
+def test_run_backup_interval_guard_skips_recent(tmp_path):
+    cfg = _cfg(tmp_path)
+    _make_db(cfg.db_path)
+    first = run_backup(reason="scheduled", config=cfg)
+    assert first["status"] == "ok"
+    second = run_backup(reason="scheduled", config=cfg)
+    assert second["status"] == "skipped"
+    assert "interval_guard" in second["reason"]
+
+
+def test_run_backup_interval_guard_allows_manual(tmp_path):
+    cfg = _cfg(tmp_path)
+    _make_db(cfg.db_path)
+    run_backup(reason="scheduled", config=cfg)
+    manual = run_backup(reason="manual-admin", config=cfg)
+    assert manual["status"] == "ok"
+
+
 def test_prune_backups_keeps_newest(tmp_path):
     backup_dir = tmp_path / "backups"
     backup_dir.mkdir()

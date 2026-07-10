@@ -54,7 +54,7 @@ def test_config_api_keys_are_masked(admin_client):
     api_keys = data["api_keys"]
 
     # Each key must be masked or 'not configured'
-    masked_pattern = re.compile(r"^….{6}$")
+    masked_pattern = re.compile(r"^.{4}….{4}$|^not configured$|^\*\*\*$")
     for key, val in api_keys.items():
         assert val == "not configured" or masked_pattern.match(val), (
             f"Key {key!r} not properly masked: {val!r}"
@@ -67,11 +67,10 @@ def test_config_no_full_key_values(admin_client):
     data = resp.json()
     api_keys = data["api_keys"]
 
-    # The NVD_API_KEY was set to "supersecretkey1234" — should only show last 6 chars
+    # The NVD_API_KEY was set to "supersecretkey1234" — masked first4…last4
     nvd_val = api_keys.get("NVD_API_KEY", "")
     assert "supersecretkey" not in nvd_val
-    # Should be masked
-    assert nvd_val == "…ey1234"
+    assert nvd_val == "supe…1234"
 
 
 def test_admin_key_not_in_response(admin_client):
@@ -278,6 +277,8 @@ def test_api_keys_never_returned_full_value(admin_client):
 
     for key, val in api_keys.items():
         # Must be masked format or "not configured"
-        assert val in ("not configured",) or val.startswith("…"), (
+        assert val in ("not configured", "***") or (
+            len(val) >= 9 and "…" in val and val[:4] != val[-4:]
+        ), (
             f"Key {key!r} looks like it may be unmasked: {val!r}"
         )
