@@ -12,6 +12,19 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — UX audit PR10 merged; PR7 structured logging
+
+**Merged:**
+| PR | Item |
+|----|------|
+| **#402** | PR10 honest Postgres integrity (`db/integrity.py`, admin Overview method/backend) |
+
+**In progress:** PR7 structured logging spine (`cursor/ux-audit-pr7-logging-489a`) — `job_log_context`, `/api/admin/logs?job_id&run_id`, IngestLogPage filters/columns, JobTable deep link.
+
+**Next after PR7 merge:** PR5 OpsCharts readability.
+
+---
+
 ## 2026-07-10 — UX audit PR4 + PR2 merged
 
 **Merged:**

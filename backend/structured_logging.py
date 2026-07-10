@@ -16,6 +16,8 @@ import collections
 import json
 import logging
 import sys
+import uuid
+from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Any
@@ -23,6 +25,8 @@ from typing import Any
 from settings import settings
 
 request_id_var: ContextVar[str] = ContextVar("request_id", default="")
+job_id_var: ContextVar[str] = ContextVar("job_id", default="")
+run_id_var: ContextVar[str] = ContextVar("run_id", default="")
 
 PLAIN_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
 
@@ -64,6 +68,19 @@ def derive_log_category(logger_name: str) -> str:
     return "Application"
 
 
+@asynccontextmanager
+async def job_log_context(job_id: str):
+    """Bind scheduler job_id/run_id for structured log entries in this task."""
+    run_id = uuid.uuid4().hex[:12]
+    token_job = job_id_var.set(job_id)
+    token_run = run_id_var.set(run_id)
+    try:
+        yield run_id
+    finally:
+        job_id_var.reset(token_job)
+        run_id_var.reset(token_run)
+
+
 def _record_to_entry(record: logging.LogRecord, *, include_category: bool) -> dict[str, Any]:
     entry: dict[str, Any] = {
         "ts": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(
@@ -74,8 +91,16 @@ def _record_to_entry(record: logging.LogRecord, *, include_category: bool) -> di
         "message": record.getMessage(),
         "request_id": getattr(record, "request_id", "") or request_id_var.get(),
     }
+    job_id = getattr(record, "job_id", "") or job_id_var.get()
+    run_id = getattr(record, "run_id", "") or run_id_var.get()
+    if job_id:
+        entry["job_id"] = job_id
+    if run_id:
+        entry["run_id"] = run_id
     if include_category:
         entry["category"] = derive_log_category(record.name)
+    if record.exc_info and record.exc_info[0]:
+        entry["error_type"] = record.exc_info[0].__name__
     for key, value in record.__dict__.items():
         if key not in _STANDARD_ATTRS and key not in entry:
             entry[key] = "[REDACTED]" if _should_redact_field(key) else value
@@ -113,6 +138,8 @@ class _RingBufferHandler(logging.Handler):
         level: str | None = None,
         logger_name: str | None = None,
         request_id: str | None = None,
+        job_id: str | None = None,
+        run_id: str | None = None,
         category: str | None = None,
         search: str | None = None,
     ) -> list[dict[str, Any]]:
@@ -125,12 +152,18 @@ class _RingBufferHandler(logging.Handler):
                 continue
             if request_id and entry.get("request_id") != request_id:
                 continue
+            if job_id and entry.get("job_id") != job_id:
+                continue
+            if run_id and entry.get("run_id") != run_id:
+                continue
             if category and entry.get("category") != category:
                 continue
             if needle:
-                message = (entry.get("message") or "").lower()
-                exc_info = (entry.get("exc_info") or "").lower()
-                if needle not in message and needle not in exc_info:
+                haystack = " ".join(
+                    str(entry.get(k) or "")
+                    for k in ("message", "exc_info", "job_id", "run_id", "error_type")
+                ).lower()
+                if needle not in haystack:
                     continue
             results.append(entry)
             if len(results) >= limit:
@@ -159,6 +192,8 @@ def get_log_buffer(
     level: str | None = None,
     logger_name: str | None = None,
     request_id: str | None = None,
+    job_id: str | None = None,
+    run_id: str | None = None,
     category: str | None = None,
     search: str | None = None,
 ) -> list[dict[str, Any]]:
@@ -167,6 +202,8 @@ def get_log_buffer(
         level=level,
         logger_name=logger_name,
         request_id=request_id,
+        job_id=job_id,
+        run_id=run_id,
         category=category,
         search=search,
     )

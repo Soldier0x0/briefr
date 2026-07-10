@@ -1,4 +1,6 @@
 import { Fragment, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ingestLogUrl } from '../../../utils/adminLinks.js'
 import { fmtIso, fmtDur } from '../formatters.js'
 import { jobLabel, statusLabel, statusHint } from '../catalog.js'
 import { canPauseResume, canRunNow, nextRunCell, nextRunTitle } from '../jobActions.js'
@@ -122,12 +124,24 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                     {onRunNow && (
                       <button
                         className="admin-btn admin-btn-ghost"
-                        style={{ marginTop: '0.4rem', fontSize: '0.75rem' }}
+                        style={{ marginTop: '0.4rem', fontSize: '0.75rem', marginRight: '0.5rem' }}
                         onClick={() => onRunNow(job.id, { retry: true })}
                       >
                         Retry now
                       </button>
                     )}
+                    <Link
+                      className="admin-btn admin-btn-ghost"
+                      style={{ marginTop: '0.4rem', fontSize: '0.75rem', display: 'inline-block' }}
+                      to={ingestLogUrl({
+                        category: 'Scheduler',
+                        level: 'ERROR',
+                        jobId: job.id,
+                        runId: job.last_run_id,
+                      })}
+                    >
+                      View in application log
+                    </Link>
                   </td>
                 </tr>
               )}

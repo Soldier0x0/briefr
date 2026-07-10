@@ -76,6 +76,7 @@ from webhooks.alerts import (
     process_watchlist_monitor_alerts,
 )
 from backup.manager import run_backup
+from structured_logging import job_log_context, run_id_var
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +141,7 @@ async def _write_job_last_run(
         "records_upserted": records,
         "had_error": had_error,
         "error_message": error_message[:500] if error_message else "",
+        "run_id": run_id_var.get() or "",
     }
     for attempt in range(4):
         try:
@@ -1140,7 +1142,7 @@ async def run_cvelistv5_sync() -> bool:
                 new_head[:12],
             )
         except Exception as exc:
-            logger.error("cvelistV5 sync failed: %s", exc)
+            logger.error("cvelistV5 sync failed: %s", exc, exc_info=True)
             _had_error = True
             _cvelist_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
         else:
@@ -1634,6 +1636,23 @@ def start_scheduler() -> AsyncIOScheduler:
     sched_tz = ZoneInfo(tz_name)
 
     scheduler = AsyncIOScheduler(timezone=sched_tz)
+
+    _orig_add_job = scheduler.add_job
+
+    def _add_job_with_log_context(fn, trigger, *, id, name, **kwargs):
+        async def _wrapped():
+            async with job_log_context(id):
+                return await fn()
+
+        return _orig_add_job(
+            _wrapped,
+            trigger,
+            id=id,
+            name=name,
+            **kwargs,
+        )
+
+    scheduler.add_job = _add_job_with_log_context  # type: ignore[method-assign]
 
     scheduler.add_job(
         run_nvd_incremental_sync,

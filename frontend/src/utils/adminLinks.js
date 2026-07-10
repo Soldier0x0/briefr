@@ -8,12 +8,14 @@ function buildAdminUrl(page, params = {}) {
   return `/admin?${sp.toString()}`
 }
 
-export function ingestLogUrl({ level, category, logger, requestId } = {}) {
+export function ingestLogUrl({ level, category, logger, requestId, jobId, runId } = {}) {
   return buildAdminUrl('ingestlog', {
     level,
     category,
     logger,
     request_id: requestId,
+    job_id: jobId,
+    run_id: runId,
   })
 }
 
@@ -48,7 +50,16 @@ export function linksForOperation(kind, meta = {}) {
       break
     case 'job':
       links.push(
-        { label: 'View application log', href: ingestLogUrl({ category: 'Scheduler', logger: 'scheduler', level: meta.error ? 'ERROR' : '' }) },
+        {
+          label: 'View application log',
+          href: ingestLogUrl({
+            category: 'Scheduler',
+            logger: 'scheduler',
+            level: meta.error ? 'ERROR' : '',
+            jobId,
+            runId: meta.runId || meta.run_id,
+          }),
+        },
         { label: 'View audit log', href: auditLogUrl({ actionPrefix: 'scheduler.', q: jobId }) },
       )
       if (!links.some(l => l.href.includes('scheduler'))) {

@@ -2,6 +2,9 @@ import { Fragment, useState, useEffect, useRef } from 'react'
 import { adminApi } from '../../api.js'
 
 const SEARCH_DEBOUNCE_MS = 300
+const DETAIL_KEYS = new Set([
+  'ts', 'level', 'logger', 'message', 'request_id', 'category', 'job_id', 'run_id', 'error_type',
+])
 
 export default function IngestLogPage({ toast, onErrorCountChange, active = true, urlFilters = {} }) {
   const [logData, setLogData] = useState(null)
@@ -9,6 +12,8 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
   const [category, setCategory] = useState(urlFilters.category || '')
   const [loggerFilter, setLoggerFilter] = useState(urlFilters.logger || '')
   const [reqId, setReqId] = useState(urlFilters.requestId || '')
+  const [jobId, setJobId] = useState(urlFilters.jobId || '')
+  const [runId, setRunId] = useState(urlFilters.runId || '')
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [limit, setLimit] = useState(100)
@@ -25,12 +30,18 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
     if (urlFilters.category != null) setCategory(urlFilters.category)
     if (urlFilters.logger != null) setLoggerFilter(urlFilters.logger)
     if (urlFilters.requestId != null) setReqId(urlFilters.requestId)
-    // A deep link (e.g. "View application log" / "Filter by request ID" from
-    // other admin pages) targets a specific entry — a stale search term left
-    // over from a previous visit to this page must not hide it.
+    if (urlFilters.jobId != null) setJobId(urlFilters.jobId)
+    if (urlFilters.runId != null) setRunId(urlFilters.runId)
     setSearchInput('')
     setSearch('')
-  }, [urlFilters.level, urlFilters.category, urlFilters.logger, urlFilters.requestId])
+  }, [
+    urlFilters.level,
+    urlFilters.category,
+    urlFilters.logger,
+    urlFilters.requestId,
+    urlFilters.jobId,
+    urlFilters.runId,
+  ])
 
   async function loadLogs() {
     const params = new URLSearchParams({ limit })
@@ -38,6 +49,8 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
     if (category) params.set('category', category)
     if (loggerFilter) params.set('logger', loggerFilter)
     if (reqId) params.set('request_id', reqId)
+    if (jobId) params.set('job_id', jobId)
+    if (runId) params.set('run_id', runId)
     if (search) params.set('search', search)
     try {
       const res = await adminApi.get(`/logs?${params}`)
@@ -50,7 +63,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
     } catch { }
   }
 
-  useEffect(() => { loadLogs() }, [level, category, loggerFilter, reqId, search, limit])
+  useEffect(() => { loadLogs() }, [level, category, loggerFilter, reqId, jobId, runId, search, limit])
 
   useEffect(() => {
     const handler = setTimeout(() => setSearch(searchInput.trim()), SEARCH_DEBOUNCE_MS)
@@ -64,7 +77,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
       clearInterval(intervalRef.current)
     }
     return () => clearInterval(intervalRef.current)
-  }, [autoRefresh, active, level, category, loggerFilter, reqId, search, limit])
+  }, [autoRefresh, active, level, category, loggerFilter, reqId, jobId, runId, search, limit])
 
   function exportLogs() {
     const lines = logs.map(e => JSON.stringify(e)).join('\n')
@@ -82,6 +95,28 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
     return {}
   }
 
+  function entryExtras(entry) {
+    return Object.fromEntries(
+      Object.entries(entry).filter(([k, v]) => !DETAIL_KEYS.has(k) && v != null && v !== ''),
+    )
+  }
+
+  function hasDetail(entry) {
+    return Boolean(entry.exc_info) || Object.keys(entryExtras(entry)).length > 0
+  }
+
+  function detailText(entry) {
+    const extras = entryExtras(entry)
+    const parts = []
+    if (Object.keys(extras).length > 0) {
+      parts.push(JSON.stringify(extras, null, 2))
+    }
+    if (entry.exc_info) {
+      parts.push(entry.exc_info)
+    }
+    return parts.join('\n\n')
+  }
+
   function toggleExpanded(key) {
     setExpanded(prev => {
       const next = new Set(prev)
@@ -94,7 +129,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
   return (
     <div>
       <h1 className="admin-page-title">Application logs</h1>
-      <p className="admin-page-subtitle">Live backend log stream, filterable by level/category/logger. Useful for tracing a specific request or recent error.</p>
+      <p className="admin-page-subtitle">Live backend log stream, filterable by level, category, job, or request. Expand rows for tracebacks and structured fields.</p>
       <div className="admin-filter-bar">
         <input
           className="admin-input"
@@ -115,6 +150,8 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
           <option value="">All loggers</option>
           {knownLoggers.map(l => <option key={l} value={l}>{l}</option>)}
         </select>
+        <input className="admin-input" placeholder="job_id…" value={jobId} onChange={e => setJobId(e.target.value)} style={{ minWidth: 140 }} />
+        <input className="admin-input" placeholder="run_id…" value={runId} onChange={e => setRunId(e.target.value)} style={{ minWidth: 120 }} />
         <input className="admin-input" placeholder="request_id…" value={reqId} onChange={e => setReqId(e.target.value)} style={{ minWidth: 160 }} />
         <select className="admin-select" value={limit} onChange={e => setLimit(Number(e.target.value))}>
           {[50, 100, 250, 500].map(n => <option key={n} value={n}>{n} entries</option>)}
@@ -132,21 +169,21 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
       <div className="admin-card" style={{ padding: 0 }}>
         <table className="admin-table">
           <thead>
-            <tr><th>TIMESTAMP</th><th>LEVEL</th><th>CATEGORY</th><th>LOGGER</th><th>MESSAGE</th><th>REQUEST ID</th></tr>
+            <tr><th>TIMESTAMP</th><th>LEVEL</th><th>CATEGORY</th><th>LOGGER</th><th>MESSAGE</th><th>JOB</th><th>RUN</th><th>REQUEST ID</th></tr>
           </thead>
           <tbody>
-            {logs.length === 0 && !logData && <tr><td colSpan={6} className="admin-empty">Loading…</td></tr>}
-            {logs.length === 0 && logData && <tr><td colSpan={6} className="admin-empty">{level || category || loggerFilter || reqId ? 'No log entries match the current filters — try a broader level or clear the filters' : 'Log buffer is empty — backend activity will appear here once jobs run'}</td></tr>}
+            {logs.length === 0 && !logData && <tr><td colSpan={8} className="admin-empty">Loading…</td></tr>}
+            {logs.length === 0 && logData && <tr><td colSpan={8} className="admin-empty">{level || category || loggerFilter || reqId || jobId || runId ? 'No log entries match the current filters — try a broader level or clear the filters' : 'Log buffer is empty — backend activity will appear here once jobs run'}</td></tr>}
             {logs.map((entry) => {
-              const hasDetail = Boolean(entry.exc_info)
-              const entryKey = `${entry.ts}-${entry.logger}-${entry.request_id}-${entry.message}`
+              const expandable = hasDetail(entry)
+              const entryKey = `${entry.ts}-${entry.logger}-${entry.request_id}-${entry.job_id || ''}-${entry.message}`
               const isExpanded = expanded.has(entryKey)
               return (
                 <Fragment key={entryKey}>
                   <tr
-                    style={{ ...rowStyle(entry), cursor: hasDetail ? 'pointer' : undefined }}
-                    onClick={hasDetail ? () => toggleExpanded(entryKey) : undefined}
-                    title={hasDetail ? 'Click for full traceback' : undefined}
+                    style={{ ...rowStyle(entry), cursor: expandable ? 'pointer' : undefined }}
+                    onClick={expandable ? () => toggleExpanded(entryKey) : undefined}
+                    title={expandable ? 'Click for structured detail' : undefined}
                   >
                     <td className="mono" style={{ fontSize: '0.68rem', whiteSpace: 'nowrap' }}>{entry.ts}</td>
                     <td>
@@ -154,15 +191,17 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
                     </td>
                     <td style={{ fontSize: '0.72rem', color: 'var(--text3)' }}>{entry.category || 'Application'}</td>
                     <td className="mono" style={{ fontSize: '0.68rem', color: 'var(--text3)' }}>{entry.logger}</td>
-                    <td style={{ fontSize: '0.8rem', wordBreak: 'break-word', maxWidth: 480, color: entry.level === 'ERROR' || entry.level === 'CRITICAL' ? 'var(--red)' : undefined }}>
-                      {hasDetail && <span className="mono" style={{ color: 'var(--text3)', marginRight: 6 }}>{isExpanded ? '▼' : '▶'}</span>}
+                    <td style={{ fontSize: '0.8rem', wordBreak: 'break-word', maxWidth: 420, color: entry.level === 'ERROR' || entry.level === 'CRITICAL' ? 'var(--red)' : undefined }}>
+                      {expandable && <span className="mono" style={{ color: 'var(--text3)', marginRight: 6 }}>{isExpanded ? '▼' : '▶'}</span>}
                       {entry.message}
                     </td>
+                    <td className="mono" style={{ fontSize: '0.68rem', color: 'var(--text3)' }}>{entry.job_id || ''}</td>
+                    <td className="mono" style={{ fontSize: '0.68rem', color: 'var(--text3)' }}>{entry.run_id || ''}</td>
                     <td className="mono" style={{ fontSize: '0.68rem', color: 'var(--text3)' }}>{entry.request_id || ''}</td>
                   </tr>
-                  {hasDetail && isExpanded && (
+                  {expandable && isExpanded && (
                     <tr>
-                      <td colSpan={6} style={{ padding: 0 }}>
+                      <td colSpan={8} style={{ padding: 0 }}>
                         <pre
                           className="mono"
                           style={{
@@ -177,7 +216,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
                             overflowY: 'auto',
                           }}
                         >
-                          {entry.exc_info}
+                          {detailText(entry)}
                         </pre>
                       </td>
                     </tr>

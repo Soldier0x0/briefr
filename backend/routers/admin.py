@@ -259,6 +259,7 @@ def _build_job_info(job: Any, history: list[dict]) -> dict[str, Any]:
         "last_run_records_upserted": latest.get("records_upserted"),
         "last_run_had_error": latest.get("had_error"),
         "last_error_message": (latest.get("error_message") or "")[:500],
+        "last_run_id": latest.get("run_id") or "",
         "run_history": history,
     }
 
@@ -1701,6 +1702,8 @@ async def get_logs(
     level: str | None = Query(None),
     logger_name: str | None = Query(None, alias="logger"),
     request_id: str | None = Query(None),
+    job_id: str | None = Query(None),
+    run_id: str | None = Query(None),
     category: str | None = Query(None),
     search: str | None = Query(None, max_length=200),
 ):
@@ -1709,6 +1712,8 @@ async def get_logs(
         level=level,
         logger_name=logger_name,
         request_id=request_id,
+        job_id=job_id,
+        run_id=run_id,
         category=category,
         search=search,
     )
