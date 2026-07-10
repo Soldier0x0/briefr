@@ -12,6 +12,19 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — UX audit PR5 merged; PR6 KEV vendor chart in progress
+
+**Merged:**
+| PR | Item |
+|----|------|
+| **#404** | PR5 OpsCharts readability (fmtDur units, horizontal ingest bars, backup sparkline, `chartOptions.js`) |
+
+**In progress:** PR6 KEV vendor chart (`cursor/ux-audit-pr6-kev-vendor-489a`) — `GET /api/stats/top-vendors`, BriefCharts vendor bar, unified `kevDeadline.js` day math.
+
+**Next after PR6 merge:** PR9 admin density + danger hierarchy.
+
+---
+
 ## 2026-07-10 — UX audit PR7 merged; PR5 OpsCharts in progress
 
 **Merged:**

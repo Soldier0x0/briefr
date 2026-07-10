@@ -1,8 +1,28 @@
-/** Days until a YYYY-MM-DD (or ISO) KEV due date; null when unknown. */
+/** Parse YYYY-MM-DD or ISO due date at UTC noon; null when invalid. */
+export function parseDueDate(dueDate) {
+  if (!dueDate) return null
+  const raw = String(dueDate).includes('T') ? dueDate : `${String(dueDate).slice(0, 10)}T12:00:00Z`
+  const due = new Date(raw)
+  return Number.isNaN(due.getTime()) ? null : due
+}
+
+/** Days until a YYYY-MM-DD (or ISO) KEV due date; null when unknown. Uses UTC noon anchor. */
 export function daysUntilDue(dateStr) {
-  if (!dateStr) return null
-  const diff = new Date(dateStr).getTime() - Date.now()
-  return Math.ceil(diff / 86400000)
+  const due = parseDueDate(dateStr)
+  if (!due) return null
+  const today = new Date()
+  today.setUTCHours(12, 0, 0, 0)
+  return Math.round((due.getTime() - today.getTime()) / 86400000)
+}
+
+/** Bucket key for KEV due-date histograms (matches feed/Morning Brief windows). */
+export function kevDueBucket(days) {
+  if (days == null) return '31+'
+  if (days < 0) return 'overdue'
+  if (days <= 7) return '0-7'
+  if (days <= 14) return '8-14'
+  if (days <= 30) return '15-30'
+  return '31+'
 }
 
 /** Full-saturation red only for overdue / due today / due tomorrow. */

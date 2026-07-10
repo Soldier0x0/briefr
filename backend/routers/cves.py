@@ -311,6 +311,47 @@ async def stats_timeline(
     return await cached_read(cache_key, DEFAULT_TTL_SECONDS, build)
 
 
+@list_router.get("/api/stats/top-vendors")
+async def stats_top_vendors(
+    limit: int = Query(default=10, ge=1, le=25, description="Maximum vendors returned"),
+):
+    """KEV catalog rows grouped by vendor_project (product fallback)."""
+    cache_key = f"stats_top_vendors:{limit}"
+
+    async def build():
+        db = await get_db()
+        try:
+            rows = await db.execute_fetchall(
+                """
+                SELECT vendor, COUNT(*) AS kev_count
+                FROM (
+                    SELECT
+                        CASE
+                            WHEN vendor_project IS NOT NULL AND TRIM(vendor_project) != ''
+                                THEN TRIM(vendor_project)
+                            WHEN product IS NOT NULL AND TRIM(product) != ''
+                                THEN TRIM(product)
+                            ELSE 'Unknown vendor'
+                        END AS vendor
+                    FROM kev_deadlines
+                ) grouped
+                GROUP BY vendor
+                ORDER BY kev_count DESC, vendor ASC
+                LIMIT ?
+                """,
+                (limit,),
+            )
+            total_row = await db.execute_fetchall("SELECT COUNT(*) AS cnt FROM kev_deadlines")
+        finally:
+            await db.close()
+
+        total_kev = int(total_row[0]["cnt"]) if total_row else 0
+        data = [{"vendor": row["vendor"], "kev_count": int(row["kev_count"])} for row in rows]
+        return {"data": data, "total_kev": total_kev}
+
+    return await cached_read(cache_key, DEFAULT_TTL_SECONDS, build)
+
+
 def _timeline_date_key(value) -> str:
     """Normalize DATE() results to YYYY-MM-DD (asyncpg returns date objects)."""
     if value is None:

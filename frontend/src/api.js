@@ -347,6 +347,10 @@ export function fetchKEVDeadlines(sort = 'recent') {
   return request(`/kev/deadlines?sort=${sort}`)
 }
 
+export function fetchTopVendors(limit = 10) {
+  return request(`/stats/top-vendors?limit=${limit}`)
+}
+
 export function fetchChanges({ field = null, sinceHours = null, since_hours = null, limit = 50 } = {}) {
   const qs = new URLSearchParams()
   qs.set('since_hours', String(since_hours ?? sinceHours ?? 24))

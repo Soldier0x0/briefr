@@ -166,6 +166,13 @@
   min-height: 180px;
 }
 
+.brief-chart-empty {
+  padding: 0.75rem 0;
+  color: var(--text3);
+  font-size: 0.6875rem;
+  text-align: center;
+}
+
 .brief-chart-canvas-wrap canvas {
   width: 100% !important;
   height: 100% !important;

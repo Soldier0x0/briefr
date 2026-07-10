@@ -153,11 +153,6 @@ function BriefView({ isActive, stats, statsError, statsErrorRequestId, onRetrySt
     }
   }, [])
 
-  const handleBucketClick = useCallback((range) => {
-    setQueueDueWindow(range)
-    setQueueReasonFilter('kev_due_soon')
-  }, [])
-
   const handleDueWindowClear = useCallback(() => {
     setQueueDueWindow(null)
   }, [])
@@ -199,7 +194,6 @@ function BriefView({ isActive, stats, statsError, statsErrorRequestId, onRetrySt
       >
         <BriefCharts
           onSelectCVE={onSelectCVE}
-          onBucketClick={handleBucketClick}
           pollEnabled={isActive}
         />
       </Suspense>
