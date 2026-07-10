@@ -70,6 +70,8 @@ function AdminPageBody({ toast }) {
       category: searchParams.get('category') || '',
       logger: searchParams.get('logger') || '',
       requestId: searchParams.get('request_id') || '',
+      jobId: searchParams.get('job_id') || '',
+      runId: searchParams.get('run_id') || '',
     },
     audit: {
       actionPrefix: searchParams.get('action_prefix') || '',

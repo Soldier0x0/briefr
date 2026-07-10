@@ -97,6 +97,52 @@ def test_logs_endpoint_filters_by_search(admin_client):
     assert all("detection lookup" in e["message"].lower() for e in logs)
 
 
+def test_logs_endpoint_filters_by_job_id(admin_client):
+    import asyncio
+
+    from structured_logging import clear_log_buffer, job_log_context
+
+    clear_log_buffer()
+
+    async def _emit():
+        async with job_log_context("cvelistv5_incremental_sync"):
+            logging.getLogger("scheduler").error("cvelistV5 sync failed: boom", exc_info=False)
+
+    asyncio.run(_emit())
+
+    resp = admin_client.get("/api/admin/logs?job_id=cvelistv5_incremental_sync&limit=20")
+    assert resp.status_code == 200
+    logs = resp.json()["logs"]
+    assert logs
+    assert all(e.get("job_id") == "cvelistv5_incremental_sync" for e in logs)
+    assert logs[0].get("run_id")
+
+
+def test_job_log_context_sets_run_id():
+    import asyncio
+
+    from structured_logging import clear_log_buffer, job_log_context
+
+    clear_log_buffer()
+
+    async def _run():
+        async with job_log_context("test_job") as run_id:
+            try:
+                raise RuntimeError("forced failure")
+            except RuntimeError:
+                logging.getLogger("scheduler").error("forced failure", exc_info=True)
+            return run_id
+
+    run_id = asyncio.run(_run())
+    assert run_id
+    logs = _ring_handler.get_logs(limit=5, job_id="test_job")
+    assert logs
+    assert logs[0]["job_id"] == "test_job"
+    assert logs[0]["run_id"] == run_id
+    assert logs[0].get("error_type")
+    assert logs[0].get("exc_info")
+
+
 def test_derive_log_category_mapping():
     assert derive_log_category("scheduler") == "Scheduler"
     assert derive_log_category("backup.manager") == "Backup"
