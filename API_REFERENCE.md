@@ -1264,16 +1264,22 @@ Body `[{key, value}, ...]`. Writes all keys to `.env`, reschedules scheduler int
 Params: `event_type`, `limit`, `offset`. Returns dedupe log `{rows: [{alert_type, target, alerted_at}], total}`. `event_type` accepts canonical names (`kev_alert`, `backup_failure`, `watchlist_alert`, `kev_backlog`, `ioc_watchlist_hit`) and legacy aliases.
 
 ### GET /api/admin/webhooks/destinations
-Returns `{destinations: [{id, kind, label, enabled, event_types, source, health_source}]}` — merged env + DB config (secrets not included).
+Returns `{destinations: [{id, kind, label, enabled, event_types, source, health_source, config}]}` — merged env + DB config. `config` is **masked** (URLs/tokens never returned in full).
+
+### POST /api/admin/webhooks/destinations
+Body `{kind, config, id?, label?, enabled?, event_types?}`. Creates a **database-backed** destination (`source: db`). `kind` is `discord`, `telegram`, or `generic`. `id` optional — generated as `{kind}-{uuid}` when omitted; custom ids must match `^[a-z0-9-]{3,64}$` and cannot use reserved env ids (`discord`, `telegram`, `generic`). Config URLs validated with SSRF checks on write. Cap: 20 destinations per kind. Audit: `webhook.destination.create.{id}`.
 
 ### PATCH /api/admin/webhooks/destinations/{destination_id}
-Body `{enabled?: bool, event_types?: string[], label?: string}`. Updates per-destination enable flag and event subscriptions. Audit: `webhook.destination.update.{id}`.
+Body `{enabled?: bool, event_types?: string[], label?: string, config?: object}`. Updates enable flag, subscriptions, and label. **`config` only for `source: db`** destinations (env bootstrap destinations keep secrets in `.env`). Audit: `webhook.destination.update.{id}`.
+
+### DELETE /api/admin/webhooks/destinations/{destination_id}
+Query `confirm_text=delete` (see `GET /api/admin/destructive-actions`). Deletes **database-backed** destinations only; env bootstrap ids cannot be deleted (disable via PATCH). Audit: `webhook.destination.delete.{id}`.
 
 ### GET /api/admin/webhooks/delivery-log
 Params: `destination_id`, `event_type`, `limit`, `offset`. Returns `{rows: [{id, destination_id, event_type, dedupe_key, status, error, attempted_at}], total}`.
 
 ### POST /api/admin/config/webhook-test
-Body `{destination_id}` or legacy `{channel}` (`discord` / `telegram` / `generic`). Sends a test message via the SSRF-safe webhook client. Audit: `webhook.test.{destination_id}`.
+Body `{destination_id}` or legacy `{channel}` (`discord` / `telegram` / `generic`). Sends a test message via the SSRF-safe webhook client. **Works on disabled destinations** (connectivity check before enable). Audit: `webhook.test.{destination_id}`.
 
 ### POST /api/admin/diagnostics/smoke
 Runs in-process smoke checks: CVE count > 0, KEV count > 0, DB integrity, feed health, backup dir writable.

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -242,3 +244,93 @@ async def webhooks_enabled() -> bool:
 
 async def configured_channels() -> list[str]:
     return [dest.id for dest in await load_destinations() if dest.enabled]
+
+
+RESERVED_ENV_IDS = frozenset({"discord", "telegram", "generic"})
+DESTINATION_KINDS = frozenset({"discord", "telegram", "generic"})
+MAX_DESTINATIONS_PER_KIND = 20
+_DESTINATION_ID_RE = re.compile(r"^[a-z0-9-]{3,64}$")
+
+from webhooks.ssrf import SSRFError, parse_https_url, resolve_hostname
+
+
+def _mask_secret(value: str) -> str:
+    text = (value or "").strip()
+    if not text:
+        return "not configured"
+    if len(text) <= 8:
+        return "***"
+    return f"{text[:4]}…{text[-4:]}"
+
+
+def _mask_url(value: str) -> str:
+    text = (value or "").strip()
+    if not text:
+        return "not configured"
+    if len(text) <= 30:
+        return text[:8] + "…[masked]"
+    return text[:30] + "…[masked]"
+
+
+def mask_destination_config(kind: str, config: dict[str, Any]) -> dict[str, Any]:
+    masked: dict[str, Any] = {}
+    if kind in {"discord", "generic"}:
+        if "url" in config:
+            masked["url"] = _mask_url(str(config.get("url", "")))
+    if kind == "telegram":
+        if "token" in config:
+            masked["token"] = _mask_secret(str(config.get("token", "")))
+        if "chat_id" in config:
+            masked["chat_id"] = str(config.get("chat_id", ""))
+    return masked
+
+
+def destination_to_api_dict(dest: WebhookDestination) -> dict[str, Any]:
+    return {
+        "id": dest.id,
+        "kind": dest.kind,
+        "label": dest.label,
+        "enabled": dest.enabled,
+        "event_types": dest.event_types,
+        "source": dest.source,
+        "health_source": dest.health_source,
+        "config": mask_destination_config(dest.kind, dest.config),
+    }
+
+
+def validate_destination_id(destination_id: str) -> None:
+    if destination_id in RESERVED_ENV_IDS:
+        raise ValueError(f"id '{destination_id}' is reserved for env bootstrap destinations")
+    if not _DESTINATION_ID_RE.fullmatch(destination_id):
+        raise ValueError("id must match ^[a-z0-9-]{3,64}$")
+
+
+def generate_destination_id(kind: str) -> str:
+    return f"{kind}-{uuid.uuid4().hex[:8]}"
+
+
+def validate_destination_kind(kind: str) -> None:
+    if kind not in DESTINATION_KINDS:
+        raise ValueError(f"kind must be one of: {', '.join(sorted(DESTINATION_KINDS))}")
+
+
+def validate_destination_config(kind: str, config: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(config, dict):
+        raise ValueError("config must be an object")
+    if kind in {"discord", "generic"}:
+        url = str(config.get("url", "")).strip()
+        if not url:
+            raise ValueError("config.url is required")
+        try:
+            host, _port, _path, _netloc = parse_https_url(url)
+            resolve_hostname(host)
+        except SSRFError as exc:
+            raise ValueError(str(exc)) from exc
+        return {"url": url}
+    if kind == "telegram":
+        token = str(config.get("token", "")).strip()
+        chat_id = str(config.get("chat_id", "")).strip()
+        if not token or not chat_id:
+            raise ValueError("config.token and config.chat_id are required")
+        return {"token": token, "chat_id": chat_id}
+    raise ValueError(f"unsupported kind: {kind}")

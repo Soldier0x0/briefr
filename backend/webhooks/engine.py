@@ -6,11 +6,11 @@ import logging
 from typing import Any
 
 from database import (
-    clear_webhook_alert,
+    clear_webhook_destination_dedupe,
     get_db,
-    record_webhook_alert,
     record_webhook_delivery,
-    was_webhook_alert_sent,
+    record_webhook_destination_sent,
+    was_webhook_destination_sent,
 )
 from webhooks.destinations import (
     EVENT_BACKUP_FAILURE,
@@ -154,19 +154,7 @@ async def dispatch_event(
         }
 
     if dedupe_key and not skip_dedupe:
-        db = await get_db()
-        try:
-            if await was_webhook_alert_sent(db, normalized, dedupe_key):
-                return {
-                    "status": "skipped",
-                    "reason": "deduped",
-                    "event_type": normalized,
-                    "dedupe_key": dedupe_key,
-                    "sent": [],
-                    "errors": {},
-                }
-        finally:
-            await db.close()
+        pass  # per-destination dedupe checked inside the delivery loop
 
     targets = [dest for dest in active if dest.subscribes_to(normalized)]
     if not targets:
@@ -180,7 +168,19 @@ async def dispatch_event(
 
     sent: list[str] = []
     errors: dict[str, str] = {}
+    skipped_dedupe: list[str] = []
     for dest in targets:
+        if dedupe_key and not skip_dedupe:
+            db = await get_db()
+            try:
+                if await was_webhook_destination_sent(
+                    db, dest.id, normalized, dedupe_key
+                ):
+                    skipped_dedupe.append(dest.id)
+                    continue
+            finally:
+                await db.close()
+
         result = await deliver_to_destination(
             dest,
             message,
@@ -203,6 +203,15 @@ async def dispatch_event(
 
         if result["ok"]:
             sent.append(dest.id)
+            if dedupe_key and not skip_dedupe:
+                db = await get_db()
+                try:
+                    await record_webhook_destination_sent(
+                        db, dest.id, normalized, dedupe_key
+                    )
+                    await db.commit()
+                finally:
+                    await db.close()
         elif result["error"]:
             errors[dest.id] = result["error"]
             logger.error(
@@ -212,16 +221,10 @@ async def dispatch_event(
                 result["error"],
             )
 
-    if dedupe_key and sent:
-        db = await get_db()
-        try:
-            await record_webhook_alert(db, normalized, dedupe_key)
-            await db.commit()
-        finally:
-            await db.close()
-
     if sent and not errors:
         status = "ok"
+    elif not sent and skipped_dedupe and not errors:
+        status = "skipped"
     elif sent:
         status = "partial"
     else:
@@ -232,13 +235,18 @@ async def dispatch_event(
         "dedupe_key": dedupe_key,
         "sent": sent,
         "errors": errors,
+        **(
+            {"reason": "deduped", "skipped_dedupe": skipped_dedupe}
+            if status == "skipped" and skipped_dedupe
+            else {}
+        ),
     }
 
 
 async def clear_event_dedupe(event_type: str, dedupe_key: str) -> None:
     db = await get_db()
     try:
-        await clear_webhook_alert(db, normalize_event_type(event_type), dedupe_key)
+        await clear_webhook_destination_dedupe(db, normalize_event_type(event_type), dedupe_key)
         await db.commit()
     finally:
         await db.close()
@@ -253,13 +261,6 @@ async def send_test_message(destination_id: str, message: str) -> dict[str, Any]
             "destination_id": destination_id,
             "delivered_at": None,
             "error": "unknown destination",
-        }
-    if not dest.enabled:
-        return {
-            "ok": False,
-            "destination_id": destination_id,
-            "delivered_at": None,
-            "error": "destination disabled",
         }
 
     from datetime import datetime, timezone

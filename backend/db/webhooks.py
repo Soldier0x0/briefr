@@ -49,6 +49,53 @@ FROM webhook_destinations
 ORDER BY id
 """
 
+_COUNT_DESTINATIONS_BY_KIND_SQLITE = """
+SELECT COUNT(*) as cnt FROM webhook_destinations WHERE kind = ?
+"""
+
+_COUNT_DESTINATIONS_BY_KIND_PG = """
+SELECT COUNT(*) as cnt FROM webhook_destinations WHERE kind = $1
+"""
+
+_INSERT_DESTINATION_SQLITE = """
+INSERT INTO webhook_destinations (
+    id, kind, label, enabled, event_types, config_json, source, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, 'db', ?, ?)
+"""
+
+_INSERT_DESTINATION_PG = """
+INSERT INTO webhook_destinations (
+    id, kind, label, enabled, event_types, config_json, source, created_at, updated_at
+) VALUES ($1, $2, $3, $4, $5, $6, 'db', $7, $8)
+"""
+
+_DELETE_DESTINATION_SQLITE = """
+DELETE FROM webhook_destinations WHERE id = ? AND source = 'db'
+"""
+
+_DELETE_DESTINATION_PG = """
+DELETE FROM webhook_destinations WHERE id = $1 AND source = 'db'
+"""
+
+_SELECT_DESTINATION_SOURCE_SQLITE = """
+SELECT source FROM webhook_destinations WHERE id = ?
+"""
+
+_SELECT_DESTINATION_SOURCE_PG = """
+SELECT source FROM webhook_destinations WHERE id = $1
+"""
+
+_INSERT_DEST_DEDUPE_SQLITE = """
+INSERT OR IGNORE INTO webhook_destination_dedupe (destination_id, event_type, dedupe_key)
+VALUES (?, ?, ?)
+"""
+
+_INSERT_DEST_DEDUPE_PG = """
+INSERT INTO webhook_destination_dedupe (destination_id, event_type, dedupe_key)
+VALUES ($1, $2, $3)
+ON CONFLICT (destination_id, event_type, dedupe_key) DO NOTHING
+"""
+
 
 def _is_postgres_connection(db: DbConnection) -> bool:
     return type(db).__name__ == "PostgresConnection"
@@ -124,6 +171,7 @@ async def update_webhook_destination(
     enabled: bool | None = None,
     event_types: list[str] | None = None,
     label: str | None = None,
+    config: dict[str, Any] | None = None,
 ) -> bool:
     pg = _is_postgres_connection(db)
     fields: list[str] = []
@@ -144,6 +192,11 @@ async def update_webhook_destination(
         if pg:
             pg_n += 1
         params.append(label)
+    if config is not None:
+        fields.append(f"config_json = {_placeholder(pg, pg_n)}")
+        if pg:
+            pg_n += 1
+        params.append(json.dumps(config))
     if not fields:
         return False
     fields.append(f"updated_at = {_placeholder(pg, pg_n)}")
@@ -205,3 +258,99 @@ async def list_webhook_delivery_log(
         params + [limit, offset],
     )
     return [dict(row) for row in rows], total
+
+
+async def count_webhook_destinations_by_kind(db: DbConnection, kind: str) -> int:
+    sql = _COUNT_DESTINATIONS_BY_KIND_PG if _is_postgres_connection(db) else _COUNT_DESTINATIONS_BY_KIND_SQLITE
+    rows = await db.execute_fetchall(sql, (kind,))
+    return int(rows[0]["cnt"]) if rows else 0
+
+
+async def get_webhook_destination_source(db: DbConnection, destination_id: str) -> str | None:
+    sql = _SELECT_DESTINATION_SOURCE_PG if _is_postgres_connection(db) else _SELECT_DESTINATION_SOURCE_SQLITE
+    rows = await db.execute_fetchall(sql, (destination_id,))
+    if not rows:
+        return None
+    return rows[0]["source"]
+
+
+async def create_webhook_destination(
+    db: DbConnection,
+    *,
+    destination_id: str,
+    kind: str,
+    label: str,
+    enabled: bool,
+    event_types: list[str],
+    config: dict[str, Any],
+) -> None:
+    now = utcnow_str()
+    payload = (
+        destination_id,
+        kind,
+        label,
+        enabled if _is_postgres_connection(db) else int(enabled),
+        json.dumps(event_types),
+        json.dumps(config),
+        now,
+        now,
+    )
+    sql = _INSERT_DESTINATION_PG if _is_postgres_connection(db) else _INSERT_DESTINATION_SQLITE
+    await db.execute(sql, payload)
+
+
+async def delete_webhook_destination(db: DbConnection, destination_id: str) -> bool:
+    sql = _DELETE_DESTINATION_PG if _is_postgres_connection(db) else _DELETE_DESTINATION_SQLITE
+    cursor = await db.execute(sql, (destination_id,))
+    return cursor.rowcount > 0
+
+
+async def was_webhook_destination_sent(
+    db: DbConnection,
+    destination_id: str,
+    event_type: str,
+    dedupe_key: str,
+) -> bool:
+    types = _webhook_alert_types(event_type)
+    pg = _is_postgres_connection(db)
+    placeholders = _in_placeholders(len(types), pg=pg, start=1)
+    dest_ph = _placeholder(pg, len(types) + 1)
+    key_ph = _placeholder(pg, len(types) + 2)
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT 1 FROM webhook_destination_dedupe
+        WHERE event_type IN ({placeholders})
+          AND destination_id = {dest_ph}
+          AND dedupe_key = {key_ph}
+        """,
+        (*types, destination_id, dedupe_key),
+    )
+    return bool(rows)
+
+
+async def record_webhook_destination_sent(
+    db: DbConnection,
+    destination_id: str,
+    event_type: str,
+    dedupe_key: str,
+) -> None:
+    sql = _INSERT_DEST_DEDUPE_PG if _is_postgres_connection(db) else _INSERT_DEST_DEDUPE_SQLITE
+    await db.execute(sql, (destination_id, event_type, dedupe_key))
+
+
+async def clear_webhook_destination_dedupe(
+    db: DbConnection,
+    event_type: str,
+    dedupe_key: str,
+) -> None:
+    types = _webhook_alert_types(event_type)
+    pg = _is_postgres_connection(db)
+    placeholders = _in_placeholders(len(types), pg=pg, start=1)
+    key_ph = _placeholder(pg, len(types) + 1)
+    await db.execute(
+        f"""
+        DELETE FROM webhook_destination_dedupe
+        WHERE event_type IN ({placeholders}) AND dedupe_key = {key_ph}
+        """,
+        (*types, dedupe_key),
+    )

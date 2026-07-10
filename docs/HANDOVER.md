@@ -12,6 +12,21 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — PR12a merged; PR12b webhook CRUD + per-destination dedupe (PR open)
+
+**Merged:** #413 — PR12a async `webhooks_enabled()` / `configured_channels()`.
+
+**PR12b (this session, branch `cursor/pr12b-webhook-crud-dedupe-489a`):**
+- Alembic `013_webhook_destination_dedupe` + SQLite init parity
+- `POST` / `DELETE` / extended `PATCH` (config for db destinations) on `/api/admin/webhooks/destinations`
+- Masked `config` on GET; SSRF validation on create/update; cap 20/kind
+- Per-destination dedupe in `dispatch_event`; admin test send works when disabled
+- Tests: `test_webhooks_destinations_crud.py` + engine dedupe updates
+
+**Next after merge:** PR12c — WebhooksPage rewrite.
+
+---
+
 ## 2026-07-10 — Sprint doc refresh: single merge gate, live queue on top, PR13 full explorer confirmed
 
 **Merged this session:** #409 (PR12/PR13 plan, amended), #410 (AI ops plan,
