@@ -30,6 +30,7 @@ import DisplayPage from './DisplayPage.jsx'
 import ComingSoonPage from './ComingSoonPage.jsx'
 import SessionsPage from './SessionsPage.jsx'
 import RateLimitPage from './RateLimitPage.jsx'
+import AiOperationsPage from './AiOperationsPage.jsx'
 import UserMenu from '../../components/UserMenu.jsx'
 import { loadJobAcks, markAllJobErrorsRead, filterUnacknowledgedErrors } from './adminJobAck.js'
 import { jobErrorsFromSystem } from './shared/JobErrorsPanel.jsx'
@@ -38,7 +39,7 @@ import '../AdminPage.css'
 const ANALYST_PAGE_IDS = new Set(ANALYST_NAV.flatMap(section => section.items.map(i => i.id)))
 const VALID_ADMIN_PAGES = new Set([
   'overview', 'backups', 'storage', 'database', 'watchlist', 'apikeys', 'scheduler',
-  'webhooks', 'alerts', 'security', 'feedhealth', 'ingestlog', 'auditlog', 'display',
+  'webhooks', 'aiops', 'alerts', 'security', 'feedhealth', 'ingestlog', 'auditlog', 'display',
   'sessions', 'ratelimit',
 ])
 
@@ -215,6 +216,7 @@ function AdminPageBody({ toast }) {
     apikeys: <ApiKeysPage toast={toast} />,
     scheduler: <SchedulerPage toast={toast} system={system} onRunIngest={handleRunIngest} onRestart={handleRestart} onDrainRestart={handleDrainRestart} onRefreshSystem={loadSystem} />,
     webhooks: <WebhooksPage toast={toast} />,
+    aiops: <AiOperationsPage toast={toast} setPage={setPage} />,
     alerts: <AlertsPage toast={toast} />,
     security: <SecurityPage />,
     feedhealth: <FeedHealthPage system={system} toast={toast} mode={mode} onReload={loadSystem} highlightSource={urlFilters.feedSource} />,

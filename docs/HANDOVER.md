@@ -12,6 +12,14 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-10 — AI-2 Admin AI Operations page (in progress)
+
+**Scope:** `/api/admin/ai/operations/{overview,providers,activity}` + `AiOperationsPage.jsx` (Overview / Providers / Models / Usage / Activity).
+
+**Next after merge:** PR13 — read-only DB explorer.
+
+---
+
 ## 2026-07-10 — AI-1 ai_operations + model catalog (#416)
 
 **Merged:** Alembic 014 `ai_operations`, recorder on `chat_completion_task`, `ai/model_catalog.py` SSOT, `GET /api/admin/ai/operations/models`. Recording gated by `AI_OPERATIONS_RECORD` (default on); no prompt text stored.

@@ -1,0 +1,447 @@
+import { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
+import { adminApi } from '../../api.js'
+import { fmtIso } from './formatters.js'
+import AsyncSection from './shared/AsyncSection.jsx'
+import HelpTip from './shared/HelpTip.jsx'
+import StatCard from './shared/StatCard.jsx'
+
+const TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'providers', label: 'Providers' },
+  { id: 'models', label: 'Models' },
+  { id: 'usage', label: 'Usage' },
+  { id: 'activity', label: 'Activity' },
+]
+
+const TASK_LABELS = {
+  product_extraction: 'Product extraction',
+  pdf_summary: 'PDF summary',
+  detection_context: 'Detection context',
+}
+
+function pct(rate) {
+  if (rate == null || Number.isNaN(rate)) return '—'
+  return `${Math.round(rate * 100)}%`
+}
+
+function successBadge(success) {
+  const ok = success === true || success === 1
+  return (
+    <span className={`badge ${ok ? 'badge-ok' : 'badge-error'}`}>
+      {ok ? 'ok' : 'fail'}
+    </span>
+  )
+}
+
+function providerStatus(p) {
+  if (!p.configured) return { label: 'No key', className: 'badge-muted' }
+  if (p.circuit_open) return { label: 'Circuit open', className: 'badge-error' }
+  if ((p.consecutive_failures || 0) > 0 || p.last_error) {
+    return { label: 'Degraded', className: 'badge-warn' }
+  }
+  return { label: 'Healthy', className: 'badge-ok' }
+}
+
+function OverviewTab({ overview, setPage }) {
+  const u24 = overview?.usage?.['24h'] || {}
+  const circuits = overview?.active_circuit_count || 0
+  const configured = overview?.configured_provider_count || 0
+
+  return (
+    <div>
+      <div className="admin-stat-grid" style={{ marginBottom: '1rem' }}>
+        <StatCard
+          label="Providers configured"
+          value={configured}
+          subLabel={overview?.any_provider_configured ? 'At least one LLM key set' : 'No LLM keys — templates only'}
+          colorClass={overview?.any_provider_configured ? 'color-green' : 'color-amber'}
+        />
+        <StatCard
+          label="24h attempts"
+          value={u24.total ?? 0}
+          subLabel={`${u24.failures ?? 0} failed · ${pct(u24.failure_rate)} fail rate`}
+        />
+        <StatCard
+          label="Active circuits"
+          value={circuits}
+          colorClass={circuits > 0 ? 'color-red' : 'color-green'}
+          subLabel={circuits > 0 ? 'One or more providers paused' : 'No open circuits'}
+        />
+        <StatCard
+          label="Recorded operations"
+          value={overview?.total_operations ?? 0}
+          subLabel={overview?.recording_enabled ? 'AI_OPERATIONS_RECORD on' : 'Recording disabled'}
+        />
+      </div>
+
+      <div className="admin-card" style={{ marginBottom: '1rem' }}>
+        <div className="admin-card-title">
+          Features
+          <HelpTip text="Scheduler ML flags and on-demand PDF summary availability. Secrets live on API keys & config." />
+        </div>
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Trigger</th>
+              <th>Enabled</th>
+              <th>LLM available</th>
+            </tr>
+          </thead>
+          <tbody>
+            {overview?.features && Object.entries(overview.features).map(([key, feat]) => (
+              <tr key={key}>
+                <td>{feat.label}</td>
+                <td style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{feat.trigger}</td>
+                <td>
+                  {'enabled' in feat
+                    ? <span className={`badge ${feat.enabled ? 'badge-ok' : 'badge-muted'}`}>{feat.enabled ? 'yes' : 'no'}</span>
+                    : <span className="badge badge-muted">n/a</span>}
+                </td>
+                <td>
+                  {'available' in feat && (
+                    <span className={`badge ${feat.available ? 'badge-ok' : 'badge-warn'}`}>
+                      {feat.available ? 'yes' : 'no'}
+                    </span>
+                  )}
+                  {'vector_count' in feat && (
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text3)' }}>
+                      {feat.enabled ? `${feat.vector_count ?? 0} vectors` : 'off'}
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="admin-callout">
+        API keys and model env vars are edited on{' '}
+        <button
+          type="button"
+          className="admin-btn admin-btn-ghost"
+          style={{ display: 'inline', padding: 0, fontSize: 'inherit', verticalAlign: 'baseline' }}
+          onClick={() => setPage?.('apikeys')}
+        >
+          API keys &amp; config
+        </button>
+        . This page is read-only observability — no prompt text is stored.
+      </div>
+    </div>
+  )
+}
+
+function ProvidersTab({ providers }) {
+  const rows = providers?.providers || []
+  return (
+    <div className="admin-card">
+      <div className="admin-card-title">
+        Provider health
+        <HelpTip text="Circuit state from the shared outbound client. Providers without traffic yet show empty health until first call." />
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Provider</th>
+              <th>Key</th>
+              <th>Status</th>
+              <th>Last success</th>
+              <th>Last error</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(p => {
+              const st = providerStatus(p)
+              return (
+                <tr key={p.provider}>
+                  <td style={{ fontFamily: 'monospace' }}>{p.provider}</td>
+                  <td>
+                    <span className={`badge ${p.configured ? 'badge-ok' : 'badge-muted'}`}>
+                      {p.configured ? 'configured' : 'missing'}
+                    </span>
+                    <span style={{ marginLeft: '0.35rem', fontSize: '0.72rem', color: 'var(--text3)' }}>{p.env_key}</span>
+                  </td>
+                  <td><span className={`badge ${st.className}`}>{st.label}</span></td>
+                  <td style={{ fontSize: '0.78rem' }}>{p.last_success ? fmtIso(p.last_success) : '—'}</td>
+                  <td style={{ fontSize: '0.78rem', color: 'var(--amber)', maxWidth: '280px', wordBreak: 'break-all' }}>
+                    {p.last_error ? p.last_error.slice(0, 120) : '—'}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function ModelsTab({ models }) {
+  const tasks = models?.tasks || {}
+  return (
+    <div className="admin-card">
+      <div className="admin-card-title">
+        Failover chains
+        <HelpTip text="Read-only catalog from model_catalog.py. Order is failover priority, not round-robin." />
+      </div>
+      {Object.entries(tasks).map(([task, steps]) => (
+        <div key={task} style={{ marginBottom: '1rem' }}>
+          <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', marginBottom: '0.35rem', color: 'var(--text2)' }}>
+            {TASK_LABELS[task] || task}
+          </div>
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Provider</th>
+                <th>Model</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(steps || []).map(step => (
+                <tr key={`${task}-${step.order}`}>
+                  <td>{step.order}</td>
+                  <td>{step.provider}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{step.model}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function UsageTab({ overview }) {
+  const windows = [
+    { key: '24h', label: 'Last 24 hours' },
+    { key: '7d', label: 'Last 7 days' },
+  ]
+  return (
+    <div>
+      {windows.map(({ key, label }) => {
+        const u = overview?.usage?.[key] || {}
+        return (
+          <div key={key} className="admin-card" style={{ marginBottom: '1rem' }}>
+            <div className="admin-card-title">{label}</div>
+            <div className="admin-stat-grid" style={{ marginBottom: '0.75rem' }}>
+              <StatCard label="Total attempts" value={u.total ?? 0} />
+              <StatCard label="Successes" value={u.successes ?? 0} colorClass="color-green" />
+              <StatCard label="Failures" value={u.failures ?? 0} colorClass={u.failures ? 'color-amber' : undefined} />
+              <StatCard label="Failover wins" value={u.fallback_successes ?? 0} subLabel="Succeeded after prior provider failed" />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text3)', marginBottom: '0.35rem' }}>By provider</div>
+                <table className="admin-table">
+                  <thead><tr><th>Provider</th><th>Total</th><th>OK</th></tr></thead>
+                  <tbody>
+                    {(u.by_provider || []).length === 0
+                      ? <tr><td colSpan={3} style={{ color: 'var(--text3)' }}>No operations in window</td></tr>
+                      : u.by_provider.map(row => (
+                        <tr key={row.provider}>
+                          <td>{row.provider}</td>
+                          <td>{row.total}</td>
+                          <td>{row.successes}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text3)', marginBottom: '0.35rem' }}>By task</div>
+                <table className="admin-table">
+                  <thead><tr><th>Task</th><th>Total</th><th>OK</th></tr></thead>
+                  <tbody>
+                    {(u.by_task || []).length === 0
+                      ? <tr><td colSpan={3} style={{ color: 'var(--text3)' }}>No operations in window</td></tr>
+                      : u.by_task.map(row => (
+                        <tr key={row.task_class}>
+                          <td>{TASK_LABELS[row.task_class] || row.task_class}</td>
+                          <td>{row.total}</td>
+                          <td>{row.successes}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {!u.tokens_recorded && (
+              <p style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '0.75rem' }}>
+                Token counts are not recorded yet — request/latency/fallback metrics only.
+              </p>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function ActivityTab({ toast }) {
+  const [rows, setRows] = useState(null)
+  const [total, setTotal] = useState(0)
+  const [offset, setOffset] = useState(0)
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const limit = 50
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const { data } = await adminApi.getJson(`/ai/operations/activity?limit=${limit}&offset=${offset}`)
+      setRows(data.rows || [])
+      setTotal(data.total || 0)
+      setError(null)
+    } catch (e) {
+      setError(e)
+      toast?.(String(e.message || e), false)
+    } finally {
+      setLoading(false)
+    }
+  }, [offset, toast])
+
+  useEffect(() => { load() }, [load])
+
+  return (
+    <AsyncSection data={rows} error={error} loading={loading} onRetry={load} emptyMessage="No AI operations recorded yet">
+      {() => (
+        <div className="admin-card">
+          <div className="admin-card-title">
+            Recent operations
+            <HelpTip text="Redacted attempt log — no prompts or completions. Newest first." />
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Task</th>
+                  <th>Provider</th>
+                  <th>Model</th>
+                  <th>Result</th>
+                  <th>Latency</th>
+                  <th>Context</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(row => (
+                  <tr key={row.operation_id}>
+                    <td style={{ fontSize: '0.78rem', whiteSpace: 'nowrap' }}>{fmtIso(row.started_at)}</td>
+                    <td>{TASK_LABELS[row.task_class] || row.task_class}</td>
+                    <td>{row.provider}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{row.model}</td>
+                    <td>
+                      {successBadge(row.success)}
+                      {row.error_class && !row.success && (
+                        <span style={{ marginLeft: '0.35rem', fontSize: '0.72rem', color: 'var(--text3)' }}>{row.error_class}</span>
+                      )}
+                      {row.fallback_from_provider && (
+                        <span style={{ display: 'block', fontSize: '0.68rem', color: 'var(--text3)' }}>
+                          fallback from {row.fallback_from_provider}
+                        </span>
+                      )}
+                    </td>
+                    <td>{row.latency_ms != null ? `${row.latency_ms}ms` : '—'}</td>
+                    <td style={{ fontSize: '0.72rem', fontFamily: 'monospace' }}>
+                      {row.context_id || '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', alignItems: 'center' }}>
+            <button className="admin-btn admin-btn-ghost" disabled={offset === 0} onClick={() => setOffset(o => Math.max(0, o - limit))}>
+              Previous
+            </button>
+            <button className="admin-btn admin-btn-ghost" disabled={offset + limit >= total} onClick={() => setOffset(o => o + limit)}>
+              Next
+            </button>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
+              {offset + 1}–{Math.min(offset + limit, total)} of {total}
+            </span>
+          </div>
+        </div>
+      )}
+    </AsyncSection>
+  )
+}
+
+export default function AiOperationsPage({ toast, setPage }) {
+  const [tab, setTab] = useState('overview')
+  const [overview, setOverview] = useState(null)
+  const [providers, setProviders] = useState(null)
+  const [models, setModels] = useState(null)
+  const [loadError, setLoadError] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  const loadCore = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [ov, prov, mod] = await Promise.all([
+        adminApi.getJson('/ai/operations/overview'),
+        adminApi.getJson('/ai/operations/providers'),
+        adminApi.getJson('/ai/operations/models'),
+      ])
+      setOverview(ov.data)
+      setProviders(prov.data)
+      setModels(mod.data)
+      setLoadError(null)
+    } catch (e) {
+      setLoadError(e)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { loadCore() }, [loadCore])
+
+  return (
+    <div>
+      <h1 className="admin-page-title">AI operations</h1>
+      <p className="admin-page-subtitle">
+        LLM provider health, model failover chains, and redacted usage — read-only.
+        {' '}
+        <Link to="/admin?p=apikeys" style={{ color: 'var(--accent)' }}>API keys &amp; config</Link>
+      </p>
+
+      <div className="admin-filter-bar" style={{ marginBottom: '1rem' }}>
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            type="button"
+            className={`admin-btn ${tab === t.id ? '' : 'admin-btn-ghost'}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab !== 'activity' && (
+        <AsyncSection
+          data={overview}
+          error={loadError}
+          loading={loading}
+          onRetry={loadCore}
+        >
+          {() => (
+            <>
+              {tab === 'overview' && <OverviewTab overview={overview} setPage={setPage} />}
+              {tab === 'providers' && <ProvidersTab providers={providers} />}
+              {tab === 'models' && <ModelsTab models={models} />}
+              {tab === 'usage' && <UsageTab overview={overview} />}
+            </>
+          )}
+        </AsyncSection>
+      )}
+
+      {tab === 'activity' && <ActivityTab toast={toast} />}
+    </div>
+  )
+}
