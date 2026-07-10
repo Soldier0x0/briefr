@@ -98,8 +98,19 @@ def sanitize_context(context_type: str | None, context_id: str | None) -> tuple[
         host = raw.lower().split("/")[0].split("?")[0]
         return ("domain", host) if DOMAIN_RE.match(host) else (None, None)
     if ctype == "url":
-        # Strip query strings — may contain tokens
+        # Strip query strings — may contain tokens; mask webhook path tails.
         base = raw.split("?")[0].split("#")[0]
+        from urllib.parse import urlparse, urlunparse
+        parsed = urlparse(base)
+        path_parts = [part for part in parsed.path.split("/") if part]
+        if len(path_parts) >= 2 and (
+            "webhook" in parsed.path.lower()
+            or parsed.netloc.endswith(("discord.com", "discordapp.com"))
+            or parsed.netloc.endswith("hooks.slack.com")
+        ):
+            path_parts[-1] = "…"
+            redacted_path = "/" + "/".join(path_parts)
+            base = urlunparse((parsed.scheme, parsed.netloc, redacted_path, "", "", ""))
         if len(base) > 96:
             base = base[:96] + "…"
         return ("url", base) if base.startswith(("http://", "https://")) else (None, None)

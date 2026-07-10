@@ -60,6 +60,16 @@ def test_sanitize_context_strips_secrets_from_url():
     assert "sig" not in cid
 
 
+def test_sanitize_context_masks_webhook_path_tail():
+    ctype, cid = sanitize_context(
+        "url",
+        "https://discord.com/api/webhooks/1234567890/abcdefghijklmnop",
+    )
+    assert ctype == "url"
+    assert cid.endswith("/…")
+    assert "abcdefghijklmnop" not in cid
+
+
 def test_resolve_queue_task_rejects_unknown_operation():
     task = resolve_queue_task(
         "github",
