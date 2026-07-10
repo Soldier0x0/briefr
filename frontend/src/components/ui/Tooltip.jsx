@@ -13,6 +13,7 @@ const GAP = 8
 const VIEWPORT_PAD = 8
 
 let dismissActive = null
+let activeTooltipId = null
 
 function clamp(n, min, max) {
   return Math.min(max, Math.max(min, n))
@@ -57,16 +58,22 @@ export default function Tooltip({
 
   const show = useCallback(() => {
     if (!text) return
-    if (dismissActive) dismissActive()
+    if (dismissActive && activeTooltipId !== id) {
+      dismissActive()
+    }
     dismissActive = () => setOpen(false)
+    activeTooltipId = id
     setOpen(true)
     updatePosition()
-  }, [text, updatePosition])
+  }, [text, updatePosition, id])
 
   const hide = useCallback(() => {
     setOpen(false)
-    if (dismissActive) dismissActive = null
-  }, [])
+    if (activeTooltipId === id) {
+      dismissActive = null
+      activeTooltipId = null
+    }
+  }, [id])
 
   useEffect(() => {
     if (!open) return undefined
@@ -81,8 +88,11 @@ export default function Tooltip({
   }, [open, updatePosition])
 
   useEffect(() => () => {
-    if (dismissActive) dismissActive = null
-  }, [])
+    if (activeTooltipId === id) {
+      dismissActive = null
+      activeTooltipId = null
+    }
+  }, [id])
 
   if (!text) return children
 
@@ -114,7 +124,7 @@ export default function Tooltip({
           className={`ui-tooltip-bubble ui-tooltip-bubble--portal ui-tooltip-bubble--${coords.placement} ${bubbleClassName}`.trim()}
           style={{
             position: 'fixed',
-            top: coords.placement === 'top' ? coords.top : coords.top,
+            top: coords.top,
             left: coords.left,
             transform: coords.placement === 'top'
               ? 'translate(-50%, -100%)'
