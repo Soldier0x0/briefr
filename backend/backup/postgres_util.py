@@ -59,6 +59,25 @@ def _versioned_pg_tool_paths(name: str) -> list[str]:
     return sorted(paths, key=_version_key, reverse=True)
 
 
+def pg_dump_available() -> bool:
+    """True when ``pg_dump`` is on PATH or in a Debian versioned client dir."""
+    try:
+        _pg_tool("pg_dump")
+        return True
+    except RuntimeError:
+        return False
+
+
+def postgres_backup_tools_available() -> bool:
+    """Live Postgres backup round-trip needs both ``pg_dump`` and ``pg_restore``."""
+    try:
+        _pg_tool("pg_dump")
+        _pg_tool("pg_restore")
+        return True
+    except RuntimeError:
+        return False
+
+
 def _pg_tool(name: str) -> str:
     path = shutil.which(name)
     if path:

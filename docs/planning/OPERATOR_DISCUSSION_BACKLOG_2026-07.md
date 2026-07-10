@@ -191,8 +191,8 @@ below is either queued, watchlist, discussion-only, or parked.
 
 | Item | Status |
 |------|--------|
-| Entry bundle regression (~1.7MB raw vs I8 ≤500KB) | Open |
-| Windows backup tests `skipif` when `age`/`pg_dump` missing | Open |
+| Entry bundle regression (~1.7MB raw vs I8 ≤500KB) | ✅ Verified — entry 317 kB; total lazy JS ~1.8 MB |
+| Windows backup tests `skipif` when `age`/`pg_dump` missing | ✅ Done — unreachable Postgres + missing pg tools skip cleanly |
 | Gemini review replacement (sunset 2026-07-17) | Decision needed |
 
 ### I-4 · UX / archive backlog (not in tracks M/N/O)
