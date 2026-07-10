@@ -39,9 +39,9 @@ def test_insert_or_ignore():
     assert "ON CONFLICT DO NOTHING" in sql
 
 
-def test_pragma_integrity_check():
+def test_pragma_integrity_check_not_stubbed_on_postgres():
     sql = adapt_sql("PRAGMA integrity_check", backend="postgresql")
-    assert sql.startswith("SELECT 'ok'")
+    assert sql.upper().startswith("PRAGMA INTEGRITY_CHECK")
 
 
 def test_datetime_now_interval():

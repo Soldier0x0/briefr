@@ -41,6 +41,7 @@ from database import (
     set_feed_cache,
     set_sync_state_value,
 )
+from db.integrity import run_integrity_check
 from config_schema import (
     INTEGER_KEYS,
     RESTART_REQUIRED_KEYS,
@@ -311,12 +312,8 @@ async def get_system(request: Request):
         if cached_integrity is not None:
             db_integrity = cached_integrity
         else:
-            ic_rows = await db.execute_fetchall("PRAGMA integrity_check")
-            integrity_ok = (
-                len(ic_rows) == 1 and ic_rows[0]["integrity_check"].lower() == "ok"
-            ) if ic_rows else False
-            integrity_msg = ic_rows[0]["integrity_check"] if ic_rows else "unknown"
-            db_integrity = {"ok": integrity_ok, "message": integrity_msg}
+            result = await run_integrity_check(db)
+            db_integrity = result.as_summary()
             await set_feed_cache(db, "admin_db_integrity", db_integrity)
 
         # Failed auth last 24h (Python cutoff — works on SQLite TEXT and Postgres)
@@ -1850,13 +1847,17 @@ async def run_smoke_test(request: Request):
             cve_count = cve_row[0]["cnt"] if cve_row else 0
             kev_row = await db.execute_fetchall("SELECT COUNT(*) as cnt FROM kev_deadlines")
             kev_count = kev_row[0]["cnt"] if kev_row else 0
-            ic_rows = await db.execute_fetchall("PRAGMA integrity_check")
-            integrity_ok = len(ic_rows) == 1 and ic_rows[0]["integrity_check"].lower() == "ok"
+            result = await run_integrity_check(db)
+            integrity_ok = result.integrity_ok
         finally:
             await db.close()
         checks.append({"name": "cves > 0", "passed": cve_count > 0, "detail": f"{cve_count} CVEs"})
         checks.append({"name": "kev_deadlines > 0", "passed": kev_count > 0, "detail": f"{kev_count} KEV entries"})
-        checks.append({"name": "db integrity_check", "passed": integrity_ok, "detail": ic_rows[0]["integrity_check"] if ic_rows else "?"})
+        checks.append({
+            "name": "db integrity_check",
+            "passed": integrity_ok,
+            "detail": result.message,
+        })
     except Exception as exc:
         checks.append({"name": "db checks", "passed": False, "detail": str(exc)[:200]})
 
@@ -1886,25 +1887,15 @@ async def run_smoke_test(request: Request):
 
 @router.post("/diagnostics/integrity")
 async def check_integrity(request: Request):
-    """Run PRAGMA integrity_check and foreign_key_check."""
+    """Run database integrity checks (SQLite PRAGMA or PostgreSQL pg_catalog)."""
     db = await get_db()
     try:
-        ic_rows = await db.execute_fetchall("PRAGMA integrity_check")
-        fk_rows = await db.execute_fetchall("PRAGMA foreign_key_check")
+        result = await run_integrity_check(db)
     finally:
         await db.close()
 
-    integrity_ok = len(ic_rows) == 1 and ic_rows[0]["integrity_check"].lower() == "ok"
-    foreign_keys_ok = len(fk_rows) == 0
-    msg = ic_rows[0]["integrity_check"] if ic_rows else "unknown"
-    await audit(request, "diagnostics.integrity", "pass" if integrity_ok and foreign_keys_ok else "fail")
-    return {
-        "ok": integrity_ok and foreign_keys_ok,
-        "integrity_ok": integrity_ok,
-        "foreign_keys_ok": foreign_keys_ok,
-        "message": msg,
-        "foreign_key_violations": len(fk_rows),
-    }
+    await audit(request, "diagnostics.integrity", "pass" if result.ok else "fail")
+    return result.as_dict()
 
 
 @router.get("/diagnostics/support-pack")

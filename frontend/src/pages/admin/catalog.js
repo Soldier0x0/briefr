@@ -230,7 +230,7 @@ export const TERM_GLOSSARY = {
   db_integrity: {
     analyst: 'Database health',
     operator: 'DB integrity',
-    explanation: 'Checks whether the database file is corrupted — not whether CVE data is accurate.',
+    explanation: 'SQLite: PRAGMA integrity + foreign keys. PostgreSQL: pg_catalog probes (invalid indexes, unvalidated constraints, FK orphans).',
   },
   open_circuits: {
     analyst: 'Sources with issues',
