@@ -12,6 +12,32 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-11 — 12-PR operator bundle complete (#428–#439)
+
+**Context:** Maintainer-approved 12-PR execution plan (operator admin → security →
+AI/monitor → perf → UX tail). All merged with green `./scripts/verify-local.sh`;
+Gemini quota exhausted mid-run — local verify was the merge gate.
+
+| PR | Branch | Scope |
+|----|--------|--------|
+| **#428** | `cursor/operator-admin-p1-9446` | P1 admin shell, AdminDataGrid, feed health, config O-1/O-2, compact purge |
+| **#429** | `cursor/database-storage-p2-9446` | P2 Database/Storage — explorer move, M-1/M-2 masking, IOPS metrics, remove Download DB |
+| **#430** | `cursor/wallboard-v2-p3-9446` | P3 Wallboard v2 — session cookie, responsive tiles, rotation |
+| **#431** | `cursor/security-hygiene-m4-9446` | M hygiene — config mask, backup interval guard, webhook redaction, backup flock |
+| **#432** | `cursor/ai3-quota-p5-9446` | AI-3 quota snapshots from rate-limit headers |
+| **#433** | `cursor/k5-llm-pacing-p6-9446` | K5 LLM pacing headroom + PDF prompt hygiene (`ai/llm_pacing.py`) |
+| **#434** | `cursor/correlation-phase45-p7-9446` | Correlation phase 4–5 tail — `cve_id` cluster filter, structured job logs |
+| **#435** | `cursor/monitor-alerts-p8-9446` | Monitor — API key health ping job + admin endpoints |
+| **#436** | `cursor/track-i-phase3a-p9-9446` | Track I Phase 3a — ORJSON, keyset pagination, drawer bundle |
+| **#437** | `cursor/rate-limit-store-p10-9446` | Track I Phase 3b — `BRIEFR_RATE_LIMIT_STORE=db` shared buckets |
+| **#438** | `cursor/embeddings-automation-p11-9446` | Embeddings auto-on-ingest tail after NVD sync |
+| **#439** | `cursor/ux-notification-center-p12-9446` | UX tail — operator notification center in admin StatusBar |
+
+**Next:** Parked items unchanged — STIX export, full V2.0, Track I Phase 3 remainder
+(feed windowing, server-side exposure sort), multi-worker uvicorn (enable store + ops decision).
+
+---
+
 ## 2026-07-10 — Quality watchlist: bundle audit + Windows backup skipif
 
 **Verified:** Entry bundle **317 kB raw** (under I8 ≤500 kB target). ~1.7 MB was total
