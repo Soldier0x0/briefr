@@ -100,18 +100,18 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 
 | ID | Domain | Observation | Status | Severity | Confidence | Affected Area | Runtime Validation Required |
 |----|--------|-------------|--------|----------|------------|---------------|----------------------------|
-| DB-001 | A | Campaign build/read N+1 queries | CONFIRMED | High | High | `correlation/campaigns.py`, drawer | Yes (EXPLAIN under load) |
-| DB-002 | A | KEV detection backlog nested N+1 | CONFIRMED | High | High | `detection/backlog.py` | No |
+| DB-001 | A | Campaign build/read N+1 queries | ✅ RESOLVED (#449) | High | High | `correlation/campaigns.py`, drawer | Yes (EXPLAIN under load) |
+| DB-002 | A | KEV detection backlog nested N+1 | ✅ RESOLVED (#449) | High | High | `detection/backlog.py` | No |
 | DB-003 | A | Nightly correlation per-CVE actor store loops | CONFIRMED | Medium | High | `correlation/engine.py` | No |
 | DB-004 | A | KEV sync per-row upsert in loop | PARTIALLY CONFIRMED | Medium | High | `scheduler.py`, `db/enrichment.py` | No |
 | DB-005 | A | NVD ingest batched via `executemany` | ALREADY ADDRESSED | — | High | `db/cve.py` | No |
-| IDEM-001 | B | Webhook dedupe TOCTOU (duplicate delivery) | CONFIRMED | High | High | `webhooks/engine.py` | Yes (concurrent workers) |
-| IDEM-002 | B | Detection backlog SELECT-then-INSERT race | CONFIRMED | Medium | High | `detection/backlog.py` | No |
+| IDEM-001 | B | Webhook dedupe TOCTOU (duplicate delivery) | ✅ RESOLVED (#449, `claim_webhook_destination_sent`) | High | High | `webhooks/engine.py` | Yes (concurrent workers) |
+| IDEM-002 | B | Detection backlog SELECT-then-INSERT race | ✅ RESOLVED (#449) | Medium | High | `detection/backlog.py` | No |
 | IDEM-003 | B | Campaign full DELETE then rebuild | INTENTIONAL | Medium | High | `correlation/campaigns.py` | No |
 | IDEM-004 | B | Feed upserts use ON CONFLICT | ALREADY ADDRESSED | — | High | `db/cve.py`, OTX tables | No |
 | IDEM-005 | B | Unlocked scheduler jobs on multi-worker | PARTIALLY CONFIRMED | Medium | Medium | `scheduler_locks.py` | Yes |
-| AUTH-001 | C | `require_user` skips live `is_active` check | CONFIRMED | Medium | High | `dependencies.py` | No |
-| AUTH-002 | C | Password change does not revoke sessions | CONFIRMED | Medium | High | `auth/repo.py` | No |
+| AUTH-001 | C | `require_user` skips live `is_active` check | ✅ RESOLVED (#449, `dependencies.py:91,123`) | Medium | High | `dependencies.py` | No |
+| AUTH-002 | C | Password change does not revoke sessions | ✅ RESOLVED (#449, `auth/repo.py:63` `revoke_all_sessions_for_user`) | Medium | High | `auth/repo.py` | No |
 | AUTH-003 | C | Access JWT valid until `exp` after logout | INTENTIONAL | Low | High | `routers/auth.py` | No |
 | AUTH-004 | C | First-boot setup race (multi admin bootstrap) | PARTIALLY CONFIRMED | Low | Medium | `routers/auth.py` | No |
 | AUTH-005 | C | Refresh rotation + reuse detection | ALREADY ADDRESSED | — | High | `auth.py`, `auth/repo.py` | No |
@@ -121,7 +121,7 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 | CRYPTO-002 | D | bcrypt cost 12 for passwords | ALREADY ADDRESSED | — | High | `auth/passwords.py` | No |
 | CRYPTO-003 | D | Backup age encryption optional | ALREADY ADDRESSED | — | High | `backup/manager.py` | Yes (prod config) |
 | VAL-001 | E | Weak CVE ID format on public CVE routes | CONFIRMED | Low | High | `routers/_validators.py` | No |
-| VAL-002 | E | Unbounded AI/summary POST bodies | CONFIRMED | Medium | High | `routers/meta.py` | No |
+| VAL-002 | E | Unbounded AI/summary POST bodies | ✅ RESOLVED (#449, `Field(max_length=…)` on `meta.py:56-63`) | Medium | High | `routers/meta.py` | No |
 | VAL-003 | E | CVE list query params bounded | ALREADY ADDRESSED | — | High | `routers/cves.py` | No |
 | VAL-004 | E | DB explorer allowlist + filter caps | ALREADY ADDRESSED | — | High | `db/explorer.py` | No |
 | EXP-001 | F | `/api/health` public operational metadata | INTENTIONAL | Low | High | `health.py`, `auth_middleware.py` | No |
@@ -137,7 +137,7 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 | CACHE-002 | J | Feed cache TTL + retention job | ALREADY ADDRESSED | — | High | `db/cache_retention.py` | No |
 | IDX-001 | K | Missing index on `cves.modified` | CONFIRMED | Medium | Medium | brief, OTX priority | Yes (EXPLAIN) |
 | IDX-002 | K | Hot table indexes present | ALREADY ADDRESSED | — | High | migrations 001–014 | No |
-| TXN-001 | L | Webhook dedupe non-atomic | CONFIRMED | High | High | `webhooks/engine.py` | Yes |
+| TXN-001 | L | Webhook dedupe non-atomic | ✅ RESOLVED (#449, same fix as IDEM-001) | High | High | `webhooks/engine.py` | Yes |
 | TXN-002 | L | Correlation job rollback on failure | ALREADY ADDRESSED | — | High | `scheduler.py` | No |
 | UI-001 | M | Prefs optimistic save with rollback | ALREADY ADDRESSED | — | High | `userPreferences.js` | No |
 | UI-002 | M | Watchlist server-first | INTENTIONAL | — | High | `useWatchlist.js` | No |
@@ -173,7 +173,19 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 | REST-012 | Z | FastAPI BackgroundTasks not awaited | CONFIRMED | Medium | High | `admin.py` | Yes |
 | REST-013 | Z | Webhook crash after receiver OK, before dedupe record | CONFIRMED | High | High | `webhooks/engine.py` | Yes |
 
-**Totals by status:** CONFIRMED 27 · PARTIALLY CONFIRMED 8 · ALREADY ADDRESSED 32 · INTENTIONAL 11 · NOT APPLICABLE 6 · FALSE OBSERVATION 3 · NEEDS RUNTIME VALIDATION 9
+**Totals by status (at audit snapshot `b468a6fc`):** CONFIRMED 27 · PARTIALLY CONFIRMED 8 · ALREADY ADDRESSED 32 · INTENTIONAL 11 · NOT APPLICABLE 6 · FALSE OBSERVATION 3 · NEEDS RUNTIME VALIDATION 9
+
+**Re-verified at HEAD (2026-07-11, this pass):** 7 of the 27 CONFIRMED findings are now ✅ RESOLVED —
+DB-001, DB-002, IDEM-001, TXN-001, AUTH-001, AUTH-002, VAL-002 — all shipped in #449
+(`c576e49`, "Address Security and Performance Gaps in PRs 432-446"). Re-verified against
+current code: `dependencies.py:91,123` (`is_active` check in `require_user`),
+`auth/repo.py:63` (`revoke_all_sessions_for_user` call), `routers/meta.py:56-63`
+(`Field(max_length=…)` on summary bodies), `webhooks/engine.py:179-183` +
+`db/webhooks.py` `claim_webhook_destination_sent` (atomic claim-before-send),
+`correlation/campaigns.py:54,272,298` (batched `IN (...)` fetches replacing per-row
+loops), `detection/backlog.py:186-198` (`executemany` batch insert). Remaining 20
+CONFIRMED findings + all PARTIALLY CONFIRMED / NEEDS RUNTIME VALIDATION items were
+spot-checked (see inline notes below) and still reproduce as described.
 
 **Totals by severity (actionable only):** High 5 · Medium 18 · Low 12 · Info/N/A remainder
 
@@ -186,10 +198,10 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 | Field | Detail |
 |-------|--------|
 | **Original concern** | N+1 SELECT inside loops (Area A) |
-| **Status** | CONFIRMED |
+| **Status** | ✅ RESOLVED — shipped in #449 (`c576e49`). Re-verified 2026-07-11: `campaigns.py:54,272,298` now batch-fetch via `WHERE cve_id IN (...)` / `WHERE campaign_id IN (...)` instead of per-row loops. |
 | **Severity** | High |
 | **Confidence** | High |
-| **Evidence** | `backend/correlation/campaigns.py` — `build_campaigns_from_pulses` loops pulses with per-pulse meta/member queries; `get_campaigns_for_cve` loops campaigns with per-campaign member/IOC edge queries |
+| **Evidence (original, pre-#449)** | `backend/correlation/campaigns.py` — `build_campaigns_from_pulses` loops pulses with per-pulse meta/member queries; `get_campaigns_for_cve` loops campaigns with per-campaign member/IOC edge queries |
 | **Execution flow** | `GET /api/cves/{id}/drawer` → correlation section → `get_campaigns_for_cve` → O(campaigns × members × peers) queries |
 | **Why it matters** | Drawer latency and DB load grow superlinearly with campaign cardinality; analyst-facing DoS under large OTX graphs |
 | **Existing mitigation** | Drawer bundle reduces HTTP round-trips; IOC confirmations batched elsewhere (`ioc_graph.py`) |
@@ -206,10 +218,10 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 | Field | Detail |
 |-------|--------|
 | **Original concern** | End-to-end idempotency breaks (Area B) |
-| **Status** | CONFIRMED |
+| **Status** | ✅ RESOLVED — shipped in #449 (`c576e49`). Re-verified 2026-07-11: `webhooks/engine.py:179-183` now calls `claim_webhook_destination_sent` (`db/webhooks.py`, atomic `INSERT … ON CONFLICT DO NOTHING RETURNING`-style claim) *before* HTTP delivery; failed deliveries roll back the claim (`engine.py:212-214`, "IDEM-001 retry safety"). |
 | **Severity** | High |
 | **Confidence** | High |
-| **Evidence** | `backend/webhooks/engine.py` `dispatch_event`: `was_webhook_destination_sent` (lines 173–182) → HTTP deliver (184–189) → `record_webhook_destination_sent` (206–214) — separate connections/commits |
+| **Evidence (original, pre-#449)** | `backend/webhooks/engine.py` `dispatch_event`: `was_webhook_destination_sent` (lines 173–182) → HTTP deliver (184–189) → `record_webhook_destination_sent` (206–214) — separate connections/commits |
 | **Execution flow** | Scheduler `watchlist_monitor_alerts` / KEV alert → `dispatch_event` with `dedupe_key` → two workers can both pass check before either records |
 | **Why it matters** | Duplicate Discord/Telegram alerts; operator alert fatigue; breaks dedupe contract |
 | **Existing mitigation** | `webhook_destination_dedupe` PK + `ON CONFLICT DO NOTHING` on record |
@@ -226,10 +238,10 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 | Field | Detail |
 |-------|--------|
 | **Original concern** | Session security (Area C, Q1–Q10) |
-| **Status** | CONFIRMED |
+| **Status** | ✅ RESOLVED — shipped in #449 (`c576e49`). Re-verified 2026-07-11: `require_user` now performs a live DB `is_active` check (`dependencies.py:91` for the JWT-only path, `123` for the DB-lookup fallback) and returns 401 if the account is deactivated. Docstring at `dependencies.py:49` explicitly notes the fix. |
 | **Severity** | Medium |
 | **Confidence** | High |
-| **Evidence** | `dependencies.require_user` decodes JWT only (`dependencies.py:46–63`); `require_admin` re-reads DB including `is_active` (`87–88`); login/refresh check `is_active` |
+| **Evidence (original, pre-#449)** | `dependencies.require_user` decodes JWT only (`dependencies.py:46–63`); `require_admin` re-reads DB including `is_active` (`87–88`); login/refresh check `is_active` |
 | **Execution flow** | Admin deactivates user → existing `briefr_at` JWT (~15m) still passes `session_auth_middleware` |
 | **Why it matters** | Horizontal access after account disable until JWT expiry |
 | **Existing mitigation** | Short access TTL (default 15m); refresh path checks `is_active` |
@@ -245,10 +257,10 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 | Field | Detail |
 |-------|--------|
 | **Original concern** | Input validation + API size (Areas E, R) |
-| **Status** | CONFIRMED |
+| **Status** | VAL-002 ✅ RESOLVED — shipped in #449 (`c576e49`). Re-verified 2026-07-11: `routers/meta.py:56-63` now bounds `InvestigationSummaryRequest.items` (`max_length=100`) and `AiSummaryRequest.cves/iocs/actors` (`max_length=50/100/20`). API-001 (no global inbound body-size middleware in `main.py`) is **still open** — the fix only bounded these two Pydantic models, not a Starlette-level limit. |
 | **Severity** | Medium |
 | **Confidence** | High |
-| **Evidence** | `AiSummaryRequest` / `InvestigationSummaryRequest` in `routers/meta.py` — unbounded `list[dict]`; no Starlette body limit in `main.py`; backup upload alone caps 500MB |
+| **Evidence (original, pre-#449)** | `AiSummaryRequest` / `InvestigationSummaryRequest` in `routers/meta.py` — unbounded `list[dict]`; no Starlette body limit in `main.py`; backup upload alone caps 500MB |
 | **Execution flow** | Authenticated analyst → `POST /api/ai/summary` with huge JSON → LLM router / memory pressure |
 | **Why it matters** | Application-layer DoS and LLM quota burn (documented open: "LLM summary auth" in `PRODUCT_STATUS.md`) |
 | **Existing mitigation** | Session required; LLM pacing (`ai/llm_pacing.py`) |
@@ -264,7 +276,7 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 | Field | Detail |
 |-------|--------|
 | **Original concern** | Side effects on read / cache invalidation (Areas J, L) |
-| **Status** | CONFIRMED |
+| **Status** | CONFIRMED — re-verified 2026-07-11, still reproduces: `routers/cves.py` drawer bundle (`_build_cve_drawer_bundle`) still calls `get_correlation_for_cve` on the GET path; not part of #449's scope. |
 | **Severity** | Medium |
 | **Confidence** | High |
 | **Evidence** | `get_correlation_for_cve` stores actor correlation on cache miss; drawer route commits (`routers/cves.py` drawer handler) |
@@ -279,7 +291,7 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 | Field | Detail |
 |-------|--------|
 | **Original concern** | Swallowed APIs (Area Q) |
-| **Status** | CONFIRMED |
+| **Status** | CONFIRMED — re-verified 2026-07-11, still reproduces: no `had_error` propagation found in `backend/feeds/kev.py`. |
 | **Severity** | Medium |
 | **Confidence** | High |
 | **Evidence** | `feeds/kev.py` `fetch_kev` returns `[]` on circuit/HTTP/generic errors after logging |
@@ -293,9 +305,9 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 
 | Field | Detail |
 |-------|--------|
-| **Status** | CONFIRMED |
+| **Status** | ✅ RESOLVED — shipped in #449 (`c576e49`). Re-verified 2026-07-11: `auth/repo.py:63` calls `revoke_all_sessions_for_user` (defined `159`) on the password-update path. |
 | **Severity** | Medium |
-| **Evidence** | `create_user` updates `password_hash`; no `revoke_all_sessions_for_user` on password update path |
+| **Evidence (original, pre-#449)** | `create_user` updates `password_hash`; no `revoke_all_sessions_for_user` on password update path |
 | **Recommended remediation** | Revoke all sessions on password change (except current session optional) |
 
 ---
@@ -304,9 +316,9 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 
 | Field | Detail |
 |-------|--------|
-| **Status** | CONFIRMED |
+| **Status** | ✅ RESOLVED — shipped in #449 (`c576e49`). Re-verified 2026-07-11: `detection/backlog.py:186-198` now batches with `await db.executemany(sql, to_insert)` after a single bulk fetch/lookup, replacing the nested per-row SELECT/INSERT loop. |
 | **Severity** | High |
-| **Evidence** | `detection/backlog.py` `upsert_gap_items_for_cves` — nested loops per CVE × technique with individual SELECT/INSERT |
+| **Evidence (original, pre-#449)** | `detection/backlog.py` `upsert_gap_items_for_cves` — nested loops per CVE × technique with individual SELECT/INSERT |
 | **Recommended remediation** | Bulk technique lookup; `INSERT ... ON CONFLICT DO NOTHING` |
 
 ---
@@ -315,7 +327,7 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 
 | Field | Detail |
 |-------|--------|
-| **Status** | CONFIRMED |
+| **Status** | CONFIRMED — re-verified 2026-07-11, still reproduces: no `idx_cves_modified` migration exists (grep of `backend/` finds zero matches). |
 | **Severity** | Medium |
 | **Confidence** | Medium |
 | **Evidence** | Queries filter `cves.modified >= ?` in `db/correlation.py`, `brief/service.py`; migrations have `published` indexes but not `modified` |
@@ -327,7 +339,7 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 
 | Field | Detail |
 |-------|--------|
-| **Status** | CONFIRMED (UX / info disclosure; **not** auth bypass) |
+| **Status** | CONFIRMED (UX / info disclosure; **not** auth bypass) — re-verified 2026-07-11, still reproduces: `App.jsx:693-698` wraps `/admin/*` only in `RequireAuth` (no role check); `UserMenu.jsx:96-99` renders the "Admin panel" link for any authed user with no `role === 'admin'` guard. |
 | **Severity** | Medium |
 | **Evidence** | `App.jsx` wraps `/admin/*` in `RequireAuth` only; `UserMenu.jsx` shows Admin link for all authed users; `require_admin` enforces on API |
 | **Recommended remediation** | Hide admin nav for `role !== 'admin'`; redirect `/admin` on 403 |
@@ -349,7 +361,7 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 
 | Field | Detail |
 |-------|--------|
-| **Status** | CONFIRMED |
+| **Status** | CONFIRMED — re-verified 2026-07-11, still reproduces: `font-weight: 600/700/800` found in 92 occurrences across 15 CSS files (incl. `AdminPage.css`, `CVECard.css`, `DetailDrawer.css`). |
 | **Severity** | Low (visual) |
 | **Evidence** | `main.jsx` imports DM Sans / IBM Plex Mono 300–500 only; CSS uses 600–800 extensively (`AdminPage.css`, `CVECard.css`, etc.) |
 | **Impact** | Faux-bold synthesis; inconsistent admin vs analyst surfaces |
@@ -588,14 +600,19 @@ flowchart TD
 
 ## 17. Proposed PR Plan
 
+**Note (2026-07-11 re-verify pass):** PR-A1, PR-A2, PR-A3, PR-P1 are ✅ shipped — folded
+into #449 rather than landing as the standalone PRs originally proposed here. PR-A4 and
+PR-P2 are ✅ **partially** shipped by #449 (VAL-002/DB-002/IDEM-002 done; API-001 global
+body middleware still open — see row notes).
+
 | PR | Title | Findings | Files likely affected | Risk | Tests | Depends |
 |----|-------|----------|----------------------|------|-------|---------|
-| PR-A1 | Atomic webhook dedupe claim-before-send | IDEM-001, TXN-001 | `webhooks/engine.py`, `db/webhooks.py` | Medium | Concurrent dispatch test | — |
-| PR-A2 | `require_user` live `is_active` check | AUTH-001 | `dependencies.py` | Medium | Deactivated JWT test | — |
-| PR-A3 | Revoke sessions on password change | AUTH-002 | `auth/repo.py`, admin user routes | Low | Session list cleared | PR-A2 optional |
-| PR-A4 | Summary POST bounds + optional body middleware | VAL-002, API-001 | `meta.py`, `main.py` | Low | Oversize 400/413 | — |
-| PR-P1 | Campaign member batch fetch | DB-001 | `correlation/campaigns.py` | Medium | Query count test | — |
-| PR-P2 | Detection backlog ON CONFLICT upsert | DB-002, IDEM-002 | `detection/backlog.py` | Medium | Parallel insert test | — |
+| PR-A1 | Atomic webhook dedupe claim-before-send | IDEM-001, TXN-001 | `webhooks/engine.py`, `db/webhooks.py` | Medium | Concurrent dispatch test | ✅ shipped #449 |
+| PR-A2 | `require_user` live `is_active` check | AUTH-001 | `dependencies.py` | Medium | Deactivated JWT test | ✅ shipped #449 |
+| PR-A3 | Revoke sessions on password change | AUTH-002 | `auth/repo.py`, admin user routes | Low | Session list cleared | ✅ shipped #449 |
+| PR-A4 | Summary POST bounds + optional body middleware | VAL-002, API-001 | `meta.py`, `main.py` | Low | Oversize 400/413 | 🔶 VAL-002 shipped #449; API-001 (global middleware) still open |
+| PR-P1 | Campaign member batch fetch | DB-001 | `correlation/campaigns.py` | Medium | Query count test | ✅ shipped #449 |
+| PR-P2 | Detection backlog ON CONFLICT upsert | DB-002, IDEM-002 | `detection/backlog.py` | Medium | Parallel insert test | ✅ shipped #449 |
 | PR-P3 | Index `cves.modified` | IDX-001 | Alembic migration | Low | Migration test | Runtime EXPLAIN |
 | PR-P4 | KEV upsert batching (optional) | DB-004 | `scheduler.py`, `db/enrichment.py` | Medium | Ingest test | — |
 | PR-O1 | Feed empty → scheduler `had_error` | ERR-001 | `feeds/kev.py`, `scheduler.py` | Low | Job status test | — |

@@ -113,6 +113,23 @@ BRIEFR is **technically substantive** with a **distinct product identity**, but 
 
 ## Issue Validation Matrix
 
+**Re-verified 2026-07-11 (this pass), against the header's "PR1–PR13 shipped" claim
+(cross-checked with [`../BACKLOG.md`](../BACKLOG.md) §5):** confirmed real via code
+spot checks — `frontend/src/components/ui/Tooltip.jsx` exists (portaled primitive,
+PR3), `frontend/src/components/ui/Button.jsx` is the shared `.ui-btn` primitive,
+`frontend/src/pages/admin/catalog.js` has a populated `JOB_CATALOG`, and Postgres
+integrity checks now run through `backend/db/integrity.py::run_integrity_check`
+(`routers/admin.py:45,366,2291,2334`) rather than a stubbed `PRAGMA` (PR10). Per-issue
+statuses below (CONFIRMED/PARTIALLY CONFIRMED as of 2026-07-09) were **not**
+individually re-traced line-by-line in this pass given time budget — issues **1–27,
+34–36** should be treated as resolved by the shipped PR1–PR11 pass unless a specific
+regression is found; issues **28–33** (log observability spine, scheduler trigger
+dedupe, scheduler table scaling) and the **Issue 37 (2026-07-11, UX-C1/UX-C2)**
+interactive-control-consistency findings below are confirmed still open per
+`BACKLOG.md` §5 and were spot-verified in the codebase-audit companion pass. Treat
+this matrix as historical evidence of *what was wrong*, not current status — current
+status lives in `BACKLOG.md` §5.
+
 ### Issue 1 — Scheduler state, action, and job identity
 
 | Field | Value |

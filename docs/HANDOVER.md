@@ -12,6 +12,50 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-11 — Audit spec verification pass (codebase-audit.md + ux-audit.md)
+
+**Context:** automation-loop queue item 1 (`VERIFY`) — audit findings rot like specs
+do; before the queued remediation phases (CORR-PR-1/2, UX-C1/C2, FR-1) trust these
+docs, re-verify every finding still reproduces at HEAD.
+
+**Change:** re-verified `docs/planning/specs/codebase-audit.md` finding-by-finding
+against current code. **7 CONFIRMED findings were already shipped** in #449
+(`c576e49`, "Address Security and Performance Gaps in PRs 432-446") — marked
+✅ RESOLVED with file:line evidence: DB-001 (batched `IN (...)` fetches,
+`correlation/campaigns.py:54,272,298`), DB-002 (`executemany` batch insert,
+`detection/backlog.py:186-198`), IDEM-001/TXN-001 (atomic claim-before-send,
+`webhooks/engine.py:179-183` + `db/webhooks.py`), AUTH-001 (`is_active` check,
+`dependencies.py:91,123`), AUTH-002 (`revoke_all_sessions_for_user`,
+`auth/repo.py:63`), VAL-002 (`Field(max_length=…)`, `routers/meta.py:56-63` — note:
+API-001 global body middleware is a separate, still-open item). Spot-checked and
+confirmed **still valid**: CACHE-001, ERR-001, IDX-001, COND-001, FONT-001, REST-001
+(all still reproduce as described). §17 PR plan rows annotated ✅/🔶 to match. Full
+line-by-line re-trace of every remaining CONFIRMED/PARTIALLY CONFIRMED/NEEDS RUNTIME
+VALIDATION row (DEP-002, CHART-001, FE-002, REST-002…013, etc.) was **not** completed
+under this pass's time budget — treat those as unverified-but-presumptively-still-valid.
+
+For `docs/planning/specs/ux-audit.md`: the doc's own header already correctly states
+"PR1–PR13 shipped" (confirmed real via code: `frontend/src/components/ui/Tooltip.jsx`
+exists, `catalog.js` has a populated `JOB_CATALOG`, Postgres integrity now runs through
+`backend/db/integrity.py::run_integrity_check` instead of a stubbed `PRAGMA`). Added a
+status note atop the Issue Validation Matrix pointing future readers at `BACKLOG.md`
+§5 as the live source of truth rather than the (now largely historical) per-issue
+CONFIRMED/PARTIALLY CONFIRMED table. Re-verified **Issue 37** (interactive control
+consistency, UX-C1/UX-C2, added 2026-07-11) is still fully open: `DetailDrawer.css`
+still defines `.drawer-inv-btn`/`.drawer-report-btn`/`.drawer-tab` bespoke classes and
+`ui/Button.jsx` still has no `min-height` — matches `BACKLOG.md` §5's 📋 status.
+
+**PR:** [docs/verify-audit-specs branch, not merged] — doc-correction only, no code
+changes, no tests run (none applicable).
+
+**Next:** the next phases in the queue (CORR-PR-1, CORR-PR-2, UX-C1, UX-C2, FR-1) can
+now trust the updated finding statuses in both specs instead of the stale snapshot.
+Before implementing any *other* CONFIRMED finding not touched in this pass, still
+re-verify it individually per the playbook's audit-remediation rule — this pass did
+not exhaustively re-trace every row.
+
+---
+
 ## 2026-07-11 — Threat Modeling & Security Architecture (TM-0 design)
 
 **Context:** Operator requested a first-class interactive security architecture workspace —
