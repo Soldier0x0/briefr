@@ -111,6 +111,28 @@ testing against). If login stalls, suspect this first — not your change.
   the same register: terse mono labels, no marketing tone, red reserved for
   destructive/severity meaning (ux-audit Issue 37).
 
+## 3b. Quota-safe checkpointing (limited-budget sessions)
+
+Sessions may die mid-phase without warning (subscription quota windows, environment
+resets). Rule: **the repo is the memory, never the conversation.** A dead session
+must cost at most 30 minutes of work.
+
+- **Checkpoint at every green boundary** — failing test written, implementation
+  passing locally, each verification artifact captured:
+  `git add -A && git commit -m "wip(<phase>): <done>; NEXT: <exact next action>" && git push`.
+  PRs merge with `--squash`, so wip commits never pollute main history — they are free.
+- **HANDOVER carries a `NEXT:` line** while a phase is in progress — one sentence
+  stating the exact next action, updated at each checkpoint. Delete it when the
+  phase's PR opens.
+- **Never more than ~30 minutes of uncommitted, unpushed work.** Pushing is the
+  checkpoint; a local commit alone does not survive environment resets.
+- **Resume protocol (any fresh session, zero conversation context):** run the §1
+  session-start ritual → read the newest HANDOVER `NEXT:` line → `git log --oneline -5`
+  on the phase branch → continue from exactly there. Do not re-plan finished steps;
+  the wip trail is the plan already executed.
+- **Pace to the window:** don't start a step you can't checkpoint within the current
+  quota window; prefer landing at a green boundary over starting the next step.
+
 ## 4. Stop-and-replan triggers
 
 Halt, write findings into HANDOVER plus a spec amendment, and ask — do **not** push
