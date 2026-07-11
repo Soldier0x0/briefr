@@ -12,6 +12,23 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-11 — Threat Modeling & Security Architecture (TM-0 design)
+
+**Context:** Operator requested a first-class interactive security architecture workspace —
+not a documentation viewer — covering STRIDE, OWASP, MITRE ATT&CK, trust boundaries,
+controls, abuse cases, threat scenarios, risk register, and review history. Must match
+existing BRIEFR visual language exactly.
+
+**Change:** Authored canonical design spec at
+[`docs/planning/specs/threat-modeling-security-architecture.md`](planning/specs/threat-modeling-security-architecture.md).
+Defines three-panel layout (`/security-architecture`), Security Architecture Corpus (YAML),
+read API surface, 17 section specs, visual token mapping, and phased implementation TM-1…TM-7.
+BACKLOG §6 updated with PR queue.
+
+**Next:** Merge TM-0 PR → implement TM-1 (corpus + API skeleton) on fresh branch.
+
+---
+
 ## 2026-07-11 — Doc taxonomy fix (planning vs archive)
 
 **Change:** Enforced two-bucket rule — `docs/planning/` = future work only;
