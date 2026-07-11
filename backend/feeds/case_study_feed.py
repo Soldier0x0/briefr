@@ -25,6 +25,23 @@ SNAPSHOT_MAX_AGE_HOURS = 24 * 7
 
 INCIDENT_RSS_SOURCE_IDS = {source["id"] for source in INCIDENT_RSS_SOURCES}
 INCIDENT_SOURCE_IDS = INCIDENT_RSS_SOURCE_IDS | {"atlas"}
+_ACTIVE_ERROR_SOURCES = {s["label"] for s in INCIDENT_RSS_SOURCES} | {
+    "MITRE ATLAS",
+    "News feeds",
+}
+
+
+def _prune_news_cards(cards: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Drop RSS cards from removed sources (stale snapshot rows)."""
+    return [c for c in cards if c.get("sourceId") in INCIDENT_RSS_SOURCE_IDS]
+
+
+def _prune_errors(errors: list[Any]) -> list[Any]:
+    return [
+        e
+        for e in errors
+        if isinstance(e, dict) and e.get("source") in _ACTIVE_ERROR_SOURCES
+    ]
 
 
 def get_incident_feed_refresh_minutes() -> int:
@@ -133,9 +150,9 @@ async def _build_snapshot() -> dict[str, Any]:
             errors.append({"source": "MITRE ATLAS", "message": str(exc)})
 
         snapshot = {
-            "news": news_cards,
+            "news": _prune_news_cards(news_cards),
             "atlas": atlas_cards,
-            "errors": errors,
+            "errors": _prune_errors(errors),
             "generated_at": datetime.now(timezone.utc).isoformat(),
         }
         try:
@@ -202,7 +219,7 @@ async def get_incident_feed(
         }
         return [], [], meta
 
-    cards = list(snapshot.get("news") or [])
+    cards = _prune_news_cards(list(snapshot.get("news") or []))
     cards.extend((snapshot.get("atlas") or [])[:atlas_limit])
     cards.sort(key=lambda c: c.get("publishedAt") or "", reverse=True)
 
@@ -213,7 +230,7 @@ async def get_incident_feed(
         "warming": False,
         "refresh_interval_minutes": get_incident_feed_refresh_minutes(),
     }
-    return cards, list(snapshot.get("errors") or []), meta
+    return cards, _prune_errors(list(snapshot.get("errors") or [])), meta
 
 
 async def refresh_incident_feed_sources(
@@ -306,9 +323,9 @@ async def refresh_incident_feed_sources(
                     )
 
             snapshot = {
-                "news": news_cards,
+                "news": _prune_news_cards(news_cards),
                 "atlas": atlas_cards,
-                "errors": errors,
+                "errors": _prune_errors(errors),
                 "generated_at": datetime.now(timezone.utc).isoformat(),
             }
             await set_feed_cache(db, SNAPSHOT_CACHE_KEY, snapshot)

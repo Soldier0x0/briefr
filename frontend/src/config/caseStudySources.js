@@ -9,12 +9,6 @@ export const CASE_STUDY_SOURCES = [
     url: 'https://feeds.feedburner.com/TheHackersNews',
   },
   {
-    id: 'bleeping',
-    label: 'Bleeping Computer',
-    type: 'rss',
-    url: 'https://www.bleepingcomputer.com/feed/',
-  },
-  {
     id: 'krebs',
     label: 'Krebs on Security',
     type: 'rss',

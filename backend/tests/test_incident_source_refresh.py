@@ -1,6 +1,7 @@
 """Per-source incident feed refresh (RSS + ATLAS partial snapshot merge)."""
 
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import AsyncMock
 
@@ -15,16 +16,29 @@ from tests.conftest import run_db_test
 
 
 def _setup_db(tmp_path, monkeypatch, name: str) -> None:
+    from settings import settings as _settings
+
     db_path = tmp_path / name
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setattr(_settings, "database_url", "")
+    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
 
 @pytest.fixture
 def admin_client(tmp_path, monkeypatch, auth_token):
+    from settings import settings as _settings
+
     db_path = tmp_path / "incidents_admin.db"
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setattr(_settings, "database_url", "")
+    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
+    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
+    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
+    monkeypatch.setattr("db.config.is_postgres", lambda url=None: False)
 
     import rate_limit as _rl
     from settings import settings as _settings
@@ -61,9 +75,9 @@ def test_partial_rss_refresh_replaces_only_that_source(tmp_path, monkeypatch):
                 {
                     "news": [
                         {
-                            "id": "old-bleep",
-                            "sourceId": "bleeping",
-                            "source": "Bleeping Computer",
+                            "id": "old-krebs",
+                            "sourceId": "krebs",
+                            "source": "Krebs on Security",
                             "publishedAt": "2020-01-01",
                             "kind": "news",
                         },
@@ -90,9 +104,9 @@ def test_partial_rss_refresh_replaces_only_that_source(tmp_path, monkeypatch):
             AsyncMock(
                 return_value=[
                     {
-                        "id": "new-bleep",
-                        "sourceId": "bleeping",
-                        "source": "Bleeping Computer",
+                        "id": "new-krebs",
+                        "sourceId": "krebs",
+                        "source": "Krebs on Security",
                         "publishedAt": "2026-06-01",
                         "kind": "news",
                     }
@@ -100,11 +114,59 @@ def test_partial_rss_refresh_replaces_only_that_source(tmp_path, monkeypatch):
             ),
         )
 
-        snapshot = await case_study_feed.refresh_incident_feed_sources(["bleeping"])
+        snapshot = await case_study_feed.refresh_incident_feed_sources(["krebs"])
         news_ids = [c["id"] for c in snapshot["news"]]
-        assert set(news_ids) == {"keep-hn", "new-bleep"}
+        assert set(news_ids) == {"keep-hn", "new-krebs"}
         assert snapshot["atlas"] == [{"id": "AML.CS0001", "kind": "atlas"}]
         assert snapshot["generated_at"] != "2020-01-01T00:00:00+00:00"
+
+    run_db_test(run())
+
+
+def test_get_incident_feed_drops_removed_source_cards(tmp_path, monkeypatch):
+    _setup_db(tmp_path, monkeypatch, "prune_removed.db")
+
+    async def run() -> None:
+        await init_db()
+        db = await case_study_feed.get_db()
+        try:
+            await set_feed_cache(
+                db,
+                case_study_feed.SNAPSHOT_CACHE_KEY,
+                {
+                    "news": [
+                        {
+                            "id": "removed-source",
+                            "sourceId": "bleeping",
+                            "source": "Bleeping Computer",
+                            "publishedAt": "2026-01-01",
+                            "kind": "news",
+                        },
+                        {
+                            "id": "active",
+                            "sourceId": "hackernews",
+                            "source": "The Hacker News",
+                            "publishedAt": "2026-01-02",
+                            "kind": "news",
+                        },
+                    ],
+                    "atlas": [],
+                    "errors": [
+                        {
+                            "source": "Bleeping Computer",
+                            "message": "stale error",
+                        }
+                    ],
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+        cards, errors, _meta = await case_study_feed.get_incident_feed()
+        assert [c["id"] for c in cards] == ["active"]
+        assert errors == []
 
     run_db_test(run())
 
