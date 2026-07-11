@@ -9,27 +9,76 @@ from db.timeutil import utcnow_str
 
 from preferences.display_validate import (
     DEFAULT_DISPLAY_PREFS,
+    DEFAULT_TYPOGRAPHY_PX,
+    INSTANCE_TYPOGRAPHY_SETTING_KEY,
     encode_display_prefs,
     merge_display_prefs,
     sanitize_display_prefs,
+    sanitize_typography_px,
     validate_timezone,
 )
 from preferences.validate import encode_profile, sanitize_profile
 
 
-def _decode_display_prefs(raw: str | None) -> dict:
+def _decode_display_prefs(
+    raw: str | None,
+    *,
+    instance_typography: dict | None = None,
+) -> dict:
     if not raw:
-        return dict(DEFAULT_DISPLAY_PREFS)
+        prefs = dict(DEFAULT_DISPLAY_PREFS)
+        prefs["typography_px"] = sanitize_typography_px(instance_typography)
+        return prefs
     try:
         data = json.loads(raw)
     except json.JSONDecodeError:
-        return dict(DEFAULT_DISPLAY_PREFS)
+        prefs = dict(DEFAULT_DISPLAY_PREFS)
+        prefs["typography_px"] = sanitize_typography_px(instance_typography)
+        return prefs
     if not isinstance(data, dict):
-        return dict(DEFAULT_DISPLAY_PREFS)
+        prefs = dict(DEFAULT_DISPLAY_PREFS)
+        prefs["typography_px"] = sanitize_typography_px(instance_typography)
+        return prefs
     try:
-        return sanitize_display_prefs(data)
+        prefs = sanitize_display_prefs(data)
     except ValueError:
-        return dict(DEFAULT_DISPLAY_PREFS)
+        prefs = dict(DEFAULT_DISPLAY_PREFS)
+    if "typography_px" in data:
+        try:
+            prefs["typography_px"] = sanitize_typography_px(data.get("typography_px"))
+        except ValueError:
+            prefs["typography_px"] = sanitize_typography_px(instance_typography)
+    else:
+        prefs["typography_px"] = sanitize_typography_px(instance_typography)
+    return prefs
+
+
+async def get_instance_typography_default(db: Any) -> dict | None:
+    from db.app_settings import get_app_setting
+
+    raw = await get_app_setting(db, INSTANCE_TYPOGRAPHY_SETTING_KEY)
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    try:
+        return sanitize_typography_px(data)
+    except ValueError:
+        return None
+
+
+async def set_instance_typography_default(db: Any, typography_px: dict) -> dict:
+    from db.app_settings import set_app_setting
+
+    sanitized = sanitize_typography_px(typography_px)
+    await set_app_setting(
+        db,
+        INSTANCE_TYPOGRAPHY_SETTING_KEY,
+        json.dumps(sanitized, separators=(",", ":"), sort_keys=True),
+    )
+    return sanitized
 
 
 def _decode_profile(raw: str | None) -> dict | None:
@@ -131,6 +180,7 @@ async def get_effective_stack_terms(db: Any) -> str:
 
 
 async def get_user_preferences(db: Any, user_id: int) -> dict:
+    instance_typography = await get_instance_typography_default(db)
     rows = await db.execute_fetchall(
         """
         SELECT display_prefs_json, timezone, remember_profile_on_server, updated_at
@@ -141,14 +191,19 @@ async def get_user_preferences(db: Any, user_id: int) -> dict:
     )
     if not rows:
         prefs = dict(DEFAULT_DISPLAY_PREFS)
+        prefs["typography_px"] = sanitize_typography_px(instance_typography)
         return {
             **prefs,
             "timezone": "UTC",
             "remember_profile_on_server": False,
             "updated_at": None,
+            "instance_typography_default": instance_typography,
         }
     row = rows[0]
-    prefs = _decode_display_prefs(row["display_prefs_json"])
+    prefs = _decode_display_prefs(
+        row["display_prefs_json"],
+        instance_typography=instance_typography,
+    )
     try:
         tz = validate_timezone(row["timezone"] or "UTC")
     except ValueError:
@@ -158,6 +213,7 @@ async def get_user_preferences(db: Any, user_id: int) -> dict:
         "timezone": tz,
         "remember_profile_on_server": bool(row["remember_profile_on_server"]),
         "updated_at": row["updated_at"],
+        "instance_typography_default": instance_typography,
     }
 
 
@@ -175,13 +231,14 @@ async def patch_user_preferences(db: Any, user_id: int, patch: dict) -> dict:
             "utc_time",
             "reduce_motion",
             "notification_sound",
+            "typography_px",
         )
         if key in patch
     }
-    prefs = merge_display_prefs(
-        {k: current[k] for k in DEFAULT_DISPLAY_PREFS},
-        display_patch,
-    )
+    existing_for_merge = {k: current[k] for k in DEFAULT_DISPLAY_PREFS if k in current}
+    if "typography_px" in current:
+        existing_for_merge["typography_px"] = current["typography_px"]
+    prefs = merge_display_prefs(existing_for_merge, display_patch)
     timezone = validate_timezone(patch["timezone"]) if "timezone" in patch else current["timezone"]
     remember = (
         bool(patch["remember_profile_on_server"])
@@ -208,4 +265,5 @@ async def patch_user_preferences(db: Any, user_id: int, patch: dict) -> dict:
         "timezone": timezone,
         "remember_profile_on_server": remember,
         "updated_at": updated_at,
+        "instance_typography_default": current.get("instance_typography_default"),
     }

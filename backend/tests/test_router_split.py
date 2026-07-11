@@ -85,6 +85,8 @@ EXPECTED_ROUTES = [
     ("GET", "/api/admin/api-keys/health"),
     ("POST", "/api/admin/api-keys/health/run"),
     ("GET", "/api/admin/notifications"),
+    ("GET", "/api/admin/display/typography-default"),
+    ("PUT", "/api/admin/display/typography-default"),
     ("GET", "/api/admin/backups"),
     ("POST", "/api/admin/backups/verify/{filename}"),
     ("POST", "/api/admin/backups/run"),

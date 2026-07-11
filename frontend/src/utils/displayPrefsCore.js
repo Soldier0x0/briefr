@@ -1,3 +1,9 @@
+import {
+  applyTypographyPx,
+  DEFAULT_TYPOGRAPHY_PX,
+  getEffectiveTypographyPx,
+} from './typographyPrefs.js'
+
 const FONT_SCALES = { xsmall: 0.8, small: 0.9, medium: 1, large: 1.15, xlarge: 1.3 }
 const DENSITY_MODES = ['compact', 'comfortable', 'spacious']
 
@@ -9,9 +15,11 @@ export const DISPLAY_DEFAULTS = {
   utcTime: false,
   reduceMotion: false,
   notificationSound: true,
+  typographyPx: { ...DEFAULT_TYPOGRAPHY_PX },
 }
 
 export function toDisplayPrefs(data = {}) {
+  const typographyPx = data.typography_px || data.typographyPx
   return {
     fontScale: data.font_scale || data.fontScale || DISPLAY_DEFAULTS.fontScale,
     density: data.density || DISPLAY_DEFAULTS.density,
@@ -25,6 +33,12 @@ export function toDisplayPrefs(data = {}) {
       : data.notificationSound !== undefined
         ? !!data.notificationSound
         : DISPLAY_DEFAULTS.notificationSound,
+    typographyPx: typographyPx
+      ? { ...DEFAULT_TYPOGRAPHY_PX, ...typographyPx }
+      : { ...DEFAULT_TYPOGRAPHY_PX },
+    instanceTypographyDefault: data.instance_typography_default
+      || data.instanceTypographyDefault
+      || null,
   }
 }
 
@@ -33,10 +47,13 @@ export function applyDisplayPrefs(prefs = toDisplayPrefs()) {
   document.documentElement.classList.toggle('density-compact', prefs.density === 'compact')
   document.documentElement.classList.toggle('density-spacious', prefs.density === 'spacious')
   document.documentElement.classList.toggle('reduce-motion', !!prefs.reduceMotion)
+  applyTypographyPx(getEffectiveTypographyPx(prefs))
   try {
     localStorage.setItem('briefr_notification_sound', prefs.notificationSound ? '1' : '0')
   } catch { /* ignore */ }
 }
+
+export { DEFAULT_TYPOGRAPHY_PX }
 
 export const FONT_SCALE_OPTIONS = Object.keys(FONT_SCALES)
 export const DENSITY_OPTIONS = DENSITY_MODES

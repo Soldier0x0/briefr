@@ -66,6 +66,9 @@ function toApiPatch(displayPatch = {}, timezone) {
   if (displayPatch.notificationSound !== undefined) {
     patch.notification_sound = displayPatch.notificationSound
   }
+  if (displayPatch.typographyPx !== undefined) {
+    patch.typography_px = displayPatch.typographyPx
+  }
   if (timezone !== undefined) patch.timezone = timezone
   return patch
 }
@@ -76,6 +79,7 @@ function fromApi(data) {
     timezone: data?.timezone || 'UTC',
     remember_profile_on_server: !!data?.remember_profile_on_server,
     updated_at: data?.updated_at || null,
+    instanceTypographyDefault: data?.instance_typography_default || null,
   }
 }
 

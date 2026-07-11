@@ -521,6 +521,40 @@ async def get_operator_notifications(
         await db.close()
 
 
+@router.get("/display/typography-default")
+async def read_instance_typography_default():
+    from preferences.repo import get_instance_typography_default
+
+    db = await get_db()
+    try:
+        typography = await get_instance_typography_default(db)
+        return {"typography_px": typography}
+    finally:
+        await db.close()
+
+
+@router.put("/display/typography-default")
+async def write_instance_typography_default(body: dict, request: Request):
+    from preferences.display_validate import sanitize_typography_px
+    from preferences.repo import set_instance_typography_default
+
+    typography_px = body.get("typography_px")
+    if not isinstance(typography_px, dict):
+        raise HTTPException(status_code=422, detail="typography_px object is required")
+    try:
+        sanitized = sanitize_typography_px(typography_px)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    db = await get_db()
+    try:
+        saved = await set_instance_typography_default(db, sanitized)
+        await db.commit()
+    finally:
+        await db.close()
+    await audit(request, "display.typography_default", "updated")
+    return {"typography_px": saved}
+
+
 # ── Backups ────────────────────────────────────────────────────────────────
 
 
