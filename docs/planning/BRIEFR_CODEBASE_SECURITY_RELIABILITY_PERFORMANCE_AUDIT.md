@@ -1,7 +1,7 @@
 # BRIEFR Codebase Security, Reliability & Performance Audit
 
-**Audit type:** Read-only architecture / security / database / API / frontend / reliability / performance review  
-**No remediation implemented in this phase.**
+**Audit type:** Read-only architecture / security / database / API / frontend / reliability / performance / restart-durability review  
+**Remediation:** None in this PR (read-only audit). Sections A–Z delivered together.
 
 ---
 
@@ -16,6 +16,8 @@ BRIEFR at commit `b468a6fc` (branch `main`, 2026-07-11) is a mature self-hosted 
 3. **Authenticated JSON body limits are weak** on LLM/summary endpoints — memory/LLM-cost DoS (`VAL-001`, Medium).
 4. **Analyst JWT gate does not re-check `is_active`** — deactivated users retain API access until access JWT expiry (`AUTH-001`, Medium).
 5. **GET drawer path persists correlation** as a side effect (`CACHE-001`, Medium).
+
+**Restart durability (Section Z):** BRIEFR uses **in-process APScheduler + asyncio locks** with **no durable “running” job state**. Graceful shutdown (`lifespan` → `stop_scheduler(wait=False)`) does **not** await in-flight scheduler jobs, admin-spawned `asyncio` tasks, or FastAPI `BackgroundTasks`. The **API queue is memory-only** — queued slots vanish on restart. **NVD ingest is checkpoint-safe** (watermark committed with CVE upserts in one transaction). **LLM product extraction can double-consume provider quota** if the process dies after a successful Groq response but before `feed_cache` commit. **Webhook delivery is at-least-once** with duplicate windows on crash/retry (`IDEM-001`).
 
 Many prompt-era concerns are **already addressed** (legacy admin-key fail-open removed, `db/dialect.py` deleted, refresh token hashing/rotation, gzip responses, CSP, wallboard SSRF tests) or **intentional for self-hosted** (plaintext operator secrets in DB/`.env`, SameSite-strict CSRF model, CSR-only frontend).
 
@@ -52,6 +54,7 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 | Chart correctness | W |
 | Typography / font-weight | X |
 | Dependency age | Y |
+| In-flight work / restart durability | Z |
 
 **Out of scope for this audit:** implementing fixes, STIX export, V2.0 docker-compose, encrypted `app_settings` (parked product work), production penetration test, full `EXPLAIN ANALYZE` on live data volumes.
 
@@ -62,7 +65,8 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 | Field | Value |
 |-------|-------|
 | **Branch** | `main` |
-| **Commit SHA** | `b468a6fc43ababdafb2ae3458fd53dc772d3b7d8` |
+| **Commit SHA (code)** | `b468a6fc43ababdafb2ae3458fd53dc772d3b7d8` |
+| **Doc revision** | Sections A–Z, single PR (2026-07-11) |
 | **Audit date** | 2026-07-11 (UTC) |
 | **Graph aid** | `graphify-out/graph.json` (5504 nodes, rebuilt 2026-07-11 per `PRODUCT_STATUS.md`) |
 | **Docs read** | `CLAUDE.md`, `docs/PRODUCT_STATUS.md`, `docs/HANDOVER.md`, `docs/SPRINT_2026-07.md`, ADR-001/002, `SYSTEM_DESIGN.md` (partial), planning audits |
@@ -144,10 +148,23 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 | FONT-001 | X | font-weight 600–800 vs bundled 300–500 | CONFIRMED | Low | High | CSS across app | No |
 | DEP-001 | Y | Backend deps pinned | ALREADY ADDRESSED | — | High | `requirements.txt` | No |
 | DEP-002 | Y | Frontend caret ranges | PARTIALLY CONFIRMED | Low | Medium | `package.json` | Yes (npm audit) |
+| REST-001 | Z | Scheduler `shutdown(wait=False)` — jobs not awaited | CONFIRMED | Medium | High | `scheduler.py`, `main.py` | Yes |
+| REST-002 | Z | Fire-and-forget asyncio tasks not drained on shutdown | CONFIRMED | Medium | High | `refresh.py`, `scheduler.py`, `case_study_feed.py` | Yes |
+| REST-003 | Z | API queue entirely in-memory | CONFIRMED | Medium | High | `api_queue.py` | No |
+| REST-004 | Z | LLM success before DB persist → retry doubles API quota | CONFIRMED | Medium | High | `ml/product_extraction.py`, `ai/llm_router.py` | Yes |
+| REST-005 | Z | NVD watermark committed with upserts (safe ordering) | ALREADY ADDRESSED | — | High | `scheduler.py` `_run_nvd_incremental_sync` | No |
+| REST-006 | Z | Correlation single commit at end — rollback on failure | ALREADY ADDRESSED | — | High | `correlation/engine.py` | No |
+| REST-007 | Z | Campaign DELETE-all before rebuild — empty window on crash | CONFIRMED | Medium | High | `correlation/campaigns.py` | No |
+| REST-008 | Z | APScheduler memory job store; `coalesce=True` | INTENTIONAL | Low | High | `scheduler.py` | No |
+| REST-009 | Z | `_job_progress` / ingest locks are in-memory only | CONFIRMED | Low | High | `scheduler.py` | No |
+| REST-010 | Z | No stale “running” job recovery on startup | CONFIRMED | Medium | High | startup path | No |
+| REST-011 | Z | `flush_api_usage_pending` on shutdown | ALREADY ADDRESSED | — | High | `main.py`, `tracking.py` | No |
+| REST-012 | Z | FastAPI BackgroundTasks not awaited | CONFIRMED | Medium | High | `admin.py` | Yes |
+| REST-013 | Z | Webhook crash after receiver OK, before dedupe record | CONFIRMED | High | High | `webhooks/engine.py` | Yes |
 
-**Totals by status:** CONFIRMED 18 · PARTIALLY CONFIRMED 8 · ALREADY ADDRESSED 28 · INTENTIONAL 10 · NOT APPLICABLE 6 · FALSE OBSERVATION 3 · NEEDS RUNTIME VALIDATION 6
+**Totals by status:** CONFIRMED 27 · PARTIALLY CONFIRMED 8 · ALREADY ADDRESSED 32 · INTENTIONAL 11 · NOT APPLICABLE 6 · FALSE OBSERVATION 3 · NEEDS RUNTIME VALIDATION 9
 
-**Totals by severity (actionable only):** High 4 · Medium 12 · Low 10 · Info/N/A remainder
+**Totals by severity (actionable only):** High 5 · Medium 18 · Low 12 · Info/N/A remainder
 
 ---
 
@@ -620,6 +637,375 @@ flowchart TD
 | X | Font weights | **CONFIRMED** cosmetic | FONT-001 |
 | Y | Dependency age | **PARTIAL** — backend pinned; npm carets | DEP-001–002 |
 
+| Y | Dependency age | **PARTIAL** — backend pinned; npm carets | DEP-001–002 |
+| Z | Restart / crash durability | **PARTIAL** — NVD/checkpoint good; queue/LLM/webhook gaps | REST-001–013 |
+
+---
+
+## 19. Section Z — In-Flight Work Durability, Restart Recovery, and Crash Consistency
+
+**Audited commit:** `b468a6fc` (code); doc update on branch `cursor/restart-durability-audit-49e4`.
+
+### 19.1 Architecture summary
+
+BRIEFR runs as a **single asyncio process** (uvicorn, typically one worker). Background work uses:
+
+| Mechanism | Used for | Durable pending state? |
+|-----------|----------|------------------------|
+| **APScheduler `AsyncIOScheduler`** | 25 scheduled jobs (ingest, correlation, backup, LLM, etc.) | **No** — default in-memory job store |
+| **`asyncio.Lock` per job** (`scheduler_locks.py`) | Prevent duplicate in-process runs | **No** — memory only |
+| **`asyncio.create_task`** | Admin `/api/refresh*`, startup maintenance, incident snapshot | **No** |
+| **FastAPI `BackgroundTasks`** | Admin restart, config apply-restart, DB migration, export | **No** |
+| **`api_queue.py`** | Outbound HTTP pacing (NVD, Groq, OTX, webhooks, etc.) | **No** |
+| **`sync_state` table** | NVD watermark, scheduler last-run history, rate-limit buckets (optional) | **Yes** (metadata only) |
+| **PostgreSQL rows** | CVEs, caches, correlation, webhooks dedupe, AI ops | **Yes** (results, not in-flight ops) |
+
+There is **no** durable operation/job table with `pending → running → completed` transitions, **no** lease/heartbeat recovery, and **no** startup reconciliation that resets abandoned “running” rows.
+
+### 19.2 Graceful shutdown path (SIGTERM / SIGINT / admin restart)
+
+**Trigger chain:**
+
+1. Admin `POST /api/admin/restart` → `BackgroundTasks.add_task(trigger_graceful_restart, drain?)` (`admin.py:2170`)
+2. Optional `drain=True`: poll up to **120s** while `any_ingest_lock_held()` (`dependencies.py:126–131`) — only NVD/KEV/EPSS locks, not all jobs
+3. `os.kill(os.getpid(), SIGTERM)` → uvicorn runs FastAPI **`lifespan` shutdown** (`main.py:125–130`)
+
+**Shutdown sequence (actual code):**
+
+```
+yield  # stop accepting new lifespan work
+→ stop_scheduler()          # APScheduler.shutdown(wait=False) — does NOT await jobs
+→ flush_api_usage_pending() # best-effort DB flush of in-memory usage counters
+→ close_pool()              # closes DB pool; in-flight DB ops may fail
+→ close_client()            # closes httpx intel client
+→ close_webhook_client()
+```
+
+**What is NOT done:**
+
+- No readiness flip to NOT READY before drain
+- No pause of new HTTP mutations (in-flight requests complete via uvicorn, but new requests may still arrive briefly)
+- No registry of all `asyncio.Task` instances — **not drained**
+- No await of `_schedule_background` / `refresh._spawn` tasks
+- No await of FastAPI `BackgroundTasks` (restart task itself may be cut off)
+- No API queue drain — `_requests` discarded
+- No `_job_progress` persistence
+- **No shutdown timeout** beyond optional 120s ingest drain before SIGTERM
+
+**SIGKILL / host loss:** No shutdown hook runs; all in-memory state lost immediately.
+
+### 19.3 Startup path
+
+```
+lifespan start
+→ ensure_db_or_restore()     # SQLite dev only
+→ run_postgres_migrations()  # fatal on failure (Postgres)
+→ init_pool() / init_db()
+→ bootstrap_operator_settings()
+→ sync_env_destinations_to_db()
+→ start_scheduler()            # if BRIEFR_SCHEDULER_ENABLED≠0
+→ maybe_run_on_startup()       # full ingest if <10 CVEs; else deferred maintenance task
+```
+
+**Recovery mechanisms present:**
+
+- NVD watermark in `sync_state` — resumes incremental sync
+- `upsert` / `ON CONFLICT` on feeds — safe replay of rows
+- EPSS backfill marker `EPSS_BACKFILL_DONE_KEY`
+- Scheduler `coalesce=True` — multiple missed interval fires collapse to one run
+- SQLite `ensure_db_or_restore` from age backup (dev)
+
+**Recovery mechanisms absent:**
+
+- No detection of jobs interrupted mid-run
+- No reset of “running” operations (none persisted)
+- Migration `status: running` in `sqlite_to_postgres._state` is **process memory** — lost on crash; operator must re-poll/re-run
+- `_job_progress` dict empty after restart
+
+### 19.4 Scheduler semantics (Q9–Q10)
+
+| Property | Value | Evidence |
+|----------|-------|----------|
+| Job store | **Memory** (APScheduler default) | No `jobstores=` configured in `start_scheduler()` |
+| `max_instances` | **1** on all jobs | `scheduler.py` `add_job` calls |
+| `coalesce` | **True** on interval/cron jobs | same |
+| `misfire_grace_time` | **Default (1s)** | not overridden |
+| Running state | In-process `asyncio.Lock` + `_job_progress` dict | not in DB |
+| Last outcome | `sync_state` key `scheduler.last_run.{job_id}` (ring of 5) | `_write_job_last_run` |
+
+**If BRIEFR is down when a job should run:** On restart, APScheduler schedules the next fire from **now**; with `coalesce=True`, **one** catch-up run may execute for piled-up interval triggers (not a full backlog replay of every missed slot). Cron jobs (nightly correlation, OTX) run at the **next scheduled wall time**, not retroactively for every missed night unless the downtime spans the misfire window (effectively: **missed cron runs are skipped**, next fire only).
+
+### 19.5 Complete work inventory (25 scheduler jobs + other paths)
+
+| Work type | Entry | Mechanism | Pending state | Running state |
+|-----------|-------|-----------|---------------|---------------|
+| NVD incremental | scheduler / `/api/refresh/nvd` | APScheduler / `create_task` | MEMORY (lock) | `_job_progress`, lock |
+| KEV sync | scheduler / refresh | same | MEMORY | same |
+| EPSS sync + backfill | scheduler / refresh | same + `_epss_backfill_lock` | MEMORY | same |
+| MITRE/ATLAS weekly | scheduler / refresh | APScheduler | MEMORY | lock |
+| ThreatFox / VulnCheck | scheduler | APScheduler | MEMORY | lock |
+| OTX nightly + continuous | scheduler | APScheduler | MEMORY | lock |
+| Exploit sources (Nuclei/GitHub/EDB/MSF) | scheduler / startup | APScheduler | MEMORY | lock |
+| Vulnrichment / cvelistV5 | scheduler | APScheduler | sync_state cursors | lock |
+| Nightly correlation | scheduler | APScheduler | MEMORY | lock; **single DB txn at end** |
+| OTX campaign build | inside correlation | sync | MEMORY | in txn |
+| Embeddings backfill | scheduler / NVD tail | APScheduler | MEMORY | per-batch commit |
+| LLM product extraction | scheduler | APScheduler | `feed_cache` keys when done | MEMORY |
+| Detection context sync/LLM | scheduler | APScheduler | `feed_cache` | MEMORY |
+| KEV backlog reconcile | scheduler | APScheduler | DB rows | MEMORY |
+| Incident/news RSS | scheduler / request miss | APScheduler / `create_task` | `feed_cache` snapshot | `_build_lock` |
+| Watchlist / KEV webhooks | scheduler | APScheduler | dedupe table | MEMORY |
+| Scheduled backup | scheduler | APScheduler | filesystem | lock |
+| Cache retention / sessions | scheduler | APScheduler | N/A | MEMORY |
+| API key health | scheduler | APScheduler | N/A | MEMORY |
+| Admin manual refresh | HTTP POST | `create_task` | NOT STORED | task set |
+| Admin DB migration | HTTP POST | `BackgroundTasks` | MEMORY `_state` | MEMORY |
+| Admin restart | HTTP POST | `BackgroundTasks` → SIGTERM | NOT STORED | NOT STORED |
+| Brief `GET /api/brief` | HTTP GET | sync handler | N/A | request scope |
+| Detection/YARA/Sigma | HTTP GET drawer | sync handler | `feed_cache` | request scope |
+| PDF/AI summary | HTTP POST | sync LLM calls | NOT STORED | request scope |
+| IOC lookup | HTTP POST | sync + external APIs | `ioc_cache` | request scope |
+| Intel snapshot import | CLI script | subprocess pg_restore | filesystem dump | external |
+
+### 19.6 Restart Durability Matrix
+
+| Work Type | Entry Point | Execution Mechanism | Pending State Location | Running State Location | Durable | Graceful Restart Behaviour | Crash Behaviour | Replay Safe | Duplicate Risk | Partial Commit Risk | Recovery Mechanism | Finding ID |
+|-----------|-------------|---------------------|------------------------|------------------------|---------|------------------------------|-----------------|-------------|----------------|---------------------|-------------------|------------|
+| NVD incremental sync | scheduler / refresh | APScheduler / asyncio task | MEMORY lock | `_job_progress` | Checkpoint **yes** (`sync_state` watermark) | Job aborted mid-run; watermark only advances on successful commit | Uncommitted batch lost; watermark unchanged | **Yes** (upsert) | Low | Low if crash before `commit` | Re-run job from last watermark | REST-005 |
+| KEV / EPSS ingest | scheduler / refresh | APScheduler | MEMORY | lock | Row-level upsert | Aborted mid-loop | Partial rows may commit per connection scope | **Yes** | Low | Per-row commits in some paths | Next scheduled run | REST-002 |
+| Nightly correlation | scheduler | APScheduler | MEMORY | lock + DB txn | Results in DB after final `commit` | `shutdown(wait=False)` may cut job | **Rollback** on exception; crash before commit loses in-txn work | Re-run rebuilds | Medium (campaign delete-first) | **High** if crash after DELETE campaigns | Next nightly job | REST-006, REST-007 |
+| LLM product extraction | scheduler | APScheduler | `feed_cache` after success | MEMORY | Per-CVE cache when done | In-flight LLM may complete externally | **Groq billed, no cache** → retry calls API again | After cache write | **API quota duplicate** | Low DB duplicate (upsert) | Next run retries uncached CVEs | REST-004 |
+| LLM PDF/summary | HTTP POST | sync request | NOT STORED | request | N/A | Request completes or client sees disconnect | Result lost; no server queue | Client retry | LLM quota duplicate | None | User retries POST | REST-004 |
+| API queue slot | all outbound HTTP | `await_api_slot` | **MEMORY ONLY** | `_requests` dict | **No** | Queue discarded | In-flight HTTP may finish at provider | Job-level retry | **Yes** for rate-limited APIs | N/A | Implicit job retry | REST-003 |
+| Webhook delivery | scheduler / alerts | `dispatch_event` | dedupe table (post-send) | MEMORY | Dedupe **after** HTTP OK | May abort mid-loop | Receiver may get POST; dedupe not recorded | Retry sends again | **High** | Delivery log partial | Dedupe key | IDEM-001, REST-013 |
+| Admin refresh task | POST `/api/refresh*` | `create_task` | NOT STORED | task ref set | **No** | Task cancelled on process exit | Mid-ingest stop | Next manual/scheduled | Low (upserts) | Uncommitted NVD batch | Operator re-trigger | REST-002 |
+| Incident feed snapshot | scheduler / cold read | APScheduler / `create_task` | `feed_cache` | `_build_lock` | Snapshot key | Build aborted | Old snapshot served until TTL | Rebuild | Low | Stale snapshot only | Next refresh job | REST-002 |
+| API usage counters | tracking middleware | memory batch | MEMORY `_api_usage_pending` | flush task | **Flushed on shutdown** | `flush_api_usage_pending` in lifespan | Pending counts may be **lost** if SIGKILL before flush | Lost counts | Low | Under-count only | Next requests | REST-011 |
+| DB migration | admin POST | BackgroundTasks | MEMORY `_state` | MEMORY | Rows in target DB as copied | May stop mid-table | Partial copy; `_state` lost | Manual re-run | Medium | Partial DB | Operator | REST-012 |
+| Brief / charts | HTTP GET | sync | N/A | request | N/A | N/A | Client refetch | **Yes** | None | None | N/A | — |
+| Backup | scheduler | APScheduler | filesystem | lock | Backup file | May truncate archive | Incomplete `.tar.gz` | Re-run backup | Low | Bad backup file | deadman alert | — |
+| Snapshot import | CLI | pg_restore | dump file | subprocess | DB tables | N/A | Partial restore | Re-run script | Low with guards | Partial intel tables | Operator | — |
+
+### 19.7 Failure Window Analysis
+
+#### Groq / LLM product extraction
+
+```
+SELECT candidate CVEs (no feed_cache key)
+  ↓
+chat_completion_task() → await_api_slot → Groq HTTP → parse JSON
+  ↓
+[CRASH HERE]
+  ↓
+set_feed_cache(llm_products:…) + set_llm_affected_products + COMMIT
+```
+
+| Question | Answer |
+|----------|--------|
+| Durable before crash | `ai_operations` row **may** exist (separate commit per attempt); **no** `feed_cache` |
+| After restart | CVE still in candidate set (errors not cached) |
+| Detected as abandoned? | **No** |
+| Retried? | **Yes** — next scheduler run |
+| Replay safe (DB)? | **Yes** — upsert products |
+| Duplicate API quota? | **Yes** — Groq call repeated |
+| Remediation | Write idempotency claim in DB **before** HTTP or store provider response hash before retry; extend REST-004 |
+
+#### NVD feed ingestion
+
+```
+FETCH NVD (external, outside txn)
+  ↓
+upsert_cves + set_nvd_sync_watermark + post-process + COMMIT
+  ↓
+[CRASH HERE — before commit]
+```
+
+| Question | Answer |
+|----------|--------|
+| Durable before crash | **No** watermark advance |
+| After restart | Re-fetch overlapping window (overlap_minutes) |
+| Replay safe? | **Yes** — `ON CONFLICT` upsert |
+| Duplicate API? | Possible NVD pagination overlap — acceptable |
+| Checkpoint before commit? | **No** — REST-005 **safe** |
+
+**Capped batch edge:** If `MAX_CVES_PER_FETCH` caps, watermark may advance to last row in capped slice while more rows exist in NVD response — pre-existing idempotency gap (see IDEM in §9).
+
+#### Nightly correlation
+
+```
+DELETE all campaigns + members
+  ↓
+per-CVE actor correlation (many writes, uncommitted)
+  ↓
+build_campaigns_from_pulses
+  ↓
+delete correlation cache prefixes
+  ↓
+COMMIT
+  ↓
+[CRASH HERE — before commit]
+```
+
+| Question | Answer |
+|----------|--------|
+| Durable before crash | Uncommitted — Postgres rolls back |
+| After restart | Previous campaign data **retained** (txn rolled back) |
+| If crash AFTER commit | New state durable |
+| If crash AFTER delete inside txn but before commit | **Rollback restores** old campaigns |
+| Partial empty campaigns | Only if DELETE committed outside txn — **not** here (single txn) |
+
+Campaign `DELETE` at start of `build_campaigns_from_pulses` is **inside** the same nightly transaction — rollback restores prior campaigns unless commit succeeded.
+
+#### Webhook delivery
+
+```
+was_webhook_destination_sent? (read)
+  ↓
+HTTP POST to Discord/Telegram
+  ↓
+[CRASH HERE — receiver got 200]
+  ↓
+record_webhook_delivery + record_webhook_destination_sent
+```
+
+| Question | Answer |
+|----------|--------|
+| Delivery semantics | **At-least-once** (duplicate window) |
+| Effective-once? | Only if receiver dedupes on payload `dedupe_key` |
+| Remediation | Atomic claim INSERT before HTTP (IDEM-001) |
+
+#### Scheduler job (generic)
+
+```
+APScheduler fires job
+  ↓
+async with job_lock
+  ↓
+work…
+  ↓
+[CRASH / SIGKILL]
+  ↓
+_write_job_last_run (finally block — may not run)
+```
+
+| Question | Answer |
+|----------|--------|
+| Marked running forever? | **No** — nothing persisted as running |
+| Last run record | May be missing or show `had_error` if finally ran |
+| On restart | Lock released; job eligible immediately |
+
+#### Snapshot import (CLI)
+
+```
+TRUNCATE intel tables (optional --replace-intel)
+  ↓
+pg_restore
+  ↓
+[CRASH HERE]
+```
+
+| Question | Answer |
+|----------|--------|
+| Partial intel | **Yes** — operator must restore from dump again |
+| Guard | Refuses if operator tables populated |
+
+#### Backup / restore
+
+```
+pg_dump / tar / age encrypt
+  ↓
+write file to BACKUP_DIR
+  ↓
+[CRASH HERE]
+```
+
+Incomplete archive; `verify_backup` or restore fails; deadman job may alert.
+
+### 19.8 Persistent job classification (§14)
+
+| Class | Work items |
+|-------|------------|
+| **A — Safe to lose** | `_job_progress` strings, API queue wait positions, in-flight HTTP request IDs, `_job_progress` UI hints |
+| **B — Safe to replay** | NVD/KEV/EPSS upserts, OTX pulse upserts, embeddings backfill, exploit sync, cache retention |
+| **C — Must resume/retry** | LLM extraction (uncached errors), EPSS backfill (marker unset until done), migration (operator) |
+| **D — Must not duplicate** | Webhook alerts (operator annoyance), LLM quota (cost), some external POST side effects |
+| **E — Requires durable op state** | **None implemented today**; candidates: long migrations, multi-hour NVD cap batches, webhook in-flight claims |
+
+**PostgreSQL can host durable ops** via `sync_state` extension or a dedicated `background_operations` table (`status`, `lease_expires_at`, `attempt_count`, `idempotency_key`) — **no Redis/Celery required** for single-tenant scale.
+
+### 19.9 Graceful shutdown coordinator (§13)
+
+**Current architecture does not require** a complex multi-phase coordinator for correctness of **intel data** (feeds are replay-safe). It **would benefit** from a **minimal coordinator** if operators restart during heavy ingest:
+
+| Need | Required? |
+|------|-----------|
+| Drain flag for ingest locks | **Partial** — exists (120s), narrow scope |
+| Await scheduler jobs | **Recommended** — change `wait=True` + job wrapper cancel |
+| Track `create_task` work | **Recommended** for refresh/migration |
+| Readiness NOT READY | Optional — nginx upstream health already uses `/api/health` |
+| Forced cancel after timeout | Missing |
+
+**Minimum change:** `stop_scheduler(wait=True)` with timeout; shared `TaskGroup` for spawned tasks; optional `BRIEFR_SHUTDOWN_DRAIN_SECONDS`.
+
+### 19.10 Mandatory final questions (Z)
+
+1. **What work is permanently lost if BRIEFR restarts right now?**  
+   In-memory API queue positions; `_job_progress`; in-flight `BackgroundTasks` not yet started; pending `api_usage` counters (if SIGKILL before flush); migration progress UI state; any HTTP request not yet committed to DB.
+
+2. **What work is automatically recovered?**  
+   Scheduled jobs re-fire (coalesced); NVD/KEV/EPSS from checkpoints/`upsert`; correlation on next nightly run; uncached LLM CVEs retried; incident snapshot rebuilt on schedule.
+
+3. **What work remains incorrectly marked as running?**  
+   **Nothing in DB.** Admin UI may briefly show stale “in progress” until refresh — locks are memory-only and released on restart.
+
+4. **What work is replayed from the beginning?**  
+   Full nightly correlation (if previous txn rolled back); LLM candidates without `feed_cache`; manual refresh if operator re-triggers; missed cron jobs **not** fully backfilled (next slot only).
+
+5. **What work can create duplicates after replay?**  
+   Webhook deliveries; LLM API calls; external HTTP when job retries after provider succeeded; `ai_operations` audit rows (intentional).
+
+6. **What external API calls can be executed twice?**  
+   Any rate-limited source behind `resilient_request` if process dies after HTTP 200 before result persisted — **especially Groq/Gemini/Cerebras/OpenRouter** and NVD fetches (safe for data, not for quota).
+
+7. **Can a successful external API response be lost before persistence?**  
+   **Yes** — LLM product extraction, incident snapshot build (returns in-memory if DB persist fails), any feed fetch that returns `[]` on error without raising.
+
+8. **Are feed cursors/checkpoints crash-safe?**  
+   **NVD: yes** (watermark with commit). **EPSS backfill marker: yes** after completion. **cvelistV5/vulnrichment: sync_state keys** committed with apply. **OTX: per-CVE commits** — replay-safe via upsert.
+
+9. **Are scheduler jobs persistent?**  
+   **No** — schedule definitions are code; fire times are in-memory APScheduler only.
+
+10. **What happens to missed scheduled jobs?**  
+    Interval jobs: coalesced catch-up **one** run. Cron jobs: next wall-clock fire; **no stack of missed nights**.
+
+11. **Are FastAPI BackgroundTasks used for work that should be durable?**  
+    **Yes** — DB migration and restart signaling; migration copies are durable row-by-row but **status tracking is not**.
+
+12. **Are asyncio tasks tracked and drained during graceful shutdown?**  
+    **No** — only strong refs in `refresh._background_tasks` and `case_study_feed._background_tasks`; **not awaited** on shutdown.
+
+13. **Does BRIEFR need a PostgreSQL-backed durable job/operation mechanism?**  
+    **Not for all work.** Recommended for: **webhook in-flight claims**, **LLM idempotency**, optional **long migration** status — not for every feed upsert.
+
+14. **Can PostgreSQL provide restart durability without Redis/Celery?**  
+    **Yes** — `sync_state`, `feed_cache`, dedupe tables, and a future `operations` table with leases suffice at CVE-scale single-node deployments.
+
+15. **Minimum architecture change for restart-safe critical processing?**  
+    1) Atomic webhook dedupe claim (`INSERT … ON CONFLICT` before HTTP).  
+    2) LLM result staging row or cache write **immediately after** HTTP response before downstream processing.  
+    3) `stop_scheduler(wait=True, timeout=N)` + await tracked background tasks.  
+    4) Optional: `operations` table for migrations and capped NVD batches.
+
+### 19.11 Proposed PR additions (restart bundle)
+
+| PR | Title | Findings | Risk |
+|----|-------|----------|------|
+| PR-R1 | Await scheduler + background tasks on shutdown (bounded) | REST-001, REST-002, REST-012 | Medium |
+| PR-R2 | LLM extraction idempotency / response staging | REST-004 | Medium |
+| PR-R3 | Webhook claim-before-send (extends PR-A1) | REST-013, IDEM-001 | Medium |
+| PR-R4 | Persist migration status to `sync_state` | REST-010, REST-012 | Low |
+
 ---
 
 ## Appendix — Section C Auth Questions (direct answers)
@@ -637,4 +1023,4 @@ flowchart TD
 
 ---
 
-*End of audit document. No code was modified during this audit.*
+*End of audit document. Sections A–Z (2026-07-11). Read-only audit at `b468a6fc`; no application code changed.*
