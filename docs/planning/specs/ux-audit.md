@@ -3,6 +3,17 @@
 **Date:** 2026-07-09  
 **Repository:** Soldier0x0/briefr (`main` at audit time)  
 **Mode:** Planning and architecture validation only — **no production fixes in this task**  
+
+**Status (2026-07-11):** PR1–PR13 shipped (see [`../BACKLOG.md`](../BACKLOG.md) §5 for
+the do-not-re-queue list). **Remaining:** deferred issues 28–33 (logs, audit context,
+log search, run_id observability, scheduler trigger dedupe, scheduler table scaling),
+the PR3 tooltip-migration tail, and the small 🔶/📋 rows in BACKLOG §5.
+
+**Execution:** per [`execution-playbook.md`](execution-playbook.md). This audit is a
+snapshot of 2026-07-09 `main` — re-verify each issue still reproduces at HEAD before
+implementing (several "critical runtime bugs" below were marked NEEDS RUNTIME
+VALIDATION and may since have shipped fixes).
+
 **Validation method:** Static code trace on latest `main`, cross-checked against manual product review screenshots and `docs/PRODUCT_STATUS.md`. Graphify CLI unavailable in audit environment; used `graphify-out/GRAPH_REPORT.md` hints plus direct reads of frontend, backend, scheduler, config, logging, and queue subsystems.
 
 ---

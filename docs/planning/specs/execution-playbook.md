@@ -1,7 +1,10 @@
 # Execution Playbook — shipping these specs at full quality
 
-**Scope:** [`forge-redesign.md`](forge-redesign.md) and
-[`threat-modeling-security-architecture.md`](threat-modeling-security-architecture.md).
+**Scope:** every active program in this folder — [`forge-redesign.md`](forge-redesign.md),
+[`threat-modeling-security-architecture.md`](threat-modeling-security-architecture.md),
+[`correlation-engine-v2.md`](correlation-engine-v2.md),
+[`codebase-audit.md`](codebase-audit.md) remediation PRs,
+[`ai-operations.md`](ai-operations.md), and [`ux-audit.md`](ux-audit.md) deferred issues.
 The specs say **what** to build. This document says **how** to execute them — written so
 that any competent agent or human, starting with zero conversation context, ships the
 same quality. If you are an AI model executing a phase: follow this literally; it
@@ -39,10 +42,18 @@ Every phase (TM-1…TM-5, FR-1…FR-3) runs the same nine steps. No skipping, no
    be green before you begin. If they're red, fixing that *is* your phase now.
 2. **Recon.** Read end-to-end every file the phase names — whole files, not grep
    excerpts. List what the spec got wrong or stale; fixing the spec is part of your PR.
+   **Audit-remediation rule:** an audit finding is a snapshot, and audits rot like
+   specs do. Before implementing any remediation PR (codebase-audit, ux-audit),
+   re-verify the finding exists at HEAD — reproduce it or re-trace the code path. If
+   it was already fixed, moved, or partially shipped (several are marked 🔶 in
+   BACKLOG), your PR is the spec/BACKLOG status update, not a re-fix.
 3. **Plan.** Smallest diff that meets acceptance. Write your assumptions down.
    Decision rule: *spec silent + user-visible consequence* → **stop and ask**, then
    record the answer in the spec's Open Questions. *Spec silent + internal detail* →
    take the boring default and note it in one line in the PR body.
+   Open-question rule: if the spec's Open Questions table has a **"default if
+   silent"** for your question, take the default and note it — that column exists
+   precisely so you don't stall. No default listed → it's a genuine stop-and-ask.
 4. **Test first.** Backend logic gets a failing test before implementation. Anything
    touching `db/`: run `cd backend && pytest tests/ -q` **twice** — default (SQLite)
    and with `DATABASE_URL` pointing at Postgres. A query that passes one and fails the

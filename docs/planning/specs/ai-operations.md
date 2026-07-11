@@ -15,6 +15,27 @@
 BRIEFR must remain **fully functional** when AI is disabled or when every AI provider
 is unavailable.
 
+**Status (2026-07-11):** AI-1…AI-2 shipped (#416–#417) plus retention #418, filters
+#419, tokens #420, quota snapshots #432, K5 pacing #433, cleanup #411. **Only the
+conditional AI-3 tail (PR-AI-6/7/8) remains** — see the evidence gate below. Live
+status: [`../BACKLOG.md`](../BACKLOG.md) §4.
+
+**Execution:** per [`execution-playbook.md`](execution-playbook.md).
+
+**AI-3 evidence gate (v2 — replaces "only if the data justifies it"):** AI-3 may start
+only when the shipped `ai_operations` data shows, over a trailing **28-day** window,
+at least one of:
+
+1. fallback rate > **10 %** of completions for any task class (provider failures
+   pushing work down the chain), or
+2. quota-pacing deferrals on ≥ **3 distinct days**, or
+3. any analyst-triggered summary served from the **template** fallback because every
+   provider was down or over quota (a visible product failure, not a background one).
+
+The numbers are review thresholds, not tuning knobs: check them on the Admin AI
+Operations page, paste the readings into the AI-3 kickoff PR, and if none is met,
+AI-3 stays parked — that is the *good* outcome, not a blocked one.
+
 **Explicitly NOT in scope:** Ask BRIEFR, chatbot, agent, tool-calling, RAG, investigation
 memory, MemPalace, browser automation, autonomous workflows. See §26.
 

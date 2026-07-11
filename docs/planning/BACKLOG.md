@@ -17,7 +17,9 @@ docs so nothing is lost when specs move to [`archive/superseded/`](../archive/su
 [`../HANDOVER.md`](../HANDOVER.md). **Build order when activated:** add checkboxes to
 [`../SPRINT_2026-07.md`](../SPRINT_2026-07.md) or a future sprint doc.
 
-**Last reconciled:** 2026-07-11 against `main` post-#454.
+**Last reconciled:** 2026-07-11 against `main` post-#461 (TM spec v2 + Forge redesign
++ execution playbook merged; all spec programs now execute per
+[`specs/execution-playbook.md`](specs/execution-playbook.md)).
 
 ---
 
@@ -113,7 +115,7 @@ other items flagged in audit §6 — see codebase-audit status table.
 
 | Item | Status | Notes |
 |------|--------|-------|
-| **AI-3** (PR-AI-6+7+8) | 💬 conditional | Build only after weeks of `ai_operations` data show fallbacks/quota pressure |
+| **AI-3** (PR-AI-6+7+8) | 💬 conditional | Measurable 28-day evidence gate now defined in spec header: fallback rate > 10 %, pacing deferrals ≥ 3 days, or template-served analyst summary. None met → stays parked (good outcome) |
 | PR-AI-7 | Model catalog refresh job | 📋 part of AI-3 |
 | PR-AI-8 | Routing policy extraction + advisory headroom | 📋 part of AI-3 |
 | OpenAI provider | deferred | Not in V1 chain |
@@ -145,21 +147,38 @@ other items flagged in audit §6 — see codebase-audit status table.
 
 ## 6. Threat Modeling & Security Architecture module
 
-**Canonical spec:** [`specs/threat-modeling-security-architecture.md`](specs/threat-modeling-security-architecture.md)  
-**Status:** TM-0 design plan — implementation starts after merge to `main`.
+**Canonical spec:** [`specs/threat-modeling-security-architecture.md`](specs/threat-modeling-security-architecture.md) (**v2**, #460/#461)  
+**Status:** TM-0 design merged (v2, evidence-gated). Committed program = TM-1…TM-5.
+Execution per [`specs/execution-playbook.md`](specs/execution-playbook.md).
 
 | PR | Title | Status |
 |----|-------|--------|
-| **TM-0** | Design plan (this spec) | 📋 in review |
-| **TM-1** | Security Architecture Corpus + API skeleton | 📋 |
-| **TM-2** | Shell UI + Overview (route, header tab ARCH, three-panel layout) | 📋 |
-| **TM-3** | System Architecture graph + Trust Boundaries + Attack Surface | 📋 |
-| **TM-4** | Framework workspaces (STRIDE, OWASP, API Security, NIST, ASVS) | 📋 |
-| **TM-5** | MITRE ATT&CK Navigator + CAPEC + CWE explorers | 📋 |
-| **TM-6** | Threat Scenarios timeline + Abuse Cases + Controls inventory | 📋 |
-| **TM-7** | Risk Register + Security Decisions + Review History + Global search | 📋 |
+| **TM-0** | Design plan v2 (evidence-gated, self-stack) | ✅ #458 + v2 #460/#461 |
+| **TM-1** | Corpus **generator** + loader + drift CI (generated/curated split) | 📋 |
+| **TM-2** | Shell UI + Overview evidence tiles (route, header tab ARCH) | 📋 |
+| **TM-3** | Live sections: MITRE + Threat Scenarios + Controls + self-stack exposure | 📋 |
+| **TM-4** | System Architecture graph + Trust Boundaries + Attack Surface | 📋 |
+| **TM-5** | Risk Register + Decisions + Review History + Abuse Cases + Search + PDF | 📋 |
+| **TM-6+** | Framework workspaces (STRIDE, OWASP×2, NIST, ASVS, CAPEC, CWE) | 💬 evidence-gated, one PR each — gate in spec §8 |
 
-**Scope:** Interactive operational workspace at `/security-architecture` — not a documentation viewer. Structured corpus + live DB merge. Reuses BRIEFR visual language exactly.
+**Scope (v2):** every committed section must cite a generated or live data source;
+hand-authored-YAML-only sections do not ship. No composite grades — drill-through
+tiles only. ⚠️ In-flight `cursor/threat-modeling-tm1-corpus-*` branches must build
+against the **v2** TM-1 definition (generator + drift CI, not hand-seeded YAML).
+
+---
+
+## 6b. Forge redesign program
+
+**Canonical spec:** [`specs/forge-redesign.md`](specs/forge-redesign.md) (#460/#461)  
+**Priority note:** Forge redesign outranks TM implementation if scheduling conflicts —
+daily workflow beats governance.
+
+| PR | Title | Status |
+|----|-------|--------|
+| **FR-1** | Hunt pack list + delete API (`GET /api/hunt-packs`, `DELETE /{id}`, audit entry) | 📋 |
+| **FR-2** | Three-panel shell + `?view=` URL state + Library view + persistent Hunt Pack rail | 📋 |
+| **FR-3** | Live-data enrichment (atlas case studies, KEV notifications, CWE/EPSS) + pack PDF export | 📋 |
 
 ---
 

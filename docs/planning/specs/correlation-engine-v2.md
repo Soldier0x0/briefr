@@ -9,6 +9,11 @@
 "2.0.0-phase2"`). This document defines the evolution of that engine; the completed
 target is `ENGINE_VERSION = "3.0"`. The file name follows the maintainer's request.
 
+**Execution:** phases run per [`execution-playbook.md`](execution-playbook.md) — entry
+gates, dual-DB test runs, stop-and-replan triggers. A phase is complete only when
+merged with evidence in the PR body. §21 open questions carry defaults so an executor
+never stalls; only Q7 is a hard precondition.
+
 **Central principles (non-negotiable):**
 
 > 1. Core correlation stays **deterministic, LLM-free, and reproducible** with zero
@@ -679,26 +684,17 @@ Applied before this document was written:
 
 ---
 
-## 21. Open questions requiring maintainer decisions
+## 21. Open questions (with defaults — an executor never stalls on these)
 
-1. **Confidence regression communication (PR-4).** Campaign confidences will visibly
-   drop once size/severity stop inflating them. Recommended: ship with changelog +
-   factor vector in the same release train (PR-4 + PR-5 together), no toggle flag.
-   Confirm acceptance of the one-time visible drop.
-2. **Pulse-family thresholds (PR-9).** Defaults: Jaccard ≥ 0.7, ≥ 3 non-hub IOCs per
-   pulse. Should these be validated against the operator's real OTX mirror before
-   PR-9 lands (recommended), or accepted as shipped defaults?
-3. **Suppression migration on campaign dedup (PR-9).** Recommended: old campaign-id
-   suppressions of any family member map to the family campaign. Alternative
-   (drop them) loses analyst work. Confirm.
-4. **Confirm-link UI (PR-12).** Worth drawer space on a solo-analyst install, or ship
-   API-only first and add the button with PR-13's metrics page?
-5. **Half-life defaults (PR-8).** IP 30 d / URL 60 d / DOMAIN 120 d / HASH 365 d are
-   defensible defaults but unvalidated against a real mirror. Accept as env-tunable
-   defaults, or calibrate first?
-6. **Feed ordering change (PR-13 / D9).** Gating the campaign-peer-of-pinned boost on
-   confidence ≥ MEDIUM + lifecycle ∈ {active, emerging} changes feed order — a
-   product decision, not just a correctness fix. Confirm.
-7. **Scale verification.** §15 row-count assumptions could not be verified during the
-   audit (sandbox limitation). Run the row counts before PR-9 to confirm the pulse-
-   family budget.
+Per the execution playbook's open-question rule: take the **default if silent**, note
+it in the PR body, and move on. Only Q7 is a hard precondition, not a question.
+
+| # | Question | Default if silent |
+|---|----------|-------------------|
+| Q1 | Confidence regression comms (PR-4): campaigns visibly drop once size/severity stop inflating them | **Ship PR-4 + PR-5 in the same release train**, changelog note, no toggle flag. The factor vector *is* the explanation |
+| Q2 | Pulse-family thresholds (PR-9): Jaccard ≥ 0.7, ≥ 3 non-hub IOCs | **Ship as env-tunable defaults** — but Q7's row counts must be run first, and if the real mirror makes candidate pairs explode, recalibrate before merge |
+| Q3 | Suppression migration on dedup (PR-9) | **Map old campaign-id suppressions of any family member to the family campaign.** Dropping them destroys analyst work — never the default |
+| Q4 | Confirm-link UI (PR-12): drawer button vs API-only | **API-only in PR-12; button ships with PR-13's metrics page** — a feedback control earns UI space when its effect is visible |
+| Q5 | Half-life defaults (PR-8): IP 30 d / URL 60 d / DOMAIN 120 d / HASH 365 d | **Ship as env-tunable defaults** via `correlation/config.py`; calibration is a post-PR-13 metrics question, not a blocker |
+| Q6 | Feed ordering change (PR-13 / D9): gating the pinned-peer boost changes feed order | **Gate it** (confidence ≥ MEDIUM, lifecycle ∈ {active, emerging}) — the ungated boost is defect D9, and correctness beats order stability. Changelog note required |
+| Q7 | **Scale verification — hard precondition for PR-9, not a question.** | Run the §15 row counts (`otx_pulse_iocs`, `otx_pulses`, `cves`) on the operator's real DB and paste them in the PR-9 body **before** implementing pulse families. If `otx_pulse_iocs` > 5×10⁶, stop and replan the candidate-pair bound |
