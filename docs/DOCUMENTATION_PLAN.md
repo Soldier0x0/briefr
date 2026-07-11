@@ -28,8 +28,10 @@ docs/archive/
 └── LIGHT_THEME.md
 
 docs/planning/
-├── README.md      Active plans (empty when queue is done)
-└── completed/     Shipped July 2026 planning specs
+├── README.md      Index — BACKLOG + reference + completed stubs
+├── BACKLOG.md     Open / parked / optional (single queue)
+├── reference/     Canonical deep dives (one topic per file)
+└── completed/     Superseded stubs + audit trail
 ```
 
 Root `Beta V*.md` stubs were removed (2026-07); archived specs live in `docs/archive/beta/`.
