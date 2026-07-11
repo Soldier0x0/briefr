@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 
 from api_queue import apply_rate_limit_headers
+from ai.llm_payload import has_llm_request_payload
 from resilient_client import resilient_request
 
 GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
@@ -44,6 +45,9 @@ async def gemini_chat_completion(
     queue_context_id: str | None = None,
     usage_out: dict | None = None,
 ) -> str:
+    if not has_llm_request_payload(messages):
+        return ""
+
     model_name = model or gemini_model()
     system_instruction, contents = _messages_to_gemini(messages)
     if not contents:

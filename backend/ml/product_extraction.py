@@ -29,6 +29,8 @@ import re
 import aiosqlite
 
 from ai.llm_router import LLMCompletion, any_llm_provider_configured, chat_completion_task
+from ai.llm_payload import has_substantive_source_text
+from ai.llm_session import llm_job_session
 from database import (
     get_cves_for_llm_product_extraction,
     set_feed_cache,
@@ -160,6 +162,9 @@ def products_to_affected_keys(products: list[dict]) -> list[str]:
 
 async def extract_products_via_llm(description: str) -> tuple[list[dict], LLMCompletion] | None:
     """One router call -> validated product dicts with provider provenance."""
+    if not has_substantive_source_text(description):
+        logger.info("Skipping LLM product extraction — empty CVE description")
+        return None
     completion = await chat_completion_task(
         "product_extraction",
         messages=[
@@ -215,64 +220,95 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, pro
     if not candidates:
         return stats
 
-    for index, candidate in enumerate(candidates):
-        cve_id = candidate["cve_id"]
-        if progress_cb:
-            progress_cb(f"Processing CVE {index + 1} of {stats['candidates']}...")
+    with llm_job_session():
+        for index, candidate in enumerate(candidates):
+            cve_id = candidate["cve_id"]
+            if progress_cb:
+                progress_cb(f"Processing CVE {index + 1} of {stats['candidates']}...")
 
-        try:
-            result = await extract_products_via_llm(candidate["description"])
-        except Exception as exc:
-            stats["errors"] += 1
-            logger.error("LLM product extraction failed for %s: %s", cve_id, exc)
-            continue
-
-        if result is None:
-            stats["errors"] += 1
-            logger.warning(
-                "LLM product extraction: all providers failed for %s (%d/%d)",
-                cve_id,
-                index + 1,
-                len(candidates),
-            )
-            continue
-
-        products, completion = result
-        written = False
-        keys = products_to_affected_keys(products)
-
-        async def _persist(
-            conn,
-            _cve_id=cve_id,
-            _keys=keys,
-            _products=products,
-            _completion=completion,
-        ):
-            nonlocal written
-            if _keys:
-                stats["extracted"] += 1
-                written = await set_llm_affected_products(conn, _cve_id, _keys)
-                if written:
-                    stats["written"] += 1
-            await set_feed_cache(
-                conn,
-                f"llm_products:{_cve_id.upper()}",
-                {
-                    "products": _products,
-                    "provider": _completion.provider,
-                    "model": _completion.model,
-                    "written": written,
-                },
-            )
-            await conn.commit()
-
-        if db is not None:
-            await _persist(db)
-        else:
-            conn = await get_db()
             try:
-                await _persist(conn)
-            finally:
-                await conn.close()
+                description = (candidate.get("description") or "").strip()
+                if not has_substantive_source_text(description):
+                    logger.info(
+                        "Skipping LLM product extraction for %s — no description text",
+                        cve_id,
+                    )
+                    async def _cache_skip(conn, _cve_id=cve_id):
+                        await set_feed_cache(
+                            conn,
+                            f"llm_products:{_cve_id.upper()}",
+                            {
+                                "products": [],
+                                "provider": None,
+                                "model": None,
+                                "written": False,
+                                "skipped": "empty_description",
+                            },
+                        )
+                        await conn.commit()
+
+                    if db is not None:
+                        await _cache_skip(db)
+                    else:
+                        conn = await get_db()
+                        try:
+                            await _cache_skip(conn)
+                        finally:
+                            await conn.close()
+                    continue
+
+                result = await extract_products_via_llm(description)
+            except Exception as exc:
+                stats["errors"] += 1
+                logger.error("LLM product extraction failed for %s: %s", cve_id, exc)
+                continue
+
+            if result is None:
+                stats["errors"] += 1
+                logger.warning(
+                    "LLM product extraction: all providers failed for %s (%d/%d)",
+                    cve_id,
+                    index + 1,
+                    len(candidates),
+                )
+                continue
+
+            products, completion = result
+            written = False
+            keys = products_to_affected_keys(products)
+
+            async def _persist(
+                conn,
+                _cve_id=cve_id,
+                _keys=keys,
+                _products=products,
+                _completion=completion,
+            ):
+                nonlocal written
+                if _keys:
+                    stats["extracted"] += 1
+                    written = await set_llm_affected_products(conn, _cve_id, _keys)
+                    if written:
+                        stats["written"] += 1
+                await set_feed_cache(
+                    conn,
+                    f"llm_products:{_cve_id.upper()}",
+                    {
+                        "products": _products,
+                        "provider": _completion.provider,
+                        "model": _completion.model,
+                        "written": written,
+                    },
+                )
+                await conn.commit()
+
+            if db is not None:
+                await _persist(db)
+            else:
+                conn = await get_db()
+                try:
+                    await _persist(conn)
+                finally:
+                    await conn.close()
 
     return stats

@@ -12,6 +12,7 @@ import re
 from typing import Any
 
 from ai.llm_router import any_llm_provider_configured, chat_completion_task
+from ai.llm_payload import has_substantive_source_text
 from templates.intelligence import kev_sentence, severity_sentence
 
 logger = logging.getLogger(__name__)
@@ -259,6 +260,9 @@ async def generate_executive_summary(
     }
 
     if not any_llm_provider_configured():
+        return template_result
+
+    if not (cve_list or ioc_list or actor_list):
         return template_result
 
     prompt = _build_user_prompt(cve_list, ioc_list, actor_list, duration)
