@@ -1,7 +1,10 @@
 # Planning docs
 
-**Active plans:** none — July 2026 execution queue is complete.
+**Active open work:** [`BACKLOG.md`](BACKLOG.md) — single queue (pending, parked, optional).  
+**Deep specs:** [`reference/`](reference/) — one canonical doc per topic.  
+**Shipped / superseded stubs:** [`completed/`](completed/) — audit trail only.
 
-Shipped and superseded planning specs live in [`completed/`](completed/). Use those only for historical context; runtime truth is [`../PRODUCT_STATUS.md`](../PRODUCT_STATUS.md) and [`../HANDOVER.md`](../HANDOVER.md).
+Runtime truth: [`../PRODUCT_STATUS.md`](../PRODUCT_STATUS.md) and [`../HANDOVER.md`](../HANDOVER.md).
 
-When starting new work, add a dated plan here (or in `completed/` once merged) and link it from [`../SPRINT_2026-07.md`](../SPRINT_2026-07.md) or a future sprint doc.
+When starting new work: add items to `BACKLOG.md`, extend the matching `reference/` doc if
+design detail is needed, link from [`../SPRINT_2026-07.md`](../SPRINT_2026-07.md) (or next sprint).

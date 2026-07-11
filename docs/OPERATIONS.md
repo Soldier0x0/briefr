@@ -518,7 +518,7 @@ Read-only TV / SOC display at `/wallboard`. **Do not** bookmark URLs with tokens
    Cloudflare Access / VPN on the hostname.
 5. Optional: set user stack in the main app — wallboard KEV-on-stack tile reads it.
 
-See [`planning/completed/WALLBOARD_V2_PLAN.md`](planning/completed/WALLBOARD_V2_PLAN.md) for layout details.
+See [`planning/BACKLOG.md`](planning/BACKLOG.md) §6 for optional layout tails.
 
 ---
 

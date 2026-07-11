@@ -12,6 +12,18 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-11 — Planning docs consolidated (dedupe + backlog)
+
+**Change:** Merged duplicate planning topics into canonical [`docs/planning/reference/`](planning/reference/)
+(one file per topic). All **open/parked/optional** items extracted to
+[`docs/planning/BACKLOG.md`](planning/BACKLOG.md) — including partial docs (e.g. O-3
+`WALLBOARD_TOKEN` in schema, correlation PR-1…PR-13, codebase audit tail post-#449, UX
+issues 28–33). Superseded duplicates are short stubs in `docs/planning/completed/`.
+
+**Next:** Activate items from BACKLOG when maintainer says go — tick sprint checkboxes per item.
+
+---
+
 ## 2026-07-11 — In-app notifications v2 (server inbox)
 
 **Context:** Operator wanted SaaS-style bells: analyst header bell for watchlist/pin
@@ -29,7 +41,8 @@ analyst header (`scope=analyst`) and admin StatusBar (`scope=operator`);
 
 ## 2026-07-11 — Planning folder archive
 
-**Change:** All July 2026 planning specs moved to `docs/planning/completed/` with index READMEs. `docs/planning/` is empty of active work — sprint execution queue complete.
+**Change:** July 2026 specs reorganized — see **Planning docs consolidated** entry above.
+`docs/planning/BACKLOG.md` is the open queue; `docs/planning/reference/` holds canonical deep dives.
 
 ---
 
