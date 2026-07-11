@@ -1,7 +1,7 @@
 # Threat Modeling & Security Architecture Module
 
 **Status:** Plan of record — **no implementation in this document**  
-**Date:** 2026-07-11  
+**Date:** 2026-07-11 · **Revised:** 2026-07-11 (v2 — evidence-gated scope, see revision notes below)  
 **Audit basis:** Direct codebase trace on `main` (post-#454). Existing threat-model API,
 Forge MITRE coverage, admin Security page, `architecture-map.html` generator, ADRs, and
 `SECURITY_AND_OPS_AUDIT_2026-07` used as inputs.
@@ -12,6 +12,35 @@ Forge MITRE coverage, admin Security page, `architecture-map.html` generator, AD
 > Every surface must be backed by structured models that can later be populated automatically
 > from repository analysis, security audits, ADRs, and live runtime data — never hardcoded
 > prose in JSX.
+>
+> **Corollary (v2):** a section whose only data source is hand-authored YAML *is* a
+> documentation viewer and does not ship. Every committed section must cite at least one
+> **generated** (derived from code by script) or **live** (DB/API at read time) source.
+
+**v2 revision notes (what changed and why):**
+
+1. **Corpus generation is now a TM-1 prerequisite, not a future enhancement** (was open
+   question Q3). A hand-maintained corpus describing our own architecture has the same
+   staleness failure mode as the docs it replaces — except rot would render as
+   authoritative-looking dashboards. The corpus is split into a *generated layer*
+   (reproduced from code, drift-checked in CI) and a *curated layer* (judgment calls
+   only), and curated records decay visibly (§4.1).
+2. **Phases reordered by live-data value.** MITRE, Threat Scenarios, and Controls — the
+   sections backed by real DB/API data — move ahead of the architecture graph. The six
+   framework checklists (STRIDE, OWASP×2, NIST CSF, ASVS, CAPEC, CWE) are demoted to
+   evidence-gated TM-6+: each ships individually only when it can cite live or generated
+   evidence. Committed program shrinks from 8 PRs / 17 sections to 5 PRs / 11 sections.
+3. **No composite grades or invented arithmetic.** "Posture: B+" and
+   "attack surface = endpoints × missing controls" are opinion rendered as measurement.
+   Every tile is a count or ratio that drills through to the exact rows that produced it
+   (PRODUCT.md design principle 1 applied to metrics, not just status words).
+4. **Self-exposure: BRIEFR watches BRIEFR.** The platform's core competency — matching
+   live CVE/KEV intelligence against a stack — is pointed at its own dependency
+   manifests. A generated *self-stack* (from `backend/requirements.txt`,
+   `frontend/package.json`, and runtime components) flows through the existing
+   `_stack_match_clause` and `build_threat_scenarios()` machinery, so the risk register
+   and attack surface include live CVEs affecting BRIEFR itself. No new intelligence
+   code — reuse of the shipping pipeline (§4.5).
 
 **Explicitly NOT in scope (this program):**
 
@@ -43,10 +72,12 @@ with live posture metrics and relationship graphs.
 
 **Recommendation:** Deliver as a **standalone authenticated route**
 (`/security-architecture`) with a three-panel executive dashboard layout patterned after
-`AdminPage` (left nav, center workspace, right context rail). Seed content from a
-versioned **Security Architecture Corpus** (YAML/JSON in-repo) merged at read time with
+`AdminPage` (left nav, center workspace, right context rail). Content comes from a
+versioned **Security Architecture Corpus** — a *generated* layer reproduced from code and
+drift-checked in CI, plus a *curated* layer for judgment fields — merged at read time with
 live DB/API data (MITRE tables, audit log, scheduler jobs, existing threat scenarios).
-Implement in **eight dependency-ordered PRs** (TM-0 … TM-7).
+Implement in **five committed dependency-ordered PRs** (TM-1 … TM-5), with framework
+workspaces following as individually evidence-gated PRs (TM-6+).
 
 ---
 
@@ -76,14 +107,14 @@ Sections grouped for scanability (flat list in spec; UI uses section headers lik
 | **Architecture** | `system-architecture` | System Architecture |
 | | `trust-boundaries` | Trust Boundaries |
 | | `attack-surface` | Attack Surface |
-| **Frameworks** | `stride` | STRIDE |
-| | `owasp` | OWASP |
-| | `api-security` | API Security |
-| | `mitre-attack` | MITRE ATT&CK |
-| | `capec` | CAPEC |
-| | `cwe` | CWE |
-| | `nist-csf` | NIST CSF |
-| | `asvs` | ASVS |
+| **Frameworks** | `mitre-attack` | MITRE ATT&CK |
+| | `stride` | STRIDE *(gated, TM-6+)* |
+| | `owasp` | OWASP *(gated, TM-6+)* |
+| | `api-security` | API Security *(gated, TM-6+)* |
+| | `capec` | CAPEC *(gated, TM-6+)* |
+| | `cwe` | CWE *(gated, TM-6+)* |
+| | `nist-csf` | NIST CSF *(gated, TM-6+)* |
+| | `asvs` | ASVS *(gated, TM-6+)* |
 | **Threats** | `abuse-cases` | Abuse Cases |
 | | `threat-scenarios` | Threat Scenarios |
 | **Governance** | `security-controls` | Security Controls |
@@ -92,6 +123,9 @@ Sections grouped for scanability (flat list in spec; UI uses section headers lik
 | | `review-history` | Review History |
 
 Global search (⌘K scoped or in-module search bar) spans all corpus entities.
+
+Nav renders from the corpus `manifest.yaml` section index, so gated sections simply do
+not appear until their PR merges — no placeholder tabs, no "coming soon" states.
 
 ---
 
@@ -215,6 +249,24 @@ corpus/
 - `source_refs[]` on each record: `{ type: "file"|"adr"|"endpoint"|"table"|"job", ref: "..." }`.
 - Corpus validated in CI via `backend/tests/test_security_architecture_corpus.py`.
 
+**Generated vs curated layers (v2 — the anti-rot mechanism):**
+
+- Every record carries `origin: generated | curated`.
+- **Generated** records (components, API endpoint inventory, scheduler jobs, DB tables,
+  architecture graph nodes/edges) are emitted by
+  `scripts/generate_security_corpus.py` — an extension of the existing
+  `generate_architecture_map.py` — from routers, the scheduler job registry, and
+  `database.py` schema metadata. Hand edits to generated files fail CI.
+- **Curated** records hold only what code cannot know: risk judgments, abuse cases,
+  decisions, review outcomes, likelihood/impact ratings, trust-boundary classifications.
+- **Drift check:** the corpus test regenerates the generated layer and fails on any diff,
+  so the corpus cannot silently diverge from the code it describes. Renaming a router or
+  scheduler job breaks the build until the corpus is regenerated (one command).
+- **Staleness decay:** any curated record past `review_date + 90d` renders with a STALE
+  badge on every surface and is **excluded from all coverage/compliance percentages**.
+  A stale corpus must look stale — the module degrades honestly instead of lying
+  confidently.
+
 ### 4.2 Live data merge (read-time, not duplicated)
 
 | Surface | Live source |
@@ -228,6 +280,13 @@ corpus/
 | Review events | `audit_log` filtered by security-related actions |
 | Posture metrics | Admin `/api/admin/security`, health, rate limits |
 | Recent changes | Git-less: `cve_change_history`, ingest log ERROR count, job errors |
+| Integrity evidence | `db/integrity.py` check results — live proof for backup/data-integrity controls in the inventory |
+| **Self-exposure** | `_stack_match_clause` + `build_threat_scenarios()` over the generated self-stack (§4.5) — live CVE/KEV hits on BRIEFR's own dependencies |
+
+Deliberately excluded: ThreatFox IOCs, watchlists, correlation clusters (intelligence
+about the world, not about BRIEFR's architecture) and webhook delivery logs (ops health,
+already on Admin; the security-relevant part — signing, SSRF guard — lives in the
+controls inventory).
 
 ### 4.3 Backend package layout
 
@@ -277,9 +336,38 @@ All routes: session auth (analyst+). Rate limit: default API bucket. Responses: 
 
 **Future (out of v1):** PATCH review status, operator annotations — requires audit trail.
 
+### 4.5 Self-stack: BRIEFR's own CVE exposure (v2)
+
+The differentiator no checklist framework provides: the platform's shipping CVE/KEV
+matching pipeline pointed at its own dependencies.
+
+- `scripts/generate_security_corpus.py` also emits `self_stack.yaml` (generated layer):
+  stack terms derived from `backend/requirements.txt`, `frontend/package.json`, and
+  declared runtime components (PostgreSQL, uvicorn, nginx where deployed). Same drift
+  check as the rest of the generated layer — a new dependency updates the self-stack or
+  fails CI.
+- Read-time merge reuses `_stack_match_clause` (routers/cves.py) and
+  `build_threat_scenarios()` (threat_model/scenarios.py) with self-stack terms instead
+  of user stack terms. **No new matching or scoring code.**
+- Surfaces:
+  - **Overview tile:** Self CVE Exposure — KEV + critical count → filtered CVE feed
+  - **Risk register:** live rows auto-derived from KEV hits on the self-stack
+    (`origin: live`, distinct styling from curated rows; cannot be closed by hand —
+    they close when the CVE stops matching)
+  - **Attack surface:** each component in the generated inventory shows its matched
+    CVE count via dependency terms
+  - **Threat scenarios:** self-stack toggle alongside the user-stack catalog
+- Honesty constraint: term-based matching is fuzzy (same limitation as user stacks) —
+  the UI labels these rows "term match" with the matched term visible, per the
+  every-status-word-explains-itself rule. Precise SBOM/PURL matching is a future
+  upgrade, explicitly out of scope for this program.
+
 ---
 
 ## 5. Section specifications
+
+Sections marked **[gated]** ship in TM-6+ only after passing the evidence gate (§8) —
+their specs below describe the target state, not committed v1 scope.
 
 ### 5.1 Overview (landing)
 
@@ -287,16 +375,21 @@ All routes: session auth (analyst+). Rate limit: default API bucket. Responses: 
 
 **Top summary cards** (8 tiles, `SummaryCardRow`):
 
-| Card | Metric source |
-|------|---------------|
-| Overall Security Posture | Weighted score from controls coverage + open critical risks |
-| Critical Threats | Count of `severity=critical` open risks + high-likelihood abuse cases |
-| Open Risks | Risk register `status=open` count |
-| Security Controls | `implemented / total` from controls corpus |
-| Framework Coverage | Mean compliance % across OWASP + ASVS + NIST |
-| Trust Boundaries | Count + highest residual risk boundary |
-| Attack Surface Score | Computed from exposed endpoints × missing controls |
-| Review Freshness | Days since last architecture review event |
+**Tile rule (v2):** every tile is a count or a ratio whose inputs the user can see —
+clicking a tile opens the section pre-filtered to the exact rows behind the number. No
+weighted composites, no letter grades, no arithmetic invented for this module. A number
+that cannot show its inputs does not render.
+
+| Card | Metric source (all drill-through) |
+|------|-----------------------------------|
+| Critical Open Risks | Risk register: `severity=critical AND status=open` → filtered register |
+| Open Risks | Risk register `status=open` count → register |
+| Controls Active | Live-flag-verified active / total controls → controls inventory |
+| MITRE Detection Coverage | Techniques with Forge detection ÷ techniques mapped to stack CVEs (live DB) → matrix |
+| Unreviewed Endpoints | Generated endpoint inventory rows with no linked control → attack surface |
+| Self CVE Exposure | KEV + critical CVEs matching the generated self-stack (§4.5) → filtered CVE feed |
+| Stale Records | Curated records past review window → filtered list |
+| Review Freshness | Days since last security review event (`audit_log` + `reviews.yaml`) → history |
 
 **Interactive Architecture Overview** (vertical stack, clickable nodes):
 
@@ -349,7 +442,7 @@ Each boundary card:
 | Controls | linked control IDs |
 | Residual risk | corpus enum: low/med/high/critical |
 
-### 5.4 STRIDE Workspace
+### 5.4 STRIDE Workspace [gated]
 
 Matrix: rows = components, columns = S/T/R/I/D/E.
 
@@ -358,7 +451,7 @@ Each cell expands to threat record:
 Description, Likelihood, Impact, Current controls, Residual risk, Owner, Review date,
 Evidence, Status (open/mitigated/accepted/wont-fix).
 
-### 5.5 OWASP + API Security
+### 5.5 OWASP + API Security [gated]
 
 Dedicated sub-views under `owasp` section with tabs:
 
@@ -388,13 +481,13 @@ Filters: Platform, Tactic, Technique, Coverage % threshold.
 
 Click technique → context rail with sub-techniques, linked CVEs, Forge deep link.
 
-### 5.7 CAPEC
+### 5.7 CAPEC [gated]
 
 Attack pattern explorer — pattern ID, description, related components, mitigations,
 likelihood, residual risk. Seed from CIRCL CAPEC IDs already surfaced in drawer + corpus
 mappings.
 
-### 5.8 CWE
+### 5.8 CWE [gated]
 
 Secure coding explorer — maps corpus + audit findings to CWE, affected code paths,
 related APIs, DB objects, mitigation, review status.
@@ -422,12 +515,15 @@ Attacker → Compromised Feed → Feed Parser → Normalization → Correlation 
 
 Each step: Threat, Likelihood, Mitigation, Residual risk.
 
-**Two scenario types:**
+**Three scenario types:**
 
 1. **Operational paths** — from `threat_scenarios.yaml` (architecture-focused)
 2. **Stack-scoped ATT&CK** — from existing `/api/threat-model/scenarios` (Forge parity)
+3. **Self-stack ATT&CK** — same engine run over the generated self-stack (§4.5):
+   scenarios against BRIEFR's own dependencies
 
-Toggle between catalogs; stack filter inherits user stack from `/api/me/stack`.
+Toggle between catalogs; stack filter inherits user stack from `/api/me/stack` for
+type 2, self-stack terms for type 3.
 
 ### 5.11 Abuse Cases
 
@@ -443,9 +539,13 @@ Fields: Description, Attack flow (steps), Impact, Current protection, Remaining 
 Enterprise table via `AdminDataGrid`:
 
 Columns: Risk, Category, Severity, Likelihood, Business impact, Owner, Mitigation, Status,
-Review date.
+Review date, Origin.
 
-Sort/filter by severity and status. Export CSV (client-side, v1).
+Two row origins: **curated** (corpus judgment calls, subject to STALE decay) and **live**
+(auto-derived from KEV/critical CVE hits on the self-stack, §4.5 — visually distinct,
+close themselves when the CVE stops matching).
+
+Sort/filter by severity, status, and origin. Export CSV (client-side, v1).
 
 ### 5.13 Security Decision Records
 
@@ -539,77 +639,98 @@ class FrameworkProvider(Protocol):
 
 ## 8. Implementation phases
 
-### TM-0 — Design merge (this document)
+Phases are ordered by **live-data value**: sections backed by real DB/API data ship
+first; the architecture graph follows; framework checklists come last and only with
+evidence.
 
-- [x] Spec authored
+### TM-0 — Design merge (v2 of this document)
+
+- [x] Spec authored + v2 revision
 - [ ] BACKLOG + HANDOVER updated
 - [ ] No runtime code
 
-### TM-1 — Corpus + API skeleton
+### TM-1 — Corpus generator + loader + drift CI
 
-- Corpus YAML seed (components, controls, trust boundaries, abuse cases, decisions, risks)
-- `corpus_loader.py` + validation tests
-- Router stub returning manifest + overview placeholders
-- Acceptance: `pytest tests/test_security_architecture_corpus.py`; corpus validates
+- `scripts/generate_security_corpus.py` emits the **generated layer** (components,
+  endpoint inventory, scheduler jobs, DB tables, architecture graph) from code
+- Curated layer seeded for judgment fields only (risks, decisions, abuse cases,
+  trust-boundary classifications)
+- `corpus_loader.py` + validation + **drift test** (regenerate-and-diff)
+- Router stub returning manifest + overview
+- Acceptance: `pytest tests/test_security_architecture_corpus.py` green; renaming a
+  router in a scratch branch makes the drift test fail
 
 ### TM-2 — Shell UI + Overview
 
 - Route `/security-architecture`, header tab ARCH, lazy page
-- Three-panel shell, nav, context rail empty state
-- Overview summary cards + simplified architecture stack
-- Acceptance: `npm run build`; keyboard nav between sections; browser verify
+- Three-panel shell, nav (manifest-driven), context rail empty state
+- Overview evidence tiles (drill-through wired) + simplified architecture stack
+- Acceptance: `npm run build`; keyboard nav between sections; every tile click lands on
+  its pre-filtered source rows; browser verify
 
-### TM-3 — System Architecture + Trust Boundaries + Attack Surface
+### TM-3 — Live sections: MITRE ATT&CK + Threat Scenarios + Controls + Self-exposure
 
-- Interactive graph component
+- Navigator matrix with coverage layers (live `mitre_techniques` / `cve_technique_map`)
+- Timeline component; integrate existing `build_threat_scenarios()` — wrap, not duplicate
+- Controls inventory with live `active` flags from runtime config
+- Self-stack merge (§4.5): overview tile, self-stack scenario toggle, live risk rows
+- Acceptance: technique click opens Forge link; coverage matches DB; stack filter works;
+  scenarios match Forge API output; a KEV entry matching a self-stack term produces a
+  live risk row with its matched term visible
+
+### TM-4 — System Architecture graph + Trust Boundaries + Attack Surface
+
+- Interactive graph component (generated `architecture.json`)
 - Trust boundary flows
-- Attack surface scoring
-- Acceptance: pan/zoom works; node selection populates context rail
+- Attack surface = generated endpoint inventory × linked controls (counts, not scores)
+- Acceptance: pan/zoom works; node selection populates context rail; graph nodes match
+  generator output exactly
 
-### TM-4 — Framework workspaces (STRIDE, OWASP, API Security, NIST, ASVS)
+### TM-5 — Risk Register + Decisions + Review History + Abuse Cases + Search
 
-- Matrix/table sections
-- Compliance % calculations
-- Acceptance: each framework renders from corpus; no hardcoded JSX strings
-
-### TM-5 — MITRE ATT&CK + CAPEC + CWE
-
-- Navigator matrix with coverage layers
-- CAPEC/CWE explorers with live CVE cross-links where available
-- Acceptance: technique click opens Forge link; coverage matches DB
-
-### TM-6 — Threat Scenarios + Abuse Cases + Controls
-
-- Timeline component
-- Integrate existing `build_threat_scenarios()`
-- Controls inventory with live `active` flags
-- Acceptance: stack filter works; scenarios match Forge API output
-
-### TM-7 — Risk Register + Decisions + Review History + Search
-
-- Risk register grid
-- Decision records from ADRs
-- Review timeline merged with audit log
+- Risk register grid; decision records from ADRs; abuse case catalog
+- Review timeline merged with audit log; STALE decay rendering verified
 - Global search endpoint + UI
-- Acceptance: search finds control by name; review history shows audit entries
+- Acceptance: search finds control by name; review history shows audit entries; a
+  fixture record aged past the review window renders STALE and drops out of percentages
 - Docs: `PRODUCT_STATUS.md`, `API_REFERENCE.md`, `SYSTEM_DESIGN.md` updated
 
-**Parallelization rule:** TM-2 must merge before TM-3+. TM-5 depends on TM-1 corpus
-MITRE IDs. Do not parallelize TM-2 and TM-3 if both touch `SecurityArchitecturePage.jsx`.
+**Committed program ends at TM-5** (5 PRs, 11 sections).
+
+### TM-6+ — Framework workspaces (evidence-gated, one PR each)
+
+STRIDE, OWASP Top 10, OWASP API, NIST CSF, ASVS, CAPEC, CWE. Each ships **individually**
+and only when it passes the evidence gate:
+
+> **Gate:** the section must render at least one live or generated data source — e.g.
+> CWE rows sourced from audit findings + CVE enrichment, OWASP rows linking the generated
+> endpoint inventory, CAPEC from CIRCL IDs already in the drawer. A framework page whose
+> only content is a hand-filled checklist does not merge, per the central principle.
+
+CAPEC and CWE are expected to pass the gate first (CIRCL + audit data already exist).
+NIST CSF and ASVS are expected to pass last, if ever — that is acceptable.
+
+**Parallelization rule:** TM-2 must merge before TM-3+. TM-3 depends on TM-1 corpus
+MITRE IDs. Do not parallelize TM-3 and TM-4 if both touch `SecurityArchitecturePage.jsx`.
 
 ---
 
 ## 9. Acceptance criteria (program complete)
 
 1. Module reachable at `/security-architecture` and via header tab ARCH
-2. All 17 sections render with designed loading/empty/error states
+2. All 11 committed sections render with designed loading/empty/error states
 3. No prose hardcoded in JSX — all copy from API/corpus
-4. Context rail updates on selection across graph, matrix, and table rows
-5. Visual audit: side-by-side with Admin page — indistinguishable design language
-6. Responsive at 375px, 960px, 1280px widths
-7. Keyboard: Tab through nav, Enter to select, Escape closes overlays
-8. `./scripts/verify-local.sh` green
-9. Runtime docs updated per `CLAUDE.md`
+4. Every metric, tile, and percentage drills through to the rows that produced it — no
+   composite grades, no arithmetic without visible inputs
+5. Corpus drift test green in CI; generated layer reproducible from code with one command
+6. STALE decay verified: an aged fixture record renders STALE and is excluded from
+   coverage percentages
+7. Context rail updates on selection across graph, matrix, and table rows
+8. Visual audit: side-by-side with Admin page — indistinguishable design language
+9. Responsive at 375px, 960px, 1280px widths
+10. Keyboard: Tab through nav, Enter to select, Escape closes overlays
+11. `./scripts/verify-local.sh` green
+12. Runtime docs updated per `CLAUDE.md`
 
 ---
 
@@ -618,8 +739,8 @@ MITRE IDs. Do not parallelize TM-2 and TM-3 if both touch `SecurityArchitectureP
 | ID | Question | Default if silent |
 |----|----------|-------------------|
 | Q1 | Header label: ARCH vs full name? | **ARCH** (mono, matches BRIEF/FEED/IOC) |
-| Q2 | Analyst write access to review status? | Read-only v1; operator PATCH in TM-8+ |
-| Q3 | Auto-regenerate corpus from `generate_architecture_map.py`? | Manual sync v1; script hook in TM-7 |
+| Q2 | Analyst write access to review status? | Read-only v1; operator PATCH after TM-5 |
+| Q3 | ~~Auto-regenerate corpus?~~ | **Resolved in v2:** generation is the TM-1 foundation, not an enhancement (§4.1) |
 | Q4 | Embed vs link to static `architecture-map.html`? | **Embed** as React SVG (no iframe) |
 
 ---
@@ -699,8 +820,8 @@ scenarios:
 │ OVERVIEW                                        [Search…    ⌘K] │
 ├─────────────────────────────────────────────────────────────────┤
 │ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ …      │
-│ │Posture │ │Critical│ │ Open   │ │Controls│ │Framework│       │
-│ │  B+    │ │   3    │ │ Risks 8│ │ 42/48  │ │  78%   │       │
+│ │Critical│ │ Open   │ │Controls│ │ MITRE  │ │ Stale  │        │
+│ │   3    │ │ Risks 8│ │ 42/48  │ │  61%   │ │   4    │        │
 │ └────────┘ └────────┘ └────────┘ └────────┘ └────────┘         │
 ├─────────────────────────────────────────────────────────────────┤
 │ ARCHITECTURE OVERVIEW                                           │
