@@ -6,6 +6,10 @@
 `Forge.css`, `routers/forge.py`, `routers/detection_backlog.py`, `routers/atlas.py`,
 `routers/proof.py`, `hunt_packs` schema in `db/init.py`.
 
+**Execution:** phases run per [`execution-playbook.md`](execution-playbook.md) — entry
+gates, dual-DB test runs, browser verification walk, smoothness budget, dogfood loop.
+A phase is complete only when merged with evidence in the PR body.
+
 **Naming decision:** Forge keeps its name. The problems below are information
 architecture, not vocabulary; API paths (`/api/forge/*`, `/api/hunt-packs/*`) and code
 identifiers never change. If the header label still bothers anyone after FR-2 ships, a
@@ -113,6 +117,7 @@ Checked against the current DB/API surface; only items with existing data are in
 | Notifications v2 (server-backed, PR #448-era) | New KEV backlog item for the user's stack emits an in-app notification deep-linking to `?view=backlog`. One scheduler-side emit at backlog refresh — no request-path work |
 | Proof runner (`/api/proof/run`) | Unchanged, but now reachable in every view via the persistent rail |
 | `cves.cwe_ids` / `epss_score` (already selected by generate) | Shown on Library rows and pack detail header — no extra queries |
+| jsPDF 4.x + `utils/exportCommon.js` branding (already shipping, dynamically imported) | **Export pack as PDF** from the rail and Library: Sigma, SIEM queries, log patterns, notes, CVE/KEV context — new `utils/huntPackPdf.js` on the existing `pdfReport.js` pattern. No new dependency |
 
 Deliberately excluded: ThreatFox IOC feed and watchlists (world-intel, belongs in
 IOC/Feed views); typography prefs (global, not Forge's concern).
@@ -134,12 +139,14 @@ IOC/Feed views); typography prefs (global, not Forge's concern).
 - Acceptance: `npm run build`; refresh preserves view + selection; generate-from-backlog
   shows pack in rail without leaving Backlog; browser-verified at 375/960/1280px
 
-### FR-3 — Live-data enrichment
+### FR-3 — Live-data enrichment + PDF export
 - Case-study chips on coverage rows + rail
 - KEV backlog notification emit (scheduler-side)
 - CWE/EPSS on Library rows
+- `utils/huntPackPdf.js` — pack export via existing jsPDF/`exportCommon.js` path
 - Acceptance: technique with case studies shows chip with count; new backlog item
-  produces a notification linking to `?view=backlog`
+  produces a notification linking to `?view=backlog`; exported pack PDF opens with
+  Sigma + queries + branding footer intact
 
 **Docs (same PRs):** `API_REFERENCE.md` (FR-1), `PRODUCT_STATUS.md` + `SYSTEM_DESIGN.md`
 (FR-2/FR-3), per CLAUDE.md docs rules.

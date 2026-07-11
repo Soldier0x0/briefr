@@ -6,6 +6,10 @@
 Forge MITRE coverage, admin Security page, `architecture-map.html` generator, ADRs, and
 `SECURITY_AND_OPS_AUDIT_2026-07` used as inputs.
 
+**Execution:** phases run per [`execution-playbook.md`](execution-playbook.md) — entry
+gates, dual-DB test runs, browser verification walk, smoothness budget, dogfood loop.
+A phase is complete only when merged with evidence in the PR body.
+
 **Central principle (non-negotiable):**
 
 > This module is an **interactive operational workspace**, not a documentation viewer.
@@ -582,7 +586,18 @@ Always reflects current selection (node, technique, control, risk, etc.):
 
 Collapsible on desktop; `Escape` closes overlay on tablet/mobile.
 
-### 5.16 Global search
+### 5.16 PDF export
+
+Client-side via the existing jsPDF path (`utils/pdfReport.js` pattern, shared
+`exportCommon.js` branding, dynamic import — never on first paint). **Per-section
+export, not a 17-section mega-document:** Overview posture snapshot, Risk register,
+and a selected threat scenario each get an "Export PDF" action.
+
+Every export footer carries: corpus version, generated timestamp, and — when any
+included record is stale — an explicit "contains N stale records" disclaimer. A PDF
+must be at least as honest as the screen it came from.
+
+### 5.17 Global search
 
 In-module search bar + ⌘K entries:
 
@@ -691,8 +706,10 @@ evidence.
 - Risk register grid; decision records from ADRs; abuse case catalog
 - Review timeline merged with audit log; STALE decay rendering verified
 - Global search endpoint + UI
+- PDF export (§5.16) for Overview, Risk register, selected scenario — existing jsPDF path
 - Acceptance: search finds control by name; review history shows audit entries; a
-  fixture record aged past the review window renders STALE and drops out of percentages
+  fixture record aged past the review window renders STALE and drops out of percentages;
+  a risk-register PDF containing a stale record shows the stale disclaimer in its footer
 - Docs: `PRODUCT_STATUS.md`, `API_REFERENCE.md`, `SYSTEM_DESIGN.md` updated
 
 **Committed program ends at TM-5** (5 PRs, 11 sections).
