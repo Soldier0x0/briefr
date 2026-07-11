@@ -12,6 +12,25 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-11 — 4-PR tail bundle complete (#441–#444)
+
+**Context:** Follow-up bundle after the 12-PR operator wave — session auth parity,
+ops docs, feed perf tail, multi-worker scheduler flag. All merged with green
+`./scripts/verify-local.sh`; Gemini quota exhausted — local verify was the merge gate.
+**Skipped:** G0 learning/onboarding path (deferred per maintainer).
+
+| PR | Branch | Scope |
+|----|--------|--------|
+| **#441** | `cursor/backend-session-auth-9446` | Backend `session_auth_middleware` — analyst `/api/*` routes require `briefr_at` (matches React `RequireAuth`); public allowlist for health, auth, wallboard, dev OpenAPI |
+| **#442** | `cursor/ops-backup-wallboard-docs-9446` | M-5 — APScheduler sole backup owner (`briefr-pg-backup.timer` disabled in deploy); N-4 wallboard kiosk runbook in `OPERATIONS.md` |
+| **#443** | `cursor/feed-perf-stack-sort-9446` | I15 feed windowing (`content-visibility: auto` on `.cve-card`); I16 server-side stack relevance sort in `GET /api/cves` when `stack` filter set |
+| **#444** | `cursor/multi-worker-scheduler-flag-9446` | `BRIEFR_SCHEDULER_ENABLED` env (default `1`); API-only workers set `0`; multi-worker ops section in `OPERATIONS.md` |
+
+**Next:** Parked unchanged — STIX export, full V2.0, G0 onboarding/learning path,
+encrypted `app_settings` / secrets SSOT, RSS↔CVE linking.
+
+---
+
 ## 2026-07-11 — 12-PR operator bundle complete (#428–#439)
 
 **Context:** Maintainer-approved 12-PR execution plan (operator admin → security →

@@ -517,6 +517,20 @@ See [`planning/WALLBOARD_V2_PLAN.md`](planning/WALLBOARD_V2_PLAN.md) for layout 
 
 ---
 
+## Multi-worker uvicorn (optional)
+
+Default production unit runs **one** worker with the scheduler enabled.
+
+To scale API concurrency:
+
+1. Set `BRIEFR_RATE_LIMIT_STORE=db` on **all** workers (shared token buckets).
+2. Run **one** scheduler owner: `BRIEFR_SCHEDULER_ENABLED=1` (default) on a single
+   backend instance, or a dedicated `briefr-backend` unit with `--workers 1`.
+3. Set `BRIEFR_SCHEDULER_ENABLED=0` on additional API-only workers (`uvicorn --workers N`).
+4. Do not run multiple scheduler owners — ingest jobs use in-process locks only.
+
+---
+
 ## Related documents
 
 | Document | Role |
