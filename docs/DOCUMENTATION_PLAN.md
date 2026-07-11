@@ -26,6 +26,10 @@ docs/archive/
 ├── sessions/      HANDOVER, SESSION_*
 ├── planned/       CORRELATION_V2, UI overhaul
 └── LIGHT_THEME.md
+
+docs/planning/
+├── README.md      Active plans (empty when queue is done)
+└── completed/     Shipped July 2026 planning specs
 ```
 
 Root `Beta V*.md` stubs were removed (2026-07); archived specs live in `docs/archive/beta/`.

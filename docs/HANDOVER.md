@@ -27,6 +27,12 @@ analyst header (`scope=analyst`) and admin StatusBar (`scope=operator`);
 
 ---
 
+## 2026-07-11 — Planning folder archive
+
+**Change:** All July 2026 planning specs moved to `docs/planning/completed/` with index READMEs. `docs/planning/` is empty of active work — sprint execution queue complete.
+
+---
+
 ## 2026-07-11 — Per-role typography px dropdowns
 
 **Change:** Admin → Display adds 9–20px dropdowns per text role (`typography_px`), session **Apply** preview, **Save as my default** (user preferences), and admin **Save as instance default** (`app_settings.display_typography_default`). CSS `--type-*` vars set from saved/preview values.
