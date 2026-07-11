@@ -16,3 +16,4 @@ Open checklist rows: [`../BACKLOG.md`](../BACKLOG.md).
 | [`codebase-audit.md`](codebase-audit.md) | Security / reliability / performance remediation | Remaining PRs per BACKLOG §3 |
 | [`ai-operations.md`](ai-operations.md) | AI ops (conditional AI-3 tail) | Gated on 28-day `ai_operations` evidence |
 | [`ux-audit.md`](ux-audit.md) | UX audit deferred issues (28–33 etc.) | Per BACKLOG §5 |
+| [`resource-benchmarking.md`](resource-benchmarking.md) | BRIEFR + Postgres utilization telemetry (admin RESOURCES page) | RB-1…RB-2 |
