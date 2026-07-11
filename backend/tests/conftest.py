@@ -223,6 +223,52 @@ def auth_token():
 
     return _make
 
+
+def attach_pytest_session_cookie(test_client) -> None:
+    """Default admin JWT for TestClient when analyst API auth is enabled."""
+    from auth.tokens import create_access_token
+
+    test_client.cookies.set(
+        "briefr_at",
+        create_access_token(1, "pytest-admin", "admin"),
+    )
+
+
+def _request_wants_no_auth(request) -> bool:
+    if request.node.get_closest_marker("no_auth") is not None:
+        return True
+    parent = request.node.parent
+    while parent is not None:
+        if parent.get_closest_marker("no_auth") is not None:
+            return True
+        parent = parent.parent
+    return False
+
+
+@pytest.fixture(autouse=True)
+def _default_session_cookie_on_testclient(request, monkeypatch):
+    """Attach briefr_at to TestClient unless the test/module is marked no_auth."""
+    if _request_wants_no_auth(request):
+        return
+
+    from fastapi.testclient import TestClient
+
+    original_init = TestClient.__init__
+    original_enter = TestClient.__enter__
+
+    def patched_init(self, app, *args, **kwargs):
+        original_init(self, app, *args, **kwargs)
+        attach_pytest_session_cookie(self)
+
+    def patched_enter(self):
+        original_enter(self)
+        attach_pytest_session_cookie(self)
+        return self
+
+    monkeypatch.setattr(TestClient, "__init__", patched_init)
+    monkeypatch.setattr(TestClient, "__enter__", patched_enter)
+
+
 BACKEND_PORT = int(os.environ.get("PLAYWRIGHT_BACKEND_PORT", "8765"))
 FRONTEND_PORT = int(os.environ.get("PLAYWRIGHT_FRONTEND_PORT", "5173"))
 BACKEND_URL = f"http://127.0.0.1:{BACKEND_PORT}"

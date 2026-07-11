@@ -4,6 +4,8 @@ import time
 import uuid
 from contextlib import asynccontextmanager
 
+from auth_middleware import session_auth_middleware
+
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -167,6 +169,11 @@ app.add_middleware(
 app.add_middleware(GZipMiddleware, minimum_size=256)
 
 app.include_router(refresh_router.router)
+
+
+@app.middleware("http")
+async def enforce_session_auth(request: Request, call_next):
+    return await session_auth_middleware(request, call_next)
 
 
 @app.middleware("http")

@@ -84,6 +84,7 @@ def test_get_preferences_defaults(client):
 
 
 def test_get_preferences_requires_auth(client):
+    client.cookies.clear()
     res = client.get("/api/me/preferences")
     assert res.status_code == 401
 

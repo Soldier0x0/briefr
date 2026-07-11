@@ -78,6 +78,7 @@ def test_get_stack_empty_by_default(client):
 
 
 def test_get_stack_requires_auth(client):
+    client.cookies.clear()
     res = client.get("/api/me/stack")
     assert res.status_code == 401
 
