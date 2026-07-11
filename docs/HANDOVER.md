@@ -12,6 +12,39 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-11 — CORR-PR-1: rank infrastructure peers by evidence, not alphabet
+
+**Context:** first PR of the correlation-engine-v2 remediation queue
+([`docs/planning/specs/correlation-engine-v2.md`](planning/specs/correlation-engine-v2.md)
+§18), executed per
+[`docs/planning/specs/execution-playbook.md`](planning/specs/execution-playbook.md).
+Fixes verified defect D1 (§5.1): peer truncation happened alphabetically
+*before* per-peer confidence scoring in `find_shared_infrastructure_v2`.
+
+**Change:** `backend/correlation/ioc_graph.py` — build confidence/evidence
+for every peer first, rank by confidence level then shared-IOC-type counts,
+truncate to `limit` last. Matches the spec's own prescribed shape exactly
+("build all peers → score → sort → slice"); no spec deltas needed. New
+regression test `test_peer_truncation_keeps_strongest_peer_over_alphabetical`
+(25-peer fixture, strong hash peer sorts alphabetically last) — confirmed
+failing on pre-fix code, green after. Full backend suite: 1081 passed, 7
+pre-existing failures unrelated to correlation (backup/age-key tooling,
+case-study snapshot) — verified those reproduce standalone on unmodified
+main. No `db/`-layer or schema touch, so no dual SQLite/Postgres run
+required; no `PRODUCT_STATUS.md`/`SYSTEM_DESIGN.md` update — neither doc
+currently describes peer-ranking behavior, so there was nothing stale to
+correct.
+
+**PR:** [#473](https://github.com/Soldier0x0/briefr/pull/473) — branch
+`corr-pr1-peer-ranking-by-evidence`, open for review, not merged.
+
+**Next:** CORR-PR-2 — composite index + drop `correlation_infrastructure`
+table (§18 PR-2). Four live references beyond the migration must all move
+in that same PR: `scripts/export_intel_snapshot.py` INTEL_TABLES/preflight,
+`backend/db/explorer_registry.py`, `docs/DATA_SNAPSHOT.md`.
+
+---
+
 ## 2026-07-11 — Audit spec verification pass (codebase-audit.md + ux-audit.md)
 
 **Context:** automation-loop queue item 1 (`VERIFY`) — audit findings rot like specs
