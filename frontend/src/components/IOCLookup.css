@@ -176,7 +176,7 @@
   border-right: 1px solid var(--border);
   padding: 10px 18px;
   cursor: pointer;
-  transition: color var(--motion-fast), background var(--motion-fast);
+  transition: color var(--motion-fast), background-color var(--motion-fast);
   position: relative;
   flex: 1;
   text-align: center;
@@ -216,7 +216,7 @@
   padding: 0 32px;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background var(--motion-fast);
+  transition: background-color var(--motion-fast);
   min-width: 120px;
   display: flex;
   align-items: center;
@@ -244,7 +244,7 @@
   padding: 0 20px;
   cursor: pointer;
   flex-shrink: 0;
-  transition: color var(--motion-fast), background var(--motion-fast);
+  transition: color var(--motion-fast), background-color var(--motion-fast);
 }
 
 .ioc-clear-btn:hover:not(:disabled) {
@@ -475,7 +475,7 @@
   border: 1px solid var(--border2);
   padding: 7px 16px;
   cursor: pointer;
-  transition: color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast);
+  transition: color var(--motion-fast), border-color var(--motion-fast), background-color var(--motion-fast);
   text-decoration: none;
   display: inline-flex;
   align-items: center;

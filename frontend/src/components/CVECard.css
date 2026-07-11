@@ -514,7 +514,7 @@
   background: transparent;
   color: var(--text2);
   cursor: pointer;
-  transition: color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast);
+  transition: color var(--motion-fast), border-color var(--motion-fast), background-color var(--motion-fast);
 }
 
 .cve-action-btn:hover:not(:disabled) {
@@ -524,7 +524,7 @@
 }
 
 .cve-action-btn:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
 

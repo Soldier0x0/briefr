@@ -202,7 +202,7 @@
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast);
+  transition: color var(--motion-fast), border-color var(--motion-fast), background-color var(--motion-fast);
 }
 
 .digest-btn:hover {
@@ -236,7 +236,7 @@
   background: var(--bg2);
   border: 1px solid var(--border);
   padding: 4px 11px;
-  transition: color var(--motion-fast), background var(--motion-fast), border-color var(--motion-fast);
+  transition: color var(--motion-fast), background-color var(--motion-fast), border-color var(--motion-fast);
 }
 
 .filter-btn:hover {
@@ -298,7 +298,7 @@
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast);
+  transition: color var(--motion-fast), border-color var(--motion-fast), background-color var(--motion-fast);
 }
 
 .export-btn:hover:not(:disabled) {
@@ -432,7 +432,7 @@
   border-radius: 0;
   white-space: nowrap;
   cursor: pointer;
-  transition: color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast);
+  transition: color var(--motion-fast), border-color var(--motion-fast), background-color var(--motion-fast);
 }
 
 .vendor-btn:hover {
