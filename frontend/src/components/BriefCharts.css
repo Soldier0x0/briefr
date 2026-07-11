@@ -27,7 +27,7 @@
 
 .brief-charts-chevron {
   display: inline-block;
-  font-size: 0.625rem;
+  font-size: var(--type-micro);
   line-height: 1;
   transition: transform 0.15s ease;
 }
@@ -38,10 +38,10 @@
 
 .brief-charts-title {
   font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--text3);
+  font-size: var(--type-heading);
+  color: var(--text2);
   letter-spacing: 0.06em;
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .brief-charts--collapsed .brief-charts-header {
@@ -101,7 +101,7 @@
 }
 
 .brief-chart-filter-chip {
-  font-size: 7px;
+  font-size: var(--type-micro);
   letter-spacing: 0.06em;
   padding: 3px 6px;
   border: 1px solid var(--border);
@@ -123,7 +123,7 @@
 
 .brief-chart-card-title {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: var(--type-subheading);
   color: var(--text2);
   letter-spacing: 0.05em;
   margin-bottom: 0;
@@ -149,7 +149,7 @@
 }
 
 .brief-chart-card-hint {
-  font-size: 0.625rem;
+  font-size: var(--type-meta);
   color: var(--text3);
   letter-spacing: 0.04em;
   margin: 0 0 8px;
@@ -169,7 +169,7 @@
 .brief-chart-empty {
   padding: 0.75rem 0;
   color: var(--text3);
-  font-size: 0.6875rem;
+  font-size: var(--type-meta);
   text-align: center;
 }
 
@@ -188,7 +188,7 @@
 .brief-epss-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.6875rem;
+  font-size: var(--type-body);
 }
 
 .brief-epss-table th {
@@ -198,6 +198,7 @@
   letter-spacing: 0.05em;
   padding: 0 4px 6px;
   border-bottom: 1px solid var(--border);
+  font-size: var(--type-meta);
 }
 
 .brief-epss-col-sev {
@@ -276,7 +277,7 @@
   color: var(--text2);
   background: var(--bg3);
   border-color: var(--border);
-  font-size: 0.5625rem;
+  font-size: var(--type-micro);
   padding: 2px 5px;
 }
 

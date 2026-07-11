@@ -68,13 +68,9 @@
   background: var(--admin-bg);
   color: var(--admin-text);
   font-family: var(--admin-font);
-  font-size: var(--type-secondary, 0.8125rem);
+  font-size: var(--type-body);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  --type-body: 0.875rem;
-  --type-secondary: 0.8125rem;
-  --type-meta: 0.75rem;
-  --type-micro: 0.6875rem;
 }
 
 .admin-root--analyst {
@@ -552,7 +548,7 @@
 
 .admin-page-subtitle {
   margin: 0 0 1rem;
-  font-size: 0.8125rem;
+  font-size: var(--type-body);
   color: var(--text2);
   line-height: 1.45;
   max-width: 72ch;
@@ -578,7 +574,7 @@
 
 .admin-card-title {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--type-subheading);
   font-weight: 600;
   color: var(--admin-text);
 }
@@ -1749,7 +1745,7 @@
 }
 
 .admin-page-subtitle {
-  font-size: 0.8125rem;
+  font-size: var(--type-body);
   color: var(--text3);
   margin: 0 0 1.25rem;
   max-width: 60ch;
@@ -1789,7 +1785,7 @@
 }
 
 .stat-card-label {
-  font-size: 11px;
+  font-size: var(--type-meta);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text3);
@@ -1803,7 +1799,7 @@
 }
 
 .stat-card-sub {
-  font-size: 11px;
+  font-size: var(--type-meta);
   color: var(--text3);
   margin-top: 0.2rem;
 }
@@ -1829,7 +1825,7 @@
   align-items: center;
   gap: 5px;
   margin-bottom: 6px;
-  font-size: 10px;
+  font-size: var(--type-meta);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1852,7 +1848,7 @@
 
 .admin-stat-card-sub {
   margin-top: 4px;
-  font-size: 11px;
+  font-size: var(--type-meta);
   color: var(--admin-text-muted);
 }
 

@@ -15,7 +15,7 @@ export function baseChartOptions(theme, { animationDuration = 160, maxRotation =
       legend: {
         labels: {
           color: theme.textSecondary,
-          font: { family: theme.mono, size: 10 },
+          font: { family: theme.mono, size: 12 },
           boxWidth: 10,
         },
       },
@@ -25,15 +25,15 @@ export function baseChartOptions(theme, { animationDuration = 160, maxRotation =
         bodyColor: theme.textSecondary,
         borderColor: theme.grid,
         borderWidth: 1,
-        titleFont: { family: theme.mono, size: 11 },
-        bodyFont: { family: theme.mono, size: 11 },
+        titleFont: { family: theme.mono, size: 13 },
+        bodyFont: { family: theme.mono, size: 13 },
       },
     },
     scales: {
       x: {
         ticks: {
           color: theme.textMuted,
-          font: { family: theme.mono, size: 9 },
+          font: { family: theme.mono, size: 12 },
           maxRotation,
           minRotation: 0,
         },
@@ -44,7 +44,7 @@ export function baseChartOptions(theme, { animationDuration = 160, maxRotation =
         beginAtZero: true,
         ticks: {
           color: theme.textMuted,
-          font: { family: theme.mono, size: 9 },
+          font: { family: theme.mono, size: 12 },
         },
         grid: { color: theme.grid },
         border: { color: theme.grid },
@@ -58,7 +58,7 @@ export function axisTitle(theme, text) {
     display: Boolean(text),
     text: text || '',
     color: theme.textMuted,
-    font: { family: theme.mono, size: 9 },
+    font: { family: theme.mono, size: 12 },
     padding: { top: 4, bottom: 0 },
   }
 }

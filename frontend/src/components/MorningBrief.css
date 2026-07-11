@@ -12,7 +12,7 @@
 }
 
 .morning-brief-heading {
-  font-size: 0.75rem;
+  font-size: var(--type-heading);
   letter-spacing: 0.08em;
   color: var(--text2);
   margin: 0 0 0.25rem;
@@ -30,7 +30,7 @@
   border: 1px solid var(--border);
   color: var(--accent);
   padding: 0.4rem 0.75rem;
-  font-size: 0.6875rem;
+  font-size: var(--type-meta);
   cursor: pointer;
   border-radius: 2px;
 }
@@ -67,7 +67,7 @@
 
 .morning-brief-retry-btn {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: var(--type-heading);
   color: var(--text2);
   background: var(--bg3);
   border: 1px solid var(--border2);
@@ -90,7 +90,7 @@
 }
 
 .morning-brief-filter-chip {
-  font-size: 0.625rem;
+  font-size: var(--type-micro);
   letter-spacing: 0.05em;
   padding: 0.25rem 0.5rem;
   border: 1px solid var(--border);
@@ -182,7 +182,7 @@
 }
 
 .morning-brief-reason-chip {
-  font-size: 0.5625rem;
+  font-size: var(--type-micro);
   letter-spacing: 0.04em;
   padding: 0.1rem 0.35rem;
   border: 1px solid var(--border);
@@ -191,7 +191,7 @@
 }
 
 .morning-brief-row-metric {
-  font-size: 0.625rem;
+  font-size: var(--type-micro);
   letter-spacing: 0.04em;
   color: var(--text2);
   white-space: nowrap;
@@ -246,7 +246,7 @@
 
 .morning-brief-row-desc-fallback {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: var(--type-heading);
   color: var(--text3);
   font-style: italic;
 }
@@ -254,7 +254,7 @@
 .morning-brief-empty {
   margin: 0;
   padding: 0.75rem;
-  font-size: 0.75rem;
+  font-size: var(--type-heading);
   color: var(--text3);
   border: 1px solid var(--border);
   background: var(--bg2);

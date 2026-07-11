@@ -12,7 +12,22 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-11 — Intel smoke auth fix (deploy)
+## 2026-07-11 — Typography + notification readability (single PR)
+
+**Context:** Production screenshots showed unreadable sub-12px text across admin,
+feed, and Brief charts; notification dropdown was transparent (undefined CSS vars)
+and lacked mark-as-read.
+
+**Change:** Raised `--type-*` token floor in `App.css` (12px minimum); aligned
+admin base font to analyst body size; migrated worst offenders in BriefCharts,
+CVECard, FilterBar, MorningBrief, admin stat cards, and chart axis labels.
+`NotificationCenter` now uses opaque admin surfaces, token-based fonts, per-item
+**Mark read**, and **Mark all read** (localStorage ack for actionable alerts).
+
+**Next:** Merge PR; operator smoke-checks notification panel on System health page.
+
+---
+
 
 **Context:** Post-deploy `smoke-intel.sh` failed on production after PR #441
 (session auth on analyst `/api/*`). Unauthenticated `curl` to

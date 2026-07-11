@@ -2,12 +2,21 @@ import { useEffect, useState } from 'react'
 import { Bell } from 'lucide-react'
 import { adminApi } from '../../../api.js'
 import { fmtIso } from '../formatters.js'
+import {
+  ackAllNotifications,
+  ackNotification,
+  countUnackedActionable,
+  isActionableNotification,
+  loadAckedKeys,
+  notificationEventKey,
+} from './adminNotificationsAck.js'
 import './NotificationCenter.css'
 
 export default function NotificationCenter() {
   const [open, setOpen] = useState(false)
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [acked, setAcked] = useState(() => loadAckedKeys())
 
   async function load() {
     setLoading(true)
@@ -27,8 +36,17 @@ export default function NotificationCenter() {
     return () => clearInterval(id)
   }, [])
 
-  const alertCount =
-    (data?.counts?.api_key_alerts || 0) + (data?.counts?.job_errors || 0)
+  const events = data?.events || []
+  const alertCount = countUnackedActionable(events, acked)
+  const hasUnread = events.some(evt => !acked.has(notificationEventKey(evt)))
+
+  function markRead(evt) {
+    setAcked(prev => ackNotification(prev, evt))
+  }
+
+  function markAllRead() {
+    setAcked(prev => ackAllNotifications(prev, events))
+  }
 
   return (
     <div className="notification-center">
@@ -47,28 +65,65 @@ export default function NotificationCenter() {
       {open && (
         <div className="notification-center-panel" role="region" aria-label="Notifications">
           <div className="notification-center-head">
-            <strong>Notifications</strong>
-            <button type="button" className="notification-center-refresh" onClick={load} disabled={loading}>
-              Refresh
-            </button>
+            <strong className="notification-center-title">Notifications</strong>
+            <div className="notification-center-actions">
+              {hasUnread && (
+                <button
+                  type="button"
+                  className="notification-center-mark-all"
+                  onClick={markAllRead}
+                >
+                  Mark all read
+                </button>
+              )}
+              <button
+                type="button"
+                className="notification-center-refresh"
+                onClick={load}
+                disabled={loading}
+              >
+                Refresh
+              </button>
+            </div>
           </div>
           {loading && !data && <p className="mono notification-center-empty">Loading…</p>}
-          {!loading && (!data?.events?.length) && (
+          {!loading && !events.length && (
             <p className="mono notification-center-empty">No recent operator events.</p>
           )}
           <ul className="notification-center-list">
-            {(data?.events || []).map((evt, idx) => (
-              <li key={`${evt.type}-${evt.id || evt.job_id || evt.provider || idx}`}>
-                <span className="notification-center-type mono">{evt.type}</span>
-                <span className="notification-center-summary">
-                  {evt.action || evt.job_id || evt.provider || 'event'}
-                  {evt.summary ? ` — ${evt.summary}` : ''}
-                </span>
-                {evt.created_at && (
-                  <span className="notification-center-time mono">{fmtIso(evt.created_at)}</span>
-                )}
-              </li>
-            ))}
+            {events.map((evt, idx) => {
+              const key = notificationEventKey(evt) || `${evt.type}-${idx}`
+              const isRead = acked.has(notificationEventKey(evt))
+              return (
+                <li
+                  key={key}
+                  className={`notification-center-item${isRead ? ' notification-center-item--read' : ''}`}
+                >
+                  <span className="notification-center-type mono">{evt.type}</span>
+                  <span className="notification-center-summary">
+                    {evt.action || evt.job_id || evt.provider || 'event'}
+                    {evt.summary ? ` — ${evt.summary}` : ''}
+                  </span>
+                  {evt.created_at && (
+                    <span className="notification-center-time mono">{fmtIso(evt.created_at)}</span>
+                  )}
+                  {!isRead && (
+                    <button
+                      type="button"
+                      className="notification-center-mark-read"
+                      onClick={() => markRead(evt)}
+                      aria-label={
+                        isActionableNotification(evt)
+                          ? 'Mark alert as read'
+                          : 'Mark notification as read'
+                      }
+                    >
+                      Mark read
+                    </button>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         </div>
       )}
