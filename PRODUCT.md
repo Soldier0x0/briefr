@@ -29,6 +29,37 @@ and detection-rule generation for CVEs. Success = an analyst trusts the data
 enough to act on it fast, and an operator can run the box without reading
 the source code to understand what a button does.
 
+## Scope & Limits (honest by design)
+
+What BRIEFR is and deliberately is not. Each line is a chosen constraint with a
+reason — stated plainly, never apologized for. This section is the source for the
+user-facing "Scope & limits" panel (About modal — BACKLOG UX-L1).
+
+- **Single-operator, self-hosted.** One analyst per instance, your hardware, your
+  data. Not multi-tenant, not a cloud service — that's the privacy and control trade.
+- **Community-source intelligence.** Correlation derives from OTX community pulses
+  (ThreatFox corroboration planned). One community source is not vendor-grade
+  attribution, and the product labels it as such in-line ("unverified attribution",
+  `why_not_higher`). Breadth of sources is bounded by what's free and self-hostable.
+- **Term-based stack matching.** Fuzzy by design — vendor/product strings, not
+  SBOM/PURL precision. Matches are labeled with the matched term so you can judge
+  them. Precise SBOM matching is a known, deliberate non-goal at current scope.
+- **Deterministic, LLM-free core.** Correlation, scoring, and scheduling are
+  reproducible with zero AI keys. LLMs only narrate and extract at the edges, always
+  with template fallbacks — the same input gives the same intelligence, every run.
+- **Freshness = upstream + your scheduler.** Data is as current as the public feeds
+  and your configured cadence; every intel section shows its as-of line. BRIEFR
+  never pretends to be real-time.
+- **Prioritization, not discovery.** BRIEFR explains and ranks known-CVE intel
+  against your stack. It is not a scanner, ASM tool, or pentest platform — it
+  doesn't find your assets or test your systems.
+- **One box, small hardware.** Designed for ~2 cores / 16 GB: PostgreSQL, one
+  process family, no Redis, no graph DB, no microservices. Operating simplicity is
+  a feature.
+
+The trade these constraints buy: trust, reproducibility, and a system one person
+can actually operate and fully understand.
+
 ## Brand Personality
 
 Dual-mode by design, operator-selectable:
