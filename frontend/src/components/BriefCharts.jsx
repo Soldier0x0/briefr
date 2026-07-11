@@ -21,6 +21,11 @@ import './BriefCharts.css'
 const POLL_MS = 5 * 60 * 1000
 const EPSS_MOVERS_LIMIT = 10
 const TOP_VENDOR_LIMIT = 10
+// Stable reference so `data?.field ?? EMPTY_ARRAY` doesn't recreate a new
+// array every render while `data` is still null (useAsync's initial/loading
+// state) — a fresh `[]` there would retrigger the useMemo/useEffect below on
+// every render and never converge (#loop).
+const EMPTY_ARRAY = []
 
 function epssDeltaClass(delta) {
   if (delta >= 0.2) return 'badge-epss-delta--high'
@@ -202,9 +207,9 @@ export default function BriefCharts({ onSelectCVE, pollEnabled = true }) {
 
   useVisibilityAwareInterval(retry, POLL_MS, { enabled: pollEnabled })
 
-  const vendorRows = data?.vendorRows ?? []
+  const vendorRows = data?.vendorRows ?? EMPTY_ARRAY
   const totalKev = data?.totalKev ?? 0
-  const epssChanges = data?.epssChanges ?? []
+  const epssChanges = data?.epssChanges ?? EMPTY_ARRAY
   const partialError = data?.partialError ?? null
 
   const epssMovers = useMemo(() => buildEpssMovers(epssChanges), [epssChanges])

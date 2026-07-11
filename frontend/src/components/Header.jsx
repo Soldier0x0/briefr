@@ -16,7 +16,7 @@ import {
 import './Header.css'
 import { feedHealthLevel, feedHealthLabel } from '../utils/feedHealthStatus.js'
 
-export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClick, onTimezoneChange, showShortcuts, feedHealth = null }) {
+export default function Header({ activeTab, onTabChange, onAboutOpen, onTutorialOpen, onLogoClick, onTimezoneChange, showShortcuts, feedHealth = null }) {
   const assetCtx = useAssetProfileOptional()
   const { status: authStatus } = useAuth()
   const [now, setNow]               = useState(new Date())
@@ -237,6 +237,14 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onLogoClic
                         Keyboard shortcuts
                       </button>
                     )}
+                    <button
+                      type="button"
+                      className="header-overflow-item"
+                      role="menuitem"
+                      onClick={() => { setOverflowOpen(false); onTutorialOpen?.() }}
+                    >
+                      Show tutorial again
+                    </button>
                     <button
                       type="button"
                       className="header-overflow-item"

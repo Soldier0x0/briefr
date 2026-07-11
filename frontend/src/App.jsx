@@ -8,6 +8,7 @@ import StatsRow from './components/StatsRow.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import DigestModal from './components/DigestModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
+import TutorialOverlay from './components/TutorialOverlay.jsx'
 import ToolErrorBoundary from './components/ToolErrorBoundary.jsx'
 import CommandPalette from './components/CommandPalette.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
@@ -28,6 +29,7 @@ import { createCveDrawerController } from './utils/openCveDrawer.js'
 import { lazyWithReload } from './utils/lazyWithReload.js'
 import { ingestLogUrl } from './utils/adminLinks.js'
 import { getSavedStack } from './utils/cveFilters.js'
+import { hasTutorialSeen, markTutorialSeen } from './utils/tutorial.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 import useVisibilityAwareInterval from './hooks/useVisibilityAwareInterval.js'
 
@@ -224,6 +226,7 @@ function BriefView({ isActive, stats, statsError, statsErrorRequestId, onRetrySt
 function FeedView({ isActive, filters, setFilters, selectedCVE, setSelectedCVE,
                    digestOpen, setDigestOpen, digestCVEs, setDigestCVEs,
                    searchFocusTrigger, setSearchFocusTrigger, aboutOpen, setAboutOpen,
+                   tutorialOpen,
                    timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
                    onDigestRequest, watchlist, onWatchlistChange, onSelectCVE,
                    feedHealth }) {
@@ -262,7 +265,7 @@ function FeedView({ isActive, filters, setFilters, selectedCVE, setSelectedCVE,
           onDigestRequest={onDigestRequest}
           searchFocusTrigger={searchFocusTrigger}
           timezone={timezone}
-          overlayOpen={!!selectedCVE || digestOpen || aboutOpen}
+          overlayOpen={!!selectedCVE || digestOpen || aboutOpen || tutorialOpen}
           openedCveId={selectedCVE?.cve_id || null}
           watchlistVersion={watchlist?.version ?? 0}
           watchlist={watchlist}
@@ -812,10 +815,18 @@ function AppLayout({
   const [mountedTabs, setMountedTabs] = useState({ brief: true })
   const [drawerMounted, setDrawerMounted] = useState(false)
   const [invMounted, setInvMounted] = useState(false)
+  const [tutorialOpen, setTutorialOpen] = useState(false)
 
   useEffect(() => {
     setMountedTabs(prev => (prev[activeTab] ? prev : { ...prev, [activeTab]: true }))
   }, [activeTab])
+
+  // AppLayout only mounts once the user is past login/admin/wallboard routes
+  // (see the "*" Route in App()), so this is the right place for the
+  // first-visit check — no route-path filtering needed here.
+  useEffect(() => {
+    if (!hasTutorialSeen()) setTutorialOpen(true)
+  }, [])
 
   useEffect(() => {
     if (selectedCVE) setDrawerMounted(true)
@@ -844,6 +855,7 @@ function AppLayout({
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onAboutOpen={onAboutOpen}
+          onTutorialOpen={() => setTutorialOpen(true)}
           onLogoClick={() => setActiveTab('brief')}
           onTimezoneChange={onTimezoneChange}
           showShortcuts={showFeedShortcuts}
@@ -891,6 +903,7 @@ function AppLayout({
                 setSearchFocusTrigger={setSearchFocusTrigger}
                 aboutOpen={aboutOpen}
                 setAboutOpen={setAboutOpen}
+                tutorialOpen={tutorialOpen}
                 timezone={timezone}
                 lastUpdated={lastUpdated}
                 nextRefreshUtc={nextRefreshUtc}
@@ -988,6 +1001,16 @@ function AppLayout({
             {aboutOpen && (
               <ToolErrorBoundary label="About" onReset={() => setAboutOpen(false)}>
                 <AboutModal onClose={() => setAboutOpen(false)} />
+              </ToolErrorBoundary>
+            )}
+
+            {tutorialOpen && (
+              <ToolErrorBoundary label="Tutorial" onReset={() => setTutorialOpen(false)}>
+                <TutorialOverlay
+                  onClose={() => { setTutorialOpen(false); markTutorialSeen() }}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                />
               </ToolErrorBoundary>
             )}
       </div>
