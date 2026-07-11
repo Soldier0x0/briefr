@@ -8,6 +8,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pytest
 from fastapi.testclient import TestClient
 
+pytestmark = pytest.mark.no_auth
+
 from auth.repo import create_user
 from database import get_db, init_db
 from tests.conftest import run_db_test

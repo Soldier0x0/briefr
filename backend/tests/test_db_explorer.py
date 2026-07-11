@@ -231,6 +231,7 @@ def test_webhook_delivery_log_redacts_error(admin_client):
     assert "discord.com" not in str(err) or "[redacted" in str(err)
 
 
+@pytest.mark.no_auth
 def test_unauthenticated_returns_401(tmp_path, monkeypatch):
     from settings import settings as _settings
 

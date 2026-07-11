@@ -3,6 +3,9 @@
 Every admin-gated route — the /api/admin router (router-level dependency)
 AND the five /api/refresh* routes (inline require_admin calls) — must
 reject unauthenticated callers with 401 and non-admin roles with 403.
+Analyst routes behind session_auth_middleware must reject unauthenticated
+callers with 401.
+
 Routes are enumerated from the routers themselves so new admin endpoints
 are covered automatically; never hand-list them here.
 """
@@ -15,6 +18,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
 from fastapi.testclient import TestClient
+
+pytestmark = pytest.mark.no_auth
 
 
 def _protected_routes():
@@ -32,6 +37,18 @@ def _protected_routes():
 
 
 PROTECTED_ROUTES = _protected_routes()
+
+
+def _analyst_sample_routes():
+    return [
+        ("GET", "/api/cves"),
+        ("GET", "/api/stats"),
+        ("POST", "/api/ai/summary"),
+        ("GET", "/api/case-studies/feed"),
+    ]
+
+
+ANALYST_SAMPLE_ROUTES = _analyst_sample_routes()
 
 
 def test_route_enumeration_finds_admin_and_refresh_routes():
@@ -149,3 +166,16 @@ def test_login_failure_body_stays_generic(client):
     )
     assert resp.status_code == 401
     assert resp.json() == {"detail": "Invalid username or password"}
+
+
+@pytest.mark.parametrize("method,path", ANALYST_SAMPLE_ROUTES)
+def test_analyst_routes_reject_unauthenticated(client, method, path):
+    if method == "POST" and path == "/api/ai/summary":
+        resp = client.request(
+            method,
+            path,
+            json={"cves": [], "iocs": [], "actors": [], "investigation_duration": 1},
+        )
+    else:
+        resp = client.request(method, path)
+    assert resp.status_code == 401, f"{method} {path} returned {resp.status_code}, want 401"

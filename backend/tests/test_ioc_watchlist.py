@@ -70,6 +70,7 @@ def ioc_client(tmp_path, monkeypatch, auth_token):
         yield client
 
 
+@pytest.mark.no_auth
 def test_ioc_watchlist_requires_auth(tmp_path, monkeypatch):
     db_path = tmp_path / "ioc_auth.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
