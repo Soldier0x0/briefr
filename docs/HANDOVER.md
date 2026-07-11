@@ -12,53 +12,36 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-11 — UX-C1: DetailDrawer interactive-control consistency (ux-audit Issue 37)
+## 2026-07-11 — CORR-PR-1: rank infrastructure peers by evidence, not alphabet
 
-**Context:** executed UX-C1 per `docs/planning/specs/execution-playbook.md`, following
-`docs/planning/BACKLOG.md` §5. Note: the user's original pointer named
-`docs/planning/specs/correlation-engine-v2.md` as the source spec, but UX-C1 is
-actually defined in `docs/planning/specs/ux-audit.md` (Issue 37) — proceeded on the
-unambiguous match rather than stalling, per playbook's "genuine stop-and-ask only when
-the spec is silent on a user-visible consequence" rule.
+**Context:** first PR of the correlation-engine-v2 remediation queue
+([`docs/planning/specs/correlation-engine-v2.md`](planning/specs/correlation-engine-v2.md)
+§18), executed per
+[`docs/planning/specs/execution-playbook.md`](planning/specs/execution-playbook.md).
+Fixes verified defect D1 (§5.1): peer truncation happened alphabetically
+*before* per-peer confidence scoring in `find_shared_infrastructure_v2`.
 
-**Branch:** `ux-c1-drawer-button-standard` (fresh off `main`, no prior attempt existed
-— checked branches/PRs first, none found). PR not yet opened as of this entry; see
-next steps.
+**Change:** `backend/correlation/ioc_graph.py` — build confidence/evidence
+for every peer first, rank by confidence level then shared-IOC-type counts,
+truncate to `limit` last. Matches the spec's own prescribed shape exactly
+("build all peers → score → sort → slice"); no spec deltas needed. New
+regression test `test_peer_truncation_keeps_strongest_peer_over_alphabetical`
+(25-peer fixture, strong hash peer sorts alphabetically last) — confirmed
+failing on pre-fix code, green after. Full backend suite: 1081 passed, 7
+pre-existing failures unrelated to correlation (backup/age-key tooling,
+case-study snapshot) — verified those reproduce standalone on unmodified
+main. No `db/`-layer or schema touch, so no dual SQLite/Postgres run
+required; no `PRODUCT_STATUS.md`/`SYSTEM_DESIGN.md` update — neither doc
+currently describes peer-ranking behavior, so there was nothing stale to
+correct.
 
-**Change:** `frontend/src/components/ui/ui.css` — `.ui-btn` hardened with
-`min-height: 30px` (`26px` for `--sm`) and a doc comment clarifying variant semantics
-(primary/danger both use `--red` because it's BRIEFR's brand color, not a warning
-color; neutral actions must use `ghost`). `frontend/src/components/DetailDrawer.css`
-— migrated **every** bespoke button/toggle in the file (not just the 9-row evidence
-table in the spec — that table was illustrative, confirmed stale by the advisor and
-by finding `corr-dismiss-btn` in it was already dead code) to `min-height`, the
-12px `--type-micro` font floor, `var(--motion-fast)` transitions, and
-`:focus-visible` rings. Fixed the semantic-collision defect (red used for neutral
-actions) on `.drawer-inv-btn` (Pin/Start investigation), `.drawer-report-btn`
-(REPORT), `.drawer-investigate-btn` (Add to investigation ×3) — all now ghost/text2
-base with accent for active/pressed state. Tab-row active underline changed
-`--red` → `--accent` (red stays destructive/severity-only app-wide). Removed 4
-confirmed-dead CSS rule blocks (`corr-dismiss-btn`, `drawer-risk-copy-btn`,
-`drawer-retry-btn`, `drawer-risk-profile-link` — zero JSX callers, verified by
-repo-wide grep). Fixed `corr-restore-btn` which was missing `cursor: pointer` and
-any hover/focus state entirely (real, separate defect found during the sweep).
+**PR:** [#473](https://github.com/Soldier0x0/briefr/pull/473) — branch
+`corr-pr1-peer-ranking-by-evidence`, open for review, not merged.
 
-**Verification:** `npm run build` green. Browser walk per playbook §3 against dev
-servers (backend `BRIEFR_SCHEDULER_ENABLED=0`, DB pre-seeded with 15 dummy CVEs via
-direct SQLite insert — the live NVD ingest was rate-limited by `circl.lu` 429s and
-would have taken too long; seeding sidesteps that without touching the SQLite-lock
-landmine documented in the playbook). Confirmed: 30px/12px geometry on Pin, REPORT,
-tabs, Copy YAML; ghost (not red) color on neutral actions; accent (not red) on
-pinned/active state; tab active underline accent; keyboard `Tab` reaches all
-migrated controls with a visible focus ring; 375/960/1280 widths hold drawer layout
-and button heights; `prefers-reduced-motion` already covered by the global wildcard
-rule in `App.css`, nothing extra needed. Three tab states (Intel/Detect/Related)
-render designed empty/loading states correctly on the sparse seed data — not a bug,
-just no correlation/exploit/OTX data on synthetic rows.
-
-**Next steps:** open the PR (branch is pushed) with build + verification evidence in
-the body per playbook step 8. UX-C2 (`CVECard.css` + feed surfaces) is next in the
-queue — same file-boundary discipline, do not reach into files C1 already owns.
+**Next:** CORR-PR-2 — composite index + drop `correlation_infrastructure`
+table (§18 PR-2). Four live references beyond the migration must all move
+in that same PR: `scripts/export_intel_snapshot.py` INTEL_TABLES/preflight,
+`backend/db/explorer_registry.py`, `docs/DATA_SNAPSHOT.md`.
 
 ---
 
