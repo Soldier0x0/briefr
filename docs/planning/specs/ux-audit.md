@@ -650,9 +650,24 @@ inactive / `--text` + accent underline active, ≥ 36px hit area.
   keyboard focus-visible pass, 375/960/1280 widths, zero layout shift on Pin/Unpin
   and Load/Retry GreyNoise label toggles); `prefers-reduced-motion` covered by the
   existing global wildcard rule in `App.css`, no per-component work needed.
-- **UX-C2** — `CVECard.css` action row + share button to the standard (red → ghost,
-  min-widths, transitions); sweep feed-level surfaces (`FilterBar`, `IOCLookup`)
-  for the same drift.
+- **UX-C2 — done (PR pending merge).** `CVECard.css`: `.cve-action-btn` (Pin,
+  Start investigation) was red-for-neutral-action — fixed to ghost/text2, active
+  (pinned) state stays accent; added `.cve-action-btn-pin`/`-investigate`
+  min-widths so the Pin/Unpin and Start/In-investigation label swaps never
+  reflow the row; `.card-share-btn` got a 26px min-height and `var(--motion-fast)`
+  transition. Swept `FilterBar.css` (`.filter-btn.active`, `.vendor-btn.active`
+  were red for a plain selection toggle → accent; `.digest-btn`/`.export-btn`/
+  `.filter-btn` got 26px min-height and standardized transitions) and
+  `IOCLookup.css` (`.ioc-indicator-chip` selected/hover and the legacy
+  `.ioc-type-btn.selected` underline were red for a non-destructive selection →
+  accent; `.action-btn` got a 30px min-height; transitions standardized on
+  `.action-btn`/`.ioc-clear-btn`/`.ioc-lookup-btn`/`.ioc-type-btn`). Left
+  meter/gauge width transitions (threat bar, quota bars, abuse bar) and the
+  left-accent input borders untouched — those are deliberate BRIEFR visual
+  language, not Issue 37 drift. Verified in-browser: filter/vendor active states
+  render accent not red, Pin/Unpin and Start/In-investigation toggles hold their
+  min-width with zero layout shift, `:focus-visible` ring applies on
+  `.cve-action-btn`.
 - Forge's `fg-*` buttons ride **FR-2** (component split adopts the primitive —
   noted in [`forge-redesign.md`](forge-redesign.md), do not fix twice).
 

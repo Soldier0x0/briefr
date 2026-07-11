@@ -12,6 +12,62 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-11 — UX-C2: CVE card + feed surfaces to the button standard
+
+**Context:** second remediation PR of ux-audit Issue 37 (interactive control
+consistency), queued right after UX-C1 (#474, merged). Executed per
+[`docs/planning/specs/execution-playbook.md`](planning/specs/execution-playbook.md).
+Entry gate confirmed: UX-C1 was merged on GitHub but local `main` was 2 commits
+stale — `git fetch && git pull --ff-only` first.
+
+**Change:** `CVECard.css` — `.cve-action-btn` (Pin, Start investigation) was
+red-border/red-text for a neutral action, the exact Issue-37 pattern; fixed to
+ghost (text2/border2), pinned state keeps the existing accent
+`.cve-action-btn-active`. Added `.cve-action-btn-pin` (min-width 64px) and
+`.cve-action-btn-investigate` (min-width 172px) — new JSX classes — so the
+Pin/Unpin and Start/In-investigation label swaps never reflow the action row.
+`.card-share-btn` got a 26px min-height and `var(--motion-fast)` transition.
+Swept `FilterBar.css` (`.filter-btn.active` and `.vendor-btn.active` were solid
+red for a plain selection toggle, not a destructive action — changed to the
+established accent-tint pattern already used by `.cve-action-btn-active`;
+`.digest-btn`/`.export-btn`/`.filter-btn` got 26px min-height, all four
+buttons' ad-hoc `0.1s` transitions standardized to `var(--motion-fast)`) and
+`IOCLookup.css` (`.ioc-indicator-chip` selected/hover border and the legacy
+`.ioc-type-btn.selected` tab underline were red for a non-destructive
+selection → accent; `.action-btn` got a 30px min-height; transitions on
+`.action-btn`/`.ioc-clear-btn`/`.ioc-lookup-btn`/`.ioc-type-btn` standardized).
+Left untouched: meter/gauge width transitions (threat bar, quota bars, abuse
+bar — legitimate width-animating fills, not layout thrash) and left-accent
+input borders — both are deliberate BRIEFR visual language, not Issue-37 drift.
+Noted but did not fix: `.ioc-type-btn`/`.ioc-type-selector`/`.ioc-detected-badge`
+in `IOCLookup.css` have no JSX caller (dead CSS, type picker was removed in a
+past refactor) — fixed the color anyway since it's harmless, but a future pass
+could delete the whole dead block.
+
+**Verify:** `cd frontend && npm run build` green. Browser-verified logged in
+(reset the local dev DB's `admin` password directly — this is the SQLite dev
+fallback with 10 seeded CVEs, not production — since no known credentials
+existed for this session): confirmed `.filter-btn.active`/`.vendor-btn.active`
+compute to accent (`rgb(200,184,138)`) not red; confirmed `.cve-action-btn-pin`
+holds 64px width for both "Pin" and "Unpin"; confirmed `.cve-action-btn`
+`:focus-visible` renders the `--focus-ring` box-shadow; confirmed
+`.ioc-indicator-chip.selected` and `.action-btn` compute to the new
+accent/min-height values. Did not get a working visual screenshot — the
+Browser pane's screenshot capture timed out repeatedly in this environment
+(unrelated to the app); verification relied on DOM/computed-style inspection
+via `read_page`/`javascript_tool` instead, which is sufficient to confirm the
+CSS ships correctly but is not a substitute for an eyeballed visual pass —
+flagging this gap for whoever reviews the PR.
+
+**PR:** [ux-c2-cve-card-feed-buttons branch, pushed, PR opened, not merged] —
+see PR body for the same evidence.
+
+**Next:** UX-J1 (domain-term HelpTip sweep) is the next item in the ux-audit
+queue per BACKLOG §5. A human should do a real visual/screenshot pass on this
+PR before merging, since the automated verification here was DOM-only.
+
+---
+
 ## 2026-07-11 — CORR-PR-1: rank infrastructure peers by evidence, not alphabet
 
 **Context:** first PR of the correlation-engine-v2 remediation queue
