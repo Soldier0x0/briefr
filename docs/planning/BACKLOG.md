@@ -210,7 +210,21 @@ daily workflow beats governance.
 
 ---
 
-## 9. Quality / process
+## 9. Resource benchmarking program
+
+**Canonical spec:** [`specs/resource-benchmarking.md`](specs/resource-benchmarking.md)
+
+| PR | Title | Status |
+|----|-------|--------|
+| **RB-1** | `resource_metrics` table + psutil collector job + retention (scheduler-lock mapping entry required) | 📋 |
+| **RB-2** | `GET /api/admin/resources` + admin RESOURCES page (1d/3d/7d/30d windows, peak/avg/low) | 📋 |
+
+Out of scope by decision: synthetic load simulation, Prometheus/Grafana export,
+per-endpoint latency histograms, alerting — see spec NOT-in-scope list.
+
+---
+
+## 10. Quality / process
 
 | Item | Status |
 |------|--------|

@@ -4,7 +4,8 @@
 [`threat-modeling-security-architecture.md`](threat-modeling-security-architecture.md),
 [`correlation-engine-v2.md`](correlation-engine-v2.md),
 [`codebase-audit.md`](codebase-audit.md) remediation PRs,
-[`ai-operations.md`](ai-operations.md), and [`ux-audit.md`](ux-audit.md) deferred issues.
+[`ai-operations.md`](ai-operations.md), [`ux-audit.md`](ux-audit.md) deferred issues,
+and [`resource-benchmarking.md`](resource-benchmarking.md).
 The specs say **what** to build. This document says **how** to execute them — written so
 that any competent agent or human, starting with zero conversation context, ships the
 same quality. If you are an AI model executing a phase: follow this literally; it
