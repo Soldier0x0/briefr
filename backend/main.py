@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 import time
 import uuid
@@ -107,7 +108,17 @@ async def lifespan(app: FastAPI):
                 "Production posture: %s — %s", posture["flag"], posture["message"]
             )
     await sync_env_destinations_to_db()
-    start_scheduler()
+    if os.environ.get("BRIEFR_SCHEDULER_ENABLED", "1").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    ):
+        start_scheduler()
+    else:
+        logger.info(
+            "main.py lifespan: scheduler disabled (BRIEFR_SCHEDULER_ENABLED=0) — API-only worker"
+        )
     await maybe_run_on_startup()
     logger.info("main.py lifespan: startup complete — accepting requests")
     yield

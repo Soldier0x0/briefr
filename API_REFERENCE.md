@@ -3,14 +3,14 @@
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
 **Base URL:** `/api` (proxied from Vite dev server at `http://localhost:5173/api` → `http://localhost:8000/api`)  
-**Auth:** built-in app login (`briefr_at` / `briefr_rt` cookies). **Ingest** `POST /api/refresh*` and all `/api/admin/*` routes require the `admin` role. See [Authentication](#authentication) below.  
+**Auth:** built-in app login (`briefr_at` / `briefr_rt` cookies). **Analyst routes** (`/api/*` except health, auth, wallboard, and dev OpenAPI) require a valid session — 401 without login (#441). **Ingest** `POST /api/refresh*` and all `/api/admin/*` routes require the `admin` role. See [Authentication](#authentication) below.  
 **Interactive docs:** `GET /api/docs` (Swagger UI), `GET /api/redoc` (ReDoc) — **unprotected; disable in production**
 
 Default error shape (FastAPI): `{"detail": "<message>"}`
 
 **Request IDs:** every response carries an `X-Request-ID` header (echoed from the request when a well-formed `X-Request-ID` is supplied, generated otherwise). The same ID appears as `request_id` in the backend's JSON log lines.
 
-**Rate limiting:** `POST /api/ioc/lookup` and all `POST /api/refresh*` routes are token-bucket rate limited per client IP (defaults: 30/min and 10/min — `RATE_LIMIT_IOC_PER_MINUTE`, `RATE_LIMIT_REFRESH_PER_MINUTE`; `RATE_LIMIT_ENABLED=0` disables). Over the limit → `429` with a `Retry-After` header (whole seconds). Auth routes use separate buckets (`RATE_LIMIT_LOGIN_PER_MINUTE`, `RATE_LIMIT_AUTH_REFRESH_PER_MINUTE`). **Multi-worker:** set `BRIEFR_RATE_LIMIT_STORE=db` to persist token buckets in `sync_state` (shared across uvicorn workers; scheduler must remain single-instance).
+**Rate limiting:** `POST /api/ioc/lookup` and all `POST /api/refresh*` routes are token-bucket rate limited per client IP (defaults: 30/min and 10/min — `RATE_LIMIT_IOC_PER_MINUTE`, `RATE_LIMIT_REFRESH_PER_MINUTE`; `RATE_LIMIT_ENABLED=0` disables). Over the limit → `429` with a `Retry-After` header (whole seconds). Auth routes use separate buckets (`RATE_LIMIT_LOGIN_PER_MINUTE`, `RATE_LIMIT_AUTH_REFRESH_PER_MINUTE`). **Multi-worker:** set `BRIEFR_RATE_LIMIT_STORE=db` to persist token buckets in `sync_state` (shared across uvicorn workers). Run the scheduler on one owner only (`BRIEFR_SCHEDULER_ENABLED=1`, default); set `BRIEFR_SCHEDULER_ENABLED=0` on API-only workers (#444).
 
 ---
 

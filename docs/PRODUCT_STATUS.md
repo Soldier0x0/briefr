@@ -11,11 +11,11 @@
 |------|--------|
 | **Release** | **v1.5.0** — V1.5 product phases 1–3 + 5 shipped (#373–#376); Phase 4 STIX excluded |
 | **License** | **AGPL-3.0-or-later** (`LICENSE`, `CONTRIBUTING.md`). Active source trees carry SPDX headers; public GitHub flip still gated on beta feedback (Track F). |
-| **Performance (Track I)** | **Phase 1–2 complete** (#378–#382): feed scroll isolation, parallel enrichments, bulk upsert, `/api/cves` KEV JOIN + count cache + `pg_trgm`. **Phase 3a–b shipped** (#436–#437): ORJSON default responses, keyset feed pagination (`pagination=keyset`), drawer bundle (`GET /api/cves/{id}/drawer`), shared rate-limit store (`BRIEFR_RATE_LIMIT_STORE=db`). **Open:** I15 feed windowing, I16 server-side exposure sort. |
+| **Performance (Track I)** | **Phase 1–2 complete** (#378–#382): feed scroll isolation, parallel enrichments, bulk upsert, `/api/cves` KEV JOIN + count cache + `pg_trgm`. **Phase 3a–b shipped** (#436–#437): ORJSON default responses, keyset feed pagination (`pagination=keyset`), drawer bundle (`GET /api/cves/{id}/drawer`), shared rate-limit store (`BRIEFR_RATE_LIMIT_STORE=db`). **Phase 3 tail shipped** (#443–#444): I15 feed windowing (`content-visibility: auto`), I16 server-side stack relevance sort, `BRIEFR_SCHEDULER_ENABLED` for API-only workers. |
 | **Security tail** | CGNAT SSRF block (`100.64.0.0/10`) + refresh rejects past `sessions.expires_at` (#381). **JWT role revalidation** shipped (#392). LLM summary auth remains open. |
 | **Database** | **PostgreSQL required** (`DATABASE_URL`, `BRIEFR_REQUIRE_POSTGRES=1`). SQLite removed from production path. **Intel snapshot:** `scripts/export_intel_snapshot.py` exports allowlisted tables per `docs/DATA_SNAPSHOT.md` with versioned manifest (`format_version: 1`); `scripts/verify_intel_snapshot.py` and `scripts/import_intel_snapshot.py` validate/import bundles; upgrade steps in `docs/OPERATIONS.md`. Postgres CI runs export→restore smoke (`test_intel_snapshot_export.py`). **Backup round-trip:** Postgres CI runs `test_backup_roundtrip_postgres.py` (`run_backup` → wipe → `restore_backup`, row-count assert on `cves` / `kev_deadlines`). |
-| **Auth** | Built-in app login + sessions (first-run `/api/auth/setup`); admin/refresh routes require the **admin role** (Sprint A0). Legacy `BRIEFR_ADMIN_API_KEY` removed. Wallboard token is **header-only** (`X-BRIEFR-Wallboard-Token`; `?token=` removed, Sprint A7). Optional Cloudflare Zero Trust at **edge** (operator policy, not in app code). |
-| **Rate limits** | Token buckets on IOC, refresh, admin, auth; set `RATE_LIMIT_ENABLED=1` in production. **Multi-worker:** optional shared store via `BRIEFR_RATE_LIMIT_STORE=db` persists buckets in `sync_state` (#437) — enable only with ops sign-off; scheduler stays single-instance. |
+| **Auth** | Built-in app login + sessions (first-run `/api/auth/setup`); **analyst `/api/*` routes require a valid session** (`briefr_at` cookie; #441 — matches React `RequireAuth`). Admin/refresh routes require the **admin role** (Sprint A0). Legacy `BRIEFR_ADMIN_API_KEY` removed. Wallboard token is **header-only** (`X-BRIEFR-Wallboard-Token`; `?token=` removed, Sprint A7). Optional Cloudflare Zero Trust at **edge** (operator policy, not in app code). |
+| **Rate limits** | Token buckets on IOC, refresh, admin, auth; set `RATE_LIMIT_ENABLED=1` in production. **Multi-worker:** optional shared store via `BRIEFR_RATE_LIMIT_STORE=db` persists buckets in `sync_state` (#437); set `BRIEFR_SCHEDULER_ENABLED=0` on API-only workers (#444). Scheduler runs on one owner only — see `OPERATIONS.md`. |
 | **API queue** | Outbound API serialization (#221) for NVD/OTX/etc.; `/api/health` exposes per-source task-level queue status (#341). Feed sync paths pass `operation` + safe `context_id` so rows show analyst copy (not generic “Outbound API request”). Header/admin indicator groups by provider, caps panel height with scroll, and summary counts distinguish **waiting** vs **queued**. |
 | **DB integrity** | SQLite uses `PRAGMA integrity_check` / `foreign_key_check`. PostgreSQL uses real `pg_catalog` probes (invalid indexes, unvalidated constraints, FK orphan scan) — no silent always-ok stub. Admin Overview “Check DB integrity” reports `method` + `backend`. |
 | **UI (Track E)** | Track E complete (E-PR1–10): Intel/GreyNoise drawer; BRIEF states audit; header/timezone; tooltips; stat deltas; IOC auto-detect; **⌘K command palette**. |
@@ -73,13 +73,13 @@
 |---------|----------------|
 | Postgres, auth, rate limits, API queue, shared rate-limit store (#437) | Full `docker-compose.yml` (V2.0) |
 | Correlation v2 core + phase-4–5 tail (#364, #389, #434 `cve_id` filter) | STIX export (excluded from current loop) |
-| Admin ops, webhooks (#413–#415), wallboard v2 (#430), AI ops (#416–#420), 12-PR operator bundle (#428–#439) | **G0** LEARNING_PATH / ONBOARDING refresh |
-| **Forge** threat scenarios, proof bench, KEV backlog, IOC watchlist (V1.5 #373–#376) | Track I Phase 3 tail (I15–I16 feed windowing, exposure sort) |
-| Track I performance Phases 1–2 (#378–#382) + Phase 3a–b (#436–#437) | Multi-worker uvicorn enablement (ops decision) |
-| Track L Wave 4: monitor alerts, onboarding, doctor, operator settings (#366–#372) | **M-5** single backup owner (APScheduler vs systemd timer) |
-| K5 LLM pacing (#433), AI-3 quota snapshots (#432), embeddings auto-on-ingest (#438) | LLM summary auth |
-| Chart.js admin ops dashboard, logrotate deploy artifacts, F2 AGPL (#423) | `IMAGE_BRIEFS` tail; MkDocs |
-| Architecture diagrams (phase A) | Wallboard kiosk docs (N-4) |
+| Admin ops, webhooks (#413–#415), wallboard v2 (#430), AI ops (#416–#420), 12-PR operator bundle (#428–#439), 4-PR tail (#441–#444) | **G0** LEARNING_PATH / ONBOARDING refresh |
+| **Forge** threat scenarios, proof bench, KEV backlog, IOC watchlist (V1.5 #373–#376) | LLM summary auth |
+| Track I performance Phases 1–3 (#378–#382, #436–#437, #443–#444) | `IMAGE_BRIEFS` tail; MkDocs |
+| Track L Wave 4: monitor alerts, onboarding, doctor, operator settings (#366–#372) | Encrypted `app_settings` / secrets SSOT |
+| K5 LLM pacing (#433), AI-3 quota snapshots (#432), embeddings auto-on-ingest (#438) | RSS↔CVE linking |
+| Chart.js admin ops dashboard, logrotate deploy artifacts, F2 AGPL (#423) | |
+| Architecture diagrams (phase A); session auth middleware (#441); M-5 backup owner + N-4 kiosk docs (#442) | |
 
 Details: [`ROADMAP.md`](ROADMAP.md). Historical beta specs → `docs/archive/` (phase 2).
 
@@ -90,7 +90,7 @@ Details: [`ROADMAP.md`](ROADMAP.md). Historical beta specs → `docs/archive/` (
 | Phase | Status |
 |-------|--------|
 | Doc structure + image briefs | Phase A diagrams shipped (`production-architecture`, `auth-layers`, `correlation-pipeline` SVGs) |
-| Living API / architecture docs | Current — synced through **#439** (12-PR operator bundle) |
+| Living API / architecture docs | Current — synced through **#444** (4-PR tail bundle) |
 | Graphify knowledge graph | **Stale** — `graphify-out/graph.json` + `GRAPH_REPORT.md` last built **2026-07-09** (`5923` nodes); `graphify` CLI not available in this environment — run `graphify update .` after the next code PR (docs-only changes do not require a graph rebuild) |
 | Archive beta root `.md` files | Pending (do not edit `docs/archive/beta/*`) |
 | MkDocs site | Pending |
