@@ -12,7 +12,22 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-11 — Merged Open Draft PRs (#447, #448)
+## 2026-07-11 — Intel smoke auth fix (deploy)
+
+**Context:** Post-deploy `smoke-intel.sh` failed on production after PR #441
+(session auth on analyst `/api/*`). Unauthenticated `curl` to
+`/api/cves/CVE-2021-44228` returned 401; Intel data was healthy once logged in.
+
+**Change:** `deploy/smoke-intel.sh` now acquires a `briefr_at` session before the
+CVE detail check — via login (`BRIEFR_SMOKE_USER`/`PASSWORD`, or
+`/var/lib/briefr/keys/smoke-credentials`) or an existing cookie
+(`BRIEFR_SMOKE_COOKIE` / `BRIEFR_ADMIN_COOKIE`). Documented in `OPERATIONS.md`.
+
+**Next:** Operator creates smoke credentials on production; re-run update or
+`bash deploy/smoke-intel.sh` to confirm.
+
+---
+
 
 **Context:** Audited, verified, and successfully merged the two remaining open draft pull requests:
 

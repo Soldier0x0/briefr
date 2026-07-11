@@ -209,9 +209,14 @@ code. In that case restore from the pre-update age-encrypted backup (J5 runbook)
 
 **Non-Postgres / dev:** Alembic is skipped when `DATABASE_URL` is not PostgreSQL.
 
-**Intel smoke:** `deploy/smoke-intel.sh` runs after a green health gate. **Strict by
-default (J3):** a failing smoke check exits non-zero. Opt out with
-`BRIEFR_SKIP_SMOKE=1` (skip entirely) or `BRIEFR_STRICT_SMOKE=0` (warn only).
+**Intel smoke:** `deploy/smoke-intel.sh` runs after a green health gate. It logs in
+(analyst session) before calling `GET /api/cves/CVE-2021-44228`. Provide credentials
+once via env (`BRIEFR_SMOKE_USER` + `BRIEFR_SMOKE_PASSWORD`), an existing
+`briefr_at` cookie (`BRIEFR_SMOKE_COOKIE` / `BRIEFR_ADMIN_COOKIE`), or a root-only
+file at `/var/lib/briefr/keys/smoke-credentials` (chmod 600) containing the same
+USER/PASSWORD variables. **Strict by default (J3):** a failing smoke check exits
+non-zero. Opt out with `BRIEFR_SKIP_SMOKE=1` (skip entirely) or
+`BRIEFR_STRICT_SMOKE=0` (warn only).
 
 ---
 

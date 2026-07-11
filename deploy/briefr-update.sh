@@ -8,6 +8,8 @@
 #   BRIEFR_INSTALL_DEV_DEPS=1 — install backend dev/test deps for on-box verification
 #   BRIEFR_SKIP_SMOKE=1       — skip OTX Intel smoke after deploy
 #   BRIEFR_STRICT_SMOKE=0     — warn-only on Intel smoke failure (default: strict / exit 1)
+#   BRIEFR_SMOKE_USER/PASSWORD — analyst login for smoke-intel.sh (or file
+#     /var/lib/briefr/keys/smoke-credentials, chmod 600)
 #   BRIEFR_SKIP_ROLLBACK=1    — on health-gate failure, exit without git reset (break-glass)
 #
 # Update safety (J1): records the pre-pull git commit, runs Alembic upgrade head
