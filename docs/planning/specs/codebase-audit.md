@@ -3,6 +3,17 @@
 **Audit type:** Read-only architecture / security / database / API / frontend / reliability / performance / restart-durability review  
 **Remediation:** None in this PR (read-only audit). Sections A–Z delivered together.
 
+**Status (2026-07-11):** shipped in #449: AUTH-001, AUTH-002, VAL-002, IDEM-001/TXN-001,
+DB-001, DB-002. **Remaining PRs** (P3, P4, O1, O2, F1–F4, restart bundle R1–R4, 9×
+runtime validations): live status in [`../BACKLOG.md`](../BACKLOG.md) §3 — this
+document is the findings evidence; BACKLOG is the queue.
+
+**Execution:** remediation PRs run per [`execution-playbook.md`](execution-playbook.md).
+This audit is a **snapshot at `b468a6fc`** — before implementing any finding,
+re-verify it exists at HEAD (reproduce or re-trace the cited path). Already fixed or
+moved → your PR is the BACKLOG/spec status update, not a re-fix. PR-R3 is the known
+example: IDEM-001 shipped in #449, so verify the remaining overlap before writing code.
+
 ---
 
 ## 1. Executive Summary
