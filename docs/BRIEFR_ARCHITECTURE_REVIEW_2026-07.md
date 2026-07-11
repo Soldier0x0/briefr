@@ -253,7 +253,7 @@ correlation 40% / intel 15%. The fused score is **orphaned** (see §4). The
 explainable-risk-bump idea (plan §13) should remain a *derived* surface (priority
 / investigation score), never a hidden weight inside v1.1b.
 
-### 3.6 Correlation v2 plan — phase review (`docs/archive/planned/CORRELATION_V2_PLAN.md`)
+### 3.6 Correlation v2 plan — phase review (`docs/archive/superseded/CORRELATION_V2_PLAN.md` — historical; current: `docs/planning/specs/correlation-engine-v2.md`)
 
 | Phase | Plan intent | Real state (code) | Verdict |
 |-------|-------------|-------------------|---------|

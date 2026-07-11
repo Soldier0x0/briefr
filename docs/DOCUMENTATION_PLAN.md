@@ -4,6 +4,19 @@
 
 ---
 
+## Two-bucket rule (planning vs archive)
+
+| Bucket | Location | What goes here |
+|--------|----------|----------------|
+| **To execute** | `docs/planning/` | `BACKLOG.md` + `specs/` for programs still open |
+| **Done / replaced** | `docs/archive/` | Beta specs, session logs, `superseded/` plans |
+
+**Never:** `archive/planned/` or `planning/completed/` — those mixed “todo” and “done” and caused confusion.
+
+**Partial completion:** extract remaining rows into `planning/BACKLOG.md`; move the full spec to `archive/superseded/` when the program closes (or keep in `specs/` while PRs remain open).
+
+---
+
 ## Reader-facing (5 files max)
 
 | File | Audience | Length goal |
@@ -14,35 +27,41 @@
 | [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) | Anyone stuck | 1 table — symptom → fix |
 | [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) | Curious readers | Optional — diagrams + short sections |
 
-**Not in main nav:** [`IMAGE_BRIEFS.md`](IMAGE_BRIEFS.md) (diagram prompts), [`DOCUMENTATION_PLAN.md`](this file), [`TEMPLATE_*.md`](TEMPLATE_concept.md).
+**Not in main nav:** [`IMAGE_BRIEFS.md`](IMAGE_BRIEFS.md), [`DOCUMENTATION_PLAN.md`](this file), [`TEMPLATE_*.md`](TEMPLATE_concept.md).
 
 ---
 
-## Archive (hidden from index)
+## Layout
 
 ```
-docs/archive/
-├── beta/          Beta V1.2–V2.0 specs
-├── sessions/      HANDOVER, SESSION_*
-├── planned/       CORRELATION_V2, UI overhaul
-└── LIGHT_THEME.md
+docs/
+├── index.md, SELF_HOST, USE, TROUBLESHOOTING, HOW_IT_WORKS   # readers
+├── PRODUCT_STATUS.md, HANDOVER.md, SPRINT_*.md               # living ops
+├── ONBOARDING, OPERATIONS, POSTGRES, ROADMAP                 # deep refs
+├── planning/          # FUTURE WORK
+│   ├── BACKLOG.md
+│   └── specs/
+├── archive/           # HISTORY
+│   ├── beta/
+│   ├── sessions/
+│   └── superseded/
+├── decisions/         # ADRs
+├── diagrams/
+└── assets/
 
-docs/planning/
-├── README.md      Index — BACKLOG + reference + completed stubs
-├── BACKLOG.md     Open / parked / optional (single queue)
-├── reference/     Canonical deep dives (one topic per file)
-└── completed/     Superseded stubs + audit trail
+repo root (agent + product entrypoints only):
+├── README.md, PRODUCT.md, CLAUDE.md, AGENTS.md, CONTRIBUTING.md
+├── API_REFERENCE.md, SYSTEM_DESIGN.md, SECURITY.md              # canonical refs (linked everywhere)
+└── CODEBASE_CONTEXT.md, TECHNICAL_INVENTORY.md, …             # periodic snapshots — prefer archive/snapshots/ long-term
 ```
-
-Root `Beta V*.md` stubs were removed (2026-07); archived specs live in `docs/archive/beta/`.
 
 ---
 
-## Images
+## What to delete (not keep)
 
-1. Prompts in [`IMAGE_BRIEFS.md`](IMAGE_BRIEFS.md)
-2. Export from Miro/Figma → [`assets/`](assets/)
-3. Reference in the 4 guides (replace `placeholder-diagram.svg`)
+- One-off bot review dumps (e.g. Gemini inline JSON reconciliations) — fix in code/PR threads, not permanent docs
+- Duplicate stubs that only redirect to another doc — fix links instead
+- Generated artifacts in git (`*.xlsx`, `*.pdf` from scripts) — regenerate on demand
 
 ---
 
@@ -51,15 +70,13 @@ Root `Beta V*.md` stubs were removed (2026-07); archived specs live in `docs/arc
 | Doc | Role |
 |-----|------|
 | [`ONBOARDING.md`](ONBOARDING.md) | Developers |
-| [`OPERATIONS.md`](OPERATIONS.md) | Deep ops (linked from SELF_HOST) |
+| [`OPERATIONS.md`](OPERATIONS.md) | Deep ops |
 | [`POSTGRES.md`](POSTGRES.md) | Deep Postgres |
 | [`ROADMAP.md`](ROADMAP.md) | Release index |
-| [`PRODUCT_STATUS.md`](PRODUCT_STATUS.md) | Living truth (short) |
-
-Everything else under [`archive/`](archive/) is historical.
+| [`PRODUCT_STATUS.md`](PRODUCT_STATUS.md) | Living truth |
 
 ---
 
 ## Rule
 
-**Do not split reader docs into more files** unless a section exceeds ~2 screens — then add a subsection heading, not a new file.
+**Do not split reader docs into more files** unless a section exceeds ~2 screens — add a subsection heading, not a new file.

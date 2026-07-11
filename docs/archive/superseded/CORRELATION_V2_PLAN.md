@@ -1,7 +1,7 @@
 # BRIEFR Correlation Engine v2 — Implementation Plan
 
 > **⚠️ SUPERSEDED (2026-07-11) BY:**
-> [`docs/planning/reference/correlation-engine-v2.md`](../../planning/reference/correlation-engine-v2.md)
+> [`docs/planning/specs/correlation-engine-v2.md`](../../planning/specs/correlation-engine-v2.md)
 >
 > **Earlier pointer (2026-07-09):** [`docs/BRIEFR_ARCHITECTURE_REVIEW_2026-07.md`](../../BRIEFR_ARCHITECTURE_REVIEW_2026-07.md) §3.
 > This plan's "current state (v1)" framing is **materially outdated**: the code
