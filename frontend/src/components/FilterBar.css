@@ -81,7 +81,7 @@
 
 .filter-title {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--type-micro);
   letter-spacing: 0.06em;
   color: var(--text3);
   font-weight: 400;
@@ -90,7 +90,7 @@
 .filter-count,
 .filter-showing {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--type-micro);
   letter-spacing: 0.06em;
   color: var(--text3);
   font-weight: 400;
@@ -98,14 +98,14 @@
 
 .filter-meta-sep {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--type-micro);
   color: var(--text3);
   opacity: 0.6;
 }
 
 .filter-stack-clear {
   margin-left: 10px;
-  font-size: 10px;
+  font-size: var(--type-micro);
   letter-spacing: 0.06em;
   color: var(--text3);
   background: none;
@@ -146,7 +146,7 @@
 }
 
 .filter-stack-label {
-  font-size: 0.6875rem;
+  font-size: var(--type-meta);
   letter-spacing: 0.08em;
   color: var(--accent);
   flex-shrink: 0;
@@ -191,7 +191,7 @@
 
 .digest-btn {
   font-family: var(--font-mono);
-  font-size: 0.625rem;
+  font-size: var(--type-meta);
   font-weight: 500;
   letter-spacing: 0.1em;
   color: var(--accent);
@@ -227,7 +227,7 @@
 
 .filter-btn {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: var(--type-meta);
   font-weight: 500;
   letter-spacing: 0.08em;
   color: var(--text2);
@@ -284,7 +284,7 @@
 
 .export-btn {
   font-family: var(--font-mono);
-  font-size: 0.625rem;
+  font-size: var(--type-meta);
   font-weight: 500;
   letter-spacing: 0.1em;
   color: var(--text2);
@@ -314,7 +314,7 @@
 }
 
 .export-error {
-  font-size: 10px;
+  font-size: var(--type-micro);
   color: var(--red);
   padding: 6px 20px;
   border-bottom: 1px solid var(--border);
@@ -322,7 +322,7 @@
 }
 
 .export-success {
-  font-size: 10px;
+  font-size: var(--type-micro);
   color: var(--green);
   padding: 6px 20px;
   border-bottom: 1px solid var(--border);
@@ -390,7 +390,7 @@
 }
 
 .vendor-filter-label {
-  font-size: 0.6875rem;
+  font-size: var(--type-meta);
   line-height: 1.4;
   letter-spacing: 0.1em;
   color: var(--accent);
@@ -398,7 +398,7 @@
 }
 
 .vendor-clear-btn {
-  font-size: 9px;
+  font-size: var(--type-micro);
   letter-spacing: 0.08em;
   color: var(--text3);
   background: none;
@@ -419,7 +419,7 @@
 
 .vendor-btn {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--type-micro);
   letter-spacing: 0.06em;
   padding: 6px 14px;
   border: 1px solid var(--border);
