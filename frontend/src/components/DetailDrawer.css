@@ -275,21 +275,32 @@
   flex-shrink: 0;
 }
 
+/* Neutral actions (Pin, Start investigation, …) — ux-audit Issue 37: red is
+   reserved for destructive/severity, so the base state is ghost, not red. */
 .drawer-inv-btn {
-  font-size: 9px;
+  min-height: 30px;
+  font-size: var(--type-micro);
   letter-spacing: 0.08em;
   font-weight: 500;
-  color: var(--red);
+  color: var(--text2);
   background: transparent;
-  border: 1px solid var(--red);
+  border: 1px solid var(--border2);
   border-radius: 0;
   padding: 6px 10px;
   cursor: pointer;
   white-space: nowrap;
+  transition: color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast);
 }
 
 .drawer-inv-btn:hover {
-  background: var(--red-dim);
+  color: var(--text);
+  border-color: var(--text3);
+  background: var(--bg3);
+}
+
+.drawer-inv-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .drawer-inv-btn-secondary {
@@ -313,21 +324,36 @@
   position: relative;
 }
 
+/* Neutral action (opens a menu) — not destructive, so ghost not red. */
 .drawer-report-btn {
-  font-size: 10px;
+  min-height: 30px;
+  font-size: var(--type-micro);
   letter-spacing: 0.1em;
   font-weight: 500;
-  color: #fff;
-  background: var(--red);
-  border: none;
+  color: var(--text2);
+  background: transparent;
+  border: 1px solid var(--border2);
   border-radius: 0;
   padding: 6px 14px;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast);
 }
 
 .drawer-report-btn:hover {
-  opacity: 0.9;
+  color: var(--text);
+  border-color: var(--text3);
+  background: var(--bg3);
+}
+
+.drawer-report-btn[aria-expanded="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+}
+
+.drawer-report-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .drawer-report-menu {
@@ -343,7 +369,8 @@
 }
 
 .drawer-report-item {
-  font-size: 10px;
+  min-height: 36px;
+  font-size: var(--type-micro);
   letter-spacing: 0.06em;
   text-align: left;
   padding: 10px 14px;
@@ -352,7 +379,7 @@
   border: none;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
-  transition: color 0.1s, background 0.1s;
+  transition: color var(--motion-fast), background var(--motion-fast);
 }
 
 .drawer-report-item:last-child {
@@ -362,6 +389,11 @@
 .drawer-report-item:hover {
   color: var(--text);
   background: var(--bg3);
+}
+
+.drawer-report-item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .drawer-close {
@@ -379,9 +411,7 @@
   color: var(--text);
 }
 
-.drawer-close:focus-visible,
-.drawer-report-btn:focus-visible,
-.drawer-tab:focus-visible {
+.drawer-close:focus-visible {
   outline: 1px solid var(--accent);
   outline-offset: 1px;
 }
@@ -400,25 +430,31 @@
 }
 
 .drawer-tab {
-  font-size: 10px;
+  min-height: 36px;
+  font-size: var(--type-micro);
   letter-spacing: 0.1em;
-  color: var(--text3);
+  color: var(--text2);
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   padding: 10px 14px;
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color var(--motion-fast), border-color var(--motion-fast);
 }
 
 .drawer-tab-active {
   color: var(--text);
-  border-bottom-color: var(--red);
+  border-bottom-color: var(--accent);
+}
+
+.drawer-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .drawer-tab:hover:not(.drawer-tab-active) {
-  color: var(--text2);
+  color: var(--text);
 }
 
 /* ── Scrollable tab content ──────────────────────────────── */
@@ -498,15 +534,26 @@
 
 /* EPSS bar */
 .drawer-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  min-width: 30px;
   font-size: 1rem;
   line-height: 1;
   color: var(--text2);
-  padding: 2px 6px 2px 0;
+  padding: 2px 8px;
   margin-right: 2px;
+  transition: color var(--motion-fast);
 }
 
 .drawer-back-btn:hover {
   color: var(--accent);
+}
+
+.drawer-back-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .drawer-epss-header .drawer-section-label,
@@ -873,8 +920,10 @@
 }
 
 .drawer-gn-load-btn {
+  min-height: 30px;
+  min-width: 11rem;
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: var(--type-micro);
   letter-spacing: 0.04em;
   color: var(--accent);
   background: transparent;
@@ -882,11 +931,17 @@
   padding: 6px 12px;
   cursor: pointer;
   margin-top: 4px;
+  transition: border-color var(--motion-fast), color var(--motion-fast);
 }
 
 .drawer-gn-load-btn:hover {
   border-color: var(--accent);
   color: var(--text);
+}
+
+.drawer-gn-load-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 
@@ -940,7 +995,10 @@
 }
 .drawer-otx-more-btn {
   margin-top: 2px;
-  font-size: 10px;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--type-micro);
   letter-spacing: 0.08em;
   color: var(--accent);
   background: none;
@@ -948,8 +1006,10 @@
   cursor: pointer;
   padding: 0;
   text-align: left;
+  transition: color var(--motion-fast);
 }
 .drawer-otx-more-btn:hover { color: var(--text); }
+.drawer-otx-more-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .drawer-otx-item { padding: 12px; background: var(--bg2); border: 1px solid var(--border); }
 .drawer-otx-name { font-size: 0.875rem; color: var(--text); margin: 0 0 8px; line-height: 1.4; }
 .drawer-otx-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
@@ -1510,28 +1570,12 @@
   border-top: 1px solid var(--border);
 }
 
-.corr-dismiss-btn {
-  font-size: 0.6875rem;
-  letter-spacing: 0.04em;
-  color: var(--text2);
-  background: transparent;
-  border: 1px solid var(--border2);
-  padding: 4px 10px;
-  cursor: pointer;
-}
-
-.corr-dismiss-btn:hover {
-  color: var(--text);
-  border-color: var(--text3);
-  background: var(--bg2);
-}
-
 .corr-evidence {
   margin-top: 6px;
 }
 
 .corr-evidence-toggle {
-  font-size: 0.6875rem;
+  font-size: var(--type-micro);
   color: var(--accent);
   cursor: pointer;
   list-style: none;
@@ -1604,41 +1648,59 @@
   margin-top: 0;
 }
 
-.corr-infra-actions .corr-dismiss-btn {
+.corr-infra-actions .corr-mark-unrelated-btn {
   flex-shrink: 0;
 }
 
 .corr-show-more-btn {
   margin-top: 8px;
-  font-size: 0.6875rem;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--type-micro);
   letter-spacing: 0.06em;
   color: var(--accent);
   background: none;
   border: none;
   cursor: pointer;
   padding: 0;
+  transition: color var(--motion-fast);
 }
 
 .corr-show-more-btn:hover {
   color: var(--text);
 }
 
+.corr-show-more-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Neutral action (add to investigation) — not destructive, so ghost not red. */
 .drawer-investigate-btn {
+  min-height: 30px;
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: var(--type-micro);
   letter-spacing: 0.04em;
-  color: var(--red);
-  background: var(--red-dim);
-  border: 1px solid var(--red);
+  color: var(--text2);
+  background: transparent;
+  border: 1px solid var(--border2);
   padding: 5px 10px;
   cursor: pointer;
   margin-top: 8px;
   align-self: flex-start;
+  transition: color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast);
 }
 
 .drawer-investigate-btn:hover {
-  background: var(--bg2);
   color: var(--text);
+  border-color: var(--text3);
+  background: var(--bg3);
+}
+
+.drawer-investigate-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 /* ── BRIEFR Risk Score breakdown (Overview tab) ──────────── */
@@ -1663,36 +1725,6 @@
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
-}
-
-.drawer-risk-copy-btn {
-  font-size: 0.5625rem;
-  letter-spacing: 0.08em;
-  color: var(--text3);
-  background: transparent;
-  border: 1px solid var(--border2);
-  padding: 3px 8px;
-  cursor: pointer;
-}
-
-.drawer-risk-copy-btn:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.drawer-retry-btn {
-  margin-top: 10px;
-  font-size: 0.625rem;
-  letter-spacing: 0.08em;
-  color: var(--accent);
-  background: transparent;
-  border: 1px solid var(--border2);
-  padding: 6px 12px;
-  cursor: pointer;
-}
-
-.drawer-retry-btn:hover {
-  border-color: var(--accent);
 }
 
 /* Large score number */
@@ -1789,49 +1821,24 @@
 
 .drawer-risk-profile-cta-btn {
   align-self: flex-start;
-  font-size: 10px;
+  min-height: 30px;
+  font-size: var(--type-micro);
   letter-spacing: 0.06em;
   padding: 6px 12px;
   border: 1px solid var(--accent);
   background: transparent;
   color: var(--accent);
   cursor: pointer;
+  transition: background var(--motion-fast);
 }
 
 .drawer-risk-profile-cta-btn:hover {
   background: var(--bg2);
 }
 
-.drawer-risk-profile-link {
-  font-size: 9px;
-  letter-spacing: 0.04em;
-  color: var(--text3);
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0 0 12px;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.drawer-risk-profile-link:hover {
-  color: var(--text2);
-}
-
-.drawer-risk-toggle {
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  color: var(--text3);
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0 0 14px;
-  cursor: pointer;
-}
-
-.drawer-risk-toggle:hover {
-  color: var(--text2);
+.drawer-risk-profile-cta-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .drawer-risk-comp-formula {
@@ -1924,10 +1931,6 @@
   color: var(--text2);
   margin: 0 0 8px;
   line-height: 1.45;
-}
-
-.drawer-risk-methodology .drawer-risk-toggle {
-  margin: 0;
 }
 
 .drawer-risk-hero-section {
@@ -2181,17 +2184,24 @@
 
 .drawer-asset-exposure-cta {
   margin-top: 8px;
-  font-size: 10px;
+  min-height: 30px;
+  font-size: var(--type-micro);
   letter-spacing: 0.06em;
   padding: 6px 12px;
   border: 1px solid var(--accent);
   background: transparent;
   color: var(--accent);
   cursor: pointer;
+  transition: background var(--motion-fast);
 }
 
 .drawer-asset-exposure-cta:hover {
   background: var(--bg2);
+}
+
+.drawer-asset-exposure-cta:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .drawer-asset-exposure-kev-note {
@@ -2324,7 +2334,8 @@
 }
 
 .det-copy-btn {
-  font-size: 9px;
+  min-height: 26px;
+  font-size: var(--type-micro);
   letter-spacing: 0.06em;
   color: var(--text3);
   background: none;
@@ -2332,12 +2343,17 @@
   padding: 3px 8px;
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.1s, border-color 0.1s;
+  transition: color var(--motion-fast), border-color var(--motion-fast);
 }
 
 .det-copy-btn:hover {
   color: var(--text);
   border-color: var(--text3);
+}
+
+.det-copy-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .det-generated-section {
@@ -2457,20 +2473,26 @@
   align-items: center;
   gap: 8px;
   width: 100%;
+  min-height: 36px;
   padding: 9px 12px;
   background: var(--bg3);
   border: none;
   cursor: pointer;
   text-align: left;
-  font-size: 10px;
+  font-size: var(--type-micro);
   letter-spacing: 0.06em;
   color: var(--text2);
-  transition: background 0.1s, color 0.1s;
+  transition: background var(--motion-fast), color var(--motion-fast);
 }
 
 .det-siem-toggle:hover {
   background: var(--bg2);
   color: var(--text);
+}
+
+.det-siem-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .det-siem-chevron {
@@ -2796,16 +2818,25 @@
 }
 
 .corr-mark-unrelated-btn {
+  min-height: 26px;
   font-size: var(--type-meta);
   letter-spacing: 0.04em;
   color: var(--text-muted);
-  padding: 2px 6px;
+  background: transparent;
+  padding: 2px 8px;
   border: 1px solid var(--border2);
+  cursor: pointer;
+  transition: color var(--motion-fast), border-color var(--motion-fast);
 }
 
 .corr-mark-unrelated-btn:hover {
   color: var(--text-secondary);
   border-color: var(--border-strong);
+}
+
+.corr-mark-unrelated-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .corr-suppressed-panel {
@@ -2841,11 +2872,25 @@
 }
 
 .corr-restore-btn {
+  min-height: 26px;
   font-size: var(--type-meta);
   letter-spacing: 0.04em;
   color: var(--text-link);
-  padding: 2px 6px;
+  background: transparent;
+  padding: 2px 8px;
   border: 1px solid var(--border2);
+  cursor: pointer;
+  transition: color var(--motion-fast), border-color var(--motion-fast);
+}
+
+.corr-restore-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.corr-restore-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .drawer-panel {
