@@ -48,3 +48,60 @@ def redact_audit_target(action: str, key: str, value: str) -> str:
     if len(value) > 200:
         return value[:200] + "…"
     return value
+
+
+_SECRET_PREFIXES = (
+    "gsk_",
+    "sk-or-v1-",
+    "sk-",
+    "sk_",
+    "csk-",
+    "vulncheck_",
+    "aq.",
+)
+
+
+def _already_masked_secret(text: str) -> bool:
+    return (
+        text in {"***", "not configured"}
+        or "…" in text
+        or "[masked]" in text.lower()
+    )
+
+
+def _looks_like_secret_value(text: str) -> bool:
+    stripped = (text or "").strip()
+    if not stripped or len(stripped) < 9 or _already_masked_secret(stripped):
+        return False
+    lower = stripped.lower()
+    if any(lower.startswith(prefix) for prefix in _SECRET_PREFIXES):
+        return True
+    if len(stripped) > 24 and " " not in stripped and "/" not in stripped:
+        return True
+    return False
+
+
+def mask_audit_log_target(action: str, target: str | None) -> str:
+    """Mask sensitive audit_log.target values on read (covers legacy plaintext rows)."""
+    text = (target or "").strip()
+    if not text:
+        return text
+    if _already_masked_secret(text):
+        return text
+
+    if action.startswith("config.set."):
+        key = action.removeprefix("config.set.")
+        field = get_field(key)
+        if field and field.type == "secret":
+            return mask_secret_value(text)
+        if field and field.type == "url":
+            return mask_url_value(text)
+        if key == "DATABASE_URL":
+            return mask_url_value(text)
+
+    if action.startswith("config.") and _looks_like_secret_value(text):
+        return mask_secret_value(text)
+
+    if len(text) > 200:
+        return text[:200] + "…"
+    return text

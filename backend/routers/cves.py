@@ -1143,17 +1143,31 @@ async def _drawer_related_payload(db, cve_key: str, *, limit: int = 5) -> dict:
     return {"data": related, "meta": {"method": method}}
 
 
+async def _drawer_db_task(coro_fn):
+    """Run one drawer sub-fetch on its own pool connection (asyncpg is single-flight per conn)."""
+    task_db = await get_db()
+    try:
+        result = await coro_fn(task_db)
+        await task_db.commit()
+        return result
+    finally:
+        await task_db.close()
+
+
 async def _build_cve_drawer_bundle(db, cve_key: str, *, sector: str = "") -> dict:
     exists = await db.execute_fetchall("SELECT 1 FROM cves WHERE cve_id = ?", (cve_key,))
     if not exists:
         raise HTTPException(status_code=404, detail=f"CVE {cve_key} not found")
 
+    sector_value = sector.strip()
     sentences, epss_history, related, correlation, momentum = await asyncio.gather(
-        _drawer_sentences_payload(db, cve_key),
-        get_epss_history(db, cve_key, days=30),
-        _drawer_related_payload(db, cve_key, limit=5),
-        get_correlation_for_cve(db, cve_key, user_sector=sector.strip()),
-        calculate_momentum(cve_key, db),
+        _drawer_db_task(lambda task_db: _drawer_sentences_payload(task_db, cve_key)),
+        _drawer_db_task(lambda task_db: get_epss_history(task_db, cve_key, days=30)),
+        _drawer_db_task(lambda task_db: _drawer_related_payload(task_db, cve_key, limit=5)),
+        _drawer_db_task(
+            lambda task_db: get_correlation_for_cve(task_db, cve_key, user_sector=sector_value)
+        ),
+        _drawer_db_task(lambda task_db: calculate_momentum(cve_key, task_db)),
     )
     correlation["provenance"] = derive_correlation_provenance(
         correlation,
