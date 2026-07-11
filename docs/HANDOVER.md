@@ -12,6 +12,26 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-11 — Merged Open Draft PRs (#447, #448)
+
+**Context:** Audited, verified, and successfully merged the two remaining open draft pull requests:
+
+* **PR #447 (Fix audit key exposure, drawer DB errors, and admin UI clarity)**:
+  * Masks sensitive values in legacy plaintext `audit_log.target` fields on read (uses prefix/heuristic regex to mask unspaced strings >24 chars).
+  * Solves the parallel-connection `asyncpg.exceptions.InterfaceError` on drawer loads by launching sub-fetches on separate pooled connections.
+  * Standardizes `.admin-table` typography and layout in CSS/JS.
+* **PR #448 (Skip empty LLM requests and degrade empty-response providers)**:
+  * Restricts empty outbound payload requests to LLM providers.
+  * Optimizes loop pacing by context-caching empty-responding providers (`llm_job_session`) to immediately circuit-skip them for the remainder of a batch job, avoiding slow timeouts.
+* **Database client startup fix**:
+  * Resolved SQLite operational errors in `conftest` test client setup (due to `patched_init` calling the DB before lifespan could initialize the SQLite database) by auto-seeding the default test user on-demand in `require_user` under the pytest context.
+
+**Verification**: All backend tests pass successfully (100% green, 1000+ passed).
+
+**Next:** Continue with remaining strategy/roadmap items.
+
+---
+
 ## 2026-07-11 — Security Gaps and N+1 Query Optimizations (#449)
 
 **Context:** Audited PR range #432–#446 (where automated Gemini review comments were missing due to daily quota exhaustion) and reconciled them against outstanding security audit findings. Implemented targeted fixes and performance optimizations on a new branch and merged via PR #449.
