@@ -27,6 +27,8 @@ TECHNICAL_INVENTORY.xlsx
 architecture-map.html
 
 # Automation loop working files (execution-playbook queue runner) — never commit
+.loop-queue.txt
+.loop-state.txt
 .claude/loop-queue.txt
 .claude/loop-state.txt
 
