@@ -30,6 +30,14 @@ _load_credentials() {
     return 0
   fi
   if [ -f "${CRED_FILE}" ]; then
+    # Warn if the file has insecure permissions (chmod 600 or 400 is expected)
+    if command -v stat >/dev/null 2>&1; then
+      local perms
+      perms="$(stat -c "%a" "${CRED_FILE}" 2>/dev/null || stat -f "%A" "${CRED_FILE}" 2>/dev/null || true)"
+      if [ -n "${perms}" ] && [ "${perms}" != "600" ] && [ "${perms}" != "400" ]; then
+        echo "WARNING: ${CRED_FILE} has insecure permissions (${perms}). Expected 600 or 400."
+      fi
+    fi
     # shellcheck disable=SC1090
     set -a
     # shellcheck source=/dev/null
