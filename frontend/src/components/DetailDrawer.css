@@ -351,6 +351,11 @@
   background: color-mix(in srgb, var(--accent) 12%, var(--bg));
 }
 
+.drawer-report-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 .drawer-report-menu {
   position: absolute;
   top: calc(100% + 6px);
@@ -406,9 +411,7 @@
   color: var(--text);
 }
 
-.drawer-close:focus-visible,
-.drawer-report-btn:focus-visible,
-.drawer-tab:focus-visible {
+.drawer-close:focus-visible {
   outline: 1px solid var(--accent);
   outline-offset: 1px;
 }
@@ -443,6 +446,11 @@
 .drawer-tab-active {
   color: var(--text);
   border-bottom-color: var(--accent);
+}
+
+.drawer-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .drawer-tab:hover:not(.drawer-tab-active) {
