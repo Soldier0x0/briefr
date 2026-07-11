@@ -26,6 +26,10 @@ SYSTEM_DESIGN.pdf
 TECHNICAL_INVENTORY.xlsx
 architecture-map.html
 
+# Automation loop working files (execution-playbook queue runner) — never commit
+.claude/loop-queue.txt
+.claude/loop-state.txt
+
 # Graphify — graph.json/graph.html/GRAPH_REPORT.md committed; ignore cache/internals
 graphify-out/cache/
 graphify-out/20*/
