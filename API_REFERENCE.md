@@ -10,7 +10,7 @@ Default error shape (FastAPI): `{"detail": "<message>"}`
 
 **Request IDs:** every response carries an `X-Request-ID` header (echoed from the request when a well-formed `X-Request-ID` is supplied, generated otherwise). The same ID appears as `request_id` in the backend's JSON log lines.
 
-**Rate limiting:** `POST /api/ioc/lookup` and all `POST /api/refresh*` routes are token-bucket rate limited per client IP (defaults: 30/min and 10/min — `RATE_LIMIT_IOC_PER_MINUTE`, `RATE_LIMIT_REFRESH_PER_MINUTE`; `RATE_LIMIT_ENABLED=0` disables). Over the limit → `429` with a `Retry-After` header (whole seconds). Auth routes use separate buckets (`RATE_LIMIT_LOGIN_PER_MINUTE`, `RATE_LIMIT_AUTH_REFRESH_PER_MINUTE`).
+**Rate limiting:** `POST /api/ioc/lookup` and all `POST /api/refresh*` routes are token-bucket rate limited per client IP (defaults: 30/min and 10/min — `RATE_LIMIT_IOC_PER_MINUTE`, `RATE_LIMIT_REFRESH_PER_MINUTE`; `RATE_LIMIT_ENABLED=0` disables). Over the limit → `429` with a `Retry-After` header (whole seconds). Auth routes use separate buckets (`RATE_LIMIT_LOGIN_PER_MINUTE`, `RATE_LIMIT_AUTH_REFRESH_PER_MINUTE`). **Multi-worker:** set `BRIEFR_RATE_LIMIT_STORE=db` to persist token buckets in `sync_state` (shared across uvicorn workers; scheduler must remain single-instance).
 
 ---
 
@@ -123,6 +123,10 @@ Built-in app login (Sprint A0). Sessions use HttpOnly cookies:
 | `ai_context_only` | bool | false | Only CVEs with `has_ai_context = 1` |
 | `frameworks` | str | null | Comma-separated AI/ML tokens; implies `has_ai_context` and matches description/products |
 | `watchlist_only` | bool | false | Only CVEs on the active watchlist (pinned + unexpired snoozes) |
+| `pagination` | str | null | Set to `keyset` for cursor-based chronological pagination (published DESC, then `cve_id` DESC). Omits `total`/`pages`. |
+| `cursor` | str | null | Opaque keyset cursor from a prior response's `next_cursor`. Requires `pagination=keyset`. |
+
+**Response (keyset mode):** Same `data` array shape; adds `pagination: "keyset"` and `next_cursor` (null when no further page). `total`, `page`, and `pages` are null. Invalid cursor → `400`.
 
 **Response:**
 
@@ -436,6 +440,37 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 
 ---
 
+### GET /api/cves/{cve_id}/drawer
+
+**Description:** Aggregate on-open drawer payloads in one round trip — sentences, EPSS history, related CVEs, correlation, and momentum. Used by `DetailDrawer` on open (#436).
+
+**Auth:** None
+
+**Query params:**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `sector` | str | `""` | User industry sector for correlation actor matching |
+
+**Response:**
+
+```json
+{
+  "cve_id": "CVE-2024-0001",
+  "sentences": { },
+  "epss_history": { },
+  "related": { },
+  "correlation": { },
+  "momentum": { }
+}
+```
+
+Sub-objects match the shapes returned by `GET /api/cves/{cve_id}/sentences`, `/epss-history`, `/related`, `/correlation`, and `/momentum` respectively. Correlation includes `provenance` derived server-side.
+
+**Error responses:** `400` invalid CVE ID; `404` CVE not found.
+
+---
+
 ### GET /api/cves/{cve_id}/sentences
 
 **Description:** Human-readable intelligence sentences (risk, EPSS, exploits, patch, KEV).
@@ -465,7 +500,7 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 
 ### GET /api/cves/{cve_id}/related
 
-**Description:** Related CVEs. Default: shared-product heuristic (last 30 days). When `EMBEDDINGS_ENABLED=1` and both the target and candidates have stored vectors, returns semantically similar CVEs instead (NumPy brute-force cosine over `cve_embeddings` vectors).
+**Description:** Related CVEs. Default: shared-product heuristic (last 30 days). When `EMBEDDINGS_ENABLED=1` and both the target and candidates have stored vectors, returns semantically similar CVEs instead (NumPy brute-force cosine over `cve_embeddings` vectors). Vectors are written by the `embeddings_backfill` scheduler job and, when `EMBEDDINGS_AUTO_ON_INGEST=1`, incrementally after NVD sync (#438).
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -736,6 +771,7 @@ Query params: `scope` plus `campaign_id`, `cve_id_b`, or `pulse_id` depending on
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `stack` | str | `null` | Comma-separated stack terms (same matching as `/api/cves`) |
+| `cve_id` | str | `null` | Return only campaigns that include this CVE (max 32 chars) |
 | `limit` | int | `20` | Max clusters (1–100) |
 | `include_stale` | bool | `false` | Include `lifecycle=stale` campaigns |
 
@@ -1237,15 +1273,24 @@ Returns system health: CVE count, NVD sync age, backup age, DB integrity, schedu
 ### GET /api/admin/correlation/status
 Operator diagnostics for the correlation engine: `last_run`, `build_watermark`, campaign totals (`by_lifecycle`, `avg_members`), CVE campaign coverage %, OTX pulse IOC coverage %, IOC sync backlog (`ioc_sync_pending_pulses`), and `suppressions_count`.
 
+### GET /api/admin/api-keys/health
+Configured external API provider keys (suffix only — never full secrets) and last health-ping results from the `api_key_health_check` scheduler job. Response: `{providers: [{provider, env_key, configured, key_suffix, healthy, status_code, latency_ms, error, last_checked_at}], checked_at}`.
+
+### POST /api/admin/api-keys/health/run
+Trigger an immediate health ping sweep for all configured providers. Returns `{ok, stats, providers, checked_at}`. Audit: `api_keys.health.run`.
+
+### GET /api/admin/notifications
+Durable operator notification feed for the admin StatusBar panel (#439). Params: `limit` (1–100, default 40). Response: `{events: [{type, summary, created_at, ...}], counts: {audit, api_key_alerts, job_errors}}`. Event types include `audit`, `api_key_unhealthy`, and `job_error` (from `sync_state` job last-run JSON).
+
 ### GET /api/admin/storage
-Returns disk partition info (`db_partition`, `backup_partition` with free/total/used bytes), DB file size, table row counts, archive count. **Fixes the NaN% bug from V1.3.**
+Returns disk partition info (`db_partition`, `backup_partition` with free/total/used bytes), DB file size, table row counts, per-table size estimates (`table_sizes`), growth estimate (`growth_estimate`), host disk I/O counters (`disk_io` when available), archive count.
 
 ### POST /api/admin/storage/purge
 Body `{target, confirm_text, days_back?}`. Targets: `ioc_cache` (confirm `"clear"`), `feed_cache` (confirm `"clear"`), `epss_history_old` (confirm `"prune"`), `change_history_old` (confirm `"prune"`), `rejected_cves` (confirm `"purge"`), `nvd_watermark` (confirm `"backfill"`), `epss_backfill_reset` (no confirm).
 Response: `{ok, rows_deleted, target}`.
 
 ### GET /api/admin/storage/export
-Streams `briefr.db` as `application/octet-stream` download. Audit: `storage.db_export`.
+Streams a consistent SQLite snapshot (`briefr.db`) via `VACUUM INTO` for dev/test. **Not exposed in the admin UI** (removed #429 — use Postgres backups in production). Audit: `storage.db_export`.
 
 ### GET /api/admin/db-explorer/tables
 Read-only allowlist catalog: `{read_only: true, tables: [{name, label, tier, row_count, columns, filter_columns, required_filter, order_by}]}`. Denied tables are omitted (not 403). Rate limit: 30/min (`db_explorer` bucket) in addition to admin read limits.
@@ -1288,10 +1333,10 @@ Params: `destination_id`, `event_type`, `limit`, `offset`. Returns `{rows: [{id,
 Read-only model catalog SSOT for LLM task failover chains. Returns `{providers: string[], tasks: {task: [{provider, model, order}]}, env_keys: object}` — no secrets.
 
 ### GET /api/admin/ai/operations/overview
-Summary for the Admin AI Operations page: recording flag, configured provider count, active LLM circuits, 24h/7d usage rollups from `ai_operations`, feature enablement flags, embeddings vector count. No secrets. Each usage window includes token sums (`input_tokens`, `output_tokens`, `total_tokens`) and `tokens_recorded` (true once a provider that reports usage runs in the window). Cost is not estimated.
+Summary for the Admin AI Operations page: recording flag, configured provider count, active LLM circuits, 24h/7d usage rollups from `ai_operations`, feature enablement flags, embeddings vector count, `quota_warnings` (#432). No secrets. Each usage window includes token sums (`input_tokens`, `output_tokens`, `total_tokens`) and `tokens_recorded` (true once a provider that reports usage runs in the window). Cost is not estimated.
 
 ### GET /api/admin/ai/operations/providers
-Per-provider health snapshot (`circuit_open`, `last_success`, `last_failure`, `last_error`, `consecutive_failures`) plus `configured` from env keys. Sources: `resilient_client` + `get_configured_providers()`.
+Per-provider health snapshot (`circuit_open`, `last_success`, `last_failure`, `last_error`, `consecutive_failures`) plus `configured` from env keys. Each row includes advisory `quota` from rate-limit response headers when available (#432). Sources: `resilient_client` + `get_configured_providers()`.
 
 ### GET /api/admin/ai/operations/activity
 Params: `limit`, `offset`, optional `task_class`, `provider`. Paginated redacted rows from `ai_operations` — `{rows, total, limit, offset}`. Each row includes `input_tokens`/`output_tokens`/`total_tokens` (null for providers that don't report usage). No prompt text.
