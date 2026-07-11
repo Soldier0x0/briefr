@@ -118,6 +118,12 @@ def _circuit_open_until(source: str) -> float:
     return float(_state(source).get("circuit_open_until") or 0.0)
 
 
+def is_circuit_open(source: str) -> bool:
+    """True when a source's circuit breaker is currently open."""
+    open_until = _circuit_open_until(source)
+    return bool(open_until and time.time() < open_until)
+
+
 def _retry_after_seconds(response: httpx.Response, attempt: int) -> float:
     for header in ("Retry-After", "retry-after"):
         retry_after = (response.headers.get(header) or "").strip()
@@ -377,6 +383,7 @@ __all__ = [
     "get_api_queue_status",
     "get_feed_health",
     "get_pooled_client",
+    "is_circuit_open",
     "record_source_failure",
     "record_source_success",
     "release_api_slot",

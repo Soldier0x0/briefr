@@ -14,11 +14,16 @@ from typing import Literal
 from ai.gemini_client import gemini_chat_completion
 from ai.groq_config import GROQ_URL
 from ai.llm_payload import has_llm_request_payload
+from ai.llm_session import (
+    is_provider_skipped_in_job,
+    mark_provider_empty_response,
+    provider_circuit_open,
+)
 from ai.model_catalog import ProviderStep, gemini_model, task_chain
 from ai.openai_chat import openai_chat_completion
 from ai.operations_recorder import AttemptTimer, classify_llm_error, record_llm_attempt
 from api_queue_operations import LLM_TASK_OPERATIONS
-from resilient_client import CircuitOpenError
+from resilient_client import CircuitOpenError, record_source_success
 
 logger = logging.getLogger(__name__)
 
@@ -222,6 +227,36 @@ async def chat_completion_task(
     for step in _task_chain(task):
         if not _api_key(step.provider):
             continue
+        if is_provider_skipped_in_job(step.provider):
+            logger.info(
+                "Skipping LLM provider %s for task %s — empty response earlier in this job",
+                step.provider,
+                task,
+            )
+            last_failed_provider = step.provider
+            last_failed_model = step.model
+            attempt_index += 1
+            continue
+        if provider_circuit_open(step.provider):
+            logger.info(
+                "Skipping LLM provider %s for task %s — circuit open",
+                step.provider,
+                task,
+            )
+            await _record_attempt(
+                task=task,
+                step=step,
+                timer=AttemptTimer(),
+                success=False,
+                retry_index=attempt_index,
+                queue_context_type=queue_context_type,
+                queue_context_id=queue_context_id,
+                error_class="circuit_open",
+            )
+            last_failed_provider = step.provider
+            last_failed_model = step.model
+            attempt_index += 1
+            continue
         timer = AttemptTimer()
         usage: dict = {}
         try:
@@ -239,6 +274,7 @@ async def chat_completion_task(
                 )
             ).strip()
             if content:
+                record_source_success(step.provider)
                 await _record_attempt(
                     task=task,
                     step=step,
@@ -257,6 +293,7 @@ async def chat_completion_task(
                     model=step.model,
                 )
             logger.warning("LLM %s returned empty content for task %s", step.provider, task)
+            mark_provider_empty_response(step.provider)
             await _record_attempt(
                 task=task,
                 step=step,
