@@ -12,6 +12,25 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-11 — Security Gaps and N+1 Query Optimizations (#449)
+
+**Context:** Audited PR range #432–#446 (where automated Gemini review comments were missing due to daily quota exhaustion) and reconciled them against outstanding security audit findings. Implemented targeted fixes and performance optimizations on a new branch and merged via PR #449.
+
+* **Security & Auth Control**:
+  * **AUTH-001**: Added live `is_active` status check on every request in `require_user` route dependency, and optimized `require_admin` to reuse `request.state.user` to prevent duplicate DB queries.
+  * **AUTH-002**: Updated user password change path to call `revoke_all_sessions_for_user`, invalidating existing JWT sessions immediately.
+  * **VAL-002**: Added Pydantic `max_length` constraints to summary requests (`cves`, `iocs`, `actors`, and `items`) to prevent resource-exhaustion/LLM-cost DoS.
+* **Concurrency & Idempotency**:
+  * **IDEM-001/TXN-001**: Implemented atomic check-and-set (`claim_webhook_destination_sent`) using `ON CONFLICT DO NOTHING` before sending webhook requests, with a rollback mechanism (`clear_webhook_destination_dedupe_for_dest`) on HTTP failure to prevent TOCTOU race conditions.
+* **Database Query Performance (N+1 queries)**:
+  * **DB-001**: Rewrote `get_campaigns_for_cve` and added `batch_ioc_edges_for_peers` to resolve the O(N * M) campaign retrieval N+1 bottleneck, reducing database queries to exactly 4 batch queries.
+  * **DB-002**: Optimized `upsert_gap_items_for_cves` and `_enrich_cve_scores` to batch fetch techniques, hunt pack counts, technique names, and existing rows, reducing nested loop queries to a flat set of 6 queries.
+* **Verification**: All backend tests pass successfully (`python -m pytest tests/ -q`), and the frontend production bundle builds successfully (`vite build`).
+
+**Next:** Continue with remaining parked items or the next sprint items.
+
+---
+
 ## 2026-07-11 — 4-PR tail bundle complete (#441–#444)
 
 **Context:** Follow-up bundle after the 12-PR operator wave — session auth parity,
