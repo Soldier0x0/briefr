@@ -1937,7 +1937,7 @@ async def refresh_incidents_feed(
 ):
     """Refresh one or more incident-feed sources (RSS outlet or ATLAS).
 
-    Body: ``{"sources": ["bleeping", "atlas"]}`` — omit or pass ``[]`` for a
+    Body: ``{"sources": ["krebs", "atlas"]}`` — omit or pass ``[]`` for a
     full rebuild (same as the ``incident_feed_refresh`` scheduler job).
     """
     from feeds.case_study_feed import INCIDENT_SOURCE_IDS, refresh_incident_feed_sources

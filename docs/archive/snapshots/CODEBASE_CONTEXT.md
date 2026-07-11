@@ -22,7 +22,7 @@ Analysts normally bounce between NVD, CISA KEV, VirusTotal, exploit trackers, AT
 | **BRIEF tab** | Morning brief action queue (`GET /api/brief`), KPI stats, 90-day heatmap, What Changed panel, analyst charts (KEV histogram, EPSS movers) |
 | **FEED tab** | Paginated CVE list with stack/vendor/KEV/EPSS filters, CSV/XLSX export, sidebar KEV deadlines + top ATT&CK techniques |
 | **IOC LOOKUP** | Multi-source IP/hash/domain enrichment (VirusTotal, AbuseIPDB, GreyNoise, OTX, MalwareBazaar, URLhaus) with 6h cache |
-| **INCIDENTS & NEWS** | 6 RSS security feeds + MITRE ATLAS case studies via `GET /api/case-studies/feed` |
+| **INCIDENTS & NEWS** | 5 RSS security feeds + MITRE ATLAS case studies via `GET /api/case-studies/feed` |
 | **Forge tab** | Detection engineering MVP — ATT&CK coverage map, hunt pack generation (`/api/forge/*`, `/api/hunt-packs/*`) |
 | **CVE detail drawer** | Live enrichment (Sploitus, GreyNoise, OTX, OSV, CIRCL), EPSS sparkline, momentum, correlation, detection rules, related CVEs, PDF export |
 | **Investigation panel** | Session-only cross-tab pivots (CVE → IOC → related CVE) |

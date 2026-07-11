@@ -1473,7 +1473,7 @@ Aggregated intel posture payload for the `/wallboard` kiosk view. Built from exi
     "stack_terms": ["log4j"]
   },
   "headlines": {
-    "items": [{"title": "…", "source": "BleepingComputer", "published_at": "…"}],
+    "items": [{"title": "…", "source": "The Hacker News", "published_at": "…"}],
     "meta": {"refreshed_at": "…", "stale": false, "warming": false, "refresh_interval_minutes": 30},
     "error_count": 0
   }

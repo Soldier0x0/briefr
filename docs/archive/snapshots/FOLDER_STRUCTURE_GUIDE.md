@@ -126,7 +126,7 @@ Every file in the repository with a one-line purpose. Tags:
 | `backend/feeds/osv.py` | OSV.dev query by CVE alias |
 | `backend/feeds/extended.py` | Sploitus, GreyNoise, MalwareBazaar, URLhaus, CIRCL |
 | `backend/feeds/ai_context.py` | AI/ML keyword detection and ATLAS link heuristics |
-| `backend/feeds/incident_sources.py` | RSS source config (6 feeds) |
+| `backend/feeds/incident_sources.py` | RSS source config (5 feeds) |
 | `backend/feeds/incident_news.py` | RSS fetch, parse, per-source feed_cache |
 | `backend/feeds/case_study_feed.py` | Combined RSS + ATLAS snapshot for `/api/case-studies/feed` (single DB connection) |
 | `backend/feeds/cvelistv5.py` | cvelistV5 GitHub delta sync (CVE JSON 5.x before NVD) |
