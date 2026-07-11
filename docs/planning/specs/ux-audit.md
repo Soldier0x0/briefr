@@ -636,9 +636,20 @@ inactive / `--text` + accent underline active, ≥ 36px hit area.
 
 **Remediation PRs:**
 
-- **UX-C1** — harden `.ui-btn` (`min-height`, danger-variant doc note); migrate
-  `DetailDrawer.css` bespoke buttons + tab row to the standard. Browser-verify per
-  playbook §3 (three states, keyboard pass, zero layout shift on state toggles).
+- **UX-C1 — done (PR pending merge).** Hardened `.ui-btn` (`min-height: 30px`,
+  `--type-micro` size floor, danger-variant doc note); migrated every bespoke
+  button/toggle in `DetailDrawer.css` — not just the 9-row evidence table above —
+  to the standard geometry (`min-height`, 12px font floor, `var(--motion-fast)`
+  transitions, `focus-visible` rings). Red-for-neutral-action fixed to ghost/text2
+  on `.drawer-inv-btn`, `.drawer-report-btn`, `.drawer-investigate-btn`. Tab active
+  underline changed `--red` → `--accent` (red stays destructive/severity-only).
+  **Spec correction:** `corr-dismiss-btn` (row above) was already dead CSS with no
+  JSX caller — the live button is `corr-mark-unrelated-btn`, migrated instead.
+  Also removed as dead: `drawer-risk-copy-btn`, `drawer-retry-btn`,
+  `drawer-risk-profile-link`. Verified in-browser per playbook §3 (three states,
+  keyboard focus-visible pass, 375/960/1280 widths, zero layout shift on Pin/Unpin
+  and Load/Retry GreyNoise label toggles); `prefers-reduced-motion` covered by the
+  existing global wildcard rule in `App.css`, no per-component work needed.
 - **UX-C2** — `CVECard.css` action row + share button to the standard (red → ghost,
   min-widths, transitions); sweep feed-level surfaces (`FilterBar`, `IOCLookup`)
   for the same drift.
