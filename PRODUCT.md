@@ -12,6 +12,15 @@ instance, no multi-tenant). Used during active triage/investigation work
 (CVE feed scanning, IOC lookup, hunt-pack generation) and ongoing operations
 (admin panel: backups, scheduler, config, security).
 
+**Audience range (2026-07-11):** the tool must be legible to people **new to
+cybersecurity** as well as seasoned professionals, leads, architects, and
+managers. Newcomers are served by progressive disclosure (tutorial overlay,
+tooltips, domain-term explanations — design principle 6), never by a
+dumbed-down mode; leadership roles are served by the same dense surfaces
+plus the summary/export layers (Morning Brief, executive PDF, wallboard,
+security-architecture posture). One interface, explained everywhere — never
+two products.
+
 ## Product Purpose
 
 A self-hosted CVE intelligence and detection-engineering platform: a
@@ -61,6 +70,14 @@ warm-cream default.
 5. **Self-hosted means operator control.** Visual preferences (theme,
    density, font scale) are the operator's choice, persisted locally, not
    dictated by the build.
+6. **Domain terms explain themselves, same as status words.** KEV, EPSS,
+   CVSS, CWE, CAPEC, ATT&CK technique IDs, and every other
+   assumed-knowledge acronym gets the same discoverable explanation
+   treatment as pills and badges (principle 1) — one sentence of meaning
+   plus "why it matters here," via the existing HelpTip/ExplainTip
+   infrastructure. A newcomer must never hit a wall of unexplained jargon;
+   an expert must never be slowed by it (tooltips are hover/focus-only,
+   zero cost to ignore).
 
 ## Accessibility & Inclusion
 
