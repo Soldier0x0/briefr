@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Eye, Wrench, RefreshCw, RotateCw, Hourglass, ChevronDown, Clock } from 'lucide-react'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import HelpTip from './shared/HelpTip.jsx'
+import NotificationCenter from './shared/NotificationCenter.jsx'
 import { fmtAge } from './formatters.js'
 import { worstSource } from './intelStatus.js'
 
@@ -202,6 +203,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
         </div>
 
         <div className="sb-actions">
+          <NotificationCenter />
           {userMenu}
           {mode === 'analyst' && (
             <>
