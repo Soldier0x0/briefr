@@ -507,6 +507,20 @@ async def run_api_keys_health(request: Request):
     return {"ok": True, "stats": stats, **payload}
 
 
+@router.get("/notifications")
+async def get_operator_notifications(
+    limit: int = Query(default=40, ge=1, le=100),
+):
+    """Durable operator notification feed (audit log + monitor alerts)."""
+    from monitoring.notifications import build_operator_notifications
+
+    db = await get_db()
+    try:
+        return await build_operator_notifications(db, limit=limit)
+    finally:
+        await db.close()
+
+
 # ── Backups ────────────────────────────────────────────────────────────────
 
 
