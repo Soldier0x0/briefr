@@ -3,7 +3,7 @@
 > **⚠️ SUPERSEDED (2026-07-11) BY:**
 > [`docs/planning/specs/correlation-engine-v2.md`](../../planning/specs/correlation-engine-v2.md)
 >
-> **Earlier pointer (2026-07-09):** [`docs/BRIEFR_ARCHITECTURE_REVIEW_2026-07.md`](../../BRIEFR_ARCHITECTURE_REVIEW_2026-07.md) §3.
+> **Earlier pointer (2026-07-09):** [`BRIEFR_ARCHITECTURE_REVIEW_2026-07.md`](BRIEFR_ARCHITECTURE_REVIEW_2026-07.md) §3.
 > This plan's "current state (v1)" framing is **materially outdated**: the code
 > is at ~phase 3 (phases 1–2 shipped, phase 3 partial). Campaigns, typed IOC
 > edges, hub suppression, IOC normalization, enrichment confirmation, analyst

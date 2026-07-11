@@ -1,4 +1,17 @@
-# Graph Report - .  (2026-07-11)
+# Graph Report - .  (2026-07-11, doc paths patched 2026-07-11)
+
+## Documentation corpus (post-reorg)
+
+| Bucket | Paths indexed |
+|--------|----------------|
+| **Living** | `docs/PRODUCT_STATUS.md`, `docs/HANDOVER.md`, `docs/SPRINT_*.md`, `SYSTEM_DESIGN.md`, `API_REFERENCE.md` |
+| **Planning (open)** | `docs/planning/BACKLOG.md`, `docs/planning/specs/*.md` |
+| **Archive** | `docs/archive/superseded/`, `docs/archive/snapshots/`, `docs/archive/beta/`, `docs/archive/sessions/` |
+| **Snapshots** | `docs/archive/snapshots/CODEBASE_CONTEXT.md`, `APPLICATION_EXECUTION_MAP.md`, `FOLDER_STRUCTURE_GUIDE.md`, `TECHNICAL_INVENTORY.md` (root `*.md` stubs redirect) |
+
+Removed from corpus: `docs/reviews/` (deleted), `archive/planned/`, `planning/completed/`.
+
+**Rebuild:** run `graphify update .` when CLI is available (semantic re-extract for moved markdown).
 
 ## Corpus Check
 - 21 files · ~526,737 words
@@ -581,7 +594,7 @@ Nodes (25): attach_pytest_session_cookie(), _build_incident_snapshot(), _default
 
 ### Community 55 - "Community 55"
 Cohesion: 0.13
-Nodes (26): API_REFERENCE.md, Documentation Assets README, CODEBASE_CONTEXT.md, BRIEFR Documentation Plan, docs/archive/ (hidden historical docs), How BRIEFR Works, Production architecture overview, Correlation pipeline (four lanes) (+18 more)
+Nodes (26): API_REFERENCE.md, Documentation Assets README, docs/archive/snapshots/CODEBASE_CONTEXT.md, BRIEFR Documentation Plan, docs/archive/ (hidden historical docs), How BRIEFR Works, Production architecture overview, Correlation pipeline (four lanes) (+18 more)
 
 ### Community 56 - "Community 56"
 Cohesion: 0.10
@@ -1205,7 +1218,7 @@ Nodes (8): CLAUDE.md — BRIEFR project instructions, Commands, Danger zones —
 
 ### Community 212 - "Community 212"
 Cohesion: 0.25
-Nodes (9): Admin Analyst/Operator Mode Spec (archived), Light Theme Design System (deprecated), archive/planned/CORRELATION_V2_PLAN.md, Hub CVE / mega-pulse suppression control, UI/UX Overhaul Plan (archived), Mobile header overflow root cause (390px clipping), Documentation Archive Index, Session State handover note (archived) (+1 more)
+Nodes (9): Admin Analyst/Operator Mode Spec (archived), Light Theme Design System (deprecated), archive/superseded/CORRELATION_V2_PLAN.md, Hub CVE / mega-pulse suppression control, UI/UX Overhaul Plan (archived), Mobile header overflow root cause (390px clipping), Documentation Archive Index, Session State handover note (archived) (+1 more)
 
 ### Community 213 - "Community 213"
 Cohesion: 0.36

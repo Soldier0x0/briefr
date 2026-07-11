@@ -287,7 +287,7 @@ def classify(comment: dict) -> dict:
 
     # TECHNICAL_INVENTORY Vite version (PR #384)
     if "technical_inventory" in low or (path == "TECHNICAL_INVENTORY.md" and "vite" in low):
-        inv = read_text("TECHNICAL_INVENTORY.md") or ""
+        inv = read_text("docs/archive/snapshots/TECHNICAL_INVENTORY.md") or ""
         if "| Vite |" in inv and "5.4.1" in inv:
             return set_cls(
                 "VALID_UNFIXED",

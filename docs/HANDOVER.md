@@ -16,12 +16,13 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 **Change:** Enforced two-bucket rule — `docs/planning/` = future work only;
 `docs/archive/` = history only. Removed `planning/completed/` stubs and
-`archive/planned/`. Full superseded plans restored under
-`docs/archive/superseded/`. Renamed `planning/reference/` → `planning/specs/`.
-Deleted `docs/reviews/` (one-off Gemini inline reconciliation).
+`archive/planned/`. Full superseded plans under `docs/archive/superseded/`.
+Renamed `planning/reference/` → `planning/specs/`. Deleted `docs/reviews/`.
+**Phase 2:** moved root snapshot docs to `docs/archive/snapshots/` (root stubs
+redirect); moved `REFACTOR_PLAN` + `BRIEFR_ARCHITECTURE_REVIEW` to
+`archive/superseded/`. Updated ONBOARDING, ROADMAP, CLAUDE, SYSTEM_DESIGN, sprint links.
 
-**Next:** Optional phase 2 — move root snapshot docs (`CODEBASE_CONTEXT.md`, etc.)
-to `docs/archive/snapshots/` and leave one-line root pointers.
+**Next:** Regenerate snapshot files on next deliberate inventory pass; activate BACKLOG items when ready.
 
 ---
 

@@ -6,6 +6,7 @@
 |--------|----------|
 | [`beta/`](beta/) | Beta V1.2–V2.0 release specs |
 | [`sessions/`](sessions/) | Old HANDOVER / SESSION_* snapshots |
+| [`snapshots/`](snapshots/) | Periodic AI/contributor inventory dumps |
 | [`superseded/`](superseded/) | Replaced or shipped planning docs |
 | Root files | `LIGHT_THEME.md`, `THREAT_MODEL.md`, etc. |
 

@@ -91,12 +91,14 @@ Cross-release amendments approved in planning (details in each release doc):
 
 | Document | Role |
 |----------|------|
-| [`BRIEFR_ARCHITECTURE_REVIEW_2026-07.md`](BRIEFR_ARCHITECTURE_REVIEW_2026-07.md) | **Durable architecture-review reasoning** (correlation, scoring, freshness, scheduler, production verdicts + execution graph) |
+| [`archive/superseded/BRIEFR_ARCHITECTURE_REVIEW_2026-07.md`](archive/superseded/BRIEFR_ARCHITECTURE_REVIEW_2026-07.md) | **Durable architecture-review reasoning** (correlation, scoring, freshness, scheduler, production verdicts + execution graph) |
+| [`planning/BACKLOG.md`](planning/BACKLOG.md) | Open / parked work queue |
+| [`planning/specs/`](planning/specs/) | Active program PR specs |
 | [`SYSTEM_DESIGN.md`](../SYSTEM_DESIGN.md) | Current architecture |
 | [`API_REFERENCE.md`](../API_REFERENCE.md) | Endpoint catalog |
-| [`TECHNICAL_INVENTORY.md`](../TECHNICAL_INVENTORY.md) | Schema, scheduler, features |
+| [`archive/snapshots/TECHNICAL_INVENTORY.md`](archive/snapshots/TECHNICAL_INVENTORY.md) | Schema, scheduler, features |
 | [`ONBOARDING.md`](ONBOARDING.md) | Contributor entry |
-| [`../APPLICATION_EXECUTION_MAP.md`](../APPLICATION_EXECUTION_MAP.md) | Request journeys |
+| [`archive/snapshots/APPLICATION_EXECUTION_MAP.md`](archive/snapshots/APPLICATION_EXECUTION_MAP.md) | Request journeys |
 
 Update `SYSTEM_DESIGN.md` in the same PR when a release phase changes runtime behavior.
 

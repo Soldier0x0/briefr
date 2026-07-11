@@ -1,6 +1,6 @@
 """Backward-compatibility shim — import from db.* submodules directly for new code.
 
-database.py was split into backend/db/ (Phase 3, docs/REFACTOR_PLAN.md). Every
+database.py was split into backend/db/ (Phase 3, docs/archive/superseded/REFACTOR_PLAN.md). Every
 function moved verbatim; this file only re-exports so the 35+ existing
 `from database import ...` call sites keep working unchanged.
 
@@ -38,7 +38,7 @@ from db.webhooks import *
 from db.ai_operations import *
 
 # Re-export constants (also covered by the star-imports above; explicit here
-# for discoverability, per docs/REFACTOR_PLAN.md's shim template).
+# for discoverability, per docs/archive/superseded/REFACTOR_PLAN.md shim template).
 from db.sync_state import NVD_SYNC_WATERMARK_KEY, EPSS_BACKFILL_DONE_KEY, ATLAS_UPSTREAM_VERSION_KEY
 
 # Private names imported directly by name from outside this module (grepped

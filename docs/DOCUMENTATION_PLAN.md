@@ -49,10 +49,10 @@ docs/
 ├── diagrams/
 └── assets/
 
-repo root (agent + product entrypoints only):
+repo root (agent + product entrypoints):
 ├── README.md, PRODUCT.md, CLAUDE.md, AGENTS.md, CONTRIBUTING.md
-├── API_REFERENCE.md, SYSTEM_DESIGN.md, SECURITY.md              # canonical refs (linked everywhere)
-└── CODEBASE_CONTEXT.md, TECHNICAL_INVENTORY.md, …             # periodic snapshots — prefer archive/snapshots/ long-term
+├── API_REFERENCE.md, SYSTEM_DESIGN.md, SECURITY.md
+├── CODEBASE_CONTEXT.md, … (stubs → docs/archive/snapshots/)
 ```
 
 ---

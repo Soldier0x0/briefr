@@ -22,7 +22,7 @@ tracks) for later PRs.
 
 ## A — Admin UI: API keys & config (your question)
 
-Source: `docs/planning/completed/BRIEFR_VISUAL_OPERATIONAL_UX_AUDIT.md` **Issues 20, 25, 26, 27**
+Source: `docs/planning/specs/ux-audit.md` **Issues 20, 25, 26, 27**
 and UX audit **PR8** scope.
 
 ### What we discussed

@@ -3,7 +3,7 @@
 ## Status
 
 **ACCEPTED — 2026-07-09.** Supersedes the "scoring surfacing is open / needs
-browser validation" framing in `docs/BRIEFR_ARCHITECTURE_REVIEW_2026-07.md` §4.
+browser validation" framing in `docs/archive/superseded/BRIEFR_ARCHITECTURE_REVIEW_2026-07.md` §4.
 The core scoring semantics are decided here from repository evidence. Browser
 validation may later tune presentation and threshold constants; it does **not**
 block this decision. Implementation is task **M1** (deterministic).

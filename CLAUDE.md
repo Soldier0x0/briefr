@@ -13,7 +13,7 @@ JSX/CSS, no component library), **PostgreSQL required in production**.
 ## Source of truth
 
 - `docs/PRODUCT_STATUS.md` is the living truth — when any other doc disagrees with it or with the code, they win, not the older doc.
-- `CODEBASE_CONTEXT.md`, `FOLDER_STRUCTURE_GUIDE.md`, `APPLICATION_EXECUTION_MAP.md`, `TECHNICAL_INVENTORY.md` are periodic snapshots and may lag the code — verify against source before relying on them.
+- `docs/archive/snapshots/CODEBASE_CONTEXT.md`, `docs/archive/snapshots/FOLDER_STRUCTURE_GUIDE.md`, `docs/archive/snapshots/APPLICATION_EXECUTION_MAP.md`, `docs/archive/snapshots/TECHNICAL_INVENTORY.md` are periodic snapshots and may lag the code — verify against source before relying on them. Root `*.md` stubs redirect to `docs/archive/snapshots/`.
 - Historical specs live in `docs/archive/` — never edit or resurrect them.
 - Recent decisions and session context: `docs/HANDOVER.md` (newest entry
   first). Current work queue: `docs/SPRINT_2026-07.md`.
