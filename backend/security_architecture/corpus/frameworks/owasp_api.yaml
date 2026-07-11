@@ -1,0 +1,37 @@
+version: 1
+categories:
+  - id: api1-broken-object-auth
+    title: API1 Broken Object Level Authorization
+    summary: CVE and resource IDs scoped to authenticated session; admin routes role-gated.
+    compliance_pct: 85
+    related_endpoints: ["/api/cves/{id}", "/api/admin/*"]
+    existing_controls: [jwt-session, role-authorization]
+    open_findings: []
+    review_date: "2026-07-11"
+
+  - id: api2-broken-auth
+    title: API2 Broken Authentication
+    summary: Session cookies, refresh rotation, password change revokes sessions.
+    compliance_pct: 90
+    related_endpoints: ["/api/auth/*"]
+    existing_controls: [jwt-session, password-hashing]
+    open_findings: []
+    review_date: "2026-07-11"
+
+  - id: api7-ssrf
+    title: API7 Server Side Request Forgery
+    summary: Webhook and resilient client SSRF guards.
+    compliance_pct: 80
+    related_endpoints: ["/api/admin/webhooks/*"]
+    existing_controls: [ssrf-protection]
+    open_findings: [webhook-ssrf]
+    recommended_improvements: [Expand SSRF tests for redirect chains]
+    review_date: "2026-07-11"
+
+  - id: api4-unrestricted-resource
+    title: API4 Unrestricted Resource Consumption
+    summary: Rate limits on IOC, refresh, auth; export pagination caps.
+    compliance_pct: 85
+    existing_controls: [rate-limiting]
+    open_findings: [rate-limit-bypass]
+    review_date: "2026-07-11"

@@ -1,0 +1,41 @@
+version: 1
+decisions:
+  - id: why-jwt-sessions
+    title: Why JWT session cookies?
+    summary: Stateless-ish tokens with server-side session invalidation and refresh rotation.
+    decision: Use signed JWT access tokens in httpOnly cookies with refresh token hashing in DB.
+    alternatives:
+      - Opaque server-only session IDs
+      - API keys for all analyst routes
+    tradeoffs: JWT enables horizontal scaling; requires careful secret rotation and short TTLs.
+    consequences: Password change revokes all sessions; admin role embedded in token claims with live revalidation.
+    review_date: "2026-07-01"
+    source_refs:
+      - { type: adr, ref: docs/decisions/ }
+
+  - id: why-postgresql
+    title: Why PostgreSQL?
+    summary: Production requires Postgres; SQLite remains test fallback only.
+    decision: asyncpg pool + Alembic migrations; BRIEFR_REQUIRE_POSTGRES=1 in production.
+    alternatives: [SQLite only, MySQL]
+    tradeoffs: Operator must run Postgres; gains concurrency and integrity probes.
+    consequences: All new SQL is Postgres-native with SQLite compat constants for tests.
+    review_date: "2026-06-15"
+
+  - id: why-signed-webhooks
+    title: Why signed webhooks?
+    summary: Receivers must authenticate payloads originated by BRIEFR.
+    decision: HMAC signature header on outbound webhook bodies.
+    alternatives: [Shared secret in URL only, mTLS]
+    tradeoffs: Operators must verify signatures on receiver side.
+    consequences: Replay still possible at receiver — dedupe keys mitigate at source.
+    review_date: "2026-07-05"
+
+  - id: why-no-redis
+    title: Why no Redis?
+    summary: BRIEFR avoids mandatory Redis to reduce self-host complexity.
+    decision: Rate limits and scheduler coordination use Postgres sync_state or in-process fallbacks.
+    alternatives: [Redis for cache and rate limits]
+    tradeoffs: Multi-worker rate limits need BRIEFR_RATE_LIMIT_STORE=db.
+    consequences: No separate cache tier; operators run Postgres + app only.
+    review_date: "2026-06-20"

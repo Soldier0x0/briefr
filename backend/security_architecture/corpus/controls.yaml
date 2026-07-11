@@ -1,0 +1,122 @@
+version: 1
+controls:
+  - id: jwt-session
+    title: JWT session cookies
+    purpose: Authenticate analyst and operator API requests via httpOnly cookies
+    threats_mitigated: [broken-auth, session-hijack]
+    coverage: full
+    related_code: [backend/auth/tokens.py, backend/auth_middleware.py]
+    related_apis: ["/api/auth/*"]
+    review_status: current
+
+  - id: password-hashing
+    title: Password hashing (bcrypt)
+    purpose: Store credentials with adaptive hashing
+    threats_mitigated: [credential-theft]
+    coverage: full
+    related_code: [backend/auth/passwords.py]
+    review_status: current
+
+  - id: rate-limiting
+    title: Token-bucket rate limiting
+    purpose: Throttle IOC, refresh, auth, and admin endpoints
+    threats_mitigated: [denial-of-service, brute-force]
+    coverage: full
+    related_code: [backend/rate_limit.py]
+    live_flag: RATE_LIMIT_ENABLED
+    review_status: current
+
+  - id: input-validation
+    title: Pydantic input validation
+    purpose: Reject malformed request bodies and query params
+    threats_mitigated: [injection]
+    coverage: full
+    related_code: [backend/routers/]
+    review_status: current
+
+  - id: parameterized-sql
+    title: Parameterized SQL
+    purpose: Prevent SQL injection in db layer
+    threats_mitigated: [injection]
+    coverage: full
+    related_code: [backend/db/]
+    review_status: current
+
+  - id: ssrf-protection
+    title: SSRF protection
+    purpose: Block private/link-local targets on outbound HTTP and webhooks
+    threats_mitigated: [ssrf]
+    coverage: full
+    related_code: [backend/webhooks/ssrf.py, backend/resilient_client.py]
+    review_status: current
+
+  - id: webhook-signing
+    title: Webhook HMAC signing
+    purpose: Authenticate outbound webhook payloads to receivers
+    threats_mitigated: [tampering, replay]
+    coverage: partial
+    related_code: [backend/webhooks/]
+    review_status: current
+
+  - id: tls
+    title: TLS termination
+    purpose: Encrypt data in transit at the reverse proxy
+    threats_mitigated: [information-disclosure]
+    coverage: operator-dependent
+    review_status: current
+
+  - id: backup-encryption
+    title: Backup encryption
+    purpose: Encrypt pg_dump archives at rest when configured
+    threats_mitigated: [information-disclosure]
+    coverage: optional
+    related_code: [backend/backup/]
+    review_status: current
+
+  - id: structured-logging
+    title: Structured logging with redaction
+    purpose: Safe operational logs without secret leakage in extra fields
+    threats_mitigated: [information-disclosure]
+    coverage: full
+    related_code: [backend/structured_logging.py]
+    review_status: current
+
+  - id: audit-logs
+    title: Audit log
+    purpose: Record operator actions for compliance review
+    threats_mitigated: [repudiation]
+    coverage: full
+    related_code: [backend/audit.py]
+    review_status: current
+
+  - id: role-authorization
+    title: Role-based authorization
+    purpose: Restrict admin routes to admin role after session validation
+    threats_mitigated: [broken-auth]
+    coverage: full
+    related_code: [backend/auth_middleware.py]
+    review_status: current
+
+  - id: output-encoding
+    title: Output encoding
+    purpose: React default escaping; safe external URL helper for links
+    threats_mitigated: [xss]
+    coverage: partial
+    related_code: [frontend/src/]
+    review_status: current
+
+  - id: llm-payload-guard
+    title: LLM payload guard
+    purpose: Skip provider calls when prompts or source text are empty
+    threats_mitigated: [prompt-injection, quota-abuse]
+    coverage: full
+    related_code: [backend/ai/llm_payload.py]
+    review_status: current
+
+  - id: circuit-breaker
+    title: Feed circuit breaker
+    purpose: Stop hammering unhealthy upstream feeds
+    threats_mitigated: [denial-of-service]
+    coverage: full
+    related_code: [backend/resilient_client.py]
+    review_status: current

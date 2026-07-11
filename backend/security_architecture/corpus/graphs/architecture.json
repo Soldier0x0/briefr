@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "overview_stack": [
+    { "id": "frontend", "label": "Frontend", "next": "api" },
+    { "id": "api", "label": "API", "next": "auth" },
+    { "id": "auth", "label": "Authentication", "next": "business-services" },
+    { "id": "business-services", "label": "Business Services", "next": "scheduler" },
+    { "id": "scheduler", "label": "Scheduler", "next": "feeds" },
+    { "id": "feeds", "label": "Feeds", "next": "correlation" },
+    { "id": "correlation", "label": "Correlation", "next": "ai" },
+    { "id": "ai", "label": "AI", "next": "database" },
+    { "id": "database", "label": "Database", "next": "backups" },
+    { "id": "backups", "label": "Backups", "next": "webhooks" },
+    { "id": "webhooks", "label": "Webhooks", "next": "external-intelligence" },
+    { "id": "external-intelligence", "label": "External Intelligence", "next": null }
+  ],
+  "nodes": [
+    { "id": "frontend", "label": "React Frontend", "cluster": "ui", "component_id": "frontend" },
+    { "id": "api", "label": "FastAPI", "cluster": "api", "component_id": "api" },
+    { "id": "auth", "label": "Auth", "cluster": "api", "component_id": "auth" },
+    { "id": "business-services", "label": "Business Services", "cluster": "api", "component_id": "business-services" },
+    { "id": "scheduler", "label": "Scheduler", "cluster": "jobs", "component_id": "scheduler" },
+    { "id": "feeds", "label": "Feeds", "cluster": "jobs", "component_id": "feeds" },
+    { "id": "correlation", "label": "Correlation", "cluster": "jobs", "component_id": "correlation" },
+    { "id": "ai", "label": "AI", "cluster": "jobs", "component_id": "ai" },
+    { "id": "database", "label": "PostgreSQL", "cluster": "data", "component_id": "database" },
+    { "id": "backups", "label": "Backups", "cluster": "data", "component_id": "backups" },
+    { "id": "webhooks", "label": "Webhooks", "cluster": "integrations", "component_id": "webhooks" },
+    { "id": "external-intelligence", "label": "External Intel", "cluster": "external", "component_id": "external-intelligence" }
+  ],
+  "edges": [
+    { "from": "frontend", "to": "api", "label": "HTTPS /api" },
+    { "from": "api", "to": "auth", "label": "session middleware" },
+    { "from": "api", "to": "business-services", "label": "handlers" },
+    { "from": "business-services", "to": "database", "label": "asyncpg" },
+    { "from": "scheduler", "to": "feeds", "label": "ingest jobs" },
+    { "from": "feeds", "to": "database", "label": "upsert" },
+    { "from": "feeds", "to": "external-intelligence", "label": "HTTPS" },
+    { "from": "correlation", "to": "database", "label": "nightly job" },
+    { "from": "ai", "to": "external-intelligence", "label": "LLM API" },
+    { "from": "backups", "to": "database", "label": "pg_dump" },
+    { "from": "webhooks", "to": "external-intelligence", "label": "outbound HTTP" }
+  ]
+}

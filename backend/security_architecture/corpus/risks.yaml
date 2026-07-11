@@ -1,0 +1,51 @@
+version: 1
+risks:
+  - id: audit-log-secret-leak
+    title: Audit log stores partial config secrets
+    summary: config.set.* audit targets may contain up to 100 chars of secret values.
+    category: confidentiality
+    severity: high
+    likelihood: medium
+    business_impact: Credential exposure via audit log export
+    owner: platform
+    mitigation: redact_audit_target for secret fields
+    status: open
+    review_date: "2026-07-10"
+    source_refs:
+      - { type: file, ref: docs/archive/superseded/SECURITY_AND_OPS_AUDIT_2026-07.md }
+
+  - id: app-settings-plaintext-secrets
+    title: app_settings persists secrets in plaintext
+    summary: Operator saves may write API keys to Postgres rows included in backups.
+    category: confidentiality
+    severity: high
+    likelihood: medium
+    business_impact: Backup/export credential exposure
+    owner: platform
+    mitigation: env-only secrets or encryption at rest (M-8 parked)
+    status: open
+    review_date: "2026-07-10"
+
+  - id: feed-poisoning-triage
+    title: Feed poisoning affects triage
+    summary: Upstream intel quality directly influences Operational Priority.
+    category: integrity
+    severity: medium
+    likelihood: low
+    business_impact: Incorrect analyst response
+    owner: intel
+    mitigation: Circuit breakers, provenance in drawer, analyst review
+    status: mitigated
+    review_date: "2026-07-11"
+
+  - id: llm-prompt-influence
+    title: LLM prompt influence on artifacts
+    summary: Optional LLM paths could emit misleading detection hints.
+    category: integrity
+    severity: low
+    likelihood: low
+    business_impact: Low-quality hunt content
+    owner: intel
+    mitigation: Deterministic fallbacks; LLM disabled by default for most jobs
+    status: mitigated
+    review_date: "2026-07-11"

@@ -1,0 +1,28 @@
+version: 1
+chapters:
+  - id: asvs-v4-auth
+    title: V2 Authentication
+    summary: Session-based auth with bcrypt and role checks.
+    compliance_pct: 88
+    existing_controls: [jwt-session, password-hashing, role-authorization]
+    review_date: "2026-07-11"
+
+  - id: asvs-v4-session
+    title: V3 Session Management
+    summary: httpOnly cookies, refresh rotation, idle handling on frontend.
+    compliance_pct: 85
+    review_date: "2026-07-11"
+
+  - id: asvs-v4-access
+    title: V4 Access Control
+    summary: Admin role enforcement on destructive routes.
+    compliance_pct: 85
+    review_date: "2026-07-11"
+
+  - id: asvs-v4-validation
+    title: V5 Validation and Encoding
+    summary: Pydantic + React escaping; safeExternalUrl rollout partial.
+    compliance_pct: 75
+    open_findings: [stored-xss]
+    recommended_improvements: [PR-F2 safeExternalUrl for all feed links]
+    review_date: "2026-07-11"

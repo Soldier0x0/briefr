@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "score": 28,
+  "summary": "Moderate attack surface — authenticated API with rate limits; primary exposure is admin config and outbound webhooks.",
+  "nodes": [
+    { "id": "public-api", "label": "Authenticated API", "exposure": "medium", "endpoints_approx": 80 },
+    { "id": "admin-api", "label": "Admin API", "exposure": "high", "endpoints_approx": 45 },
+    { "id": "wallboard", "label": "Wallboard (read-only)", "exposure": "low", "endpoints_approx": 2 },
+    { "id": "webhooks-out", "label": "Outbound webhooks", "exposure": "medium" },
+    { "id": "feed-ingest", "label": "Inbound feed HTTPS", "exposure": "low" }
+  ],
+  "factors": [
+    { "id": "auth-required", "label": "Session required on analyst API", "weight": -10 },
+    { "id": "rate-limits", "label": "Rate limiting available", "weight": -8 },
+    { "id": "admin-destructive", "label": "Destructive admin actions", "weight": 15 },
+    { "id": "outbound-http", "label": "Server-initiated HTTP", "weight": 12 },
+    { "id": "optional-llm", "label": "Optional LLM outbound", "weight": 9 }
+  ]
+}

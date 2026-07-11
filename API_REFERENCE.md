@@ -1006,6 +1006,35 @@ close detection gap).
 
 UI: Forge tab → **Threat scenarios** view (requires loaded asset profile).
 
+### Security Architecture read API (TM-1)
+
+Session-authenticated read endpoints backing the Threat Modeling & Security
+Architecture module. Data merges the in-repo **Security Architecture Corpus**
+(`backend/security_architecture/corpus/`) with live DB fields where noted.
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/security-architecture/manifest` | Corpus version, section index, entity counts |
+| GET | `/api/security-architecture/overview` | Posture summary cards + architecture overview stack |
+| GET | `/api/security-architecture/graph/architecture` | Full architecture graph + component records |
+| GET | `/api/security-architecture/graph/attack-surface` | Attack surface score and exposure nodes |
+| GET | `/api/security-architecture/trust-boundaries` | Trust boundary catalog |
+| GET | `/api/security-architecture/stride` | STRIDE matrices by component |
+| GET | `/api/security-architecture/owasp` | OWASP Top 10 + API Top 10 categories |
+| GET | `/api/security-architecture/controls` | Security controls inventory |
+| GET | `/api/security-architecture/abuse-cases` | Abuse case catalog |
+| GET | `/api/security-architecture/threat-scenarios` | Corpus operational paths + live ATT&CK scenarios (`stack` query optional) |
+| GET | `/api/security-architecture/risks` | Risk register rows |
+| GET | `/api/security-architecture/decisions` | Security decision records |
+| GET | `/api/security-architecture/reviews` | Review history |
+| GET | `/api/security-architecture/capec` | CAPEC pattern mappings |
+| GET | `/api/security-architecture/frameworks/nist-csf` | NIST CSF functions |
+| GET | `/api/security-architecture/frameworks/asvs` | OWASP ASVS chapters |
+| GET | `/api/security-architecture/search?q=` | Search corpus entities (max 100) |
+| GET | `/api/security-architecture/context/{entity_type}/{entity_id}` | Context rail payload for a selected entity |
+
+Plan of record: `docs/planning/specs/threat-modeling-security-architecture.md`.
+
 ### POST /api/proof/run
 
 **Description:** V1.5 file-based rule proof bench — run a Sigma rule (or explicit

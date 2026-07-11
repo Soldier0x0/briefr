@@ -1,0 +1,72 @@
+version: 1
+abuse_cases:
+  - id: webhook-ssrf
+    title: Webhook SSRF
+    summary: Operator configures a webhook URL pointing at internal services.
+    attack_flow:
+      - Attacker gains admin access or social-engineers operator
+      - Malicious destination URL targets metadata service or internal admin
+      - BRIEFR server performs outbound HTTP from trusted network zone
+    impact: Internal network reconnaissance or credential theft
+    current_protection: SSRF blocklist in resilient_client and webhook client
+    remaining_risk: medium
+
+  - id: prompt-injection
+    title: Prompt injection via CVE text
+    summary: Adversary poisons CVE or exploit text consumed by LLM jobs.
+    attack_flow:
+      - Malicious content ingested via NVD or exploit sync
+      - Scheduler LLM job includes poisoned text in prompt
+      - Model returns attacker-influenced artifacts
+    impact: Low-quality or misleading detection artifacts; quota burn
+    current_protection: LLM optional; payload guard; no tool execution
+    remaining_risk: low
+
+  - id: feed-poisoning
+    title: Feed poisoning
+    summary: Upstream feed returns crafted CVE metadata.
+    attack_flow:
+      - Compromised or malicious upstream source
+      - Ingest normalizes and scores poisoned records
+      - Analyst sees inflated Operational Priority
+    impact: Bad triage decisions
+    current_protection: Circuit breakers; manual refresh rate limits; analyst review
+    remaining_risk: medium
+
+  - id: duplicate-replay
+    title: Webhook duplicate replay
+    summary: Receiver accepts replayed signed payloads.
+    impact: Alert fatigue or duplicate automation actions
+    current_protection: Per-destination dedupe keys in delivery log
+    remaining_risk: low
+
+  - id: massive-payload
+    title: Massive payload DoS
+    summary: Large request bodies or export queries exhaust API workers.
+    attack_flow:
+      - Unauthenticated or authenticated flood of large POST/GET
+      - Worker memory or DB pool exhaustion
+    impact: Service degradation
+    current_protection: Rate limits; pool limits; pagination caps
+    remaining_risk: low
+
+  - id: stored-xss
+    title: Stored XSS via intel fields
+    summary: Malicious HTML/script in CVE descriptions rendered unsafely.
+    impact: Session compromise in browser
+    current_protection: React escaping; safeExternalUrl for links (partial rollout)
+    remaining_risk: low
+
+  - id: broken-authorization
+    title: Broken authorization on admin routes
+    summary: Analyst session accesses destructive admin endpoints.
+    impact: Config change, data purge, restart
+    current_protection: Admin role gate on /api/admin/* and refresh routes
+    remaining_risk: low
+
+  - id: rate-limit-bypass
+    title: Rate limit bypass via distributed clients
+    summary: Attacker rotates source IPs to evade per-client buckets.
+    impact: IOC or auth brute-force
+    current_protection: Per-route buckets; optional shared DB store for multi-worker
+    remaining_risk: medium

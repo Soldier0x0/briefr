@@ -1,0 +1,51 @@
+version: 1
+trust_boundaries:
+  - id: browser-api-db
+    title: Browser → API → Database
+    summary: Primary analyst trust chain from browser through authenticated API to Postgres.
+    data_classification: confidential
+    authentication: JWT session cookie (httpOnly)
+    encryption: TLS in transit; Postgres at-rest depends on operator infra
+    threats: [broken-auth, injection, session-hijack]
+    controls: [jwt-session, parameterized-sql, tls]
+    residual_risk: medium
+
+  - id: briefr-groq
+    title: BRIEFR → Groq (LLM)
+    summary: Optional scheduler and PDF summary calls to Groq API.
+    data_classification: internal
+    authentication: API key (env)
+    encryption: TLS
+    threats: [prompt-injection, information-disclosure]
+    controls: [llm-payload-guard, ssrf-protection]
+    residual_risk: medium
+
+  - id: briefr-threatfox
+    title: BRIEFR → ThreatFox / OTX
+    summary: Threat intel enrichment and correlation feeds.
+    data_classification: public-intel
+    authentication: API key where required
+    encryption: TLS
+    threats: [feed-poisoning]
+    controls: [circuit-breaker, input-validation]
+    residual_risk: low
+
+  - id: briefr-github
+    title: BRIEFR → GitHub
+    summary: Exploit metadata and detection artifact sync.
+    data_classification: public
+    authentication: Optional GITHUB_TOKEN
+    encryption: TLS
+    threats: [supply-chain]
+    controls: [ssrf-protection]
+    residual_risk: low
+
+  - id: briefr-webhook-receivers
+    title: BRIEFR → Webhook receivers
+    summary: Outbound operator notifications (Discord, Telegram, generic HTTP).
+    data_classification: operational
+    authentication: HMAC signature + destination secrets
+    encryption: TLS (operator responsibility for receiver URL)
+    threats: [ssrf, replay]
+    controls: [webhook-signing, ssrf-protection]
+    residual_risk: medium

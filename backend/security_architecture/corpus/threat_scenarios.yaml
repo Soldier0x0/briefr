@@ -1,0 +1,26 @@
+version: 1
+scenarios:
+  - id: feed-poisoning-to-dashboard
+    title: Poisoned feed → inflated risk on dashboard
+    summary: Adversary influences CVE metadata that flows through scoring to the analyst feed.
+    steps:
+      - { actor: Attacker, threat: Malicious CVE metadata at upstream source, likelihood: low, mitigation: circuit-breaker, residual_risk: medium }
+      - { component: feeds, threat: Unvalidated upstream JSON accepted, likelihood: low, mitigation: input-validation, residual_risk: low }
+      - { component: business-services, threat: Bad data enters scoring pipeline, likelihood: low, mitigation: analyst review, residual_risk: medium }
+      - { component: correlation, threat: False positive cluster escalation, likelihood: low, mitigation: suppression workflow, residual_risk: medium }
+      - { component: frontend, threat: Analyst acts on bad intel, likelihood: medium, mitigation: drawer provenance, residual_risk: medium }
+
+  - id: stolen-session-admin
+    title: Stolen session → admin action
+    summary: Valid analyst cookie without admin role cannot mutate system; stolen admin session can.
+    steps:
+      - { actor: Attacker, threat: XSS or physical access steals cookie, likelihood: low, mitigation: httpOnly cookie, residual_risk: low }
+      - { component: auth, threat: Session replay, likelihood: low, mitigation: refresh rotation, residual_risk: low }
+      - { component: api, threat: Admin-only routes invoked, likelihood: low, mitigation: role-authorization, residual_risk: low }
+
+  - id: webhook-ssrf-internal
+    title: Webhook SSRF to internal metadata
+    summary: Misconfigured webhook destination probes cloud metadata endpoint.
+    steps:
+      - { actor: Operator mistake, threat: Internal URL in webhook destination, likelihood: low, mitigation: ssrf-protection, residual_risk: medium }
+      - { component: webhooks, threat: Server-side request to RFC1918 target, likelihood: low, mitigation: blocklist, residual_risk: low }

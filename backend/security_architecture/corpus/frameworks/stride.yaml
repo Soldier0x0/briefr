@@ -1,0 +1,61 @@
+version: 1
+matrices:
+  - id: stride-api
+    title: FastAPI Backend STRIDE
+    summary: STRIDE analysis for the API layer.
+    component_id: api
+    threats:
+      - category: spoofing
+        description: Attacker forges session or admin credentials
+        likelihood: low
+        impact: high
+        current_controls: [jwt-session, role-authorization]
+        residual_risk: low
+        owner: platform
+        review_date: "2026-07-11"
+        status: mitigated
+      - category: tampering
+        description: Request body manipulation bypasses validation
+        likelihood: low
+        impact: medium
+        current_controls: [input-validation]
+        residual_risk: low
+        owner: platform
+        review_date: "2026-07-11"
+        status: mitigated
+      - category: repudiation
+        description: Operator denies destructive admin action
+        likelihood: low
+        impact: medium
+        current_controls: [audit-logs]
+        residual_risk: low
+        owner: platform
+        review_date: "2026-07-11"
+        status: mitigated
+      - category: information_disclosure
+        description: Error responses leak internals or secrets
+        likelihood: low
+        impact: high
+        current_controls: [structured-logging]
+        residual_risk: medium
+        owner: platform
+        review_date: "2026-07-11"
+        status: open
+      - category: denial_of_service
+        description: Refresh or IOC flood exhausts workers
+        likelihood: medium
+        impact: medium
+        current_controls: [rate-limiting]
+        residual_risk: low
+        owner: platform
+        review_date: "2026-07-11"
+        status: mitigated
+      - category: elevation_of_privilege
+        description: Analyst accesses admin-only routes
+        likelihood: low
+        impact: critical
+        current_controls: [role-authorization]
+        residual_risk: low
+        owner: platform
+        review_date: "2026-07-11"
+        status: mitigated

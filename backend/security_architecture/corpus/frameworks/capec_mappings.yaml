@@ -1,0 +1,26 @@
+version: 1
+patterns:
+  - id: capec-66
+    title: SQL Injection
+    summary: SQL injection via unsanitized query parameters.
+    description: Attacker injects SQL through application inputs.
+    related_components: [api, database]
+    mitigations: [parameterized-sql]
+    likelihood: low
+    residual_risk: low
+
+  - id: capec-242
+    title: Code Injection
+    summary: Injection of code through LLM or template paths.
+    related_components: [ai]
+    mitigations: [llm-payload-guard, input-validation]
+    likelihood: low
+    residual_risk: low
+
+  - id: capec-593
+    title: Session Hijacking
+    summary: Theft of session cookie via XSS or network sniffing.
+    related_components: [frontend, auth]
+    mitigations: [jwt-session, output-encoding, tls]
+    likelihood: low
+    residual_risk: low

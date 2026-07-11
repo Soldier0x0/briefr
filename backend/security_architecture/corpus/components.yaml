@@ -1,0 +1,131 @@
+version: 1
+components:
+  - id: frontend
+    title: React Frontend
+    summary: Vite SPA; session cookie auth; proxies /api to backend.
+    owner: platform
+    responsibilities:
+      - Render analyst workspace and admin UI
+      - Avoid storing secrets in localStorage except display prefs
+    dependencies: [api]
+    inbound_calls: [browser]
+    outbound_calls: [api]
+    security_controls: [jwt-session, output-encoding, csrf-same-site]
+    threats: [xss, broken-auth]
+    source_refs:
+      - { type: file, ref: frontend/src/App.jsx }
+
+  - id: api
+    title: FastAPI Backend
+    summary: REST API layer; session middleware; ORJSON responses.
+    owner: platform
+    responsibilities:
+      - Authenticate requests and enforce role gates
+      - Serve CVE intel, detection, and admin endpoints
+    dependencies: [auth, business-services, database]
+    inbound_calls: [frontend, webhooks]
+    outbound_calls: [external-intelligence]
+    security_controls: [jwt-session, rate-limiting, input-validation, structured-logging]
+    threats: [broken-auth, injection, ssrf]
+    source_refs:
+      - { type: file, ref: backend/main.py }
+
+  - id: auth
+    title: Authentication
+    summary: JWT session cookies, refresh rotation, bcrypt passwords.
+    owner: platform
+    dependencies: [database]
+    security_controls: [jwt-session, password-hashing, role-authorization]
+    threats: [broken-auth, session-hijack]
+    source_refs:
+      - { type: file, ref: backend/auth/ }
+
+  - id: business-services
+    title: Business Services
+    summary: CVE enrichment, scoring, correlation read paths, IOC lookups.
+    owner: intel
+    dependencies: [database]
+    security_controls: [parameterized-sql, input-validation]
+    threats: [injection, broken-auth]
+    source_refs:
+      - { type: file, ref: backend/routers/cves.py }
+
+  - id: scheduler
+    title: Scheduler
+    summary: APScheduler jobs for feeds, correlation, ML, retention.
+    owner: platform
+    dependencies: [database, external-intelligence]
+    security_controls: [scheduler-locks, structured-logging]
+    threats: [denial-of-service, feed-poisoning]
+    source_refs:
+      - { type: file, ref: backend/scheduler.py }
+
+  - id: feeds
+    title: Feed Ingest
+    summary: NVD, KEV, EPSS, MITRE, OTX, incident RSS ingestion.
+    owner: intel
+    dependencies: [external-intelligence, database]
+    security_controls: [ssrf-protection, circuit-breaker]
+    threats: [feed-poisoning, ssrf]
+    source_refs:
+      - { type: file, ref: backend/feeds/ }
+
+  - id: correlation
+    title: Correlation Engine
+    summary: Nightly OTX/campaign correlation and cluster scoring.
+    owner: intel
+    dependencies: [database, feeds]
+    security_controls: [parameterized-sql]
+    threats: [data-integrity]
+    source_refs:
+      - { type: file, ref: backend/correlation/ }
+
+  - id: ai
+    title: AI Operations
+    summary: Optional LLM router for PDF summaries and scheduler-side extraction.
+    owner: intel
+    dependencies: [external-intelligence]
+    security_controls: [llm-payload-guard, ssrf-protection]
+    threats: [prompt-injection]
+    source_refs:
+      - { type: file, ref: backend/ai/llm_router.py }
+
+  - id: database
+    title: PostgreSQL Database
+    summary: Primary data store; asyncpg pool; Alembic migrations.
+    owner: platform
+    dependencies: []
+    security_controls: [parameterized-sql, backup-encryption]
+    threats: [information-disclosure]
+    source_refs:
+      - { type: file, ref: backend/db/ }
+
+  - id: backups
+    title: Backup Manager
+    summary: Scheduled pg_dump archives with optional encryption.
+    owner: platform
+    dependencies: [database]
+    security_controls: [backup-encryption, audit-logs]
+    threats: [information-disclosure]
+    source_refs:
+      - { type: file, ref: backend/backup/ }
+
+  - id: webhooks
+    title: Webhook Delivery
+    summary: Outbound signed notifications to operator destinations.
+    owner: platform
+    dependencies: [database]
+    security_controls: [webhook-signing, ssrf-protection]
+    threats: [ssrf, replay]
+    source_refs:
+      - { type: file, ref: backend/webhooks/ }
+
+  - id: external-intelligence
+    title: External Intelligence
+    summary: NVD, MITRE, Groq, VirusTotal, ThreatFox, GitHub, RSS sources.
+    owner: intel
+    dependencies: []
+    security_controls: [ssrf-protection, api-queue]
+    threats: [supply-chain]
+    source_refs:
+      - { type: file, ref: backend/resilient_client.py }

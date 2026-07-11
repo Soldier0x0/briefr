@@ -1,0 +1,33 @@
+version: 1
+functions:
+  - id: nist-govern
+    title: Govern (GV)
+    summary: Security decisions, risk register, and review history in corpus.
+    compliance_pct: 70
+    existing_controls: [audit-logs]
+    review_date: "2026-07-11"
+
+  - id: nist-identify
+    title: Identify (ID)
+    summary: Architecture map, trust boundaries, attack surface inventory.
+    compliance_pct: 75
+    review_date: "2026-07-11"
+
+  - id: nist-protect
+    title: Protect (PR)
+    summary: Controls inventory covers auth, crypto, input validation, SSRF.
+    compliance_pct: 82
+    existing_controls: [jwt-session, rate-limiting, ssrf-protection]
+    review_date: "2026-07-11"
+
+  - id: nist-detect
+    title: Detect (DE)
+    summary: Structured logging, audit log, feed health, AI operations visibility.
+    compliance_pct: 78
+    review_date: "2026-07-11"
+
+  - id: nist-respond
+    title: Respond (RS)
+    summary: Support pack export, webhook alerts, notification center.
+    compliance_pct: 65
+    review_date: "2026-07-11"

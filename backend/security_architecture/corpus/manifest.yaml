@@ -1,0 +1,59 @@
+version: 1
+schema_version: "2026-07-11"
+title: BRIEFR Security Architecture Corpus
+last_reviewed: "2026-07-11"
+sections:
+  - id: overview
+    label: Overview
+    group: Posture
+  - id: system-architecture
+    label: System Architecture
+    group: Architecture
+  - id: trust-boundaries
+    label: Trust Boundaries
+    group: Architecture
+  - id: attack-surface
+    label: Attack Surface
+    group: Architecture
+  - id: stride
+    label: STRIDE
+    group: Frameworks
+  - id: owasp
+    label: OWASP
+    group: Frameworks
+  - id: api-security
+    label: API Security
+    group: Frameworks
+  - id: mitre-attack
+    label: MITRE ATT&CK
+    group: Frameworks
+  - id: capec
+    label: CAPEC
+    group: Frameworks
+  - id: cwe
+    label: CWE
+    group: Frameworks
+  - id: nist-csf
+    label: NIST CSF
+    group: Frameworks
+  - id: asvs
+    label: ASVS
+    group: Frameworks
+  - id: abuse-cases
+    label: Abuse Cases
+    group: Threats
+  - id: threat-scenarios
+    label: Threat Scenarios
+    group: Threats
+  - id: security-controls
+    label: Security Controls
+    group: Governance
+  - id: security-decisions
+    label: Security Decisions
+    group: Governance
+  - id: risk-register
+    label: Risk Register
+    group: Governance
+  - id: review-history
+    label: Review History
+    group: Governance

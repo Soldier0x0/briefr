@@ -67,6 +67,25 @@ EXPECTED_ROUTES = [
     ("POST", "/api/hunt-packs/generate"),
     ("GET", "/api/hunt-packs/{technique_id}"),
     ("GET", "/api/threat-model/scenarios"),
+    # Threat Modeling module (TM-1): Security Architecture read API — additive.
+    ("GET", "/api/security-architecture/manifest"),
+    ("GET", "/api/security-architecture/overview"),
+    ("GET", "/api/security-architecture/graph/architecture"),
+    ("GET", "/api/security-architecture/graph/attack-surface"),
+    ("GET", "/api/security-architecture/trust-boundaries"),
+    ("GET", "/api/security-architecture/stride"),
+    ("GET", "/api/security-architecture/owasp"),
+    ("GET", "/api/security-architecture/controls"),
+    ("GET", "/api/security-architecture/abuse-cases"),
+    ("GET", "/api/security-architecture/threat-scenarios"),
+    ("GET", "/api/security-architecture/risks"),
+    ("GET", "/api/security-architecture/decisions"),
+    ("GET", "/api/security-architecture/reviews"),
+    ("GET", "/api/security-architecture/capec"),
+    ("GET", "/api/security-architecture/frameworks/nist-csf"),
+    ("GET", "/api/security-architecture/frameworks/asvs"),
+    ("GET", "/api/security-architecture/search"),
+    ("GET", "/api/security-architecture/context/{entity_type}/{entity_id}"),
     ("POST", "/api/proof/run"),
     ("GET", "/api/detection-backlog"),
     ("POST", "/api/detection-backlog/{item_id}/dismiss"),
@@ -240,6 +259,7 @@ def test_moved_endpoints_live_in_routers():
     assert by_path["/api/config/risk"] == "routers.config"
     assert by_path["/api/brief"] == "routers.brief"
     assert by_path["/api/threat-model/scenarios"] == "routers.threat_model"
+    assert by_path["/api/security-architecture/manifest"] == "routers.security_architecture"
     assert by_path["/api/proof/run"] == "routers.proof"
     assert by_path["/api/detection-backlog"] == "routers.detection_backlog"
     assert by_path["/api/ioc/watchlist"] == "routers.ioc"

@@ -1,0 +1,38 @@
+version: 1
+categories:
+  - id: owasp-a01-broken-access
+    title: A01 Broken Access Control
+    summary: Admin routes gated by role; session required on analyst API paths.
+    compliance_pct: 85
+    related_endpoints: ["/api/admin/*", "/api/refresh"]
+    existing_controls: [role-authorization, jwt-session]
+    open_findings: [audit-log-secret-leak]
+    recommended_improvements: [Admin nav role gate UI redirect PR-F1]
+    review_date: "2026-07-11"
+
+  - id: owasp-a02-crypto-failures
+    title: A02 Cryptographic Failures
+    summary: bcrypt passwords; TLS at edge; backup encryption optional.
+    compliance_pct: 80
+    existing_controls: [password-hashing, tls, backup-encryption]
+    open_findings: [app-settings-plaintext-secrets]
+    recommended_improvements: [Encrypt app_settings secrets or env-only SSOT]
+    review_date: "2026-07-11"
+
+  - id: owasp-a03-injection
+    title: A03 Injection
+    summary: Parameterized SQL and Pydantic validation on inputs.
+    compliance_pct: 90
+    existing_controls: [parameterized-sql, input-validation]
+    open_findings: []
+    recommended_improvements: []
+    review_date: "2026-07-11"
+
+  - id: owasp-a05-misconfiguration
+    title: A05 Security Misconfiguration
+    summary: Production posture warnings for rate limits and wallboard token.
+    compliance_pct: 75
+    existing_controls: [rate-limiting]
+    open_findings: []
+    recommended_improvements: [WALLBOARD_TOKEN in config_schema O-3]
+    review_date: "2026-07-11"

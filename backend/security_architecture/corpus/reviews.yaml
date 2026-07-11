@@ -1,0 +1,29 @@
+version: 1
+reviews:
+  - id: security-ops-audit-2026-07
+    title: Security & ops hygiene audit
+    summary: Full-repo secret exposure and restart semantics review.
+    review_type: audit
+    review_date: "2026-07-10"
+    outcome: Findings documented; partial remediation shipped in #449
+    participants: [maintainer]
+    source_refs:
+      - { type: file, ref: docs/archive/superseded/SECURITY_AND_OPS_AUDIT_2026-07.md }
+
+  - id: codebase-audit-auth-2026-07
+    title: Codebase audit — auth bundle
+    summary: AUTH-001/002 and related items shipped.
+    review_type: dependency-review
+    review_date: "2026-07-09"
+    outcome: Shipped #449
+    participants: [maintainer]
+
+  - id: threat-model-module-design
+    title: Threat Modeling module design (TM-0)
+    summary: Canonical spec for Security Architecture workspace.
+    review_type: threat-model-review
+    review_date: "2026-07-11"
+    outcome: Approved; TM-1 implementation started
+    participants: [maintainer]
+    source_refs:
+      - { type: file, ref: docs/planning/specs/threat-modeling-security-architecture.md }
