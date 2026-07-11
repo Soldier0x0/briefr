@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from api_queue import apply_rate_limit_headers
+from ai.llm_payload import has_llm_request_payload
 from resilient_client import resilient_request
 
 
@@ -22,6 +23,9 @@ async def openai_chat_completion(
     queue_context_id: str | None = None,
     usage_out: dict | None = None,
 ) -> str:
+    if not has_llm_request_payload(messages):
+        return ""
+
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",

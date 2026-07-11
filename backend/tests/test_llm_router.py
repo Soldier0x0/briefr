@@ -55,6 +55,26 @@ def test_task_chain_detection_context_omits_cerebras(monkeypatch):
     assert providers == ["groq", "gemini", "openrouter"]
 
 
+def test_chat_completion_task_skips_empty_payload(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
+    calls: list[str] = []
+
+    async def fake_call(step, **_kwargs):
+        calls.append(step.provider)
+        return "should not run"
+
+    monkeypatch.setattr(router, "_call_provider", fake_call)
+
+    async def run():
+        return await chat_completion_task(
+            "product_extraction",
+            messages=[{"role": "system", "content": "instructions only"}],
+        )
+
+    assert asyncio.run(run()) is None
+    assert calls == []
+
+
 def test_chat_completion_task_failover_skips_missing_keys(monkeypatch):
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     monkeypatch.setenv("GEMINI_API_KEY", "gem_test")
@@ -162,6 +182,30 @@ class _FakeResponse:
         return self._payload
 
 
+def test_openai_chat_skips_empty_payload(monkeypatch):
+    import ai.openai_chat as oc
+
+    called = {"n": 0}
+
+    async def fake_request(*_a, **_k):
+        called["n"] += 1
+        raise AssertionError("resilient_request should not run")
+
+    monkeypatch.setattr(oc, "resilient_request", fake_request)
+
+    async def run():
+        return await oc.openai_chat_completion(
+            source="groq",
+            url="http://x",
+            api_key="k",
+            model="m",
+            messages=[{"role": "system", "content": "only"}],
+        )
+
+    assert asyncio.run(run()) == ""
+    assert called["n"] == 0
+
+
 def test_openai_chat_populates_usage_out(monkeypatch):
     import ai.openai_chat as oc
 
@@ -191,6 +235,27 @@ def test_openai_chat_populates_usage_out(monkeypatch):
     content = asyncio.run(run())
     assert content == "hello"
     assert usage == {"input_tokens": 12, "output_tokens": 5, "total_tokens": 17}
+
+
+def test_gemini_chat_skips_empty_payload(monkeypatch):
+    import ai.gemini_client as gc
+
+    called = {"n": 0}
+
+    async def fake_request(*_a, **_k):
+        called["n"] += 1
+        raise AssertionError("resilient_request should not run")
+
+    monkeypatch.setattr(gc, "resilient_request", fake_request)
+
+    async def run():
+        return await gc.gemini_chat_completion(
+            "k",
+            messages=[{"role": "user", "content": ""}],
+        )
+
+    assert asyncio.run(run()) == ""
+    assert called["n"] == 0
 
 
 def test_gemini_chat_populates_usage_out(monkeypatch):

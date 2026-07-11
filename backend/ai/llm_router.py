@@ -13,6 +13,7 @@ from typing import Literal
 
 from ai.gemini_client import gemini_chat_completion
 from ai.groq_config import GROQ_URL
+from ai.llm_payload import has_llm_request_payload
 from ai.model_catalog import ProviderStep, gemini_model, task_chain
 from ai.openai_chat import openai_chat_completion
 from ai.operations_recorder import AttemptTimer, classify_llm_error, record_llm_attempt
@@ -202,6 +203,14 @@ async def chat_completion_task(
     cve_id: str | None = None,
 ) -> LLMCompletion | None:
     """Try providers in failover order; return first non-empty completion."""
+    if not has_llm_request_payload(messages):
+        logger.info(
+            "Skipping LLM task %s — no outbound user/assistant payload (cve=%s)",
+            task,
+            cve_id or "—",
+        )
+        return None
+
     queue_operation = LLM_TASK_OPERATIONS.get(task, "outbound_request")
     queue_context_type = "cve" if cve_id else "task"
     queue_context_id = cve_id if cve_id else task

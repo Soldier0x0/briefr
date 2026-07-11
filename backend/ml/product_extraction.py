@@ -29,6 +29,7 @@ import re
 import aiosqlite
 
 from ai.llm_router import LLMCompletion, any_llm_provider_configured, chat_completion_task
+from ai.llm_payload import has_substantive_source_text
 from database import (
     get_cves_for_llm_product_extraction,
     set_feed_cache,
@@ -160,6 +161,9 @@ def products_to_affected_keys(products: list[dict]) -> list[str]:
 
 async def extract_products_via_llm(description: str) -> tuple[list[dict], LLMCompletion] | None:
     """One router call -> validated product dicts with provider provenance."""
+    if not has_substantive_source_text(description):
+        logger.info("Skipping LLM product extraction — empty CVE description")
+        return None
     completion = await chat_completion_task(
         "product_extraction",
         messages=[
@@ -221,7 +225,37 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, pro
             progress_cb(f"Processing CVE {index + 1} of {stats['candidates']}...")
 
         try:
-            result = await extract_products_via_llm(candidate["description"])
+            description = (candidate.get("description") or "").strip()
+            if not has_substantive_source_text(description):
+                logger.info(
+                    "Skipping LLM product extraction for %s — no description text",
+                    cve_id,
+                )
+                async def _cache_skip(conn, _cve_id=cve_id):
+                    await set_feed_cache(
+                        conn,
+                        f"llm_products:{_cve_id.upper()}",
+                        {
+                            "products": [],
+                            "provider": None,
+                            "model": None,
+                            "written": False,
+                            "skipped": "empty_description",
+                        },
+                    )
+                    await conn.commit()
+
+                if db is not None:
+                    await _cache_skip(db)
+                else:
+                    conn = await get_db()
+                    try:
+                        await _cache_skip(conn)
+                    finally:
+                        await conn.close()
+                continue
+
+            result = await extract_products_via_llm(description)
         except Exception as exc:
             stats["errors"] += 1
             logger.error("LLM product extraction failed for %s: %s", cve_id, exc)

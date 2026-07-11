@@ -12,6 +12,7 @@ import logging
 import re
 
 from ai.llm_router import LLMCompletion, chat_completion_task
+from ai.llm_payload import has_substantive_source_text
 
 logger = logging.getLogger(__name__)
 
@@ -201,7 +202,8 @@ async def build_extraction_text(
 
 
 async def extract_artifacts_via_llm(text: str) -> tuple[list[dict], LLMCompletion] | None:
-    if not (text or "").strip():
+    if not has_substantive_source_text(text):
+        logger.info("Skipping LLM detection context extraction — empty source text")
         return None
     completion = await chat_completion_task(
         "detection_context",
