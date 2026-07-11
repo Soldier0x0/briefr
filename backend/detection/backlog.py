@@ -66,6 +66,14 @@ async def _technique_name(db: DbConnection, technique_id: str) -> str:
     return technique_id
 
 
+def _is_postgres_connection(db: DbConnection) -> bool:
+    return type(db).__name__ == "PostgresConnection"
+
+
+def _placeholder(pg: bool, index: int) -> str:
+    return f"${index}" if pg else "?"
+
+
 async def upsert_gap_items_for_cves(
     db: DbConnection,
     cve_rows: list[dict[str, Any]],
@@ -74,12 +82,75 @@ async def upsert_gap_items_for_cves(
     reason: str = REASON_KEV_GAP,
 ) -> list[dict[str, Any]]:
     """Create open backlog rows for stack KEV CVEs whose techniques are coverage gaps."""
-    created: list[dict[str, Any]] = []
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    if not cve_rows:
+        return []
 
+    cve_ids = [c["cve_id"] for c in cve_rows]
+    pg = _is_postgres_connection(db)
+    placeholders = ",".join(f"${i+1}" if pg else "?" for i in range(len(cve_ids)))
+
+    # 1. Batch fetch techniques for all CVEs
+    cve_techniques: dict[str, set[str]] = {cid: set() for cid in cve_ids}
+    tech_rows = await db.execute_fetchall(
+        f"""
+        SELECT cve_id, technique_id AS tid FROM cve_technique_map WHERE cve_id IN ({placeholders})
+        UNION
+        SELECT cve_id, mitre_technique AS tid FROM cves
+        WHERE cve_id IN ({placeholders}) AND COALESCE(mitre_technique, '') != ''
+        """,
+        tuple(cve_ids) + tuple(cve_ids),
+    )
+    all_techniques = set()
+    for row in tech_rows:
+        cid = row["cve_id"]
+        tid = (row["tid"] or "").strip().upper()
+        if tid:
+            cve_techniques.setdefault(cid, set()).add(tid)
+            all_techniques.add(tid)
+
+    if not all_techniques:
+        return []
+
+    # 2. Batch fetch hunt pack counts for all techniques (to check gaps)
+    tech_list = list(all_techniques)
+    tech_placeholders = ",".join(f"${i+1}" if pg else "?" for i in range(len(tech_list)))
+    pack_rows = await db.execute_fetchall(
+        f"""
+        SELECT technique_id, COUNT(*) AS n FROM hunt_packs 
+        WHERE technique_id IN ({tech_placeholders})
+        GROUP BY technique_id
+        """,
+        tuple(tech_list),
+    )
+    pack_counts = {r["technique_id"]: int(r["n"]) for r in pack_rows}
+
+    # 3. Batch fetch mitre technique names
+    tech_name_rows = await db.execute_fetchall(
+        f"""
+        SELECT technique_id, name FROM mitre_techniques
+        WHERE technique_id IN ({tech_placeholders})
+        """,
+        tuple(tech_list),
+    )
+    tech_names = {r["technique_id"]: r["name"] for r in tech_name_rows}
+
+    # 4. Batch fetch existing backlog items to prevent duplicates
+    existing_rows = await db.execute_fetchall(
+        f"""
+        SELECT cve_id, technique_id FROM detection_backlog
+        WHERE cve_id IN ({placeholders}) AND reason = {_placeholder(pg, len(cve_ids) + 1)}
+        """,
+        tuple(cve_ids) + (reason,),
+    )
+    existing_set = {(r["cve_id"], r["technique_id"]) for r in existing_rows}
+
+    # 5. Insert new items and gather values to insert
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    to_insert = []
+    
     for cve in cve_rows:
         cve_id = cve["cve_id"]
-        techniques = await _techniques_for_cve(db, cve_id)
+        techniques = sorted(cve_techniques.get(cve_id, set()))
         if not techniques:
             continue
 
@@ -90,69 +161,70 @@ async def upsert_gap_items_for_cves(
         )
 
         for technique_id in techniques:
-            pack_count = await _pack_count(db, technique_id)
+            pack_count = pack_counts.get(technique_id, 0)
             if _coverage_status(pack_count, technique_id) != "gap":
                 continue
 
-            existing = await _fetchone(
-                db,
-                """
-                SELECT id, status FROM detection_backlog
-                WHERE cve_id = ? AND technique_id = ? AND reason = ?
-                """,
-                (cve_id, technique_id, reason),
-            )
-            if existing:
+            if (cve_id, technique_id) in existing_set:
                 continue
 
-            technique_name = await _technique_name(db, technique_id)
-            await db.execute(
-                """
-                INSERT INTO detection_backlog (
-                    cve_id, technique_id, reason, priority, status,
-                    stack_terms, technique_name, created_at
-                ) VALUES (?, ?, ?, ?, 'open', ?, ?, ?)
-                """,
-                (
-                    cve_id,
-                    technique_id,
-                    reason,
-                    priority,
-                    stack_terms,
-                    technique_name,
-                    now,
-                ),
-            )
-            row = await _fetchone(
-                db,
-                """
-                SELECT id, cve_id, technique_id, reason, priority, status,
-                       stack_terms, technique_name, created_at, dismissed_at
-                FROM detection_backlog
-                WHERE cve_id = ? AND technique_id = ? AND reason = ?
-                """,
-                (cve_id, technique_id, reason),
-            )
-            if row:
-                created.append(dict(row))
+            technique_name = tech_names.get(technique_id) or technique_id
+            to_insert.append((
+                cve_id,
+                technique_id,
+                reason,
+                priority,
+                "open",
+                stack_terms,
+                technique_name,
+                now,
+            ))
 
-    return created
+    if not to_insert:
+        return []
+
+    # Insert in batch using executemany
+    sql = """
+    INSERT INTO detection_backlog (
+        cve_id, technique_id, reason, priority, status,
+        stack_terms, technique_name, created_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    """ if pg else """
+    INSERT INTO detection_backlog (
+        cve_id, technique_id, reason, priority, status,
+        stack_terms, technique_name, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """
+    await db.executemany(sql, to_insert)
+
+    # 6. Fetch and return all newly created backlog rows in one query
+    created_rows = await db.execute_fetchall(
+        f"""
+        SELECT id, cve_id, technique_id, reason, priority, status,
+               stack_terms, technique_name, created_at, dismissed_at
+        FROM detection_backlog
+        WHERE cve_id IN ({placeholders}) AND reason = {_placeholder(pg, len(cve_ids) + 1)}
+          AND created_at = {_placeholder(pg, len(cve_ids) + 2)}
+        """,
+        tuple(cve_ids) + (reason, now),
+    )
+    return [dict(r) for r in created_rows]
 
 
 async def _enrich_cve_scores(db: DbConnection, cve_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    out: list[dict[str, Any]] = []
-    for cve in cve_rows:
-        row = await _fetchone(
-            db,
-            """
-            SELECT cve_id, is_kev, cvss_score, epss_score
-            FROM cves WHERE cve_id = ?
-            """,
-            (cve["cve_id"],),
-        )
-        if row:
-            out.append(dict(row))
-    return out
+    if not cve_rows:
+        return []
+    cve_ids = [c["cve_id"] for c in cve_rows]
+    pg = _is_postgres_connection(db)
+    placeholders = ",".join(f"${i+1}" if pg else "?" for i in range(len(cve_ids)))
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT cve_id, is_kev, cvss_score, epss_score
+        FROM cves WHERE cve_id IN ({placeholders})
+        """,
+        tuple(cve_ids),
+    )
+    return [dict(r) for r in rows]
 
 
 async def process_new_kev_backlog(newly_kev_ids: list[str]) -> list[dict[str, Any]]:

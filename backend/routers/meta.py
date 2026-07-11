@@ -53,14 +53,14 @@ class InvestigationItemRef(BaseModel):
 
 
 class InvestigationSummaryRequest(BaseModel):
-    items: list[InvestigationItemRef]
+    items: list[InvestigationItemRef] = Field(..., max_length=100)
     duration_minutes: int = Field(default=1, ge=1, le=10080)
 
 
 class AiSummaryRequest(BaseModel):
-    cves: list[dict[str, Any]] = Field(default_factory=list)
-    iocs: list[dict[str, Any]] = Field(default_factory=list)
-    actors: list[dict[str, Any]] = Field(default_factory=list)
+    cves: list[dict[str, Any]] = Field(default_factory=list, max_length=50)
+    iocs: list[dict[str, Any]] = Field(default_factory=list, max_length=100)
+    actors: list[dict[str, Any]] = Field(default_factory=list, max_length=20)
     investigation_duration: int = Field(default=1, ge=1, le=10080)
 
 

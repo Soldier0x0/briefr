@@ -156,3 +156,47 @@ async def related_cves_for_ioc(
         (canon_type, canon_value, limit),
     )
     return [row["cve_id"] for row in rows]
+
+
+async def batch_ioc_edges_for_peers(
+    db, cve_id_a: str, peers: list[str]
+) -> dict[str, list[dict[str, Any]]]:
+    """Shared IOC edges for cve_id_a and a list of peer CVEs (batch optimized)."""
+    if not peers:
+        return {}
+    cve_upper = cve_id_a.upper()
+    peers_upper = [p.upper() for p in peers]
+    pg = type(db).__name__ == "PostgresConnection"
+    placeholders = ",".join(f"${i+2}" if pg else "?" for i in range(len(peers_upper)))
+    bind_args = [cve_upper] + peers_upper
+    
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT ocp2.cve_id AS peer_cve, oi.ioc_type, oi.ioc_value
+        FROM otx_pulse_iocs oi
+        JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id AND ocp.cve_id = $1
+        JOIN otx_pulse_iocs oi2
+            ON oi2.ioc_type = oi.ioc_type AND oi2.ioc_value = oi.ioc_value
+        JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi2.pulse_id AND ocp2.cve_id IN ({placeholders})
+        GROUP BY ocp2.cve_id, oi.ioc_type, oi.ioc_value
+        """ if pg else f"""
+        SELECT ocp2.cve_id AS peer_cve, oi.ioc_type, oi.ioc_value
+        FROM otx_pulse_iocs oi
+        JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id AND ocp.cve_id = ?
+        JOIN otx_pulse_iocs oi2
+            ON oi2.ioc_type = oi.ioc_type AND oi2.ioc_value = oi.ioc_value
+        JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi2.pulse_id AND ocp2.cve_id IN ({placeholders})
+        GROUP BY ocp2.cve_id, oi.ioc_type, oi.ioc_value
+        """,
+        tuple(bind_args),
+    )
+    
+    by_peer: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        peer = row["peer_cve"]
+        by_peer.setdefault(peer, []).append({
+            "ioc_type": row["ioc_type"],
+            "ioc_value": row["ioc_value"],
+        })
+    return by_peer
+

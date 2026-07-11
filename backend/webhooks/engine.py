@@ -11,6 +11,8 @@ from database import (
     record_webhook_delivery,
     record_webhook_destination_sent,
     was_webhook_destination_sent,
+    claim_webhook_destination_sent,
+    clear_webhook_destination_dedupe_for_dest,
 )
 from webhooks.destinations import (
     EVENT_BACKUP_FAILURE,
@@ -173,11 +175,14 @@ async def dispatch_event(
         if dedupe_key and not skip_dedupe:
             db = await get_db()
             try:
-                if await was_webhook_destination_sent(
+                # Claim dedupe key before sending to prevent concurrent TOCTOU (IDEM-001)
+                claimed = await claim_webhook_destination_sent(
                     db, dest.id, normalized, dedupe_key
-                ):
+                )
+                if not claimed:
                     skipped_dedupe.append(dest.id)
                     continue
+                await db.commit()
             finally:
                 await db.close()
 
@@ -203,23 +208,25 @@ async def dispatch_event(
 
         if result["ok"]:
             sent.append(dest.id)
+        else:
+            # If delivery failed, rollback the dedupe claim so it can be retried (IDEM-001 retry safety)
             if dedupe_key and not skip_dedupe:
                 db = await get_db()
                 try:
-                    await record_webhook_destination_sent(
+                    await clear_webhook_destination_dedupe_for_dest(
                         db, dest.id, normalized, dedupe_key
                     )
                     await db.commit()
                 finally:
                     await db.close()
-        elif result["error"]:
-            errors[dest.id] = result["error"]
-            logger.error(
-                "Webhook delivery failed for %s (%s): %s",
-                dest.id,
-                normalized,
-                result["error"],
-            )
+            if result["error"]:
+                errors[dest.id] = result["error"]
+                logger.error(
+                    "Webhook delivery failed for %s (%s): %s",
+                    dest.id,
+                    normalized,
+                    result["error"],
+                )
 
     if sent and not errors:
         status = "ok"

@@ -228,6 +228,7 @@ def attach_pytest_session_cookie(test_client) -> None:
     """Default admin JWT for TestClient when analyst API auth is enabled."""
     from auth.tokens import create_access_token
 
+    seed_pytest_auth_user_if_missing(role="admin")
     test_client.cookies.set(
         "briefr_at",
         create_access_token(1, "pytest-admin", "admin"),

@@ -46,7 +46,7 @@ async def require_wallboard_token(request: Request) -> None:
 async def require_user(request: Request) -> dict:
     """Built-in app login (decision 2026-06-11): require a valid `briefr_at`
     access-token cookie, and populate request.state.user_username/user_role for
-    audit() to pick up."""
+    audit() to pick up. Live `is_active` status is checked from the database (AUTH-001)."""
     from auth.tokens import decode_access_token
 
     token = request.cookies.get("briefr_at", "")
@@ -58,17 +58,7 @@ async def require_user(request: Request) -> dict:
         raise HTTPException(status_code=401, detail="Not authenticated")
     if not payload.get("username"):
         raise HTTPException(status_code=401, detail="Not authenticated")
-    request.state.user_username = payload["username"]
-    request.state.user_role = payload.get("role", "")
-    return payload
 
-
-async def require_admin(request: Request) -> dict:
-    """Admin routes require a valid login session with the admin role.
-    The legacy X-BRIEFR-Admin-Key path was removed (Sprint A0) — it failed
-    open when the key was unset. Role is re-read from the users table so
-    demotions take effect without waiting for JWT expiry."""
-    payload = await require_user(request)
     try:
         user_id = int(payload.get("sub") or 0)
     except (TypeError, ValueError):
@@ -86,6 +76,39 @@ async def require_admin(request: Request) -> dict:
 
     if not user or not user.get("is_active", 1):
         raise HTTPException(status_code=401, detail="Not authenticated")
+
+    request.state.user_username = payload["username"]
+    request.state.user_role = payload.get("role", "")
+    request.state.user = user
+    return payload
+
+
+async def require_admin(request: Request) -> dict:
+    """Admin routes require a valid login session with the admin role.
+    The legacy X-BRIEFR-Admin-Key path was removed (Sprint A0) — it failed
+    open when the key was unset. Role is re-read from the users table so
+    demotions take effect without waiting for JWT expiry."""
+    payload = await require_user(request)
+    user = getattr(request.state, "user", None)
+    if not user:
+        try:
+            user_id = int(payload.get("sub") or 0)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        if user_id <= 0:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
+        from auth.repo import get_user_by_id
+
+        db = await get_db()
+        try:
+            user = await get_user_by_id(db, user_id)
+        finally:
+            await db.close()
+
+        if not user or not user.get("is_active", 1):
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
 
