@@ -170,13 +170,14 @@
   font-size: var(--type-micro);
   font-weight: 500;
   letter-spacing: 0.06em;
+  min-height: 26px;
   color: var(--text2);
   background: var(--bg2);
   border: 1px solid var(--border2);
   cursor: pointer;
   padding: 4px 6px;
   line-height: 1;
-  transition: color 0.1s, border-color 0.1s;
+  transition: color var(--motion-fast), border-color var(--motion-fast);
 }
 
 .card-share-btn:hover {
@@ -501,24 +502,45 @@
   border-top: 1px solid var(--border);
 }
 
+/* Neutral actions (Pin, Start investigation) — ux-audit Issue 37: red is
+   reserved for destructive/severity, so the base state is ghost, not red. */
 .cve-action-btn {
   font-family: var(--font-mono);
   font-size: var(--type-meta);
   letter-spacing: 0.06em;
+  min-height: 30px;
   padding: 5px 10px;
-  border: 1px solid var(--red);
+  border: 1px solid var(--border2);
   background: transparent;
-  color: var(--red);
+  color: var(--text2);
   cursor: pointer;
+  transition: color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast);
 }
 
 .cve-action-btn:hover:not(:disabled) {
-  background: var(--red-dim);
+  color: var(--text);
+  border-color: var(--text3);
+  background: var(--bg2);
+}
+
+.cve-action-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .cve-action-btn:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+/* Toggle labels (Pin/Unpin, Start investigation/In investigation) change
+   length — fixed min-width keeps the action row from reflowing on toggle. */
+.cve-action-btn-pin {
+  min-width: 64px;
+}
+
+.cve-action-btn-investigate {
+  min-width: 172px;
 }
 
 .cve-action-btn-secondary {

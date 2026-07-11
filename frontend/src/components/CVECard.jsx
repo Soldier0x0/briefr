@@ -323,7 +323,7 @@ export default memo(function CVECard({
           {onWatchlistPin && (
             <button
               type="button"
-              className={`cve-action-btn mono${isPinned ? ' cve-action-btn-active' : ''}`}
+              className={`cve-action-btn cve-action-btn-pin mono${isPinned ? ' cve-action-btn-active' : ''}`}
               onClick={handleWatchlistPin}
               aria-pressed={isPinned}
               aria-label={isPinned ? `Unpin ${cve.cve_id}` : `Pin ${cve.cve_id} to watchlist`}
@@ -334,7 +334,7 @@ export default memo(function CVECard({
           {onInvestigate && (
             <button
               type="button"
-              className="cve-action-btn mono"
+              className="cve-action-btn cve-action-btn-investigate mono"
               onClick={handleInvestigate}
               disabled={inThread}
               aria-label={`Add ${cve.cve_id} to investigation`}

@@ -136,8 +136,8 @@ other items flagged in audit §6 — see codebase-audit status table.
 | **32** | Scheduler manual trigger duplication (`MANUAL_PIPELINES` vs `JobTable`) | 📋 |
 | **33** | Scheduler table — search/filters at ~3 pages of jobs | 📋 |
 | **PR3 follow-up** | Migrate analyst `title=` tooltips on `CVECard` / `DetailDrawer` to `HelpTip` | 📋 incremental |
-| **37 / UX-C1** | Interactive control consistency — drawer buttons + tabs to `.ui-btn` standard (Issue 37) | ✅ PR pending merge |
-| **37 / UX-C2** | CVE card action row + feed surfaces to `.ui-btn` standard (red = destructive only) | 📋 |
+| **37 / UX-C1** | Interactive control consistency — drawer buttons + tabs to `.ui-btn` standard (Issue 37) | ✅ shipped (#474) |
+| **37 / UX-C2** | CVE card action row + feed surfaces to `.ui-btn` standard (red = destructive only) | ✅ PR pending merge |
 | **38 / UX-J1** | Domain-term explanation sweep (PRODUCT.md principle 6): KEV, EPSS, CVSS, CWE, CAPEC, ATT&CK IDs get HelpTip/ExplainTip coverage on feed, drawer, Forge | 📋 audit which terms already covered first |
 | **39 / UX-L1** | "Scope & limits" panel in About modal — render PRODUCT.md Scope & Limits content (copy is final, JSX only); browser-verify with the UX-C1 pass | 📋 content ready |
 | **Issue 21** | API key suffix + provider health ping in UI | 🔶 backend #435 — UI tail? |

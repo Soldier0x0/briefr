@@ -194,6 +194,7 @@
   font-size: var(--type-meta);
   font-weight: 500;
   letter-spacing: 0.1em;
+  min-height: 26px;
   color: var(--accent);
   background: transparent;
   border: 1px solid var(--border2);
@@ -201,7 +202,7 @@
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: color 0.1s, border-color 0.1s, background 0.1s;
+  transition: color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast);
 }
 
 .digest-btn:hover {
@@ -230,11 +231,12 @@
   font-size: var(--type-meta);
   font-weight: 500;
   letter-spacing: 0.08em;
+  min-height: 26px;
   color: var(--text2);
   background: var(--bg2);
   border: 1px solid var(--border);
   padding: 4px 11px;
-  transition: color 0.1s, background 0.1s, border-color 0.1s;
+  transition: color var(--motion-fast), background var(--motion-fast), border-color var(--motion-fast);
 }
 
 .filter-btn:hover {
@@ -242,10 +244,11 @@
   border-color: var(--border2);
 }
 
+/* Selected filter — neutral state, not destructive/severity, so accent not red. */
 .filter-btn.active {
-  color: var(--on-red);
-  background: var(--red);
-  border-color: var(--red);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, var(--bg));
+  border-color: var(--accent);
 }
 
 .filter-search {
@@ -287,6 +290,7 @@
   font-size: var(--type-meta);
   font-weight: 500;
   letter-spacing: 0.1em;
+  min-height: 26px;
   color: var(--text2);
   background: transparent;
   border: 1px solid var(--border2);
@@ -294,7 +298,7 @@
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: color 0.1s, border-color 0.1s, background 0.1s;
+  transition: color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast);
 }
 
 .export-btn:hover:not(:disabled) {
@@ -428,7 +432,7 @@
   border-radius: 0;
   white-space: nowrap;
   cursor: pointer;
-  transition: color 0.1s, border-color 0.1s, background 0.1s;
+  transition: color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast);
 }
 
 .vendor-btn:hover {
@@ -437,10 +441,11 @@
   background: var(--bg);
 }
 
+/* Selected vendor filter — neutral state, not destructive/severity, so accent not red. */
 .vendor-btn.active {
-  border-color: var(--red);
-  color: var(--text);
-  background: var(--red-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, var(--bg));
 }
 
 @media (max-width: 640px) {
