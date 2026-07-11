@@ -163,6 +163,11 @@ EXPECTED_ROUTES = [
     ("PUT", "/api/me/stack"),
     ("GET", "/api/me/preferences"),
     ("PATCH", "/api/me/preferences"),
+    ("GET", "/api/me/notifications"),
+    ("GET", "/api/me/notifications/unread-count"),
+    ("POST", "/api/me/notifications/seen"),
+    ("POST", "/api/me/notifications/{notification_id}/dismiss"),
+    ("POST", "/api/me/notifications/dismiss-all"),
 ]
 
 

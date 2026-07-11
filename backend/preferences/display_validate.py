@@ -17,6 +17,7 @@ DEFAULT_DISPLAY_PREFS = {
     "poll_interval_seconds": 30,
     "utc_time": False,
     "reduce_motion": False,
+    "notification_sound": True,
 }
 
 
@@ -75,6 +76,9 @@ def sanitize_display_prefs(data: dict | None) -> dict:
 
     if "reduce_motion" in data and data["reduce_motion"] is not None:
         base["reduce_motion"] = _coerce_bool(data["reduce_motion"], "reduce_motion")
+
+    if "notification_sound" in data and data["notification_sound"] is not None:
+        base["notification_sound"] = _coerce_bool(data["notification_sound"], "notification_sound")
 
     return base
 

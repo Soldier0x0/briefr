@@ -173,6 +173,27 @@ async def _write_job_last_run(
                 await db.commit()
             finally:
                 await db.close()
+            if had_error:
+                try:
+                    err_db = await get_db()
+                    try:
+                        from notifications.emit import emit_job_error_notification
+
+                        await emit_job_error_notification(
+                            err_db,
+                            job_id=job_id,
+                            error_message=error_message,
+                            dedupe_key=f"job:{job_id}:{new_entry['started_at']}",
+                        )
+                        await err_db.commit()
+                    finally:
+                        await err_db.close()
+                except Exception as notify_exc:
+                    logger.warning(
+                        "Failed to emit job error notification for %s: %s",
+                        job_id,
+                        notify_exc,
+                    )
             return
         except DatabaseLockedError as exc:
             if attempt == 3:

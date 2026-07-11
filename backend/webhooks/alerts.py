@@ -175,7 +175,7 @@ async def _fetch_cve_blurb(db, cve_id: str) -> str:
 
 async def process_watchlist_kev_alerts(newly_kev_ids: list[str]) -> int:
     """Alert when a pinned CVE enters CISA KEV."""
-    if not newly_kev_ids or not await webhooks_enabled():
+    if not newly_kev_ids:
         return 0
 
     db = await get_db()
@@ -196,30 +196,41 @@ async def process_watchlist_kev_alerts(newly_kev_ids: list[str]) -> int:
         try:
             description = await _fetch_cve_blurb(db, cve_id)
             campaign_hint = await _campaign_hint_for_cve(db, cve_id)
-        finally:
-            await db.close()
-        result = await dispatch_event(
-            EVENT_WATCHLIST_ALERT,
-            _format_watchlist_alert(
+            from notifications.emit import emit_watchlist_notification
+
+            in_app = await emit_watchlist_notification(
+                db,
                 cve_id=cve_id,
                 reason="added to CISA KEV",
                 detail="Pinned CVE is now on the Known Exploited Vulnerabilities catalog.",
-                description=description,
-                campaign_hint=campaign_hint,
-            ),
-            dedupe_key=f"{cve_id}:kev",
-        )
-        if result.get("sent"):
+                dedupe_key=f"{cve_id}:kev",
+                severity="critical",
+            )
+            await db.commit()
+        finally:
+            await db.close()
+        webhook_sent = False
+        if await webhooks_enabled():
+            result = await dispatch_event(
+                EVENT_WATCHLIST_ALERT,
+                _format_watchlist_alert(
+                    cve_id=cve_id,
+                    reason="added to CISA KEV",
+                    detail="Pinned CVE is now on the Known Exploited Vulnerabilities catalog.",
+                    description=description,
+                    campaign_hint=campaign_hint,
+                ),
+                dedupe_key=f"{cve_id}:kev",
+            )
+            webhook_sent = bool(result.get("sent"))
+        if in_app or webhook_sent:
             sent += 1
-            logger.info("Watchlist KEV alert sent for %s", cve_id)
+            logger.info("Watchlist KEV alert for %s (in_app=%s webhook=%s)", cve_id, in_app, webhook_sent)
     return sent
 
 
 async def process_watchlist_monitor_alerts(*, since_hours: int = 24) -> int:
     """Alert on significant changes to pinned CVEs (EPSS jump, PoC surfaced)."""
-    if not await webhooks_enabled():
-        return 0
-
     db = await get_db()
     try:
         pinned = {cve_id.upper() for cve_id in await list_pinned_cve_ids(db)}
@@ -261,20 +272,41 @@ async def process_watchlist_monitor_alerts(*, since_hours: int = 24) -> int:
 
             description = await _fetch_cve_blurb(db, cve_id)
             campaign_hint = await _campaign_hint_for_cve(db, cve_id)
-            result = await dispatch_event(
-                EVENT_WATCHLIST_ALERT,
-                _format_watchlist_alert(
-                    cve_id=cve_id,
-                    reason=reason,
-                    detail=detail,
-                    description=description,
-                    campaign_hint=campaign_hint,
-                ),
-                dedupe_key=f"{cve_id}:{field}:{dedupe_suffix}",
+            dedupe_key = f"{cve_id}:{field}:{dedupe_suffix}"
+            from notifications.emit import emit_watchlist_notification
+
+            in_app = await emit_watchlist_notification(
+                db,
+                cve_id=cve_id,
+                reason=reason,
+                detail=detail,
+                dedupe_key=dedupe_key,
+                severity="high",
             )
-            if result.get("sent"):
+            await db.commit()
+            webhook_sent = False
+            if await webhooks_enabled():
+                result = await dispatch_event(
+                    EVENT_WATCHLIST_ALERT,
+                    _format_watchlist_alert(
+                        cve_id=cve_id,
+                        reason=reason,
+                        detail=detail,
+                        description=description,
+                        campaign_hint=campaign_hint,
+                    ),
+                    dedupe_key=dedupe_key,
+                )
+                webhook_sent = bool(result.get("sent"))
+            if in_app or webhook_sent:
                 sent += 1
-                logger.info("Watchlist monitor alert sent for %s (%s)", cve_id, field)
+                logger.info(
+                    "Watchlist monitor alert for %s (%s) in_app=%s webhook=%s",
+                    cve_id,
+                    field,
+                    in_app,
+                    webhook_sent,
+                )
         return sent
     finally:
         await db.close()
@@ -399,7 +431,7 @@ def _format_ioc_watchlist_hit(match: dict) -> str:
 
 
 async def process_ioc_watchlist_hit_webhooks(matches: list[dict]) -> int:
-    if not matches or not await webhooks_enabled():
+    if not matches:
         return 0
 
     sent = 0
@@ -409,12 +441,31 @@ async def process_ioc_watchlist_hit_webhooks(matches: list[dict]) -> int:
         source = match.get("source", "")
         if not user_id or not ioc_value or not source:
             continue
-        result = await dispatch_event(
-            EVENT_IOC_WATCHLIST_HIT,
-            _format_ioc_watchlist_hit(match),
-            dedupe_key=f"{user_id}:{ioc_value}:{source}",
-        )
-        if result.get("sent"):
+        summary = _format_ioc_watchlist_hit(match)
+        db = await get_db()
+        try:
+            from notifications.emit import emit_ioc_watchlist_notification
+
+            in_app = await emit_ioc_watchlist_notification(
+                db,
+                user_id=int(user_id),
+                ioc_value=ioc_value,
+                source=source,
+                summary=summary,
+                dedupe_key=f"ioc:{user_id}:{ioc_value}:{source}",
+            )
+            await db.commit()
+        finally:
+            await db.close()
+        webhook_sent = False
+        if await webhooks_enabled():
+            result = await dispatch_event(
+                EVENT_IOC_WATCHLIST_HIT,
+                summary,
+                dedupe_key=f"{user_id}:{ioc_value}:{source}",
+            )
+            webhook_sent = bool(result.get("sent"))
+        if in_app or webhook_sent:
             sent += 1
     return sent
 

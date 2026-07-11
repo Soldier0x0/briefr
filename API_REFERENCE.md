@@ -375,6 +375,7 @@ When no row exists yet, `stack_terms` is `""`, `profile` is `null`, and `updated
   "poll_interval_seconds": 30,
   "utc_time": false,
   "reduce_motion": false,
+  "notification_sound": true,
   "timezone": "UTC",
   "remember_profile_on_server": false,
   "updated_at": "2026-07-08 12:00:00"
@@ -391,7 +392,30 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 
 **Response:** Same shape as GET (with non-null `updated_at`).
 
-**Validation:** `font_scale` ∈ `xsmall|small|medium|large|xlarge`; `density` ∈ `compact|comfortable|spacious`; `poll_interval_seconds` ∈ `15|30|60|120`; booleans for `show_technical_ids`, `utc_time`, `reduce_motion`, `remember_profile_on_server`; `timezone` must be a valid IANA zone. Invalid values → `422`.
+**Validation:** `font_scale` ∈ `xsmall|small|medium|large|xlarge`; `density` ∈ `compact|comfortable|spacious`; `poll_interval_seconds` ∈ `15|30|60|120`; booleans for `show_technical_ids`, `utc_time`, `reduce_motion`, `notification_sound`, `remember_profile_on_server`; `timezone` must be a valid IANA zone. Invalid values → `422`.
+
+### GET /api/me/notifications
+
+**Description:** Server-backed in-app notification inbox for the signed-in user.
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `scope` | str | `analyst` | `analyst` (watchlist/CVE/IOC alerts) or `operator` (job errors, unhealthy API keys; admin role only) |
+| `limit` | int | 30 | 1–100 |
+
+**Response:** `{notifications: [{id, scope, category, severity, title, body, entity_type, entity_id, created_at, read_at}], unread_count}` — `unread_count` counts undismissed `critical`/`high` rows with `read_at` null.
+
+### POST /api/me/notifications/seen
+
+**Body:** `{scope}` — marks all undismissed rows in scope as read (clears badge). **Response:** `{marked_seen, unread_count}`.
+
+### POST /api/me/notifications/{id}/dismiss
+
+Dismiss one notification (removed from list). **Response:** `{ok: true}` or `404`.
+
+### POST /api/me/notifications/dismiss-all
+
+**Body:** `{scope}` — dismiss all active rows in scope. **Response:** `{dismissed}`.
 
 **Notes:** `PUT /api/me/stack` updates `profile` only when the `profile` field is present in the body; omitting it preserves the saved inventory. Send `"profile": null` to clear.
 

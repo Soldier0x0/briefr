@@ -8,6 +8,7 @@ export const DISPLAY_DEFAULTS = {
   pollIntervalSeconds: 30,
   utcTime: false,
   reduceMotion: false,
+  notificationSound: true,
 }
 
 export function toDisplayPrefs(data = {}) {
@@ -19,6 +20,11 @@ export function toDisplayPrefs(data = {}) {
       || DISPLAY_DEFAULTS.pollIntervalSeconds,
     utcTime: !!(data.utc_time ?? data.utcTime),
     reduceMotion: !!(data.reduce_motion ?? data.reduceMotion),
+    notificationSound: data.notification_sound !== undefined
+      ? !!data.notification_sound
+      : data.notificationSound !== undefined
+        ? !!data.notificationSound
+        : DISPLAY_DEFAULTS.notificationSound,
   }
 }
 
@@ -27,6 +33,9 @@ export function applyDisplayPrefs(prefs = toDisplayPrefs()) {
   document.documentElement.classList.toggle('density-compact', prefs.density === 'compact')
   document.documentElement.classList.toggle('density-spacious', prefs.density === 'spacious')
   document.documentElement.classList.toggle('reduce-motion', !!prefs.reduceMotion)
+  try {
+    localStorage.setItem('briefr_notification_sound', prefs.notificationSound ? '1' : '0')
+  } catch { /* ignore */ }
 }
 
 export const FONT_SCALE_OPTIONS = Object.keys(FONT_SCALES)
