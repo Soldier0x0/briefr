@@ -3,7 +3,8 @@
 # is unavailable (free-tier exhausted, etc.). Run from repo root:
 #   ./scripts/verify-local.sh          # required gates (SQLite + audits + build)
 #   ./scripts/verify-local.sh --full   # also Postgres + gitleaks + Playwright smoke
-set -euo pipefail
+set -eu
+set -o pipefail 2>/dev/null || true
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
@@ -21,7 +22,7 @@ step() { printf '\n── %s\n' "$*"; }
 step "SQLite backend tests (required — matches CI job: test)"
 (
   cd backend
-  DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0 pytest tests/ -q
+  DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0 python3 -m pytest tests/ -q
 )
 pass "SQLite pytest"
 
@@ -60,7 +61,7 @@ if [[ "$FULL" -eq 1 ]]; then
     cd backend
     DATABASE_URL="$PG_URL" BRIEFR_REQUIRE_POSTGRES=1 \
       JWT_SECRET="${JWT_SECRET:-ci-test-jwt-secret-not-for-production}" \
-      pytest tests/ -q
+      python3 -m pytest tests/ -q
   )
     pass "Postgres pytest"
   else
@@ -83,7 +84,7 @@ if [[ "$FULL" -eq 1 ]]; then
   if python3 -c "import playwright" 2>/dev/null; then
     (
       cd backend
-      PLAYWRIGHT_SMOKE=1 pytest tests/test_playwright_smoke.py -q
+      PLAYWRIGHT_SMOKE=1 python3 -m pytest tests/test_playwright_smoke.py -q
     )
     pass "Playwright smoke"
   else

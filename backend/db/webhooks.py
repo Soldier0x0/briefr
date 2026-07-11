@@ -354,3 +354,60 @@ async def clear_webhook_destination_dedupe(
         """,
         (*types, dedupe_key),
     )
+
+
+async def claim_webhook_destination_sent(
+    db: DbConnection,
+    destination_id: str,
+    event_type: str,
+    dedupe_key: str,
+) -> bool:
+    """Try to insert a dedupe claim (atomic check-and-set).
+    Returns True if the claim was successfully written, False if it was already sent."""
+    pg = _is_postgres_connection(db)
+    if pg:
+        rows = await db.execute_fetchall(
+            """
+            INSERT INTO webhook_destination_dedupe (destination_id, event_type, dedupe_key)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (destination_id, event_type, dedupe_key) DO NOTHING
+            RETURNING 1
+            """,
+            (destination_id, event_type, dedupe_key),
+        )
+        return bool(rows)
+    else:
+        try:
+            await db.execute(
+                """
+                INSERT INTO webhook_destination_dedupe (destination_id, event_type, dedupe_key)
+                VALUES (?, ?, ?)
+                """,
+                (destination_id, event_type, dedupe_key),
+            )
+            return True
+        except Exception:
+            return False
+
+
+async def clear_webhook_destination_dedupe_for_dest(
+    db: DbConnection,
+    destination_id: str,
+    event_type: str,
+    dedupe_key: str,
+) -> None:
+    """Remove a dedupe claim for a specific destination (used to rollback on delivery failure)."""
+    types = _webhook_alert_types(event_type)
+    pg = _is_postgres_connection(db)
+    placeholders = _in_placeholders(len(types), pg=pg, start=1)
+    dest_ph = _placeholder(pg, len(types) + 1)
+    key_ph = _placeholder(pg, len(types) + 2)
+    await db.execute(
+        f"""
+        DELETE FROM webhook_destination_dedupe
+        WHERE event_type IN ({placeholders})
+          AND destination_id = {dest_ph}
+          AND dedupe_key = {key_ph}
+        """,
+        (*types, destination_id, dedupe_key),
+    )

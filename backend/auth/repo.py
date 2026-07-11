@@ -60,6 +60,7 @@ async def create_user(
             "UPDATE users SET password_hash = ? WHERE id = ?",
             (password_hash, existing["id"]),
         )
+        await revoke_all_sessions_for_user(db, existing["id"])
         existing["password_hash"] = password_hash
         return existing
 

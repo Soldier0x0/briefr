@@ -232,7 +232,7 @@ async def get_campaigns_for_cve(
     """
     from correlation.confidence import attribution_conflict, bump_confidence, campaign_confidence
     from correlation.copy import campaign_summary, sanitize_pulse_text
-    from correlation.ioc_graph import find_shared_infrastructure_v2, ioc_edges_between
+    from correlation.ioc_graph import find_shared_infrastructure_v2, ioc_edges_between, batch_ioc_edges_for_peers
     from correlation.local import kev_exploit_boosters
     from correlation.suppressions import is_campaign_suppressed, load_suppressions
 
@@ -259,36 +259,96 @@ async def get_campaigns_for_cve(
         (cve_upper,),
     )
 
-    results: list[dict] = []
-    for row in rows:
-        if is_campaign_suppressed(suppressions, row["campaign_id"]):
-            continue
-
-        member_rows = await db.execute_fetchall(
-            """
-            SELECT cve_id FROM correlation_campaign_members
-            WHERE campaign_id = ?
+    campaign_ids = [r["campaign_id"] for r in rows if not is_campaign_suppressed(suppressions, r["campaign_id"])]
+    
+    # Batch fetch all campaign members for the active campaigns
+    campaign_members_map: dict[str, list[str]] = {}
+    if campaign_ids:
+        pg = type(db).__name__ == "PostgresConnection"
+        placeholders = ",".join(f"${i+1}" if pg else "?" for i in range(len(campaign_ids)))
+        all_member_rows = await db.execute_fetchall(
+            f"""
+            SELECT campaign_id, cve_id FROM correlation_campaign_members
+            WHERE campaign_id IN ({placeholders})
             ORDER BY cve_id ASC
             """,
-            (row["campaign_id"],),
+            tuple(campaign_ids),
         )
-        all_members = [r["cve_id"] for r in member_rows]
+        for r in all_member_rows:
+            campaign_members_map.setdefault(r["campaign_id"], []).append(r["cve_id"])
+
+    # Batch fetch pulse counts for all unique CVEs across all campaigns and their peers
+    unique_cves = set()
+    unique_cves.add(cve_upper)
+    for peer in strong_infra_peers:
+        unique_cves.add(peer)
+    for cid in campaign_ids:
+        for m in campaign_members_map.get(cid, []):
+            unique_cves.add(m)
+
+    pulse_counts_map = {}
+    if unique_cves:
+        cve_list = list(unique_cves)
+        pg = type(db).__name__ == "PostgresConnection"
+        placeholders = ",".join(f"${i+1}" if pg else "?" for i in range(len(cve_list)))
+        pulse_count_rows = await db.execute_fetchall(
+            f"""
+            SELECT cve_id, COUNT(DISTINCT pulse_id) AS pulse_count
+            FROM otx_cve_pulses
+            WHERE cve_id IN ({placeholders})
+            GROUP BY cve_id
+            """,
+            tuple(cve_list),
+        )
+        pulse_counts_map = {row["cve_id"]: int(row["pulse_count"]) for row in pulse_count_rows}
+
+    # Batch fetch actor rows for anchor CVE once
+    actor_rows = await db.execute_fetchall(
+        "SELECT actor_name FROM correlation_actor WHERE cve_id = ?",
+        (cve_upper,),
+    )
+    mitre_names = [r["actor_name"] for r in actor_rows if r["actor_name"]]
+
+    # Collect all unique filtered peer CVEs to batch query their shared IOC edges with anchor
+    all_filtered_peers = set()
+    campaign_filtered_members = {}
+    for row in rows:
+        cid = row["campaign_id"]
+        if is_campaign_suppressed(suppressions, cid):
+            continue
+        all_members = list(campaign_members_map.get(cid, []))
         for peer in strong_infra_peers:
             if peer not in all_members:
                 all_members.append(peer)
-        pulse_counts = await _pulse_counts_for_cves(db, all_members)
         filtered = filter_campaign_members(
-            cve_upper, all_members, pulse_counts
+            cve_upper, all_members, pulse_counts_map
         )
         if len(filtered) < 2:
             continue
+        campaign_filtered_members[cid] = filtered
+        for peer in filtered:
+            if peer != cve_upper:
+                all_filtered_peers.add(peer)
 
-        ioc_edges: list[dict] = []
-        seen_iocs: set[tuple[str, str]] = set()
+    # Batch fetch shared IOC edges for all filtered peers in one query!
+    batch_edges_map = await batch_ioc_edges_for_peers(db, cve_upper, list(all_filtered_peers))
+
+    results: list[dict] = []
+    for row in rows:
+        cid = row["campaign_id"]
+        if is_campaign_suppressed(suppressions, cid):
+            continue
+        filtered = campaign_filtered_members.get(cid)
+        if not filtered:
+            continue
+
+        ioc_edges = []
+        seen_iocs = set()
         for peer in filtered:
             if peer == cve_upper:
                 continue
-            for edge in await ioc_edges_between(db, cve_upper, peer):
+            peer_edges = batch_edges_map.get(peer, [])
+            for edge in peer_edges:
                 key = (edge.get("ioc_type", ""), edge.get("ioc_value", ""))
                 if key in seen_iocs:
                     continue
@@ -316,11 +376,6 @@ async def get_campaigns_for_cve(
                 "value": edge.get("ioc_value", ""),
             })
 
-        actor_rows = await db.execute_fetchall(
-            "SELECT actor_name FROM correlation_actor WHERE cve_id = ?",
-            (cve_upper,),
-        )
-        mitre_names = [r["actor_name"] for r in actor_rows if r["actor_name"]]
         conflict = attribution_conflict(row["adversary"] or "", mitre_names)
         if conflict:
             confidence = "medium" if confidence == "high" else confidence
