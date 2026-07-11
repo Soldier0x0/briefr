@@ -12,6 +12,8 @@ from correlation.confirm import confirmation_receipt, confirmations_for_iocs_bat
 from correlation.copy import infrastructure_summary
 from correlation.ioc_normalize import is_noise_ip
 
+_CONFIDENCE_RANK = {"low": 0, "medium": 1, "high": 2}
+
 
 async def _shared_ioc_rows(db, cve_id: str) -> list:
     cve_upper = cve_id.upper()
@@ -77,7 +79,7 @@ async def find_shared_infrastructure_v2(
         by_peer.setdefault(peer, []).append(edge)
 
     results: list[dict[str, Any]] = []
-    for peer, edges in sorted(by_peer.items())[:limit]:
+    for peer, edges in by_peer.items():
         counts = _count_by_type(edges)
         confidence, evidence, why = aggregate_infrastructure_confidence(edges)
 
@@ -95,15 +97,19 @@ async def find_shared_infrastructure_v2(
             "why_not_higher": why,
         })
 
+    # Rank by evidence strength before truncating — never drop a stronger
+    # peer for a weaker one just because it sorts later alphabetically (D1).
     results.sort(
         key=lambda x: (
+            -_CONFIDENCE_RANK.get(x["confidence"], 0),
             -x["shared_hash_count"],
             -x["shared_domain_count"],
             -x["shared_url_count"],
             -x["shared_ip_count"],
+            x["cve_id_b"],
         )
     )
-    return results
+    return results[:limit]
 
 
 async def ioc_edges_between(
