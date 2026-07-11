@@ -20,6 +20,16 @@ const TASK_LABELS = {
   detection_context: 'Detection context',
 }
 
+const ERROR_CLASS_LABELS = {
+  empty: 'empty response',
+  rate_limit: 'rate limited',
+  circuit_open: 'circuit open',
+  timeout: 'timeout',
+  auth: 'auth error',
+  model_not_found: 'model not found',
+  unknown: 'unknown error',
+}
+
 function pct(rate) {
   if (rate == null || Number.isNaN(rate)) return '—'
   return `${Math.round(rate * 100)}%`
@@ -30,6 +40,27 @@ function successBadge(success) {
   return (
     <span className={`badge ${ok ? 'badge-ok' : 'badge-error'}`}>
       {ok ? 'ok' : 'fail'}
+    </span>
+  )
+}
+
+function resultCell(row) {
+  const ok = row.success === true || row.success === 1
+  if (ok) return successBadge(true)
+
+  const reason = row.error_class
+    ? (ERROR_CLASS_LABELS[row.error_class] || row.error_class.replace(/_/g, ' '))
+    : null
+
+  return (
+    <span className="admin-result-cell">
+      {successBadge(false)}
+      {reason && <span className="admin-result-reason">{reason}</span>}
+      {row.fallback_from_provider && (
+        <span className="admin-result-fallback">
+          fallback from {row.fallback_from_provider}
+        </span>
+      )}
     </span>
   )
 }
@@ -395,28 +426,18 @@ function ActivityTab({ toast, providerOptions }) {
                 <tbody>
                   {rows.map(row => (
                     <tr key={row.operation_id}>
-                      <td style={{ fontSize: '0.78rem', whiteSpace: 'nowrap' }}>{fmtIso(row.started_at)}</td>
+                      <td className="admin-cell-nowrap">{fmtIso(row.started_at)}</td>
                       <td>{TASK_LABELS[row.task_class] || row.task_class}</td>
                       <td>{row.provider}</td>
-                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{row.model}</td>
-                      <td>
-                        {successBadge(row.success)}
-                        {row.error_class && !row.success && (
-                          <span style={{ marginLeft: '0.35rem', fontSize: '0.72rem', color: 'var(--text3)' }}>{row.error_class}</span>
-                        )}
-                        {row.fallback_from_provider && (
-                          <span style={{ display: 'block', fontSize: '0.68rem', color: 'var(--text3)' }}>
-                            fallback from {row.fallback_from_provider}
-                          </span>
-                        )}
-                      </td>
+                      <td className="admin-cell-mono">{row.model}</td>
+                      <td>{resultCell(row)}</td>
                       <td>{row.latency_ms != null ? `${row.latency_ms}ms` : '—'}</td>
-                      <td style={{ fontSize: '0.72rem', whiteSpace: 'nowrap' }}>
+                      <td className="admin-cell-nowrap">
                         {row.total_tokens != null
                           ? row.total_tokens.toLocaleString()
-                          : <span style={{ color: 'var(--text3)' }}>—</span>}
+                          : <span className="admin-text-dim">—</span>}
                       </td>
-                      <td style={{ fontSize: '0.72rem', fontFamily: 'monospace' }}>
+                      <td className="admin-cell-mono admin-text-dim">
                         {row.context_id || '—'}
                       </td>
                     </tr>

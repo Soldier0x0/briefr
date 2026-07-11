@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from monitoring.api_key_health import build_api_key_health_payload
+from redact import mask_audit_log_target
 
 
 async def build_operator_notifications(db, *, limit: int = 40) -> dict[str, Any]:
@@ -65,7 +66,7 @@ async def build_operator_notifications(db, *, limit: int = 40) -> dict[str, Any]
                 "id": row["id"],
                 "actor": row["actor"],
                 "action": row["action"],
-                "summary": row["target"],
+                "summary": mask_audit_log_target(row["action"], row["target"]),
                 "created_at": row["created_at"],
             }
         )

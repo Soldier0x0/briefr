@@ -68,9 +68,13 @@
   background: var(--admin-bg);
   color: var(--admin-text);
   font-family: var(--admin-font);
-  font-size: 13px;
+  font-size: var(--type-secondary, 0.8125rem);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  --type-body: 0.875rem;
+  --type-secondary: 0.8125rem;
+  --type-meta: 0.75rem;
+  --type-micro: 0.6875rem;
 }
 
 .admin-root--analyst {
@@ -639,13 +643,13 @@
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--type-secondary, 0.8125rem);
 }
 
 .admin-table th {
   padding: 10px 12px;
   text-align: left;
-  font-size: 10px;
+  font-size: var(--type-meta, 0.75rem);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -658,7 +662,8 @@
 .admin-table td {
   padding: 10px 12px;
   border-bottom: 1px solid var(--admin-border);
-  color: var(--admin-text-muted);
+  color: var(--admin-text);
+  font-weight: 400;
   vertical-align: middle;
 }
 
@@ -1911,35 +1916,40 @@
   justify-content: center;
 }
 
-/* ── Tables ─────────────────────────────────────────────────────────────── */
+/* ── Tables (legacy block — zebra/hover only; sizes from primary block above) ─ */
 
-.admin-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8125rem;
-}
+.admin-table tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.02); }
 
-.admin-table th {
-  text-align: left;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.6875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text3);
-  border-bottom: 1px solid var(--border);
+.admin-cell-nowrap {
   white-space: nowrap;
 }
 
-.admin-table td {
-  padding: 0.4rem 0.75rem;
-  border-bottom: 0.5px solid var(--border);
-  color: var(--text);
-  vertical-align: middle;
+.admin-cell-mono {
+  font-family: var(--admin-mono);
+  font-size: var(--type-meta, 0.75rem);
 }
 
-.admin-table tr:last-child td { border-bottom: none; }
-.admin-table tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.02); }
-.admin-table tr:hover td { background: var(--bg3); }
+.admin-text-dim {
+  color: var(--admin-text-dim);
+}
+
+.admin-result-cell {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.admin-result-reason,
+.admin-result-fallback {
+  color: var(--admin-text-dim);
+  font-size: var(--type-meta, 0.75rem);
+  font-weight: 400;
+}
+
+.admin-result-fallback {
+  flex-basis: 100%;
+}
 
 /* ── Badges ─────────────────────────────────────────────────────────────── */
 
@@ -1948,7 +1958,7 @@
   align-items: center;
   padding: 0.1rem 0.45rem;
   border-radius: 4px;
-  font-size: 0.6875rem;
+  font-size: var(--type-meta, 0.75rem);
   font-weight: 600;
   text-transform: uppercase;
 }

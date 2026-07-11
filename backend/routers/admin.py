@@ -2224,7 +2224,15 @@ async def get_audit_log(
     finally:
         await db.close()
 
-    return {"rows": [dict(row) for row in rows], "total": total}
+    from redact import mask_audit_log_target
+
+    masked_rows = []
+    for row in rows:
+        item = dict(row)
+        item["target"] = mask_audit_log_target(item.get("action", ""), item.get("target"))
+        masked_rows.append(item)
+
+    return {"rows": masked_rows, "total": total}
 
 
 # ── Diagnostics ────────────────────────────────────────────────────────────

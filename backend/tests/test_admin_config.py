@@ -282,3 +282,35 @@ def test_api_keys_never_returned_full_value(admin_client):
         ), (
             f"Key {key!r} looks like it may be unmasked: {val!r}"
         )
+
+
+def test_audit_log_masks_legacy_plaintext_targets(admin_client):
+    """Legacy rows stored before write-path redaction must be masked on read."""
+    import database as db_mod
+    from tests.conftest import run_db_test
+
+    secret = "gsk_legacyPlaintextKey9999"
+
+    async def _seed():
+        db = await db_mod.get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO audit_log (actor, action, target)
+                VALUES ('admin', 'config.set.GROQ_API_KEY', ?)
+                """,
+                (secret,),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_seed())
+
+    resp = admin_client.get("/api/admin/audit-log?limit=5&action_prefix=config.set.")
+    assert resp.status_code == 200
+    rows = resp.json().get("rows", [])
+    groq_rows = [r for r in rows if r.get("action") == "config.set.GROQ_API_KEY"]
+    assert groq_rows
+    assert secret not in (groq_rows[0].get("target") or "")
+    assert "…" in groq_rows[0]["target"]

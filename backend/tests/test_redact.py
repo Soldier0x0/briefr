@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from redact import mask_config_value, mask_secret_value, redact_audit_target
+from redact import mask_audit_log_target, mask_config_value, mask_secret_value, redact_audit_target
 
 
 def test_mask_secret_value_first4_last4():
@@ -31,3 +31,19 @@ def test_redact_audit_target_masks_secret_config_set():
 def test_redact_audit_target_passes_through_non_secret():
     target = redact_audit_target("config.set.NVD_SYNC_INTERVAL_HOURS", "NVD_SYNC_INTERVAL_HOURS", "6")
     assert target == "6"
+
+
+def test_mask_audit_log_target_masks_legacy_plaintext_secret():
+    secret = "gsk_te5zV2BGuRmNpqrstuvwxyz1234"
+    masked = mask_audit_log_target("config.set.GROQ_API_KEY", secret)
+    assert secret not in masked
+    assert masked == "gsk_…1234"
+
+
+def test_mask_audit_log_target_preserves_non_secret():
+    assert mask_audit_log_target("config.set.NVD_SYNC_INTERVAL_HOURS", "6") == "6"
+
+
+def test_mask_audit_log_target_preserves_already_masked():
+    masked = "gsk_…1234"
+    assert mask_audit_log_target("config.set.GROQ_API_KEY", masked) == masked
