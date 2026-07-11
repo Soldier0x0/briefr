@@ -80,6 +80,12 @@ Every phase (TM-1…TM-5, FR-1…FR-3) runs the same nine steps. No skipping, no
 In a real browser against dev servers — `npm run build` passing is necessary, nowhere
 near sufficient.
 
+**Local environment landmine (known, hit before):** on the SQLite dev fallback, the
+scheduler's background writes can hold the database lock and make **login hang or
+fail** during E2E verification. Before browser testing: seed the dev DB with ≥ 10
+CVEs, or quiet the scheduler (`BRIEFR_SCHEDULER_ENABLED=0` on the API process you're
+testing against). If login stalls, suspect this first — not your change.
+
 - **The three states.** For every async view, force all three: loading (network
   throttle), empty (fresh DB), error (backend stopped). Each must be *designed*, and
   none may dead-end — every state offers a next action or an explanation with the
