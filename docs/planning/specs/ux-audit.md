@@ -580,7 +580,55 @@ BRIEFR is **technically substantive** with a **distinct product identity**, but 
 
 ---
 
-## Shared Root Causes
+### Issue 37 — Interactive control consistency (added 2026-07-11, maintainer-reported)
+
+**Symptom (maintainer):** buttons across the CVE card and detail-drawer tabs (Intel,
+Detect, …) misaligned, inconsistently sized, "too bright or too dark to view or click."
+
+**Root cause (code-confirmed):** the shared primitive `ui/Button.jsx` (`.ui-btn`) is
+correct — tokenized `--type-meta` text, 6px/12px padding (~29px tall),
+`--motion-fast` transitions, primary/ghost/danger variants — but is imported by only
+**5 files**. Every other surface hand-rolls buttons. `DetailDrawer.css` alone defines
+9+ bespoke classes:
+
+| Class | font-size | padding | color scheme | transition |
+|-------|-----------|---------|--------------|------------|
+| `.drawer-inv-btn` | **9px** | 6px 10px | red outline (neutral action) | none |
+| `.drawer-report-btn` | **10px** | 6px 14px | solid red, `#fff` literal | 0.15s |
+| `.drawer-tab` | **10px** | 10px 14px | `--text3` (dimmest token) | 0.15s |
+| `.drawer-back-btn` | 1rem | 2px 6px | `--text2` | none |
+| `.drawer-gn-load-btn` | 11px | 6px 12px | accent/border2 | none |
+| `.drawer-otx-more-btn` | **10px** | **0** | accent link-button | none |
+| `.corr-dismiss-btn` | 11px | 4px 10px | text2/border2 | none |
+| `.corr-show-more-btn` | 11px | **0** | accent link-button | none |
+| `.drawer-investigate-btn` | 11px | 5px 10px | red on red-dim (neutral action) | none |
+
+Five font sizes (two below the 12px `--type-micro` floor), seven paddings (heights
+~11px–29px — most under the 24px WCAG 2.5.8 target minimum), red used for neutral
+actions (semantic collision with severity), tab labels at 10px `--text3` (the
+"too dark" report), and adjacent controls of different heights producing the
+visible baseline misalignment. Same pattern in `CVECard.css` (`.cve-action-btn`:
+red neutral actions, no transition, state-label width jumping, ~25px targets).
+
+**Standard (decided — not per-surface):** all interactive controls use `.ui-btn` /
+`Button` or inherit its geometry: `min-height: 30px` (add to `.ui-btn`), min 12px
+(`--type-micro`) text, 8px gaps, `var(--motion-fast)` transitions, `min-width`
+sufficient that state-label changes never shift layout, **red = destructive/severity
+only** (neutral actions ghost, active states accent). Tabs: ≥ 12px text, `--text2`
+inactive / `--text` + accent underline active, ≥ 36px hit area.
+
+**Remediation PRs:**
+
+- **UX-C1** — harden `.ui-btn` (`min-height`, danger-variant doc note); migrate
+  `DetailDrawer.css` bespoke buttons + tab row to the standard. Browser-verify per
+  playbook §3 (three states, keyboard pass, zero layout shift on state toggles).
+- **UX-C2** — `CVECard.css` action row + share button to the standard (red → ghost,
+  min-widths, transitions); sweep feed-level surfaces (`FilterBar`, `IOCLookup`)
+  for the same drift.
+- Forge's `fg-*` buttons ride **FR-2** (component split adopts the primitive —
+  noted in [`forge-redesign.md`](forge-redesign.md), do not fix twice).
+
+
 
 | ID | Theme | Validated? | Evidence |
 |----|-------|------------|----------|
