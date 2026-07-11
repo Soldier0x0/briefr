@@ -259,6 +259,134 @@ def test_multi_ioc_infrastructure_has_evidence(tmp_path, monkeypatch):
     run_db_test(run())
 
 
+def test_peer_truncation_keeps_strongest_peer_over_alphabetical(tmp_path, monkeypatch):
+    """CORR-PR-1 / D1: a 25-peer fixture where the strongest (hash-sharing)
+    peer sorts alphabetically last must still survive a limit=20 truncation.
+    """
+
+    async def run():
+        db_path = str(tmp_path / "corr-peer-rank.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        database.DB_PATH = db_path
+        await init_db()
+        db = await database.get_db()
+        try:
+            weak_ids = [f"CVE-2024-30{i:02d}" for i in range(1, 25)]  # 24 peers
+            strong_id = "CVE-2024-9999"  # sorts alphabetically last
+
+            await db.execute(
+                "INSERT INTO cves (cve_id, description, published, is_kev, "
+                "has_poc, epss_score) VALUES ('CVE-2024-3000', 'Base', "
+                "'2024-01-01', 0, 0, 0.1)"
+            )
+            for peer in weak_ids + [strong_id]:
+                await db.execute(
+                    "INSERT INTO cves (cve_id, description, published, "
+                    "is_kev, has_poc, epss_score) VALUES (?, 'Peer', "
+                    "'2024-01-01', 0, 0, 0.1)",
+                    (peer,),
+                )
+
+            base_iocs = [
+                {"ioc_type": "IPv4", "ioc_value": f"203.0.113.{i}", "description": ""}
+                for i in range(1, 25)
+            ] + [
+                {
+                    "ioc_type": "SHA256",
+                    "ioc_value": "a" * 64,
+                    "description": "",
+                }
+            ]
+            await replace_otx_cve_pulses(
+                db,
+                "CVE-2024-3000",
+                [{
+                    "pulse_id": "pulse-base",
+                    "pulse_name": "Base pulse",
+                    "author": "analyst1",
+                    "created_date": "2024-01-01",
+                    "adversary": "",
+                    "malware_families": [],
+                    "tags": [],
+                    "targeted_countries": [],
+                    "ioc_count": len(base_iocs),
+                }],
+            )
+            await replace_otx_pulse_iocs(db, "pulse-base", base_iocs)
+
+            for i, peer in enumerate(weak_ids, start=1):
+                pulse_id = f"pulse-weak-{i}"
+                await replace_otx_cve_pulses(
+                    db,
+                    peer,
+                    [{
+                        "pulse_id": pulse_id,
+                        "pulse_name": f"Weak pulse {i}",
+                        "author": "analyst1",
+                        "created_date": "2024-01-01",
+                        "adversary": "",
+                        "malware_families": [],
+                        "tags": [],
+                        "targeted_countries": [],
+                        "ioc_count": 1,
+                    }],
+                )
+                await replace_otx_pulse_iocs(
+                    db,
+                    pulse_id,
+                    [{
+                        "ioc_type": "IPv4",
+                        "ioc_value": f"203.0.113.{i}",
+                        "description": "",
+                    }],
+                )
+
+            await replace_otx_cve_pulses(
+                db,
+                strong_id,
+                [{
+                    "pulse_id": "pulse-strong",
+                    "pulse_name": "Strong pulse",
+                    "author": "analyst1",
+                    "created_date": "2024-01-01",
+                    "adversary": "",
+                    "malware_families": [],
+                    "tags": [],
+                    "targeted_countries": [],
+                    "ioc_count": 1,
+                }],
+            )
+            await replace_otx_pulse_iocs(
+                db,
+                "pulse-strong",
+                [{
+                    "ioc_type": "SHA256",
+                    "ioc_value": "a" * 64,
+                    "description": "",
+                }],
+            )
+            await db.commit()
+
+            from correlation.ioc_graph import find_shared_infrastructure_v2
+
+            results = await find_shared_infrastructure_v2(
+                db, "CVE-2024-3000", limit=20
+            )
+            assert len(results) == 20
+            peer_ids = [r["cve_id_b"] for r in results]
+            assert strong_id in peer_ids, (
+                "hash-sharing peer must survive truncation over weaker "
+                "alphabetically-earlier IP-sharing peers"
+            )
+            assert results[0]["cve_id_b"] == strong_id
+            assert results[0]["confidence"] == "high"
+        finally:
+            await db.close()
+
+    run_db_test(run())
+
+
 def test_suppression_hides_campaign(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "corr-suppress.db")
