@@ -101,18 +101,24 @@ sudo apt install postgresql-client-16    # match your Postgres major
 
 `briefr-update.sh` installs the client automatically when `DATABASE_URL` is set.
 
-### systemd timer (production)
+### Scheduled backups (production)
+
+**Default:** APScheduler job `scheduled_backup` inside `briefr-backend.service`
+(honours `BACKUP_INTERVAL_HOURS` and M-4 interval guard). Fresh installs from
+`deploy/lib.sh` **disable** `briefr-pg-backup.timer` to avoid double archives.
+
+Manual / break-glass backup:
+
+```bash
+sudo -u briefr bash /opt/briefr/deploy/briefr-pg-backup.sh manual
+```
+
+Legacy host timer (optional — **do not** run alongside in-app scheduled backups):
 
 ```bash
 sudo cp /opt/briefr/deploy/briefr-pg-backup.{service,timer} /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now briefr-pg-backup.timer
-```
-
-Manual backup:
-
-```bash
-sudo -u briefr bash /opt/briefr/deploy/briefr-backup.sh manual
 ```
 
 ### Restore

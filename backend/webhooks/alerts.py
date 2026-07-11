@@ -456,7 +456,8 @@ async def check_backup_deadman() -> bool:
     message = (
         "BRIEFR backup dead-man alert: no successful backup within "
         f"{interval * 2}h (last success ~{hours}h ago). "
-        "Check `systemctl status briefr-backup.timer`, "
+        "Check scheduled_backup job in Admin → Scheduler, "
+        "BACKUP_INTERVAL_HOURS / last archive age, "
         "`journalctl -u briefr-backup`, and `/var/lib/briefr/backups`."
     )
     result = await dispatch_event(

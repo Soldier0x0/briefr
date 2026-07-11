@@ -2,7 +2,7 @@
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
-**Last updated:** 2026-07-09  
+**Last updated:** 2026-07-11  
 **Status:** Planning — ops contract for releases V1.2–V2.0
 
 ---
@@ -20,9 +20,12 @@ Internet  →  Cloudflare  →  cloudflared-briefr  →  nginx :80  →  uvicorn
 LAN       →  nginx :80  →  uvicorn (prefer 127.0.0.1:8000)
 
 systemd:
-  briefr-backend.service
-  briefr-pg-backup.timer (every 6h)
+  briefr-backend.service  (APScheduler `scheduled_backup` inside this unit)
   cloudflared-briefr.service
+
+Note: `briefr-pg-backup.timer` is **not** enabled on fresh installs — scheduled
+backups run via the in-app job to avoid double-triggering with `BACKUP_INTERVAL_HOURS`.
+Use `deploy/briefr-pg-backup.sh` for manual, pre-update, and pre-restore backups.
 
 Paths:
   Code:     /opt/briefr
@@ -61,9 +64,9 @@ These env vars must remain supported across releases (defaults preserved):
 
 | Tier | Frequency | Mechanism |
 |------|-----------|-----------|
-| Scheduled | Every 6h | `briefr-pg-backup.timer` |
-| Pre-update | Before deploy | `briefr-update.sh` / admin UI (V1.4) |
-| Manual | On demand | CLI or admin UI |
+| Scheduled | `BACKUP_INTERVAL_HOURS` (default 6h) | APScheduler `scheduled_backup` in `briefr-backend.service` |
+| Pre-update | Before deploy | `briefr-update.sh` / admin UI |
+| Manual | On demand | `deploy/briefr-pg-backup.sh` or admin UI |
 
 **Archive contents:**
 
@@ -224,7 +227,7 @@ independent phase.
 | 2 | **API additive** — new response fields only (prefer `meta`); no breaking shape changes without a documented version bump. |
 | 3 | **Deploy additive** — systemd unit, nginx site, and cloudflared changes are additive; existing paths (`/opt/briefr`, `DATABASE_URL`, `BACKUP_DIR`) unchanged. |
 | 4 | **Local verify green** — `./scripts/verify-local.sh` (and `--full` when Postgres/tools available). |
-| 5 | **Backup path known** — scheduled `briefr-pg-backup.timer` active; `BACKUP_AGE_KEY_FILE` present and backed up off-host. |
+| 5 | **Backup path known** — APScheduler `scheduled_backup` running (`BACKUP_INTERVAL_HOURS`); `briefr-pg-backup.timer` **disabled**; `BACKUP_AGE_KEY_FILE` present and backed up off-host. |
 | 6 | **Update path documented** — J1 rollback + health gate behavior understood; operator knows `BRIEFR_SKIP_ROLLBACK` / smoke opt-outs. |
 | 7 | **Post-deploy smoke** — expect strict Intel smoke on production update (J3); confirm OTX key if Intel campaigns matter. |
 | 8 | **Restore runbook** — operator has read [Production restore runbook](#production-restore-runbook-j5) below. |
@@ -493,6 +496,24 @@ cloudflared requires **outbound** HTTPS only.
 - `feeds.incidents.last_refresh`, `stale`  
 - Backup last success age  
 - Webhook to operator on failure (V1.2 monitoring hooks → V1.4 UI)  
+
+---
+
+## Wallboard kiosk setup (N-4)
+
+Read-only TV / SOC display at `/wallboard`. **Do not** bookmark URLs with tokens.
+
+1. Set `WALLBOARD_TOKEN` under Admin → API keys & config (or `.env`).
+2. On the display, open `/wallboard` once and enter the token — the app stores a
+   signed **httpOnly** session cookie (`briefr_wb`). Prefer header
+   `X-BRIEFR-Wallboard-Token` only for scripted probes.
+3. Use a **dedicated browser profile** (kiosk mode). Do not log into admin on the
+   same profile — wallboard token is read-only but admin cookies would not be.
+4. If the display is shared or public, rotate `WALLBOARD_TOKEN` after use and add
+   Cloudflare Access / VPN on the hostname.
+5. Optional: set user stack in the main app — wallboard KEV-on-stack tile reads it.
+
+See [`planning/WALLBOARD_V2_PLAN.md`](planning/WALLBOARD_V2_PLAN.md) for layout details.
 
 ---
 

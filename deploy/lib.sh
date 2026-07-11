@@ -203,8 +203,10 @@ ensure_postgresql_client() {
 }
 
 configure_backup_timer() {
+  # M-5: APScheduler job `scheduled_backup` is the sole scheduled backup owner.
+  # Host timers are disabled on install to avoid double archives with BACKUP_INTERVAL_HOURS.
   systemctl disable --now briefr-backup.timer 2>/dev/null || true
-  systemctl enable --now briefr-pg-backup.timer
+  systemctl disable --now briefr-pg-backup.timer 2>/dev/null || true
 }
 
 install_nginx_site() {
