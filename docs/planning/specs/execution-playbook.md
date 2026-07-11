@@ -96,6 +96,14 @@ near sufficient.
   nothing breaks).
 - **Every status word explains itself.** A new pill, badge, or count without a
   discoverable tooltip/legend is an incomplete feature (PRODUCT.md principle 1).
+- **Personality gate.** Before shipping any UI phase, read `PRODUCT.md` (Brand
+  Personality + Anti-references) and check the new surface against it: BRIEFR is
+  terminal-native — dense, monospace-forward, dark, no-nonsense. If a screenshot of
+  your work could pass for a generic SaaS dashboard template (hero metric cards,
+  gradient text, icon+heading+text card grids, warm-cream surfaces, decorative
+  whitespace), it fails review regardless of how well it functions. UX copy follows
+  the same register: terse mono labels, no marketing tone, red reserved for
+  destructive/severity meaning (ux-audit Issue 37).
 
 ## 4. Stop-and-replan triggers
 
