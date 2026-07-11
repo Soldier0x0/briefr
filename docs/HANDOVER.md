@@ -12,13 +12,26 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-11 — Doc taxonomy fix (planning vs archive)
+
+**Change:** Enforced two-bucket rule — `docs/planning/` = future work only;
+`docs/archive/` = history only. Removed `planning/completed/` stubs and
+`archive/planned/`. Full superseded plans under `docs/archive/superseded/`.
+Renamed `planning/reference/` → `planning/specs/`. Deleted `docs/reviews/`.
+**Phase 2:** moved root snapshot docs to `docs/archive/snapshots/` (root stubs
+redirect); moved `REFACTOR_PLAN` + `BRIEFR_ARCHITECTURE_REVIEW` to
+`archive/superseded/`. Updated ONBOARDING, ROADMAP, CLAUDE, SYSTEM_DESIGN, sprint links.
+
+**Next:** Regenerate snapshot files on next deliberate inventory pass; activate BACKLOG items when ready.
+
+---
+
 ## 2026-07-11 — Planning docs consolidated (dedupe + backlog)
 
-**Change:** Merged duplicate planning topics into canonical [`docs/planning/reference/`](planning/reference/)
+**Change:** Merged duplicate planning topics into canonical [`docs/planning/specs/`](planning/specs/)
 (one file per topic). All **open/parked/optional** items extracted to
-[`docs/planning/BACKLOG.md`](planning/BACKLOG.md) — including partial docs (e.g. O-3
-`WALLBOARD_TOKEN` in schema, correlation PR-1…PR-13, codebase audit tail post-#449, UX
-issues 28–33). Superseded duplicates are short stubs in `docs/planning/completed/`.
+[`docs/planning/BACKLOG.md`](planning/BACKLOG.md). Superseded full plans live in
+[`docs/archive/superseded/`](archive/superseded/) (see taxonomy fix entry below).
 
 **Next:** Activate items from BACKLOG when maintainer says go — tick sprint checkboxes per item.
 
@@ -41,8 +54,7 @@ analyst header (`scope=analyst`) and admin StatusBar (`scope=operator`);
 
 ## 2026-07-11 — Planning folder archive
 
-**Change:** July 2026 specs reorganized — see **Planning docs consolidated** entry above.
-`docs/planning/BACKLOG.md` is the open queue; `docs/planning/reference/` holds canonical deep dives.
+**Change:** July 2026 specs reorganized — see **Doc taxonomy fix** and **Planning docs consolidated** entries. `docs/planning/BACKLOG.md` + `docs/planning/specs/` = open work; `docs/archive/superseded/` = shipped/replaced plans.
 
 ---
 

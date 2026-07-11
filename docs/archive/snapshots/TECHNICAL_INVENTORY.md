@@ -1,0 +1,552 @@
+# BRIEFR Technical Inventory
+
+> **Snapshot document — may lag the code.** Location: `docs/archive/snapshots/`. When this disagrees with the code or [`../../PRODUCT_STATUS.md`](../../PRODUCT_STATUS.md), those win.
+
+
+Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
+
+**Version:** 1.5.0 · **Date:** 2026-07-09
+
+**Production:** PostgreSQL 16 required (`BRIEFR_REQUIRE_POSTGRES=1`). SQLite remains for local pytest only.
+
+**Recent:** V1.5 product (#373–#377), Track I performance (#378–#382), graphify knowledge graph (`graphify-out/`, doc paths synced 2026-07-11).
+
+---
+
+## 1. Tech Stack
+
+| Component | Technology | Version | Purpose |
+|---|---|---|---|
+| API framework | FastAPI | 0.136.3 | REST API, OpenAPI, validation |
+| ASGI server | uvicorn | 0.48.0 | Production HTTP server |
+| HTTP client | httpx | 0.28.1 | Async external API calls |
+| Scheduler | APScheduler | 3.11.2 | ~20+ recurring jobs (+ opt-in gates) in `scheduler.py` |
+| Database (prod) | PostgreSQL 16 + asyncpg | — | Required in production (`DATABASE_URL`) |
+| Database (tests) | SQLite + aiosqlite | 0.22.1 | Local pytest only |
+| Validation | Pydantic | 2.13.4 | Request/response models |
+| Config | python-dotenv | 1.2.2 | `.env` loading |
+| YAML | PyYAML | 6.0.2 | ATLAS feed parsing |
+| Spreadsheet generation | openpyxl | 3.1.5 | `TECHNICAL_INVENTORY.xlsx` generator script |
+| Backup encryption | pyrage | 1.3.0 | age (X25519) archive encryption in `backup/manager.py`; interoperable with the `age` CLI |
+| Vector math | NumPy | 2.4.4 | Brute-force cosine similarity over `cve_embeddings` BLOBs (default path) |
+| Embeddings (optional) | fastembed | not pinned — install only when `EMBEDDINGS_ENABLED=1` | Local CPU ONNX embedding model (`BAAI/bge-small-en-v1.5`); never imported on the request path |
+| UI framework | React | 19.x | Analyst SPA (Vite 8) |
+| Build tool | Vite | 8.x | Dev server and production bundle |
+| Routing | react-router-dom | 7.16.0 | `/privacy`, `/terms` routes |
+| PDF export | jsPDF + html2canvas | 4.2.1 / 1.4.1 | Client-side CVE PDF reports |
+| Spreadsheet export | exceljs | 4.4.0 | CVE XLSX export from feed |
+| Charts | chart.js | 4.4.x | Analyst Brief KEV histogram (`BriefCharts.jsx`); lazy-loaded Vite chunk; EPSS movers use inline SVG sparklines (`epssSparkline.js`) |
+| Shared UI | `CveDescriptionClamp.jsx` | — | Line-clamped CVE description (used by `CVECard.jsx`) |
+| Reverse proxy | nginx | (deploy configs) | TLS termination, static + API proxy |
+| CI | GitHub Actions | — | `backend-tests.yml`: pytest, dependency audit, Playwright smoke (`PLAYWRIGHT_SMOKE=1`) |
+| E2E smoke | Playwright (Chromium) | 1.52.0 | `tests/test_playwright_smoke.py` — seeded stack via `scripts/seed_screenshot_data.py` |
+
+---
+
+## 2. Database Schema
+
+Source: `database.py:init_db()` (lines 20–277) plus inline migrations (280–304).  
+`cpe_matches` column on `cves` added via migration `ALTER TABLE cves ADD COLUMN cpe_matches`.
+
+ERD: [`docs/diagrams/schema.mermaid`](docs/diagrams/schema.mermaid)
+
+### cves
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| cve_id | TEXT | PRIMARY KEY | CVE identifier |
+| description | TEXT | | NVD English description |
+| cvss_score | REAL | | CVSS v3 base score |
+| severity | TEXT | | CRITICAL/HIGH/MEDIUM/LOW |
+| published | TEXT | | ISO publish timestamp |
+| modified | TEXT | | ISO last-modified |
+| affected_products | TEXT | DEFAULT `'[]'` | JSON array vendor:product |
+| affected_products_source | TEXT | DEFAULT '' | Provenance (migration, V1.3): `''` = official CPE/unset, `'llm'` = LLM-extracted; cleared when official CPE supersedes |
+| mitre_technique | TEXT | | Primary ATT&CK ID from refs |
+| summary | TEXT | | Plain-English summary (KEV/OSV) |
+| is_kev | INTEGER | DEFAULT 0 | CISA KEV flag |
+| epss_score | REAL | | Latest EPSS probability |
+| has_poc | INTEGER | DEFAULT 0 | Public PoC/exploit flag |
+| patch_available | INTEGER | DEFAULT 0 | Patch reference detected |
+| has_ai_context | INTEGER | DEFAULT 0 | AI/ML relevance flag |
+| source_urls | TEXT | DEFAULT `'[]'` | JSON reference URLs |
+| cwe_ids | TEXT | DEFAULT `'[]'` | JSON CWE list |
+| updated_at | TEXT | DEFAULT datetime('now') | Row update time |
+| cpe_matches | TEXT | DEFAULT `'[]'` | JSON CPE match objects (migration) |
+
+Indexes: `severity`, `published`, `is_kev`, `epss_score`, `has_poc`
+
+### ioc_cache
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| value | TEXT | PRIMARY KEY | Normalized IOC value |
+| ioc_type | TEXT | NOT NULL | ip/hash/domain |
+| result | TEXT | NOT NULL | JSON enrichment result |
+| cached_at | TEXT | DEFAULT datetime('now') | TTL anchor (6h reads) |
+
+### kev_deadlines
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| cve_id | TEXT | PRIMARY KEY | CVE ID |
+| product | TEXT | | KEV product name |
+| short_description | TEXT | | CISA short text |
+| required_action | TEXT | | Remediation action |
+| due_date | TEXT | | Federal due date — surfaced as `kev_due_date` on `GET /api/cves` list/export/detail |
+| date_added | TEXT | | KEV catalog add date |
+| vendor_project | TEXT | DEFAULT '' | KEV vendor/project name |
+| vulnerability_name | TEXT | DEFAULT '' | CISA vulnerability name |
+| known_ransomware | TEXT | DEFAULT '' | `Known` / `Unknown` ransomware campaign use |
+| cwes | TEXT | DEFAULT '[]' | JSON array of CWE IDs from KEV |
+| updated_at | TEXT | DEFAULT datetime('now') | Sync timestamp |
+
+### api_usage
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| service | TEXT | NOT NULL | Service slug e.g. `nvd` |
+| date_utc | TEXT | NOT NULL | YYYY-MM-DD |
+| month_utc | TEXT | NOT NULL | YYYY-MM |
+| count | INTEGER | DEFAULT 0 | Calls that day |
+| | | PRIMARY KEY (service, date_utc) | |
+
+### sync_state
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| key | TEXT | PRIMARY KEY | e.g. `nvd_last_mod_end`, `epss_backfill_done` |
+| value | TEXT | NOT NULL | Watermark value or completion flag |
+| updated_at | TEXT | DEFAULT datetime('now') | |
+
+Known keys: `nvd_last_mod_end` (NVD incremental watermark), `epss_backfill_done` (set to `"1"` once the one-shot EPSS history backfill completes).
+
+### mitre_techniques
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| technique_id | TEXT | PRIMARY KEY | e.g. T1190 |
+| name | TEXT | NOT NULL | Technique name |
+| description | TEXT | DEFAULT '' | |
+| tactic | TEXT | DEFAULT '' | Tactic name |
+| url | TEXT | NOT NULL | attack.mitre.org URL |
+| platforms | TEXT | DEFAULT `'[]'` | JSON platforms |
+| detection | TEXT | DEFAULT '' | Detection guidance |
+
+### cve_technique_map
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| cve_id | TEXT | NOT NULL | |
+| technique_id | TEXT | NOT NULL | FK → mitre_techniques |
+| | | PRIMARY KEY (cve_id, technique_id) | |
+
+### atlas_techniques
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| technique_id | TEXT | PRIMARY KEY | e.g. AML.T0051 |
+| name | TEXT | NOT NULL | |
+| description | TEXT | DEFAULT '' | |
+| tactic | TEXT | DEFAULT '' | |
+| tactic_id | TEXT | DEFAULT '' | |
+| url | TEXT | NOT NULL | atlas.mitre.org URL |
+
+### atlas_case_studies
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| study_id | TEXT | PRIMARY KEY | |
+| name | TEXT | NOT NULL | |
+| summary | TEXT | DEFAULT '' | |
+| summary_full | TEXT | DEFAULT '' | |
+| techniques | TEXT | DEFAULT `'[]'` | JSON technique IDs |
+| target | TEXT | DEFAULT '' | |
+| date | TEXT | DEFAULT '' | |
+| study_type | TEXT | DEFAULT '' | |
+| cve_ids | TEXT | DEFAULT `'[]'` | JSON CVE IDs |
+
+### cve_atlas_map
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| cve_id | TEXT | NOT NULL | |
+| technique_id | TEXT | NOT NULL | FK → atlas_techniques |
+| | | PRIMARY KEY (cve_id, technique_id) | |
+
+### epss_history
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| cve_id | TEXT | NOT NULL | |
+| score | REAL | NOT NULL | EPSS at snapshot |
+| recorded_date | TEXT | NOT NULL | |
+| | | PRIMARY KEY (cve_id, recorded_date) | |
+
+### cve_exploits
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | INTEGER | PRIMARY KEY AUTOINCREMENT | |
+| cve_id | TEXT | NOT NULL | |
+| title | TEXT | NOT NULL DEFAULT '' | |
+| type | TEXT | NOT NULL DEFAULT 'poc' | |
+| source | TEXT | NOT NULL DEFAULT '' | |
+| url | TEXT | NOT NULL DEFAULT '' | |
+| published_date | TEXT | DEFAULT '' | |
+| fetched_at | TEXT | DEFAULT datetime('now') | |
+| | | UNIQUE (cve_id, url) via `idx_cve_exploits_cve_url` | Dedup across feeds |
+
+### feed_cache
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| cache_key | TEXT | PRIMARY KEY | e.g. `sploitus:CVE-...` |
+| result | TEXT | NOT NULL | JSON blob |
+| cached_at | TEXT | DEFAULT datetime('now') | TTL checked at read |
+
+### cve_change_history
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | INTEGER | PRIMARY KEY AUTOINCREMENT | |
+| cve_id | TEXT | NOT NULL | |
+| field_name | TEXT | NOT NULL | Tracked field |
+| old_value | TEXT | NOT NULL DEFAULT '' | |
+| new_value | TEXT | NOT NULL DEFAULT '' | |
+| detected_at | TEXT | DEFAULT datetime('now') | |
+
+**Frontend:** `WhatChangedPanel.jsx` on the BRIEF tab (`GET /api/changes`). `MorningBrief.jsx` reads `GET /api/brief` (EPSS movers section). Layout: side-by-side with `TimelineHeatmap` at ≥901px viewport width (`brief-intel-row` wrapper in `App.jsx`); stacked below 900px.
+
+**Runtime:** `backend/brief/service.py` — read-path aggregation only; no scheduler job or schema change.
+
+### otx_cve_pulses
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| cve_id | TEXT | NOT NULL | |
+| pulse_id | TEXT | NOT NULL | |
+| pulse_name | TEXT | NOT NULL DEFAULT '' | |
+| author | TEXT | DEFAULT '' | |
+| created_date | TEXT | DEFAULT '' | |
+| adversary | TEXT | DEFAULT '' | |
+| malware_families | TEXT | DEFAULT `'[]'` | JSON |
+| ioc_count | INTEGER | DEFAULT 0 | |
+| tags | TEXT | DEFAULT `'[]'` | JSON |
+| fetched_at | TEXT | DEFAULT datetime('now') | |
+| | | PRIMARY KEY (cve_id, pulse_id) | |
+
+### otx_pulse_iocs
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| pulse_id | TEXT | NOT NULL | |
+| ioc_type | TEXT | NOT NULL DEFAULT '' | |
+| ioc_value | TEXT | NOT NULL | |
+| description | TEXT | DEFAULT '' | |
+| fetched_at | TEXT | DEFAULT datetime('now') | |
+| | | PRIMARY KEY (pulse_id, ioc_type, ioc_value) | |
+
+### correlation_infrastructure
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| cve_id_a | TEXT | NOT NULL | |
+| cve_id_b | TEXT | NOT NULL | |
+| shared_ip_count | INTEGER | DEFAULT 0 | |
+| confidence | TEXT | DEFAULT 'low' | |
+| detected_at | TEXT | DEFAULT datetime('now') | |
+| | | PRIMARY KEY (cve_id_a, cve_id_b) | |
+
+### correlation_actor
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| cve_id | TEXT | NOT NULL | |
+| actor_name | TEXT | NOT NULL | |
+| actor_sectors | TEXT | DEFAULT `'[]'` | JSON |
+| user_sector_match | INTEGER | DEFAULT 0 | |
+| confidence | TEXT | DEFAULT 'low' | |
+| detected_at | TEXT | DEFAULT datetime('now') | |
+| | | PRIMARY KEY (cve_id, actor_name) | |
+
+### correlation_temporal
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| vendor | TEXT | PRIMARY KEY | |
+| current_week_count | INTEGER | DEFAULT 0 | |
+| average_weekly_count | REAL | DEFAULT 0 | |
+| anomaly_score | REAL | DEFAULT 0 | |
+| detected_at | TEXT | DEFAULT datetime('now') | |
+
+### mitre_groups
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| group_id | TEXT | PRIMARY KEY | e.g. G0016 |
+| name | TEXT | NOT NULL | |
+| aliases | TEXT | DEFAULT `'[]'` | JSON |
+| description | TEXT | DEFAULT '' | |
+| sectors | TEXT | DEFAULT `'[]'` | JSON targeted sectors |
+| url | TEXT | DEFAULT '' | |
+
+### group_technique_map
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| group_id | TEXT | NOT NULL | |
+| technique_id | TEXT | NOT NULL | |
+| | | PRIMARY KEY (group_id, technique_id) | |
+
+### cve_embeddings
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| cve_id | TEXT | PRIMARY KEY | CVE ID |
+| model | TEXT | NOT NULL | Embedding model name (e.g. `BAAI/bge-small-en-v1.5`) |
+| dim | INTEGER | NOT NULL | Vector dimension |
+| vector | BLOB | NOT NULL | float32 little-endian, L2-normalized |
+| updated_at | TEXT | DEFAULT datetime('now') | |
+
+Index: `idx_cve_embeddings_model(model)`. Written only by the `embeddings_backfill` scheduler job (V1.3, `EMBEDDINGS_ENABLED=1`); read by `GET /api/cves/{id}/related` as a pure vector scan (NumPy cosine). Empty table when embeddings are disabled — the endpoint then uses the shared-product heuristic.
+
+### hunt_packs
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | INTEGER | PRIMARY KEY AUTOINCREMENT | |
+| technique_id | TEXT | NOT NULL | ATT&CK technique (`T####` or `T####.###`) |
+| cve_id | TEXT | NOT NULL DEFAULT '' | CVE→pack linkage; '' reserved for technique-only packs |
+| title | TEXT | NOT NULL DEFAULT '' | `{cve_id} — {technique name} hunt pack` |
+| priority | TEXT | NOT NULL DEFAULT 'medium' | `critical|high|medium|low`, derived from KEV/CVSS/EPSS at generation |
+| sigma_yaml | TEXT | NOT NULL DEFAULT '' | Generated Sigma rule (experimental, template-based) |
+| siem_queries | TEXT | NOT NULL DEFAULT '{}' | JSON: per-platform `{query, notes}` (Elastic/Splunk/Sentinel/QRadar) |
+| log_patterns | TEXT | NOT NULL DEFAULT '[]' | JSON array of plain-English hunt patterns |
+| notes | TEXT | NOT NULL DEFAULT '' | Analyst notes (reserved; not written by MVP) |
+| created_at | TEXT | DEFAULT datetime('now') | |
+| updated_at | TEXT | DEFAULT datetime('now') | Bumped on regeneration |
+| | | UNIQUE (technique_id, cve_id) | Upsert target for idempotent regeneration |
+
+Indexes: `idx_hunt_packs_technique(technique_id)`, `idx_hunt_packs_cve(cve_id)`. Written only by `POST /api/hunt-packs/generate` (Forge MVP, V1.3); read by `GET /api/forge/coverage` (status = "yours") and `GET /api/hunt-packs/{technique_id}`.
+
+### audit_log
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | INTEGER | PRIMARY KEY AUTOINCREMENT | |
+| actor | TEXT | NOT NULL DEFAULT '' | User identity (empty until built-in app login ships); `system` for backups/restores |
+| action | TEXT | NOT NULL | `refresh.full|nvd|kev|epss|mitre`, `backup.run`, `backup.restore` |
+| target | TEXT | NOT NULL DEFAULT '' | Action object (feed names, archive name) |
+| created_at | TEXT | DEFAULT datetime('now') | |
+
+Indexes: `idx_audit_log_created(created_at)`, `idx_audit_log_action(action)`. Written by manual refresh endpoints (`routers/refresh.py` via `dependencies.py:audit`) and `backup/manager.py` (sync, best-effort). Admin UI reads it in V1.4.
+
+### watchlist
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| cve_id | TEXT | PRIMARY KEY | CVE identifier (one row per CVE) |
+| state | TEXT | NOT NULL CHECK IN ('pin','snooze') | Analyst intent |
+| snooze_until | TEXT | nullable | UTC `YYYY-MM-DD HH:MM:SS`; set when `state='snooze'` |
+| created_at | TEXT | DEFAULT datetime('now') | Last pin/snooze action |
+
+Indexes: `idx_watchlist_state(state)`, `idx_watchlist_snooze_until(snooze_until)`. CVE pin/snooze feed integration.
+
+### ioc_watchlist (V1.5)
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | INTEGER | PRIMARY KEY | |
+| user_id | INTEGER | NOT NULL FK → users | Owner |
+| ioc_type | TEXT | NOT NULL | `ip`, `hash`, `domain` |
+| ioc_value | TEXT | NOT NULL | Normalized IOC value |
+| label | TEXT | DEFAULT '' | Optional analyst label |
+| created_at | TEXT | DEFAULT datetime('now') | |
+
+Unique `(user_id, ioc_type, ioc_value)`. API: `GET/POST/DELETE /api/ioc/watchlist` (auth required).
+
+### threatfox_iocs (V1.5)
+
+Local mirror of Abuse.ch ThreatFox IOCs for retro-match (`threatfox_sync` job). Indexed on `ioc_value`.
+
+### detection_backlog (V1.5)
+
+KEV-driven detection gap rows for Forge Backlog tab. Populated on KEV sync + `kev_backlog_reconcile`.
+
+---
+
+## 3. Scheduler Jobs
+
+All registered in `scheduler.py:start_scheduler()` (lines 546–660). Default timezone: `SCHEDULER_TIMEZONE=Asia/Kolkata` unless noted.
+
+| Job ID | Schedule | Fetches from | Writes to | Failure behaviour | Idempotent? |
+|---|---|---|---|---|---|
+| `nvd_incremental_sync` | Every `NVD_SYNC_INTERVAL_HOURS` (default 1h) | NVD API | `cves`, `sync_state`, `cve_change_history`, `feed_cache`, `cve_exploits` | Log error; watermark not advanced if commit fails | Yes — upsert + lock skip |
+| `kev_metadata_sync` | Every `KEV_SYNC_INTERVAL_MINUTES` (default 15m) | CISA KEV JSON | `kev_deadlines`, `cves.is_kev`, `webhook_alert_log` (KEV-on-stack) | Log error; prior data retained | Yes — upsert |
+| `epss_score_sync` | Every `EPSS_SYNC_INTERVAL_HOURS` (default 6h) | EPSS CSV/API | `cves.epss_score`, `epss_history` | Log error | Yes — upsert history |
+| `weekly_mitre_refresh` | Cron Sun `MITRE_REFRESH_HOUR:MINUTE` (default 02:00 sched TZ) | MITRE STIX, CTID CSV, ATLAS YAML | `mitre_*`, `atlas_*`, `cve_*_map`, `has_ai_context` | Log error; partial commit possible | Mostly — replace atlas tables |
+| `otx_nightly_correlation` | Cron `OTX_CORRELATION_HOUR:MINUTE` in `OTX_CORRELATION_TIMEZONE` (default 02:00 IST) | OTX API | `otx_*`, `feed_cache` | Skipped if no key; log on error | Yes — replace per CVE |
+| `incident_feed_refresh` | Every `INCIDENT_FEED_REFRESH_MINUTES` (default 30m; first run ~20s after boot) | 6 RSS feeds (parallel) + ATLAS | `feed_cache` (`incident_rss:*`, `incident_feed:snapshot`) | Per-source errors stored in snapshot; cache-write contention degrades gracefully | Yes — snapshot overwrite |
+| `nightly_correlation` | Cron `CORRELATION_HOUR:MINUTE` in `CORRELATION_TIMEZONE` (default 01:00 IST) | OTX IOCs + local DB | `correlation_*`, `feed_cache` | Log error; lock skip | Yes — upsert/delete patterns |
+| _(one-shot)_ `epss_backfill` | Startup task (fires once; skipped if `sync_state.epss_backfill_done = 1`) | FIRST API `scope=time-series` | `epss_history`, `sync_state` | Log error; retries on next restart; INSERT OR IGNORE prevents duplicates | Yes — INSERT OR IGNORE + marker |
+| `vulnrichment_snapshot_sync` | Every `VULNRICHMENT_SYNC_INTERVAL_HOURS` (default 6h; first run ~45s after boot) | cisagov/vulnrichment GitHub tree + raw JSON | `cves` (additive CVSS/CWE/CPE) | Log error; prior data retained | Yes — additive merge only |
+| `cvelistv5_incremental_sync` | Every `CVELISTV5_SYNC_INTERVAL_MINUTES` (default 30m; first run ~60s after boot) | CVEProject/cvelistV5 GitHub compare + raw JSON | `cves`, `sync_state.cvelistv5_head_sha` | Log error; watermark not advanced on failure | Yes — delta + additive merge |
+| `embeddings_backfill` | Every `EMBEDDINGS_SYNC_INTERVAL_HOURS` (default 6h; first run ~90s after boot) | Local CPU model (fastembed/ONNX) — no network after model download | `cve_embeddings` | **No-op unless `EMBEDDINGS_ENABLED=1`**; clear warning if `fastembed` missing; log error otherwise | Yes — only missing vectors embedded, commit per batch |
+| `llm_product_extraction` | Every `LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS` (default 6h; first run ~150s after boot) | Groq API (via `resilient_client`, `retries=0`) | `cves.affected_products` (only while empty) + `affected_products_source='llm'`, `feed_cache` (`llm_products:*`) | **No-op unless `LLM_PRODUCT_EXTRACTION_ENABLED=1` AND `GROQ_API_KEY` set**; circuit-open aborts run; per-CVE errors retried next run (not cached) | Yes — completed extractions negative-cached 7d; write guarded on empty field |
+| `backup_deadman_check` | Every `max(1, BACKUP_INTERVAL_HOURS // 2)` (default 3h; first run ~5m after boot) | Local backup archive mtimes | `webhook_alert_log`, `webhook_delivery_log`, `sync_state.backup_deadman_baseline_utc` | **No-op unless `BACKUP_ENABLED=1` and a webhook destination is configured**; log on delivery failure | Yes — one alert per stale period |
+| `threatfox_sync` | Every `THREATFOX_SYNC_INTERVAL_HOURS` (default 24h) | Abuse.ch ThreatFox | `threatfox_iocs` | Skipped without `ABUSECH_AUTH_KEY` | Yes — upsert mirror |
+| `vulncheck_kev_sync` | Every `VULNCHECK_KEV_SYNC_INTERVAL_HOURS` (default 24h) | VulnCheck KEV API | `cves.is_vulncheck_exploited` | No-op without `VULNCHECK_API_KEY` | Yes — flag sync |
+| `ioc_retro_match` | Cron `IOC_RETRO_MATCH_HOUR:MINUTE` (default 04:00) | Local OTX + ThreatFox mirrors | `ioc_watchlist_hit` webhooks | Log error | Yes — deduped alerts |
+| `kev_backlog_reconcile` | Weekly cron | Local DB | `detection_backlog` | Log error | Yes |
+| `watchlist_monitor_alerts` | Interval | Pinned CVE change detection | `watchlist_alert` webhooks | Log error | Yes |
+| `session_cleanup` | Daily | — | purges expired `sessions` | Log error | Yes |
+| `cache_retention_cleanup` | Daily | — | stale `ioc_cache` / `feed_cache`, aged history | Log error | Yes |
+| `detection_context_sync` | Interval (`DETECTION_CONTEXT_SYNC_ENABLED`) | Local CVE/exploit text | `feed_cache` detection_ctx | No-op when disabled | Yes |
+| `detection_context_llm` | Interval (`DETECTION_CONTEXT_LLM_ENABLED`) | LLM router | `feed_cache` detection_ctx | No-op when disabled | Yes |
+
+---
+
+### webhook_alert_log (V1.3, event types updated V1.4)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `alert_type` | TEXT | `kev_alert` / `backup_failure` (legacy `kev_stack` / `backup_deadman` still queried) |
+| `target` | TEXT | CVE ID or `stale` |
+| `alerted_at` | TEXT | UTC timestamp |
+
+Primary key `(alert_type, target)` — dedupes events until cleared (backup dead-man clears on fresh backup).
+
+### webhook_destinations (V1.4)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | TEXT | `discord`, `telegram`, `generic`, or custom |
+| `kind` | TEXT | `discord`, `telegram`, `generic` |
+| `label` | TEXT | Display name |
+| `enabled` | INTEGER | 1 = active |
+| `event_types` | TEXT | JSON array: `kev_alert`, `backup_failure`, `health`, `watchlist_alert`, `kev_backlog`, `ioc_watchlist_hit` |
+| `config_json` | TEXT | Channel config (URL, token, chat_id) — env-seeded rows refresh config on startup |
+| `source` | TEXT | `env` or `db` |
+
+### webhook_delivery_log (V1.4)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | INTEGER | Auto-increment |
+| `destination_id` | TEXT | FK to `webhook_destinations.id` |
+| `event_type` | TEXT | Event dispatched |
+| `dedupe_key` | TEXT | Optional dedupe target (CVE ID, `stale`, etc.) |
+| `status` | TEXT | `ok` or `failed` |
+| `error` | TEXT | Truncated error message |
+| `attempted_at` | TEXT | UTC timestamp |
+
+Retention: operator may purge rows older than ~90 days (see `docs/OPERATIONS.md`).
+
+---
+
+## 4. External APIs
+
+| Service | Endpoint used | Key env var | Free tier limit | Fallback |
+|---|---|---|---|---|
+| NVD | `https://services.nvd.nist.gov/rest/json/cves/2.0` | `NVD_API_KEY` | 50/30s with key | Retry/backoff; anonymous fallback |
+| CISA KEV | `known_exploited_vulnerabilities.json` | — | Unlimited | `[]` |
+| EPSS | CSV gzip + `api.first.org/data/v1/epss` | — | Unlimited | `{}` |
+| MITRE STIX | `enterprise-attack.json` + CTID CSV | — | Unlimited | Job fails |
+| ATLAS | GitHub raw YAML + case-studies API | `ATLAS_YAML_URL` | Unlimited | Job fails |
+| Sploitus | `sploitus.com` search API | — | Unpublished | `None`/`[]` |
+| PoC-in-GitHub | GitHub API + raw JSON (`nomi-sec/PoC-in-GitHub`) | `GITHUB_TOKEN` optional | GitHub rate limits | Skip source |
+| ExploitDB | GitLab raw `files_exploits.csv` | — | Unrestricted | Skip source |
+| Metasploit | GitHub raw `modules_metadata_base.json` | — | Unrestricted | Skip source |
+| Nuclei | GitHub raw `cves.json` (JSONL) | — | Unrestricted | Skip source |
+| GreyNoise | `api.greynoise.io/v3/community` | `GREYNOISE_API_KEY` | 50/week | Unknown classification |
+| VirusTotal | `virustotal.com/api/v3` | `VIRUSTOTAL_API_KEY` | 500/day | Empty fields |
+| AbuseIPDB | `api.abuseipdb.com/api/v2/check` | `ABUSEIPDB_API_KEY` | 1000/day | Skipped |
+| OTX | `otx.alienvault.com/api/v1` | `OTX_API_KEY` | 10k/month | `[]` |
+| OSV | `api.osv.dev/v1/query` | — | Unlimited | `[]` |
+| CIRCL | `cve.circl.lu/api/cve` | — | Unlimited | No merge |
+| MalwareBazaar | `bazaar.abuse.ch/api` | `ABUSECH_AUTH_KEY` | Fair use | `None` |
+| URLhaus | `urlhaus-api.abuse.ch` | `ABUSECH_AUTH_KEY` | Fair use | `None` |
+| Groq | `api.groq.com/openai/v1/chat/completions` | `GROQ_API_KEY` | Console quota | Model `llama-3.1-8b-instant`; PDF summary: Anthropic/template fallback |
+| Anthropic | `api.anthropic.com/v1/messages` | `ANTHROPIC_API_KEY` | Console quota | Template |
+| GitHub | `api.github.com/search/code` | `GITHUB_TOKEN` | 60/hr without token | `[]` rules |
+| CISA Vulnrichment | `api.github.com` + `raw.githubusercontent.com/cisagov/vulnrichment` | `GITHUB_TOKEN` optional | 60/hr anon API | Skip run; circuit opens |
+| cvelistV5 | `api.github.com` + `raw.githubusercontent.com/CVEProject/cvelistV5` | `GITHUB_TOKEN` optional | 60/hr anon API | Skip run; watermark retained |
+| Discord webhook | Operator-configured `DISCORD_WEBHOOK_URL` | — | Discord limits | Log error; circuit opens (`webhook.discord`) |
+| Telegram Bot API | `api.telegram.org/bot…/sendMessage` | `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` | Bot API limits | Log error; circuit opens (`webhook.telegram`) |
+| Generic HTTPS webhook | Operator-configured `WEBHOOK_GENERIC_URL` | — | Destination limits | SSRF-blocked private IPs; circuit opens (`webhook.generic`) |
+
+---
+
+## 5. Risk Scoring — v1.1b
+
+**Weight authority:** `backend/scoring/risk.py` constants → `GET /api/config/risk`  
+**Canonical scoring:** `POST /api/cves/{cve_id}/risk` → `backend/scoring/risk.py:calculate_risk_score()` (+ `scoring/asset_match.py` for asset component)  
+**Frontend:** `frontend/src/scoring/riskScore.js` — UI helpers + weight display cache only  
+**Server momentum:** `backend/scoring/risk.py:calculate_momentum` (also included in `/risk` response)
+
+| Component | Weight | Env var (future) |
+|---|---|---|
+| Asset profile match | 0.35 | — |
+| KEV status | 0.25 | — |
+| EPSS score | 0.15 | — |
+| Exploit availability | 0.10 | — |
+| CVSS score | 0.10 | — |
+| Momentum | 0.05 | — |
+
+Weights are read by the frontend from `GET /api/config/risk` on every app load for formula display in the drawer. The numeric score itself always comes from `POST /api/cves/{cve_id}/risk`.
+
+### Momentum signals (`calculate_momentum`)
+
+| Signal | Source | Contribution logic |
+|---|---|---|
+| EPSS rising | `epss_history` last 14 snapshots | +0.10 to +0.50 based on delta |
+| New OTX pulse | `otx_cve_pulses.fetched_at` | +0.50 if ≤24h; +0.30 if ≤7d |
+| Recent KEV addition | `kev_deadlines.date_added` | +0.40 if ≤7 days |
+| Rapid exploitation | `published` vs KEV date | +0.30 if exploited within 30 days of publish |
+
+**Deprecated:** `frontend/src/utils/riskScore.js` (v1.1a weights, no momentum, unused).
+
+---
+
+## 6. Feature Completion Matrix
+
+| Feature | Status | Notes |
+|---|---|---|
+| NVD incremental ingest | Complete | Watermark, overlap, cap `MAX_CVES_PER_FETCH` |
+| KEV sync + deadlines | Complete | 15m default interval |
+| EPSS sync + history | Complete | Snapshot before update |
+| MITRE ATT&CK mapping | Complete | Weekly Sunday job |
+| MITRE ATLAS feed | Complete | Weekly with MITRE job |
+| CVE detail enrichment | Complete | Parallel off pool (#379): Sploitus/OTX/OSV/CIRCL; GreyNoise on-demand only |
+| CVE feed + filters | Complete | Pagination max 50/page; 45s count cache; Postgres `pg_trgm` (Alembic `012`) |
+| IOC lookup multi-source | Complete | 6h cache |
+| Risk score v1.1b | Complete | Client-side; momentum lazy |
+| Correlation engine | Complete | 3 levels; 6h on-demand cache |
+| Detection engineering tab | Complete | Sigma/Elastic search + generator |
+| Forge MVP (V1.3) | Complete | Coverage map + hunt-packs API + CVE→pack linkage; local template library, no outbound HTTP |
+| Asset profile CPE match | Complete | POST-only; no server storage |
+| Investigation panel | Complete | Cross-tab pivots |
+| PDF export + AI summary | Complete | Groq→Anthropic→template |
+| Case Studies / RSS | Complete | 6 feeds, 30min cache |
+| API usage quotas UI | Complete | `/api/usage/ioc` |
+| Backup encryption (age) | Complete | `briefr-*.tar.gz.age`; key `BACKUP_AGE_KEY_FILE` outside `BACKUP_DIR` (enforced); restore + startup auto-restore decrypt transparently |
+| Authentication | Complete | Built-in login + sessions; admin role for ingest/admin; refresh rotation + expiry (#381) |
+| V1.5 Forge extensions | Complete | Threat scenarios, rule proof bench, KEV backlog, IOC watchlist (#373–#376) |
+| Track I performance | Complete | Feed scroll (#378), detail pool (#379), bulk upsert (#380), list query (#382) |
+| Repository / DI layer | Partial | `db/` package + router split; not full DI |
+| Circuit breakers | Complete | Per-source in `resilient_client.py` |
+| Structured logging | Complete | JSON lines with `request_id` (`structured_logging.py`); `X-Request-ID` response header; `LOG_FORMAT=plain` opt-out |
+| Admin log viewer (V1.4) | Complete | In-process 500-line ring buffer; `GET /api/admin/logs` with level/logger/request_id/category filters; admin pane Application logs page |
+| Rate limiting | Complete | In-memory token bucket per client IP (`rate_limit.py`) on `/api/ioc/lookup` (30/min) + `/api/refresh*` (10/min); 429 + `Retry-After` |
+
+Spreadsheet export: generate with `python3 scripts/generate_technical_inventory_xlsx.py` (not committed)
+
+### Regenerating the spreadsheet
+
+```bash
+pip install openpyxl
+python3 scripts/generate_technical_inventory_xlsx.py
+```
+
+The generator writes six sheets (Tech Stack, Database Schema, Scheduler Jobs, External APIs, Risk Scoring, Feature Completion) and auto-sizes columns with a minimum width of 10 and maximum of 60.

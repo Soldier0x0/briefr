@@ -137,7 +137,7 @@ proposes; pySigma disposes.
 
 ## 5. Pillar 2 — Correlation depth and false-positive discipline
 
-- Finish Correlation v2 phases 3–5 (`archive/planned/CORRELATION_V2_PLAN.md`).
+- Finish Correlation v3 program (`planning/specs/correlation-engine-v2.md`, `planning/BACKLOG.md` §2).
 - **Add the analyst feedback loop:** one-click "useful / not useful" on every
   correlation card and generated rule, stored locally. This is the cheapest
   FP-reduction mechanism that exists, it requires no ML, and the aggregate

@@ -14,10 +14,10 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 | 2 | [`README.md`](../README.md) | Features and local quick start |
 | 3 | [`SYSTEM_DESIGN.md`](../SYSTEM_DESIGN.md) | Architecture and trade-offs |
 | 4 | [`API_REFERENCE.md`](../API_REFERENCE.md) | Endpoints when you touch the API |
-| 5 | [`CODEBASE_CONTEXT.md`](../CODEBASE_CONTEXT.md) | Module map + AI guardrails |
-| 6 | Source + tests | `backend/tests/` and files named in [`APPLICATION_EXECUTION_MAP.md`](../APPLICATION_EXECUTION_MAP.md) |
+| 5 | [`archive/snapshots/CODEBASE_CONTEXT.md`](archive/snapshots/CODEBASE_CONTEXT.md) | Module map + AI guardrails |
+| 6 | Source + tests | `backend/tests/` and files named in [`archive/snapshots/APPLICATION_EXECUTION_MAP.md`](archive/snapshots/APPLICATION_EXECUTION_MAP.md) |
 
-**Deep reference when needed:** [`FOLDER_STRUCTURE_GUIDE.md`](../FOLDER_STRUCTURE_GUIDE.md), [`TECHNICAL_INVENTORY.md`](../TECHNICAL_INVENTORY.md), [`OPERATIONS.md`](OPERATIONS.md), [`PRODUCT_STATUS.md`](PRODUCT_STATUS.md).
+**Deep reference when needed:** [`archive/snapshots/FOLDER_STRUCTURE_GUIDE.md`](archive/snapshots/FOLDER_STRUCTURE_GUIDE.md), [`archive/snapshots/TECHNICAL_INVENTORY.md`](archive/snapshots/TECHNICAL_INVENTORY.md), [`OPERATIONS.md`](OPERATIONS.md), [`PRODUCT_STATUS.md`](PRODUCT_STATUS.md).
 
 **Historical planning:** [`archive/`](archive/) (beta specs, agent notes — not required reading).
 
@@ -271,7 +271,7 @@ See [README.md § Backups and restore](../README.md) and [`docs/POSTGRES.md`](PO
 | Correlation | `backend/correlation/engine.py` |
 | Detection rules | `backend/detection/` |
 | Scheduled ingest | `backend/scheduler.py`, `backend/feeds/` |
-| Database schema | `backend/database.py` (`init_db`), `TECHNICAL_INVENTORY.md` §2 |
+| Database schema | `backend/database.py` (`init_db`), [`archive/snapshots/TECHNICAL_INVENTORY.md`](archive/snapshots/TECHNICAL_INVENTORY.md) §2 |
 | PDF export | `frontend/src/utils/pdfReport.js`, `backend/ai/summary.py` |
 | Morning brief | `frontend/src/components/MorningBrief.jsx` (unified `action_queue` list + filter chips) |
 | Analyst charts | `frontend/src/components/BriefCharts.jsx` (KEV histogram + EPSS movers table), `CveDescriptionClamp.jsx`, `chart.js` (lazy chunk for histogram only) |
@@ -328,8 +328,8 @@ Update the source markdown in the same PR when you change behaviour those artifa
 
 ## Related documentation
 
-- [`CODEBASE_CONTEXT.md`](../CODEBASE_CONTEXT.md) — consolidated codebase reference (architecture, flows, AI guardrails)
+- [`archive/snapshots/CODEBASE_CONTEXT.md`](archive/snapshots/CODEBASE_CONTEXT.md) — consolidated codebase reference (architecture, flows, AI guardrails)
 - [`SYSTEM_DESIGN.md`](../SYSTEM_DESIGN.md) — architecture deep dive
 - [`API_REFERENCE.md`](../API_REFERENCE.md) — endpoint catalog
-- [`APPLICATION_EXECUTION_MAP.md`](../APPLICATION_EXECUTION_MAP.md) — runtime traces
-- [`FOLDER_STRUCTURE_GUIDE.md`](../FOLDER_STRUCTURE_GUIDE.md) — every file in the repo
+- [`archive/snapshots/APPLICATION_EXECUTION_MAP.md`](archive/snapshots/APPLICATION_EXECUTION_MAP.md) — runtime traces
+- [`archive/snapshots/FOLDER_STRUCTURE_GUIDE.md`](archive/snapshots/FOLDER_STRUCTURE_GUIDE.md) — every file in the repo

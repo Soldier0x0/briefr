@@ -4,7 +4,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 
 **Version:** 1.1 (beta)  
 **Last updated:** 2026-06-19  
-**Source of truth:** `/workspace` codebase — see [`CODEBASE_CONTEXT.md`](CODEBASE_CONTEXT.md) for a consolidated reference and [`Beta V1.2.md`](Beta%20V1.2.md) for near-future roadmap
+**Source of truth:** `/workspace` codebase — see [`docs/archive/snapshots/CODEBASE_CONTEXT.md`](docs/archive/snapshots/CODEBASE_CONTEXT.md) for a consolidated snapshot and [`docs/ROADMAP.md`](docs/ROADMAP.md) for release index
 
 ---
 
@@ -63,7 +63,7 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
 └──────────────────────────────────┬──────────────────────────────────────────┘
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ SQLite (briefr.db) — 26 tables — see TECHNICAL_INVENTORY.md                │
+│ PostgreSQL — see docs/archive/snapshots/TECHNICAL_INVENTORY.md              │
 └──────────────────────────────────┬──────────────────────────────────────────┘
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -210,7 +210,7 @@ See **Risk score (v1.1b) — backend canonical** above. Implementation:
 6. **Merge:** Cards sorted by `publishedAt` descending; per-source errors collected in `errors[]` without failing the whole feed. Cache-write contention (e.g. during bootstrap ingest) degrades gracefully — parsed items are kept in the snapshot and persisted on the next cycle.
 7. **Editorial filter:** `incident_news.py` excludes non-security RSS items by title pattern (e.g. Dark Reading **"Name That Toon"** contest). Filter applies on parse and when serving cached rows; malformed cache entries are skipped defensively.
 
-Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (scheduler registration) · Client journey: [`APPLICATION_EXECUTION_MAP.md`](APPLICATION_EXECUTION_MAP.md) §2.C
+Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (scheduler registration) · Client journey: [`docs/archive/snapshots/APPLICATION_EXECUTION_MAP.md`](docs/archive/snapshots/APPLICATION_EXECUTION_MAP.md) §2.C
 
 ### F2. Analyst Brief charts (Chart.js, V1.3)
 
@@ -460,7 +460,7 @@ Near-future engineering and product intent lives in **[`Beta V1.2.md`](Beta%20V1
 - [`docs/ONBOARDING.md`](docs/ONBOARDING.md) — contributor entry point, local dev, tests, troubleshooting
 - [`Beta V1.2.md`](Beta%20V1.2.md) — roadmap and planned work
 - [`API_REFERENCE.md`](API_REFERENCE.md) — endpoint catalog
-- [`TECHNICAL_INVENTORY.md`](TECHNICAL_INVENTORY.md) — schema, scheduler, stack
-- [`APPLICATION_EXECUTION_MAP.md`](APPLICATION_EXECUTION_MAP.md) — startup and request journeys
-- [`FOLDER_STRUCTURE_GUIDE.md`](FOLDER_STRUCTURE_GUIDE.md) — file-by-file map
+- [`docs/archive/snapshots/TECHNICAL_INVENTORY.md`](docs/archive/snapshots/TECHNICAL_INVENTORY.md) — schema, scheduler, stack
+- [`docs/archive/snapshots/APPLICATION_EXECUTION_MAP.md`](docs/archive/snapshots/APPLICATION_EXECUTION_MAP.md) — startup and request journeys
+- [`docs/archive/snapshots/FOLDER_STRUCTURE_GUIDE.md`](docs/archive/snapshots/FOLDER_STRUCTURE_GUIDE.md) — file-by-file map
 - [`docs/diagrams/`](docs/diagrams/) — Mermaid diagrams (render in GitHub, VS Code, Notion). Master: [`system-graph.mermaid`](docs/diagrams/system-graph.mermaid). Flows: CVE feed/detail, IOC lookup, NVD sync, PDF export, error handling (`flow_error_handling.mermaid`), startup, schema ERD.

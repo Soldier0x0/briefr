@@ -91,7 +91,7 @@ Details: [`ROADMAP.md`](ROADMAP.md). Historical beta specs → `docs/archive/` (
 |-------|--------|
 | Doc structure + image briefs | Phase A diagrams shipped (`production-architecture`, `auth-layers`, `correlation-pipeline` SVGs) |
 | Living API / architecture docs | Current — synced through **#444** (4-PR tail bundle) |
-| Graphify knowledge graph | **Current** — `graphify-out/graph.json` + `GRAPH_REPORT.md` rebuilt **2026-07-11**, synced through **#444** (`5504` nodes, `11760` edges, `327` communities). A git `post-commit`/`post-checkout` hook now auto-rebuilds the graph from changed code files after every commit/checkout; doc/image changes still need a manual `/graphify --update` (semantic extraction, not AST) since the hook only re-parses code |
+| Graphify knowledge graph | **Doc paths patched 2026-07-11** — `graphify-out/graph.json` + `GRAPH_REPORT.md` updated for `docs/planning/specs/`, `docs/archive/superseded/`, `docs/archive/snapshots/`. Full semantic rebuild: `graphify update .` when CLI available (`5504` nodes, `11760` edges baseline). Hook auto-rebuilds on code commits; doc moves need manual update. |
 | Archive beta root `.md` files | Pending (do not edit `docs/archive/beta/*`) |
 | MkDocs site | Pending |
 | Stale README / API_REFERENCE auth claims | **Done** — session-cookie auth + refresh route errors updated |

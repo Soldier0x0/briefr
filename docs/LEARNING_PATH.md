@@ -14,7 +14,7 @@ in an interview. One module per week is a realistic pace. Order matters —
 each module builds on the previous one.
 
 Existing deep references when stuck: `SYSTEM_DESIGN.md`,
-`APPLICATION_EXECUTION_MAP.md`, `docs/HOW_IT_WORKS.md`.
+[`archive/snapshots/APPLICATION_EXECUTION_MAP.md`](archive/snapshots/APPLICATION_EXECUTION_MAP.md), `docs/HOW_IT_WORKS.md`.
 
 ---
 

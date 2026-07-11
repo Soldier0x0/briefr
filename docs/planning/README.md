@@ -1,10 +1,14 @@
-# Planning docs
+# Planning (future work only)
 
-**Active open work:** [`BACKLOG.md`](BACKLOG.md) — single queue (pending, parked, optional).  
-**Deep specs:** [`reference/`](reference/) — one canonical doc per topic.  
-**Shipped / superseded stubs:** [`completed/`](completed/) — audit trail only.
+**Rule:** if it still needs to be built, it lives here. If it is done or replaced, it lives in [`../archive/`](../archive/) — never under `planning/`.
 
-Runtime truth: [`../PRODUCT_STATUS.md`](../PRODUCT_STATUS.md) and [`../HANDOVER.md`](../HANDOVER.md).
+| File / folder | Purpose |
+|---------------|---------|
+| [`BACKLOG.md`](BACKLOG.md) | Single queue — open, parked, optional (checklist rows) |
+| [`specs/`](specs/) | Full PR specs for active programs (correlation v3, audit remediation, etc.) |
 
-When starting new work: add items to `BACKLOG.md`, extend the matching `reference/` doc if
-design detail is needed, link from [`../SPRINT_2026-07.md`](../SPRINT_2026-07.md) (or next sprint).
+**Also active (parent `docs/`):** [`SPRINT_2026-07.md`](../SPRINT_2026-07.md) (merge checkboxes), [`HANDOVER.md`](../HANDOVER.md) (session log).
+
+**Runtime truth:** [`../PRODUCT_STATUS.md`](../PRODUCT_STATUS.md).
+
+When a spec is fully shipped: move the doc to [`../archive/superseded/`](../archive/superseded/), leave only any remaining rows in `BACKLOG.md`.

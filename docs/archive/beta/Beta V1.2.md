@@ -188,8 +188,8 @@ Each phase should ship independently with tests; no big-bang rewrite.
 | [`Beta V1.3.md`](Beta%20V1.3.md) | Next — analyst beast |
 | [`SYSTEM_DESIGN.md`](../../../SYSTEM_DESIGN.md) | Current architecture (update when V1.2 phases land) |
 | [`API_REFERENCE.md`](../../../API_REFERENCE.md) | Endpoint catalog |
-| [`TECHNICAL_INVENTORY.md`](../../../TECHNICAL_INVENTORY.md) | Schema, scheduler, feature matrix |
-| [`APPLICATION_EXECUTION_MAP.md`](../../../APPLICATION_EXECUTION_MAP.md) | Request journeys |
-| [`FOLDER_STRUCTURE_GUIDE.md`](../../../FOLDER_STRUCTURE_GUIDE.md) | File map |
+| [`../../../archive/snapshots/TECHNICAL_INVENTORY.md`](../../../archive/snapshots/TECHNICAL_INVENTORY.md) | Schema, scheduler, feature matrix |
+| [`../../../archive/snapshots/APPLICATION_EXECUTION_MAP.md`](../../../archive/snapshots/APPLICATION_EXECUTION_MAP.md) | Request journeys |
+| [`../../../archive/snapshots/FOLDER_STRUCTURE_GUIDE.md`](../../../archive/snapshots/FOLDER_STRUCTURE_GUIDE.md) | File map |
 
 When a V1.2 phase completes, update the relevant doc in the same PR — do not let `Beta V1.2.md` and `SYSTEM_DESIGN.md` diverge for long.

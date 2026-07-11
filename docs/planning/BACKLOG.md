@@ -1,8 +1,7 @@
 # Planning backlog (open / parked / optional)
 
 **Purpose:** single queue for work that is **not** done — extracted from merged planning
-docs so nothing is lost when specs move to [`reference/`](reference/) or
-[`completed/`](completed/).
+docs so nothing is lost when specs move to [`archive/superseded/`](../archive/superseded/) or stay in [`specs/`](specs/).
 
 **Rules**
 
@@ -26,7 +25,7 @@ docs so nothing is lost when specs move to [`reference/`](reference/) or
 
 | ID | Item | Status | Source |
 |----|------|--------|--------|
-| **O-3** | `WALLBOARD_TOKEN` in `config_schema` + admin save/rotate (Security copy already points at API keys & config; field is **env-only** today) | 📋 | Sprint Track O; [`reference/ux-audit.md`](reference/ux-audit.md) Issue 23–24 |
+| **O-3** | `WALLBOARD_TOKEN` in `config_schema` + admin save/rotate (Security copy already points at API keys & config; field is **env-only** today) | 📋 | Sprint Track O; [`specs/ux-audit.md`](specs/ux-audit.md) Issue 23–24 |
 | **G0** | Refresh `LEARNING_PATH.md` + `ONBOARDING.md` for final shipped system | 🅿️ end-of-lifecycle | Sprint §G |
 | **G1–G4** | Maintainer modules 1–4 (trace + private notes) | 🅿️ end-of-lifecycle | Sprint §G |
 | **Phase 4 STIX/Sigma export** | V1.5 tail | 🅿️ | Sprint V1.5 |
@@ -35,7 +34,7 @@ docs so nothing is lost when specs move to [`reference/`](reference/) or
 
 ## 2. Correlation engine v3 program
 
-**Canonical spec:** [`reference/correlation-engine-v2.md`](reference/correlation-engine-v2.md)  
+**Canonical spec:** [`specs/correlation-engine-v2.md`](specs/correlation-engine-v2.md)  
 **Shipped tail only:** #434 (phase 4–5 partial — `cve_id` cluster filter, structured job logs).  
 **Full PR-1…PR-13 program below is still open** unless marked ✅.
 
@@ -64,7 +63,7 @@ before PR-9.
 
 ## 3. Codebase security / reliability / performance audit
 
-**Canonical spec:** [`reference/codebase-audit.md`](reference/codebase-audit.md)  
+**Canonical spec:** [`specs/codebase-audit.md`](specs/codebase-audit.md)  
 **Shipped in #449:** AUTH-001, AUTH-002, VAL-002, IDEM-001/TXN-001, DB-001, DB-002.
 
 ### Remaining remediation PRs (§17)
@@ -96,7 +95,7 @@ other items flagged in audit §6 — see codebase-audit status table.
 
 ### Track M (security/ops audit — mostly shipped)
 
-**Historical source:** [`completed/SECURITY_AND_OPS_AUDIT_2026-07.md`](completed/SECURITY_AND_OPS_AUDIT_2026-07.md)  
+**Historical source:** [`../archive/superseded/SECURITY_AND_OPS_AUDIT_2026-07.md`](../archive/superseded/SECURITY_AND_OPS_AUDIT_2026-07.md)  
 **Shipped:** M-1…M-7, M-5 (#442), partial M-6–M-10 per sprint.
 
 | ID | Item | Status |
@@ -109,7 +108,7 @@ other items flagged in audit §6 — see codebase-audit status table.
 
 ## 4. AI operations (conditional tail)
 
-**Canonical spec:** [`reference/ai-operations.md`](reference/ai-operations.md)  
+**Canonical spec:** [`specs/ai-operations.md`](specs/ai-operations.md)  
 **Shipped:** AI-1…AI-2 (#416–#417), retention #418, filters #419, tokens #420, quota snapshots #432, K5 pacing #433.
 
 | Item | Status | Notes |
@@ -124,7 +123,7 @@ other items flagged in audit §6 — see codebase-audit status table.
 
 ## 5. UX / operator UI (deferred from audit)
 
-**Canonical spec:** [`reference/ux-audit.md`](reference/ux-audit.md)
+**Canonical spec:** [`specs/ux-audit.md`](specs/ux-audit.md)
 
 | ID | Item | Status |
 |----|------|--------|
@@ -136,7 +135,7 @@ other items flagged in audit §6 — see codebase-audit status table.
 | **33** | Scheduler table — search/filters at ~3 pages of jobs | 📋 |
 | **PR3 follow-up** | Migrate analyst `title=` tooltips on `CVECard` / `DetailDrawer` to `HelpTip` | 📋 incremental |
 | **Issue 21** | API key suffix + provider health ping in UI | 🔶 backend #435 — UI tail? |
-| **UI overhaul 3a** | Dismissible config banner (not permanent amber) | 📋 [`../archive/planned/UI_UX_OVERHAUL_PLAN.md`](../archive/planned/UI_UX_OVERHAUL_PLAN.md) |
+| **UI overhaul 3a** | Dismissible config banner (not permanent amber) | 📋 [`../archive/superseded/UI_UX_OVERHAUL_PLAN.md`](../archive/superseded/UI_UX_OVERHAUL_PLAN.md) |
 | **UI overhaul 3b** | Status legend component | 📋 archive plan |
 | **UI overhaul §6** | Restart dropdown portal (clipped menu) | 📋 verify if still broken |
 
@@ -147,7 +146,7 @@ other items flagged in audit §6 — see codebase-audit status table.
 ## 6. Wallboard optional / kiosk tail
 
 **Core v2 shipped #430; kiosk runbook #442.** Historical plan:
-[`completed/WALLBOARD_V2_PLAN.md`](completed/WALLBOARD_V2_PLAN.md).
+[`../archive/superseded/WALLBOARD_V2_PLAN.md`](../archive/superseded/WALLBOARD_V2_PLAN.md).
 
 | Item | Status |
 |------|--------|
@@ -162,7 +161,7 @@ other items flagged in audit §6 — see codebase-audit status table.
 ## 7. Webhooks / DB explorer follow-ups
 
 **Shipped:** PR12 (#413–#415), PR13 (#422). Historical plan:
-[`completed/PR12_PR13_IMPLEMENTATION_PLAN.md`](completed/PR12_PR13_IMPLEMENTATION_PLAN.md).
+[`../archive/superseded/PR12_PR13_IMPLEMENTATION_PLAN.md`](../archive/superseded/PR12_PR13_IMPLEMENTATION_PLAN.md).
 
 | Item | Status |
 |------|--------|
@@ -219,4 +218,4 @@ other items flagged in audit §6 — see codebase-audit status table.
 
 1. Append a row to the relevant section **here**.
 2. If sprint-sized, add a checkbox to `SPRINT_2026-07.md` (or next sprint).
-3. Deep design context → extend the matching [`reference/`](reference/) doc, not a new duplicate file.
+3. Deep design context → extend the matching [`specs/`](specs/) doc, not a new duplicate file.

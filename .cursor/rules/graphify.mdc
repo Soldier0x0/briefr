@@ -17,5 +17,6 @@ Only use Read/Grep/Glob directly when:
 2. `graphify-out/graph.json` does not exist yet
 
 - If `graphify-out/wiki/index.md` exists, navigate it instead of reading raw files
-- Read `graphify-out/GRAPH_REPORT.md` only for broad architecture review when query/path/explain do not surface enough context
+- Read `graphify-out/GRAPH_REPORT.md` for broad architecture review and the **documentation corpus** table (planning vs archive paths)
+- **Doc locations (2026-07-11):** open work → `docs/planning/BACKLOG.md` + `docs/planning/specs/`; history → `docs/archive/superseded/` + `docs/archive/snapshots/`; living truth → `docs/PRODUCT_STATUS.md`
 - After modifying code files, run `graphify update .` to keep the graph current (AST-only, no API cost)
