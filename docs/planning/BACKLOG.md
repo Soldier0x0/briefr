@@ -143,7 +143,27 @@ other items flagged in audit §6 — see codebase-audit status table.
 
 ---
 
-## 6. Wallboard optional / kiosk tail
+## 6. Threat Modeling & Security Architecture module
+
+**Canonical spec:** [`specs/threat-modeling-security-architecture.md`](specs/threat-modeling-security-architecture.md)  
+**Status:** TM-0 design plan — implementation starts after merge to `main`.
+
+| PR | Title | Status |
+|----|-------|--------|
+| **TM-0** | Design plan (this spec) | 📋 in review |
+| **TM-1** | Security Architecture Corpus + API skeleton | 📋 |
+| **TM-2** | Shell UI + Overview (route, header tab ARCH, three-panel layout) | 📋 |
+| **TM-3** | System Architecture graph + Trust Boundaries + Attack Surface | 📋 |
+| **TM-4** | Framework workspaces (STRIDE, OWASP, API Security, NIST, ASVS) | 📋 |
+| **TM-5** | MITRE ATT&CK Navigator + CAPEC + CWE explorers | 📋 |
+| **TM-6** | Threat Scenarios timeline + Abuse Cases + Controls inventory | 📋 |
+| **TM-7** | Risk Register + Security Decisions + Review History + Global search | 📋 |
+
+**Scope:** Interactive operational workspace at `/security-architecture` — not a documentation viewer. Structured corpus + live DB merge. Reuses BRIEFR visual language exactly.
+
+---
+
+## 7. Wallboard optional / kiosk tail
 
 **Core v2 shipped #430; kiosk runbook #442.** Historical plan:
 [`../archive/superseded/WALLBOARD_V2_PLAN.md`](../archive/superseded/WALLBOARD_V2_PLAN.md).
@@ -158,7 +178,7 @@ other items flagged in audit §6 — see codebase-audit status table.
 
 ---
 
-## 7. Webhooks / DB explorer follow-ups
+## 8. Webhooks / DB explorer follow-ups
 
 **Shipped:** PR12 (#413–#415), PR13 (#422). Historical plan:
 [`../archive/superseded/PR12_PR13_IMPLEMENTATION_PLAN.md`](../archive/superseded/PR12_PR13_IMPLEMENTATION_PLAN.md).
@@ -171,7 +191,7 @@ other items flagged in audit §6 — see codebase-audit status table.
 
 ---
 
-## 8. Quality / process
+## 9. Quality / process
 
 | Item | Status |
 |------|--------|
@@ -180,7 +200,7 @@ other items flagged in audit §6 — see codebase-audit status table.
 
 ---
 
-## 9. Parked (explicit maintainer signal)
+## 10. Parked (explicit maintainer signal)
 
 | Item | Source |
 |------|--------|
@@ -193,7 +213,7 @@ other items flagged in audit §6 — see codebase-audit status table.
 
 ---
 
-## 10. Recently shipped — do **not** re-queue
+## 11. Recently shipped — do **not** re-queue
 
 | Area | PRs / notes |
 |------|-------------|
