@@ -36,6 +36,7 @@ from routers import admin as admin_router
 from routers import atlas as atlas_router
 from routers import auth as auth_router
 from routers import me as me_router
+from routers import notifications_me as notifications_me_router
 from routers import brief as brief_router
 from routers import correlation as correlation_router
 from routers import config as config_router
@@ -291,6 +292,7 @@ app.include_router(wallboard_router.router)
 # additive only, see test_router_split.py's EXPECTED_ROUTES comment.
 app.include_router(auth_router.router)
 app.include_router(me_router.router)
+app.include_router(notifications_me_router.router)
 
 
 if __name__ == "__main__":

@@ -12,7 +12,21 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-11 — Typography + notification readability (single PR)
+## 2026-07-11 — In-app notifications v2 (server inbox)
+
+**Context:** Operator wanted SaaS-style bells: analyst header bell for watchlist/pin
+alerts, admin bell for errors only, dismiss with 5s undo, badge clears on open,
+notification chime with mute in Display settings — not localStorage ack archives.
+
+**Change:** `user_notifications` table + `/api/me/notifications/*`; emit hooks on
+watchlist monitor, job errors, and API key health; shared `NotificationBell` on
+analyst header (`scope=analyst`) and admin StatusBar (`scope=operator`);
+`notification_sound` in display prefs.
+
+**Next:** PR2 — per-role px typography dropdowns (Apply / Save profile / instance default).
+
+---
+
 
 **Context:** Production screenshots showed unreadable sub-12px text across admin,
 feed, and Brief charts; notification dropdown was transparent (undefined CSS vars)

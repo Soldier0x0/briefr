@@ -81,6 +81,14 @@ export default function DisplayPage() {
       </div>
 
       <div className="admin-card">
+        <div className="admin-card-title">Notifications</div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
+          <ToggleSwitch on={!!prefs.notificationSound} onChange={v => update('notificationSound', v)} />
+          Play a short chime when new high-priority notifications arrive
+        </label>
+      </div>
+
+      <div className="admin-card">
         <div className="admin-card-title">Motion</div>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
           <ToggleSwitch on={!!prefs.reduceMotion} onChange={v => update('reduceMotion', v)} />

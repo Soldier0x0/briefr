@@ -271,5 +271,20 @@ async def run_api_key_health_checks(db) -> dict[str, int]:
                 payload["error"] or f"HTTP {payload.get('status_code')}",
                 extra={"provider": provider, "monitor": "api_key_health"},
             )
+            try:
+                from notifications.emit import emit_api_key_unhealthy_notification
+
+                await emit_api_key_unhealthy_notification(
+                    db,
+                    provider=provider,
+                    error=str(payload.get("error") or f"HTTP {payload.get('status_code')}"),
+                    dedupe_key=f"api_key:{provider}:{payload['checked_at']}",
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Failed to emit API key unhealthy notification for %s: %s",
+                    provider,
+                    exc,
+                )
     await db.commit()
     return {"checked": checked, "healthy": healthy}

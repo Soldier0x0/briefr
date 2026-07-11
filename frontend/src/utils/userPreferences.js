@@ -63,6 +63,9 @@ function toApiPatch(displayPatch = {}, timezone) {
   }
   if (displayPatch.utcTime !== undefined) patch.utc_time = displayPatch.utcTime
   if (displayPatch.reduceMotion !== undefined) patch.reduce_motion = displayPatch.reduceMotion
+  if (displayPatch.notificationSound !== undefined) {
+    patch.notification_sound = displayPatch.notificationSound
+  }
   if (timezone !== undefined) patch.timezone = timezone
   return patch
 }

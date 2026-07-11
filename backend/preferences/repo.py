@@ -174,6 +174,7 @@ async def patch_user_preferences(db: Any, user_id: int, patch: dict) -> dict:
             "poll_interval_seconds",
             "utc_time",
             "reduce_motion",
+            "notification_sound",
         )
         if key in patch
     }

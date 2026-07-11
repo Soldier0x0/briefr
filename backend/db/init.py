@@ -698,6 +698,25 @@ async def init_db() -> None:
             "DROP INDEX IF EXISTS idx_users_email",
             "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)",
             """
+            CREATE TABLE IF NOT EXISTS user_notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                scope TEXT NOT NULL,
+                category TEXT NOT NULL,
+                severity TEXT NOT NULL,
+                title TEXT NOT NULL,
+                body TEXT NOT NULL DEFAULT '',
+                entity_type TEXT NOT NULL DEFAULT '',
+                entity_id TEXT NOT NULL DEFAULT '',
+                dedupe_key TEXT NOT NULL,
+                created_at TEXT DEFAULT (datetime('now')),
+                read_at TEXT,
+                dismissed_at TEXT,
+                UNIQUE (user_id, dedupe_key)
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_user_notifications_user_active ON user_notifications(user_id, dismissed_at, created_at)",
+            """
             CREATE TABLE IF NOT EXISTS app_settings (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL DEFAULT '',

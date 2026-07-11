@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 import ShortcutsPanel from './ShortcutsPanel.jsx'
 import UserMenu from './UserMenu.jsx'
 import ApiQueueIndicator from './ApiQueueIndicator.jsx'
+import NotificationBell from './NotificationBell.jsx'
 import {
   COMMON_TIMEZONES,
   formatTime,
@@ -171,6 +172,10 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTutorial
         {/* Right: overflow, queue, account, clock */}
         <div className="header-right">
           <ApiQueueIndicator apiQueue={feedHealth?.api_queue} />
+
+          {authStatus === 'authed' ? (
+            <NotificationBell scope="analyst" className="header-notification-bell" />
+          ) : null}
 
           {authStatus === 'authed' ? (
             <UserMenu
