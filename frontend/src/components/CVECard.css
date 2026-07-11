@@ -10,6 +10,8 @@
   text-align: left;
   position: relative;
   isolation: isolate;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 140px;
   scroll-margin-top: 240px;
 }
 

@@ -659,6 +659,23 @@ def _build_cve_filters(
     return conditions, params, stack_products
 
 
+def _stack_relevance_sql(stack_products: list[str]) -> tuple[str, list]:
+    """ORDER BY expression: higher = more stack term hits (I16 server-side sort)."""
+    if not stack_products:
+        return "", []
+    parts: list[str] = []
+    params: list = []
+    for term in stack_products:
+        like = f"%{term.lower()}%"
+        parts.append(
+            "(CASE WHEN LOWER(c.description) LIKE ? OR LOWER(COALESCE(c.summary, '')) LIKE ? "
+            "OR LOWER(COALESCE(c.affected_products, '')) LIKE ? THEN 1 ELSE 0 END)"
+        )
+        params.extend([like, like, like])
+    expr = " + ".join(parts)
+    return f"({expr}) DESC,", params
+
+
 def _sort_by_stack_relevance(cve_list: list[dict], stack_products: list[str]) -> list[dict]:
     if not stack_products:
         return cve_list
@@ -737,6 +754,7 @@ async def list_cves(
 
     keyset_mode = (pagination or "").strip().lower() == "keyset"
     cursor_params: list = []
+    order_params: list = []
     if keyset_mode:
         order_by = CVE_KEYSET_ORDER_BY
         fetch_limit = limit + 1
@@ -757,7 +775,13 @@ async def list_cves(
             cursor_params = [cursor_published, cursor_published, cursor_cve_id]
     else:
         offset = (page - 1) * limit
-        order_by = CVE_ORDER_BY
+        stack_order_sql, stack_order_params = _stack_relevance_sql(stack_products)
+        if stack_order_sql:
+            order_by = CVE_ORDER_BY.replace("ORDER BY", f"ORDER BY {stack_order_sql}", 1)
+            order_params = stack_order_params
+        else:
+            order_by = CVE_ORDER_BY
+            order_params = []
         fetch_limit = limit
 
     db = await get_db()
@@ -774,12 +798,14 @@ async def list_cves(
 
         rows = await db.execute_fetchall(
             f"{CVE_SELECT} {where_clause} {order_by} LIMIT ? OFFSET ?",
-            params + cursor_params + [fetch_limit, offset],
+            params + cursor_params + order_params + [fetch_limit, offset],
         )
     finally:
         await db.close()
 
-    cve_list = _sort_by_stack_relevance([_row_to_cve_dict(row) for row in rows], stack_products)
+    cve_list = [_row_to_cve_dict(row) for row in rows]
+    if not order_params:
+        cve_list = _sort_by_stack_relevance(cve_list, stack_products)
     next_cursor = None
     if keyset_mode:
         has_more = len(rows) > limit

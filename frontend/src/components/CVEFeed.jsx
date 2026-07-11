@@ -158,8 +158,9 @@ export default function CVEFeed({
     setErrorRequestId(null)
 
     try {
+      const apiParams = toApiCveParams(filtersRef.current)
       const data = await fetchCVEs({
-        ...toApiCveParams(filtersRef.current),
+        ...apiParams,
         page: pageNum,
         limit: PAGE_LIMIT,
       })
@@ -170,7 +171,8 @@ export default function CVEFeed({
       const nextHasMore = pageNum < data.pages && data.data.length > 0
       setHasMore(nextHasMore)
       hasMoreRef.current = nextHasMore
-      const pageRows = assetAwareRef.current
+      const serverStackSort = Boolean(apiParams.stack)
+      const pageRows = assetAwareRef.current && !serverStackSort
         ? sortByExposure(data.data, getMatchScoreRef.current)
         : data.data
       setCves(prev => (append ? [...prev, ...pageRows] : pageRows))
