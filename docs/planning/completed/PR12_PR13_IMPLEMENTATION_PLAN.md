@@ -3,7 +3,7 @@
 **Status:** Plan of record — amended per maintainer review (PR #409 comment, 2026-07-10) —
 **no implementation in this document**  
 **Date:** 2026-07-10  
-**Source:** UX audit (`docs/planning/BRIEFR_VISUAL_OPERATIONAL_UX_AUDIT.md`) Issues 18 & 22  
+**Source:** UX audit (`docs/planning/completed/BRIEFR_VISUAL_OPERATIONAL_UX_AUDIT.md`) Issues 18 & 22  
 **Deferred from:** Approved 11-PR UX correction pass (PR1–PR11 + PR8 merged 2026-07-10)
 
 This file is the single planning artifact for Cloud Code / maintainer validation before any
@@ -444,7 +444,7 @@ No Gemini inline comments rejected. CodeRabbit skipped (draft PR).
 
 ## References
 
-- `docs/planning/BRIEFR_VISUAL_OPERATIONAL_UX_AUDIT.md` — Issues 18, 22; PR12/PR13 sections
+- `docs/planning/completed/BRIEFR_VISUAL_OPERATIONAL_UX_AUDIT.md` — Issues 18, 22; PR12/PR13 sections
 - `docs/DATA_SNAPSHOT.md` — INTEL vs OPERATOR table taxonomy
 - `backend/webhooks/ssrf.py` — outbound webhook security baseline
 - `docs/HANDOVER.md` — UX audit queue complete; PR12/PR13 deferred
