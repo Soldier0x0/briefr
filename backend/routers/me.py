@@ -32,6 +32,7 @@ class PreferencesPatch(BaseModel):
     utc_time: bool | None = None
     reduce_motion: bool | None = None
     notification_sound: bool | None = None
+    typography_px: dict[str, int] | None = None
     timezone: str | None = Field(default=None, max_length=64)
     remember_profile_on_server: bool | None = None
 

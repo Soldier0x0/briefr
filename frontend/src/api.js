@@ -556,6 +556,7 @@ export const adminApi = {
   get: (path) => adminFetch(path),
   post: (path, body) => adminFetch(path, { method: 'POST', body: JSON.stringify(body) }),
   patch: (path, body) => adminFetch(path, { method: 'PATCH', body: JSON.stringify(body) }),
+  put: (path, body) => adminFetch(path, { method: 'PUT', body: JSON.stringify(body) }),
   del: (path, params) => {
     let url = path
     if (params && Object.keys(params).length) {
@@ -571,6 +572,7 @@ export const adminApi = {
   getJson: async (path) => adminJson(await adminFetch(path)),
   postJson: async (path, body) => adminJson(await adminFetch(path, { method: 'POST', body: JSON.stringify(body) })),
   patchJson: async (path, body) => adminJson(await adminFetch(path, { method: 'PATCH', body: JSON.stringify(body) })),
+  putJson: async (path, body) => adminJson(await adminFetch(path, { method: 'PUT', body: JSON.stringify(body) })),
   delJson: async (path, params) => {
     let url = path
     if (params && Object.keys(params).length) {

@@ -27,6 +27,12 @@ analyst header (`scope=analyst`) and admin StatusBar (`scope=operator`);
 
 ---
 
+## 2026-07-11 — Per-role typography px dropdowns
+
+**Change:** Admin → Display adds 9–20px dropdowns per text role (`typography_px`), session **Apply** preview, **Save as my default** (user preferences), and admin **Save as instance default** (`app_settings.display_typography_default`). CSS `--type-*` vars set from saved/preview values.
+
+---
+
 
 **Context:** Production screenshots showed unreadable sub-12px text across admin,
 feed, and Brief charts; notification dropdown was transparent (undefined CSS vars)

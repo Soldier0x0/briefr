@@ -20,6 +20,40 @@ DEFAULT_DISPLAY_PREFS = {
     "notification_sound": True,
 }
 
+DEFAULT_TYPOGRAPHY_PX = {
+    "title": 20,
+    "heading": 15,
+    "subheading": 14,
+    "id": 18,
+    "body": 14,
+    "meta": 13,
+    "micro": 12,
+}
+TYPOGRAPHY_ROLES = frozenset(DEFAULT_TYPOGRAPHY_PX)
+MIN_TYPOGRAPHY_PX = 9
+MAX_TYPOGRAPHY_PX = 20
+INSTANCE_TYPOGRAPHY_SETTING_KEY = "display_typography_default"
+
+
+def sanitize_typography_px(data: dict | None) -> dict:
+    base = dict(DEFAULT_TYPOGRAPHY_PX)
+    if data is None:
+        return base
+    if not isinstance(data, dict):
+        raise ValueError("typography_px must be a JSON object")
+    for role in TYPOGRAPHY_ROLES:
+        if role not in data or data[role] is None:
+            continue
+        try:
+            px = int(data[role])
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"typography_px.{role} must be an integer") from exc
+        if px < MIN_TYPOGRAPHY_PX or px > MAX_TYPOGRAPHY_PX:
+            raise ValueError(
+                f"typography_px.{role} must be between {MIN_TYPOGRAPHY_PX} and {MAX_TYPOGRAPHY_PX}"
+            )
+        base[role] = px
+    return base
 
 def validate_timezone(raw: str | None) -> str:
     token = (raw or "UTC").strip()
@@ -84,17 +118,32 @@ def sanitize_display_prefs(data: dict | None) -> dict:
 
 
 def merge_display_prefs(existing: dict, patch: dict) -> dict:
-    merged = dict(existing)
+    merged = {k: existing[k] for k in DEFAULT_DISPLAY_PREFS if k in existing}
+    if "typography_px" in existing:
+        merged["typography_px"] = existing["typography_px"]
     for key, value in patch.items():
-        if value is not None:
+        if value is None:
+            continue
+        if key == "typography_px":
+            base = dict(merged.get("typography_px") or DEFAULT_TYPOGRAPHY_PX)
+            if isinstance(value, dict):
+                base.update(value)
+            merged["typography_px"] = sanitize_typography_px(base)
+        elif key in DEFAULT_DISPLAY_PREFS:
             merged[key] = value
-    return sanitize_display_prefs(merged)
+    result = sanitize_display_prefs(merged)
+    if "typography_px" in merged:
+        result["typography_px"] = merged["typography_px"]
+    return result
 
 
 def encode_display_prefs(prefs: dict) -> str:
     import json
 
-    encoded = json.dumps(prefs, separators=(",", ":"), sort_keys=True)
+    payload = {k: prefs[k] for k in DEFAULT_DISPLAY_PREFS if k in prefs}
+    if "typography_px" in prefs:
+        payload["typography_px"] = prefs["typography_px"]
+    encoded = json.dumps(payload, separators=(",", ":"), sort_keys=True)
     if len(encoded) > MAX_DISPLAY_PREFS_JSON_LEN:
         raise ValueError(
             f"display preferences JSON must be at most {MAX_DISPLAY_PREFS_JSON_LEN} characters"

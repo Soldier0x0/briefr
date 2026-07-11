@@ -2031,6 +2031,26 @@
 
 .admin-select:focus { border-color: var(--red); box-shadow: 0 0 0 2px var(--red-dim); }
 
+.display-typography-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.display-typography-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.display-typography-status {
+  margin: 0.65rem 0 0;
+  font-size: var(--type-meta);
+  color: var(--text3);
+}
+
 /* ── Toggle switch ──────────────────────────────────────────────────────── */
 
 .admin-toggle-label {

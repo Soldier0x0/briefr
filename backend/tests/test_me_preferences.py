@@ -136,6 +136,25 @@ def test_patch_preferences_remembers_profile_toggle(client):
     assert get.json()["remember_profile_on_server"] is True
 
 
+def test_patch_preferences_typography_px(client):
+    _login(client)
+    patch = client.patch(
+        "/api/me/preferences",
+        json={"typography_px": {"body": 16, "micro": 12}},
+    )
+    assert patch.status_code == 200
+    body = patch.json()
+    assert body["typography_px"]["body"] == 16
+    assert body["typography_px"]["micro"] == 12
+    assert body["typography_px"]["title"] == 20
+
+
+def test_patch_preferences_rejects_invalid_typography_px(client):
+    _login(client)
+    res = client.patch("/api/me/preferences", json={"typography_px": {"body": 8}})
+    assert res.status_code == 422
+
+
 def test_patch_preferences_rejects_invalid_font_scale(client):
     _login(client)
     res = client.patch("/api/me/preferences", json={"font_scale": "huge"})

@@ -376,6 +376,15 @@ When no row exists yet, `stack_terms` is `""`, `profile` is `null`, and `updated
   "utc_time": false,
   "reduce_motion": false,
   "notification_sound": true,
+  "typography_px": {
+    "title": 20,
+    "heading": 15,
+    "subheading": 14,
+    "id": 18,
+    "body": 14,
+    "meta": 13,
+    "micro": 12
+  },
   "timezone": "UTC",
   "remember_profile_on_server": false,
   "updated_at": "2026-07-08 12:00:00"
@@ -392,7 +401,9 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 
 **Response:** Same shape as GET (with non-null `updated_at`).
 
-**Validation:** `font_scale` ∈ `xsmall|small|medium|large|xlarge`; `density` ∈ `compact|comfortable|spacious`; `poll_interval_seconds` ∈ `15|30|60|120`; booleans for `show_technical_ids`, `utc_time`, `reduce_motion`, `notification_sound`, `remember_profile_on_server`; `timezone` must be a valid IANA zone. Invalid values → `422`.
+**Validation:** `font_scale` ∈ `xsmall|small|medium|large|xlarge`; `density` ∈ `compact|comfortable|spacious`; `poll_interval_seconds` ∈ `15|30|60|120`; booleans for `show_technical_ids`, `utc_time`, `reduce_motion`, `notification_sound`, `remember_profile_on_server`; `typography_px` object with integer px per role (`title`, `heading`, `subheading`, `id`, `body`, `meta`, `micro`) in range 9–20; `timezone` must be a valid IANA zone. Invalid values → `422`.
+
+**Response also includes:** `instance_typography_default` — operator-configured default profile from `app_settings` (null when unset). Users without a saved `typography_px` inherit this on read.
 
 ### GET /api/me/notifications
 
