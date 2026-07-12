@@ -1,0 +1,202 @@
+version: 1
+components:
+- id: routers-admin
+  title: routers.admin
+  summary: FastAPI router module with 62 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 62
+  source_refs:
+  - type: file
+    ref: backend/routers/admin.py
+- id: routers-atlas
+  title: routers.atlas
+  summary: FastAPI router module with 4 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 4
+  source_refs:
+  - type: file
+    ref: backend/routers/atlas.py
+- id: routers-auth
+  title: routers.auth
+  summary: FastAPI router module with 8 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 8
+  source_refs:
+  - type: file
+    ref: backend/routers/auth.py
+- id: routers-brief
+  title: routers.brief
+  summary: FastAPI router module with 1 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 1
+  source_refs:
+  - type: file
+    ref: backend/routers/brief.py
+- id: routers-config
+  title: routers.config
+  summary: FastAPI router module with 1 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 1
+  source_refs:
+  - type: file
+    ref: backend/routers/config.py
+- id: routers-correlation
+  title: routers.correlation
+  summary: FastAPI router module with 1 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 1
+  source_refs:
+  - type: file
+    ref: backend/routers/correlation.py
+- id: routers-cves
+  title: routers.cves
+  summary: FastAPI router module with 22 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 22
+  source_refs:
+  - type: file
+    ref: backend/routers/cves.py
+- id: routers-detection_backlog
+  title: routers.detection_backlog
+  summary: FastAPI router module with 2 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 2
+  source_refs:
+  - type: file
+    ref: backend/routers/detection_backlog.py
+- id: routers-forge
+  title: routers.forge
+  summary: FastAPI router module with 5 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 5
+  source_refs:
+  - type: file
+    ref: backend/routers/forge.py
+- id: routers-health
+  title: routers.health
+  summary: FastAPI router module with 2 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 2
+  source_refs:
+  - type: file
+    ref: backend/routers/health.py
+- id: routers-ioc
+  title: routers.ioc
+  summary: FastAPI router module with 5 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 5
+  source_refs:
+  - type: file
+    ref: backend/routers/ioc.py
+- id: routers-me
+  title: routers.me
+  summary: FastAPI router module with 4 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 4
+  source_refs:
+  - type: file
+    ref: backend/routers/me.py
+- id: routers-meta
+  title: routers.meta
+  summary: FastAPI router module with 7 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 7
+  source_refs:
+  - type: file
+    ref: backend/routers/meta.py
+- id: routers-notifications_me
+  title: routers.notifications_me
+  summary: FastAPI router module with 5 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 5
+  source_refs:
+  - type: file
+    ref: backend/routers/notifications_me.py
+- id: routers-proof
+  title: routers.proof
+  summary: FastAPI router module with 1 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 1
+  source_refs:
+  - type: file
+    ref: backend/routers/proof.py
+- id: routers-refresh
+  title: routers.refresh
+  summary: FastAPI router module with 5 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 5
+  source_refs:
+  - type: file
+    ref: backend/routers/refresh.py
+- id: routers-threat_model
+  title: routers.threat_model
+  summary: FastAPI router module with 1 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 1
+  source_refs:
+  - type: file
+    ref: backend/routers/threat_model.py
+- id: routers-wallboard
+  title: routers.wallboard
+  summary: FastAPI router module with 3 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 3
+  source_refs:
+  - type: file
+    ref: backend/routers/wallboard.py
+- id: routers-watchlist
+  title: routers.watchlist
+  summary: FastAPI router module with 4 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 4
+  source_refs:
+  - type: file
+    ref: backend/routers/watchlist.py
+- id: security_architecture-routers-security_architecture
+  title: security_architecture.routers.security_architecture
+  summary: FastAPI router module with 2 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 2
+  source_refs:
+  - type: file
+    ref: backend/security_architecture/routers/security_architecture.py

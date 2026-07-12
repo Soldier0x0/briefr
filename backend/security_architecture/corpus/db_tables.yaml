@@ -1,0 +1,380 @@
+version: 1
+tables:
+- id: ai_operations
+  title: ai_operations
+  summary: Database table defined in db/init.py (name=ai_operations).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: ai_operations
+- id: api_usage
+  title: api_usage
+  summary: Database table defined in db/init.py (name=api_usage).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: api_usage
+- id: app_settings
+  title: app_settings
+  summary: Database table defined in db/init.py (name=app_settings).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: app_settings
+- id: atlas_case_studies
+  title: atlas_case_studies
+  summary: Database table defined in db/init.py (name=atlas_case_studies).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: atlas_case_studies
+- id: atlas_techniques
+  title: atlas_techniques
+  summary: Database table defined in db/init.py (name=atlas_techniques).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: atlas_techniques
+- id: audit_log
+  title: audit_log
+  summary: Database table defined in db/init.py (name=audit_log).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: audit_log
+- id: correlation_actor
+  title: correlation_actor
+  summary: Database table defined in db/init.py (name=correlation_actor).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: correlation_actor
+- id: correlation_campaign_members
+  title: correlation_campaign_members
+  summary: Database table defined in db/init.py (name=correlation_campaign_members).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: correlation_campaign_members
+- id: correlation_campaigns
+  title: correlation_campaigns
+  summary: Database table defined in db/init.py (name=correlation_campaigns).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: correlation_campaigns
+- id: correlation_suppressions
+  title: correlation_suppressions
+  summary: Database table defined in db/init.py (name=correlation_suppressions).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: correlation_suppressions
+- id: correlation_temporal
+  title: correlation_temporal
+  summary: Database table defined in db/init.py (name=correlation_temporal).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: correlation_temporal
+- id: cve_atlas_map
+  title: cve_atlas_map
+  summary: Database table defined in db/init.py (name=cve_atlas_map).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: cve_atlas_map
+- id: cve_change_history
+  title: cve_change_history
+  summary: Database table defined in db/init.py (name=cve_change_history).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: cve_change_history
+- id: cve_embeddings
+  title: cve_embeddings
+  summary: Database table defined in db/init.py (name=cve_embeddings).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: cve_embeddings
+- id: cve_exploits
+  title: cve_exploits
+  summary: Database table defined in db/init.py (name=cve_exploits).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: cve_exploits
+- id: cve_technique_map
+  title: cve_technique_map
+  summary: Database table defined in db/init.py (name=cve_technique_map).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: cve_technique_map
+- id: cves
+  title: cves
+  summary: Database table defined in db/init.py (name=cves).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: cves
+- id: detection_backlog
+  title: detection_backlog
+  summary: Database table defined in db/init.py (name=detection_backlog).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: detection_backlog
+- id: epss_history
+  title: epss_history
+  summary: Database table defined in db/init.py (name=epss_history).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: epss_history
+- id: feed_cache
+  title: feed_cache
+  summary: Database table defined in db/init.py (name=feed_cache).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: feed_cache
+- id: group_technique_map
+  title: group_technique_map
+  summary: Database table defined in db/init.py (name=group_technique_map).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: group_technique_map
+- id: hunt_packs
+  title: hunt_packs
+  summary: Database table defined in db/init.py (name=hunt_packs).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: hunt_packs
+- id: ioc_cache
+  title: ioc_cache
+  summary: Database table defined in db/init.py (name=ioc_cache).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: ioc_cache
+- id: ioc_degree
+  title: ioc_degree
+  summary: Database table defined in db/init.py (name=ioc_degree).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: ioc_degree
+- id: ioc_watchlist
+  title: ioc_watchlist
+  summary: Database table defined in db/init.py (name=ioc_watchlist).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: ioc_watchlist
+- id: kev_deadlines
+  title: kev_deadlines
+  summary: Database table defined in db/init.py (name=kev_deadlines).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: kev_deadlines
+- id: mitre_groups
+  title: mitre_groups
+  summary: Database table defined in db/init.py (name=mitre_groups).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: mitre_groups
+- id: mitre_techniques
+  title: mitre_techniques
+  summary: Database table defined in db/init.py (name=mitre_techniques).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: mitre_techniques
+- id: otx_cve_pulses
+  title: otx_cve_pulses
+  summary: Database table defined in db/init.py (name=otx_cve_pulses).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: otx_cve_pulses
+- id: otx_pulse_iocs
+  title: otx_pulse_iocs
+  summary: Database table defined in db/init.py (name=otx_pulse_iocs).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: otx_pulse_iocs
+- id: otx_pulses
+  title: otx_pulses
+  summary: Database table defined in db/init.py (name=otx_pulses).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: otx_pulses
+- id: sessions
+  title: sessions
+  summary: Database table defined in db/init.py (name=sessions).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: sessions
+- id: sync_state
+  title: sync_state
+  summary: Database table defined in db/init.py (name=sync_state).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: sync_state
+- id: threatfox_iocs
+  title: threatfox_iocs
+  summary: Database table defined in db/init.py (name=threatfox_iocs).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: threatfox_iocs
+- id: user_notifications
+  title: user_notifications
+  summary: Database table defined in db/init.py (name=user_notifications).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: user_notifications
+- id: user_preferences
+  title: user_preferences
+  summary: Database table defined in db/init.py (name=user_preferences).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: user_preferences
+- id: users
+  title: users
+  summary: Database table defined in db/init.py (name=users).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: users
+- id: watchlist
+  title: watchlist
+  summary: Database table defined in db/init.py (name=watchlist).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: watchlist
+- id: webhook_alert_log
+  title: webhook_alert_log
+  summary: Database table defined in db/init.py (name=webhook_alert_log).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: webhook_alert_log
+- id: webhook_delivery_log
+  title: webhook_delivery_log
+  summary: Database table defined in db/init.py (name=webhook_delivery_log).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: webhook_delivery_log
+- id: webhook_destination_dedupe
+  title: webhook_destination_dedupe
+  summary: Database table defined in db/init.py (name=webhook_destination_dedupe).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: webhook_destination_dedupe
+- id: webhook_destinations
+  title: webhook_destinations
+  summary: Database table defined in db/init.py (name=webhook_destinations).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: webhook_destinations

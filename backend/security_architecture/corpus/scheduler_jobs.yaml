@@ -1,0 +1,236 @@
+version: 1
+jobs:
+- id: api_key_health_check
+  title: API Key Health Check
+  summary: Scheduled job registered in scheduler.py (id=api_key_health_check).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: api_key_health_check
+- id: atlas_version_check
+  title: ATLAS Upstream Version Check
+  summary: Scheduled job registered in scheduler.py (id=atlas_version_check).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: atlas_version_check
+- id: backup_deadman_check
+  title: Backup Dead-Man Check
+  summary: Scheduled job registered in scheduler.py (id=backup_deadman_check).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: backup_deadman_check
+- id: cache_retention_cleanup
+  title: Cache Retention Cleanup
+  summary: Scheduled job registered in scheduler.py (id=cache_retention_cleanup).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: cache_retention_cleanup
+- id: cvelistv5_incremental_sync
+  title: cvelistV5 Incremental Sync
+  summary: Scheduled job registered in scheduler.py (id=cvelistv5_incremental_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: cvelistv5_incremental_sync
+- id: detection_context_llm
+  title: DetectionContext LLM Artifact Extract
+  summary: Scheduled job registered in scheduler.py (id=detection_context_llm).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: detection_context_llm
+- id: detection_context_sync
+  title: DetectionContext Cache Backfill
+  summary: Scheduled job registered in scheduler.py (id=detection_context_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: detection_context_sync
+- id: embeddings_backfill
+  title: CVE Description Embeddings Backfill
+  summary: Scheduled job registered in scheduler.py (id=embeddings_backfill).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: embeddings_backfill
+- id: epss_score_sync
+  title: EPSS Score Sync
+  summary: Scheduled job registered in scheduler.py (id=epss_score_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: epss_score_sync
+- id: exploit_sources_sync
+  title: Exploit Availability Sources Sync
+  summary: Scheduled job registered in scheduler.py (id=exploit_sources_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: exploit_sources_sync
+- id: incident_feed_refresh
+  title: Incident Feed Snapshot Refresh
+  summary: Scheduled job registered in scheduler.py (id=incident_feed_refresh).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: incident_feed_refresh
+- id: ioc_retro_match
+  title: IOC Watchlist Retro-Match
+  summary: Scheduled job registered in scheduler.py (id=ioc_retro_match).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: ioc_retro_match
+- id: kev_backlog_reconcile
+  title: Weekly KEV Detection Backlog Reconcile
+  summary: Scheduled job registered in scheduler.py (id=kev_backlog_reconcile).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: kev_backlog_reconcile
+- id: kev_metadata_sync
+  title: KEV Metadata Sync
+  summary: Scheduled job registered in scheduler.py (id=kev_metadata_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: kev_metadata_sync
+- id: llm_product_extraction
+  title: LLM Product Extraction (NVD-unanalyzed CVEs)
+  summary: Scheduled job registered in scheduler.py (id=llm_product_extraction).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: llm_product_extraction
+- id: nightly_correlation
+  title: BRIEFR Nightly Correlation Engine
+  summary: Scheduled job registered in scheduler.py (id=nightly_correlation).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: nightly_correlation
+- id: nvd_incremental_sync
+  title: NVD Incremental Sync
+  summary: Scheduled job registered in scheduler.py (id=nvd_incremental_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: nvd_incremental_sync
+- id: otx_continuous_sync
+  title: OTX Continuous Pulse + IOC Sync
+  summary: Scheduled job registered in scheduler.py (id=otx_continuous_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: otx_continuous_sync
+- id: otx_nightly_correlation
+  title: OTX Nightly Campaign Correlation
+  summary: Scheduled job registered in scheduler.py (id=otx_nightly_correlation).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: otx_nightly_correlation
+- id: scheduled_backup
+  title: Scheduled Backup
+  summary: Scheduled job registered in scheduler.py (id=scheduled_backup).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: scheduled_backup
+- id: session_cleanup
+  title: Expired Login Session Cleanup
+  summary: Scheduled job registered in scheduler.py (id=session_cleanup).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: session_cleanup
+- id: threatfox_sync
+  title: ThreatFox IOC Mirror Sync
+  summary: Scheduled job registered in scheduler.py (id=threatfox_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: threatfox_sync
+- id: vulncheck_kev_sync
+  title: VulnCheck KEV Tier Sync
+  summary: Scheduled job registered in scheduler.py (id=vulncheck_kev_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: vulncheck_kev_sync
+- id: vulnrichment_snapshot_sync
+  title: CISA Vulnrichment Snapshot Sync
+  summary: Scheduled job registered in scheduler.py (id=vulnrichment_snapshot_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: vulnrichment_snapshot_sync
+- id: watchlist_monitor_alerts
+  title: Watchlist Monitor Alerts
+  summary: Scheduled job registered in scheduler.py (id=watchlist_monitor_alerts).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: watchlist_monitor_alerts
+- id: weekly_mitre_refresh
+  title: Weekly MITRE ATT&CK + ATLAS Refresh
+  summary: Scheduled job registered in scheduler.py (id=weekly_mitre_refresh).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: weekly_mitre_refresh

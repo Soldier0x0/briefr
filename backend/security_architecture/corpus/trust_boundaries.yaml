@@ -1,0 +1,4 @@
+version: 1
+# Curated: which components cross a trust boundary and how. Empty until a
+# real security-review pass classifies them -- see manifest.yaml notes.
+trust_boundaries: []

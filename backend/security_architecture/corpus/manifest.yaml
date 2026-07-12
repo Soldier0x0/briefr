@@ -1,0 +1,20 @@
+version: 1
+schema_version: 1
+last_reviewed: '2026-07-12'
+sections:
+  - overview
+  - components
+  - trust_boundaries
+  - controls
+  - abuse_cases
+  - threat_scenarios
+  - security_decisions
+  - risks
+  - reviews
+notes: >
+  TM-1 (corpus generator + loader + drift CI). Curated sections below are
+  intentionally empty placeholders -- they hold only what code cannot know
+  (risk judgments, abuse case narratives, decision records, trust-boundary
+  classifications) and are seeded by a future security-review pass, not
+  invented by the generator. The generated layer (components, api_inventory,
+  scheduler_jobs, db_tables) is real and machine-derived; see corpus_loader.py.

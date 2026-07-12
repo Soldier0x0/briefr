@@ -49,6 +49,7 @@ from routers import detection_backlog as detection_backlog_router
 from routers import proof as proof_router
 from routers import refresh as refresh_router
 from routers import threat_model as threat_model_router
+from security_architecture.routers import security_architecture as security_architecture_router
 from routers import wallboard as wallboard_router
 from routers import watchlist as watchlist_router
 from scheduler import (
@@ -280,6 +281,7 @@ app.include_router(meta_router.router)
 app.include_router(config_router.router)
 app.include_router(forge_router.router)
 app.include_router(threat_model_router.router)
+app.include_router(security_architecture_router.router)
 app.include_router(proof_router.router)
 app.include_router(detection_backlog_router.router)
 app.include_router(brief_router.router)

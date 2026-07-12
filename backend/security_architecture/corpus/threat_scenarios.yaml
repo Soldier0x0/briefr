@@ -1,0 +1,5 @@
+version: 1
+# Curated: operational attack paths (distinct from Forge's live threat-model
+# scenarios, wrapped separately per spec §4.3). Empty until a real
+# security-review pass populates it -- see manifest.yaml notes.
+threat_scenarios: []
