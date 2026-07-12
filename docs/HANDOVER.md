@@ -12,6 +12,80 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-12 — Autonomous roadmap execution, session close: FR-1 + TM-1 shipped
+
+**Context:** continuing the same session as the entry below. After correlation-engine-v2
+Phase 1 closed out, worked two more independent items from the roadmap: FR-1 (Forge
+redesign's hunt-pack Library API) and TM-1 (Security Architecture Corpus generator +
+loader + drift CI). This closes the session — see "Stopping point" below.
+
+**Shipped (2 more PRs, both merged with real Gemini review feedback addressed):**
+
+- **FR-1** (#490) — `GET /api/hunt-packs` (paginated, filterable list) and
+  `DELETE /api/hunt-packs/{pack_id}` (audit-logged), the backend half of the Forge
+  redesign's new Library view (FR-2, not started — see below). Distinct from the
+  pre-existing `/api/admin/hunt-packs*` operator utility, which is untouched.
+  **Gemini caught two real bugs**: a whitespace-only `q` search param was truthy but
+  stripped empty, silently matching every row via `LIKE '%%'`; and the delete
+  endpoint's audit log recorded actor `""` instead of the authenticated analyst —
+  traced through `auth_middleware.py` to confirm the route genuinely runs under
+  session auth before fixing, then switched to the existing `dependencies.audit()`
+  helper (same pattern `routers/admin.py` already uses). Also caught and fixed an
+  unrelated pre-existing test (`test_router_split.py`'s route-order snapshot) that
+  needed updating for the two new routes — a lesson repeated for TM-1 below.
+- **TM-1** (#491) — Security Architecture Corpus (SAC): `scripts/generate_security_corpus.py`
+  introspects live code (FastAPI route registrations, `scheduler.py` job
+  registrations, `db/init.py` table schema) into deterministic, drift-tested corpus
+  YAML; `corpus_loader.py` validates it; a router stub serves `manifest` + `overview`.
+  **Deliberately narrowed scope** from the spec's full TM-1 bullet — see
+  `corpus/manifest.yaml`'s notes and PR #491's description: the curated layer
+  (risks, controls, abuse cases, decisions, trust boundaries) is seeded empty rather
+  than inventing security judgment content, and the architecture graph
+  (`graphs/architecture.json`) is deferred to TM-4, since both require either real
+  security-domain judgment or the kind of manual curation the existing
+  `generate_architecture_map.py` did by hand (887 lines) — neither is safe unattended
+  autonomous work. Called `advisor()` before starting to weigh this against FR-2;
+  the deciding factor was verifiability, not spec priority (below).
+  **Gemini caught five real robustness bugs**: the scheduler-job regex required
+  `id=` before `name=` in source order (fixed by switching to AST parsing); the
+  DB-table regex was case-sensitive with rigid spacing; a `related_ids` YAML typo
+  (string instead of list) would iterate character-by-character into a confusing
+  error; a corpus file missing its top-level list key loaded silently then crashed
+  downstream with a bare `KeyError`/500; and an empty corpus directory raised a bare
+  `ValueError` from `max()` instead of the loader's descriptive error. All fixed
+  with regression tests, verified the AST rewrite still extracts the identical 26
+  jobs from the real `scheduler.py` (zero corpus diff after regenerating).
+
+**Why TM-1 over FR-2 (Forge's own stated priority):** the Forge redesign spec says
+Forge has priority over ARCH "if scheduling conflicts arise." Asked `advisor()` before
+choosing anyway, because FR-2's acceptance criteria explicitly require browser
+verification at 375/960/1280px, and the `computer{action:"screenshot"}` tool timed out
+on every attempt this session (worked around once for CORR-PR-5 using `read_page` DOM
+structure instead, which proves rendering but not pixel-level responsive layout).
+Shipping a Forge.jsx component-split + responsive redesign unattended, on the user's
+own flagged "still not good enough" UI, without being able to actually see it, was
+judged the wrong risk to take blind. TM-1 is backend/script work whose acceptance
+criterion ("rename a router → drift test fails") is fully self-verifying via pytest —
+the reliable groove this whole session ran on. Documenting the deviation here per the
+advisor's explicit recommendation.
+
+**Stopping point:** 8 PRs shipped this session (#482–#491, minus one number), every
+one drafted → reviewed by Gemini → real findings fixed → merged, both backend suites
+(SQLite + Postgres where `db/` was touched) green throughout. Correlation-engine-v2
+Phase 1 (PR-1→PR-5) is fully closed. Remaining roadmap, next session:
+- **FR-2** (Forge shell UI + Library view) — needs working browser screenshot
+  verification before starting; check if the tool issue was session-specific first.
+- **FR-3** (Forge live-data enrichment + PDF export) — blocked on FR-2.
+- **TM-2** (ARCH shell UI) through **TM-5** — TM-2 needs the same browser-verification
+  capability as FR-2; TM-1's corpus is ready for it to build on.
+- **AKH-2/QA-P2/QA-F1/BACKLOG** items are fully shipped (see entry below) — nothing
+  left in that queue.
+- Curated corpus content (risks/controls/decisions/abuse-cases) and the architecture
+  graph are explicitly a human-judgment task, not further autonomous work — see
+  TM-1's scope note above.
+
+---
+
 ## 2026-07-12 — Autonomous roadmap execution continued: AKH-2 + correlation-engine-v2 Phase 1 complete (PR-1→PR-5)
 
 **Context:** continuing the same autonomous draft → wait for Gemini → fix →
