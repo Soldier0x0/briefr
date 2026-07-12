@@ -261,3 +261,39 @@ def test_load_corpus_missing_file_errors(tmp_path):
     tmp_path.mkdir(parents=True, exist_ok=True)
     with pytest.raises(CorpusValidationError, match="Missing corpus file"):
         load_corpus(tmp_path)
+
+
+# ── Router stub (TM-1: manifest + overview only) ──────────────────────
+
+def test_manifest_and_overview_endpoints():
+    from fastapi.testclient import TestClient
+    from main import app
+
+    with TestClient(app) as client:
+        manifest = client.get("/api/security-architecture/manifest")
+        assert manifest.status_code == 200
+        body = manifest.json()
+        assert body["schema_version"] == 1
+        assert "components" in body["sections"]
+
+        overview = client.get("/api/security-architecture/overview")
+        assert overview.status_code == 200
+        body = overview.json()
+        assert body["generated"]["components"] > 0
+        assert body["generated"]["api_endpoints"] > 0
+        # Curated layer is honestly empty until a real review pass (see
+        # manifest.yaml notes) -- not invented content.
+        assert body["curated"]["controls"] == 0
+
+
+def test_security_architecture_routes_require_session_auth():
+    """Not in auth_middleware.py's public/admin-exempt prefixes -- must be
+    gated by the global session_auth_middleware like every other analyst
+    route (matches spec §4.4: 'All routes: session auth (analyst+)')."""
+    from fastapi.testclient import TestClient
+    from main import app
+
+    with TestClient(app) as client:
+        client.cookies.clear()
+        res = client.get("/api/security-architecture/manifest")
+        assert res.status_code == 401

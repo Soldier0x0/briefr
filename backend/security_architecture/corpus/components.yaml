@@ -190,3 +190,13 @@ components:
   source_refs:
   - type: file
     ref: backend/routers/watchlist.py
+- id: security_architecture-routers-security_architecture
+  title: security_architecture.routers.security_architecture
+  summary: FastAPI router module with 2 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 2
+  source_refs:
+  - type: file
+    ref: backend/security_architecture/routers/security_architecture.py

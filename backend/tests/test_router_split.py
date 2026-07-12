@@ -69,6 +69,8 @@ EXPECTED_ROUTES = [
     ("DELETE", "/api/hunt-packs/{pack_id}"),
     ("GET", "/api/hunt-packs/{technique_id}"),
     ("GET", "/api/threat-model/scenarios"),
+    ("GET", "/api/security-architecture/manifest"),
+    ("GET", "/api/security-architecture/overview"),
     ("POST", "/api/proof/run"),
     ("GET", "/api/detection-backlog"),
     ("POST", "/api/detection-backlog/{item_id}/dismiss"),

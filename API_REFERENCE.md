@@ -1109,6 +1109,48 @@ Optional webhook event: `kev_backlog`.
 
 ---
 
+## Security Architecture (TM-1 stub)
+
+Mounted at `/api/security-architecture/*`, session auth required (analyst+). Backed by
+the Security Architecture Corpus (SAC) — versioned YAML under
+`backend/security_architecture/corpus/` — loaded and validated by
+`security_architecture/corpus_loader.py`. Every corpus record carries `origin:
+generated | curated`: generated records (components, API endpoint inventory, scheduler
+jobs, DB tables) are emitted by `scripts/generate_security_corpus.py` from live code
+introspection and drift-tested in CI (`backend/tests/test_security_architecture_corpus.py`)
+— renaming a router, scheduler job, or table breaks the build until the script is re-run.
+Curated records (risks, decisions, abuse cases, controls, trust-boundary
+classifications) are seeded empty pending a real security-review pass — see
+`corpus/manifest.yaml`'s notes; this module reports honest zeros rather than
+invented content.
+
+Only `manifest` and `overview` ship in TM-1. The richer per-section endpoints (system
+architecture graph, STRIDE, MITRE navigator, controls inventory, risk register, etc.)
+and the overview's full drill-through tiles are TM-2 onward — see
+`docs/planning/specs/threat-modeling-security-architecture.md` §8.
+
+### GET /api/security-architecture/manifest
+
+**Response:** `{ "version": 1, "schema_version": 1, "last_reviewed": "...", "sections": [...] }`
+
+### GET /api/security-architecture/overview
+
+**Response:**
+
+```json
+{
+  "generated": {"components": 19, "api_endpoints": 143, "scheduler_jobs": 26, "db_tables": 42},
+  "curated": {"trust_boundaries": 0, "controls": 0, "abuse_cases": 0, "threat_scenarios": 0,
+              "security_decisions": 0, "risks": 0, "reviews": 0},
+  "last_reviewed": "2026-07-12"
+}
+```
+
+Counts only — no scoring, no letter grades, per spec's "no arithmetic invented for this
+module" tile rule (§5.1).
+
+---
+
 ## AI Summary
 
 ### POST /api/ai/summary
