@@ -12,6 +12,72 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-12 — Autonomous roadmap execution continued: AKH-2 + correlation-engine-v2 Phase 1 complete (PR-1→PR-5)
+
+**Context:** continuing the same autonomous draft → wait for Gemini → fix →
+merge → next-item rhythm from the entry below, now working through AKH-2 and
+the correlation-engine PR-3→PR-5 chain, held strictly sequential per the
+earlier entry's note (each PR's acceptance criteria re-verified green before
+the next was drafted).
+
+**Shipped (5 PRs, all merged with real Gemini review feedback addressed on
+3 of them):**
+
+- **AKH-2** (#486) — Inbound limits (rate-limit) admin page had no nav
+  entry; added one, renamed the page title to disambiguate from outbound
+  provider quota. No Gemini findings.
+- **CORR-PR-3** (#487) — `ioc_degree` table (per `(ioc_type, ioc_value)`
+  cve_count/pulse_count, rebuilt nightly) feeding a degree penalty into
+  `confidence_for_ioc_edge`: shared "hub" IOCs across many CVEs get
+  downranked, applied *after* any confirmation bump so a hub can't be
+  rescued back up. Also added a literal public-DNS-resolver noise-IP set
+  (spec §19 explicitly rejects a curated CDN/IP denylist feed — just the
+  handful of always-known resolvers). **Gemini caught a real gap**: the
+  resolver set was IPv4-only, letting IPv6 variants of the same resolvers
+  (Google/Cloudflare/Quad9/OpenDNS) bypass noise detection — fixed, and
+  caught two inaccuracies in Gemini's own suggested IPv6 addresses
+  (Cloudflare, OpenDNS) against the providers' actual published addresses.
+- **CORR-PR-4** (#488) — removed member-count and KEV/exploit-peer status
+  from campaign confidence (`_confidence_for_pulse` deleted; same-pulse
+  co-tagging is now a fixed `medium` base). KEV/exploit boosters moved to
+  `priority.py`'s campaign contribution instead — they're an urgency
+  signal, not evidence the link is more certain. Clean Gemini review, no
+  findings.
+- **CORR-PR-5** (#489) — additive `confidence_factors` on campaigns/
+  infrastructure API items: an ordered `{factor, value?, reason}` trace of
+  every step that moved the confidence level, plus a drawer "why this
+  level" bulleted list (`IntelTab.jsx`/`correlationPresentation.js`).
+  **Gemini caught two real consistency bugs**: an attribution conflict
+  downgraded confidence without updating `why_not_higher` to match the new
+  last factor, and `aggregate_infrastructure_confidence`'s `why_not_higher`
+  wasn't filtered to the winning edge the way `confidence_factors` already
+  was — could surface a weaker edge's reason on a stronger aggregate. Both
+  fixed with regression tests. **Browser-verified end-to-end**: seeded a
+  real campaign locally (two dev CVEs sharing a hash IOC through the actual
+  `build_campaigns_from_pulses` pipeline, not mocked), confirmed the new
+  factor list renders correctly in the live drawer.
+
+**Process notes:**
+- Every `db/`-touching PR (PR-3, and PR-5's schema-adjacent read paths) was
+  tested both ways per CLAUDE.md danger zone 1 — SQLite default and a
+  throwaway `briefr-pg-test` Docker Postgres container — before drafting.
+- GitHub Actions CI is blocked repo-wide by a billing/spending-limit issue
+  (confirmed via `gh run view`, not something fixable from this session) —
+  Gemini review + local dual-dialect test runs were the only gates for
+  every PR this cycle, consistent with the earlier entry's note that no CI
+  is currently available.
+- This closes correlation-engine-v2 **Phase 1** in full (PR-1 through
+  PR-5, all merged). **Phase 2** (PR-6 observed_at capture onward) depends
+  on data not yet collected and should get its own scoping pass, not be
+  started opportunistically.
+
+**Next:** an independent roadmap item (Forge redesign FR-1, or TM-1
+security architecture corpus generator) — see `docs/planning/specs/` for
+both. Correlation Phase 2 (PR-6+) after that, once scoped against current
+`otx_pulse_iocs` schema reality.
+
+---
+
 ## 2026-07-12 — Autonomous roadmap execution: AKH-1, QA-P2 bundle, QA-F1 shipped
 
 **Context:** maintainer requested autonomous execution of the implementation
