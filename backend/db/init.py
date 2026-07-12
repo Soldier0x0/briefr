@@ -378,6 +378,15 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_correlation_suppressions_cve
                 ON correlation_suppressions(cve_id);
 
+            CREATE TABLE IF NOT EXISTS ioc_degree (
+                ioc_type TEXT NOT NULL,
+                ioc_value TEXT NOT NULL,
+                cve_count INTEGER NOT NULL DEFAULT 0,
+                pulse_count INTEGER NOT NULL DEFAULT 0,
+                computed_at TEXT DEFAULT (datetime('now')),
+                PRIMARY KEY (ioc_type, ioc_value)
+            );
+
             CREATE TABLE IF NOT EXISTS correlation_actor (
                 cve_id TEXT NOT NULL,
                 actor_name TEXT NOT NULL,
@@ -756,6 +765,16 @@ async def init_db() -> None:
             "DROP INDEX IF EXISTS idx_correlation_infra_a",
             "DROP INDEX IF EXISTS idx_correlation_infra_b",
             "DROP TABLE IF EXISTS correlation_infrastructure",
+            """
+            CREATE TABLE IF NOT EXISTS ioc_degree (
+                ioc_type TEXT NOT NULL,
+                ioc_value TEXT NOT NULL,
+                cve_count INTEGER NOT NULL DEFAULT 0,
+                pulse_count INTEGER NOT NULL DEFAULT 0,
+                computed_at TEXT DEFAULT (datetime('now')),
+                PRIMARY KEY (ioc_type, ioc_value)
+            )
+            """,
         ):
             try:
                 await db.execute(migration)
