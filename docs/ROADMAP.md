@@ -2,8 +2,11 @@
 
 Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
 
-**Last updated:** 2026-06-10  
-**Status:** Planning — authoritative index for versioned releases
+**Last updated:** 2026-06-10 (light touch 2026-07-12 — see compatibility-promise fix below)  
+**Status:** Planning — historical release-ladder framing. Execution has since moved to
+direct PR-numbered programs tracked in [`planning/BACKLOG.md`](planning/BACKLOG.md) and
+[`planning/specs/`](planning/specs/); **for what's actually true in production, read
+[`PRODUCT_STATUS.md`](PRODUCT_STATUS.md) first.**
 
 ---
 
@@ -122,8 +125,9 @@ Releases must remain **additive** for existing systemd + nginx + cloudflared dep
 
 - Stable default paths: `DATABASE_URL`, `BACKUP_DIR`, `/opt/briefr`
 - Forward-only DB migrations
-- Public **read** APIs remain unauthenticated until an env flag tightens policy
-- Admin / write / destructive actions require auth
+- All analyst `/api/*` routes require a valid session (built-in app login shipped #441 —
+  this superseded the original "public read APIs stay unauthenticated" plan below).
+  Admin / write / destructive actions additionally require the admin role.
 - CLI backup/restore scripts remain supported as break-glass
 
 See [`OPERATIONS.md`](OPERATIONS.md).

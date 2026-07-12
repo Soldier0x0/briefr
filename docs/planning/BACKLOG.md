@@ -17,9 +17,9 @@ docs so nothing is lost when specs move to [`archive/superseded/`](../archive/su
 [`../HANDOVER.md`](../HANDOVER.md). **Build order when activated:** add checkboxes to
 [`../SPRINT_2026-07.md`](../SPRINT_2026-07.md) or a future sprint doc.
 
-**Last reconciled:** 2026-07-11 against `main` post-#461 (TM spec v2 + Forge redesign
-+ execution playbook merged; all spec programs now execute per
-[`specs/execution-playbook.md`](specs/execution-playbook.md)).
+**Last reconciled:** 2026-07-12 against `main` post-#491 (correlation-engine-v2
+Phase 0–1 / PR-1…PR-5, AKH-1, AKH-2 nav rename, QA-F1, QA-P2-1…5, FR-1, and TM-1 all
+shipped this pass — see `docs/HANDOVER.md`'s 2026-07-12 entries for the full PR list).
 
 ---
 
@@ -37,16 +37,18 @@ docs so nothing is lost when specs move to [`archive/superseded/`](../archive/su
 ## 2. Correlation engine v3 program
 
 **Canonical spec:** [`specs/correlation-engine-v2.md`](specs/correlation-engine-v2.md)  
-**Shipped tail only:** #434 (phase 4–5 partial — `cve_id` cluster filter, structured job logs).  
-**Full PR-1…PR-13 program below is still open** unless marked ✅.
+**Phase 0–1 (PR-1…PR-5) shipped 2026-07-12.** Phase 2 (PR-6…PR-8) is next in strict
+dependency order — **do not start until [PG-001](#pg-001--cross-file-pytest-pollution-on-real-postgres-found-2026-07-12)
+is resolved or scoped out**, since Phase 2 adds more `db/`-touching test files into the
+same Postgres test-pollution risk.
 
 | PR | Title (phase) | Status |
 |----|---------------|--------|
-| PR-1 | Rank infrastructure peers by evidence (0) | 📋 |
-| PR-2 | Composite index + drop `correlation_infrastructure` (0) | 📋 |
-| PR-3 | `ioc_degree` + degree-penalized edge confidence (1) | 📋 |
-| PR-4 | Remove severity/size from confidence (1) | 📋 |
-| PR-5 | Confidence factor vector in API + drawer (1) | 📋 |
+| PR-1 | Rank infrastructure peers by evidence (0) | ✅ #473 |
+| PR-2 | Composite index + drop `correlation_infrastructure` (0) | ✅ #476 |
+| PR-3 | `ioc_degree` + degree-penalized edge confidence (1) | ✅ #487 |
+| PR-4 | Remove severity/size from confidence (1) | ✅ #488 |
+| PR-5 | Confidence factor vector in API + drawer (1) | ✅ #489 |
 | PR-6 | Capture `observed_at` on pulse IOCs (2) | 📋 |
 | PR-7 | Lifecycle + momentum use observation time (2) | 📋 |
 | PR-8 | Read-time freshness decay + UI staleness (2) | 📋 |
@@ -87,8 +89,8 @@ before PR-9.
 
 | PR | Title | Status |
 |----|-------|--------|
-| **AKH-1** | Fix `api_key_health.py::_ping_json` positional-arg bug (`TypeError: resilient_request() got multiple values for argument 'source'`) — every provider health check has failed on every run since the feature shipped; also fix the notification dedupe key (currently includes a per-run timestamp, so it never dedupes) | 📋 P0 — active notification flood every 6h |
-| **AKH-2** | Quota-system UI clarity: rename Admin "Rate limit" nav (collides with unrelated outbound provider quota), wire or remove the dead `fetchUsage()`/`GET /api/usage` endpoint (zero frontend callers today), HelpTip explaining quota vs pacing vs inbound throttling. Narrows Issue 21 + folds into UX-J1 | 📋 |
+| **AKH-1** | Fix `api_key_health.py::_ping_json` positional-arg bug (`TypeError: resilient_request() got multiple values for argument 'source'`) — every provider health check has failed on every run since the feature shipped; also fix the notification dedupe key (currently includes a per-run timestamp, so it never dedupes) | ✅ #482 |
+| **AKH-2** | Quota-system UI clarity: rename Admin "Rate limit" nav (collides with unrelated outbound provider quota), wire or remove the dead `fetchUsage()`/`GET /api/usage` endpoint (zero frontend callers today), HelpTip explaining quota vs pacing vs inbound throttling. Narrows Issue 21 + folds into UX-J1 | 🔶 #486 shipped the nav rename; dead-endpoint removal + HelpTip not done |
 
 ### QA audit — functionality/UI/ops (found 2026-07-12, live-verified)
 
@@ -96,7 +98,7 @@ before PR-9.
 
 | PR | Title | Status |
 |----|-------|--------|
-| **QA-F1** | DetailDrawer DETECT tab: parallelize external rule-source calls (GitHub Search blocks the whole response 15-30s, unauthenticated in dev); fix frontend/backend timeout mismatch causing a false "request timed out" on every uncached CVE | 📋 High — active |
+| **QA-F1** | DetailDrawer DETECT tab: parallelize external rule-source calls (GitHub Search blocks the whole response 15-30s, unauthenticated in dev); fix frontend/backend timeout mismatch causing a false "request timed out" on every uncached CVE | ✅ #484 — shipped as skip-when-unauthenticated, not parallelization (see PR body: parallelizing would have reintroduced a pool-poisoning regression) |
 | **QA-U1** | DetailDrawer header: real 193px clip (not wrap) at 375px width — action button row needs a responsive collapse/overflow menu. Folds into UX-C1/C2 scope | 📋 |
 | **QA-U2** | Accent-color design pass for drawer content — token renders correctly but only 2-3 touches per tab, reads as "lost." Design judgment, not a coded fix | 📋 |
 | **QA-U3** | Global header: 29px real overflow at ~375px width (narrow-device edge case) | 📋 low |
@@ -107,11 +109,11 @@ Independently re-verified — of 17 Emergent-agent + Emergent-adjacent claims te
 
 | PR | Title | Status |
 |----|-------|--------|
-| **QA-P2-1** | Brief KPI stat tiles: "₀" flat-delta reads as noise next to the large stat number (12px muted number at same baseline as 40px number). Prefix flat/nonzero deltas with `Δ`, or hide when exactly 0 | 📋 |
-| **QA-P2-2** | Admin Overview: "DATABASE HEALTH" card only ever says "checked on startup" with no refresh affordance on the card | 📋 |
-| **QA-P2-3** | Admin Overview: "NIST CVE FEED" stat card shows a bare em-dash with no explanation of why (sub-label only describes normal cadence, not current blank state). Isolated to this one card, not systemic | 📋 |
-| **QA-P2-4** | Forge: GAP/COMMUNITY/YOURS coverage chips have no per-chip `title`/`aria-label` — only a generic group label. Add per-chip tooltips | 📋 |
-| **QA-P2-5** | IOC Lookup: input placeholder crams all 3 example formats (IP/hash/domain) into one string, copy-pasteable as a single invalid value. Cycle one example, or move to a hint line below the input | 📋 |
+| **QA-P2-1** | Brief KPI stat tiles: "₀" flat-delta reads as noise next to the large stat number (12px muted number at same baseline as 40px number). Prefix flat/nonzero deltas with `Δ`, or hide when exactly 0 | ✅ #483 |
+| **QA-P2-2** | Admin Overview: "DATABASE HEALTH" card only ever says "checked on startup" with no refresh affordance on the card | ✅ #483 |
+| **QA-P2-3** | Admin Overview: "NIST CVE FEED" stat card shows a bare em-dash with no explanation of why (sub-label only describes normal cadence, not current blank state). Isolated to this one card, not systemic | ✅ #483 |
+| **QA-P2-4** | Forge: GAP/COMMUNITY/YOURS coverage chips have no per-chip `title`/`aria-label` — only a generic group label. Add per-chip tooltips | ✅ #483 |
+| **QA-P2-5** | IOC Lookup: input placeholder crams all 3 example formats (IP/hash/domain) into one string, copy-pasteable as a single invalid value. Cycle one example, or move to a hint line below the input | ✅ #483 |
 
 ### Restart / durability bundle (§Z)
 
@@ -210,14 +212,16 @@ file (`test_correlation.py`) is 100% green solo on Postgres.
 ## 6. Threat Modeling & Security Architecture module
 
 **Canonical spec:** [`specs/threat-modeling-security-architecture.md`](specs/threat-modeling-security-architecture.md) (**v2**, #460/#461)  
-**Status:** TM-0 design merged (v2, evidence-gated). Committed program = TM-1…TM-5.
-Execution per [`specs/execution-playbook.md`](specs/execution-playbook.md).
+**Status:** TM-1 shipped 2026-07-12 (#491). TM-2 is next — **needs working browser
+screenshot verification before starting** (its acceptance criteria require it; see
+`docs/HANDOVER.md`'s 2026-07-12 session-close entry for why TM-1 was picked over TM-2
+last session). Execution per [`specs/execution-playbook.md`](specs/execution-playbook.md).
 
 | PR | Title | Status |
 |----|-------|--------|
 | **TM-0** | Design plan v2 (evidence-gated, self-stack) | ✅ #458 + v2 #460/#461 |
-| **TM-1** | Corpus **generator** + loader + drift CI (generated/curated split) | 📋 |
-| **TM-2** | Shell UI + Overview evidence tiles (route, header tab ARCH) | 📋 |
+| **TM-1** | Corpus **generator** + loader + drift CI (generated/curated split) | ✅ #491 — deliberately narrowed: curated layer seeded empty (no invented security judgment), architecture graph deferred to TM-4. See `corpus/manifest.yaml` notes |
+| **TM-2** | Shell UI + Overview evidence tiles (route, header tab ARCH) | 📋 blocked on browser verification tooling |
 | **TM-3** | Live sections: MITRE + Threat Scenarios + Controls + self-stack exposure | 📋 |
 | **TM-4** | System Architecture graph + Trust Boundaries + Attack Surface | 📋 |
 | **TM-5** | Risk Register + Decisions + Review History + Abuse Cases + Search + PDF | 📋 |
@@ -225,8 +229,7 @@ Execution per [`specs/execution-playbook.md`](specs/execution-playbook.md).
 
 **Scope (v2):** every committed section must cite a generated or live data source;
 hand-authored-YAML-only sections do not ship. No composite grades — drill-through
-tiles only. ⚠️ In-flight `cursor/threat-modeling-tm1-corpus-*` branches must build
-against the **v2** TM-1 definition (generator + drift CI, not hand-seeded YAML).
+tiles only.
 
 ---
 
@@ -234,13 +237,15 @@ against the **v2** TM-1 definition (generator + drift CI, not hand-seeded YAML).
 
 **Canonical spec:** [`specs/forge-redesign.md`](specs/forge-redesign.md) (#460/#461)  
 **Priority note:** Forge redesign outranks TM implementation if scheduling conflicts —
-daily workflow beats governance.
+daily workflow beats governance. (Deviated from once, 2026-07-12: TM-1 was picked over
+FR-2 because TM-1 self-verifies via pytest and FR-2 needs browser verification that
+wasn't available — see `docs/HANDOVER.md`.)
 
 | PR | Title | Status |
 |----|-------|--------|
-| **FR-1** | Hunt pack list + delete API (`GET /api/hunt-packs`, `DELETE /{id}`, audit entry) | 📋 |
-| **FR-2** | Three-panel shell + `?view=` URL state + Library view + persistent Hunt Pack rail | 📋 |
-| **FR-3** | Live-data enrichment (atlas case studies, KEV notifications, CWE/EPSS) + pack PDF export | 📋 |
+| **FR-1** | Hunt pack list + delete API (`GET /api/hunt-packs`, `DELETE /{id}`, audit entry) | ✅ #490 |
+| **FR-2** | Three-panel shell + `?view=` URL state + Library view + persistent Hunt Pack rail | 📋 blocked on browser verification tooling |
+| **FR-3** | Live-data enrichment (atlas case studies, KEV notifications, CWE/EPSS) + pack PDF export | 📋 blocked on FR-2 |
 
 ---
 

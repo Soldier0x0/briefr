@@ -10,12 +10,12 @@ Open checklist rows: [`../BACKLOG.md`](../BACKLOG.md).
 
 | Spec | Program | Committed scope |
 |------|---------|-----------------|
-| [`threat-modeling-security-architecture.md`](threat-modeling-security-architecture.md) | Security Architecture module (v2, evidence-gated) | TM-1…TM-5; frameworks gated TM-6+ |
-| [`forge-redesign.md`](forge-redesign.md) | Forge IA redesign + Hunt Pack Library | FR-1…FR-3 |
-| [`correlation-engine-v2.md`](correlation-engine-v2.md) | Correlation engine v3 (evidence-honest) | PR-1…PR-13 |
+| [`threat-modeling-security-architecture.md`](threat-modeling-security-architecture.md) | Security Architecture module (v2, evidence-gated) | TM-1 shipped (#491); TM-2 blocked on browser verification tooling; TM-3…TM-5; frameworks gated TM-6+ |
+| [`forge-redesign.md`](forge-redesign.md) | Forge IA redesign + Hunt Pack Library | FR-1 shipped (#490); FR-2/FR-3 blocked on browser verification tooling |
+| [`correlation-engine-v2.md`](correlation-engine-v2.md) | Correlation engine v3 (evidence-honest) | Phase 0–1 (PR-1…PR-5) shipped; PR-6…PR-13 open — do not start before PG-001 (BACKLOG §3) is resolved |
 | [`codebase-audit.md`](codebase-audit.md) | Security / reliability / performance remediation | Remaining PRs per BACKLOG §3 |
 | [`ai-operations.md`](ai-operations.md) | AI ops (conditional AI-3 tail) | Gated on 28-day `ai_operations` evidence |
 | [`ux-audit.md`](ux-audit.md) | UX audit deferred issues (28–33 etc.) | Per BACKLOG §5 |
 | [`resource-benchmarking.md`](resource-benchmarking.md) | BRIEFR + Postgres utilization telemetry (admin RESOURCES page) | RB-1…RB-2 |
-| [`api-key-health-and-quota-findings.md`](api-key-health-and-quota-findings.md) | Findings only (P0 bug RCA + quota-system clarity) — no runtime changes yet | AKH-1…AKH-2 (not started) |
-| [`qa-audit-2026-07-12.md`](qa-audit-2026-07-12.md) | Findings only (live-verified functionality/UI/ops QA pass) — no runtime changes yet | QA-F1, QA-U1…U3 (not started) |
+| [`api-key-health-and-quota-findings.md`](api-key-health-and-quota-findings.md) | Findings — RCA doc, most findings now shipped | AKH-1 shipped (#482); AKH-2 nav rename shipped (#486), dead-endpoint removal + HelpTip still open |
+| [`qa-audit-2026-07-12.md`](qa-audit-2026-07-12.md) | Findings — RCA doc, most findings now shipped | QA-F1 shipped (#484); QA-U1…U3 still open |
