@@ -49,7 +49,19 @@ async def _github_search(
     context_type: str | None = None,
     context_id: str | None = None,
 ) -> list[dict]:
-    """Search GitHub code. Returns items list or [] on hard errors."""
+    """Search GitHub code. Returns items list or [] on hard errors.
+
+    QA-F1: unauthenticated GitHub code search is rate-limited to 10 req/min
+    and was the root cause of a 15-30s hang (then a false frontend timeout)
+    on the DETECT tab's first, uncached view of any CVE. find_sigma_rules
+    and find_elastic_rules run sequentially by design (routers/cves.py —
+    they share one asyncpg connection, which Postgres does not allow
+    concurrent queries on), so this is not fixable by parallelizing; skip
+    the doomed call outright when no token is configured, same honest
+    early-exit pattern as GreyNoise/OTX "not configured" elsewhere.
+    """
+    if not (token.strip() or os.environ.get("GITHUB_TOKEN", "").strip()):
+        return []
     q_context_type = "cve" if cve_id else context_type
     q_context_id = cve_id or context_id
     try:
