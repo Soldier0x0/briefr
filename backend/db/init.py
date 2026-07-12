@@ -378,20 +378,6 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_correlation_suppressions_cve
                 ON correlation_suppressions(cve_id);
 
-            CREATE TABLE IF NOT EXISTS correlation_infrastructure (
-                cve_id_a TEXT NOT NULL,
-                cve_id_b TEXT NOT NULL,
-                shared_ip_count INTEGER DEFAULT 0,
-                confidence TEXT DEFAULT 'low',
-                detected_at TEXT DEFAULT (datetime('now')),
-                PRIMARY KEY (cve_id_a, cve_id_b)
-            );
-
-            CREATE INDEX IF NOT EXISTS idx_correlation_infra_a
-                ON correlation_infrastructure(cve_id_a);
-            CREATE INDEX IF NOT EXISTS idx_correlation_infra_b
-                ON correlation_infrastructure(cve_id_b);
-
             CREATE TABLE IF NOT EXISTS correlation_actor (
                 cve_id TEXT NOT NULL,
                 actor_name TEXT NOT NULL,
@@ -556,9 +542,6 @@ async def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_cve_atlas_map_cve ON cve_atlas_map(cve_id)",
             # Correlation engine tables (added in correlation session)
             "CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_value ON otx_pulse_iocs(ioc_value)",
-            "CREATE TABLE IF NOT EXISTS correlation_infrastructure (cve_id_a TEXT NOT NULL, cve_id_b TEXT NOT NULL, shared_ip_count INTEGER DEFAULT 0, confidence TEXT DEFAULT 'low', detected_at TEXT DEFAULT (datetime('now')), PRIMARY KEY (cve_id_a, cve_id_b))",
-            "CREATE INDEX IF NOT EXISTS idx_correlation_infra_a ON correlation_infrastructure(cve_id_a)",
-            "CREATE INDEX IF NOT EXISTS idx_correlation_infra_b ON correlation_infrastructure(cve_id_b)",
             "CREATE TABLE IF NOT EXISTS correlation_actor (cve_id TEXT NOT NULL, actor_name TEXT NOT NULL, actor_sectors TEXT DEFAULT '[]', user_sector_match INTEGER DEFAULT 0, confidence TEXT DEFAULT 'low', detected_at TEXT DEFAULT (datetime('now')), PRIMARY KEY (cve_id, actor_name))",
             "CREATE INDEX IF NOT EXISTS idx_correlation_actor_cve ON correlation_actor(cve_id)",
             "CREATE TABLE IF NOT EXISTS correlation_temporal (vendor TEXT PRIMARY KEY, current_week_count INTEGER DEFAULT 0, average_weekly_count REAL DEFAULT 0, anomaly_score REAL DEFAULT 0, detected_at TEXT DEFAULT (datetime('now')))",
@@ -770,6 +753,9 @@ async def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_threatfox_iocs_type_value ON threatfox_iocs(ioc_type, ioc_value)",
             "ALTER TABLE cves ADD COLUMN is_vulncheck_exploited INTEGER DEFAULT 0",
             "CREATE INDEX IF NOT EXISTS idx_cves_vulncheck_exploited ON cves(is_vulncheck_exploited)",
+            "DROP INDEX IF EXISTS idx_correlation_infra_a",
+            "DROP INDEX IF EXISTS idx_correlation_infra_b",
+            "DROP TABLE IF EXISTS correlation_infrastructure",
         ):
             try:
                 await db.execute(migration)

@@ -265,16 +265,6 @@ _TIER1: tuple[TableSpec, ...] = (
         filter_columns=("campaign_id", "cve_id"),
         order_by="campaign_id ASC, cve_id ASC",
     ),
-    _spec(
-        "correlation_infrastructure",
-        1,
-        "Correlation — infrastructure",
-        (
-            "cve_id_a", "cve_id_b", "shared_ip_count", "confidence", "detected_at",
-        ),
-        filter_columns=("cve_id_a", "cve_id_b"),
-        order_by="detected_at DESC, cve_id_a ASC",
-    ),
 )
 
 # Tier 2 — browse with heavy masking

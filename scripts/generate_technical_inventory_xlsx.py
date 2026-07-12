@@ -162,12 +162,6 @@ def main():
         ("otx_pulse_iocs", "ioc_value", "TEXT", "NOT NULL, PK part", ""),
         ("otx_pulse_iocs", "description", "TEXT", "DEFAULT ''", ""),
         ("otx_pulse_iocs", "fetched_at", "TEXT", "DEFAULT datetime('now')", ""),
-        # correlation_infrastructure
-        ("correlation_infrastructure", "cve_id_a", "TEXT", "NOT NULL, PK part", ""),
-        ("correlation_infrastructure", "cve_id_b", "TEXT", "NOT NULL, PK part", ""),
-        ("correlation_infrastructure", "shared_ip_count", "INTEGER", "DEFAULT 0", ""),
-        ("correlation_infrastructure", "confidence", "TEXT", "DEFAULT 'low'", ""),
-        ("correlation_infrastructure", "detected_at", "TEXT", "DEFAULT datetime('now')", ""),
         # correlation_actor
         ("correlation_actor", "cve_id", "TEXT", "NOT NULL, PK part", ""),
         ("correlation_actor", "actor_name", "TEXT", "NOT NULL, PK part", ""),

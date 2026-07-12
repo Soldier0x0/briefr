@@ -72,7 +72,6 @@ the monthly open-core snapshot.
 | `correlation_temporal` | Vendor temporal anomalies |
 | `correlation_campaigns` | Campaign objects |
 | `correlation_campaign_members` | Campaign membership |
-| `correlation_infrastructure` | Shared-infrastructure CVE pairs |
 | `cve_embeddings` | ML embedding vectors |
 | `mitre_groups` | ATT&CK group mirror |
 | `group_technique_map` | Group ↔ technique links |
