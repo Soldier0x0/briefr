@@ -31,13 +31,22 @@ def _campaign_contribution(campaigns: list[dict]) -> tuple[float, str | None]:
     if not campaigns:
         return 0.0, None
     best = _best_by_confidence(campaigns)
-    points = round(CAP_CAMPAIGN * _confidence_fraction(best.get("confidence")), 1)
+    fraction = _confidence_fraction(best.get("confidence"))
+    # CORR-PR-4: KEV/exploit status moved here from confidence.py -- it's a
+    # priority (urgency) signal, not evidence the link itself is more certain.
+    boosters = best.get("boosters") or {}
+    booster_bonus = 0.15 if (boosters.get("kev") or boosters.get("exploit")) else 0.0
+    points = round(CAP_CAMPAIGN * min(1.0, fraction + booster_bonus), 1)
     if points <= 0:
         return 0.0, None
     sentence = (
         f"Linked to a {best.get('confidence', 'low')}-confidence campaign "
         f"({best.get('label', 'OTX pulse')})."
     )
+    if boosters.get("kev"):
+        sentence += " Includes a KEV-listed member."
+    elif boosters.get("exploit"):
+        sentence += " Includes a publicly exploited member."
     return points, sentence
 
 

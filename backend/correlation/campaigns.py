@@ -23,14 +23,6 @@ def campaign_id_for_pulse(pulse_id: str) -> str:
     return f"camp_{digest}"
 
 
-def _confidence_for_pulse(member_count: int) -> str:
-    if member_count >= 4:
-        return "high"
-    if member_count >= 2:
-        return "medium"
-    return "low"
-
-
 def _parse_json_list(value: Any) -> list:
     if isinstance(value, list):
         return value
@@ -132,7 +124,11 @@ async def build_campaigns_from_pulses(db) -> dict[str, int]:
         if len(members) < 2:
             continue
 
-        confidence = _confidence_for_pulse(len(members))
+        # CORR-PR-4: same-pulse co-tagging is the confidence *base*, not member
+        # count (§7) -- a campaign with 2 members is no less "real" than one
+        # with 8; get_campaigns_for_cve still bumps this to high when strong
+        # (hash/domain) shared indicators back it up.
+        confidence = "medium"
         member_inputs, link_fetched = await fetch_member_lifecycle_inputs(
             db, pulse_id, members
         )
@@ -230,7 +226,7 @@ async def get_campaigns_for_cve(
     find_shared_infrastructure_v2 (e.g. get_correlation_for_cve) pass the
     result through instead of triggering a second, identical query.
     """
-    from correlation.confidence import attribution_conflict, bump_confidence, campaign_confidence
+    from correlation.confidence import attribution_conflict, campaign_confidence
     from correlation.copy import campaign_summary, sanitize_pulse_text
     from correlation.ioc_graph import find_shared_infrastructure_v2, ioc_edges_between, batch_ioc_edges_for_peers
     from correlation.local import kev_exploit_boosters
@@ -380,19 +376,21 @@ async def get_campaigns_for_cve(
         if conflict:
             confidence = "medium" if confidence == "high" else confidence
 
+        # CORR-PR-4: KEV/exploit status is a priority signal, not a confidence
+        # signal (§7) -- a peer being KEV-listed doesn't make the *link*
+        # between it and this CVE more certain. Still surfaced as evidence;
+        # priority.py's campaign contribution is where it moves the needle.
         boosters = await kev_exploit_boosters(db, filtered, cve_upper)
-        if boosters["kev"] or boosters["exploit"]:
-            confidence = bump_confidence(confidence, 1, cap="high")
-            if boosters["kev"]:
-                evidence.append({
-                    "type": "kev_booster",
-                    "members": boosters["kev"][:5],
-                })
-            elif boosters["exploit"]:
-                evidence.append({
-                    "type": "exploit_booster",
-                    "members": boosters["exploit"][:5],
-                })
+        if boosters["kev"]:
+            evidence.append({
+                "type": "kev_booster",
+                "members": boosters["kev"][:5],
+            })
+        elif boosters["exploit"]:
+            evidence.append({
+                "type": "exploit_booster",
+                "members": boosters["exploit"][:5],
+            })
 
         results.append({
             "campaign_id": row["campaign_id"],
