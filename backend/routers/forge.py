@@ -417,18 +417,33 @@ async def list_hunt_packs(
         )
         total = count_rows[0]["cnt"] if count_rows else 0
 
+        # Subquery keeps the existing filtered/paginated hunt_packs query
+        # untouched (params list stays identical); the outer join only adds
+        # cves.is_kev for the Library view's KEV column (forge-redesign.md
+        # §3.1 — missed in the FR-1 list endpoint, added here as additive).
         rows = await db.execute_fetchall(
             f"""
-            SELECT * FROM hunt_packs {where}
-            ORDER BY updated_at DESC
-            LIMIT ? OFFSET ?
+            SELECT hp.*, c.is_kev AS cve_is_kev
+            FROM (
+                SELECT * FROM hunt_packs {where}
+                ORDER BY updated_at DESC
+                LIMIT ? OFFSET ?
+            ) hp
+            LEFT JOIN cves c ON c.cve_id = hp.cve_id
+            ORDER BY hp.updated_at DESC
             """,
             params + [limit, offset],
         )
     finally:
         await db.close()
 
-    return {"packs": [_pack_to_dict(r) for r in rows], "total": total}
+    packs = []
+    for r in rows:
+        pack = _pack_to_dict(r)
+        pack["is_kev"] = bool(r["cve_is_kev"])
+        packs.append(pack)
+
+    return {"packs": packs, "total": total}
 
 
 @router.delete("/api/hunt-packs/{pack_id}")

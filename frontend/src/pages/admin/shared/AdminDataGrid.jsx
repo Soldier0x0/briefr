@@ -38,6 +38,8 @@ export default function AdminDataGrid({
   rowKey = (row, index) => index,
   emptyMessage = 'No rows',
   toolbarExtra = null,
+  onRowClick = null,
+  activeRowKey = null,
 }) {
   const columnIds = useMemo(() => columns.map((c) => c.id), [columns])
   const defaultVisible = useMemo(
@@ -197,7 +199,12 @@ export default function AdminDataGrid({
               </tr>
             )}
             {rows.map((row, index) => (
-              <tr key={rowKey(row, index)}>
+              <tr
+                key={rowKey(row, index)}
+                className={onRowClick ? 'admin-data-grid-row-clickable' : undefined}
+                aria-selected={activeRowKey != null && rowKey(row, index) === activeRowKey ? true : undefined}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+              >
                 {visibleColumns.map((col) => (
                   <td key={col.id} style={cellStyle(col)} title={typeof col.title === 'function' ? col.title(row) : (col.title || undefined)}>
                     {col.render ? col.render(row) : String(row[col.id] ?? '—')}
