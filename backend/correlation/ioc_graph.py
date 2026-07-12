@@ -65,7 +65,7 @@ async def find_shared_infrastructure_v2(
         ioc_value = row["ioc_value"]
         confirmations = confirmations_by_value.get(ioc_value, {})
         noise = ioc_type.upper() == "IP" and is_noise_ip(ioc_value)
-        conf, why = confidence_for_ioc_edge(
+        conf, why, factors = confidence_for_ioc_edge(
             ioc_type,
             confirmations=confirmations,
             is_noise_ip=noise,
@@ -76,6 +76,7 @@ async def find_shared_infrastructure_v2(
             "ioc_value": ioc_value,
             "confidence": conf,
             "why_not_higher": why,
+            "confidence_factors": factors,
         }
         receipt = confirmation_receipt(confirmations)
         if receipt:
@@ -85,7 +86,7 @@ async def find_shared_infrastructure_v2(
     results: list[dict[str, Any]] = []
     for peer, edges in by_peer.items():
         counts = _count_by_type(edges)
-        confidence, evidence, why = aggregate_infrastructure_confidence(edges)
+        confidence, evidence, why, factors = aggregate_infrastructure_confidence(edges)
 
         results.append({
             "cve_id_b": peer,
@@ -99,6 +100,7 @@ async def find_shared_infrastructure_v2(
             "summary": infrastructure_summary(peer, counts),
             "sources": ["otx"],
             "why_not_higher": why,
+            "confidence_factors": factors,
         })
 
     # Rank by evidence strength before truncating — never drop a stronger

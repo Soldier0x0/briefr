@@ -741,6 +741,7 @@ When `GREYNOISE_API_KEY` is unset: `{"configured": false, "scans": []}`.
       "label": "Ransomware wave",
       "members": ["CVE-2024-0001", "CVE-2024-0002"],
       "confidence": "medium",
+      "confidence_factors": [{"factor": "same_pulse", "reason": "Co-tagged in the same OTX pulse"}],
       "evidence": [{"type": "same_pulse", "pulse_id": "...", "pulse_name": "..."}],
       "boosters": {"kev": ["CVE-2024-0002"], "exploit": []},
       "summary": "Linked to 1 other CVE(s) via OTX pulse ...",
@@ -755,6 +756,7 @@ When `GREYNOISE_API_KEY` is unset: `{"configured": false, "scans": []}`.
       "shared_hash_count": 1,
       "shared_url_count": 0,
       "confidence": "high",
+      "confidence_factors": [{"factor": "ioc_type", "value": "HASH", "reason": "Hash-type indicator"}],
       "evidence": [{"type": "shared_indicator", "ioc_type": "HASH", "value": "..."}],
       "summary": "Shares 1 hash with CVE-2024-0002 via OTX pulses."
     }
@@ -782,6 +784,8 @@ When `GREYNOISE_API_KEY` is unset: `{"configured": false, "scans": []}`.
 ```
 
 Per-campaign `boosters` reflect KEV/exploit signals among that campaign's members (excluding the anchor CVE); the top-level `boosters` is the union across all campaigns. As of CORR-PR-4, boosters no longer move campaign *confidence* (they don't make the pulse-link itself more certain) — they contribute to this same response's `priority.components[].signal == "campaign"` score instead. Campaign confidence is `medium` at the same-pulse co-tag baseline, `high` when strong (hash/domain) shared indicators back it, independent of member count. `actor` matches require MITRE ATT&CK technique overlap ≥ `CORRELATION_MITRE_MIN_OVERLAP` (default 0.25); `technique_overlap` is `matched / total CVE techniques`, and confidence is `medium` at ≥0.5 else `low`.
+
+**`confidence_factors`** (CORR-PR-5, additive): on both `campaigns[]` and `infrastructure[]` items, an ordered list of `{factor, value?, reason}` objects tracing every step that moved the confidence level — e.g. `ioc_type` (base level), `confirmation` (GreyNoise/MalwareBazaar/URLhaus), `degree` (shared-IOC hub penalty, CORR-PR-3), `noise_ip`, `same_pulse`, `shared_indicators`, `attribution_conflict`. `why_not_higher` is kept for compatibility and equals the last factor's `reason` when present. The drawer's connection panel renders each factor's `reason` as a bulleted "why this level" list.
 
 Cached 6 hours in `feed_cache` (`correlation:v2:{cve}:{sector}`). On engine error, returns empty arrays + `"error"` string.
 

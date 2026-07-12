@@ -351,7 +351,7 @@ async def get_campaigns_for_cve(
                 seen_iocs.add(key)
                 ioc_edges.append(edge)
 
-        confidence, why_not_higher = campaign_confidence(
+        confidence, why_not_higher, confidence_factors = campaign_confidence(
             row["confidence"] or "medium",
             ioc_edges,
             has_same_pulse=True,
@@ -375,6 +375,10 @@ async def get_campaigns_for_cve(
         conflict = attribution_conflict(row["adversary"] or "", mitre_names)
         if conflict:
             confidence = "medium" if confidence == "high" else confidence
+            confidence_factors.append({
+                "factor": "attribution_conflict",
+                "reason": "Adversary attribution conflicts with MITRE technique-matched actors",
+            })
 
         # CORR-PR-4: KEV/exploit status is a priority signal, not a confidence
         # signal (§7) -- a peer being KEV-listed doesn't make the *link*
@@ -413,6 +417,7 @@ async def get_campaigns_for_cve(
             ),
             "sources": ["otx"],
             "why_not_higher": why_not_higher,
+            "confidence_factors": confidence_factors,
             "attribution_conflict": conflict,
             "attribution_disclaimer": "OTX community pulse — unverified attribution",
         })

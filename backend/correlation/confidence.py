@@ -30,17 +30,22 @@ def confidence_for_ioc_edge(
     confirmations: dict[str, Any] | None = None,
     is_noise_ip: bool = False,
     degree: int = 0,
-) -> tuple[str, str | None]:
-    """Return (confidence, why_not_higher).
+) -> tuple[str, str | None, list[dict[str, Any]]]:
+    """Return (confidence, why_not_higher, confidence_factors).
 
     `degree` (CORR-PR-3) is the IOC's cve_count from ioc_degree -- how many
     distinct CVEs share this indicator. Popular/shared IOCs create
     false-positive-looking clusters, so degree only ever lowers confidence
     and is applied last, after any confirmation-based bump, so a hub can't
     be rescued back up.
+
+    `confidence_factors` (CORR-PR-5) exposes every step that moved the
+    level, additive alongside the single `why_not_higher` string kept for
+    compatibility (it becomes the last factor's reason).
     """
     t = (ioc_type or "").upper()
     confirmations = confirmations or {}
+    factors: list[dict[str, Any]] = []
 
     if t == "HASH":
         level = "high"
@@ -51,43 +56,53 @@ def confidence_for_ioc_edge(
     elif t == "IP":
         level = "low"
         if is_noise_ip:
-            return "low", "Private or reserved IP range"
+            why = "Private or reserved IP range"
+            factors.append({"factor": "noise_ip", "reason": why})
+            return "low", why, factors
     else:
         level = "low"
+    factors.append({"factor": "ioc_type", "value": t, "reason": f"{t.title() if t else 'Unknown'}-type indicator"})
 
     why: str | None = None
 
     if confirmations.get("greynoise") == "malicious":
         level = bump_confidence(level, 1)
+        factors.append({"factor": "confirmation", "value": "greynoise_malicious", "reason": "GreyNoise classifies this IP as malicious"})
     elif confirmations.get("greynoise") in ("benign", "riot"):
         level = downrank_confidence(level, 1)
         why = "GreyNoise classifies this IP as benign noise"
+        factors.append({"factor": "confirmation", "value": "greynoise_benign", "reason": why})
     if confirmations.get("malwarebazaar"):
         level = bump_confidence(level, 1, cap="high")
+        factors.append({"factor": "confirmation", "value": "malwarebazaar", "reason": "MalwareBazaar sample match"})
     if confirmations.get("urlhaus_active"):
         level = bump_confidence(level, 1)
+        factors.append({"factor": "confirmation", "value": "urlhaus_active", "reason": "URLhaus active distribution"})
 
     if t == "IP" and level == "low" and not why:
         why = "IP-only edges are weaker than domain or hash matches"
+        factors.append({"factor": "ip_only", "reason": why})
 
     if degree > 10:
         why = f"Shared indicator hub — seen across {degree} CVEs"
         level = "low"
+        factors.append({"factor": "degree", "value": degree, "reason": why})
     elif degree > 3:
         downranked = downrank_confidence(level, 1)
         if downranked != level:
             why = f"Shared indicator hub — seen across {degree} CVEs"
+            factors.append({"factor": "degree", "value": degree, "reason": why})
         level = downranked
 
-    return level, why
+    return level, why, factors
 
 
 def aggregate_infrastructure_confidence(
     edges: list[dict[str, Any]],
-) -> tuple[str, list[dict], str | None]:
+) -> tuple[str, list[dict], str | None, list[dict[str, Any]]]:
     """Collapse per-IOC edges into one peer confidence + merged evidence."""
     if not edges:
-        return "low", [], None
+        return "low", [], None, []
 
     levels = [e.get("confidence", "low") for e in edges]
     max_idx = max(_level_index(l) for l in levels)
@@ -103,7 +118,17 @@ def aggregate_infrastructure_confidence(
 
     why_parts = [e["why_not_higher"] for e in edges if e.get("why_not_higher")]
     why = why_parts[0] if why_parts else None
-    return confidence, evidence, why
+
+    # Factors from the edge(s) that set the aggregate level -- same
+    # selection logic as `why` above, kept consistent rather than merging
+    # every edge's factors into one undifferentiated list.
+    factors_parts = [
+        e["confidence_factors"] for e in edges
+        if e.get("confidence") == confidence and e.get("confidence_factors")
+    ]
+    factors = factors_parts[0] if factors_parts else []
+
+    return confidence, evidence, why, factors
 
 
 def campaign_confidence(
@@ -111,13 +136,17 @@ def campaign_confidence(
     ioc_edges: list[dict[str, Any]],
     *,
     has_same_pulse: bool = True,
-) -> tuple[str, str | None]:
+) -> tuple[str, str | None, list[dict[str, Any]]]:
     level = base
     why: str | None = None
+    factors: list[dict[str, Any]] = []
+    if has_same_pulse:
+        factors.append({"factor": "same_pulse", "reason": "Co-tagged in the same OTX pulse"})
 
     strong = [e for e in ioc_edges if (e.get("ioc_type") or "").upper() in ("HASH", "DOMAIN")]
     if has_same_pulse and strong:
         level = "high"
+        factors.append({"factor": "shared_indicators", "reason": "Backed by shared hash or domain indicators"})
     elif has_same_pulse:
         level = bump_confidence(base, 0) if base else "medium"
 
@@ -125,8 +154,9 @@ def campaign_confidence(
         if level == "high":
             level = "medium"
             why = "No shared hash or domain indicators"
+            factors.append({"factor": "shared_indicators", "reason": why})
 
-    return level, why
+    return level, why, factors
 
 
 def attribution_conflict(
