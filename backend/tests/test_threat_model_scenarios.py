@@ -89,3 +89,47 @@ def test_scenarios_with_stack_and_mapping(client):
     assert scenario["mitigations"]
     assert any(m["type"] == "patch" for m in scenario["mitigations"])
     assert "scenario" in scenario and len(scenario["scenario"]) > 20
+
+
+def test_scenarios_handles_null_epss_score(client):
+    """Regression: a technique whose CVEs all have NULL epss_score used to
+    500 on Postgres. The ORDER BY referenced the SELECT-list alias
+    max_epss inside a CASE expression -- SQLite resolves that alias
+    anywhere, but Postgres only resolves a bare alias as the entire ORDER
+    BY item, so nested inside CASE it tried (and failed) to find a real
+    column named max_epss. Reproduced live via a throwaway Postgres
+    container before fixing threat_model/scenarios.py to repeat the
+    MAX(c.epss_score) aggregate instead of the alias."""
+    import asyncio
+    from database import get_db
+
+    async def _seed_null_epss():
+        db = await get_db()
+        try:
+            await db.execute(
+                "INSERT INTO mitre_techniques (technique_id, name, tactic, url) "
+                "VALUES (?, ?, ?, ?)",
+                ("T1059", "Command and Scripting Interpreter", "execution",
+                 "https://attack.mitre.org/techniques/T1059/"),
+            )
+            await db.execute(
+                "INSERT INTO cves (cve_id, description, affected_products, "
+                "severity, cvss_score, epss_score, is_kev, published) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                ("CVE-2024-9999", "Null EPSS test", '["docker:docker"]',
+                 "HIGH", 7.5, None, 0, "2024-01-01"),
+            )
+            await db.execute(
+                "INSERT INTO cve_technique_map (cve_id, technique_id) VALUES (?, ?)",
+                ("CVE-2024-9999", "T1059"),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    asyncio.run(_seed_null_epss())
+
+    resp = client.get("/api/threat-model/scenarios?stack=docker")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert any(s["technique_id"] == "T1059" for s in data["scenarios"])

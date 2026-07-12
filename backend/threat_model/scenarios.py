@@ -124,7 +124,7 @@ async def build_threat_scenarios(db: Any, stack: str | None) -> dict[str, Any]:
         {cve_filter}
         GROUP BY m.technique_id
         ORDER BY kev_count DESC,
-                 CASE WHEN max_epss IS NULL THEN 1 ELSE 0 END,
+                 CASE WHEN MAX(c.epss_score) IS NULL THEN 1 ELSE 0 END,
                  max_epss DESC,
                  cve_count DESC
         LIMIT 40
