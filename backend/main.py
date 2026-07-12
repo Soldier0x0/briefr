@@ -120,7 +120,15 @@ async def lifespan(app: FastAPI):
         logger.info(
             "main.py lifespan: scheduler disabled (BRIEFR_SCHEDULER_ENABLED=0) — API-only worker"
         )
-    await maybe_run_on_startup()
+    if os.environ.get("BRIEFR_RUN_JOBS_ON_STARTUP", "1").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    ):
+        await maybe_run_on_startup()
+    else:
+        logger.info("main.py lifespan: startup jobs skipped (BRIEFR_RUN_JOBS_ON_STARTUP=0)")
     logger.info("main.py lifespan: startup complete — accepting requests")
     yield
     logger.info("main.py lifespan: shutting down")
