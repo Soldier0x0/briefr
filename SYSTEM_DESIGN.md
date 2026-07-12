@@ -263,6 +263,47 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (sch
    `VULNCHECK_API_KEY` set) sets `cves.is_vulncheck_exploited` for risk v1.1b KEV
    component scoring below CISA KEV. HyperDX provisioning
    remains out of scope.
+6. **Forge redesign FR-1/FR-2 (2026-07, `docs/planning/specs/forge-redesign.md`):**
+   `Forge.jsx` (~1090 lines) split into a thin shell + view components under
+   `frontend/src/components/forge/` (`CoverageView`, `ScenariosView`,
+   `CampaignsView`, `BacklogView`, `LibraryView`, `HuntPackRail`, `shared`) —
+   behavior-preserving move, same fetch logic and endpoints per view.
+   - **Shell layout:** three panels — left nav (220px, five views + coverage
+     counts + MY STACK ONLY toggle) / center workspace (one view at a time) /
+     persistent Hunt Pack rail (320px). The rail mounts once at the shell
+     level and renders whichever technique is selected regardless of which
+     view set the selection — fixes the pre-FR-2 gap where Campaigns/Backlog
+     had no rail and a generated pack's result was invisible.
+   - **URL state:** `?view=coverage|scenarios|campaigns|backlog|library` +
+     `&technique=`/`&pack=`, two-way via `useSearchParams` (`Forge.jsx`
+     `writeUrl`) — every view/selection change rewrites the URL
+     (`{ replace: true }`), and a `searchParams` effect mirrors browser
+     back/forward into state. This differs from Admin's `?p=`, which is
+     read-only (drives initial page from the URL but never writes it back on
+     click) — Admin's pattern alone doesn't satisfy "refresh preserves
+     selection," so Forge's URL state is one-way-write, not a copy of Admin's.
+     Because Forge lives inside `App.jsx`'s single-page tab switcher (not a
+     router-level route), a new `App.jsx` effect activates the `forge` tab on
+     load when `?view=` is present, or a refresh while on Forge would land
+     back on the Brief tab with the params inert.
+   - **Hunt Pack Library (FR-1 backend, FR-2 frontend):** `LibraryView.jsx`
+     is an `AdminDataGrid` (`pages/admin/shared/AdminDataGrid.jsx`) over
+     `GET /api/hunt-packs` (technique/priority/KEV/title filters, 250ms
+     debounce) with delete (`DELETE /api/hunt-packs/{id}`, `ConfirmModal`,
+     hard delete + `audit_log` entry from FR-1) and a JSON export (client-side
+     blob download of the pack's Sigma/SIEM/log-pattern content — no PDF
+     dependency; PDF export via `utils/huntPackPdf.js` is FR-3 scope). Row
+     click opens the pack in the persistent rail by `technique_id`. `list_hunt_packs`
+     gained an additive `LEFT JOIN cves` (wrapped around the existing
+     filtered/paginated subquery, so the original WHERE/params are untouched)
+     to surface `is_kev` for the Library's KEV column — the FR-1 endpoint had
+     shipped without it even though forge-redesign.md §3.1 specified it.
+   - `AdminDataGrid` gained optional `onRowClick`/`activeRowKey` props
+     (backward-compatible, default `null`) for the Library's row-click-to-open
+     behavior; no other `AdminDataGrid` caller is affected.
+   - **Responsive:** mirrors `threat-modeling-security-architecture.md` §3.1 —
+     rail pinned ≥1280px, slide-in overlay with backdrop + `Escape`-to-close
+     960–1279px, left nav collapses to a horizontal wrap ≤959px.
 
 ### F. Watchlist — pin / snooze (V1.3)
 
