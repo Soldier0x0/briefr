@@ -43,10 +43,10 @@ async def _ping_json(
     started = time.monotonic()
     try:
         response = await resilient_request(
+            source,
             method,
             url,
-            source=source,
-            operation="api_key_health",
+            queue_operation="api_key_health",
             headers=headers or {},
             params=params,
             timeout=20.0,
@@ -274,11 +274,16 @@ async def run_api_key_health_checks(db) -> dict[str, int]:
             try:
                 from notifications.emit import emit_api_key_unhealthy_notification
 
+                error_text = str(payload.get("error") or f"HTTP {payload.get('status_code')}")
                 await emit_api_key_unhealthy_notification(
                     db,
                     provider=provider,
-                    error=str(payload.get("error") or f"HTTP {payload.get('status_code')}"),
-                    dedupe_key=f"api_key:{provider}:{payload['checked_at']}",
+                    error=error_text,
+                    # Stable per (provider, error) — not per run — so a
+                    # provider stuck on the same failure notifies once, not
+                    # every 6h. A *different* error still gets its own
+                    # notification (real signal: something changed).
+                    dedupe_key=f"api_key:{provider}:{error_text}",
                 )
             except Exception as exc:
                 logger.warning(
