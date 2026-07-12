@@ -12,6 +12,63 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-12 — Autonomous roadmap execution: AKH-1, QA-P2 bundle, QA-F1 shipped
+
+**Context:** maintainer requested autonomous execution of the implementation
+roadmap while away — independent items drafted, checked for automated review
+comments, fixed, merged, one after another; the correlation-engine PR-3→5
+chain deliberately held sequential (see below) since it's the highest-risk
+piece and needs entry gates, not parallel drafting.
+
+**Shipped (3 PRs, all merged with real Gemini review feedback addressed):**
+
+- **AKH-1** (#482) — the two argument bugs in `_ping_json`'s
+  `resilient_request` call (positional `source`/`method` swap, plus a
+  masked second bug: `operation=` vs the real `queue_operation=` kwarg) that
+  made every provider health check fail on every run since #435 shipped.
+  Also fixed the notification `dedupe_key` (was per-run-timestamp, never
+  deduped — the reported flood). **Gemini caught a real gap**: some
+  exception messages (`CircuitOpenError`'s `retry_at`) embed dynamic content
+  that would still defeat the fixed dedupe key — added digit-run
+  normalization (`_normalize_for_dedupe`) to close it.
+- **QA-P2 polish bundle** (#483) — D1 (flat-delta noise), I3 (Forge chip
+  tooltips), G1 (IOC placeholder), J6/J7 (Admin Overview stale/misleading
+  copy). **Gemini caught two real bugs**: the IOC hint paragraph broke
+  `.ioc-controls`' border-merge trick (moved it after the controls block,
+  not between textarea and controls — verified live, -1px overlap restored
+  exactly), and Forge tooltips could render the literal string "undefined"
+  for a missing count (added `?? 0`).
+- **QA-F1** (#484) — DetailDrawer DETECT tab's 30-second hang. Root cause:
+  unauthenticated GitHub code search, up to ~7 sequential doomed calls
+  worst case. **Almost implemented the wrong fix** — the finding doc
+  proposed parallelizing `find_sigma_rules`/`find_elastic_rules` via
+  `asyncio.gather`, but recon found an explicit comment at their call site
+  (`routers/cves.py`) explaining they're sequential *by design* (shared
+  asyncpg connection; Postgres rejects concurrent queries on one session —
+  a previously-fixed pool-poisoning bug). Parallelizing would have
+  reintroduced that regression. Shipped instead: skip the GitHub call
+  entirely when no token configured. Verified end-to-end on the real dev
+  stack: 30,357ms → 16.2ms, same CVE, same endpoint. **Gemini caught a
+  real gap**: `token` could be `None` not just `""`, crashing `.strip()` —
+  fixed at both call sites (`_github_search` + the same pre-existing
+  pattern in `_gh_headers`).
+
+**Process note (worth keeping for future sessions):** all three PRs had
+genuine, correct Gemini findings — this was not noise. The workflow of
+draft → wait briefly → address real feedback → merge, one PR at a time
+while starting the next independent item, worked as intended and caught
+real bugs before they landed on main.
+
+**Filed but not yet actioned:** BACKLOG QA-P2-1..5 are now shipped (this
+entry). AKH-2 (quota/rate-limit UI clarity) is next up, independent of the
+correlation chain.
+
+**Next:** AKH-2, then the correlation engine PR-3→PR-5 chain (sequential,
+entry-gated per playbook — do not draft PR-4 before PR-3 is merged and its
+acceptance criteria re-verified green).
+
+---
+
 ## 2026-07-12 — PR #459 closed: superseded by TM spec v2
 
 **Context:** PR #459 (`cursor/threat-modeling-tm1-corpus-6970`, "Security
