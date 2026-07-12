@@ -695,3 +695,45 @@ async def match_cves_for_assets(
         if score > 0:
             scores[row["cve_id"]] = score
     return scores
+
+
+_REBUILD_IOC_DEGREE_SQLITE = """
+INSERT INTO ioc_degree (ioc_type, ioc_value, cve_count, pulse_count, computed_at)
+SELECT oi.ioc_type,
+       oi.ioc_value,
+       COUNT(DISTINCT ocp.cve_id) AS cve_count,
+       COUNT(DISTINCT oi.pulse_id) AS pulse_count,
+       ?
+FROM otx_pulse_iocs oi
+JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id
+GROUP BY oi.ioc_type, oi.ioc_value
+"""
+
+_REBUILD_IOC_DEGREE_PG = """
+INSERT INTO ioc_degree (ioc_type, ioc_value, cve_count, pulse_count, computed_at)
+SELECT oi.ioc_type,
+       oi.ioc_value,
+       COUNT(DISTINCT ocp.cve_id) AS cve_count,
+       COUNT(DISTINCT oi.pulse_id) AS pulse_count,
+       $1
+FROM otx_pulse_iocs oi
+JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id
+GROUP BY oi.ioc_type, oi.ioc_value
+"""
+
+
+async def rebuild_ioc_degree(db: DbConnection) -> int:
+    """Truncate-and-rebuild ioc_degree (CORR-PR-3 / spec §14): how many
+    distinct CVEs and pulses reference each (ioc_type, ioc_value). Single
+    INSERT...SELECT per the spec's idempotency invariant — a popular IOC
+    (public resolver, CDN edge, common hash) gets a high cve_count, which
+    confidence.py uses to penalize its edge confidence. Plain DELETE+INSERT,
+    not a materialized view (spec §19 — SQLite-testable, refresh-lock-free).
+    Returns the row count written."""
+    await db.execute("DELETE FROM ioc_degree")
+    computed_at = utcnow_str()
+    sql = _REBUILD_IOC_DEGREE_PG if _is_postgres_connection(db) else _REBUILD_IOC_DEGREE_SQLITE
+    await db.execute(sql, (computed_at,))
+    await db.commit()
+    rows = await db.execute_fetchall("SELECT COUNT(*) AS n FROM ioc_degree")
+    return rows[0]["n"] if rows else 0

@@ -721,3 +721,55 @@ def test_temporal_anomaly_gated_off_stack_without_signal(tmp_path, monkeypatch):
             await db.close()
 
     run_db_test(run())
+
+
+def test_rebuild_ioc_degree_counts_distinct_cves_and_pulses(tmp_path, monkeypatch):
+    """CORR-PR-3: ioc_degree.cve_count must count distinct CVEs sharing an
+    IOC, not raw row occurrences (a CVE linked via 2 pulses to the same IOC
+    must count once, not twice)."""
+    from db.correlation import rebuild_ioc_degree
+
+    async def run():
+        db_path = str(tmp_path / "corr-degree.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        db = await _seed_db(db_path)
+        try:
+            # Hub IOC shared across many distinct CVEs (high degree) vs a
+            # rare IOC shared by exactly one CVE.
+            for i in range(5):
+                cve = f"CVE-2024-DEG{i}"
+                pulse_id = f"pulse-deg-{i}"
+                await replace_otx_cve_pulses(db, cve, [{
+                    "pulse_id": pulse_id, "pulse_name": f"Pulse {i}", "author": "a",
+                    "created_date": "2024-01-01", "adversary": "", "malware_families": [],
+                    "tags": [], "targeted_countries": [], "ioc_count": 0,
+                }])
+                await replace_otx_pulse_iocs(db, pulse_id, [
+                    {"ioc_type": "IP", "ioc_value": "203.0.113.1", "description": ""},
+                ])
+            await replace_otx_cve_pulses(db, "CVE-2024-RARE", [{
+                "pulse_id": "pulse-rare", "pulse_name": "Rare", "author": "a",
+                "created_date": "2024-01-01", "adversary": "", "malware_families": [],
+                "tags": [], "targeted_countries": [], "ioc_count": 0,
+            }])
+            await replace_otx_pulse_iocs(db, "pulse-rare", [
+                {"ioc_type": "DOMAIN", "ioc_value": "rare-actor.example", "description": ""},
+            ])
+            await db.commit()
+
+            n = await rebuild_ioc_degree(db)
+            assert n >= 2  # plus whatever _seed_db's own baseline IOCs contribute
+
+            rows = {
+                (r["ioc_type"], r["ioc_value"]): r
+                for r in await db.execute_fetchall("SELECT * FROM ioc_degree")
+            }
+            hub = rows[("IP", "203.0.113.1")]
+            assert hub["cve_count"] == 5
+            rare = rows[("DOMAIN", "rare-actor.example")]
+            assert rare["cve_count"] == 1
+        finally:
+            await db.close()
+
+    run_db_test(run())
