@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import time
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable
@@ -17,6 +18,17 @@ logger = logging.getLogger(__name__)
 API_KEY_HEALTH_PREFIX = "api_key_health:"
 
 CheckFn = Callable[[str], Awaitable[dict[str, Any]]]
+
+_DIGITS_RE = re.compile(r"\d+")
+
+
+def _normalize_for_dedupe(error_text: str) -> str:
+    """Collapse digit runs so dedupe keys stay stable across occurrences of
+    the *same kind* of failure even when the message embeds a value that
+    changes every time (Unix timestamps, ports, byte counts, retry-after
+    seconds). Only used for the dedupe key — the raw error_text is still
+    shown to the operator unmodified."""
+    return _DIGITS_RE.sub("#", error_text)
 
 
 def _placeholder_key(value: str) -> bool:
@@ -283,7 +295,12 @@ async def run_api_key_health_checks(db) -> dict[str, int]:
                     # provider stuck on the same failure notifies once, not
                     # every 6h. A *different* error still gets its own
                     # notification (real signal: something changed).
-                    dedupe_key=f"api_key:{provider}:{error_text}",
+                    # error_text is normalized (not used raw) because some
+                    # exception messages embed dynamic values that would
+                    # otherwise defeat this exact stability guarantee — e.g.
+                    # CircuitOpenError's "retry after <unix-ts>"
+                    # (resilient_client.py) changes every occurrence.
+                    dedupe_key=f"api_key:{provider}:{_normalize_for_dedupe(error_text)}",
                 )
             except Exception as exc:
                 logger.warning(

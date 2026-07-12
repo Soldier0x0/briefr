@@ -210,4 +210,60 @@ def test_repeated_identical_failure_notifies_once_not_every_run(monkeypatch, tmp
         f"(the bug embedded a fresh per-run timestamp, which would make "
         f"these differ): {captured_dedupe_keys}"
     )
-    assert captured_dedupe_keys[0] == "api_key:groq:HTTP 401"
+    # "401" is itself digits, collapsed by the dedupe normalizer (see
+    # test_dedupe_normalizes_dynamic_content_in_error_text) -- this is
+    # still a stable, correct key, just not the literal raw error text.
+    assert captured_dedupe_keys[0] == "api_key:groq:HTTP #"
+
+
+def test_dedupe_normalizes_dynamic_content_in_error_text(monkeypatch, tmp_path):
+    """Gemini review on PR #482: some exception messages embed a value that
+    changes every occurrence (Unix timestamps, ports, byte counts), which
+    would defeat the (provider, error) dedupe key exactly like the original
+    (provider, checked_at) bug did. CircuitOpenError is the concrete example
+    -- resilient_client.py formats it as 'Circuit open for X; retry after
+    <unix-ts>', a fresh integer on every occurrence."""
+    from database import get_db, init_db
+    from monitoring import api_key_health as mod
+    from resilient_client import CircuitOpenError
+
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "health5.db"))
+    asyncio.run(init_db())
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_testkey1234567890abcd")
+
+    call_count = {"n": 0}
+
+    async def fake_circuit_open(*args, **kwargs):
+        call_count["n"] += 1
+        # A different retry_at each call -- exactly what made the
+        # not-yet-normalized dedupe key unstable.
+        raise CircuitOpenError("groq", retry_at=1_700_000_000.0 + call_count["n"])
+
+    monkeypatch.setattr(mod, "resilient_request", fake_circuit_open)
+
+    captured_dedupe_keys: list[str] = []
+
+    async def capture_notification(db, *, provider, error, dedupe_key):
+        captured_dedupe_keys.append(dedupe_key)
+        return 1
+
+    monkeypatch.setattr(
+        "notifications.emit.emit_api_key_unhealthy_notification", capture_notification
+    )
+
+    async def run() -> None:
+        db = await get_db()
+        try:
+            await mod.run_api_key_health_checks(db)
+            await mod.run_api_key_health_checks(db)
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+    assert len(captured_dedupe_keys) == 2, captured_dedupe_keys
+    assert captured_dedupe_keys[0] == captured_dedupe_keys[1], (
+        "two CircuitOpenError occurrences with different retry_at timestamps "
+        f"must still normalize to the same dedupe key: {captured_dedupe_keys}"
+    )
