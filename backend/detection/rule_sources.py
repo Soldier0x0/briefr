@@ -35,7 +35,7 @@ def _gh_headers(token: str = "") -> dict[str, str]:
         "Accept": "application/vnd.github.v3+json",
         "X-GitHub-Api-Version": "2022-11-28",
     }
-    tok = token.strip() or os.environ.get("GITHUB_TOKEN", "").strip()
+    tok = (token or "").strip() or os.environ.get("GITHUB_TOKEN", "").strip()
     if tok:
         headers["Authorization"] = f"Bearer {tok}"
     return headers
@@ -60,7 +60,7 @@ async def _github_search(
     the doomed call outright when no token is configured, same honest
     early-exit pattern as GreyNoise/OTX "not configured" elsewhere.
     """
-    if not (token.strip() or os.environ.get("GITHUB_TOKEN", "").strip()):
+    if not ((token or "").strip() or os.environ.get("GITHUB_TOKEN", "").strip()):
         return []
     q_context_type = "cve" if cve_id else context_type
     q_context_id = cve_id or context_id

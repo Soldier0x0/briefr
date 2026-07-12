@@ -90,3 +90,16 @@ def test_find_sigma_rules_returns_empty_fast_without_token(monkeypatch, tmp_path
     result = asyncio.run(run())
     assert result == []
     assert called["n"] == 0
+
+
+def test_github_search_handles_none_token_without_crashing(monkeypatch):
+    """Gemini review on PR #484: token might be explicitly None (not just
+    the default ""), which would raise AttributeError on .strip() before
+    this fix (_gh_headers had the same pattern, fixed alongside)."""
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+
+    result = asyncio.run(rule_sources._github_search("query", token=None))
+    assert result == []
+
+    headers = rule_sources._gh_headers(token=None)
+    assert "Authorization" not in headers
