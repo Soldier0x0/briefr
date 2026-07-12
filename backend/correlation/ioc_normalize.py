@@ -16,6 +16,22 @@ _DEFANG_REPLACEMENTS = (
 
 _IP_TYPES = frozenset({"ip", "ipv4", "ipv6"})
 
+# CORR-PR-3 / D2: a small literal set of well-known public DNS resolvers —
+# these appear as "shared infrastructure" across huge numbers of unrelated
+# CVEs simply because malware and legitimate tools alike resolve through
+# them, not because the CVEs are actually related. A curated CDN/cloud-IP
+# denylist feed was explicitly rejected (spec §19, maintenance burden) —
+# the degree penalty (confidence.py) handles popular IOCs generally; this
+# is just the handful of always-known-noise addresses worth hardcoding.
+_PUBLIC_RESOLVER_IPS = frozenset({
+    "8.8.8.8", "8.8.4.4",          # Google
+    "1.1.1.1", "1.0.0.1",          # Cloudflare
+    "9.9.9.9", "149.112.112.112",  # Quad9
+    "208.67.222.222", "208.67.220.220",  # OpenDNS
+    "4.2.2.1", "4.2.2.2",          # Level3 legacy
+    "64.6.64.6", "64.6.65.6",      # Verisign
+})
+
 
 def refang(value: str) -> str:
     out = (value or "").strip()
@@ -61,9 +77,13 @@ def _normalize_url(value: str) -> str:
 
 
 def is_noise_ip(value: str) -> bool:
-    """RFC1918, loopback, link-local — downrank, do not delete."""
+    """RFC1918, loopback, link-local, or a well-known public resolver —
+    downrank, do not delete."""
+    stripped = value.strip()
+    if stripped in _PUBLIC_RESOLVER_IPS:
+        return True
     try:
-        addr = ipaddress.ip_address(value.strip())
+        addr = ipaddress.ip_address(stripped)
     except ValueError:
         return False
     return bool(
