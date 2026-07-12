@@ -912,7 +912,10 @@ async def export_db(request: Request, background_tasks: BackgroundTasks):
     try:
         await db.execute(f"VACUUM INTO '{tmp_path}'")
     except Exception as exc:
-        raise HTTPException(500, f"Failed to create database export: {exc}")
+        import logging
+
+        logging.getLogger(__name__).error("Database export failed: %s", exc)
+        raise HTTPException(500, "Failed to create database export")
     finally:
         await db.close()
 

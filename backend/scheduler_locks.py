@@ -1,12 +1,11 @@
 import asyncio
 
 # Keys must match the `id=` strings passed to scheduler.add_job() exactly.
-# incident_feed_refresh, backup_deadman_check, session_cleanup, and
-# cache_retention_cleanup have no entry here — they run without a lock today
-# (verified against
-# scheduler.py's add_job() calls and routers/admin.py's prior _JOB_LOCK_MAP;
-# this module only consolidates locks that already existed, it doesn't add
-# new ones).
+# incident_feed_refresh, backup_deadman_check, session_cleanup,
+# cache_retention_cleanup, watchlist_monitor_alerts, and api_key_health_check
+# have no entry here — they run without a lock today (each job is registered
+# with max_instances=1, so APScheduler itself prevents overlap; this module
+# only consolidates locks that already existed, it doesn't add new ones).
 _LOCKS: dict[str, asyncio.Lock] = {
     "nvd_incremental_sync": asyncio.Lock(),
     "kev_metadata_sync": asyncio.Lock(),
