@@ -1,0 +1,254 @@
+version: 1
+tables:
+- id: ai_operations
+  title: ai_operations
+  origin: generated
+  source_refs:
+  - type: table
+    ref: ai_operations
+- id: api_usage
+  title: api_usage
+  origin: generated
+  source_refs:
+  - type: table
+    ref: api_usage
+- id: app_settings
+  title: app_settings
+  origin: generated
+  source_refs:
+  - type: table
+    ref: app_settings
+- id: atlas_case_studies
+  title: atlas_case_studies
+  origin: generated
+  source_refs:
+  - type: table
+    ref: atlas_case_studies
+- id: atlas_techniques
+  title: atlas_techniques
+  origin: generated
+  source_refs:
+  - type: table
+    ref: atlas_techniques
+- id: audit_log
+  title: audit_log
+  origin: generated
+  source_refs:
+  - type: table
+    ref: audit_log
+- id: correlation_actor
+  title: correlation_actor
+  origin: generated
+  source_refs:
+  - type: table
+    ref: correlation_actor
+- id: correlation_campaign_members
+  title: correlation_campaign_members
+  origin: generated
+  source_refs:
+  - type: table
+    ref: correlation_campaign_members
+- id: correlation_campaigns
+  title: correlation_campaigns
+  origin: generated
+  source_refs:
+  - type: table
+    ref: correlation_campaigns
+- id: correlation_suppressions
+  title: correlation_suppressions
+  origin: generated
+  source_refs:
+  - type: table
+    ref: correlation_suppressions
+- id: correlation_temporal
+  title: correlation_temporal
+  origin: generated
+  source_refs:
+  - type: table
+    ref: correlation_temporal
+- id: cve_atlas_map
+  title: cve_atlas_map
+  origin: generated
+  source_refs:
+  - type: table
+    ref: cve_atlas_map
+- id: cve_change_history
+  title: cve_change_history
+  origin: generated
+  source_refs:
+  - type: table
+    ref: cve_change_history
+- id: cve_embeddings
+  title: cve_embeddings
+  origin: generated
+  source_refs:
+  - type: table
+    ref: cve_embeddings
+- id: cve_exploits
+  title: cve_exploits
+  origin: generated
+  source_refs:
+  - type: table
+    ref: cve_exploits
+- id: cve_technique_map
+  title: cve_technique_map
+  origin: generated
+  source_refs:
+  - type: table
+    ref: cve_technique_map
+- id: cves
+  title: cves
+  origin: generated
+  source_refs:
+  - type: table
+    ref: cves
+- id: detection_backlog
+  title: detection_backlog
+  origin: generated
+  source_refs:
+  - type: table
+    ref: detection_backlog
+- id: epss_history
+  title: epss_history
+  origin: generated
+  source_refs:
+  - type: table
+    ref: epss_history
+- id: feed_cache
+  title: feed_cache
+  origin: generated
+  source_refs:
+  - type: table
+    ref: feed_cache
+- id: group_technique_map
+  title: group_technique_map
+  origin: generated
+  source_refs:
+  - type: table
+    ref: group_technique_map
+- id: hunt_packs
+  title: hunt_packs
+  origin: generated
+  source_refs:
+  - type: table
+    ref: hunt_packs
+- id: ioc_cache
+  title: ioc_cache
+  origin: generated
+  source_refs:
+  - type: table
+    ref: ioc_cache
+- id: ioc_degree
+  title: ioc_degree
+  origin: generated
+  source_refs:
+  - type: table
+    ref: ioc_degree
+- id: ioc_watchlist
+  title: ioc_watchlist
+  origin: generated
+  source_refs:
+  - type: table
+    ref: ioc_watchlist
+- id: kev_deadlines
+  title: kev_deadlines
+  origin: generated
+  source_refs:
+  - type: table
+    ref: kev_deadlines
+- id: mitre_groups
+  title: mitre_groups
+  origin: generated
+  source_refs:
+  - type: table
+    ref: mitre_groups
+- id: mitre_techniques
+  title: mitre_techniques
+  origin: generated
+  source_refs:
+  - type: table
+    ref: mitre_techniques
+- id: otx_cve_pulses
+  title: otx_cve_pulses
+  origin: generated
+  source_refs:
+  - type: table
+    ref: otx_cve_pulses
+- id: otx_pulse_iocs
+  title: otx_pulse_iocs
+  origin: generated
+  source_refs:
+  - type: table
+    ref: otx_pulse_iocs
+- id: otx_pulses
+  title: otx_pulses
+  origin: generated
+  source_refs:
+  - type: table
+    ref: otx_pulses
+- id: sessions
+  title: sessions
+  origin: generated
+  source_refs:
+  - type: table
+    ref: sessions
+- id: sync_state
+  title: sync_state
+  origin: generated
+  source_refs:
+  - type: table
+    ref: sync_state
+- id: threatfox_iocs
+  title: threatfox_iocs
+  origin: generated
+  source_refs:
+  - type: table
+    ref: threatfox_iocs
+- id: user_notifications
+  title: user_notifications
+  origin: generated
+  source_refs:
+  - type: table
+    ref: user_notifications
+- id: user_preferences
+  title: user_preferences
+  origin: generated
+  source_refs:
+  - type: table
+    ref: user_preferences
+- id: users
+  title: users
+  origin: generated
+  source_refs:
+  - type: table
+    ref: users
+- id: watchlist
+  title: watchlist
+  origin: generated
+  source_refs:
+  - type: table
+    ref: watchlist
+- id: webhook_alert_log
+  title: webhook_alert_log
+  origin: generated
+  source_refs:
+  - type: table
+    ref: webhook_alert_log
+- id: webhook_delivery_log
+  title: webhook_delivery_log
+  origin: generated
+  source_refs:
+  - type: table
+    ref: webhook_delivery_log
+- id: webhook_destination_dedupe
+  title: webhook_destination_dedupe
+  origin: generated
+  source_refs:
+  - type: table
+    ref: webhook_destination_dedupe
+- id: webhook_destinations
+  title: webhook_destinations
+  origin: generated
+  source_refs:
+  - type: table
+    ref: webhook_destinations

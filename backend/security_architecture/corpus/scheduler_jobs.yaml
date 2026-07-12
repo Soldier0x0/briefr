@@ -1,0 +1,158 @@
+version: 1
+jobs:
+- id: api_key_health_check
+  title: API Key Health Check
+  origin: generated
+  source_refs:
+  - type: job
+    ref: api_key_health_check
+- id: atlas_version_check
+  title: ATLAS Upstream Version Check
+  origin: generated
+  source_refs:
+  - type: job
+    ref: atlas_version_check
+- id: backup_deadman_check
+  title: Backup Dead-Man Check
+  origin: generated
+  source_refs:
+  - type: job
+    ref: backup_deadman_check
+- id: cache_retention_cleanup
+  title: Cache Retention Cleanup
+  origin: generated
+  source_refs:
+  - type: job
+    ref: cache_retention_cleanup
+- id: cvelistv5_incremental_sync
+  title: cvelistV5 Incremental Sync
+  origin: generated
+  source_refs:
+  - type: job
+    ref: cvelistv5_incremental_sync
+- id: detection_context_llm
+  title: DetectionContext LLM Artifact Extract
+  origin: generated
+  source_refs:
+  - type: job
+    ref: detection_context_llm
+- id: detection_context_sync
+  title: DetectionContext Cache Backfill
+  origin: generated
+  source_refs:
+  - type: job
+    ref: detection_context_sync
+- id: embeddings_backfill
+  title: CVE Description Embeddings Backfill
+  origin: generated
+  source_refs:
+  - type: job
+    ref: embeddings_backfill
+- id: epss_score_sync
+  title: EPSS Score Sync
+  origin: generated
+  source_refs:
+  - type: job
+    ref: epss_score_sync
+- id: exploit_sources_sync
+  title: Exploit Availability Sources Sync
+  origin: generated
+  source_refs:
+  - type: job
+    ref: exploit_sources_sync
+- id: incident_feed_refresh
+  title: Incident Feed Snapshot Refresh
+  origin: generated
+  source_refs:
+  - type: job
+    ref: incident_feed_refresh
+- id: ioc_retro_match
+  title: IOC Watchlist Retro-Match
+  origin: generated
+  source_refs:
+  - type: job
+    ref: ioc_retro_match
+- id: kev_backlog_reconcile
+  title: Weekly KEV Detection Backlog Reconcile
+  origin: generated
+  source_refs:
+  - type: job
+    ref: kev_backlog_reconcile
+- id: kev_metadata_sync
+  title: KEV Metadata Sync
+  origin: generated
+  source_refs:
+  - type: job
+    ref: kev_metadata_sync
+- id: llm_product_extraction
+  title: LLM Product Extraction (NVD-unanalyzed CVEs)
+  origin: generated
+  source_refs:
+  - type: job
+    ref: llm_product_extraction
+- id: nightly_correlation
+  title: BRIEFR Nightly Correlation Engine
+  origin: generated
+  source_refs:
+  - type: job
+    ref: nightly_correlation
+- id: nvd_incremental_sync
+  title: NVD Incremental Sync
+  origin: generated
+  source_refs:
+  - type: job
+    ref: nvd_incremental_sync
+- id: otx_continuous_sync
+  title: OTX Continuous Pulse + IOC Sync
+  origin: generated
+  source_refs:
+  - type: job
+    ref: otx_continuous_sync
+- id: otx_nightly_correlation
+  title: OTX Nightly Campaign Correlation
+  origin: generated
+  source_refs:
+  - type: job
+    ref: otx_nightly_correlation
+- id: scheduled_backup
+  title: Scheduled Backup
+  origin: generated
+  source_refs:
+  - type: job
+    ref: scheduled_backup
+- id: session_cleanup
+  title: Expired Login Session Cleanup
+  origin: generated
+  source_refs:
+  - type: job
+    ref: session_cleanup
+- id: threatfox_sync
+  title: ThreatFox IOC Mirror Sync
+  origin: generated
+  source_refs:
+  - type: job
+    ref: threatfox_sync
+- id: vulncheck_kev_sync
+  title: VulnCheck KEV Tier Sync
+  origin: generated
+  source_refs:
+  - type: job
+    ref: vulncheck_kev_sync
+- id: vulnrichment_snapshot_sync
+  title: CISA Vulnrichment Snapshot Sync
+  origin: generated
+  source_refs:
+  - type: job
+    ref: vulnrichment_snapshot_sync
+- id: watchlist_monitor_alerts
+  title: Watchlist Monitor Alerts
+  origin: generated
+  source_refs:
+  - type: job
+    ref: watchlist_monitor_alerts
+- id: weekly_mitre_refresh
+  title: Weekly MITRE ATT&CK + ATLAS Refresh
+  origin: generated
+  source_refs:
+  - type: job
+    ref: weekly_mitre_refresh
