@@ -12,22 +12,25 @@ export default function BacklogView({ profileStack, onGeneratePack, generatingCv
   const [errorRequestId, setErrorRequestId] = useState(null)
   const [dismissingId, setDismissingId] = useState(null)
 
-  const loadBacklog = useCallback(() => {
+  const loadBacklog = useCallback((isActive = () => true) => {
     setLoading(true)
     setError(null)
     setErrorRequestId(null)
     return fetchDetectionBacklog({ stack: profileStack || '' })
-      .then(setData)
+      .then(payload => { if (isActive()) setData(payload) })
       .catch(err => {
+        if (!isActive()) return
         setError(err.message || 'Failed to load detection backlog')
         setErrorRequestId(err?.requestId || null)
         notifyApiError(err)
       })
-      .finally(() => setLoading(false))
+      .finally(() => { if (isActive()) setLoading(false) })
   }, [profileStack])
 
   useEffect(() => {
-    loadBacklog()
+    let active = true
+    loadBacklog(() => active)
+    return () => { active = false }
   }, [loadBacklog])
 
   const handleDismiss = useCallback((itemId) => {

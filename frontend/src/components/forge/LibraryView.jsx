@@ -10,7 +10,13 @@ const PRIORITIES = ['critical', 'high', 'medium', 'low']
 
 function formatDate(value) {
   if (!value) return '—'
-  const d = new Date(value)
+  // SQLite's default datetime() format ("YYYY-MM-DD HH:MM:SS") isn't
+  // ISO 8601 — Safari's Date parser returns Invalid Date for the
+  // space-separated form, unlike Chrome/Firefox. Normalize to "T".
+  const normalized = typeof value === 'string' && value.includes(' ') && !value.includes('T')
+    ? value.replace(' ', 'T')
+    : value
+  const d = new Date(normalized)
   if (Number.isNaN(d.getTime())) return value
   return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
@@ -66,23 +72,25 @@ export default function LibraryView({ selectedPackId, onOpenPack, onPackDeleted 
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
-  const load = useCallback(() => {
+  const load = useCallback((isActive = () => true) => {
     setLoading(true)
     setError(null)
     setErrorRequestId(null)
     return fetchHuntPacks({ techniqueId: technique.trim(), priority, q: q.trim(), limit: 200 })
-      .then(setData)
+      .then(payload => { if (isActive()) setData(payload) })
       .catch(err => {
+        if (!isActive()) return
         setError(err.message || 'Failed to load hunt pack library')
         setErrorRequestId(err?.requestId || null)
         notifyApiError(err)
       })
-      .finally(() => setLoading(false))
+      .finally(() => { if (isActive()) setLoading(false) })
   }, [technique, priority, q])
 
   useEffect(() => {
-    const handle = setTimeout(load, 250)
-    return () => clearTimeout(handle)
+    let active = true
+    const handle = setTimeout(() => load(() => active), 250)
+    return () => { active = false; clearTimeout(handle) }
   }, [load])
 
   const handleDeleteConfirm = useCallback(() => {
