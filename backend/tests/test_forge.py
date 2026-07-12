@@ -91,6 +91,18 @@ def forge_client(tmp_path, monkeypatch):
                     ("CVE-2024-1111", GAP_TID),
                 ],
             )
+            # Matches the autouse TestClient cookie fixture's identity
+            # (pytest-admin) so require_admin's DB re-check succeeds --
+            # needed only by test_delete_hunt_pack_writes_audit_log, but
+            # seeding here (not via seed_pytest_auth_user_if_missing inside
+            # the test body) avoids opening a second Postgres pool in a
+            # different event loop than the TestClient's already-open one.
+            await db.execute(
+                """
+                INSERT INTO users (id, username, password_hash, role, is_active)
+                VALUES (1, 'pytest-admin', 'hash', 'admin', 1)
+                """
+            )
             await db.commit()
         finally:
             await db.close()
@@ -300,3 +312,125 @@ def test_hunt_pack_detail_validation(forge_client):
 
     res = client.get("/api/hunt-packs/T9999")
     assert res.status_code == 404
+
+
+# ── Library list + delete (FR-1) ──────────────────────────
+
+def test_list_hunt_packs_empty(forge_client):
+    client, _ = forge_client
+    body = client.get("/api/hunt-packs").json()
+    assert body == {"packs": [], "total": 0}
+
+
+def test_list_hunt_packs_filters_and_pagination(forge_client):
+    client, _ = forge_client
+
+    critical = client.post(
+        "/api/hunt-packs/generate", json={"cve_id": "CVE-2021-44228"}
+    ).json()["pack"]
+    low = client.post(
+        "/api/hunt-packs/generate",
+        json={"cve_id": "CVE-2024-2222", "technique_id": "T1059"},
+    ).json()["pack"]
+
+    all_packs = client.get("/api/hunt-packs").json()
+    assert all_packs["total"] == 2
+    assert {p["id"] for p in all_packs["packs"]} == {critical["id"], low["id"]}
+
+    by_technique = client.get(
+        "/api/hunt-packs", params={"technique_id": COMMUNITY_TID}
+    ).json()
+    assert by_technique["total"] == 1
+    assert by_technique["packs"][0]["id"] == critical["id"]
+
+    by_cve = client.get(
+        "/api/hunt-packs", params={"cve_id": "cve-2024-2222"}  # case-insensitive
+    ).json()
+    assert by_cve["total"] == 1
+    assert by_cve["packs"][0]["id"] == low["id"]
+
+    by_priority = client.get(
+        "/api/hunt-packs", params={"priority": "critical"}
+    ).json()
+    assert by_priority["total"] == 1
+    assert by_priority["packs"][0]["id"] == critical["id"]
+
+    by_query = client.get(
+        "/api/hunt-packs", params={"q": "log4j"}
+    ).json()
+    assert by_query["total"] == 0  # title search, not sigma content
+
+    by_title = client.get(
+        "/api/hunt-packs", params={"q": critical["title"][:10].lower()}
+    ).json()
+    assert by_title["total"] == 1
+    assert by_title["packs"][0]["id"] == critical["id"]
+
+    page1 = client.get("/api/hunt-packs", params={"limit": 1, "offset": 0}).json()
+    page2 = client.get("/api/hunt-packs", params={"limit": 1, "offset": 1}).json()
+    assert page1["total"] == 2 and page2["total"] == 2
+    assert len(page1["packs"]) == 1 and len(page2["packs"]) == 1
+    assert page1["packs"][0]["id"] != page2["packs"][0]["id"]
+
+    # Gemini review on PR #490: a whitespace-only q must not silently match
+    # everything via LIKE '%%' -- same as not filtering at all.
+    whitespace_q = client.get("/api/hunt-packs", params={"q": "   "}).json()
+    assert whitespace_q["total"] == 2
+
+
+def test_list_hunt_packs_invalid_filters(forge_client):
+    client, _ = forge_client
+
+    res = client.get("/api/hunt-packs", params={"technique_id": "not-a-technique"})
+    assert res.status_code == 400
+
+    res = client.get("/api/hunt-packs", params={"priority": "urgent"})
+    assert res.status_code == 400
+
+
+def test_delete_hunt_pack_via_client(forge_client):
+    client, _ = forge_client
+
+    pack = client.post(
+        "/api/hunt-packs/generate", json={"cve_id": "CVE-2021-44228"}
+    ).json()["pack"]
+
+    res = client.delete(f"/api/hunt-packs/{pack['id']}")
+    assert res.status_code == 200
+    assert res.json() == {"ok": True}
+
+    assert client.get("/api/hunt-packs").json() == {"packs": [], "total": 0}
+
+
+def test_delete_hunt_pack_404_when_missing(forge_client):
+    client, _ = forge_client
+    res = client.delete("/api/hunt-packs/999999")
+    assert res.status_code == 404
+    assert res.json()["detail"] == "Hunt pack not found"
+
+
+def test_delete_hunt_pack_writes_audit_log(forge_client):
+    """Gemini review on PR #490: the audit actor must be the authenticated
+    analyst (request.state.user_username), not a hardcoded empty string --
+    verified end-to-end through the real session-cookie identity the
+    autouse TestClient fixture attaches (pytest-admin). Reading the result
+    back via /api/admin/audit-log needs an actual DB row for that identity
+    (require_admin re-checks the DB, unlike require_user's mock fallback) --
+    seeded by the forge_client fixture itself, see its seed() comment.
+    """
+    client, _ = forge_client
+
+    pack = client.post(
+        "/api/hunt-packs/generate", json={"cve_id": "CVE-2021-44228"}
+    ).json()["pack"]
+
+    res = client.delete(f"/api/hunt-packs/{pack['id']}")
+    assert res.status_code == 200
+
+    audit = client.get(
+        "/api/admin/audit-log", params={"action": "hunt_pack_deleted"}
+    ).json()
+    assert len(audit["rows"]) == 1
+    entry = audit["rows"][0]
+    assert entry["actor"] == "pytest-admin"
+    assert entry["target"] == f"{COMMUNITY_TID}/CVE-2021-44228"

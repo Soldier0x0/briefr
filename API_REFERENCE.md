@@ -972,6 +972,33 @@ is supplied. 400 on malformed CVE ID, 404 when the CVE is not in the database.
 Pack priority is derived from the CVE: KEV → `critical`; CVSS ≥ 9.0 or
 EPSS ≥ 0.5 → `high`; CVSS ≥ 7.0 or EPSS ≥ 0.1 → `medium`; else `low`.
 
+### GET /api/hunt-packs
+
+**Description:** List saved hunt packs (Forge Redesign FR-1 — Library view).
+Analyst-facing; distinct from the pre-existing `GET/DELETE /api/admin/hunt-packs*`
+operator utility (no filters, no audit log, no 404 on missing delete) — that one
+is untouched by this endpoint.
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `technique_id` | str | — | Exact match; validated `T####`/`T####.###` → 400 |
+| `cve_id` | str | — | Exact match, case-insensitive |
+| `priority` | str | — | One of `low`/`medium`/`high`/`critical` → else 400 |
+| `q` | str | — | Case-insensitive substring match on `title` |
+| `limit` | int | 50 | 1–200 |
+| `offset` | int | 0 | — |
+
+**Response:** `{ "packs": [ ...same shape as generate's pack... ], "total": N }`,
+ordered by `updated_at DESC`.
+
+### DELETE /api/hunt-packs/{pack_id}
+
+**Description:** Delete one saved hunt pack. 404 when `pack_id` doesn't exist.
+Writes an `audit_log` entry (`action: "hunt_pack_deleted"`, `target:
+"{technique_id}/{cve_id}"`).
+
+**Response:** `{ "ok": true }`
+
 ### GET /api/threat-model/scenarios
 
 **Description:** V1.5 environment threat scenarios — stack-scoped ATT&CK technique

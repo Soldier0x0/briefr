@@ -65,6 +65,8 @@ EXPECTED_ROUTES = [
     # pre-split snapshot — additive only, original order untouched.
     ("GET", "/api/forge/coverage"),
     ("POST", "/api/hunt-packs/generate"),
+    ("GET", "/api/hunt-packs"),
+    ("DELETE", "/api/hunt-packs/{pack_id}"),
     ("GET", "/api/hunt-packs/{technique_id}"),
     ("GET", "/api/threat-model/scenarios"),
     ("POST", "/api/proof/run"),
