@@ -1134,7 +1134,7 @@ export default function IOCLookup({ prefill }) {
           onChange={handleValueChange}
           onPaste={handlePaste}
           onKeyDown={handleKeyDown}
-          placeholder="8.8.8.8  /  d41d8cd98f00b204e9800998ecf8427e  /  example.com or https://example.com/path"
+          placeholder="e.g. 8.8.8.8"
           aria-label="Enter IOC value — IP address, file hash, or domain"
           rows={1}
           autoComplete="off"
@@ -1142,6 +1142,13 @@ export default function IOCLookup({ prefill }) {
           autoCapitalize="off"
           spellCheck="false"
         />
+        {/* QA-P2-5: the old placeholder crammed all 3 example formats into
+            one "/"-separated string, which read as a single copy-pasteable
+            value. One example in the placeholder; the rest spelled out here
+            where they can't be mistaken for input. */}
+        <p className="ioc-input-hint mono">
+          IP address, file hash (MD5/SHA1/SHA256), or domain/URL
+        </p>
 
         <div className="ioc-controls">
           {detectedType && (

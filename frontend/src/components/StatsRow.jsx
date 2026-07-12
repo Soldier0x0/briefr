@@ -31,9 +31,13 @@ function StatCell({
         <div className="stat-number">
           {loading ? <span className="stat-skeleton" aria-hidden="true" /> : (value ?? '--')}
         </div>
-        {!loading && deltaText != null && (
+        {/* QA-P2-1: a flat (0) delta rendered as a tiny muted number at the
+            same baseline as the large stat number reads as noise, not a
+            value — omit it entirely rather than show a number with nothing
+            to say. Nonzero deltas are unaffected. */}
+        {!loading && deltaText != null && delta !== 0 && (
           <span
-            className={`stat-delta mono stat-delta--${delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'}`}
+            className={`stat-delta mono stat-delta--${delta > 0 ? 'up' : 'down'}`}
             title="Change in publications vs prior 24h"
           >
             {deltaText}

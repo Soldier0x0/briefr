@@ -54,7 +54,14 @@ function AnalystOverview({ system, toast }) {
           label="NIST CVE FEED"
           value={fmtAge(system.last_nvd_sync_age_seconds)}
           colorClass={ageColor(system.last_nvd_sync_age_seconds, 7200, 14400)}
-          subLabel="usually hourly · incremental"
+          /* QA-P2-3: a bare "—" with only a cadence sub-label ("usually
+             hourly") never explained *why* it was blank. Say so directly
+             when there's no sync timestamp yet, instead of a silent dash. */
+          subLabel={
+            system.last_nvd_sync_age_seconds == null
+              ? 'Not synced yet — usually hourly'
+              : 'usually hourly · incremental'
+          }
         />
         {showBackupCard && (
           <StatCard label="LAST BACKUP" value={fmtAge(backupAge)} colorClass="color-amber" subLabel={`threshold ${Math.round(backupThreshold / 3600)}h`} />
@@ -63,7 +70,11 @@ function AnalystOverview({ system, toast }) {
           label="DATABASE HEALTH"
           value={db_integrity?.ok ? 'Healthy' : 'Problem'}
           colorClass={db_integrity?.ok ? 'color-green' : 'color-red'}
-          subLabel="checked on startup"
+          /* QA-P2-2: "checked on startup" was stale, inaccurate copy —
+             backend/routers/admin.py caches this at a 10-minute TTL and
+             this page itself polls every 30s, so it's re-checked
+             continuously, not once at boot. */
+          subLabel="auto-rechecked every ~10 min"
         />
         <StatCard
           label="SOURCES WITH ISSUES"

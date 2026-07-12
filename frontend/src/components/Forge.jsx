@@ -973,9 +973,15 @@ export default function Forge() {
         </div>
         {counts && (
           <div className="fg-counts" role="status" aria-label="Coverage summary">
-            <span className="fg-count mono"><StatusChip status="gap" /> {counts.gap}</span>
-            <span className="fg-count mono"><StatusChip status="community" /> {counts.community}</span>
-            <span className="fg-count mono"><StatusChip status="yours" /> {counts.yours}</span>
+            <span className="fg-count mono" title={`${counts.gap} technique${counts.gap === 1 ? '' : 's'} with no detection content — no bundled or saved hunt pack yet`}>
+              <StatusChip status="gap" /> {counts.gap}
+            </span>
+            <span className="fg-count mono" title={`${counts.community} technique${counts.community === 1 ? '' : 's'} with community hunt templates available — validate before production`}>
+              <StatusChip status="community" /> {counts.community}
+            </span>
+            <span className="fg-count mono" title={`${counts.yours} technique${counts.yours === 1 ? '' : 's'} with a hunt pack you've saved`}>
+              <StatusChip status="yours" /> {counts.yours}
+            </span>
           </div>
         )}
         {profileStack && (

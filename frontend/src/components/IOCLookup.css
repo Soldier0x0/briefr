@@ -121,6 +121,12 @@
   outline: none;
 }
 
+.ioc-input-hint {
+  font-size: var(--type-micro);
+  color: var(--text3);
+  margin: 4px 0 0;
+}
+
 /* ── Controls: type selector + lookup button ─────────────── */
 .ioc-controls {
   display: flex;
