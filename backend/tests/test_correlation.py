@@ -425,6 +425,61 @@ def test_greynoise_benign_downgrades_ip_edge():
     assert why
 
 
+def test_ioc_degree_never_raises_confidence():
+    """CORR-PR-3 invariant: degree only ever lowers confidence."""
+    from correlation.confidence import confidence_for_ioc_edge
+
+    level_no_degree, _ = confidence_for_ioc_edge("HASH", degree=0)
+    level_low_degree, _ = confidence_for_ioc_edge("HASH", degree=2)
+    assert level_no_degree == "high"
+    assert level_low_degree == "high"  # degree <= 3: no penalty
+
+
+def test_ioc_degree_50_hash_edge_downranks_to_low_with_hub_reason():
+    """Spec's own literal test case (generalized: a HASH, not just IP --
+    IP already defaults to 'low' regardless of degree, so the IP case
+    trivially passes without this code; the real value is penalizing a
+    HASH/DOMAIN edge that would otherwise stay 'high'/'medium' untouched,
+    exactly D2's concern: 'popular hashes create dense cliques of
+    plausible-looking edges across unrelated CVEs.'"""
+    from correlation.confidence import confidence_for_ioc_edge
+
+    level, why = confidence_for_ioc_edge("HASH", degree=50)
+    assert level == "low"
+    assert why and "hub" in why.lower()
+
+
+def test_ioc_degree_50_ip_edge_stays_low_with_hub_reason():
+    """The spec's literal test case, verified directly."""
+    from correlation.confidence import confidence_for_ioc_edge
+
+    level, why = confidence_for_ioc_edge("IP", degree=50)
+    assert level == "low"
+    assert why and "hub" in why.lower()
+
+
+def test_ioc_degree_moderate_downranks_by_one_level():
+    from correlation.confidence import confidence_for_ioc_edge
+
+    level, why = confidence_for_ioc_edge("HASH", degree=7)
+    assert level == "medium"
+    assert why and "hub" in why.lower()
+
+
+def test_ioc_degree_penalty_applies_after_confirmation_bump():
+    """A confirmation-based bump must not rescue a hub edge back up --
+    degree is applied last, per the 'only ever lowers' invariant."""
+    from correlation.confidence import confidence_for_ioc_edge
+
+    level, why = confidence_for_ioc_edge(
+        "DOMAIN",
+        confirmations={"malwarebazaar": True},  # would bump medium->high alone
+        degree=50,
+    )
+    assert level == "low"
+    assert why and "hub" in why.lower()
+
+
 def test_related_cves_for_ioc_from_tables(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "corr-ioc-related.db")

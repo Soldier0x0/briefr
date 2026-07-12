@@ -471,6 +471,7 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
     """
     from database import delete_feed_cache_prefix, get_recent_cve_ids_for_otx
     from correlation.campaigns import build_campaigns_from_pulses, prune_invalid_campaign_members
+    from db.correlation import rebuild_ioc_degree
 
     stats = {
         "cves_processed": 0,
@@ -480,7 +481,22 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
         "campaigns_built": 0,
         "campaign_members": 0,
         "pruned_members": 0,
+        "ioc_degree_rows": 0,
     }
+
+    # CORR-PR-3: rebuild ioc_degree first so this run's infra edges (computed
+    # on-demand, see ioc_graph.find_shared_infrastructure_v2) use fresh counts.
+    if progress_cb:
+        progress_cb("Rebuilding IOC degree table for hub-penalized confidence…")
+    try:
+        stats["ioc_degree_rows"] = await rebuild_ioc_degree(db)
+    except Exception as exc:
+        logger.error(
+            "ioc_degree rebuild failed: %s",
+            exc,
+            extra={"correlation_phase": "ioc_degree_rebuild"},
+        )
+        await _recover_db_transaction(db)
 
     # Level 3: global vendor volume anomaly detection
     if progress_cb:
@@ -537,13 +553,14 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
     await db.commit()
     logger.info(
         "Nightly correlation done: %d CVEs, %d infra pairs, %d actors, %d anomalies, "
-        "%d campaigns (%d members)",
+        "%d campaigns (%d members), %d ioc_degree rows",
         stats["cves_processed"],
         stats["infrastructure_pairs"],
         stats["actor_findings"],
         stats["temporal_anomalies"],
         stats["campaigns_built"],
         stats["campaign_members"],
+        stats["ioc_degree_rows"],
     )
     return stats
 

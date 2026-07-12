@@ -29,8 +29,16 @@ def confidence_for_ioc_edge(
     *,
     confirmations: dict[str, Any] | None = None,
     is_noise_ip: bool = False,
+    degree: int = 0,
 ) -> tuple[str, str | None]:
-    """Return (confidence, why_not_higher)."""
+    """Return (confidence, why_not_higher).
+
+    `degree` (CORR-PR-3) is the IOC's cve_count from ioc_degree -- how many
+    distinct CVEs share this indicator. Popular/shared IOCs create
+    false-positive-looking clusters, so degree only ever lowers confidence
+    and is applied last, after any confirmation-based bump, so a hub can't
+    be rescued back up.
+    """
     t = (ioc_type or "").upper()
     confirmations = confirmations or {}
 
@@ -61,6 +69,15 @@ def confidence_for_ioc_edge(
 
     if t == "IP" and level == "low" and not why:
         why = "IP-only edges are weaker than domain or hash matches"
+
+    if degree > 10:
+        why = f"Shared indicator hub — seen across {degree} CVEs"
+        level = "low"
+    elif degree > 3:
+        downranked = downrank_confidence(level, 1)
+        if downranked != level:
+            why = f"Shared indicator hub — seen across {degree} CVEs"
+        level = downranked
 
     return level, why
 

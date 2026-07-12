@@ -21,14 +21,17 @@ async def _shared_ioc_rows(db, cve_id: str) -> list:
         """
         SELECT ocp2.cve_id AS cve_id_b,
                oi.ioc_type,
-               oi.ioc_value
+               oi.ioc_value,
+               COALESCE(deg.cve_count, 0) AS degree
         FROM otx_pulse_iocs oi
         JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id AND ocp.cve_id = ?
         JOIN otx_pulse_iocs oi2
             ON oi2.ioc_type = oi.ioc_type AND oi2.ioc_value = oi.ioc_value
         JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi2.pulse_id AND ocp2.cve_id != ?
         JOIN cves c ON c.cve_id = ocp2.cve_id
-        GROUP BY ocp2.cve_id, oi.ioc_type, oi.ioc_value
+        LEFT JOIN ioc_degree deg
+            ON deg.ioc_type = oi.ioc_type AND deg.ioc_value = oi.ioc_value
+        GROUP BY ocp2.cve_id, oi.ioc_type, oi.ioc_value, deg.cve_count
         ORDER BY ocp2.cve_id ASC
         """,
         (cve_upper, cve_upper),
@@ -66,6 +69,7 @@ async def find_shared_infrastructure_v2(
             ioc_type,
             confirmations=confirmations,
             is_noise_ip=noise,
+            degree=row["degree"] or 0,
         )
         edge = {
             "ioc_type": ioc_type,
