@@ -110,6 +110,16 @@ def test_refang_and_normalize_ioc_types():
     assert domain[1] == "evil.example.com"
 
 
+def test_is_noise_ip_covers_ipv6_public_resolvers():
+    """Gemini review on PR #487: IPv4-only resolver set silently let IPv6
+    variants of the same well-known resolvers through as non-noise."""
+    assert is_noise_ip("2001:4860:4860::8888") is True  # Google
+    assert is_noise_ip("2606:4700:4700::1111") is True  # Cloudflare
+    assert is_noise_ip("2620:fe::fe") is True  # Quad9
+    assert is_noise_ip("2620:119:35::35") is True  # OpenDNS
+    assert is_noise_ip("2001:4860:4860::1234") is False  # not a listed resolver
+
+
 def test_pulse_cooccurrence_builds_campaign(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "corr.db")

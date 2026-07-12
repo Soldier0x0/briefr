@@ -24,10 +24,14 @@ _IP_TYPES = frozenset({"ip", "ipv4", "ipv6"})
 # the degree penalty (confidence.py) handles popular IOCs generally; this
 # is just the handful of always-known-noise addresses worth hardcoding.
 _PUBLIC_RESOLVER_IPS = frozenset({
-    "8.8.8.8", "8.8.4.4",          # Google
-    "1.1.1.1", "1.0.0.1",          # Cloudflare
-    "9.9.9.9", "149.112.112.112",  # Quad9
-    "208.67.222.222", "208.67.220.220",  # OpenDNS
+    "8.8.8.8", "8.8.4.4",          # Google IPv4
+    "2001:4860:4860::8888", "2001:4860:4860::8844",  # Google IPv6
+    "1.1.1.1", "1.0.0.1",          # Cloudflare IPv4
+    "2606:4700:4700::1111", "2606:4700:4700::1001",  # Cloudflare IPv6
+    "9.9.9.9", "149.112.112.112",  # Quad9 IPv4
+    "2620:fe::fe", "2620:fe::9",   # Quad9 IPv6
+    "208.67.222.222", "208.67.220.220",  # OpenDNS IPv4
+    "2620:119:35::35", "2620:119:53::53",  # OpenDNS IPv6
     "4.2.2.1", "4.2.2.2",          # Level3 legacy
     "64.6.64.6", "64.6.65.6",      # Verisign
 })
