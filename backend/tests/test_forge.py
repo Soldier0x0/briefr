@@ -91,6 +91,18 @@ def forge_client(tmp_path, monkeypatch):
                     ("CVE-2024-1111", GAP_TID),
                 ],
             )
+            # Matches the autouse TestClient cookie fixture's identity
+            # (pytest-admin) so require_admin's DB re-check succeeds --
+            # needed only by test_delete_hunt_pack_writes_audit_log, but
+            # seeding here (not via seed_pytest_auth_user_if_missing inside
+            # the test body) avoids opening a second Postgres pool in a
+            # different event loop than the TestClient's already-open one.
+            await db.execute(
+                """
+                INSERT INTO users (id, username, password_hash, role, is_active)
+                VALUES (1, 'pytest-admin', 'hash', 'admin', 1)
+                """
+            )
             await db.commit()
         finally:
             await db.close()
@@ -360,6 +372,11 @@ def test_list_hunt_packs_filters_and_pagination(forge_client):
     assert len(page1["packs"]) == 1 and len(page2["packs"]) == 1
     assert page1["packs"][0]["id"] != page2["packs"][0]["id"]
 
+    # Gemini review on PR #490: a whitespace-only q must not silently match
+    # everything via LIKE '%%' -- same as not filtering at all.
+    whitespace_q = client.get("/api/hunt-packs", params={"q": "   "}).json()
+    assert whitespace_q["total"] == 2
+
 
 def test_list_hunt_packs_invalid_filters(forge_client):
     client, _ = forge_client
@@ -392,43 +409,28 @@ def test_delete_hunt_pack_404_when_missing(forge_client):
     assert res.json()["detail"] == "Hunt pack not found"
 
 
-def test_delete_hunt_pack_writes_audit_log(tmp_path, monkeypatch):
-    """Direct-DB test (no TestClient) so a fresh get_db() call for the
-    audit-log assertion doesn't race the app lifespan's pool -- see the
-    forge_client fixture's own comment on this same event-loop pitfall."""
-    from routers.forge import delete_hunt_pack
+def test_delete_hunt_pack_writes_audit_log(forge_client):
+    """Gemini review on PR #490: the audit actor must be the authenticated
+    analyst (request.state.user_username), not a hardcoded empty string --
+    verified end-to-end through the real session-cookie identity the
+    autouse TestClient fixture attaches (pytest-admin). Reading the result
+    back via /api/admin/audit-log needs an actual DB row for that identity
+    (require_admin re-checks the DB, unlike require_user's mock fallback) --
+    seeded by the forge_client fixture itself, see its seed() comment.
+    """
+    client, _ = forge_client
 
-    db_path = str(tmp_path / "forge-audit.db")
-    monkeypatch.setenv("DB_PATH", db_path)
-    monkeypatch.setattr("database.DB_PATH", db_path)
+    pack = client.post(
+        "/api/hunt-packs/generate", json={"cve_id": "CVE-2021-44228"}
+    ).json()["pack"]
 
-    async def run():
-        await init_db()
-        db = await get_db()
-        try:
-            await db.execute(
-                "INSERT INTO hunt_packs (technique_id, cve_id, title) "
-                "VALUES (?, ?, ?)",
-                ("T1190", "CVE-2021-44228", "Test pack"),
-            )
-            await db.commit()
-            rows = await db.execute_fetchall("SELECT id FROM hunt_packs")
-            pack_id = rows[0]["id"]
-        finally:
-            await db.close()
+    res = client.delete(f"/api/hunt-packs/{pack['id']}")
+    assert res.status_code == 200
 
-        result = await delete_hunt_pack(pack_id)
-        assert result == {"ok": True}
-
-        db = await get_db()
-        try:
-            audit_rows = await db.execute_fetchall(
-                "SELECT actor, action, target FROM audit_log WHERE action = ?",
-                ("hunt_pack_deleted",),
-            )
-            assert len(audit_rows) == 1
-            assert audit_rows[0]["target"] == "T1190/CVE-2021-44228"
-        finally:
-            await db.close()
-
-    run_db_test(run())
+    audit = client.get(
+        "/api/admin/audit-log", params={"action": "hunt_pack_deleted"}
+    ).json()
+    assert len(audit["rows"]) == 1
+    entry = audit["rows"][0]
+    assert entry["actor"] == "pytest-admin"
+    assert entry["target"] == f"{COMMUNITY_TID}/CVE-2021-44228"

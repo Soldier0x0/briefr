@@ -31,7 +31,7 @@ import json
 import re
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from database import get_db
@@ -404,7 +404,7 @@ async def list_hunt_packs(
             raise HTTPException(status_code=400, detail="Invalid priority filter")
         conditions.append("priority = ?")
         params.append(p)
-    if q:
+    if q and q.strip():
         conditions.append("LOWER(title) LIKE ?")
         params.append(f"%{q.strip().lower()}%")
 
@@ -432,9 +432,11 @@ async def list_hunt_packs(
 
 
 @router.delete("/api/hunt-packs/{pack_id}")
-async def delete_hunt_pack(pack_id: int):
-    """Delete one saved hunt pack; writes an audit_log entry."""
-    from db.enrichment import write_audit_log
+async def delete_hunt_pack(pack_id: int, request: Request):
+    """Delete one saved hunt pack; writes an audit_log entry attributed to
+    the authenticated analyst (request.state.user_username, populated by
+    the session_auth_middleware -> require_user gate on all /api/* routes)."""
+    from dependencies import audit
 
     db = await get_db()
     try:
@@ -446,15 +448,11 @@ async def delete_hunt_pack(pack_id: int):
         pack = rows[0]
 
         await db.execute("DELETE FROM hunt_packs WHERE id = ?", (pack_id,))
-        await write_audit_log(
-            db,
-            "",
-            "hunt_pack_deleted",
-            f"{pack['technique_id']}/{pack['cve_id']}",
-        )
         await db.commit()
     finally:
         await db.close()
+
+    await audit(request, "hunt_pack_deleted", f"{pack['technique_id']}/{pack['cve_id']}")
 
     return {"ok": True}
 
