@@ -12,6 +12,35 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-12 — PR #459 closed: superseded by TM spec v2
+
+**Context:** PR #459 (`cursor/threat-modeling-tm1-corpus-6970`, "Security
+Architecture Corpus and read API (TM-1)") was opened by a Cursor session hours
+before the TM spec's v2 revision (#460/#461) merged the same day, and was left
+incomplete when the maintainer stopped mid-session.
+
+**Decision:** closed without merging, not just left stale. Not a rebase
+situation — architecturally incompatible with v2: it hand-types
+`components.yaml` and the architecture graph JSONs (v2 requires these come
+from a generator script + drift CI, precisely to avoid the rot v2 was written
+to prevent), and it ships all six framework corpus files (STRIDE/OWASP×2/NIST/
+ASVS/CAPEC) that v2 explicitly gates to evidence-based TM-6+.
+
+**Salvage note:** the curated-layer YAML content — `risks.yaml`,
+`abuse_cases.yaml`, `security_decisions.yaml`, `trust_boundaries.yaml`,
+`reviews.yaml`, `threat_scenarios.yaml` — is well-sourced (cites real audit
+findings, e.g. the M-8 secret-storage gap) and worth pulling into the real
+TM-1 implementation as a curated-layer starting point (needs an `origin:
+curated` field added). The generated-layer files (`components.yaml`, both
+graph JSONs, `manifest.yaml`) should **not** be reused — they must come from
+`scripts/generate_security_corpus.py` per v2 §4.1. Full rationale in the PR's
+closing comment.
+
+**Next:** whoever executes TM-1 should read the closed PR's diff for the
+curated-file content before writing new curated YAML from scratch.
+
+---
+
 ## 2026-07-11 — UX-C2: CVE card + feed surfaces to the button standard
 
 **Context:** second remediation PR of ux-audit Issue 37 (interactive control
