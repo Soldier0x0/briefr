@@ -110,6 +110,16 @@ def test_refang_and_normalize_ioc_types():
     assert domain[1] == "evil.example.com"
 
 
+def test_is_noise_ip_covers_ipv6_public_resolvers():
+    """Gemini review on PR #487: IPv4-only resolver set silently let IPv6
+    variants of the same well-known resolvers through as non-noise."""
+    assert is_noise_ip("2001:4860:4860::8888") is True  # Google
+    assert is_noise_ip("2606:4700:4700::1111") is True  # Cloudflare
+    assert is_noise_ip("2620:fe::fe") is True  # Quad9
+    assert is_noise_ip("2620:119:35::35") is True  # OpenDNS
+    assert is_noise_ip("2001:4860:4860::1234") is False  # not a listed resolver
+
+
 def test_pulse_cooccurrence_builds_campaign(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "corr.db")
@@ -425,6 +435,61 @@ def test_greynoise_benign_downgrades_ip_edge():
     assert why
 
 
+def test_ioc_degree_never_raises_confidence():
+    """CORR-PR-3 invariant: degree only ever lowers confidence."""
+    from correlation.confidence import confidence_for_ioc_edge
+
+    level_no_degree, _ = confidence_for_ioc_edge("HASH", degree=0)
+    level_low_degree, _ = confidence_for_ioc_edge("HASH", degree=2)
+    assert level_no_degree == "high"
+    assert level_low_degree == "high"  # degree <= 3: no penalty
+
+
+def test_ioc_degree_50_hash_edge_downranks_to_low_with_hub_reason():
+    """Spec's own literal test case (generalized: a HASH, not just IP --
+    IP already defaults to 'low' regardless of degree, so the IP case
+    trivially passes without this code; the real value is penalizing a
+    HASH/DOMAIN edge that would otherwise stay 'high'/'medium' untouched,
+    exactly D2's concern: 'popular hashes create dense cliques of
+    plausible-looking edges across unrelated CVEs.'"""
+    from correlation.confidence import confidence_for_ioc_edge
+
+    level, why = confidence_for_ioc_edge("HASH", degree=50)
+    assert level == "low"
+    assert why and "hub" in why.lower()
+
+
+def test_ioc_degree_50_ip_edge_stays_low_with_hub_reason():
+    """The spec's literal test case, verified directly."""
+    from correlation.confidence import confidence_for_ioc_edge
+
+    level, why = confidence_for_ioc_edge("IP", degree=50)
+    assert level == "low"
+    assert why and "hub" in why.lower()
+
+
+def test_ioc_degree_moderate_downranks_by_one_level():
+    from correlation.confidence import confidence_for_ioc_edge
+
+    level, why = confidence_for_ioc_edge("HASH", degree=7)
+    assert level == "medium"
+    assert why and "hub" in why.lower()
+
+
+def test_ioc_degree_penalty_applies_after_confirmation_bump():
+    """A confirmation-based bump must not rescue a hub edge back up --
+    degree is applied last, per the 'only ever lowers' invariant."""
+    from correlation.confidence import confidence_for_ioc_edge
+
+    level, why = confidence_for_ioc_edge(
+        "DOMAIN",
+        confirmations={"malwarebazaar": True},  # would bump medium->high alone
+        degree=50,
+    )
+    assert level == "low"
+    assert why and "hub" in why.lower()
+
+
 def test_related_cves_for_ioc_from_tables(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "corr-ioc-related.db")
@@ -717,6 +782,58 @@ def test_temporal_anomaly_gated_off_stack_without_signal(tmp_path, monkeypatch):
             on_kev = await _get_temporal_for_cve(db, "CVE-2024-HUB1")
             assert len(on_kev) == 1
             assert on_kev[0]["vendor"] == "acme"
+        finally:
+            await db.close()
+
+    run_db_test(run())
+
+
+def test_rebuild_ioc_degree_counts_distinct_cves_and_pulses(tmp_path, monkeypatch):
+    """CORR-PR-3: ioc_degree.cve_count must count distinct CVEs sharing an
+    IOC, not raw row occurrences (a CVE linked via 2 pulses to the same IOC
+    must count once, not twice)."""
+    from db.correlation import rebuild_ioc_degree
+
+    async def run():
+        db_path = str(tmp_path / "corr-degree.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        db = await _seed_db(db_path)
+        try:
+            # Hub IOC shared across many distinct CVEs (high degree) vs a
+            # rare IOC shared by exactly one CVE.
+            for i in range(5):
+                cve = f"CVE-2024-DEG{i}"
+                pulse_id = f"pulse-deg-{i}"
+                await replace_otx_cve_pulses(db, cve, [{
+                    "pulse_id": pulse_id, "pulse_name": f"Pulse {i}", "author": "a",
+                    "created_date": "2024-01-01", "adversary": "", "malware_families": [],
+                    "tags": [], "targeted_countries": [], "ioc_count": 0,
+                }])
+                await replace_otx_pulse_iocs(db, pulse_id, [
+                    {"ioc_type": "IP", "ioc_value": "203.0.113.1", "description": ""},
+                ])
+            await replace_otx_cve_pulses(db, "CVE-2024-RARE", [{
+                "pulse_id": "pulse-rare", "pulse_name": "Rare", "author": "a",
+                "created_date": "2024-01-01", "adversary": "", "malware_families": [],
+                "tags": [], "targeted_countries": [], "ioc_count": 0,
+            }])
+            await replace_otx_pulse_iocs(db, "pulse-rare", [
+                {"ioc_type": "DOMAIN", "ioc_value": "rare-actor.example", "description": ""},
+            ])
+            await db.commit()
+
+            n = await rebuild_ioc_degree(db)
+            assert n >= 2  # plus whatever _seed_db's own baseline IOCs contribute
+
+            rows = {
+                (r["ioc_type"], r["ioc_value"]): r
+                for r in await db.execute_fetchall("SELECT * FROM ioc_degree")
+            }
+            hub = rows[("IP", "203.0.113.1")]
+            assert hub["cve_count"] == 5
+            rare = rows[("DOMAIN", "rare-actor.example")]
+            assert rare["cve_count"] == 1
         finally:
             await db.close()
 
