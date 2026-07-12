@@ -33,24 +33,40 @@ sys.path.insert(0, str(BACKEND))
 # ── Pure extraction (unit-testable without the live app or filesystem) ──
 
 def extract_scheduler_jobs(source: str) -> list[dict[str, str]]:
-    """Parse `scheduler.add_job(func, ..., id="...", name="...")` calls."""
-    pattern = re.compile(
-        r'add_job\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*,.*?'
-        r'id\s*=\s*["\']([^"\']+)["\'].*?'
-        r'name\s*=\s*["\']([^"\']+)["\']',
-        re.S,
-    )
-    jobs = [
-        {"id": job_id, "title": name, "callable": func}
-        for func, job_id, name in pattern.findall(source)
-    ]
+    """Parse `scheduler.add_job(func, ..., id="...", name="...")` calls via
+    AST -- robust to argument order, formatting, and inline comments (a
+    regex needing id before name in the source text was not, per review)."""
+    import ast
+
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return []
+
+    jobs = []
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Call) and getattr(node.func, "attr", None) == "add_job"):
+            continue
+        func_name = node.args[0].id if node.args and isinstance(node.args[0], ast.Name) else ""
+        job_id = None
+        name = None
+        for kw in node.keywords:
+            if kw.arg == "id" and isinstance(kw.value, ast.Constant):
+                job_id = kw.value.value
+            elif kw.arg == "name" and isinstance(kw.value, ast.Constant):
+                name = kw.value.value
+        if job_id and name:
+            jobs.append({"id": job_id, "title": name, "callable": func_name})
+
     jobs.sort(key=lambda j: j["id"])
     return jobs
 
 
 def extract_db_tables(source: str) -> list[str]:
-    """Parse `CREATE TABLE IF NOT EXISTS <name>` statements."""
-    return sorted(set(re.findall(r"CREATE TABLE IF NOT EXISTS (\w+)", source)))
+    """Parse `CREATE TABLE IF NOT EXISTS <name>` statements -- case-insensitive,
+    flexible whitespace (a developer writing lowercase SQL or extra spacing
+    would otherwise be silently skipped, per review)."""
+    return sorted(set(re.findall(r"(?i)CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+(\w+)", source)))
 
 
 def build_components(

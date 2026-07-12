@@ -35,24 +35,34 @@ import generate_security_corpus as gen
 
 def test_extract_scheduler_jobs_parses_id_and_name():
     source = """
-    scheduler.add_job(
-        run_kev_sync,
-        "interval",
-        minutes=15,
-        id="kev_metadata_sync",
-        name="KEV Metadata Sync",
-    )
-    scheduler.add_job(
-        run_nvd_sync,
-        "interval",
-        hours=1,
-        id="nvd_incremental_sync",
-        name="NVD Incremental Sync",
-    )
-    """
+scheduler.add_job(
+    run_kev_sync,
+    "interval",
+    minutes=15,
+    id="kev_metadata_sync",
+    name="KEV Metadata Sync",
+)
+scheduler.add_job(
+    run_nvd_sync,
+    "interval",
+    hours=1,
+    id="nvd_incremental_sync",
+    name="NVD Incremental Sync",
+)
+"""
     jobs = gen.extract_scheduler_jobs(source)
     assert [j["id"] for j in jobs] == ["kev_metadata_sync", "nvd_incremental_sync"]  # sorted
     assert jobs[0]["title"] == "KEV Metadata Sync"
+
+
+def test_extract_scheduler_jobs_handles_name_before_id():
+    """Gemini review on PR #491: the original regex required id= before
+    name= in source order; a real job registered the other way around
+    would be silently skipped. AST-based extraction doesn't care about
+    keyword-argument order."""
+    source = 'scheduler.add_job(f, "interval", name="Reordered Job", id="reordered_job")'
+    jobs = gen.extract_scheduler_jobs(source)
+    assert jobs == [{"id": "reordered_job", "title": "Reordered Job", "callable": "f"}]
 
 
 def test_extract_scheduler_jobs_renaming_changes_output():
@@ -237,6 +247,33 @@ def test_load_corpus_rejects_dangling_related_id(tmp_path):
         load_corpus(tmp_path)
 
 
+def test_load_corpus_rejects_non_list_related_ids(tmp_path):
+    """Gemini review on PR #491: a typo'd related_ids: my-id (string, not a
+    list) would previously iterate character-by-character and raise a
+    confusing 'unknown related_ids entry m' error."""
+    _write_minimal_corpus(
+        tmp_path,
+        **{"controls.yaml": {"controls": [
+            {
+                "id": "x", "title": "X", "summary": "S", "origin": "curated",
+                "review_date": "2026-01-01", "evidence": [], "related_ids": "my-id",
+            }
+        ]}},
+    )
+    with pytest.raises(CorpusValidationError, match="must be a list"):
+        load_corpus(tmp_path)
+
+
+def test_load_corpus_rejects_missing_top_level_key(tmp_path):
+    """Gemini review on PR #491: a corpus file missing its expected
+    top-level list key (e.g. components.yaml with no 'components' key)
+    would previously load silently, then crash downstream (get_overview())
+    with an opaque KeyError / 500."""
+    _write_minimal_corpus(tmp_path, **{"components.yaml": {"wrong_key": []}})
+    with pytest.raises(CorpusValidationError, match="missing required top-level key"):
+        load_corpus(tmp_path)
+
+
 def test_load_corpus_resolves_cross_file_related_ids(tmp_path):
     """A control referencing a component (different file) must resolve."""
     _write_minimal_corpus(
@@ -261,6 +298,18 @@ def test_load_corpus_missing_file_errors(tmp_path):
     tmp_path.mkdir(parents=True, exist_ok=True)
     with pytest.raises(CorpusValidationError, match="Missing corpus file"):
         load_corpus(tmp_path)
+
+
+def test_get_corpus_empty_directory_raises_corpus_error_not_value_error(tmp_path):
+    """Gemini review on PR #491: an empty/missing corpus directory made
+    get_corpus()'s max() over an empty mtime sequence raise a bare
+    ValueError instead of falling through to load_corpus()'s descriptive
+    CorpusValidationError."""
+    from security_architecture.corpus_loader import get_corpus
+
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    with pytest.raises(CorpusValidationError, match="Missing corpus file"):
+        get_corpus(tmp_path)
 
 
 # ── Router stub (TM-1: manifest + overview only) ──────────────────────

@@ -79,12 +79,19 @@ def _validate_record(filename: str, record: dict[str, Any], all_ids: set[str]) -
                         f"required field '{field}'"
                     )
 
-    for rid in record.get("related_ids") or []:
-        if rid not in all_ids:
+    related_ids = record.get("related_ids")
+    if related_ids is not None:
+        if isinstance(related_ids, str) or not isinstance(related_ids, (list, set, tuple)):
             raise CorpusValidationError(
-                f"{filename}: record '{record.get('id')}' references unknown "
-                f"related_ids entry '{rid}'"
+                f"{filename}: record '{record.get('id')}' 'related_ids' must be a list, "
+                f"got {type(related_ids).__name__}"
             )
+        for rid in related_ids:
+            if rid not in all_ids:
+                raise CorpusValidationError(
+                    f"{filename}: record '{record.get('id')}' references unknown "
+                    f"related_ids entry '{rid}'"
+                )
 
 
 def load_corpus(corpus_dir: Path | None = None) -> dict[str, Any]:
@@ -123,6 +130,10 @@ def load_corpus(corpus_dir: Path | None = None) -> dict[str, Any]:
                 all_ids.add(record["id"])
 
     for filename, list_key in all_files.items():
+        if list_key not in raw[filename]:
+            raise CorpusValidationError(
+                f"{filename}: missing required top-level key '{list_key}'"
+            )
         for record in raw[filename].get(list_key) or []:
             _validate_record(filename, record, all_ids)
 
@@ -141,11 +152,15 @@ def get_corpus(corpus_dir: Path | None = None) -> dict[str, Any]:
 
     directory = corpus_dir or CORPUS_DIR
     all_files = {**_GENERATED_FILES, **_CURATED_FILES, "manifest.yaml": None}
-    latest_mtime = max(
+    existing_mtimes = [
         (directory / filename).stat().st_mtime
         for filename in all_files
         if (directory / filename).exists()
-    )
+    ]
+    # Empty/missing directory: fall through to load_corpus() below, which
+    # raises the correct descriptive CorpusValidationError instead of a bare
+    # ValueError from max() on an empty sequence.
+    latest_mtime = max(existing_mtimes) if existing_mtimes else 0.0
 
     if _cache is None or _cache_mtime != latest_mtime:
         _cache = load_corpus(directory)
