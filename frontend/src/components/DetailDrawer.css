@@ -2810,6 +2810,16 @@
   line-height: 1.45;
 }
 
+.corr-confidence-factors {
+  margin: 8px 0 0;
+  padding-left: 16px;
+  list-style: disc;
+}
+
+.corr-confidence-factors .corr-connection-meta {
+  margin: 0 0 2px;
+}
+
 .corr-connection-open {
   display: inline-block;
   margin-top: 10px;

@@ -198,7 +198,29 @@ export function buildConnectionPanel(item, cveIdA) {
     linkStrength: linkStrengthLabel(item?.confidence),
     limitedConfidence: limited,
     relatedCve: item?.cve_id_b,
+    confidenceFactors: confidenceFactorReasons(item?.confidence_factors),
   }
+}
+
+/**
+ * CORR-PR-5: backend confidence_factors -> ordered, deduped reason strings
+ * for the drawer's "why this level" list. Additive -- falls back to nothing
+ * (existing limitedConfidence single-sentence caveat still renders) when
+ * the backend hasn't sent factors yet.
+ * @param {Array<{factor?: string, reason?: string}> | null | undefined} factors
+ * @returns {string[]}
+ */
+export function confidenceFactorReasons(factors) {
+  if (!Array.isArray(factors)) return []
+  const seen = new Set()
+  const reasons = []
+  for (const f of factors) {
+    const reason = f?.reason
+    if (!reason || seen.has(reason)) continue
+    seen.add(reason)
+    reasons.push(reason)
+  }
+  return reasons
 }
 
 /**

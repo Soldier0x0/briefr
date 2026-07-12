@@ -263,6 +263,32 @@ def test_multi_ioc_infrastructure_has_evidence(tmp_path, monkeypatch):
             assert row["shared_hash_count"] + row["shared_domain_count"] >= 1
             assert row["evidence"]
             assert row["summary"]
+            # CORR-PR-5: confidence_factors reaches the peer-aggregate API shape
+            assert row["confidence_factors"]
+            assert all("factor" in f and "reason" in f for f in row["confidence_factors"])
+        finally:
+            await db.close()
+
+    run_db_test(run())
+
+
+def test_campaign_confidence_factors_reach_api_shape(tmp_path, monkeypatch):
+    """CORR-PR-5: confidence_factors surfaces on get_campaigns_for_cve output."""
+    async def run():
+        db_path = str(tmp_path / "corr-campaign-factors.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        db = await _seed_db(db_path)
+        try:
+            await build_campaigns_from_pulses(db)
+            await db.commit()
+
+            campaigns = await get_campaigns_for_cve(db, "CVE-2024-1001")
+            assert campaigns
+            factors = campaigns[0]["confidence_factors"]
+            assert factors
+            assert all("factor" in f and "reason" in f for f in factors)
+            assert factors[0]["factor"] == "same_pulse"
         finally:
             await db.close()
 
@@ -427,20 +453,21 @@ def test_suppression_hides_campaign(tmp_path, monkeypatch):
 def test_greynoise_benign_downgrades_ip_edge():
     from correlation.confidence import confidence_for_ioc_edge
 
-    level, why = confidence_for_ioc_edge(
+    level, why, factors = confidence_for_ioc_edge(
         "IP",
         confirmations={"greynoise": "benign"},
     )
     assert level == "low"
     assert why
+    assert any(f["factor"] == "confirmation" for f in factors)
 
 
 def test_ioc_degree_never_raises_confidence():
     """CORR-PR-3 invariant: degree only ever lowers confidence."""
     from correlation.confidence import confidence_for_ioc_edge
 
-    level_no_degree, _ = confidence_for_ioc_edge("HASH", degree=0)
-    level_low_degree, _ = confidence_for_ioc_edge("HASH", degree=2)
+    level_no_degree, _, _ = confidence_for_ioc_edge("HASH", degree=0)
+    level_low_degree, _, _ = confidence_for_ioc_edge("HASH", degree=2)
     assert level_no_degree == "high"
     assert level_low_degree == "high"  # degree <= 3: no penalty
 
@@ -454,7 +481,7 @@ def test_ioc_degree_50_hash_edge_downranks_to_low_with_hub_reason():
     plausible-looking edges across unrelated CVEs.'"""
     from correlation.confidence import confidence_for_ioc_edge
 
-    level, why = confidence_for_ioc_edge("HASH", degree=50)
+    level, why, _ = confidence_for_ioc_edge("HASH", degree=50)
     assert level == "low"
     assert why and "hub" in why.lower()
 
@@ -463,7 +490,7 @@ def test_ioc_degree_50_ip_edge_stays_low_with_hub_reason():
     """The spec's literal test case, verified directly."""
     from correlation.confidence import confidence_for_ioc_edge
 
-    level, why = confidence_for_ioc_edge("IP", degree=50)
+    level, why, _ = confidence_for_ioc_edge("IP", degree=50)
     assert level == "low"
     assert why and "hub" in why.lower()
 
@@ -471,7 +498,7 @@ def test_ioc_degree_50_ip_edge_stays_low_with_hub_reason():
 def test_ioc_degree_moderate_downranks_by_one_level():
     from correlation.confidence import confidence_for_ioc_edge
 
-    level, why = confidence_for_ioc_edge("HASH", degree=7)
+    level, why, _ = confidence_for_ioc_edge("HASH", degree=7)
     assert level == "medium"
     assert why and "hub" in why.lower()
 
@@ -481,13 +508,119 @@ def test_ioc_degree_penalty_applies_after_confirmation_bump():
     degree is applied last, per the 'only ever lowers' invariant."""
     from correlation.confidence import confidence_for_ioc_edge
 
-    level, why = confidence_for_ioc_edge(
+    level, why, _ = confidence_for_ioc_edge(
         "DOMAIN",
         confirmations={"malwarebazaar": True},  # would bump medium->high alone
         degree=50,
     )
     assert level == "low"
     assert why and "hub" in why.lower()
+
+
+def test_confidence_factors_snapshot_for_ioc_edge_and_campaign():
+    """CORR-PR-5: confidence_factors is an additive, ordered trace of every
+    step that moved the level -- not just the last why_not_higher string."""
+    from correlation.confidence import campaign_confidence, confidence_for_ioc_edge
+
+    level, why, factors = confidence_for_ioc_edge("HASH", degree=50)
+    assert level == "low"
+    factor_names = [f["factor"] for f in factors]
+    assert factor_names == ["ioc_type", "degree"]
+    assert factors[-1]["value"] == 50
+    assert factors[-1]["reason"] == why
+
+    level, why, factors = confidence_for_ioc_edge(
+        "IP", confirmations={"greynoise": "malicious"}
+    )
+    assert level == "medium"
+    assert [f["factor"] for f in factors] == ["ioc_type", "confirmation"]
+    assert factors[1]["value"] == "greynoise_malicious"
+
+    level, why, factors = campaign_confidence(
+        "medium",
+        [{"ioc_type": "HASH", "ioc_value": "abc"}],
+        has_same_pulse=True,
+    )
+    assert level == "high"
+    assert [f["factor"] for f in factors] == ["same_pulse", "shared_indicators"]
+
+    level, why, factors = campaign_confidence("medium", [], has_same_pulse=True)
+    assert level == "medium"
+    assert [f["factor"] for f in factors] == ["same_pulse"]
+
+
+def test_aggregate_infrastructure_why_matches_aggregate_confidence_edge():
+    """Gemini review on PR #489: why_not_higher must come from an edge whose
+    confidence equals the aggregate level, same filter as confidence_factors
+    -- otherwise why can describe a weaker edge that lost the max() vote."""
+    from correlation.confidence import aggregate_infrastructure_confidence
+
+    edges = [
+        {
+            "ioc_type": "IP",
+            "ioc_value": "1.2.3.4",
+            "confidence": "low",
+            "why_not_higher": "IP-only edges are weaker than domain or hash matches",
+            "confidence_factors": [{"factor": "ip_only", "reason": "IP-only edges are weaker than domain or hash matches"}],
+        },
+        {
+            "ioc_type": "HASH",
+            "ioc_value": "a" * 64,
+            "confidence": "high",
+            "why_not_higher": None,
+            "confidence_factors": [{"factor": "ioc_type", "value": "HASH", "reason": "Hash-type indicator"}],
+        },
+    ]
+    confidence, evidence, why, factors = aggregate_infrastructure_confidence(edges)
+    assert confidence == "high"
+    assert why is None  # the low IP edge's why must not leak onto the high aggregate
+    assert factors == [{"factor": "ioc_type", "value": "HASH", "reason": "Hash-type indicator"}]
+
+
+def test_campaign_attribution_conflict_updates_why_not_higher(tmp_path, monkeypatch):
+    """Gemini review on PR #489: an attribution conflict downgrades confidence
+    but previously left why_not_higher stale (None), breaking the documented
+    'why_not_higher equals the last factor's reason' contract."""
+    async def run():
+        db_path = str(tmp_path / "corr-conflict-why.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        db = await _seed_db(db_path)
+        try:
+            pulses = [
+                {
+                    "pulse_id": "pulse-conflict-why",
+                    "pulse_name": "Conflict wave",
+                    "author": "analyst1",
+                    "created_date": "2024-01-10",
+                    "adversary": "Totally Different Threat Group",
+                    "malware_families": [],
+                    "tags": [],
+                    "targeted_countries": [],
+                    "ioc_count": 0,
+                }
+            ]
+            await replace_otx_cve_pulses(db, "CVE-2024-1001", pulses)
+            await replace_otx_cve_pulses(db, "CVE-2024-HUB1", pulses)
+            await db.commit()
+            await db.execute(
+                "INSERT INTO correlation_actor (cve_id, actor_name, confidence) VALUES (?, ?, ?)",
+                ("CVE-2024-1001", "APT28", "medium"),
+            )
+            await db.commit()
+
+            await build_campaigns_from_pulses(db)
+            await db.commit()
+
+            campaigns = await get_campaigns_for_cve(db, "CVE-2024-1001")
+            assert len(campaigns) == 1
+            assert campaigns[0]["attribution_conflict"] is True
+            assert campaigns[0]["why_not_higher"] == "Adversary attribution conflicts with MITRE technique-matched actors"
+            assert campaigns[0]["confidence_factors"][-1]["reason"] == campaigns[0]["why_not_higher"]
+        finally:
+            await db.close()
+
+    run_db_test(run())
 
 
 def test_related_cves_for_ioc_from_tables(tmp_path, monkeypatch):

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { displayText } from '../../utils/displayText.js'
 import {
   buildConnectionPanel,
+  confidenceFactorReasons,
   formatEvidenceItem,
   linkStrengthLabel,
 } from '../../utils/correlationPresentation.js'
@@ -58,7 +59,7 @@ function ConnectionEvidence({ item, cveId, onSelectCve }) {
 
   if (item.cve_id_b && cveId) {
     const panel = buildConnectionPanel(item, cveId)
-    if (!panel.primary && !panel.limitedConfidence) return null
+    if (!panel.primary && !panel.limitedConfidence && !panel.confidenceFactors.length) return null
 
     return (
       <details className="corr-evidence">
@@ -81,6 +82,13 @@ function ConnectionEvidence({ item, cveId, onSelectCve }) {
           {panel.limitedConfidence && (
             <p className="corr-connection-limited">{panel.limitedConfidence}</p>
           )}
+          {panel.confidenceFactors.length > 0 && (
+            <ul className="corr-confidence-factors">
+              {panel.confidenceFactors.map(reason => (
+                <li key={reason} className="corr-connection-meta">{reason}</li>
+              ))}
+            </ul>
+          )}
           {panel.relatedCve && onSelectCve && (
             <button
               type="button"
@@ -100,6 +108,7 @@ function ConnectionEvidence({ item, cveId, onSelectCve }) {
   if (!formatted.length) return null
 
   const primary = formatted[0]
+  const factorReasons = confidenceFactorReasons(item.confidence_factors)
   return (
     <details className="corr-evidence">
       <summary className="corr-view-connection-toggle mono">View connection</summary>
@@ -115,6 +124,13 @@ function ConnectionEvidence({ item, cveId, onSelectCve }) {
         <p className="corr-connection-meta">
           Link strength: {linkStrengthLabel(item.confidence)}
         </p>
+        {factorReasons.length > 0 && (
+          <ul className="corr-confidence-factors">
+            {factorReasons.map(reason => (
+              <li key={reason} className="corr-connection-meta">{reason}</li>
+            ))}
+          </ul>
+        )}
       </div>
     </details>
   )
