@@ -97,6 +97,9 @@ def build_scheduler_jobs_yaml(jobs: list[dict[str, str]]) -> list[dict[str, Any]
         {
             "id": job["id"],
             "title": job["title"],
+            "summary": f"Scheduled job registered in scheduler.py (id={job['id']}).",
+            "owner": "platform",
+            "status": "active",
             "origin": "generated",
             "source_refs": [{"type": "job", "ref": job["id"]}],
         }
@@ -109,6 +112,9 @@ def build_db_tables_yaml(tables: list[str]) -> list[dict[str, Any]]:
         {
             "id": table,
             "title": table,
+            "summary": f"Database table defined in db/init.py (name={table}).",
+            "owner": "platform",
+            "status": "active",
             "origin": "generated",
             "source_refs": [{"type": "table", "ref": table}],
         }

@@ -1,0 +1,5 @@
+version: 1
+# Curated: security controls, what they mitigate, and their live_flag/
+# review_status. Empty until a real security-review pass populates it --
+# see manifest.yaml notes.
+controls: []

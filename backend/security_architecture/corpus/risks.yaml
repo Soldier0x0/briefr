@@ -1,0 +1,6 @@
+version: 1
+# Curated: risk register rows (origin: curated). Live-derived rows
+# (origin: live, self-stack KEV hits per spec §4.5) are computed at read
+# time by merge.py, not stored here. Empty until a real security-review
+# pass populates it -- see manifest.yaml notes.
+risks: []

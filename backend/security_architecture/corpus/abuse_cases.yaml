@@ -1,0 +1,4 @@
+version: 1
+# Curated: abuse case catalog. Empty until a real security-review pass
+# populates it -- see manifest.yaml notes.
+abuse_cases: []
