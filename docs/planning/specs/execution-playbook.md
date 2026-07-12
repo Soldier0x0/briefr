@@ -59,6 +59,21 @@ Every phase (TM-1…TM-5, FR-1…FR-3) runs the same nine steps. No skipping, no
    touching `db/`: run `cd backend && pytest tests/ -q` **twice** — default (SQLite)
    and with `DATABASE_URL` pointing at Postgres. A query that passes one and fails the
    other is a production incident you almost shipped.
+   **Getting a Postgres server:** a native PostgreSQL 16 service already runs on
+   `localhost:5432` on this dev machine (Windows service `postgresql-x64-16`) — do
+   not touch its data or guess its credentials. For a disposable throwaway instead:
+   `docker run -d --name briefr-pg-test -p 127.0.0.1:5433:5432 -e POSTGRES_USER=briefr
+   -e POSTGRES_PASSWORD=briefr -e POSTGRES_DB=briefr postgres:16-alpine`, then
+   `DATABASE_URL=postgresql://briefr:briefr@localhost:5433/briefr` for both
+   `alembic upgrade head` and pytest. Docker Desktop must be running first (its
+   daemon can take ~30s after the app launches — retry `docker info` rather than
+   assuming it's broken).
+   **Known issue (PG-001, BACKLOG §3):** running more than one test file together
+   against a live Postgres can produce failures that don't reproduce when each file
+   runs alone — cross-file pollution, not a bug in your change. If a `db/`-touching
+   PR's Postgres run fails, **always re-run the specific file(s) your change touches
+   in isolation** before concluding your change broke something; if isolated runs are
+   clean, cite PG-001 in the PR body rather than chasing a phantom regression.
 5. **Build.** Match neighboring style. No new dependencies — jsPDF, Chart.js,
    lucide-react are already installed and are the entire budget. No abstraction with one
    caller. Every changed line traces to the phase.

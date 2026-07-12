@@ -95,6 +95,32 @@ before PR-9.
 Run on production-like Postgres before closing: production CORS origins (TRANS-002) and
 other items flagged in audit §6 — see codebase-audit status table.
 
+### PG-001 — Cross-file pytest pollution on real Postgres (found 2026-07-12)
+
+**No local Postgres had ever been run against this repo before this date** — the
+CLAUDE.md danger-zone-1 dual-DB rule was unenforceable (no server, no `DATABASE_URL`).
+First real run (disposable `postgres:16-alpine` container) surfaced a genuine,
+previously invisible bug:
+
+- `pytest tests/test_correlation.py -q` alone on Postgres: **20/20 passed**.
+- `pytest tests/test_db_explorer.py -q` alone on Postgres: **21/21 passed**.
+- `pytest tests/test_correlation.py tests/test_db_explorer.py -q` together: **15
+  failed / 26 passed** — `db.errors...` on tests that pass individually.
+
+Not a bug in either file's code — proven by the clean solo runs. The autouse
+`_postgres_test_isolation` fixture in `tests/conftest.py` (per-test `TRUNCATE …
+RESTART IDENTITY CASCADE`) should make files order-independent; something about
+running both files in one pytest process breaks that isolation on Postgres in a way
+SQLite's fresh-in-memory-per-test model never exposes (leaked connection warning
+observed: `close_pool(): timed out after 5s`, suggests pool/event-loop state bleeding
+across files, not per-test data). **Not caused by CORR-PR-2** (#476) — its only test
+file (`test_correlation.py`) is 100% green solo on Postgres.
+
+| Item | Status |
+|------|--------|
+| **PG-001** | Diagnose + fix cross-file Postgres test pollution (`test_correlation.py` + `test_db_explorer.py` at minimum — likely repo-wide, full-suite Postgres run never completed to confirm scope) | 📋 |
+| **PG-002** | Set up a documented persistent local Postgres for dev/CI (native service already exists on this machine at `localhost:5432`; OR fix `deploy/docker-compose.postgres.yml` port conflict guidance) so the CLAUDE.md dual-DB rule stops being aspirational | 📋 |
+
 ### Track M (security/ops audit — mostly shipped)
 
 **Historical source:** [`../archive/superseded/SECURITY_AND_OPS_AUDIT_2026-07.md`](../archive/superseded/SECURITY_AND_OPS_AUDIT_2026-07.md)  
