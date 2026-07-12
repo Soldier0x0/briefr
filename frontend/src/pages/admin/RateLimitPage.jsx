@@ -45,8 +45,15 @@ export default function RateLimitPage({ toast }) {
 
   return (
     <div>
-      <h1 className="admin-page-title">Rate limit</h1>
-      <p className="admin-page-subtitle">Per-bucket request counters and top consumers since last restart.</p>
+      <h1 className="admin-page-title">Inbound limits</h1>
+      {/* AKH-2: distinguishes this from outbound provider quota (NVD,
+          VirusTotal, OTX, etc. — visible on the IOC Lookup tab and API
+          keys & config), which is a completely separate system. This page
+          is BRIEFR's own request throttling, protecting the server from
+          its own users/scripts. */}
+      <p className="admin-page-subtitle">
+        Per-bucket request counters and top consumers since last restart — throttling on requests <em>to</em> BRIEFR's own API. Not the same as outbound provider quota (NVD, VirusTotal, OTX, etc.), which is tracked separately on the IOC Lookup tab.
+      </p>
 
       {data && (
         <div className="admin-callout" style={{ marginBottom: '1rem' }}>

@@ -12,6 +12,7 @@ export const NAV = [
     { id: 'webhooks', label: 'Webhooks', icon: 'Webhook' },
     { id: 'aiops', label: 'AI operations', icon: 'Sparkles' },
     { id: 'security', label: 'Security', icon: 'ShieldAlert', badgeKey: 'failed_auth_last_24h' },
+    { id: 'ratelimit', label: 'Inbound limits', icon: 'Gauge' },
   ]},
   { section: 'OBSERVABILITY', items: [
     { id: 'feedhealth', label: 'Feed health', icon: 'HeartPulse', badgeKey: 'open_circuit_count' },
