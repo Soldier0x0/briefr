@@ -1142,13 +1142,6 @@ export default function IOCLookup({ prefill }) {
           autoCapitalize="off"
           spellCheck="false"
         />
-        {/* QA-P2-5: the old placeholder crammed all 3 example formats into
-            one "/"-separated string, which read as a single copy-pasteable
-            value. One example in the placeholder; the rest spelled out here
-            where they can't be mistaken for input. */}
-        <p className="ioc-input-hint mono">
-          IP address, file hash (MD5/SHA1/SHA256), or domain/URL
-        </p>
 
         <div className="ioc-controls">
           {detectedType && (
@@ -1188,6 +1181,18 @@ export default function IOCLookup({ prefill }) {
             CLEAR
           </button>
         </div>
+
+        {/* QA-P2-5: the old placeholder crammed all 3 example formats into
+            one "/"-separated string, which read as a single copy-pasteable
+            value. One example in the placeholder; the rest spelled out here.
+            Placed after .ioc-controls (not between the textarea and
+            controls) so it doesn't interpose in the border-merge
+            (.ioc-controls' negative margin-top overlaps the textarea's
+            bottom border to look like one connected input — Gemini review
+            on the first version of this fix caught the layout break). */}
+        <p className="ioc-input-hint mono">
+          IP address, file hash (MD5/SHA1/SHA256), or domain/URL
+        </p>
 
         <p className="ioc-privacy-notice mono" role="note">
           {'// Lookups are sent to third-party enrichment APIs (see Privacy Policy).'}<br />
