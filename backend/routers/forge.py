@@ -376,6 +376,89 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
 
 # ── Hunt pack API (registered after the literal /generate sibling) ──
 
+_VALID_PRIORITIES = frozenset({"low", "medium", "high", "critical"})
+
+
+@router.get("/api/hunt-packs")
+async def list_hunt_packs(
+    technique_id: str | None = Query(default=None),
+    cve_id: str | None = Query(default=None),
+    priority: str | None = Query(default=None),
+    q: str | None = Query(default=None, max_length=200),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+):
+    """List saved hunt packs (FR-1 Library view). Paginated, filterable."""
+    conditions: list[str] = []
+    params: list = []
+
+    if technique_id:
+        conditions.append("technique_id = ?")
+        params.append(_validate_technique_id(technique_id))
+    if cve_id:
+        conditions.append("cve_id = ?")
+        params.append(cve_id.strip().upper())
+    if priority:
+        p = priority.strip().lower()
+        if p not in _VALID_PRIORITIES:
+            raise HTTPException(status_code=400, detail="Invalid priority filter")
+        conditions.append("priority = ?")
+        params.append(p)
+    if q:
+        conditions.append("LOWER(title) LIKE ?")
+        params.append(f"%{q.strip().lower()}%")
+
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+
+    db = await get_db()
+    try:
+        count_rows = await db.execute_fetchall(
+            f"SELECT COUNT(*) AS cnt FROM hunt_packs {where}", params
+        )
+        total = count_rows[0]["cnt"] if count_rows else 0
+
+        rows = await db.execute_fetchall(
+            f"""
+            SELECT * FROM hunt_packs {where}
+            ORDER BY updated_at DESC
+            LIMIT ? OFFSET ?
+            """,
+            params + [limit, offset],
+        )
+    finally:
+        await db.close()
+
+    return {"packs": [_pack_to_dict(r) for r in rows], "total": total}
+
+
+@router.delete("/api/hunt-packs/{pack_id}")
+async def delete_hunt_pack(pack_id: int):
+    """Delete one saved hunt pack; writes an audit_log entry."""
+    from db.enrichment import write_audit_log
+
+    db = await get_db()
+    try:
+        rows = await db.execute_fetchall(
+            "SELECT technique_id, cve_id FROM hunt_packs WHERE id = ?", (pack_id,)
+        )
+        if not rows:
+            raise HTTPException(status_code=404, detail="Hunt pack not found")
+        pack = rows[0]
+
+        await db.execute("DELETE FROM hunt_packs WHERE id = ?", (pack_id,))
+        await write_audit_log(
+            db,
+            "",
+            "hunt_pack_deleted",
+            f"{pack['technique_id']}/{pack['cve_id']}",
+        )
+        await db.commit()
+    finally:
+        await db.close()
+
+    return {"ok": True}
+
+
 @router.get("/api/hunt-packs/{technique_id}")
 async def get_hunt_pack(technique_id: str):
     """
