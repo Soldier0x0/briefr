@@ -81,6 +81,15 @@ before PR-9.
 | PR-F3 | Font-weight token alignment | 📋 |
 | PR-F4 | `loadStats` sequence guard | 📋 |
 
+### API key health & quota clarity (found 2026-07-12)
+
+**Findings doc:** [`specs/api-key-health-and-quota-findings.md`](specs/api-key-health-and-quota-findings.md) — observation/RCA only, no code changes yet.
+
+| PR | Title | Status |
+|----|-------|--------|
+| **AKH-1** | Fix `api_key_health.py::_ping_json` positional-arg bug (`TypeError: resilient_request() got multiple values for argument 'source'`) — every provider health check has failed on every run since the feature shipped; also fix the notification dedupe key (currently includes a per-run timestamp, so it never dedupes) | 📋 P0 — active notification flood every 6h |
+| **AKH-2** | Quota-system UI clarity: rename Admin "Rate limit" nav (collides with unrelated outbound provider quota), wire or remove the dead `fetchUsage()`/`GET /api/usage` endpoint (zero frontend callers today), HelpTip explaining quota vs pacing vs inbound throttling. Narrows Issue 21 + folds into UX-J1 | 📋 |
+
 ### Restart / durability bundle (§Z)
 
 | PR | Title | Status |
