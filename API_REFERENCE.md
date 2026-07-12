@@ -1109,7 +1109,7 @@ Optional webhook event: `kev_backlog`.
 
 ---
 
-## Security Architecture (TM-1 stub)
+## Security Architecture (TM-1 corpus + TM-2 shell)
 
 Mounted at `/api/security-architecture/*`, session auth required (analyst+). Backed by
 the Security Architecture Corpus (SAC) — versioned YAML under
@@ -1124,10 +1124,12 @@ classifications) are seeded empty pending a real security-review pass — see
 `corpus/manifest.yaml`'s notes; this module reports honest zeros rather than
 invented content.
 
-Only `manifest` and `overview` ship in TM-1. The richer per-section endpoints (system
-architecture graph, STRIDE, MITRE navigator, controls inventory, risk register, etc.)
-and the overview's full drill-through tiles are TM-2 onward — see
-`docs/planning/specs/threat-modeling-security-architecture.md` §8.
+Frontend: `/security-architecture` route, header tab **ARCH** (TM-2), three-panel shell
+(`frontend/src/pages/security-architecture/`) mirroring Forge/Admin — manifest-driven
+left nav, Overview center workspace with drill-through evidence tiles, empty-state
+context rail (populated content is TM-3+). The richer typed per-section endpoints
+(system architecture graph, STRIDE, MITRE navigator, controls inventory, risk register,
+etc.) are TM-3+ — see `docs/planning/specs/threat-modeling-security-architecture.md` §8.
 
 ### GET /api/security-architecture/manifest
 
@@ -1139,15 +1141,49 @@ and the overview's full drill-through tiles are TM-2 onward — see
 
 ```json
 {
-  "generated": {"components": 19, "api_endpoints": 143, "scheduler_jobs": 26, "db_tables": 42},
+  "generated": {"components": 20, "api_endpoints": 146, "scheduler_jobs": 26, "db_tables": 42},
   "curated": {"trust_boundaries": 0, "controls": 0, "abuse_cases": 0, "threat_scenarios": 0,
               "security_decisions": 0, "risks": 0, "reviews": 0},
-  "last_reviewed": "2026-07-12"
+  "last_reviewed": "2026-07-12",
+  "tiles": [
+    {"id": "components", "label": "System Components", "value": 20,
+     "help": "...", "section": "components", "filter": {"type": "components"}},
+    "... 7 more (endpoints, scheduler_jobs, db_tables, open_risks, critical_open_risks, controls, review_freshness)"
+  ]
 }
 ```
 
 Counts only — no scoring, no letter grades, per spec's "no arithmetic invented for this
-module" tile rule (§5.1).
+module" tile rule (§5.1). Each tile's `section`/`filter` is the exact drill-through
+target for `GET /section/{id}` below — MITRE Detection Coverage and Self CVE Exposure
+tiles from spec §5.1 are deliberately absent (they need TM-3's self-stack generation +
+merge machinery, which doesn't exist yet; faking them would violate the no-invented-
+arithmetic rule).
+
+### GET /api/security-architecture/section/{section_id}
+
+**TM-2 shell convenience** — a generic read of any manifest data section's corpus rows,
+added so Overview tile clicks land on real pre-filtered rows without building nine typed
+endpoints ahead of the sections that need them. Superseded per-section by spec §4.4's
+typed endpoints as TM-3+ ships live sections (MITRE, STRIDE, graph, ...) — this is an
+intentional, documented divergence, not the final API shape.
+
+**Path:** `section_id` — one of manifest.yaml's `sections[]` (excluding `overview`):
+`components`, `trust_boundaries`, `controls`, `abuse_cases`, `threat_scenarios`,
+`security_decisions`, `risks`, `reviews`.
+
+**Query params (all optional):**
+
+| Param | Applies to | Effect |
+|-------|------------|--------|
+| `type` | `components` only | Switches generated collection: `components` (default) \| `endpoints` \| `jobs` \| `tables` |
+| `status` | any | Exact match on record `status` field |
+| `severity` | any | Exact match on record `severity` field |
+| `stale` | any | `true` → only curated records past `review_date + 90d` |
+
+**Response:** `{ "section": "...", "type": "...", "available_types": [...], "count": N, "items": [...] }`
+
+404 when `section_id` isn't a manifest section.
 
 ---
 

@@ -12,6 +12,80 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-12 — TM-2: Security Architecture shell UI + Overview shipped
+
+**Context:** picked up TM-2 per the previous entry's queue — TM-1's corpus (merged,
+`pytest tests/test_security_architecture_corpus.py -q` green, entry gate confirmed)
+was ready to build on. FR-2 (Forge shell) is still open on its own branch
+(`fr2-forge-shell-redesign`, unmerged) — used it as the pattern reference per the
+task brief (three-panel `useSearchParams` shell, `forge/shared.jsx` conventions) but
+built TM-2 independent of it landing first, since neither branch touches the other's
+files.
+
+**Shipped (branch `tm2-arch-shell-overview`, not yet merged — see PR):**
+
+- **Backend:** `overview` endpoint gained a `tiles[]` array — 8 tiles, each a `len()`
+  or exact-match count over corpus rows with a `section`/`filter` drill target, no
+  invented arithmetic. Added a generic `GET /api/security-architecture/section/{id}`
+  read (manifest section → corpus rows, `type`/`status`/`severity`/`stale` filters) —
+  a TM-2 shell convenience, not the typed per-section endpoint set from spec §4.4;
+  documented as an intentional divergence in both the router docstring and
+  `API_REFERENCE.md`. Regenerated the corpus after adding the new route (drift test
+  caught the new endpoint changing `security_architecture` router's endpoint_count —
+  exactly the mechanism TM-1 built it to catch). Fixed `test_router_split.py`'s route
+  snapshot for the new route (same maintenance FR-1/TM-1 needed).
+- **Frontend:** `/security-architecture` route + header tab **ARCH** (`Header.jsx`,
+  desktop nav + mobile tab bar — it's a real route like Admin/Wallboard, not an
+  AppLayout-internal tab like Forge, so it unmounts `Header` on navigate; that's why
+  there's no `activeTab==='arch'` state). `SecurityArchitecturePage.jsx`: three-panel
+  shell, left nav **manifest-driven** (renders whatever `GET /manifest`'s `sections[]`
+  lists — currently 9: overview + 8 data sections; TM-1's manifest is narrower than
+  spec §2.2's 18-row aspirational catalog since MITRE/STRIDE/OWASP/etc. don't exist
+  in the corpus yet — documented divergence, not a bug), `OverviewSection` (tiles +
+  a simplified architecture-stack view built only from the generated layer — no
+  invented "Frontend" tier, since `components.yaml` only has backend routers today),
+  `GenericSection` (stub table reading the generic section endpoint, with filter
+  chips and a type-tab switcher for the components section's 4 sub-collections).
+  Context rail is a fixed empty state — no selection wiring yet, per spec's own TM-2
+  scope ("context rail empty state"). All state (`?section=&type=&status=&severity=`)
+  round-trips through the URL.
+
+**Deliberately out of scope (per spec §8 TM-2 boundary, confirmed via advisor before
+starting):** MITRE Detection Coverage and Self CVE Exposure tiles (need TM-3's
+self-stack corpus generation + `merge.py`, neither exists yet); an "Unreviewed
+Endpoints" tile (needs TM-4's endpoint↔control linkage, which the corpus doesn't
+carry). Building any of these now would have faked data through machinery that isn't
+there — the advisor's framing was "lead with generated-layer tiles since their drill
+targets are populated tables, not empty curated stubs" and that's what shipped.
+
+**Browser verification — completed, not flagged.** Unlike the FR-2/TM-1 session,
+`computer{action:"screenshot"}` still timed out on every attempt, but `read_page`
+(DOM/accessibility tree) plus targeted `javascript_tool` checks (computed styles,
+`document.activeElement`, dispatched `KeyboardEvent`) fully verified the acceptance
+criteria without pixel screenshots: login flow (seeded a throwaway `tm2verify` user
+in this worktree's own `briefr.db`, copied from the main repo's populated DB to dodge
+the sub-10-CVE scheduler-lock landmine, `BRIEFR_SCHEDULER_ENABLED=0` on top), ARCH tab
+navigation, Overview tiles rendering real counts (20 components / 146 endpoints / 26
+jobs / 42 tables against the real corpus), tile-click drill-through landing on
+pre-filtered rows (verified for `components` type-tabs and a `risks?status=open&
+severity=critical` empty-state with filter chips), keyboard nav between nav sections
+(arrow-key wraparound both directions, confirmed via dispatched `KeyboardEvent` since
+the Browser-pane `computer{action:"key"}` tool wasn't reliably reaching page focus —
+a tool quirk, not a code defect, isolated by dispatching the identical event via JS
+and observing the identical state transition), 375/960/1280px with zero horizontal
+overflow at any width, and a designed error state (unknown section → 404 with
+`detail` + `ref:` id + Retry, no dead end). `computer{action:"screenshot"}` being
+broken across two consecutive sessions now (see 2026-07-12 entry below) is worth
+someone checking outside an agent session — logging it here as the second precedent
+rather than a third open investigation.
+
+**Next:** TM-3 (MITRE ATT&CK + Threat Scenarios + Controls + self-exposure) — needs
+the self-stack generation + `merge.py` machinery from spec §4.5 before its overview
+tiles and scenario toggle can ship; TM-1's corpus MITRE IDs are already in place.
+Do not parallelize TM-3 and TM-4 against `SecurityArchitecturePage.jsx` (spec §8).
+
+---
+
 ## 2026-07-12 — Autonomous roadmap execution, session close: FR-1 + TM-1 shipped
 
 **Context:** continuing the same session as the entry below. After correlation-engine-v2
