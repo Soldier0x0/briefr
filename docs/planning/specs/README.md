@@ -12,7 +12,7 @@ Open checklist rows: [`../BACKLOG.md`](../BACKLOG.md).
 |------|---------|-----------------|
 | [`threat-modeling-security-architecture.md`](threat-modeling-security-architecture.md) | Security Architecture module (v2, evidence-gated) | TM-1 shipped (#491); TM-2 blocked on browser verification tooling; TM-3…TM-5; frameworks gated TM-6+ |
 | [`forge-redesign.md`](forge-redesign.md) | Forge IA redesign + Hunt Pack Library | FR-1 shipped (#490); FR-2/FR-3 blocked on browser verification tooling |
-| [`correlation-engine-v2.md`](correlation-engine-v2.md) | Correlation engine v3 (evidence-honest) | Phase 0–1 (PR-1…PR-5) shipped; PR-6…PR-13 open — do not start before PG-001 (BACKLOG §3) is resolved |
+| [`correlation-engine-v2.md`](correlation-engine-v2.md) | Correlation engine v3 (evidence-honest) | Phase 0–1 (PR-1…PR-5) shipped; PR-6…PR-13 open (PG-001, BACKLOG §3, fixed 2026-07-12 — no longer a blocker) |
 | [`codebase-audit.md`](codebase-audit.md) | Security / reliability / performance remediation | Remaining PRs per BACKLOG §3 |
 | [`ai-operations.md`](ai-operations.md) | AI ops (conditional AI-3 tail) | Gated on 28-day `ai_operations` evidence |
 | [`ux-audit.md`](ux-audit.md) | UX audit deferred issues (28–33 etc.) | Per BACKLOG §5 |

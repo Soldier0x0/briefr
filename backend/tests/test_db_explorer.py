@@ -1,13 +1,18 @@
 """Security and behavior tests for read-only DB explorer."""
 
+# PG-001: this file used to force SQLite mode via a module-level (import-time)
+# `os.environ["DATABASE_URL"] = ""` -- module-level code can't use monkeypatch,
+# so that mutation was permanent and process-wide, not scoped to this file's
+# own tests. It broke Postgres detection for every test collected afterward
+# in the same pytest invocation (both directly, via tests/conftest.py's own
+# os.environ read, and collaterally, via every other test file's module-level
+# `@pytest.mark.skipif(os.environ.get("DATABASE_URL", "")...)` decorators,
+# which evaluate at collection time). The admin_client fixture below already
+# forces SQLite mode correctly, scoped via monkeypatch (database_url,
+# is_postgres, resolve_database_url, run_postgres_migrations) -- that's the
+# only place this file's own tests need it, and it reverts automatically.
+
 import os
-
-# Conftest's session-scoped Postgres bootstrap reads os.environ only — clear
-# DATABASE_URL before collection so these SQLite-isolated tests do not require
-# a live Postgres instance when backend/.env points at production DSN.
-os.environ["DATABASE_URL"] = ""
-os.environ["BRIEFR_REQUIRE_POSTGRES"] = "0"
-
 import sys
 from pathlib import Path
 
@@ -56,9 +61,14 @@ def admin_client(tmp_path, monkeypatch):
     import main as _main_mod
     import database as _database_mod
 
-    _main_mod.is_postgres = lambda url=None: False
-    _main_mod.run_postgres_migrations = _noop_migrations
-    _database_mod.run_postgres_migrations = _noop_migrations
+    # PG-001: these three were raw (non-monkeypatch) assignments -- never
+    # reverted, so main.is_postgres stayed permanently False (and both
+    # run_postgres_migrations stayed permanently no-op) for every test that
+    # ran later in the same pytest process, breaking Postgres detection
+    # process-wide for any subsequent TestClient(app)-driven test file.
+    monkeypatch.setattr(_main_mod, "is_postgres", lambda url=None: False)
+    monkeypatch.setattr(_main_mod, "run_postgres_migrations", _noop_migrations)
+    monkeypatch.setattr(_database_mod, "run_postgres_migrations", _noop_migrations)
 
     import rate_limit as _rl
 

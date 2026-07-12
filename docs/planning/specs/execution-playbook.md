@@ -68,12 +68,16 @@ Every phase (TM-1…TM-5, FR-1…FR-3) runs the same nine steps. No skipping, no
    `alembic upgrade head` and pytest. Docker Desktop must be running first (its
    daemon can take ~30s after the app launches — retry `docker info` rather than
    assuming it's broken).
-   **Known issue (PG-001, BACKLOG §3):** running more than one test file together
-   against a live Postgres can produce failures that don't reproduce when each file
-   runs alone — cross-file pollution, not a bug in your change. If a `db/`-touching
-   PR's Postgres run fails, **always re-run the specific file(s) your change touches
-   in isolation** before concluding your change broke something; if isolated runs are
-   clean, cite PG-001 in the PR body rather than chasing a phantom regression.
+   **PG-001 (BACKLOG §3), fixed 2026-07-12:** running more than one test file together
+   against a live Postgres used to produce failures that didn't reproduce when each
+   file ran alone. Root cause was `tests/test_db_explorer.py` raw (non-`monkeypatch`)
+   mutations that never reverted — a module-level `os.environ["DATABASE_URL"] = ""`
+   and direct `main.is_postgres`/`run_postgres_migrations` reassignment — corrupting
+   Postgres detection process-wide for every test collected/run afterward. Fixed in
+   `tests/conftest.py` + `tests/test_db_explorer.py`; running the full suite together
+   against Postgres is safe again. If you still see a cross-file-only failure on a
+   PR unrelated to test infra, it's a **new** regression worth investigating from
+   scratch, not a recurrence of PG-001 — the specific mechanism is gone.
 5. **Build.** Match neighboring style. No new dependencies — jsPDF, Chart.js,
    lucide-react are already installed and are the entire budget. No abstraction with one
    caller. Every changed line traces to the phase.
