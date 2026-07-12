@@ -601,6 +601,17 @@ def test_compute_correlation_priority_breakdown():
     assert empty == {"score": 0, "components": []}
 
 
+def test_campaign_priority_booster_bonus_is_capped():
+    from correlation.priority import compute_correlation_priority, CAP_CAMPAIGN
+
+    boosted = compute_correlation_priority({
+        "campaigns": [{"confidence": "high", "label": "X", "boosters": {"kev": ["CVE-1"]}}],
+    })
+    campaign_component = next(c for c in boosted["components"] if c["signal"] == "campaign")
+    assert campaign_component["points"] == CAP_CAMPAIGN  # already at fraction 1.0, bonus capped
+    assert "KEV-listed" in campaign_component["sentence"]
+
+
 def test_get_correlation_error_path_hides_exception_text(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "corr-error-path.db")
@@ -710,7 +721,14 @@ def test_mitre_overlap_below_threshold_is_excluded(tmp_path, monkeypatch):
     run_db_test(run())
 
 
-def test_kev_booster_bumps_campaign_confidence(tmp_path, monkeypatch):
+def test_kev_booster_affects_priority_not_confidence(tmp_path, monkeypatch):
+    """CORR-PR-4: KEV/exploit status among campaign peers is a priority
+    (urgency) signal, not a confidence signal -- a KEV-listed peer doesn't
+    make the shared-pulse *link* itself more certain, so it must no longer
+    bump campaign confidence. It still surfaces as evidence and now bumps
+    the correlation priority score instead (priority.py)."""
+    from correlation.priority import compute_correlation_priority
+
     async def run():
         db_path = str(tmp_path / "corr-booster.db")
         monkeypatch.setenv("DB_PATH", db_path)
@@ -740,7 +758,15 @@ def test_kev_booster_bumps_campaign_confidence(tmp_path, monkeypatch):
             campaigns = await get_campaigns_for_cve(db, "CVE-2024-1001")
             assert len(campaigns) == 1
             assert campaigns[0]["boosters"]["kev"] == ["CVE-2024-HUB1"]
-            assert campaigns[0]["confidence"] == "high"
+            # No strong (hash/domain) shared indicators here -- confidence
+            # stays at the same-pulse co-tag base, unmoved by the KEV peer.
+            assert campaigns[0]["confidence"] == "medium"
+
+            with_booster = compute_correlation_priority({"campaigns": campaigns})
+            without_booster = compute_correlation_priority(
+                {"campaigns": [{**campaigns[0], "boosters": {"kev": [], "exploit": []}}]}
+            )
+            assert with_booster["score"] > without_booster["score"]
         finally:
             await db.close()
 

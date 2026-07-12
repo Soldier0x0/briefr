@@ -771,13 +771,17 @@ When `GREYNOISE_API_KEY` is unset: `{"configured": false, "scans": []}`.
   ],
   "temporal": [],
   "boosters": {"kev": ["CVE-2024-0002"], "exploit": []},
+  "priority": {
+    "score": 31.0,
+    "components": [{"signal": "campaign", "points": 31.0, "sentence": "Linked to a medium-confidence campaign (Ransomware wave). Includes a KEV-listed member."}]
+  },
   "otx_status": "ok",
   "meta": {"engine_version": "2.0", "cache_hit": false},
   "computed_at": "2024-01-01T00:00:00+00:00"
 }
 ```
 
-Per-campaign `boosters` reflect KEV/exploit signals among that campaign's members (excluding the anchor CVE) and bump campaign confidence one level (capped at `high`) when present; the top-level `boosters` is the union across all campaigns. `actor` matches require MITRE ATT&CK technique overlap ≥ `CORRELATION_MITRE_MIN_OVERLAP` (default 0.25); `technique_overlap` is `matched / total CVE techniques`, and confidence is `medium` at ≥0.5 else `low`.
+Per-campaign `boosters` reflect KEV/exploit signals among that campaign's members (excluding the anchor CVE); the top-level `boosters` is the union across all campaigns. As of CORR-PR-4, boosters no longer move campaign *confidence* (they don't make the pulse-link itself more certain) — they contribute to this same response's `priority.components[].signal == "campaign"` score instead. Campaign confidence is `medium` at the same-pulse co-tag baseline, `high` when strong (hash/domain) shared indicators back it, independent of member count. `actor` matches require MITRE ATT&CK technique overlap ≥ `CORRELATION_MITRE_MIN_OVERLAP` (default 0.25); `technique_overlap` is `matched / total CVE techniques`, and confidence is `medium` at ≥0.5 else `low`.
 
 Cached 6 hours in `feed_cache` (`correlation:v2:{cve}:{sector}`). On engine error, returns empty arrays + `"error"` string.
 
