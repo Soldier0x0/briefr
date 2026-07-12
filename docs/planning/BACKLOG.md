@@ -38,9 +38,9 @@ shipped this pass — see `docs/HANDOVER.md`'s 2026-07-12 entries for the full P
 
 **Canonical spec:** [`specs/correlation-engine-v2.md`](specs/correlation-engine-v2.md)  
 **Phase 0–1 (PR-1…PR-5) shipped 2026-07-12.** Phase 2 (PR-6…PR-8) is next in strict
-dependency order — **do not start until [PG-001](#pg-001--cross-file-pytest-pollution-on-real-postgres-found-2026-07-12)
-is resolved or scoped out**, since Phase 2 adds more `db/`-touching test files into the
-same Postgres test-pollution risk.
+dependency order. [PG-001](#pg-001--cross-file-pytest-pollution-on-real-postgres-found-2026-07-12-fixed-2026-07-12)
+(the Postgres test-pollution risk that previously gated this) is fixed — no longer a
+blocker.
 
 | PR | Title (phase) | Status |
 |----|---------------|--------|
@@ -129,31 +129,46 @@ Independently re-verified — of 17 Emergent-agent + Emergent-adjacent claims te
 Run on production-like Postgres before closing: production CORS origins (TRANS-002) and
 other items flagged in audit §6 — see codebase-audit status table.
 
-### PG-001 — Cross-file pytest pollution on real Postgres (found 2026-07-12)
+### PG-001 — Cross-file pytest pollution on real Postgres (found 2026-07-12, fixed 2026-07-12)
 
-**No local Postgres had ever been run against this repo before this date** — the
-CLAUDE.md danger-zone-1 dual-DB rule was unenforceable (no server, no `DATABASE_URL`).
-First real run (disposable `postgres:16-alpine` container) surfaced a genuine,
-previously invisible bug:
+**Root cause (confirmed empirically, not the originally-suspected `close_pool()`
+timeout or scheduler-job mechanism):** `tests/test_db_explorer.py` had two raw,
+non-`monkeypatch` mutations that never revert:
 
-- `pytest tests/test_correlation.py -q` alone on Postgres: **20/20 passed**.
-- `pytest tests/test_db_explorer.py -q` alone on Postgres: **21/21 passed**.
-- `pytest tests/test_correlation.py tests/test_db_explorer.py -q` together: **15
-  failed / 26 passed** — `db.errors...` on tests that pass individually.
+1. A **module-level** `os.environ["DATABASE_URL"] = ""` (module-level code can't use
+   `monkeypatch`, so this ran once at import/collection time and stayed wiped for the
+   rest of the pytest process). This broke `tests/conftest.py::_postgres_dsn_or_none()`
+   (a raw `os.environ.get("DATABASE_URL")` read, unlike the rest of the codebase's
+   settings-safe `resolve_database_url()`) — and, verified separately, would have
+   collaterally corrupted every *other* test file's `@pytest.mark.skipif(os.environ
+   .get("DATABASE_URL", "")...)` decorator collected afterward in the same invocation
+   (`test_admin_storage.py`, `test_backup_roundtrip_postgres.py`, `test_forge.py`,
+   `test_wallboard.py`, `test_watchlist.py`, and others share this pattern).
+2. Inside the `admin_client` fixture, `_main_mod.is_postgres = lambda url=None:
+   False` and both `run_postgres_migrations` reassignments used **raw attribute
+   assignment** instead of `monkeypatch.setattr(...)` — permanently breaking
+   `main.py`'s own Postgres detection for every later `TestClient(app)`-driven test
+   in the same process, which is what actually produced the `close_pool(): timed out
+   after 5s` warnings and the eventual `duplicate key … cves_pkey` failures (stale
+   rows surviving because the isolation `TRUNCATE` step got silently bypassed).
 
-Not a bug in either file's code — proven by the clean solo runs. The autouse
-`_postgres_test_isolation` fixture in `tests/conftest.py` (per-test `TRUNCATE …
-RESTART IDENTITY CASCADE`) should make files order-independent; something about
-running both files in one pytest process breaks that isolation on Postgres in a way
-SQLite's fresh-in-memory-per-test model never exposes (leaked connection warning
-observed: `close_pool(): timed out after 5s`, suggests pool/event-loop state bleeding
-across files, not per-test data). **Not caused by CORR-PR-2** (#476) — its only test
-file (`test_correlation.py`) is 100% green solo on Postgres.
+**Fix (`tests/conftest.py`, `tests/test_db_explorer.py`):** `_postgres_dsn_or_none()`
+now uses the settings-safe `resolve_database_url()`; the three raw assignments became
+`monkeypatch.setattr(...)`; the module-level `os.environ` wipe was removed entirely
+(the fixture-level scoped monkeypatches already cover this file's own need to force
+SQLite mode).
+
+**Verified:** `pytest tests/test_correlation.py tests/test_db_explorer.py -q` on
+Postgres — was 15 failed / 26 passed, now **52 passed / 1 skipped**, and the
+`close_pool()` timeout warnings are gone too (confirming they were a symptom, not an
+independent bug). Spot-checked `test_db_explorer.py` + `test_forge.py` +
+`test_wallboard.py` + `test_watchlist.py` together on Postgres: 43 passed / 5 skipped,
+no collateral skip-decorator corruption. Full SQLite suite green (no regressions).
 
 | Item | Status |
 |------|--------|
-| **PG-001** | Diagnose + fix cross-file Postgres test pollution (`test_correlation.py` + `test_db_explorer.py` at minimum — likely repo-wide, full-suite Postgres run never completed to confirm scope) | 📋 |
-| **PG-002** | Set up a documented persistent local Postgres for dev/CI (native service already exists on this machine at `localhost:5432`; OR fix `deploy/docker-compose.postgres.yml` port conflict guidance) so the CLAUDE.md dual-DB rule stops being aspirational | 📋 |
+| **PG-001** | Diagnose + fix cross-file Postgres test pollution | ✅ fixed 2026-07-12 |
+| **PG-002** | Set up a documented persistent local Postgres for dev/CI (native service already exists on this machine at `localhost:5432`; OR fix `deploy/docker-compose.postgres.yml` port conflict guidance) so the CLAUDE.md dual-DB rule stops being aspirational | 📋 — a throwaway `docker run postgres:16-alpine` on port 5433 has worked reliably all session; formalizing that into a documented script is the remaining gap |
 
 ### Track M (security/ops audit — mostly shipped)
 

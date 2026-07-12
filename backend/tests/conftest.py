@@ -27,7 +27,19 @@ sys.path.insert(0, str(BACKEND_DIR))
 
 
 def _postgres_dsn_or_none() -> str | None:
-    url = os.environ.get("DATABASE_URL", "")
+    """PG-001: use the settings-safe resolver, not a raw os.environ read.
+
+    db/config.py::resolve_database_url() prioritizes settings.database_url
+    (a Pydantic singleton frozen at process start) over os.environ, exactly
+    so a test file's raw (non-monkeypatch) os.environ mutation can't corrupt
+    Postgres detection for every test that runs afterward in the same
+    process. test_db_explorer.py's module-level `os.environ["DATABASE_URL"]
+    = ""` (never reverted -- module-level code can't use monkeypatch) used
+    to defeat that safety net here by reading os.environ directly, breaking
+    this fixture's isolation TRUNCATE for every test collected after it."""
+    from db.config import resolve_database_url
+
+    url = resolve_database_url()
     return url if url.startswith("postgresql") else None
 
 
