@@ -45,6 +45,7 @@ const Forge = lazyWithReload(() => import('./components/Forge.jsx'))
 const DetailDrawer = lazyWithReload(() => import('./components/DetailDrawer'))
 const AdminPage = lazyWithReload(() => import('./pages/admin/AdminPage.jsx'))
 const WallboardPage = lazyWithReload(() => import('./pages/WallboardPage.jsx'))
+const SecurityArchitecturePage = lazyWithReload(() => import('./pages/security-architecture/SecurityArchitecturePage.jsx'))
 
 function TabLoading({ label }) {
   return (
@@ -695,6 +696,15 @@ export default function App() {
             <Suspense fallback={<TabLoading label="admin" />}>
               <AdminPage />
             </Suspense>
+          </RequireAuth>
+        } />
+        <Route path="/security-architecture/*" element={
+          <RequireAuth>
+            <ToolErrorBoundary label="Security Architecture">
+              <Suspense fallback={<TabLoading label="Security Architecture" />}>
+                <SecurityArchitecturePage />
+              </Suspense>
+            </ToolErrorBoundary>
           </RequireAuth>
         } />
         <Route path="/wallboard" element={

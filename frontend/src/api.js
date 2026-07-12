@@ -308,6 +308,23 @@ export function fetchThreatModelScenarios(stack = '') {
   return request(`/threat-model/scenarios${qs}`)
 }
 
+/** TM-2: Security Architecture module -- manifest (section index) + overview tiles. */
+export function fetchSecurityArchitectureManifest() {
+  return request('/security-architecture/manifest')
+}
+
+export function fetchSecurityArchitectureOverview() {
+  return request('/security-architecture/overview')
+}
+
+/** TM-2: generic drill-through read of a manifest section's corpus rows. */
+export function fetchSecurityArchitectureSection(sectionId, params = {}) {
+  const qs = new URLSearchParams(
+    Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ''),
+  ).toString()
+  return request(`/security-architecture/section/${encodeURIComponent(sectionId)}${qs ? `?${qs}` : ''}`)
+}
+
 /** V1.5: run Sigma rule against pasted log lines (file-based proof bench). */
 export function runProofBench({ lines, sigmaYaml, patterns, maxSamples = 10 }) {
   const body = { lines, max_samples: maxSamples }

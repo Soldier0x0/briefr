@@ -1,0 +1,467 @@
+/* TM-2: Security Architecture shell. Mirrors Forge.css's three-panel
+   geometry (FR-2) and AdminPage.css's status-bar pattern -- global tokens
+   only, no new palette (spec §3.3, §6). */
+
+.sa-root {
+  --sa-nav-width: 220px;
+  --sa-rail-width: 320px;
+  --sa-section-gap: 1.25rem;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ── Top bar (mirrors admin-statusbar's back-link pattern) ───────────── */
+
+.sa-topbar {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+
+.sa-brand-link {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.sa-brand-link:hover {
+  color: var(--accent);
+}
+
+.sa-topbar-sep {
+  color: var(--text3);
+}
+
+.sa-topbar-title {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--text2);
+}
+
+/* ── Three-panel shell ────────────────────────────────────────────────
+   ≥1280px: three panels visible, rail pinned in normal flow.
+   960–1279px / ≤959px: shell stacks vertically -- narrower than Forge's
+   overlay treatment because TM-2's rail has no selection to overlay for
+   yet (spec §8 TM-2: rail stays in an empty state); the overlay/backdrop
+   behavior belongs with TM-3's selection wiring. */
+
+.sa-shell {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 20px 24px 48px;
+}
+
+.sa-nav {
+  width: var(--sa-nav-width);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 20px;
+}
+
+.sa-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sa-nav-btn {
+  text-align: left;
+  font-size: 0.8125rem;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text2);
+  cursor: pointer;
+  transition: background-color 0.14s ease-out, color 0.14s ease-out, border-color 0.14s ease-out;
+}
+
+.sa-nav-btn:hover {
+  background: var(--bg2);
+  color: var(--text);
+}
+
+.sa-nav-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.sa-nav-btn.active {
+  background: var(--bg3);
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.sa-nav-meta {
+  font-size: 0.6875rem;
+  color: var(--text3);
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.sa-workspace {
+  flex: 1;
+  min-width: 0;
+}
+
+.sa-error-block {
+  border: 1px solid var(--red);
+  background: var(--red-dim);
+  padding: 12px 16px;
+  margin-bottom: var(--sa-section-gap);
+}
+
+.sa-error {
+  color: var(--red);
+  margin: 0;
+}
+
+/* ── Section shell ─────────────────────────────────────────────────── */
+
+.sa-section-title {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: var(--text);
+  margin: 0 0 var(--sa-section-gap);
+}
+
+.sa-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sa-subsection-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  color: var(--text3);
+  margin: 0;
+}
+
+/* ── Evidence tiles (spec §5.1) ───────────────────────────────────── */
+
+.sa-tile-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.sa-skeleton-row {
+  height: 76px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+}
+
+.sa-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease-out, background-color 0.15s ease-out;
+}
+
+.sa-tile:hover {
+  border-color: var(--border2);
+  background: var(--bg3);
+}
+
+.sa-tile:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.sa-tile-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+}
+
+.sa-tile-value {
+  font-size: 1.5rem;
+  color: var(--text);
+  line-height: 1;
+}
+
+.sa-tile-unit {
+  font-size: 0.75rem;
+  color: var(--text3);
+}
+
+/* ── Simplified architecture stack (Overview) ─────────────────────── */
+
+.sa-arch-stack {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+
+.sa-arch-stack-note {
+  font-size: 0.8125rem;
+  color: var(--text3);
+  margin: 4px 0 16px;
+  max-width: 640px;
+}
+
+.sa-arch-tiers {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sa-arch-tier-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sa-arch-tier {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s ease-out, background-color 0.15s ease-out;
+}
+
+.sa-arch-tier:hover {
+  border-color: var(--accent);
+  background: var(--bg3);
+}
+
+.sa-arch-tier:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.sa-arch-tier-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--text2);
+}
+
+.sa-arch-tier-count {
+  font-size: 1.125rem;
+  color: var(--text);
+}
+
+.sa-arch-tier-arrow {
+  color: var(--text3);
+}
+
+/* ── Generic section (stub list view) ─────────────────────────────── */
+
+.sa-active-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.sa-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6875rem;
+  color: var(--text2);
+  border: 1px solid var(--border2);
+  background: var(--bg2);
+  padding: 3px 8px;
+}
+
+.sa-filter-chip-clear {
+  background: transparent;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.6875rem;
+}
+
+.sa-filter-chip-clear:hover {
+  color: var(--text);
+}
+
+.sa-type-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 14px 0;
+}
+
+.sa-type-tab {
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  cursor: pointer;
+}
+
+.sa-type-tab:hover {
+  background: var(--bg2);
+  color: var(--text);
+}
+
+.sa-type-tab.active {
+  background: var(--bg3);
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.sa-row-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sa-row {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+}
+
+.sa-row-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sa-row-title {
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+.sa-row-tag {
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  color: var(--text2);
+  border: 1px solid var(--border);
+  padding: 1px 6px;
+}
+
+.sa-row-origin {
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+}
+
+.sa-row-origin-generated {
+  color: var(--text2);
+}
+
+.sa-row-origin-curated {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: var(--amber-dim);
+}
+
+.sa-row-summary {
+  font-size: 0.75rem;
+  color: var(--text3);
+  margin: 4px 0 0;
+}
+
+.sa-section-count {
+  font-size: 0.6875rem;
+  color: var(--text3);
+  margin: 12px 0 0;
+}
+
+/* ── Context rail ──────────────────────────────────────────────────── */
+
+.sa-rail {
+  width: var(--sa-rail-width);
+  flex-shrink: 0;
+  position: sticky;
+  top: 20px;
+}
+
+.sa-rail-head {
+  margin-bottom: 12px;
+}
+
+.sa-rail-empty {
+  font-size: 0.8125rem;
+  color: var(--text3);
+  border: 1px dashed var(--border);
+  padding: 16px;
+  line-height: 1.6;
+}
+
+.sa-rail-empty-note {
+  font-size: 0.75rem;
+  color: var(--text3);
+  margin: 8px 0 0;
+}
+
+/* ── Responsive (spec §3.1) ────────────────────────────────────────── */
+
+@media (max-width: 1279px) {
+  .sa-shell {
+    flex-wrap: wrap;
+  }
+
+  .sa-rail {
+    width: 100%;
+    position: static;
+    order: 3;
+  }
+}
+
+@media (max-width: 959px) {
+  .sa-shell {
+    flex-direction: column;
+  }
+
+  .sa-nav {
+    width: 100%;
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .sa-nav-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .sa-nav-meta {
+    display: none;
+  }
+
+  .sa-tile-row {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sa-tile,
+  .sa-arch-tier,
+  .sa-nav-btn {
+    transition: none;
+  }
+}
