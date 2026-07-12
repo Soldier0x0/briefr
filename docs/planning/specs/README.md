@@ -18,3 +18,4 @@ Open checklist rows: [`../BACKLOG.md`](../BACKLOG.md).
 | [`ux-audit.md`](ux-audit.md) | UX audit deferred issues (28–33 etc.) | Per BACKLOG §5 |
 | [`resource-benchmarking.md`](resource-benchmarking.md) | BRIEFR + Postgres utilization telemetry (admin RESOURCES page) | RB-1…RB-2 |
 | [`api-key-health-and-quota-findings.md`](api-key-health-and-quota-findings.md) | Findings only (P0 bug RCA + quota-system clarity) — no runtime changes yet | AKH-1…AKH-2 (not started) |
+| [`qa-audit-2026-07-12.md`](qa-audit-2026-07-12.md) | Findings only (live-verified functionality/UI/ops QA pass) — no runtime changes yet | QA-F1, QA-U1…U3 (not started) |

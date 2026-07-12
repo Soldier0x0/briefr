@@ -90,6 +90,17 @@ before PR-9.
 | **AKH-1** | Fix `api_key_health.py::_ping_json` positional-arg bug (`TypeError: resilient_request() got multiple values for argument 'source'`) — every provider health check has failed on every run since the feature shipped; also fix the notification dedupe key (currently includes a per-run timestamp, so it never dedupes) | 📋 P0 — active notification flood every 6h |
 | **AKH-2** | Quota-system UI clarity: rename Admin "Rate limit" nav (collides with unrelated outbound provider quota), wire or remove the dead `fetchUsage()`/`GET /api/usage` endpoint (zero frontend callers today), HelpTip explaining quota vs pacing vs inbound throttling. Narrows Issue 21 + folds into UX-J1 | 📋 |
 
+### QA audit — functionality/UI/ops (found 2026-07-12, live-verified)
+
+**Findings doc:** [`specs/qa-audit-2026-07-12.md`](specs/qa-audit-2026-07-12.md) — observation/RCA only, no code changes yet. Reproduced live against a running dev instance (not static analysis).
+
+| PR | Title | Status |
+|----|-------|--------|
+| **QA-F1** | DetailDrawer DETECT tab: parallelize external rule-source calls (GitHub Search blocks the whole response 15-30s, unauthenticated in dev); fix frontend/backend timeout mismatch causing a false "request timed out" on every uncached CVE | 📋 High — active |
+| **QA-U1** | DetailDrawer header: real 193px clip (not wrap) at 375px width — action button row needs a responsive collapse/overflow menu. Folds into UX-C1/C2 scope | 📋 |
+| **QA-U2** | Accent-color design pass for drawer content — token renders correctly but only 2-3 touches per tab, reads as "lost." Design judgment, not a coded fix | 📋 |
+| **QA-U3** | Global header: 29px real overflow at ~375px width (narrow-device edge case) | 📋 low |
+
 ### Restart / durability bundle (§Z)
 
 | PR | Title | Status |
