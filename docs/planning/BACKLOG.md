@@ -101,6 +101,18 @@ before PR-9.
 | **QA-U2** | Accent-color design pass for drawer content — token renders correctly but only 2-3 touches per tab, reads as "lost." Design judgment, not a coded fix | 📋 |
 | **QA-U3** | Global header: 29px real overflow at ~375px width (narrow-device edge case) | 📋 low |
 
+### QA live audit round 2 (found 2026-07-12, `qa-live-audit-2026-07-12-part2.md`)
+
+Independently re-verified — of 17 Emergent-agent + Emergent-adjacent claims tested live, 6 confirmed real (below), 11 refuted/overstated. See findings doc for the full verification log, including the 11 refutations with evidence.
+
+| PR | Title | Status |
+|----|-------|--------|
+| **QA-P2-1** | Brief KPI stat tiles: "₀" flat-delta reads as noise next to the large stat number (12px muted number at same baseline as 40px number). Prefix flat/nonzero deltas with `Δ`, or hide when exactly 0 | 📋 |
+| **QA-P2-2** | Admin Overview: "DATABASE HEALTH" card only ever says "checked on startup" with no refresh affordance on the card | 📋 |
+| **QA-P2-3** | Admin Overview: "NIST CVE FEED" stat card shows a bare em-dash with no explanation of why (sub-label only describes normal cadence, not current blank state). Isolated to this one card, not systemic | 📋 |
+| **QA-P2-4** | Forge: GAP/COMMUNITY/YOURS coverage chips have no per-chip `title`/`aria-label` — only a generic group label. Add per-chip tooltips | 📋 |
+| **QA-P2-5** | IOC Lookup: input placeholder crams all 3 example formats (IP/hash/domain) into one string, copy-pasteable as a single invalid value. Cycle one example, or move to a hint line below the input | 📋 |
+
 ### Restart / durability bundle (§Z)
 
 | PR | Title | Status |
