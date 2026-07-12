@@ -97,7 +97,7 @@ export default function GenericSection({ sectionId, filters, onFilterChange }) {
       >
         <ul className="sa-row-list" aria-label={`${humanizeSectionId(sectionId)} records`}>
           {items.map((item, i) => (
-            <li key={item.id || item.path || i} className="sa-row">
+            <li key={item.id || (item.method ? `${item.method}-${item.path}` : item.path) || i} className="sa-row">
               <div className="sa-row-main">
                 <span className="sa-row-title">{item.title || item.path || item.id}</span>
                 {item.method && <span className="sa-row-tag mono">{item.method}</span>}

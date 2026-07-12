@@ -16,9 +16,33 @@ typed per-section endpoints in spec §4.4 (graph/architecture, stride, mitre,
 
 from __future__ import annotations
 
+import datetime
+
 from fastapi.testclient import TestClient
 
+import security_architecture.routers.security_architecture as sa_router
 from main import app
+
+
+def _corpus_with(last_reviewed, review_date):
+    """Minimal corpus shape matching what an unquoted YAML date parses to
+    (datetime.date, not str) -- reproduces the Gemini-caught crash."""
+    return {
+        "manifest": {"version": "1", "last_reviewed": last_reviewed},
+        "components": {"components": []},
+        "api_inventory": {"endpoints": []},
+        "scheduler_jobs": {"jobs": []},
+        "db_tables": {"tables": []},
+        "risks": {"risks": [
+            {"origin": "curated", "status": "open", "severity": "critical", "review_date": review_date},
+        ]},
+        "controls": {"controls": []},
+        "trust_boundaries": {"trust_boundaries": []},
+        "abuse_cases": {"abuse_cases": []},
+        "threat_scenarios": {"threat_scenarios": []},
+        "security_decisions": {"security_decisions": []},
+        "reviews": {"reviews": []},
+    }
 
 
 def test_overview_tiles_are_counts_with_drill_targets():
@@ -96,6 +120,31 @@ def test_section_endpoint_unknown_section_404s():
     with TestClient(app) as client:
         res = client.get("/api/security-architecture/section/not-a-real-section")
         assert res.status_code == 404
+
+
+def test_overview_survives_unquoted_yaml_date(monkeypatch):
+    """PyYAML parses an unquoted last_reviewed: 2026-07-12 as datetime.date,
+    not str -- date.fromisoformat(date_obj) raises TypeError, uncaught by
+    the original `except ValueError`. Must not 500."""
+    corpus = _corpus_with(datetime.date(2026, 7, 1), "2026-01-01")
+    monkeypatch.setattr(sa_router, "get_corpus", lambda: corpus)
+    with TestClient(app) as client:
+        res = client.get("/api/security-architecture/overview")
+        assert res.status_code == 200
+        tile = next(t for t in res.json()["tiles"] if t["id"] == "review_freshness")
+        assert isinstance(tile["value"], int)
+
+
+def test_section_stale_filter_survives_unquoted_yaml_date(monkeypatch):
+    """Same unquoted-date issue on a curated row's review_date -- comparing
+    a date object against the string cutoff raised TypeError in Python 3."""
+    old_date = datetime.date.today() - datetime.timedelta(days=400)
+    corpus = _corpus_with("2026-07-01", old_date)
+    monkeypatch.setattr(sa_router, "get_corpus", lambda: corpus)
+    with TestClient(app) as client:
+        res = client.get("/api/security-architecture/section/risks?stale=true")
+        assert res.status_code == 200
+        assert res.json()["count"] == 1
 
 
 def test_section_endpoint_requires_session_auth():

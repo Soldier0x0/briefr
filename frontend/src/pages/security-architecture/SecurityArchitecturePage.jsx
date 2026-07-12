@@ -97,6 +97,7 @@ export default function SecurityArchitecturePage() {
                 ref={el => { navRefs.current[id] = el }}
                 type="button"
                 role="tab"
+                tabIndex={section === id ? 0 : -1}
                 aria-selected={section === id}
                 aria-current={section === id ? 'page' : undefined}
                 className={`sa-nav-btn${section === id ? ' active' : ''}`}

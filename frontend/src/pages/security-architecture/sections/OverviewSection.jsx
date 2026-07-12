@@ -64,20 +64,21 @@ export default function OverviewSection({ onDrill }) {
       >
         <div className="sa-tile-row" role="list" aria-label="Security posture evidence tiles">
           {tiles.map(tile => (
-            <Tooltip key={tile.id} text={tile.help}>
-              <button
-                type="button"
-                role="listitem"
-                className="sa-tile"
-                onClick={() => onDrill(tile.section, tile.filter)}
-              >
-                <span className="sa-tile-label mono">{tile.label}</span>
-                <span className="sa-tile-value">
-                  {tile.value}
-                  {tile.unit && <span className="sa-tile-unit"> {tile.unit}</span>}
-                </span>
-              </button>
-            </Tooltip>
+            <div key={tile.id} role="listitem">
+              <Tooltip text={tile.help}>
+                <button
+                  type="button"
+                  className="sa-tile"
+                  onClick={() => onDrill(tile.section, tile.filter)}
+                >
+                  <span className="sa-tile-label mono">{tile.label}</span>
+                  <span className="sa-tile-value">
+                    {tile.value}
+                    {tile.unit && <span className="sa-tile-unit"> {tile.unit}</span>}
+                  </span>
+                </button>
+              </Tooltip>
+            </div>
           ))}
         </div>
       </AsyncState>
@@ -90,11 +91,10 @@ export default function OverviewSection({ onDrill }) {
         </p>
         <div className="sa-arch-tiers" role="list" aria-label="Generated architecture tiers">
           {stackTiers.map((tier, i) => (
-            <div key={tier.type} className="sa-arch-tier-wrap">
+            <div key={tier.type} className="sa-arch-tier-wrap" role="listitem">
               <Tooltip text={tier.help}>
                 <button
                   type="button"
-                  role="listitem"
                   className="sa-arch-tier"
                   onClick={() => onDrill('components', { type: tier.type })}
                 >

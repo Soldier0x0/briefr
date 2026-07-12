@@ -105,8 +105,10 @@ async def get_overview():
     controls = _rows(corpus, "controls", "controls")
 
     try:
-        days_since_review = (date.today() - date.fromisoformat(corpus["manifest"]["last_reviewed"])).days
-    except ValueError:
+        last_reviewed = corpus["manifest"]["last_reviewed"]
+        review_date = last_reviewed if isinstance(last_reviewed, date) else date.fromisoformat(last_reviewed)
+        days_since_review = (date.today() - review_date).days
+    except (ValueError, TypeError):
         days_since_review = None
 
     tiles = [
@@ -200,10 +202,18 @@ async def get_section(section_id: str, type: str = "", status: str = "", severit
         rows = [r for r in rows if isinstance(r, dict) and r.get("severity") == severity]
     if stale:
         cutoff = (date.today() - timedelta(days=STALE_WINDOW_DAYS)).isoformat()
+
+        def _is_stale(r: dict) -> bool:
+            rev_date = r.get("review_date")
+            if not rev_date:
+                return False
+            if isinstance(rev_date, date):
+                rev_date = rev_date.isoformat()
+            return str(rev_date) < cutoff
+
         rows = [
             r for r in rows
-            if isinstance(r, dict) and r.get("origin") == "curated"
-            and r.get("review_date") and r["review_date"] < cutoff
+            if isinstance(r, dict) and r.get("origin") == "curated" and _is_stale(r)
         ]
 
     return {
