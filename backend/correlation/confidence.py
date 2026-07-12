@@ -116,7 +116,10 @@ def aggregate_infrastructure_confidence(
             **({"confirmation": edge["confirmation"]} if edge.get("confirmation") else {}),
         })
 
-    why_parts = [e["why_not_higher"] for e in edges if e.get("why_not_higher")]
+    why_parts = [
+        e["why_not_higher"] for e in edges
+        if e.get("confidence") == confidence and e.get("why_not_higher")
+    ]
     why = why_parts[0] if why_parts else None
 
     # Factors from the edge(s) that set the aggregate level -- same

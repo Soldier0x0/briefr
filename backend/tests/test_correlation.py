@@ -549,6 +549,80 @@ def test_confidence_factors_snapshot_for_ioc_edge_and_campaign():
     assert [f["factor"] for f in factors] == ["same_pulse"]
 
 
+def test_aggregate_infrastructure_why_matches_aggregate_confidence_edge():
+    """Gemini review on PR #489: why_not_higher must come from an edge whose
+    confidence equals the aggregate level, same filter as confidence_factors
+    -- otherwise why can describe a weaker edge that lost the max() vote."""
+    from correlation.confidence import aggregate_infrastructure_confidence
+
+    edges = [
+        {
+            "ioc_type": "IP",
+            "ioc_value": "1.2.3.4",
+            "confidence": "low",
+            "why_not_higher": "IP-only edges are weaker than domain or hash matches",
+            "confidence_factors": [{"factor": "ip_only", "reason": "IP-only edges are weaker than domain or hash matches"}],
+        },
+        {
+            "ioc_type": "HASH",
+            "ioc_value": "a" * 64,
+            "confidence": "high",
+            "why_not_higher": None,
+            "confidence_factors": [{"factor": "ioc_type", "value": "HASH", "reason": "Hash-type indicator"}],
+        },
+    ]
+    confidence, evidence, why, factors = aggregate_infrastructure_confidence(edges)
+    assert confidence == "high"
+    assert why is None  # the low IP edge's why must not leak onto the high aggregate
+    assert factors == [{"factor": "ioc_type", "value": "HASH", "reason": "Hash-type indicator"}]
+
+
+def test_campaign_attribution_conflict_updates_why_not_higher(tmp_path, monkeypatch):
+    """Gemini review on PR #489: an attribution conflict downgrades confidence
+    but previously left why_not_higher stale (None), breaking the documented
+    'why_not_higher equals the last factor's reason' contract."""
+    async def run():
+        db_path = str(tmp_path / "corr-conflict-why.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        db = await _seed_db(db_path)
+        try:
+            pulses = [
+                {
+                    "pulse_id": "pulse-conflict-why",
+                    "pulse_name": "Conflict wave",
+                    "author": "analyst1",
+                    "created_date": "2024-01-10",
+                    "adversary": "Totally Different Threat Group",
+                    "malware_families": [],
+                    "tags": [],
+                    "targeted_countries": [],
+                    "ioc_count": 0,
+                }
+            ]
+            await replace_otx_cve_pulses(db, "CVE-2024-1001", pulses)
+            await replace_otx_cve_pulses(db, "CVE-2024-HUB1", pulses)
+            await db.commit()
+            await db.execute(
+                "INSERT INTO correlation_actor (cve_id, actor_name, confidence) VALUES (?, ?, ?)",
+                ("CVE-2024-1001", "APT28", "medium"),
+            )
+            await db.commit()
+
+            await build_campaigns_from_pulses(db)
+            await db.commit()
+
+            campaigns = await get_campaigns_for_cve(db, "CVE-2024-1001")
+            assert len(campaigns) == 1
+            assert campaigns[0]["attribution_conflict"] is True
+            assert campaigns[0]["why_not_higher"] == "Adversary attribution conflicts with MITRE technique-matched actors"
+            assert campaigns[0]["confidence_factors"][-1]["reason"] == campaigns[0]["why_not_higher"]
+        finally:
+            await db.close()
+
+    run_db_test(run())
+
+
 def test_related_cves_for_ioc_from_tables(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "corr-ioc-related.db")
