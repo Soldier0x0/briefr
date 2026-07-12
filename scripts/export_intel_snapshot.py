@@ -58,7 +58,6 @@ INTEL_TABLES: tuple[str, ...] = (
     "correlation_temporal",
     "correlation_campaigns",
     "correlation_campaign_members",
-    "correlation_infrastructure",
     "cve_embeddings",
     "mitre_groups",
     "group_technique_map",
