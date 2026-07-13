@@ -56,7 +56,7 @@ controls:
     related_code: [backend/rate_limit.py, backend/rate_limit_store.py]
     related_apis: ['/api/auth/login', '/api/auth/refresh', '/api/ioc/*', '/api/admin/*', '/api/wallboard/*']
     review_status: current
-    live_flag: null
+    live_flag: RATE_LIMIT_ENABLED
 
   - id: parameterized-sql
     title: Parameterized SQL
@@ -128,20 +128,28 @@ controls:
 
   - id: postgres-required-in-production
     title: PostgreSQL required in production
-    summary: BRIEFR refuses to start against a non-Postgres DATABASE_URL when BRIEFR_REQUIRE_POSTGRES is set -- SQLite survives only as a zero-config dev/test fallback, never a silent production footgun.
+    summary: >-
+      BRIEFR refuses to start against a non-Postgres DATABASE_URL when
+      BRIEFR_REQUIRE_POSTGRES is set -- SQLite survives only as a
+      zero-config dev/test fallback, never a silent production footgun.
+      Opt-in: settings.briefr_require_postgres defaults to False, unlike
+      this inventory's other *_ENABLED flags which default on -- an unset
+      DATABASE_URL production box is not enforcing this control, and the
+      active flag below says so.
     owner: platform
     status: active
     origin: curated
     review_date: '2026-07-01'
-    evidence: [backend/main.py, backend/.env.example]
+    evidence: [backend/main.py, backend/.env.example, backend/settings.py]
     related_ids: []
     category: configuration-hardening
     threats_mitigated: [misconfiguration, data-loss]
     coverage: full
-    related_code: [backend/main.py]
+    related_code: [backend/main.py, backend/settings.py]
     related_apis: []
     review_status: current
     live_flag: BRIEFR_REQUIRE_POSTGRES
+    live_flag_default_when_unset: false
 
   - id: structured-logging-redaction
     title: Structured logging secret redaction

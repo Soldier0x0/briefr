@@ -84,8 +84,11 @@ new router endpoints, `build_coverage_map` — passed on both. One pre-existing,
 test_scenarios_with_stack_and_mapping` and `::test_scenarios_handles_null_epss_score`
 fail only under Postgres because their seeding helper calls a bare `asyncio.run()`
 *after* the TestClient's app lifespan already opened the asyncpg pool on a different
-event loop — asyncpg binds pool release/reset to the loop that created it. Fixed the
-same pattern in this PR's own new test file
+event loop — asyncpg binds pool release/reset to the loop that created it. Proof this
+is pre-existing and not a TM-3 regression: `git diff b4e8c24 -- backend/tests/
+test_threat_model_scenarios.py` is empty (this branch never touches that file), and
+the traceback puts the failure inside `_seed_mitre_cve`'s `asyncio.run()` call, before
+any endpoint under test even runs. Fixed the same pattern in this PR's own new test file
 (`test_security_architecture_live.py`, via `client.portal.call(...)` instead of
 `asyncio.run()`) but did **not** touch `test_threat_model_scenarios.py` — out of TM-3's
 scope, would be a second unrelated fix bloating the diff. Flagged as a spawned

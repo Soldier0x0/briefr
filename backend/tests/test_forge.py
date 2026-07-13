@@ -197,6 +197,33 @@ def test_coverage_map_statuses_and_counts(forge_client):
     assert body["meta"]["generated_at"]
 
 
+def test_count_coverage_summary_matches_full_coverage_map(forge_client):
+    """TM-3 (Security Architecture Overview's MITRE Detection Coverage tile,
+    Gemini review on PR #494): count_coverage_summary is a lightweight
+    covered/total query, not the full build_coverage_map -- must agree with
+    it on the same data. Runs via the TestClient's own anyio portal (not
+    run_db_test/asyncio.run -- the app lifespan's pool is already open on
+    that loop; see test_security_architecture_live.py's `_seed` docstring
+    for why a second event loop blows up under Postgres)."""
+    from routers.forge import build_coverage_map, count_coverage_summary
+
+    client, _ = forge_client
+
+    async def _run():
+        from database import get_db
+        db = await get_db()
+        try:
+            full = await build_coverage_map(db, None)
+            summary = await count_coverage_summary(db)
+        finally:
+            await db.close()
+        return full, summary
+
+    full, summary = client.portal.call(_run)
+    full_covered = full["meta"]["counts"]["yours"] + full["meta"]["counts"]["community"]
+    assert summary == {"covered": full_covered, "total": full["meta"]["technique_total"]}
+
+
 def test_coverage_map_stack_filter_narrows(forge_client):
     client, _ = forge_client
     body = client.get("/api/forge/coverage", params={"stack": "log4j"}).json()

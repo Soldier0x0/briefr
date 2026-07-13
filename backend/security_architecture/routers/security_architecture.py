@@ -43,7 +43,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 
 from database import get_db
-from routers.forge import build_coverage_map
+from routers.forge import build_coverage_map, count_coverage_summary
 from security_architecture import merge
 from security_architecture.corpus_loader import CorpusValidationError, get_corpus
 from threat_model.scenarios import build_threat_scenarios
@@ -172,13 +172,13 @@ async def get_overview():
 
     db = await get_db()
     try:
-        coverage = await build_coverage_map(db, None)
+        coverage_summary = await count_coverage_summary(db)
         exposure = await merge.self_cve_exposure_summary(db, corpus)
     finally:
         await db.close()
 
-    covered = coverage["meta"]["counts"]["yours"] + coverage["meta"]["counts"]["community"]
-    total = coverage["meta"]["technique_total"]
+    covered = coverage_summary["covered"]
+    total = coverage_summary["total"]
     tiles.append({
         "id": "mitre_detection_coverage", "label": "MITRE Detection Coverage",
         "value": f"{covered}/{total}" if total else "—",
@@ -293,7 +293,10 @@ async def get_section(
     if section_id == "controls":
         rows = merge.enrich_controls(rows)
 
-    if section_id == "risks":
+    # Skip the query entirely when the requested filters can't include live
+    # rows anyway: origin=curated excludes them by definition, and stale=true
+    # only ever matches curated rows (live rows carry no review_date).
+    if section_id == "risks" and origin != "curated" and not stale:
         db = await get_db()
         try:
             live_rows = await merge.self_stack_risk_rows(db, corpus)

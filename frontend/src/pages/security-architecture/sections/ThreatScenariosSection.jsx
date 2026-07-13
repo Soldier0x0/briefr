@@ -43,6 +43,16 @@ export default function ThreatScenariosSection() {
   }, [])
 
   useEffect(() => {
+    // "Your stack" with no saved profile has nothing to query -- the empty
+    // state below explains why; firing the request anyway would just be a
+    // network round-trip for a result we already know is empty.
+    if (catalog === 'stack' && !userStack) {
+      setData(null)
+      setLoading(false)
+      setError(null)
+      return undefined
+    }
+
     let cancelled = false
     setLoading(true)
     setError(null)

@@ -45,12 +45,24 @@ def resolve_control_active(control: dict[str, Any]) -> bool:
     """A control without a `live_flag` is structural (enforced unconditionally
     in code, e.g. parameterized SQL, TLS-only webhooks) -- its presence in
     the codebase *is* the live proof, so it reads active. A control with a
-    `live_flag` reads the actual runtime env var, same truthiness convention
-    as the rest of the codebase's *_ENABLED flags."""
+    `live_flag` reads the actual runtime env var.
+
+    Most of this codebase's `*_ENABLED` flags are opt-*out* (default True
+    when unset -- e.g. `RATE_LIMIT_ENABLED`, `settings.rate_limit_enabled:
+    bool = True`), so that's the default here too. A control whose flag is
+    opt-*in* instead (default False when unset -- e.g.
+    `BRIEFR_REQUIRE_POSTGRES`, `settings.briefr_require_postgres: bool =
+    False`) must say so explicitly via `live_flag_default_when_unset: false`
+    in its corpus record; otherwise this would silently misreport an unset
+    opt-in flag as active, which is exactly the confidently-wrong posture
+    claim the module exists to avoid."""
     flag = control.get("live_flag")
     if not flag:
         return True
-    return os.environ.get(flag, "1").strip().lower() not in _FALSY
+    raw = os.environ.get(flag)
+    if raw is None:
+        return bool(control.get("live_flag_default_when_unset", True))
+    return raw.strip().lower() not in _FALSY
 
 
 def enrich_controls(controls: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -100,7 +112,11 @@ async def self_stack_risk_rows(db: Any, corpus: dict[str, Any]) -> list[dict[str
     live_rows = []
     for r in rows:
         row = dict(r)
-        matched = _matched_term(row, terms)
+        # The WHERE clause guarantees at least one term matched, but which
+        # one is a second, looser scan (substring vs. the exact clause the
+        # DB used) -- fall back to "unknown" rather than let a None slip
+        # into the row's title/summary as the literal string "None".
+        matched = _matched_term(row, terms) or "unknown"
         is_kev = bool(row.get("is_kev"))
         live_rows.append({
             "id": f"self-stack-{row['cve_id']}",

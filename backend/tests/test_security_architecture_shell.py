@@ -107,9 +107,18 @@ def test_section_endpoint_type_param_switches_generated_collection():
 
 def test_section_endpoint_filters_by_status_and_severity():
     with TestClient(app) as client:
-        # risks.yaml is currently an empty curated stub -- filters must not
-        # error on an empty list, and must return an honestly empty result.
-        res = client.get("/api/security-architecture/section/risks?status=open&severity=critical")
+        # risks.yaml's curated stub is empty -- filters must not error on an
+        # empty list and must return an honestly empty result. `origin=curated`
+        # pins this to the curated-only stub deliberately: this test file
+        # doesn't isolate DB_PATH (unlike test_security_architecture_live.py),
+        # so without the origin filter a KEV CVE already present in whatever
+        # DB this process happens to be pointed at (live self-stack rows,
+        # TM-3 spec §4.5) could legitimately match status=open&severity=critical
+        # too -- that's correct merge behavior, not a bug, and is covered by
+        # test_security_architecture_live.py's live-row tests instead.
+        res = client.get(
+            "/api/security-architecture/section/risks?status=open&severity=critical&origin=curated"
+        )
         assert res.status_code == 200
         body = res.json()
         assert body["section"] == "risks"

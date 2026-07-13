@@ -156,6 +156,34 @@ def test_controls_active_flag_respects_env_override(client, monkeypatch):
     assert backup["active"] is False
 
 
+def test_postgres_required_control_defaults_inactive_when_unset(client, monkeypatch):
+    """Codex review on PR #494: BRIEFR_REQUIRE_POSTGRES is opt-in (default
+    False in settings.py), unlike this inventory's other *_ENABLED flags --
+    an unset env var must not read as ACTIVE."""
+    monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
+    res = client.get("/api/security-architecture/section/controls")
+    body = res.json()
+    control = next(i for i in body["items"] if i["id"] == "postgres-required-in-production")
+    assert control["active"] is False
+    monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "1")
+    res = client.get("/api/security-architecture/section/controls")
+    body = res.json()
+    control = next(i for i in body["items"] if i["id"] == "postgres-required-in-production")
+    assert control["active"] is True
+
+
+def test_rate_limiting_control_reflects_real_toggle(client, monkeypatch):
+    """Gemini review on PR #494: the rate-limiting control had no live_flag,
+    so it always read ACTIVE even with RATE_LIMIT_ENABLED=0 (rate_limit
+    .py::_enforce returns immediately in that case -- a real posture gap
+    the control must not paper over)."""
+    monkeypatch.setenv("RATE_LIMIT_ENABLED", "0")
+    res = client.get("/api/security-architecture/section/controls")
+    body = res.json()
+    control = next(i for i in body["items"] if i["id"] == "rate-limiting")
+    assert control["active"] is False
+
+
 # ── Risks: live self-stack rows (spec §4.5) ─────────────────────────────
 
 def test_risks_section_includes_live_self_stack_row_with_matched_term(client):
@@ -253,6 +281,37 @@ def test_resolve_control_active_respects_falsy_env_values(monkeypatch):
     assert merge.resolve_control_active({"live_flag": "SOME_FLAG"}) is False
     monkeypatch.setenv("SOME_FLAG", "1")
     assert merge.resolve_control_active({"live_flag": "SOME_FLAG"}) is True
+
+
+def test_resolve_control_active_unset_opt_out_flag_defaults_active(monkeypatch):
+    """Most *_ENABLED flags are opt-out (default True when unset) --
+    RATE_LIMIT_ENABLED matches settings.rate_limit_enabled: bool = True."""
+    monkeypatch.delenv("SOME_OPT_OUT_FLAG", raising=False)
+    assert merge.resolve_control_active({"live_flag": "SOME_OPT_OUT_FLAG"}) is True
+
+
+def test_resolve_control_active_unset_opt_in_flag_defaults_inactive(monkeypatch):
+    """An opt-in flag (default False when unset, e.g. BRIEFR_REQUIRE_POSTGRES /
+    settings.briefr_require_postgres: bool = False) must not be reported
+    active just because merge.py's blanket 'missing env var = enabled'
+    assumption doesn't hold for it -- the corpus record says so explicitly
+    via live_flag_default_when_unset: false (Codex review, PR #494)."""
+    monkeypatch.delenv("SOME_OPT_IN_FLAG", raising=False)
+    control = {"live_flag": "SOME_OPT_IN_FLAG", "live_flag_default_when_unset": False}
+    assert merge.resolve_control_active(control) is False
+    monkeypatch.setenv("SOME_OPT_IN_FLAG", "1")
+    assert merge.resolve_control_active(control) is True
+
+
+def test_matched_term_none_reads_as_unknown_not_python_none():
+    """Gemini review on PR #494: a fallback match miss must never leak the
+    literal string 'None' into a row's title/summary."""
+    row = {"cve_id": "CVE-2024-0001", "description": "no overlap here", "affected_products": "[]"}
+    assert merge._matched_term(row, ["zzz-unrelated-term"]) is None
+    # self_stack_risk_rows applies the `or "unknown"` fallback around the
+    # call site (merge.py), not inside _matched_term itself -- covered by
+    # test_risks_section_includes_live_self_stack_row_with_matched_term's
+    # assertion that matched_term is always truthy.
 
 
 def test_self_stack_terms_reads_generated_layer():

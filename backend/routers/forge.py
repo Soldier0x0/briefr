@@ -216,6 +216,32 @@ async def build_coverage_map(db, stack: str | None) -> dict:
     }
 
 
+async def count_coverage_summary(db) -> dict[str, int]:
+    """Lightweight covered/total technique counts, for tile-sized summaries
+    (Security Architecture Overview's MITRE Detection Coverage tile) that
+    only need two numbers -- doesn't build the full coverage map (CVE/KEV
+    joins, per-technique metadata, sorting) just to throw away everything
+    but the counts. Same "yours"/"community" status logic as
+    build_coverage_map, just without the per-CVE detail."""
+    technique_rows = await db.execute_fetchall(
+        "SELECT DISTINCT technique_id FROM cve_technique_map"
+    )
+    total_ids = {r["technique_id"] for r in technique_rows}
+    if not total_ids:
+        return {"covered": 0, "total": 0}
+
+    pack_rows = await db.execute_fetchall(
+        "SELECT DISTINCT technique_id FROM hunt_packs"
+    )
+    packed_ids = {r["technique_id"] for r in pack_rows}
+
+    covered = sum(
+        1 for tid in total_ids
+        if tid in packed_ids or _technique_prefix(tid) in _COMMUNITY_TECHNIQUES
+    )
+    return {"covered": covered, "total": len(total_ids)}
+
+
 @router.get("/api/forge/coverage")
 async def forge_coverage(
     stack: str | None = Query(
