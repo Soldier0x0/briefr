@@ -6,6 +6,7 @@ import {
 } from '../../../api.js'
 import { notifyApiError } from '../../../components/Toast.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
+import { downloadScenarioPdf } from '../../../utils/securityArchitecturePdf.js'
 
 const CATALOGS = [
   { id: 'operational', label: 'Operational paths' },
@@ -26,7 +27,7 @@ const STATUS_LABEL = { yours: 'YOURS', community: 'COMMUNITY', gap: 'GAP' }
  * zone 6). "Operational paths" reuses the existing generic section read
  * (curated threat_scenarios.yaml, currently an empty pre-review stub).
  */
-export default function ThreatScenariosSection() {
+export default function ThreatScenariosSection({ corpusVersion } = {}) {
   const [catalog, setCatalog] = useState('operational')
   const [userStack, setUserStack] = useState('')
   const [data, setData] = useState(null)
@@ -122,6 +123,13 @@ export default function ThreatScenariosSection() {
                 <div className="sa-row-main">
                   <span className="sa-row-title">{item.title}</span>
                   {item.origin && <span className={`sa-row-origin sa-row-origin-${item.origin} mono`}>{item.origin}</span>}
+                  <button
+                    type="button"
+                    className="sa-row-tag mono"
+                    onClick={() => downloadScenarioPdf(item, { corpusVersion })}
+                  >
+                    EXPORT PDF
+                  </button>
                 </div>
                 {item.summary && <p className="sa-row-summary">{item.summary}</p>}
               </li>
@@ -143,6 +151,13 @@ export default function ThreatScenariosSection() {
                     {STATUS_LABEL[scenario.coverage_status] || scenario.coverage_status}
                   </span>
                   {scenario.kev_count > 0 && <span className="sa-row-tag sa-row-tag-kev mono">{scenario.kev_count} KEV</span>}
+                  <button
+                    type="button"
+                    className="sa-row-tag mono"
+                    onClick={() => downloadScenarioPdf(scenario, { corpusVersion })}
+                  >
+                    EXPORT PDF
+                  </button>
                 </div>
                 <p className="sa-row-summary">{scenario.scenario}</p>
               </li>

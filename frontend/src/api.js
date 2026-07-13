@@ -355,6 +355,16 @@ export function fetchSecurityArchitectureNodeContext(nodeId) {
   return request(`/security-architecture/context/${encodeURIComponent(nodeId)}`)
 }
 
+/** TM-5: global search over the corpus + live MITRE technique names (spec §5.17). */
+export function fetchSecurityArchitectureSearch(q) {
+  return request(`/security-architecture/search?q=${encodeURIComponent(q)}`)
+}
+
+/** TM-5: every curated record past the review window, across all sections (Stale Records tile drill-through). */
+export function fetchSecurityArchitectureStale() {
+  return request('/security-architecture/stale')
+}
+
 /** V1.5: run Sigma rule against pasted log lines (file-based proof bench). */
 export function runProofBench({ lines, sigmaYaml, patterns, maxSamples = 10 }) {
   const body = { lines, max_samples: maxSamples }

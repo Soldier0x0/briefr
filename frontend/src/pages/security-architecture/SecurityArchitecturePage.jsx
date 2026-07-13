@@ -10,7 +10,13 @@ import ThreatScenariosSection from './sections/ThreatScenariosSection.jsx'
 import ArchitectureGraphSection from './sections/ArchitectureGraphSection.jsx'
 import TrustBoundariesSection from './sections/TrustBoundariesSection.jsx'
 import AttackSurfaceSection from './sections/AttackSurfaceSection.jsx'
+import RiskRegisterSection from './sections/RiskRegisterSection.jsx'
+import DecisionsSection from './sections/DecisionsSection.jsx'
+import AbuseCasesSection from './sections/AbuseCasesSection.jsx'
+import ReviewHistorySection from './sections/ReviewHistorySection.jsx'
+import StaleRecordsSection from './sections/StaleRecordsSection.jsx'
 import ContextRail from './ContextRail.jsx'
+import GlobalSearch from './GlobalSearch.jsx'
 import './SecurityArchitecturePage.css'
 
 /**
@@ -113,6 +119,7 @@ export default function SecurityArchitecturePage() {
         <Link to="/" className="sa-brand-link mono" title="Back to BRIEFR">BRIEFR</Link>
         <span className="sa-topbar-sep" aria-hidden="true">//</span>
         <span className="sa-topbar-title mono">SECURITY ARCHITECTURE</span>
+        <GlobalSearch onOpenSection={(id) => goToSection(id)} />
       </header>
 
       <div className="sa-shell">
@@ -150,17 +157,27 @@ export default function SecurityArchitecturePage() {
           )}
 
           {section === 'overview' ? (
-            <OverviewSection onDrill={goToSection} />
+            <OverviewSection onDrill={goToSection} corpusVersion={manifest?.version} />
           ) : section === 'mitre_attack' ? (
             <MitreSection />
           ) : section === 'threat_scenarios' ? (
-            <ThreatScenariosSection />
+            <ThreatScenariosSection corpusVersion={manifest?.version} />
           ) : section === 'system_architecture' ? (
             <ArchitectureGraphSection selectedNodeId={selectedNodeId} onSelectNode={selectNode} />
           ) : section === 'trust_boundaries' ? (
             <TrustBoundariesSection />
           ) : section === 'attack_surface' ? (
             <AttackSurfaceSection />
+          ) : section === 'risks' ? (
+            <RiskRegisterSection filters={filters} onFilterChange={setFilters} />
+          ) : section === 'security_decisions' ? (
+            <DecisionsSection />
+          ) : section === 'abuse_cases' ? (
+            <AbuseCasesSection />
+          ) : section === 'reviews' ? (
+            <ReviewHistorySection />
+          ) : section === 'stale' ? (
+            <StaleRecordsSection onOpenSection={goToSection} />
           ) : (
             <GenericSection sectionId={section} filters={filters} onFilterChange={setFilters} />
           )}

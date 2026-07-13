@@ -808,3 +808,156 @@
     transition: none;
   }
 }
+
+/* ── Global search (TM-5, spec §5.17) ─────────────────────────────── */
+
+.sa-search {
+  position: relative;
+  margin-left: auto;
+  width: 260px;
+}
+
+.sa-search-input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-size: 0.75rem;
+  padding: 5px 10px;
+}
+
+.sa-search-input:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.sa-search-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 340px;
+  max-height: 420px;
+  overflow-y: auto;
+  background: var(--surface-raised);
+  border: 1px solid var(--border2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  z-index: 40;
+  padding: 8px 0;
+}
+
+.sa-search-empty {
+  padding: 10px 14px;
+  color: var(--text3);
+  font-size: 0.75rem;
+}
+
+.sa-search-group {
+  padding: 4px 14px 8px;
+}
+
+.sa-search-result {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 6px 4px;
+  cursor: pointer;
+  transition: background-color 0.12s ease-out;
+}
+
+.sa-search-result:hover,
+.sa-search-result.active {
+  background: var(--bg3);
+}
+
+.sa-search-result-title {
+  font-size: 0.8125rem;
+}
+
+.sa-search-result-summary {
+  font-size: 0.6875rem;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+/* ── Decision records / abuse cases (TM-5, spec §5.11, §5.13) ───────── */
+
+.sa-decision-row {
+  display: block;
+}
+
+.sa-decision-toggle {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}
+
+.sa-decision-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.sa-decision-caret {
+  margin-left: auto;
+  color: var(--text3);
+}
+
+.sa-decision-detail {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sa-decision-field h4 {
+  margin-bottom: 4px;
+}
+
+.sa-decision-field p,
+.sa-decision-field ul,
+.sa-decision-field ol {
+  font-size: 0.8125rem;
+  color: var(--text2);
+  margin: 0;
+  padding-left: 1.1em;
+}
+
+.sa-decision-field p {
+  padding-left: 0;
+}
+
+.sa-decision-source {
+  color: var(--text3);
+  font-size: 0.6875rem;
+}
+
+/* ── Review history timeline (TM-5, spec §5.14) ──────────────────────── */
+
+.sa-review-timeline .sa-row {
+  border-left: 2px solid var(--border2);
+  padding-left: 12px;
+}
+
+/* ── Buttons used as inline tag/chip links (Stale Records drill-through) */
+
+button.sa-row-tag {
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+button.sa-row-tag:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
