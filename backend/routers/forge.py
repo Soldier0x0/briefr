@@ -34,7 +34,11 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
-from database import get_db
+from database import (
+    get_case_studies_for_technique,
+    get_case_study_counts_by_technique,
+    get_db,
+)
 from detection.sigma_generator import TECHNIQUE_TEMPLATES, generate_sigma_rule
 from detection.context import get_detection_context
 from detection.siem_queries import TECHNIQUE_QUERIES, get_siem_queries
@@ -144,6 +148,7 @@ async def build_coverage_map(db, stack: str | None) -> dict:
     technique_rows = await db.execute_fetchall(
         "SELECT technique_id, name, tactic, url FROM mitre_techniques"
     )
+    case_study_counts = await get_case_study_counts_by_technique(db)
 
     packs_by_technique = {r["technique_id"]: r["pack_count"] for r in pack_rows}
     meta_by_technique = {
@@ -171,6 +176,7 @@ async def build_coverage_map(db, stack: str | None) -> dict:
             "max_epss": row["max_epss"],
             "pack_count": pack_count,
             "status": status,
+            "case_study_count": case_study_counts.get(tid, 0),
         })
 
     # Techniques with saved packs always stay on the map, even when the
@@ -191,6 +197,7 @@ async def build_coverage_map(db, stack: str | None) -> dict:
             "max_epss": None,
             "pack_count": pack_count,
             "status": status,
+            "case_study_count": case_study_counts.get(tid, 0),
         })
 
     # Gaps (then community) first within each tactic — the map is a worklist.
@@ -407,7 +414,18 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
     finally:
         await db.close()
 
-    return {"pack": _pack_to_dict(pack_rows[0]), "created": created}
+    pack = _pack_to_dict(pack_rows[0])
+    # cve was already loaded above for sigma/SIEM generation — reuse it for
+    # the same CWE/EPSS/KEV fields list_hunt_packs and get_hunt_pack expose,
+    # so a freshly generated pack shows them in the rail immediately instead
+    # of only after the next full technique-detail reload (forge-redesign.md
+    # §4 FR-3).
+    pack["cwe_ids"] = cwe_ids
+    pack["cvss_score"] = cve["cvss_score"]
+    pack["epss_score"] = cve["epss_score"]
+    pack["is_kev"] = bool(cve["is_kev"])
+
+    return {"pack": pack, "created": created}
 
 
 # ── Hunt pack API (registered after the literal /generate sibling) ──
@@ -455,11 +473,13 @@ async def list_hunt_packs(
 
         # Subquery keeps the existing filtered/paginated hunt_packs query
         # untouched (params list stays identical); the outer join only adds
-        # cves.is_kev for the Library view's KEV column (forge-redesign.md
-        # §3.1 — missed in the FR-1 list endpoint, added here as additive).
+        # cves columns for the Library view (forge-redesign.md §3.1/§4) —
+        # is_kev (FR-1), cwe_ids/cvss_score/epss_score (FR-3), all already
+        # selected by the pack-generate flow, no extra query added here.
         rows = await db.execute_fetchall(
             f"""
-            SELECT hp.*, c.is_kev AS cve_is_kev
+            SELECT hp.*, c.is_kev AS cve_is_kev, c.cwe_ids AS cve_cwe_ids,
+                   c.cvss_score AS cve_cvss_score, c.epss_score AS cve_epss_score
             FROM (
                 SELECT * FROM hunt_packs {where}
                 ORDER BY updated_at DESC
@@ -477,6 +497,9 @@ async def list_hunt_packs(
     for r in rows:
         pack = _pack_to_dict(r)
         pack["is_kev"] = bool(r["cve_is_kev"])
+        pack["cwe_ids"] = _loads_or(r["cve_cwe_ids"], [])
+        pack["cvss_score"] = r["cve_cvss_score"]
+        pack["epss_score"] = r["cve_epss_score"]
         packs.append(pack)
 
     return {"packs": packs, "total": total}
@@ -531,7 +554,7 @@ async def get_hunt_pack(technique_id: str):
         cve_rows = await db.execute_fetchall(
             """
             SELECT c.cve_id, c.severity, c.cvss_score, c.epss_score,
-                   c.is_kev, c.published
+                   c.is_kev, c.published, c.cwe_ids
             FROM cve_technique_map m
             JOIN cves c ON c.cve_id = m.cve_id
             WHERE m.technique_id = ?
@@ -542,8 +565,21 @@ async def get_hunt_pack(technique_id: str):
             """,
             (tid,),
         )
+        case_studies = await get_case_studies_for_technique(db, tid)
     finally:
         await db.close()
+
+    # cve_rows above is already fetched for "linked CVEs" — reuse it to
+    # attach CWE/EPSS/CVSS to each saved pack's header (forge-redesign.md
+    # §4) without a second query.
+    cve_meta = {
+        r["cve_id"]: {
+            "cwe_ids": _loads_or(r["cwe_ids"], []),
+            "cvss_score": r["cvss_score"],
+            "epss_score": r["epss_score"],
+        }
+        for r in cve_rows
+    }
 
     if not technique_rows and not pack_rows and not cve_rows:
         raise HTTPException(status_code=404, detail="Technique not found")
@@ -565,12 +601,22 @@ async def get_hunt_pack(technique_id: str):
     baseline = get_siem_queries(technique_id=tid)
     log_patterns = baseline.pop("log_patterns", [])
 
+    packs = []
+    for r in pack_rows:
+        pack = _pack_to_dict(r)
+        meta = cve_meta.get(pack["cve_id"], {})
+        pack["cwe_ids"] = meta.get("cwe_ids", [])
+        pack["cvss_score"] = meta.get("cvss_score")
+        pack["epss_score"] = meta.get("epss_score")
+        packs.append(pack)
+
     return {
         "technique": technique,
         "status": _coverage_status(len(pack_rows), tid),
-        "packs": [_pack_to_dict(r) for r in pack_rows],
+        "packs": packs,
         "siem_queries": baseline,
         "log_patterns": log_patterns,
+        "case_studies": case_studies,
         "linked_cves": [
             {
                 "cve_id": r["cve_id"],

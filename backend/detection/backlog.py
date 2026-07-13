@@ -13,12 +13,36 @@ from typing import Any
 from database import get_db
 from db.enrichment import filter_cves_matching_stack
 from db.types import DbConnection
+from notifications.emit import emit_kev_backlog_notification
 from preferences.repo import get_effective_stack_terms
 from routers.forge import _coverage_status, _derive_priority
 
 logger = logging.getLogger(__name__)
 
 REASON_KEV_GAP = "kev_gap"
+
+
+async def _notify_new_backlog_items(db: DbConnection, created: list[dict[str, Any]]) -> None:
+    """In-app notification per new backlog row (forge-redesign.md §4) —
+    scheduler-side only, called from process_new_kev_backlog /
+    reconcile_kev_backlog after the backlog insert already committed.
+    Failure here must never fail the backlog refresh itself."""
+    for item in created:
+        try:
+            await emit_kev_backlog_notification(
+                db,
+                cve_id=item["cve_id"],
+                technique_id=item["technique_id"],
+                technique_name=item.get("technique_name") or item["technique_id"],
+                priority=item.get("priority", "medium"),
+                dedupe_key=f"kev_backlog:{item['cve_id']}:{item['technique_id']}",
+            )
+        except Exception as exc:
+            logger.warning(
+                "KEV backlog notification failed for %s/%s: %s",
+                item.get("cve_id"), item.get("technique_id"), exc,
+            )
+    await db.commit()
 
 
 async def _fetchone(db: DbConnection, sql: str, params: tuple = ()) -> Any | None:
@@ -89,14 +113,23 @@ async def upsert_gap_items_for_cves(
     pg = _is_postgres_connection(db)
     placeholders = ",".join(f"${i+1}" if pg else "?" for i in range(len(cve_ids)))
 
-    # 1. Batch fetch techniques for all CVEs
+    # 1. Batch fetch techniques for all CVEs. The UNION passes cve_ids twice
+    # (once per branch) — SQLite's positional "?" tolerates reusing the same
+    # placeholder text, but asyncpg numbers "$n" globally per statement, so
+    # reusing {placeholders} in both branches while binding 2×len(cve_ids)
+    # params raises "the server expects N arguments, 2N were passed". The
+    # second branch needs its own, offset placeholder list on Postgres.
+    placeholders2 = (
+        ",".join(f"${len(cve_ids) + i + 1}" for i in range(len(cve_ids)))
+        if pg else placeholders
+    )
     cve_techniques: dict[str, set[str]] = {cid: set() for cid in cve_ids}
     tech_rows = await db.execute_fetchall(
         f"""
         SELECT cve_id, technique_id AS tid FROM cve_technique_map WHERE cve_id IN ({placeholders})
         UNION
         SELECT cve_id, mitre_technique AS tid FROM cves
-        WHERE cve_id IN ({placeholders}) AND COALESCE(mitre_technique, '') != ''
+        WHERE cve_id IN ({placeholders2}) AND COALESCE(mitre_technique, '') != ''
         """,
         tuple(cve_ids) + tuple(cve_ids),
     )
@@ -248,6 +281,7 @@ async def process_new_kev_backlog(newly_kev_ids: list[str]) -> list[dict[str, An
         if created:
             await db.commit()
             logger.info("KEV backlog: %d new gap item(s)", len(created))
+            await _notify_new_backlog_items(db, created)
         return created
     finally:
         await db.close()
@@ -283,6 +317,7 @@ async def reconcile_kev_backlog() -> int:
         if created:
             await db.commit()
             logger.info("KEV backlog reconcile: %d new gap item(s)", len(created))
+            await _notify_new_backlog_items(db, created)
         return len(created)
     finally:
         await db.close()

@@ -259,6 +259,12 @@ def test_generate_pack_persists_link_and_is_idempotent(forge_client):
         "elastic_kql", "splunk_spl", "sentinel_kql", "qradar_aql",
     }
     assert pack["log_patterns"]
+    # FR-3: generate's response carries CWE/EPSS/KEV immediately (not just
+    # list_hunt_packs/get_hunt_pack) so a freshly generated pack shows them
+    # in the rail without a second round trip.
+    assert pack["is_kev"] is True
+    assert pack["cvss_score"] == pytest.approx(10.0)
+    assert pack["epss_score"] == pytest.approx(0.97)
 
     second = client.post("/api/hunt-packs/generate", json={"cve_id": "CVE-2021-44228"})
     assert second.status_code == 200
@@ -328,6 +334,66 @@ def test_hunt_pack_detail_shape(forge_client):
     assert body["status"] == "yours"
     assert len(body["packs"]) == 1
     assert body["packs"][0]["cve_id"] == "CVE-2021-44228"
+
+
+def test_hunt_pack_detail_includes_case_studies_and_cwe_epss(forge_client):
+    """forge-redesign.md §4 FR-3: case-study cross-links (joined through the
+    shared CVE, since ATLAS and ATT&CK are separate technique taxonomies)
+    and CWE/EPSS on the pack header."""
+    client, db_path = forge_client
+
+    async def seed_case_study() -> None:
+        db = await get_db()
+        try:
+            await db.execute(
+                "UPDATE cves SET cwe_ids = ? WHERE cve_id = ?",
+                ('["CWE-502"]', "CVE-2021-44228"),
+            )
+            await db.execute(
+                """
+                INSERT INTO atlas_case_studies
+                    (study_id, name, summary, techniques, target, date, study_type, cve_ids)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "AML.CS0001", "Log4Shell-adjacent AI incident",
+                    "An AI pipeline exposed via a vulnerable logging library.",
+                    "[]", "AI system", "2021-12-15", "incident",
+                    '["CVE-2021-44228"]',
+                ),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    # client.portal.call, not run_db_test/asyncio.run -- the TestClient's
+    # app lifespan already opened the asyncpg pool on its own event loop;
+    # a second asyncio.run() here would open (and later close) a second
+    # pool on a different loop, breaking the first (see HANDOVER's PG-001
+    # writeup and test_security_architecture_live.py's same fix).
+
+    client.portal.call(seed_case_study)
+
+    coverage = client.get("/api/forge/coverage").json()
+    by_tid = {t["technique_id"]: t for t in coverage["techniques"]}
+    assert by_tid[COMMUNITY_TID]["case_study_count"] == 1
+    assert by_tid[GAP_TID]["case_study_count"] == 0
+
+    detail = client.get(f"/api/hunt-packs/{COMMUNITY_TID}").json()
+    assert len(detail["case_studies"]) == 1
+    assert detail["case_studies"][0]["study_id"] == "AML.CS0001"
+
+    client.post("/api/hunt-packs/generate", json={"cve_id": "CVE-2021-44228"})
+    detail = client.get(f"/api/hunt-packs/{COMMUNITY_TID}").json()
+    pack = detail["packs"][0]
+    assert pack["cwe_ids"] == ["CWE-502"]
+    assert pack["epss_score"] == pytest.approx(0.97)
+    assert pack["cvss_score"] == pytest.approx(10.0)
+
+    library = client.get("/api/hunt-packs").json()
+    lib_pack = library["packs"][0]
+    assert lib_pack["cwe_ids"] == ["CWE-502"]
+    assert lib_pack["epss_score"] == pytest.approx(0.97)
 
 
 def test_hunt_pack_detail_validation(forge_client):

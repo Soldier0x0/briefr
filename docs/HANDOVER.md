@@ -129,6 +129,59 @@ event-loop bug is independent and can land anytime.
 
 ---
 
+## 2026-07-13 — FR-3: Forge live-data enrichment + PDF export shipped (PR open)
+
+**Context:** closes the forge-redesign.md program (FR-1 #490, FR-2 #492, FR-3 this PR)
+per `execution-playbook.md`. Entry gate: FR-2 merged, `pytest -k "forge or hunt_pack"`
+green before starting.
+
+**Shipped (branch `fr3-forge-live-data-pdf`, PR open, not merged):**
+- Case-study chips on Coverage rows + Hunt Pack rail, joined through the shared CVE
+  (ATLAS and ATT&CK are separate technique taxonomies, so this is a CVE join, not a
+  technique join) — `backend/routers/forge.py`, `frontend/src/components/forge/`.
+- CWE/EPSS surfaced immediately in the pack-generate response, not just on subsequent
+  list/get calls — `backend/db/metadata.py`.
+- KEV backlog notification emit, scheduler-side (`backend/detection/backlog.py` +
+  `backend/notifications/emit.py`), deep-linking to `?view=backlog` — not on the
+  request path, per CLAUDE.md danger zone 6. Also fixed a pre-existing placeholder bug
+  in the KEV backlog path discovered while wiring this.
+- `frontend/src/utils/huntPackPdf.js` — pack export via the existing jsPDF +
+  `exportCommon.js` pattern (mirrors `pdfReport.js`), supersedes FR-2's JSON-blob
+  placeholder in `LibraryView.jsx` (that placeholder's own comment said PDF was
+  deferred to FR-3 — this closes that loop).
+- Docs: `API_REFERENCE.md`, `SYSTEM_DESIGN.md`, `PRODUCT_STATUS.md` updated same PR.
+
+**Fixed along the way:** `test_hunt_pack_detail_includes_case_studies_and_cwe_epss`
+failed only under Postgres — same root cause as PG-001 (`run_db_test()`'s
+`asyncio.run()` opening a second event loop while the TestClient's app lifespan
+already bound the asyncpg pool to its own). Switched to `client.portal.call(...)`,
+matching the fix already in `test_security_architecture_live.py`.
+
+**New finding, not blocking this PR:** the full backend suite (`pytest tests/ -q`,
+SQLite default) shows 11 failures instead of the known 7-failure baseline. The extra
+4 (`test_api_key_health.py` × 5 tests reported as failing together, actually the same
+5; `test_db_explorer.py::test_unauthenticated_returns_401`) all pass cleanly in
+isolation or combined with `test_forge.py` — and both files collect *before*
+`test_forge.py` alphabetically, so FR-3's changes (confined to `forge.py` and its own
+tests, no `scheduler.py`/`main.py`/import-time side effects — checked via `git diff
+b4e8c24 --stat`) cannot be the cause. This is SQLite full-suite test-order pollution,
+same class of bug as PG-001 but a different pair of files and a different DB backend.
+Not diagnosed further here — record as **PG-003** in BACKLOG (cross-file SQLite test
+pollution, `test_api_key_health.py` + `test_db_explorer.py`, full-suite-only).
+
+**Verification:** `pytest tests/test_forge.py -q` green on SQLite (18 passed, 1
+skipped) and Postgres (17 passed, 1 skipped, via the existing disposable
+`briefr-pg-test` container on `:5433`); `npm run build` green. Live browser walk not
+completed this session (fourth precedent for this exact environment limitation — see
+the TM-2/TM-3 entries above); shipping on build+test evidence per the same call made
+those two times.
+
+**Next:** forge-redesign.md program is fully shipped once this PR merges (FR-1→FR-3).
+PG-003 (SQLite pollution) and PG-002 (persistent local Postgres for dev/CI, still open)
+are both standalone backlog items, not gating anything.
+
+---
+
 ## 2026-07-12 — TM-2: Security Architecture shell UI + Overview shipped
 
 **Context:** picked up TM-2 per the previous entry's queue — TM-1's corpus (merged,
