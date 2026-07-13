@@ -1,0 +1,274 @@
+version: 1
+terms:
+- id: self-stack-aiosqlite
+  title: aiosqlite
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: aiosqlite
+  source: backend/requirements.txt
+- id: self-stack-alembic
+  title: alembic
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: alembic
+  source: backend/requirements.txt
+- id: self-stack-apscheduler
+  title: apscheduler
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: apscheduler
+  source: backend/requirements.txt
+- id: self-stack-asyncpg
+  title: asyncpg
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: asyncpg
+  source: backend/requirements.txt
+- id: self-stack-bcrypt
+  title: bcrypt
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: bcrypt
+  source: backend/requirements.txt
+- id: self-stack-chart-js
+  title: chart.js
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: chart.js
+  source: frontend/package.json
+- id: self-stack-fastapi
+  title: fastapi
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: fastapi
+  source: backend/requirements.txt
+- id: self-stack-fontsource-dm-sans
+  title: '@fontsource/dm-sans'
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: '@fontsource/dm-sans'
+  source: frontend/package.json
+- id: self-stack-fontsource-dm-serif-display
+  title: '@fontsource/dm-serif-display'
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: '@fontsource/dm-serif-display'
+  source: frontend/package.json
+- id: self-stack-fontsource-ibm-plex-mono
+  title: '@fontsource/ibm-plex-mono'
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: '@fontsource/ibm-plex-mono'
+  source: frontend/package.json
+- id: self-stack-html2canvas
+  title: html2canvas
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: html2canvas
+  source: frontend/package.json
+- id: self-stack-httpx
+  title: httpx
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: httpx
+  source: backend/requirements.txt
+- id: self-stack-jspdf
+  title: jspdf
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: jspdf
+  source: frontend/package.json
+- id: self-stack-lucide-react
+  title: lucide-react
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: lucide-react
+  source: frontend/package.json
+- id: self-stack-nginx
+  title: nginx
+  summary: BRIEFR dependency term derived from declared runtime component.
+  owner: platform
+  status: active
+  origin: generated
+  term: nginx
+  source: declared runtime component
+- id: self-stack-numpy
+  title: numpy
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: numpy
+  source: backend/requirements.txt
+- id: self-stack-openpyxl
+  title: openpyxl
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: openpyxl
+  source: backend/requirements.txt
+- id: self-stack-orjson
+  title: orjson
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: orjson
+  source: backend/requirements.txt
+- id: self-stack-playwright
+  title: playwright
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: playwright
+  source: frontend/package.json
+- id: self-stack-postgresql
+  title: postgresql
+  summary: BRIEFR dependency term derived from declared runtime component.
+  owner: platform
+  status: active
+  origin: generated
+  term: postgresql
+  source: declared runtime component
+- id: self-stack-psycopg
+  title: psycopg
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: psycopg
+  source: backend/requirements.txt
+- id: self-stack-pydantic
+  title: pydantic
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: pydantic
+  source: backend/requirements.txt
+- id: self-stack-pydantic-settings
+  title: pydantic-settings
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: pydantic-settings
+  source: backend/requirements.txt
+- id: self-stack-pyrage
+  title: pyrage
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: pyrage
+  source: backend/requirements.txt
+- id: self-stack-python-dotenv
+  title: python-dotenv
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: python-dotenv
+  source: backend/requirements.txt
+- id: self-stack-python-multipart
+  title: python-multipart
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: python-multipart
+  source: backend/requirements.txt
+- id: self-stack-pyyaml
+  title: PyYAML
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: PyYAML
+  source: backend/requirements.txt
+- id: self-stack-react
+  title: react
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: react
+  source: frontend/package.json
+- id: self-stack-react-dom
+  title: react-dom
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: react-dom
+  source: frontend/package.json
+- id: self-stack-react-router-dom
+  title: react-router-dom
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: react-router-dom
+  source: frontend/package.json
+- id: self-stack-uvicorn
+  title: uvicorn
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: uvicorn
+  source: backend/requirements.txt
+- id: self-stack-vite
+  title: vite
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: vite
+  source: frontend/package.json
+- id: self-stack-vitejs-plugin-react
+  title: '@vitejs/plugin-react'
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: '@vitejs/plugin-react'
+  source: frontend/package.json
+- id: self-stack-write-excel-file
+  title: write-excel-file
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: write-excel-file
+  source: frontend/package.json

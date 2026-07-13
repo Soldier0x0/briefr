@@ -102,19 +102,18 @@ def _pack_to_dict(row) -> dict:
 
 # ── Coverage map ──────────────────────────────────────────
 
-@router.get("/api/forge/coverage")
-async def forge_coverage(
-    stack: str | None = Query(
-        default=None,
-        max_length=500,
-        description="Comma-separated stack terms (same matching as /api/cves)",
-    ),
-):
+async def build_coverage_map(db, stack: str | None) -> dict:
     """
     MITRE coverage map: techniques linked to CVEs in the database (optionally
-    filtered to the analyst's stack), each with CVE/KEV exposure counts and a
-    rule status of "yours" (saved hunt pack), "community" (bundled template
-    library covers it), or "gap" (no detection content at all).
+    filtered to a stack), each with CVE/KEV exposure counts and a rule status
+    of "yours" (saved hunt pack), "community" (bundled template library
+    covers it), or "gap" (no detection content at all).
+
+    Extracted from the `/api/forge/coverage` handler so the Security
+    Architecture MITRE ATT&CK section (TM-3) can reuse the exact same query
+    and status logic instead of duplicating it -- same convention as
+    `threat_model.scenarios.build_threat_scenarios` being wrapped, not
+    reimplemented. Caller owns the `db` connection lifecycle.
     """
     stack_clause, stack_params, stack_terms = _stack_match_clause(stack)
 
@@ -126,29 +125,25 @@ async def forge_coverage(
         cve_filter = f"WHERE m.cve_id IN (SELECT cve_id FROM cves WHERE {stack_clause})"
         params = list(stack_params)
 
-    db = await get_db()
-    try:
-        exposure_rows = await db.execute_fetchall(
-            f"""
-            SELECT m.technique_id,
-                   COUNT(DISTINCT m.cve_id) AS cve_count,
-                   SUM(CASE WHEN c.is_kev = 1 THEN 1 ELSE 0 END) AS kev_count,
-                   MAX(c.epss_score) AS max_epss
-            FROM cve_technique_map m
-            JOIN cves c ON c.cve_id = m.cve_id
-            {cve_filter}
-            GROUP BY m.technique_id
-            """,
-            params,
-        )
-        pack_rows = await db.execute_fetchall(
-            "SELECT technique_id, COUNT(*) AS pack_count FROM hunt_packs GROUP BY technique_id"
-        )
-        technique_rows = await db.execute_fetchall(
-            "SELECT technique_id, name, tactic, url FROM mitre_techniques"
-        )
-    finally:
-        await db.close()
+    exposure_rows = await db.execute_fetchall(
+        f"""
+        SELECT m.technique_id,
+               COUNT(DISTINCT m.cve_id) AS cve_count,
+               SUM(CASE WHEN c.is_kev = 1 THEN 1 ELSE 0 END) AS kev_count,
+               MAX(c.epss_score) AS max_epss
+        FROM cve_technique_map m
+        JOIN cves c ON c.cve_id = m.cve_id
+        {cve_filter}
+        GROUP BY m.technique_id
+        """,
+        params,
+    )
+    pack_rows = await db.execute_fetchall(
+        "SELECT technique_id, COUNT(*) AS pack_count FROM hunt_packs GROUP BY technique_id"
+    )
+    technique_rows = await db.execute_fetchall(
+        "SELECT technique_id, name, tactic, url FROM mitre_techniques"
+    )
 
     packs_by_technique = {r["technique_id"]: r["pack_count"] for r in pack_rows}
     meta_by_technique = {
@@ -219,6 +214,21 @@ async def forge_coverage(
             "technique_total": len(techniques),
         },
     }
+
+
+@router.get("/api/forge/coverage")
+async def forge_coverage(
+    stack: str | None = Query(
+        default=None,
+        max_length=500,
+        description="Comma-separated stack terms (same matching as /api/cves)",
+    ),
+):
+    db = await get_db()
+    try:
+        return await build_coverage_map(db, stack)
+    finally:
+        await db.close()
 
 
 # ── Hunt pack generation (CVE → pack linkage) ─────────────
