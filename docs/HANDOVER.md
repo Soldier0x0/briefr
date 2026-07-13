@@ -1867,7 +1867,7 @@ M1 is the Wave-2 scoring implementation once picked up.
 ## 2026-07-09 — Architecture review + wave replan (docs-only)
 
 **What:** Repository-wide principal-architect review. New durable artifact
-[`BRIEFR_ARCHITECTURE_REVIEW_2026-07.md`](BRIEFR_ARCHITECTURE_REVIEW_2026-07.md)
+[`BRIEFR_ARCHITECTURE_REVIEW_2026-07.md`](archive/superseded/BRIEFR_ARCHITECTURE_REVIEW_2026-07.md)
 (the primary output — read it before re-investigating correlation, scoring,
 freshness, scheduler, or production). `SPRINT_2026-07.md` execution queue
 replaced with a **wave model**; the linear J→H→I→F→G queue is kept but marked
@@ -2627,7 +2627,7 @@ dispatch `notifyBackendRestarting()` and show a top **RestartBanner** (polls
 ## 2026-07-07 — Product / open-core program (PR #0)
 
 **Session:** Planning session distilled into
-[`PROGRAM_PRODUCT_OPEN_CORE.md`](PROGRAM_PRODUCT_OPEN_CORE.md) — SaaS-grade
+[`PROGRAM_PRODUCT_OPEN_CORE.md`](planning/PROGRAM_PRODUCT_OPEN_CORE.md) — SaaS-grade
 admin UX (config Save, toast policy), user stack/prefs on Postgres, intel vs
 operator table split, Postgres-only database FAQ, and phased PR waves for
 open-core launch. July sprint **Track L** added as cross-links (E7, H1a, F1,
