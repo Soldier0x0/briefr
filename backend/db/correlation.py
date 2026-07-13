@@ -432,7 +432,7 @@ async def replace_otx_pulse_iocs(
                 norm.get("ioc_value") or "",
                 norm.get("description") or "",
                 utcnow_str(),
-                (norm.get("observed_at") or "").strip() or None,
+                str(norm.get("observed_at") or "").strip() or None,
             )
         )
     if not normalized_rows:

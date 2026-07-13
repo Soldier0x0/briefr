@@ -236,7 +236,7 @@ async def fetch_pulse_iocs(pulse_id: str, api_key: str) -> list[dict]:
             "ioc_type": ioc_type,
             "ioc_value": value,
             "description": (row.get("description") or row.get("title") or "").strip(),
-            "observed_at": (row.get("created") or row.get("created_date") or "").strip() or None,
+            "observed_at": str(row.get("created") or row.get("created_date") or "").strip() or None,
         })
     return iocs
 
