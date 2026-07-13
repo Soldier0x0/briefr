@@ -400,7 +400,13 @@ endpoints:
   path: /api/security-architecture/overview
   component_id: security_architecture-routers-security_architecture
 - method: GET
+  path: /api/security-architecture/search
+  component_id: security_architecture-routers-security_architecture
+- method: GET
   path: /api/security-architecture/section/{section_id}
+  component_id: security_architecture-routers-security_architecture
+- method: GET
+  path: /api/security-architecture/stale
   component_id: security_architecture-routers-security_architecture
 - method: GET
   path: /api/security-architecture/threat-scenarios
