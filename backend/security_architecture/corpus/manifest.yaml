@@ -4,8 +4,10 @@ last_reviewed: '2026-07-13'
 sections:
   - overview
   - components
-  - mitre_attack
+  - system_architecture
   - trust_boundaries
+  - attack_surface
+  - mitre_attack
   - controls
   - abuse_cases
   - threat_scenarios
@@ -16,11 +18,24 @@ notes: >
   TM-1 (corpus generator + loader + drift CI) seeded curated sections as
   intentionally empty placeholders. TM-3 (MITRE ATT&CK + Threat Scenarios +
   Controls + Self-exposure) did the first real security-review pass over
-  `controls.yaml` -- risks, abuse cases, decisions, trust boundaries, and
-  reviews are still empty pending a future pass. `mitre_attack` has no
-  corpus file of its own: it's served entirely from live
-  `mitre_techniques`/`cve_technique_map` DB data via
+  `controls.yaml`. TM-4 (System Architecture graph + Trust Boundaries +
+  Attack Surface) added `graphs/architecture.json` (generated -- component/
+  job/table nodes, component->table SQL-reference edges), a real curated
+  pass over `trust_boundaries.yaml` (2 boundaries, spec §5.3 examples), and
+  a read-time attack-surface merge (generated api_inventory × curated
+  controls.related_apis, counts only -- security_architecture/graphs.py).
+  Risks, abuse cases, decisions, and reviews are still empty pending a
+  future pass. `mitre_attack` has no corpus file of its own: it's served
+  entirely from live `mitre_techniques`/`cve_technique_map` DB data via
   GET /api/security-architecture/mitre (routers.forge.build_coverage_map,
   reused not duplicated). The generated layer (components, api_inventory,
-  scheduler_jobs, db_tables, self_stack) is real and machine-derived; see
-  corpus_loader.py and scripts/generate_security_corpus.py.
+  scheduler_jobs, db_tables, self_stack, graphs/architecture.json) is real
+  and machine-derived; see corpus_loader.py, graphs.py, and
+  scripts/generate_security_corpus.py.
+
+  Note on spec §2.2's navigation catalog: that table uses kebab-case
+  section ids (`system-architecture`, `trust-boundaries`, `attack-surface`).
+  Code has used snake_case since TM-1 (`mitre_attack`, `trust_boundaries`,
+  `security_decisions`, ...) -- this file follows the established code
+  convention, not the spec table verbatim; the spec table is stale on this
+  point and should be read as descriptive of intent, not literal ids.
