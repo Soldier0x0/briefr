@@ -50,7 +50,9 @@ function ensureSpace(ctx, needed) {
 
 function drawSection(ctx, title, bodyLines, borderRgb) {
   const maxW = PAGE_W - MARGIN * 2 - 4
-  const lines = Array.isArray(bodyLines) ? bodyLines : splitLines(ctx.doc, bodyLines, maxW)
+  const lines = Array.isArray(bodyLines)
+    ? bodyLines.flatMap(item => splitLines(ctx.doc, item, maxW))
+    : splitLines(ctx.doc, bodyLines, maxW)
   if (!lines.length) return
   const blockH = 10 + lines.length * 4.5 + 6
   ensureSpace(ctx, blockH)

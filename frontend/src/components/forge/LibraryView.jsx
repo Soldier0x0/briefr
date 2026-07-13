@@ -29,9 +29,12 @@ function exportPackPdf(pack, onError) {
   // Hunt Pack rail), so the PDF falls back to the bare technique_id line;
   // exporting the same pack from the rail includes technique name + tactic
   // and related case studies.
-  import('../../utils/huntPackPdf.js')
+  return import('../../utils/huntPackPdf.js')
     .then(({ downloadHuntPackPdf }) => downloadHuntPackPdf(pack))
-    .catch(err => onError?.(err))
+    .catch(err => {
+      onError?.(err)
+      throw err
+    })
 }
 
 /**
@@ -134,7 +137,8 @@ export default function LibraryView({ selectedPackId, onOpenPack, onPackDeleted 
               e.stopPropagation()
               setExportingId(row.id)
               exportPackPdf(row, err => notifyApiError(err))
-              window.setTimeout(() => setExportingId(null), 800)
+                .catch(() => {})
+                .finally(() => setExportingId(null))
             }}
           >
             {exportingId === row.id ? 'EXPORTING…' : 'EXPORT PDF'}
