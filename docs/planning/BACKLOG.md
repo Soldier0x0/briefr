@@ -49,7 +49,7 @@ blocker.
 | PR-3 | `ioc_degree` + degree-penalized edge confidence (1) | ✅ #487 |
 | PR-4 | Remove severity/size from confidence (1) | ✅ #488 |
 | PR-5 | Confidence factor vector in API + drawer (1) | ✅ #489 |
-| PR-6 | Capture `observed_at` on pulse IOCs (2) | 📋 |
+| PR-6 | Capture `observed_at` on pulse IOCs (2) | 📋 in PR |
 | PR-7 | Lifecycle + momentum use observation time (2) | 📋 |
 | PR-8 | Read-time freshness decay + UI staleness (2) | 📋 |
 | PR-9 | Pulse families + campaign dedup + retraction (3) | 📋 |

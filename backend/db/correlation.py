@@ -92,20 +92,22 @@ _DELETE_OTX_PULSE_IOCS_PG = "DELETE FROM otx_pulse_iocs WHERE pulse_id = $1"
 
 _UPSERT_OTX_PULSE_IOCS_SQLITE = """
 INSERT INTO otx_pulse_iocs (
-    pulse_id, ioc_type, ioc_value, description, fetched_at
-) VALUES (?, ?, ?, ?, ?)
+    pulse_id, ioc_type, ioc_value, description, fetched_at, observed_at
+) VALUES (?, ?, ?, ?, ?, ?)
 ON CONFLICT(pulse_id, ioc_type, ioc_value) DO UPDATE SET
     description = excluded.description,
-    fetched_at = excluded.fetched_at
+    fetched_at = excluded.fetched_at,
+    observed_at = excluded.observed_at
 """
 
 _UPSERT_OTX_PULSE_IOCS_PG = """
 INSERT INTO otx_pulse_iocs (
-    pulse_id, ioc_type, ioc_value, description, fetched_at
-) VALUES ($1, $2, $3, $4, $5)
+    pulse_id, ioc_type, ioc_value, description, fetched_at, observed_at
+) VALUES ($1, $2, $3, $4, $5, $6)
 ON CONFLICT(pulse_id, ioc_type, ioc_value) DO UPDATE SET
     description = excluded.description,
-    fetched_at = excluded.fetched_at
+    fetched_at = excluded.fetched_at,
+    observed_at = excluded.observed_at
 """
 
 _SELECT_OTX_PULSE_IOCS_SQLITE = """
@@ -131,14 +133,14 @@ WHERE pulse_id = $1 AND ioc_type = $2 AND ioc_value = $3
 """
 
 _READ_OTX_PULSE_IOCS_FRESH_SQLITE = """
-SELECT ioc_type, ioc_value, description
+SELECT ioc_type, ioc_value, description, observed_at
 FROM otx_pulse_iocs
 WHERE pulse_id = ?
   AND fetched_at > ?
 """
 
 _READ_OTX_PULSE_IOCS_FRESH_PG = """
-SELECT ioc_type, ioc_value, description
+SELECT ioc_type, ioc_value, description, observed_at
 FROM otx_pulse_iocs
 WHERE pulse_id = $1
   AND fetched_at > $2
@@ -430,6 +432,7 @@ async def replace_otx_pulse_iocs(
                 norm.get("ioc_value") or "",
                 norm.get("description") or "",
                 utcnow_str(),
+                (norm.get("observed_at") or "").strip() or None,
             )
         )
     if not normalized_rows:
@@ -472,6 +475,7 @@ async def read_otx_pulse_iocs(
             "ioc_type": row["ioc_type"],
             "ioc_value": row["ioc_value"],
             "description": row["description"],
+            "observed_at": row["observed_at"],
         }
         for row in rows
     ]

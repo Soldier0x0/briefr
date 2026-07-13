@@ -83,7 +83,12 @@ def test_otx_pulse_iocs_round_trip(tmp_path, monkeypatch):
         db = await get_db()
         try:
             iocs = [
-                {"ioc_type": "domain", "ioc_value": "evil.example", "description": "bad domain"},
+                {
+                    "ioc_type": "domain",
+                    "ioc_value": "evil.example",
+                    "description": "bad domain",
+                    "observed_at": "2024-06-15T12:00:00Z",
+                },
                 {"ioc_type": "IPv4", "ioc_value": "1.2.3.4", "description": "bad ip"},
             ]
             await replace_otx_pulse_iocs(db, PULSE_ID, iocs)
@@ -94,6 +99,9 @@ def test_otx_pulse_iocs_round_trip(tmp_path, monkeypatch):
             values = {(r["ioc_type"], r["ioc_value"]) for r in rows}
             assert ("DOMAIN", "evil.example") in values
             assert ("IP", "1.2.3.4") in values
+            by_value = {r["ioc_value"]: r for r in rows}
+            assert by_value["evil.example"]["observed_at"] == "2024-06-15T12:00:00Z"
+            assert by_value["1.2.3.4"]["observed_at"] is None
 
             await replace_otx_pulse_iocs(
                 db,
@@ -104,6 +112,7 @@ def test_otx_pulse_iocs_round_trip(tmp_path, monkeypatch):
             rows2 = await read_otx_pulse_iocs(db, PULSE_ID, max_age_hours=6)
             assert rows2 is not None
             assert len(rows2) == 1
+            assert rows2[0]["observed_at"] is None
         finally:
             await db.close()
 
