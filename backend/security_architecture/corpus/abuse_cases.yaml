@@ -1,4 +1,117 @@
 version: 1
-# Curated: abuse case catalog. Empty until a real security-review pass
-# populates it -- see manifest.yaml notes.
-abuse_cases: []
+# Curated: abuse case catalog (spec §5.11). TM-5's first real
+# security-review pass. Every entry cites real code as its
+# `current_protection` evidence -- a hand-authored abuse-case description
+# with no verifiable control behind it would be exactly the "documentation
+# viewer" this module's central principle forbids. Only entries with real,
+# citable protection code ship; the spec §5.11 example list is illustrative,
+# not a mandatory checklist to fill in with unverified prose.
+abuse_cases:
+  - id: webhook-ssrf
+    title: Webhook destination SSRF
+    summary: An operator configures a webhook URL pointing at an internal-only host to make BRIEFR's outbound request act as an SSRF proxy into the private network.
+    owner: platform
+    status: mitigated
+    origin: curated
+    review_date: '2026-07-13'
+    evidence: [backend/webhooks/ssrf.py, backend/tests/test_webhooks_ssrf.py]
+    related_ids: [webhook-ssrf-guard, webhook-signing]
+    category: ssrf
+    attack_flow:
+      - Attacker with webhook-config access sets the destination URL to a loopback, link-local, or private-range host/IP.
+      - Attacker (or DNS rebinding) points the resolved hostname at an internal service after validation.
+      - BRIEFR's scheduled delivery worker sends the signed payload to that internal host.
+    impact: Internal network scanning or unauthorized calls to internal-only services using BRIEFR's egress as a proxy.
+    current_protection: HTTPS-only destinations; resolved destination IPs are validated against blocked ranges (loopback, link-local, private) before connecting, and the resolved IP is pinned for the request to close the DNS-rebinding TOCTOU window (backend/webhooks/ssrf.py).
+    remaining_risk: Validation is IP-range based, not an allowlist of destinations -- a misconfigured internal service reachable on a public IP is not blocked by this control.
+
+  - id: webhook-delivery-replay
+    title: Duplicate / replayed webhook delivery
+    summary: The same security-relevant event (e.g. a KEV hit) is delivered to a subscriber more than once, either from a retry storm or an attacker replaying a captured delivery.
+    owner: platform
+    status: mitigated
+    origin: curated
+    review_date: '2026-07-13'
+    evidence: [backend/webhooks/engine.py, backend/webhooks/alerts.py]
+    related_ids: [webhook-signing]
+    category: integrity
+    attack_flow:
+      - An event (CVE field change, new KEV entry) is queued for delivery.
+      - A scheduler retry, duplicate ingest pass, or captured-and-replayed request re-triggers delivery of the same logical event.
+    impact: Subscriber-side alert fatigue or double-processing of the same security event (e.g. duplicate ticket creation downstream).
+    current_protection: Deliveries carry a per-event `dedupe_key` (e.g. `{cve_id}:kev`, `{cve_id}:{field}:{value}`) that the engine uses to suppress duplicate sends of the same logical event (backend/webhooks/alerts.py, backend/webhooks/engine.py::clear_event_dedupe).
+    remaining_risk: Dedup is same-instance and time-windowed, not a cryptographic replay-proof nonce -- an attacker who can capture and replay a signed payload to a *different* receiver is not addressed by this control (HMAC signing proves authenticity, not freshness).
+
+  - id: rate-limit-bypass
+    title: Rate limit bypass on auth / lookup routes
+    summary: An attacker attempts credential stuffing or IOC-lookup scraping fast enough, or from enough distinct sources, to defeat the per-route rate limiter.
+    owner: platform
+    status: mitigated
+    origin: curated
+    review_date: '2026-07-13'
+    evidence: [backend/rate_limit.py, backend/tests/test_rate_limit.py]
+    related_ids: [rate-limiting]
+    category: abuse-prevention
+    attack_flow:
+      - Attacker scripts repeated requests against /api/auth/login, /api/auth/refresh, or /api/ioc/* lookup routes.
+      - Requests are distributed across many source IPs or session identities to avoid a single token bucket's limit.
+    impact: Credential-stuffing success, brute-force account takeover, or IOC-cache scraping at a rate the platform did not intend to serve.
+    current_protection: Token-bucket rate limits are enforced per route on login, refresh, IOC lookup, admin, wallboard, and DB explorer endpoints (backend/rate_limit.py); toggled by RATE_LIMIT_ENABLED, and the Security Architecture Controls inventory reports the control's real active/inactive state rather than assuming it is always on.
+    remaining_risk: Distributed-source attacks (many IPs, many sessions) can still stay under any single bucket's threshold -- this is a rate limiter, not a full anti-automation / device-fingerprinting system.
+
+  - id: sql-injection-via-query-params
+    title: SQL injection via query/filter parameters
+    summary: An attacker crafts a search, filter, or export query parameter designed to break out of a SQL string and read or modify data outside the intended query.
+    owner: platform
+    status: mitigated
+    origin: curated
+    review_date: '2026-07-13'
+    evidence: [backend/db/, docs/planning/specs/codebase-audit.md]
+    related_ids: [parameterized-sql]
+    category: injection
+    attack_flow:
+      - Attacker supplies a crafted string in a filter/search/export query parameter.
+      - The value reaches SQL construction in the db/ package.
+    impact: Unauthorized data read, data modification, or (worst case) full database compromise.
+    current_protection: Every query in the Postgres-native db/ package uses parameter binding, not string interpolation of untrusted input (backend/db/connection.py, backend/db/pg_adapt.py) -- audited in docs/planning/specs/codebase-audit.md.
+    remaining_risk: A future contributor adding a new query with ad-hoc string interpolation would reintroduce this class -- there is no automated static-analysis gate enforcing parameterization today, only code review discipline.
+
+  - id: secret-leakage-via-logs
+    title: Secret leakage via structured logs
+    summary: An API key, token, or password is accidentally written to the application log, where it becomes readable by anyone with log access (including in a shared support-pack export).
+    owner: platform
+    status: partial
+    origin: curated
+    review_date: '2026-07-13'
+    evidence: [backend/structured_logging.py, backend/tests/test_structured_logging.py]
+    related_ids: [structured-logging-redaction]
+    category: secrets-hygiene
+    attack_flow:
+      - A developer logs an exception or debug payload that contains a raw secret value.
+      - The secret is written to disk/stdout and later shared (e.g. in a diagnostics support pack).
+    impact: Credential compromise for whichever integration the leaked secret belongs to (Groq/OTX/GitHub API keys, DB credentials).
+    current_protection: Structured log records redact `extra` fields whose key matches `*_KEY`/`_TOKEN`/`_SECRET`/`_PASSWORD` before they are written (backend/structured_logging.py).
+    remaining_risk: Redaction only covers `extra` fields, not secrets interpolated directly into the message string (CLAUDE.md danger zone 4) -- a log call that does `logger.info(f"using key {api_key}")` is not caught.
+
+  - id: broken-authorization-single-tier-session
+    title: Broken authorization across analyst/operator surfaces
+    summary: A read-only analyst session is used to reach an operator-only or admin-only action because the platform's authorization model does not yet distinguish the two roles.
+    owner: platform
+    status: open
+    origin: curated
+    review_date: '2026-07-13'
+    evidence: [backend/auth_middleware.py]
+    related_ids: [jwt-session-auth]
+    category: broken-authorization
+    attack_flow:
+      - An authenticated analyst session (any valid briefr_at cookie) is used against an admin-prefixed route.
+      - The session-auth gate (backend/auth_middleware.py) validates the session but does not check a role claim, because no analyst/operator role split exists in the session token yet.
+    impact: An analyst account could take operator/admin actions the product intends to reserve for a higher trust tier (spec §2.1 describes an "analyst vs operator" split that is not yet implemented in code).
+    current_protection: Every non-public /api/* route requires a valid session cookie (backend/auth_middleware.py) -- there is no unauthenticated path to any operator surface.
+    remaining_risk: >-
+      This is a real, open gap, not a mitigated one -- the codebase has a
+      single authenticated-session tier today. Security Architecture spec
+      §2.1's "analyst read-only / operator edit" distinction is aspirational
+      (spec §10 Q2 default: "Read-only v1, operator PATCH after TM-5").
+      Recorded here rather than glossed over, per the central principle that
+      a stale or aspirational claim must not render as a solved problem.

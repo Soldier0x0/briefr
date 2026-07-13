@@ -37,7 +37,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
@@ -51,7 +51,10 @@ from threat_model.scenarios import build_threat_scenarios
 
 router = APIRouter(prefix="/api/security-architecture")
 
-STALE_WINDOW_DAYS = 90
+# Staleness computation lives in merge.py (single source of truth shared by
+# the router, the Controls Active ratio, and the PDF export disclaimer --
+# spec §4.1, TM-5 build note in merge.py's STALE_WINDOW_DAYS docstring).
+STALE_WINDOW_DAYS = merge.STALE_WINDOW_DAYS
 
 # section_id (manifest.yaml `sections[]`) -> { type: (corpus_key, list_key) }.
 # "components" fans out to all four generated-layer collections via the
@@ -117,6 +120,7 @@ async def get_overview():
     tables = _rows(corpus, "db_tables", "tables")
     risks = _rows(corpus, "risks", "risks")
     controls = _rows(corpus, "controls", "controls")
+    _controls_ratio = merge.controls_active_ratio(controls)
 
     try:
         last_reviewed = corpus["manifest"]["last_reviewed"]
@@ -158,8 +162,13 @@ async def get_overview():
             "section": "risks", "filter": {"status": "open", "severity": "critical"},
         },
         {
-            "id": "controls", "label": "Controls", "value": len(controls),
-            "help": "Curated security controls inventory, seeded by a real security-review pass (TM-3). Click through to see each control's live active/inactive flag.",
+            "id": "controls", "label": "Controls Active",
+            "value": f"{_controls_ratio['active']}/{_controls_ratio['total']}",
+            "help": (
+                "Live-flag-verified active controls out of total controls (spec §5.1). "
+                "A control whose review has lapsed past the 90-day staleness window is excluded "
+                "from both sides of this ratio -- it is not a verified-active control."
+            ),
             "section": "controls", "filter": {},
         },
         {
@@ -199,6 +208,14 @@ async def get_overview():
         "value": attack_surface["unreviewed_endpoints"],
         "help": f"Generated endpoint inventory rows ({attack_surface['total_endpoints']} total) with no curated control's related_apis covering them yet.",
         "section": "attack_surface", "filter": {},
+    })
+
+    stale_count = _count_stale_curated_records(corpus)
+    tiles.append({
+        "id": "stale_records", "label": "Stale Records",
+        "value": stale_count,
+        "help": f"Curated records past the {STALE_WINDOW_DAYS}-day review window across every curated collection (spec §4.1 staleness decay). Excluded from coverage/compliance percentages.",
+        "section": "stale", "filter": {},
     })
 
     return {
@@ -362,6 +379,23 @@ async def get_section(
             await db.close()
         rows = [*rows, *live_rows]
 
+    # TM-5 (spec §5.14): Review History merges curated reviews.yaml with
+    # live audit_log security events -- reuses the audit_log table + the
+    # admin Audit Log view's own redaction helper (merge.py docstring), not
+    # a duplicate query or a duplicate masking rule.
+    if section_id == "reviews" and origin != "curated":
+        db = await get_db()
+        try:
+            audit_events = await merge.security_audit_log_events(db)
+        finally:
+            await db.close()
+        rows = [*rows, *audit_events]
+
+    # Single source of truth for staleness (merge.py) -- every curated row
+    # carries a visible `stale` flag regardless of whether ?stale is set, so
+    # the frontend badge and this filter always agree.
+    rows = merge.annotate_stale(rows)
+
     if status:
         rows = [r for r in rows if isinstance(r, dict) and r.get("status") == status]
     if severity:
@@ -369,20 +403,7 @@ async def get_section(
     if origin:
         rows = [r for r in rows if isinstance(r, dict) and r.get("origin") == origin]
     if stale:
-        cutoff = (date.today() - timedelta(days=STALE_WINDOW_DAYS)).isoformat()
-
-        def _is_stale(r: dict) -> bool:
-            rev_date = r.get("review_date")
-            if not rev_date:
-                return False
-            if isinstance(rev_date, date):
-                rev_date = rev_date.isoformat()
-            return str(rev_date) < cutoff
-
-        rows = [
-            r for r in rows
-            if isinstance(r, dict) and r.get("origin") == "curated" and _is_stale(r)
-        ]
+        rows = [r for r in rows if isinstance(r, dict) and r.get("stale")]
 
     return {
         "section": section_id,
@@ -391,3 +412,67 @@ async def get_section(
         "count": len(rows),
         "items": rows,
     }
+
+
+def _all_curated_rows_by_section(corpus: dict[str, Any]) -> list[dict[str, Any]]:
+    """Every curated-layer row across every section, each tagged with the
+    nav section + type it drills through to (spec §5.1 'Stale Records' tile,
+    §9.6 STALE decay acceptance). Iterates `_SECTION_SOURCES` rather than
+    hand-listing corpus files, so a new curated section is picked up
+    automatically."""
+    items: list[dict[str, Any]] = []
+    for section_id, sources in _SECTION_SOURCES.items():
+        for type_key, (corpus_key, list_key) in sources.items():
+            for row in _rows(corpus, corpus_key, list_key):
+                if isinstance(row, dict) and row.get("origin") == "curated":
+                    items.append({**row, "section": section_id, "type": type_key})
+    return items
+
+
+def _count_stale_curated_records(corpus: dict[str, Any]) -> int:
+    return sum(1 for r in _all_curated_rows_by_section(corpus) if merge.is_stale(r))
+
+
+@router.get("/stale")
+async def get_stale_records():
+    """Every curated record past the review window, across all sections
+    (spec §5.1 'Stale Records' tile drill-through). Not a manifest nav
+    section of its own -- reached only via the Overview tile, same pattern
+    as `components` fanning across four generated collections."""
+    try:
+        corpus = get_corpus()
+    except CorpusValidationError as exc:
+        raise HTTPException(status_code=500, detail=f"Corpus invalid: {exc}") from exc
+
+    rows = merge.annotate_stale(_all_curated_rows_by_section(corpus))
+    stale_rows = [r for r in rows if r.get("stale")]
+    return {"count": len(stale_rows), "items": stale_rows}
+
+
+@router.get("/search")
+async def search(q: str = Query(default="", max_length=200)):
+    """Global search (spec §5.17): corpus entities (components, endpoints,
+    jobs, tables, controls, abuse cases, threat scenarios, decisions, risks,
+    reviews) plus live MITRE technique names -- exactly the sources the spec
+    lists. No index subsystem: a bounded scan over the already mtime-cached
+    corpus (merge.search_corpus docstring) plus one MITRE query."""
+    if not q.strip():
+        return {"query": q, "count": 0, "results": []}
+
+    try:
+        corpus = get_corpus()
+    except CorpusValidationError as exc:
+        raise HTTPException(status_code=500, detail=f"Corpus invalid: {exc}") from exc
+
+    results = merge.search_corpus(corpus, q)
+
+    db = await get_db()
+    try:
+        technique_rows = await db.execute_fetchall(
+            "SELECT technique_id, name, tactic FROM mitre_techniques", ()
+        )
+    finally:
+        await db.close()
+    results.extend(merge.search_mitre_techniques([dict(r) for r in technique_rows], q))
+
+    return {"query": q, "count": len(results), "results": results}

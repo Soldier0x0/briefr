@@ -3,6 +3,7 @@ import { fetchSecurityArchitectureOverview } from '../../../api.js'
 import { notifyApiError } from '../../../components/Toast.jsx'
 import Tooltip from '../../../components/ui/Tooltip.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
+import { downloadOverviewPdf } from '../../../utils/securityArchitecturePdf.js'
 
 /**
  * Overview (spec §5.1, §8 TM-2): evidence tiles that are counts or ratios
@@ -18,7 +19,7 @@ import AsyncState from '../../../components/ui/AsyncState.jsx'
  * "Frontend" tier here because components.yaml currently only contains
  * backend router modules.
  */
-export default function OverviewSection({ onDrill }) {
+export default function OverviewSection({ onDrill, corpusVersion }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -54,7 +55,17 @@ export default function OverviewSection({ onDrill }) {
 
   return (
     <div className="sa-section">
-      <h2 className="sa-section-title mono">OVERVIEW</h2>
+      <div className="sa-section-head">
+        <h2 className="sa-section-title mono">OVERVIEW</h2>
+        <button
+          type="button"
+          className="admin-btn admin-btn-ghost mono"
+          onClick={() => downloadOverviewPdf({ ...data, corpus_version: corpusVersion })}
+          disabled={!data}
+        >
+          EXPORT PDF
+        </button>
+      </div>
 
       <AsyncState
         loading={loading}

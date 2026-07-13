@@ -74,10 +74,16 @@ def test_overview_curated_tiles_reflect_empty_corpus_honestly():
         by_id = {t["id"]: t for t in body["tiles"]}
         # Risks are still genuinely empty pre-review (TM-1 manifest note) --
         # the tile must say 0, not fabricate a number. Controls got a real
-        # curated seed in TM-3 (spec §5.9), so it's non-zero now.
+        # curated seed in TM-3 (spec §5.9), so it's non-zero now. TM-5 turned
+        # "Controls" into the spec §5.1 "Controls Active" ratio (active/total,
+        # stale controls excluded from both sides) -- value is a rendered
+        # "N/M" string, not a bare count.
         assert by_id["open_risks"]["value"] == 0
         assert by_id["critical_open_risks"]["value"] == 0
-        assert by_id["controls"]["value"] > 0
+        assert by_id["controls"]["label"] == "Controls Active"
+        active_str, total_str = by_id["controls"]["value"].split("/")
+        assert int(total_str) > 0
+        assert int(active_str) > 0
 
 
 def test_section_endpoint_returns_generated_components():

@@ -582,7 +582,7 @@
       "label": "security_architecture.routers.security_architecture",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 8,
+      "endpoint_count": 10,
       "source_refs": [
         {
           "type": "file",
@@ -1226,6 +1226,12 @@
       "id": "routers-watchlist->table:watchlist",
       "source": "routers-watchlist",
       "target": "table:watchlist",
+      "kind": "references_table"
+    },
+    {
+      "id": "security_architecture-routers-security_architecture->table:mitre_techniques",
+      "source": "security_architecture-routers-security_architecture",
+      "target": "table:mitre_techniques",
       "kind": "references_table"
     }
   ]

@@ -24,8 +24,20 @@ notes: >
   pass over `trust_boundaries.yaml` (2 boundaries, spec §5.3 examples), and
   a read-time attack-surface merge (generated api_inventory × curated
   controls.related_apis, counts only -- security_architecture/graphs.py).
-  Risks, abuse cases, decisions, and reviews are still empty pending a
-  future pass. `mitre_attack` has no corpus file of its own: it's served
+  TM-5 (Risk Register + Decisions + Review History + Abuse Cases + Search)
+  seeded `security_decisions.yaml` from the two real ADRs in docs/decisions/,
+  `abuse_cases.yaml` with six entries each backed by real protection code
+  (webhook SSRF, webhook replay, rate-limit bypass, SQL injection, log
+  secret leakage, and one honestly-open broken-authorization finding), and
+  `reviews.yaml` with the program's own TM-3/TM-4/TM-5 curated review
+  passes. `risks.yaml` stays intentionally empty -- no real risk-register
+  judgment pass has happened yet; the register's live rows (self-stack KEV
+  hits, `origin: live`) are the only non-empty content there today, computed
+  at read time. TM-5 also added the staleness-decay `stale` flag on every
+  curated row (security_architecture/merge.py::annotate_stale) and turned
+  the Overview "Controls" tile into the spec §5.1 "Controls Active" ratio
+  (active/total, stale controls excluded from both sides).
+  `mitre_attack` has no corpus file of its own: it's served
   entirely from live `mitre_techniques`/`cve_technique_map` DB data via
   GET /api/security-architecture/mitre (routers.forge.build_coverage_map,
   reused not duplicated). The generated layer (components, api_inventory,

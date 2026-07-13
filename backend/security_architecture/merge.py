@@ -16,6 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 from __future__ import annotations
 
 import os
+from datetime import date, timedelta
 from typing import Any
 
 from routers.cves import _stack_match_clause
@@ -25,6 +26,60 @@ from routers.cves import _stack_match_clause
 # match that convention so a control's live_flag reads the same as every
 # other runtime toggle.
 _FALSY = {"0", "false", "no", "off"}
+
+# TM-5 (spec §4.1 staleness decay): a curated record past review_date + this
+# window renders STALE and is excluded from every coverage/compliance
+# percentage that reads it. Shared here so the router's per-row `stale` flag,
+# the Controls Active ratio, and the risk-register/review-history/PDF-export
+# disclaimer all compute the same answer from one place -- three independent
+# staleness calculations is how the PDF and the screen end up disagreeing.
+STALE_WINDOW_DAYS = 90
+
+
+def _as_date(value: Any) -> date | None:
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str) and value:
+        try:
+            return date.fromisoformat(value)
+        except ValueError:
+            return None
+    return None
+
+
+def is_stale(record: dict[str, Any], *, today: date | None = None) -> bool:
+    """A curated record is stale once its review_date is more than
+    STALE_WINDOW_DAYS in the past. Generated and live rows never carry a
+    review_date judgment call, so they are never stale by definition (spec
+    §4.1: staleness decay applies to the curated layer only)."""
+    if record.get("origin") != "curated":
+        return False
+    rev_date = _as_date(record.get("review_date"))
+    if rev_date is None:
+        return False
+    cutoff = (today or date.today()) - timedelta(days=STALE_WINDOW_DAYS)
+    return rev_date < cutoff
+
+
+def annotate_stale(rows: list[dict[str, Any]], *, today: date | None = None) -> list[dict[str, Any]]:
+    """Add a `stale: bool` field to every row -- the single source of truth
+    the STALE badge, the percentage-exclusion math, and the PDF footer
+    disclaimer all read (spec §4.1, §5.16)."""
+    return [
+        {**r, "stale": is_stale(r, today=today)} if isinstance(r, dict) else r
+        for r in rows
+    ]
+
+
+def controls_active_ratio(controls: list[dict[str, Any]]) -> dict[str, int]:
+    """Overview 'Controls Active' tile (spec §5.1: 'Live-flag-verified active
+    / total controls'). A control whose review has lapsed is not a verified
+    control -- stale controls are excluded from both the numerator and the
+    denominator, so the tile's ratio is exactly the STALE-decay percentage
+    the acceptance criteria require (§9.6)."""
+    eligible = [c for c in controls if not is_stale(c)]
+    active = sum(1 for c in eligible if resolve_control_active(c))
+    return {"active": active, "total": len(eligible), "stale_excluded": len(controls) - len(eligible)}
 
 
 def self_stack_terms(corpus: dict[str, Any]) -> list[str]:
@@ -155,3 +210,160 @@ async def self_cve_exposure_summary(db: Any, corpus: dict[str, Any]) -> dict[str
         "critical_count": sum(1 for r in rows if r["severity"] == "critical"),
         "terms": self_stack_terms(corpus),
     }
+
+
+# ── TM-5: Review History (audit_log merge) ──────────────────────────────
+
+# Security-relevant audit_log action prefixes (spec §4.2 "Review events:
+# audit_log filtered by security-related actions", §5.14: "Merge audit_log
+# security actions + corpus reviews.yaml"). Sourced from the real action
+# strings passed to `audit()` across routers/*.py (grepped at TM-5 build
+# time) -- auth events, backup/integrity/migration operations, config
+# changes, restarts, and scheduler pause/resume are the security-adjacent
+# subset; routine content refreshes (refresh.kev, hunt_packs.delete, ...)
+# are operational noise, not security review events, and are excluded.
+SECURITY_AUDIT_ACTION_PREFIXES = (
+    "auth.",
+    "backup.",
+    "database.",
+    "diagnostics.integrity",
+    "config.apply",
+    "system.restart",
+    "scheduler.",
+)
+
+
+def is_security_audit_action(action: str) -> bool:
+    return any(action.startswith(p) for p in SECURITY_AUDIT_ACTION_PREFIXES)
+
+
+async def security_audit_log_events(db: Any, *, limit: int = 100) -> list[dict[str, Any]]:
+    """Audit-log rows shaped as review-history entries (spec §5.14). Reuses
+    the same `audit_log` table and `redact.mask_audit_log_target` masking
+    helper the admin Audit Log view already uses (`routers/admin.py::
+    get_audit_log`) -- not a duplicate query, not a duplicate redaction
+    rule. This endpoint is analyst-scoped (Security Architecture has no
+    admin-only gate), so it re-runs the same read directly rather than
+    calling the admin-only router function."""
+    from redact import mask_audit_log_target
+
+    # Filter by prefix in SQL, not after LIMIT -- a burst of routine
+    # non-security actions (refresh.kev, hunt_packs.delete, ...) ahead of
+    # the last `limit` rows would otherwise starve out real security events
+    # entirely (Gemini review, PR #497).
+    where_clauses = " OR ".join("action LIKE ?" for _ in SECURITY_AUDIT_ACTION_PREFIXES)
+    params = tuple(f"{p}%" for p in SECURITY_AUDIT_ACTION_PREFIXES) + (limit,)
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT id, actor, action, target, created_at
+        FROM audit_log
+        WHERE {where_clauses}
+        ORDER BY created_at DESC
+        LIMIT ?
+        """,
+        params,
+    )
+
+    events = []
+    for row in rows:
+        r = dict(row)
+        action = r.get("action") or ""
+        target = mask_audit_log_target(action, r.get("target"))
+        events.append({
+            "id": f"audit-{r['id']}",
+            "title": action,
+            "summary": f"{r.get('actor') or 'system'} — {target}" if target else (r.get("actor") or "system"),
+            "category": "audit-log",
+            "origin": "live",
+            "status": "logged",
+            "actor": r.get("actor"),
+            "action": action,
+            "target": target,
+            "occurred_at": r.get("created_at"),
+        })
+    return events
+
+
+# ── TM-5: Global search ──────────────────────────────────────────────────
+
+# Which corpus files' record lists participate in search, and the section id
+# each hit should drill through to (spec §5.17 "Index built server-side from
+# corpus + MITRE names + control titles + API paths").
+_SEARCH_CORPUS_SOURCES: tuple[tuple[str, str, str], ...] = (
+    ("components", "components", "components"),
+    ("api_inventory", "endpoints", "components"),
+    ("scheduler_jobs", "jobs", "components"),
+    ("db_tables", "tables", "components"),
+    ("trust_boundaries", "trust_boundaries", "trust_boundaries"),
+    ("controls", "controls", "controls"),
+    ("abuse_cases", "abuse_cases", "abuse_cases"),
+    ("threat_scenarios", "threat_scenarios", "threat_scenarios"),
+    ("security_decisions", "security_decisions", "security_decisions"),
+    ("risks", "risks", "risks"),
+    ("reviews", "reviews", "reviews"),
+)
+
+
+def _search_haystack(record: dict[str, Any]) -> str:
+    parts = [
+        record.get("title"), record.get("id"), record.get("summary"),
+        record.get("path"), record.get("method"),
+    ]
+    return " ".join(str(p) for p in parts if p).lower()
+
+
+def search_corpus(corpus: dict[str, Any], query: str, *, limit: int = 50) -> list[dict[str, Any]]:
+    """Search over the already mtime-cached corpus (spec §5.17). No index
+    subsystem: this is a bounded linear scan over data `corpus_loader.
+    get_corpus()` already holds in memory -- cheap enough to run on the
+    request path (CLAUDE.md danger zone 6 only forbids *heavy* work there),
+    and re-scanning on every keystroke is exactly as fresh as the corpus
+    itself."""
+    q = query.strip().lower()
+    if not q:
+        return []
+
+    results: list[dict[str, Any]] = []
+    for corpus_key, list_key, section in _SEARCH_CORPUS_SOURCES:
+        for record in (corpus.get(corpus_key) or {}).get(list_key) or []:
+            if not isinstance(record, dict):
+                continue
+            if q not in _search_haystack(record):
+                continue
+            results.append({
+                "id": record.get("id") or record.get("path") or "",
+                "title": record.get("title") or record.get("path") or record.get("id") or "",
+                "summary": record.get("summary"),
+                "type": corpus_key,
+                "section": section,
+            })
+            if len(results) >= limit:
+                return results
+    return results
+
+
+def search_mitre_techniques(
+    rows: list[dict[str, Any]], query: str, *, limit: int = 50
+) -> list[dict[str, Any]]:
+    """MITRE technique names/ids matching the query (spec §5.17: index
+    includes 'MITRE names'). `rows` are `mitre_techniques` table rows
+    (id, technique_id, name, tactic) -- one bounded query, not a new table.
+    `limit` caps results for a broad query (e.g. a single letter) that
+    would otherwise match hundreds of techniques."""
+    q = query.strip().lower()
+    if not q:
+        return []
+    results = []
+    for row in rows:
+        haystack = f"{row.get('technique_id') or ''} {row.get('name') or ''}".lower()
+        if q in haystack:
+            results.append({
+                "id": row.get("technique_id"),
+                "title": f"{row.get('technique_id')} — {row.get('name')}",
+                "summary": row.get("tactic"),
+                "type": "mitre_technique",
+                "section": "mitre_attack",
+            })
+            if len(results) >= limit:
+                break
+    return results

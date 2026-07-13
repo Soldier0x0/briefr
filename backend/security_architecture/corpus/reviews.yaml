@@ -1,4 +1,47 @@
 version: 1
-# Curated: review history. Empty until a real security-review pass
-# populates it -- see manifest.yaml notes.
-reviews: []
+# Curated: review history (spec §5.14). TM-5 merges this curated list with
+# live audit_log security events at read time (security_architecture/
+# routers/security_architecture.py::get_section, origin=live rows) -- these
+# entries are the *curated* half: real, dated review passes this program
+# itself performed over the corpus, each citing the evidence (tests, PRs)
+# that back it. Not invented "pen test" / "OWASP review" placeholders --
+# only passes that actually happened ship here.
+reviews:
+  - id: tm3-controls-security-review
+    title: Controls inventory security review (TM-3)
+    summary: First real curated security-review pass over controls.yaml -- ten shipping controls (JWT session auth, bcrypt hashing, rate limiting, parameterized SQL, webhook signing, webhook SSRF guard, backup encryption, Postgres-required, structured-logging redaction, audit log) reviewed and each given a live_flag mapped to its actual runtime toggle.
+    owner: platform
+    status: completed
+    origin: curated
+    review_date: '2026-07-13'
+    evidence: [backend/security_architecture/corpus/controls.yaml, backend/tests/test_security_architecture_live.py]
+    related_ids: []
+    review_type: architecture-review
+    participants: [platform]
+    outcome: 10 controls reviewed and seeded; 3 review-driven fixes landed (rate-limiting and postgres-required-in-production live_flag semantics, matched_term None-leak fix) per code-review findings during the same pass.
+
+  - id: tm4-trust-boundary-review
+    title: Trust boundary + attack surface review (TM-4)
+    summary: Curated review of BRIEFR's two primary trust boundaries (Browser -> API -> Database; BRIEFR -> external intelligence feeds/webhook receivers) plus a generated-endpoint x curated-control attack-surface merge to find endpoints with no linked control.
+    owner: platform
+    status: completed
+    origin: curated
+    review_date: '2026-07-13'
+    evidence: [backend/security_architecture/corpus/trust_boundaries.yaml, backend/security_architecture/graphs.py, backend/tests/test_security_architecture_graph.py]
+    related_ids: []
+    review_type: architecture-review
+    participants: [platform]
+    outcome: 2 trust boundaries documented with data classification, authentication, encryption, and residual-risk fields; attack-surface merge shipped as counts only (no invented severity scores).
+
+  - id: tm5-decisions-abuse-cases-review
+    title: Decision records + abuse case catalog review (TM-5)
+    summary: Curated review mapping the two existing ADRs (intel/app schema split, Operational Priority scoring) into security-decision records, and a first abuse-case catalog pass seeding six entries each backed by real protection code (webhook SSRF, webhook replay, rate-limit bypass, SQL injection, log secret leakage, broken authorization).
+    owner: platform
+    status: completed
+    origin: curated
+    review_date: '2026-07-13'
+    evidence: [backend/security_architecture/corpus/security_decisions.yaml, backend/security_architecture/corpus/abuse_cases.yaml]
+    related_ids: [adr-001-intel-app-schema-split, adr-002-operational-priority-scoring]
+    review_type: threat-model-review
+    participants: [platform]
+    outcome: 2 decision records + 6 abuse cases seeded; one open (unmitigated) finding recorded honestly rather than glossed over -- broken-authorization-single-tier-session (no analyst/operator role split in code yet).
