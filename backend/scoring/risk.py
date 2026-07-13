@@ -540,7 +540,7 @@ async def calculate_momentum(cve_id: str, db: Any) -> dict[str, Any]:
         (cve_upper,),
     )
     if otx_rows:
-        observed_str = (otx_rows[0]["created_date"] or "").strip()
+        observed_str = str(otx_rows[0]["created_date"] or "").strip()
         try:
             text = observed_str
             if text.endswith("Z"):

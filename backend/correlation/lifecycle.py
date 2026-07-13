@@ -159,7 +159,9 @@ async def fetch_member_lifecycle_inputs(
         (pulse_id, *member_ids),
     )
     observation_at = [
-        r["created_date"] for r in link_rows if (r["created_date"] or "").strip()
+        r["created_date"]
+        for r in link_rows
+        if str(r["created_date"] or "").strip()
     ]
 
     ioc_rows = await db.execute_fetchall(
