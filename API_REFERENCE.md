@@ -1122,31 +1122,36 @@ Optional webhook event: `kev_backlog`.
 
 ---
 
-## Security Architecture (TM-1 corpus + TM-2 shell)
+## Security Architecture (TM-1 corpus + TM-2 shell + TM-3 live sections)
 
 Mounted at `/api/security-architecture/*`, session auth required (analyst+). Backed by
 the Security Architecture Corpus (SAC) — versioned YAML under
 `backend/security_architecture/corpus/` — loaded and validated by
 `security_architecture/corpus_loader.py`. Every corpus record carries `origin:
-generated | curated`: generated records (components, API endpoint inventory, scheduler
-jobs, DB tables) are emitted by `scripts/generate_security_corpus.py` from live code
-introspection and drift-tested in CI (`backend/tests/test_security_architecture_corpus.py`)
-— renaming a router, scheduler job, or table breaks the build until the script is re-run.
-Curated records (risks, decisions, abuse cases, controls, trust-boundary
-classifications) are seeded empty pending a real security-review pass — see
-`corpus/manifest.yaml`'s notes; this module reports honest zeros rather than
-invented content.
+generated | curated | live`: generated records (components, API endpoint inventory,
+scheduler jobs, DB tables, `self_stack.yaml` dependency terms) are emitted by
+`scripts/generate_security_corpus.py` from live code introspection and drift-tested in
+CI (`backend/tests/test_security_architecture_corpus.py`) — renaming a router,
+scheduler job, table, or dependency breaks the build until the script is re-run.
+Curated records (controls) got their first real security-review pass in TM-3; risks,
+decisions, abuse cases, and trust-boundary classifications are still seeded empty
+pending a future pass. `live` rows (self-stack risk register entries) are computed at
+read time, never stored — see `security_architecture/merge.py`.
 
-Frontend: `/security-architecture` route, header tab **ARCH** (TM-2), three-panel shell
+Frontend: `/security-architecture` route, header tab **ARCH**, three-panel shell
 (`frontend/src/pages/security-architecture/`) mirroring Forge/Admin — manifest-driven
-left nav, Overview center workspace with drill-through evidence tiles, empty-state
-context rail (populated content is TM-3+). The richer typed per-section endpoints
-(system architecture graph, STRIDE, MITRE navigator, controls inventory, risk register,
-etc.) are TM-3+ — see `docs/planning/specs/threat-modeling-security-architecture.md` §8.
+left nav, Overview center workspace with drill-through evidence tiles. TM-3 adds
+dedicated MITRE ATT&CK and Threat Scenarios section components; System Architecture
+graph, Trust Boundaries, Attack Surface, Risk Register grid, Decisions, Review History,
+and global search are TM-4/TM-5 — see
+`docs/planning/specs/threat-modeling-security-architecture.md` §8.
 
 ### GET /api/security-architecture/manifest
 
 **Response:** `{ "version": 1, "schema_version": 1, "last_reviewed": "...", "sections": [...] }`
+
+`sections[]` includes `mitre_attack` — it has no corpus file of its own; it's served
+entirely from live `mitre_techniques`/`cve_technique_map` DB data.
 
 ### GET /api/security-architecture/overview
 
@@ -1154,36 +1159,67 @@ etc.) are TM-3+ — see `docs/planning/specs/threat-modeling-security-architectu
 
 ```json
 {
-  "generated": {"components": 20, "api_endpoints": 146, "scheduler_jobs": 26, "db_tables": 42},
-  "curated": {"trust_boundaries": 0, "controls": 0, "abuse_cases": 0, "threat_scenarios": 0,
+  "generated": {"components": 20, "api_endpoints": 148, "scheduler_jobs": 26, "db_tables": 42},
+  "curated": {"trust_boundaries": 0, "controls": 10, "abuse_cases": 0, "threat_scenarios": 0,
               "security_decisions": 0, "risks": 0, "reviews": 0},
-  "last_reviewed": "2026-07-12",
+  "self_exposure": {"count": 0, "kev_count": 0, "critical_count": 0, "terms": ["fastapi", "react", "..."]},
+  "last_reviewed": "2026-07-13",
   "tiles": [
     {"id": "components", "label": "System Components", "value": 20,
      "help": "...", "section": "components", "filter": {"type": "components"}},
-    "... 7 more (endpoints, scheduler_jobs, db_tables, open_risks, critical_open_risks, controls, review_freshness)"
+    "... 6 more (endpoints, scheduler_jobs, db_tables, open_risks, critical_open_risks, controls, review_freshness)",
+    {"id": "mitre_detection_coverage", "label": "MITRE Detection Coverage", "value": "3/12",
+     "help": "...", "section": "mitre_attack", "filter": {}},
+    {"id": "self_cve_exposure", "label": "Self CVE Exposure", "value": 0,
+     "help": "...", "section": "risks", "filter": {"origin": "live"}}
   ]
 }
 ```
 
-Counts only — no scoring, no letter grades, per spec's "no arithmetic invented for this
-module" tile rule (§5.1). Each tile's `section`/`filter` is the exact drill-through
-target for `GET /section/{id}` below — MITRE Detection Coverage and Self CVE Exposure
-tiles from spec §5.1 are deliberately absent (they need TM-3's self-stack generation +
-merge machinery, which doesn't exist yet; faking them would violate the no-invented-
-arithmetic rule).
+Counts and ratios only — no scoring, no letter grades, per spec's "no arithmetic
+invented for this module" tile rule (§5.1). Each tile's `section`/`filter` is the exact
+drill-through target for `GET /section/{id}` below. `mitre_detection_coverage` is
+`"<covered>/<total>"` (techniques with a hunt pack or bundled template, out of every
+technique mapped to a CVE, global — not stack-scoped) or `"—"` when no technique is
+mapped yet. `self_cve_exposure` is the live self-stack KEV/critical CVE count (§4.5).
+
+### GET /api/security-architecture/mitre
+
+**Query params:** `stack` (optional, comma-separated terms, same matching as `/api/cves`).
+
+ATT&CK coverage matrix. Reuses `routers.forge.build_coverage_map` — the exact query and
+status logic `GET /api/forge/coverage` uses, not a reimplementation, so this endpoint's
+output is byte-identical to Forge's for the same `stack`. **Response:** see
+`GET /api/forge/coverage` above (`meta.counts.{gap,community,yours}`, `techniques[]`
+with `technique_id`, `name`, `tactic`, `cve_count`, `kev_count`, `pack_count`, `status`).
+
+### GET /api/security-architecture/threat-scenarios
+
+**Query params:**
+
+| Param | Effect |
+|-------|--------|
+| `stack` | Comma-separated stack terms (Forge parity — same as `/api/threat-model/scenarios`) |
+| `self_stack` | `true` → ignores `stack`, uses the generated self-stack terms (§4.5) instead |
+
+Wraps `threat_model.scenarios.build_threat_scenarios` — output is identical in shape to
+`GET /api/threat-model/scenarios` for the same effective stack (plus `meta.catalog`:
+`"stack"` or `"self-stack"`). No new matching/scoring code. The self-stack is computed
+once at corpus-generation time (`scripts/generate_security_corpus.py`), never
+recomputed per request.
 
 ### GET /api/security-architecture/section/{section_id}
 
 **TM-2 shell convenience** — a generic read of any manifest data section's corpus rows,
-added so Overview tile clicks land on real pre-filtered rows without building nine typed
+added so Overview tile clicks land on real pre-filtered rows without building typed
 endpoints ahead of the sections that need them. Superseded per-section by spec §4.4's
-typed endpoints as TM-3+ ships live sections (MITRE, STRIDE, graph, ...) — this is an
-intentional, documented divergence, not the final API shape.
+typed endpoints as later phases ship live sections — an intentional, documented
+divergence, not the final API shape.
 
-**Path:** `section_id` — one of manifest.yaml's `sections[]` (excluding `overview`):
-`components`, `trust_boundaries`, `controls`, `abuse_cases`, `threat_scenarios`,
-`security_decisions`, `risks`, `reviews`.
+**Path:** `section_id` — one of manifest.yaml's `sections[]` excluding `overview` and
+`mitre_attack` (which has its own typed endpoint above): `components`,
+`trust_boundaries`, `controls`, `abuse_cases`, `threat_scenarios`, `security_decisions`,
+`risks`, `reviews`.
 
 **Query params (all optional):**
 
@@ -1192,7 +1228,20 @@ intentional, documented divergence, not the final API shape.
 | `type` | `components` only | Switches generated collection: `components` (default) \| `endpoints` \| `jobs` \| `tables` |
 | `status` | any | Exact match on record `status` field |
 | `severity` | any | Exact match on record `severity` field |
+| `origin` | any | Exact match on record `origin` field (`generated` \| `curated` \| `live`) |
 | `stale` | any | `true` → only curated records past `review_date + 90d` |
+
+**TM-3 live enrichment:**
+
+- `controls` rows gain a live `active: boolean` flag (`security_architecture/merge.py::resolve_control_active`)
+  resolved from each control's `live_flag` (e.g. `BACKUP_ENABLED`) against the current
+  runtime environment; a control with no `live_flag` is structural and always reads
+  `active: true`.
+- `risks` rows gain live-derived entries (`origin: "live"`) auto-computed from KEV/
+  critical CVE hits on the generated self-stack (§4.5) — each carries `matched_term`,
+  `cve_id`, `is_kev`, and the CVE's real `severity` (never synthesized). These rows
+  can't be closed by hand; they disappear when the underlying query stops matching.
+  `?stale=true` never includes them (only curated rows carry a `review_date`).
 
 **Response:** `{ "section": "...", "type": "...", "available_types": [...], "count": N, "items": [...] }`
 

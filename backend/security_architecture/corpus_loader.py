@@ -24,6 +24,7 @@ _GENERATED_FILES: dict[str, str] = {
     "api_inventory.yaml": "endpoints",
     "scheduler_jobs.yaml": "jobs",
     "db_tables.yaml": "tables",
+    "self_stack.yaml": "terms",
 }
 _CURATED_FILES: dict[str, str] = {
     "trust_boundaries.yaml": "trust_boundaries",

@@ -378,6 +378,14 @@
   background: var(--amber-dim);
 }
 
+/* live rows (spec §4.5 self-stack) -- distinct from curated, visually
+   flags "this row closes itself when the CVE stops matching, not by hand" */
+.sa-row-origin-live {
+  color: var(--red);
+  border-color: var(--red);
+  background: var(--red-dim);
+}
+
 .sa-row-summary {
   font-size: 0.75rem;
   color: var(--text3);
@@ -388,6 +396,100 @@
   font-size: 0.6875rem;
   color: var(--text3);
   margin: 12px 0 0;
+}
+
+/* ── Controls: live active flag (spec §5.9) ───────────────────────── */
+
+.sa-active-flag {
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+}
+
+.sa-active-true {
+  color: var(--green);
+  border-color: var(--green);
+}
+
+.sa-active-false {
+  color: var(--text3);
+}
+
+.sa-row-tag-kev {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.sa-row-tag-term {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+/* ── MITRE ATT&CK (spec §5.6) ──────────────────────────────────────── */
+
+.sa-mitre-counts {
+  font-size: 0.75rem;
+  color: var(--text3);
+}
+
+.sa-stack-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+
+.sa-stack-input {
+  flex: 1;
+  min-width: 220px;
+  font-size: 0.8125rem;
+  padding: 6px 10px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.sa-stack-input:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.sa-mitre-tactic-group {
+  margin-bottom: 20px;
+}
+
+.sa-mitre-link {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.sa-mitre-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.sa-status-chip {
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+}
+
+.sa-status-gap {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.sa-status-community {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+.sa-status-yours {
+  color: var(--green);
+  border-color: var(--green);
 }
 
 /* ── Context rail ──────────────────────────────────────────────────── */

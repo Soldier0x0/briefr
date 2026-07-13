@@ -1,27 +1,35 @@
-"""Security Architecture module API (TM-1 stub + TM-2 shell additions).
+"""Security Architecture module API (TM-1 stub + TM-2 shell + TM-3 live
+sections).
 
 Mounted at /api/security-architecture/*. Session auth applies globally via
 main.py's session_auth_middleware (this router isn't in auth_middleware.py's
 public/admin-exempt prefixes) -- matches spec §4.4: "All routes: session
 auth (analyst+)".
 
-TM-1 shipped manifest + overview (raw counts only). TM-2 (shell UI +
-Overview, threat-modeling-security-architecture.md §8) adds:
+TM-1 shipped manifest + overview (raw counts only). TM-2 added shell UI +
+Overview evidence tiles + the generic `/section/{id}` drill-through read.
 
-- `overview.tiles[]`: evidence tiles with visible inputs -- every value is a
-  len() or a direct field match over corpus rows, no composite grades, no
-  invented arithmetic (spec §9.4). Each tile carries a `section`/`filter`
-  drill target so a UI click can land on the exact pre-filtered rows.
-- `GET /section/{id}`: a generic read of any manifest data section's corpus
-  rows, with `status`/`severity`/`type` query filters. This is a TM-2 shell
-  convenience -- one generic endpoint instead of nine typed ones -- and is
-  intentionally superseded by spec §4.4's typed endpoints (graph/mitre/
-  stride/...) as TM-3+ builds live sections. Not a substitute for those.
+TM-3 (threat-modeling-security-architecture.md §8) adds the first *live*
+sections -- no new matching/scoring code, all glue over the existing
+shipping pipeline (security_architecture/merge.py docstring has the full
+rationale):
 
-MITRE coverage, self-stack CVE exposure, and endpoint<->control linkage
-(attack surface) need machinery this branch doesn't have yet (self-stack
-generation + merge.py is TM-3; endpoint<->control linkage is TM-4) -- they
-are deliberately absent from the tile set rather than faked.
+- `GET /mitre`: ATT&CK coverage matrix, reusing
+  `routers.forge.build_coverage_map` (same query the Forge tab uses) instead
+  of duplicating it.
+- `GET /threat-scenarios`: wraps `threat_model.scenarios.build_threat_scenarios`
+  -- `?stack=` for the user's stack (Forge parity, `?self_stack=1` swaps in
+  the generated self-stack (spec §4.5) instead. Output shape is identical to
+  `/api/threat-model/scenarios` by construction (same function).
+- `/section/controls` rows gain a live `active` flag
+  (`merge.enrich_controls`).
+- `/section/risks` rows gain live-derived (`origin: live`) rows auto-derived
+  from KEV/critical CVE hits on the self-stack (`merge.self_stack_risk_rows`).
+- `/overview` gains a "Self CVE Exposure" tile and a "MITRE Detection
+  Coverage" tile, both live.
+
+Endpoint<->control linkage (attack surface) is still TM-4 -- deliberately
+absent here rather than faked.
 
 Copyright © 2026 Sai Harsha Vardhan
 SPDX-License-Identifier: AGPL-3.0-or-later
@@ -32,9 +40,13 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
+from database import get_db
+from routers.forge import build_coverage_map, count_coverage_summary
+from security_architecture import merge
 from security_architecture.corpus_loader import CorpusValidationError, get_corpus
+from threat_model.scenarios import build_threat_scenarios
 
 router = APIRouter(prefix="/api/security-architecture")
 
@@ -91,7 +103,8 @@ async def get_manifest():
 
 @router.get("/overview")
 async def get_overview():
-    """Posture summary counts + drill-through evidence tiles (TM-2 §5.1)."""
+    """Posture summary counts + drill-through evidence tiles (TM-2 §5.1,
+    TM-3 adds the two live tiles at the end)."""
     try:
         corpus = get_corpus()
     except CorpusValidationError as exc:
@@ -145,7 +158,7 @@ async def get_overview():
         },
         {
             "id": "controls", "label": "Controls", "value": len(controls),
-            "help": "Curated security controls inventory. Live active/inactive flags ship in TM-3.",
+            "help": "Curated security controls inventory, seeded by a real security-review pass (TM-3). Click through to see each control's live active/inactive flag.",
             "section": "controls", "filter": {},
         },
         {
@@ -156,6 +169,28 @@ async def get_overview():
             "section": "reviews", "filter": {},
         },
     ]
+
+    db = await get_db()
+    try:
+        coverage_summary = await count_coverage_summary(db)
+        exposure = await merge.self_cve_exposure_summary(db, corpus)
+    finally:
+        await db.close()
+
+    covered = coverage_summary["covered"]
+    total = coverage_summary["total"]
+    tiles.append({
+        "id": "mitre_detection_coverage", "label": "MITRE Detection Coverage",
+        "value": f"{covered}/{total}" if total else "—",
+        "help": "Techniques with a saved hunt pack or bundled community template, out of every technique linked to a CVE in the database (live mitre_techniques / cve_technique_map, same query as Forge coverage).",
+        "section": "mitre_attack", "filter": {},
+    })
+    tiles.append({
+        "id": "self_cve_exposure", "label": "Self CVE Exposure",
+        "value": exposure["count"],
+        "help": f"KEV or critical CVEs matching BRIEFR's own generated self-stack ({len(exposure['terms'])} dependency terms from requirements.txt / package.json). Term match, not SBOM-precise -- see the matched term on each row.",
+        "section": "risks", "filter": {"origin": "live"},
+    })
 
     return {
         "generated": {
@@ -173,16 +208,74 @@ async def get_overview():
             "risks": len(risks),
             "reviews": len(corpus["reviews"]["reviews"]),
         },
+        "self_exposure": exposure,
         "last_reviewed": corpus["manifest"]["last_reviewed"],
         "tiles": tiles,
     }
 
 
+@router.get("/mitre")
+async def get_mitre(
+    stack: str | None = Query(default=None, max_length=500),
+):
+    """ATT&CK coverage matrix (spec §5.6). Reuses the exact query Forge's
+    coverage map uses (`routers.forge.build_coverage_map`) -- not a
+    reimplementation, so 'coverage matches DB' holds by construction."""
+    db = await get_db()
+    try:
+        return await build_coverage_map(db, stack)
+    finally:
+        await db.close()
+
+
+@router.get("/threat-scenarios")
+async def get_threat_scenarios(
+    stack: str | None = Query(default=None, max_length=500),
+    self_stack: bool = False,
+):
+    """Stack-scoped / self-stack ATT&CK threat scenarios (spec §5.10, §4.5).
+
+    Wraps `threat_model.scenarios.build_threat_scenarios` -- identical
+    output shape to `/api/threat-model/scenarios` by construction, so
+    'scenarios match Forge API output' holds without a parallel
+    implementation. `self_stack=true` swaps in the generated self-stack
+    terms instead of the `stack` query param (mirrors Forge's profileStack
+    toggle pattern, computed server-side from the corpus, never per-request
+    from scratch)."""
+    try:
+        corpus = get_corpus()
+    except CorpusValidationError as exc:
+        raise HTTPException(status_code=500, detail=f"Corpus invalid: {exc}") from exc
+
+    effective_stack = merge.self_stack_query(corpus) if self_stack else stack
+
+    db = await get_db()
+    try:
+        result = await build_threat_scenarios(db, effective_stack)
+    finally:
+        await db.close()
+
+    result["meta"]["catalog"] = "self-stack" if self_stack else "stack"
+    return result
+
+
 @router.get("/section/{section_id}")
-async def get_section(section_id: str, type: str = "", status: str = "", severity: str = "", stale: bool = False):
+async def get_section(
+    section_id: str,
+    type: str = "",
+    status: str = "",
+    severity: str = "",
+    origin: str = "",
+    stale: bool = False,
+):
     """Generic read of a manifest data section's corpus rows (TM-2 shell
     convenience -- see module docstring for why this isn't the typed
-    per-section endpoint set from spec §4.4)."""
+    per-section endpoint set from spec §4.4).
+
+    TM-3 additions: `controls` rows get a live `active` flag; `risks` rows
+    gain live-derived self-stack rows (`origin: live`, spec §4.5) alongside
+    the curated register; both routes only touch the DB when their section
+    actually needs it."""
     sources = _SECTION_SOURCES.get(section_id)
     if sources is None:
         raise HTTPException(status_code=404, detail=f"Unknown section: {section_id}")
@@ -196,10 +289,27 @@ async def get_section(section_id: str, type: str = "", status: str = "", severit
         raise HTTPException(status_code=500, detail=f"Corpus invalid: {exc}") from exc
 
     rows = _rows(corpus, corpus_key, list_key)
+
+    if section_id == "controls":
+        rows = merge.enrich_controls(rows)
+
+    # Skip the query entirely when the requested filters can't include live
+    # rows anyway: origin=curated excludes them by definition, and stale=true
+    # only ever matches curated rows (live rows carry no review_date).
+    if section_id == "risks" and origin != "curated" and not stale:
+        db = await get_db()
+        try:
+            live_rows = await merge.self_stack_risk_rows(db, corpus)
+        finally:
+            await db.close()
+        rows = [*rows, *live_rows]
+
     if status:
         rows = [r for r in rows if isinstance(r, dict) and r.get("status") == status]
     if severity:
         rows = [r for r in rows if isinstance(r, dict) and r.get("severity") == severity]
+    if origin:
+        rows = [r for r in rows if isinstance(r, dict) and r.get("origin") == origin]
     if stale:
         cutoff = (date.today() - timedelta(days=STALE_WINDOW_DAYS)).isoformat()
 

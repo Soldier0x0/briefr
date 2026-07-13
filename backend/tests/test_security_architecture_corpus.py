@@ -127,6 +127,38 @@ def test_build_db_tables_yaml_shape():
     assert out[0]["summary"]
 
 
+# ── Self-stack (spec §4.5) ─────────────────────────────────────────────
+
+def test_extract_requirements_terms_strips_pins_extras_and_comments():
+    text = "fastapi==0.139.0\nuvicorn[standard]==0.49.0\n# comment\n\n-r other.txt\nbcrypt>=4.0\n"
+    assert gen.extract_requirements_terms(text) == ["bcrypt", "fastapi", "uvicorn"]
+
+
+def test_extract_package_json_terms_merges_deps_and_dev_deps():
+    text = '{"dependencies": {"react": "^19.0.0"}, "devDependencies": {"vite": "^8.0.0"}}'
+    assert gen.extract_package_json_terms(text) == ["react", "vite"]
+
+
+def test_build_self_stack_yaml_shape_and_dedup():
+    out = gen.build_self_stack_yaml(["fastapi"], ["react"], ["postgresql"])
+    assert {e["term"] for e in out} == {"fastapi", "react", "postgresql"}
+    assert all(e["origin"] == "generated" for e in out)
+    assert all(e["id"].startswith("self-stack-") for e in out)
+    # A term appearing in two sources collapses to one entry (id is derived
+    # from the slugified term, not the source).
+    out2 = gen.build_self_stack_yaml(["fastapi"], ["fastapi"], [])
+    assert len(out2) == 1
+
+
+def test_build_self_stack_yaml_renaming_a_dependency_changes_output():
+    """Same acceptance-criterion shape as the router-rename test: a new
+    dependency changes self_stack.yaml, which is what keeps the drift
+    check honest about self-stack staleness (spec §4.5)."""
+    before = gen.build_self_stack_yaml(["fastapi"], [], [])
+    after = gen.build_self_stack_yaml(["fastapi", "django"], [], [])
+    assert before != after
+
+
 # ── Generator determinism + drift ─────────────────────────────────────
 
 def test_generate_is_deterministic(tmp_path):
@@ -148,6 +180,7 @@ def test_committed_corpus_has_no_drift(tmp_path):
         "api_inventory.yaml",
         "scheduler_jobs.yaml",
         "db_tables.yaml",
+        "self_stack.yaml",
     ):
         committed = gen.CORPUS_DIR / filename
         fresh = regenerated_dir / filename
@@ -171,6 +204,7 @@ def _write_minimal_corpus(directory: Path, **overrides) -> None:
         "api_inventory.yaml": {"endpoints": []},
         "scheduler_jobs.yaml": {"jobs": []},
         "db_tables.yaml": {"tables": []},
+        "self_stack.yaml": {"terms": []},
         "trust_boundaries.yaml": {"trust_boundaries": []},
         "controls.yaml": {"controls": []},
         "abuse_cases.yaml": {"abuse_cases": []},
@@ -199,7 +233,9 @@ def test_load_corpus_loads_real_committed_corpus():
     assert corpus["scheduler_jobs"]["jobs"]
     assert corpus["db_tables"]["tables"]
     assert corpus["api_inventory"]["endpoints"]
+    assert corpus["self_stack"]["terms"]
     assert all(c["origin"] == "generated" for c in corpus["components"]["components"])
+    assert all(t["origin"] == "generated" for t in corpus["self_stack"]["terms"])
 
 
 def test_load_corpus_rejects_missing_required_field(tmp_path):
@@ -330,9 +366,10 @@ def test_manifest_and_overview_endpoints():
         body = overview.json()
         assert body["generated"]["components"] > 0
         assert body["generated"]["api_endpoints"] > 0
-        # Curated layer is honestly empty until a real review pass (see
-        # manifest.yaml notes) -- not invented content.
-        assert body["curated"]["controls"] == 0
+        # Risks are honestly empty until a real review pass (see manifest.yaml
+        # notes). Controls got a real curated seed in TM-3 (spec §5.9).
+        assert body["curated"]["risks"] == 0
+        assert body["curated"]["controls"] > 0
 
 
 def test_security_architecture_routes_require_session_auth():

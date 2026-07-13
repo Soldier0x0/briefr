@@ -38,10 +38,10 @@ export default function GenericSection({ sectionId, filters, onFilterChange }) {
       })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [sectionId, filters.type, filters.status, filters.severity, reloadKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sectionId, filters.type, filters.status, filters.severity, filters.origin, reloadKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const items = data?.items || []
-  const activeFilters = ['status', 'severity'].filter(k => filters[k])
+  const activeFilters = ['status', 'severity', 'origin'].filter(k => filters[k])
 
   return (
     <div className="sa-section">
@@ -102,8 +102,14 @@ export default function GenericSection({ sectionId, filters, onFilterChange }) {
                 <span className="sa-row-title">{item.title || item.path || item.id}</span>
                 {item.method && <span className="sa-row-tag mono">{item.method}</span>}
                 {item.origin && <span className={`sa-row-origin sa-row-origin-${item.origin} mono`}>{item.origin}</span>}
+                {typeof item.active === 'boolean' && (
+                  <span className={`sa-active-flag sa-active-${item.active} mono`} title={item.live_flag ? `live_flag: ${item.live_flag}` : 'structural control (always active)'}>
+                    {item.active ? 'ACTIVE' : 'INACTIVE'}
+                  </span>
+                )}
                 {item.status && <span className="sa-row-tag mono">{item.status}</span>}
                 {item.severity && <span className="sa-row-tag mono">{item.severity}</span>}
+                {item.matched_term && <span className="sa-row-tag sa-row-tag-term mono">term: {item.matched_term}</span>}
               </div>
               {item.summary && <p className="sa-row-summary">{item.summary}</p>}
             </li>

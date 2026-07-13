@@ -71,6 +71,8 @@ EXPECTED_ROUTES = [
     ("GET", "/api/threat-model/scenarios"),
     ("GET", "/api/security-architecture/manifest"),
     ("GET", "/api/security-architecture/overview"),
+    ("GET", "/api/security-architecture/mitre"),
+    ("GET", "/api/security-architecture/threat-scenarios"),
     ("GET", "/api/security-architecture/section/{section_id}"),
     ("POST", "/api/proof/run"),
     ("GET", "/api/detection-backlog"),

@@ -138,6 +138,73 @@ def build_db_tables_yaml(tables: list[str]) -> list[dict[str, Any]]:
     ]
 
 
+# ── Self-stack (spec §4.5): BRIEFR's own CVE exposure ────────────────────
+#
+# Stack terms derived from BRIEFR's own dependency manifests + declared
+# runtime components, fed into the *existing* `_stack_match_clause` /
+# `build_threat_scenarios()` pipeline at read time (security_architecture/
+# merge.py) -- no new matching or scoring code, same convention as a user's
+# asset-profile stack (Forge's `profileStack`).
+
+_RUNTIME_COMPONENTS: list[str] = ["postgresql", "nginx"]
+
+
+def extract_requirements_terms(requirements_text: str) -> list[str]:
+    """Bare package names from a pip requirements.txt -- strips version
+    pins/extras/markers, skips comments, blank lines, and pip options
+    (-r, --hash, ...)."""
+    terms: set[str] = set()
+    for raw_line in requirements_text.splitlines():
+        line = raw_line.split("#", 1)[0].strip()
+        if not line or line.startswith("-"):
+            continue
+        name = re.split(r"[=<>!~\[;]", line, maxsplit=1)[0].strip()
+        if name:
+            terms.add(name)
+    return sorted(terms)
+
+
+def extract_package_json_terms(package_json_text: str) -> list[str]:
+    """Package names from package.json's dependencies + devDependencies."""
+    import json
+
+    data = json.loads(package_json_text)
+    names = set(data.get("dependencies", {})) | set(data.get("devDependencies", {}))
+    return sorted(names)
+
+
+def build_self_stack_yaml(
+    requirements_terms: list[str],
+    package_json_terms: list[str],
+    runtime_components: list[str],
+) -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for source, terms in (
+        ("backend/requirements.txt", requirements_terms),
+        ("frontend/package.json", package_json_terms),
+        ("declared runtime component", runtime_components),
+    ):
+        for term in terms:
+            slug = re.sub(r"[^a-z0-9]+", "-", term.lower()).strip("-")
+            entry_id = f"self-stack-{slug}"
+            if entry_id in seen:
+                continue
+            seen.add(entry_id)
+            entries.append({
+                "id": entry_id,
+                "title": term,
+                "summary": f"BRIEFR dependency term derived from {source}.",
+                "owner": "platform",
+                "status": "active",
+                "origin": "generated",
+                "term": term,
+                "source": source,
+            })
+    entries.sort(key=lambda e: e["id"])
+    return entries
+
+
 # ── Live introspection glue ──────────────────────────────────────────────
 
 def _iter_route_contexts(routes: list[Any]):
@@ -181,9 +248,13 @@ def generate(output_dir: Path) -> dict[Path, dict[str, Any]]:
     routes_by_module = live_routes_by_module()
     scheduler_source = (BACKEND / "scheduler.py").read_text(encoding="utf-8")
     db_source = (BACKEND / "db" / "init.py").read_text(encoding="utf-8")
+    requirements_text = (BACKEND / "requirements.txt").read_text(encoding="utf-8")
+    package_json_text = (ROOT / "frontend" / "package.json").read_text(encoding="utf-8")
 
     jobs = extract_scheduler_jobs(scheduler_source)
     tables = extract_db_tables(db_source)
+    requirements_terms = extract_requirements_terms(requirements_text)
+    package_json_terms = extract_package_json_terms(package_json_text)
 
     outputs = {
         output_dir / "components.yaml": {
@@ -201,6 +272,12 @@ def generate(output_dir: Path) -> dict[Path, dict[str, Any]]:
         output_dir / "db_tables.yaml": {
             "version": 1,
             "tables": build_db_tables_yaml(tables),
+        },
+        output_dir / "self_stack.yaml": {
+            "version": 1,
+            "terms": build_self_stack_yaml(
+                requirements_terms, package_json_terms, _RUNTIME_COMPONENTS
+            ),
         },
     }
 

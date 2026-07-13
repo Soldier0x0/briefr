@@ -12,6 +12,123 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-13 — TM-3: Security Architecture live sections — MITRE ATT&CK, Threat Scenarios, Controls, Self-exposure (PR open)
+
+**Context:** picked up TM-3 per the previous entry's queue. Entry gate confirmed
+(`pytest tests/test_security_architecture_shell.py tests/test_security_architecture_corpus.py -q`
+green before starting). Read TM-2's full shell code, `threat_model/scenarios.py`,
+`routers/forge.py`, and Forge's `profileStack` convention per the task brief before
+writing anything.
+
+**Shipped (branch `tm3-arch-live-sections`, PR open against `main`, not merged):**
+
+- **Self-stack generation (spec §4.5):** `scripts/generate_security_corpus.py` now also
+  emits `corpus/self_stack.yaml` — one generated record per dependency term parsed from
+  `backend/requirements.txt` + `frontend/package.json`, plus declared runtime components
+  (`postgresql`, `nginx`). Drift-tested same as the rest of the generated layer (new test
+  cases in `test_security_architecture_corpus.py`); a new dependency changes this file
+  and fails CI until regenerated.
+- **MITRE ATT&CK (`GET /mitre`):** extracted `routers.forge.forge_coverage`'s body into
+  a reusable `build_coverage_map(db, stack)` — `/api/forge/coverage` and the new
+  `/api/security-architecture/mitre` call the identical function, so "coverage matches
+  DB" holds by construction, not by two implementations staying in sync. Frontend:
+  `MitreSection.jsx`, grouped-by-tactic list (not the spec's aspirational heat matrix —
+  see deviation note below), stack-filter input, technique rows link to
+  `/?view=coverage&technique=<id>` (Forge's existing URL-state contract, verified in
+  the browser walk to land on the right hunt-pack detail).
+- **Threat Scenarios (`GET /threat-scenarios`):** wraps `threat_model.scenarios
+  .build_threat_scenarios` unchanged — `?stack=` for Forge-parity output (verified
+  byte-identical to `/api/threat-model/scenarios` in tests), `?self_stack=true` swaps
+  in the generated self-stack terms server-side (never recomputed per request — corpus
+  generation time only, CLAUDE.md danger zone 6). Frontend: `ThreatScenariosSection.jsx`,
+  three-catalog toggle (operational / your stack via `GET /api/me/stack` per spec §5.10 /
+  BRIEFR self-stack), matches Forge's `profileStack` convention rather than inventing a
+  new one.
+- **Controls inventory:** `controls.yaml` was an empty curated stub since TM-1 — TM-3
+  did the first real security-review seed (10 controls: JWT session, bcrypt, rate
+  limiting, parameterized SQL, webhook signing + SSRF guard, backup encryption,
+  Postgres-required, log redaction, audit log). `security_architecture/merge.py::
+  resolve_control_active` reads each control's `live_flag` env var at request time
+  (`BACKUP_ENABLED`, `BRIEFR_REQUIRE_POSTGRES`); a control with no `live_flag` is
+  structural and always reads `active: true`. `/section/controls` rows carry the flag.
+- **Self-exposure live risk rows:** `merge.self_stack_risk_rows` queries KEV/critical
+  CVEs matching the self-stack via the existing `_stack_match_clause`, merged into
+  `/section/risks` as `origin: "live"` rows with a visible `matched_term` — verified in
+  the browser walk (seeded `CVE-2026-90099`, a KEV matching self-stack term "fastapi",
+  produced exactly one live row with the term shown). These rows aren't stored and
+  can't be closed by hand; `?stale=true` never includes them. Overview gained
+  `mitre_detection_coverage` (`"<covered>/<total>"`, global — not stack-scoped) and
+  `self_cve_exposure` (live count, drills to `risks?origin=live`) tiles.
+- **Advisor-caught bug fixed before shipping:** the first cut of
+  `self_stack_risk_rows` reported `severity: "critical"` for every KEV row regardless
+  of the CVE's actual severity — inventing a value the spec's central principle
+  explicitly forbids ("opinion rendered as measurement"). Fixed to report the DB's real
+  severity; `is_kev` alone carries the urgency signal. Regression test added
+  (`test_risks_section_live_row_reports_real_severity_not_invented`).
+
+**Deviation from spec, documented (per playbook §2 step 2 — fixing the spec is part of
+the PR):** spec §5.6 names an `AttackNavigatorMatrix` with 5 coverage layers (Detection/
+Correlation/YARA/Threat feed/AI). Only Detection has a live data source in this
+codebase (hunt packs + bundled templates — same one Forge uses). TM-3 ships a dense
+grouped-by-tactic list with that one real layer instead of fabricating rows for the
+other four, which would violate the corpus's central "no invented arithmetic" principle.
+None of TM-3's acceptance criteria require the heat-matrix visualization; it's a future
+enhancement, not something this phase left half-built.
+
+**Dual-DB verification (CLAUDE.md danger zone 1):** ran the full TM-3-touching test
+files against both SQLite (default) and a disposable Postgres 16 container
+(`briefr-pg-test` on `localhost:5433`, already running from a prior session, reused per
+the playbook's Docker guidance). All TM-3 code — `merge.py`'s self-stack queries, the
+new router endpoints, `build_coverage_map` — passed on both. One pre-existing,
+**unrelated** gap surfaced: `tests/test_threat_model_scenarios.py::
+test_scenarios_with_stack_and_mapping` and `::test_scenarios_handles_null_epss_score`
+fail only under Postgres because their seeding helper calls a bare `asyncio.run()`
+*after* the TestClient's app lifespan already opened the asyncpg pool on a different
+event loop — asyncpg binds pool release/reset to the loop that created it. Proof this
+is pre-existing and not a TM-3 regression: `git diff b4e8c24 -- backend/tests/
+test_threat_model_scenarios.py` is empty (this branch never touches that file), and
+the traceback puts the failure inside `_seed_mitre_cve`'s `asyncio.run()` call, before
+any endpoint under test even runs. Fixed the same pattern in this PR's own new test file
+(`test_security_architecture_live.py`, via `client.portal.call(...)` instead of
+`asyncio.run()`) but did **not** touch `test_threat_model_scenarios.py` — out of TM-3's
+scope, would be a second unrelated fix bloating the diff. Flagged as a spawned
+follow-up task (task_323705ac) rather than silently left broken.
+
+**Full suite:** `pytest tests/ -q` — 1128 passed, 10 skipped (Postgres-only markers),
+excluding the 5 pre-existing `test_backup_*` failures (Windows POSIX-chmod semantics
+don't apply to `st_mode` checks on this dev machine — untouched by this PR, confirmed
+failing identically on `main`).
+
+**Browser verification — completed.** Prior sessions' TM-1/TM-2 entries note port 8000
+already occupied by another worktree's backend; ran this session's own stack instead
+(`uvicorn` on `:8001` with `BRIEFR_SCHEDULER_ENABLED=0`, `vite preview --port 5180` with
+`PLAYWRIGHT_BACKEND_URL=http://127.0.0.1:8001` — vite.config.js's existing `preview.proxy`
+env hook, no code changes). Copied a 15-CVE snapshot from the main repo's `backend/briefr.db`
+into this worktree (avoids the sub-10-CVE synchronous-NVD-sync login-lock landmine),
+seeded one KEV CVE matching self-stack term "fastapi" plus a `cve_technique_map` row,
+created a throwaway `tm3verify` user. Verified: login; ARCH → MITRE ATT&CK renders real
+tactic-grouped technique rows from live DB data (gap/community counts correct); technique
+"Open in Forge" link lands on the exact hunt-pack detail for that technique with the
+matching CVE listed; Threat Scenarios self-stack toggle renders the T1001 scenario with
+all self-stack terms listed; Risks section shows the live row with `matched_term:
+"fastapi"` visible; Controls section renders all 10 seeded controls with `ACTIVE` badges;
+Overview's `MITRE Detection Coverage` (`1/2`) and `Self CVE Exposure` (`1`) tiles render
+live and the exposure tile's drill-through lands on the pre-filtered `risks?origin=live`
+row; 375px width has zero horizontal overflow. Torn down both throwaway processes and
+freed the ports after verification.
+
+**Next:** TM-4 (System Architecture graph, Trust Boundaries, Attack Surface). Per spec
+§8's parallelization rule, do **not** run TM-4 in parallel with any TM-3 follow-up work
+that touches `SecurityArchitecturePage.jsx` — TM-3 added the `mitre_attack` and
+`threat_scenarios` section special-cases there; TM-4 will add its own for
+`system-architecture`/`trust-boundaries`/`attack-surface`. TM-4 needs a real
+`graphs/architecture.json` generator (doesn't exist yet — spec §4.1 lists it under the
+generated layer but TM-1's `generate_security_corpus.py` never built it). The optional
+follow-up task (task_323705ac) fixing `test_threat_model_scenarios.py`'s Postgres
+event-loop bug is independent and can land anytime.
+
+---
+
 ## 2026-07-13 — FR-3: Forge live-data enrichment + PDF export shipped (PR open)
 
 **Context:** closes the forge-redesign.md program (FR-1 #490, FR-2 #492, FR-3 this PR)
