@@ -87,11 +87,11 @@ async def self_stack_risk_rows(db: Any, corpus: dict[str, Any]) -> list[dict[str
 
     rows = await db.execute_fetchall(
         f"""
-        SELECT cve_id, severity, cvss_score, epss_score, is_kev, published,
-               description, affected_products
-        FROM cves
-        WHERE ({stack_clause}) AND (is_kev = 1 OR severity = 'CRITICAL')
-        ORDER BY is_kev DESC, published DESC
+        SELECT c.cve_id, c.severity, c.cvss_score, c.epss_score, c.is_kev, c.published,
+               c.description, c.affected_products
+        FROM cves c
+        WHERE ({stack_clause}) AND (c.is_kev = 1 OR c.severity = 'CRITICAL')
+        ORDER BY c.is_kev DESC, c.published DESC
         LIMIT 50
         """,
         stack_params,

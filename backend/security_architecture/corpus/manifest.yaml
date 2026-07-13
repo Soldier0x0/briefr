@@ -1,9 +1,10 @@
 version: 1
 schema_version: 1
-last_reviewed: '2026-07-12'
+last_reviewed: '2026-07-13'
 sections:
   - overview
   - components
+  - mitre_attack
   - trust_boundaries
   - controls
   - abuse_cases
@@ -12,9 +13,14 @@ sections:
   - risks
   - reviews
 notes: >
-  TM-1 (corpus generator + loader + drift CI). Curated sections below are
-  intentionally empty placeholders -- they hold only what code cannot know
-  (risk judgments, abuse case narratives, decision records, trust-boundary
-  classifications) and are seeded by a future security-review pass, not
-  invented by the generator. The generated layer (components, api_inventory,
-  scheduler_jobs, db_tables) is real and machine-derived; see corpus_loader.py.
+  TM-1 (corpus generator + loader + drift CI) seeded curated sections as
+  intentionally empty placeholders. TM-3 (MITRE ATT&CK + Threat Scenarios +
+  Controls + Self-exposure) did the first real security-review pass over
+  `controls.yaml` -- risks, abuse cases, decisions, trust boundaries, and
+  reviews are still empty pending a future pass. `mitre_attack` has no
+  corpus file of its own: it's served entirely from live
+  `mitre_techniques`/`cve_technique_map` DB data via
+  GET /api/security-architecture/mitre (routers.forge.build_coverage_map,
+  reused not duplicated). The generated layer (components, api_inventory,
+  scheduler_jobs, db_tables, self_stack) is real and machine-derived; see
+  corpus_loader.py and scripts/generate_security_corpus.py.

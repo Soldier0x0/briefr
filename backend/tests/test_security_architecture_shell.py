@@ -72,11 +72,12 @@ def test_overview_curated_tiles_reflect_empty_corpus_honestly():
     with TestClient(app) as client:
         body = client.get("/api/security-architecture/overview").json()
         by_id = {t["id"]: t for t in body["tiles"]}
-        # Curated layer is genuinely empty pre-review (TM-1 manifest note) --
-        # the tile must say 0, not fabricate a number.
+        # Risks are still genuinely empty pre-review (TM-1 manifest note) --
+        # the tile must say 0, not fabricate a number. Controls got a real
+        # curated seed in TM-3 (spec §5.9), so it's non-zero now.
         assert by_id["open_risks"]["value"] == 0
         assert by_id["critical_open_risks"]["value"] == 0
-        assert by_id["controls"]["value"] == 0
+        assert by_id["controls"]["value"] > 0
 
 
 def test_section_endpoint_returns_generated_components():

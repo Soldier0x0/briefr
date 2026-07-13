@@ -366,9 +366,10 @@ def test_manifest_and_overview_endpoints():
         body = overview.json()
         assert body["generated"]["components"] > 0
         assert body["generated"]["api_endpoints"] > 0
-        # Curated layer is honestly empty until a real review pass (see
-        # manifest.yaml notes) -- not invented content.
-        assert body["curated"]["controls"] == 0
+        # Risks are honestly empty until a real review pass (see manifest.yaml
+        # notes). Controls got a real curated seed in TM-3 (spec §5.9).
+        assert body["curated"]["risks"] == 0
+        assert body["curated"]["controls"] > 0
 
 
 def test_security_architecture_routes_require_session_auth():

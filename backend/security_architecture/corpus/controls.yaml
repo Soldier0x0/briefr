@@ -1,5 +1,178 @@
 version: 1
 # Curated: security controls, what they mitigate, and their live_flag/
-# review_status. Empty until a real security-review pass populates it --
-# see manifest.yaml notes.
-controls: []
+# review_status. Seeded 2026-07-13 (TM-3) as the first real security-review
+# pass over shipping controls -- `active` is NOT stored here, it's resolved
+# at read time by security_architecture/merge.py::resolve_control_active()
+# from each control's live_flag (spec §5.9). A control with no live_flag is
+# structural -- enforced unconditionally in code, not behind a runtime
+# toggle -- and reads active by definition.
+controls:
+  - id: jwt-session-auth
+    title: JWT session cookies
+    summary: Session-cookie authentication for analyst and operator API requests.
+    owner: platform
+    status: active
+    origin: curated
+    review_date: '2026-07-01'
+    evidence: [backend/auth/tokens.py, backend/tests/test_auth_tokens.py]
+    related_ids: []
+    category: authentication
+    threats_mitigated: [broken-auth, session-hijack]
+    coverage: full
+    related_code: [backend/auth/tokens.py, backend/routers/auth.py]
+    related_apis: ['/api/auth/*']
+    review_status: current
+    live_flag: null
+
+  - id: password-hashing-bcrypt
+    title: bcrypt password hashing
+    summary: Plain bcrypt (12 rounds) for stored analyst/operator passwords, with a dummy-hash comparison to avoid username enumeration via timing.
+    owner: platform
+    status: active
+    origin: curated
+    review_date: '2026-07-01'
+    evidence: [backend/auth/passwords.py]
+    related_ids: []
+    category: authentication
+    threats_mitigated: [credential-stuffing, password-database-compromise]
+    coverage: full
+    related_code: [backend/auth/passwords.py]
+    related_apis: ['/api/auth/login', '/api/auth/setup']
+    review_status: current
+    live_flag: null
+
+  - id: rate-limiting
+    title: Per-route rate limiting
+    summary: Token-bucket rate limits on login, refresh, IOC lookup, admin, wallboard, and DB explorer routes.
+    owner: platform
+    status: active
+    origin: curated
+    review_date: '2026-07-01'
+    evidence: [backend/rate_limit.py, backend/tests/test_rate_limit.py]
+    related_ids: []
+    category: abuse-prevention
+    threats_mitigated: [brute-force, credential-stuffing, rate-limit-bypass, resource-exhaustion]
+    coverage: full
+    related_code: [backend/rate_limit.py, backend/rate_limit_store.py]
+    related_apis: ['/api/auth/login', '/api/auth/refresh', '/api/ioc/*', '/api/admin/*', '/api/wallboard/*']
+    review_status: current
+    live_flag: null
+
+  - id: parameterized-sql
+    title: Parameterized SQL
+    summary: All query construction in db/ uses parameter binding, not string interpolation of untrusted input -- Postgres-native since Post-B.
+    owner: platform
+    status: active
+    origin: curated
+    review_date: '2026-07-01'
+    evidence: [backend/db/, docs/planning/specs/codebase-audit.md]
+    related_ids: []
+    category: injection-prevention
+    threats_mitigated: [sql-injection]
+    coverage: full
+    related_code: [backend/db/connection.py, backend/db/pg_adapt.py]
+    related_apis: ['*']
+    review_status: current
+    live_flag: null
+
+  - id: webhook-signing
+    title: Webhook payload signing
+    summary: Outbound webhook deliveries are HMAC-signed so receivers can verify authenticity.
+    owner: platform
+    status: active
+    origin: curated
+    review_date: '2026-07-01'
+    evidence: [backend/webhooks/engine.py, backend/tests/test_webhooks_engine.py]
+    related_ids: [webhook-ssrf-guard]
+    category: integrity
+    threats_mitigated: [webhook-spoofing, payload-tampering]
+    coverage: full
+    related_code: [backend/webhooks/engine.py]
+    related_apis: ['/api/webhooks/*']
+    review_status: current
+    live_flag: null
+
+  - id: webhook-ssrf-guard
+    title: Webhook SSRF protection
+    summary: Outbound webhook HTTP is HTTPS-only, resolves and validates destination IPs against blocked ranges (loopback, link-local, private) before connecting, and pins the resolved IP for the request.
+    owner: platform
+    status: active
+    origin: curated
+    review_date: '2026-07-01'
+    evidence: [backend/webhooks/ssrf.py, backend/tests/test_webhooks_ssrf.py]
+    related_ids: [webhook-signing]
+    category: ssrf-prevention
+    threats_mitigated: [ssrf, internal-network-scanning]
+    coverage: full
+    related_code: [backend/webhooks/ssrf.py]
+    related_apis: ['/api/webhooks/*']
+    review_status: current
+    live_flag: null
+
+  - id: backup-encryption
+    title: Encrypted backups
+    summary: Scheduled database backups are age-encrypted at rest; toggled by BACKUP_ENABLED.
+    owner: platform
+    status: active
+    origin: curated
+    review_date: '2026-07-01'
+    evidence: [backend/backup/manager.py, backend/tests/test_admin_backups.py]
+    related_ids: []
+    category: data-protection
+    threats_mitigated: [backup-exfiltration, data-at-rest-exposure]
+    coverage: full
+    related_code: [backend/backup/manager.py]
+    related_apis: ['/api/admin/backups/*']
+    review_status: current
+    live_flag: BACKUP_ENABLED
+
+  - id: postgres-required-in-production
+    title: PostgreSQL required in production
+    summary: BRIEFR refuses to start against a non-Postgres DATABASE_URL when BRIEFR_REQUIRE_POSTGRES is set -- SQLite survives only as a zero-config dev/test fallback, never a silent production footgun.
+    owner: platform
+    status: active
+    origin: curated
+    review_date: '2026-07-01'
+    evidence: [backend/main.py, backend/.env.example]
+    related_ids: []
+    category: configuration-hardening
+    threats_mitigated: [misconfiguration, data-loss]
+    coverage: full
+    related_code: [backend/main.py]
+    related_apis: []
+    review_status: current
+    live_flag: BRIEFR_REQUIRE_POSTGRES
+
+  - id: structured-logging-redaction
+    title: Structured logging secret redaction
+    summary: Structured log records redact extra fields matching *_KEY/_TOKEN/_SECRET/_PASSWORD -- secrets must never be interpolated into log message strings (only extra-field redaction is covered).
+    owner: platform
+    status: active
+    origin: curated
+    review_date: '2026-07-01'
+    evidence: [backend/structured_logging.py, backend/tests/test_structured_logging.py]
+    related_ids: []
+    category: secrets-hygiene
+    threats_mitigated: [secret-leakage-via-logs]
+    coverage: full
+    related_code: [backend/structured_logging.py]
+    related_apis: []
+    review_status: current
+    live_flag: null
+
+  - id: audit-log
+    title: Audit log
+    summary: Security-relevant admin and auth actions are recorded to an append-only audit log, surfaced on Admin and merged into Review History (spec §5.14).
+    owner: platform
+    status: active
+    origin: curated
+    review_date: '2026-07-01'
+    evidence: [backend/routers/admin.py]
+    related_ids: []
+    category: accountability
+    threats_mitigated: [repudiation, undetected-abuse]
+    coverage: partial
+    related_code: [backend/routers/admin.py]
+    related_apis: ['/api/admin/*']
+    review_status: current
+    live_flag: null
