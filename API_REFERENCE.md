@@ -1122,7 +1122,7 @@ Optional webhook event: `kev_backlog`.
 
 ---
 
-## Security Architecture (TM-1 corpus + TM-2 shell + TM-3/TM-4 live + graph sections)
+## Security Architecture (TM-0→TM-5 — committed program complete)
 
 Mounted at `/api/security-architecture/*`, session auth required (analyst+). Backed by
 the Security Architecture Corpus (SAC) — versioned YAML under
@@ -1134,11 +1134,22 @@ scheduler jobs, DB tables, `self_stack.yaml` dependency terms, and TM-4's
 live code introspection and drift-tested in CI
 (`backend/tests/test_security_architecture_corpus.py`) — renaming a router, scheduler
 job, table, or dependency breaks the build until the script is re-run.
-Curated records: controls got their first real security-review pass in TM-3; TM-4
-seeded `trust_boundaries.yaml` with its first 2 boundaries; risks, decisions, and abuse
-cases are still seeded empty pending a future pass. `live` rows (self-stack risk
-register entries) are computed at read time, never stored — see
-`security_architecture/merge.py`.
+Curated records: controls got their first real security-review pass in TM-3;
+trust boundaries in TM-4; TM-5 seeded `security_decisions.yaml` (2 records mapped from
+the real ADRs in `docs/decisions/`), `abuse_cases.yaml` (6 entries, each citing real
+protection code as evidence), and `reviews.yaml` (the program's own TM-3/TM-4/TM-5
+review passes). `risks.yaml` stays intentionally empty — no real risk-register judgment
+pass has happened yet; its only non-empty content is `live` rows. `live` rows
+(self-stack risk register entries, and `reviews` section's audit-log security events)
+are computed at read time, never stored — see `security_architecture/merge.py`.
+
+**Staleness decay (TM-5, spec §4.1):** every curated row carries a `stale: boolean`
+field (`security_architecture/merge.py::annotate_stale`) — `true` once
+`review_date` is more than 90 days in the past. The Overview "Controls Active" tile is
+a ratio (`active / total`, spec §5.1) that excludes stale controls from **both**
+numerator and denominator — the module's one live percentage a curated record feeds.
+The same `stale` flag drives the frontend STALE badge and the PDF export disclaimer, so
+all three never disagree.
 
 Frontend: `/security-architecture` route, header tab **ARCH**, three-panel shell
 (`frontend/src/pages/security-architecture/`) mirroring Forge/Admin — manifest-driven
@@ -1146,8 +1157,15 @@ left nav, Overview center workspace with drill-through evidence tiles. TM-3 adds
 dedicated MITRE ATT&CK and Threat Scenarios section components. TM-4 adds the
 interactive pan/zoom System Architecture graph, Trust Boundaries flow cards, Attack
 Surface endpoint list, and the first working context rail (populated on graph node
-selection). Risk Register grid, Decisions, Review History, and global search are TM-5
-— see `docs/planning/specs/threat-modeling-security-architecture.md` §8.
+selection). TM-5 adds dedicated Risk Register (`RiskRegisterSection.jsx`, AdminDataGrid,
+CSV + PDF export), Decision Records (`DecisionsSection.jsx`), Abuse Cases
+(`AbuseCasesSection.jsx`, in-page search), Review History (`ReviewHistorySection.jsx`,
+curated + live audit-log timeline), Stale Records (`StaleRecordsSection.jsx`,
+cross-section drill-through), and global search (`GlobalSearch.jsx`, topbar) — this
+closes the committed program (TM-0→TM-5, 5 PRs, 11 sections) per
+`docs/planning/specs/threat-modeling-security-architecture.md` §8. TM-6+ framework
+workspaces (STRIDE/OWASP/CAPEC/CWE/NIST CSF/ASVS) are evidence-gated future work, not
+queued.
 
 ### GET /api/security-architecture/manifest
 
@@ -1162,29 +1180,40 @@ entirely from live `mitre_techniques`/`cve_technique_map` DB data.
 
 ```json
 {
-  "generated": {"components": 20, "api_endpoints": 148, "scheduler_jobs": 26, "db_tables": 42},
-  "curated": {"trust_boundaries": 0, "controls": 10, "abuse_cases": 0, "threat_scenarios": 0,
-              "security_decisions": 0, "risks": 0, "reviews": 0},
+  "generated": {"components": 20, "api_endpoints": 151, "scheduler_jobs": 26, "db_tables": 42},
+  "curated": {"trust_boundaries": 2, "controls": 10, "abuse_cases": 6, "threat_scenarios": 0,
+              "security_decisions": 2, "risks": 0, "reviews": 3},
   "self_exposure": {"count": 0, "kev_count": 0, "critical_count": 0, "terms": ["fastapi", "react", "..."]},
   "last_reviewed": "2026-07-13",
   "tiles": [
     {"id": "components", "label": "System Components", "value": 20,
      "help": "...", "section": "components", "filter": {"type": "components"}},
-    "... 6 more (endpoints, scheduler_jobs, db_tables, open_risks, critical_open_risks, controls, review_freshness)",
+    "... 5 more (endpoints, scheduler_jobs, db_tables, open_risks, critical_open_risks)",
+    {"id": "controls", "label": "Controls Active", "value": "10/10",
+     "help": "...", "section": "controls", "filter": {}},
+    {"id": "review_freshness", "label": "Review Freshness", "value": 0, "unit": "days",
+     "help": "...", "section": "reviews", "filter": {}},
     {"id": "mitre_detection_coverage", "label": "MITRE Detection Coverage", "value": "3/12",
      "help": "...", "section": "mitre_attack", "filter": {}},
     {"id": "self_cve_exposure", "label": "Self CVE Exposure", "value": 0,
-     "help": "...", "section": "risks", "filter": {"origin": "live"}}
+     "help": "...", "section": "risks", "filter": {"origin": "live"}},
+    {"id": "unreviewed_endpoints", "label": "Unreviewed Endpoints", "value": 0,
+     "help": "...", "section": "attack_surface", "filter": {}},
+    {"id": "stale_records", "label": "Stale Records", "value": 0,
+     "help": "...", "section": "stale", "filter": {}}
   ]
 }
 ```
 
 Counts and ratios only — no scoring, no letter grades, per spec's "no arithmetic
 invented for this module" tile rule (§5.1). Each tile's `section`/`filter` is the exact
-drill-through target for `GET /section/{id}` below. `mitre_detection_coverage` is
-`"<covered>/<total>"` (techniques with a hunt pack or bundled template, out of every
-technique mapped to a CVE, global — not stack-scoped) or `"—"` when no technique is
-mapped yet. `self_cve_exposure` is the live self-stack KEV/critical CVE count (§4.5).
+drill-through target for `GET /section/{id}` below (`stale_records`'s target is
+`GET /stale`, TM-5). `mitre_detection_coverage` is `"<covered>/<total>"` (techniques
+with a hunt pack or bundled template, out of every technique mapped to a CVE, global —
+not stack-scoped) or `"—"` when no technique is mapped yet. `self_cve_exposure` is the
+live self-stack KEV/critical CVE count (§4.5). `controls` (TM-5) is
+`"<active>/<total>"` — live-flag-verified active controls out of total, **excluding
+stale controls from both sides** (spec §5.1, §4.1 staleness decay).
 
 ### GET /api/security-architecture/mitre
 
@@ -1292,9 +1321,11 @@ divergence, not the final API shape.
 **Path:** `section_id` — one of manifest.yaml's `sections[]` excluding `overview`,
 `mitre_attack`, `system_architecture`, and `attack_surface` (which have their own typed
 endpoints above): `components`, `trust_boundaries`, `controls`, `abuse_cases`,
-`threat_scenarios`, `security_decisions`, `risks`, `reviews`. `trust_boundaries` has no
-dedicated endpoint — its data shape (a plain curated-record list) fits the generic read
-as-is; `TrustBoundariesSection.jsx` renders it as flow cards instead of a table.
+`threat_scenarios`, `security_decisions`, `risks`, `reviews`. None of these has a
+dedicated typed endpoint — TM-5's frontend components (`RiskRegisterSection.jsx`,
+`DecisionsSection.jsx`, `AbuseCasesSection.jsx`, `ReviewHistorySection.jsx`,
+`TrustBoundariesSection.jsx`) each render this generic read's rows with their own
+typed table/timeline/card layout instead of a plain list.
 
 **Query params (all optional):**
 
@@ -1318,9 +1349,44 @@ as-is; `TrustBoundariesSection.jsx` renders it as flow cards instead of a table.
   can't be closed by hand; they disappear when the underlying query stops matching.
   `?stale=true` never includes them (only curated rows carry a `review_date`).
 
+**TM-5 live enrichment:**
+
+- Every row is annotated with `stale: boolean` (`security_architecture/merge.py::
+  annotate_stale`) — `true` for curated rows whose `review_date` is more than 90 days
+  in the past; always `false` for generated/live rows. This is the single source of
+  truth the frontend STALE badge, the Overview "Controls Active" ratio, and the PDF
+  export disclaimer all read — computed once, never re-derived client-side.
+- `reviews` rows gain live-derived entries (`origin: "live"`) from `audit_log`, filtered
+  to security-relevant action prefixes (`auth.`, `backup.`, `database.`,
+  `diagnostics.integrity`, `config.apply`, `system.restart`, `scheduler.`) and reusing
+  `redact.mask_audit_log_target` — the same table and masking rule as the Admin Audit
+  Log view (`routers/admin.py::get_audit_log`), not a duplicate.
+
 **Response:** `{ "section": "...", "type": "...", "available_types": [...], "count": N, "items": [...] }`
 
 404 when `section_id` isn't a manifest section.
+
+### GET /api/security-architecture/stale
+
+**TM-5** (spec §5.1 "Stale Records" tile drill-through, §9.6 acceptance). Every curated
+record across every section past the 90-day review window, each tagged with the
+`section`/`type` it belongs to. Not a manifest nav section of its own — reached only via
+the Overview tile (`StaleRecordsSection.jsx`), same convention as `components` fanning
+across the generated collections.
+
+**Response:** `{ "count": N, "items": [{ ...record, "section": "controls", "type": "" }, ...] }`
+
+### GET /api/security-architecture/search
+
+**TM-5** (spec §5.17). Global search over the corpus (components, endpoints, jobs,
+tables, trust boundaries, controls, abuse cases, threat scenarios, decisions, risks,
+reviews) plus live MITRE technique names — a bounded scan over the already
+mtime-cached corpus (`security_architecture/merge.py::search_corpus`) plus one MITRE
+query, not an index subsystem.
+
+**Query params:** `q` (required for non-empty results; empty/missing → `{"count": 0}`).
+
+**Response:** `{ "query": "...", "count": N, "results": [{ "id": "...", "title": "...", "summary": "...", "type": "controls", "section": "controls" }, ...] }`
 
 ---
 
