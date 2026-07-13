@@ -526,24 +526,31 @@ async def calculate_momentum(cve_id: str, db: Any) -> dict[str, Any]:
             })
             total += 0.10
 
-    # ── Signal 2: New OTX pulse ───────────────────────────
+    # ── Signal 2: New OTX pulse (observation time, not ingest fetch time) ──
     otx_rows = await db.execute_fetchall(
         """
-        SELECT fetched_at
+        SELECT created_date
         FROM otx_cve_pulses
         WHERE cve_id = ?
-        ORDER BY fetched_at DESC
+          AND created_date IS NOT NULL
+          AND created_date != ''
+        ORDER BY created_date DESC
         LIMIT 1
         """,
         (cve_upper,),
     )
     if otx_rows:
-        fetched_str = (otx_rows[0]["fetched_at"] or "").strip()
+        observed_str = str(otx_rows[0]["created_date"] or "").strip()
         try:
-            fetched_dt = datetime.fromisoformat(fetched_str.replace("Z", "+00:00"))
-            if fetched_dt.tzinfo is None:
-                fetched_dt = fetched_dt.replace(tzinfo=timezone.utc)
-            hours_ago = max(0.0, (now - fetched_dt).total_seconds() / 3600)
+            text = observed_str
+            if text.endswith("Z"):
+                text = text[:-1] + "+00:00"
+            if len(text) == 10 and text[4] == "-" and text[7] == "-":
+                text = f"{text}T00:00:00+00:00"
+            observed_dt = datetime.fromisoformat(text)
+            if observed_dt.tzinfo is None:
+                observed_dt = observed_dt.replace(tzinfo=timezone.utc)
+            hours_ago = max(0.0, (now - observed_dt).total_seconds() / 3600)
             if hours_ago <= 24:
                 signals.append({
                     "type": "otx_pulse",

@@ -44,7 +44,7 @@ def compute_campaign_lifecycle(
     *,
     pulse_created_date: Any,
     members: list[dict[str, Any]],
-    member_link_fetched_at: list[Any],
+    member_observation_at: list[Any],
     now: Optional[datetime] = None,
 ) -> str:
     """
@@ -52,7 +52,9 @@ def compute_campaign_lifecycle(
 
     members: dicts with is_kev, has_poc, published, modified, kev_date_added,
              epss_activity_at (latest EPSS history row datetime, optional).
-    member_link_fetched_at: otx_cve_pulses.fetched_at values for pulse members.
+    member_observation_at: OTX pulse/indicator observation times (pulse
+        ``created_date`` on CVE links and ``observed_at`` on pulse IOCs).
+        Ingest ``fetched_at`` is never used (CORR-PR-7 / D4).
     """
     now = now or datetime.now(timezone.utc)
     if now.tzinfo is None:
@@ -71,12 +73,12 @@ def compute_campaign_lifecycle(
 
     last_activity: Optional[datetime] = pulse_dt
 
-    for fetched in member_link_fetched_at:
-        link_dt = _parse_dt(fetched)
-        if link_dt and link_dt >= emerging_cutoff:
+    for observed in member_observation_at:
+        obs_dt = _parse_dt(observed)
+        if obs_dt and obs_dt >= emerging_cutoff:
             return "emerging"
-        if link_dt and (last_activity is None or link_dt > last_activity):
-            last_activity = link_dt
+        if obs_dt and (last_activity is None or obs_dt > last_activity):
+            last_activity = obs_dt
 
     for member in members:
         for key in ("published", "modified"):
@@ -151,10 +153,25 @@ async def fetch_member_lifecycle_inputs(
 
     link_rows = await db.execute_fetchall(
         f"""
-        SELECT fetched_at FROM otx_cve_pulses
+        SELECT created_date FROM otx_cve_pulses
         WHERE pulse_id = ? AND cve_id IN ({placeholders})
         """,
         (pulse_id, *member_ids),
     )
-    fetched_at = [r["fetched_at"] for r in link_rows]
-    return members, fetched_at
+    observation_at = [
+        r["created_date"]
+        for r in link_rows
+        if str(r["created_date"] or "").strip()
+    ]
+
+    ioc_rows = await db.execute_fetchall(
+        """
+        SELECT observed_at FROM otx_pulse_iocs
+        WHERE pulse_id = ?
+          AND observed_at IS NOT NULL
+          AND observed_at != ''
+        """,
+        (pulse_id,),
+    )
+    observation_at.extend(r["observed_at"] for r in ioc_rows)
+    return members, observation_at
