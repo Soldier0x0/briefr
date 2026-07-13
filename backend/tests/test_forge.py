@@ -339,7 +339,13 @@ def test_hunt_pack_detail_includes_case_studies_and_cwe_epss(forge_client):
         finally:
             await db.close()
 
-    run_db_test(seed_case_study())
+    # client.portal.call, not run_db_test/asyncio.run -- the TestClient's
+    # app lifespan already opened the asyncpg pool on its own event loop;
+    # a second asyncio.run() here would open (and later close) a second
+    # pool on a different loop, breaking the first (see HANDOVER's PG-001
+    # writeup and test_security_architecture_live.py's same fix).
+
+    client.portal.call(seed_case_study)
 
     coverage = client.get("/api/forge/coverage").json()
     by_tid = {t["technique_id"]: t for t in coverage["techniques"]}
