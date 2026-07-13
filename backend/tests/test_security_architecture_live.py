@@ -41,45 +41,57 @@ def client(tmp_path, monkeypatch):
         yield test_client
 
 
-def _seed(client, self_stack_term="fastapi"):
+async def _seed_coro(self_stack_term="fastapi"):
     """Seed a technique + a KEV CVE whose description matches a real
     self-stack term (fastapi ships in requirements.txt -- see
     corpus/self_stack.yaml) so self-stack merge queries have something to
     match without needing to monkeypatch the corpus."""
-    import asyncio
-
     from database import get_db
 
-    async def _run():
-        db = await get_db()
-        try:
-            await db.execute(
-                "INSERT INTO mitre_techniques (technique_id, name, tactic, url) "
-                "VALUES (?, ?, ?, ?)",
-                (COMMUNITY_TID, "Exploit Public-Facing Application", "Initial Access",
-                 "https://attack.mitre.org/techniques/T1190/"),
-            )
-            await db.execute(
-                """
-                INSERT INTO cves (cve_id, description, affected_products,
-                                  severity, cvss_score, epss_score, is_kev, published)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    "CVE-2024-9999",
-                    f"Remote code execution in {self_stack_term} request handling.",
-                    "[]", "CRITICAL", 9.8, 0.9, 1, "2024-01-01T00:00:00",
-                ),
-            )
-            await db.execute(
-                "INSERT INTO cve_technique_map (cve_id, technique_id) VALUES (?, ?)",
-                ("CVE-2024-9999", COMMUNITY_TID),
-            )
-            await db.commit()
-        finally:
-            await db.close()
+    db = await get_db()
+    try:
+        await db.execute(
+            "INSERT INTO mitre_techniques (technique_id, name, tactic, url) "
+            "VALUES (?, ?, ?, ?)",
+            (COMMUNITY_TID, "Exploit Public-Facing Application", "Initial Access",
+             "https://attack.mitre.org/techniques/T1190/"),
+        )
+        await db.execute(
+            """
+            INSERT INTO cves (cve_id, description, affected_products,
+                              severity, cvss_score, epss_score, is_kev, published)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "CVE-2024-9999",
+                f"Remote code execution in {self_stack_term} request handling.",
+                "[]", "CRITICAL", 9.8, 0.9, 1, "2024-01-01T00:00:00",
+            ),
+        )
+        await db.execute(
+            "INSERT INTO cve_technique_map (cve_id, technique_id) VALUES (?, ?)",
+            ("CVE-2024-9999", COMMUNITY_TID),
+        )
+        await db.commit()
+    finally:
+        await db.close()
 
-    asyncio.run(_run())
+
+def _seed(client, self_stack_term="fastapi"):
+    """Run the seed coroutine on the TestClient's own event loop via its
+    anyio portal, not a bare `asyncio.run()` -- the app lifespan already
+    opened the Postgres connection pool on that loop, and asyncpg's Pool
+    binds release/reset futures to the loop that created it. A second
+    `asyncio.run()` spins up an unrelated loop and blows up with
+    'attached to a different loop' / 'another operation is in progress'
+    under Postgres (SQLite's aiosqlite tolerates it, which is why this
+    only surfaces in the dual-DB run -- CLAUDE.md danger zone 1). Same fix
+    as tests/test_forge.py's `run_db_test(seed())` placed *before*
+    `TestClient(app)` opens; `portal.call` is the equivalent for seeding
+    *after* the client is already open, which every test in this file
+    needs (fixture seeding alone isn't enough -- some tests insert more
+    rows mid-test)."""
+    client.portal.call(_seed_coro, self_stack_term)
 
 
 # ── MITRE (wraps routers.forge.build_coverage_map) ─────────────────────
@@ -164,11 +176,9 @@ def test_risks_section_live_row_reports_real_severity_not_invented(client):
     report the DB's actual severity, not synthesize one. Inventing
     'critical' here would violate the central principle (spec v2 note 3:
     no opinion rendered as measurement)."""
-    import asyncio
-
     from database import get_db
 
-    async def _run():
+    async def _insert_high_severity_kev():
         db = await get_db()
         try:
             await db.execute(
@@ -187,7 +197,7 @@ def test_risks_section_live_row_reports_real_severity_not_invented(client):
         finally:
             await db.close()
 
-    asyncio.run(_run())
+    client.portal.call(_insert_high_severity_kev)
 
     res = client.get("/api/security-architecture/section/risks?origin=live")
     body = res.json()
