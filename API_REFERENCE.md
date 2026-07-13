@@ -1122,29 +1122,32 @@ Optional webhook event: `kev_backlog`.
 
 ---
 
-## Security Architecture (TM-1 corpus + TM-2 shell + TM-3 live sections)
+## Security Architecture (TM-1 corpus + TM-2 shell + TM-3/TM-4 live + graph sections)
 
 Mounted at `/api/security-architecture/*`, session auth required (analyst+). Backed by
 the Security Architecture Corpus (SAC) — versioned YAML under
 `backend/security_architecture/corpus/` — loaded and validated by
 `security_architecture/corpus_loader.py`. Every corpus record carries `origin:
 generated | curated | live`: generated records (components, API endpoint inventory,
-scheduler jobs, DB tables, `self_stack.yaml` dependency terms) are emitted by
-`scripts/generate_security_corpus.py` from live code introspection and drift-tested in
-CI (`backend/tests/test_security_architecture_corpus.py`) — renaming a router,
-scheduler job, table, or dependency breaks the build until the script is re-run.
-Curated records (controls) got their first real security-review pass in TM-3; risks,
-decisions, abuse cases, and trust-boundary classifications are still seeded empty
-pending a future pass. `live` rows (self-stack risk register entries) are computed at
-read time, never stored — see `security_architecture/merge.py`.
+scheduler jobs, DB tables, `self_stack.yaml` dependency terms, and TM-4's
+`graphs/architecture.json`) are emitted by `scripts/generate_security_corpus.py` from
+live code introspection and drift-tested in CI
+(`backend/tests/test_security_architecture_corpus.py`) — renaming a router, scheduler
+job, table, or dependency breaks the build until the script is re-run.
+Curated records: controls got their first real security-review pass in TM-3; TM-4
+seeded `trust_boundaries.yaml` with its first 2 boundaries; risks, decisions, and abuse
+cases are still seeded empty pending a future pass. `live` rows (self-stack risk
+register entries) are computed at read time, never stored — see
+`security_architecture/merge.py`.
 
 Frontend: `/security-architecture` route, header tab **ARCH**, three-panel shell
 (`frontend/src/pages/security-architecture/`) mirroring Forge/Admin — manifest-driven
 left nav, Overview center workspace with drill-through evidence tiles. TM-3 adds
-dedicated MITRE ATT&CK and Threat Scenarios section components; System Architecture
-graph, Trust Boundaries, Attack Surface, Risk Register grid, Decisions, Review History,
-and global search are TM-4/TM-5 — see
-`docs/planning/specs/threat-modeling-security-architecture.md` §8.
+dedicated MITRE ATT&CK and Threat Scenarios section components. TM-4 adds the
+interactive pan/zoom System Architecture graph, Trust Boundaries flow cards, Attack
+Surface endpoint list, and the first working context rail (populated on graph node
+selection). Risk Register grid, Decisions, Review History, and global search are TM-5
+— see `docs/planning/specs/threat-modeling-security-architecture.md` §8.
 
 ### GET /api/security-architecture/manifest
 
@@ -1208,6 +1211,76 @@ Wraps `threat_model.scenarios.build_threat_scenarios` — output is identical in
 once at corpus-generation time (`scripts/generate_security_corpus.py`), never
 recomputed per request.
 
+### GET /api/security-architecture/graph/architecture
+
+System architecture graph (spec §5.2, TM-4). Returns `graphs/architecture.json`
+verbatim — no read-time filtering, so the response's node set always matches the
+generator's output exactly.
+
+**Response:**
+
+```json
+{
+  "version": 1,
+  "clusters": [{"id": "api", "label": "API Routers", "kind": "component"}, "..."],
+  "nodes": [
+    {"id": "routers-cves", "label": "routers.cves", "kind": "component", "cluster": "api",
+     "endpoint_count": 22, "source_refs": [{"type": "file", "ref": "backend/routers/cves.py"}]},
+    {"id": "table:cves", "label": "cves", "kind": "table", "cluster": "database",
+     "source_refs": [{"type": "table", "ref": "cves"}]},
+    {"id": "job:nvd_incremental_sync", "label": "NVD Incremental Sync", "kind": "job",
+     "cluster": "scheduler", "source_refs": [{"type": "job", "ref": "nvd_incremental_sync"}]}
+  ],
+  "edges": [
+    {"id": "routers-cves->table:cves", "source": "routers-cves", "target": "table:cves",
+     "kind": "references_table"}
+  ]
+}
+```
+
+No `x`/`y` layout coordinates — presentation isn't a code fact, so it's excluded from
+the drift-checked generated file. The frontend (`ArchitectureGraphSection.jsx`) computes
+a deterministic cluster+index grid layout at render time.
+
+### GET /api/security-architecture/graph/attack-surface
+
+Attack surface = generated endpoint inventory × linked controls, **counts only** — no
+composite score (spec §8 TM-4). Read-time join of `api_inventory.yaml` against curated
+`controls.yaml`'s `related_apis` glob patterns (exact path, `<prefix>/*`, or `*`).
+
+**Response:**
+
+```json
+{
+  "total_endpoints": 151,
+  "reviewed_endpoints": 151,
+  "unreviewed_endpoints": 0,
+  "endpoints": [
+    {"method": "GET", "path": "/api/cves", "component_id": "routers-cves",
+     "linked_control_count": 1, "linked_control_ids": ["parameterized-sql"]}
+  ]
+}
+```
+
+### GET /api/security-architecture/context/{node_id}
+
+Context-rail payload for a selected architecture-graph node selection (spec §5.2, TM-4).
+`node_id` is the graph's own node id (`routers-cves`, `table:cves`,
+`job:nvd_incremental_sync`).
+
+**Response (component node):** node fields + `summary`, `owner`, `endpoints[]` (from
+`api_inventory`, filtered by `component_id`), `controls[]` (glob-matched via the same
+logic as `/graph/attack-surface`), `tables[]` (outbound `references_table` edges),
+`outbound`/`inbound` edge lists.
+
+**Response (table node):** node fields + `referenced_by[]` (reverse of `outbound` — every
+component with an edge into this table), `outbound`/`inbound`.
+
+**Response (job node):** node fields + `outbound`/`inbound` (always empty today — no
+generated job→table edge exists yet).
+
+404 when `node_id` isn't in the current architecture graph.
+
 ### GET /api/security-architecture/section/{section_id}
 
 **TM-2 shell convenience** — a generic read of any manifest data section's corpus rows,
@@ -1216,10 +1289,12 @@ endpoints ahead of the sections that need them. Superseded per-section by spec �
 typed endpoints as later phases ship live sections — an intentional, documented
 divergence, not the final API shape.
 
-**Path:** `section_id` — one of manifest.yaml's `sections[]` excluding `overview` and
-`mitre_attack` (which has its own typed endpoint above): `components`,
-`trust_boundaries`, `controls`, `abuse_cases`, `threat_scenarios`, `security_decisions`,
-`risks`, `reviews`.
+**Path:** `section_id` — one of manifest.yaml's `sections[]` excluding `overview`,
+`mitre_attack`, `system_architecture`, and `attack_surface` (which have their own typed
+endpoints above): `components`, `trust_boundaries`, `controls`, `abuse_cases`,
+`threat_scenarios`, `security_decisions`, `risks`, `reviews`. `trust_boundaries` has no
+dedicated endpoint — its data shape (a plain curated-record list) fits the generic read
+as-is; `TrustBoundariesSection.jsx` renders it as flow cards instead of a table.
 
 **Query params (all optional):**
 
