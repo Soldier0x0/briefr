@@ -12,6 +12,70 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-13 — Session close: FR-1→FR-3 and TM-0→TM-5 both fully merged
+
+**For a fresh agent picking this up cold with zero conversation context.**
+
+**Shipped and merged this session, in order:** CORR-PR-2 (#476), CORR-PR-3/4/5
+(#487–489), FR-1 (#490), TM-1 (#491), FR-2 (#492), TM-2 (#493), FR-3 (#495), TM-3
+(#494), TM-4 (#496), TM-5 (#497). The forge-redesign.md program (FR-1→FR-3) and the
+**committed** threat-modeling-security-architecture.md program (TM-0→TM-5, 5 PRs / 11
+sections) are both **done** — see the TM-5 entry directly below for full close-out
+detail, including why TM-6+ (STRIDE/OWASP/NIST/CAPEC/CWE) is evidence-gated and not
+queued. Every merged PR's own HANDOVER entry below has full context; read them before
+re-deriving anything.
+
+**No next phase is queued.** What's left is a flat, independent backlog — see
+`docs/planning/BACKLOG.md` for the authoritative list, currently:
+- Small/cheap: **PG-002** (formalize the disposable-Postgres dev/CI setup below into a
+  documented script), **PG-003** (SQLite cross-file test pollution, `test_api_key_health.py`
+  + `test_db_explorer.py`, undiagnosed), PR-F1–F4 (small Forge fixes), PR-O1/O2, PR-P3/P4.
+- Larger, needs its own scoping pass first (do not start opportunistically): correlation-engine-v2
+  Phase 2, PR-6 through PR-13 (`docs/planning/specs/correlation-engine-v2.md` §18).
+
+**Environment landmines hit repeatedly this session — read before you re-discover them:**
+1. **SQLite dev DB lock on login.** A fresh/empty worktree DB (`backend/briefr.db`)
+   triggers `scheduler.py::maybe_run_on_startup()`'s synchronous full NVD ingest
+   whenever `cves` has < 10 rows, **regardless of `BRIEFR_SCHEDULER_ENABLED`** — this
+   holds the SQLite write lock and makes login hang/fail with "database is locked".
+   Fix: copy an already-populated `briefr.db` into the worktree before first login, or
+   seed ≥ 10 CVE rows any other way.
+2. **Disposable Postgres for the dual-DB test rule** (CLAUDE.md danger zone 1): a native
+   Postgres service already runs on `localhost:5432` on this machine — **do not touch
+   it**, credentials unknown/not ours. Instead: `docker run -d --name briefr-pg-test -p
+   127.0.0.1:5433:5432 -e POSTGRES_USER=briefr -e POSTGRES_PASSWORD=briefr -e
+   POSTGRES_DB=briefr postgres:16-alpine`, then `DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5433/briefr
+   BRIEFR_REQUIRE_POSTGRES=1` for `alembic upgrade head` + pytest. This container
+   (`briefr-pg-test`) was left running and reused successfully all session — check
+   `docker ps` before spinning up a new one.
+3. **GitHub Actions CI is blocked repo-wide by a billing/spending-limit issue** — every
+   PR this session showed `test`/`test-postgres`/`gitleaks`/`dependency-audit`/
+   `playwright-smoke` failing in 1–4 seconds with `runner_id: 0` and zero steps executed.
+   This is **not a code problem**; don't chase it. Confirm via `gh api repos/.../actions/runs/<id>/jobs`
+   showing `runner_id: 0`. Needs the repo owner to clear the spending limit in GitHub
+   billing settings — outside any agent's reach.
+4. **The sandboxed Browser-pane tool has its own cookie jar**, separate from any other
+   browser session (the user's real Chrome, a Claude-in-Chrome extension session, or a
+   different agent's own pane) — logging in on one does not authenticate another. If a
+   throwaway dev login is needed, create it directly with `backend/scripts/create_user.py`
+   (the sanctioned, HTTP-inaccessible admin tool) in your **own** worktree's isolated
+   DB only. Never query the `users` table looking for existing credentials — treat that
+   as out of bounds.
+5. **Merge conflicts are real and recurring** when multiple phase branches land
+   back-to-back on `main` — FR-3/TM-3 both touched `backend/routers/forge.py` and TM-2/FR-2/TM-3/FR-3/TM-4/TM-5
+   all touched `docs/HANDOVER.md`'s insertion point. Always `git fetch origin` and
+   check `gh pr view <n> --json mergeable,mergeStateStatus` before merging a queued PR
+   — `mergeStateStatus: DIRTY`/`mergeable: CONFLICTING` means resolve in the PR's own
+   worktree, re-run tests + build, then push before merging.
+6. **Automated PR review bots** (Gemini, Codex, CodeRabbit) post real findings on a
+   delay (minutes to hours) after a PR opens — Gemini found genuine bugs on nearly
+   every PR this session (race conditions, SQL placeholder/filtering issues, ARIA
+   structure, prop-threading bugs); Codex and CodeRabbit mostly hit their own usage
+   limits and posted nothing actionable. Don't skip checking Gemini's comments just
+   because the other two bots are rate-limited.
+
+---
+
 ## 2026-07-13 — TM-5: Risk Register, Decisions, Review History, Abuse Cases, Search, PDF export — **committed ARCH program complete** (PR open)
 
 **Context:** picked up TM-5 per the previous entry's `Next:` line — the final committed
