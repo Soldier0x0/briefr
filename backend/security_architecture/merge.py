@@ -113,7 +113,12 @@ async def self_stack_risk_rows(db: Any, corpus: dict[str, Any]) -> list[dict[str
             "category": "self-exposure",
             "origin": "live",
             "status": "open",
-            "severity": "critical" if is_kev else (row.get("severity") or "").lower(),
+            # The DB's own severity, not an invented one -- a KEV hit can be
+            # HIGH, not CRITICAL; is_kev already carries the urgency signal
+            # (badge + summary), inventing "critical" here would be exactly
+            # the "opinion rendered as measurement" the central principle
+            # (spec v2 note 3) forbids.
+            "severity": (row.get("severity") or "").lower(),
             "cve_id": row["cve_id"],
             "matched_term": matched,
             "is_kev": is_kev,

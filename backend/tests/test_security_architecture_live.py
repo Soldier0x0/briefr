@@ -159,6 +159,43 @@ def test_risks_section_includes_live_self_stack_row_with_matched_term(client):
     assert row["is_kev"] is True
 
 
+def test_risks_section_live_row_reports_real_severity_not_invented(client):
+    """A KEV CVE isn't necessarily severity=CRITICAL -- the live row must
+    report the DB's actual severity, not synthesize one. Inventing
+    'critical' here would violate the central principle (spec v2 note 3:
+    no opinion rendered as measurement)."""
+    import asyncio
+
+    from database import get_db
+
+    async def _run():
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO cves (cve_id, description, affected_products,
+                                  severity, cvss_score, epss_score, is_kev, published)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "CVE-2024-8888",
+                    "Remote code execution in fastapi routing.",
+                    "[]", "HIGH", 7.5, 0.4, 1, "2024-02-01T00:00:00",
+                ),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    asyncio.run(_run())
+
+    res = client.get("/api/security-architecture/section/risks?origin=live")
+    body = res.json()
+    row = next(r for r in body["items"] if r["cve_id"] == "CVE-2024-8888")
+    assert row["severity"] == "high"
+    assert row["is_kev"] is True
+
+
 def test_risks_section_origin_filter_isolates_live_rows(client):
     _seed(client, self_stack_term="fastapi")
     res = client.get("/api/security-architecture/section/risks?origin=live")
