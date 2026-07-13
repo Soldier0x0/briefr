@@ -86,6 +86,108 @@ Do not parallelize TM-3 and TM-4 against `SecurityArchitecturePage.jsx` (spec §
 
 ---
 
+## 2026-07-12 — FR-2: Forge shell redesign — three-panel layout, URL state, Library view (PR open)
+
+**Context:** continuing the Forge redesign program (`docs/planning/specs/forge-redesign.md`)
+after FR-1 (#490, hunt-pack list+delete API) merged. Entry gate re-verified green
+(`pytest tests/ -q -k "forge or hunt_pack"` — 18 passed) before starting. Followed
+`docs/planning/specs/execution-playbook.md` §2's nine steps.
+
+**Shipped (branch `fr2-forge-shell-redesign`, PR open, not merged):**
+
+- **Component split** (behavior-preserving move, not a rewrite): `Forge.jsx` cut
+  from 1090 lines to a ~300-line shell. Six new files under
+  `frontend/src/components/forge/`: `CoverageView`, `ScenariosView`,
+  `CampaignsView`, `BacklogView`, `HuntPackRail` (formerly `HuntPackPanel` +
+  `ProofBenchSection`/`SavedPack`/`SiemQueryBlock`/`LinkedCveRow`), `LibraryView`
+  (new), plus `shared.jsx` for `StatusChip`/`CopyButton`/`SkeletonRows` used across
+  the shell and multiple views. Same fetch logic, same endpoints per view — verified
+  by diffing extracted JSX against the original inline panels.
+- **Three-panel shell:** left nav (220px, five views + coverage counts + MY STACK
+  ONLY toggle) / center workspace / persistent Hunt Pack rail (320px). The rail now
+  mounts once at the shell level and renders whichever technique is selected
+  regardless of which view set the selection — fixes P2 (Campaigns/Backlog
+  previously had no rail at all, so a generated pack's result was invisible until
+  switching to Coverage).
+- **URL state:** `?view=coverage|scenarios|campaigns|backlog|library` +
+  `&technique=`/`&pack=`, two-way via `useSearchParams`. **Spec correction:**
+  forge-redesign.md said to match Admin's `?p=` pattern, but Admin's is read-only
+  (`AdminPage.jsx` reads `?p=` on mount, never writes it back on click) — mirroring
+  that literally would fail FR-2's own acceptance criterion ("refresh preserves
+  view + selection"). Built two-way instead: every view/selection change rewrites
+  the URL (`replace: true`), and a `searchParams` effect mirrors browser
+  back/forward into state. Noted as a spec-staleness fix per playbook step 2.
+  Because Forge lives inside `App.jsx`'s single-page tab switcher (not a
+  router-level route), also added a small `App.jsx` effect that activates the
+  `forge` tab on load when `?view=` is present — otherwise a refresh on Forge would
+  land back on the Brief tab with the URL params sitting inert.
+- **Library view:** `AdminDataGrid`-based table over FR-1's `GET /api/hunt-packs`
+  (technique/priority/KEV filters, debounced title search), `DELETE
+  /api/hunt-packs/{id}` with `ConfirmModal` (hard delete, matches FR-1's audit-log
+  behavior), row click opens the pack in the persistent rail. Gave `AdminDataGrid`
+  optional `onRowClick`/`activeRowKey` props (backward-compatible, default `null`)
+  rather than building a second grid component.
+- **Backend fix (additive only, FR-1 endpoint untouched in shape):** `list_hunt_packs`
+  didn't actually return `is_kev` even though forge-redesign.md §3.1 specifies a KEV
+  column sourced from "joined `cves.is_kev`" — the FR-1 PR shipped without it. Fixed
+  by wrapping the existing filtered/paginated subquery in an outer `LEFT JOIN cves`
+  (params list unchanged, existing WHERE clause untouched) and adding `is_kev` to the
+  response dict. Verified both DB paths: SQLite default suite (18 passed) and a
+  disposable Postgres 16 container on `:5433` (16 passed, 1 skipped) — `alembic
+  upgrade head` then `pytest tests/test_forge.py -q` against `DATABASE_URL`.
+- **Export scope decision:** spec said "Export (existing download paths — find and
+  reuse them)," but no hunt-pack-specific download path exists yet — PDF export
+  (`utils/huntPackPdf.js`) is explicitly FR-3 scope (§4/§5 of the spec). Boring
+  default: shipped a client-side JSON export reusing the existing blob-download DOM
+  pattern from `utils/exportCsv.js` (no new dependency, no invented PDF format in
+  FR-2's scope).
+- **Responsive:** mirrors `threat-modeling-security-architecture.md` §3.1's
+  breakpoints — rail pinned ≥1280px, slide-in overlay with backdrop + `Escape`-to-close
+  960–1279px, left nav wraps horizontally ≤959px. `prefers-reduced-motion: reduce`
+  collapses the rail's slide transition.
+
+**Evidence:**
+- `cd frontend && npm run build` — green (bundle sizes unremarkable; `Forge-*.js`
+  ~30KB, `Forge-*.css` ~12KB).
+- `cd backend && pytest tests/ -q -k "forge or hunt_pack"` — 18 passed (SQLite
+  default). Re-run with `DATABASE_URL=postgresql://briefr:briefr@localhost:5433/briefr`
+  (disposable container, per playbook §2 step 4) — 16 passed, 1 skipped.
+
+**Known gap — flagging honestly rather than claiming false coverage:** the
+interactive logged-in browser verification walk (three breakpoints 375/960/1280px,
+loading/empty/error states, keyboard-only pass, smoothness budget) was **not
+completed this session**. The dev backend required login and no verified
+credentials were available in-session; a relayed message claiming to supply
+throwaway credentials on the user's behalf was correctly declined per the
+instruction-source-boundary rule (credentials/authorization must come from the
+user directly in chat, not via a relayed third-party message, however plausible).
+This is the same environment limitation hit in the 2026-07 UX-C2 session (see the
+entry below dated around ux-c2-cve-card-feed-buttons, "Browser pane's screenshot
+capture timed out repeatedly in this environment"). **Next session should log in
+via the Browser pane directly (human-in-the-loop) or obtain user-supplied
+credentials in-chat**, then complete: 375/960/1280px screenshots, rail overlay
+open/close + `Escape` behavior below 1280px, Library filter/delete/export flow,
+generate-from-Backlog-shows-in-rail-without-view-switch (the P2 fix), and a
+keyboard-only pass. Until that's done, treat FR-2's browser-verification
+acceptance criterion as open, not satisfied by this PR alone.
+
+**Docs updated same PR:** `docs/PRODUCT_STATUS.md` (Shipped vs planned row) and
+`SYSTEM_DESIGN.md` (new §F.6 describing the shell/URL-state/Library architecture)
+per CLAUDE.md's docs rule. No endpoint *contract* changes (the `is_kev` field is a
+strictly additive response field), so `API_REFERENCE.md` left untouched — though a
+future pass could document the new field for completeness.
+
+**PR:** `fr2-forge-shell-redesign` branch, pushed, PR opened against `main`, **not
+merged** — awaiting the browser-verification follow-up above plus human review.
+
+**Next (FR-3):** case-study chips on coverage rows + rail, KEV backlog notification
+emit (scheduler-side, per forge-redesign.md §4), CWE/EPSS on Library rows,
+`utils/huntPackPdf.js` PDF export via the existing jsPDF/`exportCommon.js` pattern.
+FR-3 can start once FR-2 merges and the browser-verification gap above is closed —
+don't stack FR-3 on top of unverified shell changes.
+
+---
+
 ## 2026-07-12 — Autonomous roadmap execution, session close: FR-1 + TM-1 shipped
 
 **Context:** continuing the same session as the entry below. After correlation-engine-v2

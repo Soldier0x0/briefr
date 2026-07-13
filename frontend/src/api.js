@@ -353,6 +353,21 @@ export function fetchHuntPack(techniqueId) {
   return request(`/hunt-packs/${encodeURIComponent(techniqueId)}`)
 }
 
+/** Forge Library (FR-2): list saved hunt packs, paginated + filterable. */
+export function fetchHuntPacks({ techniqueId, cveId, priority, q, limit = 50, offset = 0 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) })
+  if (techniqueId) params.set('technique_id', techniqueId)
+  if (cveId) params.set('cve_id', cveId)
+  if (priority) params.set('priority', priority)
+  if (q) params.set('q', q)
+  return request(`/hunt-packs?${params}`)
+}
+
+/** Forge Library (FR-2): delete one saved hunt pack (hard delete, audited). */
+export function deleteHuntPack(packId) {
+  return request(`/hunt-packs/${encodeURIComponent(packId)}`, { method: 'DELETE' })
+}
+
 /** Forge: generate + persist a detection pack for a CVE (CVE→pack link). */
 export function generateHuntPack(cveId, techniqueId = '') {
   const body = techniqueId

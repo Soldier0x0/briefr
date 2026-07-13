@@ -516,6 +516,18 @@ export default function App() {
     setSearchParams(next, { replace: true })
   }, [searchParams, openCveById, setSearchParams])
 
+  // Forge owns ?view=/&technique=/&pack= (FR-2 URL state). Tab switching
+  // itself isn't URL-synced app-wide, so a refresh while on Forge would
+  // otherwise land back on the Brief tab with those params sitting unused —
+  // activate the Forge tab once on load when a Forge view param is present.
+  const forgeDeepLinkHandled = useRef(false)
+  useEffect(() => {
+    if (forgeDeepLinkHandled.current) return
+    if (!searchParams.get('view')) return
+    forgeDeepLinkHandled.current = true
+    setActiveTab('forge')
+  }, [searchParams])
+
   const investigationNav = useMemo(() => ({
     setActiveTab,
     clearIocPrefill: () => setIocPrefill(null),

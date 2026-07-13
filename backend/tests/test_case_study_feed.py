@@ -42,7 +42,7 @@ def test_build_snapshot_uses_single_db_connection(tmp_path, monkeypatch):
             "fetch_all_incident_news_parallel",
             AsyncMock(
                 return_value=(
-                    [{"id": "n1", "kind": "news", "publishedAt": "2026-01-02"}],
+                    [{"id": "n1", "kind": "news", "sourceId": "krebs", "publishedAt": "2026-01-02"}],
                     [],
                 )
             ),
@@ -69,10 +69,10 @@ def test_get_incident_feed_serves_snapshot_with_meta(tmp_path, monkeypatch):
             AsyncMock(
                 return_value=(
                     [
-                        {"id": "n1", "kind": "news", "publishedAt": "2026-01-02"},
-                        {"id": "n2", "kind": "news", "publishedAt": "2026-01-05"},
+                        {"id": "n1", "kind": "news", "sourceId": "krebs", "publishedAt": "2026-01-02"},
+                        {"id": "n2", "kind": "news", "sourceId": "krebs", "publishedAt": "2026-01-05"},
                     ],
-                    [{"source": "Broken Feed", "message": "boom"}],
+                    [{"source": "News feeds", "message": "boom"}],
                 )
             ),
         )
@@ -91,7 +91,7 @@ def test_get_incident_feed_serves_snapshot_with_meta(tmp_path, monkeypatch):
 
         cards2, errors2, meta2 = await case_study_feed.get_incident_feed(atlas_limit=5)
         assert [c["id"] for c in cards2 if c["kind"] == "news"] == ["n2", "n1"]
-        assert errors2 == [{"source": "Broken Feed", "message": "boom"}]
+        assert errors2 == [{"source": "News feeds", "message": "boom"}]
         assert meta2["warming"] is False
         assert meta2["stale"] is False
         assert meta2["refreshed_at"]
