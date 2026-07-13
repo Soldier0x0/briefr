@@ -89,7 +89,7 @@
 | TM-4: `graphs/architecture.json` generator (component/job/table nodes + component→table SQL-reference edges, no layout baked in), interactive pan/zoom System Architecture graph (`ArchitectureGraphSection.jsx`, `GET /api/security-architecture/graph/architecture`), node-selection context rail (`GET /api/security-architecture/context/{node_id}`), Trust Boundaries curated seed + visual flow cards (`TrustBoundariesSection.jsx`), Attack Surface = generated endpoint inventory × linked controls counts (`GET /api/security-architecture/graph/attack-surface`, `AttackSurfaceSection.jsx`), Overview "Unreviewed Endpoints" tile | |
 | TM-5: Risk Register grid (`RiskRegisterSection.jsx`, curated+live rows, CSV+PDF export), Decision records seeded from real ADRs (`security_decisions.yaml`), Abuse Case catalog seeded with 6 evidence-backed entries (`abuse_cases.yaml`), Review History merging curated `reviews.yaml` with live `audit_log` security events (`GET /api/security-architecture/section/reviews`), STALE decay (`security_architecture/merge.py::annotate_stale`, "Controls Active" ratio excludes stale controls from both sides), global search (`GET /api/security-architecture/search`, `GET /api/security-architecture/stale`) — **threat-modeling-security-architecture.md program complete (TM-0→TM-5)** | |
 
-Details: [`ROADMAP.md`](ROADMAP.md). Historical beta specs → `docs/archive/` (phase 2).
+Details: [`ROADMAP.md`](planning/ROADMAP.md). Historical beta specs → `docs/archive/` (phase 2).
 
 ---
 

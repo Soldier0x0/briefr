@@ -27,33 +27,41 @@
 | [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) | Anyone stuck | 1 table — symptom → fix |
 | [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) | Curious readers | Optional — diagrams + short sections |
 
-**Not in main nav:** [`IMAGE_BRIEFS.md`](IMAGE_BRIEFS.md), [`DOCUMENTATION_PLAN.md`](this file), [`TEMPLATE_*.md`](TEMPLATE_concept.md).
+**Not in main nav:** [`IMAGE_BRIEFS.md`](IMAGE_BRIEFS.md), [`DOCUMENTATION_PLAN.md`](this file), templates ([`decisions/TEMPLATE.md`](decisions/TEMPLATE.md), [`TEMPLATE_concept.md`](TEMPLATE_concept.md)).
 
 ---
 
 ## Layout
 
 ```
-docs/
+docs/                  # THE PRESENT — what is true today
 ├── index.md, SELF_HOST, USE, TROUBLESHOOTING, HOW_IT_WORKS   # readers
-├── PRODUCT_STATUS.md, HANDOVER.md, SPRINT_*.md               # living ops
-├── ONBOARDING, OPERATIONS, POSTGRES, ROADMAP                 # deep refs
-├── planning/          # FUTURE WORK
-│   ├── BACKLOG.md
+├── PRODUCT_STATUS.md, HANDOVER.md                            # living ops
+├── ONBOARDING, OPERATIONS, POSTGRES, LEARNING_PATH           # deep guides
+├── API_REFERENCE, SYSTEM_DESIGN, PRODUCT,                    # deep reference
+│   DATA_SNAPSHOT, BRIEFR_PRODUCT_VOICE, IMAGE_BRIEFS
+├── planning/          # THE FUTURE — direction + queue + specs
+│   ├── SPRINT_*.md, BACKLOG.md
+│   ├── STRATEGY.md, ROADMAP.md, PROGRAM_*.md
 │   └── specs/
-├── archive/           # HISTORY
+├── archive/           # THE PAST — immutable history
 │   ├── beta/
 │   ├── sessions/
+│   ├── snapshots/
 │   └── superseded/
-├── decisions/         # ADRs
-├── diagrams/
-└── assets/
+├── decisions/         # ADRs (incl. TEMPLATE.md)
+├── diagrams/          # Mermaid sources
+└── assets/            # SVGs + committed screenshots (README embeds)
 
-repo root (agent + product entrypoints):
-├── README.md, PRODUCT.md, CLAUDE.md, AGENTS.md, CONTRIBUTING.md
-├── API_REFERENCE.md, SYSTEM_DESIGN.md, SECURITY.md
-├── CODEBASE_CONTEXT.md, … (stubs → docs/archive/snapshots/)
+repo root (code + entrypoints only):
+├── README.md, LICENSE, CONTRIBUTING.md, SECURITY.md   # community standards
+├── CLAUDE.md, AGENTS.md                               # agent entrypoints (tooling pins these to root)
+└── backend/ frontend/ deploy/ scripts/                # code + ops
 ```
+
+**Root rule:** no other Markdown at repo root. Reference material lives in
+`docs/`; generated artifacts (`graphify-out/`, `*.xlsx`, `*.pdf`) are
+gitignored and regenerated on demand.
 
 ---
 
@@ -72,7 +80,7 @@ repo root (agent + product entrypoints):
 | [`ONBOARDING.md`](ONBOARDING.md) | Developers |
 | [`OPERATIONS.md`](OPERATIONS.md) | Deep ops |
 | [`POSTGRES.md`](POSTGRES.md) | Deep Postgres |
-| [`ROADMAP.md`](ROADMAP.md) | Release index |
+| [`planning/ROADMAP.md`](planning/ROADMAP.md) | Release index |
 | [`PRODUCT_STATUS.md`](PRODUCT_STATUS.md) | Living truth |
 
 ---

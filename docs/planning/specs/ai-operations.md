@@ -690,7 +690,7 @@ but they ship as **four PRs**:
 
 **Sequencing (verified against `main` head, 2026-07-10):** D4 and Post-B are complete
 (`db/dialect.py` deleted — new SQL is Postgres-native), the wave-model queue in
-`docs/SPRINT_2026-07.md` is closed through Wave 3, and the UX audit PR1–PR11 pass is merged.
+`docs/planning/SPRINT_2026-07.md` is closed through Wave 3, and the UX audit PR1–PR11 pass is merged.
 The execution queue (recorded in `SPRINT_2026-07.md` via PR #409) is:
 PR-A (#411) → PR12a–c → **AI-1 → AI-2** → PR13 (full explorer — maintainer decision 2026-07-10), with AI-3 data-gated.
 

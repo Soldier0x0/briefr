@@ -32,8 +32,5 @@ architecture-map.html
 .claude/loop-queue.txt
 .claude/loop-state.txt
 
-# Graphify — graph.json/graph.html/GRAPH_REPORT.md committed; ignore cache/internals
-graphify-out/cache/
-graphify-out/20*/
-graphify-out/.graphify_*
-graphify-out/manifest.json
+# Graphify — generated knowledge graph, regenerate on demand (never committed)
+graphify-out/

@@ -4,9 +4,9 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 
 **Last updated:** 2026-06-10 (light touch 2026-07-12 — see compatibility-promise fix below)  
 **Status:** Planning — historical release-ladder framing. Execution has since moved to
-direct PR-numbered programs tracked in [`planning/BACKLOG.md`](planning/BACKLOG.md) and
-[`planning/specs/`](planning/specs/); **for what's actually true in production, read
-[`PRODUCT_STATUS.md`](PRODUCT_STATUS.md) first.**
+direct PR-numbered programs tracked in [`planning/BACKLOG.md`](BACKLOG.md) and
+[`planning/specs/`](specs/); **for what's actually true in production, read
+[`PRODUCT_STATUS.md`](../PRODUCT_STATUS.md) first.**
 
 ---
 
@@ -24,7 +24,7 @@ BRIEFR is **not** a SIEM, XDR, or enterprise threat-intelligence platform. It is
 
 > A **self-hosted analyst intelligence pane** — vulnerability and threat context (KEV, EPSS, MITRE, IOC) ranked for **your stack**, connected to **detection engineering** and **investigation**, without enterprise TI pricing or log-scale infrastructure.
 
-See [`archive/JUPITER_VISION.md`](archive/JUPITER_VISION.md) for the full north-star architecture.
+See [`archive/JUPITER_VISION.md`](../archive/JUPITER_VISION.md) for the full north-star architecture.
 
 ---
 
@@ -47,7 +47,7 @@ Each release ships as **small, independent phases** with tests. Do not merge rel
 
 Decision: implement **V1.2 → V1.5**; **V2.0 stays parked** while the deployment is private.
 
-**Live execution state, PR ledger, and the mandatory per-PR workflow for implementing agents: [`HANDOVER.md`](HANDOVER.md).**
+**Live execution state, PR ledger, and the mandatory per-PR workflow for implementing agents: [`HANDOVER.md`](../HANDOVER.md).**
 
 **Deployment reality:** private instance behind a **Cloudflare Access policy** (closed beta, 3 testers). Edge authentication exists today; this informs priorities below.
 
@@ -68,7 +68,7 @@ Cross-release amendments approved in planning (details in each release doc):
 | STRIDE-lite worksheet and HyperDX provisioner | **Deferred** | Speculative until the modular-SIEM future is real |
 | Repository layer | **Pay-as-you-go** | Extract per table only when needed; full layer waits for V2.0 Postgres |
 
-**Storage decision:** intel data stays in **PostgreSQL** inside BRIEFR (production: Postgres 16 in Docker at `/opt/infra/postgres`). ClickHouse remains the **telemetry sidecar** store only (see [`archive/JUPITER_VISION.md`](archive/JUPITER_VISION.md)).
+**Storage decision:** intel data stays in **PostgreSQL** inside BRIEFR (production: Postgres 16 in Docker at `/opt/infra/postgres`). ClickHouse remains the **telemetry sidecar** store only (see [`archive/JUPITER_VISION.md`](../archive/JUPITER_VISION.md)).
 
 **ML placement rules:** all ML is env-gated, CPU-only, runs in scheduler jobs (never the request path), and the tool stays fully functional with ML disabled. No log ML in core; no black-box replacement of the explainable risk score; EPSS is consumed, never re-derived.
 
@@ -78,15 +78,15 @@ Cross-release amendments approved in planning (details in each release doc):
 
 | Document | Contents |
 |----------|----------|
-| [`archive/beta/Beta V1.2.md`](archive/beta/Beta%20V1.2.md) | Foundation: structure, repos, auth, resilience — **not a feature explosion** |
-| [`archive/beta/Beta V1.3.md`](archive/beta/Beta%20V1.3.md) | Analyst pane: action queue, Chart.js, Forge MVP, performance |
-| [`archive/beta/Beta V1.4.md`](archive/beta/Beta%20V1.4.md) | Operator pane: admin, backups UI, webhooks, wallboard |
-| [`archive/beta/Beta V1.5.md`](archive/beta/Beta%20V1.5.md) | Threat modeling, detection proof, intel-driven backlog |
-| [`archive/beta/Beta V2.0.md`](archive/beta/Beta%20V2.0.md) | Containerization, Postgres option, team-ready auth |
-| [`archive/JUPITER_VISION.md`](archive/JUPITER_VISION.md) | Jupiter ecosystem, ClickStack relationship, ML split |
-| [`archive/THREAT_MODEL.md`](archive/THREAT_MODEL.md) | Application threat model (BRIEFR itself) |
-| [`OPERATIONS.md`](OPERATIONS.md) | Backup, logs, container seams, deploy compatibility |
-| [`archive/AGENT_IMPLEMENTATION_GUIDE.md`](archive/AGENT_IMPLEMENTATION_GUIDE.md) | Notes for AI agents / implementers |
+| [`archive/beta/Beta V1.2.md`](../archive/beta/Beta%20V1.2.md) | Foundation: structure, repos, auth, resilience — **not a feature explosion** |
+| [`archive/beta/Beta V1.3.md`](../archive/beta/Beta%20V1.3.md) | Analyst pane: action queue, Chart.js, Forge MVP, performance |
+| [`archive/beta/Beta V1.4.md`](../archive/beta/Beta%20V1.4.md) | Operator pane: admin, backups UI, webhooks, wallboard |
+| [`archive/beta/Beta V1.5.md`](../archive/beta/Beta%20V1.5.md) | Threat modeling, detection proof, intel-driven backlog |
+| [`archive/beta/Beta V2.0.md`](../archive/beta/Beta%20V2.0.md) | Containerization, Postgres option, team-ready auth |
+| [`archive/JUPITER_VISION.md`](../archive/JUPITER_VISION.md) | Jupiter ecosystem, ClickStack relationship, ML split |
+| [`archive/THREAT_MODEL.md`](../archive/THREAT_MODEL.md) | Application threat model (BRIEFR itself) |
+| [`OPERATIONS.md`](../OPERATIONS.md) | Backup, logs, container seams, deploy compatibility |
+| [`archive/AGENT_IMPLEMENTATION_GUIDE.md`](../archive/AGENT_IMPLEMENTATION_GUIDE.md) | Notes for AI agents / implementers |
 
 ---
 
@@ -94,14 +94,14 @@ Cross-release amendments approved in planning (details in each release doc):
 
 | Document | Role |
 |----------|------|
-| [`archive/superseded/BRIEFR_ARCHITECTURE_REVIEW_2026-07.md`](archive/superseded/BRIEFR_ARCHITECTURE_REVIEW_2026-07.md) | **Durable architecture-review reasoning** (correlation, scoring, freshness, scheduler, production verdicts + execution graph) |
-| [`planning/BACKLOG.md`](planning/BACKLOG.md) | Open / parked work queue |
-| [`planning/specs/`](planning/specs/) | Active program PR specs |
+| [`archive/superseded/BRIEFR_ARCHITECTURE_REVIEW_2026-07.md`](../archive/superseded/BRIEFR_ARCHITECTURE_REVIEW_2026-07.md) | **Durable architecture-review reasoning** (correlation, scoring, freshness, scheduler, production verdicts + execution graph) |
+| [`planning/BACKLOG.md`](BACKLOG.md) | Open / parked work queue |
+| [`planning/specs/`](specs/) | Active program PR specs |
 | [`SYSTEM_DESIGN.md`](../SYSTEM_DESIGN.md) | Current architecture |
 | [`API_REFERENCE.md`](../API_REFERENCE.md) | Endpoint catalog |
-| [`archive/snapshots/TECHNICAL_INVENTORY.md`](archive/snapshots/TECHNICAL_INVENTORY.md) | Schema, scheduler, features |
-| [`ONBOARDING.md`](ONBOARDING.md) | Contributor entry |
-| [`archive/snapshots/APPLICATION_EXECUTION_MAP.md`](archive/snapshots/APPLICATION_EXECUTION_MAP.md) | Request journeys |
+| [`archive/snapshots/TECHNICAL_INVENTORY.md`](../archive/snapshots/TECHNICAL_INVENTORY.md) | Schema, scheduler, features |
+| [`ONBOARDING.md`](../ONBOARDING.md) | Contributor entry |
+| [`archive/snapshots/APPLICATION_EXECUTION_MAP.md`](../archive/snapshots/APPLICATION_EXECUTION_MAP.md) | Request journeys |
 
 Update `SYSTEM_DESIGN.md` in the same PR when a release phase changes runtime behavior.
 
@@ -130,7 +130,7 @@ Releases must remain **additive** for existing systemd + nginx + cloudflared dep
   Admin / write / destructive actions additionally require the admin role.
 - CLI backup/restore scripts remain supported as break-glass
 
-See [`OPERATIONS.md`](OPERATIONS.md).
+See [`OPERATIONS.md`](../OPERATIONS.md).
 
 ---
 
@@ -138,7 +138,7 @@ See [`OPERATIONS.md`](OPERATIONS.md).
 
 1. Read **V1.2** first — do not skip foundation work.
 2. Pick **one phase** from the target release doc.
-3. Follow [`ONBOARDING.md`](ONBOARDING.md) and existing code conventions.
+3. Follow [`ONBOARDING.md`](../ONBOARDING.md) and existing code conventions.
 4. Do not expand scope into a later release without updating these docs in the same PR.
 5. Jupiter telemetry (ClickStack) is **optional** and documented in `archive/JUPITER_VISION.md` — not required for BRIEFR core releases.
 

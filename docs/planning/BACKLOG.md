@@ -15,7 +15,7 @@ docs so nothing is lost when specs move to [`archive/superseded/`](../archive/su
 
 **Authoritative runtime truth:** [`../PRODUCT_STATUS.md`](../PRODUCT_STATUS.md) and
 [`../HANDOVER.md`](../HANDOVER.md). **Build order when activated:** add checkboxes to
-[`../SPRINT_2026-07.md`](../SPRINT_2026-07.md) or a future sprint doc.
+[`SPRINT_2026-07.md`](SPRINT_2026-07.md) or a future sprint doc.
 
 **Last reconciled:** 2026-07-12 against `main` post-#491 (correlation-engine-v2
 Phase 0–1 / PR-1…PR-5, AKH-1, AKH-2 nav rename, QA-F1, QA-P2-1…5, FR-1, and TM-1 all

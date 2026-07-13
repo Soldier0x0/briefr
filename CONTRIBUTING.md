@@ -41,7 +41,7 @@ Use `--full` when Postgres and optional tools are available.
 - **Tests:** backend changes need `pytest tests/ -q` green; frontend changes
   need `npm run build` green.
 - **Docs:** if runtime behavior or API changes, update `docs/PRODUCT_STATUS.md`
-  and `API_REFERENCE.md` in the same PR (see `CLAUDE.md` docs rules).
+  and `docs/API_REFERENCE.md` in the same PR (see `CLAUDE.md` docs rules).
 - **Migrations:** Alembic only, forward-only — never edit applied revisions.
 - **Security:** do not weaken `require_admin`, webhook SSRF checks, or DB
   explorer allowlists without an explicit design discussion.

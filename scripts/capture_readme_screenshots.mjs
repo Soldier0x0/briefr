@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(path.join(__dirname, '../frontend/package.json'));
 const { chromium } = require('playwright');
-const outDir = path.join(__dirname, '..', 'screenshots');
+const outDir = path.join(__dirname, '..', 'docs', 'assets', 'screenshots');
 const baseUrl = 'http://localhost:5173';
 const apiUrl = 'http://127.0.0.1:8000';
 

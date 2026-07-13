@@ -6,7 +6,7 @@ Read in this order before making changes:
 1. [`CLAUDE.md`](CLAUDE.md) — project rules, danger zones, error-handling and UI conventions
 2. [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md) — what is true in production (wins over stale docs)
 3. [`docs/HANDOVER.md`](docs/HANDOVER.md) — recent session context: what changed, why, decisions made
-4. [`docs/SPRINT_2026-07.md`](docs/SPRINT_2026-07.md) — current work queue with acceptance criteria
+4. [`docs/planning/SPRINT_2026-07.md`](docs/planning/SPRINT_2026-07.md) — current work queue with acceptance criteria
 
 ## Execution contract (autonomous loop — mandatory)
 

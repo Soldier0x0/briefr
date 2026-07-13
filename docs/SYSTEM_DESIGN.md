@@ -4,7 +4,7 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 
 **Version:** 1.1 (beta)  
 **Last updated:** 2026-06-19  
-**Source of truth:** `/workspace` codebase — see [`docs/archive/snapshots/CODEBASE_CONTEXT.md`](docs/archive/snapshots/CODEBASE_CONTEXT.md) for a consolidated snapshot and [`docs/ROADMAP.md`](docs/ROADMAP.md) for release index
+**Source of truth:** `/workspace` codebase — see [`docs/archive/snapshots/CODEBASE_CONTEXT.md`](archive/snapshots/CODEBASE_CONTEXT.md) for a consolidated snapshot and [`docs/planning/ROADMAP.md`](planning/ROADMAP.md) for release index
 
 ---
 
@@ -83,7 +83,7 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
 └──────────────┴──────────────┴──────────────┴──────────────┴───────────────┘
 ```
 
-Mermaid sources: master graph [`docs/diagrams/system-graph.mermaid`](docs/diagrams/system-graph.mermaid) · component view [`docs/diagrams/architecture.mermaid`](docs/diagrams/architecture.mermaid)
+Mermaid sources: master graph [`docs/diagrams/system-graph.mermaid`](diagrams/system-graph.mermaid) · component view [`docs/diagrams/architecture.mermaid`](diagrams/architecture.mermaid)
 
 ### DB tables → primary API readers
 
@@ -150,7 +150,7 @@ drawer open.
 4. **List:** `GET /api/cves` builds SQL from `_build_cve_filters`, paginates (`page`, `limit` max **50**). `CVE_SELECT` uses a `LEFT JOIN kev_deadlines` (no correlated KEV subquery). `total` is cached 45s per filter set (`read_cache.py`). Postgres search benefits from Alembic `012_cve_trgm_search` GIN indexes on description/summary/affected_products.
 5. **UI:** `CVEFeed.jsx:loadPage` → `fetchCVEs` → `CVECard.jsx` renders each row. Scroll “Showing X–Y” is tracked by leaf component `FeedVisibleRange.jsx` (rAF-throttled) so scrolling does not re-render the card list (`React.memo` on `CVECard`).
 
-Sequence diagram: [`docs/diagrams/flow_cve_feed.mermaid`](docs/diagrams/flow_cve_feed.mermaid)
+Sequence diagram: [`docs/diagrams/flow_cve_feed.mermaid`](diagrams/flow_cve_feed.mermaid)
 
 ### B. CVE detail drill-down
 
@@ -169,7 +169,7 @@ Sequence diagram: [`docs/diagrams/flow_cve_feed.mermaid`](docs/diagrams/flow_cve
 
 **ATLAS wiring:** `GET /api/cves/{id}` returns `has_ai_context`, `atlas_techniques`, and `atlas_case_studies` via `database.get_atlas_techniques_for_cve` / `get_atlas_case_studies_for_cve` for `DrawerAtlasSection.jsx`.
 
-Sequence diagram: [`docs/diagrams/flow_cve_detail.mermaid`](docs/diagrams/flow_cve_detail.mermaid)
+Sequence diagram: [`docs/diagrams/flow_cve_detail.mermaid`](diagrams/flow_cve_detail.mermaid)
 
 ### C. IOC lookup
 
@@ -182,7 +182,7 @@ Sequence diagram: [`docs/diagrams/flow_cve_detail.mermaid`](docs/diagrams/flow_c
 4. **Cache write:** `set_ioc_cache` with `ON CONFLICT DO UPDATE`.
 5. **UI:** per-source result cards and template sentences from `templates/intelligence.py`.
 
-Sequence diagram: [`docs/diagrams/flow_ioc_lookup.mermaid`](docs/diagrams/flow_ioc_lookup.mermaid)
+Sequence diagram: [`docs/diagrams/flow_ioc_lookup.mermaid`](diagrams/flow_ioc_lookup.mermaid)
 
 ### C2. IOC watchlist + retro-match (V1.5 Phase 5)
 
@@ -210,7 +210,7 @@ See **Risk score (v1.1b) — backend canonical** above. Implementation:
 6. **Merge:** Cards sorted by `publishedAt` descending; per-source errors collected in `errors[]` without failing the whole feed. Cache-write contention (e.g. during bootstrap ingest) degrades gracefully — parsed items are kept in the snapshot and persisted on the next cycle.
 7. **Editorial filter:** `incident_news.py` excludes non-security RSS items by title pattern (e.g. Dark Reading **"Name That Toon"** contest). Filter applies on parse and when serving cached rows; malformed cache entries are skipped defensively.
 
-Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (scheduler registration) · Client journey: [`docs/archive/snapshots/APPLICATION_EXECUTION_MAP.md`](docs/archive/snapshots/APPLICATION_EXECUTION_MAP.md) §2.C
+Flowchart: [`docs/diagrams/startup.mermaid`](diagrams/startup.mermaid) (scheduler registration) · Client journey: [`docs/archive/snapshots/APPLICATION_EXECUTION_MAP.md`](archive/snapshots/APPLICATION_EXECUTION_MAP.md) §2.C
 
 ### F2. Analyst Brief charts (Chart.js, V1.3)
 
@@ -364,7 +364,7 @@ Single-user instance: `watchlist` rows are not keyed by identity until built-in 
 
 ### G. ML assist — embeddings + LLM product extraction (V1.3, env-gated)
 
-Both features follow the ML placement rules (`docs/ROADMAP.md`): env-gated, CPU-only, scheduler-side only, deterministic fallback, tool fully functional with ML disabled. **Both are off by default.**
+Both features follow the ML placement rules (`docs/planning/ROADMAP.md`): env-gated, CPU-only, scheduler-side only, deterministic fallback, tool fully functional with ML disabled. **Both are off by default.**
 
 **Similar CVEs via embeddings (`EMBEDDINGS_ENABLED=1`):**
 
@@ -540,16 +540,16 @@ GitHub Actions job **`playwright-smoke`** in `.github/workflows/backend-tests.ym
 
 ## 8. Beta V1.2 roadmap
 
-Near-future engineering and product intent lives in **[`Beta V1.2.md`](Beta%20V1.2.md)** — themes include router split, `services/` layer, `resilient_client.py`, shared risk config, frontend hooks, auth, and E2E CI. Update that document when V1.2 phases ship.
+Near-future engineering and product intent lives in **[`Beta V1.2.md`](archive/beta/Beta%20V1.2.md)** — themes include router split, `services/` layer, `resilient_client.py`, shared risk config, frontend hooks, auth, and E2E CI. Update that document when V1.2 phases ship.
 
 ---
 
 ## Related documentation
 
-- [`docs/ONBOARDING.md`](docs/ONBOARDING.md) — contributor entry point, local dev, tests, troubleshooting
-- [`Beta V1.2.md`](Beta%20V1.2.md) — roadmap and planned work
+- [`docs/ONBOARDING.md`](ONBOARDING.md) — contributor entry point, local dev, tests, troubleshooting
+- [`Beta V1.2.md`](archive/beta/Beta%20V1.2.md) — roadmap and planned work
 - [`API_REFERENCE.md`](API_REFERENCE.md) — endpoint catalog
-- [`docs/archive/snapshots/TECHNICAL_INVENTORY.md`](docs/archive/snapshots/TECHNICAL_INVENTORY.md) — schema, scheduler, stack
-- [`docs/archive/snapshots/APPLICATION_EXECUTION_MAP.md`](docs/archive/snapshots/APPLICATION_EXECUTION_MAP.md) — startup and request journeys
-- [`docs/archive/snapshots/FOLDER_STRUCTURE_GUIDE.md`](docs/archive/snapshots/FOLDER_STRUCTURE_GUIDE.md) — file-by-file map
-- [`docs/diagrams/`](docs/diagrams/) — Mermaid diagrams (render in GitHub, VS Code, Notion). Master: [`system-graph.mermaid`](docs/diagrams/system-graph.mermaid). Flows: CVE feed/detail, IOC lookup, NVD sync, PDF export, error handling (`flow_error_handling.mermaid`), startup, schema ERD.
+- [`docs/archive/snapshots/TECHNICAL_INVENTORY.md`](archive/snapshots/TECHNICAL_INVENTORY.md) — schema, scheduler, stack
+- [`docs/archive/snapshots/APPLICATION_EXECUTION_MAP.md`](archive/snapshots/APPLICATION_EXECUTION_MAP.md) — startup and request journeys
+- [`docs/archive/snapshots/FOLDER_STRUCTURE_GUIDE.md`](archive/snapshots/FOLDER_STRUCTURE_GUIDE.md) — file-by-file map
+- [`docs/diagrams/`](diagrams/) — Mermaid diagrams (render in GitHub, VS Code, Notion). Master: [`system-graph.mermaid`](diagrams/system-graph.mermaid). Flows: CVE feed/detail, IOC lookup, NVD sync, PDF export, error handling (`flow_error_handling.mermaid`), startup, schema ERD.

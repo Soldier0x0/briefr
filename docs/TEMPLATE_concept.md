@@ -13,7 +13,7 @@ One-sentence summary.
 ![TITLE — pending](assets/placeholder-diagram.svg)
 
 > **Asset:** `docs/assets/FILENAME.png`  
-> **Brief:** [IMAGE_BRIEFS.md §N](../IMAGE_BRIEFS.md)
+> **Brief:** [IMAGE_BRIEFS.md §N](IMAGE_BRIEFS.md)
 
 ## At a glance
 

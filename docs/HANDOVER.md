@@ -8,7 +8,37 @@ significant working session; never rewrite old entries.
 
 **Read order for a fresh agent:** `CLAUDE.md` (rules) →
 `docs/PRODUCT_STATUS.md` (what's true in prod) → **this file's newest
-entry** → `docs/SPRINT_2026-07.md` (checkboxes).
+entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
+
+---
+
+## 2026-07-13 — Repository reorganization (docs-only, no runtime change)
+
+**What:** first-principles repo cleanup. Reference docs left the repo root
+(`API_REFERENCE.md`, `SYSTEM_DESIGN.md`, `PRODUCT.md` → `docs/`); planning
+material left the docs root (`SPRINT_2026-07.md`, `STRATEGY.md`, `ROADMAP.md`,
+`PROGRAM_PRODUCT_OPEN_CORE.md` → `docs/planning/`); `TEMPLATE_adr.md` →
+`docs/decisions/TEMPLATE.md`; `screenshots/` → `docs/assets/screenshots/`
+(capture scripts updated); the four root redirect stubs
+(`CODEBASE_CONTEXT.md` etc.) deleted — nothing linked to them; `graphify-out/`
+untracked and fully gitignored (regenerate on demand); `scripts/README.md`
+added (scripts/ vs backend/scripts/ vs deploy/ distinction).
+
+**Doc model now:** repo root = code + entrypoints (`README`, `LICENSE`,
+`CONTRIBUTING`, `SECURITY`, `CLAUDE.md`, `AGENTS.md`) — no other root
+Markdown. `docs/` = the present, `docs/planning/` = the future,
+`docs/archive/` = the past (immutable). Layout codified in
+`docs/DOCUMENTATION_PLAN.md`.
+
+**Deliberately untouched:** `docs/archive/**` and dated HANDOVER entries keep
+their now-stale links (immutable history, per CLAUDE.md); backend/frontend
+source layout unchanged — proposed-only in the reorg PR body (import churn,
+deploy/systemd risk).
+
+**Where paths were updated:** `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`,
+`README.md`, living docs, `scripts/generate_system_design_pdf.mjs`,
+`scripts/capture_*_screenshots.mjs`, `backend/ml/__init__.py` docstring. A
+repo-wide relative-link audit of living Markdown passes with zero broken links.
 
 ---
 

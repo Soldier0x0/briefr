@@ -103,7 +103,7 @@ line and explain what each detection key matches.
 **Self-check:** Be precise: which parts of the rule are CVE-specific and
 which are template? Why is every generated rule marked `experimental` with a
 confidence note? What would "CVE-specific artifact injection" from Nuclei
-templates add (see `docs/STRATEGY.md` §4)?
+templates add (see `docs/planning/STRATEGY.md` §4)?
 
 ## Module 7 — Auth, sessions, and application security
 
@@ -137,7 +137,7 @@ Why age-encrypt archives? What does `request_id` in the JSON logs enable?
 
 ## After the eight modules
 
-1. Write the ADRs listed in `docs/STRATEGY.md` §7 — each one is now a
+1. Write the ADRs listed in `docs/planning/STRATEGY.md` §7 — each one is now a
    30-minute exercise instead of research.
 2. Do one full mock interview: have someone (or an AI) grill you per module
    using the self-check questions, no notes allowed.
