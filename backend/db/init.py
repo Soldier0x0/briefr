@@ -314,6 +314,7 @@ async def init_db() -> None:
                 ioc_value TEXT NOT NULL,
                 description TEXT DEFAULT '',
                 fetched_at TEXT DEFAULT (datetime('now')),
+                observed_at TEXT,
                 PRIMARY KEY (pulse_id, ioc_type, ioc_value)
             );
 
@@ -601,6 +602,7 @@ async def init_db() -> None:
             )
             """,
             "ALTER TABLE otx_cve_pulses ADD COLUMN targeted_countries TEXT DEFAULT '[]'",
+            "ALTER TABLE otx_pulse_iocs ADD COLUMN observed_at TEXT",
             """
             CREATE TABLE IF NOT EXISTS correlation_campaigns (
                 campaign_id TEXT PRIMARY KEY,

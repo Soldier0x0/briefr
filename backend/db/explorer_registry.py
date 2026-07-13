@@ -204,7 +204,7 @@ _TIER1: tuple[TableSpec, ...] = (
         "otx_pulse_iocs",
         1,
         "OTX pulse IOCs",
-        ("pulse_id", "ioc_type", "ioc_value", "description", "fetched_at"),
+        ("pulse_id", "ioc_type", "ioc_value", "description", "fetched_at", "observed_at"),
         filter_columns=("pulse_id", "ioc_value"),
         order_by="fetched_at DESC, pulse_id ASC",
         truncate_columns=("description",),
