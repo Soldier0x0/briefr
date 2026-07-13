@@ -181,7 +181,7 @@ The project only advances the career goal if the maintainer can *defend
 every architectural decision without the AI assistant in the room.* The
 codebase already contains the syllabus:
 
-- **Write ADRs retroactively** using `docs/TEMPLATE_adr.md` — one page each
+- **Write ADRs retroactively** using `docs/decisions/TEMPLATE.md` — one page each
   for: why PostgreSQL over SQLite; why APScheduler over Celery/cron; why the
   outbound API queue exists (#221); why rate limiting is token-bucket; why
   backups are age-encrypted with the key outside `BACKUP_DIR`; why EPSS is

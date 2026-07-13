@@ -87,7 +87,7 @@ Backups: every **6h** + before each update. Archives are age-encrypted when key 
 | `RATE_LIMIT_ENABLED` | `1` in production |
 | `BACKUP_DIR` | Default `/var/lib/briefr/backups` |
 
-Full list: `backend/.env.example` · API catalog: [`API_REFERENCE.md`](../API_REFERENCE.md)
+Full list: `backend/.env.example` · API catalog: [`API_REFERENCE.md`](API_REFERENCE.md)
 
 ---
 

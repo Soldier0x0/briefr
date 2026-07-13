@@ -54,7 +54,7 @@ Inbound token buckets on IOC, refresh, admin, login. Set `RATE_LIMIT_ENABLED=1` 
 |-----|------|
 | [`ONBOARDING.md`](ONBOARDING.md) | Contributing code |
 | [`archive/snapshots/CODEBASE_CONTEXT.md`](archive/snapshots/CODEBASE_CONTEXT.md) | AI / dense module map |
-| [`API_REFERENCE.md`](../API_REFERENCE.md) | Every endpoint |
-| [`SYSTEM_DESIGN.md`](../SYSTEM_DESIGN.md) | Full architecture essay |
+| [`API_REFERENCE.md`](API_REFERENCE.md) | Every endpoint |
+| [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) | Full architecture essay |
 
 Historical plans: [`archive/`](archive/)

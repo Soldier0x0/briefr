@@ -15,7 +15,7 @@ const root = path.join(__dirname, '..');
 const require = createRequire(path.join(root, 'frontend/package.json'));
 const { chromium } = require('playwright');
 
-const MD_PATH = path.join(root, 'SYSTEM_DESIGN.md');
+const MD_PATH = path.join(root, 'docs', 'SYSTEM_DESIGN.md');
 const PDF_PATH = path.join(root, 'SYSTEM_DESIGN.pdf');
 const DIAGRAMS_DIR = path.join(root, 'docs/diagrams');
 

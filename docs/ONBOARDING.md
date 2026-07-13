@@ -12,8 +12,8 @@ Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confi
 |------|----------|-----|
 | 1 | [`index.md`](index.md) + [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) | Quick product context (5 min) |
 | 2 | [`README.md`](../README.md) | Features and local quick start |
-| 3 | [`SYSTEM_DESIGN.md`](../SYSTEM_DESIGN.md) | Architecture and trade-offs |
-| 4 | [`API_REFERENCE.md`](../API_REFERENCE.md) | Endpoints when you touch the API |
+| 3 | [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) | Architecture and trade-offs |
+| 4 | [`API_REFERENCE.md`](API_REFERENCE.md) | Endpoints when you touch the API |
 | 5 | [`archive/snapshots/CODEBASE_CONTEXT.md`](archive/snapshots/CODEBASE_CONTEXT.md) | Module map + AI guardrails |
 | 6 | Source + tests | `backend/tests/` and files named in [`archive/snapshots/APPLICATION_EXECUTION_MAP.md`](archive/snapshots/APPLICATION_EXECUTION_MAP.md) |
 
@@ -329,7 +329,7 @@ Update the source markdown in the same PR when you change behaviour those artifa
 ## Related documentation
 
 - [`archive/snapshots/CODEBASE_CONTEXT.md`](archive/snapshots/CODEBASE_CONTEXT.md) — consolidated codebase reference (architecture, flows, AI guardrails)
-- [`SYSTEM_DESIGN.md`](../SYSTEM_DESIGN.md) — architecture deep dive
-- [`API_REFERENCE.md`](../API_REFERENCE.md) — endpoint catalog
+- [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) — architecture deep dive
+- [`API_REFERENCE.md`](API_REFERENCE.md) — endpoint catalog
 - [`archive/snapshots/APPLICATION_EXECUTION_MAP.md`](archive/snapshots/APPLICATION_EXECUTION_MAP.md) — runtime traces
 - [`archive/snapshots/FOLDER_STRUCTURE_GUIDE.md`](archive/snapshots/FOLDER_STRUCTURE_GUIDE.md) — every file in the repo

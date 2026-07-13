@@ -80,7 +80,7 @@ Many prompt-era concerns are **already addressed** (legacy admin-key fail-open r
 | **Doc revision** | Sections A–Z, single PR (2026-07-11) |
 | **Audit date** | 2026-07-11 (UTC) |
 | **Graph aid** | `graphify-out/graph.json` (5504 nodes, rebuilt 2026-07-11 per `PRODUCT_STATUS.md`) |
-| **Docs read** | `CLAUDE.md`, `docs/PRODUCT_STATUS.md`, `docs/HANDOVER.md`, `docs/SPRINT_2026-07.md`, ADR-001/002, `SYSTEM_DESIGN.md` (partial), planning audits |
+| **Docs read** | `CLAUDE.md`, `docs/PRODUCT_STATUS.md`, `docs/HANDOVER.md`, `docs/planning/SPRINT_2026-07.md`, ADR-001/002, `SYSTEM_DESIGN.md` (partial), planning audits |
 
 ---
 

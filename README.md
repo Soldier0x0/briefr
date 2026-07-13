@@ -17,15 +17,15 @@ BRIEFR is a self-hosted CVE intelligence dashboard for security analysts, small 
 
 ### BRIEF — morning brief, charts, heatmap
 
-![BRIEF tab — morning brief action queue](screenshots/brief.png)
+![BRIEF tab — morning brief action queue](docs/assets/screenshots/brief.png)
 
 ### IOC LOOKUP — multi-source indicator enrichment
 
-![IOC Lookup tab](screenshots/ioc-lookup.png)
+![IOC Lookup tab](docs/assets/screenshots/ioc-lookup.png)
 
 ### INCIDENTS & NEWS — RSS security news + MITRE ATLAS case studies
 
-![Incidents and News tab](screenshots/incidents-news.png)
+![Incidents and News tab](docs/assets/screenshots/incidents-news.png)
 
 ---
 
@@ -283,7 +283,7 @@ See `backend/.env.example` for the full list. Key variables:
 
 ## API Reference
 
-Full endpoint catalog: [`API_REFERENCE.md`](API_REFERENCE.md)  
+Full endpoint catalog: [`API_REFERENCE.md`](docs/API_REFERENCE.md)  
 Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in production**)
 
 ### Core endpoints

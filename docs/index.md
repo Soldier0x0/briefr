@@ -10,4 +10,6 @@ Pick **one** guide — you do not need to read anything else unless something br
 | **Understand how it works** | [How it works](HOW_IT_WORKS.md) *(optional)* |
 | **Change the code** | [Onboarding](ONBOARDING.md) |
 
-[What's shipped today](PRODUCT_STATUS.md) · [Archive](archive/) *(historical planning — skip unless curious)*
+Deep reference: [API catalog](API_REFERENCE.md) · [System design](SYSTEM_DESIGN.md) · [Product principles](PRODUCT.md)
+
+[What's shipped today](PRODUCT_STATUS.md) · [Planned work](planning/) · [Decisions (ADRs)](decisions/) · [Archive](archive/) *(historical — skip unless curious)*

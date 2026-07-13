@@ -48,10 +48,10 @@ JSX/CSS, no component library), **PostgreSQL required in production**.
 ## Source of truth
 
 - `docs/PRODUCT_STATUS.md` is the living truth — when any other doc disagrees with it or with the code, they win, not the older doc.
-- `docs/archive/snapshots/CODEBASE_CONTEXT.md`, `docs/archive/snapshots/FOLDER_STRUCTURE_GUIDE.md`, `docs/archive/snapshots/APPLICATION_EXECUTION_MAP.md`, `docs/archive/snapshots/TECHNICAL_INVENTORY.md` are periodic snapshots and may lag the code — verify against source before relying on them. Root `*.md` stubs redirect to `docs/archive/snapshots/`.
+- `docs/archive/snapshots/CODEBASE_CONTEXT.md`, `docs/archive/snapshots/FOLDER_STRUCTURE_GUIDE.md`, `docs/archive/snapshots/APPLICATION_EXECUTION_MAP.md`, `docs/archive/snapshots/TECHNICAL_INVENTORY.md` are periodic snapshots and may lag the code — verify against source before relying on them.
 - Historical specs live in `docs/archive/` — never edit or resurrect them.
 - Recent decisions and session context: `docs/HANDOVER.md` (newest entry
-  first). Current work queue: `docs/SPRINT_2026-07.md`.
+  first). Current work queue: `docs/planning/SPRINT_2026-07.md`.
 
 ## Danger zones — read before editing
 
@@ -73,7 +73,7 @@ JSX/CSS, no component library), **PostgreSQL required in production**.
    `*_KEY/_TOKEN/_SECRET/_PASSWORD`. Never interpolate secrets into log
    message strings — redaction only covers `extra` fields.
 5. **`deploy/` scripts run on a live production box.** Changes must stay
-   additive per the compatibility promise in `docs/ROADMAP.md` /
+   additive per the compatibility promise in `docs/planning/ROADMAP.md` /
    `docs/OPERATIONS.md`.
 6. **Heavy work never runs on the request path.** ML, enrichment sweeps, and
    external syncs belong in `scheduler.py` jobs; request handlers do DB reads
@@ -99,17 +99,17 @@ JSX/CSS, no component library), **PostgreSQL required in production**.
   never for feeds, tables, or dashboards.
 - Dark terminal aesthetic: mono labels, existing tokens in `App.css`. No
   gradients, no hero-marketing sections, no icon+heading+text card grids
-  (see `PRODUCT.md` anti-references).
+  (see `docs/PRODUCT.md` anti-references).
 - Motion: 120–180ms ease-out, opacity/transform only,
   `prefers-reduced-motion` respected (global rule exists — keep it).
 - Every status word, pill, or badge ships with a discoverable explanation
-  (tooltip/legend) — `PRODUCT.md` design principle 1.
+  (tooltip/legend) — `docs/PRODUCT.md` design principle 1.
 
 ## Docs rules
 
 - Runtime behavior changed → update `docs/PRODUCT_STATUS.md` and
-  `SYSTEM_DESIGN.md` in the same PR.
-- Endpoints changed → update `API_REFERENCE.md` in the same PR.
+  `docs/SYSTEM_DESIGN.md` in the same PR.
+- Endpoints changed → update `docs/API_REFERENCE.md` in the same PR.
 - Do not create new top-level docs; extend the existing set
   (`docs/DOCUMENTATION_PLAN.md` governs structure).
 

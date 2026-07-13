@@ -6,7 +6,7 @@
 (`scripts/export_intel_snapshot.py`, Wave 3 PR 9) and CI restore smoke (Track J2)
 implement this spec.
 
-**Related:** `docs/PROGRAM_PRODUCT_OPEN_CORE.md` § INTEL vs OPERATOR,
+**Related:** `docs/planning/PROGRAM_PRODUCT_OPEN_CORE.md` § INTEL vs OPERATOR,
 `docs/decisions/ADR-001-intel-app-schema-split.md`.
 
 ---
