@@ -1,16 +1,16 @@
-# Graph Report - agent-ae21fcb2ea69c76c9  (2026-07-12)
+# Graph Report - agent-a3d06efcee74314a6  (2026-07-13)
 
 ## Corpus Check
-- 680 files · ~489,951 words
+- 685 files · ~494,932 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 7353 nodes · 13959 edges · 559 communities (399 shown, 160 thin omitted)
-- Extraction: 83% EXTRACTED · 17% INFERRED · 0% AMBIGUOUS · INFERRED: 2360 edges (avg confidence: 0.79)
+- 7386 nodes · 14100 edges · 563 communities (407 shown, 156 thin omitted)
+- Extraction: 83% EXTRACTED · 17% INFERRED · 0% AMBIGUOUS · INFERRED: 2372 edges (avg confidence: 0.79)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d367db8d`
+- Built from commit: `b4e8c243`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -18,30 +18,30 @@
 - [[_COMMUNITY_get_db|get_db]]
 - [[_COMMUNITY_App.jsx|App.jsx]]
 - [[_COMMUNITY_is_postgres|is_postgres]]
-- [[_COMMUNITY_pdfReport.js|pdfReport.js]]
+- [[_COMMUNITY_dependencies|dependencies]]
 - [[_COMMUNITY_run_db_test|run_db_test]]
 - [[_COMMUNITY_api.js|api.js]]
 - [[_COMMUNITY_cves.py|cves.py]]
-- [[_COMMUNITY_ingestLogUrl|ingestLogUrl]]
+- [[_COMMUNITY_notifyApiError|notifyApiError]]
 - [[_COMMUNITY_manager.py|manager.py]]
 - [[_COMMUNITY_InvestigationContext.jsx|InvestigationContext.jsx]]
 - [[_COMMUNITY_init_db|init_db]]
 - [[_COMMUNITY_enrichment.py|enrichment.py]]
 - [[_COMMUNITY_scheduler.py|scheduler.py]]
-- [[_COMMUNITY_get_source_pacing|get_source_pacing]]
-- [[_COMMUNITY_AdminPageBody|AdminPageBody]]
-- [[_COMMUNITY_BriefCharts.jsx|BriefCharts.jsx]]
+- [[_COMMUNITY_test_llm_pacing.py|test_llm_pacing.py]]
+- [[_COMMUNITY_AdminPage.jsx|AdminPage.jsx]]
+- [[_COMMUNITY_pdfReport.js|pdfReport.js]]
 - [[_COMMUNITY_sync_env_destinations_to_db|sync_env_destinations_to_db]]
 - [[_COMMUNITY_RuntimeError|RuntimeError]]
-- [[_COMMUNITY_test_llm_product_extraction.py|test_llm_product_extraction.py]]
+- [[_COMMUNITY_product_extraction.py|product_extraction.py]]
 - [[_COMMUNITY_destinations.py|destinations.py]]
 - [[_COMMUNITY_structured_logging.py|structured_logging.py]]
 - [[_COMMUNITY_cve.py|cve.py]]
 - [[_COMMUNITY_webhooks.py|webhooks.py]]
-- [[_COMMUNITY_AssetProfileContext.jsx|AssetProfileContext.jsx]]
-- [[_COMMUNITY_types.py|types.py]]
+- [[_COMMUNITY_AssetWizard.jsx|AssetWizard.jsx]]
+- [[_COMMUNITY_run_nvd_incremental_sync|run_nvd_incremental_sync]]
 - [[_COMMUNITY_metadata.py|metadata.py]]
-- [[_COMMUNITY_intelligence.py|intelligence.py]]
+- [[_COMMUNITY_OverviewPage.jsx|OverviewPage.jsx]]
 - [[_COMMUNITY_safe_webhook_request|safe_webhook_request]]
 - [[_COMMUNITY_llm_router.py|llm_router.py]]
 - [[_COMMUNITY_Session handover log|Session handover log]]
@@ -50,9 +50,9 @@
 - [[_COMMUNITY_TestClient|TestClient]]
 - [[_COMMUNITY_artifact_extract.py|artifact_extract.py]]
 - [[_COMMUNITY_atlas.py|atlas.py]]
-- [[_COMMUNITY_utcnow_str|utcnow_str]]
+- [[_COMMUNITY_cache.py|cache.py]]
 - [[_COMMUNITY_mitre.py|mitre.py]]
-- [[_COMMUNITY_repo.py|repo.py]]
+- [[_COMMUNITY_run_integrity_check|run_integrity_check]]
 - [[_COMMUNITY_repo.py|repo.py]]
 - [[_COMMUNITY_database.py|database.py]]
 - [[_COMMUNITY_poc_github.py|poc_github.py]]
@@ -61,12 +61,12 @@
 - [[_COMMUNITY_risk.py|risk.py]]
 - [[_COMMUNITY_cve_record_v5.py|cve_record_v5.py]]
 - [[_COMMUNITY_test_embeddings.py|test_embeddings.py]]
-- [[_COMMUNITY_DisplayPage.jsx|DisplayPage.jsx]]
+- [[_COMMUNITY_AssetProfileContext.jsx|AssetProfileContext.jsx]]
 - [[_COMMUNITY_test_config_schema.py|test_config_schema.py]]
 - [[_COMMUNITY_DbConnection|DbConnection]]
 - [[_COMMUNITY_test_destructive_actions.py|test_destructive_actions.py]]
 - [[_COMMUNITY_test_epss_backfill.py|test_epss_backfill.py]]
-- [[_COMMUNITY_OverviewPage.jsx|OverviewPage.jsx]]
+- [[_COMMUNITY_SchedulerPage.jsx|SchedulerPage.jsx]]
 - [[_COMMUNITY_riskScore.js|riskScore.js]]
 - [[_COMMUNITY_sqlite_to_postgres.py|sqlite_to_postgres.py]]
 - [[_COMMUNITY_conftest.py|conftest.py]]
@@ -78,9 +78,9 @@
 - [[_COMMUNITY_nvd.py|nvd.py]]
 - [[_COMMUNITY_forge.py|forge.py]]
 - [[_COMMUNITY_OverviewTab.jsx|OverviewTab.jsx]]
-- [[_COMMUNITY_FilterBar.jsx|FilterBar.jsx]]
-- [[_COMMUNITY_summary.py|summary.py]]
-- [[_COMMUNITY_AdminPage.jsx|AdminPage.jsx]]
+- [[_COMMUNITY_CVEFeed.jsx|CVEFeed.jsx]]
+- [[_COMMUNITY_intelligence.py|intelligence.py]]
+- [[_COMMUNITY_formatters.js|formatters.js]]
 - [[_COMMUNITY_api_key_health.py|api_key_health.py]]
 - [[_COMMUNITY_rate_limit.py|rate_limit.py]]
 - [[_COMMUNITY_patchReferences.js|patchReferences.js]]
@@ -88,7 +88,7 @@
 - [[_COMMUNITY_api_queue.py|api_queue.py]]
 - [[_COMMUNITY_test_api_queue_operations.py|test_api_queue_operations.py]]
 - [[_COMMUNITY_PR13 — Read-only DB explorer (admin Database section)|PR13 — Read-only DB explorer (admin Database section)]]
-- [[_COMMUNITY_test_brief_endpoint.py|test_brief_endpoint.py]]
+- [[_COMMUNITY_service.py|service.py]]
 - [[_COMMUNITY_context.py|context.py]]
 - [[_COMMUNITY_test_cpe_matching.py|test_cpe_matching.py]]
 - [[_COMMUNITY_test_cves_router_fixes.py|test_cves_router_fixes.py]]
@@ -100,7 +100,7 @@
 - [[_COMMUNITY_resilient_client.py|resilient_client.py]]
 - [[_COMMUNITY_FastAPI|FastAPI]]
 - [[_COMMUNITY_backlog.py|backlog.py]]
-- [[_COMMUNITY_lookup_ioc|lookup_ioc]]
+- [[_COMMUNITY_get_system|get_system]]
 - [[_COMMUNITY_rate_limit_store.py|rate_limit_store.py]]
 - [[_COMMUNITY_service.py|service.py]]
 - [[_COMMUNITY_cve_risk_score|cve_risk_score]]
@@ -110,17 +110,17 @@
 - [[_COMMUNITY_BRIEFR — Operations & Deploy Compatibility|BRIEFR — Operations & Deploy Compatibility]]
 - [[_COMMUNITY_timedelta|timedelta]]
 - [[_COMMUNITY_test_db_explorer.py|test_db_explorer.py]]
-- [[_COMMUNITY_resolve_detection_class|resolve_detection_class]]
+- [[_COMMUNITY_AiOperationsPage.jsx|AiOperationsPage.jsx]]
 - [[_COMMUNITY_test_detection_context.py|test_detection_context.py]]
 - [[_COMMUNITY_verify_snapshot|verify_snapshot]]
 - [[_COMMUNITY_tracking.py|tracking.py]]
 - [[_COMMUNITY_lib.sh|lib.sh]]
-- [[_COMMUNITY_reset_feed_health|reset_feed_health]]
+- [[_COMMUNITY_get_feed_health|get_feed_health]]
 - [[_COMMUNITY_build_support_pack|build_support_pack]]
-- [[_COMMUNITY_run_integrity_check|run_integrity_check]]
+- [[_COMMUNITY_case_study_feed.py|case_study_feed.py]]
 - [[_COMMUNITY_Sprint — July 2026|Sprint — July 2026]]
 - [[_COMMUNITY_asset_match.py|asset_match.py]]
-- [[_COMMUNITY_Header.jsx|Header.jsx]]
+- [[_COMMUNITY_investigationPdf.js|investigationPdf.js]]
 - [[_COMMUNITY_DetectTab.jsx|DetectTab.jsx]]
 - [[_COMMUNITY_Admin Dashboard — `apiadmin`|Admin Dashboard — `/api/admin/*`]]
 - [[_COMMUNITY_engine.py|engine.py]]
@@ -130,16 +130,16 @@
 - [[_COMMUNITY_main.py|main.py]]
 - [[_COMMUNITY_errors.py|errors.py]]
 - [[_COMMUNITY_A — Secret exposure & redaction|A — Secret exposure & redaction]]
-- [[_COMMUNITY_lifespan|lifespan]]
+- [[_COMMUNITY_Settings|Settings]]
 - [[_COMMUNITY_test_backup_postgres.py|test_backup_postgres.py]]
 - [[_COMMUNITY_provenance.py|provenance.py]]
 - [[_COMMUNITY_BRIEFR UIUX Overhaul Plan|BRIEFR UI/UX Overhaul Plan]]
 - [[_COMMUNITY_cvelistv5.py|cvelistv5.py]]
-- [[_COMMUNITY_health.py|health.py]]
+- [[_COMMUNITY_FilterBar.jsx|FilterBar.jsx]]
 - [[_COMMUNITY_test_admin_config.py|test_admin_config.py]]
 - [[_COMMUNITY_apiQueuePresentation.js|apiQueuePresentation.js]]
-- [[_COMMUNITY_main.jsx|main.jsx]]
-- [[_COMMUNITY_find_shared_infrastructure_v2|find_shared_infrastructure_v2]]
+- [[_COMMUNITY_AuthContext.jsx|AuthContext.jsx]]
+- [[_COMMUNITY_get_campaigns_for_cve|get_campaigns_for_cve]]
 - [[_COMMUNITY_normalize_ioc|normalize_ioc]]
 - [[_COMMUNITY_watchlist.py|watchlist.py]]
 - [[_COMMUNITY_nuclei_parser.py|nuclei_parser.py]]
@@ -153,33 +153,33 @@
 - [[_COMMUNITY_exportXlsx.js|exportXlsx.js]]
 - [[_COMMUNITY_AI-2 PR 417 (Admin AI Operations Page + Observability APIs)|AI-2 PR #417 (Admin AI Operations Page + Observability APIs)]]
 - [[_COMMUNITY_cache_retention.py|cache_retention.py]]
-- [[_COMMUNITY_dependencies|dependencies]]
+- [[_COMMUNITY_index.jsx|index.jsx]]
 - [[_COMMUNITY_Operator discussion backlog (2026-07-10)|Operator discussion backlog (2026-07-10)]]
 - [[_COMMUNITY_test_config_risk_endpoint.py|test_config_risk_endpoint.py]]
 - [[_COMMUNITY_test_gemini_reconciliation.py|test_gemini_reconciliation.py]]
 - [[_COMMUNITY_test_api_queue.py|test_api_queue.py]]
 - [[_COMMUNITY_test_playwright_smoke.py|test_playwright_smoke.py]]
 - [[_COMMUNITY_test_security_invariants.py|test_security_invariants.py]]
-- [[_COMMUNITY_test_webhooks_alerts.py|test_webhooks_alerts.py]]
+- [[_COMMUNITY_lifespan|lifespan]]
 - [[_COMMUNITY_BRIEFR|BRIEFR]]
 - [[_COMMUNITY_Concepts & pipelines|Concepts & pipelines]]
-- [[_COMMUNITY_get_campaigns_for_cve|get_campaigns_for_cve]]
+- [[_COMMUNITY_list_correlation_clusters|list_correlation_clusters]]
 - [[_COMMUNITY_campaigns.py|campaigns.py]]
-- [[_COMMUNITY_generate_sigma_rule|generate_sigma_rule]]
+- [[_COMMUNITY_get_source_pacing|get_source_pacing]]
 - [[_COMMUNITY_build_yara_rules_from_hashes|build_yara_rules_from_hashes]]
 - [[_COMMUNITY_BRIEFR Contributor Onboarding|BRIEFR Contributor Onboarding]]
 - [[_COMMUNITY_Planning backlog (open  parked  optional)|Planning backlog (open / parked / optional)]]
 - [[_COMMUNITY_redact.py|redact.py]]
 - [[_COMMUNITY_calculate_threat_score|calculate_threat_score]]
 - [[_COMMUNITY_observableExtraction.js|observableExtraction.js]]
-- [[_COMMUNITY_WallboardPage.jsx|WallboardPage.jsx]]
-- [[_COMMUNITY_correlationPresentation.js|correlationPresentation.js]]
-- [[_COMMUNITY_user_notifications.py|user_notifications.py]]
+- [[_COMMUNITY_AuditLogPage.jsx|AuditLogPage.jsx]]
+- [[_COMMUNITY_AdminPageBody|AdminPageBody]]
+- [[_COMMUNITY_utcnow_str|utcnow_str]]
 - [[_COMMUNITY_quota.py|quota.py]]
 - [[_COMMUNITY_watchlist.py|watchlist.py]]
 - [[_COMMUNITY_llm_payload.py|llm_payload.py]]
 - [[_COMMUNITY_bench.py|bench.py]]
-- [[_COMMUNITY_get_feed_health|get_feed_health]]
+- [[_COMMUNITY_test_brief_endpoint.py|test_brief_endpoint.py]]
 - [[_COMMUNITY_test_admin_storage.py|test_admin_storage.py]]
 - [[_COMMUNITY_test_forge.py|test_forge.py]]
 - [[_COMMUNITY_capture_readme_screenshots.mjs|capture_readme_screenshots.mjs]]
@@ -193,20 +193,20 @@
 - [[_COMMUNITY_test_me_stack.py|test_me_stack.py]]
 - [[_COMMUNITY_test_router_split.py|test_router_split.py]]
 - [[_COMMUNITY_ADR-002 — BRIEFR scoring axes and Operational Priority|ADR-002 — BRIEFR scoring axes and Operational Priority]]
-- [[_COMMUNITY_useModalLayer|useModalLayer]]
+- [[_COMMUNITY_me.py|me.py]]
 - [[_COMMUNITY_model_catalog.py|model_catalog.py]]
 - [[_COMMUNITY_connection.py|connection.py]]
 - [[_COMMUNITY_test_security_architecture_corpus.py|test_security_architecture_corpus.py]]
 - [[_COMMUNITY_test_wallboard.py|test_wallboard.py]]
 - [[_COMMUNITY_test_watchlist.py|test_watchlist.py]]
-- [[_COMMUNITY_ToolErrorBoundary|ToolErrorBoundary]]
+- [[_COMMUNITY_CaseStudies.jsx|CaseStudies.jsx]]
 - [[_COMMUNITY_generate_system_design_pdf.mjs|generate_system_design_pdf.mjs]]
 - [[_COMMUNITY_AGENTS.md — Cursor Cloud Agent Instructions|AGENTS.md — Cursor Cloud Agent Instructions]]
 - [[_COMMUNITY_Production Upgrade  Recovery Gaps (no Alembic step in update script, warn-only health check)|Production Upgrade / Recovery Gaps (no Alembic step in update script, warn-only health check)]]
 - [[_COMMUNITY___main__.py|__main__.py]]
 - [[_COMMUNITY_BRIEFR Correlation Engine v2 — Implementation Plan|BRIEFR Correlation Engine v2 — Implementation Plan]]
 - [[_COMMUNITY_backendrequirements.txt|backend/requirements.txt]]
-- [[_COMMUNITY_get_storage|get_storage]]
+- [[_COMMUNITY_storage_metrics.py|storage_metrics.py]]
 - [[_COMMUNITY_test_cache_retention.py|test_cache_retention.py]]
 - [[_COMMUNITY_test_me_preferences.py|test_me_preferences.py]]
 - [[_COMMUNITY_BRIEFR product voice|BRIEFR product voice]]
@@ -220,9 +220,9 @@
 - [[_COMMUNITY_test_auth_setup.py|test_auth_setup.py]]
 - [[_COMMUNITY_capture_theme_screenshots.mjs|capture_theme_screenshots.mjs]]
 - [[_COMMUNITY_5. Section specifications|5. Section specifications]]
-- [[_COMMUNITY_get_stack_terms|get_stack_terms]]
+- [[_COMMUNITY_repo.py|repo.py]]
 - [[_COMMUNITY_suppressions.py|suppressions.py]]
-- [[_COMMUNITY_threatfox.py|threatfox.py]]
+- [[_COMMUNITY_generate_sigma_rule|generate_sigma_rule]]
 - [[_COMMUNITY_test_scheduler_reschedule.py|test_scheduler_reschedule.py]]
 - [[_COMMUNITY_test_epss_related.py|test_epss_related.py]]
 - [[_COMMUNITY_test_version_endpoint.py|test_version_endpoint.py]]
@@ -232,21 +232,21 @@
 - [[_COMMUNITY_build_gemini_reconciliation.py|build_gemini_reconciliation.py]]
 - [[_COMMUNITY_ADR-002 Operational Priority (ThreatEnvironmentPriority split)|ADR-002: Operational Priority (Threat/Environment/Priority split)]]
 - [[_COMMUNITY_generate|generate]]
-- [[_COMMUNITY_test_structured_logging.py|test_structured_logging.py]]
+- [[_COMMUNITY_TokenBucket|TokenBucket]]
 - [[_COMMUNITY_backenddatabase.py (monolithic module, 3197 lines)|backend/database.py (monolithic module, 3197 lines)]]
 - [[_COMMUNITY_6. Detailed Findings|6. Detailed Findings]]
 - [[_COMMUNITY_BRIEFR API Reference|BRIEFR API Reference]]
-- [[_COMMUNITY_get_cve_sentences|get_cve_sentences]]
-- [[_COMMUNITY_corpus_loader.py|corpus_loader.py]]
+- [[_COMMUNITY_ApiKeysPage.jsx|ApiKeysPage.jsx]]
+- [[_COMMUNITY_get_corpus|get_corpus]]
 - [[_COMMUNITY_Using BRIEFR|Using BRIEFR]]
 - [[_COMMUNITY_seed_screenshot_data.py|seed_screenshot_data.py]]
-- [[_COMMUNITY_set_sync_state_value|set_sync_state_value]]
+- [[_COMMUNITY_fmtIso|fmtIso]]
 - [[_COMMUNITY_main|main]]
 - [[_COMMUNITY_test_ai_alerts_and_feed.py|test_ai_alerts_and_feed.py]]
 - [[_COMMUNITY_test_ioc_defensive_json.py|test_ioc_defensive_json.py]]
 - [[_COMMUNITY_test_job_catalog_coverage.py|test_job_catalog_coverage.py]]
 - [[_COMMUNITY_test_postgres_pool.py|test_postgres_pool.py]]
-- [[_COMMUNITY_test_proof_bench.py|test_proof_bench.py]]
+- [[_COMMUNITY_ToolErrorBoundary|ToolErrorBoundary]]
 - [[_COMMUNITY_test_threat_model_scenarios.py|test_threat_model_scenarios.py]]
 - [[_COMMUNITY_Program — Product polish & open-core readiness|Program — Product polish & open-core readiness]]
 - [[_COMMUNITY_SQLite over PostgreSQL Decision (v1.1, since superseded)|SQLite over PostgreSQL Decision (v1.1, since superseded)]]
@@ -257,11 +257,11 @@
 - [[_COMMUNITY_Appendix — Implementation specs (pre-decided; execute as written)|Appendix — Implementation specs (pre-decided; execute as written)]]
 - [[_COMMUNITY_NotificationBell.jsx|NotificationBell.jsx]]
 - [[_COMMUNITY_dispatch_event|dispatch_event]]
-- [[_COMMUNITY_test_health_endpoints.py|test_health_endpoints.py]]
-- [[_COMMUNITY_DrawerTabErrorBoundary|DrawerTabErrorBoundary]]
-- [[_COMMUNITY_SessionsPage.jsx|SessionsPage.jsx]]
+- [[_COMMUNITY_build_threat_scenarios|build_threat_scenarios]]
+- [[_COMMUNITY_prepare_query|prepare_query]]
+- [[_COMMUNITY_atlas.py|atlas.py]]
 - [[_COMMUNITY_BRIEFR Beta V1.2 — Roadmap|BRIEFR Beta V1.2 — Roadmap]]
-- [[_COMMUNITY_userPreferences.js|userPreferences.js]]
+- [[_COMMUNITY_get_stack_terms|get_stack_terms]]
 - [[_COMMUNITY_briefr-backup.sh|briefr-backup.sh]]
 - [[_COMMUNITY_briefr-restore.sh|briefr-restore.sh]]
 - [[_COMMUNITY_setup.sh|setup.sh]]
@@ -294,13 +294,13 @@
 - [[_COMMUNITY_smoke-intel.sh|smoke-intel.sh]]
 - [[_COMMUNITY_BRIEFR Visual and Operational UX Audit|BRIEFR Visual and Operational UX Audit]]
 - [[_COMMUNITY_Recommended PR Plan|Recommended PR Plan]]
-- [[_COMMUNITY_index.js|index.js]]
+- [[_COMMUNITY_BriefCharts.jsx|BriefCharts.jsx]]
 - [[_COMMUNITY_caseStudySources.js|caseStudySources.js]]
 - [[_COMMUNITY_BRIEFR Beta V1.4 — Operator Beast|BRIEFR Beta V1.4 — Operator Beast]]
 - [[_COMMUNITY_24. Quality & trust controls|24. Quality & trust controls]]
 - [[_COMMUNITY_Postgres-Native Conversion Plan (Post-B)|Postgres-Native Conversion Plan (Post-B)]]
 - [[_COMMUNITY_Forge Redesign — IA, Hunt Pack Library & Live-Data Completeness|Forge Redesign — IA, Hunt Pack Library & Live-Data Completeness]]
-- [[_COMMUNITY_AssetWizard.jsx|AssetWizard.jsx]]
+- [[_COMMUNITY_test_cve_detail_atlas.py|test_cve_detail_atlas.py]]
 - [[_COMMUNITY_BRIEFR Beta V1.5 — Detection & Threat Depth|BRIEFR Beta V1.5 — Detection & Threat Depth]]
 - [[_COMMUNITY_PostgreSQL database (production)|PostgreSQL database (production)]]
 - [[_COMMUNITY_BRIEFR Strategy — from personal project to must-have analyst tool|BRIEFR Strategy — from personal project to must-have analyst tool]]
@@ -323,7 +323,7 @@
 - [[_COMMUNITY_Forge (V1.3 MVP)|Forge (V1.3 MVP)]]
 - [[_COMMUNITY_User stack (per-user preferences)|User stack (per-user preferences)]]
 - [[_COMMUNITY_Scheduler & Admin|Scheduler & Admin]]
-- [[_COMMUNITY_patch_sentence|patch_sentence]]
+- [[_COMMUNITY_run_detection_context_sync|run_detection_context_sync]]
 - [[_COMMUNITY_3.2 Display catalog (implement first)|3.2 Display catalog (implement first)]]
 - [[_COMMUNITY_5. Discussion points & recommended decisions|5. Discussion points & recommended decisions]]
 - [[_COMMUNITY_Notes for AI implementers (Claude  Cursor agents)|Notes for AI implementers (Claude / Cursor agents)]]
@@ -340,9 +340,9 @@
 - [[_COMMUNITY_2026-07-08 — Session handoff program status, agent workflow, Post-B plan|2026-07-08 — Session handoff: program status, agent workflow, Post-B plan]]
 - [[_COMMUNITY_Execution Playbook — shipping these specs at full quality|Execution Playbook — shipping these specs at full quality]]
 - [[_COMMUNITY_CVE Detail & Enrichment|CVE Detail & Enrichment]]
-- [[_COMMUNITY_ioc_watchlist.py|ioc_watchlist.py]]
+- [[_COMMUNITY_ioc.py|ioc.py]]
 - [[_COMMUNITY_emit.py|emit.py]]
-- [[_COMMUNITY_test_rule_sources.py|test_rule_sources.py]]
+- [[_COMMUNITY_rule_sources.py|rule_sources.py]]
 - [[_COMMUNITY_Contributing to BRIEFR|Contributing to BRIEFR]]
 - [[_COMMUNITY_4.1 Intel status (`overview`) — Analyst view|4.1 Intel status (`overview`) — Analyst view]]
 - [[_COMMUNITY_19.7 Failure Window Analysis|19.7 Failure Window Analysis]]
@@ -351,8 +351,8 @@
 - [[_COMMUNITY_TITLE|TITLE]]
 - [[_COMMUNITY_Security Policy|Security Policy]]
 - [[_COMMUNITY_Health & Stats|Health & Stats]]
-- [[_COMMUNITY_test_investigation_summary.py|test_investigation_summary.py]]
-- [[_COMMUNITY_test_admin_system.py|test_admin_system.py]]
+- [[_COMMUNITY_test_incident_source_refresh.py|test_incident_source_refresh.py]]
+- [[_COMMUNITY_build_onboarding_checklist|build_onboarding_checklist]]
 - [[_COMMUNITY_4. Page-by-page specification|4. Page-by-page specification]]
 - [[_COMMUNITY_4. Risk scoring architecture review|4. Risk scoring architecture review]]
 - [[_COMMUNITY_12. UI  UX|12. UI / UX]]
@@ -362,9 +362,9 @@
 - [[_COMMUNITY_Self-host BRIEFR|Self-host BRIEFR]]
 - [[_COMMUNITY_ADR-NNN Title|ADR-NNN: Title]]
 - [[_COMMUNITY_IntelProvenanceLine.jsx|IntelProvenanceLine.jsx]]
-- [[_COMMUNITY_Risk & Correlation|Risk & Correlation]]
-- [[_COMMUNITY_test_admin_feeds.py|test_admin_feeds.py]]
-- [[_COMMUNITY_test_correlation_postgres_sql.py|test_correlation_postgres_sql.py]]
+- [[_COMMUNITY_vulncheck_kev.py|vulncheck_kev.py]]
+- [[_COMMUNITY_detection_backlog.py|detection_backlog.py]]
+- [[_COMMUNITY_merge_additive_cve_fields|merge_additive_cve_fields]]
 - [[_COMMUNITY_14. Copy examples (analyst)|14. Copy examples (analyst)]]
 - [[_COMMUNITY_18. Implementation phases|18. Implementation phases]]
 - [[_COMMUNITY_Phase 3 — Split `database.py` into `db` Package|Phase 3 — Split `database.py` into `db/` Package]]
@@ -377,7 +377,7 @@
 - [[_COMMUNITY_IOC Lookup|IOC Lookup]]
 - [[_COMMUNITY_Watchlist (pin  snooze)|Watchlist (pin / snooze)]]
 - [[_COMMUNITY_build_operator_notifications|build_operator_notifications]]
-- [[_COMMUNITY_test_display_typography.py|test_display_typography.py]]
+- [[_COMMUNITY_test_rate_limit_store.py|test_rate_limit_store.py]]
 - [[_COMMUNITY_7. Shared components|7. Shared components]]
 - [[_COMMUNITY_BRIEFR Light Theme Design System|BRIEFR Light Theme Design System]]
 - [[_COMMUNITY_BRIEFR — Session State (for next session's context)|BRIEFR — Session State (for next session's context)]]
@@ -395,7 +395,7 @@
 - [[_COMMUNITY_14. Admin AI Operations UX architecture|14. Admin AI Operations UX architecture]]
 - [[_COMMUNITY_9. Routing design|9. Routing design]]
 - [[_COMMUNITY_Cross-Surface Correction Methodology|Cross-Surface Correction Methodology]]
-- [[_COMMUNITY_appLinks.js|appLinks.js]]
+- [[_COMMUNITY_formatSharedObservablesSummary|formatSharedObservablesSummary]]
 - [[_COMMUNITY_10. Files to create or modify|10. Files to create or modify]]
 - [[_COMMUNITY_12. Testing & acceptance|12. Testing & acceptance]]
 - [[_COMMUNITY_9. Implementation phases|9. Implementation phases]]
@@ -546,18 +546,22 @@
 - [[_COMMUNITY_scriptsverify-local.sh (Local Merge Gate)|scripts/verify-local.sh (Local Merge Gate)]]
 - [[_COMMUNITY_confirm.py|confirm.py]]
 - [[_COMMUNITY_test_epss_sparkline_trend.py|test_epss_sparkline_trend.py]]
+- [[_COMMUNITY_appLinks.js|appLinks.js]]
+- [[_COMMUNITY_AI Summary|AI Summary]]
+- [[_COMMUNITY_CorrelationSuppressModal.jsx|CorrelationSuppressModal.jsx]]
+- [[_COMMUNITY_get_bucket_stats|get_bucket_stats]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `run_db_test()` - 222 edges
 2. `DbConnection` - 188 edges
 3. `get_db()` - 176 edges
-4. `Session handover log` - 126 edges
-5. `init_db()` - 64 edges
-6. `request()` - 64 edges
+4. `Session handover log` - 128 edges
+5. `request()` - 69 edges
+6. `init_db()` - 64 edges
 7. `is_postgres()` - 57 edges
 8. `audit()` - 46 edges
 9. `utcnow_str()` - 45 edges
-10. `start_scheduler()` - 42 edges
+10. `ingestLogUrl()` - 43 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `frontend/index.html (SPA entry point)` --conceptually_related_to--> `Auth layers diagram (Edge Cloudflare Zero Trust + Application session layer)`  [INFERRED]
@@ -577,139 +581,139 @@
 ## Hyperedges (group relationships)
 - **CI Merge-Gate Pipeline (pytest, dependency-audit, Playwright smoke, gitleaks)** — github_workflows_backend_tests_yml_job_test, github_workflows_backend_tests_yml_job_dependency_audit, github_workflows_backend_tests_yml_job_playwright_smoke, github_workflows_gitleaks_yml [INFERRED 0.85]
 
-## Communities (559 total, 160 thin omitted)
+## Communities (563 total, 156 thin omitted)
 
 ### Community 0 - "get_db"
-Cohesion: 0.04
-Nodes (111): get_db(), Return a database connection (SQLite default, PostgreSQL when configured)., Upsert any sync_state key (caller commits)., set_sync_state_value(), audit(), Record an audited action. request.state.user_username is populated by     requi, persist_operator_setting(), apply_all_config() (+103 more)
+Cohesion: 0.05
+Nodes (98): get_db(), Return a database connection (SQLite default, PostgreSQL when configured)., audit(), Record an audited action. request.state.user_username is populated by     requi, apply_all_config(), _apply_config_side_effects(), check_integrity(), clear_all_snoozes() (+90 more)
 
 ### Community 1 - "App.jsx"
-Cohesion: 0.05
-Nodes (40): AdminPage, App(), AppLayout(), BriefCharts, CaseStudies, CVEFeed, DEFAULT_FILTERS, DetailDrawer (+32 more)
+Cohesion: 0.04
+Nodes (71): AdminPage, App(), AppLayout(), BriefCharts, CaseStudies, CVEFeed, DEFAULT_FILTERS, DetailDrawer (+63 more)
 
 ### Community 2 - "is_postgres"
 Cohesion: 0.04
 Nodes (64): database_backend(), get_database_url(), is_postgres(), is_sqlite(), Database URL resolution and backend detection., Return the effective database URL.    Priority:   1. ``DATABASE_URL`` env / s, ``sqlite`` or ``postgresql``., resolve_database_url() (+56 more)
 
-### Community 3 - "pdfReport.js"
-Cohesion: 0.05
-Nodes (77): dependencies, chart.js, @fontsource/dm-sans, @fontsource/dm-serif-display, @fontsource/ibm-plex-mono, html2canvas, jspdf, lucide-react (+69 more)
+### Community 3 - "dependencies"
+Cohesion: 0.07
+Nodes (28): dependencies, chart.js, @fontsource/dm-sans, @fontsource/dm-serif-display, @fontsource/ibm-plex-mono, html2canvas, lucide-react, react (+20 more)
 
 ### Community 4 - "run_db_test"
 Cohesion: 0.04
-Nodes (68): Run an async test body that calls database.get_db()/get_connection()     direct, Insert the JWT test user when absent. Does not overwrite an existing row     so, run_db_test(), seed_pytest_auth_user_if_missing(), ATLAS upstream release-feed version check (auto-refresh trigger)., test_get_latest_atlas_release_parses_first_entry_title(), test_get_latest_atlas_release_returns_none_on_failure(), test_run_atlas_version_check_refreshes_when_version_changes() (+60 more)
+Nodes (83): Run an async test body that calls database.get_db()/get_connection()     direct, run_db_test(), ATLAS upstream release-feed version check (auto-refresh trigger)., test_get_latest_atlas_release_parses_first_entry_title(), test_get_latest_atlas_release_returns_none_on_failure(), test_run_atlas_version_check_refreshes_when_version_changes(), test_run_atlas_version_check_skips_refresh_when_unchanged(), Tests for CIRCL (vulnerability.circl.lu) migration and OSV by-ID lookup. (+75 more)
 
 ### Community 5 - "api.js"
 Cohesion: 0.06
-Nodes (59): addIocWatchlist(), adminFetch(), authedFetch(), clearAllSnoozes(), dismissDetectionBacklogItem(), doFetch(), fetchAtlasCaseStudies(), fetchAtlasTechniques() (+51 more)
+Nodes (58): addIocWatchlist(), clearAllSnoozes(), clearWallboardToken(), createWallboardSession(), doFetch(), fetchAtlasCaseStudies(), fetchAtlasTechniques(), fetchBrief() (+50 more)
 
 ### Community 6 - "cves.py"
 Cohesion: 0.05
-Nodes (55): load_suppressions(), AssetMatchRequest, _build_cve_filters(), CorrelationSuppressBody, cve_changes(), _cve_count_cache_key(), cve_greynoise_scans(), cve_momentum() (+47 more)
+Nodes (58): fetch_osv_by_cve(), _fetch_osv_record(), _parse_osv_record(), otx_configured_from_env(), cached_read(), Return cached value when fresh; otherwise await ``build()`` and store., AssetMatchRequest, _build_cve_drawer_bundle() (+50 more)
 
-### Community 7 - "ingestLogUrl"
-Cohesion: 0.12
-Nodes (27): fetchStatsTimeline(), fetchTopTechniques(), ProofBenchSection(), getCached(), setCached(), Sidebar(), SIDEBAR_FILTERS, sidebarCache (+19 more)
+### Community 7 - "notifyApiError"
+Cohesion: 0.09
+Nodes (32): fetchSecurityArchitectureManifest(), fetchSecurityArchitectureOverview(), fetchSecurityArchitectureSection(), fetchStatsTimeline(), getCached(), setCached(), Sidebar(), SIDEBAR_FILTERS (+24 more)
 
 ### Community 8 - "manager.py"
 Cohesion: 0.09
 Nodes (49): BRIEFR backup and restore utilities., _append_log(), _archive_backend(), _backup_file_lock(), BackupConfig, _check_age_key_location(), _create_archive_bundle(), _create_postgres_archive_bundle() (+41 more)
 
 ### Community 9 - "InvestigationContext.jsx"
-Cohesion: 0.18
-Nodes (19): formatElapsed(), InvestigationPanel(), ThreadList(), typeBadge(), PdfExportModal(), buildThreadSummary(), INV_SOURCES, INV_TYPES (+11 more)
+Cohesion: 0.16
+Nodes (21): fetchOTXPulseIocs(), formatElapsed(), InvestigationPanel(), ThreadList(), typeBadge(), PdfExportModal(), buildThreadSummary(), INV_SOURCES (+13 more)
 
 ### Community 10 - "init_db"
-Cohesion: 0.05
-Nodes (45): init_db(), _init_postgres_schema(), _normalize_epss_scores(), DB init/bootstrap: get_db, init_db, run_postgres_migrations. Split from database, Apply Alembic DDL before the asyncpg pool opens (avoids migration lock waits)., run_postgres_migrations(), lifespan(), bootstrap_operator_settings() (+37 more)
+Cohesion: 0.06
+Nodes (42): init_db(), _init_postgres_schema(), _normalize_epss_scores(), DB init/bootstrap: get_db, init_db, run_postgres_migrations. Split from database, Apply Alembic DDL before the asyncpg pool opens (avoids migration lock waits)., run_postgres_migrations(), API key health ping monitoring., Regression test for the source/method argument-order bug.      Prior tests all (+34 more)
 
 ### Community 11 - "enrichment.py"
-Cohesion: 0.07
-Nodes (47): backfill_display_fields(), backfill_has_poc(), _clean_iso_date(), _cutoff_date_days_ago(), _cutoff_datetime_hours_ago(), _cve_id_filter_clause(), _epss_display_percent(), _epss_scores_differ() (+39 more)
+Cohesion: 0.08
+Nodes (43): backfill_display_fields(), backfill_has_poc(), _clean_iso_date(), _cutoff_date_days_ago(), _cutoff_datetime_hours_ago(), _cve_id_filter_clause(), _epss_display_percent(), _epss_scores_differ() (+35 more)
 
 ### Community 12 - "scheduler.py"
 Cohesion: 0.05
-Nodes (86): AsyncIOScheduler, enrich_kev_summaries(), Fill plain-English summary from CISA KEV short descriptions., get_sync_state_value(), Read any sync_state key; returns None when absent., get_cvelistv5_sync_interval_minutes(), exploit_sources_enabled(), otx_continuous_enabled() (+78 more)
+Nodes (82): AsyncIOScheduler, enrich_kev_summaries(), Fill plain-English summary from CISA KEV short descriptions., get_all_cve_ids(), get_cvelistv5_sync_interval_minutes(), exploit_sources_enabled(), get_exploit_sources_interval_hours(), Orchestrates scheduler-side exploit-availability feeds. (+74 more)
 
-### Community 13 - "get_source_pacing"
-Cohesion: 0.16
-Nodes (20): cerebras_limits(), compute_min_interval(), _env_float(), _env_int(), gemini_limits(), limits_from_env(), openrouter_limits(), ProviderLimits (+12 more)
+### Community 13 - "test_llm_pacing.py"
+Cohesion: 0.10
+Nodes (26): groq_limits(), GroqLimits, Shared Groq API settings for all BRIEFR LLM call sites., Limits for the configured model — override via env for other tiers/models., cerebras_limits(), compute_min_interval(), _env_float(), _env_int() (+18 more)
 
-### Community 14 - "AdminPageBody"
-Cohesion: 0.08
-Nodes (30): adminJson(), getAdminRequestId(), useToast(), filterUnacknowledgedErrors(), jobErrorAckKey(), loadJobAcks(), markAllJobErrorsRead(), saveJobAcks() (+22 more)
+### Community 14 - "AdminPage.jsx"
+Cohesion: 0.09
+Nodes (25): adminApi, ConfirmModal(), ANALYST_PAGE_IDS, AlertsPage(), DatabasePage(), cellPreview(), DbExplorerPanel(), DETAIL_KEYS (+17 more)
 
-### Community 15 - "BriefCharts.jsx"
-Cohesion: 0.15
-Nodes (15): buildEpssMovers(), EMPTY_ARRAY, epssDelta(), epssDeltaClass(), EpssMoversTable(), formatEpssPct(), severityDotClass(), useAsync() (+7 more)
+### Community 15 - "pdfReport.js"
+Cohesion: 0.18
+Nodes (26): fetchCVE(), fetchCVECorrelation(), fetchCVESentences(), hexToRgb(), applyFootersAndStripes(), buildMeta(), captureSparkline(), DATA_SOURCES (+18 more)
 
 ### Community 16 - "sync_env_destinations_to_db"
-Cohesion: 0.27
-Nodes (17): _install_transport(), Path, Tests for the V1.4 webhook engine., Guard helpers must await load_destinations(), not env-only builders., _setup_db(), test_dedupe_records_once(), test_discord_only(), test_event_type_subscription_filter() (+9 more)
+Cohesion: 0.19
+Nodes (25): _install_transport(), Path, Tests for the V1.4 webhook engine., Guard helpers must await load_destinations(), not env-only builders., _setup_db(), test_dedupe_records_once(), test_discord_only(), test_event_type_subscription_filter() (+17 more)
 
 ### Community 17 - "RuntimeError"
 Cohesion: 0.09
 Nodes (33): _build_pg_cmd(), parse_postgres_url(), pg_dump_available(), _pg_tool(), postgres_backup_tools_available(), Path, PostgreSQL backup helpers (pg_dump / pg_restore) for backup.manager., Create a custom-format pg_dump at destination. (+25 more)
 
-### Community 18 - "test_llm_product_extraction.py"
-Cohesion: 0.07
-Nodes (34): llm_job_session(), Scope scheduler batch jobs so empty providers are not retried on every CVE., _extract_items(), _json_candidates(), llm_product_extraction_enabled(), _normalize_token(), parse_products_payload(), products_to_affected_keys() (+26 more)
+### Community 18 - "product_extraction.py"
+Cohesion: 0.11
+Nodes (20): llm_job_session(), Scope scheduler batch jobs so empty providers are not retried on every CVE., _extract_items(), _json_candidates(), _normalize_token(), parse_products_payload(), products_to_affected_keys(), Connection (+12 more)
 
 ### Community 19 - "destinations.py"
 Cohesion: 0.17
-Nodes (26): create_webhook_destination(), get_webhook_destinations(), patch_webhook_destination(), destination_to_api_dict(), _discord_destination(), _env(), generate_destination_id(), _generic_destination() (+18 more)
+Nodes (21): _discord_destination(), _env(), generate_destination_id(), _generic_destination(), load_env_destinations(), mask_destination_config(), _mask_secret(), _mask_url() (+13 more)
 
 ### Community 20 - "structured_logging.py"
-Cohesion: 0.07
-Nodes (29): get_logs(), clear_log_buffer(), configure_logging(), derive_log_category(), ensure_ring_buffer_attached(), get_known_loggers(), get_log_buffer(), job_log_context() (+21 more)
+Cohesion: 0.06
+Nodes (30): get_logs(), clear_log_buffer(), configure_logging(), derive_log_category(), ensure_ring_buffer_attached(), get_known_loggers(), get_log_buffer(), job_log_context() (+22 more)
 
 ### Community 21 - "cve.py"
-Cohesion: 0.08
-Nodes (42): _append_upsert_change_rows(), apply_additive_cve_enrichments(), _build_additive_update(), _change_value_str(), count_cve_embeddings(), _cutoff_date_days_ago(), _cutoff_datetime_hours_ago(), cve_exists() (+34 more)
+Cohesion: 0.09
+Nodes (40): _append_upsert_change_rows(), apply_additive_cve_enrichments(), _build_additive_update(), _change_value_str(), count_cve_embeddings(), _cutoff_date_days_ago(), _cutoff_datetime_hours_ago(), cve_exists() (+32 more)
 
 ### Community 22 - "webhooks.py"
 Cohesion: 0.20
 Nodes (24): claim_webhook_destination_sent(), clear_webhook_alert(), clear_webhook_destination_dedupe(), clear_webhook_destination_dedupe_for_dest(), count_webhook_destinations_by_kind(), create_webhook_destination(), delete_webhook_destination(), get_webhook_destination_source() (+16 more)
 
-### Community 23 - "AssetProfileContext.jsx"
-Cohesion: 0.10
-Nodes (27): fetchCveAssetMatch(), AssetProfileManage(), AssetRememberToggle(), AssetWarning(), AssetWizard(), filterSuggestions(), STEPS, SessionIdleWarning() (+19 more)
+### Community 23 - "AssetWizard.jsx"
+Cohesion: 0.21
+Nodes (13): AssetWizard(), filterSuggestions(), STEPS, SessionIdleWarning(), AI_PRODUCTS, APP_CATEGORIES, CRITICALITY_LEVELS, ENTERPRISE_PRODUCTS (+5 more)
 
-### Community 24 - "types.py"
-Cohesion: 0.13
-Nodes (19): ai_operations_usage_since(), count_ai_operations(), count_cve_embeddings(), _hours_ago_str(), insert_ai_operation(), _is_postgres_connection(), list_ai_operations(), list_ai_operations_page() (+11 more)
+### Community 24 - "run_nvd_incremental_sync"
+Cohesion: 0.23
+Nodes (14): purge_legacy_rejected_cves(), Delete rows ingested before reject-filtering (NVD 'Rejected reason:' text)., get_nvd_sync_watermark(), get_sync_state_value(), _is_postgres_connection(), Generic sync-state key/value store plus NVD watermark helpers. Split from databa, Read any sync_state key; returns None when absent., Upsert any sync_state key (caller commits). (+6 more)
 
 ### Community 25 - "metadata.py"
-Cohesion: 0.09
-Nodes (37): clear_cve_atlas_map(), clear_cve_technique_map(), count_ai_ml_profile_alerts(), _cutoff_date_days_ago(), get_all_cve_ids(), get_all_cve_ids_set(), get_atlas_case_studies(), get_atlas_case_studies_for_cve() (+29 more)
+Cohesion: 0.10
+Nodes (33): clear_cve_atlas_map(), count_ai_ml_profile_alerts(), _cutoff_date_days_ago(), get_atlas_case_studies(), get_atlas_case_studies_for_cve(), get_atlas_techniques_for_cve(), get_atlas_techniques_grouped(), get_mitre_group_count() (+25 more)
 
-### Community 26 - "intelligence.py"
-Cohesion: 0.19
-Nodes (21): fmtAge(), sourceLabel(), ANALYST_SCHEDULE_TABLE_JOB_IDS, analystScheduleJobs(), collectHealthIssues(), nvdCadenceLabel(), nvdJob(), nvdStaleDetail() (+13 more)
+### Community 26 - "OverviewPage.jsx"
+Cohesion: 0.20
+Nodes (20): BackupsPage(), ageColor(), fmtAge(), ANALYST_SCHEDULE_TABLE_JOB_IDS, analystScheduleJobs(), collectHealthIssues(), nvdCadenceLabel(), nvdJob() (+12 more)
 
 ### Community 27 - "safe_webhook_request"
 Cohesion: 0.10
 Nodes (36): SSRF protections for outbound webhooks., RFC 6066 forbids IP literals in SNI — destination URLs that are     themselves, test_allows_public_addresses(), test_async_resolve_hostname_blocks_private(), test_blocks_reserved_address_classes(), test_build_pinned_url_ipv6_brackets(), test_dns_rebinding_connects_to_validated_ip(), test_parse_https_url_rejects_http() (+28 more)
 
 ### Community 28 - "llm_router.py"
-Cohesion: 0.13
-Nodes (23): _api_key(), _call_provider(), chat_completion_task(), _is_usable_api_key(), LLMCompletion, LLMTask, Task-based multi-provider LLM router with failover (Track K2).  Failover order, Try providers in failover order; return first non-empty completion. (+15 more)
+Cohesion: 0.08
+Nodes (32): _api_key(), _call_provider(), chat_completion_task(), _is_usable_api_key(), LLMCompletion, LLMTask, Task-based multi-provider LLM router with failover (Track K2).  Failover order, Try providers in failover order; return first non-empty completion. (+24 more)
 
 ### Community 29 - "Session handover log"
 Cohesion: 0.02
-Nodes (99): 2026-07-08 — #340: UI/UX hierarchy pass, 2026-07-08 — #341: API queue task-level observability, 2026-07-08 — Docs sync: Track E closed, Post-B4 next, 2026-07-08 — E-PR10: E6 Cmd+K command palette, 2026-07-08 — E-PR2 merged: Intel tab CSS + compact infrastructure, 2026-07-08 — E-PR3: drawer readability (exploits table, EPSS, contrast), 2026-07-08 — E-PR4: GreyNoise on-demand (quota-safe), 2026-07-08 — E-PR5: E1 states audit + BRIEF heatmap dead zone (+91 more)
+Nodes (101): 2026-07-08 — #340: UI/UX hierarchy pass, 2026-07-08 — #341: API queue task-level observability, 2026-07-08 — Docs sync: Track E closed, Post-B4 next, 2026-07-08 — E-PR10: E6 Cmd+K command palette, 2026-07-08 — E-PR2 merged: Intel tab CSS + compact infrastructure, 2026-07-08 — E-PR3: drawer readability (exploits table, EPSS, contrast), 2026-07-08 — E-PR4: GreyNoise on-demand (quota-safe), 2026-07-08 — E-PR5: E1 states audit + BRIEF heatmap dead zone (+93 more)
 
 ### Community 30 - "otx.py"
-Cohesion: 0.10
-Nodes (28): _author_name(), _extract_cves_from_pulse(), fetch_pulse_iocs(), load_pulse_iocs(), lookup_ioc_in_otx(), lookup_otx_for_ioc(), _normalize_adversary(), _normalize_malware_families() (+20 more)
+Cohesion: 0.09
+Nodes (33): store_otx_cve_pulses(), _author_name(), _extract_cves_from_pulse(), fetch_cve_pulses(), fetch_pulse_iocs(), load_otx_pulses_for_cve(), load_pulse_iocs(), lookup_ioc_in_otx() (+25 more)
 
 ### Community 31 - "test_rate_limit.py"
-Cohesion: 0.11
-Nodes (29): Classic token bucket, one bucket per key.      Capacity equals the per-minute, TokenBucket, _drain(), _fake_request(), V1.2 §5.5 — token-bucket rate limiting on POST /api/ioc/lookup and POST /api/re, A direct connection cannot mint fresh buckets via spoofed headers., The leftmost XFF hops are client-controlled; nginx appends the real     peer on, TestClient's peer is not a loopback proxy, so the spoofed header is     ignored (+21 more)
+Cohesion: 0.16
+Nodes (20): _drain(), _fake_request(), V1.2 §5.5 — token-bucket rate limiting on POST /api/ioc/lookup and POST /api/re, A direct connection cannot mint fresh buckets via spoofed headers., The leftmost XFF hops are client-controlled; nginx appends the real     peer on, TestClient's peer is not a loopback proxy, so the spoofed header is     ignored, Under the limit the handler runs (proven by its own 400 validation)., Unauthenticated bursts must not bypass the bucket. (+12 more)
 
 ### Community 32 - "TestClient"
-Cohesion: 0.09
-Nodes (21): auth_token(), Signed access-token factory (Sprint A0). Set the returned value as the     `bri, admin_client(), admin_client(), admin_client(), admin_client(), admin_client(), admin_client() (+13 more)
+Cohesion: 0.03
+Nodes (61): JsonFormatter, One JSON object per log line; `extra={...}` kwargs become JSON keys., auth_token(), Signed access-token factory (Sprint A0). Set the returned value as the     `bri, admin_client(), admin_client(), Tests for /api/admin/feeds/* endpoints — circuit breaker reset., admin_client() (+53 more)
 
 ### Community 33 - "artifact_extract.py"
 Cohesion: 0.09
@@ -717,19 +721,19 @@ Nodes (30): build_extraction_text(), fetch_nuclei_template_text(), format_exploi
 
 ### Community 34 - "atlas.py"
 Cohesion: 0.12
-Nodes (33): _as_text(), atlas_technique_url(), download_atlas_bundle(), extract_cve_ids(), _fetch_bytes(), _format_tactic_name(), get_latest_atlas_release(), _is_v6_document() (+25 more)
+Nodes (34): _as_text(), atlas_technique_url(), download_atlas_bundle(), extract_cve_ids(), _fetch_bytes(), _format_tactic_name(), get_latest_atlas_release(), _is_v6_document() (+26 more)
 
-### Community 35 - "utcnow_str"
-Cohesion: 0.13
-Nodes (30): _cutoff_datetime_hours_ago(), delete_feed_cache_prefix(), get_cached_cve_exploits(), get_cve_ids_missing_circl_capec(), get_feed_cache(), get_ioc_cache(), get_ioc_cache_batch(), _in_placeholders() (+22 more)
+### Community 35 - "cache.py"
+Cohesion: 0.11
+Nodes (36): _cutoff_datetime_hours_ago(), delete_feed_cache_prefix(), get_cached_cve_exploits(), get_cve_exploits_latest_fetched_at(), get_cve_ids_missing_circl_capec(), get_feed_cache(), get_feed_cache_timestamp(), get_ioc_cache() (+28 more)
 
 ### Community 36 - "mitre.py"
-Cohesion: 0.08
-Nodes (43): analyze_cve_ai_context(), cve_matches_declared_frameworks(), _haystack_text(), infer_atlas_technique_ids(), matched_ai_keywords(), Any, AI/ML CVE context detection and MITRE ATLAS technique hints., cve_technique_from_db_column() (+35 more)
+Cohesion: 0.07
+Nodes (45): clear_cve_technique_map(), get_all_cve_ids_set(), analyze_cve_ai_context(), cve_matches_declared_frameworks(), _haystack_text(), infer_atlas_technique_ids(), matched_ai_keywords(), Any (+37 more)
 
-### Community 37 - "repo.py"
-Cohesion: 0.06
-Nodes (57): IntegrityResult, _postgres_fk_violation_count(), _postgres_integrity(), Any, Database integrity checks — SQLite PRAGMA vs PostgreSQL pg_catalog probes., Lightweight shape for admin /system db_integrity cache., run_integrity_check(), _sqlite_integrity() (+49 more)
+### Community 37 - "run_integrity_check"
+Cohesion: 0.20
+Nodes (15): IntegrityResult, _postgres_fk_violation_count(), _postgres_integrity(), Any, Database integrity checks — SQLite PRAGMA vs PostgreSQL pg_catalog probes., Lightweight shape for admin /system db_integrity cache., run_integrity_check(), _sqlite_integrity() (+7 more)
 
 ### Community 38 - "repo.py"
 Cohesion: 0.08
@@ -737,67 +741,67 @@ Nodes (49): count_users(), create_session(), create_user(), get_session_by_token
 
 ### Community 39 - "database.py"
 Cohesion: 0.05
-Nodes (28): Backward-compatibility shim — import from db.* submodules directly for new code., main(), Use the same venv as briefr-backend.service when system python lacks deps., _reexec_with_venv_python(), admin_client(), Admin AI operations APIs (AI-2)., test_providers_payload_lists_four_providers(), test_usage_aggregates_and_activity_pagination() (+20 more)
+Nodes (29): Backward-compatibility shim — import from db.* submodules directly for new code., main(), Use the same venv as briefr-backend.service when system python lacks deps., _reexec_with_venv_python(), client(), Tests for GET /api/cves/{cve_id}/detection (Sprint D5)., client(), _login() (+21 more)
 
 ### Community 40 - "poc_github.py"
-Cohesion: 0.07
-Nodes (45): detection_context_nuclei_enabled(), cve_year(), exploit_card(), normalize_cve_id(), Shared helpers for scheduler-side exploit-availability feeds., get_exploit_sources_interval_hours(), Orchestrates scheduler-side exploit-availability feeds., Run PoC-in-GitHub, ExploitDB, Metasploit, and Nuclei feeds sequentially. (+37 more)
+Cohesion: 0.08
+Nodes (40): cve_year(), exploit_card(), normalize_cve_id(), Shared helpers for scheduler-side exploit-availability feeds., fetch_exploitdb_csv(), parse_exploitdb_csv(), ExploitDB CSV snapshot sync., Parse ExploitDB CSV into CVE → exploit cards. (+32 more)
 
 ### Community 41 - "extended.py"
-Cohesion: 0.09
-Nodes (32): abusech_headers(), _circl_headers(), enrich_cve_circl(), enrich_cves_extended(), extract_ipv4_from_cve(), fetch_circl_cve(), fetch_greynoise_ip(), fetch_malwarebazaar_hash() (+24 more)
+Cohesion: 0.06
+Nodes (51): is_valid_domain(), Validate DNS hostnames for IOC domain lookups (ASCII + IDN/punycode)., Return True when host is a plausible DNS hostname (FQDN with 2+ labels)., _error_result(), _lookup_abuseipdb(), lookup_ioc(), _lookup_vt_domain(), _lookup_vt_hash() (+43 more)
 
 ### Community 42 - "alerts.py"
-Cohesion: 0.18
-Nodes (19): test_ioc_watchlist_hit_webhook_format(), _backup_enabled(), check_backup_deadman(), _format_ioc_watchlist_hit(), _format_kev_alert(), _format_kev_backlog_alert(), get_backup_deadman_threshold(), get_backup_interval_hours() (+11 more)
+Cohesion: 0.12
+Nodes (31): list_pinned_cve_ids(), Return CVE IDs pinned on the watchlist (excludes snoozed rows)., test_ioc_watchlist_hit_webhook_format(), _backup_enabled(), _campaign_hint_for_cve(), check_backup_deadman(), _fetch_cve_blurb(), _format_ioc_watchlist_hit() (+23 more)
 
 ### Community 43 - "risk.py"
-Cohesion: 0.10
-Nodes (27): asset_component_score(), _asset_tokens(), _boolish(), _build_component_sentences_v11b(), calculate_momentum(), calculate_risk_score(), _days_since(), _exploit_score_v11b() (+19 more)
+Cohesion: 0.09
+Nodes (28): asset_component_score(), _asset_tokens(), _boolish(), _build_component_sentences_v11b(), calculate_momentum(), calculate_risk_score(), _days_since(), _exploit_score_v11b() (+20 more)
 
 ### Community 44 - "cve_record_v5.py"
-Cohesion: 0.12
-Nodes (26): cve_tree_bucket(), cvelistv5_repo_path(), _extract_affected_products(), _extract_cvss(), _extract_cwes(), _extract_description(), _extract_ssvc(), _find_cisa_adp() (+18 more)
+Cohesion: 0.16
+Nodes (21): cve_tree_bucket(), cvelistv5_repo_path(), _extract_affected_products(), _extract_cvss(), _extract_cwes(), _extract_description(), _extract_ssvc(), _find_cisa_adp() (+13 more)
 
 ### Community 45 - "test_embeddings.py"
 Cohesion: 0.06
 Nodes (46): blob_to_vector(), _default_hf_home_for_cache(), _embed_texts(), embeddings_auto_on_ingest_enabled(), embeddings_enabled(), find_similar_cves(), get_embeddings_cache_dir(), get_embeddings_ingest_max_per_run() (+38 more)
 
-### Community 46 - "DisplayPage.jsx"
-Cohesion: 0.11
-Nodes (41): fetchUserPreferences(), patchUserPreferences(), UiSelect(), DENSITY_LABELS, DisplayPage(), FONT_LABELS, getDisplayPrefs(), resetDisplayPrefs() (+33 more)
+### Community 46 - "AssetProfileContext.jsx"
+Cohesion: 0.07
+Nodes (54): fetchCveAssetMatch(), fetchUserPreferences(), patchUserPreferences(), AssetProfileManage(), AssetRememberToggle(), AssetWarning(), SessionLockOverlay(), UiSelect() (+46 more)
 
 ### Community 47 - "test_config_schema.py"
-Cohesion: 0.12
-Nodes (19): ConfigField, get_field(), list_schema(), Single source of truth for writable admin config keys.  Replaces the three sep, Return the effective apply strategy for a schema field., Return an error message if value violates the field's type/bounds, else None., resolved_apply_strategy(), resolved_display_label() (+11 more)
+Cohesion: 0.11
+Nodes (20): ConfigField, get_field(), list_schema(), Single source of truth for writable admin config keys.  Replaces the three sep, Return the effective apply strategy for a schema field., Return an error message if value violates the field's type/bounds, else None., resolved_apply_strategy(), resolved_display_label() (+12 more)
 
 ### Community 48 - "DbConnection"
 Cohesion: 0.08
-Nodes (39): _cutoff_date_days_ago(), _cutoff_datetime_hours_ago(), delete_correlation_suppression(), get_cves_missing_otx_pulses(), get_embedding_boosted_cve_ids_for_otx(), get_prioritized_cve_ids_for_otx(), get_recent_cve_ids_for_otx(), _in_placeholders() (+31 more)
+Nodes (41): ai_operations_usage_since(), count_ai_operations(), count_cve_embeddings(), _hours_ago_str(), insert_ai_operation(), _is_postgres_connection(), list_ai_operations(), list_ai_operations_page() (+33 more)
 
 ### Community 49 - "test_destructive_actions.py"
-Cohesion: 0.12
-Nodes (15): DestructiveAction, get_action(), list_actions(), Single source of truth for confirm-gated destructive admin actions.  Generaliz, Raise ValueError if confirm_text doesn't match the action's required word., require_confirm(), get_destructive_actions(), Registry of confirm-gated destructive actions, for the frontend to     render c (+7 more)
+Cohesion: 0.14
+Nodes (13): DestructiveAction, get_action(), list_actions(), Single source of truth for confirm-gated destructive admin actions.  Generaliz, Raise ValueError if confirm_text doesn't match the action's required word., require_confirm(), admin_client(), Tests for the destructive_actions registry and its wiring into admin routes. (+5 more)
 
 ### Community 50 - "test_epss_backfill.py"
 Cohesion: 0.08
 Nodes (29): _install_transport(), _make_items(), Response, Tests for the EPSS 30-day history backfill job (§5.4).  All tests use an in-me, API returns a list or other non-dict JSON — should not raise AttributeError., Bootstrap a fresh in-memory DB and run ``coro_fn(db)``., If sync_state has epss_backfill_done=1, the job exits without API calls., Happy path: CVEs in DB, API returns data, rows land in epss_history. (+21 more)
 
-### Community 51 - "OverviewPage.jsx"
-Cohesion: 0.10
-Nodes (25): AUDIT_ACTION_LABELS, JOB_CATALOG, jobLabel(), STATUS_CATALOG, statusHint(), statusLabel(), TERM_GLOSSARY, fmtDur() (+17 more)
+### Community 51 - "SchedulerPage.jsx"
+Cohesion: 0.13
+Nodes (21): AUDIT_ACTION_LABELS, JOB_CATALOG, jobLabel(), STATUS_CATALOG, statusHint(), statusLabel(), TERM_GLOSSARY, canPauseResume() (+13 more)
 
 ### Community 52 - "riskScore.js"
-Cohesion: 0.10
-Nodes (29): ASSET_EXPOSURE_TIERS, boolish(), buildRiskHeroSummary(), calculateThreatScore(), classifyEnvironment(), correlationEscalation(), daysSince(), DEFAULT_WEIGHTS (+21 more)
+Cohesion: 0.11
+Nodes (28): ASSET_EXPOSURE_TIERS, boolish(), buildOperationalHeroSummary(), buildRiskHeroSummary(), calculateThreatScore(), classifyEnvironment(), correlationEscalation(), daysSince() (+20 more)
 
 ### Community 53 - "sqlite_to_postgres.py"
 Cohesion: 0.13
 Nodes (21): _apply_schema(), _count_pg_rows(), _count_sqlite_rows(), get_status(), _intersect_columns(), _pg_columns(), Any, Connection (+13 more)
 
 ### Community 54 - "conftest.py"
-Cohesion: 0.07
-Nodes (30): attach_pytest_session_cookie(), _build_incident_snapshot(), _default_session_cookie_on_testclient(), _noop_scheduler(), playwright_smoke_stack(), _postgres_dsn_or_none(), _postgres_is_live(), _postgres_schema_once() (+22 more)
+Cohesion: 0.06
+Nodes (38): attach_pytest_session_cookie(), _build_incident_snapshot(), _default_session_cookie_on_testclient(), _noop_scheduler(), playwright_smoke_stack(), _postgres_dsn_or_none(), _postgres_is_live(), _postgres_schema_once() (+30 more)
 
 ### Community 55 - "ROADMAP.md"
 Cohesion: 0.12
@@ -816,52 +820,52 @@ Cohesion: 0.24
 Nodes (7): _ExecuteResult, PostgresConnection, Any, asyncpg-backed connection with SQLite placeholder translation., Re-raise *exc* as a ``DatabaseError`` subclass when applicable., reraise_db_exception(), adapt_params()
 
 ### Community 59 - "adapt_sql"
-Cohesion: 0.13
-Nodes (25): adapt_sql(), _colon_to_dollar(), _postgres_translate_sql(), prepare_query(), _qmark_to_dollar(), PostgreSQL SQL adaptation for legacy SQLite-oriented query strings.  Internal, Translate SQLite-oriented SQL for PostgreSQL when needed., Return SQL + params ready for PostgreSQL asyncpg. (+17 more)
+Cohesion: 0.21
+Nodes (16): adapt_sql(), Translate SQLite-oriented SQL for PostgreSQL when needed., Tests for PostgreSQL SQL adaptation (legacy router SQL at connection boundary)., test_bare_datetime_column(), test_date_dotted_column(), test_date_now_interval(), test_datetime_column_compare_now(), test_datetime_column_compare_now_interval() (+8 more)
 
 ### Community 60 - "nvd.py"
 Cohesion: 0.09
-Nodes (40): build_plain_summary(), extract_mitre_from_urls(), extract_mitre_technique(), has_public_poc(), is_auto_generated_summary(), Derive display fields from NVD/KEV/OSV source data (no LLM)., True when summary is only the first-sentence NVD truncate, not KEV/OSV enrichmen, simplify_description() (+32 more)
+Nodes (39): build_plain_summary(), extract_mitre_from_urls(), extract_mitre_technique(), has_public_poc(), is_auto_generated_summary(), Derive display fields from NVD/KEV/OSV source data (no LLM)., True when summary is only the first-sentence NVD truncate, not KEV/OSV enrichmen, simplify_description() (+31 more)
 
 ### Community 61 - "forge.py"
-Cohesion: 0.11
-Nodes (27): _coverage_status(), _derive_priority(), _first_product(), forge_coverage(), generate_hunt_pack(), get_hunt_pack(), HuntPackGenerateRequest, list_hunt_packs() (+19 more)
+Cohesion: 0.19
+Nodes (18): _coverage_status(), _derive_priority(), _first_product(), forge_coverage(), generate_hunt_pack(), get_hunt_pack(), HuntPackGenerateRequest, list_hunt_packs() (+10 more)
 
 ### Community 62 - "OverviewTab.jsx"
-Cohesion: 0.16
-Nodes (19): capecHref(), capecLabel(), flattenOsvPackageRows(), AssetExposureSection(), EnvironmentTierChip(), KeyExploitationSignals(), OperationalPriorityBreakdown(), OperationalPriorityHero() (+11 more)
+Cohesion: 0.14
+Nodes (24): EpssSparklineCell(), flattenOsvPackageRows(), AssetExposureSection(), EnvironmentTierChip(), ExploitationSection(), KeyExploitationSignals(), OperationalPriorityBreakdown(), OperationalPriorityHero() (+16 more)
 
-### Community 63 - "FilterBar.jsx"
-Cohesion: 0.07
-Nodes (35): fetchCVEs(), CVEFeed(), sortByExposure(), FeedVisibleRange(), deriveActive(), FilterBar(), hasActiveFilters(), parseVendors() (+27 more)
-
-### Community 64 - "summary.py"
-Cohesion: 0.06
-Nodes (58): AI-assisted report generation (on-demand only)., _build_user_prompt(), _cve_label(), _format_actors_block(), _format_cves_block(), _format_iocs_block(), generate_executive_summary(), generate_investigation_summary() (+50 more)
-
-### Community 65 - "AdminPage.jsx"
+### Community 63 - "CVEFeed.jsx"
 Cohesion: 0.15
-Nodes (17): BackupsPage(), DatabasePage(), ageColor(), diskBarColor(), diskPct(), fmtBytes(), AsyncSection(), GuardedPurgePanel() (+9 more)
+Nodes (15): sortByExposure(), HIDDEN_PATHS, ScrollToTop(), FIELD_CHIPS, FIELD_LABELS, formatValue(), isVisibleChange(), timeAgo() (+7 more)
+
+### Community 64 - "intelligence.py"
+Cohesion: 0.05
+Nodes (61): AI-assisted report generation (on-demand only)., _build_user_prompt(), _cve_label(), _format_actors_block(), _format_cves_block(), _format_iocs_block(), generate_executive_summary(), generate_investigation_summary() (+53 more)
+
+### Community 65 - "formatters.js"
+Cohesion: 0.13
+Nodes (17): diskBarColor(), diskPct(), fmtBytes(), fmtDur(), DangerZone(), GuardedPurgePanel(), HelpTip(), backupSizeRows() (+9 more)
 
 ### Community 66 - "api_key_health.py"
 Cohesion: 0.21
 Nodes (22): build_api_key_health_payload(), _check_abuseipdb(), _check_cerebras(), _check_gemini(), _check_github(), _check_greynoise(), _check_groq(), _check_nvd() (+14 more)
 
 ### Community 67 - "rate_limit.py"
-Cohesion: 0.13
-Nodes (25): check_login_username_rate_limit(), client_key(), _enforce(), get_bucket_stats(), get_top_consumers(), Request, rate_limit_admin(), rate_limit_auth_refresh() (+17 more)
+Cohesion: 0.17
+Nodes (20): client_key(), _enforce(), get_top_consumers(), Request, rate_limit_admin(), rate_limit_auth_refresh(), rate_limit_db_explorer(), rate_limit_ioc() (+12 more)
 
 ### Community 68 - "patchReferences.js"
 Cohesion: 0.17
 Nodes (22): PatchActionSection(), ADVISORY_PATH_RE, CISA_HOSTS, classifyRemediationReference(), cveIdInUrl(), DOC_PATH_HINTS, hasAdvisoryPath(), hostOf() (+14 more)
 
 ### Community 69 - "MorningBrief.jsx"
-Cohesion: 0.21
-Nodes (13): EMPTY_HINTS, filterQueue(), metricClass(), MorningBrief(), REASON_FILTERS, REASON_LABELS, REASON_TOOLTIPS, reasonChipClass() (+5 more)
+Cohesion: 0.15
+Nodes (19): EMPTY_HINTS, filterQueue(), inlineMetric(), metricClass(), MorningBrief(), REASON_FILTERS, REASON_LABELS, REASON_TOOLTIPS (+11 more)
 
 ### Community 70 - "api_queue.py"
-Cohesion: 0.21
-Nodes (16): _ApiRequest, apply_rate_limit_headers(), await_api_slot(), _parse_duration_seconds(), Global outbound API request queue — wait for slots, never drop on rate limits., Propagate source-level wait_reason to in-flight requests., Update pacing from provider rate-limit response headers., Block until this source's pacing window allows another request.      Returns a (+8 more)
+Cohesion: 0.18
+Nodes (18): _ApiRequest, apply_rate_limit_headers(), await_api_slot(), _parse_duration_seconds(), Global outbound API request queue — wait for slots, never drop on rate limits., Propagate source-level wait_reason to in-flight requests., Update pacing from provider rate-limit response headers., Block until this source's pacing window allows another request.      Returns a (+10 more)
 
 ### Community 71 - "test_api_queue_operations.py"
 Cohesion: 0.12
@@ -871,21 +875,21 @@ Nodes (22): get_api_queue_status(), operation_label(), public_request_state(), A
 Cohesion: 0.05
 Nodes (42): Acceptance criteria (12a–12c combined), Acceptance criteria (Phase A), Allowlist tiers (seed from `docs/DATA_SNAPSHOT.md`), Architecture decisions (resolve before coding), Architecture decisions (resolve before coding), Async refactor note (PR12 — Gemini §1, validated), Current state (code-confirmed), DB migration (what it means for PR12) (+34 more)
 
-### Community 73 - "test_brief_endpoint.py"
-Cohesion: 0.12
-Nodes (23): _active_campaigns_for_stack(), _brief_cve_item(), _build_action_queue(), _build_epss_movers(), build_morning_brief(), _epss_delta(), _parse_epss_history_value(), _priority_score() (+15 more)
+### Community 73 - "service.py"
+Cohesion: 0.13
+Nodes (21): _active_campaigns_for_stack(), _brief_cve_item(), _build_action_queue(), _build_epss_movers(), build_morning_brief(), _epss_delta(), _parse_epss_history_value(), _priority_score() (+13 more)
 
 ### Community 74 - "context.py"
-Cohesion: 0.10
-Nodes (29): build_detection_context(), detection_context_cache_key(), _first_product(), get_detection_context(), enrich_detection_context_from_nuclei(), get_detection_context_nuclei_max_per_run(), _merge_artifacts(), Connection (+21 more)
+Cohesion: 0.12
+Nodes (25): normalize_cwe_ids(), Any, build_detection_context(), detection_context_cache_key(), _first_product(), get_detection_context(), detection_context_nuclei_enabled(), enrich_detection_context_from_nuclei() (+17 more)
 
 ### Community 75 - "test_cpe_matching.py"
 Cohesion: 0.16
 Nodes (23): _compare_versions(), _is_version_bound(), _normalize_key(), product_keys_match(), Any, CPE-based asset ↔ CVE version matching., score_asset_against_cpe(), score_cve_for_assets() (+15 more)
 
 ### Community 76 - "test_cves_router_fixes.py"
-Cohesion: 0.11
-Nodes (18): cached_read(), clear_read_cache(), In-process TTL cache for hot read endpoints (Track I5).  No Redis — dict + mon, Return cached value when fresh; otherwise await ``build()`` and store., Clear all entries (tests only)., kev_deadlines(), Daily CVE counts grouped by published date (calendar day, UTC)., KEV catalog rows grouped by vendor_project (product fallback). (+10 more)
+Cohesion: 0.10
+Nodes (20): clear_read_cache(), In-process TTL cache for hot read endpoints (Track I5).  No Redis — dict + mon, Clear all entries (tests only)., export_cves(), Return up to 500 CVE rows matching filters (for CSV export)., _row_to_cve_dict(), _sort_by_stack_relevance(), _clear_read_cache_between_tests() (+12 more)
 
 ### Community 77 - "V1.3 (Tranche 2)"
 Cohesion: 0.08
@@ -908,8 +912,8 @@ Cohesion: 0.09
 Nodes (34): _assert_rss_bytes(), _extract_meta(), fetch_all_incident_news(), fetch_all_incident_news_parallel(), _fetch_rss_bytes(), fetch_rss_source(), _fetch_rss_source_bytes(), _filter_news_items() (+26 more)
 
 ### Community 82 - "resilient_client.py"
-Cohesion: 0.11
-Nodes (28): fetch_osv_by_cve(), _fetch_osv_record(), _parse_osv_record(), _extract_cve_ids(), fetch_vulncheck_kev_cve_ids(), Any, VulnCheck community KEV catalog sync (V1.5 Theme 4b)., Paginate VulnCheck KEV index and return CVE IDs. (+20 more)
+Cohesion: 0.13
+Nodes (27): fetch_cve_by_id(), Fetch a single CVE by ID from the NVD API., _circuit_open_until(), _execute_request_attempt(), _get_client(), get_pooled_client(), is_circuit_open(), Any (+19 more)
 
 ### Community 83 - "FastAPI"
 Cohesion: 0.09
@@ -919,13 +923,13 @@ Nodes (36): Request, Shared route dependencies (V1.2 §5.2 router split).  Sessi
 Cohesion: 0.20
 Nodes (17): dismiss_backlog_item(), _enrich_cve_scores(), _fetchone(), _is_postgres_connection(), list_backlog_items(), _pack_count(), _placeholder(), process_new_kev_backlog() (+9 more)
 
-### Community 85 - "lookup_ioc"
+### Community 85 - "get_system"
 Cohesion: 0.10
-Nodes (29): is_valid_domain(), Validate DNS hostnames for IOC domain lookups (ASCII + IDN/punycode)., Return True when host is a plausible DNS hostname (FQDN with 2+ labels)., _error_result(), _lookup_abuseipdb(), lookup_ioc(), _lookup_vt_domain(), _lookup_vt_hash() (+21 more)
+Nodes (24): Shut the process down via SIGTERM instead of os._exit(0).      uvicorn's insta, trigger_graceful_restart(), _build_job_info(), _get_active_locks(), _get_all_scheduler_jobs(), _get_job_last_run(), get_system(), _iso_to_age_seconds() (+16 more)
 
 ### Community 86 - "rate_limit_store.py"
-Cohesion: 0.17
-Nodes (19): Try to take one token for `key`.          Returns 0.0 when granted, otherwise, _load_postgres(), _load_sqlite(), _load_state(), _postgres_dsn(), Any, Optional shared rate-limit bucket state (Track I Phase 3b).  When ``BRIEFR_RAT, Try to take one token from the shared store. Returns retry_after seconds. (+11 more)
+Cohesion: 0.34
+Nodes (13): _load_postgres(), _load_sqlite(), _load_state(), _postgres_dsn(), Any, Optional shared rate-limit bucket state (Track I Phase 3b).  When ``BRIEFR_RAT, Try to take one token from the shared store. Returns retry_after seconds., _save_postgres() (+5 more)
 
 ### Community 87 - "service.py"
 Cohesion: 0.22
@@ -937,15 +941,15 @@ Nodes (34): cve_risk_score(), Operational Priority surface for one CVE (ADR-002)
 
 ### Community 89 - "2. Architecture"
 Cohesion: 0.05
-Nodes (37): 1. Overview, 2. Architecture, 4. Design Decisions & Trade-offs, 5. System Design Principles Status, 6. External Dependencies Map, 7. Known Limitations — v1.1 Beta, 8. Beta V1.2 roadmap, A. CVE lifecycle (+29 more)
+Nodes (38): 1. Overview, 2. Architecture, 4. Design Decisions & Trade-offs, 5. System Design Principles Status, 6. External Dependencies Map, 7. Known Limitations — v1.1 Beta, 8. Beta V1.2 roadmap, A. CVE lifecycle (+30 more)
 
 ### Community 90 - "CVECard.jsx"
-Cohesion: 0.11
-Nodes (8): cvssBadgeClass(), severityClass(), CveDescriptionClamp(), publishedAgeClass(), kevDueUrgencyClass(), _cache, _listeners, useMomentumScore()
+Cohesion: 0.12
+Nodes (7): cvssBadgeClass(), severityClass(), CveDescriptionClamp(), publishedAgeClass(), _cache, _listeners, useMomentumScore()
 
 ### Community 91 - "IntelTab.jsx"
-Cohesion: 0.06
-Nodes (43): fetchCorrelationSuppressions(), fetchCVEDetection(), fetchCVEDrawerBundle(), fetchCVEGreynoiseScans(), fetchCVERisk(), fetchIOCUsage(), CorrelationSuppressModal(), exploitTypeLabel() (+35 more)
+Cohesion: 0.13
+Nodes (19): exploitTypeLabel(), techniqueLink(), CampaignPulseGroups(), CampaignPulseRow(), ConfidenceBadge(), ConnectionEvidence(), exploitDisplayTitle(), GENERIC_EXPLOIT_TITLES (+11 more)
 
 ### Community 92 - "BRIEFR — Operations & Deploy Compatibility"
 Cohesion: 0.06
@@ -959,35 +963,35 @@ Nodes (20): compute_campaign_lifecycle(), _days_ago(), fetch_member_lifecycle_in
 Cohesion: 0.09
 Nodes (28): _clamp_limit(), _clamp_offset(), fetch_table_catalog(), fetch_table_rows(), _is_postgres_connection(), _mask_cell(), _normalize_filter_value(), Any (+20 more)
 
-### Community 95 - "resolve_detection_class"
-Cohesion: 0.13
-Nodes (18): ActivityTab(), AiOperationsPage(), ERROR_CLASS_LABELS, OverviewTab(), pct(), ProvidersTab(), providerStatus(), resultCell() (+10 more)
+### Community 95 - "AiOperationsPage.jsx"
+Cohesion: 0.19
+Nodes (11): ActivityTab(), AiOperationsPage(), ERROR_CLASS_LABELS, OverviewTab(), pct(), ProvidersTab(), providerStatus(), resultCell() (+3 more)
 
 ### Community 96 - "test_detection_context.py"
-Cohesion: 0.18
-Nodes (13): merge_detection_inputs(), Apply cached DetectionContext to rule-generation inputs., detection_context_sync_enabled(), _load_rule(), Tests for DetectionContext scaffold (Sprint D2)., test_cache_roundtrip(), test_disabled_by_default(), test_enabled_with_flag() (+5 more)
+Cohesion: 0.13
+Nodes (18): Map ATT&CK technique or CWE list to a stable detection class slug., Resolve class from a CVE-like dict (single entry point for detection outputs)., resolve_detection_class(), merge_detection_inputs(), Apply cached DetectionContext to rule-generation inputs., detection_context_sync_enabled(), _load_rule(), Tests for DetectionContext scaffold (Sprint D2). (+10 more)
 
 ### Community 97 - "verify_snapshot"
 Cohesion: 0.26
 Nodes (10): Unit tests for intel snapshot versioning helpers., test_validate_format_version_accepts_v1(), test_validate_format_version_rejects_unknown(), test_verify_manifest_only(), Intel snapshot format versioning (Wave 4 / open-core).  Copyright © 2026 Sai H, validate_format_version(), _load_manifest(), main() (+2 more)
 
 ### Community 98 - "tracking.py"
-Cohesion: 0.16
-Nodes (21): _build_service_stat(), _committed_usage_bucket(), _effective_hourly_limit(), flush_api_usage_pending(), get_hour_usage(), get_ioc_usage_stats(), get_today_usage(), get_usage_stats() (+13 more)
+Cohesion: 0.15
+Nodes (24): api_usage_ioc(), API quota counters for IOC Lookup enrichment sources., _build_service_stat(), _committed_usage_bucket(), _effective_hourly_limit(), flush_api_usage_pending(), get_hour_usage(), get_ioc_usage_stats() (+16 more)
 
 ### Community 99 - "lib.sh"
 Cohesion: 0.18
 Nodes (18): as_app_user(), build_frontend(), configure_backup_timer(), ensure_app_home(), ensure_app_user(), ensure_nginx(), ensure_node(), ensure_postgresql_client() (+10 more)
 
-### Community 100 - "reset_feed_health"
-Cohesion: 0.11
-Nodes (25): Test helper — clear queue state., reset_api_queue(), get_feed_health(), _iso(), Per-source health snapshot for /api/health., Test helper — clear all recorded health state., reset_feed_health(), Tests for per-job LLM provider session and empty-response degradation. (+17 more)
+### Community 100 - "get_feed_health"
+Cohesion: 0.12
+Nodes (24): get_feed_health(), _iso(), Per-source health snapshot for /api/health., Test helper — clear all recorded health state., reset_feed_health(), _clean_feed_health(), Tests for per-job LLM provider session and empty-response degradation., test_empty_response_failsover_within_single_call() (+16 more)
 
 ### Community 101 - "build_support_pack"
-Cohesion: 0.12
-Nodes (21): get_correlation_admin_status(), Any, Phase 5 operator diagnostics for correlation engine., Last run, campaign counts, OTX IOC coverage, and ingest backlog., Shut the process down via SIGTERM instead of os._exit(0).      uvicorn's insta, trigger_graceful_restart(), build_support_pack(), _database_meta() (+13 more)
+Cohesion: 0.18
+Nodes (16): get_correlation_admin_status(), Any, Phase 5 operator diagnostics for correlation engine., Last run, campaign counts, OTX IOC coverage, and ingest backlog., get_last_updated(), build_support_pack(), _database_meta(), Any (+8 more)
 
-### Community 102 - "run_integrity_check"
+### Community 102 - "case_study_feed.py"
 Cohesion: 0.20
 Nodes (21): _atlas_study_to_card(), build_incident_feed_snapshot(), _build_snapshot(), get_incident_feed(), get_incident_feed_refresh_minutes(), get_incident_feed_status(), _is_snapshot_stale(), _load_atlas_cards() (+13 more)
 
@@ -996,12 +1000,12 @@ Cohesion: 0.06
 Nodes (36): C1 — Source→field utilization matrix (audited 2026-07-06), C1 suspects — verdict, C2 shortlist (top unused high-value — from C1), C3 — Retention/TTL map (audited 2026-07-06), Closed programs (history), Definition of done + merge gate (single source — reconciled 2026-07-10), Execution queue (current — the only live order), Exploit indices (scheduler `exploit_sync.py`) (+28 more)
 
 ### Community 104 - "asset_match.py"
-Cohesion: 0.13
-Nodes (20): _affected_products(), asset_match_info(), asset_score_from_backend(), cpe_match_score_for_cve(), _profile_product_name(), profile_to_match_assets(), Any, Asset profile matching for Risk Score v1.1b (mirrors frontend graduation table). (+12 more)
+Cohesion: 0.14
+Nodes (19): _affected_products(), asset_match_info(), asset_score_from_backend(), cpe_match_score_for_cve(), _profile_product_name(), profile_to_match_assets(), Any, Asset profile matching for Risk Score v1.1b (mirrors frontend graduation table). (+11 more)
 
-### Community 105 - "Header.jsx"
-Cohesion: 0.18
-Nodes (21): Header(), useAssetProfileOptional(), feedHealthLabel(), feedHealthLevel(), buildCombinedReport(), buildSingleReport(), cveSection(), COMMON_TIMEZONES (+13 more)
+### Community 105 - "investigationPdf.js"
+Cohesion: 0.21
+Nodes (19): jspdf, fetchAiSummary(), applyFooters(), buildMeta(), consolidatedActions(), downloadInvestigationPdf(), drawHeading(), drawSectionBody() (+11 more)
 
 ### Community 106 - "DetectTab.jsx"
 Cohesion: 0.15
@@ -1012,12 +1016,12 @@ Cohesion: 0.06
 Nodes (35): Admin Dashboard — `/api/admin/*`, DELETE /api/admin/webhooks/destinations/{destination_id}, GET /api/admin/ai/operations/activity, GET /api/admin/ai/operations/models, GET /api/admin/ai/operations/overview, GET /api/admin/ai/operations/providers, GET /api/admin/api-keys/health, GET /api/admin/audit-log (+27 more)
 
 ### Community 108 - "engine.py"
-Cohesion: 0.10
-Nodes (27): extract_sectors_from_text(), find_actor_sector_correlation(), find_temporal_anomalies(), get_correlation_for_cve(), _get_temporal_for_cve(), _parse_json_list(), Any, BRIEFR Correlation Engine v2 CVE correlation analysis — DB-backed, no external (+19 more)
+Cohesion: 0.16
+Nodes (19): extract_sectors_from_text(), find_actor_sector_correlation(), find_temporal_anomalies(), get_correlation_for_cve(), _get_temporal_for_cve(), _parse_json_list(), Any, BRIEFR Correlation Engine v2 CVE correlation analysis — DB-backed, no external (+11 more)
 
 ### Community 109 - "BaseModel"
 Cohesion: 0.09
-Nodes (27): AssetMatchItem, Optional asset profile for personalised Risk Score v1.1b., RiskScoreRequest, format_time_in_tz(), health_live(), datetime, Health endpoint, moved verbatim from main.py (V1.2 §5.2 router split, phase 2)., Liveness probe — no database access (safe when the pool is saturated). (+19 more)
+Nodes (26): AssetMatchItem, Optional asset profile for personalised Risk Score v1.1b., RiskScoreRequest, format_time_in_tz(), health(), health_live(), datetime, Health endpoint, moved verbatim from main.py (V1.2 §5.2 router split, phase 2). (+18 more)
 
 ### Community 110 - "BRIEFR Owner's Learning Path"
 Cohesion: 0.18
@@ -1028,8 +1032,8 @@ Cohesion: 0.18
 Nodes (4): Superseded plans (historical), Planning (future work only), Planning specs (execution detail), Zero-budget operating model
 
 ### Community 112 - "main.py"
-Cohesion: 0.15
-Nodes (16): _is_public_api_path(), Request, Response, Session auth gate for analyst API routes (matches React RequireAuth)., Require a valid briefr_at session for analyst /api/* routes., session_auth_middleware(), _skip_session_gate(), PoolExhaustedError (+8 more)
+Cohesion: 0.21
+Nodes (12): _is_public_api_path(), Request, Response, Session auth gate for analyst API routes (matches React RequireAuth)., Require a valid briefr_at session for analyst /api/* routes., session_auth_middleware(), _skip_session_gate(), add_security_headers() (+4 more)
 
 ### Community 113 - "errors.py"
 Cohesion: 0.18
@@ -1039,7 +1043,7 @@ Nodes (16): _asyncpg_locked(), DatabaseError, DatabaseLockedError, normalize_db_
 Cohesion: 0.06
 Nodes (32): A-10 · Structured logging redacts `extra` only (MEDIUM), A-11 · Intel snapshot export (LOW — OK), A-12 · Auth/session APIs (LOW — OK), A-13 · AI operations (LOW — OK), A-14 · JWT / admin API key (LOW — OK), A-1 · Audit log stores raw config values (HIGH), A-2 · POST `/api/admin/config` returns full secrets (HIGH), A-3 · `app_settings` persists secrets in plaintext (HIGH) (+24 more)
 
-### Community 115 - "lifespan"
+### Community 115 - "Settings"
 Cohesion: 0.14
 Nodes (9): production_posture_warnings(), Unsafe-flag report for production posture (Sprint A6).      Each entry: {"flag, Settings, client(), Sprint A6 — production posture self-check.  production_posture_warnings() repo, test_all_unsafe_flags_reported(), test_safe_configuration_reports_nothing(), test_security_readout_includes_posture() (+1 more)
 
@@ -1048,20 +1052,20 @@ Cohesion: 0.17
 Nodes (16): _fake_pgdump(), _pg_cfg(), Path, Tests for PostgreSQL backup path (pg_dump archives)., test_archive_backend_detects_postgres_manifest(), test_pg_tool_finds_versioned_postgresql_client_path(), test_pg_tool_prefers_highest_numeric_version(), test_redact_database_url() (+8 more)
 
 ### Community 117 - "provenance.py"
-Cohesion: 0.16
-Nodes (22): get_cve_exploits_latest_fetched_at(), get_feed_cache_timestamp(), Return cached_at for a feed_cache row regardless of TTL., _circuit_open(), derive_correlation_provenance(), derive_detection_provenance(), derive_exploit_provenance(), _latest_timestamp() (+14 more)
+Cohesion: 0.26
+Nodes (14): _circuit_open(), derive_correlation_provenance(), derive_detection_provenance(), derive_exploit_provenance(), _latest_timestamp(), _line(), Any, Per-section intel provenance (FR1 — review §5.4). (+6 more)
 
 ### Community 118 - "BRIEFR UI/UX Overhaul Plan"
 Cohesion: 0.06
 Nodes (30): 10. Precise “delayed” messaging + configured refresh cadence (discussion — 2026-06-24), 11. P0 — Fix three scheduler errors + confirm watermark safety (discussion — 2026-06-24), 11a. `nightly_correlation` SQL (Postgres), 11b. `weekly_mitre_refresh` FK violation, 11c. `scheduled_backup` — `pg_dump` missing, 1. Quick, verified-safe fixes (main app) — do these first, low risk, 1a. Focus-indicator contrast (WCAG 2.4.7), 1b. CVE card share button touch target (+22 more)
 
 ### Community 119 - "cvelistv5.py"
-Cohesion: 0.12
-Nodes (30): cve_id_from_repo_path(), _compare_commits(), _cvelistv5_get(), _fetch_bootstrap_base_sha(), fetch_cvelistv5_delta(), fetch_cvelistv5_for_cve(), _fetch_head_sha(), _fetch_record() (+22 more)
+Cohesion: 0.13
+Nodes (27): cve_id_from_repo_path(), _compare_commits(), _cvelistv5_get(), _fetch_bootstrap_base_sha(), fetch_cvelistv5_delta(), fetch_cvelistv5_for_cve(), _fetch_head_sha(), _fetch_record() (+19 more)
 
-### Community 120 - "health.py"
-Cohesion: 0.22
-Nodes (10): adminApi, cellPreview(), DbExplorerPanel(), STATUS_FILTERS, SecurityPage(), ConfirmModal(), DangerZone(), HelpTip() (+2 more)
+### Community 120 - "FilterBar.jsx"
+Cohesion: 0.15
+Nodes (16): ControlTooltip(), FeedVisibleRange(), deriveActive(), FilterBar(), hasActiveFilters(), parseVendors(), QUICK_FILTERS, VENDORS (+8 more)
 
 ### Community 121 - "test_admin_config.py"
 Cohesion: 0.10
@@ -1071,33 +1075,33 @@ Nodes (5): Tests for /api/admin/config endpoints., No API key should be returned
 Cohesion: 0.24
 Nodes (15): ApiQueueIndicator(), SOURCE_DISPLAY, buildQueueRows(), countRowsByState(), formatElapsed(), formatSourceLabel(), formatWaitDetail(), groupQueueRows() (+7 more)
 
-### Community 123 - "main.jsx"
+### Community 123 - "AuthContext.jsx"
 Cohesion: 0.12
 Nodes (18): fetchMe(), fetchSetupRequired(), fetchUserStack(), setupAccount(), AppErrorBoundary, RequireAuth(), UserMenu(), AuthContext (+10 more)
 
-### Community 124 - "find_shared_infrastructure_v2"
+### Community 124 - "get_campaigns_for_cve"
 Cohesion: 0.14
 Nodes (19): get_campaigns_for_cve(), Return campaign clusters containing cve_id with hub filtering applied.     Clus, attribution_conflict(), campaign_summary(), infrastructure_summary(), Analyst-facing correlation copy (Correlation v2 Phase 2)., sanitize_pulse_text(), batch_ioc_edges_for_peers() (+11 more)
 
 ### Community 125 - "normalize_ioc"
-Cohesion: 0.19
-Nodes (16): is_noise_ip(), _normalize_domain(), _normalize_hash(), normalize_ioc(), normalize_ioc_row(), normalize_ioc_type(), _normalize_url(), Any (+8 more)
+Cohesion: 0.12
+Nodes (24): is_noise_ip(), _normalize_domain(), _normalize_hash(), normalize_ioc(), normalize_ioc_row(), normalize_ioc_type(), _normalize_url(), Any (+16 more)
 
 ### Community 126 - "watchlist.py"
-Cohesion: 0.21
-Nodes (12): clear_all_snoozes(), get_watchlist(), CVE watchlist — pin / snooze (Beta V1.3 Theme 1).  Single-user for now (no use, Remove all snoozed CVEs from the watchlist (restore them to the default feed)., Remove a CVE from the watchlist (unpin / unsnooze)., List active watchlist entries (pins and unexpired snoozes)., Pin or snooze a CVE. Replaces any existing watchlist row for that CVE., remove_watchlist_entry() (+4 more)
+Cohesion: 0.17
+Nodes (14): delete_all_snooze_entries(), Remove every snoozed watchlist row. Returns rows deleted., clear_all_snoozes(), get_watchlist(), CVE watchlist — pin / snooze (Beta V1.3 Theme 1).  Single-user for now (no use, Remove all snoozed CVEs from the watchlist (restore them to the default feed)., Remove a CVE from the watchlist (unpin / unsnooze)., List active watchlist entries (pins and unexpired snoozes). (+6 more)
 
 ### Community 127 - "nuclei_parser.py"
 Cohesion: 0.22
 Nodes (15): _matcher_words(), _normalize_path(), _parse_http_entry(), parse_nuclei_template_yaml(), _parse_raw_block(), Any, _query_params_from_path(), Deterministic Nuclei template YAML parser (Sprint D4).  Extracts ``{paths, par (+7 more)
 
 ### Community 128 - "sigma_generator.py"
-Cohesion: 0.11
-Nodes (31): _apply_artifacts_to_sigma_rule(), build_sigma_rule_dict(), _generate_rule_id(), generate_sigma_rule(), generate_sigma_rule_bundle(), _normalize_cwe_id(), parse_sigma_rule_meta(), Template-based Sigma rule generator for BRIEFR. One template per major ATT&CK t (+23 more)
+Cohesion: 0.15
+Nodes (18): _apply_artifacts_to_sigma_rule(), build_sigma_rule_dict(), _generate_rule_id(), generate_sigma_rule_bundle(), _normalize_cwe_id(), parse_sigma_rule_meta(), Template-based Sigma rule generator for BRIEFR. One template per major ATT&CK t, Return (template, briefr_basis, matched_cwe_id). (+10 more)
 
 ### Community 129 - "test_intel_feeds.py"
-Cohesion: 0.12
-Nodes (18): merge_additive_cve_fields(), Merge enrichment into an existing row without downgrading richer data.      Re, _load(), mock_transport(), Tests for CISA Vulnrichment and cvelistV5 feed modules., test_apply_additive_enrichment_in_db(), test_apply_additive_stores_ssvc_in_feed_cache(), test_fetch_cvelistv5_delta_advances_watermark() (+10 more)
+Cohesion: 0.15
+Nodes (14): _load(), mock_transport(), Tests for CISA Vulnrichment and cvelistV5 feed modules., test_apply_additive_enrichment_in_db(), test_apply_additive_stores_ssvc_in_feed_cache(), test_fetch_cvelistv5_delta_advances_watermark(), test_fetch_vulnrichment_enrichments_targeted(), test_parse_cvelistv5_prefers_cna_over_adp() (+6 more)
 
 ### Community 130 - "epss.py"
 Cohesion: 0.17
@@ -1123,9 +1127,9 @@ Nodes (15): buildCvesSheetData(), CENTER_COLS, COLORS, COLUMN_WIDTHS, cveToXlsxR
 Cohesion: 0.39
 Nodes (15): _cutoff_date_days_ago(), _cutoff_datetime_hours_ago(), _is_postgres_connection(), purge_old_ai_operations(), purge_old_audit_log(), purge_old_cve_change_history(), purge_old_epss_history(), purge_old_webhook_delivery_log() (+7 more)
 
-### Community 138 - "dependencies"
-Cohesion: 0.14
-Nodes (5): SIEM_PLATFORMS, CopyButton(), SkeletonRows(), STATUS_LABELS, StatusChip()
+### Community 138 - "index.jsx"
+Cohesion: 0.06
+Nodes (52): deleteHuntPack(), dismissDetectionBacklogItem(), fetchCorrelationClusters(), fetchCorrelationSuppressions(), fetchCVEDetection(), fetchCVEDrawerBundle(), fetchCVEGreynoiseScans(), fetchCVERisk() (+44 more)
 
 ### Community 139 - "Operator discussion backlog (2026-07-10)"
 Cohesion: 0.08
@@ -1136,8 +1140,8 @@ Cohesion: 0.18
 Nodes (14): get_risk_config(), Config endpoints — single-source v1.1b risk weights for frontend consumption., Return v1.1b risk score weights sourced from scoring/risk.py.      Weights sum, _call(), Tests for GET /api/config/risk — §5.3 single-source risk weights.  Verifies:, Endpoint must read directly from scoring/risk.py — no copy-pasted values., Route must appear in the OpenAPI spec (wired into app correctly)., test_config_risk_all_component_keys_present() (+6 more)
 
 ### Community 141 - "test_gemini_reconciliation.py"
-Cohesion: 0.15
-Nodes (12): _circl_enrichment_patch(), Return only CIRCL-owned fields so concurrent enrichments are not overwritten., Regression tests for Gemini review reconciliation (PRs #306–#385)., test_build_cve_filters_search_uses_lower_for_trgm_alignment(), test_circl_enrichment_patch_empty_dict_returns_empty_patch(), test_circl_enrichment_patch_non_dict_returns_empty(), test_circl_enrichment_patch_none_returns_empty(), test_circl_enrichment_patch_returns_only_owned_fields() (+4 more)
+Cohesion: 0.16
+Nodes (11): _circl_enrichment_patch(), Return only CIRCL-owned fields so concurrent enrichments are not overwritten., Regression tests for Gemini review reconciliation (PRs #306–#385)., test_circl_enrichment_patch_empty_dict_returns_empty_patch(), test_circl_enrichment_patch_non_dict_returns_empty(), test_circl_enrichment_patch_none_returns_empty(), test_circl_enrichment_patch_returns_only_owned_fields(), test_circl_patch_merge_preserves_osv_summary() (+3 more)
 
 ### Community 143 - "test_playwright_smoke.py"
 Cohesion: 0.22
@@ -1147,9 +1151,9 @@ Nodes (14): _feed_tab_visible(), _open_full_feed(), _poll(), Chromium-only UI sm
 Cohesion: 0.12
 Nodes (12): client(), _protected_routes(), Sprint A0 security invariants.  Every admin-gated route — the /api/admin route, JWT may still claim admin after DB role demotion — must 403 immediately., Exact-message check for the login endpoint only — admin routes return     'Not, (method, concrete_path) for every route behind require_admin., Guard the guard: enumeration must cover both protected surfaces., _reset_user_role() (+4 more)
 
-### Community 145 - "test_webhooks_alerts.py"
-Cohesion: 0.35
-Nodes (15): _mock_webhooks(), Path, Tests for KEV-on-stack and backup dead-man webhook rules., _seed_cve(), _setup_db(), test_backup_deadman_alerts_when_stale(), test_backup_deadman_clears_after_fresh_backup(), test_kev_stack_alert_sent_once() (+7 more)
+### Community 145 - "lifespan"
+Cohesion: 0.12
+Nodes (18): get_atlas_technique_count(), get_mitre_technique_count(), lifespan(), bootstrap_operator_settings(), hydrate_operator_settings_from_db(), persist_operator_setting(), Hydrate operator settings from DB at startup (env wins over DB over .env)., One-time import of .env writable keys into DB when absent. (+10 more)
 
 ### Community 146 - "BRIEFR"
 Cohesion: 0.08
@@ -1159,17 +1163,17 @@ Nodes (24): API Reference, Backups and restore, BRIEF — morning brief, charts,
 Cohesion: 0.09
 Nodes (23): 10. data-model-overview, 11. ui-brief-tab, 12. ui-feed-tab, 13. ui-detail-drawer, 14. ui-ioc-lookup, 15. ui-admin-security, 16. ioc-lookup-flow, 17. investigation-pivot-flow (+15 more)
 
-### Community 148 - "get_campaigns_for_cve"
+### Community 148 - "list_correlation_clusters"
 Cohesion: 0.24
 Nodes (8): _cluster_sort_key(), list_correlation_clusters(), Any, Phase 4 cluster list for brief/feed consumers., Return campaign clusters ranked for stack + watchlist relevance., correlation_clusters(), Correlation cluster list (Phase 4)., Precomputed campaign clusters for brief/feed consumers.
 
 ### Community 149 - "campaigns.py"
-Cohesion: 0.19
-Nodes (13): get_correlation_cache_hours(), get_correlation_confirm_enabled(), get_hub_cve_pulse_cap(), get_max_campaign_members(), get_mitre_min_overlap(), get_otx_cve_sync_days(), Correlation v2 configuration — env-backed defaults., apply_member_cap() (+5 more)
+Cohesion: 0.12
+Nodes (20): build_campaigns_from_pulses(), campaign_id_for_pulse(), _parse_json_list(), prune_invalid_campaign_members(), Any, Pulse-centric campaign clustering (Correlation v2 Phase 1)., Drop campaign members whose CVE no longer exists., Rebuild correlation_campaigns + members from otx_cve_pulses / otx_pulses.     O (+12 more)
 
-### Community 150 - "generate_sigma_rule"
-Cohesion: 0.20
-Nodes (12): get_min_interval(), get_otx_hourly_limit(), get_source_pacing(), _github_interval(), _nvd_interval(), Per-source outbound API pacing derived from official provider documentation., OTX authenticated tier: 10,000 requests/hour., Seconds to wait after the previous request to the same source. (+4 more)
+### Community 150 - "get_source_pacing"
+Cohesion: 0.12
+Nodes (20): get_otx_ioc_sync_max_per_run(), prefetch_pulse_iocs_for_nightly(), Pre-fetch IOC data for pulses not yet in otx_pulse_iocs.     Called by the nigh, get_otx_continuous_budget_per_run(), get_otx_continuous_interval_minutes(), Continuous OTX background sync — spends hourly API budget across the day.  Run, Spend API budget on prioritized CVE pulse refresh, then pulse IOC prefetch., run_otx_continuous_sync() (+12 more)
 
 ### Community 151 - "build_yara_rules_from_hashes"
 Cohesion: 0.19
@@ -1192,28 +1196,28 @@ Cohesion: 0.22
 Nodes (13): calculate_threat_score(), Any, Threat Score v1.0 — asset-independent exploitation credibility (ADR-002)., Asset-independent Threat Score (0–100) with KEV floor.      Reuses v1.1b compo, threat_band(), Tests for Threat Score v1.0 (ADR-002)., _recent_kev_date(), test_cvss_only_low_threat() (+5 more)
 
 ### Community 156 - "observableExtraction.js"
-Cohesion: 0.17
-Nodes (22): DOMAIN_ASCII_RE, DOMAIN_EXTRACT_RE, isIpv4(), isValidDomain(), extractIndicatorsFromCve(), ADVISORY_URL_HINTS, classifyDomainContext(), classifyObservableContext() (+14 more)
+Cohesion: 0.18
+Nodes (21): DOMAIN_ASCII_RE, DOMAIN_EXTRACT_RE, isIpv4(), isValidDomain(), ADVISORY_URL_HINTS, classifyDomainContext(), classifyObservableContext(), classifyUrlContext() (+13 more)
 
-### Community 157 - "WallboardPage.jsx"
+### Community 157 - "AuditLogPage.jsx"
 Cohesion: 0.19
 Nodes (11): AuditLogPage(), auditActionLabel(), ComingSoonPage(), ANALYST_NAV, AUDIT_PREFIXES, COMING_SOON_INFO, MANUAL_PIPELINES, NAV (+3 more)
 
-### Community 158 - "correlationPresentation.js"
-Cohesion: 0.25
-Nodes (12): any_llm_provider_configured(), get_configured_providers(), build_models_payload(), build_overview_payload(), build_providers_payload(), _env_flag(), _provider_health_rows(), Any (+4 more)
+### Community 158 - "AdminPageBody"
+Cohesion: 0.18
+Nodes (16): adminFetch(), adminJson(), authedFetch(), getAdminRequestId(), filterUnacknowledgedErrors(), jobErrorAckKey(), loadJobAcks(), markAllJobErrorsRead() (+8 more)
 
-### Community 159 - "user_notifications.py"
-Cohesion: 0.11
-Nodes (31): get_app_setting(), _is_postgres_connection(), list_app_settings(), Operator settings persisted in PostgreSQL/SQLite (Phase B).  Keys mirror writa, set_app_setting(), ThreatFox IOC mirror table (V1.5 Theme 4b)., Insert or refresh ThreatFox rows. Returns rows written., upsert_threatfox_iocs() (+23 more)
+### Community 159 - "utcnow_str"
+Cohesion: 0.09
+Nodes (34): get_app_setting(), _is_postgres_connection(), list_app_settings(), Operator settings persisted in PostgreSQL/SQLite (Phase B).  Keys mirror writa, set_app_setting(), ThreatFox IOC mirror table (V1.5 Theme 4b)., Insert or refresh ThreatFox rows. Returns rows written., upsert_threatfox_iocs() (+26 more)
 
 ### Community 160 - "quota.py"
 Cohesion: 0.24
 Nodes (10): get_quota_snapshot(), _normalize_provider(), Any, quota_warnings(), Advisory LLM provider quota snapshots from rate-limit response headers., record_quota_snapshot(), _Headers, Tests for advisory LLM quota snapshots. (+2 more)
 
 ### Community 161 - "watchlist.py"
-Cohesion: 0.17
-Nodes (15): _active_sql(), delete_all_snooze_entries(), delete_watchlist_entry(), get_watchlist_entry(), _is_postgres_connection(), list_pinned_cve_ids(), list_watchlist_entries(), Watchlist CRUD. Split from database.py (Phase 3).  Postgres-native (Post-B Pha (+7 more)
+Cohesion: 0.26
+Nodes (11): _active_sql(), delete_watchlist_entry(), get_watchlist_entry(), _is_postgres_connection(), list_watchlist_entries(), Watchlist CRUD. Split from database.py (Phase 3).  Postgres-native (Post-B Pha, Return one active watchlist row, or None., Insert or replace a watchlist row (caller commits). (+3 more)
 
 ### Community 162 - "llm_payload.py"
 Cohesion: 0.12
@@ -1223,13 +1227,13 @@ Nodes (20): gemini_chat_completion(), gemini_model(), _messages_to_gemini(), Goo
 Cohesion: 0.21
 Nodes (12): _collect_strings(), extract_patterns_from_sigma(), _line_matches(), Any, File-based rule proof bench (V1.5 Theme 2).  Copyright © 2026 Sai Harsha Vardh, Return (match_patterns, false_positive_hints) from Sigma YAML., Match log lines against Sigma keywords/selection strings or explicit patterns., run_proof() (+4 more)
 
-### Community 164 - "get_feed_health"
-Cohesion: 0.29
-Nodes (11): _patch_app_lifecycle(), Path, Tests for GET /api/brief — V1.3 morning brief., _seed_brief_bad_epss_db(), _seed_brief_db(), test_brief_active_campaigns_section(), test_brief_endpoint_shape(), test_brief_epss_movers_section() (+3 more)
+### Community 164 - "test_brief_endpoint.py"
+Cohesion: 0.24
+Nodes (13): _patch_app_lifecycle(), Path, Tests for GET /api/brief — V1.3 morning brief., _seed_brief_bad_epss_db(), _seed_brief_db(), test_brief_active_campaigns_section(), test_brief_endpoint_shape(), test_brief_epss_movers_section() (+5 more)
 
 ### Community 165 - "test_admin_storage.py"
-Cohesion: 0.14
-Nodes (3): Tests for /api/admin/storage endpoints — disk usage, purge, export., epss_backfill_reset target requires no confirm_text., test_purge_epss_backfill_reset_no_confirm()
+Cohesion: 0.13
+Nodes (4): admin_client(), Tests for /api/admin/storage endpoints — disk usage, purge, export., epss_backfill_reset target requires no confirm_text., test_purge_epss_backfill_reset_no_confirm()
 
 ### Community 166 - "test_forge.py"
 Cohesion: 0.10
@@ -1244,8 +1248,8 @@ Cohesion: 0.18
 Nodes (9): postgres_server_live(), True when ``url`` (or ``DATABASE_URL``) points at a reachable Postgres server., _backup_config(), _ensure_postgres_live(), Path, Post-B4: production backup path round-trip against live Postgres.  Exercises t, pg_dump archive from run_backup restores row counts for core intel tables., Skip at runtime when DATABASE_URL is set but the server is down. (+1 more)
 
 ### Community 169 - "load_corpus"
-Cohesion: 0.16
-Nodes (21): CorpusValidationError, load_corpus(), A corpus file failed schema validation., Load and validate every corpus file. Returns {file_stem: parsed_data}.      Ra, Path, A minimal valid corpus, with per-file overrides for negative tests., Gemini review on PR #491: a typo'd related_ids: my-id (string, not a     list), Gemini review on PR #491: a corpus file missing its expected     top-level list (+13 more)
+Cohesion: 0.22
+Nodes (15): CorpusValidationError, load_corpus(), _load_yaml(), Any, Path, TM-1: load + validate the Security Architecture Corpus (SAC).  Schema rules (s, A corpus file failed schema validation., Load and validate every corpus file. Returns {file_stem: parsed_data}.      Ra (+7 more)
 
 ### Community 170 - "confidence_for_ioc_edge"
 Cohesion: 0.11
@@ -1260,8 +1264,8 @@ Cohesion: 0.22
 Nodes (8): fetch_kev(), parse_kev_catalog(), Normalize CISA KEV catalog entries, keeping triage-relevant fields., Tests for KEV enrichment fields (ransomware use, CWEs, vendor, name)., test_parse_kev_catalog_coerces_non_list_cwes(), test_parse_kev_catalog_keeps_enrichment_fields(), test_parse_kev_catalog_rejects_malformed_payload(), test_parse_kev_catalog_tolerates_missing_fields()
 
 ### Community 173 - "test_admin_backups.py"
-Cohesion: 0.17
-Nodes (5): Tests for /api/admin/backups/* endpoints., Path traversal in filename must be rejected — filename stays within BACKUP_DIR., Verify reads manifest.json from archive without full extraction., test_upload_path_traversal_stays_in_backup_dir(), test_verify_endpoint_reads_manifest()
+Cohesion: 0.15
+Nodes (6): admin_client(), Tests for /api/admin/backups/* endpoints., Path traversal in filename must be rejected — filename stays within BACKUP_DIR., Verify reads manifest.json from archive without full extraction., test_upload_path_traversal_stays_in_backup_dir(), test_verify_endpoint_reads_manifest()
 
 ### Community 174 - "test_correlation_phase45.py"
 Cohesion: 0.22
@@ -1279,21 +1283,21 @@ Nodes (12): _get_paths(), _iter_route_contexts(), _openapi_route_list(), Any, V1
 Cohesion: 0.08
 Nodes (24): ADR-002 — BRIEFR scoring axes and Operational Priority, Adversarial validation, Backend contract (for M1), Consequences, Context, Correlation Priority interaction, Current implementation (verified in code), DECISION (+16 more)
 
-### Community 178 - "useModalLayer"
-Cohesion: 0.10
-Nodes (26): clearWallboardToken(), createWallboardSession(), fetchWallboard(), getWallboardToken(), setWallboardToken(), AboutModal(), SOURCES, CommandPalette() (+18 more)
+### Community 178 - "me.py"
+Cohesion: 0.18
+Nodes (15): _decode_profile(), get_user_stack(), upsert_user_stack(), encode_profile(), normalize_stack_terms(), Validation for per-user stack terms and asset profile JSON., sanitize_profile(), validate_stack_terms() (+7 more)
 
 ### Community 179 - "model_catalog.py"
-Cohesion: 0.29
-Nodes (11): cerebras_model(), env_model(), gemini_model(), models_catalog_payload(), openrouter_model(), LLMTask, Model catalog SSOT for LLM task → provider failover chains (AI-1)., Failover order per task — not round-robin. (+3 more)
+Cohesion: 0.14
+Nodes (23): any_llm_provider_configured(), get_configured_providers(), cerebras_model(), env_model(), gemini_model(), models_catalog_payload(), openrouter_model(), LLMTask (+15 more)
 
 ### Community 180 - "connection.py"
 Cohesion: 0.11
-Nodes (12): close_pool(), get_connection(), get_pool_stats(), init_pool(), Connection, Async database connections for SQLite (default) and PostgreSQL (optional)., Create the PostgreSQL pool when ``DATABASE_URL`` points at Postgres., Return asyncpg pool counters when Postgres is active. (+4 more)
+Nodes (14): close_pool(), get_connection(), get_pool_stats(), init_pool(), PoolExhaustedError, Connection, Async database connections for SQLite (default) and PostgreSQL (optional)., Create the PostgreSQL pool when ``DATABASE_URL`` points at Postgres. (+6 more)
 
 ### Community 181 - "test_security_architecture_corpus.py"
-Cohesion: 0.10
-Nodes (12): TM-1: corpus generator, loader, and drift CI.  Verifies: - Pure extraction fu, Acceptance criterion (§8, TM-1): 'renaming a router in a scratch     branch mak, The literal acceptance criterion: regenerate-and-diff. Compares     parsed YAML, Not in auth_middleware.py's public/admin-exempt prefixes -- must be     gated b, Gemini review on PR #491: the original regex required id= before     name= in s, The literal acceptance criterion, at the pure-function level: renaming     a jo, test_build_components_renaming_a_router_module_changes_output(), test_committed_corpus_has_no_drift() (+4 more)
+Cohesion: 0.08
+Nodes (21): Path, TM-1: corpus generator, loader, and drift CI.  Verifies: - Pure extraction fu, Acceptance criterion (§8, TM-1): 'renaming a router in a scratch     branch mak, The literal acceptance criterion: regenerate-and-diff. Compares     parsed YAML, A minimal valid corpus, with per-file overrides for negative tests., A control referencing a component (different file) must resolve., Not in auth_middleware.py's public/admin-exempt prefixes -- must be     gated b, Gemini review on PR #491: the original regex required id= before     name= in s (+13 more)
 
 ### Community 182 - "test_wallboard.py"
 Cohesion: 0.32
@@ -1303,7 +1307,7 @@ Nodes (9): _disable_rate_limit(), _patch_app_lifecycle(), Path, Tests for GET /a
 Cohesion: 0.21
 Nodes (7): Path, CVE watchlist — pin / snooze (Beta V1.3 Theme 1).  Verifies: - watchlist sche, _seed_cves(), _table_columns(), test_expired_snooze_reappears(), test_watchlist_schema_idempotent(), watchlist_client()
 
-### Community 184 - "ToolErrorBoundary"
+### Community 184 - "CaseStudies.jsx"
 Cohesion: 0.29
 Nodes (8): fetchCaseStudyFeed(), CaseStudies(), FeedCard(), filterCaseStudyCards(), highlightParts(), isCampaignArticle(), loadCaseStudyFeed(), relativeDate()
 
@@ -1323,9 +1327,9 @@ Nodes (20): 10. Engine modules (backend layout), 13. Product integrations, 14. M
 Cohesion: 0.22
 Nodes (11): backend/requirements-dev.txt, backend/requirements.txt, alembic==1.18.5, asyncpg==0.31.0, fastapi==0.139.0, deploy/docker-compose.postgres.yml, Backend Tests CI Workflow, CI Job: dependency-audit (+3 more)
 
-### Community 191 - "get_storage"
+### Community 191 - "storage_metrics.py"
 Cohesion: 0.31
-Nodes (10): get_storage(), _device_for_path(), estimate_growth_bytes_per_day(), fetch_table_sizes(), _is_postgres_connection(), Any, Storage metrics helpers — table sizes, growth estimate, host disk I/O., Read cumulative disk I/O from /proc/diskstats when readable. (+2 more)
+Nodes (9): _device_for_path(), estimate_growth_bytes_per_day(), fetch_table_sizes(), _is_postgres_connection(), Any, Storage metrics helpers — table sizes, growth estimate, host disk I/O., Read cumulative disk I/O from /proc/diskstats when readable., Rough growth estimate from backup archive size trend when available. (+1 more)
 
 ### Community 192 - "test_cache_retention.py"
 Cohesion: 0.31
@@ -1379,17 +1383,17 @@ Nodes (9): assertStyled(), { chromium }, __dirname, main(), outDir, require, set
 Cohesion: 0.11
 Nodes (18): 5.10 Threat Scenarios, 5.11 Abuse Cases, 5.12 Risk Register, 5.13 Security Decision Records, 5.14 Review History, 5.15 Context rail (right panel), 5.16 PDF export, 5.17 Global search (+10 more)
 
-### Community 205 - "get_stack_terms"
-Cohesion: 0.23
-Nodes (11): Health hook for modules that manage their own request logic., record_source_failure(), _clean_feed_health(), _force_sqlite(), FR1 — per-section intel provenance derivation., test_correlation_provenance_checked(), test_correlation_provenance_not_configured(), test_detail_includes_exploit_provenance() (+3 more)
+### Community 205 - "repo.py"
+Cohesion: 0.28
+Nodes (14): _coerce_bool(), encode_display_prefs(), merge_display_prefs(), Validation for per-user display preferences and timezone., sanitize_display_prefs(), sanitize_typography_px(), validate_timezone(), _decode_display_prefs() (+6 more)
 
 ### Community 206 - "suppressions.py"
-Cohesion: 0.29
-Nodes (9): add_suppression(), is_campaign_suppressed(), is_infrastructure_suppressed(), Any, Analyst dismiss / suppress feedback for correlation findings., remove_suppression(), scope_key_for(), Remove a correlation suppression. (+1 more)
+Cohesion: 0.25
+Nodes (10): add_suppression(), is_campaign_suppressed(), is_infrastructure_suppressed(), load_suppressions(), Any, Analyst dismiss / suppress feedback for correlation findings., remove_suppression(), scope_key_for() (+2 more)
 
-### Community 207 - "threatfox.py"
-Cohesion: 0.31
-Nodes (8): _extract_match_value(), fetch_threatfox_iocs(), _lookup_type_from_threatfox(), parse_threatfox_ioc(), Any, ThreatFox bulk IOC ingest (abuse.ch Auth-Key)., Fetch recent ThreatFox IOCs (max 7 days per API)., threatfox_sync_days()
+### Community 207 - "generate_sigma_rule"
+Cohesion: 0.30
+Nodes (13): generate_sigma_rule(), Generate a Sigma rule YAML string for a CVE/technique pair., _load_rule(), Tests for CWE-aware Sigma rule generation (Sprint D1)., test_cwe22_format_variants_resolve(), test_cwe22_path_traversal_without_technique(), test_cwe416_memory_corruption_generic_logsource(), test_cwe611_xxe_single_quoted_system() (+5 more)
 
 ### Community 208 - "test_scheduler_reschedule.py"
 Cohesion: 0.28
@@ -1412,8 +1416,8 @@ Cohesion: 0.17
 Nodes (11): 11. Data sources (no new APIs v1), 13. PR template snippet, 15. Opus advisor prompts (when stuck), 16. Non-goals (explicit), 1. Problem statement, 2.1 Mockup reference (“Image 1” — visual north star for Analyst), 2.2 Current admin (“Image 2” — Operator baseline), 2. UI inspiration vs separation of concerns (+3 more)
 
 ### Community 213 - "helpers.js"
-Cohesion: 0.39
-Nodes (8): EpssSparklineCell(), drawerEpssBarColor(), ExploitationSection(), buildEpssSparklinePoints(), epssSparklinePolyline(), epssTrendLabel(), hasEnoughEpssHistory(), hasMeaningfulEpssVariation()
+Cohesion: 0.36
+Nodes (7): capecHref(), capecLabel(), drawerEpssBarColor(), severityColor(), truncateText(), TabOverview(), TabRelated()
 
 ### Community 214 - "build_gemini_reconciliation.py"
 Cohesion: 0.42
@@ -1423,37 +1427,37 @@ Nodes (8): build_root_cause_matrix(), classify(), current_main_path(), main(), r
 Cohesion: 0.20
 Nodes (17): build_api_inventory(), build_components(), build_db_tables_yaml(), build_scheduler_jobs_yaml(), extract_db_tables(), extract_scheduler_jobs(), generate(), _iter_route_contexts() (+9 more)
 
-### Community 217 - "test_structured_logging.py"
-Cohesion: 0.19
-Nodes (14): JsonFormatter, One JSON object per log line; `extra={...}` kwargs become JSON keys., _format_record(), V1.2 §5.5 — JSON structured logging with request IDs: formatter output, X-Reque, test_429_responses_also_carry_request_id(), test_access_log_line_carries_request_metadata(), test_every_response_carries_a_generated_request_id(), test_formatter_emits_parseable_json_with_core_keys() (+6 more)
+### Community 217 - "TokenBucket"
+Cohesion: 0.14
+Nodes (12): check_login_username_rate_limit(), Per-username companion to rate_limit_login — called directly from the     login, Classic token bucket, one bucket per key.      Capacity equals the per-minute, Try to take one token for `key`.          Returns 0.0 when granted, otherwise, TokenBucket, Distinct spoofed keys inside one refill window must not grow the     dict witho, test_bucket_allows_burst_up_to_capacity_then_denies(), test_bucket_hard_cap_bounds_memory_under_key_floods() (+4 more)
 
 ### Community 219 - "6. Detailed Findings"
 Cohesion: 0.12
 Nodes (17): 6. Detailed Findings, AUTH-001 — Analyst gate trusts JWT without live `is_active`, AUTH-002 — Password change does not revoke sessions, AUTH-003 — Stateless access JWT after logout, CACHE-001 — GET drawer persists correlation, COND-001 / FE-ADMIN — Frontend admin shell without role gate, CRYPTO-001 — Plaintext operator secrets, DB-001 — Campaign build/read N+1 queries (+9 more)
 
 ### Community 220 - "BRIEFR API Reference"
-Cohesion: 0.12
-Nodes (16): AI Summary, BRIEFR API Reference, Config, Detection, Frontend smoke (CI — no new endpoints), GET /api/ai/summary, GET /api/config/risk, GET /api/cves/{cve_id}/detection (+8 more)
+Cohesion: 0.11
+Nodes (19): BRIEFR API Reference, Config, DELETE /api/cves/{cve_id}/correlation/suppress, Detection, Frontend smoke (CI — no new endpoints), GET /api/config/risk, GET /api/correlation/clusters, GET /api/cves/{cve_id}/correlation (+11 more)
 
-### Community 221 - "get_cve_sentences"
-Cohesion: 0.22
-Nodes (5): ApiKeysPage(), SECTIONS, TIMEZONE_KEYS, RATE_LIMIT_HINTS, DiffReviewModal()
+### Community 221 - "ApiKeysPage.jsx"
+Cohesion: 0.20
+Nodes (6): ApiKeysPage(), SECTIONS, TIMEZONE_KEYS, RATE_LIMIT_HINTS, DiffReviewModal(), TIMEZONES_BY_CONTINENT
 
-### Community 222 - "corpus_loader.py"
-Cohesion: 0.17
-Nodes (14): get_corpus(), _load_yaml(), Any, Path, TM-1: load + validate the Security Architecture Corpus (SAC).  Schema rules (s, Cached load, invalidated when any corpus file's mtime changes., _validate_record(), get_manifest() (+6 more)
+### Community 222 - "get_corpus"
+Cohesion: 0.18
+Nodes (14): get_corpus(), Cached load, invalidated when any corpus file's mtime changes., _count(), get_manifest(), get_overview(), get_section(), Any, Security Architecture module API (TM-1 stub + TM-2 shell additions).  Mounted (+6 more)
 
 ### Community 223 - "Using BRIEFR"
 Cohesion: 0.29
 Nodes (7): Admin & wallboard, CVE detail drawer, Deploying?, IOC lookup, Shortcuts, Tabs, Using BRIEFR
 
 ### Community 224 - "seed_screenshot_data.py"
-Cohesion: 0.38
-Nodes (6): _days_ago(), _days_from_now(), main(), _recent_timestamp(), _seed_cves(), _warm_incident_feeds()
+Cohesion: 0.32
+Nodes (7): get_cve_count(), _days_ago(), _days_from_now(), main(), _recent_timestamp(), _seed_cves(), _warm_incident_feeds()
 
-### Community 225 - "set_sync_state_value"
-Cohesion: 0.22
-Nodes (6): groq_limits(), GroqLimits, Shared Groq API settings for all BRIEFR LLM call sites., Limits for the configured model — override via env for other tiers/models., Groq model defaults for all LLM call sites., test_groq_limits_use_headroom()
+### Community 225 - "fmtIso"
+Cohesion: 0.24
+Nodes (12): FeedHealthPage(), FeedSourceCard(), fmtIso(), sourceLabel(), AdminDataGrid(), loadPrefs(), savePrefs(), newOpId() (+4 more)
 
 ### Community 226 - "main"
 Cohesion: 0.60
@@ -1474,6 +1478,10 @@ Nodes (5): _catalog_job_ids(), JOB_CATALOG in frontend must cover every schedule
 ### Community 230 - "test_postgres_pool.py"
 Cohesion: 0.33
 Nodes (4): postgres_migrations(), PostgreSQL pool integration tests — run in CI with a live DATABASE_URL., Schema only — do not bind asyncpg pool to a closed event loop., test_postgres_pool_stats_on_health()
+
+### Community 231 - "ToolErrorBoundary"
+Cohesion: 0.24
+Nodes (5): ToolErrorBoundary, isChunkLoadError(), lazyWithReload(), markChunkReloadNow(), readLastChunkReloadMs()
 
 ### Community 232 - "test_threat_model_scenarios.py"
 Cohesion: 0.29
@@ -1504,28 +1512,32 @@ Cohesion: 0.12
 Nodes (16): §1 — D1: CWE class templates (`sigma_generator.py`), §2 — D2: `DetectionContext` scaffold (shipped), §2 — K5: Prompt hygiene + multi-provider headroom (added 2026-07-10), §3 — D3: Unified class router (shipped), §4 — D4: Artifact injection (shipped), §5 — D5: Detect tab UI (shipped), Appendix — Implementation specs (pre-decided; execute as written), Spec A0 — remove legacy admin key, enforce role (decided 2026-07-05) (+8 more)
 
 ### Community 240 - "NotificationBell.jsx"
-Cohesion: 0.25
-Nodes (12): NotificationBell(), useNotificationSoundEnabled(), NotificationCenter(), getAudioContext(), playNotificationChime(), dismissAllNotifications(), dismissNotification(), fetchNotifications() (+4 more)
+Cohesion: 0.20
+Nodes (14): NotificationBell(), useNotificationSoundEnabled(), worstSource(), NotificationCenter(), StatusBar(), getAudioContext(), playNotificationChime(), dismissAllNotifications() (+6 more)
 
 ### Community 241 - "dispatch_event"
 Cohesion: 0.29
 Nodes (12): _deliver_discord(), _deliver_generic(), _deliver_telegram(), deliver_to_destination(), dispatch_event(), Any, Multi-destination webhook dispatch engine (V1.4 Theme 2)., Send an event to every enabled destination subscribed to event_type. (+4 more)
 
-### Community 243 - "DrawerTabErrorBoundary"
-Cohesion: 0.24
-Nodes (8): build_campaigns_from_pulses(), campaign_id_for_pulse(), _parse_json_list(), prune_invalid_campaign_members(), Any, Pulse-centric campaign clustering (Correlation v2 Phase 1)., Drop campaign members whose CVE no longer exists., Rebuild correlation_campaigns + members from otx_cve_pulses / otx_pulses.     O
+### Community 242 - "build_threat_scenarios"
+Cohesion: 0.25
+Nodes (9): Threat model read API (V1.5 Theme 1).  Copyright © 2026 Sai Harsha Vardhan SP, Stack-scoped ATT&CK threat scenario cards with CVE evidence and mitigation hints, threat_model_scenarios(), build_threat_scenarios(), _mitigation_actions(), Any, Environment threat scenarios (V1.5 Theme 1).  Copyright © 2026 Sai Harsha Vard, Stack-scoped ATT&CK scenario cards with CVE evidence and mitigation hints. (+1 more)
 
-### Community 244 - "SessionsPage.jsx"
-Cohesion: 0.20
-Nodes (9): atlas_case_studies(), atlas_techniques_grouped(), case_studies_feed(), case_studies_news(), MITRE ATLAS + Case Studies endpoints, moved verbatim from main.py (V1.2 §5.2 ro, MITRE ATLAS techniques grouped by tactic (AI/ML threats — not Enterprise ATT&CK), Cybersecurity news RSS feeds for the Case Studies tab (server-side fetch)., Combined RSS news + ATLAS case studies, served from the precomputed snapshot. (+1 more)
+### Community 243 - "prepare_query"
+Cohesion: 0.27
+Nodes (9): _colon_to_dollar(), _postgres_translate_sql(), prepare_query(), _qmark_to_dollar(), PostgreSQL SQL adaptation for legacy SQLite-oriented query strings.  Internal, Return SQL + params ready for PostgreSQL asyncpg., SQLite-oriented SQL → PostgreSQL syntax (placeholders handled separately)., test_kev_overdue_bound_date_compare() (+1 more)
+
+### Community 244 - "atlas.py"
+Cohesion: 0.25
+Nodes (7): atlas_case_studies(), case_studies_feed(), case_studies_news(), MITRE ATLAS + Case Studies endpoints, moved verbatim from main.py (V1.2 §5.2 ro, Cybersecurity news RSS feeds for the Case Studies tab (server-side fetch)., Combined RSS news + ATLAS case studies, served from the precomputed snapshot., Recent ATLAS case studies with technique and CVE references.
 
 ### Community 245 - "BRIEFR Beta V1.2 — Roadmap"
 Cohesion: 0.13
 Nodes (15): Allowed V1.2 additions (from planning 2026-06-10), Beta V1.2 — engineering themes, Beta V1.2 — product / security backlog, BRIEFR Beta V1.2 — Roadmap, Explicit non-goals for V1.2, Purpose, Recent stabilization (pre–V1.2), Related documents (+7 more)
 
-### Community 246 - "userPreferences.js"
-Cohesion: 0.38
-Nodes (8): parseDatetimeLocalToIso(), toDatetimeLocalValue(), defaultCustomSince(), defaultCustomUntil(), defaultPresetWindow(), hoursFromWindow(), TIME_PRESETS, TimeWindowPicker()
+### Community 246 - "get_stack_terms"
+Cohesion: 0.22
+Nodes (8): cve_matches_stack(), kev_exploit_boosters(), Local boosters (no OTX required) and stack gating — Correlation v2 Phase 3 subse, Mirrors routers.cves._stack_match_clause, evaluated in Python on an     already, KEV/exploit signal among campaign peers (excludes the anchor CVE itself)., stack_terms_list(), get_stack_terms(), Operator stack profile for server-side matching (BRIEFR_STACK_TERMS).
 
 ### Community 247 - "briefr-backup.sh"
 Cohesion: 0.50
@@ -1536,8 +1548,8 @@ Cohesion: 0.50
 Nodes (3): BACKUP_AGE_KEY_FILE, BACKUP_DIR, briefr-restore.sh script
 
 ### Community 250 - "test_ioc_watchlist.py"
-Cohesion: 0.18
-Nodes (9): find_retro_matches(), Any, Local IOC watchlist retro-match (V1.5 Theme 4b).  Copyright © 2026 Sai Harsha, Join saved IOC watchlist entries against local OTX + ThreatFox mirrors., run_ioc_retro_match(), Tests for IOC watchlist + retro-match (V1.5 Theme 4b)., test_ioc_watchlist_requires_auth(), test_parse_threatfox_ioc_url_extracts_domain() (+1 more)
+Cohesion: 0.16
+Nodes (10): find_retro_matches(), Any, Local IOC watchlist retro-match (V1.5 Theme 4b).  Copyright © 2026 Sai Harsha, Join saved IOC watchlist entries against local OTX + ThreatFox mirrors., run_ioc_retro_match(), ioc_client(), Tests for IOC watchlist + retro-match (V1.5 Theme 4b)., test_ioc_watchlist_requires_auth() (+2 more)
 
 ### Community 251 - "sequential-thinking"
 Cohesion: 0.50
@@ -1571,9 +1583,9 @@ Nodes (14): Architecture Decisions Required, Architecture Questions — Answers,
 Cohesion: 0.14
 Nodes (14): PR10 — Diagnostics honesty (Postgres integrity), PR11 — IOC input and feed responsive pass, PR12 (optional / later) — Multi-webhook endpoints, PR13 (optional / later) — Read-only DB explorer, PR1 — Scheduler state semantics and display catalog, PR2 — API queue panel density and metadata propagation, PR3 — Portaled tooltip primitive, PR4 — Toast lifecycle and scheduler copy (+6 more)
 
-### Community 293 - "index.js"
-Cohesion: 0.14
-Nodes (11): ControlTooltip(), AsyncState(), Button(), ConfirmModal(), EmptyState(), errorMessage(), ErrorState(), Modal() (+3 more)
+### Community 293 - "BriefCharts.jsx"
+Cohesion: 0.10
+Nodes (25): buildEpssMovers(), EMPTY_ARRAY, epssDelta(), epssDeltaClass(), EpssMoversTable(), formatEpssPct(), severityDotClass(), parseDatetimeLocalToIso() (+17 more)
 
 ### Community 299 - "BRIEFR Beta V1.4 — Operator Beast"
 Cohesion: 0.15
@@ -1591,9 +1603,9 @@ Nodes (12): Conversion pattern (locked in #320), Gotchas discovered while buildi
 Cohesion: 0.15
 Nodes (13): 1. Problems (all verified in code), 2. Target information architecture, 3.1 Library view, 3.2 API additions (additive only), 3. Hunt Pack Library (new — the P4 fix), 4. Live-data completeness (nothing recent goes to waste), 5. Implementation phases, 6. Acceptance criteria (program complete) (+5 more)
 
-### Community 308 - "AssetWizard.jsx"
+### Community 308 - "test_cve_detail_atlas.py"
 Cohesion: 0.22
-Nodes (6): classify_llm_error(), BaseException, CircuitOpenError, Raised when a source's circuit is open — callers may wait and retry., _FakeResponse, Exception
+Nodes (7): Tests for ATLAS fields on GET /api/cves/{id}., CVE_SELECT must include has_ai_context — list/export should not default to False, test_cve_detail_atlas_helpers_return_linked_data(), test_get_cve_endpoint_includes_atlas_fields(), test_investigation_summary_endpoint_returns_200(), test_list_cves_includes_has_ai_context(), test_replace_atlas_techniques_drops_stale_fk_mappings()
 
 ### Community 309 - "BRIEFR Beta V1.5 — Detection & Threat Depth"
 Cohesion: 0.17
@@ -1608,8 +1620,8 @@ Cohesion: 0.17
 Nodes (12): 1. Where the tool actually is today, 2. What BRIEFR is — and what it must accurately claim to be, 3. The one metric: analyst minutes saved per day, 4. Pillar 1 — Detection content quality (the Forge ladder), 5. Pillar 2 — Correlation depth and false-positive discipline, 6. Pillar 3 — Adoption engineering, 7. Pillar 4 — The maintainer's knowledge (the career asset), 8. Sequencing (next ~90 days) (+4 more)
 
 ### Community 312 - "get_siem_queries"
-Cohesion: 0.13
-Nodes (16): normalize_cwe_ids(), Any, Unified detection class router (Sprint D3).  Single resolution path for CWE/AT, Map ATT&CK technique or CWE list to a stable detection class slug., Resolve class from a CVE-like dict (single entry point for detection outputs)., resolve_detection_class(), get_siem_queries(), SIEM quick-search query templates for BRIEFR detection engineering. Covers Elas (+8 more)
+Cohesion: 0.22
+Nodes (9): Unified detection class router (Sprint D3).  Single resolution path for CWE/AT, get_siem_queries(), SIEM quick-search query templates for BRIEFR detection engineering. Covers Elas, Return SIEM queries for a CVE/technique pair.     Selection order: ATT&CK techn, Tests for unified detection class router (Sprint D3)., test_siem_class_fallback_for_sqli(), test_siem_class_queries_are_platform_specific_not_generic(), test_sigma_and_siem_agree_on_class_without_technique() (+1 more)
 
 ### Community 313 - "test_user_notifications.py"
 Cohesion: 0.36
@@ -1663,9 +1675,9 @@ Nodes (10): GET /api/changes, GET /api/me/notifications, GET /api/me/preferences
 Cohesion: 0.20
 Nodes (10): GET /api/kev/deadlines, GET /api/usage, GET /api/usage/ioc, GET /api/version, POST /api/refresh, POST /api/refresh/epss, POST /api/refresh/kev, POST /api/refresh/mitre (+2 more)
 
-### Community 332 - "patch_sentence"
-Cohesion: 0.28
-Nodes (8): get_otx_ioc_sync_max_per_run(), prefetch_pulse_iocs_for_nightly(), Pre-fetch IOC data for pulses not yet in otx_pulse_iocs.     Called by the nigh, get_otx_continuous_budget_per_run(), get_otx_continuous_interval_minutes(), Continuous OTX background sync — spends hourly API budget across the day.  Run, Spend API budget on prioritized CVE pulse refresh, then pulse IOC prefetch., run_otx_continuous_sync()
+### Community 332 - "run_detection_context_sync"
+Cohesion: 0.36
+Nodes (7): get_cves_for_detection_context_sync(), get_detection_context_max_per_run(), Connection, Scheduler-side DetectionContext backfill (Sprint D2).  Populates ``feed_cache`, CVEs missing a fresh detection_ctx cache entry., Backfill DetectionContext cache rows for CVEs missing them., run_detection_context_sync()
 
 ### Community 333 - "3.2 Display catalog (implement first)"
 Cohesion: 0.20
@@ -1731,15 +1743,15 @@ Nodes (9): 0. Non-negotiables (read before anything), 1. Session start ritual (e
 Cohesion: 0.25
 Nodes (8): CVE Detail & Enrichment, GET /api/cves/{cve_id}, GET /api/cves/{cve_id}/drawer, GET /api/cves/{cve_id}/epss-history, GET /api/cves/{cve_id}/momentum, GET /api/cves/{cve_id}/related, GET /api/cves/{cve_id}/sentences, GET /api/otx/pulses/{pulse_id}/iocs
 
-### Community 349 - "ioc_watchlist.py"
-Cohesion: 0.36
-Nodes (7): delete_ioc_watchlist_entry(), _is_postgres_connection(), list_ioc_watchlist(), Per-user IOC watchlist (V1.5 Theme 4b)., upsert_ioc_watchlist_entry(), validate_ioc_type(), get_ioc_watchlist()
+### Community 349 - "ioc.py"
+Cohesion: 0.21
+Nodes (13): delete_ioc_watchlist_entry(), _is_postgres_connection(), list_ioc_watchlist(), Per-user IOC watchlist (V1.5 Theme 4b)., upsert_ioc_watchlist_entry(), validate_ioc_type(), delete_ioc_watchlist(), get_ioc_watchlist() (+5 more)
 
 ### Community 350 - "emit.py"
-Cohesion: 0.17
-Nodes (17): list_active_user_ids(), emit_api_key_unhealthy_notification(), emit_ioc_watchlist_notification(), emit_job_error_notification(), _emit_to_users(), emit_watchlist_notification(), Emit in-app notifications when monitor rules fire., _campaign_hint_for_cve() (+9 more)
+Cohesion: 0.46
+Nodes (7): list_active_user_ids(), emit_api_key_unhealthy_notification(), emit_ioc_watchlist_notification(), emit_job_error_notification(), _emit_to_users(), emit_watchlist_notification(), Emit in-app notifications when monitor rules fire.
 
-### Community 351 - "test_rule_sources.py"
+### Community 351 - "rule_sources.py"
 Cohesion: 0.10
 Nodes (24): _elastic_meta(), _fetch_raw(), find_elastic_rules(), find_sigma_rules(), _gh_headers(), _github_search(), Detection rule source discovery.  Priority: SigmaHQ community rules → Elastic, Quick regex extraction of title and status from Sigma YAML without full parse. (+16 more)
 
@@ -1775,9 +1787,13 @@ Nodes (7): Out of scope, Reporting a vulnerability, Secret scanning, Secure depl
 Cohesion: 0.29
 Nodes (7): GET /api/health, GET /api/stats, GET /api/stats/timeline, GET /api/stats/top-vendors, GET /api/techniques/top, GET /api/time, Health & Stats
 
-### Community 360 - "test_investigation_summary.py"
+### Community 360 - "test_incident_source_refresh.py"
 Cohesion: 0.31
 Nodes (6): admin_client(), Per-source incident feed refresh (RSS + ATLAS partial snapshot merge)., _setup_db(), test_atlas_only_refresh_keeps_rss_cards(), test_get_incident_feed_drops_removed_source_cards(), test_partial_rss_refresh_replaces_only_that_source()
+
+### Community 361 - "build_onboarding_checklist"
+Cohesion: 0.29
+Nodes (7): _backup_recent_enough(), build_onboarding_checklist(), Any, First-hour operator onboarding checklist (Wave 4).  Copyright © 2026 Sai Harsh, Return checklist items with live done/pending state., get_effective_stack_terms(), Operator stack for KEV alerts / wallboard: env override, else saved user stack.
 
 ### Community 362 - "4. Page-by-page specification"
 Cohesion: 0.29
@@ -1815,13 +1831,17 @@ Nodes (6): ADR-NNN: Title, Alternatives considered, Consequences, Context, Decis
 Cohesion: 0.48
 Nodes (5): IntelProvenanceLine(), formatIntelProvenanceLine(), intelProvenanceTooltip(), STATUS_LABELS, STATUS_TOOLTIPS
 
-### Community 371 - "Risk & Correlation"
+### Community 371 - "vulncheck_kev.py"
 Cohesion: 0.33
-Nodes (6): DELETE /api/cves/{cve_id}/correlation/suppress, GET /api/correlation/clusters, GET /api/cves/{cve_id}/correlation, GET /api/cves/{cve_id}/greynoise-scans, POST /api/cves/{cve_id}/correlation/suppress, Risk & Correlation
+Nodes (6): _extract_cve_ids(), fetch_vulncheck_kev_cve_ids(), Any, VulnCheck community KEV catalog sync (V1.5 Theme 4b)., Paginate VulnCheck KEV index and return CVE IDs., vulncheck_enabled()
 
-### Community 373 - "test_correlation_postgres_sql.py"
+### Community 372 - "detection_backlog.py"
+Cohesion: 0.38
+Nodes (6): get_detection_backlog(), _item_to_dict(), post_dismiss_backlog_item(), Detection backlog API (V1.5 Theme 3).  Copyright © 2026 Sai Harsha Vardhan SP, List KEV-driven detection backlog items (open gaps on the operator stack)., Soft-dismiss a backlog item (does not reopen on later KEV sync).
+
+### Community 373 - "merge_additive_cve_fields"
 Cohesion: 0.33
-Nodes (5): Postgres-safe SQL shapes for correlation nightly queries., GROUP BY prefetch query must not use DISTINCT + ORDER BY on missing columns., test_build_campaign_members_query_runs_on_sqlite(), test_nightly_correlation_recovers_after_temporal_failure(), test_prefetch_pulse_iocs_query_runs_on_sqlite()
+Nodes (6): merge_additive_cve_fields(), Merge enrichment into an existing row without downgrading richer data.      Re, preview_merge(), Test helper exposing additive merge rules., test_merge_additive_does_not_downgrade_cvss(), test_merge_additive_fills_gaps()
 
 ### Community 374 - "14. Copy examples (analyst)"
 Cohesion: 0.33
@@ -1871,9 +1891,9 @@ Nodes (5): DELETE /api/watchlist/{cve_id}, DELETE /api/watchlist/snoozes, GET /a
 Cohesion: 0.40
 Nodes (4): build_operator_notifications(), Any, Operator notification center — durable events from audit log and monitors., Aggregate recent operator-visible events (Issue 8 tail).
 
-### Community 386 - "test_display_typography.py"
-Cohesion: 0.47
-Nodes (8): _install_transport(), Tests for env-configured Telegram/Discord webhook sender., _setup_db(), test_both_channels(), test_discord_only(), test_telegram_only(), test_uses_retries(), test_webhooks_disabled_without_env()
+### Community 386 - "test_rate_limit_store.py"
+Cohesion: 0.40
+Nodes (5): shared_store_enabled(), Shared rate-limit store (Track I Phase 3b)., test_shared_acquire_persists_across_buckets(), test_shared_store_disabled_by_default(), test_shared_store_enabled_with_db_flag()
 
 ### Community 387 - "7. Shared components"
 Cohesion: 0.40
@@ -1943,9 +1963,9 @@ Nodes (5): 9. Routing design, Current behaviour (baseline), OmniRoute research (
 Cohesion: 0.40
 Nodes (5): Cross-Surface Correction Methodology, How we catch “invisible” backend gaps, Out of scope for this pass, Per-PR rule (mandatory for implementers), Sweep map by PR (non-exhaustive — run fresh grep each PR)
 
-### Community 404 - "appLinks.js"
-Cohesion: 0.36
-Nodes (5): inlineMetric(), daysUntilDue(), kevDueBucket(), kevDueLabel(), parseDueDate()
+### Community 404 - "formatSharedObservablesSummary"
+Cohesion: 0.60
+Nodes (3): InfrastructureList(), formatSharedObservablesSummary(), pluralize()
 
 ### Community 405 - "10. Files to create or modify"
 Cohesion: 0.50
@@ -2056,32 +2076,48 @@ Cohesion: 0.67
 Nodes (3): 2.1 Route strategy, 2.2 Navigation catalog (left sidebar), 2. Module placement & navigation
 
 ### Community 557 - "confirm.py"
-Cohesion: 0.39
-Nodes (7): confirmation_receipt(), confirmations_enabled(), confirmations_for_iocs_batch(), _parse_confirmations(), Any, Enrichment confirmation from cached IOC lookups (Correlation v2 Phase 2)., Read ioc_cache for all distinct IOC values in one query (instead of one     que
+Cohesion: 0.33
+Nodes (8): get_correlation_confirm_enabled(), confirmation_receipt(), confirmations_enabled(), confirmations_for_iocs_batch(), _parse_confirmations(), Any, Enrichment confirmation from cached IOC lookups (Correlation v2 Phase 2)., Read ioc_cache for all distinct IOC values in one query (instead of one     que
 
 ### Community 558 - "test_epss_sparkline_trend.py"
 Cohesion: 0.43
 Nodes (6): Sanity checks for EPSS trend thresholds (mirrors frontend epssTrendLabel)., Python mirror of frontend absolute-delta trend logic., test_falling_when_absolute_change_below_threshold(), test_rising_when_absolute_change_above_threshold(), test_stable_when_change_within_band(), _trend_label()
 
+### Community 559 - "appLinks.js"
+Cohesion: 0.70
+Nodes (4): appOrigin(), buildCveShareText(), cveDeepLink(), nvdCveLink()
+
+### Community 560 - "AI Summary"
+Cohesion: 0.50
+Nodes (4): AI Summary, GET /api/ai/summary, POST /api/ai/summary, POST /api/investigation/summary
+
+### Community 561 - "CorrelationSuppressModal.jsx"
+Cohesion: 0.67
+Nodes (3): CorrelationSuppressModal(), SUPPRESSION_REASONS, suppressionDialogCopy()
+
+### Community 562 - "get_bucket_stats"
+Cohesion: 0.67
+Nodes (3): get_bucket_stats(), Return per-bucket stats for the rate limit dashboard., get_ratelimit_dashboard()
+
 ## Knowledge Gaps
-- **1660 isolated node(s):** `SIEM_PLATFORMS`, `STATUS_LABELS`, `npx`, `@modelcontextprotocol/server-sequential-thinking`, `briefr-backup.sh script` (+1655 more)
+- **1666 isolated node(s):** `npx`, `@modelcontextprotocol/server-sequential-thinking`, `briefr-backup.sh script`, `BACKUP_AGE_KEY_FILE`, `BACKUP_DIR` (+1661 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **160 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **156 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `get_db()` connect `get_db` to `run_db_test`, `cves.py`, `init_db`, `enrichment.py`, `scheduler.py`, `sync_env_destinations_to_db`, `test_webhooks_alerts.py`, `test_llm_product_extraction.py`, `destinations.py`, `get_campaigns_for_cve`, `metadata.py`, `correlationPresentation.js`, `otx.py`, `user_notifications.py`, `artifact_extract.py`, `mitre.py`, `repo.py`, `repo.py`, `database.py`, `poc_github.py`, `extended.py`, `alerts.py`, `test_embeddings.py`, `test_correlation_phase45.py`, `DbConnection`, `connection.py`, `forge.py`, `get_storage`, `summary.py`, `test_brief_endpoint.py`, `context.py`, `patch_sentence`, `suppressions.py`, `FastAPI`, `backlog.py`, `lookup_ioc`, `service.py`, `cve_risk_score`, `ioc_watchlist.py`, `emit.py`, `test_rule_sources.py`, `seed_screenshot_data.py`, `tracking.py`, `test_ai_alerts_and_feed.py`, `build_support_pack`, `run_integrity_check`, `dispatch_event`, `SessionsPage.jsx`, `provenance.py`, `test_ioc_watchlist.py`, `watchlist.py`?**
+- **Why does `get_db()` connect `get_db` to `run_db_test`, `cves.py`, `init_db`, `scheduler.py`, `sync_env_destinations_to_db`, `lifespan`, `product_extraction.py`, `destinations.py`, `list_correlation_clusters`, `get_source_pacing`, `run_nvd_incremental_sync`, `metadata.py`, `llm_router.py`, `otx.py`, `utcnow_str`, `artifact_extract.py`, `atlas.py`, `cache.py`, `mitre.py`, `repo.py`, `database.py`, `alerts.py`, `test_embeddings.py`, `test_correlation_phase45.py`, `DbConnection`, `me.py`, `connection.py`, `forge.py`, `intelligence.py`, `service.py`, `run_detection_context_sync`, `test_cves_router_fixes.py`, `suppressions.py`, `FastAPI`, `backlog.py`, `get_system`, `service.py`, `cve_risk_score`, `ioc.py`, `rule_sources.py`, `seed_screenshot_data.py`, `tracking.py`, `test_ai_alerts_and_feed.py`, `build_support_pack`, `case_study_feed.py`, `dispatch_event`, `build_threat_scenarios`, `atlas.py`, `detection_backlog.py`, `test_ioc_watchlist.py`, `watchlist.py`?**
   _High betweenness centrality (0.060) - this node is a cross-community bridge._
-- **Why does `DbConnection` connect `DbConnection` to `get_db`, `watchlist.py`, `utcnow_str`, `cache_retention.py`, `init_db`, `enrichment.py`, `scheduler.py`, `backlog.py`, `provenance.py`, `cve.py`, `webhooks.py`, `types.py`, `metadata.py`, `test_ioc_watchlist.py`, `ioc_watchlist.py`, `emit.py`, `user_notifications.py`?**
-  _High betweenness centrality (0.022) - this node is a cross-community bridge._
-- **Why does `AuthProvider()` connect `main.jsx` to `DisplayPage.jsx`, `repo.py`?**
-  _High betweenness centrality (0.016) - this node is a cross-community bridge._
+- **Why does `run_db_test()` connect `run_db_test` to `test_intel_feeds.py`, `is_postgres`, `test_admin_scheduler.py`, `test_auth_router.py`, `init_db`, `test_gemini_reconciliation.py`, `test_security_invariants.py`, `sync_env_destinations_to_db`, `build_yara_rules_from_hashes`, `TestClient`, `artifact_extract.py`, `test_forge.py`, `database.py`, `poc_github.py`, `alerts.py`, `test_embeddings.py`, `test_me_stack.py`, `test_epss_backfill.py`, `test_cve_detail_atlas.py`, `conftest.py`, `test_wallboard.py`, `test_watchlist.py`, `run_backup`, `test_user_notifications.py`, `nvd.py`, `test_me_preferences.py`, `test_auth_setup.py`, `test_cves_router_fixes.py`, `test_webhooks_destinations_crud.py`, `test_db_explorer.py`, `test_detection_context.py`, `test_ai_alerts_and_feed.py`, `test_incident_source_refresh.py`, `test_admin_config.py`, `test_ioc_watchlist.py`?**
+  _High betweenness centrality (0.023) - this node is a cross-community bridge._
+- **Why does `AuthProvider()` connect `AuthContext.jsx` to `AssetProfileContext.jsx`, `repo.py`?**
+  _High betweenness centrality (0.019) - this node is a cross-community bridge._
 - **Are the 219 inferred relationships involving `run_db_test()` (e.g. with `test_audit_log_masks_legacy_plaintext_targets()` and `test_last_five_run_history_written_and_trimmed()`) actually correct?**
   _`run_db_test()` has 219 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 171 inferred relationships involving `get_db()` (e.g. with `record_llm_attempt()` and `prefetch_pulse_iocs_for_nightly()`) actually correct?**
   _`get_db()` has 171 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 85 inferred relationships involving `TestClient` (e.g. with `admin_client()` and `admin_client()`) actually correct?**
-  _`TestClient` has 85 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `SIEM_PLATFORMS`, `STATUS_LABELS`, `npx` to the rest of the system?**
-  _2656 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Are the 94 inferred relationships involving `TestClient` (e.g. with `admin_client()` and `admin_client()`) actually correct?**
+  _`TestClient` has 94 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `npx`, `@modelcontextprotocol/server-sequential-thinking`, `AI-assisted report generation (on-demand only).` to the rest of the system?**
+  _2668 weakly-connected nodes found - possible documentation gaps or missing edges._
