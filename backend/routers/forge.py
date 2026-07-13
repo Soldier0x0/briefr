@@ -378,7 +378,18 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
     finally:
         await db.close()
 
-    return {"pack": _pack_to_dict(pack_rows[0]), "created": created}
+    pack = _pack_to_dict(pack_rows[0])
+    # cve was already loaded above for sigma/SIEM generation — reuse it for
+    # the same CWE/EPSS/KEV fields list_hunt_packs and get_hunt_pack expose,
+    # so a freshly generated pack shows them in the rail immediately instead
+    # of only after the next full technique-detail reload (forge-redesign.md
+    # §4 FR-3).
+    pack["cwe_ids"] = cwe_ids
+    pack["cvss_score"] = cve["cvss_score"]
+    pack["epss_score"] = cve["epss_score"]
+    pack["is_kev"] = bool(cve["is_kev"])
+
+    return {"pack": pack, "created": created}
 
 
 # ── Hunt pack API (registered after the literal /generate sibling) ──

@@ -232,6 +232,12 @@ def test_generate_pack_persists_link_and_is_idempotent(forge_client):
         "elastic_kql", "splunk_spl", "sentinel_kql", "qradar_aql",
     }
     assert pack["log_patterns"]
+    # FR-3: generate's response carries CWE/EPSS/KEV immediately (not just
+    # list_hunt_packs/get_hunt_pack) so a freshly generated pack shows them
+    # in the rail without a second round trip.
+    assert pack["is_kev"] is True
+    assert pack["cvss_score"] == pytest.approx(10.0)
+    assert pack["epss_score"] == pytest.approx(0.97)
 
     second = client.post("/api/hunt-packs/generate", json={"cve_id": "CVE-2021-44228"})
     assert second.status_code == 200
