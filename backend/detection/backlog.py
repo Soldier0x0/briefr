@@ -113,14 +113,23 @@ async def upsert_gap_items_for_cves(
     pg = _is_postgres_connection(db)
     placeholders = ",".join(f"${i+1}" if pg else "?" for i in range(len(cve_ids)))
 
-    # 1. Batch fetch techniques for all CVEs
+    # 1. Batch fetch techniques for all CVEs. The UNION passes cve_ids twice
+    # (once per branch) — SQLite's positional "?" tolerates reusing the same
+    # placeholder text, but asyncpg numbers "$n" globally per statement, so
+    # reusing {placeholders} in both branches while binding 2×len(cve_ids)
+    # params raises "the server expects N arguments, 2N were passed". The
+    # second branch needs its own, offset placeholder list on Postgres.
+    placeholders2 = (
+        ",".join(f"${len(cve_ids) + i + 1}" for i in range(len(cve_ids)))
+        if pg else placeholders
+    )
     cve_techniques: dict[str, set[str]] = {cid: set() for cid in cve_ids}
     tech_rows = await db.execute_fetchall(
         f"""
         SELECT cve_id, technique_id AS tid FROM cve_technique_map WHERE cve_id IN ({placeholders})
         UNION
         SELECT cve_id, mitre_technique AS tid FROM cves
-        WHERE cve_id IN ({placeholders}) AND COALESCE(mitre_technique, '') != ''
+        WHERE cve_id IN ({placeholders2}) AND COALESCE(mitre_technique, '') != ''
         """,
         tuple(cve_ids) + tuple(cve_ids),
     )

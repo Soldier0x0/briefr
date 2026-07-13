@@ -304,6 +304,44 @@ Flowchart: [`docs/diagrams/startup.mermaid`](docs/diagrams/startup.mermaid) (sch
    - **Responsive:** mirrors `threat-modeling-security-architecture.md` §3.1 —
      rail pinned ≥1280px, slide-in overlay with backdrop + `Escape`-to-close
      960–1279px, left nav collapses to a horizontal wrap ≤959px.
+7. **Forge redesign FR-3 (2026-07, live-data enrichment + PDF export):**
+   closes the `forge-redesign.md` program (FR-1→FR-3 all shipped).
+   - **Case-study cross-links:** MITRE ATLAS (`atlas_case_studies`,
+     `atlas_techniques`) and MITRE ATT&CK Enterprise (`mitre_techniques`,
+     Forge's own taxonomy) are separate technique ID spaces — a case study's
+     `techniques` list is ATLAS IDs, not ATT&CK ones. The only shared key is
+     the CVE, so `db/metadata.py::get_case_study_counts_by_technique` /
+     `get_case_studies_for_technique` join `atlas_case_studies.cve_ids`
+     (JSON) against `cve_technique_map.cve_id` in Python — the ATLAS table
+     is MITRE's small bundled dataset, not a live feed, so this avoids an
+     N+1 across every coverage-map technique. `GET /api/forge/coverage`
+     gains `case_study_count` per technique (Coverage map chip); `GET
+     /api/hunt-packs/{technique_id}` gains a `case_studies` array (Hunt Pack
+     rail section) — both additive, no schema change.
+   - **KEV backlog notifications:** `detection/backlog.py`'s
+     `process_new_kev_backlog` / `reconcile_kev_backlog` (both scheduler-only
+     — CLAUDE.md danger zone 6, never on the request path) call
+     `notifications/emit.py::emit_kev_backlog_notification` for each newly
+     created backlog row, one `user_notifications` insert per active analyst
+     (`entity_type="kev_backlog"`, `dedupe_key=f"kev_backlog:{cve_id}:
+     {technique_id}"`). `NotificationBell.jsx` deep-links `kev_backlog`
+     clicks to `/?view=backlog`, reusing the same `?view=` App-tab-activation
+     effect FR-2 built for the `?cve=` deep link.
+   - **CWE/EPSS:** `list_hunt_packs` (Library) and `get_hunt_pack` (rail)
+     extend their existing `cves` join/query to also select `cwe_ids`,
+     `cvss_score`, `epss_score` — no new query, same columns the
+     pack-generate flow already reads. Library grid gained CWE/EPSS columns;
+     the rail's saved-pack header shows the same line.
+   - **PDF export:** `utils/huntPackPdf.js` mirrors `pdfReport.js`'s jsPDF
+     pattern (lazy `import('jspdf')`, `exportCommon.js` layout constants/
+     branding, local `drawSection`/`drawCodeBlock`/footer helpers — not
+     extracted into a shared module, matching `pdfReport.js`'s own choice
+     not to share those with `investigationPdf.js`). Renders technique,
+     Sigma rule, SIEM queries, log patterns, notes, CVE/KEV/CWE/EPSS badges,
+     and related case studies (when known) with the BRIEFR branding footer.
+     Wired from both `LibraryView.jsx` (row EXPORT PDF — supersedes the FR-2
+     JSON-blob placeholder) and `HuntPackRail.jsx` (per-pack EXPORT PDF,
+     which additionally has technique name/tactic and case studies loaded).
 
 ### F. Watchlist — pin / snooze (V1.3)
 

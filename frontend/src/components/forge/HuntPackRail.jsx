@@ -212,7 +212,19 @@ function ProofBenchSection({ packs }) {
   )
 }
 
-function SavedPack({ pack, defaultOpen }) {
+function PackContextLine({ pack }) {
+  const cwes = pack.cwe_ids || []
+  if (!cwes.length && pack.epss_score == null && pack.cvss_score == null) return null
+  return (
+    <p className="fg-pack-context mono">
+      {pack.cvss_score != null && `CVSS ${pack.cvss_score.toFixed(1)}`}
+      {pack.epss_score != null && `${pack.cvss_score != null ? ' · ' : ''}EPSS ${(pack.epss_score * 100).toFixed(1)}%`}
+      {cwes.length > 0 && `${(pack.cvss_score != null || pack.epss_score != null) ? ' · ' : ''}${cwes.join(', ')}`}
+    </p>
+  )
+}
+
+function SavedPack({ pack, defaultOpen, onExportPdf, exporting }) {
   // Freeze the initial open state: <details> stays uncontrolled, so a later
   // re-render (second pack saved flips defaultOpen) never force-toggles a
   // panel the user opened or closed. React has no defaultOpen DOM prop —
@@ -227,13 +239,50 @@ function SavedPack({ pack, defaultOpen }) {
         </span>
       </summary>
       <div className="fg-pack-body">
+        <PackContextLine pack={pack} />
         <div className="fg-siem-head">
           <span className="fg-siem-label mono">SIGMA RULE (experimental)</span>
-          <CopyButton text={pack.sigma_yaml} />
+          <div className="fg-pack-body-actions">
+            <button
+              type="button"
+              className="fg-copy-btn mono"
+              onClick={(e) => { e.preventDefault(); onExportPdf?.(pack) }}
+              disabled={exporting}
+            >
+              {exporting ? 'EXPORTING…' : 'EXPORT PDF'}
+            </button>
+            <CopyButton text={pack.sigma_yaml} />
+          </div>
         </div>
         <pre className="fg-code mono">{pack.sigma_yaml}</pre>
       </div>
     </details>
+  )
+}
+
+function CaseStudiesSection({ studies }) {
+  if (!studies?.length) return null
+  return (
+    <section className="fg-section" aria-label="Related case studies">
+      <div className="fg-proof-head">
+        <h4 className="fg-section-label mono">CASE STUDIES ({studies.length})</h4>
+        <Tooltip text="Real-world MITRE ATLAS incidents linked to CVEs mapped to this technique — cross-referenced by shared CVE, not by ATT&CK technique ID (ATLAS uses its own AI/ML taxonomy).">
+          <span className="fg-proof-help mono" tabIndex={-1}>?</span>
+        </Tooltip>
+      </div>
+      <ul className="fg-case-study-list">
+        {studies.map(study => (
+          <li key={study.study_id} className="fg-case-study-item">
+            <p className="fg-case-study-name">{study.name}</p>
+            {study.summary && <p className="fg-case-study-summary">{study.summary}</p>}
+            <p className="fg-case-study-meta mono">
+              {study.target || 'AI system'}
+              {study.incident_date ? ` · ${study.incident_date}` : ''}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 
@@ -251,6 +300,7 @@ export default function HuntPackRail({ techniqueId, onPackSaved }) {
   const [generatingCve, setGeneratingCve] = useState(null)
   const [generateError, setGenerateError] = useState(null)
   const [generateErrorRequestId, setGenerateErrorRequestId] = useState(null)
+  const [exportingPackId, setExportingPackId] = useState(null)
 
   const loadHuntPack = useCallback(() => {
     if (!techniqueId) return undefined
@@ -301,6 +351,17 @@ export default function HuntPackRail({ techniqueId, onPackSaved }) {
       .finally(() => setGeneratingCve(null))
   }, [techniqueId, onPackSaved])
 
+  const handleExportPdf = useCallback((pack) => {
+    setExportingPackId(pack.id)
+    import('../../utils/huntPackPdf.js')
+      .then(({ downloadHuntPackPdf }) => downloadHuntPackPdf(pack, {
+        technique: detail?.technique,
+        caseStudies: detail?.case_studies,
+      }))
+      .catch(err => notifyApiError(err))
+      .finally(() => setExportingPackId(null))
+  }, [detail])
+
   if (!techniqueId) {
     return (
       <p className="fg-panel-empty mono">
@@ -331,7 +392,7 @@ export default function HuntPackRail({ techniqueId, onPackSaved }) {
   }
   if (!detail) return null
 
-  const { technique, status, packs, siem_queries: siemQueries, log_patterns: logPatterns, linked_cves: linkedCves } = detail
+  const { technique, status, packs, siem_queries: siemQueries, log_patterns: logPatterns, linked_cves: linkedCves, case_studies: caseStudies } = detail
 
   return (
     <div className="fg-panel">
@@ -392,12 +453,20 @@ export default function HuntPackRail({ techniqueId, onPackSaved }) {
         <section className="fg-section" aria-label="Saved hunt packs">
           <h4 className="fg-section-label mono">YOUR PACKS ({packs.length})</h4>
           {packs.map(pack => (
-            <SavedPack key={pack.id} pack={pack} defaultOpen={packs.length === 1} />
+            <SavedPack
+              key={pack.id}
+              pack={pack}
+              defaultOpen={packs.length === 1}
+              onExportPdf={handleExportPdf}
+              exporting={exportingPackId === pack.id}
+            />
           ))}
         </section>
       )}
 
       {packs.length > 0 && <ProofBenchSection packs={packs} />}
+
+      <CaseStudiesSection studies={caseStudies} />
 
       <section className="fg-section" aria-label="SIEM quick-search queries">
         <h4 className="fg-section-label mono">SIEM QUICK SEARCHES</h4>

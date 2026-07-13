@@ -127,6 +127,43 @@ def test_dismiss_missing_returns_404(backlog_client):
     assert resp.status_code == 404
 
 
+def test_new_backlog_item_emits_notification(backlog_client):
+    """forge-redesign.md §4 FR-3: a new KEV backlog item on the analyst's
+    stack emits a scheduler-side in-app notification deep-linking to
+    ?view=backlog (frontend NotificationBell handles entity_type
+    'kev_backlog')."""
+    from db.user_notifications import list_notifications
+
+    async def seed_analyst() -> None:
+        db = await get_db()
+        try:
+            await db.execute(
+                "INSERT INTO users (id, username, password_hash, role, is_active) "
+                "VALUES (2, 'analyst-1', 'hash', 'analyst', 1)"
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(seed_analyst())
+
+    created = run_db_test(process_new_kev_backlog(["CVE-2024-2001", "CVE-2024-2002"]))
+    assert len(created) == 1
+
+    async def read_notifications():
+        db = await get_db()
+        try:
+            return await list_notifications(db, user_id=2, scope="analyst")
+        finally:
+            await db.close()
+
+    notifications = run_db_test(read_notifications())
+    assert len(notifications) == 1
+    assert notifications[0]["entity_type"] == "kev_backlog"
+    assert notifications[0]["entity_id"] == "CVE-2024-2001"
+    assert "CVE-2024-2001" in notifications[0]["title"]
+
+
 def test_upsert_idempotent(tmp_path, monkeypatch):
     db_path = tmp_path / "backlog_unit.db"
     monkeypatch.setenv("DB_PATH", str(db_path))

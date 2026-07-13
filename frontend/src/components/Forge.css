@@ -203,7 +203,7 @@
 .fg-tech-row {
   width: 100%;
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) auto auto;
+  grid-template-columns: 64px minmax(0, 1fr) auto auto auto;
   align-items: center;
   gap: 10px;
   text-align: left;
@@ -244,6 +244,15 @@
 
 .fg-kev-count {
   color: var(--red);
+}
+
+.fg-case-study-chip {
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+  color: var(--text3);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  white-space: nowrap;
 }
 
 /* ── Hunt pack panel / persistent rail (FR-2) ─────────── */
@@ -428,6 +437,18 @@
   padding: 0 12px 12px;
 }
 
+.fg-pack-context {
+  font-size: 0.6875rem;
+  color: var(--text3);
+  margin: 0 0 10px;
+}
+
+.fg-pack-body-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .fg-priority {
   font-size: 0.625rem;
   letter-spacing: 0.1em;
@@ -512,6 +533,42 @@
   font-size: 0.8125rem;
   color: var(--text2);
   line-height: 1.5;
+}
+
+/* ── Case studies (FR-3, forge-redesign.md §4) ───────── */
+
+.fg-case-study-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fg-case-study-item {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+}
+
+.fg-case-study-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0 0 4px;
+}
+
+.fg-case-study-summary {
+  font-size: 0.8125rem;
+  color: var(--text2);
+  margin: 0 0 6px;
+  line-height: 1.4;
+}
+
+.fg-case-study-meta {
+  font-size: 0.6875rem;
+  color: var(--text3);
+  margin: 0;
 }
 
 /* ── States ──────────────────────────────────────────── */

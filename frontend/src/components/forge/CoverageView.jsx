@@ -1,7 +1,9 @@
 import { useMemo } from 'react'
+import Tooltip from '../ui/Tooltip.jsx'
 import { SkeletonRows, StatusChip } from './shared.jsx'
 
 function CoverageRow({ technique, active, onSelect }) {
+  const caseStudyCount = technique.case_study_count || 0
   return (
     <li>
       <button
@@ -18,6 +20,13 @@ function CoverageRow({ technique, active, onSelect }) {
             <span className="fg-kev-count"> · {technique.kev_count} KEV</span>
           )}
         </span>
+        {caseStudyCount > 0 && (
+          <Tooltip text="Real-world MITRE ATLAS incidents linked to CVEs mapped to this technique — open the hunt pack rail to read them.">
+            <span className="fg-case-study-chip mono">
+              Case studies ({caseStudyCount})
+            </span>
+          </Tooltip>
+        )}
         <StatusChip status={technique.status} />
       </button>
     </li>
