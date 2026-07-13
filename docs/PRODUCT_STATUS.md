@@ -83,7 +83,8 @@
 | K5 LLM pacing (#433), AI-3 quota snapshots (#432), embeddings auto-on-ingest (#438) | RSS↔CVE linking |
 | Chart.js admin ops dashboard, logrotate deploy artifacts, F2 AGPL (#423) | |
 | Architecture diagrams (phase A); session auth middleware (#441); M-5 backup owner + N-4 kiosk docs (#442) | |
-| TM-1: Security Architecture Corpus generator + loader + drift CI, `/api/security-architecture/{manifest,overview}` stub | TM-2+: shell UI, live sections, architecture graph, curated content (risks/controls/decisions) |
+| TM-1: Security Architecture Corpus generator + loader + drift CI, `/api/security-architecture/{manifest,overview}` stub | TM-3+: MITRE ATT&CK, threat scenarios, controls, self-exposure, system architecture graph, curated content (risks/controls/decisions) |
+| TM-2: `/security-architecture` shell + Overview — ARCH header tab, manifest-driven nav (9 sections), drill-through evidence tiles, generic `/api/security-architecture/section/{id}` stub reads, simplified architecture stack | |
 
 Details: [`ROADMAP.md`](ROADMAP.md). Historical beta specs → `docs/archive/` (phase 2).
 

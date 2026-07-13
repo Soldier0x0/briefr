@@ -18,8 +18,9 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
 
   if (status === 'authed') {
-    const from = location.state?.from?.pathname || '/'
-    return <Navigate to={from} replace />
+    const from = location.state?.from
+    const to = from ? `${from.pathname}${from.search || ''}` : '/'
+    return <Navigate to={to} replace />
   }
 
   async function handleSubmit(e) {
@@ -33,8 +34,9 @@ export default function LoginPage() {
       } else {
         await login(username, password, rememberMe)
       }
-      const from = location.state?.from?.pathname || '/'
-      navigate(from, { replace: true })
+      const from = location.state?.from
+      const to = from ? `${from.pathname}${from.search || ''}` : '/'
+      navigate(to, { replace: true })
     } catch (err) {
       setError(err.message || (setupRequired ? 'Setup failed' : 'Login failed'))
       setShake(true)
