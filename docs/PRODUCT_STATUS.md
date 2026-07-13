@@ -75,7 +75,7 @@
 | Postgres, auth, rate limits, API queue, shared rate-limit store (#437) | Full `docker-compose.yml` (V2.0) |
 | Correlation v2 core + phase-4–5 tail (#364, #389, #434 `cve_id` filter) | STIX export (excluded from current loop) |
 | Correlation v3 Phase 0–1 (#473, #476, #487–#489): evidence-ranked peers, degree-penalized IOC hub confidence, severity/size removed from campaign confidence, additive `confidence_factors` in API + drawer | Correlation v3 Phase 2+ (PR-6…PR-13) — `PG-001` (cross-file Postgres test pollution, BACKLOG §3) fixed 2026-07-12, no longer a blocker |
-| FR-1: `GET/DELETE /api/hunt-packs` list+delete API (#490) | FR-2/FR-3: Forge three-panel shell + Library view + PDF export — blocked on browser verification tooling |
+| FR-1: `GET/DELETE /api/hunt-packs` list+delete API (#490) | FR-2: Forge three-panel shell, `?view=`/`&technique=`/`&pack=` URL state, Library view, persistent Hunt Pack rail — PR open, not merged (interactive logged-in browser walk not completed this session, see HANDOVER); FR-3 (case-study chips, KEV backlog notifications, PDF export) not started |
 | Admin ops, webhooks (#413–#415), wallboard v2 (#430), AI ops (#416–#420), 12-PR operator bundle (#428–#439), 4-PR tail (#441–#444) | **G0** LEARNING_PATH / ONBOARDING refresh |
 | **Forge** threat scenarios, proof bench, KEV backlog, IOC watchlist (V1.5 #373–#376) | LLM summary auth |
 | Track I performance Phases 1–3 (#378–#382, #436–#437, #443–#444) | `IMAGE_BRIEFS` tail; MkDocs |

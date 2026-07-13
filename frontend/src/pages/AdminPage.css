@@ -2943,6 +2943,20 @@
   background: color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
+.admin-data-grid-row-clickable {
+  cursor: pointer;
+  transition: background-color 0.12s ease-out;
+}
+
+.admin-data-grid-row-clickable:hover td {
+  background: var(--admin-surface-hover);
+}
+
+.admin-data-grid-row-clickable[aria-selected="true"] td {
+  background: var(--admin-accent-dim);
+  box-shadow: inset 2px 0 0 var(--admin-accent);
+}
+
 .config-section-header {
   display: flex;
   align-items: center;
