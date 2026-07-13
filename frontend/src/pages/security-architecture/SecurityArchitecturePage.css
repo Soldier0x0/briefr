@@ -567,3 +567,244 @@
     transition: none;
   }
 }
+
+/* ── System Architecture graph (TM-4) ─────────────────────────────────
+   Pan/zoom rides the <g transform> exclusively (playbook §3 smoothness
+   budget) -- no layout recompute on drag, so no transition on the graph
+   group itself (would visibly lag a live drag). */
+
+.sa-graph-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+
+.sa-graph-search {
+  max-width: 220px;
+}
+
+.sa-graph-canvas {
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+}
+
+.sa-graph-canvas:active {
+  cursor: grabbing;
+}
+
+.sa-graph-cluster-label {
+  fill: var(--text3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sa-graph-edge {
+  stroke: var(--border2);
+  stroke-width: 1;
+  fill: none;
+}
+
+.sa-graph-edge-active {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.sa-graph-node rect {
+  fill: var(--bg3);
+  stroke: var(--border2);
+  stroke-width: 1;
+  transition: stroke-color 0.14s ease-out, opacity 0.14s ease-out;
+}
+
+.sa-graph-node text {
+  fill: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.sa-graph-node {
+  cursor: pointer;
+}
+
+.sa-graph-node:hover rect,
+.sa-graph-node:focus-visible rect {
+  stroke: var(--accent);
+}
+
+.sa-graph-node:focus-visible {
+  outline: none;
+}
+
+.sa-graph-node-job rect { fill: color-mix(in srgb, var(--bg3) 85%, var(--amber) 15%); }
+.sa-graph-node-table rect { fill: color-mix(in srgb, var(--bg3) 85%, var(--green) 15%); }
+
+.sa-graph-node-selected rect {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.sa-graph-node-dim {
+  opacity: 0.25;
+}
+
+.sa-graph-node-match rect {
+  stroke: var(--amber);
+  stroke-width: 2;
+}
+
+.sa-graph-hint {
+  font-size: 0.6875rem;
+  color: var(--text3);
+  margin: 8px 0 0;
+}
+
+/* ── Trust boundaries (TM-4) ──────────────────────────────────────── */
+
+.sa-tb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 16px;
+}
+
+.sa-tb-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 16px;
+}
+
+.sa-tb-flow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.sa-tb-flow-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sa-tb-flow-node {
+  font-size: 0.8125rem;
+  padding: 4px 10px;
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  color: var(--text);
+}
+
+.sa-tb-flow-arrow {
+  color: var(--text3);
+  line-height: 1;
+  padding: 2px 0;
+}
+
+.sa-tb-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.sa-tb-field dt {
+  margin-bottom: 4px;
+}
+
+.sa-tb-field dd {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text2);
+}
+
+.sa-tb-residual {
+  display: inline-block;
+  margin-top: 8px;
+}
+
+.sa-status-low { color: var(--green); border-color: var(--green); }
+.sa-status-medium { color: var(--amber); border-color: var(--amber); }
+.sa-status-high { color: var(--red); border-color: var(--red); }
+.sa-status-critical { color: var(--red); border-color: var(--red); font-weight: 600; }
+
+/* ── Context rail (populated selection, TM-4) ─────────────────────── */
+
+.sa-rail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sa-rail-selection-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sa-rail-kind {
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+}
+
+.sa-rail-close {
+  background: transparent;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  padding: 2px 6px;
+}
+
+.sa-rail-close:hover {
+  color: var(--text);
+}
+
+.sa-rail-close:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.sa-rail-title {
+  font-size: 0.9375rem;
+  color: var(--text);
+  margin: 0 0 6px;
+}
+
+.sa-rail-meta {
+  font-size: 0.6875rem;
+  color: var(--text3);
+  margin: 0 0 10px;
+}
+
+.sa-rail-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.sa-rail-section .sa-row-list {
+  margin-top: 8px;
+}
+
+.sa-rail-line {
+  font-size: 0.75rem;
+  color: var(--text2);
+  padding: 3px 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sa-graph-node rect {
+    transition: none;
+  }
+}
