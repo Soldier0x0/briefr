@@ -108,6 +108,11 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
 
   // Wheel zoom: native listener, not React's (passive) onWheel, so
   // preventDefault actually stops page scroll while zooming the canvas.
+  // Depends on `graph` (not []): the canvas div is behind AsyncState's
+  // loading state, so it doesn't exist in the DOM yet on first mount --
+  // an empty-deps effect would capture a null ref forever. Re-running
+  // once `graph` arrives (and the canvas actually renders) is what
+  // makes the listener attach to a real element.
   useEffect(() => {
     const el = svgRef.current
     if (!el) return undefined
@@ -121,7 +126,7 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
     }
     el.addEventListener('wheel', handler, { passive: false })
     return () => el.removeEventListener('wheel', handler)
-  }, [])
+  }, [graph])
 
   const onPointerDown = useCallback((e) => {
     if (e.target.closest('[data-node]')) return
