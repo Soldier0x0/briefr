@@ -35,7 +35,7 @@ function riskCsvRows(rows) {
  * -- never recomputed here, so the badge and the Overview "Controls Active"
  * percentage math always agree on which rows are stale.
  */
-export default function RiskRegisterSection({ filters, onFilterChange }) {
+export default function RiskRegisterSection({ filters, onFilterChange, corpusVersion }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -164,7 +164,7 @@ export default function RiskRegisterSection({ filters, onFilterChange }) {
               </button>
               <button
                 type="button" className="admin-btn admin-btn-ghost mono"
-                onClick={() => downloadRiskRegisterPdf(rows, { corpusVersion: data?.corpus_version })}
+                onClick={() => downloadRiskRegisterPdf(rows, { corpusVersion })}
                 disabled={!rows.length}
               >
                 EXPORT PDF

@@ -31,16 +31,21 @@ export default function GlobalSearch({ onOpenSection }) {
       setOpen(false)
       return undefined
     }
+    let active = true
     debounceRef.current = setTimeout(() => {
       fetchSecurityArchitectureSearch(q)
         .then(res => {
+          if (!active) return
           setResults(res.results || [])
           setOpen(true)
           setActiveIndex(-1)
         })
         .catch(() => { /* search bar just shows no results */ })
     }, 180)
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+    return () => {
+      active = false
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
   }, [query])
 
   useEffect(() => {

@@ -169,7 +169,7 @@ export default function SecurityArchitecturePage() {
           ) : section === 'attack_surface' ? (
             <AttackSurfaceSection />
           ) : section === 'risks' ? (
-            <RiskRegisterSection filters={filters} onFilterChange={setFilters} />
+            <RiskRegisterSection filters={filters} onFilterChange={setFilters} corpusVersion={manifest?.version} />
           ) : section === 'security_decisions' ? (
             <DecisionsSection />
           ) : section === 'abuse_cases' ? (

@@ -247,22 +247,27 @@ async def security_audit_log_events(db: Any, *, limit: int = 100) -> list[dict[s
     calling the admin-only router function."""
     from redact import mask_audit_log_target
 
+    # Filter by prefix in SQL, not after LIMIT -- a burst of routine
+    # non-security actions (refresh.kev, hunt_packs.delete, ...) ahead of
+    # the last `limit` rows would otherwise starve out real security events
+    # entirely (Gemini review, PR #497).
+    where_clauses = " OR ".join("action LIKE ?" for _ in SECURITY_AUDIT_ACTION_PREFIXES)
+    params = tuple(f"{p}%" for p in SECURITY_AUDIT_ACTION_PREFIXES) + (limit,)
     rows = await db.execute_fetchall(
-        """
+        f"""
         SELECT id, actor, action, target, created_at
         FROM audit_log
+        WHERE {where_clauses}
         ORDER BY created_at DESC
         LIMIT ?
         """,
-        (limit,),
+        params,
     )
 
     events = []
     for row in rows:
         r = dict(row)
         action = r.get("action") or ""
-        if not is_security_audit_action(action):
-            continue
         target = mask_audit_log_target(action, r.get("target"))
         events.append({
             "id": f"audit-{r['id']}",
@@ -337,10 +342,14 @@ def search_corpus(corpus: dict[str, Any], query: str, *, limit: int = 50) -> lis
     return results
 
 
-def search_mitre_techniques(rows: list[dict[str, Any]], query: str) -> list[dict[str, Any]]:
+def search_mitre_techniques(
+    rows: list[dict[str, Any]], query: str, *, limit: int = 50
+) -> list[dict[str, Any]]:
     """MITRE technique names/ids matching the query (spec §5.17: index
     includes 'MITRE names'). `rows` are `mitre_techniques` table rows
-    (id, technique_id, name, tactic) -- one bounded query, not a new table."""
+    (id, technique_id, name, tactic) -- one bounded query, not a new table.
+    `limit` caps results for a broad query (e.g. a single letter) that
+    would otherwise match hundreds of techniques."""
     q = query.strip().lower()
     if not q:
         return []
@@ -355,4 +364,6 @@ def search_mitre_techniques(rows: list[dict[str, Any]], query: str) -> list[dict
                 "type": "mitre_technique",
                 "section": "mitre_attack",
             })
+            if len(results) >= limit:
+                break
     return results
