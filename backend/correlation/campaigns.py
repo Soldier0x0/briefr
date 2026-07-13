@@ -129,14 +129,14 @@ async def build_campaigns_from_pulses(db) -> dict[str, int]:
         # with 8; get_campaigns_for_cve still bumps this to high when strong
         # (hash/domain) shared indicators back it up.
         confidence = "medium"
-        member_inputs, link_fetched = await fetch_member_lifecycle_inputs(
+        member_inputs, observation_at = await fetch_member_lifecycle_inputs(
             db, pulse_id, members
         )
         pulse_created = meta.get("created_date") or ""
         lifecycle = compute_campaign_lifecycle(
             pulse_created_date=pulse_created,
             members=member_inputs,
-            member_link_fetched_at=link_fetched,
+            member_observation_at=observation_at,
             now=now_dt,
         )
         await db.execute(
