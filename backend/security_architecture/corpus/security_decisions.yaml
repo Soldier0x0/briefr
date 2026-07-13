@@ -1,4 +1,92 @@
 version: 1
-# Curated: ADR-style security decision records. Empty until a real
-# security-review pass populates it -- see manifest.yaml notes.
-security_decisions: []
+# Curated: ADR-style security decision records (spec §5.13). TM-5's first
+# real security-review pass -- these map the two real ADRs in
+# docs/decisions/ into the corpus schema, not invented prose. Each record's
+# `decision`/`alternatives`/`tradeoffs`/`consequences` fields are drawn
+# directly from the ADR's own sections; `evidence` cites the ADR file
+# itself. Security-relevant BRIEFR decisions that are already fully
+# captured as controls.yaml entries (JWT, bcrypt, parameterized SQL,
+# webhook signing, PostgreSQL-required) are cross-referenced via
+# `related_ids` rather than duplicated as a second decision record with
+# no ADR of its own -- the spec §5.13 example list (JWT/Postgres/bcrypt/...)
+# is aspirational; only decisions with a real, citable document ship here.
+security_decisions:
+  - id: adr-001-intel-app-schema-split
+    title: 'ADR-001: Intel vs app schema split (open-core data plane)'
+    summary: >-
+      Publishing a free monthly intel snapshot for self-hosters must never
+      leak operator data (accounts, sessions, IOC cache, webhooks,
+      watchlists). Documents the intel/app boundary and enforces it via an
+      allowlist export script rather than a raw production pg_dump or an
+      immediate physical schema split.
+    owner: platform
+    status: accepted
+    origin: curated
+    review_date: '2026-07-08'
+    evidence: [docs/decisions/ADR-001-intel-app-schema-split.md]
+    related_ids: []
+    decision: >-
+      Document the intel/app boundary in docs/DATA_SNAPSHOT.md with explicit
+      table and sync_state key allowlists; export via an allowlist script
+      (scripts/export_intel_snapshot.py) using pg_dump table filters, not
+      ad-hoc production dumps; defer a physical intel/app schema split;
+      default-deny sync_state so only ingest watermarks are published.
+    alternatives:
+      - 'Publish full production pg_dump with a "don''t leak" doc note — rejected: irreversible operator-data exposure.'
+      - 'JSONL-only portable export — rejected: loses Postgres types and embedding-column fidelity, slower adoption.'
+      - 'Immediate CREATE SCHEMA intel/app split — rejected: blocks the open-core timeline before the export path is proven.'
+      - 'Strip operator tables with pg_restore post-hoc — rejected: easy to miss tables, no manifest verification.'
+    tradeoffs: >-
+      Single-schema coupling remains until a follow-up migration; the export
+      allowlist script must be updated whenever a new table is added
+      (enforced by manifest review in PRs, not by CI today).
+    consequences: >-
+      Clear legal/ops story for open-core distribution; export script is
+      CI-gateable; aligns with the "never raw prod dump" program rule.
+      Follow-up: a physical schema-split ADR revision once the intel schema
+      migration ships.
+    adr_ref: docs/decisions/ADR-001-intel-app-schema-split.md
+
+  - id: adr-002-operational-priority-scoring
+    title: 'ADR-002: BRIEFR scoring axes and Operational Priority'
+    summary: >-
+      Corrects a semantic failure in the v1.1b risk score: an unknown asset
+      environment silently banked 17.5 phantom "positive" points into the
+      analyst-facing headline number, so "we don't know" read as fabricated
+      evidence of exposure. Splits one blended score into three honest
+      surfaces: Threat Score, Environment Relevance tier, and a
+      deterministic Operational Priority band.
+    owner: platform
+    status: accepted
+    origin: curated
+    review_date: '2026-07-09'
+    evidence: [docs/decisions/ADR-002-operational-priority.md]
+    related_ids: []
+    decision: >-
+      Adopt Option D: Threat Score (0-100, asset-independent, KEV-floored at
+      80) is the primary "how dangerous" number; Environment Relevance is a
+      categorical tier (CONFIRMED/LIKELY/POSSIBLE/WEAK/NO_MATCH/UNKNOWN),
+      never folded into Threat as a number; Operational Priority is a
+      deterministic rule-based P1-P4 band derived from Threat band x
+      Environment tier, with Correlation as a bounded one-band escalation
+      qualifier (capped at P1, never escalating P4). UNKNOWN environment
+      yields a provisional priority off the Threat band -- no fabricated
+      points. The fused Investigation Score (risk*0.45 + correlation*0.40 +
+      intel*0.15) is deleted as orphaned, double-counting, placeholder-prone
+      code.
+    alternatives:
+      - 'Keep one unified blended score (Option A) — rejected: folding a placeholder or renormalizing both preserve the conflation.'
+      - 'Three co-equal visible numbers: Threat / Environment / Operational Priority (Option B) — rejected as the default surface: sort ambiguity ("which do I sort by?").'
+      - 'Operational Priority as a naive weighted average of Threat/Env/Correlation (Option C) — rejected: recreates the arbitrary weighted-average conflation this ADR exists to remove.'
+    tradeoffs: >-
+      M1 adds three small pure functions plus display changes and parity
+      tests, and deletes orphaned code; the v1.1b total/components fields
+      are retained for one release as legacy_risk_v11b for external
+      consumers before removal from the headline display.
+    consequences: >-
+      Analysts get an honest, asset-independent Threat number, an explicit
+      Environment tier, and a deterministic P1-P4 action band; "unknown"
+      stops inflating scores; proven no-match legitimately de-escalates;
+      confirmed exploitation dominates; fuzzy matches never masquerade as
+      version proof.
+    adr_ref: docs/decisions/ADR-002-operational-priority.md
