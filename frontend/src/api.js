@@ -340,6 +340,21 @@ export function fetchSecurityArchitectureThreatScenarios({ stack = '', selfStack
   return request(`/security-architecture/threat-scenarios${qs ? `?${qs}` : ''}`)
 }
 
+/** TM-4: generated system architecture graph (nodes/edges, no layout). */
+export function fetchSecurityArchitectureGraph() {
+  return request('/security-architecture/graph/architecture')
+}
+
+/** TM-4: attack surface -- endpoint inventory x linked controls, counts only. */
+export function fetchSecurityArchitectureAttackSurface() {
+  return request('/security-architecture/graph/attack-surface')
+}
+
+/** TM-4: context-rail payload for a selected architecture-graph node. */
+export function fetchSecurityArchitectureNodeContext(nodeId) {
+  return request(`/security-architecture/context/${encodeURIComponent(nodeId)}`)
+}
+
 /** V1.5: run Sigma rule against pasted log lines (file-based proof bench). */
 export function runProofBench({ lines, sigmaYaml, patterns, maxSamples = 10 }) {
   const body = { lines, max_samples: maxSamples }

@@ -1,0 +1,1232 @@
+{
+  "version": 1,
+  "clusters": [
+    {
+      "id": "api",
+      "label": "API Routers",
+      "kind": "component"
+    },
+    {
+      "id": "scheduler",
+      "label": "Scheduler Jobs",
+      "kind": "job"
+    },
+    {
+      "id": "database",
+      "label": "Database Tables",
+      "kind": "table"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "job:api_key_health_check",
+      "label": "API Key Health Check",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "api_key_health_check"
+        }
+      ]
+    },
+    {
+      "id": "job:atlas_version_check",
+      "label": "ATLAS Upstream Version Check",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "atlas_version_check"
+        }
+      ]
+    },
+    {
+      "id": "job:backup_deadman_check",
+      "label": "Backup Dead-Man Check",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "backup_deadman_check"
+        }
+      ]
+    },
+    {
+      "id": "job:cache_retention_cleanup",
+      "label": "Cache Retention Cleanup",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "cache_retention_cleanup"
+        }
+      ]
+    },
+    {
+      "id": "job:cvelistv5_incremental_sync",
+      "label": "cvelistV5 Incremental Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "cvelistv5_incremental_sync"
+        }
+      ]
+    },
+    {
+      "id": "job:detection_context_llm",
+      "label": "DetectionContext LLM Artifact Extract",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "detection_context_llm"
+        }
+      ]
+    },
+    {
+      "id": "job:detection_context_sync",
+      "label": "DetectionContext Cache Backfill",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "detection_context_sync"
+        }
+      ]
+    },
+    {
+      "id": "job:embeddings_backfill",
+      "label": "CVE Description Embeddings Backfill",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "embeddings_backfill"
+        }
+      ]
+    },
+    {
+      "id": "job:epss_score_sync",
+      "label": "EPSS Score Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "epss_score_sync"
+        }
+      ]
+    },
+    {
+      "id": "job:exploit_sources_sync",
+      "label": "Exploit Availability Sources Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "exploit_sources_sync"
+        }
+      ]
+    },
+    {
+      "id": "job:incident_feed_refresh",
+      "label": "Incident Feed Snapshot Refresh",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "incident_feed_refresh"
+        }
+      ]
+    },
+    {
+      "id": "job:ioc_retro_match",
+      "label": "IOC Watchlist Retro-Match",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "ioc_retro_match"
+        }
+      ]
+    },
+    {
+      "id": "job:kev_backlog_reconcile",
+      "label": "Weekly KEV Detection Backlog Reconcile",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "kev_backlog_reconcile"
+        }
+      ]
+    },
+    {
+      "id": "job:kev_metadata_sync",
+      "label": "KEV Metadata Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "kev_metadata_sync"
+        }
+      ]
+    },
+    {
+      "id": "job:llm_product_extraction",
+      "label": "LLM Product Extraction (NVD-unanalyzed CVEs)",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "llm_product_extraction"
+        }
+      ]
+    },
+    {
+      "id": "job:nightly_correlation",
+      "label": "BRIEFR Nightly Correlation Engine",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "nightly_correlation"
+        }
+      ]
+    },
+    {
+      "id": "job:nvd_incremental_sync",
+      "label": "NVD Incremental Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "nvd_incremental_sync"
+        }
+      ]
+    },
+    {
+      "id": "job:otx_continuous_sync",
+      "label": "OTX Continuous Pulse + IOC Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "otx_continuous_sync"
+        }
+      ]
+    },
+    {
+      "id": "job:otx_nightly_correlation",
+      "label": "OTX Nightly Campaign Correlation",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "otx_nightly_correlation"
+        }
+      ]
+    },
+    {
+      "id": "job:scheduled_backup",
+      "label": "Scheduled Backup",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "scheduled_backup"
+        }
+      ]
+    },
+    {
+      "id": "job:session_cleanup",
+      "label": "Expired Login Session Cleanup",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "session_cleanup"
+        }
+      ]
+    },
+    {
+      "id": "job:threatfox_sync",
+      "label": "ThreatFox IOC Mirror Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "threatfox_sync"
+        }
+      ]
+    },
+    {
+      "id": "job:vulncheck_kev_sync",
+      "label": "VulnCheck KEV Tier Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "vulncheck_kev_sync"
+        }
+      ]
+    },
+    {
+      "id": "job:vulnrichment_snapshot_sync",
+      "label": "CISA Vulnrichment Snapshot Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "vulnrichment_snapshot_sync"
+        }
+      ]
+    },
+    {
+      "id": "job:watchlist_monitor_alerts",
+      "label": "Watchlist Monitor Alerts",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "watchlist_monitor_alerts"
+        }
+      ]
+    },
+    {
+      "id": "job:weekly_mitre_refresh",
+      "label": "Weekly MITRE ATT&CK + ATLAS Refresh",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "weekly_mitre_refresh"
+        }
+      ]
+    },
+    {
+      "id": "routers-admin",
+      "label": "routers.admin",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 62,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/admin.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-atlas",
+      "label": "routers.atlas",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 4,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/atlas.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-auth",
+      "label": "routers.auth",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 8,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/auth.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-brief",
+      "label": "routers.brief",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 1,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/brief.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-config",
+      "label": "routers.config",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 1,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/config.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-correlation",
+      "label": "routers.correlation",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 1,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/correlation.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-cves",
+      "label": "routers.cves",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 22,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/cves.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-detection_backlog",
+      "label": "routers.detection_backlog",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 2,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/detection_backlog.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-forge",
+      "label": "routers.forge",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 5,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/forge.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-health",
+      "label": "routers.health",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 2,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/health.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-ioc",
+      "label": "routers.ioc",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 5,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/ioc.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-me",
+      "label": "routers.me",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 4,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/me.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-meta",
+      "label": "routers.meta",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 7,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/meta.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-notifications_me",
+      "label": "routers.notifications_me",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 5,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/notifications_me.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-proof",
+      "label": "routers.proof",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 1,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/proof.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-refresh",
+      "label": "routers.refresh",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 5,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/refresh.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-threat_model",
+      "label": "routers.threat_model",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 1,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/threat_model.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-wallboard",
+      "label": "routers.wallboard",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 3,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/wallboard.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-watchlist",
+      "label": "routers.watchlist",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 4,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/watchlist.py"
+        }
+      ]
+    },
+    {
+      "id": "security_architecture-routers-security_architecture",
+      "label": "security_architecture.routers.security_architecture",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 8,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/security_architecture/routers/security_architecture.py"
+        }
+      ]
+    },
+    {
+      "id": "table:ai_operations",
+      "label": "ai_operations",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "ai_operations"
+        }
+      ]
+    },
+    {
+      "id": "table:api_usage",
+      "label": "api_usage",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "api_usage"
+        }
+      ]
+    },
+    {
+      "id": "table:app_settings",
+      "label": "app_settings",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "app_settings"
+        }
+      ]
+    },
+    {
+      "id": "table:atlas_case_studies",
+      "label": "atlas_case_studies",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "atlas_case_studies"
+        }
+      ]
+    },
+    {
+      "id": "table:atlas_techniques",
+      "label": "atlas_techniques",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "atlas_techniques"
+        }
+      ]
+    },
+    {
+      "id": "table:audit_log",
+      "label": "audit_log",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "audit_log"
+        }
+      ]
+    },
+    {
+      "id": "table:correlation_actor",
+      "label": "correlation_actor",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "correlation_actor"
+        }
+      ]
+    },
+    {
+      "id": "table:correlation_campaign_members",
+      "label": "correlation_campaign_members",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "correlation_campaign_members"
+        }
+      ]
+    },
+    {
+      "id": "table:correlation_campaigns",
+      "label": "correlation_campaigns",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "correlation_campaigns"
+        }
+      ]
+    },
+    {
+      "id": "table:correlation_suppressions",
+      "label": "correlation_suppressions",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "correlation_suppressions"
+        }
+      ]
+    },
+    {
+      "id": "table:correlation_temporal",
+      "label": "correlation_temporal",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "correlation_temporal"
+        }
+      ]
+    },
+    {
+      "id": "table:cve_atlas_map",
+      "label": "cve_atlas_map",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "cve_atlas_map"
+        }
+      ]
+    },
+    {
+      "id": "table:cve_change_history",
+      "label": "cve_change_history",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "cve_change_history"
+        }
+      ]
+    },
+    {
+      "id": "table:cve_embeddings",
+      "label": "cve_embeddings",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "cve_embeddings"
+        }
+      ]
+    },
+    {
+      "id": "table:cve_exploits",
+      "label": "cve_exploits",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "cve_exploits"
+        }
+      ]
+    },
+    {
+      "id": "table:cve_technique_map",
+      "label": "cve_technique_map",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "cve_technique_map"
+        }
+      ]
+    },
+    {
+      "id": "table:cves",
+      "label": "cves",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "cves"
+        }
+      ]
+    },
+    {
+      "id": "table:detection_backlog",
+      "label": "detection_backlog",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "detection_backlog"
+        }
+      ]
+    },
+    {
+      "id": "table:epss_history",
+      "label": "epss_history",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "epss_history"
+        }
+      ]
+    },
+    {
+      "id": "table:feed_cache",
+      "label": "feed_cache",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "feed_cache"
+        }
+      ]
+    },
+    {
+      "id": "table:group_technique_map",
+      "label": "group_technique_map",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "group_technique_map"
+        }
+      ]
+    },
+    {
+      "id": "table:hunt_packs",
+      "label": "hunt_packs",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "hunt_packs"
+        }
+      ]
+    },
+    {
+      "id": "table:ioc_cache",
+      "label": "ioc_cache",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "ioc_cache"
+        }
+      ]
+    },
+    {
+      "id": "table:ioc_degree",
+      "label": "ioc_degree",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "ioc_degree"
+        }
+      ]
+    },
+    {
+      "id": "table:ioc_watchlist",
+      "label": "ioc_watchlist",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "ioc_watchlist"
+        }
+      ]
+    },
+    {
+      "id": "table:kev_deadlines",
+      "label": "kev_deadlines",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "kev_deadlines"
+        }
+      ]
+    },
+    {
+      "id": "table:mitre_groups",
+      "label": "mitre_groups",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "mitre_groups"
+        }
+      ]
+    },
+    {
+      "id": "table:mitre_techniques",
+      "label": "mitre_techniques",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "mitre_techniques"
+        }
+      ]
+    },
+    {
+      "id": "table:otx_cve_pulses",
+      "label": "otx_cve_pulses",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "otx_cve_pulses"
+        }
+      ]
+    },
+    {
+      "id": "table:otx_pulse_iocs",
+      "label": "otx_pulse_iocs",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "otx_pulse_iocs"
+        }
+      ]
+    },
+    {
+      "id": "table:otx_pulses",
+      "label": "otx_pulses",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "otx_pulses"
+        }
+      ]
+    },
+    {
+      "id": "table:sessions",
+      "label": "sessions",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "sessions"
+        }
+      ]
+    },
+    {
+      "id": "table:sync_state",
+      "label": "sync_state",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "sync_state"
+        }
+      ]
+    },
+    {
+      "id": "table:threatfox_iocs",
+      "label": "threatfox_iocs",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "threatfox_iocs"
+        }
+      ]
+    },
+    {
+      "id": "table:user_notifications",
+      "label": "user_notifications",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "user_notifications"
+        }
+      ]
+    },
+    {
+      "id": "table:user_preferences",
+      "label": "user_preferences",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "user_preferences"
+        }
+      ]
+    },
+    {
+      "id": "table:users",
+      "label": "users",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "users"
+        }
+      ]
+    },
+    {
+      "id": "table:watchlist",
+      "label": "watchlist",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "watchlist"
+        }
+      ]
+    },
+    {
+      "id": "table:webhook_alert_log",
+      "label": "webhook_alert_log",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "webhook_alert_log"
+        }
+      ]
+    },
+    {
+      "id": "table:webhook_delivery_log",
+      "label": "webhook_delivery_log",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "webhook_delivery_log"
+        }
+      ]
+    },
+    {
+      "id": "table:webhook_destination_dedupe",
+      "label": "webhook_destination_dedupe",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "webhook_destination_dedupe"
+        }
+      ]
+    },
+    {
+      "id": "table:webhook_destinations",
+      "label": "webhook_destinations",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "webhook_destinations"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "routers-admin->table:audit_log",
+      "source": "routers-admin",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:cves",
+      "source": "routers-admin",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:feed_cache",
+      "source": "routers-admin",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:hunt_packs",
+      "source": "routers-admin",
+      "target": "table:hunt_packs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:ioc_cache",
+      "source": "routers-admin",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:kev_deadlines",
+      "source": "routers-admin",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:sync_state",
+      "source": "routers-admin",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:watchlist",
+      "source": "routers-admin",
+      "target": "table:watchlist",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:webhook_alert_log",
+      "source": "routers-admin",
+      "target": "table:webhook_alert_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-atlas->table:atlas_techniques",
+      "source": "routers-atlas",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-auth->table:sessions",
+      "source": "routers-auth",
+      "target": "table:sessions",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:correlation_campaign_members",
+      "source": "routers-cves",
+      "target": "table:correlation_campaign_members",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:correlation_campaigns",
+      "source": "routers-cves",
+      "target": "table:correlation_campaigns",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:cve_technique_map",
+      "source": "routers-cves",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:cves",
+      "source": "routers-cves",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:kev_deadlines",
+      "source": "routers-cves",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:watchlist",
+      "source": "routers-cves",
+      "target": "table:watchlist",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:cve_technique_map",
+      "source": "routers-forge",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:cves",
+      "source": "routers-forge",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:hunt_packs",
+      "source": "routers-forge",
+      "target": "table:hunt_packs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:mitre_techniques",
+      "source": "routers-forge",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-watchlist->table:watchlist",
+      "source": "routers-watchlist",
+      "target": "table:watchlist",
+      "kind": "references_table"
+    }
+  ]
+}

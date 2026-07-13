@@ -138,6 +138,107 @@ def build_db_tables_yaml(tables: list[str]) -> list[dict[str, Any]]:
     ]
 
 
+# ── Architecture graph (spec §4.1, §5.2 -- TM-4) ──────────────────────────
+#
+# Nodes are exactly the generated-layer entities already emitted above
+# (components/jobs/tables) -- the TM-4 acceptance criterion "graph nodes
+# match generator output exactly" holds by construction, not by a second
+# hand-synced node list. Edges are `component -> table` "references" derived
+# by grepping each router module's own source file for the table name
+# appearing directly after a SQL keyword (FROM/JOIN/INTO/UPDATE, or
+# DELETE FROM) -- anchored to real SQL syntax, not a bare substring/word
+# match, so a table named e.g. `users` or `config` doesn't spuriously match
+# unrelated identifiers, comments, or docstrings elsewhere in the file (the
+# central "no opinion rendered as measurement" principle applies to graph
+# edges too: a false negative -- a query routed through a shared helper --
+# is acceptable; a false positive is not). No x/y coordinates here: layout
+# is presentation, not a code fact, and doesn't belong in a drift-checked
+# generated file -- the frontend computes a deterministic layout from
+# cluster + index at render time.
+
+_SQL_TABLE_REF_RE = re.compile(
+    r"(?i)\b(?:FROM|JOIN|INTO|UPDATE|DELETE\s+FROM)\s+(\w+)"
+)
+
+
+def extract_table_refs(source: str, known_tables: set[str]) -> list[str]:
+    """Table names referenced in SQL keyword position (FROM/JOIN/INTO/
+    UPDATE/DELETE FROM) within `source`, restricted to `known_tables` so an
+    unrelated identifier that happens to follow one of those keywords in
+    non-SQL code can't slip in."""
+    found: set[str] = set()
+    for match in _SQL_TABLE_REF_RE.finditer(source):
+        name = match.group(1)
+        if name and name.lower() in known_tables:
+            found.add(name.lower())
+    return sorted(found)
+
+
+def build_architecture_graph(
+    components: list[dict[str, Any]],
+    jobs_yaml: list[dict[str, Any]],
+    tables_yaml: list[dict[str, Any]],
+    component_source_by_id: dict[str, str],
+) -> dict[str, Any]:
+    """Nodes = union of components/jobs/tables (already generated above);
+    edges = component->table SQL references. Deterministically sorted so
+    the drift test and CI never flake on dict/set ordering."""
+    known_table_ids = {t["id"] for t in tables_yaml}
+
+    clusters = [
+        {"id": "api", "label": "API Routers", "kind": "component"},
+        {"id": "scheduler", "label": "Scheduler Jobs", "kind": "job"},
+        {"id": "database", "label": "Database Tables", "kind": "table"},
+    ]
+
+    nodes: list[dict[str, Any]] = []
+    for c in components:
+        nodes.append({
+            "id": c["id"],
+            "label": c["title"],
+            "kind": "component",
+            "cluster": "api",
+            "endpoint_count": c["endpoint_count"],
+            "source_refs": c["source_refs"],
+        })
+    for j in jobs_yaml:
+        nodes.append({
+            "id": f"job:{j['id']}",
+            "label": j["title"],
+            "kind": "job",
+            "cluster": "scheduler",
+            "source_refs": j["source_refs"],
+        })
+    for t in tables_yaml:
+        nodes.append({
+            "id": f"table:{t['id']}",
+            "label": t["title"],
+            "kind": "table",
+            "cluster": "database",
+            "source_refs": t["source_refs"],
+        })
+    nodes.sort(key=lambda n: n["id"])
+
+    edges: list[dict[str, Any]] = []
+    for c in components:
+        source_text = component_source_by_id.get(c["id"], "")
+        for table in extract_table_refs(source_text, known_table_ids):
+            edges.append({
+                "id": f"{c['id']}->table:{table}",
+                "source": c["id"],
+                "target": f"table:{table}",
+                "kind": "references_table",
+            })
+    edges.sort(key=lambda e: (e["source"], e["target"]))
+
+    return {
+        "version": 1,
+        "clusters": clusters,
+        "nodes": nodes,
+        "edges": edges,
+    }
+
+
 # ── Self-stack (spec §4.5): BRIEFR's own CVE exposure ────────────────────
 #
 # Stack terms derived from BRIEFR's own dependency manifests + declared
@@ -256,10 +357,25 @@ def generate(output_dir: Path) -> dict[Path, dict[str, Any]]:
     requirements_terms = extract_requirements_terms(requirements_text)
     package_json_terms = extract_package_json_terms(package_json_text)
 
+    components = build_components(routes_by_module)
+    jobs_yaml = build_scheduler_jobs_yaml(jobs)
+    tables_yaml = build_db_tables_yaml(tables)
+
+    component_source_by_id: dict[str, str] = {}
+    for c in components:
+        rel_path = c["source_refs"][0]["ref"]  # "backend/routers/foo.py"
+        abs_path = ROOT / rel_path
+        if abs_path.exists():
+            component_source_by_id[c["id"]] = abs_path.read_text(encoding="utf-8")
+
+    architecture_graph = build_architecture_graph(
+        components, jobs_yaml, tables_yaml, component_source_by_id
+    )
+
     outputs = {
         output_dir / "components.yaml": {
             "version": 1,
-            "components": build_components(routes_by_module),
+            "components": components,
         },
         output_dir / "api_inventory.yaml": {
             "version": 1,
@@ -267,11 +383,11 @@ def generate(output_dir: Path) -> dict[Path, dict[str, Any]]:
         },
         output_dir / "scheduler_jobs.yaml": {
             "version": 1,
-            "jobs": build_scheduler_jobs_yaml(jobs),
+            "jobs": jobs_yaml,
         },
         output_dir / "db_tables.yaml": {
             "version": 1,
-            "tables": build_db_tables_yaml(tables),
+            "tables": tables_yaml,
         },
         output_dir / "self_stack.yaml": {
             "version": 1,
@@ -285,6 +401,15 @@ def generate(output_dir: Path) -> dict[Path, dict[str, Any]]:
     for path, data in outputs.items():
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             yaml.safe_dump(data, f, sort_keys=False, default_flow_style=False)
+
+    graph_path = output_dir / "graphs" / "architecture.json"
+    graph_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(graph_path, "w", encoding="utf-8", newline="\n") as f:
+        import json
+
+        json.dump(architecture_graph, f, indent=2, sort_keys=False)
+        f.write("\n")
+    outputs[graph_path] = architecture_graph
 
     return outputs
 

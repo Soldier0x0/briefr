@@ -12,6 +12,125 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-13 — TM-4: Security Architecture graph + Trust Boundaries + Attack Surface (PR open)
+
+**Context:** picked up TM-4 per the previous entry's `Next:` line. Entry gate confirmed
+(`pytest tests/test_security_architecture_shell.py tests/test_security_architecture_live.py
+tests/test_security_architecture_corpus.py -q` — 58 passed before starting). Re-checked
+`git log --oneline -5 origin/main`: nothing new landed since TM-3 merged (`7a373d9`), no
+conflict risk.
+
+**The known gap, closed:** `graphs/architecture.json` didn't exist — spec §4.1 lists it
+under the generated layer but TM-1's `scripts/generate_security_corpus.py` never built
+it. Added `build_architecture_graph()`: nodes are exactly the union of
+components/scheduler_jobs/db_tables already emitted by the rest of the generator (a
+corpus test — `test_architecture_graph_nodes_match_generated_layer_exactly` — asserts
+this equality directly, so "graph nodes match generator output exactly" is mechanical,
+not aspirational). Edges are `component -> table` "references_table", derived by
+regexing each router's own source file for a table name appearing directly after a SQL
+keyword (`FROM`/`JOIN`/`INTO`/`UPDATE`, or `DELETE FROM`) — anchored to real SQL syntax
+so a table named e.g. `users` can't spuriously match a comment or unrelated identifier
+elsewhere in the file (advisor flagged a bare substring/word-match approach during
+planning as exactly the "opinion rendered as measurement" the corpus's central
+principle forbids — fixed before writing any code). 22 real edges came out of this
+against the committed corpus (`routers.cves -> table:cves`, `routers.forge ->
+table:mitre_techniques`, etc.). No `x`/`y` layout in the generated file — presentation
+isn't a code fact and would force a corpus regen on every layout tweak; the frontend
+computes a deterministic cluster+index grid layout at render time instead.
+
+**Shipped (branch `tm4-arch-graph-boundaries`, PR open against `main`, not merged):**
+
+- **Generator:** `scripts/generate_security_corpus.py::build_architecture_graph` +
+  `extract_table_refs`, writing `corpus/graphs/architecture.json` (JSON, not YAML — a
+  graph blob, not an entity-record list, so it isn't part of `corpus_loader.py`'s
+  schema). Drift-tested same as the rest of the generated layer
+  (`test_committed_architecture_graph_has_no_drift`); running the generator after this
+  PR's new endpoints (which added 3 routes to `security_architecture`'s own router) was
+  itself a real drift catch — `components.yaml`/`api_inventory.yaml` needed
+  regenerating, exactly the mechanism the drift test exists to enforce.
+- **Backend package:** `security_architecture/graphs.py` — `get_architecture_graph()`
+  (mtime-cached load, same pattern as `corpus_loader.get_corpus`), `build_attack_surface`
+  (read-time join of generated `api_inventory` against curated `controls.yaml`'s
+  `related_apis` glob patterns — exact path / `<prefix>/*` / `*` — counts only, no
+  score), `build_node_context` (one read-time join per node: component nodes get
+  endpoints + glob-matched controls + referenced tables; table nodes get the reverse
+  `referenced_by`; job nodes get their own record + edges). Attack surface is
+  deliberately **not** a second generated JSON file despite spec §4.1 listing
+  `graphs/attack_surface.json` under the generated layer — it depends on curated
+  `related_apis` linkage, which isn't a code fact, so computing it at read time matches
+  the corpus's own generated/curated split rather than contradicting it. Noted as a
+  spec staleness in `manifest.yaml`'s notes.
+- **3 new endpoints:** `GET /graph/architecture` (verbatim `architecture.json`), `GET
+  /graph/attack-surface`, `GET /context/{node_id}`. `trust_boundaries` still reads
+  through the existing generic `GET /section/{id}` — its data shape (a plain
+  curated-record list) didn't need a dedicated route, just a dedicated frontend
+  component rendering it as flow cards instead of a table.
+- **Trust boundaries seeded:** `trust_boundaries.yaml` was an empty curated stub since
+  TM-1 — TM-4 did a real pass, 2 boundaries (spec §5.3's own examples: Browser→API→
+  Database, BRIEFR→external services), each linking `related_ids` to real generated
+  component/table ids and TM-3's curated controls (not free-floating prose — the v2
+  corollary that a hand-authored-YAML-only section doesn't ship).
+- **Frontend:** `ArchitectureGraphSection.jsx` (SVG pan/zoom — single `<g transform>`,
+  native non-passive `wheel` listener for zoom since React's `onWheel` is passive and
+  can't `preventDefault` page scroll, pointer-drag pan, min 0.4×/max 2.5×, cluster
+  filter chips, node-label search with amber highlight, hover/select highlights
+  connected edges), `TrustBoundariesSection.jsx` (vertical flow cards), `AttackSurfaceSection.jsx`
+  (endpoint list, all/unreviewed filter), `ContextRail.jsx` (first phase to actually
+  populate the persistent right rail — TM-2/TM-3 left it permanently empty). Node
+  selection round-trips `?node=<id>` through the URL like every other selection in this
+  module.
+- **Overview:** new `Unreviewed Endpoints` tile drilling to the new `attack_surface`
+  section; verified 0/151 in the seeded corpus (curated `parameterized-sql` control's
+  `related_apis: ['*']` covers everything — an honest consequence of the curated data,
+  not a bug).
+
+**Real bug caught during the browser walk, fixed before shipping:** the wheel-zoom
+`useEffect` had an empty `[]` dependency array and read `svgRef.current` on mount — but
+the canvas `<div>` is behind `AsyncState`'s loading state, so it doesn't exist in the
+DOM yet on first render. The effect captured a `null` ref forever; zoom silently did
+nothing. Fixed by depending on `[graph]` so the effect re-runs once the canvas actually
+mounts. Caught by dispatching a synthetic `WheelEvent` in the live browser session and
+reading the `<g transform>` attribute before/after — build and unit tests alone would
+never have caught this (nothing here is a unit-testable pure function; it's a mount-order
+bug).
+
+**Dual-DB note (CLAUDE.md danger zone 1):** not applicable to this PR's new code — the
+graph generator does static regex parsing of source files (no SQL), and
+`graphs.py::build_attack_surface`/`build_node_context` are pure joins over already-loaded
+corpus dicts (no new queries). The only DB touch is the pre-existing `count_coverage_summary`
+call in `get_overview`, unchanged by this PR. Ran the full
+`test_security_architecture_*` + `test_router_split.py` suite (82 passed) plus the full
+backend suite (`pytest tests/ -q`: 1190 passed, 10 skipped, 6 failed — 5 are the
+same pre-existing `test_backup_*` Windows chmod-semantics failures noted in the TM-3
+entry above, untouched by this PR; the 6th, `test_router_split.py`'s route-list
+snapshot, was a real, expected diff from this PR's 3 new routes — snapshot updated in
+the same commit).
+
+**Browser verification — completed.** Port 8000/5173 were both occupied by other
+worktrees' running servers (same landmine noted in prior entries) — ran this session's
+own stack on `:8010`/`:5183` via a temporary `vite.config.js` proxy-target edit
+(reverted before the final commit; `git diff` on that file is clean). Copied the main
+repo's 15-CVE `briefr.db` into this worktree, created a throwaway `tm4walkthrough` user
+via `scripts/create_user.py`. Verified: login; System Architecture graph renders all 88
+nodes / 22 edges (matches `GET /graph/architecture` exactly); clicking (and
+Enter-selecting, keyboard pass) `routers.cves` populates the context rail with its 22
+real endpoints, 1 linked control (`parameterized-sql`), and 6 referenced tables;
+selecting a table node (`table:cves`) shows the reverse `REFERENCED BY` list; wheel
+zoom clamps at 2.5× after repeated scroll-in and drag-pan moves the graph by the exact
+pixel delta; Reset View returns to the origin transform; Trust Boundaries renders both
+seeded flow cards with residual-risk chips; Attack Surface shows 151/151 reviewed
+(honest per the wildcard-control note above), Unreviewed filter shows 0 rows; Overview's
+new tile drills to `attack_surface`; 375px width has no horizontal overflow, no console
+errors. Tore down both throwaway processes, reverted the vite.config.js edit, freed the
+ports.
+
+**Next:** TM-5 (Risk Register grid, Decision records, Review History, Abuse Cases,
+global search, PDF export) — the final committed phase (spec §8: "committed program
+ends at TM-5"). TM-6+ (STRIDE/OWASP/CAPEC/CWE/NIST CSF/ASVS, evidence-gated) is future
+work after that. No `NEXT:` line needed in-progress — this phase's PR is open.
+
+---
+
 ## 2026-07-13 — TM-3: Security Architecture live sections — MITRE ATT&CK, Threat Scenarios, Controls, Self-exposure (PR open)
 
 **Context:** picked up TM-3 per the previous entry's queue. Entry gate confirmed

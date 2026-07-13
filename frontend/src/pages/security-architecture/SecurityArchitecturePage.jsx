@@ -7,6 +7,10 @@ import OverviewSection from './sections/OverviewSection.jsx'
 import GenericSection from './sections/GenericSection.jsx'
 import MitreSection from './sections/MitreSection.jsx'
 import ThreatScenariosSection from './sections/ThreatScenariosSection.jsx'
+import ArchitectureGraphSection from './sections/ArchitectureGraphSection.jsx'
+import TrustBoundariesSection from './sections/TrustBoundariesSection.jsx'
+import AttackSurfaceSection from './sections/AttackSurfaceSection.jsx'
+import ContextRail from './ContextRail.jsx'
 import './SecurityArchitecturePage.css'
 
 /**
@@ -41,6 +45,10 @@ export default function SecurityArchitecturePage() {
     severity: searchParams.get('severity') || '',
     origin: searchParams.get('origin') || '',
   }), [searchParams])
+  // Graph node selection round-trips through the URL (?node=) like every
+  // other selection in this module -- "selection is never lost by
+  // navigation inside the module" (playbook §3 smoothness budget).
+  const selectedNodeId = searchParams.get('node') || ''
 
   useEffect(() => {
     let cancelled = false
@@ -67,6 +75,22 @@ export default function SecurityArchitecturePage() {
   const setFilters = useCallback((nextFilters) => {
     goToSection(section, nextFilters)
   }, [section, goToSection])
+
+  const selectNode = useCallback((nodeId) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      next.set('node', nodeId)
+      return next
+    })
+  }, [setSearchParams])
+
+  const clearSelection = useCallback(() => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      next.delete('node')
+      return next
+    })
+  }, [setSearchParams])
 
   const navSections = manifest?.sections || (manifestError ? [] : [DEFAULT_SECTION])
 
@@ -131,6 +155,12 @@ export default function SecurityArchitecturePage() {
             <MitreSection />
           ) : section === 'threat_scenarios' ? (
             <ThreatScenariosSection />
+          ) : section === 'system_architecture' ? (
+            <ArchitectureGraphSection selectedNodeId={selectedNodeId} onSelectNode={selectNode} />
+          ) : section === 'trust_boundaries' ? (
+            <TrustBoundariesSection />
+          ) : section === 'attack_surface' ? (
+            <AttackSurfaceSection />
           ) : (
             <GenericSection sectionId={section} filters={filters} onFilterChange={setFilters} />
           )}
@@ -140,10 +170,14 @@ export default function SecurityArchitecturePage() {
           <div className="sa-rail-head">
             <h2 className="sa-subsection-label mono">CONTEXT</h2>
           </div>
-          <div className="sa-rail-empty">
-            <p>Select a node, technique, control, or risk to see related context here.</p>
-            <p className="sa-rail-empty-note">Component detail, related APIs, and evidence links ship in a later phase.</p>
-          </div>
+          {selectedNodeId ? (
+            <ContextRail nodeId={selectedNodeId} onClose={clearSelection} />
+          ) : (
+            <div className="sa-rail-empty">
+              <p>Select a node, technique, control, or risk to see related context here.</p>
+              <p className="sa-rail-empty-note">Click a node in System Architecture to populate this rail.</p>
+            </div>
+          )}
         </aside>
       </div>
     </div>

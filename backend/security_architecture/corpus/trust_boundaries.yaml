@@ -1,4 +1,48 @@
 version: 1
-# Curated: which components cross a trust boundary and how. Empty until a
-# real security-review pass classifies them -- see manifest.yaml notes.
-trust_boundaries: []
+# Curated: which components cross a trust boundary and how (spec §5.3).
+# Seeded 2026-07-13 (TM-4) as the first real security-review pass -- the
+# two boundaries the spec calls out by name (Browser<->API<->Database,
+# BRIEFR<->external services). Each links related_ids to real generated
+# components/tables and curated controls already in the corpus (v2
+# corollary: a section whose only source is hand-authored YAML doesn't
+# ship -- every boundary here cites generated component/table ids and
+# TM-3's curated controls, not free-floating prose).
+trust_boundaries:
+  - id: tb-browser-api-database
+    title: Browser -> API -> Database
+    summary: >-
+      Analyst browser session crosses into the FastAPI backend (session-cookie
+      authenticated), which crosses into PostgreSQL/SQLite for all query
+      execution. The two hops a request makes for almost every read in the app.
+    owner: platform
+    status: active
+    origin: curated
+    review_date: '2026-07-13'
+    evidence: [backend/auth/tokens.py, backend/db/connection.py]
+    related_ids: [jwt-session-auth, rate-limiting, parameterized-sql, routers-auth, routers-cves, cves]
+    data_classification: Analyst credentials, session tokens, CVE intelligence data
+    authentication: JWT session cookie (see jwt-session-auth control)
+    encryption: TLS in transit (deployment-terminated); PostgreSQL at-rest encryption is deployment-configured, not enforced by the app itself
+    threats: [broken-auth, sql-injection, session-hijack]
+    controls: [jwt-session-auth, rate-limiting, parameterized-sql]
+    residual_risk: low
+
+  - id: tb-briefr-external-services
+    title: BRIEFR -> External intelligence sources + webhook receivers
+    summary: >-
+      Outbound egress from BRIEFR's scheduler jobs to third-party feeds (NVD,
+      KEV, EPSS, ThreatFox, OTX, GitHub-hosted mirrors) and to operator-configured
+      webhook receivers. The only trust boundary where BRIEFR is the initiating
+      party against infrastructure it doesn't control.
+    owner: platform
+    status: active
+    origin: curated
+    review_date: '2026-07-13'
+    evidence: [backend/webhooks/engine.py, backend/webhooks/ssrf.py]
+    related_ids: [webhook-signing, webhook-ssrf-guard]
+    data_classification: CVE/KEV metadata (outbound fetch), webhook payloads (outbound delivery, no credentials)
+    authentication: API keys where the upstream requires them (VulnCheck, GitHub); webhook deliveries are HMAC-signed, not authenticated by the receiver
+    encryption: HTTPS-only for webhook delivery (webhook-ssrf-guard); upstream feed TLS depends on the third party
+    threats: [ssrf, webhook-spoofing, payload-tampering, internal-network-scanning]
+    controls: [webhook-signing, webhook-ssrf-guard]
+    residual_risk: medium

@@ -13,9 +13,10 @@ import AsyncState from '../../../components/ui/AsyncState.jsx'
  *
  * The "architecture stack" is a simplified view of the generated layer
  * (routers / scheduler jobs / DB tables) -- real corpus data, not the full
- * System Architecture graph (that's TM-4, backed by graphs/architecture.json
- * which doesn't exist yet). There is no "Frontend" tier here because
- * components.yaml currently only contains backend router modules.
+ * System Architecture graph (TM-4's interactive pan/zoom graph, backed by
+ * graphs/architecture.json, lives in its own nav section). There is no
+ * "Frontend" tier here because components.yaml currently only contains
+ * backend router modules.
  */
 export default function OverviewSection({ onDrill }) {
   const [data, setData] = useState(null)
@@ -87,7 +88,7 @@ export default function OverviewSection({ onDrill }) {
         <h3 className="sa-subsection-label mono">ARCHITECTURE OVERVIEW (SIMPLIFIED)</h3>
         <p className="sa-arch-stack-note">
           Generated layer only — routers, scheduler jobs, and DB tables discovered from code.
-          The full interactive system graph ships in a later phase.
+          See the System Architecture section for the full interactive graph with edges.
         </p>
         <div className="sa-arch-tiers" role="list" aria-label="Generated architecture tiers">
           {stackTiers.map((tier, i) => (

@@ -44,8 +44,9 @@ from fastapi import APIRouter, HTTPException, Query
 
 from database import get_db
 from routers.forge import build_coverage_map, count_coverage_summary
-from security_architecture import merge
+from security_architecture import graphs, merge
 from security_architecture.corpus_loader import CorpusValidationError, get_corpus
+from security_architecture.graphs import ArchitectureGraphError
 from threat_model.scenarios import build_threat_scenarios
 
 router = APIRouter(prefix="/api/security-architecture")
@@ -192,6 +193,14 @@ async def get_overview():
         "section": "risks", "filter": {"origin": "live"},
     })
 
+    attack_surface = graphs.build_attack_surface(corpus)
+    tiles.append({
+        "id": "unreviewed_endpoints", "label": "Unreviewed Endpoints",
+        "value": attack_surface["unreviewed_endpoints"],
+        "help": f"Generated endpoint inventory rows ({attack_surface['total_endpoints']} total) with no curated control's related_apis covering them yet.",
+        "section": "attack_surface", "filter": {},
+    })
+
     return {
         "generated": {
             "components": len(components),
@@ -257,6 +266,55 @@ async def get_threat_scenarios(
 
     result["meta"]["catalog"] = "self-stack" if self_stack else "stack"
     return result
+
+
+@router.get("/graph/architecture")
+async def get_architecture_graph():
+    """System architecture graph (spec §5.2, §8 TM-4). Nodes/edges are
+    exactly `graphs/architecture.json`'s generated-layer content -- no
+    read-time filtering here, so 'graph nodes match generator output
+    exactly' holds by construction. Layout (x/y) is intentionally absent:
+    presentation isn't a code fact (advisor note during TM-4 build) --
+    the frontend computes a deterministic cluster+index layout."""
+    try:
+        return graphs.get_architecture_graph()
+    except ArchitectureGraphError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.get("/graph/attack-surface")
+async def get_attack_surface():
+    """Attack surface = generated endpoint inventory × linked controls,
+    counts only (spec §8 TM-4) -- every endpoint's linked_control_count is
+    visible on the row, so 'Unreviewed Endpoints' (count 0) is never an
+    invented severity, just an endpoint with no curated control record
+    covering it yet."""
+    try:
+        corpus = get_corpus()
+    except CorpusValidationError as exc:
+        raise HTTPException(status_code=500, detail=f"Corpus invalid: {exc}") from exc
+    return graphs.build_attack_surface(corpus)
+
+
+@router.get("/context/{node_id}")
+async def get_node_context(node_id: str):
+    """Context-rail payload for an architecture-graph node selection (spec
+    §5.2, §8 TM-4: 'node selection populates the context rail'). `node_id`
+    is the graph's own node id (e.g. `routers-cves`, `table:cves`,
+    `job:nvd_incremental_sync`) -- a single path param, not the spec §4.4
+    two-segment `/context/{entity_type}/{id}` form, since the graph node id
+    already encodes its kind via prefix and this keeps the frontend's graph
+    click handler a one-field lookup."""
+    try:
+        corpus = get_corpus()
+        graph = graphs.get_architecture_graph()
+    except (CorpusValidationError, ArchitectureGraphError) as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    context = graphs.build_node_context(node_id, corpus, graph)
+    if context is None:
+        raise HTTPException(status_code=404, detail=f"Unknown node: {node_id}")
+    return context
 
 
 @router.get("/section/{section_id}")
