@@ -325,6 +325,21 @@ export function fetchSecurityArchitectureSection(sectionId, params = {}) {
   return request(`/security-architecture/section/${encodeURIComponent(sectionId)}${qs ? `?${qs}` : ''}`)
 }
 
+/** TM-3: ATT&CK coverage matrix (wraps routers.forge.build_coverage_map -- same query as Forge). */
+export function fetchSecurityArchitectureMitre(stack = '') {
+  const qs = stack ? `?stack=${encodeURIComponent(stack)}` : ''
+  return request(`/security-architecture/mitre${qs}`)
+}
+
+/** TM-3: threat scenarios -- stack-scoped (Forge parity) or self-stack toggle (spec §4.5). */
+export function fetchSecurityArchitectureThreatScenarios({ stack = '', selfStack = false } = {}) {
+  const params = new URLSearchParams()
+  if (selfStack) params.set('self_stack', 'true')
+  else if (stack) params.set('stack', stack)
+  const qs = params.toString()
+  return request(`/security-architecture/threat-scenarios${qs ? `?${qs}` : ''}`)
+}
+
 /** V1.5: run Sigma rule against pasted log lines (file-based proof bench). */
 export function runProofBench({ lines, sigmaYaml, patterns, maxSamples = 10 }) {
   const body = { lines, max_samples: maxSamples }

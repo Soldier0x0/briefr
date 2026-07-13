@@ -5,6 +5,8 @@ import { notifyApiError } from '../../components/Toast.jsx'
 import { humanizeSectionId, DEFAULT_SECTION } from './constants.js'
 import OverviewSection from './sections/OverviewSection.jsx'
 import GenericSection from './sections/GenericSection.jsx'
+import MitreSection from './sections/MitreSection.jsx'
+import ThreatScenariosSection from './sections/ThreatScenariosSection.jsx'
 import './SecurityArchitecturePage.css'
 
 /**
@@ -37,6 +39,7 @@ export default function SecurityArchitecturePage() {
     type: searchParams.get('type') || '',
     status: searchParams.get('status') || '',
     severity: searchParams.get('severity') || '',
+    origin: searchParams.get('origin') || '',
   }), [searchParams])
 
   useEffect(() => {
@@ -124,6 +127,10 @@ export default function SecurityArchitecturePage() {
 
           {section === 'overview' ? (
             <OverviewSection onDrill={goToSection} />
+          ) : section === 'mitre_attack' ? (
+            <MitreSection />
+          ) : section === 'threat_scenarios' ? (
+            <ThreatScenariosSection />
           ) : (
             <GenericSection sectionId={section} filters={filters} onFilterChange={setFilters} />
           )}
