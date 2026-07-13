@@ -904,7 +904,8 @@ each with exposure counts and a rule status.
       "kev_count": 3,
       "max_epss": 0.97,
       "pack_count": 1,
-      "status": "yours"
+      "status": "yours",
+      "case_study_count": 2
     }
   ],
   "meta": {
@@ -921,6 +922,11 @@ Status semantics: `yours` = at least one saved hunt pack for the technique;
 inherit the parent's coverage); `gap` = neither. Techniques with saved packs stay
 on the map even when the stack filter matches none of their CVEs. Sorted by
 tactic, gaps first within each tactic.
+
+`case_study_count` (Forge Redesign FR-3): number of distinct MITRE ATLAS case
+studies linked to this technique's CVEs. ATLAS and ATT&CK are separate
+technique taxonomies, so the join is through the shared CVE, not a technique
+ID match.
 
 ### GET /api/hunt-packs/{technique_id}
 
@@ -939,10 +945,13 @@ tactic, gaps first within each tactic.
   "packs": [ { "id": 1, "technique_id": "T1190", "cve_id": "CVE-2021-44228",
                "title": "...", "priority": "critical", "sigma_yaml": "...",
                "siem_queries": {}, "log_patterns": [], "notes": "",
-               "created_at": "...", "updated_at": "..." } ],
+               "created_at": "...", "updated_at": "...",
+               "cwe_ids": ["CWE-502"], "cvss_score": 10.0, "epss_score": 0.97 } ],
   "siem_queries": { "elastic_kql": {"query": "...", "notes": "..."}, "splunk_spl": {},
                     "sentinel_kql": {}, "qradar_aql": {} },
   "log_patterns": ["..."],
+  "case_studies": [ { "study_id": "AML.CS0001", "name": "...", "summary": "...",
+                      "target": "AI system", "incident_date": "2021-12-15" } ],
   "linked_cves": [ { "cve_id": "CVE-2021-44228", "severity": "CRITICAL",
                      "cvss_score": 10.0, "epss_score": 0.97, "is_kev": true,
                      "published": "..." } ]
@@ -950,6 +959,10 @@ tactic, gaps first within each tactic.
 ```
 
 `linked_cves` is capped at 20, ordered KEV first, then EPSS, then recency.
+`packs[].cwe_ids`/`cvss_score`/`epss_score` and `case_studies` are Forge
+Redesign FR-3 additions — read from the same `cve_technique_map` join already
+used for `linked_cves`, no extra query. `case_studies` capped at 5, matched
+through the pack's/technique's linked CVEs (see `case_study_count` note above).
 
 ### POST /api/hunt-packs/generate
 

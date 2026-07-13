@@ -161,6 +161,14 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
       url.pathname = '/'
       url.searchParams.set('cve', item.entity_id)
       window.location.assign(url.toString())
+    } else if (item.entity_type === 'kev_backlog') {
+      // Forge owns ?view= (FR-2 URL state); App.jsx activates the Forge tab
+      // on load whenever that param is present (see forgeDeepLinkHandled),
+      // same mechanism the ?cve= deep link above relies on.
+      const url = new URL(window.location.href)
+      url.pathname = '/'
+      url.searchParams.set('view', 'backlog')
+      window.location.assign(url.toString())
     }
   }
 

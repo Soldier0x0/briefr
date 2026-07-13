@@ -21,38 +21,20 @@ function formatDate(value) {
   return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-function downloadPack(pack) {
-  // No hunt-pack-specific export path exists yet (PDF export is FR-3 scope —
-  // forge-redesign.md §4/§5). Boring default for FR-2: reuse the existing
-  // blob-download DOM pattern (utils/exportCsv.js downloadCsv) to dump the
-  // pack's content as JSON — no new dependency, no invented PDF format.
-  const payload = {
-    id: pack.id,
-    technique_id: pack.technique_id,
-    cve_id: pack.cve_id,
-    title: pack.title,
-    priority: pack.priority,
-    is_kev: pack.is_kev,
-    sigma_yaml: pack.sigma_yaml,
-    siem_queries: pack.siem_queries,
-    log_patterns: pack.log_patterns,
-    notes: pack.notes,
-    created_at: pack.created_at,
-    updated_at: pack.updated_at,
-  }
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `hunt-pack-${pack.technique_id}-${pack.cve_id}.json`
-  link.rel = 'noopener'
-  link.style.display = 'none'
-  document.body.appendChild(link)
-  link.click()
-  window.setTimeout(() => {
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }, 200)
+function exportPackPdf(pack, onError) {
+  // FR-3 (forge-redesign.md §4/§5): pack export as PDF via the existing
+  // jsPDF/exportCommon.js pattern — supersedes the FR-2 JSON-blob
+  // placeholder now that PDF export is in scope. Library rows only know
+  // technique_id (no loaded technique/case-study detail — that lives in the
+  // Hunt Pack rail), so the PDF falls back to the bare technique_id line;
+  // exporting the same pack from the rail includes technique name + tactic
+  // and related case studies.
+  return import('../../utils/huntPackPdf.js')
+    .then(({ downloadHuntPackPdf }) => downloadHuntPackPdf(pack))
+    .catch(err => {
+      onError?.(err)
+      throw err
+    })
 }
 
 /**
@@ -71,6 +53,7 @@ export default function LibraryView({ selectedPackId, onOpenPack, onPackDeleted 
   const [errorRequestId, setErrorRequestId] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [exportingId, setExportingId] = useState(null)
 
   const load = useCallback((isActive = () => true) => {
     setLoading(true)
@@ -126,20 +109,39 @@ export default function LibraryView({ selectedPackId, onOpenPack, onPackDeleted 
       align: 'center',
       render: row => (row.is_kev ? <span className="fg-kev-badge mono">KEV</span> : '—'),
     },
+    {
+      id: 'cwe_ids',
+      label: 'CWE',
+      width: 110,
+      render: row => (row.cwe_ids?.length ? row.cwe_ids.join(', ') : '—'),
+    },
+    {
+      id: 'epss_score',
+      label: 'EPSS',
+      width: 80,
+      render: row => (row.epss_score != null ? `${(row.epss_score * 100).toFixed(1)}%` : '—'),
+    },
     { id: 'created_at', label: 'Created', width: 150, render: row => formatDate(row.created_at) },
     { id: 'updated_at', label: 'Updated', width: 150, render: row => formatDate(row.updated_at) },
     {
       id: 'actions',
       label: 'Actions',
-      width: 140,
+      width: 150,
       render: row => (
         <div className="fg-library-row-actions">
           <button
             type="button"
             className="fg-copy-btn mono"
-            onClick={(e) => { e.stopPropagation(); downloadPack(row) }}
+            disabled={exportingId === row.id}
+            onClick={(e) => {
+              e.stopPropagation()
+              setExportingId(row.id)
+              exportPackPdf(row, err => notifyApiError(err))
+                .catch(() => {})
+                .finally(() => setExportingId(null))
+            }}
           >
-            EXPORT
+            {exportingId === row.id ? 'EXPORTING…' : 'EXPORT PDF'}
           </button>
           <button
             type="button"

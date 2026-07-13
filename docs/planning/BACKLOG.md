@@ -169,6 +169,7 @@ no collateral skip-decorator corruption. Full SQLite suite green (no regressions
 |------|--------|
 | **PG-001** | Diagnose + fix cross-file Postgres test pollution | ✅ fixed 2026-07-12 |
 | **PG-002** | Set up a documented persistent local Postgres for dev/CI (native service already exists on this machine at `localhost:5432`; OR fix `deploy/docker-compose.postgres.yml` port conflict guidance) so the CLAUDE.md dual-DB rule stops being aspirational | 📋 — a throwaway `docker run postgres:16-alpine` on port 5433 has worked reliably all session; formalizing that into a documented script is the remaining gap |
+| **PG-003** | Cross-file **SQLite** test pollution (found 2026-07-13, FR-3 session): full-suite `pytest tests/ -q` shows `test_api_key_health.py` + `test_db_explorer.py::test_unauthenticated_returns_401` failing, but both pass cleanly standalone and combined with `test_forge.py`. Same *class* of bug as PG-001 (cross-file pollution) but a different pair of files and the default SQLite backend, not Postgres — not diagnosed further, root cause unknown | 📋 |
 
 ### Track M (security/ops audit — mostly shipped)
 

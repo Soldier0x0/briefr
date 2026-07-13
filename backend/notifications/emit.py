@@ -101,6 +101,39 @@ async def emit_ioc_watchlist_notification(
     )
 
 
+async def emit_kev_backlog_notification(
+    db,
+    *,
+    cve_id: str,
+    technique_id: str,
+    technique_name: str,
+    priority: str,
+    dedupe_key: str,
+) -> int:
+    """New KEV-driven detection-backlog item (forge-redesign.md §4) — emitted
+    scheduler-side only (CLAUDE.md danger zone 6), from detection/backlog.py's
+    process_new_kev_backlog / reconcile_kev_backlog, never on the request
+    path. Deep-links to Forge's backlog view via entity_type."""
+    user_ids = await list_active_user_ids(db, scope=SCOPE_ANALYST)
+    if not user_ids:
+        return 0
+    title = f"New detection gap: {cve_id} on {technique_id}"
+    body = f"{technique_name} — {(priority or 'medium').upper()} priority, no hunt pack yet."
+    severity = "critical" if priority == "critical" else "high" if priority == "high" else "medium"
+    return await _emit_to_users(
+        db,
+        scope=SCOPE_ANALYST,
+        user_ids=user_ids,
+        category="kev_backlog",
+        severity=severity,
+        title=title,
+        body=body,
+        entity_type="kev_backlog",
+        entity_id=cve_id.upper(),
+        dedupe_key=dedupe_key,
+    )
+
+
 async def emit_job_error_notification(
     db,
     *,

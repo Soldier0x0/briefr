@@ -597,6 +597,79 @@ async def get_atlas_case_studies_for_cve(
     ]
 
 
+# ── Forge case-study cross-links (forge-redesign.md §4/FR-3) ──────────
+#
+# atlas_case_studies (MITRE ATLAS — AI/ML threats) and mitre_techniques
+# (MITRE ATT&CK Enterprise — Forge's coverage map) are separate taxonomies;
+# a case study's own `techniques` list is ATLAS technique IDs, not ATT&CK
+# ones. The only shared key is the CVE: a case study references cve_ids,
+# and cve_technique_map links the same CVEs to ATT&CK technique_ids. Both
+# helpers below join through that shared CVE set, in Python — the ATLAS
+# case-study table is small (MITRE's bundle, not a live feed), so this
+# avoids per-technique round trips (an N+1 across ~100+ coverage rows).
+
+async def get_case_study_counts_by_technique(db: DbConnection) -> dict[str, int]:
+    """Distinct case-study count per ATT&CK technique_id, for the Forge
+    coverage map's "Case studies (n)" chip (forge-redesign.md §4)."""
+    study_rows = await db.execute_fetchall(
+        "SELECT study_id, cve_ids FROM atlas_case_studies"
+    )
+    studies_by_cve: dict[str, set[str]] = {}
+    for row in study_rows:
+        for cve_id in _parse_json_list(row["cve_ids"]):
+            studies_by_cve.setdefault(str(cve_id).upper(), set()).add(row["study_id"])
+    if not studies_by_cve:
+        return {}
+
+    map_rows = await db.execute_fetchall(
+        "SELECT technique_id, cve_id FROM cve_technique_map"
+    )
+    counts: dict[str, set[str]] = {}
+    for row in map_rows:
+        study_ids = studies_by_cve.get((row["cve_id"] or "").upper())
+        if not study_ids:
+            continue
+        counts.setdefault(row["technique_id"], set()).update(study_ids)
+    return {tid: len(ids) for tid, ids in counts.items()}
+
+
+async def get_case_studies_for_technique(
+    db: DbConnection, technique_id: str, *, limit: int = 5
+) -> list[dict]:
+    """Case studies for one ATT&CK technique (via shared CVEs), for the Hunt
+    Pack rail's case-study section."""
+    cve_rows = await db.execute_fetchall(
+        "SELECT DISTINCT cve_id FROM cve_technique_map WHERE technique_id = ?",
+        (technique_id,),
+    )
+    cve_ids = {(row["cve_id"] or "").upper() for row in cve_rows if row["cve_id"]}
+    if not cve_ids:
+        return []
+
+    study_rows = await db.execute_fetchall(
+        "SELECT study_id, name, summary, target, date, cve_ids FROM atlas_case_studies"
+    )
+    seen: set[str] = set()
+    out: list[dict] = []
+    for row in study_rows:
+        if row["study_id"] in seen:
+            continue
+        study_cves = {str(c).upper() for c in _parse_json_list(row["cve_ids"])}
+        if not (study_cves & cve_ids):
+            continue
+        seen.add(row["study_id"])
+        out.append({
+            "study_id": row["study_id"],
+            "name": row["name"],
+            "summary": row["summary"],
+            "target": row["target"],
+            "incident_date": row["date"],
+        })
+        if len(out) >= limit:
+            break
+    return out
+
+
 async def count_ai_ml_profile_alerts(
     db: DbConnection, frameworks: list[str]
 ) -> int:
