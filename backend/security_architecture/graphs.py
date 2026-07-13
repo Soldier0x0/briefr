@@ -32,26 +32,24 @@ class ArchitectureGraphError(ValueError):
     """graphs/architecture.json is missing or malformed."""
 
 
-_cache: dict[str, Any] | None = None
-_cache_mtime: float | None = None
+_caches: dict[Path, tuple[float, dict[str, Any]]] = {}
 
 
 def get_architecture_graph(path: Path | None = None) -> dict[str, Any]:
     """Cached load of the generated architecture graph, invalidated on
-    mtime change (same pattern as corpus_loader.get_corpus)."""
-    global _cache, _cache_mtime
-
-    p = path or GRAPH_PATH
+    mtime change (same pattern as corpus_loader.get_corpus). Keyed by
+    resolved path -- a global single-slot cache would pollute across calls
+    with different `path` values (tests routinely pass a scratch path)."""
+    p = (path or GRAPH_PATH).resolve()
     if not p.exists():
         raise ArchitectureGraphError(
             f"Missing {p} -- run `python scripts/generate_security_corpus.py`"
         )
     mtime = p.stat().st_mtime
-    if _cache is None or _cache_mtime != mtime:
+    if p not in _caches or _caches[p][0] != mtime:
         with open(p, encoding="utf-8") as f:
-            _cache = json.load(f)
-        _cache_mtime = mtime
-    return _cache
+            _caches[p] = (mtime, json.load(f))
+    return _caches[p][1]
 
 
 def _endpoint_matches_pattern(path: str, pattern: str) -> bool:

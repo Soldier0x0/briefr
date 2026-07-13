@@ -137,15 +137,28 @@ def test_get_architecture_graph_missing_file_raises(tmp_path):
     from security_architecture.graphs import ArchitectureGraphError
 
     missing = tmp_path / "does-not-exist.json"
-    graphs._cache = None
-    graphs._cache_mtime = None
-    try:
-        import pytest
-        with pytest.raises(ArchitectureGraphError):
-            graphs.get_architecture_graph(missing)
-    finally:
-        graphs._cache = None
-        graphs._cache_mtime = None
+    import pytest
+    with pytest.raises(ArchitectureGraphError):
+        graphs.get_architecture_graph(missing)
+
+
+def test_get_architecture_graph_cache_is_keyed_per_path(tmp_path):
+    """Gemini review, PR #496: a single-slot module-level cache would
+    return the wrong file's contents when called with two different paths
+    in sequence -- must be keyed by path, not last-call-wins."""
+    import json
+
+    a = tmp_path / "a.json"
+    b = tmp_path / "b.json"
+    a.write_text(json.dumps({"nodes": [{"id": "a"}], "edges": []}))
+    b.write_text(json.dumps({"nodes": [{"id": "b"}], "edges": []}))
+
+    graph_a = graphs.get_architecture_graph(a)
+    graph_b = graphs.get_architecture_graph(b)
+    assert graph_a["nodes"][0]["id"] == "a"
+    assert graph_b["nodes"][0]["id"] == "b"
+    # Re-fetch a after b -- must still be a's content, not b's.
+    assert graphs.get_architecture_graph(a)["nodes"][0]["id"] == "a"
 
 
 # ── Router endpoints ─────────────────────────────────────────────────

@@ -157,7 +157,7 @@ def build_db_tables_yaml(tables: list[str]) -> list[dict[str, Any]]:
 # cluster + index at render time.
 
 _SQL_TABLE_REF_RE = re.compile(
-    r"(?i)\b(?:FROM|JOIN|INTO|UPDATE)\s+(\w+)|DELETE\s+FROM\s+(\w+)"
+    r"(?i)\b(?:FROM|JOIN|INTO|UPDATE|DELETE\s+FROM)\s+(\w+)"
 )
 
 
@@ -168,7 +168,7 @@ def extract_table_refs(source: str, known_tables: set[str]) -> list[str]:
     non-SQL code can't slip in."""
     found: set[str] = set()
     for match in _SQL_TABLE_REF_RE.finditer(source):
-        name = match.group(1) or match.group(2)
+        name = match.group(1)
         if name and name.lower() in known_tables:
             found.add(name.lower())
     return sorted(found)
