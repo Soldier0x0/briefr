@@ -194,6 +194,103 @@ def test_committed_corpus_has_no_drift(tmp_path):
         )
 
 
+def test_committed_architecture_graph_has_no_drift(tmp_path):
+    """TM-4: same drift check as the YAML generated layer, for
+    graphs/architecture.json (JSON, not YAML -- compared as parsed data)."""
+    import json
+
+    regenerated_dir = tmp_path / "regenerated"
+    gen.generate(regenerated_dir)
+
+    committed = gen.CORPUS_DIR / "graphs" / "architecture.json"
+    fresh = regenerated_dir / "graphs" / "architecture.json"
+    with open(committed, encoding="utf-8") as f:
+        committed_data = json.load(f)
+    with open(fresh, encoding="utf-8") as f:
+        fresh_data = json.load(f)
+    assert committed_data == fresh_data, (
+        "graphs/architecture.json has drifted from the code it describes -- "
+        "run `python scripts/generate_security_corpus.py` and commit the result"
+    )
+
+
+def test_architecture_graph_nodes_match_generated_layer_exactly():
+    """TM-4 acceptance (spec §8): 'graph nodes match generator output
+    exactly' -- the node id set is exactly the union of component ids,
+    job ids, and table ids from the other generated-layer files, not a
+    hand-maintained parallel list."""
+    import json
+
+    with open(gen.CORPUS_DIR / "graphs" / "architecture.json", encoding="utf-8") as f:
+        graph = json.load(f)
+    with open(gen.CORPUS_DIR / "components.yaml", encoding="utf-8") as f:
+        components = yaml.safe_load(f)["components"]
+    with open(gen.CORPUS_DIR / "scheduler_jobs.yaml", encoding="utf-8") as f:
+        jobs = yaml.safe_load(f)["jobs"]
+    with open(gen.CORPUS_DIR / "db_tables.yaml", encoding="utf-8") as f:
+        tables = yaml.safe_load(f)["tables"]
+
+    expected_ids = (
+        {c["id"] for c in components}
+        | {f"job:{j['id']}" for j in jobs}
+        | {f"table:{t['id']}" for t in tables}
+    )
+    assert {n["id"] for n in graph["nodes"]} == expected_ids
+
+
+def test_extract_table_refs_anchors_to_sql_keywords():
+    """A table name appearing only as a bare identifier/comment (not after
+    FROM/JOIN/INTO/UPDATE/DELETE FROM) must NOT produce an edge -- the
+    central 'no opinion rendered as measurement' principle applies to graph
+    edges: a false positive here would fabricate an architectural
+    dependency that doesn't exist."""
+    known = {"users", "cves"}
+    source = "# users are important\nSELECT * FROM cves WHERE id = ?\nuser_count = get_users_total()"
+    assert gen.extract_table_refs(source, known) == ["cves"]
+
+
+def test_extract_table_refs_covers_join_into_update_delete():
+    known = {"a", "b", "c", "d"}
+    source = (
+        "SELECT * FROM a JOIN b ON a.id=b.id; "
+        "INSERT INTO c VALUES (1); "
+        "UPDATE d SET x=1; "
+        "DELETE FROM a WHERE id=1;"
+    )
+    assert gen.extract_table_refs(source, known) == ["a", "b", "c", "d"]
+
+
+def test_build_architecture_graph_shape_and_determinism():
+    components = [{
+        "id": "routers-x", "title": "routers.x", "endpoint_count": 1,
+        "source_refs": [{"type": "file", "ref": "backend/routers/x.py"}],
+    }]
+    jobs_yaml = [{
+        "id": "job_x", "title": "Job X",
+        "source_refs": [{"type": "job", "ref": "job_x"}],
+    }]
+    tables_yaml = [{
+        "id": "tbl_x", "title": "tbl_x",
+        "source_refs": [{"type": "table", "ref": "tbl_x"}],
+    }]
+    sources = {"routers-x": "SELECT * FROM tbl_x"}
+
+    graph1 = gen.build_architecture_graph(components, jobs_yaml, tables_yaml, sources)
+    graph2 = gen.build_architecture_graph(components, jobs_yaml, tables_yaml, sources)
+    assert graph1 == graph2  # deterministic
+
+    node_ids = {n["id"] for n in graph1["nodes"]}
+    assert node_ids == {"routers-x", "job:job_x", "table:tbl_x"}
+    assert graph1["edges"] == [{
+        "id": "routers-x->table:tbl_x", "source": "routers-x",
+        "target": "table:tbl_x", "kind": "references_table",
+    }]
+    # No x/y layout coordinates baked into the generated layer (advisor
+    # note: presentation isn't a code fact and shouldn't force a corpus
+    # regen on every layout tweak).
+    assert all("x" not in n and "y" not in n for n in graph1["nodes"])
+
+
 # ── corpus_loader validation ───────────────────────────────────────────
 
 def _write_minimal_corpus(directory: Path, **overrides) -> None:
