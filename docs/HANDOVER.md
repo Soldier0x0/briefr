@@ -12,6 +12,133 @@ entry** → `docs/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-13 — TM-5: Risk Register, Decisions, Review History, Abuse Cases, Search, PDF export — **committed ARCH program complete** (PR open)
+
+**Context:** picked up TM-5 per the previous entry's `Next:` line — the final committed
+phase of `threat-modeling-security-architecture.md` (spec §8: "committed program ends
+at TM-5", 5 PRs / 11 sections). Entry gate confirmed
+(`pytest tests/ -q -k security_architecture` — 80 passed before starting).
+`git log --oneline -5 origin/main` showed nothing new since TM-4 (`a342f24`), no
+conflict risk.
+
+**The one real design decision (flagged to the advisor before coding):** acceptance
+says a stale fixture "renders STALE and drops out of percentages" — but before this
+phase the only *percentage* the module had was MITRE Detection Coverage, which is
+100% live-DB derived and carries no curated `review_date` to go stale on. Resolved by
+turning the Overview "Controls" tile into the spec §5.1-specified "Controls Active"
+ratio (`active / total`) and excluding stale controls from **both** sides
+(`security_architecture/merge.py::controls_active_ratio`) — now there's a real
+percentage a curated record feeds, and the acceptance criterion is testable rather than
+aspirational.
+
+**Shipped (branch `tm5-arch-risk-register-search`, PR open against `main`, not merged):**
+
+- **Staleness decay, centralized:** `merge.py::is_stale`/`annotate_stale` — one function
+  computes `stale: boolean` for every curated row; `GET /section/{id}` now annotates
+  every row with it (not just under `?stale=true`), so the frontend badge, the Controls
+  Active ratio, and the PDF export disclaimer can never disagree about which rows are
+  stale. `STALE_WINDOW_DAYS` (90) moved from the router into `merge.py` as the single
+  source of truth.
+- **Curated content seeded** (first real security-review pass on these three files,
+  previously empty stubs since TM-1): `security_decisions.yaml` — 2 records mapping the
+  two real ADRs in `docs/decisions/` (`decision`/`alternatives`/`tradeoffs`/
+  `consequences` drawn from each ADR's own text, not invented prose). `abuse_cases.yaml`
+  — 6 entries, each `current_protection` citing real code as evidence (webhook SSRF,
+  webhook replay, rate-limit bypass, SQL injection, log secret leakage), plus one
+  **honestly-open** finding (`broken-authorization-single-tier-session` — no
+  analyst/operator role split exists in code yet; recorded rather than glossed over).
+  `reviews.yaml` — 3 curated entries documenting the program's own TM-3/TM-4/TM-5
+  review passes. `risks.yaml` stays **intentionally empty** — no real risk-register
+  judgment pass has happened; fabricating rows to make the register look populated
+  would violate the central principle. The register's only non-empty content is the
+  pre-existing `live` self-stack rows.
+- **Review History (`GET /section/reviews`):** merges curated `reviews.yaml` with live
+  `audit_log` security events, filtered to a documented prefix allowlist (`auth.`,
+  `backup.`, `database.`, `diagnostics.integrity`, `config.apply`, `system.restart`,
+  `scheduler.`) — reuses the same table and `redact.mask_audit_log_target` masking rule
+  the admin Audit Log view already uses, not a duplicate.
+- **Global search:** `GET /search` (`merge.py::search_corpus` + `search_mitre_
+  techniques`) — a bounded scan over the already mtime-cached corpus plus one MITRE
+  query, not an index subsystem (danger zone 6 only forbids *heavy* request-path work).
+  `GET /stale` — every curated record past the review window across every section, the
+  Overview "Stale Records" tile's drill-through target.
+- **Frontend:** `RiskRegisterSection.jsx` (`AdminDataGrid` wrapper, origin filter tabs,
+  STALE badge, CSV + PDF export), `DecisionsSection.jsx` (expandable ADR cards),
+  `AbuseCasesSection.jsx` (in-page search), `ReviewHistorySection.jsx` (curated + live
+  timeline), `StaleRecordsSection.jsx` (cross-section tile drill-through, not a manifest
+  nav item), `GlobalSearch.jsx` (topbar search bar, debounced, grouped results,
+  arrow-key nav, Enter opens the section).
+- **PDF export (spec §5.16):** `utils/securityArchitecturePdf.js` — follows
+  `huntPackPdf.js`'s pattern exactly (lazy `import('jspdf')`, shared `exportCommon.js`
+  branding, no new dependency). Three exports: Overview snapshot, Risk Register (rows
+  currently in view), and a selected Threat Scenario. Every footer carries corpus
+  version + timestamp, and — when any exported row's `stale` flag is true — a "Contains
+  N stale records" disclaimer, read from the same server-computed flag as the on-screen
+  badge (never recomputed client-side).
+- **Tests:** `test_security_architecture_stale.py` (11 tests — pure `is_stale`/
+  `annotate_stale`/`controls_active_ratio` logic, plus HTTP integration with a
+  monkeypatched fixture control aged past the review window, verifying it renders
+  `stale: true` and drops out of the Controls Active ratio: `"1/1"` not `"2/2"` — the
+  exact spec §9.6 acceptance criterion). `test_security_architecture_search_reviews.py`
+  (9 tests — search finds a real control by title and a live MITRE technique by name;
+  review history merges curated + live rows and excludes non-security audit actions).
+  `test_security_architecture_shell.py` updated for the Controls tile's new ratio shape.
+  100/100 `security_architecture` tests green, both SQLite (default) and Postgres
+  (`DATABASE_URL=postgresql://briefr:briefr@localhost:5433/briefr` against the
+  playbook's disposable Docker instance) — CLAUDE.md danger zone 1.
+
+**Docs:** `docs/PRODUCT_STATUS.md`, `SYSTEM_DESIGN.md` (repo-root, not `docs/`),
+`API_REFERENCE.md` (repo-root) updated in this same PR per spec §8 TM-5's explicit
+requirement — new `GET /stale` and `GET /search` endpoints documented, Controls tile
+shape change documented, TM-0→TM-5 marked complete in `PRODUCT_STATUS.md`'s table.
+
+**Browser verification — attempted, not completed; flagged honestly rather than pushed
+through (playbook §3b/§4).** Seeded the worktree's `backend/briefr.db` with 15
+synthetic CVEs (avoids the known scheduler-lock-on-login landmine) and created a
+throwaway `tm5tester` user via `scripts/create_user.py` in this worktree's own isolated
+DB, per the task brief's constraints. `npm run build` passes; both dev servers start
+cleanly and serve real traffic (frontend HMR picks up every edit; backend access-logs
+show real requests). But `POST /api/auth/login` consistently returns 401 "Invalid
+username or password" against the running preview server — via the browser form, via
+`fetch()` in the page, and via `curl` directly to `:8000` — **while the identical
+`auth.repo.get_user_by_username` + `auth.passwords.verify_password` call succeeds when
+run in-process** (confirmed with two different local Python installs, both green).
+Added temporary `logging.warning()` instrumentation at the top of `routers/auth.py
+::login()` and at every one of its three `_AUTH_FAILURE` raise sites — **none of them
+fired** in `preview_logs`, even though the access log shows the request was processed
+and answered in ~270ms (bcrypt-cost-consistent timing) with exactly `_AUTH_FAILURE`'s
+literal text. That combination (the exact right error string, but the instrumented
+function body provably never executing) points at something in this sandbox's preview
+proxy layer intercepting `/api/auth/login` specifically, not a code defect — the same
+code path is exercised and passes in `test_security_architecture_search_reviews.py`'s
+own TestClient-based fixtures (which seed `audit_log`/`mitre_techniques` via the app's
+real DB layer) and in the 100 passing `security_architecture` integration tests. Reverted
+the debug instrumentation cleanly (`git diff backend/routers/auth.py` is empty). Did not
+spend further budget past this point per the playbook's explicit allowance ("if tooling
+friction persists after one or two reasonable attempts, ship with build+test evidence
+and flag the gap honestly") — this was well past two attempts. **Gap:** the STALE badge
+render, PDF export buttons, and global search UI were not eyeballed in a live browser
+this session; they were verified via the backend contract tests above (which assert the
+exact JSON shape each component consumes) and via `npm run build`'s successful
+compilation. A follow-up session with working preview-server login should do the actual
+click-through pass — start from `docs/HANDOVER.md`'s login-mystery note above rather
+than re-diagnosing from scratch.
+
+**Program status:** this closes the **committed** ARCH program — TM-0 (design) → TM-1
+(corpus) → TM-2 (shell) → TM-3 (live sections) → TM-4 (graph) → TM-5 (register/
+decisions/history/search/PDF), 5 PRs, 11 sections, per spec §8's own scope line
+("Committed program ends at TM-5"). **TM-6+** (STRIDE, OWASP Top 10, OWASP API, NIST
+CSF, ASVS, CAPEC, CWE framework workspaces) is explicitly **evidence-gated, not
+queued** — spec §8's own gate: "the section must render at least one live or generated
+data source... a framework page whose only content is a hand-filled checklist does not
+merge." CAPEC and CWE are the only two spec calls out as likely to pass that gate
+eventually (CIRCL + audit-finding data already exist); NIST CSF and ASVS may never pass
+it, which the spec says is acceptable. No next phase is queued after this PR merges —
+the next work item for this program, if any, would be a human/product decision to
+individually evidence-gate one TM-6+ framework, not an automatic continuation.
+
+---
+
 ## 2026-07-13 — TM-4: Security Architecture graph + Trust Boundaries + Attack Surface (PR open)
 
 **Context:** picked up TM-4 per the previous entry's `Next:` line. Entry gate confirmed
