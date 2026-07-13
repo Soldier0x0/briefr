@@ -10,6 +10,41 @@ JSX/CSS, no component library), **PostgreSQL required in production**.
 - Frontend build (must pass before any frontend change is done): `cd frontend && npm run build`
 - Dev servers: `uvicorn main:app --port 8000` (from `backend/`); `npm run dev` (from `frontend/`, proxies `/api` → `:8000`)
 
+## Environment (Windows) — read first, these caused real lost hours
+
+- Bash cwd resets between calls: always use absolute paths
+  (`/c/Users/harsh/Documents/briefr-main/backend`), never bare `cd backend`.
+- Not on PATH: `sqlite3`, `psql`, `wmic`. Foreground `sleep` is blocked —
+  for waits, run the command as a background task and act on its
+  completion notification; never poll in a loop.
+- Postgres test run (danger zone 1 "both ways"): container `briefr-pg-test`
+  on port 5433 →
+  `DATABASE_URL=postgresql://briefr:briefr@localhost:5433/briefr python -m pytest tests/ -q`
+- Dev servers only via `.claude/launch.json` / preview_start — raw Bash
+  servers collide with other sessions' ports (8000/5173).
+- Browser E2E against local SQLite: seed ≥10 CVEs or quiet the scheduler
+  first, or login hits "database is locked".
+
+## Agent guardrails — each of these stalled a real session
+
+- Never merge a PR unless the current user message says to merge.
+- Never edit `.claude/settings*.json` or widen your own permissions.
+- Never print `.env` contents, password hashes, or tokens to stdout.
+- Never kill processes you didn't start this session.
+- Browser logins are the user's job — ask, never type credentials.
+- A request with 3+ items (especially UI/design): write the list to a
+  checklist file first and tick items off — verbal lists don't survive
+  context compaction.
+
+## PR workflow
+
+- After push, CI + a Gemini review bot run. Wait with
+  `gh pr checks <n> --watch` as a background task, then
+  `gh pr view <n> --comments`; triage Gemini findings (real vs noise)
+  before applying fixes. Don't re-poll manually.
+- `dependency-audit` and `gitleaks` CI jobs are known-red on every run —
+  not merge blockers until fixed.
+
 ## Source of truth
 
 - `docs/PRODUCT_STATUS.md` is the living truth — when any other doc disagrees with it or with the code, they win, not the older doc.
