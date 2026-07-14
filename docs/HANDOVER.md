@@ -12,6 +12,15 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — RB-1: resource metrics collector — merged #521
+
+**What:** `resource_metrics` table, `psutil` collector job (`resource_metrics_sample` / 60s),
+request counter middleware, 30-day retention, scheduler lock + admin run map.
+
+**Next:** RB-2 admin Resources API + page.
+
+---
+
 ## 2026-07-14 — QA-U1: DetailDrawer header overflow menu — merged #520
 
 **What:** At `max-width: 480px`, investigation and report actions collapse into a `···`
