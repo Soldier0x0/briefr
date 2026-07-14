@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from correlation.freshness import freshness_context, numeric_edge_level
+
 _LEVELS = ("low", "medium", "high")
 
 
@@ -96,8 +98,6 @@ def confidence_for_ioc_edge(
             why = f"Shared indicator hub — seen across {degree} CVEs"
             factors.append({"factor": "degree", "value": degree, "reason": why})
         level = downranked
-
-    from correlation.freshness import freshness_context, numeric_edge_level
 
     fresh = freshness_context(
         t,

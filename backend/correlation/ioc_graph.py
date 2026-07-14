@@ -22,8 +22,8 @@ async def _shared_ioc_rows(db, cve_id: str) -> list:
         SELECT ocp2.cve_id AS cve_id_b,
                oi.ioc_type,
                oi.ioc_value,
-               oi.observed_at,
-               oi.fetched_at,
+               MAX(oi.observed_at) AS observed_at,
+               MAX(oi.fetched_at) AS fetched_at,
                COALESCE(deg.cve_count, 0) AS degree
         FROM otx_pulse_iocs oi
         JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id AND ocp.cve_id = ?

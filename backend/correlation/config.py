@@ -55,7 +55,10 @@ def get_freshness_half_life_days(ioc_type: str) -> int:
     env_key = f"CORRELATION_FRESHNESS_HALF_LIFE_{key}"
     raw = os.environ.get(env_key, "").strip()
     if raw:
-        return max(1, int(raw))
+        try:
+            return max(1, int(raw))
+        except ValueError:
+            pass
     return _DEFAULT_FRESHNESS_HALF_LIFE_DAYS.get(key, 120)
 
 
