@@ -2384,6 +2384,11 @@
   min-height: 2rem;
 }
 
+.config-key-suffix {
+  color: var(--text3);
+  font-size: 0.85em;
+}
+
 /* ── Pending changes bar ────────────────────────────────────────────────── */
 
 .pending-bar {

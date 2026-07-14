@@ -62,15 +62,17 @@ async def _build_wallboard_payload(db: Any) -> dict[str, Any]:
     stack = await get_effective_stack_terms(db)
     now = datetime.now(timezone.utc)
 
+    brief = await build_morning_brief(db, stack=stack or None, since_hours=24, limit=5)
+
     kev_on_stack = await _kev_on_stack_tile(db, stack)
-    changes_24h = await _changes_24h_tile(db, stack)
+    changes_24h = _changes_24h_from_brief(brief)
     top_risk = await _top_risk_tile(db, stack)
     ingest_health = await _ingest_health_tile(db)
     ingest_strip = _ingest_strip_tile(ingest_health)
     coverage_gaps = await _coverage_gaps_tile(db, stack)
     headlines = await _headlines_tile()
     kev_due_soon = await _kev_due_soon_tile(db, stack, changes_24h)
-    epss_movers = await _epss_movers_tile(db, stack, changes_24h)
+    epss_movers = _epss_movers_from_brief(brief)
     campaigns = await _campaigns_tile(db)
     source_health = _source_health_table(ingest_health)
 
@@ -120,8 +122,7 @@ async def _kev_on_stack_tile(db: Any, stack: str) -> dict[str, Any]:
     }
 
 
-async def _changes_24h_tile(db: Any, stack: str) -> dict[str, Any]:
-    brief = await build_morning_brief(db, stack=stack or None, since_hours=24, limit=5)
+def _changes_24h_from_brief(brief: dict[str, Any]) -> dict[str, Any]:
     sections = brief.get("sections") or {}
     section_counts = {
         key: int((sections.get(key) or {}).get("count") or 0)
@@ -142,6 +143,29 @@ async def _changes_24h_tile(db: Any, stack: str) -> dict[str, Any]:
         "action_queue_count": len(brief.get("action_queue") or []),
         "highlights": highlights,
     }
+
+
+def _epss_movers_from_brief(brief: dict[str, Any]) -> dict[str, Any]:
+    """EPSS movers from morning-brief deltas (24h positive changes), not top scores."""
+    section = (brief.get("sections") or {}).get("epss_movers") or {}
+    items = []
+    for item in (section.get("items") or [])[:5]:
+        items.append({
+            "cve_id": item.get("cve_id"),
+            "epss_score": item.get("epss_new") if item.get("epss_new") is not None else item.get("epss_score"),
+            "epss_delta": item.get("epss_delta"),
+            "epss_old": item.get("epss_old"),
+            "summary": (item.get("summary") or item.get("description") or "")[:120],
+        })
+    return {
+        "count": int(section.get("count") or len(items)),
+        "items": items,
+    }
+
+
+async def _changes_24h_tile(db: Any, stack: str) -> dict[str, Any]:
+    brief = await build_morning_brief(db, stack=stack or None, since_hours=24, limit=5)
+    return _changes_24h_from_brief(brief)
 
 
 async def _top_risk_tile(db: Any, stack: str = "") -> dict[str, Any]:
@@ -292,48 +316,22 @@ async def _kev_due_soon_tile(
     }
 
 
-async def _epss_movers_tile(
-    db: Any,
-    stack: str,
-    changes_24h: dict[str, Any],
-) -> dict[str, Any]:
-    brief_section = (changes_24h.get("section_counts") or {}).get("epss_movers", 0)
-    clause, params, _ = _stack_match_clause(stack)
-    if clause:
-        where = f"WHERE {clause}"
-        from_table = "cves c"
-    else:
-        where = ""
-        from_table = "cves"
-    order = "epss_score DESC NULLS LAST" if _is_postgres_connection(db) else "epss_score DESC"
-    rows = await db.execute_fetchall(
-        f"""
-        SELECT cve_id, epss_score, summary, description
-        FROM {from_table}
-        {where}
-        ORDER BY {order}
-        LIMIT 5
-        """,
-        params if clause else [],
-    )
-    items = [{
-        "cve_id": r["cve_id"],
-        "epss_score": r["epss_score"],
-        "summary": (r["summary"] or r["description"] or "")[:120],
-    } for r in rows if r["epss_score"] is not None]
-    return {"count": int(brief_section or len(items)), "items": items[:5]}
+_CAMPAIGN_ACTIVE_WHERE = "WHERE COALESCE(lifecycle, 'active') != 'stale'"
 
 
 async def _campaigns_tile(db: Any) -> dict[str, Any]:
     try:
         rows = await db.execute_fetchall(
-            """
-            SELECT campaign_id, label, member_count, confidence
+            f"""
+            SELECT campaign_id, label, member_count, confidence, lifecycle
             FROM correlation_campaigns
-            WHERE lifecycle = 'active' OR lifecycle IS NULL OR lifecycle = ''
+            {_CAMPAIGN_ACTIVE_WHERE}
             ORDER BY member_count DESC, label ASC
             LIMIT 5
             """
+        )
+        count_row = await db.execute_fetchall(
+            f"SELECT COUNT(*) AS n FROM correlation_campaigns {_CAMPAIGN_ACTIVE_WHERE}"
         )
     except Exception:
         return {"active_count": 0, "items": []}
@@ -342,8 +340,8 @@ async def _campaigns_tile(db: Any) -> dict[str, Any]:
         "name": r["label"] or r["campaign_id"],
         "member_count": int(r["member_count"] or 0),
         "confidence": r["confidence"],
+        "lifecycle": r["lifecycle"] or "active",
     } for r in rows]
-    count_row = await db.execute_fetchall("SELECT COUNT(*) AS n FROM correlation_campaigns")
     active = int(count_row[0]["n"] or 0) if count_row else len(items)
     return {"active_count": active, "items": items}
 

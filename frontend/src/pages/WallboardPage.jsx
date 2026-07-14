@@ -62,13 +62,26 @@ function TokenModal({ onSubmit, error }) {
   )
 }
 
-function TileShell({ label, active, children, className = '' }) {
+function TileShell({ label, hint, active, children, className = '' }) {
   return (
     <article className={`wallboard-tile${active ? ' wallboard-tile--active' : ''} ${className}`.trim()}>
-      <h2 className="wallboard-tile-label">{label}</h2>
+      <h2 className="wallboard-tile-label">
+        <span>{label}</span>
+        {hint && <span className="wallboard-tile-hint mono">{hint}</span>}
+      </h2>
       {children}
     </article>
   )
+}
+
+function fmtEpssDelta(delta) {
+  if (delta == null || Number.isNaN(Number(delta))) return null
+  const n = Number(delta)
+  return `+${(n * 100).toFixed(1)}%`
+}
+
+function MiniListEmpty({ children }) {
+  return <p className="wallboard-tile-empty mono">{children}</p>
 }
 
 function CveLink({ cveId, children }) {
@@ -99,7 +112,11 @@ function PageOne({ payload, activeTile }) {
   return (
     <div className="wallboard-page1">
       <div className="wallboard-hero-row">
-        <TileShell label="KEV on stack" active={activeTile === 0}>
+        <TileShell
+          label="KEV on stack"
+          hint="CISA KEV entries matching your stack"
+          active={activeTile === 0}
+        >
           <p className="wallboard-tile-metric mono">{fmtCount(payload?.kev_on_stack?.count)}</p>
           <p className="wallboard-tile-sub">
             {payload?.kev_on_stack?.stack_configured
@@ -107,18 +124,22 @@ function PageOne({ payload, activeTile }) {
               : 'Configure stack in Feed'}
           </p>
         </TileShell>
-        <TileShell label="KEV due <7d" active={activeTile === 1}>
+        <TileShell label="KEV due <7d" hint="Federal remediation deadlines within 7 days" active={activeTile === 1}>
           <p className="wallboard-tile-metric mono">{fmtCount(payload?.kev_due_soon?.count)}</p>
-          <ul className="wallboard-mini-list">
-            {(payload?.kev_due_soon?.items || []).slice(0, 3).map((item) => (
-              <li key={item.cve_id}>
-                <CveLink cveId={item.cve_id} />
-                <span className="wallboard-tile-sub">{item.due_date}</span>
-              </li>
-            ))}
-          </ul>
+          {(payload?.kev_due_soon?.items || []).length > 0 ? (
+            <ul className="wallboard-mini-list">
+              {(payload?.kev_due_soon?.items || []).slice(0, 3).map((item) => (
+                <li key={item.cve_id}>
+                  <CveLink cveId={item.cve_id} />
+                  <span className="wallboard-tile-sub">{item.due_date}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <MiniListEmpty>No KEV deadlines in the next 7 days</MiniListEmpty>
+          )}
         </TileShell>
-        <TileShell label="New KEV 24h" active={activeTile === 2}>
+        <TileShell label="New KEV 24h" hint="Catalog additions in the last 24 hours" active={activeTile === 2}>
           <p className="wallboard-tile-metric mono">{fmtCount(payload?.changes_24h?.section_counts?.new_kev)}</p>
           <p className="wallboard-tile-sub mono">queue {fmtCount(payload?.changes_24h?.action_queue_count)}</p>
         </TileShell>
@@ -138,45 +159,63 @@ function PageOne({ payload, activeTile }) {
       <IngestStrip strip={payload?.ingest_strip} />
 
       <div className="wallboard-secondary-grid">
-        <TileShell label="24h queue" active={activeTile === 4}>
-          <ul className="wallboard-mini-list">
-            {(payload?.changes_24h?.highlights || []).slice(0, 5).map((item) => (
-              <li key={item.cve_id}>
-                <CveLink cveId={item.cve_id} />
-                {item.is_kev && <span className="wallboard-chip">KEV</span>}
-              </li>
-            ))}
-          </ul>
+        <TileShell label="24h queue" hint="Priority CVEs from the last 24h brief" active={activeTile === 4}>
+          {(payload?.changes_24h?.highlights || []).length > 0 ? (
+            <ul className="wallboard-mini-list">
+              {(payload?.changes_24h?.highlights || []).slice(0, 5).map((item) => (
+                <li key={item.cve_id}>
+                  <CveLink cveId={item.cve_id} />
+                  {item.is_kev && <span className="wallboard-chip">KEV</span>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <MiniListEmpty>No items in the 24h action queue</MiniListEmpty>
+          )}
         </TileShell>
-        <TileShell label="EPSS movers" active={activeTile === 5}>
+        <TileShell label="EPSS movers" hint="Largest positive EPSS score changes (24h)" active={activeTile === 5}>
           <p className="wallboard-tile-metric mono">{fmtCount(payload?.epss_movers?.count)}</p>
-          <ul className="wallboard-mini-list">
-            {(payload?.epss_movers?.items || []).slice(0, 3).map((item) => (
-              <li key={item.cve_id}>
-                <CveLink cveId={item.cve_id} />
-                <span>{item.epss_score != null ? Number(item.epss_score).toFixed(3) : '—'}</span>
-              </li>
-            ))}
-          </ul>
+          {(payload?.epss_movers?.items || []).length > 0 ? (
+            <ul className="wallboard-mini-list">
+              {(payload?.epss_movers?.items || []).slice(0, 3).map((item) => (
+                <li key={item.cve_id}>
+                  <CveLink cveId={item.cve_id} />
+                  <span>
+                    {fmtEpssDelta(item.epss_delta) || (item.epss_score != null ? Number(item.epss_score).toFixed(3) : '—')}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <MiniListEmpty>No EPSS increases in the last 24h</MiniListEmpty>
+          )}
         </TileShell>
-        <TileShell label="Campaigns" active={activeTile === 6}>
+        <TileShell label="Campaigns" hint="Non-stale OTX correlation clusters" active={activeTile === 6}>
           <p className="wallboard-tile-metric mono">{fmtCount(payload?.campaigns?.active_count)}</p>
-          <ul className="wallboard-mini-list">
-            {(payload?.campaigns?.items || []).slice(0, 3).map((item) => (
-              <li key={item.campaign_id} className="mono">{item.name} ({item.member_count})</li>
-            ))}
-          </ul>
+          {(payload?.campaigns?.items || []).length > 0 ? (
+            <ul className="wallboard-mini-list">
+              {(payload?.campaigns?.items || []).slice(0, 3).map((item) => (
+                <li key={item.campaign_id} className="mono">{item.name} ({item.member_count})</li>
+              ))}
+            </ul>
+          ) : (
+            <MiniListEmpty>No active campaigns</MiniListEmpty>
+          )}
         </TileShell>
-        <TileShell label="Coverage gaps" active={activeTile === 7}>
+        <TileShell label="Coverage gaps" hint="ATT&CK techniques with exposure but no hunt pack" active={activeTile === 7}>
           <p className="wallboard-tile-metric mono">{fmtCount(payload?.coverage_gaps?.gap_count)}</p>
-          <ul className="wallboard-mini-list">
-            {(payload?.coverage_gaps?.top_gaps || []).slice(0, 3).map((gap) => (
-              <li key={gap.technique_id}>
-                <span className="mono">{gap.technique_id}</span>
-                {gap.kev_count > 0 && <span className="wallboard-chip">KEV</span>}
-              </li>
-            ))}
-          </ul>
+          {(payload?.coverage_gaps?.top_gaps || []).length > 0 ? (
+            <ul className="wallboard-mini-list">
+              {(payload?.coverage_gaps?.top_gaps || []).slice(0, 3).map((gap) => (
+                <li key={gap.technique_id}>
+                  <span className="mono">{gap.technique_id}</span>
+                  {gap.kev_count > 0 && <span className="wallboard-chip">KEV</span>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <MiniListEmpty>No coverage gaps on your stack</MiniListEmpty>
+          )}
         </TileShell>
       </div>
     </div>
@@ -224,26 +263,34 @@ function PageTwo({ payload, activeTile }) {
             ))}
           </ul>
         </TileShell>
-        <TileShell label="EPSS movers (full)" active={activeTile === 2}>
-          <ul className="wallboard-mini-list">
-            {(payload?.epss_movers?.items || []).map((item) => (
-              <li key={item.cve_id}>
-                <CveLink cveId={item.cve_id} />
-                <span>{item.epss_score != null ? Number(item.epss_score).toFixed(3) : '—'}</span>
-                <span className="wallboard-tile-sub">{item.summary}</span>
-              </li>
-            ))}
-          </ul>
+        <TileShell label="EPSS movers (full)" hint="24h EPSS score increases" active={activeTile === 2}>
+          {(payload?.epss_movers?.items || []).length > 0 ? (
+            <ul className="wallboard-mini-list">
+              {(payload?.epss_movers?.items || []).map((item) => (
+                <li key={item.cve_id}>
+                  <CveLink cveId={item.cve_id} />
+                  <span>{fmtEpssDelta(item.epss_delta) || (item.epss_score != null ? Number(item.epss_score).toFixed(3) : '—')}</span>
+                  <span className="wallboard-tile-sub">{item.summary}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <MiniListEmpty>No EPSS increases in the last 24h</MiniListEmpty>
+          )}
         </TileShell>
-        <TileShell label="Active campaigns" active={activeTile === 3}>
-          <ul className="wallboard-mini-list">
-            {(payload?.campaigns?.items || []).map((item) => (
-              <li key={item.campaign_id}>
-                <span className="mono">{item.name}</span>
-                <span className="wallboard-tile-sub">{item.member_count} CVEs · {item.confidence}</span>
-              </li>
-            ))}
-          </ul>
+        <TileShell label="Active campaigns" hint="Correlation clusters still in play" active={activeTile === 3}>
+          {(payload?.campaigns?.items || []).length > 0 ? (
+            <ul className="wallboard-mini-list">
+              {(payload?.campaigns?.items || []).map((item) => (
+                <li key={item.campaign_id}>
+                  <span className="mono">{item.name}</span>
+                  <span className="wallboard-tile-sub">{item.member_count} CVEs · {item.confidence}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <MiniListEmpty>No active campaigns</MiniListEmpty>
+          )}
         </TileShell>
       </div>
     </div>

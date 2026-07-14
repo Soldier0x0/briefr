@@ -12,7 +12,17 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-14 — UX item 29: audit log metadata_json + expandable rows — merged (this PR)
+## 2026-07-14 — Issue 21 UI + wallboard tile upgrades — merged (this PR)
+
+**What:** Admin → API keys gains a provider health table (`GET/POST /api/admin/api-keys/health`),
+key suffix beside masked secrets, and Run check now. Wallboard EPSS movers tile now uses
+morning-brief 24h positive deltas (not top scores); campaign `active_count` excludes stale
+clusters; kiosk tiles show hints and empty-state copy.
+
+**Next:** optional webhook health UI, parked programs.
+
+---
+
 
 **What:** Alembic `024_audit_log_metadata` adds nullable `metadata_json` to `audit_log`.
 `write_audit_log` / `audit()` accept optional metadata (auto-attaches `request_id`);

@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 
 from database import init_db
 from tests.conftest import run_db_test
+from wallboard.service import _epss_movers_from_brief
 
 # _seed_wallboard_db below writes via raw aiosqlite with SQLite-dialect SQL
 # (datetime('now', ...)) — genuinely SQLite-only, not a fixture-pattern gap.
@@ -229,3 +230,31 @@ def test_wallboard_response_has_no_admin_keys(wallboard_client):
     dumped = str(body).lower()
     for forbidden in ("admin_api_key", "backup_age", "webhook_url", "api_key"):
         assert forbidden not in dumped
+
+
+def test_epss_movers_from_brief_uses_positive_deltas():
+    brief = {
+        "sections": {
+            "epss_movers": {
+                "count": 1,
+                "items": [{
+                    "cve_id": "CVE-2024-1",
+                    "epss_new": 0.42,
+                    "epss_old": 0.12,
+                    "epss_delta": 0.3,
+                    "summary": "Example mover",
+                }],
+            },
+        },
+    }
+    tile = _epss_movers_from_brief(brief)
+    assert tile["count"] == 1
+    assert tile["items"][0]["cve_id"] == "CVE-2024-1"
+    assert tile["items"][0]["epss_delta"] == 0.3
+    assert tile["items"][0]["epss_score"] == 0.42
+
+
+def test_epss_movers_from_brief_empty_section():
+    tile = _epss_movers_from_brief({"sections": {"epss_movers": {"count": 0, "items": []}}})
+    assert tile["count"] == 0
+    assert tile["items"] == []
