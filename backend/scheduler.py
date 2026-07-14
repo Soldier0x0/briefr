@@ -10,10 +10,11 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
-from db.errors import DatabaseLockedError
+from db.errors import DatabaseLockedError, format_db_exception_message
 from scheduler_locks import any_locked, get_lock, locked_jobs
 from database import (
     EPSS_BACKFILL_DONE_KEY,
+    ADDITIVE_ENRICHMENT_COMMIT_CHUNK,
     apply_additive_cve_enrichments,
     delete_cves_by_ids,
     purge_legacy_rejected_cves,
@@ -1095,6 +1096,7 @@ async def run_vulnrichment_sync() -> bool:
     async with get_lock("vulnrichment_snapshot_sync"):
         start = _start
         logger.info("Vulnrichment snapshot sync started at %s", start.isoformat())
+        applied = 0
         try:
             db = await get_db()
             try:
@@ -1115,7 +1117,11 @@ async def run_vulnrichment_sync() -> bool:
             _job_progress["vulnrichment_snapshot_sync"] = f"Applying {len(enrichments)} Vulnrichment records (CWE, CVSS, CPE metadata) to database…"
             db = await get_db()
             try:
-                applied = await apply_additive_cve_enrichments(db, enrichments)
+                applied = await apply_additive_cve_enrichments(
+                    db,
+                    enrichments,
+                    commit_every=ADDITIVE_ENRICHMENT_COMMIT_CHUNK,
+                )
                 await db.commit()
             finally:
                 await db.close()
@@ -1124,14 +1130,20 @@ async def run_vulnrichment_sync() -> bool:
         except Exception as exc:
             logger.error("Vulnrichment sync failed: %s", exc)
             _had_error = True
-            _vuln_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
+            _vuln_error_msg = format_db_exception_message(exc)[:500]
         else:
             _vuln_error_msg = ""
         finally:
             _job_progress.pop("vulnrichment_snapshot_sync", None)
         duration = (datetime.now(timezone.utc) - start).total_seconds()
         logger.info("Vulnrichment snapshot sync finished in %.1fs", duration)
-    await _write_job_last_run("vulnrichment_snapshot_sync", _start, had_error=_had_error, error_message=_vuln_error_msg)
+    await _write_job_last_run(
+        "vulnrichment_snapshot_sync",
+        _start,
+        records=applied if not _had_error else 0,
+        had_error=_had_error,
+        error_message=_vuln_error_msg,
+    )
     return True
 
 
@@ -1165,7 +1177,11 @@ async def run_cvelistv5_sync() -> bool:
             try:
                 if records:
                     _job_progress["cvelistv5_incremental_sync"] = f"Applying {len(records)} cvelistV5 CVE record updates (descriptions, CWEs, references)…"
-                    applied = await apply_additive_cve_enrichments(db, records)
+                    applied = await apply_additive_cve_enrichments(
+                        db,
+                        records,
+                        commit_every=ADDITIVE_ENRICHMENT_COMMIT_CHUNK,
+                    )
                 if rejected_ids:
                     _job_progress["cvelistv5_incremental_sync"] = f"Purging {len(rejected_ids)} CVEs rejected by cvelistV5 maintainers…"
                     purged = await delete_cves_by_ids(db, rejected_ids)
@@ -1183,14 +1199,20 @@ async def run_cvelistv5_sync() -> bool:
         except Exception as exc:
             logger.error("cvelistV5 sync failed: %s", exc, exc_info=True)
             _had_error = True
-            _cvelist_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
+            _cvelist_error_msg = format_db_exception_message(exc)[:500]
         else:
             _cvelist_error_msg = ""
         finally:
             _job_progress.pop("cvelistv5_incremental_sync", None)
         duration = (datetime.now(timezone.utc) - start).total_seconds()
         logger.info("cvelistV5 incremental sync finished in %.1fs", duration)
-    await _write_job_last_run("cvelistv5_incremental_sync", _start, had_error=_had_error, error_message=_cvelist_error_msg)
+    await _write_job_last_run(
+        "cvelistv5_incremental_sync",
+        _start,
+        records=applied if not _had_error else 0,
+        had_error=_had_error,
+        error_message=_cvelist_error_msg,
+    )
     return True
 
 

@@ -12,6 +12,28 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — cvelistV5 sync Postgres timeout fix (in PR)
+
+**What:** Production `cvelistv5_incremental_sync` failed every ~30m with bare
+`DatabaseError` when GitHub compare returned a large delta (up to 300 CVE JSON
+files). Root cause: `apply_additive_cve_enrichments` held one Postgres transaction
+open for hundreds of per-row statements; asyncpg `command_timeout` (60s) raised
+`TimeoutError` (empty message) → useless notifications and stuck
+`cvelistv5_head_sha` watermark.
+
+**Fix:** Batch new-row inserts via `upsert_cves`; commit every 50 enrichments
+(`ADDITIVE_ENRICHMENT_COMMIT_CHUNK`) in scheduler cvelistV5 + vulnrichment apply
+paths; map `TimeoutError` to `PostgreSQL command timeout` in `db/errors.py`;
+record `records_upserted` on cvelist last-run metadata.
+
+**Verify:** `pytest tests/test_db_errors.py tests/test_intel_feeds.py`; deploy +
+watch `scheduler.last_run.cvelistv5_incremental_sync` for `had_error: false` on
+the next heavy delta.
+
+**Next:** remaining notification issues (GreyNoise 404 health probe, etc.).
+
+---
+
 ## 2026-07-14 — Webhook health UI + unit test/README sync — merged (this PR)
 
 **What:** Admin → Webhooks refactored to destination health cards (`feed-source-card` pattern)

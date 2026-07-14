@@ -364,6 +364,40 @@ def test_apply_additive_stores_ssvc_in_feed_cache(tmp_path, monkeypatch):
     run_db_test(run())
 
 
+def test_apply_additive_batches_new_inserts_with_commit_every(tmp_path, monkeypatch):
+    db_file = str(tmp_path / "intel_batch.db")
+    monkeypatch.setattr(db_module, "DB_PATH", db_file)
+
+    async def run():
+        await db_module.init_db()
+        db = await db_module.get_db()
+        try:
+            enrichments = [
+                {
+                    "cve_id": f"CVE-2026-{1000 + i}",
+                    "description": f"desc {i}",
+                    "cvss_score": 5.0,
+                    "severity": "MEDIUM",
+                    "cwe_ids": ["CWE-79"],
+                    "affected_products": ["vendor:product"],
+                    "published": "2026-01-01",
+                    "modified": "2026-01-02",
+                }
+                for i in range(5)
+            ]
+            updated = await db_module.apply_additive_cve_enrichments(
+                db, enrichments, commit_every=2
+            )
+            await db.commit()
+            assert updated == 5
+            rows = await db.execute_fetchall("SELECT COUNT(*) AS n FROM cves")
+            assert rows[0]["n"] == 5
+        finally:
+            await db.close()
+
+    run_db_test(run())
+
+
 def test_scheduler_cvelistv5_sets_sync_state(tmp_path, monkeypatch):
     db_file = str(tmp_path / "scheduler_cvelist.db")
     monkeypatch.setattr(db_module, "DB_PATH", db_file)
