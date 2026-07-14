@@ -3,6 +3,7 @@
  */
 
 import { classifyRemediationReference } from './patchReferences.js'
+import { safeExternalUrl } from './safeExternalUrl.js'
 
 const HOST_VENDOR_LABELS = {
   'adobe.com': 'Adobe',
@@ -122,7 +123,8 @@ export function buildReferenceRows(urls, opts = {}) {
   const list = Array.isArray(urls) ? urls : []
   const seen = new Set()
   const rows = []
-  for (const url of list) {
+  for (const raw of list) {
+    const url = safeExternalUrl(raw)
     if (!url || seen.has(url)) continue
     seen.add(url)
     rows.push(buildReferenceRow(url, opts))

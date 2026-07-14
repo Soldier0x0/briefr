@@ -29,6 +29,7 @@ import {
 } from '../../utils/patchRemediation.js'
 import { formatKevDueDate } from '../../utils/kevDeadline.js'
 import { buildReferenceRows } from '../../utils/referenceRows.js'
+import { safeExternalUrl } from '../../utils/safeExternalUrl.js'
 import { buildExploitationDisplay } from '../../utils/exploitationDisplay.js'
 import { drawerEpssBarColor, capecHref, capecLabel, flattenOsvPackageRows } from './helpers.js'
 
@@ -137,6 +138,8 @@ function PatchActionSection({ cve, sentences, urls }) {
   const kevRemediation = buildKevRemediationDisplay({ cve, sentences })
   const vendorRef = pickVendorRemediationReference(cve, urls)
   const cisaRef = pickCisaRemediationReference(cve, urls)
+  const vendorHref = vendorRef ? safeExternalUrl(vendorRef.url) : null
+  const cisaHref = cisaRef ? safeExternalUrl(cisaRef.url) : null
 
   if (!vendor && !kevRemediation) return null
 
@@ -155,10 +158,10 @@ function PatchActionSection({ cve, sentences, urls }) {
             <span className="drawer-patch-status-label mono">{vendor.status}</span>
           </div>
           <p className="drawer-patch-guidance">{vendor.text}</p>
-          {vendorRef && (
+          {vendorHref && (
             <a
               className="drawer-patch-ref-link mono"
-              href={vendorRef.url}
+              href={vendorHref}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -172,10 +175,10 @@ function PatchActionSection({ cve, sentences, urls }) {
         <div className="drawer-patch-block">
           <p className="drawer-patch-cisa-heading mono">CISA KEV REMEDIATION GUIDANCE</p>
           <p className="drawer-patch-guidance">{kevRemediation.text}</p>
-          {cisaRef && (
+          {cisaHref && (
             <a
               className="drawer-patch-ref-link mono"
-              href={cisaRef.url}
+              href={cisaHref}
               target="_blank"
               rel="noopener noreferrer"
             >

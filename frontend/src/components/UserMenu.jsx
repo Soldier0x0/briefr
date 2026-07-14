@@ -92,12 +92,12 @@ export default function UserMenu({
                 <Home size={14} aria-hidden="true" />
                 <span>Back to BRIEFR</span>
               </Link>
-            ) : (
+            ) : role === 'admin' ? (
               <Link to="/admin" className="user-menu-item" role="menuitem" onClick={close}>
                 <LayoutDashboard size={14} aria-hidden="true" />
                 <span>Admin panel</span>
               </Link>
-            )}
+            ) : null}
             <Link to="/admin?p=display" className="user-menu-item" role="menuitem" onClick={close}>
               <Settings size={14} aria-hidden="true" />
               <span>Preferences</span>

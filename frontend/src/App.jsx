@@ -15,6 +15,7 @@ import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import RequireAuth from './components/RequireAuth.jsx'
+import RequireAdmin from './components/RequireAdmin.jsx'
 import { useToast } from './components/Toast.jsx'
 import { fetchStats, fetchHealth, fetchCVE } from './api.js'
 import { useWatchlist } from './hooks/useWatchlist.js'
@@ -325,16 +326,20 @@ export default function App() {
 
   const [statsError, setStatsError] = useState(null)
   const [statsErrorRequestId, setStatsErrorRequestId] = useState(null)
+  const statsLoadSeqRef = useRef(0)
 
   const loadStats = useCallback(() => {
+    const seq = ++statsLoadSeqRef.current
     const frameworks = getAiFrameworksForAlerts(assetCtx?.profile)
     fetchStats({ frameworks })
       .then(data => {
+        if (seq !== statsLoadSeqRef.current) return
         setStats(data)
         setStatsError(null)
         setStatsErrorRequestId(null)
       })
       .catch(err => {
+        if (seq !== statsLoadSeqRef.current) return
         setStatsError(err?.message || 'Failed to load stats.')
         setStatsErrorRequestId(err?.requestId || null)
         toast({
@@ -705,9 +710,11 @@ export default function App() {
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/admin/*" element={
           <RequireAuth>
-            <Suspense fallback={<TabLoading label="admin" />}>
-              <AdminPage />
-            </Suspense>
+            <RequireAdmin>
+              <Suspense fallback={<TabLoading label="admin" />}>
+                <AdminPage />
+              </Suspense>
+            </RequireAdmin>
           </RequireAuth>
         } />
         <Route path="/security-architecture/*" element={

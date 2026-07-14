@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { buildReferenceRow } from './referenceRows.js'
+import { buildReferenceRow, buildReferenceRows } from './referenceRows.js'
 
 describe('buildReferenceRow', () => {
   it('derives Adobe bulletin title from URL path', () => {
@@ -26,5 +26,17 @@ describe('buildReferenceRow', () => {
     const url = 'https://nvd.nist.gov/vuln/detail/CVE-2024-0001'
     const row = buildReferenceRow(url, { cveId: 'CVE-2024-0001' })
     assert.equal(row.url, url)
+  })
+})
+
+describe('buildReferenceRows', () => {
+  it('drops non-http(s) URLs from feed data', () => {
+    const rows = buildReferenceRows([
+      'https://example.com/advisory',
+      'javascript:alert(1)',
+      '/relative/path',
+    ])
+    assert.equal(rows.length, 1)
+    assert.equal(rows[0].url, 'https://example.com/advisory')
   })
 })
