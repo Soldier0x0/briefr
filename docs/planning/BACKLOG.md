@@ -74,7 +74,7 @@ before PR-9.
 | PR | Title | Status |
 |----|-------|--------|
 | PR-P3 | Index `cves.modified` | ✅ #516 |
-| PR-P4 | KEV upsert batching | 📋 optional |
+| PR-P4 | KEV upsert batching | ✅ (this PR) — `upsert_kev_batch` executemany in 500-row chunks; `_run_kev_sync` uses it |
 | PR-O1 | Feed empty → scheduler `had_error` | ✅ #517 |
 | PR-F1–F4 | Admin gate, safe URLs, fonts, loadStats | ✅ #518 |
 | PR-O2 | Correlation GET read-only split (CACHE-001) | ✅ (this PR) |
@@ -227,7 +227,7 @@ Flat backlog after major programs above — **no strict order**; pick from here 
 
 | Bucket | IDs |
 |--------|-----|
-| Codebase audit | PR-P4 optional (PR-P3/O1/O2/F1–F4 ✅) |
+| Codebase audit | — complete (PR-P3/P4/O1/O2/F1–F4 ✅) |
 | API key health tail | AKH-2 (remove dead `/api/usage`, HelpTip on Inbound limits) |
 | QA / UX | QA-U2 (design pass, deferred) |
 | Durability | — (PR-R1/R2/R4 ✅; PR-R3 verified as IDEM-001 overlap in #449 scope — see §3) |

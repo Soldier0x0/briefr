@@ -523,11 +523,15 @@ async def enrich_kev_summaries(db: DbConnection) -> int:
 
 
 async def upsert_kev(db: DbConnection, entry: dict) -> None:
+    sql = _UPSERT_KEV_PG if _is_postgres_connection(db) else _UPSERT_KEV_SQLITE
+    await db.execute(sql, _kev_upsert_params(entry))
+
+
+def _kev_upsert_params(entry: dict) -> tuple:
     cwes = entry.get("cwes") or []
     if not isinstance(cwes, list):
         cwes = []
-    updated_at = utcnow_str()
-    params = (
+    return (
         entry.get("cveID", ""),
         entry.get("product", ""),
         entry.get("shortDescription", ""),
@@ -538,10 +542,22 @@ async def upsert_kev(db: DbConnection, entry: dict) -> None:
         entry.get("vulnerabilityName", ""),
         entry.get("knownRansomwareCampaignUse", ""),
         json.dumps(cwes),
-        updated_at,
+        utcnow_str(),
     )
+
+
+async def upsert_kev_batch(db: DbConnection, entries: list[dict]) -> int:
+    """PR-P4 (DB-004): batch the full-catalog KEV upsert instead of one
+    execute() round-trip per row (~1,300 entries per sync)."""
+    valid = [e for e in entries if e.get("cveID")]
+    if not valid:
+        return 0
     sql = _UPSERT_KEV_PG if _is_postgres_connection(db) else _UPSERT_KEV_SQLITE
-    await db.execute(sql, params)
+    params_batch = [_kev_upsert_params(e) for e in valid]
+    chunk_size = 500
+    for i in range(0, len(params_batch), chunk_size):
+        await db.executemany(sql, params_batch[i : i + chunk_size])
+    return len(valid)
 
 
 async def filter_cves_matching_stack(

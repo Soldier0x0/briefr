@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import aiosqlite
 
-from database import _clean_iso_date, upsert_kev
+from database import _clean_iso_date, upsert_kev, upsert_kev_batch
 from feeds.kev import parse_kev_catalog
 
 SAMPLE_CATALOG = {
@@ -201,6 +201,58 @@ def test_upsert_kev_stores_and_updates_enrichment_fields():
             ("CVE-2026-11645",),
         )
         assert rows[0]["known_ransomware"] == "Known"
+        await db.close()
+
+    asyncio.run(_run())
+
+
+def test_upsert_kev_batch_matches_per_row_results():
+    """PR-P4: batched executemany writes the same rows as per-row upserts,
+    skips entries without a cveID, and updates in place on re-sync."""
+    async def _run():
+        db = await aiosqlite.connect(":memory:")
+        db.row_factory = aiosqlite.Row
+        await db.execute(_kev_table_sql())
+
+        entries = parse_kev_catalog(SAMPLE_CATALOG)
+        count = await upsert_kev_batch(db, [*entries, {"product": "no-id"}])
+        await db.commit()
+        assert count == len(entries)
+
+        rows = await db.execute_fetchall(
+            "SELECT cve_id, vendor_project, cwes FROM kev_deadlines ORDER BY cve_id"
+        )
+        by_id = {r["cve_id"]: dict(r) for r in rows}
+        assert len(by_id) == len(entries)
+        assert by_id["CVE-2023-4966"]["vendor_project"] == "Citrix"
+        assert json.loads(by_id["CVE-2023-4966"]["cwes"]) == ["CWE-119"]
+
+        # Re-sync with a changed flag updates in place (no duplicate rows).
+        updated = dict(entries[0])
+        updated["knownRansomwareCampaignUse"] = "Known"
+        await upsert_kev_batch(db, [updated])
+        await db.commit()
+        rows = await db.execute_fetchall(
+            "SELECT COUNT(*) AS n FROM kev_deadlines"
+        )
+        assert rows[0]["n"] == len(entries)
+        flag = await db.execute_fetchall(
+            "SELECT known_ransomware FROM kev_deadlines WHERE cve_id = ?",
+            (entries[0]["cveID"],),
+        )
+        assert flag[0]["known_ransomware"] == "Known"
+        await db.close()
+
+    asyncio.run(_run())
+
+
+def test_upsert_kev_batch_empty_returns_zero():
+    async def _run():
+        db = await aiosqlite.connect(":memory:")
+        db.row_factory = aiosqlite.Row
+        await db.execute(_kev_table_sql())
+        assert await upsert_kev_batch(db, []) == 0
+        assert await upsert_kev_batch(db, [{"product": "no-id"}]) == 0
         await db.close()
 
     asyncio.run(_run())

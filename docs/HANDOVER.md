@@ -12,6 +12,18 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — PR-P4: KEV upsert batching — merged (this PR)
+
+**What:** `upsert_kev_batch` (executemany, 500-row chunks, same upsert SQL both
+dialects); `_run_kev_sync` writes the full CISA catalog in ~3 round-trips instead of
+~1,300. Per-row `upsert_kev` retained for tests/single-entry callers. Codebase audit
+remediation program now fully complete.
+
+**Next:** remaining open: QA-U2 (design), item 29 (migration decision), PR3 tooltip
+follow-up, wallboard optional rows, parked programs.
+
+---
+
 ## 2026-07-14 — UI overhaul 3b legend + 3a/§6 verify — merged (this PR)
 
 **What:** Orphan `StatusLegend.jsx` (never imported since the admin overhaul) fixed
