@@ -231,6 +231,8 @@ def test_admin_correlation_status(admin_client):
     assert body["build_watermark"]
     assert body["campaigns"]["total"] >= 2
     assert body["features"]["feed_campaign_sort_boost"] is True
+    assert body["features"]["feed_campaign_sort_boost_gated"] is True
+    assert "metrics" in body
     assert body["coverage"]["cves_total"] == 4
     assert body["coverage"]["otx_pulses_linked"] == 2
     assert body["coverage"]["otx_pulses_with_iocs"] == 1

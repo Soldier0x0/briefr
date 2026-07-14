@@ -78,6 +78,10 @@ async def get_correlation_admin_status(db: Any) -> dict[str, Any]:
     )
     suppressions_count = int(suppressions_row[0]["cnt"]) if suppressions_row else 0
 
+    from db.correlation import get_latest_correlation_metrics
+
+    metrics = await get_latest_correlation_metrics(db)
+
     return {
         "last_run": last_run,
         "build_watermark": build_watermark,
@@ -98,9 +102,11 @@ async def get_correlation_admin_status(db: Any) -> dict[str, Any]:
             "ioc_sync_pending_pulses": ioc_backlog_pulses,
         },
         "suppressions_count": suppressions_count,
+        "metrics": metrics,
         "features": {
             "clusters_api": "/api/correlation/clusters",
             "feed_campaign_sort_boost": True,
+            "feed_campaign_sort_boost_gated": True,
             "cve_cluster_filter": True,
         },
     }

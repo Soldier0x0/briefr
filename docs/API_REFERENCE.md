@@ -167,7 +167,7 @@ Each CVE object may include `kev_due_date` (`YYYY-MM-DD` from `kev_deadlines.due
 - `member_of_campaign` — `true` when the CVE is a member of a nightly-built OTX pulse campaign cluster; `false` otherwise
 - `campaign_lifecycle` — `"active"`, `"emerging"`, `"declining"`, or `"stale"` when `member_of_campaign` is `true`; omitted otherwise (cheapest lifecycle when multiple campaigns apply)
 
-**Default sort:** pinned watchlist CVEs first; then CVEs that share a campaign cluster with a pinned peer; then `published` DESC, severity (CRITICAL→LOW), EPSS DESC. When `stack` is set, an additional client-side exposure sort may apply in the feed UI.
+**Default sort:** pinned watchlist CVEs first; then CVEs that share a **gated** campaign cluster with a pinned peer (campaign confidence ≥ MEDIUM, lifecycle ∈ {active, emerging}, not retracted — CORR-PR-13 / D9); then `published` DESC, severity (CRITICAL→LOW), EPSS DESC. When `stack` is set, an additional client-side exposure sort may apply in the feed UI.
 
 **Error responses:**
 
@@ -1672,7 +1672,7 @@ All admin endpoints require an authenticated session (`briefr_at` cookie) with t
 Returns system health: CVE count, NVD sync age, backup age, DB integrity, scheduler jobs (with `status`, `last_error_message`, `run_history`), feed sources, active locks, recent errors, open circuit count.
 
 ### GET /api/admin/correlation/status
-Operator diagnostics for the correlation engine: `last_run`, `build_watermark`, campaign totals (`by_lifecycle`, `avg_members`), CVE campaign coverage %, OTX pulse IOC coverage %, IOC sync backlog (`ioc_sync_pending_pulses`), and `suppressions_count`.
+Operator diagnostics for the correlation engine: `last_run`, `build_watermark`, campaign totals (`by_lifecycle`, `avg_members`), CVE campaign coverage %, OTX pulse IOC coverage %, IOC sync backlog (`ioc_sync_pending_pulses`), `suppressions_count`, and **`metrics`** (latest nightly `correlation_metrics` row when present: confirmation/rejection rates, orphan ratio, evidence age, etc.). `features.feed_campaign_sort_boost_gated` is true when pinned-peer feed boost requires campaign confidence ≥ MEDIUM and lifecycle ∈ {active, emerging} (CORR-PR-13 / D9).
 
 ### GET /api/admin/api-keys/health
 Configured external API provider keys (suffix only — never full secrets) and last health-ping results from the `api_key_health_check` scheduler job. Response: `{providers: [{provider, env_key, configured, key_suffix, healthy, status_code, latency_ms, error, last_checked_at}], checked_at}`.

@@ -856,3 +856,134 @@ async def delete_correlation_feedback(
     )
     cursor = await db.execute(sql, (cve_id.upper(), scope, scope_key, verdict))
     return (cursor.rowcount or 0) > 0
+
+
+_UPSERT_CORRELATION_METRICS_SQLITE = """
+INSERT INTO correlation_metrics (
+    day, computed_at, suppressions_30d, feedback_confirm_30d, feedback_reject_30d,
+    surfaced_findings_30d, rejection_rate, confirmation_rate, weak_edge_ratio,
+    hub_suppressed_edge_count, ioc_degree_p95, avg_independent_sources,
+    orphan_cve_ratio, campaigns_active, campaigns_retracted, campaign_survival_rate,
+    campaign_member_count, stale_campaign_ratio, median_evidence_age_days
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(day) DO UPDATE SET
+    computed_at = excluded.computed_at,
+    suppressions_30d = excluded.suppressions_30d,
+    feedback_confirm_30d = excluded.feedback_confirm_30d,
+    feedback_reject_30d = excluded.feedback_reject_30d,
+    surfaced_findings_30d = excluded.surfaced_findings_30d,
+    rejection_rate = excluded.rejection_rate,
+    confirmation_rate = excluded.confirmation_rate,
+    weak_edge_ratio = excluded.weak_edge_ratio,
+    hub_suppressed_edge_count = excluded.hub_suppressed_edge_count,
+    ioc_degree_p95 = excluded.ioc_degree_p95,
+    avg_independent_sources = excluded.avg_independent_sources,
+    orphan_cve_ratio = excluded.orphan_cve_ratio,
+    campaigns_active = excluded.campaigns_active,
+    campaigns_retracted = excluded.campaigns_retracted,
+    campaign_survival_rate = excluded.campaign_survival_rate,
+    campaign_member_count = excluded.campaign_member_count,
+    stale_campaign_ratio = excluded.stale_campaign_ratio,
+    median_evidence_age_days = excluded.median_evidence_age_days
+"""
+
+_UPSERT_CORRELATION_METRICS_PG = """
+INSERT INTO correlation_metrics (
+    day, computed_at, suppressions_30d, feedback_confirm_30d, feedback_reject_30d,
+    surfaced_findings_30d, rejection_rate, confirmation_rate, weak_edge_ratio,
+    hub_suppressed_edge_count, ioc_degree_p95, avg_independent_sources,
+    orphan_cve_ratio, campaigns_active, campaigns_retracted, campaign_survival_rate,
+    campaign_member_count, stale_campaign_ratio, median_evidence_age_days
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+ON CONFLICT(day) DO UPDATE SET
+    computed_at = excluded.computed_at,
+    suppressions_30d = excluded.suppressions_30d,
+    feedback_confirm_30d = excluded.feedback_confirm_30d,
+    feedback_reject_30d = excluded.feedback_reject_30d,
+    surfaced_findings_30d = excluded.surfaced_findings_30d,
+    rejection_rate = excluded.rejection_rate,
+    confirmation_rate = excluded.confirmation_rate,
+    weak_edge_ratio = excluded.weak_edge_ratio,
+    hub_suppressed_edge_count = excluded.hub_suppressed_edge_count,
+    ioc_degree_p95 = excluded.ioc_degree_p95,
+    avg_independent_sources = excluded.avg_independent_sources,
+    orphan_cve_ratio = excluded.orphan_cve_ratio,
+    campaigns_active = excluded.campaigns_active,
+    campaigns_retracted = excluded.campaigns_retracted,
+    campaign_survival_rate = excluded.campaign_survival_rate,
+    campaign_member_count = excluded.campaign_member_count,
+    stale_campaign_ratio = excluded.stale_campaign_ratio,
+    median_evidence_age_days = excluded.median_evidence_age_days
+"""
+
+_SELECT_LATEST_METRICS_SQLITE = """
+SELECT * FROM correlation_metrics
+WHERE day < ?
+ORDER BY day DESC
+LIMIT 1
+"""
+
+_SELECT_LATEST_METRICS_PG = """
+SELECT * FROM correlation_metrics
+WHERE day < $1
+ORDER BY day DESC
+LIMIT 1
+"""
+
+_SELECT_METRICS_DAY_SQLITE = "SELECT * FROM correlation_metrics WHERE day = ?"
+_SELECT_METRICS_DAY_PG = "SELECT * FROM correlation_metrics WHERE day = $1"
+
+
+async def upsert_correlation_metrics(db: DbConnection, row: dict) -> dict:
+    pg = _is_postgres_connection(db)
+    sql = _UPSERT_CORRELATION_METRICS_PG if pg else _UPSERT_CORRELATION_METRICS_SQLITE
+    params = (
+        row["day"],
+        row["computed_at"],
+        row["suppressions_30d"],
+        row["feedback_confirm_30d"],
+        row["feedback_reject_30d"],
+        row["surfaced_findings_30d"],
+        row["rejection_rate"],
+        row["confirmation_rate"],
+        row["weak_edge_ratio"],
+        row["hub_suppressed_edge_count"],
+        row["ioc_degree_p95"],
+        row["avg_independent_sources"],
+        row["orphan_cve_ratio"],
+        row["campaigns_active"],
+        row["campaigns_retracted"],
+        row["campaign_survival_rate"],
+        row["campaign_member_count"],
+        row["stale_campaign_ratio"],
+        row["median_evidence_age_days"],
+    )
+    await db.execute(sql, params)
+    return row
+
+
+async def get_latest_correlation_metrics(
+    db: DbConnection, before_day: str | None = None
+) -> dict | None:
+    if before_day:
+        sql = (
+            _SELECT_LATEST_METRICS_PG
+            if _is_postgres_connection(db)
+            else _SELECT_LATEST_METRICS_SQLITE
+        )
+        rows = await db.execute_fetchall(sql, (before_day,))
+    else:
+        rows = await db.execute_fetchall(
+            "SELECT * FROM correlation_metrics ORDER BY day DESC LIMIT 1"
+        )
+    return dict(rows[0]) if rows else None
+
+
+async def get_correlation_metrics_for_day(db: DbConnection, day: str) -> dict | None:
+    sql = (
+        _SELECT_METRICS_DAY_PG
+        if _is_postgres_connection(db)
+        else _SELECT_METRICS_DAY_SQLITE
+    )
+    rows = await db.execute_fetchall(sql, (day,))
+    return dict(rows[0]) if rows else None

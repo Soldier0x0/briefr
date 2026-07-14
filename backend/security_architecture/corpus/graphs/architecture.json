@@ -711,6 +711,18 @@
       ]
     },
     {
+      "id": "table:correlation_metrics",
+      "label": "correlation_metrics",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "correlation_metrics"
+        }
+      ]
+    },
+    {
       "id": "table:correlation_suppressions",
       "label": "correlation_suppressions",
       "kind": "table",

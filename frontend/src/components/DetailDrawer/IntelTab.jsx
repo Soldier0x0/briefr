@@ -154,6 +154,27 @@ function CorrelationSuppressAction({ onRequestSuppress, body, peerCve, label = '
   )
 }
 
+function isFeedbackConfirmed(feedback, scope, scopeKey) {
+  return (feedback || []).some(
+    row => row.scope === scope && row.scope_key === scopeKey && row.verdict === 'confirm',
+  )
+}
+
+function CorrelationConfirmAction({ onConfirm, body, scopeKey, feedback, label = 'Confirm link' }) {
+  if (!onConfirm || isFeedbackConfirmed(feedback, body?.scope, scopeKey)) return null
+  return (
+    <button
+      type="button"
+      className="corr-confirm-link-btn mono"
+      onClick={() => onConfirm(body)}
+      aria-label={`${label} — record analyst confirmation for this correlation`}
+      title="Record that this correlation link is valid (feeds quality metrics)"
+    >
+      {label}
+    </button>
+  )
+}
+
 function SuppressedCorrelationsPanel({ suppressions, onRestore, cveId }) {
   if (!suppressions?.length) return null
 
@@ -215,7 +236,7 @@ function CorrelationEvidence({ evidence, item, cveId, onSelectCve }) {
 
 const INFRA_PREVIEW = 3
 
-function InfrastructureList({ items, onSelectCve, onRequestSuppress, cveId }) {
+function InfrastructureList({ items, onSelectCve, onRequestSuppress, onConfirmCorrelation, correlationFeedback, cveId }) {
   const [showAll, setShowAll] = useState(false)
   const visible = showAll ? items : items.slice(0, INFRA_PREVIEW)
   const hidden = Math.max(0, items.length - INFRA_PREVIEW)
@@ -252,6 +273,12 @@ function InfrastructureList({ items, onSelectCve, onRequestSuppress, cveId }) {
             </span>
             <span className="corr-infra-actions" role="cell">
               <ConnectionEvidence item={item} cveId={cveId} onSelectCve={onSelectCve} />
+              <CorrelationConfirmAction
+                onConfirm={onConfirmCorrelation}
+                body={{ scope: 'infrastructure', key: { cve_id_b: item.cve_id_b } }}
+                scopeKey={item.cve_id_b}
+                feedback={correlationFeedback}
+              />
               <CorrelationSuppressAction
                 onRequestSuppress={onRequestSuppress}
                 body={{ scope: 'infrastructure', key: { cve_id_b: item.cve_id_b } }}
@@ -280,6 +307,8 @@ function CorrelationFindings({
   loading,
   onSelectCve,
   onRequestSuppress,
+  onConfirmCorrelation,
+  correlationFeedback,
   suppressions,
   onRestoreSuppression,
   cve,
@@ -379,6 +408,12 @@ function CorrelationFindings({
                     Add to investigation
                   </button>
                 )}
+                <CorrelationConfirmAction
+                  onConfirm={onConfirmCorrelation}
+                  body={{ scope: 'campaign_id', key: { campaign_id: item.campaign_id } }}
+                  scopeKey={item.campaign_id}
+                  feedback={correlationFeedback}
+                />
                 <CorrelationSuppressAction
                   onRequestSuppress={onRequestSuppress}
                   body={{ scope: 'campaign_id', key: { campaign_id: item.campaign_id } }}
@@ -396,6 +431,8 @@ function CorrelationFindings({
             items={infra}
             onSelectCve={onSelectCve}
             onRequestSuppress={onRequestSuppress}
+            onConfirmCorrelation={onConfirmCorrelation}
+            correlationFeedback={correlationFeedback}
             cveId={correlation?.cve_id}
           />
         </div>
@@ -612,6 +649,8 @@ export default function TabIntel({
   correlationLoading,
   onSelectCorrelatedCve,
   onRequestSuppressCorrelation,
+  onConfirmCorrelation,
+  correlationFeedback,
   suppressions,
   onRestoreSuppression,
 }) {
@@ -838,6 +877,8 @@ export default function TabIntel({
         loading={correlationLoading}
         onSelectCve={onSelectCorrelatedCve}
         onRequestSuppress={onRequestSuppressCorrelation}
+        onConfirmCorrelation={onConfirmCorrelation}
+        correlationFeedback={correlationFeedback}
         suppressions={suppressions}
         onRestoreSuppression={onRestoreSuppression}
         cve={cve}
