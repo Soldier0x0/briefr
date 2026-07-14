@@ -12,6 +12,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — QA-U3: global header 375px overflow — merged (this PR)
+
+**What:** New `max-width: 430px` tier in `Header.css` — side padding 24→12px, grid gap
+16→8px, divider hidden, logo slightly smaller. Recovers ~60px against the measured
+29px deficit at 375px.
+
+**Next:** UX-L1 Scope & limits About panel.
+
+---
+
 ## 2026-07-14 — PG-002: disposable Postgres dev script — merged (this PR)
 
 **What:** `scripts/postgres-dev.sh` — `briefr-pg-test` on `127.0.0.1:5433` for dual-DB
