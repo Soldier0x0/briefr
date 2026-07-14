@@ -48,10 +48,14 @@ async def remove_feedback(
 ) -> bool:
     from database import delete_correlation_feedback
 
+    if scope not in VALID_SCOPES:
+        raise ValueError(f"Invalid scope: {scope}")
     verdict_norm = (verdict or "").strip().lower()
     if verdict_norm not in VALID_VERDICTS:
         raise ValueError(f"Invalid verdict: {verdict}")
     sk = scope_key_for(scope, key)
+    if not sk:
+        raise ValueError("Missing scope key")
     return await delete_correlation_feedback(
         db, cve_id.upper(), scope, sk, verdict_norm
     )
