@@ -2,8 +2,8 @@
 
 ## Status
 
-**PROPOSED — 2026-07-14.** Awaiting maintainer acceptance. Establishes the UI architecture
-that all future UI work follows. Companion to [`docs/design/design-system.md`](../design/design-system.md)
+**ACCEPTED — 2026-07-14.** Establishes the UI architecture that all future UI work
+follows. Companion to [`docs/design/design-system.md`](../design/design-system.md)
 (rules), [`frontend/src/styles/tokens.css`](../../frontend/src/styles/tokens.css) (token spec),
 and [`docs/planning/ui-modernization-plan.md`](../planning/ui-modernization-plan.md) (roadmap).
 Continues the `docs/decisions/ADR-00N` sequence (previous: ADR-001 schema split, ADR-002
