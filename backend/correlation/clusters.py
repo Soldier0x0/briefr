@@ -38,6 +38,7 @@ async def list_correlation_clusters(
     cve_filter = (cve_id or "").strip().upper()
     stack_clause, stack_params, stack_terms = _stack_match_clause(stack)
     stale_filter = "" if include_stale else "AND camp.lifecycle != 'stale'"
+    retracted_filter = "AND camp.retracted_at IS NULL"
     campaign_scope_sql = ""
     campaign_scope_params: list[Any] = []
     if cve_filter:
@@ -57,6 +58,7 @@ async def list_correlation_clusters(
         FROM correlation_campaigns camp
         WHERE camp.member_count >= 2
           {stale_filter}
+          {retracted_filter}
           {campaign_scope_sql}
         ORDER BY camp.member_count DESC, camp.label ASC
         LIMIT ?

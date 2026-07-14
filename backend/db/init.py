@@ -349,11 +349,27 @@ async def init_db() -> None:
                 member_count INTEGER DEFAULT 0,
                 lifecycle TEXT DEFAULT 'active',
                 campaign_version TEXT DEFAULT '',
-                computed_at TEXT DEFAULT (datetime('now'))
+                computed_at TEXT DEFAULT (datetime('now')),
+                family_id TEXT,
+                first_seen TEXT,
+                last_seen TEXT,
+                independent_sources INTEGER DEFAULT 1,
+                author_count INTEGER DEFAULT 1,
+                retracted_at TEXT
             );
 
             CREATE INDEX IF NOT EXISTS idx_correlation_campaigns_pulse
                 ON correlation_campaigns(primary_pulse_id);
+
+            CREATE TABLE IF NOT EXISTS pulse_families (
+                pulse_id TEXT PRIMARY KEY,
+                family_id TEXT NOT NULL,
+                jaccard REAL,
+                computed_at TEXT
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_pulse_families_family
+                ON pulse_families(family_id);
 
             CREATE TABLE IF NOT EXISTS correlation_campaign_members (
                 campaign_id TEXT NOT NULL,
@@ -616,10 +632,31 @@ async def init_db() -> None:
                 member_count INTEGER DEFAULT 0,
                 lifecycle TEXT DEFAULT 'active',
                 campaign_version TEXT DEFAULT '',
-                computed_at TEXT DEFAULT (datetime('now'))
+                computed_at TEXT DEFAULT (datetime('now')),
+                family_id TEXT,
+                first_seen TEXT,
+                last_seen TEXT,
+                independent_sources INTEGER DEFAULT 1,
+                author_count INTEGER DEFAULT 1,
+                retracted_at TEXT
             )
             """,
             "CREATE INDEX IF NOT EXISTS idx_correlation_campaigns_pulse ON correlation_campaigns(primary_pulse_id)",
+            """
+            CREATE TABLE IF NOT EXISTS pulse_families (
+                pulse_id TEXT PRIMARY KEY,
+                family_id TEXT NOT NULL,
+                jaccard REAL,
+                computed_at TEXT
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_pulse_families_family ON pulse_families(family_id)",
+            "ALTER TABLE correlation_campaigns ADD COLUMN family_id TEXT",
+            "ALTER TABLE correlation_campaigns ADD COLUMN first_seen TEXT",
+            "ALTER TABLE correlation_campaigns ADD COLUMN last_seen TEXT",
+            "ALTER TABLE correlation_campaigns ADD COLUMN independent_sources INTEGER DEFAULT 1",
+            "ALTER TABLE correlation_campaigns ADD COLUMN author_count INTEGER DEFAULT 1",
+            "ALTER TABLE correlation_campaigns ADD COLUMN retracted_at TEXT",
             """
             CREATE TABLE IF NOT EXISTS correlation_campaign_members (
                 campaign_id TEXT NOT NULL,

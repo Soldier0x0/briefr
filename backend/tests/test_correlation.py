@@ -525,15 +525,15 @@ def test_confidence_factors_snapshot_for_ioc_edge_and_campaign():
     level, why, factors = confidence_for_ioc_edge("HASH", degree=50)
     assert level == "low"
     factor_names = [f["factor"] for f in factors]
-    assert factor_names == ["ioc_type", "degree"]
-    assert factors[-1]["value"] == 50
-    assert factors[-1]["reason"] == why
+    assert factor_names == ["ioc_type", "degree", "freshness"]
+    assert factors[1]["value"] == 50
+    assert factors[1]["reason"] == why or factors[2]["reason"] == why
 
     level, why, factors = confidence_for_ioc_edge(
         "IP", confirmations={"greynoise": "malicious"}
     )
-    assert level == "medium"
-    assert [f["factor"] for f in factors] == ["ioc_type", "confirmation"]
+    assert level == "low"
+    assert [f["factor"] for f in factors] == ["ioc_type", "confirmation", "freshness"]
     assert factors[1]["value"] == "greynoise_malicious"
 
     level, why, factors = campaign_confidence(

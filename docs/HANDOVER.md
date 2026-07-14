@@ -12,6 +12,27 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — CORR-PR-9: pulse families + campaign dedup
+
+**What:** Phase 3 start — mirrored OTX pulses collapse into pulse families
+(Jaccard ≥ 0.7 on non-hub IOC sets with ≥ 3 IOCs each, or identical CVE set
++ normalized name). One campaign per family; `author_count`, `first_seen`,
+`last_seen`, `family_id` on `correlation_campaigns`; vanished families get
+`retracted_at` (excluded from default cluster/campaign views). Legacy
+per-pulse `campaign_id` suppressions map to the family campaign.
+Alembic **019** `pulse_families` table + campaign columns.
+
+**Files:** `backend/correlation/pulse_families.py`, `campaigns.py`,
+`suppressions.py`, `clusters.py`, `db/init.py`, migration 019, tests
+`test_pulse_families.py`. Snapshot test fix for PR-8 freshness factor vector.
+
+**Verify:** `./scripts/verify-local.sh` green (1226 passed; pre-existing
+`test_router_split` + security corpus drift failures unchanged).
+
+**Next:** PR-10 ThreatFox corroboration on IOC edges.
+
+---
+
 ## 2026-07-13 — Repository reorganization (docs-only, no runtime change)
 
 **What:** first-principles repo cleanup. Reference docs left the repo root
