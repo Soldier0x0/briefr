@@ -163,7 +163,7 @@ are summarized; full Problem/Evidence/Impact are in §2 and the backlog.
 - **E7-2** Loading skeletons over spinners/jumps — M · QW.
 - **E7-3** Copy/export feedback (toast + progress) — S · QW.
 - **E7-4** Spacing/border pass (filter panel, stat cards, degraded cards) — M · QW · E0-1.
-- **E7-5** Chart migration Chart.js → **Recharts** (shadcn look, no Tailwind; ADR-005) — L · ARCH · E0-1, E2-1. *Scope:* re-create shadcn's chart wrapper on `--chart-*` tokens; migrate `BriefCharts`/`OpsCharts` chart-by-chart behind `ChartShell` (fixed height) with visual-regression; wire animations to the motion toggle; keep the 90-day heatmap + EPSS sparklines as custom SVG; **remove Chart.js when the last chart is ported** (never ship both). *Accept:* all Chart.js charts replaced; Chart.js dependency removed; no chart grows unbounded; parity or better visuals.
+- **E7-5** Chart migration Chart.js → **Recharts** (shadcn look, no Tailwind; ADR-005) — L · ARCH · E0-1, E2-1. *Scope:* re-create shadcn's chart wrapper on `--chart-*` tokens; migrate **every Chart.js chart** chart-by-chart behind `ChartShell` (fixed height) with visual-regression — including `BriefCharts`, the admin `OpsCharts`, **and the Admin → Resources chart** (the infinite-growth offender, UI-BUG-1); wire animations to the motion toggle; keep the 90-day heatmap + EPSS sparklines as custom SVG. Lazy-load chart chunks so only one charting library is loaded client-side at a time during migration; **remove Chart.js once the last chart is ported**. *Accept:* no `import` of Chart.js remains; Chart.js dependency removed from `package.json`; no chart grows unbounded; parity or better visuals.
 
 ### E8 — Navigation / IA
 - **E8-1** Unify active-state across shells (rides E4-1) — S · QW.
@@ -227,7 +227,8 @@ Critical-path (design system): **E0-1 → E0-2 → E3 → E4 → E5**. Reliabili
 - **Charts:** wrap every chart in `ChartShell` (fixed height) to permanently prevent the
   infinite-growth class of bug. Charting standardizes on **Recharts** (SVG, no Tailwind;
   shadcn look re-skinned to `--chart-*` tokens) — **Chart.js is deprecated and removed** after
-  the E7-5 migration; never ship both libraries at once (lazy-load during migration). Keep the
+  the E7-5 migration. Both libraries may coexist in the repo during migration, but lazy-loaded
+  chart chunks ensure only one charting library is loaded by the client at a time. Keep the
   heatmap/sparklines as custom SVG. Ref: ADR-005.
 - **DataGrid:** single `<table>` with `table-layout:fixed` + shared `<col>` widths so resize
   keeps header/body aligned; virtualize large tables (Attack Surface 157, epss_history-scale).

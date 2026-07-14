@@ -57,11 +57,13 @@ Constraints (from ADR-003 / `CLAUDE.md` / the design system):
   them into Recharts.
 
 ### Charting decision (single library)
-BRIEFR standardizes on **exactly one charting library**. Because the maintainer prefers the
-shadcn chart look and it is achievable without Tailwind, that library is **Recharts** (via
-re-skinned shadcn patterns). During migration both libraries may be present briefly;
-lazy-load charts to avoid bundle bloat, and delete Chart.js at the end. Chart animations must
-respect the tool-wide motion toggle and `prefers-reduced-motion`.
+BRIEFR standardizes on **exactly one charting library as the end state**. Because the
+maintainer prefers the shadcn chart look and it is achievable without Tailwind, that library
+is **Recharts** (via re-skinned shadcn patterns). During the E7-5 migration both libraries
+technically exist in the repo and build artifacts, but charts are **lazy-loaded so that only
+one charting library is ever loaded by the client at a time** (a page loads Recharts *or*
+the legacy Chart.js chunk, never both). Delete Chart.js once the last chart is ported. Chart
+animations must respect the tool-wide motion toggle and `prefers-reduced-motion`.
 
 ### 🟡 Conditional — pattern/copy reference ONLY (re-implement on BRIEFR CSS; never a runtime dep)
 - **shadcn/ui registry** — copy component *patterns/markup* and adapt to BRIEFR tokens.
@@ -112,5 +114,6 @@ ADR is updated.
 - Headless utilities (Recharts, cmdk, Floating UI, TanStack Table) are sanctioned so the
   charts/DataGrid/palette/positioning work doesn't require a styled kit.
 - Charting standardizes on **Recharts** (shadcn look, no Tailwind); **Chart.js is deprecated**
-  and removed after the E7-5 migration. Only one charting library ships at a time.
+  and removed after the E7-5 migration. Both may coexist in the repo during migration, but
+  lazy-loading ensures only one charting library is loaded by the client at any given time.
 - Adding anything new is a deliberate, documented decision.
