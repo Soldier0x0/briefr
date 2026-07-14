@@ -485,6 +485,8 @@ async def record_api_call(service: str, count: int = 1) -> None:
 
 _COMMITTED_USAGE_CACHE_TTL_SECONDS = 2.0
 _committed_usage_cache: dict[tuple[str, str], tuple[float, int]] = {}
+_committed_week_usage_cache: dict[tuple[str, str], tuple[float, int]] = {}
+_committed_month_usage_cache: dict[tuple[str, str], tuple[float, int]] = {}
 
 
 async def _committed_usage_bucket(service: str, bucket: str) -> int:
@@ -563,6 +565,12 @@ async def get_today_usage(service: str) -> int:
 
 async def _committed_week_usage(service: str) -> int:
     week_start = _week_start_utc()
+    cache_key = (service, week_start)
+    now = time.monotonic()
+    cached = _committed_week_usage_cache.get(cache_key)
+    if cached is not None and now - cached[0] < _COMMITTED_USAGE_CACHE_TTL_SECONDS:
+        return cached[1]
+
     try:
         db = await get_db()
         try:
@@ -573,12 +581,15 @@ async def _committed_week_usage(service: str) -> int:
                 """,
                 (service, week_start),
             )
-            return rows[0]["total"] if rows and rows[0]["total"] else 0
+            value = rows[0]["total"] if rows and rows[0]["total"] else 0
         finally:
             await db.close()
     except Exception as exc:
         logger.error("Failed to read weekly usage for %s: %s", service, exc)
-        return 0
+        return cached[1] if cached is not None else 0
+
+    _committed_week_usage_cache[cache_key] = (now, value)
+    return value
 
 
 async def get_week_usage(service: str) -> int:
@@ -596,6 +607,12 @@ async def get_week_usage(service: str) -> int:
 
 async def _committed_month_usage(service: str) -> int:
     month = datetime.now(timezone.utc).strftime("%Y-%m")
+    cache_key = (service, month)
+    now = time.monotonic()
+    cached = _committed_month_usage_cache.get(cache_key)
+    if cached is not None and now - cached[0] < _COMMITTED_USAGE_CACHE_TTL_SECONDS:
+        return cached[1]
+
     try:
         db = await get_db()
         try:
@@ -603,12 +620,15 @@ async def _committed_month_usage(service: str) -> int:
                 "SELECT SUM(count) as total FROM api_usage WHERE service = ? AND month_utc = ?",
                 (service, month),
             )
-            return rows[0]["total"] if rows and rows[0]["total"] else 0
+            value = rows[0]["total"] if rows and rows[0]["total"] else 0
         finally:
             await db.close()
     except Exception as exc:
         logger.error("Failed to read monthly usage for %s: %s", service, exc)
-        return 0
+        return cached[1] if cached is not None else 0
+
+    _committed_month_usage_cache[cache_key] = (now, value)
+    return value
 
 
 async def get_month_usage(service: str) -> int:
