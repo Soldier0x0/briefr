@@ -284,6 +284,10 @@ def test_api_keys_never_returned_full_value(admin_client):
 
 
 def test_config_set_wallboard_token_masks_response(admin_client, tmp_path, monkeypatch):
+    monkeypatch.delenv("WALLBOARD_TOKEN", raising=False)
+    from settings import settings as app_settings
+
+    monkeypatch.setattr(app_settings, "wallboard_token", "")
     dotenv_path = tmp_path / ".env"
     dotenv_path.write_text("")
     import routers.admin as admin_mod
@@ -295,19 +299,25 @@ def test_config_set_wallboard_token_masks_response(admin_client, tmp_path, monke
     monkeypatch.setattr("operator_settings.persist_operator_setting", _noop_persist)
 
     secret = "kiosk-wallboard-secret-token-99"
-    with patch("dotenv.set_key"):
-        resp = admin_client.post(
-            "/api/admin/config/apply-all",
-            json=[{"key": "WALLBOARD_TOKEN", "value": secret}],
-        )
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["ok"] is True
-    assert data["restart_required"] is True
-    assert secret not in str(data)
+    try:
+        with patch("dotenv.set_key"):
+            resp = admin_client.post(
+                "/api/admin/config/apply-all",
+                json=[{"key": "WALLBOARD_TOKEN", "value": secret}],
+            )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["ok"] is True
+        assert data["restart_required"] is True
+        assert secret not in str(data)
 
-    cfg = admin_client.get("/api/admin/config").json()
-    assert cfg["security"]["WALLBOARD_TOKEN"] == "kios…n-99"
+        cfg = admin_client.get("/api/admin/config").json()
+        assert cfg["security"]["WALLBOARD_TOKEN"] == "kios…n-99"
+    finally:
+        import os
+
+        os.environ.pop("WALLBOARD_TOKEN", None)
+        app_settings.wallboard_token = ""
 
 
 def test_audit_log_masks_legacy_plaintext_targets(admin_client):
