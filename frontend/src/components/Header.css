@@ -490,3 +490,21 @@
     background: linear-gradient(to right, #e85433 0%, #e85433 100%);
   }
 }
+
+/* QA-U3: at iPhone SE-class widths (≤430px) the 24px side padding + 16px grid
+   gap left .header-inner ~29px short for logo + right cluster at 375px.
+   Trim the chrome budget instead of letting content clip. */
+@media (max-width: 430px) {
+  .header-inner {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .header-divider { display: none; }
+  .header-right   { gap: 6px; }
+
+  .header-logo-btn {
+    font-size: 0.875rem;
+    letter-spacing: 0.06em;
+  }
+}
