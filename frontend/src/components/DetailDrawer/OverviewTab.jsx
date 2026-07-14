@@ -31,7 +31,11 @@ import { formatKevDueDate } from '../../utils/kevDeadline.js'
 import { buildReferenceRows } from '../../utils/referenceRows.js'
 import { safeExternalUrl } from '../../utils/safeExternalUrl.js'
 import { buildExploitationDisplay } from '../../utils/exploitationDisplay.js'
+import ControlTooltip from '../ControlTooltip.jsx'
 import { drawerEpssBarColor, capecHref, capecLabel, flattenOsvPackageRows } from './helpers.js'
+
+const OP_PRIORITY_TOOLTIP =
+  "BRIEFR's rule-based P1–P4 band from threat signals and environment relevance. Separate from CVSS."
 
 
 function KeyExploitationSignals({ cve, riskScore, momentumData }) {
@@ -310,7 +314,9 @@ function ReferencesSection({ urls, cve }) {
         {rows.map(row => (
           <li key={row.url} className="drawer-ref-row">
             <span className="drawer-ref-vendor mono">{row.vendor}</span>
-            <span className="drawer-ref-title" title={row.url}>{row.title}</span>
+            <ControlTooltip text={row.url} trigger="hover-focus">
+              <span className="drawer-ref-title">{row.title}</span>
+            </ControlTooltip>
             <a
               className="drawer-ref-link mono"
               href={row.url}
@@ -353,7 +359,9 @@ function SsvcSection({ ssvc }) {
     if (!value) return null
     return (
       <div key={key} className="drawer-ssvc-row">
-        <span className="drawer-ssvc-key mono" title={explain}>{key}</span>
+        <ControlTooltip text={explain} trigger="hover-focus">
+          <span className="drawer-ssvc-key mono">{key}</span>
+        </ControlTooltip>
         <span className="drawer-ssvc-value mono">{value}</span>
       </div>
     )
@@ -368,9 +376,11 @@ function SsvcSection({ ssvc }) {
       <div className="drawer-ssvc-grid" aria-label="SSVC decision points">
         {rows}
         {decisions.computed && (
-          <p className="drawer-ssvc-computed mono" title="Compact SSVC vector from CISA">
-            {decisions.computed}
-          </p>
+          <ControlTooltip text="Compact SSVC vector from CISA" trigger="hover-focus">
+            <p className="drawer-ssvc-computed mono">
+              {decisions.computed}
+            </p>
+          </ControlTooltip>
         )}
       </div>
     </section>
@@ -468,14 +478,15 @@ function EnvironmentTierChip({ riskScore }) {
   const env = getEnvironmentDisplay(riskScore)
   if (!env) return null
   return (
-    <span
-      className="drawer-op-env-chip mono"
-      style={{ color: environmentTierColor(env.tier) }}
-      title={env.evidence || env.label}
-    >
-      {env.label}
-      {env.versionVerified ? ' ✓' : ''}
-    </span>
+    <ControlTooltip text={env.evidence || env.label} trigger="hover-focus">
+      <span
+        className="drawer-op-env-chip mono"
+        style={{ color: environmentTierColor(env.tier) }}
+      >
+        {env.label}
+        {env.versionVerified ? ' ✓' : ''}
+      </span>
+    </ControlTooltip>
   )
 }
 
@@ -516,7 +527,9 @@ function OperationalPriorityBreakdown({ riskScore, momentumData }) {
         {rows.map(row => (
           <div key={row.key} className="drawer-risk-component">
             <div className="drawer-risk-comp-header drawer-risk-comp-header--semantics">
-              <span className="drawer-risk-comp-label mono" title={THREAT_COMPONENT_TOOLTIPS[row.key] || undefined}>{row.label}</span>
+              <ControlTooltip text={THREAT_COMPONENT_TOOLTIPS[row.key]} trigger="hover-focus">
+                <span className="drawer-risk-comp-label mono">{row.label}</span>
+              </ControlTooltip>
               <div className="drawer-risk-signal-col">
                 <span className="drawer-risk-signal-caption mono">Signal</span>
                 <RiskScoreBar score={row.raw} />
@@ -559,13 +572,14 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, momentumData }) 
   if (riskLoading) {
     return (
       <section className="drawer-section drawer-risk-hero-section" aria-labelledby="op-priority-heading">
-        <h3
-          id="op-priority-heading"
-          className="drawer-risk-section-label drawer-tab-anchor mono"
-          title="BRIEFR's rule-based P1–P4 band from threat signals and environment relevance. Separate from CVSS."
-        >
-          // OPERATIONAL PRIORITY
-        </h3>
+        <ControlTooltip text={OP_PRIORITY_TOOLTIP} trigger="hover-focus">
+          <h3
+            id="op-priority-heading"
+            className="drawer-risk-section-label drawer-tab-anchor mono"
+          >
+            // OPERATIONAL PRIORITY
+          </h3>
+        </ControlTooltip>
         <p className="drawer-risk-summary mono" style={{ color: 'var(--text-muted, var(--text3))' }}>
           Computing priority…
         </p>
@@ -584,13 +598,14 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, momentumData }) 
 
   return (
     <section className="drawer-section drawer-risk-hero-section" aria-labelledby="op-priority-heading">
-      <h3
-        id="op-priority-heading"
-        className="drawer-risk-section-label drawer-tab-anchor mono"
-        title="BRIEFR's rule-based P1–P4 band from threat signals and environment relevance. Separate from CVSS."
-      >
-        // OPERATIONAL PRIORITY
-      </h3>
+      <ControlTooltip text={OP_PRIORITY_TOOLTIP} trigger="hover-focus">
+        <h3
+          id="op-priority-heading"
+          className="drawer-risk-section-label drawer-tab-anchor mono"
+        >
+          // OPERATIONAL PRIORITY
+        </h3>
+      </ControlTooltip>
       <div className="drawer-risk-hero drawer-op-hero">
         <div
           className="drawer-op-band mono"
@@ -599,9 +614,12 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, momentumData }) 
         >
           {op.band}
           {op.provisional && (
-            <span className="drawer-op-provisional" title="No My Stack profile loaded — priority is provisional and may change once environment relevance is known">
-              *
-            </span>
+            <ControlTooltip
+              text="No My Stack profile loaded — priority is provisional and may change once environment relevance is known"
+              trigger="hover-focus"
+            >
+              <span className="drawer-op-provisional">*</span>
+            </ControlTooltip>
           )}
         </div>
         <div className="drawer-op-metrics">
@@ -722,21 +740,25 @@ export default function TabOverview({
           <h3 id="affected-heading" className="drawer-human-label mono">AFFECTED PRODUCTS</h3>
           <div className="product-tags" aria-label="Affected products">
             {products.map(p => (
-              <span key={p} className="product-tag mono" title={p}>
-                {p.split(':')[1] || p}
-              </span>
+              <ControlTooltip key={p} text={p} trigger="hover-focus">
+                <span className="product-tag mono">
+                  {p.split(':')[1] || p}
+                </span>
+              </ControlTooltip>
             ))}
           </div>
           {cwes.length > 0 && (
             <div className="cwe-list" aria-label="Weakness types">
               {cwes.map(c => (
-                <span
+                <ControlTooltip
                   key={c}
-                  className="cwe-tag mono"
-                  title={`${c} — MITRE Common Weakness Enumeration: the class of coding weakness behind this vulnerability`}
+                  text={`${c} — MITRE Common Weakness Enumeration: the class of coding weakness behind this vulnerability`}
+                  trigger="hover-focus"
                 >
-                  {c}
-                </span>
+                  <span className="cwe-tag mono">
+                    {c}
+                  </span>
+                </ControlTooltip>
               ))}
             </div>
           )}
@@ -754,20 +776,30 @@ export default function TabOverview({
               const href = capecHref(id)
               const label = capecLabel(id)
               return href ? (
-                <a
+                <ControlTooltip
                   key={id}
-                  className="capec-tag mono"
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={`${label} — MITRE Common Attack Pattern Enumeration and Classification (sourced from CIRCL)`}
+                  text={`${label} — MITRE Common Attack Pattern Enumeration and Classification (sourced from CIRCL)`}
+                  trigger="hover-focus"
                 >
-                  {label}
-                </a>
+                  <a
+                    className="capec-tag mono"
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {label}
+                  </a>
+                </ControlTooltip>
               ) : (
-                <span key={id} className="capec-tag mono" title="CAPEC attack pattern ID from CIRCL enrichment">
-                  {label}
-                </span>
+                <ControlTooltip
+                  key={id}
+                  text="CAPEC attack pattern ID from CIRCL enrichment"
+                  trigger="hover-focus"
+                >
+                  <span className="capec-tag mono">
+                    {label}
+                  </span>
+                </ControlTooltip>
               )
             })}
           </div>

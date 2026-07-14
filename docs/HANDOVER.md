@@ -35,6 +35,18 @@ stay for a later incremental pass.
 
 ---
 
+## 2026-07-14 — PR3 follow-up tail: drawer tab portaled tooltips — merged (this PR)
+
+**What:** Completed PR3 DetailDrawer migration — all tab `title=` hovers now use
+`ControlTooltip` (Overview SSVC/CWE/CAPEC/priority, Intel correlation, Detect metadata,
+drawer tab labels, header badges, intel provenance). Only non-hover `title` left is
+`PdfExportModal` dialog label.
+
+**Next:** wallboard `?density=compact` / optional tiles, item 29 (migration decision),
+parked programs.
+
+---
+
 ## 2026-07-14 — Wallboard rate-limit in config schema — merged (this PR)
 
 **What:** `RATE_LIMIT_WALLBOARD_PER_MINUTE` writable from Admin → API keys & config

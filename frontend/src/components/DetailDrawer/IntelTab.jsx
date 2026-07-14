@@ -10,6 +10,7 @@ import {
 } from '../../utils/correlationPresentation.js'
 import { formatSharedObservablesSummary } from '../../utils/sharedObservables.js'
 import DrawerAtlasSection from '../DrawerAtlasSection.jsx'
+import ControlTooltip from '../ControlTooltip.jsx'
 import IntelProvenanceLine from './IntelProvenanceLine.jsx'
 import { exploitTypeLabel, techniqueLink } from './helpers.js'
 
@@ -47,9 +48,11 @@ function ConfidenceBadge({ confidence, stale = false }) {
         ? 'Moderate community or shared-pulse link'
         : 'Weak or IP-only signal — verify before acting'
   return (
-    <span className={`corr-confidence-badge mono ${cls}`} title={title}>
-      {linkStrengthLabel(confidence)}
-    </span>
+    <ControlTooltip text={title} trigger="hover-focus">
+      <span className={`corr-confidence-badge mono ${cls}`}>
+        {linkStrengthLabel(confidence)}
+      </span>
+    </ControlTooltip>
   )
 }
 
@@ -68,9 +71,11 @@ function ConnectionEvidence({ item, cveId, onSelectCve }) {
           {panel.primary && (
             <>
               {panel.timeline && (
-                <p className="corr-connection-timeline mono" title="Observation timeline for shared evidence">
-                  {panel.timeline}
-                </p>
+                <ControlTooltip text="Observation timeline for shared evidence" trigger="hover-focus">
+                  <p className="corr-connection-timeline mono">
+                    {panel.timeline}
+                  </p>
+                </ControlTooltip>
               )}
               <p className="corr-connection-meta">{panel.primary.heading}</p>
               <p className="corr-connection-value mono">{panel.primary.value}</p>
@@ -163,15 +168,16 @@ function isFeedbackConfirmed(feedback, scope, scopeKey) {
 function CorrelationConfirmAction({ onConfirm, body, scopeKey, feedback, label = 'Confirm link' }) {
   if (!onConfirm || isFeedbackConfirmed(feedback, body?.scope, scopeKey)) return null
   return (
-    <button
-      type="button"
-      className="corr-confirm-link-btn mono"
-      onClick={() => onConfirm(body)}
-      aria-label={`${label} — record analyst confirmation for this correlation`}
-      title="Record that this correlation link is valid (feeds quality metrics)"
-    >
-      {label}
-    </button>
+    <ControlTooltip text="Record that this correlation link is valid (feeds quality metrics)" trigger="hover-focus">
+      <button
+        type="button"
+        className="corr-confirm-link-btn mono"
+        onClick={() => onConfirm(body)}
+        aria-label={`${label} — record analyst confirmation for this correlation`}
+      >
+        {label}
+      </button>
+    </ControlTooltip>
   )
 }
 
@@ -217,14 +223,16 @@ function CorrelationPriority({ priority }) {
   if (score <= 0 || !top) return null
   const level = score >= 50 ? 'high' : score >= 25 ? 'medium' : 'low'
   return (
-    <div
-      className={`corr-priority corr-priority-${level}`}
-      title="BRIEFR's deterministic prioritization of relationship evidence. Separate from vulnerability severity."
+    <ControlTooltip
+      text="BRIEFR's deterministic prioritization of relationship evidence. Separate from vulnerability severity."
+      trigger="hover-focus"
     >
-      <span className="corr-priority-label mono">Correlation strength</span>
-      <span className="corr-priority-score mono">{score.toFixed(0)}</span>
-      <p className="corr-priority-reason mono">{top.sentence}</p>
-    </div>
+      <div className={`corr-priority corr-priority-${level}`}>
+        <span className="corr-priority-label mono">Correlation strength</span>
+        <span className="corr-priority-score mono">{score.toFixed(0)}</span>
+        <p className="corr-priority-reason mono">{top.sentence}</p>
+      </div>
+    </ControlTooltip>
   )
 }
 function CorrelationEvidence({ evidence, item, cveId, onSelectCve }) {
@@ -366,9 +374,11 @@ function CorrelationFindings({
                   <span className="corr-lane-tag mono">Campaign link</span>{' '}
                   {item.summary || item.label}
                   {item.attribution_conflict && (
-                    <span className="corr-conflict-note" title="OTX adversary disagrees with MITRE actor mapping">
-                      {' '}Attribution conflict — treat as unverified.
-                    </span>
+                    <ControlTooltip text="OTX adversary disagrees with MITRE actor mapping" trigger="hover-focus">
+                      <span className="corr-conflict-note">
+                        {' '}Attribution conflict — treat as unverified.
+                      </span>
+                    </ControlTooltip>
                   )}
                   {item.attribution_claims?.claims?.length > 1 && (
                     <div className="corr-conflicting-claims" aria-label="Conflicting attribution">
@@ -539,13 +549,15 @@ function CampaignPulseRow({ pulse, cve, onInvestigatePulse }) {
           return <span key={`${label}-${famIdx}`} className="drawer-otx-malware mono">{label}</span>
         })}
         {(pulse.targeted_countries || []).filter(Boolean).slice(0, 3).map((cc, ccIdx) => (
-          <span
+          <ControlTooltip
             key={`${cc}-${ccIdx}`}
-            className="drawer-otx-country mono"
-            title={`${cc} — Country targeted in this OTX pulse (AlienVault OTX community intelligence)`}
+            text={`${cc} — Country targeted in this OTX pulse (AlienVault OTX community intelligence)`}
+            trigger="hover-focus"
           >
-            {cc}
-          </span>
+            <span className="drawer-otx-country mono">
+              {cc}
+            </span>
+          </ControlTooltip>
         ))}
       </div>
       {onInvestigatePulse && pulse.pulse_id && (
@@ -617,13 +629,15 @@ function GreynoiseQuotaLine({ quota }) {
   const week = quota?.this_week
   if (!week || week.limit == null) return null
   return (
-    <p
-      className="drawer-gn-quota mono"
-      title="GreyNoise Community API — 50 lookups per week (shared with Visualizer)"
+    <ControlTooltip
+      text="GreyNoise Community API — 50 lookups per week (shared with Visualizer)"
+      trigger="hover-focus"
     >
-      GreyNoise quota: {week.used}/{week.limit} this week
-      {week.remaining != null ? ` · ${week.remaining} left` : ''}
-    </p>
+      <p className="drawer-gn-quota mono">
+        GreyNoise quota: {week.used}/{week.limit} this week
+        {week.remaining != null ? ` · ${week.remaining} left` : ''}
+      </p>
+    </ControlTooltip>
   )
 }
 

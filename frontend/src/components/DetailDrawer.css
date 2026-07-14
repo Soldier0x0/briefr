@@ -3142,3 +3142,36 @@
   font-size: var(--type-secondary);
   color: var(--text-secondary);
 }
+
+.drawer-tabs .control-tooltip-wrap,
+.drawer-header-left .control-tooltip-wrap,
+.det-generated-meta .control-tooltip-wrap,
+.corr-finding-head .control-tooltip-wrap,
+.drawer-otx-tags .control-tooltip-wrap,
+.product-tags .control-tooltip-wrap,
+.cwe-list .control-tooltip-wrap,
+.capec-list .control-tooltip-wrap,
+.drawer-ssvc-row .control-tooltip-wrap,
+.drawer-op-metrics .control-tooltip-wrap,
+.drawer-risk-comp-header .control-tooltip-wrap {
+  display: inline-flex;
+}
+
+.drawer-tabs .control-tooltip-wrap {
+  flex: 0 0 auto;
+}
+
+.drawer-ref-row .control-tooltip-wrap {
+  display: inline;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.control-tooltip-wrap:has(.corr-priority),
+.control-tooltip-wrap:has(.drawer-gn-quota),
+.control-tooltip-wrap:has(.det-generated-warning),
+.control-tooltip-wrap:has(.drawer-ssvc-computed),
+.control-tooltip-wrap:has(.drawer-intel-provenance) {
+  display: block;
+  width: 100%;
+}
