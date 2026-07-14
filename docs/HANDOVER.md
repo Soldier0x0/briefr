@@ -12,6 +12,18 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — UX item 29: audit log metadata_json + expandable rows — merged (this PR)
+
+**What:** Alembic `024_audit_log_metadata` adds nullable `metadata_json` to `audit_log`.
+`write_audit_log` / `audit()` accept optional metadata (auto-attaches `request_id`);
+`config.apply` stores `changed_keys` + `restart_needed`. GET `/api/admin/audit-log`
+returns parsed `metadata` with read-path masking. AuditLogPage rows expand for full
+target + metadata (IngestLog pattern).
+
+**Next:** wallboard enriched tiles (optional), parked programs.
+
+---
+
 ## 2026-07-14 — Wallboard `?density=compact` layout mode — merged (this PR)
 
 **What:** `/wallboard?density=compact` applies `.wallboard-page--compact` — tighter padding,

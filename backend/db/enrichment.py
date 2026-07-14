@@ -21,9 +21,11 @@ from db.types import DbConnection
 _ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}")
 
 _WRITE_AUDIT_LOG_SQLITE = (
-    "INSERT INTO audit_log (actor, action, target) VALUES (?, ?, ?)"
+    "INSERT INTO audit_log (actor, action, target, metadata_json) VALUES (?, ?, ?, ?)"
 )
-_WRITE_AUDIT_LOG_PG = "INSERT INTO audit_log (actor, action, target) VALUES ($1, $2, $3)"
+_WRITE_AUDIT_LOG_PG = (
+    "INSERT INTO audit_log (actor, action, target, metadata_json) VALUES ($1, $2, $3, $4)"
+)
 
 _SNAPSHOT_EPSS_SQLITE = """
 INSERT OR REPLACE INTO epss_history (cve_id, score, recorded_date)
@@ -256,10 +258,15 @@ async def write_audit_log(
     actor: str | None,
     action: str,
     target: str = "",
+    metadata: dict | None = None,
 ) -> None:
     """Append one audit row (caller commits). Actor is '' when no identity."""
+    from redact import redact_audit_metadata
+
     sql = _WRITE_AUDIT_LOG_PG if _is_postgres_connection(db) else _WRITE_AUDIT_LOG_SQLITE
-    await db.execute(sql, ((actor or "").strip(), action, target or ""))
+    safe_meta = redact_audit_metadata(action, metadata)
+    metadata_json = json.dumps(safe_meta, separators=(",", ":")) if safe_meta else None
+    await db.execute(sql, ((actor or "").strip(), action, target or "", metadata_json))
 
 
 async def mark_cves_as_kev(db: DbConnection, cve_ids: list) -> list[str]:

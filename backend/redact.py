@@ -105,3 +105,30 @@ def mask_audit_log_target(action: str, target: str | None) -> str:
     if len(text) > 200:
         return text[:200] + "…"
     return text
+
+
+def redact_audit_metadata(action: str, metadata: dict | None) -> dict | None:
+    """Redact sensitive values before persisting audit_log.metadata_json."""
+    if not metadata:
+        return None
+    return _mask_metadata_tree(action, metadata)
+
+
+def mask_audit_log_metadata(action: str, metadata: dict | None) -> dict | None:
+    """Mask sensitive metadata values on read (covers legacy plaintext in JSON)."""
+    if not metadata:
+        return None
+    return _mask_metadata_tree(action, metadata)
+
+
+def _mask_metadata_tree(action: str, value):
+    if isinstance(value, dict):
+        return {k: _mask_metadata_tree(action, v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_mask_metadata_tree(action, v) for v in value]
+    if isinstance(value, str):
+        if action.startswith("config.set.") and _looks_like_secret_value(value):
+            return mask_secret_value(value)
+        if len(value) > 500:
+            return value[:500] + "…"
+    return value

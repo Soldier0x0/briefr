@@ -350,3 +350,33 @@ def test_audit_log_masks_legacy_plaintext_targets(admin_client):
     assert groq_rows
     assert secret not in (groq_rows[0].get("target") or "")
     assert "…" in groq_rows[0]["target"]
+
+
+def test_audit_log_returns_metadata(admin_client):
+    import database as db_mod
+    from tests.conftest import run_db_test
+
+    async def _seed():
+        db = await db_mod.get_db()
+        try:
+            await db_mod.write_audit_log(
+                db,
+                "admin",
+                "config.apply",
+                "FOO",
+                metadata={"changed_keys": ["FOO"], "request_id": "abc123"},
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_seed())
+
+    resp = admin_client.get("/api/admin/audit-log?limit=5&action=config.apply")
+    assert resp.status_code == 200
+    rows = resp.json().get("rows", [])
+    assert rows
+    row = rows[0]
+    assert row.get("metadata") is not None
+    assert row["metadata"].get("changed_keys") == ["FOO"]
+    assert "metadata_json" not in row

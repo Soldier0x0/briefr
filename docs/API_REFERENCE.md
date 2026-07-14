@@ -1790,7 +1790,7 @@ Params: `limit` (1–500, default 100), `level` (exact match, e.g. `ERROR`), `lo
 Response: `{logs: [{ts, level, logger, message, request_id, category, job_id?, run_id?, error_type?, exc_info?, ...}], known_loggers: [...], categories: [...], buffer_capacity: 500}`. Secret-like `extra` fields are redacted to `[REDACTED]` in buffer entries.
 
 ### GET /api/admin/audit-log
-Params: `limit`, `offset`, `action`, `action_prefix`, `actor`. Use `action_prefix=backup.` for category filters.
+Params: `limit`, `offset`, `action`, `action_prefix`, `actor`, `q` (substring over action, target, and `metadata_json`). Response rows include optional `metadata` object (parsed from `metadata_json`; secrets masked on read). Append-only — no mutation endpoints.
 
 ### GET /api/admin/security
 Security panel readout. Response: `{failed_auth_last_24h, environment, posture_warnings: [{flag, message}], rate_limit_enabled, rate_limit_ioc_per_minute, rate_limit_refresh_per_minute, rate_limit_admin_read_per_minute, rate_limit_login_per_minute, rate_limit_auth_refresh_per_minute, top_rate_limit_consumers}`.

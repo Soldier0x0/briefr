@@ -78,3 +78,33 @@ def test_restore_writes_audit_row(tmp_path):
     finally:
         conn.close()
     assert rows == [("system", "backup.restore", archive.name)]
+
+
+def test_write_audit_log_metadata_roundtrip(tmp_path, monkeypatch):
+    monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "audit_meta.db"))
+
+    async def _run():
+        await database.init_db()
+        db = await database.get_db()
+        try:
+            await database.write_audit_log(
+                db,
+                "admin",
+                "config.apply",
+                "NVD_SYNC_INTERVAL_HOURS",
+                metadata={"changed_keys": ["NVD_SYNC_INTERVAL_HOURS"], "restart_needed": False},
+            )
+            await db.commit()
+            rows = await db.execute_fetchall(
+                "SELECT metadata_json FROM audit_log ORDER BY id"
+            )
+            return rows[0]["metadata_json"]
+        finally:
+            await db.close()
+
+    raw = run_db_test(_run())
+    import json
+
+    parsed = json.loads(raw)
+    assert parsed["changed_keys"] == ["NVD_SYNC_INTERVAL_HOURS"]
+    assert parsed["restart_needed"] is False
