@@ -273,15 +273,41 @@ def test_api_keys_never_returned_full_value(admin_client):
     resp = admin_client.get("/api/admin/config")
     assert resp.status_code == 200
     data = resp.json()
-    api_keys = data.get("api_keys", {})
 
-    for key, val in api_keys.items():
-        # Must be masked format or "not configured"
-        assert val in ("not configured", "***") or (
-            len(val) >= 9 and "…" in val and val[:4] != val[-4:]
-        ), (
-            f"Key {key!r} looks like it may be unmasked: {val!r}"
+    for section in ("api_keys", "security"):
+        for key, val in (data.get(section) or {}).items():
+            assert val in ("not configured", "***") or (
+                len(val) >= 9 and "…" in val and val[:4] != val[-4:]
+            ), (
+                f"Key {key!r} looks like it may be unmasked: {val!r}"
+            )
+
+
+def test_config_set_wallboard_token_masks_response(admin_client, tmp_path, monkeypatch):
+    dotenv_path = tmp_path / ".env"
+    dotenv_path.write_text("")
+    import routers.admin as admin_mod
+    monkeypatch.setattr(admin_mod, "_DOTENV_PATH", dotenv_path)
+
+    async def _noop_persist(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr("operator_settings.persist_operator_setting", _noop_persist)
+
+    secret = "kiosk-wallboard-secret-token-99"
+    with patch("dotenv.set_key"):
+        resp = admin_client.post(
+            "/api/admin/config/apply-all",
+            json=[{"key": "WALLBOARD_TOKEN", "value": secret}],
         )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["ok"] is True
+    assert data["restart_required"] is True
+    assert secret not in str(data)
+
+    cfg = admin_client.get("/api/admin/config").json()
+    assert cfg["security"]["WALLBOARD_TOKEN"] == "kios…n-99"
 
 
 def test_audit_log_masks_legacy_plaintext_targets(admin_client):

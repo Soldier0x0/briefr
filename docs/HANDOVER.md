@@ -12,6 +12,17 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — O-3: WALLBOARD_TOKEN in admin config
+
+**What:** `WALLBOARD_TOKEN` added to `config_schema` (secret, `restart_required`).
+Admin GET config returns masked value under `security`; API keys & config page has
+Security / kiosk accordion. Save/rotate via existing config apply flow with audit
+redaction. Closes docs-vs-reality gap (Security page already pointed at config UI).
+
+**Next:** Sprint tail / codebase audit PRs per BACKLOG.
+
+---
+
 ## 2026-07-14 — CORR-PR-13: correlation_metrics + feed-boost gating — merged #513
 
 **What:** Alembic 021 `correlation_metrics` nightly snapshot; admin correlation status

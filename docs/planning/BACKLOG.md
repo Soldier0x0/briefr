@@ -27,7 +27,7 @@ shipped this pass — see `docs/HANDOVER.md`'s 2026-07-12 entries for the full P
 
 | ID | Item | Status | Source |
 |----|------|--------|--------|
-| **O-3** | `WALLBOARD_TOKEN` in `config_schema` + admin save/rotate (Security copy already points at API keys & config; field is **env-only** today) | 📋 | Sprint Track O; [`specs/ux-audit.md`](specs/ux-audit.md) Issue 23–24 |
+| **O-3** | `WALLBOARD_TOKEN` in `config_schema` + admin save/rotate (Security copy already points at API keys & config; field is **env-only** today) | ✅ in PR |
 | **G0** | Refresh `LEARNING_PATH.md` + `ONBOARDING.md` for final shipped system | 🅿️ end-of-lifecycle | Sprint §G |
 | **G1–G4** | Maintainer modules 1–4 (trace + private notes) | 🅿️ end-of-lifecycle | Sprint §G |
 | **Phase 4 STIX/Sigma export** | V1.5 tail | 🅿️ | Sprint V1.5 |

@@ -234,6 +234,13 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
     ConfigField("WEBHOOK_GENERIC_EVENTS", "webhooks", "str",
                 help_text="Comma-separated event types to send to the generic webhook (blank = all)."),
 
+    # ── Security / kiosk ────────────────────────────────────────────────────
+    ConfigField("WALLBOARD_TOKEN", "security", "secret", restart_required=True,
+                display_label="Wallboard kiosk token",
+                help_text="Optional read-only gate for GET /api/wallboard and /wallboard. "
+                "Clients send X-BRIEFR-Wallboard-Token once to obtain a session cookie. "
+                "Leave blank to keep the wallboard open (production warns when unset)."),
+
     # ── API Keys ─────────────────────────────────────────────────────────────
     ConfigField("NVD_API_KEY", "api_keys", "secret",
                 help_text="Raises the NVD API rate limit from 5 to 50 requests per 30s."),

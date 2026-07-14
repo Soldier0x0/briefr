@@ -17,6 +17,7 @@ const TIMEZONE_KEYS = new Set(['SCHEDULER_TIMEZONE', 'CORRELATION_TIMEZONE', 'OT
 // scheduler_main/scheduler_cron both read from config.scheduler).
 const SECTIONS = [
   { id: 'api_keys', title: 'API Keys', backendKey: 'api_keys' },
+  { id: 'security', title: 'Security / kiosk', backendKey: 'security' },
   { id: 'webhooks', title: 'Webhooks — Discord / Telegram / generic', backendKey: 'webhooks' },
   { id: 'scheduler_main', title: 'Scheduler intervals — NVD / KEV / EPSS', backendKey: 'scheduler' },
   { id: 'scheduler_cron', title: 'Scheduler intervals — cron & timezone', backendKey: 'scheduler' },
