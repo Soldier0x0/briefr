@@ -24,6 +24,8 @@ already present (migration 011).
 `confidence.py`, `freshness.py` (`corroboration_factor`), tests
 `test_threatfox_corroboration.py`.
 
+**Merged:** #510 (`f8ed7c5`). Gemini: index-friendly TF join, URL host mapping.
+
 **Next:** PR-11 alias-aware attribution + conflict surfacing.
 
 ---
