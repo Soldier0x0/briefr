@@ -12,6 +12,22 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — CORR-PR-10: ThreatFox corroboration on IOC edges
+
+**What:** OTX shared-indicator edges join the local `threatfox_iocs` mirror at read
+time. Matching edges gain `corroborated_by: ["threatfox:<ioc_id>"]`, a
+`corroboration` confidence factor (spec §7 formula), and `sources` includes
+`threatfox` when applicable. Index on `threatfox_iocs(ioc_type, ioc_value)`
+already present (migration 011).
+
+**Files:** `correlation/threatfox_corroboration.py`, `ioc_graph.py`,
+`confidence.py`, `freshness.py` (`corroboration_factor`), tests
+`test_threatfox_corroboration.py`.
+
+**Next:** PR-11 alias-aware attribution + conflict surfacing.
+
+---
+
 ## 2026-07-14 — CORR-PR-9: pulse families + campaign dedup
 
 **What:** Phase 3 start — mirrored OTX pulses collapse into pulse families

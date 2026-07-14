@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from correlation.freshness import freshness_context, numeric_edge_level
+from correlation.freshness import (
+    corroboration_factor,
+    freshness_context,
+    numeric_edge_level,
+)
 
 _LEVELS = ("low", "medium", "high")
 
@@ -35,6 +39,7 @@ def confidence_for_ioc_edge(
     observed_at: Any = None,
     ingested_at: Any = None,
     now: Any = None,
+    corroborated_by: list[str] | None = None,
 ) -> tuple[str, str | None, list[dict[str, Any]]]:
     """Return (confidence, why_not_higher, confidence_factors).
 
@@ -105,12 +110,29 @@ def confidence_for_ioc_edge(
         ingested_at=ingested_at,
         now=now,
     )
+    corroboration_k = 1 + (1 if corroborated_by else 0)
+    corroboration = corroboration_factor(corroboration_k)
     fresh_level = numeric_edge_level(
-        t, degree=degree, freshness=fresh["freshness_factor"]
+        t,
+        degree=degree,
+        freshness=fresh["freshness_factor"],
+        corroboration_k=corroboration_k,
     )
     if _level_index(fresh_level) < _level_index(level):
         level = fresh_level
         why = fresh["freshness_reason"]
+    elif corroborated_by and _level_index(fresh_level) > _level_index(level):
+        level = fresh_level
+        why = "Corroborated by ThreatFox mirror"
+    factors.append({
+        "factor": "corroboration",
+        "value": round(corroboration, 4),
+        "reason": (
+            "Independent ThreatFox observation corroborates this indicator"
+            if corroborated_by
+            else "Single community (OTX) source"
+        ),
+    })
     factors.append({
         "factor": "freshness",
         "value": fresh["freshness_factor"],
@@ -161,6 +183,11 @@ def aggregate_infrastructure_confidence(
             **(
                 {"freshness_fallback": True}
                 if edge.get("freshness_fallback")
+                else {}
+            ),
+            **(
+                {"corroborated_by": edge["corroborated_by"]}
+                if edge.get("corroborated_by")
                 else {}
             ),
         })

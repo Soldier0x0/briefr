@@ -57,12 +57,25 @@ def score_to_confidence_level(score: float) -> str:
     return "low"
 
 
-def numeric_edge_level(ioc_type: str, *, degree: int, freshness: float) -> str:
+def corroboration_factor(k: int) -> float:
+    """Independent source count multiplier (spec §7, CORR-PR-10)."""
+    sources = max(1, int(k or 1))
+    return min(1.0, 0.6 + 0.2 * math.log2(1 + sources))
+
+
+def numeric_edge_level(
+    ioc_type: str, *, degree: int, freshness: float, corroboration_k: int = 1
+) -> str:
     t = (ioc_type or "").upper()
     if t in ("IPV4", "IPV6"):
         t = "IP"
     base = _IOC_BASE_SCORE.get(t, 0.3)
-    score = base * degree_factor(degree) * freshness
+    score = (
+        base
+        * degree_factor(degree)
+        * freshness
+        * corroboration_factor(corroboration_k)
+    )
     return score_to_confidence_level(score)
 
 
