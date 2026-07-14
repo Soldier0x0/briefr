@@ -241,7 +241,7 @@ export default memo(function CVECard({
           {cve.cvss_score != null && (
             <span
               className={`badge badge-cvss badge-cvss-${cvssClass}`}
-              title={`CVSS score: ${cve.cvss_score} (${cve.severity || 'unknown'})`}
+              title={`CVSS ${cve.cvss_score} (${cve.severity || 'unknown'}) — Common Vulnerability Scoring System, the 0–10 industry severity standard. Measures technical impact, not exploitation likelihood (see EPSS).`}
             >
               CVSS {cve.cvss_score.toFixed(1)}
             </span>

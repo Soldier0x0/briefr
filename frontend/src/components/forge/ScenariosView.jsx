@@ -78,7 +78,7 @@ export default function ScenariosView({
                       {scenario.evidence_cves.map(cve => (
                         <li key={cve.cve_id} className="mono">
                           {cve.cve_id}
-                          {cve.is_kev && <span className="fg-kev-badge">KEV</span>}
+                          {cve.is_kev && <span className="fg-kev-badge" title="CISA Known Exploited Vulnerabilities — confirmed active exploitation in the wild">KEV</span>}
                         </li>
                       ))}
                     </ul>

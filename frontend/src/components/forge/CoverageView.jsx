@@ -17,7 +17,10 @@ function CoverageRow({ technique, active, onSelect }) {
         <span className="fg-tech-counts mono">
           {technique.cve_count} CVE{technique.cve_count === 1 ? '' : 's'}
           {technique.kev_count > 0 && (
-            <span className="fg-kev-count"> · {technique.kev_count} KEV</span>
+            <span
+              className="fg-kev-count"
+              title="CVEs on CISA's Known Exploited Vulnerabilities catalog — confirmed active exploitation"
+            > · {technique.kev_count} KEV</span>
           )}
         </span>
         {caseStudyCount > 0 && (

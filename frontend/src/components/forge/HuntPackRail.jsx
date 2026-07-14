@@ -30,12 +30,12 @@ function LinkedCveRow({ cve, pack, generating, onGenerate }) {
   return (
     <li className="fg-cve-row">
       <span className="fg-cve-id mono">{cve.cve_id}</span>
-      <span className="fg-cve-meta mono">
+      <span className="fg-cve-meta mono" title="CVSS = industry severity (0–10) · EPSS = 30-day exploitation probability (FIRST.org)">
         {cve.severity || '—'}
         {cve.cvss_score != null && ` · CVSS ${cve.cvss_score.toFixed(1)}`}
         {cve.epss_score != null && ` · EPSS ${(cve.epss_score * 100).toFixed(1)}%`}
       </span>
-      {cve.is_kev && <span className="fg-kev-badge mono">KEV</span>}
+      {cve.is_kev && <span className="fg-kev-badge mono" title="CISA Known Exploited Vulnerabilities — confirmed active exploitation in the wild">KEV</span>}
       {pack ? (
         <span className="fg-pack-saved mono">PACK SAVED ✓</span>
       ) : (
@@ -216,7 +216,10 @@ function PackContextLine({ pack }) {
   const cwes = pack.cwe_ids || []
   if (!cwes.length && pack.epss_score == null && pack.cvss_score == null) return null
   return (
-    <p className="fg-pack-context mono">
+    <p
+      className="fg-pack-context mono"
+      title="CVSS = industry severity (0–10) · EPSS = 30-day exploitation probability (FIRST.org) · CWE = weakness class (MITRE)"
+    >
       {pack.cvss_score != null && `CVSS ${pack.cvss_score.toFixed(1)}`}
       {pack.epss_score != null && `${pack.cvss_score != null ? ' · ' : ''}EPSS ${(pack.epss_score * 100).toFixed(1)}%`}
       {cwes.length > 0 && `${(pack.cvss_score != null || pack.epss_score != null) ? ' · ' : ''}${cwes.join(', ')}`}

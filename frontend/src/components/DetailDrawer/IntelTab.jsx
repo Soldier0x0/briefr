@@ -834,6 +834,9 @@ export default function TabIntel({
 
       <section className="drawer-section" aria-labelledby="mitre-heading">
         <h3 id="mitre-heading" className="drawer-section-label">MITRE ATT&CK</h3>
+        <p className="drawer-capec-hint mono">
+          Adversary techniques mapped to this CVE — ATT&amp;CK is MITRE&apos;s knowledge base of real-world attacker tactics and techniques.
+        </p>
         {loading && techList.length === 0 ? (
           <p className="mitre-empty mono">// Loading ATT&CK mapping…</p>
         ) : techList.length === 0 ? (

@@ -107,19 +107,27 @@ export default function LibraryView({ selectedPackId, onOpenPack, onPackDeleted 
       label: 'KEV',
       width: 60,
       align: 'center',
-      render: row => (row.is_kev ? <span className="fg-kev-badge mono">KEV</span> : '—'),
+      render: row => (row.is_kev ? <span className="fg-kev-badge mono" title="CISA Known Exploited Vulnerabilities — confirmed active exploitation in the wild">KEV</span> : '—'),
     },
     {
       id: 'cwe_ids',
       label: 'CWE',
       width: 110,
-      render: row => (row.cwe_ids?.length ? row.cwe_ids.join(', ') : '—'),
+      render: row => (row.cwe_ids?.length ? (
+        <span title="MITRE Common Weakness Enumeration — the class of coding weakness behind the CVE">
+          {row.cwe_ids.join(', ')}
+        </span>
+      ) : '—'),
     },
     {
       id: 'epss_score',
       label: 'EPSS',
       width: 80,
-      render: row => (row.epss_score != null ? `${(row.epss_score * 100).toFixed(1)}%` : '—'),
+      render: row => (row.epss_score != null ? (
+        <span title="FIRST.org Exploit Prediction Scoring System — probability of exploitation in the wild within 30 days">
+          {`${(row.epss_score * 100).toFixed(1)}%`}
+        </span>
+      ) : '—'),
     },
     { id: 'created_at', label: 'Created', width: 150, render: row => formatDate(row.created_at) },
     { id: 'updated_at', label: 'Updated', width: 150, render: row => formatDate(row.updated_at) },

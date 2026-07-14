@@ -117,7 +117,7 @@ Independently re-verified — of 17 Emergent-agent + Emergent-adjacent claims te
 |----|-------|--------|
 | PR-R1 | Await scheduler + background tasks on shutdown | ✅ (this PR) |
 | PR-R2 | LLM extraction idempotency / response staging | ✅ (this PR) |
-| PR-R3 | Webhook claim-before-send (extends IDEM-001) | 🔶 IDEM-001 shipped #449 — verify overlap |
+| PR-R3 | Webhook claim-before-send (extends IDEM-001) | ✅ verified complete 2026-07-14 — `webhooks/engine.py` claims the dedupe key (committed) **before** the HTTP send and rolls the claim back on failed delivery; shipped as part of IDEM-001 (#449), no remaining gap |
 | PR-R4 | Persist migration status to `sync_state` | ✅ (this PR) |
 
 ### Runtime validation (9× NEEDS RUNTIME VALIDATION)
@@ -210,7 +210,7 @@ no collateral skip-decorator corruption. Full SQLite suite green (no regressions
 | **PR3 follow-up** | Migrate analyst `title=` tooltips on `CVECard` / `DetailDrawer` to `HelpTip` | 📋 incremental |
 | **37 / UX-C1** | Interactive control consistency — drawer buttons + tabs to `.ui-btn` standard (Issue 37) | ✅ shipped (#474) |
 | **37 / UX-C2** | CVE card action row + feed surfaces to `.ui-btn` standard (red = destructive only) | ✅ #475 |
-| **38 / UX-J1** | Domain-term explanation sweep (PRODUCT.md principle 6): KEV, EPSS, CVSS, CWE, CAPEC, ATT&CK IDs get HelpTip/ExplainTip coverage on feed, drawer, Forge | 📋 audit which terms already covered first |
+| **38 / UX-J1** | Domain-term explanation sweep (PRODUCT.md principle 6): KEV, EPSS, CVSS, CWE, CAPEC, ATT&CK IDs get HelpTip/ExplainTip coverage on feed, drawer, Forge | ✅ (this PR) — audit found feed mostly covered (FilterBar/StatsRow/CVECard EPSS); filled gaps: drawer CWE tags, ATT&CK section hint, CVECard CVSS badge, Forge KEV badges + CWE/EPSS columns + pack context line |
 | **39 / UX-L1** | "Scope & limits" panel in About modal — render PRODUCT.md Scope & Limits content (copy is final, JSX only); browser-verify with the UX-C1 pass | ✅ (this PR) |
 | **Issue 21** | API key suffix + provider health ping in UI | 🔶 backend #435 — UI tail? |
 | **UI overhaul 3a** | Dismissible config banner (not permanent amber) | 📋 [`../archive/superseded/UI_UX_OVERHAUL_PLAN.md`](../archive/superseded/UI_UX_OVERHAUL_PLAN.md) |
@@ -229,8 +229,8 @@ Flat backlog after major programs above — **no strict order**; pick from here 
 |--------|-----|
 | Codebase audit | PR-P4 optional (PR-P3/O1/O2/F1–F4 ✅) |
 | API key health tail | AKH-2 (remove dead `/api/usage`, HelpTip on Inbound limits) |
-| QA / UX | QA-U2–U3, UX-J1, UX-L1 |
-| Durability | PR-R1, PR-R2, PR-R4 (PR-R3 verify vs #449) |
+| QA / UX | QA-U2 (design pass, deferred) |
+| Durability | — (PR-R1/R2/R4 ✅; PR-R3 verified as IDEM-001 overlap in #449 scope — see §3) |
 | Ops / test infra | — (M-9 ✅, M-10 verified, PG-002/003 ✅) |
 | Resource benchmarking | — (RB-1/RB-2 complete) |
 | UX audit deferred | §5 items 28–33, PR3 follow-up, UI 3a/3b/§6 |

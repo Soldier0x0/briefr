@@ -12,6 +12,18 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — UX-J1: domain-term explanation sweep — merged (this PR)
+
+**What:** Audit found feed surfaces largely covered (FilterBar/StatsRow/CVECard). Filled
+gaps: drawer CWE tags + ATT&CK section hint, richer CVECard CVSS badge tooltip, Forge KEV
+badges (Library/Scenarios/HuntPackRail/Coverage), CWE + EPSS Library columns, pack context
+line. PR-R3 verified complete (claim-before-send shipped in #449) — durability bundle closed.
+
+**Next:** backlog is largely drained — remaining open: QA-U2 (design pass), PR-P4
+(optional), parked/evidence-gated programs.
+
+---
+
 ## 2026-07-14 — M-9 ingest cadence restore + M-10 verify — merged (this PR)
 
 **What:** `_restore_ingest_next_runs` re-anchors NVD/KEV/EPSS `next_run_time` to

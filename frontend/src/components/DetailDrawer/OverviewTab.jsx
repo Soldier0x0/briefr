@@ -730,7 +730,13 @@ export default function TabOverview({
           {cwes.length > 0 && (
             <div className="cwe-list" aria-label="Weakness types">
               {cwes.map(c => (
-                <span key={c} className="cwe-tag mono">{c}</span>
+                <span
+                  key={c}
+                  className="cwe-tag mono"
+                  title={`${c} — MITRE Common Weakness Enumeration: the class of coding weakness behind this vulnerability`}
+                >
+                  {c}
+                </span>
               ))}
             </div>
           )}
