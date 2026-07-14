@@ -149,3 +149,50 @@ def test_scheduler_lock_registered():
     import scheduler_locks
 
     assert "resource_metrics_sample" in scheduler_locks._LOCKS
+
+
+def test_downsample_series_caps_points():
+    from db.resource_metrics import downsample_series
+
+    rows = [{"ts": f"2026-01-01T00:{i:02d}:00+00:00", "briefr_cpu_pct": float(i)} for i in range(1000)]
+    out = downsample_series(rows, max_points=100)
+    assert len(out) == 100
+    assert out[0]["briefr_cpu_pct"] is not None
+
+
+def test_summarize_metric_peak_timestamp():
+    from db.resource_metrics import summarize_metric
+
+    rows = [
+        {"ts": "2026-01-01T00:00:00+00:00", "briefr_cpu_pct": 1.0},
+        {"ts": "2026-01-01T01:00:00+00:00", "briefr_cpu_pct": 9.0},
+        {"ts": "2026-01-01T02:00:00+00:00", "briefr_cpu_pct": 3.0},
+    ]
+    summary = summarize_metric(rows, "briefr_cpu_pct")
+    assert summary["peak"] == 9.0
+    assert summary["peak_at"] == "2026-01-01T01:00:00+00:00"
+    assert summary["low"] == 1.0
+
+
+def test_fetch_resources_response_empty_sqlite(tmp_path, monkeypatch):
+    if is_postgres():
+        return
+    db_path = tmp_path / "resources_api.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    async def _run():
+        from db.resource_metrics import fetch_resources_response
+
+        await init_db()
+        db = await get_db()
+        try:
+            data = await fetch_resources_response(db, "7d")
+            assert data["window"] == "7d"
+            assert data["sample_count"] == 0
+            assert data["degraded"]["code"] == "empty"
+            assert data["series"] == []
+        finally:
+            await db.close()
+
+    run_db_test(_run())

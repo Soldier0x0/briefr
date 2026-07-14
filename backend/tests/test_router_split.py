@@ -111,6 +111,7 @@ EXPECTED_ROUTES = [
     ("GET", "/api/admin/destructive-actions"),
     ("POST", "/api/admin/storage/purge"),
     ("GET", "/api/admin/storage/export"),
+    ("GET", "/api/admin/resources"),
     ("GET", "/api/admin/watchlist"),
     ("DELETE", "/api/admin/watchlist/{cve_id}"),
     ("POST", "/api/admin/watchlist/clear-snoozes"),

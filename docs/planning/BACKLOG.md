@@ -232,7 +232,7 @@ Flat backlog after major programs above — **no strict order**; pick from here 
 | QA / UX | QA-U2–U3, UX-J1, UX-L1 |
 | Durability | PR-R1, PR-R2, PR-R4 (PR-R3 verify vs #449) |
 | Ops / test infra | M-9, M-10 verify, PG-002, PG-003 |
-| Resource benchmarking | RB-1, RB-2 |
+| Resource benchmarking | — (RB-1/RB-2 complete) |
 | UX audit deferred | §5 items 28–33, PR3 follow-up, UI 3a/3b/§6 |
 | Wallboard optional | §7 optional rows |
 
@@ -307,8 +307,9 @@ tiles only.
 
 | PR | Title | Status |
 |----|-------|--------|
-| **RB-1** | `resource_metrics` table + psutil collector job + retention (scheduler-lock mapping entry required) | 📋 |
-| **RB-2** | `GET /api/admin/resources` + admin RESOURCES page (1d/3d/7d/30d windows, peak/avg/low) | 📋 |
+| **RB-1** | `resource_metrics` table + psutil collector job + retention (scheduler-lock mapping entry required) | ✅ #521 |
+| **RB-2** | `GET /api/admin/resources` + admin Resources page (Chart.js, 1d/3d/7d/30d windows) | ✅ (this PR) |
+| **RB-2** | `GET /api/admin/resources` + admin RESOURCES page (1d/3d/7d/30d windows, peak/avg/low) | ✅ (this PR) |
 
 Out of scope by decision: synthetic load simulation, Prometheus/Grafana export,
 per-endpoint latency histograms, alerting — see spec NOT-in-scope list.
