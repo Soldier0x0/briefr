@@ -2861,6 +2861,27 @@
   color: var(--text-link);
 }
 
+.corr-confirm-link-btn {
+  min-height: 26px;
+  font-size: var(--type-meta);
+  letter-spacing: 0.04em;
+  color: var(--green);
+  background: transparent;
+  padding: 2px 8px;
+  border: 1px solid color-mix(in srgb, var(--green) 40%, var(--border2));
+  cursor: pointer;
+  transition: color var(--motion-fast), border-color var(--motion-fast);
+}
+
+.corr-confirm-link-btn:hover {
+  border-color: var(--green);
+}
+
+.corr-confirm-link-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--green) 35%, transparent);
+}
+
 .corr-mark-unrelated-btn {
   min-height: 26px;
   font-size: var(--type-meta);

@@ -410,6 +410,28 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_correlation_feedback_cve
                 ON correlation_feedback(cve_id);
 
+            CREATE TABLE IF NOT EXISTS correlation_metrics (
+                day TEXT PRIMARY KEY,
+                computed_at TEXT,
+                suppressions_30d INTEGER NOT NULL DEFAULT 0,
+                feedback_confirm_30d INTEGER NOT NULL DEFAULT 0,
+                feedback_reject_30d INTEGER NOT NULL DEFAULT 0,
+                surfaced_findings_30d INTEGER NOT NULL DEFAULT 0,
+                rejection_rate REAL,
+                confirmation_rate REAL,
+                weak_edge_ratio REAL,
+                hub_suppressed_edge_count INTEGER NOT NULL DEFAULT 0,
+                ioc_degree_p95 INTEGER NOT NULL DEFAULT 0,
+                avg_independent_sources REAL,
+                orphan_cve_ratio REAL,
+                campaigns_active INTEGER NOT NULL DEFAULT 0,
+                campaigns_retracted INTEGER NOT NULL DEFAULT 0,
+                campaign_survival_rate REAL,
+                campaign_member_count INTEGER NOT NULL DEFAULT 0,
+                stale_campaign_ratio REAL,
+                median_evidence_age_days REAL
+            );
+
             CREATE TABLE IF NOT EXISTS ioc_degree (
                 ioc_type TEXT NOT NULL,
                 ioc_value TEXT NOT NULL,
@@ -708,6 +730,29 @@ async def init_db() -> None:
             )
             """,
             "CREATE INDEX IF NOT EXISTS idx_correlation_feedback_cve ON correlation_feedback(cve_id)",
+            """
+            CREATE TABLE IF NOT EXISTS correlation_metrics (
+                day TEXT PRIMARY KEY,
+                computed_at TEXT,
+                suppressions_30d INTEGER NOT NULL DEFAULT 0,
+                feedback_confirm_30d INTEGER NOT NULL DEFAULT 0,
+                feedback_reject_30d INTEGER NOT NULL DEFAULT 0,
+                surfaced_findings_30d INTEGER NOT NULL DEFAULT 0,
+                rejection_rate REAL,
+                confirmation_rate REAL,
+                weak_edge_ratio REAL,
+                hub_suppressed_edge_count INTEGER NOT NULL DEFAULT 0,
+                ioc_degree_p95 INTEGER NOT NULL DEFAULT 0,
+                avg_independent_sources REAL,
+                orphan_cve_ratio REAL,
+                campaigns_active INTEGER NOT NULL DEFAULT 0,
+                campaigns_retracted INTEGER NOT NULL DEFAULT 0,
+                campaign_survival_rate REAL,
+                campaign_member_count INTEGER NOT NULL DEFAULT 0,
+                stale_campaign_ratio REAL,
+                median_evidence_age_days REAL
+            )
+            """,
             "ALTER TABLE correlation_suppressions ADD COLUMN dismissed_by TEXT DEFAULT ''",
             "CREATE INDEX IF NOT EXISTS idx_otx_cve_pulses_pulse ON otx_cve_pulses(pulse_id)",
             # Built-in app login (decision 2026-06-11): users + sessions.

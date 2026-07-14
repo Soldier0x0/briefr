@@ -17,6 +17,16 @@ import OpsCharts from './shared/OpsCharts.jsx'
 
 function AnalystOverview({ system, toast }) {
   const [running, setRunning] = useState({})
+  const [correlationStatus, setCorrelationStatus] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    adminApi.get('/correlation/status')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (!cancelled) setCorrelationStatus(data) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [system?.cve_count])
 
   async function runNow(jobId) {
     setRunning(r => ({ ...r, [jobId]: true }))
@@ -83,6 +93,50 @@ function AnalystOverview({ system, toast }) {
           subLabel={worstEntries.length ? sourceLabel(worstEntries[0][0]) : undefined}
         />
       </div>
+
+      {correlationStatus?.metrics && (
+        <div className="admin-card">
+          <div className="admin-card-title">Correlation quality (latest nightly snapshot)</div>
+          <div className="stat-card-row" style={{ marginTop: '0.5rem' }}>
+            <StatCard
+              label="CONFIRMATION RATE (30D)"
+              value={
+                correlationStatus.metrics.confirmation_rate != null
+                  ? `${(correlationStatus.metrics.confirmation_rate * 100).toFixed(1)}%`
+                  : '—'
+              }
+              subLabel={`day ${correlationStatus.metrics.day}`}
+            />
+            <StatCard
+              label="REJECTION RATE (30D)"
+              value={
+                correlationStatus.metrics.rejection_rate != null
+                  ? `${(correlationStatus.metrics.rejection_rate * 100).toFixed(1)}%`
+                  : '—'
+              }
+              subLabel={`${correlationStatus.metrics.campaigns_active ?? 0} active campaigns`}
+            />
+            <StatCard
+              label="ORPHAN CVE RATIO"
+              value={
+                correlationStatus.metrics.orphan_cve_ratio != null
+                  ? `${(correlationStatus.metrics.orphan_cve_ratio * 100).toFixed(1)}%`
+                  : '—'
+              }
+              subLabel="CVEs with pulses but no campaign"
+            />
+            <StatCard
+              label="MEDIAN EVIDENCE AGE"
+              value={
+                correlationStatus.metrics.median_evidence_age_days != null
+                  ? `${correlationStatus.metrics.median_evidence_age_days}d`
+                  : '—'
+              }
+              subLabel="OTX IOC observed/fetched timestamps"
+            />
+          </div>
+        </div>
+      )}
 
       {active_locks?.length > 0 && (
         <div className="admin-card">

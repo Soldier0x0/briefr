@@ -232,6 +232,18 @@ export function restoreCVECorrelation(cveId, { scope, cve_id_b = '', campaign_id
   })
 }
 
+export function fetchCorrelationFeedback(cveId) {
+  return request(`/cves/${encodeURIComponent(cveId)}/correlation/feedback`)
+}
+
+export function confirmCVECorrelation(cveId, body) {
+  return request(`/cves/${encodeURIComponent(cveId)}/correlation/feedback`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...body, verdict: 'confirm' }),
+  })
+}
+
 export function fetchCVEDetection(cveId, product = '') {
   const qs = product ? `?product=${encodeURIComponent(product)}` : ''
   return request(`/cves/${encodeURIComponent(cveId)}/detection${qs}`)

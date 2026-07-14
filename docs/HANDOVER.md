@@ -12,7 +12,19 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-14 — CORR-PR-12: analyst confirm feedback (API)
+## 2026-07-14 — CORR-PR-13: correlation_metrics + feed-boost gating + Confirm UI
+
+**What:** Alembic 021 `correlation_metrics` nightly snapshot in `run_nightly_correlation`;
+`GET /api/admin/correlation/status` includes latest `metrics` row; analyst Intel status
+page shows confirmation/rejection/orphan/evidence-age cards. Feed pinned-peer boost
+gated on campaign confidence ≥ MEDIUM and lifecycle ∈ {active, emerging} (D9).
+Drawer **Confirm link** button posts feedback API (PR-12).
+
+**Next:** Correlation v3 Phase 4 complete — tick BACKLOG PR-13; optional scale verification.
+
+---
+
+## 2026-07-14 — CORR-PR-12: analyst confirm feedback (API) — merged #512
 
 **What:** `correlation_feedback` table (Alembic 020) mirrors suppressions shape with
 `verdict` (`confirm | reject | resolve_conflict`). GET/POST/DELETE

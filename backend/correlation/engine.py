@@ -547,6 +547,22 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
         )
         await _recover_db_transaction(db)
 
+    if progress_cb:
+        progress_cb("Snapshotting correlation quality metrics…")
+    try:
+        from correlation.metrics import snapshot_correlation_metrics
+
+        metrics_row = await snapshot_correlation_metrics(db)
+        stats["metrics_day"] = metrics_row.get("day")
+        stats["confirmation_rate"] = metrics_row.get("confirmation_rate")
+    except Exception as exc:
+        logger.error(
+            "Correlation metrics snapshot failed: %s",
+            exc,
+            extra={"correlation_phase": "metrics_snapshot"},
+        )
+        await _recover_db_transaction(db)
+
     await delete_feed_cache_prefix(db, "correlation:v2:")
     await delete_feed_cache_prefix(db, "correlation:v1:")
 

@@ -103,3 +103,41 @@ def test_feed_boosts_campaign_peer_of_pinned_cve(tmp_path, monkeypatch):
     ids = [row["cve_id"] for row in rows]
     assert ids.index("CVE-2026-PEER-001") < ids.index("CVE-2026-PEER-002")
     assert ids.index("CVE-2026-PEER-002") < ids.index("CVE-2026-PEER-003")
+
+
+def test_feed_skips_boost_for_low_confidence_campaign(tmp_path, monkeypatch):
+    db_path = _force_sqlite(tmp_path, monkeypatch)
+    asyncio.run(init_db())
+
+    async def seed() -> None:
+        db = await aiosqlite.connect(db_path)
+        try:
+            await _seed_feed_campaign_graph(db)
+            await db.execute(
+                """
+                UPDATE cves SET epss_score = 0.9 WHERE cve_id = 'CVE-2026-PEER-003'
+                """
+            )
+            await db.execute(
+                """
+                UPDATE correlation_campaigns
+                SET confidence = 'low', lifecycle = 'stale'
+                WHERE campaign_id = 'camp_peer'
+                """
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    asyncio.run(seed())
+
+    from main import app
+
+    with TestClient(app) as client:
+        res = client.get("/api/cves", params={"limit": 10})
+
+    assert res.status_code == 200
+    rows = res.json()["data"]
+    ids = [row["cve_id"] for row in rows]
+    assert ids.index("CVE-2026-PEER-001") < ids.index("CVE-2026-PEER-003")
+    assert ids.index("CVE-2026-PEER-003") < ids.index("CVE-2026-PEER-002")

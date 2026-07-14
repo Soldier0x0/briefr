@@ -7,6 +7,8 @@ import {
   fetchCVEGreynoiseScans,
   fetchCVERisk,
   fetchCorrelationSuppressions,
+  fetchCorrelationFeedback,
+  confirmCVECorrelation,
   fetchIOCUsage,
   restoreCVECorrelation,
   suppressCVECorrelation,
@@ -77,6 +79,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
   const [correlation, setCorrelation] = useState(null)
   const [correlationLoading, setCorrelationLoading] = useState(false)
   const [correlationSuppressions, setCorrelationSuppressions] = useState([])
+  const [correlationFeedback, setCorrelationFeedback] = useState([])
   const [suppressModal, setSuppressModal] = useState(null)
   const [suppressSubmitting, setSuppressSubmitting] = useState(false)
   const [greynoiseScans, setGreynoiseScans] = useState([])
@@ -161,6 +164,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
       setCorrelation(null)
       setCorrelationLoading(false)
       setCorrelationSuppressions([])
+      setCorrelationFeedback([])
       setMomentumData(null)
       return
     }
@@ -175,8 +179,9 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     Promise.all([
       fetchCVEDrawerBundle(cve.cve_id, sector),
       fetchCorrelationSuppressions(cve.cve_id).catch(() => ({ suppressions: [] })),
+      fetchCorrelationFeedback(cve.cve_id).catch(() => ({ feedback: [] })),
     ])
-      .then(([bundle, supData]) => {
+      .then(([bundle, supData, fbData]) => {
         if (cancelled) return
         setSentences(bundle.sentences || null)
         setEpssHistory(Array.isArray(bundle.epss_history) ? bundle.epss_history : [])
@@ -185,6 +190,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
         setRelatedMethod(relatedPayload.meta?.method || '')
         setCorrelation(bundle.correlation || null)
         setCorrelationSuppressions(supData?.suppressions || [])
+        setCorrelationFeedback(fbData?.feedback || [])
         const momentum = bundle.momentum
         if (momentum && typeof momentum.momentum_score === 'number') {
           setMomentumData(momentum)
@@ -201,6 +207,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
           setRelatedMethod('')
           setCorrelation(null)
           setCorrelationSuppressions([])
+          setCorrelationFeedback([])
           setMomentumData(null)
         }
       })
@@ -278,12 +285,24 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
   async function refreshCorrelation() {
     if (!cve?.cve_id) return
     const sector = assetCtx?.profile?.environment?.industry || ''
-    const [data, supData] = await Promise.all([
+    const [data, supData, fbData] = await Promise.all([
       fetchCVECorrelation(cve.cve_id, sector),
       fetchCorrelationSuppressions(cve.cve_id).catch(() => ({ suppressions: [] })),
+      fetchCorrelationFeedback(cve.cve_id).catch(() => ({ feedback: [] })),
     ])
     setCorrelation(data)
     setCorrelationSuppressions(supData?.suppressions || [])
+    setCorrelationFeedback(fbData?.feedback || [])
+  }
+
+  async function handleConfirmCorrelation(body) {
+    if (!cve?.cve_id || !body) return
+    try {
+      await confirmCVECorrelation(cve.cve_id, body)
+      await refreshCorrelation()
+    } catch {
+      /* best-effort */
+    }
   }
 
   function handleRequestSuppressCorrelation(body, peerCve) {
@@ -752,6 +771,8 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
               correlationLoading={correlationLoading}
               onSelectCorrelatedCve={handleSelectRelated}
               onRequestSuppressCorrelation={handleRequestSuppressCorrelation}
+              onConfirmCorrelation={handleConfirmCorrelation}
+              correlationFeedback={correlationFeedback}
               suppressions={correlationSuppressions}
               onRestoreSuppression={handleRestoreSuppression}
             />

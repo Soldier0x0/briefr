@@ -90,6 +90,15 @@ tables:
   source_refs:
   - type: table
     ref: correlation_feedback
+- id: correlation_metrics
+  title: correlation_metrics
+  summary: Database table defined in db/init.py (name=correlation_metrics).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: correlation_metrics
 - id: correlation_suppressions
   title: correlation_suppressions
   summary: Database table defined in db/init.py (name=correlation_suppressions).
