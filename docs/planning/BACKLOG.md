@@ -284,7 +284,7 @@ tiles only.
 | `?density=compact` layout mode | 📋 optional |
 | Campaign tile, EPSS movers, enriched backend tiles | 📋 optional |
 | QR / one-time setup card on Security page (N-4) | 🔶 docs in OPERATIONS.md; QR card not built |
-| `RATE_LIMIT_WALLBOARD_PER_MINUTE` in config schema | 📋 optional |
+| `RATE_LIMIT_WALLBOARD_PER_MINUTE` in config schema | ✅ (this PR) — writable under section `app`, restart apply strategy, same pattern as O-3 |
 
 ---
 

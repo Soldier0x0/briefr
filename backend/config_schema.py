@@ -191,6 +191,8 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 help_text="Max login/setup attempts per minute per client IP and per username."),
     ConfigField("RATE_LIMIT_AUTH_REFRESH_PER_MINUTE", "app", "int", min=1, restart_required=True,
                 help_text="Max session refresh requests per minute per client IP."),
+    ConfigField("RATE_LIMIT_WALLBOARD_PER_MINUTE", "app", "int", min=1, restart_required=True,
+                help_text="Max wallboard snapshot requests per minute per client IP (kiosk polling)."),
     ConfigField("ALLOWED_ORIGINS", "app", "str",
                 help_text="Comma-separated CORS origins allowed to call the API.",
                 restart_required=True,

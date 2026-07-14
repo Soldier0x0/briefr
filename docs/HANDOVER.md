@@ -12,6 +12,19 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — Wallboard rate-limit in config schema — merged (this PR)
+
+**What:** `RATE_LIMIT_WALLBOARD_PER_MINUTE` writable from Admin → API keys & config
+(section `app`, restart apply strategy) — same pattern as O-3's `WALLBOARD_TOKEN`.
+Closes the last cheap wallboard-optional row; `?density=compact` and enriched tiles
+remain optional feature work.
+
+**Next:** loop drained. Open: QA-U2 (design judgment), item 29 (migration decision),
+PR3 tooltip follow-up (incremental), wallboard layout/tile options, parked programs,
+Gemini reviewer replacement decision (💬, reviews cease 2026-07-17).
+
+---
+
 ## 2026-07-14 — PR-P4: KEV upsert batching — merged (this PR)
 
 **What:** `upsert_kev_batch` (executemany, 500-row chunks, same upsert SQL both
