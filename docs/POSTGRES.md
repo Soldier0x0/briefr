@@ -38,13 +38,27 @@ BRIEFR only needs TCP access to the mapped port. Schema is applied by Alembic on
 
 ## Local development
 
-```bash
-docker compose -f deploy/docker-compose.postgres.yml up -d   # Postgres 16
-```
+**Persistent dev Postgres (port 5432)** — shares the default port with production-style setups; use when you want a named volume:
 
 ```bash
-# backend/.env
-DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5432/briefr
+docker compose -f deploy/docker-compose.postgres.yml up -d   # Postgres 16, container briefr-postgres
+```
+
+**Disposable test Postgres (port 5433, PG-002)** — recommended for the dual-DB pytest rule when `:5432` is already taken (production, compose stack, or cloud VM):
+
+```bash
+./scripts/postgres-dev.sh start   # container briefr-pg-test on 127.0.0.1:5433
+# prints DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5433/briefr
+
+cd backend && DATABASE_URL="$(../scripts/postgres-dev.sh url)" BRIEFR_REQUIRE_POSTGRES=1 python3 -m pytest tests/ -q
+```
+
+`./scripts/verify-local.sh --full` auto-starts `briefr-pg-test` when `DATABASE_URL` is unset and compose on `:5432` is not running.
+
+```bash
+# backend/.env (either stack — pick one URL)
+DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5432/briefr   # compose
+# DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5433/briefr  # disposable dev/CI
 BRIEFR_REQUIRE_POSTGRES=1
 DATABASE_POOL_SIZE=10
 ```

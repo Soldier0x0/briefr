@@ -12,6 +12,18 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — PG-002: disposable Postgres dev script — merged (this PR)
+
+**What:** `scripts/postgres-dev.sh` — `briefr-pg-test` on `127.0.0.1:5433` for dual-DB
+pytest without conflicting with `:5432`. Wired into `verify-local.sh --full`, POSTGRES.md,
+ONBOARDING, CLAUDE.md.
+
+**Next:** continue backlog (PR-O2 deferred, PG-003, UX-J1/L1, …).
+
+---
+
+## 2026-07-14 — RB-2: admin Resources API + page — merged #522
+
 ## 2026-07-14 — RB-1: resource metrics collector — merged #521
 
 **What:** `resource_metrics` table, `psutil` collector job (`resource_metrics_sample` / 60s),

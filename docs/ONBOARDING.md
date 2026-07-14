@@ -46,7 +46,7 @@ cp .env.example .env    # add keys as needed
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-- PostgreSQL via `DATABASE_URL` in `backend/.env` (local: `docker compose -f deploy/docker-compose.postgres.yml up -d`)
+- PostgreSQL via `DATABASE_URL` in `backend/.env` (local: `docker compose -f deploy/docker-compose.postgres.yml up -d` on **:5432**, or disposable `./scripts/postgres-dev.sh start` on **:5433** for dual-DB pytest — see `docs/POSTGRES.md`)
 - Interactive API docs: http://localhost:8000/api/docs
 - Health check: http://localhost:8000/api/health
 

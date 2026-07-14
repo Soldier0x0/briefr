@@ -54,6 +54,12 @@ if [[ "$FULL" -eq 1 ]]; then
   if [[ -z "$PG_URL" ]] && command -v docker >/dev/null 2>&1; then
     if docker compose -f deploy/docker-compose.postgres.yml ps --status running 2>/dev/null | grep -q postgres; then
       PG_URL="postgresql://briefr:briefr@127.0.0.1:5432/briefr"
+    elif [[ -x "$REPO_ROOT/scripts/postgres-dev.sh" ]]; then
+      if docker inspect briefr-pg-test >/dev/null 2>&1; then
+        PG_URL="$("$REPO_ROOT/scripts/postgres-dev.sh" url)"
+      else
+        PG_URL="$( "$REPO_ROOT/scripts/postgres-dev.sh" start 2>/dev/null | sed -n 's/^DATABASE_URL=//p' )"
+      fi
     fi
   fi
   if [[ -n "$PG_URL" ]] && [[ "$PG_URL" == postgresql* ]]; then
@@ -65,7 +71,7 @@ if [[ "$FULL" -eq 1 ]]; then
   )
     pass "Postgres pytest"
   else
-    skip "Postgres pytest — set DATABASE_URL or start deploy/docker-compose.postgres.yml"
+    skip "Postgres pytest — set DATABASE_URL, run ./scripts/postgres-dev.sh start, or start deploy/docker-compose.postgres.yml"
   fi
 
   step "gitleaks secret scan (optional — matches CI workflow: gitleaks)"
