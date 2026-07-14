@@ -2,8 +2,8 @@
 
 ## Status
 
-**PROPOSED — 2026-07-14.** Awaiting maintainer acceptance. Decides the fix for the
-CRITICAL reliability finding REL-1/REL-2 in
+**ACCEPTED — 2026-07-14.** Decides the fix for the CRITICAL reliability finding
+REL-1/REL-2 in
 [`docs/planning/reliability-and-bug-backlog.md`](../planning/reliability-and-bug-backlog.md).
 Continues the `docs/decisions/ADR-00N` sequence. Relates to ADR-002 (Operational Priority,
 which depends on correlation for escalation) and **amends**

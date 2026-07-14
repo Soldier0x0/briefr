@@ -2,8 +2,8 @@
 
 ## Status
 
-**PROPOSED — 2026-07-14.** Awaiting maintainer acceptance. This ADR is the **canonical
-registry** of which UI libraries may be used in BRIEFR and how. It operationalizes
+**ACCEPTED — 2026-07-14.** This ADR is the **canonical registry** of which UI
+libraries may be used in BRIEFR and how. It operationalizes
 [`ADR-003`](ADR-003-ui-design-system.md) (semantic tokens + Radix, no Tailwind) into an
 explicit allow/deny list so future work can't silently pull in a conflicting library.
 Enforced by [`.cursor/rules/design-system.mdc`](../../.cursor/rules/design-system.mdc);
