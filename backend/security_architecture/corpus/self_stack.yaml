@@ -232,6 +232,14 @@ terms:
   origin: generated
   term: PyYAML
   source: backend/requirements.txt
+- id: self-stack-radix-ui-react-checkbox
+  title: '@radix-ui/react-checkbox'
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: '@radix-ui/react-checkbox'
+  source: frontend/package.json
 - id: self-stack-react
   title: react
   summary: BRIEFR dependency term derived from frontend/package.json.

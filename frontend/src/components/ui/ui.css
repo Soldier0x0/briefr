@@ -313,3 +313,61 @@
   box-shadow: var(--focus-ring);
   border-color: var(--accent);
 }
+
+/* Checkbox (Radix primitive — E0-2) */
+.ui-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height-sm);
+  height: var(--control-height-sm);
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background: var(--surface-input);
+  color: var(--text-on-accent);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.ui-checkbox:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.ui-checkbox:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.ui-checkbox[data-state='checked'] {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--text-on-accent);
+}
+
+.ui-checkbox:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ui-checkbox-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+
+.ui-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: var(--font-size-meta);
+}
+
+.ui-checkbox-label:has(.ui-checkbox:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
