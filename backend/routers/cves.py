@@ -46,7 +46,7 @@ import os
 import re
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from correlation.engine import get_correlation_for_cve
@@ -1817,6 +1817,119 @@ async def unsuppress_correlation_finding(
             raise HTTPException(status_code=404, detail="Suppression not found")
         await delete_feed_cache_prefix(db, f"correlation:v2:{cve_id}")
         await db.commit()
+    finally:
+        await db.close()
+
+    return {"ok": True}
+
+
+class CorrelationFeedbackBody(BaseModel):
+    scope: str = Field(
+        description="campaign_id | cve_pair | pulse_id | infrastructure"
+    )
+    key: dict = Field(default_factory=dict)
+    verdict: str = Field(description="confirm | reject | resolve_conflict")
+    reason: str = ""
+    created_by: str = Field(
+        default="",
+        description="Analyst identity, free-text until app login ships",
+    )
+
+
+@intel_router.get("/api/cves/{cve_id}/correlation/feedback")
+async def list_correlation_feedback_for_cve(cve_id: str):
+    """List persisted analyst feedback for correlation findings."""
+    cve_id = require_cve_id(cve_id)
+
+    from correlation.feedback import load_feedback
+
+    db = await get_db()
+    try:
+        rows = await load_feedback(db, cve_id)
+    finally:
+        await db.close()
+
+    return {"cve_id": cve_id.upper(), "feedback": rows}
+
+
+@intel_router.post("/api/cves/{cve_id}/correlation/feedback")
+async def add_correlation_feedback(cve_id: str, body: CorrelationFeedbackBody, request: Request):
+    """Record analyst confirm/reject feedback for a correlation finding."""
+    cve_id = require_cve_id(cve_id)
+
+    from correlation.feedback import add_feedback
+    from database import delete_feed_cache_prefix, write_audit_log
+
+    db = await get_db()
+    try:
+        row = await add_feedback(
+            db,
+            cve_id,
+            body.scope.strip(),
+            body.key,
+            body.verdict.strip(),
+            body.reason.strip(),
+            body.created_by.strip(),
+        )
+        actor = getattr(request.state, "user_username", None) or body.created_by.strip() or ""
+        await write_audit_log(
+            db,
+            actor,
+            f"correlation.feedback.{row['verdict']}",
+            f"{cve_id.upper()}:{body.scope}:{row['scope_key']}",
+        )
+        await delete_feed_cache_prefix(db, f"correlation:v2:{cve_id}")
+        await db.commit()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    finally:
+        await db.close()
+
+    return {"ok": True, "feedback": row}
+
+
+@intel_router.delete("/api/cves/{cve_id}/correlation/feedback")
+async def remove_correlation_feedback(
+    cve_id: str,
+    request: Request,
+    scope: str = Query(...),
+    verdict: str = Query(...),
+    cve_id_b: str = Query(default=""),
+    campaign_id: str = Query(default=""),
+    pulse_id: str = Query(default=""),
+):
+    """Remove analyst correlation feedback."""
+    cve_id = require_cve_id(cve_id)
+
+    from correlation.feedback import remove_feedback
+    from database import delete_feed_cache_prefix, write_audit_log
+
+    key: dict = {}
+    if scope == "campaign_id":
+        key = {"campaign_id": campaign_id}
+    elif scope == "cve_pair":
+        key = {"cve_id_b": cve_id_b}
+    elif scope == "pulse_id":
+        key = {"pulse_id": pulse_id}
+    elif scope == "infrastructure":
+        key = {"cve_id_b": cve_id_b}
+
+    db = await get_db()
+    try:
+        removed = await remove_feedback(db, cve_id, scope, key, verdict)
+        if not removed:
+            raise HTTPException(status_code=404, detail="Feedback not found")
+        actor = getattr(request.state, "user_username", None) or ""
+        await write_audit_log(
+            db,
+            actor,
+            "correlation.feedback.delete",
+            f"{cve_id.upper()}:{scope}:{verdict}",
+        )
+        await delete_feed_cache_prefix(db, f"correlation:v2:{cve_id}")
+        await db.commit()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     finally:
         await db.close()
 

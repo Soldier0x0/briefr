@@ -12,6 +12,28 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — CORR-PR-12: analyst confirm feedback (API)
+
+**What:** `correlation_feedback` table (Alembic 020) mirrors suppressions shape with
+`verdict` (`confirm | reject | resolve_conflict`). GET/POST/DELETE
+`/api/cves/{cve_id}/correlation/feedback` with audit-log entries. API-only per Q4 —
+drawer Confirm button ships in PR-13.
+
+**Next:** PR-13 `correlation_metrics` nightly snapshot + admin surface + feed-boost gating.
+
+---
+
+## 2026-07-14 — CORR-PR-11: alias-aware attribution + conflict surfacing
+
+**What:** `attribution_conflict` expands MITRE group aliases from `mitre_groups.aliases`
+so APT28/Fancy Bear resolve as the same family (D7). Genuine mismatches attach
+dual `attribution_claims` on campaign API results; drawer shows a Conflicting
+attribution subsection.
+
+**Next:** PR-12 analyst confirm feedback.
+
+---
+
 ## 2026-07-14 — CORR-PR-10: ThreatFox corroboration on IOC edges
 
 **What:** OTX shared-indicator edges join the local `threatfox_iocs` mirror at read

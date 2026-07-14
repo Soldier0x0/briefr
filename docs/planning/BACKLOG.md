@@ -54,8 +54,8 @@ blocker.
 | PR-8 | Read-time freshness decay + UI staleness (2) | ✅ #508 |
 | PR-9 | Pulse families + campaign dedup + retraction (3) | ✅ #509 |
 | PR-10 | ThreatFox corroboration on IOC edges (3) | ✅ #510 |
-| PR-11 | Alias-aware attribution + conflict surfacing (4) | 📋 in PR |
-| PR-12 | Analyst confirm feedback (4) | 📋 |
+| PR-11 | Alias-aware attribution + conflict surfacing (4) | ✅ #511 |
+| PR-12 | Analyst confirm feedback (4) | 📋 in PR |
 | PR-13 | `correlation_metrics` nightly + admin + feed-boost gating (4) | 📋 |
 
 **Maintainer open questions (§21):** confidence regression comms (PR-4+5); pulse-family

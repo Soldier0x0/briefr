@@ -413,7 +413,7 @@
       "label": "routers.cves",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 22,
+      "endpoint_count": 25,
       "source_refs": [
         {
           "type": "file",
@@ -699,6 +699,18 @@
       ]
     },
     {
+      "id": "table:correlation_feedback",
+      "label": "correlation_feedback",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "correlation_feedback"
+        }
+      ]
+    },
+    {
       "id": "table:correlation_suppressions",
       "label": "correlation_suppressions",
       "kind": "table",
@@ -959,6 +971,18 @@
         {
           "type": "table",
           "ref": "otx_pulses"
+        }
+      ]
+    },
+    {
+      "id": "table:pulse_families",
+      "label": "pulse_families",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "pulse_families"
         }
       ]
     },
