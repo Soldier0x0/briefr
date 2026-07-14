@@ -17,9 +17,10 @@ JSX/CSS, no component library), **PostgreSQL required in production**.
 - Not on PATH: `sqlite3`, `psql`, `wmic`. Foreground `sleep` is blocked —
   for waits, run the command as a background task and act on its
   completion notification; never poll in a loop.
-- Postgres test run (danger zone 1 "both ways"): container `briefr-pg-test`
-  on port 5433 →
-  `DATABASE_URL=postgresql://briefr:briefr@localhost:5433/briefr python -m pytest tests/ -q`
+- Postgres test run (danger zone 1 "both ways"): `./scripts/postgres-dev.sh start`
+  (container `briefr-pg-test` on port **5433**, avoids `:5432` conflicts) →
+  `DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5433/briefr python3 -m pytest tests/ -q`
+  (from `backend/`). Persistent local stack: `docker compose -f deploy/docker-compose.postgres.yml up -d` on `:5432`.
 - Dev servers only via `.claude/launch.json` / preview_start — raw Bash
   servers collide with other sessions' ports (8000/5173).
 - Browser E2E against local SQLite: seed ≥10 CVEs or quiet the scheduler
