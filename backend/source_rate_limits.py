@@ -33,15 +33,27 @@ class SourcePacing:
 
 
 def _nvd_interval() -> float:
+    # NVD publishes 50/30s (key) and 5/30s (anon). Use 60s divisor for headroom.
     if os.environ.get("NVD_API_KEY", "").strip():
-        return 60.0 / 50.0  # 50 requests per 30s window
-    return 60.0 / 5.0  # 5 requests per 30s window
+        return 60.0 / 50.0
+    return 60.0 / 5.0
 
 
 def _github_interval() -> float:
     if os.environ.get("GITHUB_TOKEN", "").strip():
         return 3600.0 / 5000.0  # 5,000 req/hour authenticated
-    return 6.0  # unauthenticated search: ~10/min
+    return 3600.0 / 60.0  # 60 req/hour unauthenticated (GitHub REST + raw)
+
+
+def get_openrouter_daily_limit() -> int | None:
+    """OpenRouter free tier: 50 req/day without credits; override via env."""
+    raw = os.environ.get("OPENROUTER_DAILY_LIMIT", "50").strip()
+    if not raw or raw.lower() in ("none", "0", "unlimited"):
+        return None
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return 50
 
 
 # Pacing profile key -> limits. Multiple circuit sources map via resolve_pacing_key().
@@ -49,7 +61,7 @@ PACING_PROFILES: dict[str, SourcePacing] = {
     "nvd": SourcePacing(
         min_interval_seconds=6.0,
         docs_url="https://nvd.nist.gov/developers/start",
-        notes="Overridden at runtime when NVD_API_KEY is set (50 req/30s).",
+        notes="Overridden at runtime when NVD_API_KEY is set (conservative vs 50/30s).",
     ),
     "groq": SourcePacing(
         min_interval_seconds=15.0,
@@ -132,12 +144,30 @@ PACING_PROFILES: dict[str, SourcePacing] = {
         notes="Outbound Discord/Telegram/custom webhooks.",
     ),
     "sploitus": SourcePacing(min_interval_seconds=1.0),
-    "circl": SourcePacing(min_interval_seconds=0.5),
-    "malwarebazaar": SourcePacing(min_interval_seconds=0.5),
-    "urlhaus": SourcePacing(min_interval_seconds=0.5),
-    "poc_github": SourcePacing(
-        min_interval_seconds=0.5,
-        docs_url="https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api",
+    "circl": SourcePacing(
+        min_interval_seconds=2.0,
+        docs_url="https://cve.circl.lu/",
+        notes="abuse.ch fair-use spacing (~1 req/2s).",
+    ),
+    "malwarebazaar": SourcePacing(
+        min_interval_seconds=2.0,
+        docs_url="https://bazaar.abuse.ch/api/",
+        notes="abuse.ch fair-use spacing (~1 req/2s).",
+    ),
+    "urlhaus": SourcePacing(
+        min_interval_seconds=2.0,
+        docs_url="https://urlhaus.abuse.ch/api/",
+        notes="abuse.ch fair-use spacing (~1 req/2s).",
+    ),
+    "threatfox": SourcePacing(
+        min_interval_seconds=2.0,
+        docs_url="https://threatfox.abuse.ch/api/",
+        notes="abuse.ch fair-use spacing (~1 req/2s).",
+    ),
+    "vulncheck": SourcePacing(
+        min_interval_seconds=60.0 / 1000.0,
+        docs_url="https://docs.vulncheck.com/",
+        notes="Community tier ~1,000 req/min; conservative default spacing.",
     ),
     "default": SourcePacing(min_interval_seconds=1.0),
 }

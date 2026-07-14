@@ -113,7 +113,7 @@ async def fetch_threatfox_iocs(auth_key: str, *, days: int = 7) -> list[dict[str
             queue_context_type="task",
             queue_context_id="threatfox_sync",
         )
-        record_api_call("threatfox")
+        await record_api_call("threatfox", 1)
     except CircuitOpenError:
         logger.warning("ThreatFox circuit open — skipping sync")
         return []

@@ -319,7 +319,7 @@ async def lookup_ioc(
             if not result["country"]:
                 result["country"] = parsed.get("country_code")
 
-        if include_greynoise and greynoise_key and db is not None:
+        if include_greynoise and greynoise_key and db is not None and await has_quota("greynoise"):
             from feeds.extended import greynoise_for_ip
             from templates.intelligence import greynoise_sentence
 

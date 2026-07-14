@@ -12,7 +12,22 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-14 — cvelistV5 sync Postgres timeout fix (in PR)
+---
+
+## 2026-07-14 — Rate-limit pacing + quota enforcement — merged (#545)
+
+**What:** Tightened outbound API pacing and quota gates per provider docs audit:
+GitHub unauthenticated 60/hr; VulnCheck + ThreatFox profiles; abuse.ch feeds 1 req/2s;
+Cerebras free-tier defaults 5 RPM / 30K TPM; `has_quota()` enforces weekly (GreyNoise)
+and monthly (VirusTotal) caps; OpenRouter daily cap (default 50, `OPENROUTER_DAILY_LIMIT`);
+fixed missing `await record_api_call` in ThreatFox/VulnCheck sync; GreyNoise IOC gated on
+weekly quota; API key health accepts GreyNoise HTTP 404 as healthy.
+
+**Verify:** deploy and confirm GreyNoise health checks stop false unhealthy notifications.
+
+---
+
+## 2026-07-14 — cvelistV5 sync Postgres timeout fix — merged (#544)
 
 **What:** Production `cvelistv5_incremental_sync` failed every ~30m with bare
 `DatabaseError` when GitHub compare returned a large delta (up to 300 CVE JSON
@@ -23,14 +38,11 @@ open for hundreds of per-row statements; asyncpg `command_timeout` (60s) raised
 
 **Fix:** Batch new-row inserts via `upsert_cves`; commit every 50 enrichments
 (`ADDITIVE_ENRICHMENT_COMMIT_CHUNK`) in scheduler cvelistV5 + vulnrichment apply
-paths; map `TimeoutError` to `PostgreSQL command timeout` in `db/errors.py`;
+paths; map `TimeoutError` to `Database command timeout` in `db/errors.py`;
 record `records_upserted` on cvelist last-run metadata.
 
-**Verify:** `pytest tests/test_db_errors.py tests/test_intel_feeds.py`; deploy +
-watch `scheduler.last_run.cvelistv5_incremental_sync` for `had_error: false` on
-the next heavy delta.
-
-**Next:** remaining notification issues (GreyNoise 404 health probe, etc.).
+**Verify:** deploy + watch `scheduler.last_run.cvelistv5_incremental_sync` for
+`had_error: false` on the next heavy delta.
 
 ---
 

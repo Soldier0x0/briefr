@@ -63,7 +63,7 @@ async def fetch_vulncheck_kev_cve_ids(api_key: str, *, limit: int = 5000) -> lis
                 queue_context_type="task",
                 queue_context_id="vulncheck_sync",
             )
-            record_api_call("vulncheck")
+            await record_api_call("vulncheck", 1)
         except CircuitOpenError:
             logger.warning("VulnCheck circuit open — skipping sync")
             break

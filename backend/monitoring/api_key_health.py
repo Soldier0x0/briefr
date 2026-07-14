@@ -10,6 +10,8 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable
 
+import httpx
+
 from database import get_sync_state_value, set_sync_state_value
 from resilient_client import resilient_request
 
@@ -62,6 +64,7 @@ async def _ping_json(
             headers=headers or {},
             params=params,
             timeout=20.0,
+            record_client_error=False,
         )
         latency_ms = int((time.monotonic() - started) * 1000)
         healthy = response.status_code in ok_statuses
@@ -70,6 +73,16 @@ async def _ping_json(
             "status_code": response.status_code,
             "latency_ms": latency_ms,
             "error": None if healthy else f"HTTP {response.status_code}",
+        }
+    except httpx.HTTPStatusError as exc:
+        latency_ms = int((time.monotonic() - started) * 1000)
+        status_code = exc.response.status_code
+        healthy = status_code in ok_statuses
+        return {
+            "healthy": healthy,
+            "status_code": status_code,
+            "latency_ms": latency_ms,
+            "error": None if healthy else f"HTTP {status_code}",
         }
     except Exception as exc:
         latency_ms = int((time.monotonic() - started) * 1000)
