@@ -1436,6 +1436,28 @@
   background: var(--admin-purple-dim);
 }
 
+/* Status legend disclosure (UI overhaul 3b) */
+.nav-status-legend {
+  margin: 8px 10px 16px;
+}
+
+.nav-status-legend-summary {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 6px 2px;
+  user-select: none;
+}
+
+.nav-status-legend-summary:hover {
+  color: var(--text2);
+}
+
+.nav-status-legend[open] .nav-status-legend-summary {
+  color: var(--text2);
+}
+
 /* Legacy status bar refresh */
 .admin-statusbar {
   position: sticky;

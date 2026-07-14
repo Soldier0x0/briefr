@@ -1,11 +1,11 @@
 import { HelpCircle } from 'lucide-react'
 
 const LEGEND = [
-  { tag: 'ACTIVE', className: 'active', desc: 'Job is scheduled and running on its interval.' },
-  { tag: 'PAUSED', className: 'paused', desc: 'Temporarily stopped; resume when ready.' },
-  { tag: 'LOCKED', className: 'locked', desc: 'Blocked by dependency or global pause.' },
-  { tag: 'DISABLED', className: 'disabled', desc: 'Turned off in configuration.' },
-  { tag: 'CIRCUIT', className: 'circuit', desc: 'Upstream source tripped the circuit breaker.' },
+  { tag: 'ACTIVE', className: 'active', desc: 'Scheduled and running on its interval.' },
+  { tag: 'PAUSED', className: 'paused', desc: "Won't run until you resume it." },
+  { tag: 'LOCKED', className: 'locked', desc: "Currently executing — can't be triggered again until done." },
+  { tag: 'DISABLED', className: 'disabled', desc: 'Turned off in configuration (API keys & config).' },
+  { tag: 'CIRCUIT', className: 'circuit', desc: 'Upstream source failing — circuit breaker open, retries paused.' },
 ]
 
 export default function StatusLegend({ compact = false }) {
