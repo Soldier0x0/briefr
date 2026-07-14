@@ -212,7 +212,7 @@ no collateral skip-decorator corruption. Full SQLite suite green (no regressions
 | **37 / UX-C2** | CVE card action row + feed surfaces to `.ui-btn` standard (red = destructive only) | ✅ #475 |
 | **38 / UX-J1** | Domain-term explanation sweep (PRODUCT.md principle 6): KEV, EPSS, CVSS, CWE, CAPEC, ATT&CK IDs get HelpTip/ExplainTip coverage on feed, drawer, Forge | ✅ (this PR) — audit found feed mostly covered (FilterBar/StatsRow/CVECard EPSS); filled gaps: drawer CWE tags, ATT&CK section hint, CVECard CVSS badge, Forge KEV badges + CWE/EPSS columns + pack context line |
 | **39 / UX-L1** | "Scope & limits" panel in About modal — render PRODUCT.md Scope & Limits content (copy is final, JSX only); browser-verify with the UX-C1 pass | ✅ (this PR) |
-| **Issue 21** | API key suffix + provider health ping in UI | 🔶 backend #435 — UI tail? |
+| **Issue 21** | API key suffix + provider health ping in UI | ✅ (this PR) — health table + Run check now on API keys page; suffix beside masked secrets |
 | **UI overhaul 3a** | Dismissible config banner (not permanent amber) | ✅ verified already fixed — the permanent `load_dotenv` amber banner no longer exists in `ApiKeysPage` |
 | **UI overhaul 3b** | Status legend component | ✅ (this PR) — orphan `StatusLegend.jsx` corrected (LOCKED/PAUSED/DISABLED copy now matches scheduler HelpTips) and mounted as a collapsible disclosure in the admin sidebar footer |
 | **UI overhaul §6** | Restart dropdown portal (clipped menu) | ✅ verified already fixed — `StatusBar.jsx` renders the restart menu via `createPortal` + `getBoundingClientRect` positioning |
@@ -282,7 +282,7 @@ tiles only.
 |------|--------|
 | **O-3 / N-1** | `WALLBOARD_TOKEN` in `config_schema` (same as §1) | ✅ #514 |
 | `?density=compact` layout mode | ✅ (this PR) |
-| Campaign tile, EPSS movers, enriched backend tiles | 📋 optional |
+| Campaign tile, EPSS movers, enriched backend tiles | ✅ wallboard v2 core + EPSS delta fix (this PR) |
 | QR / one-time setup card on Security page (N-4) | 🔶 docs in OPERATIONS.md; QR card not built |
 | `RATE_LIMIT_WALLBOARD_PER_MINUTE` in config schema | ✅ (this PR) — writable under section `app`, restart apply strategy, same pattern as O-3 |
 

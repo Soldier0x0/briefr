@@ -4,6 +4,7 @@ import { notifyBackendRestarting } from '../../utils/backendRestart.js'
 import HelpTip from './shared/HelpTip.jsx'
 import ToggleSwitch from './shared/ToggleSwitch.jsx'
 import DiffReviewModal from './shared/DiffReviewModal.jsx'
+import ApiKeyHealthPanel from './ApiKeyHealthPanel.jsx'
 import { TIMEZONES_BY_CONTINENT } from '../../utils/timezone.js'
 import { RATE_LIMIT_HINTS } from './rateLimits.js'
 
@@ -89,6 +90,10 @@ export default function ApiKeysPage({ toast }) {
   })
   const [showReview, setShowReview] = useState(false)
   const [applyingAll, setApplyingAll] = useState(false)
+  const [health, setHealth] = useState(null)
+  const [healthLoading, setHealthLoading] = useState(true)
+  const [healthError, setHealthError] = useState(null)
+  const [healthRunning, setHealthRunning] = useState(false)
 
   const sectionOpen = useCallback((sectionId) => (
     expandedSections[sectionId] ?? (sectionId === 'api_keys')
@@ -106,6 +111,56 @@ export default function ApiKeysPage({ toast }) {
     adminApi.get('/config').then(r => r.json()).then(setConfig).catch(() => {})
     adminApi.get('/config/schema').then(r => r.json()).then(setSchema).catch(() => {})
   }, [])
+
+  const loadHealth = useCallback(async () => {
+    setHealthLoading(true)
+    setHealthError(null)
+    try {
+      const res = await adminApi.get('/api-keys/health')
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail || `HTTP ${res.status}`)
+      }
+      setHealth(await res.json())
+    } catch (e) {
+      setHealthError(e)
+      setHealth(null)
+    } finally {
+      setHealthLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadHealth()
+  }, [loadHealth])
+
+  const runHealthCheck = useCallback(async () => {
+    setHealthRunning(true)
+    try {
+      const { data } = await adminApi.postJson('/api-keys/health/run', {})
+      setHealth({
+        providers: data.providers || [],
+        configured_count: data.configured_count,
+        healthy_count: data.healthy_count,
+        checked_at: data.checked_at,
+      })
+      const checked = data.stats?.checked ?? data.configured_count ?? 0
+      const healthy = data.stats?.healthy ?? data.healthy_count ?? 0
+      toast(`Health check complete — ${healthy}/${checked} configured providers healthy`, true)
+    } catch (e) {
+      toast(`Health check failed: ${e.message || String(e)}`, false)
+    } finally {
+      setHealthRunning(false)
+    }
+  }, [toast])
+
+  const healthByEnvKey = useMemo(() => {
+    const map = {}
+    for (const row of health?.providers || []) {
+      map[row.env_key] = row
+    }
+    return map
+  }, [health])
 
   async function reloadConfig() {
     try {
@@ -203,6 +258,8 @@ export default function ApiKeysPage({ toast }) {
     const isEditing = editVal !== undefined
     const isSaving = savingKeys.has(envKey)
     const label = field?.display_label || envKey
+    const healthRow = healthByEnvKey[envKey]
+    const keySuffix = isSecret && healthRow?.key_suffix ? healthRow.key_suffix : null
     const strategy = field?.apply_strategy || (field?.restart_required ? 'restart' : 'immediate')
     const restartRequired = strategy === 'restart'
     const helpText = field?.help_text || ''
@@ -233,6 +290,14 @@ export default function ApiKeysPage({ toast }) {
               ) : (
                 <span className="mono admin-input admin-input-display" title={isSecret ? undefined : displayValue}>
                   {displayValue}
+                  {keySuffix && (
+                    <span className="config-key-suffix mono" title="Key suffix from health check">
+                      {' '}
+                      (
+                      {keySuffix}
+                      )
+                    </span>
+                  )}
                 </span>
               )}
               <div className="config-row-actions">
@@ -335,6 +400,15 @@ export default function ApiKeysPage({ toast }) {
         <span className="badge badge-warn" style={{ fontSize: '0.6rem', margin: '0 0.25rem' }}>restart</span>
         and restart the backend after save.
       </p>
+
+      <ApiKeyHealthPanel
+        health={health}
+        loading={healthLoading}
+        error={healthError}
+        running={healthRunning}
+        onRefresh={loadHealth}
+        onRun={runHealthCheck}
+      />
 
       {SECTIONS.map(section => {
         const fields = fieldsBySection[section.id] || []
