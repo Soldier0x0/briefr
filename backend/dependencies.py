@@ -130,18 +130,24 @@ async def require_admin(request: Request) -> dict:
     return {**payload, "role": user["role"]}
 
 
-async def audit(request: Request, action: str, target: str = "") -> None:
+async def audit(request: Request, action: str, target: str = "", metadata: dict | None = None) -> None:
     """Record an audited action. request.state.user_username is populated by
     require_user() once a session cookie is presented.
 
     Best-effort: write contention (e.g. bootstrap ingest holding the DB)
     must not turn an otherwise valid admin action into a 500.
     """
+    from structured_logging import request_id_var
+
     actor = getattr(request.state, "user_username", None)
+    meta = dict(metadata) if metadata else {}
+    request_id = request_id_var.get()
+    if request_id:
+        meta.setdefault("request_id", request_id)
     try:
         db = await get_db()
         try:
-            await write_audit_log(db, actor, action, target)
+            await write_audit_log(db, actor, action, target, meta or None)
             await db.commit()
         finally:
             await db.close()

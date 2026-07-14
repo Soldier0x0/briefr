@@ -47,3 +47,17 @@ def test_mask_audit_log_target_preserves_non_secret():
 def test_mask_audit_log_target_preserves_already_masked():
     masked = "gsk_…1234"
     assert mask_audit_log_target("config.set.GROQ_API_KEY", masked) == masked
+
+
+def test_redact_audit_metadata_masks_secret_values():
+    from redact import mask_audit_log_metadata, redact_audit_metadata
+
+    secret = "gsk_legacyPlaintextKey9999"
+    raw = {"api_key": secret, "changed_keys": ["GROQ_API_KEY"]}
+    stored = redact_audit_metadata("config.apply", raw)
+    assert stored["changed_keys"] == ["GROQ_API_KEY"]
+    assert secret not in stored["api_key"]
+    assert "…" in stored["api_key"]
+
+    masked = mask_audit_log_metadata("config.apply", raw)
+    assert secret not in masked["api_key"]

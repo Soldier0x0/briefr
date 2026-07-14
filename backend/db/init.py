@@ -549,6 +549,7 @@ async def init_db() -> None:
                 actor TEXT NOT NULL DEFAULT '',
                 action TEXT NOT NULL,
                 target TEXT NOT NULL DEFAULT '',
+                metadata_json TEXT,
                 created_at TEXT DEFAULT (datetime('now'))
             );
 
@@ -949,6 +950,7 @@ async def init_db() -> None:
             """,
             _RESOURCE_METRICS_TABLE_SQL,
             _RESOURCE_METRICS_IDX_SQL,
+            "ALTER TABLE audit_log ADD COLUMN metadata_json TEXT",
         ):
             try:
                 await db.execute(migration)

@@ -1378,13 +1378,18 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
         return {"ok": True, "changed_keys": [], "message": "No changes to apply"}
 
     changed_summary = ", ".join(changed_keys[:10])
-    await audit(request, "config.apply", changed_summary)
-
     restart_needed = any(
         (get_field(k) and resolved_apply_strategy(get_field(k)) == APPLY_RESTART)
         or k in RESTART_REQUIRED_KEYS
         for k in changed_keys
     )
+    await audit(
+        request,
+        "config.apply",
+        changed_summary,
+        metadata={"changed_keys": changed_keys, "restart_needed": restart_needed},
+    )
+
     side_effects = _apply_config_side_effects(changed_keys)
     if restart_needed:
         background_tasks.add_task(trigger_graceful_restart)
@@ -2261,7 +2266,8 @@ async def get_audit_log(
             conditions.append("actor = ?")
             params.append(actor)
         if q:
-            conditions.append("(target LIKE ? OR action LIKE ?)")
+            conditions.append("(target LIKE ? OR action LIKE ? OR metadata_json LIKE ?)")
+            params.append(f"%{q}%")
             params.append(f"%{q}%")
             params.append(f"%{q}%")
 
@@ -2276,7 +2282,7 @@ async def get_audit_log(
         params_paginated = params + [limit, offset]
         rows = await db.execute_fetchall(
             f"""
-            SELECT id, actor, action, target, created_at
+            SELECT id, actor, action, target, metadata_json, created_at
             FROM audit_log
             {where}
             ORDER BY created_at DESC
@@ -2287,12 +2293,23 @@ async def get_audit_log(
     finally:
         await db.close()
 
-    from redact import mask_audit_log_target
+    import json
+
+    from redact import mask_audit_log_metadata, mask_audit_log_target
 
     masked_rows = []
     for row in rows:
         item = dict(row)
         item["target"] = mask_audit_log_target(item.get("action", ""), item.get("target"))
+        raw_meta = item.pop("metadata_json", None)
+        if raw_meta:
+            try:
+                parsed = json.loads(raw_meta)
+            except json.JSONDecodeError:
+                parsed = None
+            item["metadata"] = mask_audit_log_metadata(item.get("action", ""), parsed)
+        else:
+            item["metadata"] = None
         masked_rows.append(item)
 
     return {"rows": masked_rows, "total": total}
