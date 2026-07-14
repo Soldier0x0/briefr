@@ -12,6 +12,19 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — UX §5 operator tail (items 30/32/33 + 28/31 verified) — merged (this PR)
+
+**What:** `GET /api/admin/logs` gains `since`/`until` ISO time bounds (+ datetime inputs
+in IngestLogPage). SchedulerPage: job name/id search box beside status chips; Manual
+triggers retitled "Pinned quick triggers" with a single-run-path HelpTip. Items 28
+(expandable rows) and 31 (run_id linking) verified already shipped. Item 29 stays
+deferred (needs `metadata_json` migration decision).
+
+**Next:** backlog drained to: QA-U2 (design pass), PR-P4 (optional), item 29 (decision),
+UI overhaul 3a/3b/§6 verify, PR3 tooltip follow-up, parked programs.
+
+---
+
 ## 2026-07-14 — UX-J1: domain-term explanation sweep — merged (this PR)
 
 **What:** Audit found feed surfaces largely covered (FilterBar/StatsRow/CVECard). Filled

@@ -16,6 +16,8 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
   const [runId, setRunId] = useState(urlFilters.runId || '')
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
+  const [since, setSince] = useState('')
+  const [until, setUntil] = useState('')
   const [limit, setLimit] = useState(100)
   const [autoRefresh, setAutoRefresh] = useState(false)
   const [expanded, setExpanded] = useState(() => new Set())
@@ -52,6 +54,8 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
     if (jobId) params.set('job_id', jobId)
     if (runId) params.set('run_id', runId)
     if (search) params.set('search', search)
+    if (since) params.set('since', new Date(since).toISOString())
+    if (until) params.set('until', new Date(until).toISOString())
     try {
       const res = await adminApi.get(`/logs?${params}`)
       const data = await res.json()
@@ -63,7 +67,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
     } catch { }
   }
 
-  useEffect(() => { loadLogs() }, [level, category, loggerFilter, reqId, jobId, runId, search, limit])
+  useEffect(() => { loadLogs() }, [level, category, loggerFilter, reqId, jobId, runId, search, since, until, limit])
 
   useEffect(() => {
     const handler = setTimeout(() => setSearch(searchInput.trim()), SEARCH_DEBOUNCE_MS)
@@ -77,7 +81,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
       clearInterval(intervalRef.current)
     }
     return () => clearInterval(intervalRef.current)
-  }, [autoRefresh, active, level, category, loggerFilter, reqId, jobId, runId, search, limit])
+  }, [autoRefresh, active, level, category, loggerFilter, reqId, jobId, runId, search, since, until, limit])
 
   function exportLogs() {
     const lines = logs.map(e => JSON.stringify(e)).join('\n')
@@ -153,6 +157,22 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
         <input className="admin-input" placeholder="job_id…" value={jobId} onChange={e => setJobId(e.target.value)} style={{ minWidth: 140 }} />
         <input className="admin-input" placeholder="run_id…" value={runId} onChange={e => setRunId(e.target.value)} style={{ minWidth: 120 }} />
         <input className="admin-input" placeholder="request_id…" value={reqId} onChange={e => setReqId(e.target.value)} style={{ minWidth: 160 }} />
+        <input
+          className="admin-input"
+          type="datetime-local"
+          value={since}
+          onChange={e => setSince(e.target.value)}
+          title="Only entries at or after this time (local, converted to UTC)"
+          aria-label="From time"
+        />
+        <input
+          className="admin-input"
+          type="datetime-local"
+          value={until}
+          onChange={e => setUntil(e.target.value)}
+          title="Only entries at or before this time (local, converted to UTC)"
+          aria-label="To time"
+        />
         <select className="admin-select" value={limit} onChange={e => setLimit(Number(e.target.value))}>
           {[50, 100, 250, 500].map(n => <option key={n} value={n}>{n} entries</option>)}
         </select>
@@ -173,7 +193,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
           </thead>
           <tbody>
             {logs.length === 0 && !logData && <tr><td colSpan={8} className="admin-empty">Loading…</td></tr>}
-            {logs.length === 0 && logData && <tr><td colSpan={8} className="admin-empty">{level || category || loggerFilter || reqId || jobId || runId ? 'No log entries match the current filters — try a broader level or clear the filters' : 'Log buffer is empty — backend activity will appear here once jobs run'}</td></tr>}
+            {logs.length === 0 && logData && <tr><td colSpan={8} className="admin-empty">{level || category || loggerFilter || reqId || jobId || runId || since || until ? 'No log entries match the current filters — try a broader level, wider time range, or clear the filters' : 'Log buffer is empty — backend activity will appear here once jobs run'}</td></tr>}
             {logs.map((entry) => {
               const expandable = hasDetail(entry)
               const entryKey = `${entry.ts}-${entry.logger}-${entry.request_id}-${entry.job_id || ''}-${entry.message}`

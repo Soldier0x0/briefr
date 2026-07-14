@@ -143,6 +143,8 @@ class _RingBufferHandler(logging.Handler):
         run_id: str | None = None,
         category: str | None = None,
         search: str | None = None,
+        since: str | None = None,
+        until: str | None = None,
     ) -> list[dict[str, Any]]:
         needle = search.lower().strip() if search else None
         results = []
@@ -158,6 +160,12 @@ class _RingBufferHandler(logging.Handler):
             if run_id and entry.get("run_id") != run_id:
                 continue
             if category and entry.get("category") != category:
+                continue
+            # Entries carry ISO-8601 UTC timestamps, so lexicographic
+            # comparison is chronological (Issue 30: server-side time range).
+            if since and entry["ts"] < since:
+                continue
+            if until and entry["ts"] > until:
                 continue
             if needle:
                 haystack = " ".join(
@@ -197,6 +205,8 @@ def get_log_buffer(
     run_id: str | None = None,
     category: str | None = None,
     search: str | None = None,
+    since: str | None = None,
+    until: str | None = None,
 ) -> list[dict[str, Any]]:
     return _ring_handler.get_logs(
         limit=limit,
@@ -207,6 +217,8 @@ def get_log_buffer(
         run_id=run_id,
         category=category,
         search=search,
+        since=since,
+        until=until,
     )
 
 

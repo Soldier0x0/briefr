@@ -25,6 +25,7 @@ export default function SchedulerPage({ toast, system }) {
   const [pauseAllConfirm, setPauseAllConfirm] = useState(false)
   const [resumeAllConfirm, setResumeAllConfirm] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
+  const [jobSearch, setJobSearch] = useState('')
   const [page, setPage] = useState(0)
 
   async function loadJobs() {
@@ -107,7 +108,15 @@ export default function SchedulerPage({ toast, system }) {
   }
 
   const activeLocks = system?.active_locks || []
-  const filteredJobs = jobs ? (statusFilter ? jobs.filter(j => j.status === statusFilter) : jobs) : null
+  const searchNeedle = jobSearch.trim().toLowerCase()
+  const filteredJobs = jobs
+    ? jobs.filter(j => {
+        if (statusFilter && j.status !== statusFilter) return false
+        if (!searchNeedle) return true
+        const haystack = `${j.id} ${j.name || ''} ${jobLabel(j.id, 'operator')}`.toLowerCase()
+        return haystack.includes(searchNeedle)
+      })
+    : null
 
   useEffect(() => {
     if (filteredJobs && page > 0 && page * PAGE_SIZE >= filteredJobs.length) {
@@ -141,8 +150,8 @@ export default function SchedulerPage({ toast, system }) {
 
       <div className="admin-card">
         <div className="admin-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          Manual triggers
-          <HelpTip text="Run an individual data sync right now without waiting for the schedule. A job shows 'Running…' while active and cannot be triggered again until it finishes (LOCKED status)." />
+          Pinned quick triggers
+          <HelpTip text="Shortcuts for the most common syncs — every job (including these) can also be run from its row in the All jobs table below; both use the same run path. A job shows 'Running…' while active and cannot be triggered again until it finishes (LOCKED status)." />
         </div>
         <div className="admin-action-bar" style={{ flexWrap: 'wrap' }}>
           {MANUAL_PIPELINES.map(p => {
@@ -174,13 +183,21 @@ export default function SchedulerPage({ toast, system }) {
           All jobs
           <HelpTip text="ACTIVE = running on schedule. PAUSED = won't run until you resume it. LOCKED = currently executing (can't be triggered again until done). DISABLED = registered but turned off in configuration — enable the matching setting under API keys & config." />
         </div>
-        <div className="admin-filter-chips" style={{ marginBottom: '0.75rem' }}>
+        <div className="admin-filter-chips" style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
           <button className={`filter-chip ${statusFilter === '' ? 'active' : ''}`} onClick={() => { setStatusFilter(''); setPage(0) }}>All</button>
           {STATUS_FILTERS.map(s => (
             <button key={s} className={`filter-chip ${statusFilter === s ? 'active' : ''}`} onClick={() => { setStatusFilter(s); setPage(0) }}>
               {s}
             </button>
           ))}
+          <input
+            className="admin-input"
+            placeholder="Search jobs…"
+            value={jobSearch}
+            onChange={e => { setJobSearch(e.target.value); setPage(0) }}
+            style={{ minWidth: 180, marginLeft: 'auto' }}
+            aria-label="Search jobs by name or id"
+          />
         </div>
         <JobTable jobs={pagedJobs} onRunNow={runNow} onPauseResume={pauseResume} />
         {filteredJobs && filteredJobs.length > PAGE_SIZE && (

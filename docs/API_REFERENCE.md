@@ -1785,7 +1785,7 @@ Body `{drain?: bool}`. When `drain=true`: waits up to 120s for all job locks to 
 ### GET /api/admin/logs
 Admin-gated read-only tail of the in-process ring buffer (last 500 JSON log lines captured at emit time — no `journalctl` or shell). Shares the refresh token-bucket rate limit.
 
-Params: `limit` (1–500, default 100), `level` (exact match, e.g. `ERROR`), `logger` (exact logger name), `request_id` (exact match), `job_id` (scheduler job id, exact match), `run_id` (scheduler run id from last-run history, exact match), `category` (`Application` | `Scheduler` | `Backup` | `Webhooks` | `Security`), `search` (case-insensitive substring over message, exc_info, job_id, run_id, error_type).
+Params: `limit` (1–500, default 100), `level` (exact match, e.g. `ERROR`), `logger` (exact logger name), `request_id` (exact match), `job_id` (scheduler job id, exact match), `run_id` (scheduler run id from last-run history, exact match), `category` (`Application` | `Scheduler` | `Backup` | `Webhooks` | `Security`), `search` (case-insensitive substring over message, exc_info, job_id, run_id, error_type), `since` / `until` (ISO-8601 UTC bounds, inclusive — lexicographic against entry timestamps).
 
 Response: `{logs: [{ts, level, logger, message, request_id, category, job_id?, run_id?, error_type?, exc_info?, ...}], known_loggers: [...], categories: [...], buffer_capacity: 500}`. Secret-like `extra` fields are redacted to `[REDACTED]` in buffer entries.
 

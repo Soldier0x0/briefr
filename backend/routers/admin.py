@@ -2159,6 +2159,8 @@ async def get_logs(
     run_id: str | None = Query(None),
     category: str | None = Query(None),
     search: str | None = Query(None, max_length=200),
+    since: str | None = Query(None, max_length=40, description="ISO-8601 UTC lower bound (inclusive)"),
+    until: str | None = Query(None, max_length=40, description="ISO-8601 UTC upper bound (inclusive)"),
 ):
     logs = get_log_buffer(
         limit=limit,
@@ -2169,6 +2171,8 @@ async def get_logs(
         run_id=run_id,
         category=category,
         search=search,
+        since=since,
+        until=until,
     )
     known = get_known_loggers()
 
