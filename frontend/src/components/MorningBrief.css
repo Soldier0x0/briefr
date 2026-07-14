@@ -105,9 +105,9 @@
 }
 
 .morning-brief-filter-chip--active {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--bg2));
+  border-color: var(--accent-selected);
+  color: var(--accent-selected);
+  background: var(--surface-selected);
 }
 
 .morning-brief-filter-chip--due {

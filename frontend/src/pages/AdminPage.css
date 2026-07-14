@@ -2187,7 +2187,7 @@
 }
 
 .admin-subtab { transition: color 0.15s, border-bottom-color 0.15s; }
-.admin-subtab.active { color: var(--red); border-bottom-color: var(--red); }
+.admin-subtab.active { color: var(--accent-selected); border-bottom-color: var(--accent-selected); }
 .admin-subtab:hover  { color: var(--text2); }
 
 /* ── Filter chips ───────────────────────────────────────────────────────── */
@@ -2211,7 +2211,7 @@
 }
 
 .filter-chip:hover { background: var(--bg3); color: var(--text2); }
-.filter-chip.active { background: var(--red-dim); color: var(--red); border-color: var(--red); }
+.filter-chip.active { background: var(--surface-selected); color: var(--accent-selected); border-color: var(--accent-selected); }
 
 /* ── Action bar ─────────────────────────────────────────────────────────── */
 

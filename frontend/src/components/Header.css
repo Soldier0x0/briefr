@@ -86,9 +86,9 @@
 }
 
 .header-tab.active {
-  color: #fff;
-  background: linear-gradient(to right, #e85433 0%, #e85433 100%);
-  border-color: #e85433;
+  color: var(--text-on-accent);
+  background: var(--accent-selected);
+  border-color: var(--accent-selected);
 }
 
 /* Right */
@@ -486,8 +486,8 @@
   }
 
   .mobile-tab.active {
-    color: #fff;
-    background: linear-gradient(to right, #e85433 0%, #e85433 100%);
+    color: var(--text-on-accent);
+    background: var(--accent-selected);
   }
 }
 
