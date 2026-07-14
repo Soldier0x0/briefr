@@ -2,6 +2,7 @@ import logging
 
 import httpx
 
+from feeds.errors import FeedFetchError
 from resilient_client import CircuitOpenError, resilient_get
 from tracking import record_api_call
 
@@ -55,20 +56,22 @@ async def fetch_kev() -> list[dict]:
             queue_context_id="kev_sync",
         )
         data = response.json()
-    except CircuitOpenError:
+    except CircuitOpenError as exc:
         logger.warning("KEV circuit open — skipping catalog fetch")
-        return []
+        raise FeedFetchError("KEV circuit open") from exc
     except httpx.HTTPStatusError as exc:
         logger.error("KEV HTTP error %s: %s", exc.response.status_code, exc)
-        return []
+        raise FeedFetchError(f"KEV HTTP {exc.response.status_code}") from exc
     except httpx.HTTPError as exc:
         logger.error("KEV request error: %s", exc)
-        return []
+        raise FeedFetchError("KEV request failed") from exc
     except Exception as exc:
         logger.error("KEV unexpected error: %s", exc)
-        return []
+        raise FeedFetchError("KEV fetch failed") from exc
 
     results = parse_kev_catalog(data)
+    if not results:
+        raise FeedFetchError("KEV catalog parsed empty")
     await record_api_call("kev", 1)
     logger.info("KEV fetch complete: %d entries retrieved", len(results))
     return results

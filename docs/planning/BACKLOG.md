@@ -75,7 +75,7 @@ before PR-9.
 |----|-------|--------|
 | PR-P3 | Index `cves.modified` | ✅ #516 |
 | PR-P4 | KEV upsert batching | 📋 optional |
-| PR-O1 | Feed empty → scheduler `had_error` | 📋 |
+| PR-O1 | Feed empty → scheduler `had_error` | ✅ in PR |
 | PR-O2 | Correlation GET read-only split (CACHE-001) | 📋 |
 | PR-F1 | Admin nav role gate + 403 redirect | 📋 |
 | PR-F2 | `safeExternalUrl` for feed links | 📋 |

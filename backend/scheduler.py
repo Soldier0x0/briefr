@@ -497,6 +497,7 @@ async def _run_kev_sync() -> None:
 
     except Exception as exc:
         logger.error("KEV sync failed: %s", exc)
+        raise
 
     duration = (datetime.now(timezone.utc) - start_time).total_seconds()
     logger.info("KEV metadata sync finished in %.1fs", duration)
