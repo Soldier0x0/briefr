@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
+from db.resource_metrics import purge_old_resource_metrics
 from db.types import DbConnection
 
 # Physical retention >= read TTL for each key family (hours).
@@ -331,5 +332,6 @@ async def run_retention_cleanup(db: DbConnection) -> dict[str, int]:
         "ai_operations": await purge_old_ai_operations(db),
         "webhook_delivery_log": await purge_old_webhook_delivery_log(db),
         "audit_log": await purge_old_audit_log(db),
+        "resource_metrics": await purge_old_resource_metrics(db),
         **otx,
     }

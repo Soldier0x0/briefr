@@ -229,7 +229,7 @@ Flat backlog after major programs above — **no strict order**; pick from here 
 |--------|-----|
 | Codebase audit | PR-P3, PR-O1, PR-O2, PR-F1–F4 (PR-P4 optional) |
 | API key health tail | AKH-2 (remove dead `/api/usage`, HelpTip on Inbound limits) |
-| QA / UX | QA-U1–U3, UX-J1, UX-L1 |
+| QA / UX | QA-U2–U3, UX-J1, UX-L1 |
 | Durability | PR-R1, PR-R2, PR-R4 (PR-R3 verify vs #449) |
 | Ops / test infra | M-9, M-10 verify, PG-002, PG-003 |
 | Resource benchmarking | RB-1, RB-2 |

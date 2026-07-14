@@ -28,6 +28,34 @@ _CREATE_IDX_CVES_MODIFIED_SQL = (
 
 _ALEMBIC_VERSION_SQL = "SELECT version_num FROM alembic_version LIMIT 1"
 
+_RESOURCE_METRICS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS resource_metrics (
+    ts TEXT PRIMARY KEY,
+    briefr_cpu_pct REAL,
+    briefr_rss_bytes INTEGER,
+    briefr_io_read_bps REAL,
+    briefr_io_write_bps REAL,
+    briefr_iops_r REAL,
+    briefr_iops_w REAL,
+    pg_cpu_pct REAL,
+    pg_rss_bytes INTEGER,
+    pg_iops_r REAL,
+    pg_iops_w REAL,
+    req_count INTEGER,
+    pg_xact_per_min REAL,
+    pg_blks_read_per_min REAL,
+    pg_cache_hit_pct REAL,
+    pg_db_size_bytes INTEGER,
+    disk_free_bytes INTEGER,
+    sys_cpu_pct REAL,
+    sys_mem_pct REAL
+)
+"""
+
+_RESOURCE_METRICS_IDX_SQL = (
+    "CREATE INDEX IF NOT EXISTS idx_resource_metrics_ts ON resource_metrics(ts)"
+)
+
 
 async def get_db() -> DbConnection:
     """Return a database connection (SQLite default, PostgreSQL when configured)."""
@@ -591,6 +619,31 @@ async def init_db() -> None:
                 ON threatfox_iocs(ioc_value);
             CREATE INDEX IF NOT EXISTS idx_threatfox_iocs_type_value
                 ON threatfox_iocs(ioc_type, ioc_value);
+
+            CREATE TABLE IF NOT EXISTS resource_metrics (
+                ts TEXT PRIMARY KEY,
+                briefr_cpu_pct REAL,
+                briefr_rss_bytes INTEGER,
+                briefr_io_read_bps REAL,
+                briefr_io_write_bps REAL,
+                briefr_iops_r REAL,
+                briefr_iops_w REAL,
+                pg_cpu_pct REAL,
+                pg_rss_bytes INTEGER,
+                pg_iops_r REAL,
+                pg_iops_w REAL,
+                req_count INTEGER,
+                pg_xact_per_min REAL,
+                pg_blks_read_per_min REAL,
+                pg_cache_hit_pct REAL,
+                pg_db_size_bytes INTEGER,
+                disk_free_bytes INTEGER,
+                sys_cpu_pct REAL,
+                sys_mem_pct REAL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_resource_metrics_ts
+                ON resource_metrics(ts);
         """)
         await db.commit()
 
@@ -894,6 +947,8 @@ async def init_db() -> None:
                 PRIMARY KEY (ioc_type, ioc_value)
             )
             """,
+            _RESOURCE_METRICS_TABLE_SQL,
+            _RESOURCE_METRICS_IDX_SQL,
         ):
             try:
                 await db.execute(migration)

@@ -1,0 +1,151 @@
+"""RB-1: resource metrics collector, storage, retention."""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+import resource_collector as collector_mod
+from db.config import is_postgres
+from db.resource_metrics import purge_old_resource_metrics
+from database import get_db, init_db
+from metrics.request_counter import read_and_reset_request_count, reset_for_tests
+from resource_collector import _pg_derived_rates, _rate_per_sec
+from tests.conftest import run_db_test
+
+
+def test_rate_per_sec_first_sample_is_none():
+    assert _rate_per_sec(100, None, 60.0) is None
+
+
+def test_rate_per_sec_computes_delta_over_elapsed():
+    assert _rate_per_sec(1100, 1000, 10.0) == 10.0
+
+
+def test_rate_per_sec_negative_delta_returns_none():
+    assert _rate_per_sec(50, 100, 10.0) is None
+
+
+def test_pg_derived_rates_first_sample_is_none_tuple():
+    curr = {
+        "xact_commit": 10,
+        "xact_rollback": 1,
+        "blks_read": 100,
+        "blks_hit": 900,
+        "db_size_bytes": 1_000_000,
+    }
+    assert _pg_derived_rates(curr, None, 60.0) == (None, None, None)
+
+
+def test_pg_derived_rates_cache_hit_from_deltas():
+    prev = {
+        "xact_commit": 100,
+        "xact_rollback": 5,
+        "blks_read": 200,
+        "blks_hit": 800,
+        "db_size_bytes": 1_000_000,
+    }
+    curr = {
+        "xact_commit": 160,
+        "xact_rollback": 10,
+        "blks_read": 260,
+        "blks_hit": 940,
+        "db_size_bytes": 1_050_000,
+    }
+    xact_per_min, blks_read_per_min, cache_hit = _pg_derived_rates(curr, prev, 60.0)
+    assert xact_per_min == 65.0
+    assert blks_read_per_min == 60.0
+    assert cache_hit == 70.0
+
+
+def test_request_counter_read_and_reset():
+    reset_for_tests()
+    from metrics.request_counter import increment_request_count
+
+    increment_request_count()
+    increment_request_count()
+    assert read_and_reset_request_count() == 2
+    assert read_and_reset_request_count() == 0
+
+
+def test_collect_and_store_sample_sqlite_null_pg_columns(tmp_path, monkeypatch):
+    if is_postgres():
+        return
+    db_path = tmp_path / "resource_metrics.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+    collector_mod.reset_collector_state_for_tests()
+    reset_for_tests()
+
+    async def _run():
+        await init_db()
+        db = await get_db()
+        try:
+            first = await collector_mod.collect_and_store_sample(db)
+            await db.commit()
+            assert first["briefr_io_read_bps"] is None
+            assert first["pg_xact_per_min"] is None
+            assert first["pg_db_size_bytes"] is None
+
+            second = await collector_mod.collect_and_store_sample(db)
+            await db.commit()
+            assert second["briefr_rss_bytes"] is not None
+
+            rows = await db.execute_fetchall(
+                "SELECT COUNT(*) AS n FROM resource_metrics"
+            )
+            assert rows[0]["n"] == 2
+        finally:
+            await db.close()
+
+    run_db_test(_run())
+
+
+def test_purge_old_resource_metrics(tmp_path, monkeypatch):
+    if is_postgres():
+        return
+    db_path = tmp_path / "resource_purge.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    async def _run():
+        await init_db()
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO resource_metrics (ts, briefr_rss_bytes, req_count)
+                VALUES (?, ?, ?)
+                """,
+                ("2000-01-01T00:00:00+00:00", 1000, 1),
+            )
+            await db.execute(
+                """
+                INSERT INTO resource_metrics (ts, briefr_rss_bytes, req_count)
+                VALUES (?, ?, ?)
+                """,
+                ("2099-01-01T00:00:00+00:00", 2000, 2),
+            )
+            await db.commit()
+            deleted = await purge_old_resource_metrics(db, retention_days=30)
+            await db.commit()
+            assert deleted >= 1
+            rows = await db.execute_fetchall("SELECT ts FROM resource_metrics")
+            assert len(rows) == 1
+            assert rows[0]["ts"].startswith("2099")
+        finally:
+            await db.close()
+
+    run_db_test(_run())
+
+
+def test_admin_job_run_map_includes_resource_metrics_sample():
+    from routers.admin import _JOB_RUN_MAP
+
+    assert "resource_metrics_sample" in _JOB_RUN_MAP
+
+
+def test_scheduler_lock_registered():
+    import scheduler_locks
+
+    assert "resource_metrics_sample" in scheduler_locks._LOCKS
