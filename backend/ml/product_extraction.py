@@ -33,6 +33,7 @@ from ai.llm_payload import has_substantive_source_text
 from ai.llm_session import llm_job_session
 from database import (
     get_cves_for_llm_product_extraction,
+    get_feed_cache,
     set_feed_cache,
     set_llm_affected_products,
 )
@@ -45,6 +46,12 @@ logger = logging.getLogger(__name__)
 # Errored attempts are not cached at all and retry on the next run.
 RETRY_HOURS = 168.0
 MAX_PRODUCTS_PER_CVE = 10
+
+# PR-R2 (REST-004): the raw LLM response is staged in feed_cache immediately
+# after the HTTP call returns — its own short commit, before parse/persist.
+# A crash in the persist window no longer re-bills the provider: the next
+# run replays the staged response instead of calling the API again.
+_STAGED_RESPONSE_PREFIX = "llm_products_raw:"
 
 SYSTEM_PROMPT = (
     "You are a vulnerability analyst. Extract the affected software from a "
@@ -226,6 +233,15 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, pro
             if progress_cb:
                 progress_cb(f"Processing CVE {index + 1} of {stats['candidates']}...")
 
+            async def _db_scope(fn):
+                if db is not None:
+                    return await fn(db)
+                conn = await get_db()
+                try:
+                    return await fn(conn)
+                finally:
+                    await conn.close()
+
             try:
                 description = (candidate.get("description") or "").strip()
                 if not has_substantive_source_text(description):
@@ -247,33 +263,64 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, pro
                         )
                         await conn.commit()
 
-                    if db is not None:
-                        await _cache_skip(db)
-                    else:
-                        conn = await get_db()
-                        try:
-                            await _cache_skip(conn)
-                        finally:
-                            await conn.close()
+                    await _db_scope(_cache_skip)
                     continue
 
-                result = await extract_products_via_llm(description)
+                # PR-R2: replay a staged response from a previous run that
+                # crashed between the LLM call and the persist — no re-bill.
+                staged_key = f"{_STAGED_RESPONSE_PREFIX}{cve_id.upper()}"
+
+                async def _read_staged(conn, _key=staged_key):
+                    return await get_feed_cache(conn, _key, max_age_hours=RETRY_HOURS)
+
+                staged = await _db_scope(_read_staged)
+                if staged is not None:
+                    logger.info(
+                        "Replaying staged LLM response for %s (provider=%s) — quota not re-billed",
+                        cve_id,
+                        staged.get("provider"),
+                    )
+                    products = parse_products_payload(staged.get("content") or "")
+                    provider = staged.get("provider")
+                    model = staged.get("model")
+                else:
+                    result = await extract_products_via_llm(description)
+                    if result is None:
+                        stats["errors"] += 1
+                        logger.warning(
+                            "LLM product extraction: all providers failed for %s (%d/%d)",
+                            cve_id,
+                            index + 1,
+                            len(candidates),
+                        )
+                        continue
+                    products, completion = result
+                    provider = completion.provider
+                    model = completion.model
+
+                    # Stage the raw response in its own commit BEFORE the
+                    # parse/persist below — the quota is already spent, so a
+                    # crash after this point never repeats the HTTP call.
+                    async def _stage(
+                        conn,
+                        _key=staged_key,
+                        _content=completion.content,
+                        _provider=provider,
+                        _model=model,
+                    ):
+                        await set_feed_cache(
+                            conn,
+                            _key,
+                            {"content": _content, "provider": _provider, "model": _model},
+                        )
+                        await conn.commit()
+
+                    await _db_scope(_stage)
             except Exception as exc:
                 stats["errors"] += 1
                 logger.error("LLM product extraction failed for %s: %s", cve_id, exc)
                 continue
 
-            if result is None:
-                stats["errors"] += 1
-                logger.warning(
-                    "LLM product extraction: all providers failed for %s (%d/%d)",
-                    cve_id,
-                    index + 1,
-                    len(candidates),
-                )
-                continue
-
-            products, completion = result
             written = False
             keys = products_to_affected_keys(products)
 
@@ -282,7 +329,8 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, pro
                 _cve_id=cve_id,
                 _keys=keys,
                 _products=products,
-                _completion=completion,
+                _provider=provider,
+                _model=model,
             ):
                 nonlocal written
                 if _keys:
@@ -295,20 +343,13 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, pro
                     f"llm_products:{_cve_id.upper()}",
                     {
                         "products": _products,
-                        "provider": _completion.provider,
-                        "model": _completion.model,
+                        "provider": _provider,
+                        "model": _model,
                         "written": written,
                     },
                 )
                 await conn.commit()
 
-            if db is not None:
-                await _persist(db)
-            else:
-                conn = await get_db()
-                try:
-                    await _persist(conn)
-                finally:
-                    await conn.close()
+            await _db_scope(_persist)
 
     return stats

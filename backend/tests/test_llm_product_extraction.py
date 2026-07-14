@@ -391,6 +391,106 @@ def test_run_extraction_all_providers_failed_is_not_negative_cached(tmp_path, mo
     assert cache_count == 0
 
 
+def test_run_extraction_replays_staged_response_without_rebilling(tmp_path, monkeypatch):
+    """PR-R2 (REST-004): a crash between the LLM call and the persist leaves a
+    staged raw response; the next run replays it instead of re-billing."""
+    monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "staged.db"))
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
+
+    async def must_not_be_called(description: str):
+        raise AssertionError("HTTP call repeated despite staged response")
+
+    monkeypatch.setattr(pex, "extract_products_via_llm", must_not_be_called)
+
+    async def run():
+        await init_db()
+        db = await database.get_db()
+        try:
+            await db.execute(
+                "INSERT INTO cves (cve_id, description, published, affected_products, cpe_matches) "
+                "VALUES ('CVE-2024-0001', 'RCE in acme widget', ?, '[]', '[]')",
+                (date.today().isoformat(),),
+            )
+            # Simulate the post-HTTP / pre-persist crash: staged raw response
+            # exists, but no negative-cache entry and no products written.
+            await database.set_feed_cache(
+                db,
+                "llm_products_raw:CVE-2024-0001",
+                {
+                    "content": json.dumps(
+                        {"products": [{"vendor": "acme", "product": "widget", "version_range": "< 2.0"}]}
+                    ),
+                    "provider": "groq",
+                    "model": "openai/gpt-oss-20b",
+                },
+            )
+            await db.commit()
+
+            stats = await run_llm_product_extraction(db)
+            row = dict(
+                (await db.execute_fetchall(
+                    "SELECT affected_products, affected_products_source FROM cves "
+                    "WHERE cve_id = 'CVE-2024-0001'"
+                ))[0]
+            )
+            cache_rows = await db.execute_fetchall(
+                "SELECT cache_key, result FROM feed_cache WHERE cache_key = 'llm_products:CVE-2024-0001'"
+            )
+            return stats, row, [dict(r) for r in cache_rows]
+        finally:
+            await db.close()
+
+    stats, row, cache_rows = run_db_test(run())
+    assert stats == {"candidates": 1, "extracted": 1, "written": 1, "errors": 0}
+    assert json.loads(row["affected_products"]) == ["acme:widget"]
+    assert row["affected_products_source"] == "llm"
+    assert len(cache_rows) == 1
+    cached = json.loads(cache_rows[0]["result"])
+    assert cached["provider"] == "groq"
+    assert cached["written"] is True
+
+
+def test_run_extraction_stages_response_before_persist(tmp_path, monkeypatch):
+    """The raw response is committed to feed_cache before parse/persist."""
+    monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "stage_write.db"))
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
+
+    async def fake_extract(description: str):
+        return (
+            [{"vendor": "acme", "product": "widget", "version_range": ""}],
+            LLMCompletion(
+                content='{"products": [{"vendor": "acme", "product": "widget"}]}',
+                provider="groq",
+                model="openai/gpt-oss-20b",
+            ),
+        )
+
+    monkeypatch.setattr(pex, "extract_products_via_llm", fake_extract)
+
+    async def run():
+        await init_db()
+        db = await database.get_db()
+        try:
+            await db.execute(
+                "INSERT INTO cves (cve_id, description, published, affected_products, cpe_matches) "
+                "VALUES ('CVE-2024-0001', 'RCE in acme widget', ?, '[]', '[]')",
+                (date.today().isoformat(),),
+            )
+            await db.commit()
+            await run_llm_product_extraction(db)
+            staged = await database.get_feed_cache(
+                db, "llm_products_raw:CVE-2024-0001", max_age_hours=1
+            )
+            return staged
+        finally:
+            await db.close()
+
+    staged = run_db_test(run())
+    assert staged is not None
+    assert staged["provider"] == "groq"
+    assert "widget" in staged["content"]
+
+
 def test_scheduler_llm_job_noop_when_disabled(monkeypatch):
     monkeypatch.delenv("LLM_PRODUCT_EXTRACTION_ENABLED", raising=False)
     from scheduler import run_llm_extraction_sync

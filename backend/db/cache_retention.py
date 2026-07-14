@@ -26,6 +26,7 @@ FEED_CACHE_PREFIX_RETENTION: tuple[tuple[str, float], ...] = (
     ("circl_miss:", 48),
     ("sploitus:", 168),
     ("llm_products:", 168),
+    ("llm_products_raw:", 168),
     ("otx:cve:", 48),
     ("otx:pulse:", 48),
     ("otx:ioc:", 48),
