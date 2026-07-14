@@ -14,6 +14,7 @@ import aiosqlite
 
 from database import init_db
 from feeds import case_study_feed
+import task_registry
 
 
 def _setup_db(tmp_path, monkeypatch, name: str) -> None:
@@ -86,8 +87,7 @@ def test_get_incident_feed_serves_snapshot_with_meta(tmp_path, monkeypatch):
         assert meta["stale"] is True
 
         # Let the scheduled background build run to completion.
-        if case_study_feed._background_tasks:
-            await asyncio.gather(*case_study_feed._background_tasks)
+        await task_registry.drain_background_tasks(timeout=5.0)
 
         cards2, errors2, meta2 = await case_study_feed.get_incident_feed(atlas_limit=5)
         assert [c["id"] for c in cards2 if c["kind"] == "news"] == ["n2", "n1"]

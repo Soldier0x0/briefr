@@ -12,6 +12,17 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — PR-R1: bounded graceful shutdown — merged (this PR)
+
+**What:** New `task_registry.py` — all fire-and-forget spawns (refresh router, admin
+scheduler/run, incident snapshot build, `_schedule_background`, `_reapply_paused_jobs`)
+register there. Lifespan shutdown now waits (bounded, `SHUTDOWN_DRAIN_TIMEOUT_SECONDS`,
+default 10s) for lock-holding jobs + registered tasks before closing pools.
+
+**Next:** PR-R2 LLM extraction idempotency.
+
+---
+
 ## 2026-07-14 — PR-R4 + PG-003 close-out — merged (this PR)
 
 **What:** Migration status persists to `sync_state` (`migration.last_status`) on every

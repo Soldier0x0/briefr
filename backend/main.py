@@ -57,6 +57,7 @@ from scheduler import (
     maybe_run_on_startup,
     start_scheduler,
     stop_scheduler,
+    wait_for_running_jobs,
 )
 
 
@@ -126,7 +127,15 @@ async def lifespan(app: FastAPI):
     logger.info("main.py lifespan: startup complete — accepting requests")
     yield
     logger.info("main.py lifespan: shutting down")
+    # PR-R1 (REST-001/REST-002): stop new triggers first, then wait — bounded
+    # by SHUTDOWN_DRAIN_TIMEOUT_SECONDS (default 10s) each — for running jobs
+    # and fire-and-forget tasks, so an in-flight ingest can finish its commit
+    # instead of dying mid-write.
     stop_scheduler()
+    await wait_for_running_jobs()
+    from task_registry import drain_background_tasks
+
+    await drain_background_tasks()
     await flush_api_usage_pending()
     await close_pool()
     await close_client()
