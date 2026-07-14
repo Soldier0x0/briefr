@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { adminApi } from '../../api.js'
+import HelpTip from './shared/HelpTip.jsx'
 
 function BucketRow({ bucket, expanded, onToggle }) {
   return (
@@ -45,14 +46,12 @@ export default function RateLimitPage({ toast }) {
 
   return (
     <div>
-      <h1 className="admin-page-title">Inbound limits</h1>
-      {/* AKH-2: distinguishes this from outbound provider quota (NVD,
-          VirusTotal, OTX, etc. — visible on the IOC Lookup tab and API
-          keys & config), which is a completely separate system. This page
-          is BRIEFR's own request throttling, protecting the server from
-          its own users/scripts. */}
+      <h1 className="admin-page-title">
+        Inbound limits
+        <HelpTip text="Protects BRIEFR's own API from abuse (per-client IP buckets). Not outbound provider quota — NVD, VirusTotal, OTX limits are on IOC Lookup and AI Operations. Not LLM pacing headroom (scheduler-side)." />
+      </h1>
       <p className="admin-page-subtitle">
-        Per-bucket request counters and top consumers since last restart — throttling on requests <em>to</em> BRIEFR's own API. Not the same as outbound provider quota (NVD, VirusTotal, OTX, etc.), which is tracked separately on the IOC Lookup tab.
+        Per-bucket request counters and top consumers since last restart — throttling on requests <em>to</em> BRIEFR's own API.
       </p>
 
       {data && (

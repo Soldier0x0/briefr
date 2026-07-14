@@ -58,7 +58,6 @@ EXPECTED_ROUTES = [
     ("POST", "/api/cves/{cve_id}/correlation/feedback"),
     ("DELETE", "/api/cves/{cve_id}/correlation/feedback"),
     ("GET", "/api/kev/deadlines"),
-    ("GET", "/api/usage"),
     ("GET", "/api/usage/ioc"),
     ("GET", "/api/ai/summary"),
     ("POST", "/api/ai/summary"),
@@ -249,7 +248,7 @@ def test_moved_endpoints_live_in_routers():
     assert by_path["/api/kev/deadlines"] == "routers.cves"
     assert by_path["/api/version"] == "routers.meta"
     assert by_path["/api/time"] == "routers.meta"
-    assert by_path["/api/usage"] == "routers.meta"
+    assert by_path["/api/usage/ioc"] == "routers.meta"
     assert by_path["/api/investigation/summary"] == "routers.meta"
     assert by_path["/api/refresh"] == "routers.refresh"
     assert by_path["/api/config/risk"] == "routers.config"

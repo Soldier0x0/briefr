@@ -6,7 +6,7 @@ in the pre-split main.py — main.py includes them in the exact pre-split
 sequence so the OpenAPI route list stays byte-identical:
 
 - info_router: GET /api/version, GET /api/time
-- router:      /api/usage, /api/usage/ioc, /api/ai/summary (POST+GET),
+- router:      /api/usage/ioc, /api/ai/summary (POST+GET),
                /api/investigation/summary
 
 `/api/version` now reads the app version via `request.app` instead of the
@@ -30,7 +30,7 @@ from pydantic import BaseModel, Field
 
 from ai.summary import generate_executive_summary, generate_investigation_summary
 from routers.health import format_time_in_tz
-from tracking import get_ioc_usage_stats, get_usage_stats
+from tracking import get_ioc_usage_stats
 
 logger = logging.getLogger(__name__)
 
@@ -104,18 +104,6 @@ async def server_time(
         result["default_tz"] = format_time_in_tz(now_utc, default_tz)
 
     return result
-
-
-@router.get("/api/usage")
-async def api_usage():
-    now_utc = datetime.now(timezone.utc)
-    stats = await get_usage_stats()
-    return {
-        "as_of_utc": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "today_date_utc": now_utc.strftime("%Y-%m-%d"),
-        "this_month_utc": now_utc.strftime("%Y-%m"),
-        "services": stats,
-    }
 
 
 @router.get("/api/usage/ioc")

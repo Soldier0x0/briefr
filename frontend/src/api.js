@@ -461,9 +461,6 @@ export function fetchBrief({ stack = '', sinceHours = 24, limit = 10, kevDueDays
   return request(`/brief?${qs}`)
 }
 
-export function fetchUsage() {
-  return request('/usage')
-}
 
 export function fetchIOCUsage() {
   return request('/usage/ioc')
