@@ -74,7 +74,7 @@
 |---------|----------------|
 | Postgres, auth, rate limits, API queue, shared rate-limit store (#437) | Full `docker-compose.yml` (V2.0) |
 | Correlation v2 core + phase-4–5 tail (#364, #389, #434 `cve_id` filter) | STIX export (excluded from current loop) |
-| Correlation v3 Phase 0–4 (#473…#512): … PR-12 analyst feedback API (#512) | Correlation v3 PR-13 metrics + feed-boost gating (in PR) |
+| Correlation v3 Phase 0–4 (#473…#513): PR-9 pulse families through PR-13 metrics + feed-boost gating | Correlation v3 program complete per BACKLOG |
 | FR-1: `GET/DELETE /api/hunt-packs` list+delete API (#490); FR-2: Forge three-panel shell, `?view=`/`&technique=`/`&pack=` URL state, Library view, persistent Hunt Pack rail (#492); FR-3: case-study chips (coverage map + Hunt Pack rail), KEV backlog notification emit (scheduler-side), CWE/EPSS on Library rows + pack header, hunt-pack PDF export (`utils/huntPackPdf.js`) — forge-redesign.md program complete (FR-1→FR-3) | |
 | Admin ops, webhooks (#413–#415), wallboard v2 (#430), AI ops (#416–#420), 12-PR operator bundle (#428–#439), 4-PR tail (#441–#444) | **G0** LEARNING_PATH / ONBOARDING refresh |
 | **Forge** threat scenarios, proof bench, KEV backlog, IOC watchlist (V1.5 #373–#376) | LLM summary auth |

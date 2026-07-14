@@ -56,7 +56,7 @@ blocker.
 | PR-10 | ThreatFox corroboration on IOC edges (3) | ✅ #510 |
 | PR-11 | Alias-aware attribution + conflict surfacing (4) | ✅ #511 |
 | PR-12 | Analyst confirm feedback (4) | ✅ #512 |
-| PR-13 | `correlation_metrics` nightly + admin + feed-boost gating (4) | 📋 in PR |
+| PR-13 | `correlation_metrics` nightly + admin + feed-boost gating (4) | ✅ #513 |
 
 **Maintainer open questions (§21):** confidence regression comms (PR-4+5); pulse-family
 thresholds (PR-9); suppression migration on dedup (PR-9); confirm-link UI vs API-only
