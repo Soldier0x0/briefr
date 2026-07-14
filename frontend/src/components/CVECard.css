@@ -225,6 +225,17 @@
   max-width: calc(100% - 4px);
 }
 
+.cve-badges .control-tooltip-wrap,
+.cve-id .control-tooltip-wrap,
+.meta-time .control-tooltip-wrap {
+  display: inline-flex;
+}
+
+.cve-card .control-tooltip-wrap:has(.cve-epss) {
+  display: flex;
+  width: 100%;
+}
+
 .cve-id {
   font-family: var(--font-mono);
   font-size: 0.8125rem;

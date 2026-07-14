@@ -24,6 +24,17 @@ layout/tile options, parked programs.
 
 ---
 
+## 2026-07-14 — PR3 follow-up: portaled tooltips on feed + drawer chrome — merged (this PR)
+
+**What:** Migrated native `title=` on CVECard badges (KEV, CVSS, EPSS bar, published time,
+etc.), DetailDrawer header ransomware/campaign badges, and `IntelProvenanceLine` to
+`ControlTooltip` (portaled `Tooltip` primitive). Remaining drawer tab `title=` attributes
+stay for a later incremental pass.
+
+**Next:** item 29 (migration decision), wallboard layout/tile options, parked programs.
+
+---
+
 ## 2026-07-14 — Wallboard rate-limit in config schema — merged (this PR)
 
 **What:** `RATE_LIMIT_WALLBOARD_PER_MINUTE` writable from Admin → API keys & config

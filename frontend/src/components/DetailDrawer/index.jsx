@@ -28,6 +28,7 @@ import TabIntel from './IntelTab.jsx'
 import TabDetect from './DetectTab.jsx'
 import TabRelated from './RelatedTab.jsx'
 import CorrelationSuppressModal from './CorrelationSuppressModal.jsx'
+import ControlTooltip from '../ControlTooltip.jsx'
 import '../DetailDrawer.css'
 
 
@@ -557,21 +558,21 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
                 </span>
               )}
               {cve.kev_ransomware_use && (
-                <span
-                  className="drawer-ransomware-badge mono"
-                  title="Known ransomware campaign use (CISA KEV)"
-                  aria-label="Known ransomware campaign use"
-                >
-                  RANSOMWARE
-                </span>
+                <ControlTooltip text="Known ransomware campaign use (CISA KEV)" trigger="hover-focus">
+                  <span
+                    className="drawer-ransomware-badge mono"
+                    aria-label="Known ransomware campaign use"
+                  >
+                    RANSOMWARE
+                  </span>
+                </ControlTooltip>
               )}
               {campaignChip && (
-                <span
-                  className={`drawer-campaign-badge mono ${campaignLifecycleClass(campaignChip.lifecycle)}`}
-                  title={campaignBadgeTooltip(campaignChip.lifecycle)}
-                >
-                  Campaign · {campaignChip.linkedCount} linked CVE{campaignChip.linkedCount === 1 ? '' : 's'}
-                </span>
+                <ControlTooltip text={campaignBadgeTooltip(campaignChip.lifecycle)} trigger="hover-focus">
+                  <span className={`drawer-campaign-badge mono ${campaignLifecycleClass(campaignChip.lifecycle)}`}>
+                    Campaign · {campaignChip.linkedCount} linked CVE{campaignChip.linkedCount === 1 ? '' : 's'}
+                  </span>
+                </ControlTooltip>
               )}
             </div>
             <div className="drawer-header-actions">

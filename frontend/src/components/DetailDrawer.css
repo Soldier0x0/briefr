@@ -214,6 +214,10 @@
   flex-wrap: wrap;
 }
 
+.drawer-header-left .control-tooltip-wrap {
+  display: inline-flex;
+}
+
 .drawer-cve-id {
   font-family: var(--font-mono);
   font-size: 16px;
