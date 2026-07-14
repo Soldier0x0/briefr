@@ -1,0 +1,79 @@
+---
+description: BRIEFR UI design-system rules — tokens, Radix primitives, accessibility, motion
+globs: frontend/src/**/*.{jsx,tsx,js,ts,css}
+alwaysApply: false
+---
+
+# BRIEFR UI design-system rules
+
+Authoritative sources (read before UI work):
+- Rules/SSOT: `docs/design/design-system.md`
+- Tokens: `frontend/src/styles/tokens.css`
+- Rationale: `docs/decisions/ADR-003-ui-design-system.md`
+- Approved/prohibited UI libraries: `docs/decisions/ADR-005-component-library-strategy.md`
+- Roadmap: `docs/planning/ui-modernization-plan.md`
+
+These rules apply to ALL generated or edited UI code. If a change conflicts with them, stop
+and reconcile with `docs/design/design-system.md` (which wins over ad-hoc styling; runtime
+truth in `docs/PRODUCT_STATUS.md` wins over planning docs).
+
+## Tokens (hard rules)
+- NEVER hardcode colors. Use semantic tokens (`--surface-*`, `--text-*`, `--severity-*`,
+  `--status-*`, `--accent-*`). No raw hex, `rgb()`, or the underlying `--c-*` primitives in
+  component code.
+- NEVER hardcode spacing, radius, font-size, z-index, or motion durations. Use `--space-*`,
+  `--radius-*`, `--font-size-*`, `--z-*`, `--motion-*`.
+- ALWAYS use semantic token names; never encode a literal color in a name (no `--orange`).
+
+## Color semantics
+- Red (`--danger`, `--severity-critical`, `--status-error`) is ONLY for destructive actions,
+  critical severity, and error status. NEVER use red for neutral links, selection, or toggles.
+- "Selected/active" state ALWAYS uses `--accent-selected` (nav, sidebar, chips, rows, radios).
+  Do not invent a per-surface active color.
+- Severity uses the `--severity-*` scale AND a card left-accent; never rely on color alone —
+  pair with a label/icon.
+
+## Components
+- PREFER existing reusable components; do not duplicate a pattern that already has a primitive.
+- PREFER Radix UI primitives (Checkbox, RadioGroup, Switch, Select, Slider, Tabs, Tooltip,
+  Popover, Dialog/AlertDialog, DropdownMenu, ScrollArea) styled with BRIEFR tokens.
+- NEVER use native `<input type="checkbox">`, `<input type="radio">`, or `<select>` — use the
+  primitives (native defaults are a known "amateur" defect).
+- Tooltips/popovers MUST be portaled and collision-aware. Tables MUST use the shared
+  `DataGrid` (`table-layout: fixed` + shared `<col>` so resize keeps header/body aligned).
+- Charts MUST live in a fixed-height wrapper (`maintainAspectRatio:false`) and render an
+  EmptyState when data is empty/zero — never allow a chart to grow the page unbounded.
+- Every async region implements four states: loading (skeleton), empty, error (+ request-id),
+  data. Empty and error MUST be visually distinct.
+- Follow the design system BEFORE introducing a new pattern; new patterns require a
+  `design-system.md` update in the same PR.
+
+## Accessibility (WCAG 2.1 AA minimum)
+- Maintain AA contrast (≥ 4.5:1 body text; ≥ 3:1 large/bold and UI boundaries). Use
+  `--text-muted` (AA-guaranteed); do not dim text below it.
+- Every interactive element shows the standard `--focus-ring` (2px, accent). Never remove
+  outlines without an equal-or-better replacement.
+- Icon-only controls (bell, "…", pin, close-X) MUST have an `aria-label`.
+- Interactive targets ≥ 24px; primary buttons ≥ 30px. Logical tab order; no focus traps;
+  modals trap focus and restore it on close; Esc closes overlays.
+- Clickable elements must look clickable (hover + cursor); non-interactive cards must not.
+
+## Motion
+- RESPECT `prefers-reduced-motion` and the tool-wide motion toggle (`data-motion` on `<html>`).
+- Keep transitions between 120–180ms (`--motion-fast`/`--motion-normal`), `--motion-slow`
+  (220ms) only for drawer/modal, unless justified in the PR.
+- Animate ONLY `transform` and `opacity` (GPU-friendly). Never animate layout properties
+  (width/height/top/left). No infinite/decorative animation.
+
+## Identity & scope
+- PRESERVE the BRIEFR dark terminal identity: keep `--accent-primary` (#c8b88a), mono labels,
+  density-first layout (fill width; `max-width` for prose only; no large centered columns).
+- DO NOT introduce Tailwind (or any CSS/component framework) unless the maintainer explicitly
+  requests it (ADR-003). shadcn may be used only as a pattern reference, adapted to BRIEFR CSS.
+- ONLY use UI libraries listed as Approved/Conditional in
+  `docs/decisions/ADR-005-component-library-strategy.md` (Radix + sanctioned headless utils;
+  shadcn/Magic UI are reference-only, re-skinned, no Tailwind runtime). Mantine, MUI, Ant
+  Design, Chakra, Bootstrap, DaisyUI are prohibited. Anything not listed is prohibited until
+  ADR-005 is updated.
+- Keep components composable and reusable (Primitives → Composites → Features); do not
+  re-implement a lower layer inside a feature.
