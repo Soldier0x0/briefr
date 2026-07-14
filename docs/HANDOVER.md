@@ -12,6 +12,18 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — QA-U2: drawer accent anchor per tab — merged (this PR)
+
+**What:** Added `.drawer-tab-anchor` (accent text + 2px left border) on one primary section
+heading per drawer tab: Overview `// OPERATIONAL PRIORITY`, Intel `// CORRELATION FINDINGS`,
+Detect `// EXISTING COMMUNITY RULES`, Related lane heading. Addresses qa-audit U2 — accent
+was technically present but too thin to read as BRIEFR's signature gold.
+
+**Next:** item 29 (migration decision), PR3 tooltip follow-up (incremental), wallboard
+layout/tile options, parked programs.
+
+---
+
 ## 2026-07-14 — Wallboard rate-limit in config schema — merged (this PR)
 
 **What:** `RATE_LIMIT_WALLBOARD_PER_MINUTE` writable from Admin → API keys & config

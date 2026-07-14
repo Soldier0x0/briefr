@@ -283,7 +283,7 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
       </section>
 
       <section className="drawer-section" aria-labelledby="det-community-heading">
-        <h3 id="det-community-heading" className="drawer-human-label mono">
+        <h3 id="det-community-heading" className="drawer-human-label drawer-tab-anchor mono">
           // EXISTING COMMUNITY RULES
         </h3>
         {!hasCommunity && (
