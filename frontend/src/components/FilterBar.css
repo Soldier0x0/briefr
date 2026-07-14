@@ -246,9 +246,9 @@
 
 /* Selected filter — neutral state, not destructive/severity, so accent not red. */
 .filter-btn.active {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 15%, var(--bg));
-  border-color: var(--accent);
+  color: var(--accent-selected);
+  background: var(--surface-selected);
+  border-color: var(--accent-selected);
 }
 
 .filter-search {
@@ -443,9 +443,9 @@
 
 /* Selected vendor filter — neutral state, not destructive/severity, so accent not red. */
 .vendor-btn.active {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 15%, var(--bg));
+  border-color: var(--accent-selected);
+  color: var(--accent-selected);
+  background: var(--surface-selected);
 }
 
 @media (max-width: 640px) {

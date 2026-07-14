@@ -279,7 +279,7 @@
   --input-bg:        var(--surface-input);
   --chip-bg:         var(--background-secondary);
   --chip-border:     var(--border-default);
-  --chip-active-bg:  var(--danger-bg);
+  --chip-active-bg:  var(--surface-selected);
 
   --type-title:      var(--font-size-title);
   --type-heading:    var(--font-size-heading);
