@@ -515,11 +515,25 @@ async def get_cves_needing_intel_enrichment(
     return [row["cve_id"] for row in rows]
 
 
+_ADDITIVE_ENRICHMENT_COMMIT_CHUNK = 50
+
+# Scheduler jobs pass commit_every=ADDITIVE_ENRICHMENT_COMMIT_CHUNK for large deltas.
+ADDITIVE_ENRICHMENT_COMMIT_CHUNK = _ADDITIVE_ENRICHMENT_COMMIT_CHUNK
+
+
 async def apply_additive_cve_enrichments(
     db: DbConnection,
     enrichments: list[dict],
+    *,
+    commit_every: int | None = None,
 ) -> int:
-    """Merge scheduler intel into cves without downgrading richer NVD fields."""
+    """Merge scheduler intel into cves without downgrading richer NVD fields.
+
+    When *commit_every* is set (scheduler jobs), new rows are batched via
+    ``upsert_cves`` and the connection is committed every N processed rows so
+    large cvelistV5/vulnrichment deltas do not hold one transaction open for
+  300+ statements (Postgres ``command_timeout`` default 60s).
+    """
     from feeds.cve_record_v5 import merge_additive_cve_fields
 
     if not enrichments:
@@ -530,6 +544,31 @@ async def apply_additive_cve_enrichments(
         _SELECT_CVE_FOR_ENRICHMENT_PG if pg else _SELECT_CVE_FOR_ENRICHMENT_SQLITE
     )
     updated = 0
+    pending_inserts: list[dict] = []
+    processed = 0
+
+    async def _store_ssvc(incoming: dict, cve_id: str, *, count_ssvc_only: bool, had_row_changes: bool) -> None:
+        nonlocal updated
+        ssvc = incoming.get("ssvc")
+        if isinstance(ssvc, dict) and ssvc.get("decisions"):
+            from db.cache import set_feed_cache
+
+            await set_feed_cache(db, f"ssvc:{cve_id}", ssvc)
+            if count_ssvc_only and not had_row_changes:
+                updated += 1
+
+    async def _flush_inserts() -> None:
+        nonlocal updated
+        if not pending_inserts:
+            return
+        batch = pending_inserts[:]
+        pending_inserts.clear()
+        await upsert_cves(db, batch)
+        updated += len(batch)
+        for row in batch:
+            cve_id = (row.get("cve_id") or "").upper()
+            await _store_ssvc(row, cve_id, count_ssvc_only=False, had_row_changes=True)
+
     for incoming in enrichments:
         cve_id = (incoming.get("cve_id") or "").upper()
         if not cve_id:
@@ -543,24 +582,28 @@ async def apply_additive_cve_enrichments(
             changes = merge_additive_cve_fields(existing, incoming) or {}
             ssvc = incoming.get("ssvc")
             if not changes and not (isinstance(ssvc, dict) and ssvc.get("decisions")):
+                processed += 1
+                if commit_every and processed % commit_every == 0:
+                    await _flush_inserts()
+                    await db.commit()
                 continue
             built = _build_additive_update(pg, changes, cve_id)
             if built:
                 update_sql, params = built
                 await db.execute(update_sql, params)
                 updated += 1
+            await _store_ssvc(
+                incoming, cve_id, count_ssvc_only=True, had_row_changes=bool(changes)
+            )
         else:
-            await upsert_cve(db, incoming)
-            updated += 1
+            pending_inserts.append(incoming)
 
-        ssvc = incoming.get("ssvc")
-        if isinstance(ssvc, dict) and ssvc.get("decisions"):
-            from db.cache import set_feed_cache
+        processed += 1
+        if commit_every and processed % commit_every == 0:
+            await _flush_inserts()
+            await db.commit()
 
-            await set_feed_cache(db, f"ssvc:{cve_id}", ssvc)
-            if rows and not changes:
-                updated += 1
-
+    await _flush_inserts()
     return updated
 
 

@@ -37,10 +37,28 @@ def _asyncpg_locked(exc: BaseException) -> bool:
     return isinstance(exc, locked_types)
 
 
+def format_db_exception_message(exc: BaseException) -> str:
+    """Operator-safe one-line message for logs and notifications."""
+    if isinstance(exc, DatabaseError) and str(exc):
+        return f"{type(exc).__name__}: {exc}"
+    if isinstance(exc, DatabaseError):
+        cause = exc.__cause__
+        if isinstance(cause, TimeoutError):
+            return "DatabaseError: Database command timeout"
+        return type(exc).__name__
+    if isinstance(exc, TimeoutError):
+        return "TimeoutError: Database command timeout"
+    if str(exc):
+        return f"{type(exc).__name__}: {exc}"
+    return type(exc).__name__
+
+
 def normalize_db_exception(exc: BaseException) -> DatabaseError:
     """Map sqlite3/asyncpg failures to app-level types; pass through existing."""
     if isinstance(exc, DatabaseError):
         return exc
+    if isinstance(exc, TimeoutError):
+        return DatabaseError("Database command timeout")
     if isinstance(exc, sqlite3.OperationalError):
         if _sqlite_locked_message(exc):
             return DatabaseLockedError(str(exc))

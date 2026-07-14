@@ -13,6 +13,7 @@ from db.connection import SqliteConnection
 from db.errors import (
     DatabaseError,
     DatabaseLockedError,
+    format_db_exception_message,
     normalize_db_exception,
     reraise_db_exception,
 )
@@ -37,6 +38,18 @@ def test_normalize_asyncpg_deadlock():
     exc = asyncpg.exceptions.DeadlockDetectedError("deadlock")
     out = normalize_db_exception(exc)
     assert isinstance(out, DatabaseLockedError)
+
+
+def test_normalize_timeout_error():
+    out = normalize_db_exception(TimeoutError())
+    assert type(out) is DatabaseError
+    assert "timeout" in str(out).lower()
+
+
+def test_format_db_exception_message_timeout():
+    wrapped = normalize_db_exception(TimeoutError())
+    assert format_db_exception_message(wrapped) == "DatabaseError: Database command timeout"
+    assert format_db_exception_message(TimeoutError()) == "TimeoutError: Database command timeout"
 
 
 def test_reraise_db_exception_preserves_subclass():
