@@ -231,7 +231,7 @@
   display: inline-flex;
 }
 
-.cve-top .control-tooltip-wrap:has(.cve-epss) {
+.cve-card .control-tooltip-wrap:has(.cve-epss) {
   display: flex;
   width: 100%;
 }
