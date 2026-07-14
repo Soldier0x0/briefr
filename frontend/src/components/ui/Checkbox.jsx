@@ -23,15 +23,14 @@ export default function Checkbox({
   label,
   ...rest
 }) {
-  const control = (
+  const root = (
     <RadixCheckbox.Root
       id={id}
-      className={`ui-checkbox${className ? ` ${className}` : ''}`}
+      className="ui-checkbox"
       checked={checked}
       defaultChecked={defaultChecked}
       onCheckedChange={onCheckedChange}
       disabled={disabled}
-      {...rest}
     >
       <RadixCheckbox.Indicator className="ui-checkbox-indicator">
         <Check size={14} strokeWidth={2.5} aria-hidden="true" />
@@ -39,11 +38,31 @@ export default function Checkbox({
     </RadixCheckbox.Root>
   )
 
-  if (!label) return control
+  if (!label) {
+    return (
+      <RadixCheckbox.Root
+        id={id}
+        className={`ui-checkbox${className ? ` ${className}` : ''}`}
+        checked={checked}
+        defaultChecked={defaultChecked}
+        onCheckedChange={onCheckedChange}
+        disabled={disabled}
+        {...rest}
+      >
+        <RadixCheckbox.Indicator className="ui-checkbox-indicator">
+          <Check size={14} strokeWidth={2.5} aria-hidden="true" />
+        </RadixCheckbox.Indicator>
+      </RadixCheckbox.Root>
+    )
+  }
 
   return (
-    <label className="ui-checkbox-label" htmlFor={id}>
-      {control}
+    <label
+      className={`ui-checkbox-label${className ? ` ${className}` : ''}`}
+      htmlFor={id}
+      {...rest}
+    >
+      {root}
       <span className="ui-checkbox-label-text">{label}</span>
     </label>
   )
