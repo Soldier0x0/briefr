@@ -163,6 +163,7 @@ are summarized; full Problem/Evidence/Impact are in §2 and the backlog.
 - **E7-2** Loading skeletons over spinners/jumps — M · QW.
 - **E7-3** Copy/export feedback (toast + progress) — S · QW.
 - **E7-4** Spacing/border pass (filter panel, stat cards, degraded cards) — M · QW · E0-1.
+- **E7-5** Chart migration Chart.js → **Recharts** (shadcn look, no Tailwind; ADR-005) — L · ARCH · E0-1, E2-1. *Scope:* re-create shadcn's chart wrapper on `--chart-*` tokens; migrate `BriefCharts`/`OpsCharts` chart-by-chart behind `ChartShell` (fixed height) with visual-regression; wire animations to the motion toggle; keep the 90-day heatmap + EPSS sparklines as custom SVG; **remove Chart.js when the last chart is ported** (never ship both). *Accept:* all Chart.js charts replaced; Chart.js dependency removed; no chart grows unbounded; parity or better visuals.
 
 ### E8 — Navigation / IA
 - **E8-1** Unify active-state across shells (rides E4-1) — S · QW.
@@ -223,8 +224,11 @@ Critical-path (design system): **E0-1 → E0-2 → E3 → E4 → E5**. Reliabili
   during migration; enforce "no raw hex / no raw spacing" via lint (proposed CI job).
 - **Motion toggle:** `data-motion` on `<html>`; persists via `GET/PATCH /api/me/preferences`
   (existing) with localStorage fallback; consolidates the current partial Display toggle.
-- **Charts:** wrap every chart in `ChartShell` (`maintainAspectRatio:false` + fixed height)
-  to permanently prevent the infinite-growth class of bug.
+- **Charts:** wrap every chart in `ChartShell` (fixed height) to permanently prevent the
+  infinite-growth class of bug. Charting standardizes on **Recharts** (SVG, no Tailwind;
+  shadcn look re-skinned to `--chart-*` tokens) — **Chart.js is deprecated and removed** after
+  the E7-5 migration; never ship both libraries at once (lazy-load during migration). Keep the
+  heatmap/sparklines as custom SVG. Ref: ADR-005.
 - **DataGrid:** single `<table>` with `table-layout:fixed` + shared `<col>` widths so resize
   keeps header/body aligned; virtualize large tables (Attack Surface 157, epss_history-scale).
 - **Performance:** animate transform/opacity only; memoize heavy rows; keep feed windowing
@@ -323,7 +327,7 @@ Critical-path (design system): **E0-1 → E0-2 → E3 → E4 → E5**. Reliabili
 - [ ] E6-1 contrast/type  [ ] E6-2 focus ring  [ ] E6-3 aria-labels  [ ] E6-4 shortcuts  [ ] E6-5 target size/charts
 
 **Polish / IA / Observability (E7/E8/E9)**
-- [ ] E7-1 hover/press  [ ] E7-2 skeletons  [ ] E7-3 copy/export feedback  [ ] E7-4 spacing/borders
+- [ ] E7-1 hover/press  [ ] E7-2 skeletons  [ ] E7-3 copy/export feedback  [ ] E7-4 spacing/borders  [ ] E7-5 charts → Recharts (remove Chart.js)
 - [ ] E8-1 unify active  [ ] E8-2 breadcrumbs  [ ] E8-3 needs-attention landing
 - [ ] E9-1 failure alerts  [ ] E9-2 global webhook/key surfacing  [ ] E9-3 AI-ops label fix
 

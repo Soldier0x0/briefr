@@ -264,8 +264,10 @@ Three layers. Higher layers compose lower ones; never re-implement a lower layer
   components; do not hand-roll active styling.
 - Clickable elements must look clickable (hover + cursor + affordance); non-clickable
   cards must not look interactive (audit E-hidden-clickable: stat cards/header icons).
-- Charts must be wrapped in `ChartShell` (fixed height, `maintainAspectRatio:false`) and
-  render `EmptyState` when series are empty/zero.
+- Charts use **Recharts** (the approved engine — ADR-005; shadcn look re-skinned to
+  `--chart-*` tokens, no Tailwind), wrapped in `ChartShell` (fixed height) and rendering
+  `EmptyState` when series are empty/zero. Chart.js is deprecated (migrating out per plan
+  E7-5). Keep the 90-day heatmap + EPSS sparklines as custom SVG.
 
 ## 20. Naming conventions
 

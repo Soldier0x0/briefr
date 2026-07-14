@@ -35,13 +35,33 @@ Constraints (from ADR-003 / `CLAUDE.md` / the design system):
   DropdownMenu, ScrollArea, etc.). Unstyled; ARIA/focus/portaling handled; React 19 compatible.
 
 ### ✅ Approved — headless utilities (no styling; use when Radix/existing don't already cover it)
-- **Chart.js** — already in use; the charting layer (must be wrapped in `ChartShell`).
+- **Recharts** — the **sanctioned charting engine** (SVG, MIT, React 19 compatible). Themed
+  via CSS variables mapped to the `--chart-*` tokens; wrapped in `ChartShell` (fixed height).
+  This is what lets us adopt the shadcn "Charts" look **without Tailwind**: re-create shadcn's
+  thin chart wrapper (`ChartContainer`/tooltip/legend) with BRIEFR CSS tokens, not Tailwind
+  classes. See the charting decision below.
 - **cmdk** — command palette (already used for ⌘/Ctrl-K).
 - **Floating UI** — positioning for custom tooltips/popovers/menus (note: Radix already uses
   it internally — prefer Radix's built-ins before adding it standalone).
 - **TanStack Table (headless)** — table/data-grid logic for the shared `DataGrid` (headless
   only; render with BRIEFR markup + tokens).
 - Rule: prefer what Radix or the existing stack already provides before adding a utility.
+
+### ♻️ Deprecated — migrate off
+- **Chart.js** — currently in use (`BriefCharts.jsx`, `OpsCharts.jsx`, `chartLoader.js`).
+  **Deprecated in favor of Recharts** so we can adopt the shadcn chart aesthetic (re-skinned,
+  no Tailwind). Migrate chart-by-chart, each behind `ChartShell` with a visual-regression
+  snapshot; **remove Chart.js once the last chart is ported** — never ship both libraries
+  long-term. Tracked as ticket **E7-5** in `docs/planning/ui-modernization-plan.md`.
+  Custom SVG visuals (90-day heatmap, EPSS sparklines) stay hand-built SVG — do NOT force
+  them into Recharts.
+
+### Charting decision (single library)
+BRIEFR standardizes on **exactly one charting library**. Because the maintainer prefers the
+shadcn chart look and it is achievable without Tailwind, that library is **Recharts** (via
+re-skinned shadcn patterns). During migration both libraries may be present briefly;
+lazy-load charts to avoid bundle bloat, and delete Chart.js at the end. Chart animations must
+respect the tool-wide motion toggle and `prefers-reduced-motion`.
 
 ### 🟡 Conditional — pattern/copy reference ONLY (re-implement on BRIEFR CSS; never a runtime dep)
 - **shadcn/ui registry** — copy component *patterns/markup* and adapt to BRIEFR tokens.
@@ -89,6 +109,8 @@ ADR is updated.
 ## Consequences
 - One authoritative list to check in review and in `.cursor/rules/design-system.mdc`.
 - shadcn and Magic UI are explicitly "reference, re-skinned, no Tailwind" — not runtime deps.
-- Headless utilities (Chart.js, cmdk, Floating UI, TanStack Table) are sanctioned so the
-  DataGrid/palette/positioning work doesn't require a styled kit.
+- Headless utilities (Recharts, cmdk, Floating UI, TanStack Table) are sanctioned so the
+  charts/DataGrid/palette/positioning work doesn't require a styled kit.
+- Charting standardizes on **Recharts** (shadcn look, no Tailwind); **Chart.js is deprecated**
+  and removed after the E7-5 migration. Only one charting library ships at a time.
 - Adding anything new is a deliberate, documented decision.
