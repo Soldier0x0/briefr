@@ -37,7 +37,7 @@ from database import (
     update_epss_scores,
     upsert_cve,
     upsert_cves,
-    upsert_kev,
+    upsert_kev_batch,
 )
 from feeds.cvelistv5 import SYNC_STATE_KEY as CVELISTV5_SYNC_STATE_KEY
 from feeds.cvelistv5 import fetch_cvelistv5_delta, get_cvelistv5_sync_interval_minutes
@@ -457,13 +457,8 @@ async def _run_kev_sync() -> None:
 
         db = await get_db()
         try:
-            kev_ids = []
-            for entry in kev_entries:
-                await upsert_kev(db, entry)
-                cve_id = entry.get("cveID", "")
-                if cve_id:
-                    kev_ids.append(cve_id)
-                    kev_count += 1
+            kev_ids = [e["cveID"] for e in kev_entries if e.get("cveID")]
+            kev_count = await upsert_kev_batch(db, kev_entries)
             newly_kev = await mark_cves_as_kev(db, kev_ids)
             _job_progress["kev_metadata_sync"] = f"Enriching KEV summaries from CISA descriptions ({len(newly_kev)} newly flagged CVEs)…"
             kev_summaries = await enrich_kev_summaries(db)
