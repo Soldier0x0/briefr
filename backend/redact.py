@@ -124,8 +124,6 @@ def mask_webhook_delivery_error(error: str | None) -> str | None:
     lower = text.lower()
     if len(text) > 80 or "token" in lower or "password" in lower or "secret" in lower:
         return "[redacted]"
-    if len(text) > 200:
-        return text[:200] + "…"
     return text
 
 

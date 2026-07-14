@@ -126,8 +126,12 @@ export default function WebhooksPage({ toast }) {
         data.ok ? `${destinationId} delivered${refNote}` : `${destinationId} failed: ${data.error}${refNote}`,
         data.ok,
       )
-      await loadHealth()
-      await loadDeliveryLog(deliveryLogOffset, deliveryLogFilter)
+      try {
+        await loadHealth()
+        await loadDeliveryLog(deliveryLogOffset, deliveryLogFilter)
+      } catch {
+        /* refresh failure must not mask test result toast */
+      }
     } catch (e) {
       toast(String(e.message), false)
     }

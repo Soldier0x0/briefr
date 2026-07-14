@@ -285,16 +285,11 @@ async def build_webhook_destination_health(db: DbConnection) -> list[dict[str, A
         since_expr = "datetime('now', '-24 hours')"
 
     latest_rows = await db.execute_fetchall(latest_sql)
-    success_sql = f"""
-        SELECT destination_id, MAX(attempted_at) AS last_success_at
+    success_failure_sql = """
+        SELECT destination_id,
+               MAX(CASE WHEN status = 'ok' THEN attempted_at END) AS last_success_at,
+               MAX(CASE WHEN status != 'ok' THEN attempted_at END) AS last_failure_at
         FROM webhook_delivery_log
-        WHERE status = 'ok'
-        GROUP BY destination_id
-    """
-    failure_sql = f"""
-        SELECT destination_id, MAX(attempted_at) AS last_failure_at
-        FROM webhook_delivery_log
-        WHERE status != 'ok'
         GROUP BY destination_id
     """
     counts_sql = f"""
@@ -306,12 +301,11 @@ async def build_webhook_destination_health(db: DbConnection) -> list[dict[str, A
         GROUP BY destination_id
     """
 
-    success_rows = await db.execute_fetchall(success_sql)
-    failure_rows = await db.execute_fetchall(failure_sql)
+    success_failure_rows = await db.execute_fetchall(success_failure_sql)
     count_rows = await db.execute_fetchall(counts_sql)
 
-    success_by_dest = {r["destination_id"]: r["last_success_at"] for r in success_rows}
-    failure_by_dest = {r["destination_id"]: r["last_failure_at"] for r in failure_rows}
+    success_by_dest = {r["destination_id"]: r["last_success_at"] for r in success_failure_rows}
+    failure_by_dest = {r["destination_id"]: r["last_failure_at"] for r in success_failure_rows}
     counts_by_dest = {
         r["destination_id"]: {
             "ok_24h": int(r["ok_24h"] or 0),
