@@ -86,7 +86,7 @@ dependencies, and ensures `backend/.env` exists (copied from `backend/.env.examp
   backend must be running first or the UI shows `/api` 404s.
 
 Local dev without production infra: `docker compose -f deploy/docker-compose.postgres.yml up -d`
-(Postgres 17).
+(Postgres 16 image for local dev; production is 17).
 
 ### Tests / build / lint
 

@@ -38,11 +38,28 @@ function summaryCards(summary, field, label, tip) {
   )
 }
 
+function seriesHasPlottableData(series, fields) {
+  if (!series?.length) return false
+  return series.some(row =>
+    fields.some(field => {
+      const v = row[field]
+      return v != null && !Number.isNaN(Number(v))
+    }),
+  )
+}
+
 function ResourceLineChart({ id, series, fields, labels, canvasRef, chartsRef }) {
+  const hasData = seriesHasPlottableData(series, fields)
+
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      if (!canvasRef.current || !series?.length) return
+      if (!hasData) {
+        chartsRef.current[id]?.destroy?.()
+        delete chartsRef.current[id]
+        return
+      }
+      if (!canvasRef.current) return
       const Chart = await loadChartJs()
       if (cancelled) return
       const theme = readChartTheme()
@@ -73,8 +90,21 @@ function ResourceLineChart({ id, series, fields, labels, canvasRef, chartsRef })
       })
     })()
     return () => { cancelled = true }
-  }, [series, fields, labels, id, canvasRef, chartsRef])
-  return <canvas ref={canvasRef} height={120} aria-hidden="true" />
+  }, [series, fields, labels, id, canvasRef, chartsRef, hasData])
+
+  if (!hasData) {
+    return (
+      <div className="admin-empty admin-ops-chart-empty" role="status">
+        No samples in this window yet
+      </div>
+    )
+  }
+
+  return (
+    <div className="admin-resources-chart-wrap">
+      <canvas ref={canvasRef} aria-hidden="true" />
+    </div>
+  )
 }
 
 export default function ResourcesPage() {
