@@ -337,7 +337,7 @@ numbers recorded in the closing PR body:
 - [ ] E1-3 four-state correlation/risk
 
 **Standalone bugs (E2)**
-- [ ] E2-1 Resources chart bounded + empty state
+- [x] E2-1 Resources chart bounded + empty state
 - [ ] E2-2 per-process CPU metric
 - [ ] E2-3 column resize alignment
 - [ ] E2-4 reference tooltip portaled

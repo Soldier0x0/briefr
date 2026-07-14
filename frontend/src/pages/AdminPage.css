@@ -3081,3 +3081,8 @@
 .admin-resources-chart-card {
   margin-bottom: 1rem;
 }
+
+.admin-resources-chart-wrap {
+  position: relative;
+  height: 200px;
+}
