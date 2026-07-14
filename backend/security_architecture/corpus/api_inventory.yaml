@@ -187,6 +187,9 @@ endpoints:
   path: /api/admin/webhooks/destinations/{destination_id}
   component_id: routers-admin
 - method: GET
+  path: /api/admin/webhooks/health
+  component_id: routers-admin
+- method: GET
   path: /api/admin/webhooks/log
   component_id: routers-admin
 - method: GET

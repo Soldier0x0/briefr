@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from config_schema import get_field
 
 
@@ -102,6 +104,26 @@ def mask_audit_log_target(action: str, target: str | None) -> str:
     if action.startswith("config.") and _looks_like_secret_value(text):
         return mask_secret_value(text)
 
+    if len(text) > 200:
+        return text[:200] + "…"
+    return text
+
+
+_WEBHOOK_ERROR_URL_RE = re.compile(r"https?://\S+", re.IGNORECASE)
+
+
+def mask_webhook_delivery_error(error: str | None) -> str | None:
+    """Mask webhook delivery errors for admin APIs (URLs/tokens must not leak)."""
+    if error is None:
+        return None
+    text = str(error).strip()
+    if not text:
+        return text
+    if _WEBHOOK_ERROR_URL_RE.search(text):
+        text = _WEBHOOK_ERROR_URL_RE.sub("[redacted-url]", text)
+    lower = text.lower()
+    if len(text) > 80 or "token" in lower or "password" in lower or "secret" in lower:
+        return "[redacted]"
     if len(text) > 200:
         return text[:200] + "…"
     return text

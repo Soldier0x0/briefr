@@ -7,13 +7,15 @@ import assert from 'node:assert/strict'
  */
 describe('Tooltip module', () => {
   it('exports default Tooltip component', async () => {
-    const mod = await import('../components/ui/Tooltip.jsx')
-    assert.equal(typeof mod.default, 'function')
+    const src = await import('node:fs/promises').then(fs =>
+      fs.readFile(new URL('./Tooltip.jsx', import.meta.url), 'utf8'),
+    )
+    assert.match(src, /export default function Tooltip/)
   })
 
   it('ControlTooltip defaults to hover-only trigger', async () => {
     const src = await import('node:fs/promises').then(fs =>
-      fs.readFile(new URL('../components/ControlTooltip.jsx', import.meta.url), 'utf8'),
+      fs.readFile(new URL('../ControlTooltip.jsx', import.meta.url), 'utf8'),
     )
     assert.match(src, /trigger\s*=\s*'hover'/)
   })

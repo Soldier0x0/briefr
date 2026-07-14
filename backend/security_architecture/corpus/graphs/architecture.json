@@ -347,7 +347,7 @@
       "label": "routers.admin",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 63,
+      "endpoint_count": 64,
       "source_refs": [
         {
           "type": "file",
@@ -1208,6 +1208,12 @@
       "id": "routers-admin->table:webhook_alert_log",
       "source": "routers-admin",
       "target": "table:webhook_alert_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:webhook_delivery_log",
+      "source": "routers-admin",
+      "target": "table:webhook_delivery_log",
       "kind": "references_table"
     },
     {

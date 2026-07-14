@@ -1741,7 +1741,10 @@ Body `{enabled?: bool, event_types?: string[], label?: string, config?: object}`
 Query `confirm_text=delete` (see `GET /api/admin/destructive-actions`). Deletes **database-backed** destinations only; env bootstrap ids cannot be deleted (disable via PATCH). Audit: `webhook.destination.delete.{id}`.
 
 ### GET /api/admin/webhooks/delivery-log
-Params: `destination_id`, `event_type`, `limit`, `offset`. Returns `{rows: [{id, destination_id, event_type, dedupe_key, status, error, attempted_at}], total}`.
+Params: `destination_id`, `event_type`, `limit`, `offset`. Returns `{rows: [{id, destination_id, event_type, dedupe_key, status, error, attempted_at}], total}`. `error` values are masked on read (URLs and token-like substrings redacted).
+
+### GET /api/admin/webhooks/health
+Returns per-destination delivery health merged with destination config: `{destinations: [{id, kind, label, enabled, source, last_status, last_event_type, last_attempt_at, last_success_at, last_failure_at, last_error, ok_24h, failed_24h}]}`. Derived from `webhook_delivery_log` (24h counts, latest attempt). Destinations with no deliveries show zero counts and null timestamps. `last_error` is masked like delivery-log.
 
 ### GET /api/admin/ai/operations/models
 Read-only model catalog SSOT for LLM task failover chains. Returns `{providers: string[], tasks: {task: [{provider, model, order}]}, env_keys: object}` — no secrets.

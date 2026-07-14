@@ -260,6 +260,87 @@ async def list_webhook_delivery_log(
     return [dict(row) for row in rows], total
 
 
+async def build_webhook_destination_health(db: DbConnection) -> list[dict[str, Any]]:
+    """Per-destination delivery health from webhook_delivery_log (read-path only)."""
+    pg = _is_postgres_connection(db)
+    if pg:
+        latest_sql = """
+            SELECT DISTINCT ON (destination_id)
+                destination_id, status, error, attempted_at, event_type
+            FROM webhook_delivery_log
+            ORDER BY destination_id, attempted_at DESC, id DESC
+        """
+        since_expr = "NOW() - INTERVAL '24 hours'"
+    else:
+        latest_sql = """
+            SELECT d.destination_id, d.status, d.error, d.attempted_at, d.event_type
+            FROM webhook_delivery_log d
+            INNER JOIN (
+                SELECT destination_id, MAX(id) AS max_id
+                FROM webhook_delivery_log
+                GROUP BY destination_id
+            ) latest
+              ON d.id = latest.max_id
+        """
+        since_expr = "datetime('now', '-24 hours')"
+
+    latest_rows = await db.execute_fetchall(latest_sql)
+    success_sql = f"""
+        SELECT destination_id, MAX(attempted_at) AS last_success_at
+        FROM webhook_delivery_log
+        WHERE status = 'ok'
+        GROUP BY destination_id
+    """
+    failure_sql = f"""
+        SELECT destination_id, MAX(attempted_at) AS last_failure_at
+        FROM webhook_delivery_log
+        WHERE status != 'ok'
+        GROUP BY destination_id
+    """
+    counts_sql = f"""
+        SELECT destination_id,
+               SUM(CASE WHEN status = 'ok' THEN 1 ELSE 0 END) AS ok_24h,
+               SUM(CASE WHEN status != 'ok' THEN 1 ELSE 0 END) AS failed_24h
+        FROM webhook_delivery_log
+        WHERE attempted_at >= {since_expr}
+        GROUP BY destination_id
+    """
+
+    success_rows = await db.execute_fetchall(success_sql)
+    failure_rows = await db.execute_fetchall(failure_sql)
+    count_rows = await db.execute_fetchall(counts_sql)
+
+    success_by_dest = {r["destination_id"]: r["last_success_at"] for r in success_rows}
+    failure_by_dest = {r["destination_id"]: r["last_failure_at"] for r in failure_rows}
+    counts_by_dest = {
+        r["destination_id"]: {
+            "ok_24h": int(r["ok_24h"] or 0),
+            "failed_24h": int(r["failed_24h"] or 0),
+        }
+        for r in count_rows
+    }
+
+    from redact import mask_webhook_delivery_error
+
+    out: list[dict[str, Any]] = []
+    for row in latest_rows:
+        r = dict(row)
+        dest_id = r["destination_id"]
+        counts = counts_by_dest.get(dest_id, {"ok_24h": 0, "failed_24h": 0})
+        out.append({
+            "destination_id": dest_id,
+            "last_status": r["status"],
+            "last_event_type": r["event_type"],
+            "last_attempt_at": r["attempted_at"],
+            "last_success_at": success_by_dest.get(dest_id),
+            "last_failure_at": failure_by_dest.get(dest_id),
+            "last_error": mask_webhook_delivery_error(r.get("error")),
+            "ok_24h": counts["ok_24h"],
+            "failed_24h": counts["failed_24h"],
+        })
+    return out
+
+
 async def count_webhook_destinations_by_kind(db: DbConnection, kind: str) -> int:
     sql = _COUNT_DESTINATIONS_BY_KIND_PG if _is_postgres_connection(db) else _COUNT_DESTINATIONS_BY_KIND_SQLITE
     rows = await db.execute_fetchall(sql, (kind,))
