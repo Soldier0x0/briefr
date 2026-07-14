@@ -743,19 +743,19 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
 
           <nav className="drawer-tabs" role="tablist" aria-label="CVE detail sections">
             {TABS.map(tab => (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                id={`drawer-tab-${tab.id}`}
-                className={`drawer-tab mono${activeTab === tab.id ? ' drawer-tab-active' : ''}`}
-                aria-selected={activeTab === tab.id}
-                aria-controls={`drawer-panel-${tab.id}`}
-                onClick={() => setActiveTab(tab.id)}
-                title={tab.title}
-              >
-                {tab.label}
-              </button>
+              <ControlTooltip key={tab.id} text={tab.title} trigger="hover-focus">
+                <button
+                  type="button"
+                  role="tab"
+                  id={`drawer-tab-${tab.id}`}
+                  className={`drawer-tab mono${activeTab === tab.id ? ' drawer-tab-active' : ''}`}
+                  aria-selected={activeTab === tab.id}
+                  aria-controls={`drawer-panel-${tab.id}`}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              </ControlTooltip>
             ))}
           </nav>
         </div>

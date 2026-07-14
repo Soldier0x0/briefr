@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { copyToClipboard } from '../../utils/report.js'
 
 import { confidenceMatchLabel } from '../../utils/detectLabels.js'
+import ControlTooltip from '../ControlTooltip.jsx'
 import IntelProvenanceLine from './IntelProvenanceLine.jsx'
 
 const BASIS_LABELS = {
@@ -31,9 +32,11 @@ function StatusBadge({ status, title, children }) {
     : s === 'test' ? 'det-badge-test'
     : 'det-badge-experimental'
   return (
-    <span className={`det-status-badge mono ${cls}`} title={title}>
-      {children || s}
-    </span>
+    <ControlTooltip text={title} trigger="hover-focus">
+      <span className={`det-status-badge mono ${cls}`}>
+        {children || s}
+      </span>
+    </ControlTooltip>
   )
 }
 
@@ -42,9 +45,11 @@ function BasisBadge({ basis }) {
   const label = BASIS_LABELS[key] || key
   const tip = BASIS_TOOLTIPS[key] || BASIS_TOOLTIPS.generic
   return (
-    <span className="det-basis-badge mono" title={tip}>
-      Based on {label}
-    </span>
+    <ControlTooltip text={tip} trigger="hover-focus">
+      <span className="det-basis-badge mono">
+        Based on {label}
+      </span>
+    </ControlTooltip>
   )
 }
 
@@ -196,21 +201,27 @@ function GeneratedSigmaSection({
       <div className="det-generated-meta">
         <StatusBadge status={meta?.status || 'experimental'} title={EXPERIMENTAL_TOOLTIP} />
         <BasisBadge basis={meta?.briefr_basis} />
-        <span className={`${confidenceCls} mono`} title="BRIEFR confidence in this template match">
-          {confidenceMatchLabel(confidence)}
-        </span>
-        {(meta?.briefr_class || detectionClass) && (
-          <span
-            className="det-class-badge mono"
-            title="Detection pattern from the unified CWE/ATT&CK router (Sigma, SIEM, log patterns)"
-          >
-            Pattern: {(meta?.briefr_class || detectionClass).replace(/_/g, ' ')}
+        <ControlTooltip text="BRIEFR confidence in this template match" trigger="hover-focus">
+          <span className={`${confidenceCls} mono`}>
+            {confidenceMatchLabel(confidence)}
           </span>
+        </ControlTooltip>
+        {(meta?.briefr_class || detectionClass) && (
+          <ControlTooltip
+            text="Detection pattern from the unified CWE/ATT&CK router (Sigma, SIEM, log patterns)"
+            trigger="hover-focus"
+          >
+            <span className="det-class-badge mono">
+              Pattern: {(meta?.briefr_class || detectionClass).replace(/_/g, ' ')}
+            </span>
+          </ControlTooltip>
         )}
       </div>
-      <p className="det-generated-warning mono" title={EXPERIMENTAL_TOOLTIP}>
-        Experimental hunt starter — tune fields and test in your SIEM before production use.
-      </p>
+      <ControlTooltip text={EXPERIMENTAL_TOOLTIP} trigger="hover-focus">
+        <p className="det-generated-warning mono">
+          Experimental hunt starter — tune fields and test in your SIEM before production use.
+        </p>
+      </ControlTooltip>
       <div className="det-code-wrap">
         <div className="det-code-actions">
           <CopyButton text={generatedSigma} label="Copy YAML" />

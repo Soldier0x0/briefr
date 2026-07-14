@@ -19,6 +19,16 @@ function clamp(n, min, max) {
   return Math.min(max, Math.max(min, n))
 }
 
+const FOCUSABLE_TAGS = new Set(['a', 'button', 'input', 'select', 'textarea'])
+
+function childCanReceiveFocus(child) {
+  if (!isValidElement(child)) return false
+  if (typeof child.props?.tabIndex === 'number' && child.props.tabIndex >= 0) return true
+  if (child.props?.href != null) return true
+  const tag = typeof child.type === 'string' ? child.type.toLowerCase() : ''
+  return FOCUSABLE_TAGS.has(tag)
+}
+
 /**
  * Portaled tooltip — single coordinator closes the previous bubble when a new one opens.
  *
@@ -112,6 +122,7 @@ export default function Tooltip({
 
   const child = asChild && isValidElement(children)
     ? cloneElement(children, {
+        ...(trigger === 'hover-focus' && !childCanReceiveFocus(children) ? { tabIndex: 0 } : {}),
         'aria-describedby': [children.props?.['aria-describedby'], id].filter(Boolean).join(' ') || id,
       })
     : children
