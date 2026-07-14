@@ -517,6 +517,7 @@ Read-only TV / SOC display at `/wallboard`. **Do not** bookmark URLs with tokens
 4. If the display is shared or public, rotate `WALLBOARD_TOKEN` after use and add
    Cloudflare Access / VPN on the hostname.
 5. Optional: set user stack in the main app — wallboard KEV-on-stack tile reads it.
+6. Optional: append `?density=compact` for a denser tile layout on large displays (4K wall mounts).
 
 See [`planning/BACKLOG.md`](planning/BACKLOG.md) §6 for optional layout tails.
 

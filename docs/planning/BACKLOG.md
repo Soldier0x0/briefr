@@ -281,7 +281,7 @@ tiles only.
 | Item | Status |
 |------|--------|
 | **O-3 / N-1** | `WALLBOARD_TOKEN` in `config_schema` (same as §1) | ✅ #514 |
-| `?density=compact` layout mode | 📋 optional |
+| `?density=compact` layout mode | ✅ (this PR) |
 | Campaign tile, EPSS movers, enriched backend tiles | 📋 optional |
 | QR / one-time setup card on Security page (N-4) | 🔶 docs in OPERATIONS.md; QR card not built |
 | `RATE_LIMIT_WALLBOARD_PER_MINUTE` in config schema | ✅ (this PR) — writable under section `app`, restart apply strategy, same pattern as O-3 |
