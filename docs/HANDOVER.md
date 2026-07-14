@@ -12,6 +12,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — PR-R2: LLM extraction response staging — merged (this PR)
+
+**What:** Raw LLM responses stage to `feed_cache` (`llm_products_raw:<CVE>`) in their own
+commit immediately after the HTTP call; a crash before persist replays the staged
+response on the next run instead of re-billing provider quota (REST-004).
+
+**Next:** PR-O2 correlation GET read-only split.
+
+---
+
 ## 2026-07-14 — PR-R1: bounded graceful shutdown — merged (this PR)
 
 **What:** New `task_registry.py` — all fire-and-forget spawns (refresh router, admin
