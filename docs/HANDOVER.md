@@ -29,6 +29,8 @@ Alembic **019** `pulse_families` table + campaign columns.
 **Verify:** `./scripts/verify-local.sh` green (1226 passed; pre-existing
 `test_router_split` + security corpus drift failures unchanged).
 
+**Merged:** #509 (`092699b`). Gemini: PG placeholders + tz-aware sort applied.
+
 **Next:** PR-10 ThreatFox corroboration on IOC edges.
 
 ---
