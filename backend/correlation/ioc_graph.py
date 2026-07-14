@@ -11,6 +11,11 @@ from correlation.confidence import (
 from correlation.confirm import confirmation_receipt, confirmations_for_iocs_batch
 from correlation.copy import infrastructure_summary
 from correlation.ioc_normalize import is_noise_ip
+from correlation.threatfox_corroboration import (
+    batch_threatfox_hits,
+    corroboration_receipt,
+    ioc_edge_key,
+)
 
 _CONFIDENCE_RANK = {"low": 0, "medium": 1, "high": 2}
 
@@ -59,6 +64,9 @@ async def find_shared_infrastructure_v2(
     confirmations_by_value = await confirmations_for_iocs_batch(
         db, [row["ioc_value"] for row in rows]
     )
+    threatfox_hits = await batch_threatfox_hits(
+        db, [(row["ioc_type"], row["ioc_value"]) for row in rows]
+    )
     by_peer: dict[str, list[dict]] = {}
 
     for row in rows:
@@ -67,6 +75,12 @@ async def find_shared_infrastructure_v2(
         ioc_value = row["ioc_value"]
         confirmations = confirmations_by_value.get(ioc_value, {})
         noise = ioc_type.upper() == "IP" and is_noise_ip(ioc_value)
+        tf_rows = threatfox_hits.get(ioc_edge_key(ioc_type, ioc_value) or (), [])
+        corroborated_by = [
+            corroboration_receipt(r["ioc_id"])
+            for r in tf_rows
+            if r.get("ioc_id")
+        ]
         conf, why, factors = confidence_for_ioc_edge(
             ioc_type,
             confirmations=confirmations,
@@ -74,6 +88,7 @@ async def find_shared_infrastructure_v2(
             degree=row["degree"] or 0,
             observed_at=row["observed_at"],
             ingested_at=row["fetched_at"],
+            corroborated_by=corroborated_by or None,
         )
         edge = {
             "ioc_type": ioc_type,
@@ -84,6 +99,8 @@ async def find_shared_infrastructure_v2(
             "observed_at": row["observed_at"],
             "ingested_at": row["fetched_at"],
         }
+        if corroborated_by:
+            edge["corroborated_by"] = corroborated_by
         for f in factors:
             if f.get("factor") == "freshness":
                 edge["freshness_factor"] = f.get("value")
@@ -100,6 +117,9 @@ async def find_shared_infrastructure_v2(
     for peer, edges in by_peer.items():
         counts = _count_by_type(edges)
         confidence, evidence, why, factors = aggregate_infrastructure_confidence(edges)
+        sources = ["otx"]
+        if any(e.get("corroborated_by") for e in edges):
+            sources.append("threatfox")
 
         results.append({
             "cve_id_b": peer,
@@ -111,7 +131,7 @@ async def find_shared_infrastructure_v2(
             "confidence": confidence,
             "evidence": evidence,
             "summary": infrastructure_summary(peer, counts),
-            "sources": ["otx"],
+            "sources": sources,
             "why_not_higher": why,
             "confidence_factors": factors,
         })
