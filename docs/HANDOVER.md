@@ -12,6 +12,15 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — QA-U1: DetailDrawer header overflow menu — merged #520
+
+**What:** At `max-width: 480px`, investigation and report actions collapse into a `···`
+overflow menu; Pin and Close stay visible. Fixes ~193px header clip at 375px viewports.
+
+**Next:** RB-1 resource metrics collector.
+
+---
+
 ## 2026-07-14 — AKH-2 tail: remove dead GET /api/usage + Inbound limits HelpTip
 
 **What:** Dropped unused `GET /api/usage` and `fetchUsage()`; kept `GET /api/usage/ioc`

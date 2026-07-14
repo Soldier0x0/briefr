@@ -95,7 +95,7 @@ before PR-9.
 | PR | Title | Status |
 |----|-------|--------|
 | **QA-F1** | DetailDrawer DETECT tab: parallelize external rule-source calls (GitHub Search blocks the whole response 15-30s, unauthenticated in dev); fix frontend/backend timeout mismatch causing a false "request timed out" on every uncached CVE | ✅ #484 — shipped as skip-when-unauthenticated, not parallelization (see PR body: parallelizing would have reintroduced a pool-poisoning regression) |
-| **QA-U1** | DetailDrawer header: real 193px clip (not wrap) at 375px width — action button row needs a responsive collapse/overflow menu. Folds into UX-C1/C2 scope | 📋 |
+| **QA-U1** | DetailDrawer header: real 193px clip (not wrap) at 375px width — action button row needs a responsive collapse/overflow menu. Folds into UX-C1/C2 scope | ✅ #520 |
 | **QA-U2** | Accent-color design pass for drawer content — token renders correctly but only 2-3 touches per tab, reads as "lost." Design judgment, not a coded fix | 📋 |
 | **QA-U3** | Global header: 29px real overflow at ~375px width (narrow-device edge case) | 📋 low |
 
