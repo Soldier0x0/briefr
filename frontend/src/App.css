@@ -55,7 +55,7 @@ input:focus, textarea:focus {
 
 [data-theme="light"] input:focus,
 [data-theme="light"] textarea:focus {
-  border-color: var(--red);
+  border-color: var(--accent-primary);
 }
 
 /* ── Layout ────────────────────────────────────────────── */
