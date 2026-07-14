@@ -213,9 +213,9 @@ no collateral skip-decorator corruption. Full SQLite suite green (no regressions
 | **38 / UX-J1** | Domain-term explanation sweep (PRODUCT.md principle 6): KEV, EPSS, CVSS, CWE, CAPEC, ATT&CK IDs get HelpTip/ExplainTip coverage on feed, drawer, Forge | ✅ (this PR) — audit found feed mostly covered (FilterBar/StatsRow/CVECard EPSS); filled gaps: drawer CWE tags, ATT&CK section hint, CVECard CVSS badge, Forge KEV badges + CWE/EPSS columns + pack context line |
 | **39 / UX-L1** | "Scope & limits" panel in About modal — render PRODUCT.md Scope & Limits content (copy is final, JSX only); browser-verify with the UX-C1 pass | ✅ (this PR) |
 | **Issue 21** | API key suffix + provider health ping in UI | 🔶 backend #435 — UI tail? |
-| **UI overhaul 3a** | Dismissible config banner (not permanent amber) | 📋 [`../archive/superseded/UI_UX_OVERHAUL_PLAN.md`](../archive/superseded/UI_UX_OVERHAUL_PLAN.md) |
-| **UI overhaul 3b** | Status legend component | 📋 archive plan |
-| **UI overhaul §6** | Restart dropdown portal (clipped menu) | 📋 verify if still broken |
+| **UI overhaul 3a** | Dismissible config banner (not permanent amber) | ✅ verified already fixed — the permanent `load_dotenv` amber banner no longer exists in `ApiKeysPage` |
+| **UI overhaul 3b** | Status legend component | ✅ (this PR) — orphan `StatusLegend.jsx` corrected (LOCKED/PAUSED/DISABLED copy now matches scheduler HelpTips) and mounted as a collapsible disclosure in the admin sidebar footer |
+| **UI overhaul §6** | Restart dropdown portal (clipped menu) | ✅ verified already fixed — `StatusBar.jsx` renders the restart menu via `createPortal` + `getBoundingClientRect` positioning |
 
 **Shipped (do not re-queue):** PR1–PR11, PR12 (#413–#415), PR13 (#422), notification center (#439), O-1/O-2 (#428), O-3 (#514), wallboard v2 core (#430), K5 (#433), UX-C1 (#474), UX-C2 (#475).
 

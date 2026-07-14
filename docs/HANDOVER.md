@@ -12,6 +12,18 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — UI overhaul 3b legend + 3a/§6 verify — merged (this PR)
+
+**What:** Orphan `StatusLegend.jsx` (never imported since the admin overhaul) fixed
+(LOCKED/PAUSED copy now matches scheduler HelpTips) and mounted as a collapsible
+disclosure in the admin sidebar footer. 3a (permanent amber banner) and §6 (restart
+dropdown clipping) verified already fixed on HEAD.
+
+**Next:** remaining open: QA-U2 (design pass), PR-P4 (optional), item 29 (migration
+decision), PR3 tooltip follow-up (incremental), parked/evidence-gated programs.
+
+---
+
 ## 2026-07-14 — UX §5 operator tail (items 30/32/33 + 28/31 verified) — merged (this PR)
 
 **What:** `GET /api/admin/logs` gains `since`/`until` ISO time bounds (+ datetime inputs
