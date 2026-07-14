@@ -22,6 +22,10 @@ _CREATE_IDX_CVES_HAS_POC_SQL = (
     "CREATE INDEX IF NOT EXISTS idx_cves_has_poc ON cves(has_poc)"
 )
 
+_CREATE_IDX_CVES_MODIFIED_SQL = (
+    "CREATE INDEX IF NOT EXISTS idx_cves_modified ON cves(modified)"
+)
+
 _ALEMBIC_VERSION_SQL = "SELECT version_num FROM alembic_version LIMIT 1"
 
 
@@ -132,6 +136,7 @@ async def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_cves_severity ON cves(severity);
             CREATE INDEX IF NOT EXISTS idx_cves_published ON cves(published);
+            CREATE INDEX IF NOT EXISTS idx_cves_modified ON cves(modified);
             CREATE INDEX IF NOT EXISTS idx_cves_is_kev ON cves(is_kev);
             CREATE INDEX IF NOT EXISTS idx_cves_epss ON cves(epss_score);
 
@@ -875,6 +880,7 @@ async def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_threatfox_iocs_type_value ON threatfox_iocs(ioc_type, ioc_value)",
             "ALTER TABLE cves ADD COLUMN is_vulncheck_exploited INTEGER DEFAULT 0",
             "CREATE INDEX IF NOT EXISTS idx_cves_vulncheck_exploited ON cves(is_vulncheck_exploited)",
+            _CREATE_IDX_CVES_MODIFIED_SQL,
             "DROP INDEX IF EXISTS idx_correlation_infra_a",
             "DROP INDEX IF EXISTS idx_correlation_infra_b",
             "DROP TABLE IF EXISTS correlation_infrastructure",

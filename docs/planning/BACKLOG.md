@@ -73,7 +73,7 @@ before PR-9.
 
 | PR | Title | Status |
 |----|-------|--------|
-| PR-P3 | Index `cves.modified` | 📋 |
+| PR-P3 | Index `cves.modified` | ✅ in PR |
 | PR-P4 | KEV upsert batching | 📋 optional |
 | PR-O1 | Feed empty → scheduler `had_error` | 📋 |
 | PR-O2 | Correlation GET read-only split (CACHE-001) | 📋 |
