@@ -48,8 +48,8 @@ def test_normalize_timeout_error():
 
 def test_format_db_exception_message_timeout():
     wrapped = normalize_db_exception(TimeoutError())
-    assert format_db_exception_message(wrapped) == "DatabaseError: PostgreSQL command timeout"
-    assert format_db_exception_message(TimeoutError()) == "TimeoutError: PostgreSQL command timeout"
+    assert format_db_exception_message(wrapped) == "DatabaseError: Database command timeout"
+    assert format_db_exception_message(TimeoutError()) == "TimeoutError: Database command timeout"
 
 
 def test_reraise_db_exception_preserves_subclass():

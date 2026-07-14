@@ -6,7 +6,6 @@ Post-B Phase 2: callers outside ``db/`` must catch ``DatabaseError`` /
 
 from __future__ import annotations
 
-import asyncio
 import sqlite3
 from typing import TypeVar
 
@@ -45,10 +44,10 @@ def format_db_exception_message(exc: BaseException) -> str:
     if isinstance(exc, DatabaseError):
         cause = exc.__cause__
         if isinstance(cause, TimeoutError):
-            return "DatabaseError: PostgreSQL command timeout"
+            return "DatabaseError: Database command timeout"
         return type(exc).__name__
     if isinstance(exc, TimeoutError):
-        return "TimeoutError: PostgreSQL command timeout"
+        return "TimeoutError: Database command timeout"
     if str(exc):
         return f"{type(exc).__name__}: {exc}"
     return type(exc).__name__
@@ -59,7 +58,7 @@ def normalize_db_exception(exc: BaseException) -> DatabaseError:
     if isinstance(exc, DatabaseError):
         return exc
     if isinstance(exc, TimeoutError):
-        return DatabaseError("PostgreSQL command timeout")
+        return DatabaseError("Database command timeout")
     if isinstance(exc, sqlite3.OperationalError):
         if _sqlite_locked_message(exc):
             return DatabaseLockedError(str(exc))
