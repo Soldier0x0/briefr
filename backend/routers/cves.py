@@ -442,7 +442,7 @@ CVE_ORDER_BY = """
             WHERE cm_peer.cve_id != cm_self.cve_id
               AND cc.retracted_at IS NULL
               AND cc.lifecycle IN ('active', 'emerging')
-              AND LOWER(cc.confidence) IN ('medium', 'high')
+              AND cc.confidence IN ('medium', 'high')
         ) THEN 0 ELSE 1 END,
         c.published DESC,
         CASE c.severity

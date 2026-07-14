@@ -104,14 +104,19 @@ async def compute_correlation_metrics_snapshot(db) -> dict[str, Any]:
         or 0
     )
 
-    degree_rows = await db.execute_fetchall(
-        "SELECT cve_count FROM ioc_degree ORDER BY cve_count"
-    )
+    total_degrees = int(await _scalar(db, "SELECT COUNT(*) FROM ioc_degree") or 0)
     ioc_degree_p95 = 0
-    if degree_rows:
-        idx = max(0, int(len(degree_rows) * 0.95) - 1)
-        dr = degree_rows[idx]
-        ioc_degree_p95 = int(dr["cve_count"] if isinstance(dr, dict) else dict(dr)["cve_count"])
+    if total_degrees > 0:
+        idx = max(0, int(total_degrees * 0.95) - 1)
+        p95_rows = await db.execute_fetchall(
+            f"SELECT cve_count FROM ioc_degree ORDER BY cve_count LIMIT 1 OFFSET {idx}"
+        )
+        if p95_rows:
+            row = p95_rows[0]
+            if isinstance(row, dict):
+                ioc_degree_p95 = int(next(iter(row.values())))
+            else:
+                ioc_degree_p95 = int(dict(row)["cve_count"])
 
     avg_independent_sources = float(
         await _scalar(
@@ -129,17 +134,21 @@ async def compute_correlation_metrics_snapshot(db) -> dict[str, Any]:
     cves_with_pulses = int(
         await _scalar(db, "SELECT COUNT(DISTINCT cve_id) FROM otx_cve_pulses") or 0
     )
-    cves_in_campaigns = int(
-        await _scalar(
-            db, "SELECT COUNT(DISTINCT cve_id) FROM correlation_campaign_members"
+    orphan_cve_ratio = 0.0
+    if cves_with_pulses > 0:
+        orphan_cves = int(
+            await _scalar(
+                db,
+                """
+                SELECT COUNT(DISTINCT cve_id) FROM otx_cve_pulses
+                WHERE cve_id NOT IN (
+                    SELECT DISTINCT cve_id FROM correlation_campaign_members
+                )
+                """,
+            )
+            or 0
         )
-        or 0
-    )
-    orphan_cve_ratio = (
-        round((cves_with_pulses - cves_in_campaigns) / cves_with_pulses, 4)
-        if cves_with_pulses
-        else 0.0
-    )
+        orphan_cve_ratio = round(orphan_cves / cves_with_pulses, 4)
 
     campaigns_active = int(
         await _scalar(
@@ -178,28 +187,41 @@ async def compute_correlation_metrics_snapshot(db) -> dict[str, Any]:
     )
 
     # Median evidence age from observed_at or fetched_at (days)
-    age_rows = await db.execute_fetchall(
-        """
-        SELECT COALESCE(observed_at, fetched_at) AS ts
-        FROM otx_pulse_iocs
-        WHERE COALESCE(observed_at, fetched_at) IS NOT NULL
-        ORDER BY ts
-        """
+    total_ts = int(
+        await _scalar(
+            db,
+            """
+            SELECT COUNT(*) FROM otx_pulse_iocs
+            WHERE COALESCE(observed_at, fetched_at) IS NOT NULL
+            """,
+        )
+        or 0
     )
     median_evidence_age_days = 0.0
-    if age_rows:
-        mid = age_rows[len(age_rows) // 2]
-        ts_raw = mid["ts"] if isinstance(mid, dict) else dict(mid)["ts"]
-        if ts_raw:
-            try:
-                ts = datetime.fromisoformat(str(ts_raw).replace("Z", "+00:00"))
-                if ts.tzinfo is None:
-                    ts = ts.replace(tzinfo=timezone.utc)
-                median_evidence_age_days = round(
-                    (datetime.now(timezone.utc) - ts).total_seconds() / 86400, 2
-                )
-            except ValueError:
-                median_evidence_age_days = 0.0
+    if total_ts > 0:
+        mid_idx = total_ts // 2
+        mid_rows = await db.execute_fetchall(
+            f"""
+            SELECT COALESCE(observed_at, fetched_at) AS ts
+            FROM otx_pulse_iocs
+            WHERE COALESCE(observed_at, fetched_at) IS NOT NULL
+            ORDER BY ts
+            LIMIT 1 OFFSET {mid_idx}
+            """
+        )
+        if mid_rows:
+            mid = mid_rows[0]
+            ts_raw = mid["ts"] if isinstance(mid, dict) else dict(mid)["ts"]
+            if ts_raw:
+                try:
+                    ts = datetime.fromisoformat(str(ts_raw).replace("Z", "+00:00"))
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=timezone.utc)
+                    median_evidence_age_days = round(
+                        (datetime.now(timezone.utc) - ts).total_seconds() / 86400, 2
+                    )
+                except ValueError:
+                    median_evidence_age_days = 0.0
 
     row = {
         "day": _today(),
