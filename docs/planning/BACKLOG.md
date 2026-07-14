@@ -233,7 +233,7 @@ Flat backlog after major programs above — **no strict order**; pick from here 
 | Durability | — (PR-R1/R2/R4 ✅; PR-R3 verified as IDEM-001 overlap in #449 scope — see §3) |
 | Ops / test infra | — (M-9 ✅, M-10 verified, PG-002/003 ✅) |
 | Resource benchmarking | — (RB-1/RB-2 complete) |
-| UX audit deferred | §5: item 29 (needs migration decision), PR3 follow-up, UI 3a/3b/§6 (items 28/30–33 ✅) |
+| UX audit deferred | §5: item 29 (needs migration decision), PR3 follow-up (items 28/30–33, UI 3a/3b/§6 ✅) |
 | Wallboard optional | §7 optional rows |
 
 ---
