@@ -97,6 +97,45 @@ def test_logs_endpoint_filters_by_search(admin_client):
     assert all("detection lookup" in e["message"].lower() for e in logs)
 
 
+def test_logs_endpoint_filters_by_time_range(admin_client):
+    """Issue 30: server-side since/until bounds on ISO timestamps."""
+    from structured_logging import clear_log_buffer
+
+    clear_log_buffer()
+    logging.getLogger("test.admin.timerange").info("Time range probe entry")
+
+    resp = admin_client.get("/api/admin/logs?limit=10&search=Time+range+probe")
+    entry_ts = resp.json()["logs"][0]["ts"]
+
+    # A window that contains the entry
+    inside = admin_client.get(
+        f"/api/admin/logs?limit=10&search=Time+range+probe&since=2000-01-01T00:00:00&until=2100-01-01T00:00:00"
+    )
+    assert inside.status_code == 200
+    assert inside.json()["logs"]
+
+    # A window entirely before the entry
+    before = admin_client.get(
+        "/api/admin/logs?limit=10&search=Time+range+probe&until=2000-01-01T00:00:00"
+    )
+    assert before.status_code == 200
+    assert before.json()["logs"] == []
+
+    # A window entirely after the entry
+    after = admin_client.get(
+        "/api/admin/logs?limit=10&search=Time+range+probe&since=2100-01-01T00:00:00"
+    )
+    assert after.status_code == 200
+    assert after.json()["logs"] == []
+
+    # since is inclusive of the exact timestamp
+    exact = admin_client.get(
+        f"/api/admin/logs?limit=10&search=Time+range+probe&since={entry_ts}"
+    )
+    assert exact.status_code == 200
+    assert exact.json()["logs"]
+
+
 def test_logs_endpoint_filters_by_job_id(admin_client):
     import asyncio
 

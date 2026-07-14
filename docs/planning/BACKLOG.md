@@ -201,12 +201,12 @@ no collateral skip-decorator corruption. Full SQLite suite green (no regressions
 
 | ID | Item | Status |
 |----|------|--------|
-| **28** | Application logs — structured `extra` + expandable row in `IngestLogPage` | 📋 |
-| **29** | Audit logs — expandable actor/action context; optional `metadata_json` | 📋 |
-| **30** | Log search — server-side time range + `job_id` filter | 📋 |
-| **31** | Failure observability — shared `run_id` linking toast → scheduler → logs | 📋 |
-| **32** | Scheduler manual trigger duplication (`MANUAL_PIPELINES` vs `JobTable`) | 📋 |
-| **33** | Scheduler table — search/filters at ~3 pages of jobs | 📋 |
+| **28** | Application logs — structured `extra` + expandable row in `IngestLogPage` | ✅ verified shipped — expandable rows with structured extras + tracebacks exist in `IngestLogPage`; `job_log_context` binds job_id/run_id |
+| **29** | Audit logs — expandable actor/action context; optional `metadata_json` | 📋 needs migration decision (`metadata_json` column) — deferred to maintainer |
+| **30** | Log search — server-side time range + `job_id` filter | ✅ (this PR) — `since`/`until` ISO bounds added; `job_id` filter already existed |
+| **31** | Failure observability — shared `run_id` linking toast → scheduler → logs | ✅ verified shipped — `job_log_context` run_id persisted in last-run history; `JobTable` links to logs filtered by `run_id` |
+| **32** | Scheduler manual trigger duplication (`MANUAL_PIPELINES` vs `JobTable`) | ✅ (this PR) — section retitled "Pinned quick triggers" with HelpTip clarifying the single shared run path |
+| **33** | Scheduler table — search/filters at ~3 pages of jobs | ✅ (this PR) — status chips existed; job name/id search box added |
 | **PR3 follow-up** | Migrate analyst `title=` tooltips on `CVECard` / `DetailDrawer` to `HelpTip` | 📋 incremental |
 | **37 / UX-C1** | Interactive control consistency — drawer buttons + tabs to `.ui-btn` standard (Issue 37) | ✅ shipped (#474) |
 | **37 / UX-C2** | CVE card action row + feed surfaces to `.ui-btn` standard (red = destructive only) | ✅ #475 |
@@ -233,7 +233,7 @@ Flat backlog after major programs above — **no strict order**; pick from here 
 | Durability | — (PR-R1/R2/R4 ✅; PR-R3 verified as IDEM-001 overlap in #449 scope — see §3) |
 | Ops / test infra | — (M-9 ✅, M-10 verified, PG-002/003 ✅) |
 | Resource benchmarking | — (RB-1/RB-2 complete) |
-| UX audit deferred | §5 items 28–33, PR3 follow-up, UI 3a/3b/§6 |
+| UX audit deferred | §5: item 29 (needs migration decision), PR3 follow-up, UI 3a/3b/§6 (items 28/30–33 ✅) |
 | Wallboard optional | §7 optional rows |
 
 ---
