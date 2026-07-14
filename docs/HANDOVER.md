@@ -14,6 +14,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — UI-M automated PR loop started (E0-1 → E0-2)
+
+**What:** Autonomous UI modernization execution loop began. Merged PRs:
+- **#550** E0-1 — `tokens.css` wired, App.css reconciled, design-token lint gates
+- **#551** E2-8 — `PyJWT` in `requirements.txt`
+- **#552** E2-9 — production Postgres 17 doc correction
+- **#553** E2-1 — Resources charts bounded + empty state
+- **#554** E0-2/E0-4 — Radix `Checkbox` primitive + `CLAUDE.md` doc sync
+
+Gemini review disposition applied on #550 (rg `--pcre2` removal, contrast parser hardening) and #554 (Checkbox `className` on label wrapper).
+
+**Next (plan §13 order):** E0-3 motion toggle → E2-2 CPU metric → E1-1 correlation precompute (parallel reliability track) → E4-1/E4-2 token wins → E3 primitives…
+
+---
+
 ## 2026-07-14 — UI/reliability planning package reconciled + wired into execution (this PR)
 
 **What (docs-only, no runtime change):** The 2026-07-14 planning package (#546/#547 —
