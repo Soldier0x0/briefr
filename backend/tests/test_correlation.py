@@ -211,6 +211,31 @@ def test_get_correlation_includes_campaigns_and_v2_cache(tmp_path, monkeypatch):
     run_db_test(run())
 
 
+def test_get_correlation_read_path_does_not_write_correlation_actor(tmp_path, monkeypatch):
+    """PR-O2 (CACHE-001): the GET path computes actor findings live but never
+    writes correlation_actor — persistence is scheduler-only."""
+    async def run():
+        db_path = str(tmp_path / "corr-readonly.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        monkeypatch.setenv("OTX_API_KEY", "test-key")
+        db = await _seed_db(db_path)
+        try:
+            before = await db.execute_fetchall(
+                "SELECT COUNT(*) AS n FROM correlation_actor"
+            )
+            result = await get_correlation_for_cve(db, "CVE-2024-1001")
+            assert result["meta"]["engine_version"] == "2.0"
+            after = await db.execute_fetchall(
+                "SELECT COUNT(*) AS n FROM correlation_actor"
+            )
+            assert after[0]["n"] == before[0]["n"]
+        finally:
+            await db.close()
+
+    run_db_test(run())
+
+
 def test_prune_invalid_campaign_members(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "corr-prune.db")

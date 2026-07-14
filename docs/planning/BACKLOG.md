@@ -77,7 +77,7 @@ before PR-9.
 | PR-P4 | KEV upsert batching | 📋 optional |
 | PR-O1 | Feed empty → scheduler `had_error` | ✅ #517 |
 | PR-F1–F4 | Admin gate, safe URLs, fonts, loadStats | ✅ #518 |
-| PR-O2 | Correlation GET read-only split (CACHE-001) | 📋 |
+| PR-O2 | Correlation GET read-only split (CACHE-001) | ✅ (this PR) |
 
 ### API key health & quota clarity (found 2026-07-12)
 

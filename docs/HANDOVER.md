@@ -12,6 +12,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — PR-O2: correlation GET read-only split — merged (this PR)
+
+**What:** `get_correlation_for_cve` no longer writes `correlation_actor` on the GET
+path (CACHE-001) — actor findings are computed live for the response; durable rows are
+scheduler-only (nightly job). The 6h feed_cache read-through stays (documented cache).
+
+**Next:** M-9/M-10 verify, then UX-J1 term sweep.
+
+---
+
 ## 2026-07-14 — PR-R2: LLM extraction response staging — merged (this PR)
 
 **What:** Raw LLM responses stage to `feed_cache` (`llm_products_raw:<CVE>`) in their own
