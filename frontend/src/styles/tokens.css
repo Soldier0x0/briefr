@@ -1,0 +1,314 @@
+/* =============================================================================
+ * BRIEFR semantic design tokens — SPECIFICATION (NOT YET WIRED)
+ * -----------------------------------------------------------------------------
+ * Status:      DRAFT / spec artifact. This file is intentionally NOT imported
+ *              anywhere yet (no runtime effect). It is the single source of
+ *              truth for the token vocabulary that the UI modernization effort
+ *              will adopt. Wiring it in (importing from main.jsx and migrating
+ *              components off raw hex) is tracked as Phase 1 in
+ *              docs/planning/ui-modernization-plan.md (ticket E0-1).
+ *
+ * Authority:   docs/design/design-system.md (usage rules) and
+ *              docs/decisions/ADR-003-ui-design-system.md (rationale).
+ *
+ * Reconciliation with frontend/src/App.css:
+ *   App.css ALREADY defines: --bg/--bg2/--bg3, --border/--border2/--border-strong,
+ *   --text/--text2/--text3/--text-disabled, --text-primary/secondary/muted/heading/link,
+ *   --type-*, --red/--amber/--green/--accent, --surface-page/raised/sunken,
+ *   --input-bg, --chip-*, --focus-ring, --radius-sm/md, --motion-fast, --z-*.
+ *   Those names are PRESERVED. This file (a) re-expresses them as the canonical
+ *   semantic layer, and (b) ADDS the layers App.css is missing today:
+ *   severity scale, status scale, --accent-selected, a full spacing scale,
+ *   --radius-lg, motion-normal/slow + easing tokens, chart tokens, breakpoints.
+ *
+ *   MIGRATION RULE: new/edited code consumes the SEMANTIC names below. Legacy
+ *   raw names (--red, --bg2, --text3, …) remain as compatibility aliases until
+ *   components are migrated, then are removed (see plan Phase 2). Do NOT add new
+ *   raw hex anywhere — see .cursor/rules/design-system.mdc.
+ *
+ * Contrast: every text-on-surface pairing in the light/dark maps below is
+ *   specified to meet WCAG 2.1 AA (>= 4.5:1 for < 18px text, >= 3:1 for >= 18px
+ *   or bold, and for UI/graphical boundaries). Muted text was RAISED from the
+ *   current ~3:1 grays to meet AA (audit finding H2).
+ * ========================================================================== */
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 1. PRIMITIVE PALETTE (raw values — referenced ONLY by the semantic layer
+ *    below; product code must never consume these directly)
+ * ──────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Neutrals (dark terminal ramp) */
+  --c-neutral-0:   #0a0a08; /* page */
+  --c-neutral-1:   #111110; /* raised */
+  --c-neutral-2:   #1a1a17; /* sunken / hover base */
+  --c-neutral-3:   #222220;
+  --c-line-1:      #2a2a25;
+  --c-line-2:      #333330;
+  --c-line-3:      #3d3d38;
+  --c-ink-0:       #f2f0ea; /* headings */
+  --c-ink-1:       #e8e6df; /* primary body */
+  --c-ink-2:       #c4c1b8; /* secondary */
+  --c-ink-3:       #a7a396; /* muted — RAISED from #969388 to reach AA on --bg */
+  --c-ink-disabled:#6c6a62; /* RAISED from #5c5a54 for a legible disabled state */
+
+  /* Brand / accent */
+  --c-accent:      #c8b88a; /* BRIEFR signature tan/gold */
+  --c-accent-strong:#d8c79a;
+  --c-link:        #7eb8f0;
+
+  /* Signal hues */
+  --c-red:         #e85533; --c-red-strong:#f26b4a; --c-red-dim:#3d1a12;
+  --c-amber:       #d4860a; --c-amber-strong:#efa02a; --c-amber-dim:#2e1e04;
+  --c-yellow:      #d8c341; --c-yellow-dim:#2c2705;
+  --c-green:       #4a9e6a; --c-green-strong:#5cb87e; --c-green-dim:#0d2318;
+  --c-blue:        #4a86c8; --c-blue-dim:#0c1c2e;
+  --c-slate:       #7d8aa0; --c-slate-dim:#161a20;
+
+  /* Chart categorical ramp (colorblind-aware ordering) */
+  --c-chart-1:#c8b88a; --c-chart-2:#7eb8f0; --c-chart-3:#5cb87e;
+  --c-chart-4:#d4860a; --c-chart-5:#b07dd6; --c-chart-6:#e0715a;
+  --c-chart-7:#5bc0c0; --c-chart-8:#c9c05a;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 2. SEMANTIC TOKENS — DARK (default). Product code consumes ONLY these.
+ * ──────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --background-primary:    var(--c-neutral-0);
+  --background-secondary:  var(--c-neutral-1);
+  --background-tertiary:   var(--c-neutral-2);
+  --background-overlay:    rgba(6, 6, 5, 0.72); /* modal/drawer scrim */
+
+  /* Surfaces */
+  --surface-primary:   var(--c-neutral-1);
+  --surface-raised:    #121211;
+  --surface-sunken:    var(--c-neutral-2);
+  --surface-hover:     var(--c-neutral-2);   /* +~10% luminance vs surface (audit M1) */
+  --surface-active:    var(--c-neutral-3);
+  --surface-input:     var(--c-neutral-1);
+  --surface-selected:  color-mix(in srgb, var(--c-accent) 14%, transparent);
+
+  /* Text */
+  --text-primary:    var(--c-ink-1);
+  --text-secondary:  var(--c-ink-2);
+  --text-muted:      var(--c-ink-3);        /* AA-guaranteed on --background-primary */
+  --text-heading:    var(--c-ink-0);
+  --text-disabled:   var(--c-ink-disabled);
+  --text-link:       var(--c-link);
+  --text-on-accent:  #17140c;
+  --text-on-danger:  #ffffff;
+
+  /* Borders */
+  --border-subtle:   var(--c-line-1);
+  --border-default:  var(--c-line-2);
+  --border-strong:   var(--c-line-3);
+  --border-focus:    var(--c-accent);
+
+  /* Accent */
+  --accent-primary:  var(--c-accent);
+  --accent-strong:   var(--c-accent-strong);
+  --accent-selected: var(--c-accent);       /* THE single "selected/active" token
+                                               (audit H1 — replaces green chips /
+                                               red radios / orange tab / faint nav) */
+
+  /* Severity (CVSS / risk) — used for badges AND the card left-accent (audit E4-3) */
+  --severity-critical:      var(--c-red);
+  --severity-critical-bg:   var(--c-red-dim);
+  --severity-high:          var(--c-amber);
+  --severity-high-bg:       var(--c-amber-dim);
+  --severity-medium:        var(--c-yellow);
+  --severity-medium-bg:     var(--c-yellow-dim);
+  --severity-low:           var(--c-green);
+  --severity-low-bg:        var(--c-green-dim);
+  --severity-none:          var(--c-slate);
+  --severity-none-bg:       var(--c-slate-dim);
+
+  /* Status (health / ops / circuits / feeds / jobs) */
+  --status-success:      var(--c-green);
+  --status-success-bg:   var(--c-green-dim);
+  --status-warning:      var(--c-amber);
+  --status-warning-bg:   var(--c-amber-dim);
+  --status-error:        var(--c-red);
+  --status-error-bg:     var(--c-red-dim);
+  --status-info:         var(--c-blue);
+  --status-info-bg:      var(--c-blue-dim);
+  --status-neutral:      var(--c-slate);
+  --status-neutral-bg:   var(--c-slate-dim);
+
+  /* Danger (destructive ACTIONS only — never for neutral selection/links) */
+  --danger:          var(--c-red);
+  --danger-strong:   var(--c-red-strong);
+  --danger-bg:       var(--c-red-dim);
+
+  /* Charts */
+  --chart-1: var(--c-chart-1); --chart-2: var(--c-chart-2);
+  --chart-3: var(--c-chart-3); --chart-4: var(--c-chart-4);
+  --chart-5: var(--c-chart-5); --chart-6: var(--c-chart-6);
+  --chart-7: var(--c-chart-7); --chart-8: var(--c-chart-8);
+  --chart-grid:       var(--c-line-1);
+  --chart-axis:       var(--c-ink-3);
+  --chart-empty-text: var(--c-ink-3);
+
+  /* Heatmap ramp (publication timeline) */
+  --heatmap-0:#1a1a17; --heatmap-1:#2d1a0e; --heatmap-2:#7a3520;
+  --heatmap-3:#b84a28; --heatmap-4:#e85533;
+
+  /* ── Typography ── */
+  --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-display: 'DM Serif Display', Georgia, serif;
+
+  --font-size-title:       1.25rem;   /* 20px page titles */
+  --font-size-id:          1.125rem;  /* 18px CVE IDs */
+  --font-size-heading:     0.9375rem; /* 15px section headings */
+  --font-size-subheading:  0.875rem;  /* 14px card/panel titles */
+  --font-size-body:        0.875rem;  /* 14px body */
+  --font-size-secondary:   0.8125rem; /* 13px secondary */
+  --font-size-meta:        0.8125rem; /* 13px timestamps/labels */
+  --font-size-micro:       0.75rem;   /* 12px badges/pills — ABSOLUTE FLOOR, never body */
+
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  --line-height-tight: 1.25;
+  --line-height-base:  1.5;
+
+  /* ── Spacing (4px base) ── */
+  --space-0:  0;
+  --space-1:  0.25rem;  /* 4  */
+  --space-2:  0.5rem;   /* 8  */
+  --space-3:  0.75rem;  /* 12 */
+  --space-4:  1rem;     /* 16 */
+  --space-5:  1.5rem;   /* 24 */
+  --space-6:  2rem;     /* 32 */
+  --space-7:  3rem;     /* 48 */
+  --space-8:  4rem;     /* 64 */
+  --gutter:   var(--space-5); /* default page gutter (24–32px, per CLAUDE.md density rule) */
+
+  /* ── Radius ── */
+  --radius-none: 0;
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   10px;
+  --radius-pill: 999px;
+
+  /* ── Elevation / shadow (dark theme keeps these flat; light theme adds depth) ── */
+  --shadow-none: none;
+  --shadow-sm:   none;
+  --shadow-md:   none;
+  --shadow-lg:   none;
+  --shadow-overlay: 0 12px 40px rgba(0, 0, 0, 0.5); /* modals/drawers even in dark */
+
+  /* ── Focus ring (audit E6-2: high-contrast, accent-based, NOT red) ── */
+  --focus-ring:        0 0 0 2px var(--background-primary), 0 0 0 4px var(--accent-primary);
+  --focus-ring-inset:  inset 0 0 0 2px var(--accent-primary);
+
+  /* ── Z-index scale ── */
+  --z-base:        0;
+  --z-sticky:      100;
+  --z-drawer:      200;
+  --z-dropdown:    1000;
+  --z-modal:       1200;
+  --z-popover:     1300;
+  --z-tooltip:     1400;
+  --z-toast:       9998;
+
+  /* ── Motion durations + easing ──
+   * Gated by the tool-wide motion toggle: [data-motion="off"] sets all to 0ms
+   * (see block below and design-system.md §Motion). Range 120–180ms per audit. */
+  --motion-fast:    120ms;
+  --motion-normal:  160ms;
+  --motion-slow:    220ms;   /* reserved for larger surfaces (drawer/modal) only */
+  --ease-standard:  cubic-bezier(0.2, 0, 0, 1);    /* ease-out — default */
+  --ease-emphasized:cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit:      cubic-bezier(0.4, 0, 1, 1);
+  --transition-fast:   var(--motion-fast) var(--ease-standard);
+  --transition-normal: var(--motion-normal) var(--ease-standard);
+
+  /* ── Breakpoints (documented for reference; used via media queries) ──
+   * --bp-* custom properties cannot be used inside @media directly; these exist
+   * so JS/container-query logic and docs share one source of truth. */
+  --bp-sm: 640px;
+  --bp-md: 960px;   /* analyst surfaces tighten at/below this (audit responsive) */
+  --bp-lg: 1280px;
+  --bp-xl: 1600px;
+
+  /* ── Component sizing minimums (a11y target size >= 24px; buttons >= 30px) ── */
+  --control-height-sm: 24px;
+  --control-height-md: 30px;
+  --control-height-lg: 36px;
+  --hit-target-min:    24px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 3. TOOL-WIDE MOTION TOGGLE (audit E0-3)
+ *    Default = ON. Set data-motion="off" on <html> to disable ALL animation
+ *    (also honor OS prefers-reduced-motion below). Persisted via user prefs.
+ * ──────────────────────────────────────────────────────────────────────── */
+:root[data-motion="off"] {
+  --motion-fast:   0ms;
+  --motion-normal: 0ms;
+  --motion-slow:   0ms;
+}
+:root[data-motion="off"] *,
+:root[data-motion="off"] *::before,
+:root[data-motion="off"] *::after {
+  transition-duration: 0ms !important;
+  animation-duration:  0ms !important;
+  scroll-behavior: auto !important;
+}
+/* OS-level preference wins unless the user has explicitly opted in
+ * (data-motion="on" is written by the toggle when the user overrides). */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="on"]) {
+    --motion-fast:   0ms;
+    --motion-normal: 0ms;
+    --motion-slow:   0ms;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 4. LIGHT THEME MAP (parity target; currently not shipped — see design-system.md).
+ *    Only the values that differ from dark are overridden.
+ * ──────────────────────────────────────────────────────────────────────── */
+:root[data-theme="light"] {
+  --background-primary:   #f0ece4;
+  --background-secondary: #ffffff;
+  --background-tertiary:  #e8e4dc;
+  --background-overlay:   rgba(26, 24, 20, 0.4);
+
+  --surface-primary:  #ffffff;
+  --surface-raised:   #ffffff;
+  --surface-sunken:   #ebe7df;
+  --surface-hover:    #f4f1ea;
+  --surface-active:   #e8e4dc;
+  --surface-input:    #ffffff;
+
+  --text-primary:   #1a1814;
+  --text-secondary: #3d3a36;
+  --text-muted:     #55514a;   /* AA on light bg */
+  --text-heading:   #100e0a;
+  --text-disabled:  #8a857c;
+  --text-on-accent: #17140c;
+
+  --border-subtle:  #c9c4bb;
+  --border-default: #b8b2a8;
+  --border-strong:  #9a948a;
+
+  --severity-critical-bg: #fdeae5;
+  --severity-high-bg:     #faf0dc;
+  --severity-medium-bg:   #f7f2d6;
+  --severity-low-bg:      #d8ebe0;
+
+  --status-success-bg: #d8ebe0;
+  --status-warning-bg: #faf0dc;
+  --status-error-bg:   #fdeae5;
+  --status-info-bg:    #e2edf7;
+
+  --shadow-sm: 0 1px 2px rgba(26, 24, 20, 0.06);
+  --shadow-md: 0 2px 10px rgba(26, 24, 20, 0.1);
+  --shadow-lg: 0 8px 28px rgba(26, 24, 20, 0.14);
+}
