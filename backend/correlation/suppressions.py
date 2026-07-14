@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict
+from datetime import datetime, timezone
 from typing import Any
 
 from correlation.lifecycle import _parse_dt
@@ -102,7 +103,8 @@ async def resolve_suppressed_campaign_ids(db, suppressions: list[dict]) -> set[s
         oldest = sorted(
             members,
             key=lambda m: (
-                _parse_dt(m.get("created_date")) or _parse_dt("1970-01-01"),
+                _parse_dt(m.get("created_date"))
+                or datetime(1970, 1, 1, tzinfo=timezone.utc),
                 m["pulse_id"],
             ),
         )[0]

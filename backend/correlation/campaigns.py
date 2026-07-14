@@ -144,12 +144,14 @@ async def build_campaigns_from_pulses(db) -> dict[str, int]:
         tags = _parse_json_list(primary.get("tags"))
         countries = _parse_json_list(primary.get("targeted_countries"))
 
+        pg = type(db).__name__ == "PostgresConnection"
+        member_ph = ",".join(f"${i+1}" if pg else "?" for i in range(len(pulse_ids)))
         member_rows = await db.execute_fetchall(
             f"""
             SELECT DISTINCT ocp.cve_id
             FROM otx_cve_pulses ocp
             INNER JOIN cves c ON c.cve_id = ocp.cve_id
-            WHERE ocp.pulse_id IN ({",".join("?" * len(pulse_ids))})
+            WHERE ocp.pulse_id IN ({member_ph})
             ORDER BY ocp.cve_id ASC
             """,
             tuple(pulse_ids),

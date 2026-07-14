@@ -15,6 +15,16 @@ _JACCARD_THRESHOLD = 0.7
 _MIN_IOCS_FOR_JACCARD = 3
 
 
+def _is_postgres(db) -> bool:
+    return type(db).__name__ == "PostgresConnection"
+
+
+def _in_placeholders(count: int, *, pg: bool, start: int = 1) -> str:
+    if pg:
+        return ", ".join(f"${i}" for i in range(start, start + count))
+    return ", ".join("?" for _ in range(count))
+
+
 def normalize_pulse_name(name: str) -> str:
     text = re.sub(r"\s+", " ", (name or "").strip().lower())
     return text
@@ -98,11 +108,13 @@ async def rebuild_pulse_families(db) -> dict[str, Any]:
     created_map = {row["pulse_id"]: row["created_date"] or "" for row in pulse_rows}
     name_map = {row["pulse_id"]: normalize_pulse_name(row["pulse_name"] or "") for row in pulse_rows}
 
+    pg = _is_postgres(db)
+    id_ph = _in_placeholders(len(pulse_ids), pg=pg)
     cve_rows = await db.execute_fetchall(
         f"""
         SELECT pulse_id, cve_id
         FROM otx_cve_pulses
-        WHERE pulse_id IN ({",".join("?" * len(pulse_ids))})
+        WHERE pulse_id IN ({id_ph})
         """,
         tuple(pulse_ids),
     )
@@ -117,7 +129,7 @@ async def rebuild_pulse_families(db) -> dict[str, Any]:
         FROM otx_pulse_iocs oi
         LEFT JOIN ioc_degree deg
             ON deg.ioc_type = oi.ioc_type AND deg.ioc_value = oi.ioc_value
-        WHERE oi.pulse_id IN ({",".join("?" * len(pulse_ids))})
+        WHERE oi.pulse_id IN ({id_ph})
         """,
         tuple(pulse_ids),
     )
@@ -174,15 +186,16 @@ async def rebuild_pulse_families(db) -> dict[str, Any]:
     now = utcnow_str()
     await db.execute("DELETE FROM pulse_families")
     family_count = 0
+    insert_vals = _in_placeholders(4, pg=pg)
     for _root, members in families.items():
         oldest = _oldest_pulse_id(members, created_map)
         fam_id = family_id_for_oldest_pulse(oldest)
         family_count += 1
         for pid in members:
             await db.execute(
-                """
+                f"""
                 INSERT INTO pulse_families (pulse_id, family_id, jaccard, computed_at)
-                VALUES (?, ?, ?, ?)
+                VALUES ({insert_vals})
                 """,
                 (pid, fam_id, None, now),
             )
@@ -193,7 +206,8 @@ async def rebuild_pulse_families(db) -> dict[str, Any]:
 async def family_map_for_pulses(db, pulse_ids: list[str]) -> dict[str, str]:
     if not pulse_ids:
         return {}
-    placeholders = ",".join("?" * len(pulse_ids))
+    pg = _is_postgres(db)
+    placeholders = _in_placeholders(len(pulse_ids), pg=pg)
     rows = await db.execute_fetchall(
         f"""
         SELECT pulse_id, family_id FROM pulse_families
@@ -205,8 +219,9 @@ async def family_map_for_pulses(db, pulse_ids: list[str]) -> dict[str, str]:
 
 
 async def legacy_campaign_ids_for_family(db, family_id: str) -> list[str]:
+    ph = "$1" if _is_postgres(db) else "?"
     rows = await db.execute_fetchall(
-        "SELECT pulse_id FROM pulse_families WHERE family_id = ?",
+        f"SELECT pulse_id FROM pulse_families WHERE family_id = {ph}",
         (family_id,),
     )
     return [legacy_campaign_id_for_pulse(row["pulse_id"]) for row in rows]
