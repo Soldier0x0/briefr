@@ -403,7 +403,11 @@ async def get_correlation_for_cve(
             if row["cve_id_b"] not in campaign_members
         ]
 
-        await _store_actor_correlation(db, cve_upper, actor)
+        # PR-O2 (CACHE-001): no correlation_actor write here. This is the GET
+        # read path — actor findings above are computed live for the response;
+        # durable persistence is scheduler-only (run_correlation_analysis
+        # stores actor rows nightly for recent CVEs). The feed_cache write
+        # below is the documented 6-hour read-through cache, not domain state.
 
         if campaigns:
             otx_status = "ok"
