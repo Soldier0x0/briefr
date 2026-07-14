@@ -1574,6 +1574,28 @@
   font-size: 0.75rem;
 }
 
+.corr-conflicting-claims {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-left: 2px solid var(--amber);
+  background: color-mix(in srgb, var(--amber) 8%, transparent);
+}
+
+.corr-conflicting-label {
+  font-size: 0.7rem;
+  color: var(--amber);
+  margin: 0 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.corr-conflicting-list {
+  margin: 0;
+  padding-left: 1rem;
+  font-size: 0.75rem;
+  color: var(--text2);
+}
+
 .corr-finding-foot {
   display: flex;
   justify-content: flex-end;

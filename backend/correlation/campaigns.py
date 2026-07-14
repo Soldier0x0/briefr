@@ -271,7 +271,12 @@ async def get_campaigns_for_cve(
     find_shared_infrastructure_v2 (e.g. get_correlation_for_cve) pass the
     result through instead of triggering a second, identical query.
     """
-    from correlation.confidence import attribution_conflict, campaign_confidence
+    from correlation.attribution import (
+        attribution_conflict,
+        build_attribution_claims,
+        load_mitre_alias_index,
+    )
+    from correlation.confidence import campaign_confidence
     from correlation.copy import campaign_summary, sanitize_pulse_text
     from correlation.ioc_graph import find_shared_infrastructure_v2, ioc_edges_between, batch_ioc_edges_for_peers
     from correlation.local import kev_exploit_boosters
@@ -353,6 +358,7 @@ async def get_campaigns_for_cve(
         (cve_upper,),
     )
     mitre_names = [r["actor_name"] for r in actor_rows if r["actor_name"]]
+    alias_index = await load_mitre_alias_index(db)
 
     # Collect all unique filtered peer CVEs to batch query their shared IOC edges with anchor
     all_filtered_peers = set()
@@ -421,7 +427,15 @@ async def get_campaigns_for_cve(
                 "value": edge.get("ioc_value", ""),
             })
 
-        conflict = attribution_conflict(row["adversary"] or "", mitre_names)
+        conflict = attribution_conflict(
+            row["adversary"] or "", mitre_names, alias_index=alias_index
+        )
+        attribution_claims = build_attribution_claims(
+            row["adversary"] or "",
+            mitre_names,
+            alias_index=alias_index,
+            otx_observed_at=(row["first_seen"] if row["first_seen"] else "") or "",
+        )
         if conflict:
             confidence = "medium" if confidence == "high" else confidence
             why_not_higher = "Adversary attribution conflicts with MITRE technique-matched actors"
@@ -469,6 +483,7 @@ async def get_campaigns_for_cve(
             "why_not_higher": why_not_higher,
             "confidence_factors": confidence_factors,
             "attribution_conflict": conflict,
+            "attribution_claims": attribution_claims,
             "attribution_disclaimer": "OTX community pulse — unverified attribution",
             "author_count": int(row["author_count"] or 1),
             "first_seen": row["first_seen"] or "",

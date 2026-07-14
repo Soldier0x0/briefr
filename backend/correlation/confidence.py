@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from correlation.attribution import attribution_conflict as _attribution_conflict
 from correlation.freshness import (
     corroboration_factor,
     freshness_context,
@@ -242,14 +243,10 @@ def campaign_confidence(
 def attribution_conflict(
     otx_adversary: str,
     mitre_actors: list[str],
+    *,
+    alias_index: dict | None = None,
 ) -> bool:
-    if not otx_adversary or not mitre_actors:
-        return False
-    otx_lower = otx_adversary.lower()
-    for name in mitre_actors:
-        if not name:
-            continue
-        name_lower = name.lower()
-        if name_lower in otx_lower or otx_lower in name_lower:
-            return False
-    return True
+    """Backward-compatible wrapper; prefer correlation.attribution."""
+    return _attribution_conflict(
+        otx_adversary, mitre_actors, alias_index=alias_index
+    )
