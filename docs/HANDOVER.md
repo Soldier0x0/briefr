@@ -12,7 +12,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-14 — PR-P3: index on `cves.modified` (IDX-001)
+## 2026-07-14 — PR-O1: KEV feed failure → scheduler `had_error` (ERR-001)
+
+**What:** `FeedFetchError` from `fetch_kev` on circuit/HTTP/empty catalog; `_run_kev_sync`
+re-raises so `run_kev_sync` records `had_error` in job last-run state.
+
+**Next:** PR-F1–F4 frontend audit bundle.
+
+---
+
+## 2026-07-14 — PR-P3: index on `cves.modified` (IDX-001) — merged #516
 
 **What:** Alembic **022** `idx_cves_modified` on `cves(modified)`; SQLite bootstrap +
 forward migration in `db/init.py`. Closes codebase-audit IDX-001 for brief/OTX priority
