@@ -327,9 +327,9 @@ numbers recorded in the closing PR body:
 
 **Foundation (E0)**
 - [x] E0-1 tokens wired + reconciled + lint gates
-- [ ] E0-2 Radix adoption + reference Checkbox
+- [x] E0-2 Radix adoption + reference Checkbox
 - [ ] E0-3 tool-wide motion toggle
-- [ ] E0-4 docs sync on ADR acceptance (CLAUDE.md / AGENTS.md / PRODUCT_STATUS)
+- [x] E0-4 docs sync on ADR acceptance (CLAUDE.md / AGENTS.md / PRODUCT_STATUS)
 
 **Reliability (E1) — see backlog**
 - [ ] E1-1 correlation precompute (ADR-004)

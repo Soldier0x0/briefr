@@ -2,7 +2,7 @@
 
 BRIEFR is a self-hosted CVE intelligence and detection-engineering platform.
 FastAPI backend (`backend/`), React 19 + Vite frontend (`frontend/`, plain
-JSX/CSS, no component library), **PostgreSQL required in production**.
+JSX/CSS + semantic tokens + Radix primitives per ADR-003; no Tailwind), **PostgreSQL required in production**.
 
 ## Commands
 

@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Checkbox } from '../../../components/ui/index.js'
 import { ingestLogUrl } from '../../../utils/adminLinks.js'
 import { fmtIso, fmtDur } from '../formatters.js'
 import { jobLabel, statusLabel, statusHint } from '../catalog.js'
@@ -58,10 +59,13 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
 
   return (
     <div>
-      <label className="admin-checkbox-label" style={{ fontSize: '0.75rem', marginBottom: '0.4rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-        <input type="checkbox" checked={showIds} onChange={e => toggleShowIds(e.target.checked)} />
-        Show technical IDs
-      </label>
+      <Checkbox
+        id="admin-job-table-show-ids"
+        checked={showIds}
+        onCheckedChange={toggleShowIds}
+        label="Show technical IDs"
+        className="admin-job-table-show-ids"
+      />
       <table className="admin-table">
         <thead>
           <tr>

@@ -3086,3 +3086,7 @@
   position: relative;
   height: 200px;
 }
+
+.admin-job-table-show-ids {
+  margin-bottom: 0.4rem;
+}
