@@ -143,3 +143,37 @@ def test_batch_threatfox_hits_matches_canonical_domain(tmp_path, monkeypatch):
             await db.close()
 
     run_db_test(run())
+
+
+def test_batch_threatfox_hits_maps_domain_and_url_keys(tmp_path, monkeypatch):
+    from correlation.threatfox_corroboration import batch_threatfox_hits
+
+    async def run():
+        db_path = str(tmp_path / "tf-dual-type.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        await init_db()
+        db = await database.get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO threatfox_iocs (
+                    ioc_id, ioc_type, ioc_value, raw_ioc, malware, threat_type,
+                    confidence_level, first_seen
+                ) VALUES (
+                    'tf-dual', 'domain', 'shared.example', 'shared.example',
+                    'emotet', 'payload_delivery', 80, '2024-05-01'
+                )
+                """
+            )
+            await db.commit()
+            hits = await batch_threatfox_hits(
+                db,
+                [("DOMAIN", "shared.example"), ("URL", "http://shared.example/path")],
+            )
+            assert ("DOMAIN", "shared.example") in hits
+            assert any(k[0] == "URL" for k in hits)
+        finally:
+            await db.close()
+
+    run_db_test(run())

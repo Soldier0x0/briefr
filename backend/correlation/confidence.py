@@ -123,7 +123,8 @@ def confidence_for_ioc_edge(
         why = fresh["freshness_reason"]
     elif corroborated_by and _level_index(fresh_level) > _level_index(level):
         level = fresh_level
-        why = "Corroborated by ThreatFox mirror"
+        if level == "high":
+            why = None
     factors.append({
         "factor": "corroboration",
         "value": round(corroboration, 4),

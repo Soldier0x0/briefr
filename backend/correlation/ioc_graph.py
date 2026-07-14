@@ -10,10 +10,11 @@ from correlation.confidence import (
 )
 from correlation.confirm import confirmation_receipt, confirmations_for_iocs_batch
 from correlation.copy import infrastructure_summary
-from correlation.ioc_normalize import is_noise_ip, normalize_ioc_type
+from correlation.ioc_normalize import is_noise_ip
 from correlation.threatfox_corroboration import (
     batch_threatfox_hits,
     corroboration_receipt,
+    ioc_edge_key,
 )
 
 _CONFIDENCE_RANK = {"low": 0, "medium": 1, "high": 2}
@@ -74,10 +75,7 @@ async def find_shared_infrastructure_v2(
         ioc_value = row["ioc_value"]
         confirmations = confirmations_by_value.get(ioc_value, {})
         noise = ioc_type.upper() == "IP" and is_noise_ip(ioc_value)
-        tf_rows = threatfox_hits.get(
-            (normalize_ioc_type(ioc_type), ioc_value.strip().lower()),
-            [],
-        )
+        tf_rows = threatfox_hits.get(ioc_edge_key(ioc_type, ioc_value) or (), [])
         corroborated_by = [
             corroboration_receipt(r["ioc_id"])
             for r in tf_rows
