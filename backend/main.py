@@ -12,6 +12,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, ORJSONResponse
+from metrics.request_counter import increment_request_count
 
 load_dotenv()
 
@@ -223,6 +224,7 @@ async def request_context(request: Request, call_next):
         request_id = uuid.uuid4().hex[:16]
     token = request_id_var.set(request_id)
     start = time.perf_counter()
+    increment_request_count()
     try:
         response = await call_next(request)
         duration_ms = round((time.perf_counter() - start) * 1000, 1)

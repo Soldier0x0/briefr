@@ -1,3 +1,5 @@
+from typing import Any
+
 import asyncio
 import logging
 import os
@@ -1689,6 +1691,27 @@ async def run_session_cleanup() -> int:
         await db.close()
 
 
+async def run_resource_metrics_sample() -> dict[str, Any] | None:
+    """Scheduler hook: sample BRIEFR + Postgres utilization (RB-1)."""
+    if get_lock("resource_metrics_sample").locked():
+        logger.debug("resource_metrics_sample skipped — lock held")
+        return None
+
+    async with get_lock("resource_metrics_sample"):
+        from resource_collector import collect_and_store_sample
+
+        db = await get_db()
+        try:
+            sample = await collect_and_store_sample(db)
+            await db.commit()
+            return sample
+        except Exception as exc:
+            logger.error("Resource metrics sample failed: %s", exc)
+            return None
+        finally:
+            await db.close()
+
+
 async def run_cache_retention_cleanup() -> dict[str, int]:
     """Scheduler hook: delete physically stale cache and overlay rows (Sprint C3)."""
     from database import run_retention_cleanup
@@ -2062,6 +2085,21 @@ def start_scheduler() -> AsyncIOScheduler:
         max_instances=1,
         coalesce=True,
         next_run_time=datetime.now(sched_tz) + timedelta(minutes=15),
+    )
+
+    resource_sample_seconds = max(
+        30,
+        int(os.environ.get("RESOURCE_SAMPLE_INTERVAL_SECONDS", "60")),
+    )
+    scheduler.add_job(
+        run_resource_metrics_sample,
+        trigger=IntervalTrigger(seconds=resource_sample_seconds, timezone=sched_tz),
+        id="resource_metrics_sample",
+        name="Resource Metrics Sample",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=30),
     )
 
     scheduler.start()

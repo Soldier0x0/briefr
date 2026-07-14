@@ -184,6 +184,13 @@ export const JOB_CATALOG = {
     analystDescription: 'Prunes aged feed cache and housekeeping rows per retention policy.',
     refreshButton: 'Run cache cleanup',
   },
+  resource_metrics_sample: {
+    label: 'Resource metrics sample',
+    short: 'Resources',
+    operatorName: 'Resource Metrics Sample',
+    analystDescription: 'Samples CPU, RAM, disk I/O, and request counts for the admin Resources page.',
+    refreshButton: 'Sample resources now',
+  },
 }
 
 export function jobLabel(id, mode = 'operator') {

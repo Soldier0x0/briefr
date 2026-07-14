@@ -1892,6 +1892,7 @@ _JOB_RUN_MAP: dict[str, str] = {
     "api_key_health_check": "run_api_key_health_check",
     "session_cleanup": "run_session_cleanup",
     "cache_retention_cleanup": "run_cache_retention_cleanup",
+    "resource_metrics_sample": "run_resource_metrics_sample",
 }
 
 

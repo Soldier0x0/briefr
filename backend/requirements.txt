@@ -16,3 +16,4 @@ numpy==2.5.1
 python-multipart==0.0.32
 bcrypt==5.0.0
 orjson==3.11.6
+psutil==7.0.0
