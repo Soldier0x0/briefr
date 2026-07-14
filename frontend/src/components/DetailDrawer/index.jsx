@@ -68,6 +68,7 @@ const TABS = [
 export default function DetailDrawer({ cve, loading = false, error = null, onRetry, onClose, onCveReplace, watchlistState = null, onWatchlistChange }) {
   const [activeTab, setActiveTab] = useState('overview')
   const [reportOpen, setReportOpen] = useState(false)
+  const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [sentences, setSentences] = useState(null)
   const [sentencesLoading, setSentencesLoading] = useState(false)
@@ -99,6 +100,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
   const [pdfBusy, setPdfBusy] = useState(false)
   const [pdfError, setPdfError] = useState(null)
   const reportRef = useRef(null)
+  const actionsMenuRef = useRef(null)
   const epssSparklineRef = useRef(null)
   const sheetRef = useRef(null)
   const navigatingRef = useRef(false)
@@ -395,6 +397,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
       document.body.style.overflow = 'hidden'
       setActiveTab('overview')
       setReportOpen(false)
+      setActionsMenuOpen(false)
     } else {
       document.body.classList.remove('briefr-drawer-open')
       document.body.style.overflow = ''
@@ -415,6 +418,17 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     document.addEventListener('mousedown', onDocClick)
     return () => document.removeEventListener('mousedown', onDocClick)
   }, [reportOpen])
+
+  useEffect(() => {
+    if (!actionsMenuOpen) return
+    function onDocClick(e) {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target)) {
+        setActionsMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [actionsMenuOpen])
 
   async function handleCopyMarkdown() {
     if (!cve) return
@@ -572,61 +586,143 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
                   {isPinned ? 'Unpin' : 'Pin'}
                 </button>
               )}
-              {investigation && (
-                <>
-                  <button
-                    type="button"
-                    className="drawer-inv-btn mono"
-                    onClick={() => investigation.startInvestigation(cve)}
-                    aria-label={`Add ${cve.cve_id} to investigation`}
-                  >
-                    {investigation.isCveInThread(cve.cve_id) ? 'In investigation' : 'Start investigation'}
-                  </button>
-                  <button
-                    type="button"
-                    className="drawer-inv-btn drawer-inv-btn-secondary mono"
-                    onClick={() => investigation.pivotToIocFromCve(cve)}
-                    aria-label={`Review indicators from ${cve.cve_id}`}
-                  >
-                    Review indicators
-                  </button>
-                  {campaignChip && investigation.pivotToCampaign && (
+              <div className="drawer-header-actions-inline">
+                {investigation && (
+                  <>
+                    <button
+                      type="button"
+                      className="drawer-inv-btn mono"
+                      onClick={() => investigation.startInvestigation(cve)}
+                      aria-label={`Add ${cve.cve_id} to investigation`}
+                    >
+                      {investigation.isCveInThread(cve.cve_id) ? 'In investigation' : 'Start investigation'}
+                    </button>
                     <button
                       type="button"
                       className="drawer-inv-btn drawer-inv-btn-secondary mono"
-                      onClick={() => investigation.pivotToCampaign(campaignChip.campaign, cve)}
-                      aria-label={`Add ${campaignChip.linkedCount} linked campaign CVEs to investigation`}
+                      onClick={() => investigation.pivotToIocFromCve(cve)}
+                      aria-label={`Review indicators from ${cve.cve_id}`}
                     >
-                      Add campaign
+                      Review indicators
                     </button>
+                    {campaignChip && investigation.pivotToCampaign && (
+                      <button
+                        type="button"
+                        className="drawer-inv-btn drawer-inv-btn-secondary mono"
+                        onClick={() => investigation.pivotToCampaign(campaignChip.campaign, cve)}
+                        aria-label={`Add ${campaignChip.linkedCount} linked campaign CVEs to investigation`}
+                      >
+                        Add campaign
+                      </button>
+                    )}
+                  </>
+                )}
+                <div className="drawer-report-wrap" ref={reportRef}>
+                  <button
+                    type="button"
+                    className="drawer-report-btn mono"
+                    onClick={() => setReportOpen(o => !o)}
+                    aria-expanded={reportOpen}
+                    aria-haspopup="menu"
+                  >
+                    REPORT
+                  </button>
+                  {reportOpen && (
+                    <div className="drawer-report-menu" role="menu">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="drawer-report-item mono"
+                        onClick={handleDownloadPdfClick}
+                      >
+                        Download PDF
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="drawer-report-item mono"
+                        onClick={handleCopyMarkdown}
+                      >
+                        {copied ? 'Copied!' : 'Copy Markdown'}
+                      </button>
+                    </div>
                   )}
-                </>
-              )}
-              <div className="drawer-report-wrap" ref={reportRef}>
+                </div>
+              </div>
+              <div className="drawer-actions-overflow-wrap" ref={actionsMenuRef}>
                 <button
                   type="button"
-                  className="drawer-report-btn mono"
-                  onClick={() => setReportOpen(o => !o)}
-                  aria-expanded={reportOpen}
+                  className="drawer-actions-overflow-btn mono"
+                  onClick={() => {
+                    setActionsMenuOpen(o => !o)
+                    if (actionsMenuOpen) setReportOpen(false)
+                  }}
+                  aria-label="More actions"
+                  aria-expanded={actionsMenuOpen}
                   aria-haspopup="menu"
                 >
-                  REPORT
+                  &middot;&middot;&middot;
                 </button>
-                {reportOpen && (
-                  <div className="drawer-report-menu" role="menu">
+                {actionsMenuOpen && (
+                  <div className="drawer-actions-overflow-menu" role="menu" aria-label="CVE actions">
+                    {investigation && (
+                      <>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="drawer-actions-overflow-item mono"
+                          onClick={() => {
+                            setActionsMenuOpen(false)
+                            investigation.startInvestigation(cve)
+                          }}
+                        >
+                          {investigation.isCveInThread(cve.cve_id) ? 'In investigation' : 'Start investigation'}
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="drawer-actions-overflow-item mono"
+                          onClick={() => {
+                            setActionsMenuOpen(false)
+                            investigation.pivotToIocFromCve(cve)
+                          }}
+                        >
+                          Review indicators
+                        </button>
+                        {campaignChip && investigation.pivotToCampaign && (
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className="drawer-actions-overflow-item mono"
+                            onClick={() => {
+                              setActionsMenuOpen(false)
+                              investigation.pivotToCampaign(campaignChip.campaign, cve)
+                            }}
+                          >
+                            Add campaign
+                          </button>
+                        )}
+                      </>
+                    )}
                     <button
                       type="button"
                       role="menuitem"
-                      className="drawer-report-item mono"
-                      onClick={handleDownloadPdfClick}
+                      className="drawer-actions-overflow-item mono"
+                      onClick={() => {
+                        setActionsMenuOpen(false)
+                        handleDownloadPdfClick()
+                      }}
                     >
                       Download PDF
                     </button>
                     <button
                       type="button"
                       role="menuitem"
-                      className="drawer-report-item mono"
-                      onClick={handleCopyMarkdown}
+                      className="drawer-actions-overflow-item mono"
+                      onClick={() => {
+                        setActionsMenuOpen(false)
+                        handleCopyMarkdown()
+                      }}
                     >
                       {copied ? 'Copied!' : 'Copy Markdown'}
                     </button>
