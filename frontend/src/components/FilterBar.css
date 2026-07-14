@@ -116,7 +116,7 @@
 }
 
 .filter-stack-clear:hover {
-  color: var(--red);
+  color: var(--text-link);
 }
 
 .filter-bar-stack {

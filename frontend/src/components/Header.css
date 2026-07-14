@@ -29,7 +29,7 @@
   font-family: var(--font-mono);
   font-size: 0.9375rem;
   font-weight: 500;
-  color: var(--red);
+  color: var(--accent-primary);
   letter-spacing: 0.08em;
   background: none;
   border: none;

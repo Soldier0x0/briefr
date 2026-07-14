@@ -268,7 +268,7 @@
   --green:           var(--status-success);
   --green-dim:       var(--status-success-bg);
   --toggle-on:       var(--status-success);
-  --toggle-off:      var(--danger);
+  --toggle-off:      var(--status-neutral);
   --accent:          var(--accent-primary);
   --link:            var(--text-link);
 

@@ -352,7 +352,7 @@ numbers recorded in the closing PR body:
 - [ ] E3-4 Dialog/AlertDialog  [ ] E3-5 Tabs/Dropdown/Select  [ ] E3-6 Slider  [ ] E3-7 Badge/Card/StatCard/EmptyState/Toast
 
 **Semantics (E4)**
-- [x] E4-1 one selection accent  [ ] E4-2 red reserved  [ ] E4-3 card severity accent  [ ] E4-4 legends
+- [x] E4-1 one selection accent  [x] E4-2 red reserved  [ ] E4-3 card severity accent  [ ] E4-4 legends
 
 **ARCH (E5)**
 - [ ] E5-1 Overview grid  [ ] E5-2 lists→DataGrid  [ ] E5-3 sidebar active  [ ] E5-4 badge wording  [ ] E5-5 empty state
