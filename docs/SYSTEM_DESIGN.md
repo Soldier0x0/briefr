@@ -470,7 +470,7 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 | Repository Pattern | MISSING | `repositories/` from `database.py` |
 | Dependency Injection | MISSING | FastAPI `Depends()` for DB + `settings.py` |
 | Circuit Breaker | MISSING | `resilient_client.py` planned Beta V1.2 (NVD has retry only today) |
-| Idempotency | PARTIAL | Upserts + scheduler locks; fix `cve_change_history` duplicate inserts |
+| Idempotency | PARTIAL | Upserts + scheduler locks; fix `cve_change_history` duplicate inserts. Graceful shutdown (PR-R1): lifespan waits — bounded by `SHUTDOWN_DRAIN_TIMEOUT_SECONDS` (10s default) — for lock-holding jobs (`scheduler.wait_for_running_jobs`) and registered fire-and-forget tasks (`task_registry.drain_background_tasks`) before closing pools |
 | Caching Strategy | PARTIAL | `feed_cache`/`ioc_cache` exist; add React Query + stats cache |
 | API Consistency | PARTIAL | v1.2 response envelope (`data` + `meta`) |
 | Config Management | PARTIAL | `settings.py`; centralize weights and TTLs |

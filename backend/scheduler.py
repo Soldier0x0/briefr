@@ -11,7 +11,7 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
 from db.errors import DatabaseLockedError
-from scheduler_locks import any_locked, get_lock
+from scheduler_locks import any_locked, get_lock, locked_jobs
 from database import (
     EPSS_BACKFILL_DONE_KEY,
     apply_additive_cve_enrichments,
@@ -106,7 +106,9 @@ def _schedule_background(coro) -> asyncio.Task:
         async with _scheduler_db_sem:
             await coro
 
-    return asyncio.create_task(_guarded())
+    from task_registry import spawn_background_task
+
+    return spawn_background_task(_guarded())
 
 
 async def _with_db(coro):
@@ -2120,7 +2122,9 @@ def start_scheduler() -> AsyncIOScheduler:
         finally:
             await db.close()
 
-    asyncio.ensure_future(_reapply_paused_jobs(_scheduler))
+    from task_registry import spawn_background_task
+
+    spawn_background_task(_reapply_paused_jobs(_scheduler))
 
     logger.info(
         "Scheduler started (tz=%s). NVD every %dh; KEV every %dm; EPSS every %dh; "
@@ -2279,3 +2283,31 @@ def stop_scheduler() -> None:
         _scheduler.shutdown(wait=False)
         logger.info("Scheduler stopped.")
     _scheduler = None
+
+
+async def wait_for_running_jobs(timeout: float | None = None) -> list[str]:
+    """Bounded wait for lock-holding jobs to finish after stop_scheduler()
+    (PR-R1 / REST-001). Returns job ids still running at timeout — [] means
+    everything drained cleanly."""
+    from task_registry import shutdown_drain_timeout_seconds
+
+    if timeout is None:
+        timeout = shutdown_drain_timeout_seconds()
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout
+    logged = False
+    while True:
+        running = locked_jobs()
+        if _epss_backfill_lock.locked():
+            running = [*running, "epss_backfill"]
+        if not running:
+            return []
+        if loop.time() >= deadline:
+            logger.warning(
+                "Shutdown: job(s) still running after %.1fs: %s", timeout, running
+            )
+            return running
+        if not logged:
+            logger.info("Shutdown: waiting up to %.1fs for job(s): %s", timeout, running)
+            logged = True
+        await asyncio.sleep(0.25)

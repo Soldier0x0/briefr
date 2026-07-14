@@ -115,7 +115,7 @@ Independently re-verified — of 17 Emergent-agent + Emergent-adjacent claims te
 
 | PR | Title | Status |
 |----|-------|--------|
-| PR-R1 | Await scheduler + background tasks on shutdown | 📋 |
+| PR-R1 | Await scheduler + background tasks on shutdown | ✅ (this PR) |
 | PR-R2 | LLM extraction idempotency / response staging | 📋 |
 | PR-R3 | Webhook claim-before-send (extends IDEM-001) | 🔶 IDEM-001 shipped #449 — verify overlap |
 | PR-R4 | Persist migration status to `sync_state` | ✅ (this PR) |

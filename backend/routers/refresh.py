@@ -6,8 +6,6 @@ Copyright © 2026 Sai Harsha Vardhan
 SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
-import asyncio
-
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from dependencies import audit, require_admin
@@ -20,19 +18,15 @@ from scheduler import (
     run_nvd_incremental_sync,
     run_weekly_mitre_refresh,
 )
+from task_registry import spawn_background_task
 
 # §5.5: every /api/refresh* route shares one token bucket (per client IP).
 router = APIRouter(dependencies=[Depends(rate_limit_refresh)])
 
-# The event loop only holds weak references to tasks; keep strong references
-# so a fire-and-forget ingest can't be garbage collected mid-run.
-_background_tasks: set[asyncio.Task] = set()
-
 
 def _spawn(coro) -> None:
-    task = asyncio.create_task(coro)
-    _background_tasks.add(task)
-    task.add_done_callback(_background_tasks.discard)
+    # Registered in task_registry: strong ref (PR #94) + shutdown drain (PR-R1).
+    spawn_background_task(coro)
 
 
 @router.post("/api/refresh")

@@ -1936,7 +1936,9 @@ async def run_scheduler_job(request: Request, body: dict):
     if fn is None:
         raise HTTPException(500, f"Coroutine '{fn_name}' not found in scheduler module")
 
-    asyncio.create_task(fn())
+    from task_registry import spawn_background_task
+
+    spawn_background_task(fn())
     await audit(request, f"scheduler.run.{job_id}", job_id)
     return {"ok": True, "job_id": job_id, "message": f"Job '{job_id}' started in background"}
 
