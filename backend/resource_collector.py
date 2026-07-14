@@ -59,12 +59,57 @@ def _prime_cpu_percent(pids: set[int]) -> None:
     _cpu_primed = True
 
 
-def _aggregate_process_metrics(pids: set[int]) -> dict[str, float | int]:
+def _cpu_times_snapshot(pids: set[int]) -> dict[int, tuple[float, float]]:
+    snap: dict[int, tuple[float, float]] = {}
+    for pid in pids:
+        try:
+            times = psutil.Process(pid).cpu_times()
+            snap[pid] = (float(times.user), float(times.system))
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+    return snap
+
+
+def _cpu_pct_from_times(
+    curr: dict[int, tuple[float, float]],
+    prev: dict[int, tuple[float, float]] | None,
+    elapsed_sec: float | None,
+) -> float | None:
+    if not curr:
+        return None
+    if prev is None or not elapsed_sec or elapsed_sec <= 0:
+        return None
+    delta = 0.0
+    for pid, (user, system) in curr.items():
+        if pid not in prev:
+            continue
+        pu, ps = prev[pid]
+        delta += max(0.0, (user - pu) + (system - ps))
+    logical_cpus = psutil.cpu_count() or 1
+    return min(100.0, (delta / elapsed_sec) / logical_cpus * 100.0)
+
+
+def _aggregate_process_metrics(
+    pids: set[int],
+    *,
+    prev_cpu_times: dict[int, tuple[float, float]] | None = None,
+    elapsed_sec: float | None = None,
+) -> dict[str, float | int | None]:
     global _cpu_primed
     if not _cpu_primed:
         _prime_cpu_percent(pids)
 
-    cpu = 0.0
+    curr_cpu_times = _cpu_times_snapshot(pids)
+    cpu = _cpu_pct_from_times(curr_cpu_times, prev_cpu_times, elapsed_sec)
+    if cpu is None:
+        # Fallback for first sample in a process: non-blocking psutil aggregate.
+        cpu = 0.0
+        for pid in pids:
+            try:
+                cpu += float(psutil.Process(pid).cpu_percent(interval=None) or 0.0)
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+
     rss = 0
     read_bytes = 0
     write_bytes = 0
@@ -87,6 +132,7 @@ def _aggregate_process_metrics(pids: set[int]) -> dict[str, float | int]:
             continue
     return {
         "cpu_pct": cpu,
+        "cpu_times": curr_cpu_times,
         "rss_bytes": rss,
         "read_bytes": read_bytes,
         "write_bytes": write_bytes,
@@ -155,12 +201,24 @@ async def collect_and_store_sample(db: DbConnection) -> dict[str, Any]:
     briefr_pids = _briefr_pids()
     pg_pids = _postgres_pids() if is_postgres() else set()
 
-    briefr_raw = _aggregate_process_metrics(briefr_pids)
-    pg_raw = _aggregate_process_metrics(pg_pids) if pg_pids else None
-
     elapsed = None
     if _prev_sample is not None:
         elapsed = max(sampled_at - float(_prev_sample["sampled_at"]), 0.001)
+
+    briefr_raw = _aggregate_process_metrics(
+        briefr_pids,
+        prev_cpu_times=(_prev_sample or {}).get("briefr_cpu_times"),
+        elapsed_sec=elapsed,
+    )
+    pg_raw = (
+        _aggregate_process_metrics(
+            pg_pids,
+            prev_cpu_times=(_prev_sample or {}).get("pg_cpu_times"),
+            elapsed_sec=elapsed,
+        )
+        if pg_pids
+        else None
+    )
 
     briefr_io_read_bps = _rate_per_sec(
         briefr_raw["read_bytes"],
@@ -250,8 +308,10 @@ async def collect_and_store_sample(db: DbConnection) -> dict[str, Any]:
         "briefr_write_bytes": briefr_raw["write_bytes"],
         "briefr_read_count": briefr_raw["read_count"],
         "briefr_write_count": briefr_raw["write_count"],
+        "briefr_cpu_times": briefr_raw.get("cpu_times"),
         "pg_read_count": pg_raw["read_count"] if pg_raw else None,
         "pg_write_count": pg_raw["write_count"] if pg_raw else None,
+        "pg_cpu_times": pg_raw.get("cpu_times") if pg_raw else None,
         "pg_stat": pg_stat,
     }
     return sample

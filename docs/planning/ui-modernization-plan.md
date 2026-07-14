@@ -338,7 +338,7 @@ numbers recorded in the closing PR body:
 
 **Standalone bugs (E2)**
 - [x] E2-1 Resources chart bounded + empty state
-- [ ] E2-2 per-process CPU metric
+- [x] E2-2 per-process CPU metric
 - [ ] E2-3 column resize alignment
 - [ ] E2-4 reference tooltip portaled
 - [ ] E2-5 ARCH pan `user-select:none`
