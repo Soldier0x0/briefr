@@ -28,21 +28,24 @@ LIGHT_PAIRS = [
 ]
 
 
-def strip_comment(value: str) -> str:
-    return re.sub(r"/\*.*?\*/", "", value).strip()
-
-
 def parse_hex(value: str) -> tuple[float, float, float] | None:
-    value = strip_comment(value).rstrip(";").strip()
-    m = re.fullmatch(r"#([0-9a-fA-F]{6})", value)
+    value = value.rstrip(";").strip()
+    m = re.fullmatch(r"#([0-9a-fA-F]{3,8})", value)
     if not m:
         return None
     h = m.group(1)
-    return (
-        int(h[0:2], 16) / 255,
-        int(h[2:4], 16) / 255,
-        int(h[4:6], 16) / 255,
-    )
+    if len(h) in (3, 4):
+        r = int(h[0] * 2, 16) / 255
+        g = int(h[1] * 2, 16) / 255
+        b = int(h[2] * 2, 16) / 255
+        return r, g, b
+    if len(h) in (6, 8):
+        return (
+            int(h[0:2], 16) / 255,
+            int(h[2:4], 16) / 255,
+            int(h[4:6], 16) / 255,
+        )
+    return None
 
 
 def linearize(c: float) -> float:
@@ -60,26 +63,10 @@ def contrast_ratio(fg: tuple[float, float, float], bg: tuple[float, float, float
     return (lighter + 0.05) / (darker + 0.05)
 
 
-def extract_vars(css: str, selector: str) -> dict[str, str]:
-    pattern = re.escape(selector) + r"\s*\{([^}]*)\}"
-    m = re.search(pattern, css, re.DOTALL)
-    if not m:
-        return {}
-    out: dict[str, str] = {}
-    for raw_line in m.group(1).splitlines():
-        line = strip_comment(raw_line.strip())
-        for part in line.split(";"):
-            part = part.strip()
-            if not part or ":" not in part:
-                continue
-            name, val = part.split(":", 1)
-            out[name.strip()] = val.strip()
-    return out
-
-
-def extract_all_root_blocks(css: str) -> list[dict[str, str]]:
-    blocks: list[dict[str, str]] = []
-    for m in re.finditer(r":root(?:\[[^\]]+\])?\s*\{", css):
+def extract_all_root_blocks(css: str) -> list[tuple[str, dict[str, str]]]:
+    blocks: list[tuple[str, dict[str, str]]] = []
+    for m in re.finditer(r"(:root(?:\[[^\]]+\])?)\s*\{", css):
+        selector = m.group(1).strip()
         start = m.end()
         depth = 1
         i = start
@@ -92,14 +79,14 @@ def extract_all_root_blocks(css: str) -> list[dict[str, str]]:
         body = css[start : i - 1]
         block: dict[str, str] = {}
         for raw_line in body.splitlines():
-            line = strip_comment(raw_line.strip())
+            line = raw_line.strip()
             for part in line.split(";"):
                 part = part.strip()
                 if not part or ":" not in part:
                     continue
                 name, val = part.split(":", 1)
                 block[name.strip()] = val.strip()
-        blocks.append(block)
+        blocks.append((selector, block))
     return blocks
 
 
@@ -108,7 +95,7 @@ def resolve(var_name: str, scope: dict[str, str]) -> str | None:
     current = var_name
     while current in scope and current not in seen:
         seen.add(current)
-        val = strip_comment(scope[current])
+        val = scope[current]
         if val.startswith("#"):
             return val
         if val.startswith("var("):
@@ -121,14 +108,22 @@ def resolve(var_name: str, scope: dict[str, str]) -> str | None:
 
 def main() -> int:
     css = TOKENS_PATH.read_text(encoding="utf-8")
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
     blocks = extract_all_root_blocks(css)
-    if len(blocks) < 2:
+
+    dark: dict[str, str] = {}
+    light_override: dict[str, str] = {}
+
+    for selector, block in blocks:
+        if selector == ":root":
+            dark.update(block)
+        elif selector == ':root[data-theme="light"]':
+            light_override.update(block)
+
+    if not dark:
         print("Could not parse tokens.css :root blocks", file=sys.stderr)
         return 1
 
-    primitives = blocks[0]
-    dark = {**primitives, **blocks[1]}
-    light_override = extract_vars(css, ':root[data-theme="light"]')
     light = {**dark, **light_override}
 
     errors: list[str] = []

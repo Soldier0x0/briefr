@@ -28,7 +28,7 @@ ALLOW_GLOB=(
 )
 
 mapfile -t HEX_HITS < <(
-  rg -n --pcre2 '#[0-9a-fA-F]{3,8}\b' frontend/src \
+  rg -n '#[0-9a-fA-F]{3,8}\b' frontend/src \
     --glob '*.css' --glob '*.jsx' --glob '*.js' --glob '*.tsx' --glob '*.ts' \
     | while IFS= read -r line; do
         file="${line%%:*}"
