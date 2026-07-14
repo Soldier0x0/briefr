@@ -12,6 +12,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — UX-L1: Scope & limits panel in About modal — merged (this PR)
+
+**What:** About modal now renders the seven Scope & Limits constraints from
+`docs/PRODUCT.md` verbatim (single-operator, community-source intel, term matching,
+LLM-free core, freshness, prioritization-not-discovery, one box). Modal scrolls at 88vh.
+
+**Next:** PG-003 SQLite test pollution diagnosis.
+
+---
+
 ## 2026-07-14 — QA-U3: global header 375px overflow — merged (this PR)
 
 **What:** New `max-width: 430px` tier in `Header.css` — side padding 24→12px, grid gap

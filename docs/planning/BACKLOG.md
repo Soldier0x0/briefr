@@ -211,7 +211,7 @@ no collateral skip-decorator corruption. Full SQLite suite green (no regressions
 | **37 / UX-C1** | Interactive control consistency — drawer buttons + tabs to `.ui-btn` standard (Issue 37) | ✅ shipped (#474) |
 | **37 / UX-C2** | CVE card action row + feed surfaces to `.ui-btn` standard (red = destructive only) | ✅ #475 |
 | **38 / UX-J1** | Domain-term explanation sweep (PRODUCT.md principle 6): KEV, EPSS, CVSS, CWE, CAPEC, ATT&CK IDs get HelpTip/ExplainTip coverage on feed, drawer, Forge | 📋 audit which terms already covered first |
-| **39 / UX-L1** | "Scope & limits" panel in About modal — render PRODUCT.md Scope & Limits content (copy is final, JSX only); browser-verify with the UX-C1 pass | 📋 content ready |
+| **39 / UX-L1** | "Scope & limits" panel in About modal — render PRODUCT.md Scope & Limits content (copy is final, JSX only); browser-verify with the UX-C1 pass | ✅ (this PR) |
 | **Issue 21** | API key suffix + provider health ping in UI | 🔶 backend #435 — UI tail? |
 | **UI overhaul 3a** | Dismissible config banner (not permanent amber) | 📋 [`../archive/superseded/UI_UX_OVERHAUL_PLAN.md`](../archive/superseded/UI_UX_OVERHAUL_PLAN.md) |
 | **UI overhaul 3b** | Status legend component | 📋 archive plan |
