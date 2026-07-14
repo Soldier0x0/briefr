@@ -345,7 +345,7 @@ numbers recorded in the closing PR body:
 - [ ] E2-6 ARCH max-zoom raised
 - [ ] E2-7 ARCH filter hides not dims
 - [x] E2-8 PyJWT in requirements.txt
-- [ ] E2-9 PG16 → PG17 doc correction
+- [x] E2-9 PG16 → PG17 doc correction
 
 **Primitives (E3)**
 - [ ] E3-1 Checkbox/Switch/Radio  [ ] E3-2 Tooltip/Popover  [ ] E3-3 Table/DataGrid

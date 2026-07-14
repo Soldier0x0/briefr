@@ -60,7 +60,7 @@ full developer guide; this section only captures non-obvious cloud-environment c
 
 ### Database (PostgreSQL)
 
-Production uses **PostgreSQL 16** in Docker at `/opt/infra/postgres`. BRIEFR connects via
+Production uses **PostgreSQL 17** in Docker at `/opt/infra/postgres`. BRIEFR connects via
 `DATABASE_URL` in `backend/.env` (host port `127.0.0.1:5432`).
 
 ```bash
@@ -70,7 +70,7 @@ DATABASE_POOL_SIZE=10
 ```
 
 - Runtime: **asyncpg** pool; migrations: **Alembic**
-- Backups: host `pg_dump` / `pg_restore` — install `postgresql-client-16` (or matching major)
+- Backups: host `pg_dump` / `pg_restore` — install `postgresql-client-17` (or matching major)
 - Verify: `curl -s http://127.0.0.1:8000/api/health` → `"backend": "postgresql"`
 - See `docs/POSTGRES.md` for backups, restore, and troubleshooting
 
@@ -86,7 +86,7 @@ dependencies, and ensures `backend/.env` exists (copied from `backend/.env.examp
   backend must be running first or the UI shows `/api` 404s.
 
 Local dev without production infra: `docker compose -f deploy/docker-compose.postgres.yml up -d`
-(Postgres 16).
+(Postgres 17).
 
 ### Tests / build / lint
 
