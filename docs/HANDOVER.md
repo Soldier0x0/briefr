@@ -12,6 +12,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — Wallboard `?density=compact` layout mode — merged (this PR)
+
+**What:** `/wallboard?density=compact` applies `.wallboard-page--compact` — tighter padding,
+smaller metrics/labels, denser grids for 4K kiosk walls. Default layout unchanged.
+
+**Next:** item 29 (migration decision), enriched wallboard backend tiles (optional),
+parked programs.
+
+---
+
 ## 2026-07-14 — QA-U2: drawer accent anchor per tab — merged (this PR)
 
 **What:** Added `.drawer-tab-anchor` (accent text + 2px left border) on one primary section

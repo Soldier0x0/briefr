@@ -348,3 +348,79 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ?density=compact — denser kiosk layout for 4K / multi-tile walls */
+.wallboard-page--compact {
+  padding: 0.5rem 0.75rem 0;
+}
+
+.wallboard-page--compact .wallboard-header {
+  margin-bottom: 0.45rem;
+  gap: 0.35rem 0.75rem;
+}
+
+.wallboard-page--compact .wallboard-brand {
+  font-size: clamp(1rem, 1.8vw, 1.35rem);
+}
+
+.wallboard-page--compact .wallboard-header-stack,
+.wallboard-page--compact .wallboard-header-meta {
+  font-size: clamp(0.65rem, 0.95vw, 0.78rem);
+}
+
+.wallboard-page--compact .wallboard-body,
+.wallboard-page--compact .wallboard-page1,
+.wallboard-page--compact .wallboard-page2 {
+  gap: 0.45rem;
+}
+
+.wallboard-page--compact .wallboard-hero-row,
+.wallboard-page--compact .wallboard-secondary-grid {
+  gap: 0.45rem;
+}
+
+@media (min-width: 1400px) {
+  .wallboard-page--compact .wallboard-hero-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .wallboard-page--compact .wallboard-secondary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.wallboard-page--compact .wallboard-tile {
+  padding: 0.45rem 0.55rem;
+  gap: 0.2rem;
+}
+
+.wallboard-page--compact .wallboard-tile-label {
+  font-size: clamp(0.58rem, 0.85vw, 0.68rem);
+}
+
+.wallboard-page--compact .wallboard-tile-metric {
+  font-size: clamp(1.25rem, 2.6vw, 2rem);
+}
+
+.wallboard-page--compact .wallboard-tile-sub,
+.wallboard-page--compact .wallboard-mini-list {
+  font-size: clamp(0.62rem, 0.9vw, 0.75rem);
+}
+
+.wallboard-page--compact .wallboard-ingest-strip {
+  padding: 0.3rem 0.5rem;
+  font-size: clamp(0.62rem, 0.9vw, 0.75rem);
+}
+
+.wallboard-page--compact .wallboard-table-wrap {
+  max-height: 22vh;
+}
+
+.wallboard-page--compact .wallboard-ticker {
+  margin-top: 0.35rem;
+  padding: 0.35rem 0;
+}
+
+.wallboard-page--compact .wallboard-ticker-track {
+  font-size: clamp(0.72rem, 1.1vw, 0.9rem);
+}

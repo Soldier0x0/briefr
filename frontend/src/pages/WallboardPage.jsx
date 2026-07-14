@@ -252,6 +252,7 @@ function PageTwo({ payload, activeTile }) {
 
 export default function WallboardPage() {
   const [searchParams] = useSearchParams()
+  const compact = searchParams.get('density') === 'compact'
   const [authenticated, setAuthenticated] = useState(false)
   const [payload, setPayload] = useState(null)
   const [error, setError] = useState('')
@@ -336,7 +337,7 @@ export default function WallboardPage() {
   const stackLabel = (payload?.meta?.stack_terms || []).join(', ') || 'no stack'
 
   return (
-    <div className="wallboard-page">
+    <div className={`wallboard-page${compact ? ' wallboard-page--compact' : ''}`}>
       <header className="wallboard-header">
         <div className="wallboard-brand mono">BRIEFR</div>
         <div className="wallboard-header-stack mono">
