@@ -341,6 +341,18 @@ function CorrelationFindings({
                       {' '}Attribution conflict — treat as unverified.
                     </span>
                   )}
+                  {item.attribution_claims?.claims?.length > 1 && (
+                    <div className="corr-conflicting-claims" aria-label="Conflicting attribution">
+                      <p className="corr-conflicting-label mono">Conflicting attribution</p>
+                      <ul className="corr-conflicting-list">
+                        {item.attribution_claims.claims.map((claim, idx) => (
+                          <li key={`${claim.source}-${idx}`}>
+                            <span className="mono">{claim.source}</span>: {claim.value}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   {(item.members || []).filter(id => id !== correlation?.cve_id).map((cveId, idx) => (
                     <span key={cveId}>
                       {idx === 0 ? ' ' : ', '}
