@@ -9,7 +9,9 @@ the **non-UI reliability findings** and the **specific reproduced bugs** from th
 2026-07-14 running-product review (restored **production** DB, 21,679 CVEs, logged in as
 admin). Every item here was observed at runtime — via the UI, the API, the database, and the
 backend logs — not inferred from code. UI-styling issues live in the UI plan; this is for
-bugs and backend/ops behavior. Ticket ids are cross-referenced from the UI plan (`REL-*`).
+bugs and backend/ops behavior. **This doc's `REL-*` numbering is canonical** — the UI plan
+cites these ids verbatim (its own finding ids are `UI-*`/`UI-BUG-*`; never renumber either
+scheme).
 
 **Cross-refs:** [`ADR-004-correlation-precompute.md`](../decisions/ADR-004-correlation-precompute.md),
 [`design-system.md`](../design/design-system.md) (for the UI-side of state handling),
@@ -92,6 +94,7 @@ environment or data artifact, or cosmetic-adjacent.
 - **Effort:** M · **Type:** Quick win (via primitive).
 
 ## REL-3 — ARCH System-Architecture graph: pan-drag selects text  · HIGH (UX-breaking)
+- **UI-plan id:** UI-BUG-4 (this doc's `REL-3` is canonical for cross-referencing).
 - **Location:** ARCH → System Architecture (node graph).
 - **Problem:** Click-dragging the canvas triggers browser text selection (node labels
   highlight blue) instead of panning.

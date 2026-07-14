@@ -5,7 +5,7 @@
  *              anywhere yet (no runtime effect). It is the single source of
  *              truth for the token vocabulary that the UI modernization effort
  *              will adopt. Wiring it in (importing from main.jsx and migrating
- *              components off raw hex) is tracked as Phase 1 in
+ *              components off raw hex) is tracked as Phase 0 in
  *              docs/planning/ui-modernization-plan.md (ticket E0-1).
  *
  * Authority:   docs/design/design-system.md (usage rules) and
@@ -29,7 +29,7 @@
  * Contrast: every text-on-surface pairing in the light/dark maps below is
  *   specified to meet WCAG 2.1 AA (>= 4.5:1 for < 18px text, >= 3:1 for >= 18px
  *   or bold, and for UI/graphical boundaries). Muted text was RAISED from the
- *   current ~3:1 grays to meet AA (audit finding H2).
+ *   current ~3:1 grays to meet AA (audit finding UI-4, plan ticket E6-1).
  * ========================================================================== */
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -40,6 +40,7 @@
   /* Neutrals (dark terminal ramp) */
   --c-neutral-0:   #0a0a08; /* page */
   --c-neutral-1:   #111110; /* raised */
+  --c-neutral-raised: #121211; /* card-on-raised step between neutral-1 and neutral-2 */
   --c-neutral-2:   #1a1a17; /* sunken / hover base */
   --c-neutral-3:   #222220;
   --c-line-1:      #2a2a25;
@@ -68,6 +69,10 @@
   --c-chart-1:#c8b88a; --c-chart-2:#7eb8f0; --c-chart-3:#5cb87e;
   --c-chart-4:#d4860a; --c-chart-5:#b07dd6; --c-chart-6:#e0715a;
   --c-chart-7:#5bc0c0; --c-chart-8:#c9c05a;
+
+  /* Heatmap ramp primitives (publication timeline) */
+  --c-heat-0:#1a1a17; --c-heat-1:#2d1a0e; --c-heat-2:#7a3520;
+  --c-heat-3:#b84a28; --c-heat-4:#e85533;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -82,9 +87,9 @@
 
   /* Surfaces */
   --surface-primary:   var(--c-neutral-1);
-  --surface-raised:    #121211;
+  --surface-raised:    var(--c-neutral-raised);
   --surface-sunken:    var(--c-neutral-2);
-  --surface-hover:     var(--c-neutral-2);   /* +~10% luminance vs surface (audit M1) */
+  --surface-hover:     var(--c-neutral-2);   /* +~10% luminance vs surface (audit UI-7) */
   --surface-active:    var(--c-neutral-3);
   --surface-input:     var(--c-neutral-1);
   --surface-selected:  color-mix(in srgb, var(--c-accent) 14%, transparent);
@@ -109,7 +114,7 @@
   --accent-primary:  var(--c-accent);
   --accent-strong:   var(--c-accent-strong);
   --accent-selected: var(--c-accent);       /* THE single "selected/active" token
-                                               (audit H1 — replaces green chips /
+                                               (audit UI-2 — replaces green chips /
                                                red radios / orange tab / faint nav) */
 
   /* Severity (CVSS / risk) — used for badges AND the card left-accent (audit E4-3) */
@@ -151,8 +156,8 @@
   --chart-empty-text: var(--c-ink-3);
 
   /* Heatmap ramp (publication timeline) */
-  --heatmap-0:#1a1a17; --heatmap-1:#2d1a0e; --heatmap-2:#7a3520;
-  --heatmap-3:#b84a28; --heatmap-4:#e85533;
+  --heatmap-0:var(--c-heat-0); --heatmap-1:var(--c-heat-1); --heatmap-2:var(--c-heat-2);
+  --heatmap-3:var(--c-heat-3); --heatmap-4:var(--c-heat-4);
 
   /* ── Typography ── */
   --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
@@ -223,7 +228,9 @@
   --motion-normal:  160ms;
   --motion-slow:    220ms;   /* reserved for larger surfaces (drawer/modal) only */
   --ease-standard:  cubic-bezier(0.2, 0, 0, 1);    /* ease-out — default */
-  --ease-emphasized:cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized:var(--ease-standard); /* intentional alias TODAY — reserved so
+                                             call-sites can opt in before a distinct
+                                             curve is chosen (design review decides) */
   --ease-exit:      cubic-bezier(0.4, 0, 1, 1);
   --transition-fast:   var(--motion-fast) var(--ease-standard);
   --transition-normal: var(--motion-normal) var(--ease-standard);
@@ -253,6 +260,7 @@
   --motion-normal: 0ms;
   --motion-slow:   0ms;
 }
+:root[data-motion="off"],
 :root[data-motion="off"] *,
 :root[data-motion="off"] *::before,
 :root[data-motion="off"] *::after {
@@ -261,12 +269,23 @@
   scroll-behavior: auto !important;
 }
 /* OS-level preference wins unless the user has explicitly opted in
- * (data-motion="on" is written by the toggle when the user overrides). */
+ * (data-motion="on" is written by the toggle when the user overrides).
+ * Mirrors the data-motion="off" block above: zeroing only the --motion-* vars
+ * would miss animations that don't consume the tokens (e.g. Radix keyframes),
+ * so transition/animation durations are force-zeroed here too. */
 @media (prefers-reduced-motion: reduce) {
   :root:not([data-motion="on"]) {
     --motion-fast:   0ms;
     --motion-normal: 0ms;
     --motion-slow:   0ms;
+  }
+  :root:not([data-motion="on"]),
+  :root:not([data-motion="on"]) *,
+  :root:not([data-motion="on"]) *::before,
+  :root:not([data-motion="on"]) *::after {
+    transition-duration: 0ms !important;
+    animation-duration:  0ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -297,6 +316,25 @@
   --border-subtle:  #c9c4bb;
   --border-default: #b8b2a8;
   --border-strong:  #9a948a;
+
+  /* Severity/status FOREGROUNDS must also darken for light surfaces — the dark-theme
+   * hues (--c-yellow #d8c341, --c-amber #d4860a, --c-green #4a9e6a) do not reach
+   * 4.5:1 on #f0ece4. Values below are AA-targeted; validate with the contrast lint
+   * (plan E0-1) before shipping the light theme. */
+  --severity-critical:  #b93312;
+  --severity-high:      #8f5a00;
+  --severity-medium:    #6e6000;
+  --severity-low:       #22693f;
+  --severity-none:      #4d5668;
+
+  --status-success:  #22693f;
+  --status-warning:  #8f5a00;
+  --status-error:    #b93312;
+  --status-info:     #1f5c96;
+  --status-neutral:  #4d5668;
+
+  --danger:          #b93312;
+  --text-link:       #14568f;
 
   --severity-critical-bg: #fdeae5;
   --severity-high-bg:     #faf0dc;

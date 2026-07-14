@@ -18,6 +18,10 @@
 > `docs/PRODUCT_STATUS.md` documents shipped runtime truth, which always wins over
 > planning docs.
 
+**Finding-id legend:** `UI-*` / `UI-BUG-*` ids resolve in the roadmap's audit table
+(`ui-modernization-plan.md` §2); `REL-*` ids resolve in the reliability backlog;
+`E*-*` ids are roadmap tickets (plan §4).
+
 ---
 
 ## 1. Design philosophy
@@ -118,7 +122,7 @@ scale (audit: admin previously felt denser/smaller — must not diverge). Table 
   `--status-*`, `--accent-*`). Never raw hex, never the `--c-*` primitives directly.
 - **Red is reserved** for `--danger` (destructive actions) and `--severity-critical` /
   `--status-error`. It must **not** be used for neutral selection, plain links, or neutral
-  toggles (audit H1/E4-2: red CVE links in Campaign Links, red "UTC" toggle, red radios).
+  toggles (audit UI-3, plan ticket E4-2: red CVE links in Campaign Links, red "UTC" toggle, red radios).
 - **Selection/active = `--accent-selected`** everywhere (nav tabs, sidebar items, filter
   chips, selected rows, selected radios). Exactly one visual language for "current."
 
@@ -138,9 +142,9 @@ Rules:
 - Hues are chosen for **at-a-glance separation** (audit: critical vs high badges were too
   close). Do not narrow the palette.
 - **Cards carry a 3–4px left accent** in the severity color (`border-left`) in addition to
-  the badge, so severity is seen before reading the number (audit E4-3).
+  the badge, so severity is seen before reading the number (audit UI-5, plan ticket E4-3).
 - Never map EPSS "increasing" to green in a way that reads as "good" — use a directional
-  arrow + `--status-warning` semantics (audit L5).
+  arrow + `--status-warning` semantics (audit UI-21).
 
 ---
 
@@ -154,8 +158,9 @@ Rules:
 | Info | `--status-info` | informational/neutral notices |
 | Neutral | `--status-neutral` | disabled/unknown |
 
-A **high failure metric must render as `--status-error`**, not muted gray (audit E9-1: a
-91% LLM fail rate was dim gray). Status pills always ship a tooltip/legend (§3.4).
+A **high failure metric must render as `--status-error`**, not muted gray (backlog REL-6,
+plan ticket E9-1: a 91% LLM fail rate was dim gray). Status pills always ship a
+tooltip/legend (§3.4).
 
 ---
 
@@ -164,7 +169,7 @@ A **high failure metric must render as `--status-error`**, not muted gray (audit
 4px base scale `--space-0…--space-8` (0/4/8/12/16/24/32/48/64). Page gutter `--gutter`.
 Rules: consistent internal card padding (`--space-4`), consistent gaps between controls
 (`--space-2`) and cards (`--space-4/5`); never let controls touch or text butt against
-edges (audit E7-4: cramped FEED filter panel). Group related filters with a
+edges (audit UI-14, plan ticket E7-4: cramped FEED filter panel). Group related filters with a
 `--border-subtle` divider.
 
 ## 10. Border radius system
@@ -201,7 +206,7 @@ actions. Reserve the warning triangle for `--status-warning/error` only.
 ## 14. Keyboard accessibility
 
 - Global shortcuts register at document level with input-focus guards so they don't type
-  into fields (audit H4: `/`, `F`, `g d` typed into search). Document them in the command
+  into fields (audit UI-10: `/`, `F`, `g d` typed into search). Document them in the command
   palette (⌘/Ctrl-K).
 - Standard bindings: `/` focus search, `F` cycle filters, `g d` digest, `Esc` close, arrow
   keys navigate feed rows, `Enter` open, `C` copy markdown.
@@ -212,7 +217,7 @@ actions. Reserve the warning triangle for `--status-warning/error` only.
 - Breakpoints `--bp-sm/md/lg/xl` (640/960/1280/1600). Analyst surfaces tighten at ≤ 960px;
   admin sidebar collapses at ≤ 700px. (Audit: layout survives 960/700 today — preserve it.)
 - Use fluid grids (`repeat(auto-fill, minmax(…))`) for stat/card grids so boxes stay
-  uniform (audit E5-1: ARCH Overview boxes were jammed/non-uniform).
+  uniform (plan ticket E5-1: ARCH Overview boxes were jammed/non-uniform).
 - Tables scroll horizontally within a bounded container; never overflow the page. Charts
   live in fixed-height wrappers at every breakpoint.
 
@@ -223,7 +228,7 @@ Every async region MUST distinguish:
 - **Empty** — intentional message + optional CTA (FEED "no results / clear filters" is the
   reference quality bar).
 - **Degraded/Error** — explicit message + `X-Request-ID` ("ref: …") + retry. Must be
-  visually distinct from Empty (audit E1-3: correlation timeout looked like "no data"; the
+  visually distinct from Empty (audit UI-11, plan ticket E1-3: correlation timeout looked like "no data"; the
   Resources chart looked empty when it was failing).
 - **Data** — the normal state.
 
@@ -256,14 +261,14 @@ Three layers. Higher layers compose lower ones; never re-implement a lower layer
   primitives (audit: raw default checkboxes across Storage/Feed-health/Scheduler/FEED were
   the top "amateur" signal).
 - One primitive per pattern; do not fork a second tooltip/button/table implementation.
-- Tooltips/popovers are **portaled and collision-aware** (audit E2-4: reference tooltip
+- Tooltips/popovers are **portaled and collision-aware** (audit UI-BUG-3, plan ticket E2-4: reference tooltip
   overflowed over other content).
 - Tables use `DataGrid` with `table-layout: fixed` + shared `<col>` so column resize keeps
-  header/body aligned (audit E2-3: resize desynced header from body).
+  header/body aligned (audit UI-BUG-2, plan ticket E2-3: resize desynced header from body).
 - Selected/active state = `--accent-selected` via the shared SidebarNav/Tabs/Chip
   components; do not hand-roll active styling.
 - Clickable elements must look clickable (hover + cursor + affordance); non-clickable
-  cards must not look interactive (audit E-hidden-clickable: stat cards/header icons).
+  cards must not look interactive (audit UI-15: stat cards/header icons).
 - Charts use **Recharts** (the approved engine — ADR-005; shadcn look re-skinned to
   `--chart-*` tokens, no Tailwind), wrapped in `ChartShell` (fixed height) and rendering
   `EmptyState` when series are empty/zero. Chart.js is deprecated (migrating out per plan

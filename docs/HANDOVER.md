@@ -14,6 +14,42 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — UI/reliability planning package reconciled + wired into execution (this PR)
+
+**What (docs-only, no runtime change):** The 2026-07-14 planning package (#546/#547 —
+`ui-modernization-plan.md`, `reliability-and-bug-backlog.md`, `design-system.md`,
+ADR-003/004/005, `tokens.css` spec, `.cursor/rules/design-system.mdc`) was reviewed and
+reconciled:
+
+- **Wired into the execution loop:** sprint now carries the **UI-M track** pointing at the
+  plan's §13 checklist (the authoritative ticket state); `BACKLOG.md` §9b added;
+  `DOCUMENTATION_PLAN.md` registers `docs/design/`.
+- **Id collisions fixed:** plan no longer labels the webhook finding `REL-3` (backlog
+  REL-3 = ARCH pan-drag = plan UI-BUG-4; backlog `REL-*` numbering declared canonical);
+  plan milestones renamed **UI-M1…M3** (sprint ticket `M1` is a closed DetailDrawer item);
+  dangling draft ids (H1/H2/H4/M1/L5) in `design-system.md`/`tokens.css` normalized to
+  `UI-*` ids; finding-id legend added to the design system.
+- **ADR-004 ↔ correlation spec reconciled:** ADR-004 gained a "Relationship to the
+  correlation-engine-v2 spec" section (amends spec §3.3 computation location; scoring
+  semantics unchanged; builds on shipped PR-3 `ioc_degree`); spec header carries the
+  forward amendment note.
+- **Plan hardening:** new tickets **E0-4** (update `CLAUDE.md` "no component library" +
+  `PRODUCT_STATUS` when ADR-003 lands) and **E2-9** (PG16→PG17 doc correction); E4-1/E4-2
+  unblocked from E3 (token-only, land right after E0-1); E7-5/ADR-005 chart-migration
+  claim corrected to **page-atomic** lazy-loading; gzip budgets added (primitives ≤ 35 kB,
+  TanStack ≤ 15 kB, Recharts chunk ≤ 110 kB, entry ≤ 105 kB); UI-M1…M3 exit criteria now
+  scriptable metrics.
+- **`tokens.css` spec fixes:** `prefers-reduced-motion` now force-zeroes
+  transition/animation durations like `data-motion="off"` (Radix keyframes were missed);
+  light-theme severity/status **foregrounds** added (dark hues fail AA on light bg);
+  raw hex in the semantic layer moved to primitives (`--c-neutral-raised`, `--c-heat-*`);
+  `--ease-emphasized` documented as an intentional alias; Phase-1 header typo → Phase 0.
+
+**Next:** maintainer accepts ADR-003/004/005, then plan Phase 0 (E0-1 tokens wiring) and
+the parallel reliability track (E1-1 correlation precompute) start.
+
+---
+
 ## 2026-07-14 — Rate-limit pacing + quota enforcement — merged (#545)
 
 **What:** Tightened outbound API pacing and quota gates per provider docs audit:

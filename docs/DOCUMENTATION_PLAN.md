@@ -43,6 +43,7 @@ docs/                  # THE PRESENT — what is true today
 ├── planning/          # THE FUTURE — direction + queue + specs
 │   ├── SPRINT_*.md, BACKLOG.md
 │   ├── STRATEGY.md, ROADMAP.md, PROGRAM_*.md
+│   ├── ui-modernization-plan.md, reliability-and-bug-backlog.md   # 2026-07-14 program
 │   └── specs/
 ├── archive/           # THE PAST — immutable history
 │   ├── beta/
@@ -50,6 +51,8 @@ docs/                  # THE PRESENT — what is true today
 │   ├── snapshots/
 │   └── superseded/
 ├── decisions/         # ADRs (incl. TEMPLATE.md)
+├── design/            # UI single source of truth (design-system.md; tokens live in
+│                      #   frontend/src/styles/tokens.css — spec until wired, plan E0-1)
 ├── diagrams/          # Mermaid sources
 └── assets/            # SVGs + committed screenshots (README embeds)
 

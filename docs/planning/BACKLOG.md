@@ -316,6 +316,24 @@ per-endpoint latency histograms, alerting — see spec NOT-in-scope list.
 
 ---
 
+## 9b. UI modernization + reliability program (added 2026-07-14)
+
+**Canonical roadmap:** [`ui-modernization-plan.md`](ui-modernization-plan.md) (epics E0–E9;
+§13 checklist is the ticket state — do **not** duplicate per-ticket rows here).  
+**Verified-bug backlog:** [`reliability-and-bug-backlog.md`](reliability-and-bug-backlog.md) (REL-1…REL-7).  
+**Decisions:** ADR-003 (tokens + Radix, no Tailwind) · ADR-004 (correlation precompute) ·
+ADR-005 (UI library allow/deny). **Design SSOT:** [`../design/design-system.md`](../design/design-system.md).
+
+| Item | Status |
+|------|--------|
+| ADR-003 / ADR-004 / ADR-005 maintainer acceptance | 💬 gate for Phase 0/1 |
+| Plan Phase 0 (E0: tokens, Radix spike, motion toggle, docs sync) | 📋 |
+| Plan Phase 1 (E1 correlation precompute, E2 standalone bugs incl. REL-7 PyJWT) | 📋 |
+| Plan Phase 2 (E3 primitives, E4 semantics, E6 a11y core) | 📋 after Phase 0 |
+| Plan Phase 3 (E5 ARCH re-skin, E7 polish incl. Recharts migration, E8/E9) | 📋 after Phase 2 |
+
+---
+
 ## 10. Quality / process
 
 | Item | Status |
