@@ -12,6 +12,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — Planning docs reconcile (BACKLOG / PRODUCT_STATUS / SPRINT)
+
+**What:** Audited plan vs codebase after O-3 (#514). Fixed stale BACKLOG rows that still
+listed shipped work as open: correlation v3 (already ✅ in §2 but intro said Phase 2 next),
+TM-2…TM-5 (#493–#497), FR-2/FR-3 (#492, #495), UX-C2 (#475). Added §5b active open
+queue. Updated `PRODUCT_STATUS.md` header + shipped/planned table; fixed SPRINT Track N/O
+cross-refs.
+
+**Verified open in code (unchanged):** PR-P3, PR-O1/O2, PR-F1–F4, AKH-2 tail, QA-U*,
+PR-R*, RB-1/2, PG-002/003, UX-J1/L1, wallboard optional tail.
+
+**Next:** Codebase audit PRs per BACKLOG §5b (PR-P3 → PR-O1 → PR-F1…).
+
+---
+
 ## 2026-07-14 — O-3: WALLBOARD_TOKEN in admin config — merged #514
 
 **What:** `WALLBOARD_TOKEN` added to `config_schema` (secret, `restart_required`).
@@ -143,12 +158,13 @@ queued. Every merged PR's own HANDOVER entry below has full context; read them b
 re-deriving anything.
 
 **No next phase is queued.** What's left is a flat, independent backlog — see
-`docs/planning/BACKLOG.md` for the authoritative list, currently:
+`docs/planning/BACKLOG.md` §5b for the authoritative open queue (reconciled 2026-07-14),
+currently:
 - Small/cheap: **PG-002** (formalize the disposable-Postgres dev/CI setup below into a
   documented script), **PG-003** (SQLite cross-file test pollution, `test_api_key_health.py`
-  + `test_db_explorer.py`, undiagnosed), PR-F1–F4 (small Forge fixes), PR-O1/O2, PR-P3/P4.
-- Larger, needs its own scoping pass first (do not start opportunistically): correlation-engine-v2
-  Phase 2, PR-6 through PR-13 (`docs/planning/specs/correlation-engine-v2.md` §18).
+  + `test_db_explorer.py`, undiagnosed), PR-F1–F4 (small frontend fixes), PR-O1/O2, PR-P3/P4.
+- Correlation v3 PR-6…PR-13 and FR/TM programs listed here as "next" in the original entry
+  are **merged** (#501–#513, #492–#497) — do not re-queue.
 
 **Environment landmines hit repeatedly this session — read before you re-discover them:**
 1. **SQLite dev DB lock on login.** A fresh/empty worktree DB (`backend/briefr.db`)

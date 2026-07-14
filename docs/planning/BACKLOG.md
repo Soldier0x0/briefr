@@ -17,9 +17,10 @@ docs so nothing is lost when specs move to [`archive/superseded/`](../archive/su
 [`../HANDOVER.md`](../HANDOVER.md). **Build order when activated:** add checkboxes to
 [`SPRINT_2026-07.md`](SPRINT_2026-07.md) or a future sprint doc.
 
-**Last reconciled:** 2026-07-12 against `main` post-#491 (correlation-engine-v2
-Phase 0–1 / PR-1…PR-5, AKH-1, AKH-2 nav rename, QA-F1, QA-P2-1…5, FR-1, and TM-1 all
-shipped this pass — see `docs/HANDOVER.md`'s 2026-07-12 entries for the full PR list).
+**Last reconciled:** 2026-07-14 against `main` post-#514 (O-3). Correlation v3
+(PR-1…PR-13), forge-redesign (FR-1…FR-3 #490–#495), threat-modeling ARCH program
+(TM-0…TM-5 #491–#497), and UX-C2 (#475) verified shipped in code — see
+`docs/HANDOVER.md` 2026-07-14 docs-reconcile entry.
 
 ---
 
@@ -34,13 +35,11 @@ shipped this pass — see `docs/HANDOVER.md`'s 2026-07-12 entries for the full P
 
 ---
 
-## 2. Correlation engine v3 program
+## 2. Correlation engine v3 program — **complete**
 
 **Canonical spec:** [`specs/correlation-engine-v2.md`](specs/correlation-engine-v2.md)  
-**Phase 0–1 (PR-1…PR-5) shipped 2026-07-12.** Phase 2 (PR-6…PR-8) is next in strict
-dependency order. [PG-001](#pg-001--cross-file-pytest-pollution-on-real-postgres-found-2026-07-12-fixed-2026-07-12)
-(the Postgres test-pollution risk that previously gated this) is fixed — no longer a
-blocker.
+**All phases shipped 2026-07-12…2026-07-14 (#473…#513).** [PG-001](#pg-001--cross-file-pytest-pollution-on-real-postgres-found-2026-07-12-fixed-2026-07-12)
+is fixed — no longer a blocker.
 
 | PR | Title (phase) | Status |
 |----|---------------|--------|
@@ -213,7 +212,7 @@ no collateral skip-decorator corruption. Full SQLite suite green (no regressions
 | **33** | Scheduler table — search/filters at ~3 pages of jobs | 📋 |
 | **PR3 follow-up** | Migrate analyst `title=` tooltips on `CVECard` / `DetailDrawer` to `HelpTip` | 📋 incremental |
 | **37 / UX-C1** | Interactive control consistency — drawer buttons + tabs to `.ui-btn` standard (Issue 37) | ✅ shipped (#474) |
-| **37 / UX-C2** | CVE card action row + feed surfaces to `.ui-btn` standard (red = destructive only) | ✅ PR pending merge |
+| **37 / UX-C2** | CVE card action row + feed surfaces to `.ui-btn` standard (red = destructive only) | ✅ #475 |
 | **38 / UX-J1** | Domain-term explanation sweep (PRODUCT.md principle 6): KEV, EPSS, CVSS, CWE, CAPEC, ATT&CK IDs get HelpTip/ExplainTip coverage on feed, drawer, Forge | 📋 audit which terms already covered first |
 | **39 / UX-L1** | "Scope & limits" panel in About modal — render PRODUCT.md Scope & Limits content (copy is final, JSX only); browser-verify with the UX-C1 pass | 📋 content ready |
 | **Issue 21** | API key suffix + provider health ping in UI | 🔶 backend #435 — UI tail? |
@@ -221,26 +220,41 @@ no collateral skip-decorator corruption. Full SQLite suite green (no regressions
 | **UI overhaul 3b** | Status legend component | 📋 archive plan |
 | **UI overhaul §6** | Restart dropdown portal (clipped menu) | 📋 verify if still broken |
 
-**Shipped (do not re-queue):** PR1–PR11, PR12 (#413–#415), PR13 (#422), notification center (#439), O-1/O-2 (#428), wallboard v2 core (#430), K5 (#433).
+**Shipped (do not re-queue):** PR1–PR11, PR12 (#413–#415), PR13 (#422), notification center (#439), O-1/O-2 (#428), O-3 (#514), wallboard v2 core (#430), K5 (#433), UX-C1 (#474), UX-C2 (#475).
 
 ---
 
-## 6. Threat Modeling & Security Architecture module
+## 5b. Active open queue (verified 2026-07-14)
+
+Flat backlog after major programs above — **no strict order**; pick from here or §3–§9:
+
+| Bucket | IDs |
+|--------|-----|
+| Codebase audit | PR-P3, PR-O1, PR-O2, PR-F1–F4 (PR-P4 optional) |
+| API key health tail | AKH-2 (remove dead `/api/usage`, HelpTip on Inbound limits) |
+| QA / UX | QA-U1–U3, UX-J1, UX-L1 |
+| Durability | PR-R1, PR-R2, PR-R4 (PR-R3 verify vs #449) |
+| Ops / test infra | M-9, M-10 verify, PG-002, PG-003 |
+| Resource benchmarking | RB-1, RB-2 |
+| UX audit deferred | §5 items 28–33, PR3 follow-up, UI 3a/3b/§6 |
+| Wallboard optional | §7 optional rows |
+
+---
+
+## 6. Threat Modeling & Security Architecture module — **committed program complete**
 
 **Canonical spec:** [`specs/threat-modeling-security-architecture.md`](specs/threat-modeling-security-architecture.md) (**v2**, #460/#461)  
-**Status:** TM-1 shipped 2026-07-12 (#491). TM-2 is next — **needs working browser
-screenshot verification before starting** (its acceptance criteria require it; see
-`docs/HANDOVER.md`'s 2026-07-12 session-close entry for why TM-1 was picked over TM-2
-last session). Execution per [`specs/execution-playbook.md`](specs/execution-playbook.md).
+**TM-0…TM-5 shipped 2026-07-12…2026-07-13 (#491–#497).** TM-6+ framework workspaces remain
+evidence-gated (not queued). Execution per [`specs/execution-playbook.md`](specs/execution-playbook.md).
 
 | PR | Title | Status |
 |----|-------|--------|
 | **TM-0** | Design plan v2 (evidence-gated, self-stack) | ✅ #458 + v2 #460/#461 |
-| **TM-1** | Corpus **generator** + loader + drift CI (generated/curated split) | ✅ #491 — deliberately narrowed: curated layer seeded empty (no invented security judgment), architecture graph deferred to TM-4. See `corpus/manifest.yaml` notes |
-| **TM-2** | Shell UI + Overview evidence tiles (route, header tab ARCH) | 📋 blocked on browser verification tooling |
-| **TM-3** | Live sections: MITRE + Threat Scenarios + Controls + self-stack exposure | 📋 |
-| **TM-4** | System Architecture graph + Trust Boundaries + Attack Surface | 📋 |
-| **TM-5** | Risk Register + Decisions + Review History + Abuse Cases + Search + PDF | 📋 |
+| **TM-1** | Corpus **generator** + loader + drift CI (generated/curated split) | ✅ #491 |
+| **TM-2** | Shell UI + Overview evidence tiles (route, header tab ARCH) | ✅ #493 |
+| **TM-3** | Live sections: MITRE + Threat Scenarios + Controls + self-stack exposure | ✅ #494 |
+| **TM-4** | System Architecture graph + Trust Boundaries + Attack Surface | ✅ #496 |
+| **TM-5** | Risk Register + Decisions + Review History + Abuse Cases + Search + PDF | ✅ #497 |
 | **TM-6+** | Framework workspaces (STRIDE, OWASP×2, NIST, ASVS, CAPEC, CWE) | 💬 evidence-gated, one PR each — gate in spec §8 |
 
 **Scope (v2):** every committed section must cite a generated or live data source;
@@ -249,19 +263,16 @@ tiles only.
 
 ---
 
-## 6b. Forge redesign program
+## 6b. Forge redesign program — **complete**
 
 **Canonical spec:** [`specs/forge-redesign.md`](specs/forge-redesign.md) (#460/#461)  
-**Priority note:** Forge redesign outranks TM implementation if scheduling conflicts —
-daily workflow beats governance. (Deviated from once, 2026-07-12: TM-1 was picked over
-FR-2 because TM-1 self-verifies via pytest and FR-2 needs browser verification that
-wasn't available — see `docs/HANDOVER.md`.)
+**FR-1…FR-3 shipped 2026-07-12…2026-07-13 (#490, #492, #495).**
 
 | PR | Title | Status |
 |----|-------|--------|
 | **FR-1** | Hunt pack list + delete API (`GET /api/hunt-packs`, `DELETE /{id}`, audit entry) | ✅ #490 |
-| **FR-2** | Three-panel shell + `?view=` URL state + Library view + persistent Hunt Pack rail | 📋 blocked on browser verification tooling |
-| **FR-3** | Live-data enrichment (atlas case studies, KEV notifications, CWE/EPSS) + pack PDF export | 📋 blocked on FR-2 |
+| **FR-2** | Three-panel shell + `?view=` URL state + Library view + persistent Hunt Pack rail | ✅ #492 |
+| **FR-3** | Live-data enrichment (atlas case studies, KEV notifications, CWE/EPSS) + pack PDF export | ✅ #495 |
 
 ---
 
@@ -347,6 +358,11 @@ per-endpoint latency histograms, alerting — see spec NOT-in-scope list.
 | PR12/PR13 | #413–#415, #422 |
 | AI-1/2 + retention + filters + tokens | #416–#420 |
 | F2 LICENSE/CONTRIBUTING | #423 |
+| Correlation v3 PR-1…PR-13 | #473…#513 |
+| Forge redesign FR-1…FR-3 | #490, #492, #495 |
+| Threat modeling TM-1…TM-5 | #491, #493–#497 |
+| UX-C1 / UX-C2 (Issue 37) | #474, #475 |
+| O-3 wallboard token in admin config | #514 |
 
 ---
 
