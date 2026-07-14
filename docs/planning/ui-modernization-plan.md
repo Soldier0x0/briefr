@@ -326,7 +326,7 @@ numbers recorded in the closing PR body:
 ## 13. Progress checklist
 
 **Foundation (E0)**
-- [ ] E0-1 tokens wired + reconciled + lint gates
+- [x] E0-1 tokens wired + reconciled + lint gates
 - [ ] E0-2 Radix adoption + reference Checkbox
 - [ ] E0-3 tool-wide motion toggle
 - [ ] E0-4 docs sync on ADR acceptance (CLAUDE.md / AGENTS.md / PRODUCT_STATUS)

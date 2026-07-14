@@ -1,12 +1,9 @@
 /* =============================================================================
  * BRIEFR semantic design tokens — SPECIFICATION (NOT YET WIRED)
  * -----------------------------------------------------------------------------
- * Status:      DRAFT / spec artifact. This file is intentionally NOT imported
- *              anywhere yet (no runtime effect). It is the single source of
- *              truth for the token vocabulary that the UI modernization effort
- *              will adopt. Wiring it in (importing from main.jsx and migrating
- *              components off raw hex) is tracked as Phase 0 in
- *              docs/planning/ui-modernization-plan.md (ticket E0-1).
+ * Status:      WIRED — imported from main.jsx before App.css (ticket E0-1).
+ *              Single source of truth for the token vocabulary; legacy aliases
+ *              below preserve App.css-era names during migration.
  *
  * Authority:   docs/design/design-system.md (usage rules) and
  *              docs/decisions/ADR-003-ui-design-system.md (rationale).
@@ -248,6 +245,51 @@
   --control-height-md: 30px;
   --control-height-lg: 36px;
   --hit-target-min:    24px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 2b. LEGACY COMPATIBILITY ALIASES (App.css era — remove post-migration)
+ *     New code must use semantic names above, not these.
+ * ──────────────────────────────────────────────────────────────────────── */
+:root {
+  --bg:              var(--background-primary);
+  --bg2:             var(--background-secondary);
+  --bg3:             var(--background-tertiary);
+  --border:          var(--border-subtle);
+  --border2:         var(--border-default);
+  --text:            var(--text-primary);
+  --text2:           var(--text-secondary);
+  --text3:           var(--text-muted);
+  --red:             var(--danger);
+  --on-red:          var(--text-on-danger);
+  --red-dim:         var(--danger-bg);
+  --amber:           var(--severity-high);
+  --amber-dim:       var(--severity-high-bg);
+  --green:           var(--status-success);
+  --green-dim:       var(--status-success-bg);
+  --toggle-on:       var(--status-success);
+  --toggle-off:      var(--danger);
+  --accent:          var(--accent-primary);
+  --link:            var(--text-link);
+
+  --surface-page:    var(--background-primary);
+  --surface-1:       var(--surface-raised);
+  --surface-2:       var(--background-secondary);
+  --muted:           var(--text-muted);
+  --input-bg:        var(--surface-input);
+  --chip-bg:         var(--background-secondary);
+  --chip-border:     var(--border-default);
+  --chip-active-bg:  var(--danger-bg);
+
+  --type-title:      var(--font-size-title);
+  --type-heading:    var(--font-size-heading);
+  --type-subheading: var(--font-size-subheading);
+  --type-id:         var(--font-size-id);
+  --type-body:       var(--font-size-body);
+  --type-secondary:  var(--font-size-secondary);
+  --type-meta:       var(--font-size-meta);
+  --type-micro:      var(--font-size-micro);
+  --type-min:        var(--font-size-micro);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

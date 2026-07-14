@@ -26,6 +26,10 @@ step "SQLite backend tests (required — matches CI job: test)"
 )
 pass "SQLite pytest"
 
+step "Design token lint (required — E0-1 gates)"
+"$REPO_ROOT/scripts/lint-design-tokens.sh"
+pass "design-token lint"
+
 step "Frontend production build (required — matches playwright-smoke job build step)"
 (
   cd frontend
