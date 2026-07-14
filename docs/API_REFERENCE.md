@@ -1551,17 +1551,9 @@ query, not an index subsystem.
 
 ---
 
-### GET /api/usage
-
-**Description:** API quota counters for ingest/enrichment services.
-
-**Response:** `{"as_of_utc": "...", "today_date_utc": "...", "this_month_utc": "...", "services": {...}}`
-
----
-
 ### GET /api/usage/ioc
 
-**Description:** IOC Lookup quota counters (VT, AbuseIPDB, GreyNoise, OTX, MalwareBazaar, URLhaus).
+**Description:** IOC Lookup outbound quota counters (VT, AbuseIPDB, GreyNoise, OTX, MalwareBazaar, URLhaus). Full ingest-provider quota (`GET /api/usage`) was removed in AKH-2 — no UI consumed it; see AI Operations and IOC Lookup for operator-facing quota.
 
 ---
 

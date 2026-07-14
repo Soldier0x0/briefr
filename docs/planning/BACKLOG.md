@@ -75,12 +75,9 @@ before PR-9.
 |----|-------|--------|
 | PR-P3 | Index `cves.modified` | ✅ #516 |
 | PR-P4 | KEV upsert batching | 📋 optional |
-| PR-O1 | Feed empty → scheduler `had_error` | ✅ in PR |
+| PR-O1 | Feed empty → scheduler `had_error` | ✅ #517 |
+| PR-F1–F4 | Admin gate, safe URLs, fonts, loadStats | ✅ #518 |
 | PR-O2 | Correlation GET read-only split (CACHE-001) | 📋 |
-| PR-F1 | Admin nav role gate + 403 redirect | ✅ in PR |
-| PR-F2 | `safeExternalUrl` for feed links | ✅ in PR |
-| PR-F3 | Font-weight token alignment | ✅ in PR |
-| PR-F4 | `loadStats` sequence guard | ✅ in PR |
 
 ### API key health & quota clarity (found 2026-07-12)
 
@@ -89,7 +86,7 @@ before PR-9.
 | PR | Title | Status |
 |----|-------|--------|
 | **AKH-1** | Fix `api_key_health.py::_ping_json` positional-arg bug (`TypeError: resilient_request() got multiple values for argument 'source'`) — every provider health check has failed on every run since the feature shipped; also fix the notification dedupe key (currently includes a per-run timestamp, so it never dedupes) | ✅ #482 |
-| **AKH-2** | Quota-system UI clarity: rename Admin "Rate limit" nav (collides with unrelated outbound provider quota), wire or remove the dead `fetchUsage()`/`GET /api/usage` endpoint (zero frontend callers today), HelpTip explaining quota vs pacing vs inbound throttling. Narrows Issue 21 + folds into UX-J1 | 🔶 #486 shipped the nav rename; dead-endpoint removal + HelpTip not done |
+| **AKH-2** | Quota-system UI clarity: rename Admin "Rate limit" nav (collides with unrelated outbound provider quota), wire or remove the dead `fetchUsage()`/`GET /api/usage` endpoint (zero frontend callers today), HelpTip explaining quota vs pacing vs inbound throttling. Narrows Issue 21 + folds into UX-J1 | ✅ in PR |
 
 ### QA audit — functionality/UI/ops (found 2026-07-12, live-verified)
 

@@ -12,7 +12,26 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-14 — PR-O1: KEV feed failure → scheduler `had_error` (ERR-001)
+## 2026-07-14 — AKH-2 tail: remove dead GET /api/usage + Inbound limits HelpTip
+
+**What:** Dropped unused `GET /api/usage` and `fetchUsage()`; kept `GET /api/usage/ioc`
+for IOC Lookup. HelpTip on Admin → Inbound limits clarifies vs outbound quota and LLM pacing.
+
+**Next:** QA-U1 drawer header responsive overflow.
+
+---
+
+## 2026-07-14 — PR-F1–F4: codebase audit frontend bundle — merged #518
+
+**What:** `RequireAdmin` (operator routes; `display` still analyst-accessible), hide Admin
+panel link for non-admins, `safeExternalUrl` on incidents + drawer references,
+DM Sans/IBM Plex 600 imports + weight tokens, `loadStats` sequence guard.
+
+**Next:** AKH-2 tail.
+
+---
+
+## 2026-07-14 — PR-O1: KEV feed failure → scheduler `had_error` (ERR-001) — merged #517
 
 **What:** `FeedFetchError` from `fetch_kev` on circuit/HTTP/empty catalog; `_run_kev_sync`
 re-raises so `run_kev_sync` records `had_error` in job last-run state.

@@ -439,9 +439,6 @@ endpoints:
   path: /api/time
   component_id: routers-meta
 - method: GET
-  path: /api/usage
-  component_id: routers-meta
-- method: GET
   path: /api/usage/ioc
   component_id: routers-meta
 - method: GET
