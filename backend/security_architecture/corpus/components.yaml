@@ -2,11 +2,11 @@ version: 1
 components:
 - id: routers-admin
   title: routers.admin
-  summary: FastAPI router module with 62 endpoint(s).
+  summary: FastAPI router module with 63 endpoint(s).
   owner: platform
   status: active
   origin: generated
-  endpoint_count: 62
+  endpoint_count: 63
   source_refs:
   - type: file
     ref: backend/routers/admin.py
@@ -122,11 +122,11 @@ components:
     ref: backend/routers/me.py
 - id: routers-meta
   title: routers.meta
-  summary: FastAPI router module with 7 endpoint(s).
+  summary: FastAPI router module with 6 endpoint(s).
   owner: platform
   status: active
   origin: generated
-  endpoint_count: 7
+  endpoint_count: 6
   source_refs:
   - type: file
     ref: backend/routers/meta.py

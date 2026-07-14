@@ -247,6 +247,18 @@
       ]
     },
     {
+      "id": "job:resource_metrics_sample",
+      "label": "Resource Metrics Sample",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "resource_metrics_sample"
+        }
+      ]
+    },
+    {
       "id": "job:scheduled_backup",
       "label": "Scheduled Backup",
       "kind": "job",
@@ -335,7 +347,7 @@
       "label": "routers.admin",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 62,
+      "endpoint_count": 63,
       "source_refs": [
         {
           "type": "file",
@@ -491,7 +503,7 @@
       "label": "routers.meta",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 7,
+      "endpoint_count": 6,
       "source_refs": [
         {
           "type": "file",
@@ -995,6 +1007,18 @@
         {
           "type": "table",
           "ref": "pulse_families"
+        }
+      ]
+    },
+    {
+      "id": "table:resource_metrics",
+      "label": "resource_metrics",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "resource_metrics"
         }
       ]
     },
