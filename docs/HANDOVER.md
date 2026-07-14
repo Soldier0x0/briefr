@@ -12,6 +12,17 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — M-9 ingest cadence restore + M-10 verify — merged (this PR)
+
+**What:** `_restore_ingest_next_runs` re-anchors NVD/KEV/EPSS `next_run_time` to
+persisted last-run + interval on startup (overdue → +2min, never later than the trigger
+default). M-10 verified complete: archive creation + prune only run inside `run_backup`'s
+flock; all creators route through `run_backup`.
+
+**Next:** UX-J1 domain-term HelpTip sweep.
+
+---
+
 ## 2026-07-14 — PR-O2: correlation GET read-only split — merged (this PR)
 
 **What:** `get_correlation_for_cve` no longer writes `correlation_actor` on the GET

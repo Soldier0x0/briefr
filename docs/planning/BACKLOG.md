@@ -175,8 +175,8 @@ no collateral skip-decorator corruption. Full SQLite suite green (no regressions
 | ID | Item | Status |
 |----|------|--------|
 | **M-8** | `app_settings` secret policy (env-only vs encrypted DB) | 🅿️ |
-| **M-9** | Ingest `next_run_time` from `scheduler.last_run` (no immediate NVD/KEV/EPSS on restart) | 📋 verify vs #431 |
-| **M-10** | Global backup mutex (fcntl) — partial via #431 flock | 🔶 verify completeness |
+| **M-9** | Ingest `next_run_time` from `scheduler.last_run` (no immediate NVD/KEV/EPSS on restart) | ✅ (this PR) — `_restore_ingest_next_runs` re-anchors NVD/KEV/EPSS to last-run + interval; overdue jobs run +2min after boot, never postponed beyond the trigger default |
+| **M-10** | Global backup mutex (fcntl) — partial via #431 flock | ✅ verified complete 2026-07-14 — `_create_archive_bundle` + `prune_backups` run only inside `run_backup`'s `.backup.lock` flock; all creators (scheduled job, admin manual) route through `run_backup`. fcntl-less platforms (Windows dev) fall back to no lock by design |
 
 ---
 
@@ -231,7 +231,7 @@ Flat backlog after major programs above — **no strict order**; pick from here 
 | API key health tail | AKH-2 (remove dead `/api/usage`, HelpTip on Inbound limits) |
 | QA / UX | QA-U2–U3, UX-J1, UX-L1 |
 | Durability | PR-R1, PR-R2, PR-R4 (PR-R3 verify vs #449) |
-| Ops / test infra | M-9, M-10 verify |
+| Ops / test infra | — (M-9 ✅, M-10 verified, PG-002/003 ✅) |
 | Resource benchmarking | — (RB-1/RB-2 complete) |
 | UX audit deferred | §5 items 28–33, PR3 follow-up, UI 3a/3b/§6 |
 | Wallboard optional | §7 optional rows |
