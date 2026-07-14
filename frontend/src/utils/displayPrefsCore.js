@@ -3,6 +3,7 @@ import {
   DEFAULT_TYPOGRAPHY_PX,
   getEffectiveTypographyPx,
 } from './typographyPrefs.js'
+import { osPrefersReducedMotion } from './motion.js'
 
 const FONT_SCALES = { xsmall: 0.8, small: 0.9, medium: 1, large: 1.15, xlarge: 1.3 }
 const DENSITY_MODES = ['compact', 'comfortable', 'spacious']
@@ -46,7 +47,15 @@ export function applyDisplayPrefs(prefs = toDisplayPrefs()) {
   document.documentElement.style.fontSize = `${(FONT_SCALES[prefs.fontScale] ?? 1) * 100}%`
   document.documentElement.classList.toggle('density-compact', prefs.density === 'compact')
   document.documentElement.classList.toggle('density-spacious', prefs.density === 'spacious')
-  document.documentElement.classList.toggle('reduce-motion', !!prefs.reduceMotion)
+  const reduceMotion = !!prefs.reduceMotion
+  document.documentElement.classList.toggle('reduce-motion', reduceMotion)
+  if (reduceMotion) {
+    document.documentElement.setAttribute('data-motion', 'off')
+  } else if (osPrefersReducedMotion()) {
+    document.documentElement.setAttribute('data-motion', 'on')
+  } else {
+    document.documentElement.removeAttribute('data-motion')
+  }
   applyTypographyPx(getEffectiveTypographyPx(prefs))
   try {
     localStorage.setItem('briefr_notification_sound', prefs.notificationSound ? '1' : '0')

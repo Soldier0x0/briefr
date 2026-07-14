@@ -1,5 +1,7 @@
 /** Short notification chime — respects mute + reduced motion prefs. */
 
+import { prefersReducedMotion } from './motion.js'
+
 let audioCtx = null
 
 function getAudioContext() {
@@ -14,7 +16,7 @@ function getAudioContext() {
 
 export function playNotificationChime() {
   try {
-    if (localStorage.getItem('briefr_reduce_motion') === '1') return
+    if (prefersReducedMotion()) return
     const ctx = getAudioContext()
     if (!ctx) return
     if (ctx.state === 'suspended') {

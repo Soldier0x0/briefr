@@ -292,17 +292,9 @@ html.density-spacious body {
   line-height: 1.7;
 }
 
-/* Honor the OS-level reduced-motion preference everywhere. */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
+/* Tool-wide motion is governed by tokens.css (`data-motion` on <html>) and
+   Admin → Display → Reduce interface motion. Legacy `.reduce-motion` rules in
+   AdminPage.css remain during migration. */
 
 /* App-level crash screen (root error boundary fallback). */
 .app-crash {
