@@ -1,8 +1,13 @@
 # BRIEFR UI Modernization Plan
 
-**Status:** DRAFT (v0.1) — master implementation roadmap for the UI/design-system effort.
+**Status:** DRAFT (v0.2) — master implementation roadmap for the UI/design-system effort.
 **Last updated:** 2026-07-14
 **Type:** Planning only. No application code is changed by this document.
+**Execution wiring:** this plan is the **UI-M track** in
+[`docs/planning/SPRINT_2026-07.md`](SPRINT_2026-07.md); the progress checklist (§13) is
+the authoritative ticket state (tick items here, add PR numbers, per the sprint loop in
+`AGENTS.md`). Ticket id scheme: `E*-*` (this plan), `UI-*`/`UI-BUG-*` (findings §2),
+`REL-*` (backlog doc ids — always cited with the backlog's numbering).
 
 **Companion documents (authoritative inputs / keep in sync):**
 - Design SSOT: [`docs/design/design-system.md`](../design/design-system.md)
@@ -47,6 +52,12 @@ Severity uses Critical / High / Medium / Low. Each finding: Location · Problem 
 Impact · Fix ticket. Backend/reliability items live in the backlog doc; the highest-impact
 ones are listed here for completeness and cross-referenced.
 
+Relationship to prior audits: the UX-audit correction pass
+([`specs/ux-audit.md`](specs/ux-audit.md), PR1–PR11 = #396–#408) and the QA audits
+(2026-07-12) are **shipped history** — nothing below re-opens a closed ticket. All
+findings here were independently reproduced on 2026-07-14 against the restored
+production DB.
+
 ### Critical
 - **[REL-1] Correlation engine times out (~61s)** for hub-IOC-heavy CVEs → `correlation_unavailable`. *Backlog REL-1.* Impact: flagship feature intermittently dead. → epic **E1**.
 - **[REL-2] Operational-Priority hero never renders** (drawer Overview) because `POST /risk` shares the slow correlation path. Evidence: `audit_drawer_op_hero.png`; API returns P1/85.8/UNKNOWN when given 61s. Impact: ADR-002 headline invisible. → **E1**.
@@ -60,7 +71,7 @@ ones are listed here for completeness and cross-referenced.
 - **[UI-5] No CVSS severity accent on cards**; badge hues too close to separate at a glance. Evidence: `audit_r_feed_severity.png`. → **E4-3**.
 - **[UI-6] ARCH section is barebones/unstyled** — 11 of 12 pages are wall-of-text lists (only Risks is tabled); Overview boxes non-uniform/jammed. Evidence: `audit_r_arch_attack_surface.png`, `audit_v_arch_overview_boxes.png`. → **E5**.
 - **[UI-BUG-2] Column-resize handles wonky** — drag guide moves but header/body desync; no clean resize. Evidence: `audit_v_resize_1.png`. → **E2-3 / E3-3**.
-- **[REL-3] Failing Discord webhook (HTTP 500) not globally surfaced**; **91% LLM fail-rate shown as dim gray** not an alert. *Backlog REL-4/REL-6.* → **E9**.
+- **[REL-4/REL-6] Failing Discord webhook (HTTP 500) not globally surfaced**; **91% LLM fail-rate shown as dim gray** not an alert. *Backlog REL-4/REL-6.* → **E9**.
 
 ### Medium
 - **[UI-7] Weak/absent hover feedback** on cards, vendor chips, filter chips (~3–5% delta / none; no transition). Evidence: `audit_p1_hover.png`. → **E7-1**.
@@ -70,7 +81,7 @@ ones are listed here for completeness and cross-referenced.
 - **[UI-11] Empty vs error vs loading not distinguished** (correlation timeout looks empty; Resources looks empty when failing). → **E1-3 / E7-2**.
 - **[UI-12] No feedback on "Copy markdown"; no progress on large exports.** → **E7-3**.
 - **[UI-BUG-3] Reference tooltip overflows** over other drawer content (not clamped/flipped). Evidence: `audit_r_ref_tooltip.png`. → **E2-4 / E3-2**.
-- **[UI-BUG-4] ARCH graph pan selects text** instead of panning. Evidence: `audit_r_arch_pan_selection.png`. → **E2-5**.
+- **[UI-BUG-4] ARCH graph pan selects text** instead of panning. *Backlog REL-3.* Evidence: `audit_r_arch_pan_selection.png`. → **E2-5**.
 - **[UI-13] ARCH graph max-zoom (2.5×) insufficient** — labels ~10–11px on 93 nodes. → **E2-6**.
 - **[UI-14] Spacing/borders**: cramped FEED filter panel; borderless BRIEF stat cards; tight degraded-source card padding. Evidence: `audit_r_spacing.png`. → **E7-4**.
 - **[UI-15] Hidden/low-affordance clickables** (stat cards, header icons). Evidence: `audit_r_hidden_clickable.png`. → **E7-1 / E3-7**.
@@ -111,8 +122,9 @@ are summarized; full Problem/Evidence/Impact are in §2 and the backlog.
 
 ### E0 — Design-system foundation
 - **E0-1** Wire `tokens.css` + reconcile with `App.css`; add severity/status/spacing/motion layers — M · ARCH · —. *Accept:* tokens imported; CI "no raw hex" + contrast lint pass.
-- **E0-2** Adopt Radix primitives (no Tailwind; shadcn as reference); ship reference `Checkbox` — M · ARCH · E0-1, ADR-003. *Accept:* ADR-003 accepted; one primitive on tokens.
+- **E0-2** Adopt Radix primitives (no Tailwind; shadcn as reference); ship reference `Checkbox` — M · ARCH · E0-1, ADR-003. *Accept:* ADR-003 accepted; one primitive on tokens; incremental gzip cost of the primitives layer ≤ 35 kB (measured in the PR body; ADR-005 governance).
 - **E0-3** Tool-wide motion toggle (default on, honor `prefers-reduced-motion`, persist) — S/M · QW · E0-1. *Accept:* toggling kills all animation app-wide; OS pref respected; persists.
+- **E0-4** Docs sync on ADR acceptance — S · QW · ADR-003/005 accepted. Update `CLAUDE.md` ("plain JSX/CSS, **no component library**" → tokens + Radix per ADR-003), `AGENTS.md` cloud notes, and `docs/PRODUCT_STATUS.md` in the same PR that lands E0-2, so the always-applied agent rules never contradict `.cursor/rules/design-system.mdc`. *Accept:* no repo doc still claims "no component library".
 
 ### E1 — Reliability: correlation & operational priority  *(parallel track; see ADR-004 + backlog)*
 - **E1-1** Correlation off request path (precompute edges; degree-cap hubs) — L · ARCH. *Accept:* p95 < 2s on prod dataset; no `correlation_unavailable` on sampled hubs.
@@ -128,21 +140,22 @@ are summarized; full Problem/Evidence/Impact are in §2 and the backlog.
 - **E2-6** Raise graph max-zoom (~4×) + fit/reset control — S · QW.
 - **E2-7** ARCH filter hides (not dims) non-matching columns — S · QW.
 - **E2-8** Add `PyJWT` to `requirements.txt` — S · QW *(setup/CI; backlog REL-7)*.
+- **E2-9** Correct PG16 → PG17 in `AGENTS.md` / `docs/PRODUCT_STATUS.md` / `docs/POSTGRES.md` — S · QW *(docs-only; backlog "Environment / data artifacts" note: production backup is pg_dump v1.16 = PG17)*.
 
 ### E3 — Primitive component library *(depends on E0)*
 - **E3-1** Checkbox / Switch / Radio — M · ARCH. *Accept:* zero native checkboxes (grep gate).
 - **E3-2** Tooltip / Popover (portaled, collision-aware) — M · ARCH.
-- **E3-3** Table / DataGrid (fixed layout, sticky header, sortable, resize, wrap/center) — L · ARCH.
+- **E3-3** Table / DataGrid (fixed layout, sticky header, sortable, resize, wrap/center) — L · ARCH. *Accept:* if TanStack Table is used, headless only, incremental gzip ≤ 15 kB (ADR-005 governance).
 - **E3-4** Dialog / Modal / AlertDialog (focus trap, scroll-lock, Esc/return-focus) — M · ARCH.
 - **E3-5** Tabs / DropdownMenu / Select — M · ARCH.
 - **E3-6** Slider/range primitive — S · QW.
 - **E3-7** Badge / Pill / Card / StatCard / EmptyState / Toast — M · ARCH.
 
-### E4 — Color & severity semantics *(depends on E0/E3)*
-- **E4-1** One `--accent-selected` across nav/sidebar/chips/rows/radios — M · QW.
-- **E4-2** Reserve red for destructive/critical; recolor neutral links/toggles/radios — S · QW.
-- **E4-3** Card severity left-accent + wider badge hue separation + EPSS direction fix — S/M · QW.
-- **E4-4** Status/severity legends & tooltips everywhere — M · QW.
+### E4 — Color & severity semantics
+- **E4-1** One `--accent-selected` across nav/sidebar/chips/rows/radios — M · QW · E0-1 only (token/CSS change; does **not** wait for E3 — highest-visibility quick win).
+- **E4-2** Reserve red for destructive/critical; recolor neutral links/toggles/radios — S · QW · E0-1 only.
+- **E4-3** Card severity left-accent + wider badge hue separation + EPSS direction fix — S/M · QW · E0-1 (+E3-7 where Badge/Card primitives already exist).
+- **E4-4** Status/severity legends & tooltips everywhere — M · QW · E3-2 (portaled Tooltip).
 
 ### E5 — ARCH re-skin *(depends on E3/E4)*
 - **E5-1** Overview → uniform responsive StatCard grid; real connectors — M · QW.
@@ -163,7 +176,7 @@ are summarized; full Problem/Evidence/Impact are in §2 and the backlog.
 - **E7-2** Loading skeletons over spinners/jumps — M · QW.
 - **E7-3** Copy/export feedback (toast + progress) — S · QW.
 - **E7-4** Spacing/border pass (filter panel, stat cards, degraded cards) — M · QW · E0-1.
-- **E7-5** Chart migration Chart.js → **Recharts** (shadcn look, no Tailwind; ADR-005) — L · ARCH · E0-1, E2-1. *Scope:* re-create shadcn's chart wrapper on `--chart-*` tokens; migrate **every Chart.js chart** chart-by-chart behind `ChartShell` (fixed height) with visual-regression — including `BriefCharts`, the admin `OpsCharts`, **and the Admin → Resources chart** (the infinite-growth offender, UI-BUG-1); wire animations to the motion toggle; keep the 90-day heatmap + EPSS sparklines as custom SVG. Lazy-load chart chunks so only one charting library is loaded client-side at a time during migration; **remove Chart.js once the last chart is ported**. *Accept:* no `import` of Chart.js remains; Chart.js dependency removed from `package.json`; no chart grows unbounded; parity or better visuals.
+- **E7-5** Chart migration Chart.js → **Recharts** (shadcn look, no Tailwind; ADR-005) — L · ARCH · E0-1, E2-1. *Scope:* re-create shadcn's chart wrapper on `--chart-*` tokens; migrate **every Chart.js chart** chart-by-chart behind `ChartShell` (fixed height) with visual-regression — including `BriefCharts`, the admin `OpsCharts`, **and the Admin → Resources chart** (the infinite-growth offender, UI-BUG-1); wire animations to the motion toggle; keep the 90-day heatmap + EPSS sparklines as custom SVG. Migrate **page-atomically** (all charts on a page/route in one PR) and lazy-load chart chunks, so any given route loads Recharts *or* the legacy Chart.js chunk — never both (a per-page guarantee is only enforceable if migration is page-atomic; mixed pages would load both); **remove Chart.js once the last chart is ported**. *Accept:* no `import` of Chart.js remains; Chart.js dependency removed from `package.json`; Recharts ships as a lazy chunk ≤ 110 kB gzip (measured in the PR body); no chart grows unbounded; parity or better visuals.
 
 ### E8 — Navigation / IA
 - **E8-1** Unify active-state across shells (rides E4-1) — S · QW.
@@ -179,9 +192,9 @@ are summarized; full Problem/Evidence/Impact are in §2 and the backlog.
 
 ## 5. Prioritized implementation phases
 
-- **Phase 0 — Groundwork:** E0-1, E0-2, E0-3, ADR-003 accepted. Nothing user-visible except the motion toggle.
-- **Phase 1 — Trust/reliability (parallel):** E1-1, E1-2, E2-1, E2-2, E2-8; ADR-004 accepted.
-- **Phase 2 — Primitives + semantics:** E3-1…3-7, E4-1…4-4, E6-1/2/3, E2-3/4.
+- **Phase 0 — Groundwork:** E0-1, E0-2, E0-3, E0-4, ADR-003/005 accepted. Nothing user-visible except the motion toggle.
+- **Phase 1 — Trust/reliability (parallel):** E1-1, E1-2, E2-1, E2-2, E2-8, E2-9; ADR-004 accepted. Early visible wins: E4-1, E4-2 (token-only, need just E0-1).
+- **Phase 2 — Primitives + semantics:** E3-1…3-7, E4-3/4-4, E6-1/2/3, E2-3/4.
 - **Phase 3 — ARCH + polish + IA + observability:** E5-*, E7-*, E8-*, E9-*, E2-5/6/7, E6-4/5, E1-3.
 - **Phase 4 (future):** §14.
 
@@ -190,15 +203,17 @@ are summarized; full Problem/Evidence/Impact are in §2 and the backlog.
 ## 6. Dependencies between tasks
 
 ```
-E0-1 ─┬─ E0-2 ─ E3-1..3-7 ─┬─ E4-1..4-4 ─ E5-1..5-5
-      ├─ E0-3               ├─ E6-1/6-2
-      └─ E6-1/6-2           └─ E7-1/7-4
-E3-2 ─ E2-4         E3-3 ─ E2-3, E5-2
-E4-1 ─ E5-3, E8-1   E7(EmptyState/E3-7) ─ E1-3
-E1-1 ─ E1-2 (ADR-004)     [E2-1,E2-2,E2-5,E2-6,E2-7,E2-8: independent]
+E0-1 ─┬─ E0-2(+E0-4) ─ E3-1..3-7 ─┬─ E4-3/E4-4 ─ E5-1..5-5
+      ├─ E0-3                      ├─ E6-1/6-2
+      ├─ E4-1, E4-2 (token-only)   └─ E7-1/7-4
+      └─ E6-1/6-2
+E3-2 ─ E2-4, E4-4    E3-3 ─ E2-3, E5-2
+E4-1 ─ E5-3, E8-1    E7(EmptyState/E3-7) ─ E1-3
+E1-1 ─ E1-2 (ADR-004)     [E2-1,E2-2,E2-5,E2-6,E2-7,E2-8,E2-9: independent]
 ```
-Critical-path (design system): **E0-1 → E0-2 → E3 → E4 → E5**. Reliability path
-(**E1-1 → E1-2**) is independent and can start immediately.
+Critical-path (design system): **E0-1 → E0-2 → E3 → E4-3/4 → E5**. Reliability path
+(**E1-1 → E1-2**) is independent and can start immediately. E4-1/E4-2 are token-only
+and can land right after E0-1 (early visible wins).
 
 ---
 
@@ -207,7 +222,7 @@ Critical-path (design system): **E0-1 → E0-2 → E3 → E4 → E5**. Reliabili
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
 | Token migration regresses styling (shared surface — `CLAUDE.md` danger zone) | Med | High | Land tokens as aliases first; visual-regression snapshots; migrate per-component behind review. |
-| DetailDrawer contention (M1/H2/H4/C-Evolve-3 all touch it) | Med | Med | Never parallelize DetailDrawer work (per `AGENTS.md`). Serialize E3-4/E4-3 there. |
+| DetailDrawer contention (sprint tickets M1/H2/H4/C-Evolve-3 all touched it) | Med | Med | Never parallelize DetailDrawer work (per `AGENTS.md`). Serialize E3-4/E4-3 there. |
 | E1-1 correlation redesign changes data semantics | Med | High | ADR-004; keep API shape; before/after latency evidence on restored prod DB; feature-flag precompute. |
 | Radix + React 19 interop issues | Low | Med | Radix supports React 19; spike in E0-2 before broad adoption. |
 | Scope creep into a full Tailwind migration | Med | Med | ADR-003 explicitly defers Tailwind; `.mdc` rule forbids introducing it unprompted. |
@@ -227,9 +242,9 @@ Critical-path (design system): **E0-1 → E0-2 → E3 → E4 → E5**. Reliabili
 - **Charts:** wrap every chart in `ChartShell` (fixed height) to permanently prevent the
   infinite-growth class of bug. Charting standardizes on **Recharts** (SVG, no Tailwind;
   shadcn look re-skinned to `--chart-*` tokens) — **Chart.js is deprecated and removed** after
-  the E7-5 migration. Both libraries may coexist in the repo during migration, but lazy-loaded
-  chart chunks ensure only one charting library is loaded by the client at a time. Keep the
-  heatmap/sparklines as custom SVG. Ref: ADR-005.
+  the E7-5 migration. Both libraries may coexist in the repo during migration; migration is
+  **page-atomic** with lazy-loaded chart chunks so any given route loads only one charting
+  library. Keep the heatmap/sparklines as custom SVG. Ref: ADR-005.
 - **DataGrid:** single `<table>` with `table-layout:fixed` + shared `<col>` widths so resize
   keeps header/body aligned; virtualize large tables (Attack Surface 157, epss_history-scale).
 - **Performance:** animate transform/opacity only; memoize heavy rows; keep feed windowing
@@ -286,9 +301,25 @@ Critical-path (design system): **E0-1 → E0-2 → E3 → E4 → E5**. Reliabili
 
 ## 12. Milestones
 
-- **M1 — Foundation & trust:** E0-1/2/3, E1-1/2, E2-1/2/8, ADR-003/004 accepted. *Exit:* tokens live, motion toggle shipped, app feels reliable (correlation/OP hero fast).
-- **M2 — Primitives & semantics:** E3-1…3-7, E4-1…4-4, E6-1/2/3, E2-3/4. *Exit:* no native controls; one selection color; AA contrast; portaled tooltips; aligned resizable tables.
-- **M3 — ARCH & polish:** E5-*, E7-*, E8-*, E9-*, E2-5/6/7, E6-4/5, E1-3. *Exit:* ARCH on the system; hovers/skeletons/feedback consistent; failures surfaced; states honest.
+Named `UI-M*` to avoid colliding with sprint ticket ids (the sprint's closed **M1**
+is a DetailDrawer ticket — see §7).
+
+- **UI-M1 — Foundation & trust:** E0-1/2/3/4, E1-1/2, E2-1/2/8/9, ADR-003/004/005 accepted. *Exit:* tokens live, motion toggle shipped, app feels reliable (correlation/OP hero fast).
+- **UI-M2 — Primitives & semantics:** E3-1…3-7, E4-1…4-4, E6-1/2/3, E2-3/4. *Exit:* no native controls; one selection color; AA contrast; portaled tooltips; aligned resizable tables.
+- **UI-M3 — ARCH & polish:** E5-*, E7-*, E8-*, E9-*, E2-5/6/7, E6-4/5, E1-3. *Exit:* ARCH on the system; hovers/skeletons/feedback consistent; failures surfaced; states honest.
+
+**Measured exit criteria (scriptable, not vibes)** — each milestone's exit is checked by
+numbers recorded in the closing PR body:
+
+| Metric | How measured | UI-M1 | UI-M2 | UI-M3 |
+|---|---|---|---|---|
+| Native `<input type=checkbox\|radio>` / `<select>` count | grep gate (E3-1) | baseline recorded | **0** | 0 |
+| Raw hex occurrences in `frontend/src` component code | lint gate (E0-1) | no new | declining | **0** (aliases removed per cut-line) |
+| axe critical/serious violations per audited page | axe/pa11y run (§9) | baseline recorded | 0 on migrated surfaces | **0 app-wide** |
+| `/correlation` p95 on restored prod DB | timing harness (§9) | **< 2s** | < 2s | < 2s |
+| OP hero first render | timing harness (§9) | **< 1s** | < 1s | < 1s |
+| Entry bundle gzip (guard: sprint I8 baseline 99 kB) | `npm run build` output | ≤ 105 kB | ≤ 105 kB | ≤ 105 kB |
+| Distinct "selected/active" treatments | manual sweep + snapshots | — | **1** | 1 |
 
 ---
 
@@ -298,6 +329,7 @@ Critical-path (design system): **E0-1 → E0-2 → E3 → E4 → E5**. Reliabili
 - [ ] E0-1 tokens wired + reconciled + lint gates
 - [ ] E0-2 Radix adoption + reference Checkbox
 - [ ] E0-3 tool-wide motion toggle
+- [ ] E0-4 docs sync on ADR acceptance (CLAUDE.md / AGENTS.md / PRODUCT_STATUS)
 
 **Reliability (E1) — see backlog**
 - [ ] E1-1 correlation precompute (ADR-004)
@@ -313,6 +345,7 @@ Critical-path (design system): **E0-1 → E0-2 → E3 → E4 → E5**. Reliabili
 - [ ] E2-6 ARCH max-zoom raised
 - [ ] E2-7 ARCH filter hides not dims
 - [ ] E2-8 PyJWT in requirements.txt
+- [ ] E2-9 PG16 → PG17 doc correction
 
 **Primitives (E3)**
 - [ ] E3-1 Checkbox/Switch/Radio  [ ] E3-2 Tooltip/Popover  [ ] E3-3 Table/DataGrid

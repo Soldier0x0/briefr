@@ -2,6 +2,11 @@
 
 **Status:** Plan of record — **no implementation in this document**
 **Date:** 2026-07-11
+**Amendment (2026-07-14):** the program below is complete (PR-1…PR-13, #473…#513).
+[`ADR-004`](../../decisions/ADR-004-correlation-precompute.md) **amends §3.3**: per-CVE
+edge computation moves off the request path into a scheduler-precomputed store (REL-1/REL-2,
+verified ~61s timeouts on production-scale data). Scoring semantics defined here are
+unchanged; ADR-004 governs *where* the computation runs.
 **Audit basis:** Direct codebase trace on `main` (`2b5a588`, in sync with `origin/main`,
 2026-07-11). `graphify-out/` **not** used as source of truth.
 **Naming note:** the shipped engine already self-identifies as v2

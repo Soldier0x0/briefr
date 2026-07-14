@@ -60,10 +60,12 @@ Constraints (from ADR-003 / `CLAUDE.md` / the design system):
 BRIEFR standardizes on **exactly one charting library as the end state**. Because the
 maintainer prefers the shadcn chart look and it is achievable without Tailwind, that library
 is **Recharts** (via re-skinned shadcn patterns). During the E7-5 migration both libraries
-technically exist in the repo and build artifacts, but charts are **lazy-loaded so that only
-one charting library is ever loaded by the client at a time** (a page loads Recharts *or*
-the legacy Chart.js chunk, never both). Delete Chart.js once the last chart is ported. Chart
-animations must respect the tool-wide motion toggle and `prefers-reduced-motion`.
+technically exist in the repo and build artifacts; migration is **page-atomic** (all charts
+on a route move in one PR) and chart chunks are lazy-loaded, so any given route loads
+Recharts *or* the legacy Chart.js chunk — never both. (The per-route guarantee holds only
+because migration is page-atomic; a mixed page would load both chunks.) Delete Chart.js once
+the last chart is ported. Chart animations must respect the tool-wide motion toggle and
+`prefers-reduced-motion`.
 
 ### 🟡 Conditional — pattern/copy reference ONLY (re-implement on BRIEFR CSS; never a runtime dep)
 - **shadcn/ui registry** — copy component *patterns/markup* and adapt to BRIEFR tokens.
@@ -90,6 +92,9 @@ A new UI dependency (or promoting a Conditional one) requires **all** of:
 3. **License** check (MIT/Apache-2.0/BSD; AGPL-compatible) and **React 19** compatibility.
 4. **No Tailwind / no injected global CSS**; must be themable via BRIEFR semantic tokens.
 5. **Bundle-size** justification (prefer headless/tree-shakeable; note gzip cost).
+   Current budgets (recorded in PR bodies): primitives layer ≤ 35 kB gzip incremental
+   (plan E0-2); TanStack Table ≤ 15 kB (E3-3); Recharts lazy chunk ≤ 110 kB (E7-5);
+   entry bundle stays ≤ 105 kB gzip (sprint I8 baseline: 99 kB).
 6. Accessibility parity (keyboard, focus, ARIA) at least equal to the Radix baseline.
 
 If a library isn't on the Approved/Conditional lists, it is Prohibited by default until this
@@ -114,6 +119,6 @@ ADR is updated.
 - Headless utilities (Recharts, cmdk, Floating UI, TanStack Table) are sanctioned so the
   charts/DataGrid/palette/positioning work doesn't require a styled kit.
 - Charting standardizes on **Recharts** (shadcn look, no Tailwind); **Chart.js is deprecated**
-  and removed after the E7-5 migration. Both may coexist in the repo during migration, but
-  lazy-loading ensures only one charting library is loaded by the client at any given time.
+  and removed after the E7-5 migration. Both may coexist in the repo during migration; the
+  page-atomic + lazy-loading rule keeps any given route on a single charting library.
 - Adding anything new is a deliberate, documented decision.

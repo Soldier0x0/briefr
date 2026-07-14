@@ -6,7 +6,36 @@
 CRITICAL reliability finding REL-1/REL-2 in
 [`docs/planning/reliability-and-bug-backlog.md`](../planning/reliability-and-bug-backlog.md).
 Continues the `docs/decisions/ADR-00N` sequence. Relates to ADR-002 (Operational Priority,
-which depends on correlation for escalation) and `docs/planning/specs/correlation-engine-v2.md`.
+which depends on correlation for escalation) and **amends**
+`docs/planning/specs/correlation-engine-v2.md` (see "Relationship to the
+correlation-engine-v2 spec" below).
+
+## Relationship to the correlation-engine-v2 spec (what this ADR amends)
+
+The v3 program defined by
+[`specs/correlation-engine-v2.md`](../planning/specs/correlation-engine-v2.md) is
+**complete** (PR-1…PR-13, #473…#513 — see `docs/planning/BACKLOG.md` §2). This ADR is a
+**new increment on top of that shipped work**, not a reopening or rewrite of its PR queue.
+Precisely:
+
+- **Supersedes spec §3.3 ("On-demand per CVE")** as the *computation* model: per-CVE edge
+  computation moves from request time (`engine.py::get_correlation_for_cve`, 6 h
+  `feed_cache`) to a scheduler job writing precomputed rows. The request path becomes a
+  cheap indexed read. The spec's *scoring semantics* (degree-penalized confidence from
+  PR-3/PR-4, receipts, hub suppression, `priority.py` caps) are **unchanged** and are
+  reused by the precompute job.
+- **Consistent with the spec's central principle 4** ("no new services, daemons … 
+  everything rides the existing nightly job"): the precompute is a scheduler job in the
+  existing APScheduler, not a new daemon.
+- **Consistent with the spec's NOT-in-scope list** ("materialized views"): the decision
+  below prefers a plain application table over a matview for the same reasons the spec
+  gives (SQLite testability, no refresh locks).
+- **Builds on shipped infrastructure:** `ioc_degree` (spec PR-3, #487) and
+  `hub_suppress.py` are prerequisites this ADR consumes, not new work.
+
+The spec remains the authority on correlation *semantics* (confidence, evidence, campaign
+lifecycle); this ADR is the authority on *where the computation runs*. If they conflict on
+that question, this ADR wins.
 
 ## Context
 
