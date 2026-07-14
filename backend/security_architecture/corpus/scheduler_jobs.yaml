@@ -171,6 +171,15 @@ jobs:
   source_refs:
   - type: job
     ref: otx_nightly_correlation
+- id: resource_metrics_sample
+  title: Resource Metrics Sample
+  summary: Scheduled job registered in scheduler.py (id=resource_metrics_sample).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: resource_metrics_sample
 - id: scheduled_backup
   title: Scheduled Backup
   summary: Scheduled job registered in scheduler.py (id=scheduled_backup).

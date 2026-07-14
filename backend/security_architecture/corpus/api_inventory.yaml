@@ -120,6 +120,9 @@ endpoints:
 - method: GET
   path: /api/admin/ratelimit
   component_id: routers-admin
+- method: GET
+  path: /api/admin/resources
+  component_id: routers-admin
 - method: POST
   path: /api/admin/restart
   component_id: routers-admin

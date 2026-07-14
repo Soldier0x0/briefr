@@ -306,6 +306,15 @@ tables:
   source_refs:
   - type: table
     ref: pulse_families
+- id: resource_metrics
+  title: resource_metrics
+  summary: Database table defined in db/init.py (name=resource_metrics).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: resource_metrics
 - id: sessions
   title: sessions
   summary: Database table defined in db/init.py (name=sessions).
