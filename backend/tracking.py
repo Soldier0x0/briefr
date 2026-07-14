@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 from db.errors import DatabaseLockedError
 from database import get_db
-from source_rate_limits import get_otx_hourly_limit
+from source_rate_limits import get_openrouter_daily_limit, get_otx_hourly_limit
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +114,30 @@ API_LIMITS: dict[str, dict] = {
         "docs_url": "https://otx.alienvault.com/api",
         "cache_hours": 6,
     },
+    "openrouter": {
+        "name": "OpenRouter",
+        "daily_limit": None,
+        "monthly_limit": None,
+        "rate_limit": "20 RPM · 50 req/day free (no credits)",
+        "notes": "LLM failover provider. Daily cap override via OPENROUTER_DAILY_LIMIT (default 50).",
+        "docs_url": "https://openrouter.ai/docs/api-reference/limits",
+    },
+    "threatfox": {
+        "name": "ThreatFox",
+        "daily_limit": None,
+        "monthly_limit": None,
+        "rate_limit": "Fair use · Auth-Key required",
+        "notes": "Scheduled IOC catalog sync (not IOC Lookup tab).",
+        "docs_url": "https://threatfox.abuse.ch/api/",
+    },
+    "vulncheck": {
+        "name": "VulnCheck",
+        "daily_limit": None,
+        "monthly_limit": None,
+        "rate_limit": "~1,000 req/min (community)",
+        "notes": "KEV enrichment index sync when VULNCHECK_API_KEY is set.",
+        "docs_url": "https://docs.vulncheck.com/",
+    },
 }
 
 # IOC Lookup tab: display order and optional aggregate of usage counters
@@ -167,15 +191,28 @@ def _effective_hourly_limit(service: str) -> int | None:
     return int(hourly)
 
 
-def _usage_bucket(used: int, limit: int | None) -> dict:
+def _effective_daily_limit(service: str) -> int | None:
+    if service == "openrouter":
+        return get_openrouter_daily_limit()
+    limits = API_LIMITS.get(service, {})
+    daily = limits.get("daily_limit")
+    return int(daily) if daily is not None else None
+
+
+def _week_start_utc(now: datetime | None = None) -> str:
+    ts = now or datetime.now(timezone.utc)
+    return (ts - timedelta(days=ts.weekday())).strftime("%Y-%m-%d")
+
+
+def _usage_bucket(used: int, limit: int | None, *, period: str = "daily") -> dict:
     remaining = (limit - used) if limit is not None else None
     pct = round(used / limit * 100, 1) if limit else None
     warning = None
     if limit is not None and remaining is not None:
         if remaining <= 0:
-            warning = "daily_quota_exceeded"
+            warning = f"{period}_quota_exceeded"
         elif pct is not None and pct >= 80:
-            warning = "daily_quota_near_limit"
+            warning = f"{period}_quota_near_limit"
     return {
         "used": used,
         "limit": limit,
@@ -203,8 +240,8 @@ def _build_service_stat(
     monthly_limit = limits.get("monthly_limit")
     hourly_limit = _effective_hourly_limit(service)
 
-    daily_bucket = _usage_bucket(daily_used, daily_limit)
-    weekly_bucket = _usage_bucket(weekly_used, weekly_limit)
+    daily_bucket = _usage_bucket(daily_used, daily_limit, period="daily")
+    weekly_bucket = _usage_bucket(weekly_used, weekly_limit, period="weekly")
     monthly_remaining = (monthly_limit - monthly_used) if monthly_limit is not None else None
     monthly_pct = round(monthly_used / monthly_limit * 100, 1) if monthly_limit else None
 
@@ -241,13 +278,10 @@ def _build_service_stat(
     }
     if hourly_limit is not None:
         hour_used = sum((hour_map or {}).get(s, 0) for s in sources)
-        hour_bucket = _usage_bucket(hour_used, hourly_limit)
+        hour_bucket = _usage_bucket(hour_used, hourly_limit, period="hourly")
         hour_warning = hour_bucket.pop("warning")
         if not warning and hour_warning:
-            if hour_warning == "daily_quota_exceeded":
-                warning = "hourly_quota_exceeded"
-            elif hour_warning == "daily_quota_near_limit":
-                warning = "hourly_quota_near_limit"
+            warning = hour_warning
         stat["this_hour"] = {
             "used": hour_bucket["used"],
             "limit": hour_bucket["limit"],
@@ -324,7 +358,7 @@ async def get_ioc_usage_stats() -> list[dict]:
     now = datetime.now(timezone.utc)
     today = now.strftime("%Y-%m-%d")
     month = now.strftime("%Y-%m")
-    week_start = (now - timedelta(days=now.weekday())).strftime("%Y-%m-%d")
+    week_start = _week_start_utc(now)
 
     today_map: dict[str, int] = {}
     month_map: dict[str, int] = {}
@@ -415,7 +449,7 @@ async def record_api_call(service: str, count: int = 1) -> None:
             )
         return
 
-    limit = API_LIMITS.get(service, {}).get("daily_limit")
+    limit = _effective_daily_limit(service)
     if limit:
         committed = await _committed_usage_bucket(service, bucket)
         used = committed + pending_total
@@ -423,6 +457,30 @@ async def record_api_call(service: str, count: int = 1) -> None:
             logger.warning("%s daily quota exhausted (%d/%d calls today)", service, used, limit)
         elif used >= limit * 0.8:
             logger.warning("%s daily quota near limit (%d/%d calls today)", service, used, limit)
+
+    weekly_limit = API_LIMITS.get(service, {}).get("weekly_limit")
+    if weekly_limit:
+        used = await get_week_usage(service)
+        if used >= weekly_limit:
+            logger.warning(
+                "%s weekly quota exhausted (%d/%d calls this week)", service, used, weekly_limit
+            )
+        elif used >= weekly_limit * 0.8:
+            logger.warning(
+                "%s weekly quota near limit (%d/%d calls this week)", service, used, weekly_limit
+            )
+
+    monthly_limit = API_LIMITS.get(service, {}).get("monthly_limit")
+    if monthly_limit:
+        used = await get_month_usage(service)
+        if used >= monthly_limit:
+            logger.warning(
+                "%s monthly quota exhausted (%d/%d calls this month)", service, used, monthly_limit
+            )
+        elif used >= monthly_limit * 0.8:
+            logger.warning(
+                "%s monthly quota near limit (%d/%d calls this month)", service, used, monthly_limit
+            )
 
 
 _COMMITTED_USAGE_CACHE_TTL_SECONDS = 2.0
@@ -503,16 +561,88 @@ async def get_today_usage(service: str) -> int:
     return committed + pending
 
 
+async def _committed_week_usage(service: str) -> int:
+    week_start = _week_start_utc()
+    try:
+        db = await get_db()
+        try:
+            rows = await db.execute_fetchall(
+                """
+                SELECT SUM(count) as total FROM api_usage
+                WHERE service = ? AND date_utc >= ?
+                """,
+                (service, week_start),
+            )
+            return rows[0]["total"] if rows and rows[0]["total"] else 0
+        finally:
+            await db.close()
+    except Exception as exc:
+        logger.error("Failed to read weekly usage for %s: %s", service, exc)
+        return 0
+
+
+async def get_week_usage(service: str) -> int:
+    """UTC week (Mon–Sun) usage, including the unflushed buffer."""
+    week_start = _week_start_utc()
+    committed = await _committed_week_usage(service)
+    async with _API_USAGE_LOCK:
+        pending = sum(
+            count
+            for (svc, day, _month), count in _api_usage_pending.items()
+            if svc == service and day >= week_start
+        )
+    return committed + pending
+
+
+async def _committed_month_usage(service: str) -> int:
+    month = datetime.now(timezone.utc).strftime("%Y-%m")
+    try:
+        db = await get_db()
+        try:
+            rows = await db.execute_fetchall(
+                "SELECT SUM(count) as total FROM api_usage WHERE service = ? AND month_utc = ?",
+                (service, month),
+            )
+            return rows[0]["total"] if rows and rows[0]["total"] else 0
+        finally:
+            await db.close()
+    except Exception as exc:
+        logger.error("Failed to read monthly usage for %s: %s", service, exc)
+        return 0
+
+
+async def get_month_usage(service: str) -> int:
+    """Current UTC month usage, including the unflushed buffer."""
+    month = datetime.now(timezone.utc).strftime("%Y-%m")
+    committed = await _committed_month_usage(service)
+    async with _API_USAGE_LOCK:
+        pending = sum(
+            count
+            for (svc, _day, pending_month), count in _api_usage_pending.items()
+            if svc == service and pending_month == month
+        )
+    return committed + pending
+
+
 async def has_quota(service: str) -> bool:
-    """True if service has remaining quota (hourly or daily). No limit == unrestricted."""
+    """True if service has remaining quota across hourly/daily/weekly/monthly caps."""
     hourly_limit = _effective_hourly_limit(service)
-    if hourly_limit is not None:
-        return await get_hour_usage(service) < hourly_limit
-    limit = API_LIMITS.get(service, {}).get("daily_limit")
-    if not limit:
-        return True
-    used = await get_today_usage(service)
-    return used < limit
+    if hourly_limit is not None and await get_hour_usage(service) >= hourly_limit:
+        return False
+
+    daily_limit = _effective_daily_limit(service)
+    if daily_limit is not None and await get_today_usage(service) >= daily_limit:
+        return False
+
+    weekly_limit = API_LIMITS.get(service, {}).get("weekly_limit")
+    if weekly_limit is not None and await get_week_usage(service) >= weekly_limit:
+        return False
+
+    monthly_limit = API_LIMITS.get(service, {}).get("monthly_limit")
+    if monthly_limit is not None and await get_month_usage(service) >= monthly_limit:
+        return False
+
+    return True
 
 
 async def get_usage_stats() -> list[dict]:

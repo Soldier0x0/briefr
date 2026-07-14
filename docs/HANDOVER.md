@@ -12,6 +12,22 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — Rate-limit pacing + quota enforcement (in PR)
+
+**What:** Tightened outbound API pacing and quota gates per provider docs audit:
+GitHub unauthenticated 60/hr; VulnCheck + ThreatFox profiles; abuse.ch feeds 1 req/2s;
+Cerebras free-tier defaults 5 RPM / 30K TPM; `has_quota()` now enforces weekly (GreyNoise)
+and monthly (VirusTotal) caps; OpenRouter daily cap (default 50, `OPENROUTER_DAILY_LIMIT`);
+fixed missing `await record_api_call` in ThreatFox/VulnCheck sync; GreyNoise IOC gated on
+weekly quota; API key health accepts GreyNoise HTTP 404 as healthy.
+
+**Verify:** `pytest tests/test_rate_limit_pacing.py tests/test_llm_pacing.py`; deploy and
+confirm GreyNoise health checks stop false unhealthy notifications.
+
+**Next:** merge cvelistV5 timeout PR #544 if not yet deployed.
+
+---
+
 ## 2026-07-14 — Webhook health UI + unit test/README sync — merged (this PR)
 
 **What:** Admin → Webhooks refactored to destination health cards (`feed-source-card` pattern)

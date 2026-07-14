@@ -99,11 +99,11 @@ def gemini_limits() -> ProviderLimits:
 
 
 def cerebras_limits() -> ProviderLimits:
-    """Cerebras overflow tier defaults (30 RPM, 60K TPM)."""
+    """Cerebras free-trial defaults (5 RPM, 30K TPM per inference-docs)."""
     return limits_from_env(
         "CEREBRAS",
-        default_rpm=30,
-        default_tpm=60_000,
+        default_rpm=5,
+        default_tpm=30_000,
         default_est_tokens=1500,
         floor_seconds=0.5,
     )

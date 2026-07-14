@@ -227,6 +227,18 @@ async def chat_completion_task(
     for step in _task_chain(task):
         if not _api_key(step.provider):
             continue
+        if step.provider == "openrouter":
+            from tracking import has_quota
+
+            if not await has_quota("openrouter"):
+                logger.info(
+                    "Skipping LLM provider openrouter for task %s — daily quota exhausted",
+                    task,
+                )
+                last_failed_provider = step.provider
+                last_failed_model = step.model
+                attempt_index += 1
+                continue
         if is_provider_skipped_in_job(step.provider):
             logger.info(
                 "Skipping LLM provider %s for task %s — empty response earlier in this job",

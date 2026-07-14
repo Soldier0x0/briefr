@@ -53,6 +53,10 @@ async def openai_chat_completion(
         queue_context_id=queue_context_id,
     )
     apply_rate_limit_headers(source, response.headers, estimated_tokens=max_tokens + 500)
+    if source == "openrouter":
+        from tracking import record_api_call
+
+        await record_api_call("openrouter", 1)
     try:
         data = response.json()
         if isinstance(data, dict):

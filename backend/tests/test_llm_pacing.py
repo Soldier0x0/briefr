@@ -39,8 +39,8 @@ def test_gemini_defaults_conservative():
 
 def test_cerebras_defaults_conservative():
     limits = cerebras_limits()
-    assert limits.rpm == 30
-    assert limits.tpm == 60_000
+    assert limits.rpm == 5
+    assert limits.tpm == 30_000
     assert limits.min_interval_seconds >= 0.5
 
 

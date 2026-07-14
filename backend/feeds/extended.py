@@ -706,11 +706,15 @@ async def lookup_greynoise(db, ip: str, api_key: str) -> dict | None:
 
 async def greynoise_for_ip(db, ip: str, api_key: str) -> dict | None:
     from database import get_feed_cache, set_feed_cache
+    from tracking import has_quota
 
     cache_key = f"greynoise:{ip}"
     cached = await get_feed_cache(db, cache_key, max_age_hours=1)
     if cached is not None:
         return cached
+
+    if not await has_quota("greynoise"):
+        return None
 
     result = await fetch_greynoise_ip(ip, api_key)
     if result is not None:
