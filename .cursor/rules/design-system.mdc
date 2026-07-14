@@ -10,6 +10,7 @@ Authoritative sources (read before UI work):
 - Rules/SSOT: `docs/design/design-system.md`
 - Tokens: `frontend/src/styles/tokens.css`
 - Rationale: `docs/decisions/ADR-003-ui-design-system.md`
+- Approved/prohibited UI libraries: `docs/decisions/ADR-005-component-library-strategy.md`
 - Roadmap: `docs/planning/ui-modernization-plan.md`
 
 These rules apply to ALL generated or edited UI code. If a change conflicts with them, stop
@@ -69,5 +70,10 @@ truth in `docs/PRODUCT_STATUS.md` wins over planning docs).
   density-first layout (fill width; `max-width` for prose only; no large centered columns).
 - DO NOT introduce Tailwind (or any CSS/component framework) unless the maintainer explicitly
   requests it (ADR-003). shadcn may be used only as a pattern reference, adapted to BRIEFR CSS.
+- ONLY use UI libraries listed as Approved/Conditional in
+  `docs/decisions/ADR-005-component-library-strategy.md` (Radix + sanctioned headless utils;
+  shadcn/Magic UI are reference-only, re-skinned, no Tailwind runtime). Mantine, MUI, Ant
+  Design, Chakra, Bootstrap, DaisyUI are prohibited. Anything not listed is prohibited until
+  ADR-005 is updated.
 - Keep components composable and reusable (Primitives → Composites → Features); do not
   re-implement a lower layer inside a feature.

@@ -8,6 +8,7 @@
 - Tokens: [`frontend/src/styles/tokens.css`](../../frontend/src/styles/tokens.css)
 - Roadmap: [`docs/planning/ui-modernization-plan.md`](../planning/ui-modernization-plan.md)
 - Rationale: [`docs/decisions/ADR-003-ui-design-system.md`](../decisions/ADR-003-ui-design-system.md)
+- Approved UI libraries: [`docs/decisions/ADR-005-component-library-strategy.md`](../decisions/ADR-005-component-library-strategy.md)
 - Non-UI/bug backlog: [`docs/planning/reliability-and-bug-backlog.md`](../planning/reliability-and-bug-backlog.md)
 - Cursor enforcement: [`.cursor/rules/design-system.mdc`](../../.cursor/rules/design-system.mdc)
 - Existing runtime tokens this consolidates: [`frontend/src/App.css`](../../frontend/src/App.css)
@@ -282,7 +283,8 @@ Three layers. Higher layers compose lower ones; never re-implement a lower layer
 ## 21. Assumptions & open questions
 
 - **A1:** Radix primitives adopted **without Tailwind**; shadcn used only as a copy/pattern
-  reference (ADR-003). Revisit only if the team explicitly requests Tailwind.
+  reference (ADR-003). The approved/conditional/prohibited library registry is ADR-005.
+  Revisit only if the team explicitly requests Tailwind.
 - **A2:** `tokens.css` supersedes the ad-hoc token block in `App.css`; legacy raw names
   (`--red`, `--bg2`, `--text3`, …) remain as aliases until migration completes, then are
   removed. **Open:** exact alias-removal cut-line per component.

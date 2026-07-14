@@ -10,6 +10,7 @@
 - Architecture decision: [`docs/decisions/ADR-003-ui-design-system.md`](../decisions/ADR-003-ui-design-system.md)
 - Non-UI + verified-bug backlog: [`docs/planning/reliability-and-bug-backlog.md`](reliability-and-bug-backlog.md)
 - Correlation redesign decision: [`docs/decisions/ADR-004-correlation-precompute.md`](../decisions/ADR-004-correlation-precompute.md)
+- Component-library registry: [`docs/decisions/ADR-005-component-library-strategy.md`](../decisions/ADR-005-component-library-strategy.md)
 - Cursor enforcement: [`.cursor/rules/design-system.mdc`](../../.cursor/rules/design-system.mdc)
 
 > This plan consolidates a full running-product review conducted 2026-07-14 against a

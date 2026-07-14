@@ -48,7 +48,8 @@ signature dark-terminal identity and (per maintainer) **not adopt Tailwind**.
    focus-trap, and focus-ring findings.
 4. **shadcn/ui as a pattern reference only.** We copy shadcn's composition/markup patterns and
    adapt them to BRIEFR's CSS token architecture. We do **not** install shadcn's Tailwind/CVA
-   toolchain.
+   toolchain. The full approved/conditional/prohibited library registry (incl. shadcn, Magic
+   UI, and headless utilities) is maintained in [`ADR-005`](ADR-005-component-library-strategy.md).
 5. **Tailwind migration intentionally deferred.** No Tailwind is introduced unless the
    maintainer explicitly requests it later. (Enforced by `.cursor/rules/design-system.mdc`.)
 6. **One primitive per pattern; three-layer hierarchy** (Primitives → Composites → Features)
@@ -103,6 +104,11 @@ signature dark-terminal identity and (per maintainer) **not adopt Tailwind**.
    accessibility (focus trap, portaling, keyboard) that Radix gives free and that the audit
    shows we currently get wrong — **rejected** (high a11y risk).
 4. **Do nothing / spot-fix.** Leaves the root causes; drift returns — **rejected**.
+
+## Related decisions
+
+- [`ADR-005`](ADR-005-component-library-strategy.md) — canonical component-library & UI
+  dependency registry (approved / conditional / prohibited) that operationalizes this ADR.
 
 ## Future roadmap
 

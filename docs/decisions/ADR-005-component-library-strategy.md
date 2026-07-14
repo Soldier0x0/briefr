@@ -1,0 +1,94 @@
+# ADR-005 — Component library & UI dependency strategy (approved / conditional / prohibited)
+
+## Status
+
+**PROPOSED — 2026-07-14.** Awaiting maintainer acceptance. This ADR is the **canonical
+registry** of which UI libraries may be used in BRIEFR and how. It operationalizes
+[`ADR-003`](ADR-003-ui-design-system.md) (semantic tokens + Radix, no Tailwind) into an
+explicit allow/deny list so future work can't silently pull in a conflicting library.
+Enforced by [`.cursor/rules/design-system.mdc`](../../.cursor/rules/design-system.mdc);
+usage rules live in [`docs/design/design-system.md`](../design/design-system.md).
+Continues the `docs/decisions/ADR-00N` sequence.
+
+## Context
+
+ADR-003 set the direction (Radix primitives styled with BRIEFR CSS variables; shadcn as a
+pattern reference; Tailwind deferred). Without a concrete registry, a future change is likely
+to add a styled component kit "because it solves a problem," reintroducing the exact
+inconsistency the design system exists to remove (opinionated themes, global CSS, Tailwind,
+heavy/decorative animation). We also need to cover **headless utility** libraries, not just
+component kits, and to define a **governance gate** for adding any new UI dependency.
+
+Constraints (from ADR-003 / `CLAUDE.md` / the design system):
+- No Tailwind or any CSS framework unless the maintainer explicitly requests it.
+- Components must be stylable entirely via BRIEFR semantic tokens (no injected theme/global CSS).
+- Motion budget: 120–180ms, `transform`/`opacity` only, respect the tool-wide motion toggle.
+- Preserve the dark-terminal identity and WCAG 2.1 AA.
+- Project license is **AGPL-3.0-or-later**; dependencies must carry a compatible permissive
+  license (MIT / Apache-2.0 / BSD).
+
+## Decision
+
+### ✅ Approved — behavior/primitive layer (use directly, styled with BRIEFR tokens)
+- **Radix UI primitives** — the sanctioned headless behavior/accessibility layer (Checkbox,
+  RadioGroup, Switch, Select, Slider, Tabs, Tooltip, Popover, Dialog/AlertDialog,
+  DropdownMenu, ScrollArea, etc.). Unstyled; ARIA/focus/portaling handled; React 19 compatible.
+
+### ✅ Approved — headless utilities (no styling; use when Radix/existing don't already cover it)
+- **Chart.js** — already in use; the charting layer (must be wrapped in `ChartShell`).
+- **cmdk** — command palette (already used for ⌘/Ctrl-K).
+- **Floating UI** — positioning for custom tooltips/popovers/menus (note: Radix already uses
+  it internally — prefer Radix's built-ins before adding it standalone).
+- **TanStack Table (headless)** — table/data-grid logic for the shared `DataGrid` (headless
+  only; render with BRIEFR markup + tokens).
+- Rule: prefer what Radix or the existing stack already provides before adding a utility.
+
+### 🟡 Conditional — pattern/copy reference ONLY (re-implement on BRIEFR CSS; never a runtime dep)
+- **shadcn/ui registry** — copy component *patterns/markup* and adapt to BRIEFR tokens.
+  **Do not** install its Tailwind/CVA toolchain or ship its class names.
+- **Magic UI (selected components only)** — reference for specific interactions/visuals, but
+  it is **Tailwind + Framer-Motion and animation-heavy**: strip Tailwind, re-skin with tokens,
+  and cut motion to the BRIEFR budget (120–180ms, transform/opacity, honor the motion toggle).
+  Not a blanket "copy freely" source; each use is case-by-case and design-reviewed.
+- Rule for both: **no Tailwind at runtime**, no Framer-Motion for decorative effects, output
+  must pass the design-system rules as if hand-written.
+
+### ⛔ Prohibited — styled/opinionated component or CSS frameworks
+Do **not** add: **Mantine, MUI (Material UI), Ant Design, Chakra UI, Bootstrap, DaisyUI**, or
+**Tailwind CSS** as a framework (deferred by ADR-003). More generally, prohibit any library
+that ships its own theme/design language, injects global CSS, or cannot be styled purely via
+BRIEFR tokens. These would fight the terminal identity, duplicate the token system, and
+reintroduce inconsistency.
+
+## Governance (adding or changing any UI dependency)
+
+A new UI dependency (or promoting a Conditional one) requires **all** of:
+1. An update to this ADR (move it into the correct list with rationale).
+2. Design-review sign-off against `docs/design/design-system.md`.
+3. **License** check (MIT/Apache-2.0/BSD; AGPL-compatible) and **React 19** compatibility.
+4. **No Tailwind / no injected global CSS**; must be themable via BRIEFR semantic tokens.
+5. **Bundle-size** justification (prefer headless/tree-shakeable; note gzip cost).
+6. Accessibility parity (keyboard, focus, ARIA) at least equal to the Radix baseline.
+
+If a library isn't on the Approved/Conditional lists, it is Prohibited by default until this
+ADR is updated.
+
+## Risks
+- **Over-restriction** slows a genuine need — mitigated by the governance path (update the ADR
+  rather than bypass it).
+- **Conditional creep** (shadcn/Magic UI copied without re-skinning) — mitigated by design
+  review + the `.mdc` rule (no Tailwind/raw hex/native controls).
+
+## Alternatives considered
+1. **No registry (rely on ADR-003 prose).** Rejected — too easy to drift; not enforceable.
+2. **Radix-only, ban all references.** Rejected — too rigid; shadcn/Magic UI patterns are
+   useful when adapted.
+3. **Adopt a full styled kit (MUI/Mantine).** Rejected — see ADR-003; imposes a foreign visual
+   language and runtime.
+
+## Consequences
+- One authoritative list to check in review and in `.cursor/rules/design-system.mdc`.
+- shadcn and Magic UI are explicitly "reference, re-skinned, no Tailwind" — not runtime deps.
+- Headless utilities (Chart.js, cmdk, Floating UI, TanStack Table) are sanctioned so the
+  DataGrid/palette/positioning work doesn't require a styled kit.
+- Adding anything new is a deliberate, documented decision.
