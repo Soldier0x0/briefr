@@ -22,6 +22,8 @@ async def _shared_ioc_rows(db, cve_id: str) -> list:
         SELECT ocp2.cve_id AS cve_id_b,
                oi.ioc_type,
                oi.ioc_value,
+               MAX(oi.observed_at) AS observed_at,
+               MAX(oi.fetched_at) AS fetched_at,
                COALESCE(deg.cve_count, 0) AS degree
         FROM otx_pulse_iocs oi
         JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id AND ocp.cve_id = ?
@@ -70,6 +72,8 @@ async def find_shared_infrastructure_v2(
             confirmations=confirmations,
             is_noise_ip=noise,
             degree=row["degree"] or 0,
+            observed_at=row["observed_at"],
+            ingested_at=row["fetched_at"],
         )
         edge = {
             "ioc_type": ioc_type,
@@ -77,7 +81,16 @@ async def find_shared_infrastructure_v2(
             "confidence": conf,
             "why_not_higher": why,
             "confidence_factors": factors,
+            "observed_at": row["observed_at"],
+            "ingested_at": row["fetched_at"],
         }
+        for f in factors:
+            if f.get("factor") == "freshness":
+                edge["freshness_factor"] = f.get("value")
+                edge["freshness_reason"] = f.get("reason")
+                if f.get("freshness_fallback"):
+                    edge["freshness_fallback"] = True
+                break
         receipt = confirmation_receipt(confirmations)
         if receipt:
             edge["confirmation"] = receipt
