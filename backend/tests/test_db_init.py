@@ -16,6 +16,7 @@ def test_init_exports_dialect_neutral_fixup_sql():
     assert "?" not in init_mod._NORMALIZE_EPSS_SCORES_SQL
     assert "$1" not in init_mod._NORMALIZE_EPSS_SCORES_SQL
     assert "idx_cves_has_poc" in init_mod._CREATE_IDX_CVES_HAS_POC_SQL
+    assert "idx_cves_modified" in init_mod._CREATE_IDX_CVES_MODIFIED_SQL
     assert "alembic_version" in init_mod._ALEMBIC_VERSION_SQL
 
 

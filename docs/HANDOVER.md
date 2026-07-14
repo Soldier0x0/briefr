@@ -12,6 +12,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — PR-P3: index on `cves.modified` (IDX-001)
+
+**What:** Alembic **022** `idx_cves_modified` on `cves(modified)`; SQLite bootstrap +
+forward migration in `db/init.py`. Closes codebase-audit IDX-001 for brief/OTX priority
+filters (`db/correlation.py`, `brief/service.py`).
+
+**Next:** PR-O1 feed empty → scheduler `had_error`.
+
+---
+
 ## 2026-07-14 — Planning docs reconcile (BACKLOG / PRODUCT_STATUS / SPRINT)
 
 **What:** Audited plan vs codebase after O-3 (#514). Fixed stale BACKLOG rows that still
