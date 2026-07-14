@@ -127,7 +127,7 @@ def _mask_metadata_tree(action: str, value):
     if isinstance(value, list):
         return [_mask_metadata_tree(action, v) for v in value]
     if isinstance(value, str):
-        if action.startswith("config.") and _looks_like_secret_value(value):
+        if action.startswith("config.set.") and _looks_like_secret_value(value):
             return mask_secret_value(value)
         if len(value) > 500:
             return value[:500] + "…"

@@ -53,11 +53,22 @@ def test_redact_audit_metadata_masks_secret_values():
     from redact import mask_audit_log_metadata, redact_audit_metadata
 
     secret = "gsk_legacyPlaintextKey9999"
-    raw = {"api_key": secret, "changed_keys": ["GROQ_API_KEY"]}
+    raw = {"value": secret}
+    stored = redact_audit_metadata("config.set.GROQ_API_KEY", raw)
+    assert secret not in stored["value"]
+    assert "…" in stored["value"]
+
+    masked = mask_audit_log_metadata("config.set.GROQ_API_KEY", raw)
+    assert secret not in masked["value"]
+
+
+def test_redact_audit_metadata_preserves_config_apply_key_names():
+    from redact import mask_audit_log_metadata, redact_audit_metadata
+
+    long_key = "CORRELATION_OBSERVATION_RETENTION_DAYS"
+    raw = {"changed_keys": [long_key], "restart_needed": False}
     stored = redact_audit_metadata("config.apply", raw)
-    assert stored["changed_keys"] == ["GROQ_API_KEY"]
-    assert secret not in stored["api_key"]
-    assert "…" in stored["api_key"]
+    assert stored["changed_keys"] == [long_key]
 
     masked = mask_audit_log_metadata("config.apply", raw)
-    assert secret not in masked["api_key"]
+    assert masked["changed_keys"] == [long_key]
