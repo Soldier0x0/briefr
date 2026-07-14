@@ -17,6 +17,8 @@
   width: 90%;
   padding: 40px;
   position: relative;
+  max-height: 88vh;
+  overflow-y: auto;
 }
 
 .about-close {
@@ -99,6 +101,55 @@
   color: var(--text3);
   line-height: 1.5;
   margin: 12px 0 0;
+}
+
+/* Scope & limits (UX-L1 — copy from docs/PRODUCT.md) */
+.about-scope-section {
+  margin-bottom: 20px;
+}
+
+.about-scope-intro {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text3);
+  line-height: 1.5;
+  margin: 0 0 10px;
+}
+
+.about-scope-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.about-scope-item {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text2);
+  padding-left: 12px;
+  border-left: 2px solid var(--border2);
+}
+
+.about-scope-term {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.about-scope-detail {
+  color: var(--text2);
+}
+
+.about-scope-outro {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text3);
+  line-height: 1.5;
+  margin: 0;
 }
 
 .about-copyright {
