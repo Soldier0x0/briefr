@@ -2125,6 +2125,7 @@ def start_scheduler() -> AsyncIOScheduler:
     from task_registry import spawn_background_task
 
     spawn_background_task(_reapply_paused_jobs(_scheduler))
+    spawn_background_task(_restore_ingest_next_runs(_scheduler))
 
     logger.info(
         "Scheduler started (tz=%s). NVD every %dh; KEV every %dm; EPSS every %dh; "
@@ -2275,6 +2276,80 @@ def reschedule_jobs_for_keys(keys: list[str]) -> dict[str, list[str] | bool]:
         "skipped": skipped,
         "scheduler_running": True,
     }
+
+
+# M-9: jobs whose cadence should survive restarts. Interval triggers default
+# to first-fire = now + interval, so frequent restarts perpetually postpone
+# ingest; conversely an unconditional immediate run would stampede on boot.
+_RESTORE_NEXT_RUN_JOBS = ("nvd_incremental_sync", "kev_metadata_sync", "epss_score_sync")
+
+# Overdue jobs run this soon after boot — deferred slightly so startup
+# (init_db, pool warmup, deferred maintenance) isn't competing with ingest.
+_OVERDUE_STARTUP_DELAY = timedelta(minutes=2)
+
+
+def _compute_restored_next_run(
+    last_started_at: str,
+    interval_seconds: float,
+    now: datetime,
+    default_next_run: datetime | None,
+) -> datetime | None:
+    """Next fire time derived from the persisted last run: last + interval,
+    or now + 2min when overdue. Returns None when the default is already
+    sooner-or-equal (never postpone beyond the trigger's own schedule)."""
+    try:
+        last = datetime.fromisoformat(last_started_at.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+    if last.tzinfo is None:
+        last = last.replace(tzinfo=timezone.utc)
+    due = last + timedelta(seconds=interval_seconds)
+    if due <= now:
+        due = now + _OVERDUE_STARTUP_DELAY
+    if default_next_run is not None and default_next_run <= due:
+        return None
+    return due
+
+
+async def _restore_ingest_next_runs(sched: AsyncIOScheduler) -> None:
+    """M-9: re-anchor NVD/KEV/EPSS next_run_time to persisted last-run data."""
+    import json as _json
+
+    db = await get_db()
+    try:
+        for job_id in _RESTORE_NEXT_RUN_JOBS:
+            job = sched.get_job(job_id)
+            if job is None or not isinstance(job.trigger, IntervalTrigger):
+                continue
+            raw = await get_sync_state_value(db, f"scheduler.last_run.{job_id}")
+            if not raw:
+                continue
+            try:
+                history = _json.loads(raw)
+            except (ValueError, TypeError):
+                continue
+            newest = history[0] if isinstance(history, list) and history else (
+                history if isinstance(history, dict) else None
+            )
+            if not newest:
+                continue
+            restored = _compute_restored_next_run(
+                newest.get("started_at") or newest.get("last_run_utc") or "",
+                job.trigger.interval.total_seconds(),
+                datetime.now(timezone.utc),
+                job.next_run_time,
+            )
+            if restored is not None:
+                job.modify(next_run_time=restored)
+                logger.info(
+                    "Restored %s next run to %s (from persisted last run)",
+                    job_id,
+                    restored.isoformat(timespec="seconds"),
+                )
+    except Exception as exc:  # noqa: BLE001 - cadence restore is best-effort
+        logger.warning("Could not restore ingest next-run times: %s", exc)
+    finally:
+        await db.close()
 
 
 def stop_scheduler() -> None:
