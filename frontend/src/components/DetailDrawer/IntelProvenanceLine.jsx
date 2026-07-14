@@ -1,3 +1,4 @@
+import ControlTooltip from '../ControlTooltip.jsx'
 import {
   formatIntelProvenanceLine,
   intelProvenanceTooltip,
@@ -5,14 +6,14 @@ import {
 
 export default function IntelProvenanceLine({ provenance, className = '' }) {
   const line = formatIntelProvenanceLine(provenance)
+  const tip = intelProvenanceTooltip(provenance)
   if (!line) return null
 
   return (
-    <p
-      className={`drawer-intel-provenance mono${className ? ` ${className}` : ''}`}
-      title={intelProvenanceTooltip(provenance)}
-    >
-      {line}
-    </p>
+    <ControlTooltip text={tip} trigger="hover-focus">
+      <p className={`drawer-intel-provenance mono${className ? ` ${className}` : ''}`}>
+        {line}
+      </p>
+    </ControlTooltip>
   )
 }

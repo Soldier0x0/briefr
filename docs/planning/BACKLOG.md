@@ -207,7 +207,7 @@ no collateral skip-decorator corruption. Full SQLite suite green (no regressions
 | **31** | Failure observability — shared `run_id` linking toast → scheduler → logs | ✅ verified shipped — `job_log_context` run_id persisted in last-run history; `JobTable` links to logs filtered by `run_id` |
 | **32** | Scheduler manual trigger duplication (`MANUAL_PIPELINES` vs `JobTable`) | ✅ (this PR) — section retitled "Pinned quick triggers" with HelpTip clarifying the single shared run path |
 | **33** | Scheduler table — search/filters at ~3 pages of jobs | ✅ (this PR) — status chips existed; job name/id search box added |
-| **PR3 follow-up** | Migrate analyst `title=` tooltips on `CVECard` / `DetailDrawer` to `HelpTip` | 📋 incremental |
+| **PR3 follow-up** | Migrate analyst `title=` tooltips on `CVECard` / `DetailDrawer` to `HelpTip` | 📋 incremental — CVECard badges/EPSS/time + drawer header badges + intel provenance (this PR); tab content `title=` remains |
 | **37 / UX-C1** | Interactive control consistency — drawer buttons + tabs to `.ui-btn` standard (Issue 37) | ✅ shipped (#474) |
 | **37 / UX-C2** | CVE card action row + feed surfaces to `.ui-btn` standard (red = destructive only) | ✅ #475 |
 | **38 / UX-J1** | Domain-term explanation sweep (PRODUCT.md principle 6): KEV, EPSS, CVSS, CWE, CAPEC, ATT&CK IDs get HelpTip/ExplainTip coverage on feed, drawer, Forge | ✅ (this PR) — audit found feed mostly covered (FilterBar/StatsRow/CVECard EPSS); filled gaps: drawer CWE tags, ATT&CK section hint, CVECard CVSS badge, Forge KEV badges + CWE/EPSS columns + pack context line |

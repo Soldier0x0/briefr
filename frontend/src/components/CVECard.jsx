@@ -14,6 +14,7 @@ import {
   campaignLifecycleClass,
 } from '../utils/correlationPresentation.js'
 import CveDescriptionClamp from './CveDescriptionClamp.jsx'
+import ControlTooltip from './ControlTooltip.jsx'
 import './CVECard.css'
 
 function timeAgo(isoString) {
@@ -189,72 +190,76 @@ export default memo(function CVECard({
         <span className="cve-id" aria-label={`CVE ID: ${cve.cve_id}`}>
           {cve.cve_id}
           {momentumScore > 0.5 && (
-            <span
-              className="cve-momentum-arrow"
-              title="Rising threat momentum — recent PoC activity, mentions, or exploitation reports are accelerating for this CVE"
-              aria-label="Rising threat momentum"
+            <ControlTooltip
+              text="Rising threat momentum — recent PoC activity, mentions, or exploitation reports are accelerating for this CVE"
+              trigger="hover-focus"
             >
-              ↑
-            </span>
+              <span
+                className="cve-momentum-arrow"
+                aria-label="Rising threat momentum"
+              >
+                ↑
+              </span>
+            </ControlTooltip>
           )}
         </span>
         <div className="cve-badges" aria-label="CVE attributes">
           {cve.is_kev && (
-            <span className="badge badge-kev" title="Listed in CISA Known Exploited Vulnerabilities">
-              KEV
-            </span>
+            <ControlTooltip text="Listed in CISA Known Exploited Vulnerabilities" trigger="hover-focus">
+              <span className="badge badge-kev">KEV</span>
+            </ControlTooltip>
           )}
           {cve.kev_ransomware_use && (
-            <span
-              className="badge badge-ransomware"
-              title="Known ransomware campaign use (CISA KEV catalog)"
-            >
-              RANSOMWARE
-            </span>
+            <ControlTooltip text="Known ransomware campaign use (CISA KEV catalog)" trigger="hover-focus">
+              <span className="badge badge-ransomware">RANSOMWARE</span>
+            </ControlTooltip>
           )}
           {isPinned && (
-            <span className="badge badge-pin" title="Pinned to watchlist">
-              PIN
-            </span>
+            <ControlTooltip text="Pinned to watchlist" trigger="hover-focus">
+              <span className="badge badge-pin">PIN</span>
+            </ControlTooltip>
           )}
           {kevDueText && (
-            <span
-              className={`badge badge-kev-due ${kevDueUrgencyClass(kevDueDays)}`}
-              title={`Federal remediation deadline: ${cve.kev_due_date}`}
-            >
-              {kevDueText}
-            </span>
+            <ControlTooltip text={`Federal remediation deadline: ${cve.kev_due_date}`} trigger="hover-focus">
+              <span className={`badge badge-kev-due ${kevDueUrgencyClass(kevDueDays)}`}>
+                {kevDueText}
+              </span>
+            </ControlTooltip>
           )}
           {cve.has_poc && (
-            <span className="badge badge-poc" title="Public exploit or PoC reference in NVD">
-              PoC
-            </span>
+            <ControlTooltip text="Public exploit or PoC reference in NVD" trigger="hover-focus">
+              <span className="badge badge-poc">PoC</span>
+            </ControlTooltip>
           )}
           {cve.member_of_campaign && (
-            <span
-              className={`badge badge-campaign ${campaignLifecycleClass(cve.campaign_lifecycle)}`}
-              title={campaignBadgeTooltip(cve.campaign_lifecycle)}
-            >
-              Campaign
-            </span>
+            <ControlTooltip text={campaignBadgeTooltip(cve.campaign_lifecycle)} trigger="hover-focus">
+              <span className={`badge badge-campaign ${campaignLifecycleClass(cve.campaign_lifecycle)}`}>
+                Campaign
+              </span>
+            </ControlTooltip>
           )}
           {cve.cvss_score != null && (
-            <span
-              className={`badge badge-cvss badge-cvss-${cvssClass}`}
-              title={`CVSS ${cve.cvss_score} (${cve.severity || 'unknown'}) — Common Vulnerability Scoring System, the 0–10 industry severity standard. Measures technical impact, not exploitation likelihood (see EPSS).`}
+            <ControlTooltip
+              text={`CVSS ${cve.cvss_score} (${cve.severity || 'unknown'}) — Common Vulnerability Scoring System, the 0–10 industry severity standard. Measures technical impact, not exploitation likelihood (see EPSS).`}
+              trigger="hover-focus"
             >
-              CVSS {cve.cvss_score.toFixed(1)}
-            </span>
+              <span className={`badge badge-cvss badge-cvss-${cvssClass}`}>
+                CVSS {cve.cvss_score.toFixed(1)}
+              </span>
+            </ControlTooltip>
           )}
           {cve.patch_available && (
-            <span className="badge badge-patch" title="Patch available">
-              Patch
-            </span>
+            <ControlTooltip text="Patch available" trigger="hover-focus">
+              <span className="badge badge-patch">Patch</span>
+            </ControlTooltip>
           )}
           {exposureScore > 0 && (
-            <span className="badge badge-exposure" title={`Exposure score ${exposureScore} — how closely this CVE matches your stack. Higher = more relevant to your environment.`}>
-              {exposureScore}
-            </span>
+            <ControlTooltip
+              text={`Exposure score ${exposureScore} — how closely this CVE matches your stack. Higher = more relevant to your environment.`}
+              trigger="hover-focus"
+            >
+              <span className="badge badge-exposure">{exposureScore}</span>
+            </ControlTooltip>
           )}
         </div>
       </div>
@@ -273,15 +278,20 @@ export default memo(function CVECard({
 
       {/* EPSS bar */}
       {epss != null && epss > 0 && (
-        <div className="cve-epss" title={`EPSS ${(epss * 100).toFixed(1)}% — probability this vulnerability will be exploited in the wild within 30 days (FIRST.org model)`} aria-label={`EPSS exploitation probability: ${(epss * 100).toFixed(1)}%`}>
-          <div className="epss-track" role="progressbar" aria-valuenow={Math.round(epss * 100)} aria-valuemin={0} aria-valuemax={100}>
-            <div
-              className="epss-fill"
-              style={{ width: `${Math.min(epss * 100, 100)}%` }}
-            />
+        <ControlTooltip
+          text={`EPSS ${(epss * 100).toFixed(1)}% — probability this vulnerability will be exploited in the wild within 30 days (FIRST.org model)`}
+          trigger="hover-focus"
+        >
+          <div className="cve-epss" aria-label={`EPSS exploitation probability: ${(epss * 100).toFixed(1)}%`}>
+            <div className="epss-track" role="progressbar" aria-valuenow={Math.round(epss * 100)} aria-valuemin={0} aria-valuemax={100}>
+              <div
+                className="epss-fill"
+                style={{ width: `${Math.min(epss * 100, 100)}%` }}
+              />
+            </div>
+            <span className="epss-label">EPSS {(epss * 100).toFixed(1)}%</span>
           </div>
-          <span className="epss-label">EPSS {(epss * 100).toFixed(1)}%</span>
-        </div>
+        </ControlTooltip>
       )}
 
       {/* Meta row */}
@@ -309,12 +319,11 @@ export default memo(function CVECard({
         )}
         <span className="meta-item meta-time" aria-label={`Published: ${cve.published}`}>
           <span className="meta-key">published</span>
-          <span
-            className={`meta-val time-tooltip-wrap ${publishedAgeClass(cve.published)}`}
-            title={formatAbsolute(cve.published, timezone)}
-          >
-            {timeAgo(cve.published)}
-          </span>
+          <ControlTooltip text={formatAbsolute(cve.published, timezone)} trigger="hover-focus">
+            <span className={`meta-val time-tooltip-wrap ${publishedAgeClass(cve.published)}`}>
+              {timeAgo(cve.published)}
+            </span>
+          </ControlTooltip>
         </span>
       </div>
 
