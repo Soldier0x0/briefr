@@ -12,6 +12,17 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-14 — PR-R4 + PG-003 close-out — merged (this PR)
+
+**What:** Migration status persists to `sync_state` (`migration.last_status`) on every
+transition; `GET /api/admin/database/migrate/status` falls back to the snapshot after a
+restart and reports dead-process `running` as `interrupted`. PG-003 verified not
+reproducible (3× full SQLite suite green) — closed in BACKLOG.
+
+**Next:** PR-R1 graceful shutdown.
+
+---
+
 ## 2026-07-14 — UX-L1: Scope & limits panel in About modal — merged (this PR)
 
 **What:** About modal now renders the seven Scope & Limits constraints from

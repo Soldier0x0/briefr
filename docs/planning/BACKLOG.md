@@ -118,7 +118,7 @@ Independently re-verified — of 17 Emergent-agent + Emergent-adjacent claims te
 | PR-R1 | Await scheduler + background tasks on shutdown | 📋 |
 | PR-R2 | LLM extraction idempotency / response staging | 📋 |
 | PR-R3 | Webhook claim-before-send (extends IDEM-001) | 🔶 IDEM-001 shipped #449 — verify overlap |
-| PR-R4 | Persist migration status to `sync_state` | 📋 |
+| PR-R4 | Persist migration status to `sync_state` | ✅ (this PR) |
 
 ### Runtime validation (9× NEEDS RUNTIME VALIDATION)
 
@@ -165,7 +165,7 @@ no collateral skip-decorator corruption. Full SQLite suite green (no regressions
 |------|--------|
 | **PG-001** | Diagnose + fix cross-file Postgres test pollution | ✅ fixed 2026-07-12 |
 | **PG-002** | Set up a documented persistent local Postgres for dev/CI (native service already exists on this machine at `localhost:5432`; OR fix `deploy/docker-compose.postgres.yml` port conflict guidance) so the CLAUDE.md dual-DB rule stops being aspirational | ✅ `scripts/postgres-dev.sh` (:5433 disposable) + POSTGRES/ONBOARDING/verify-local |
-| **PG-003** | Cross-file **SQLite** test pollution (found 2026-07-13, FR-3 session): full-suite `pytest tests/ -q` shows `test_api_key_health.py` + `test_db_explorer.py::test_unauthenticated_returns_401` failing, but both pass cleanly standalone and combined with `test_forge.py`. Same *class* of bug as PG-001 (cross-file pollution) but a different pair of files and the default SQLite backend, not Postgres — not diagnosed further, root cause unknown | 📋 |
+| **PG-003** | Cross-file **SQLite** test pollution (found 2026-07-13, FR-3 session): full-suite `pytest tests/ -q` showed `test_api_key_health.py` + `test_db_explorer.py::test_unauthenticated_returns_401` failing, but both passed standalone. Same *class* as PG-001 but different files, SQLite backend | ✅ verified not reproducible 2026-07-14 — three full SQLite suite runs green (1245→1262 passed, only corpus-drift failures which were fixed separately in #524). Likely fixed as a side effect of the PG-001 conftest hardening; re-open with a failing seed if it recurs |
 
 ### Track M (security/ops audit — mostly shipped)
 
@@ -231,7 +231,7 @@ Flat backlog after major programs above — **no strict order**; pick from here 
 | API key health tail | AKH-2 (remove dead `/api/usage`, HelpTip on Inbound limits) |
 | QA / UX | QA-U2–U3, UX-J1, UX-L1 |
 | Durability | PR-R1, PR-R2, PR-R4 (PR-R3 verify vs #449) |
-| Ops / test infra | M-9, M-10 verify, PG-003 |
+| Ops / test infra | M-9, M-10 verify |
 | Resource benchmarking | — (RB-1/RB-2 complete) |
 | UX audit deferred | §5 items 28–33, PR3 follow-up, UI 3a/3b/§6 |
 | Wallboard optional | §7 optional rows |

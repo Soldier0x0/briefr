@@ -1714,9 +1714,9 @@ async def start_database_migration(request: Request, background_tasks: Backgroun
 
 @router.get("/database/migrate/status")
 async def get_database_migration_status(request: Request):
-    from migration.sqlite_to_postgres import get_status
+    from migration.sqlite_to_postgres import get_status_with_fallback
 
-    return get_status()
+    return await get_status_with_fallback()
 
 
 # ── Scheduler ──────────────────────────────────────────────────────────────

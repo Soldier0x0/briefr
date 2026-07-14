@@ -11,6 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import time
@@ -22,6 +23,13 @@ import aiosqlite
 from db.config import postgres_dsn
 
 logger = logging.getLogger(__name__)
+
+# PR-R4 (REST-010/REST-012): the in-memory _state dies with the process, so a
+# restart mid-migration used to leave the admin panel reporting "idle" with no
+# trace. Every status transition is snapshotted to sync_state under this key;
+# get_status() falls back to the persisted record, reporting a persisted
+# "running" from a dead process as "interrupted".
+MIGRATION_STATUS_KEY = "migration.last_status"
 
 # Dependency-safe copy order (parents before children).
 TABLE_ORDER: list[str] = [
@@ -61,6 +69,57 @@ _lock = asyncio.Lock()
 
 def get_status() -> dict[str, Any]:
     return dict(_state)
+
+
+async def _persist_status() -> None:
+    """Snapshot the in-memory state to sync_state (best-effort)."""
+    from database import get_db, set_sync_state_value
+
+    try:
+        db = await get_db()
+        try:
+            await set_sync_state_value(db, MIGRATION_STATUS_KEY, json.dumps(_state))
+            await db.commit()
+        finally:
+            await db.close()
+    except Exception as exc:  # noqa: BLE001 - persistence must never break the migration
+        logger.warning("Could not persist migration status: %s", exc)
+
+
+async def get_status_with_fallback() -> dict[str, Any]:
+    """In-memory state when a migration ran in this process; otherwise the
+    persisted snapshot. A persisted "running" with no live in-memory run means
+    the process died mid-migration — reported as "interrupted"."""
+    if _state["status"] != "idle":
+        return dict(_state)
+
+    from database import get_db, get_sync_state_value
+
+    try:
+        db = await get_db()
+        try:
+            raw = await get_sync_state_value(db, MIGRATION_STATUS_KEY)
+        finally:
+            await db.close()
+    except Exception:
+        raw = None
+
+    if not raw:
+        return dict(_state)
+
+    try:
+        persisted = json.loads(raw)
+    except (ValueError, TypeError):
+        return dict(_state)
+
+    if persisted.get("status") == "running":
+        persisted["status"] = "interrupted"
+        persisted["error"] = (
+            "The backend restarted while this migration was running. "
+            "Verify the target database and re-run the migration."
+        )
+    persisted["persisted"] = True
+    return persisted
 
 
 async def test_connection(database_url: str) -> dict[str, Any]:
@@ -169,6 +228,7 @@ async def reserve_migration_slot() -> None:
             rows_copied=0, started_at=time.time(), finished_at=None,
             error=None, verification=None,
         )
+    await _persist_status()
 
 
 async def run_migration(database_url: str, sqlite_path: str, _reserved: bool = False) -> None:
@@ -267,8 +327,10 @@ async def run_migration(database_url: str, sqlite_path: str, _reserved: bool = F
                     "Migration finished with row-count mismatches: %s",
                     verification["mismatches"],
                 )
+            await _persist_status()
         except Exception as exc:  # noqa: BLE001 - reported to the admin panel
             logger.exception("SQLite to Postgres migration failed")
             _state["status"] = "error"
             _state["error"] = str(exc)
             _state["finished_at"] = time.time()
+            await _persist_status()
