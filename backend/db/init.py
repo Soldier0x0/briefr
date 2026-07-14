@@ -395,6 +395,21 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_correlation_suppressions_cve
                 ON correlation_suppressions(cve_id);
 
+            CREATE TABLE IF NOT EXISTS correlation_feedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                cve_id TEXT NOT NULL,
+                scope TEXT NOT NULL,
+                scope_key TEXT NOT NULL,
+                verdict TEXT NOT NULL,
+                reason TEXT DEFAULT '',
+                created_by TEXT DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now')),
+                UNIQUE (cve_id, scope, scope_key, verdict)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_correlation_feedback_cve
+                ON correlation_feedback(cve_id);
+
             CREATE TABLE IF NOT EXISTS ioc_degree (
                 ioc_type TEXT NOT NULL,
                 ioc_value TEXT NOT NULL,
@@ -679,6 +694,20 @@ async def init_db() -> None:
             )
             """,
             "CREATE INDEX IF NOT EXISTS idx_correlation_suppressions_cve ON correlation_suppressions(cve_id)",
+            """
+            CREATE TABLE IF NOT EXISTS correlation_feedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                cve_id TEXT NOT NULL,
+                scope TEXT NOT NULL,
+                scope_key TEXT NOT NULL,
+                verdict TEXT NOT NULL,
+                reason TEXT DEFAULT '',
+                created_by TEXT DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now')),
+                UNIQUE (cve_id, scope, scope_key, verdict)
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_correlation_feedback_cve ON correlation_feedback(cve_id)",
             "ALTER TABLE correlation_suppressions ADD COLUMN dismissed_by TEXT DEFAULT ''",
             "CREATE INDEX IF NOT EXISTS idx_otx_cve_pulses_pulse ON otx_cve_pulses(pulse_id)",
             # Built-in app login (decision 2026-06-11): users + sessions.

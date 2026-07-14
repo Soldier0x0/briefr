@@ -62,11 +62,11 @@ components:
     ref: backend/routers/correlation.py
 - id: routers-cves
   title: routers.cves
-  summary: FastAPI router module with 22 endpoint(s).
+  summary: FastAPI router module with 25 endpoint(s).
   owner: platform
   status: active
   origin: generated
-  endpoint_count: 22
+  endpoint_count: 25
   source_refs:
   - type: file
     ref: backend/routers/cves.py

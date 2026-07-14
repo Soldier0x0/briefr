@@ -81,6 +81,15 @@ tables:
   source_refs:
   - type: table
     ref: correlation_campaigns
+- id: correlation_feedback
+  title: correlation_feedback
+  summary: Database table defined in db/init.py (name=correlation_feedback).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: correlation_feedback
 - id: correlation_suppressions
   title: correlation_suppressions
   summary: Database table defined in db/init.py (name=correlation_suppressions).
@@ -279,6 +288,15 @@ tables:
   source_refs:
   - type: table
     ref: otx_pulses
+- id: pulse_families
+  title: pulse_families
+  summary: Database table defined in db/init.py (name=pulse_families).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: pulse_families
 - id: sessions
   title: sessions
   summary: Database table defined in db/init.py (name=sessions).

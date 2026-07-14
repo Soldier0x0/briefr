@@ -256,6 +256,15 @@ endpoints:
   path: /api/cves/{cve_id}/correlation
   component_id: routers-cves
 - method: DELETE
+  path: /api/cves/{cve_id}/correlation/feedback
+  component_id: routers-cves
+- method: GET
+  path: /api/cves/{cve_id}/correlation/feedback
+  component_id: routers-cves
+- method: POST
+  path: /api/cves/{cve_id}/correlation/feedback
+  component_id: routers-cves
+- method: DELETE
   path: /api/cves/{cve_id}/correlation/suppress
   component_id: routers-cves
 - method: POST

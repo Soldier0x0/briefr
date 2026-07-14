@@ -741,3 +741,118 @@ async def rebuild_ioc_degree(db: DbConnection) -> int:
     await db.commit()
     rows = await db.execute_fetchall("SELECT COUNT(*) AS n FROM ioc_degree")
     return rows[0]["n"] if rows else 0
+
+
+_LIST_CORRELATION_FEEDBACK_SQLITE = """
+SELECT id, cve_id, scope, scope_key, verdict, reason, created_by, created_at
+FROM correlation_feedback
+WHERE cve_id = ?
+ORDER BY created_at DESC
+"""
+
+_LIST_CORRELATION_FEEDBACK_PG = """
+SELECT id, cve_id, scope, scope_key, verdict, reason, created_by, created_at
+FROM correlation_feedback
+WHERE cve_id = $1
+ORDER BY created_at DESC
+"""
+
+_UPSERT_CORRELATION_FEEDBACK_SQLITE = """
+INSERT INTO correlation_feedback (cve_id, scope, scope_key, verdict, reason, created_by, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(cve_id, scope, scope_key, verdict) DO UPDATE SET
+    reason = excluded.reason,
+    created_by = excluded.created_by,
+    created_at = excluded.created_at
+"""
+
+_UPSERT_CORRELATION_FEEDBACK_PG = """
+INSERT INTO correlation_feedback (cve_id, scope, scope_key, verdict, reason, created_by, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+ON CONFLICT(cve_id, scope, scope_key, verdict) DO UPDATE SET
+    reason = excluded.reason,
+    created_by = excluded.created_by,
+    created_at = excluded.created_at
+"""
+
+_SELECT_CORRELATION_FEEDBACK_SQLITE = """
+SELECT id, cve_id, scope, scope_key, verdict, reason, created_by, created_at
+FROM correlation_feedback
+WHERE cve_id = ? AND scope = ? AND scope_key = ? AND verdict = ?
+"""
+
+_SELECT_CORRELATION_FEEDBACK_PG = """
+SELECT id, cve_id, scope, scope_key, verdict, reason, created_by, created_at
+FROM correlation_feedback
+WHERE cve_id = $1 AND scope = $2 AND scope_key = $3 AND verdict = $4
+"""
+
+_DELETE_CORRELATION_FEEDBACK_SQLITE = """
+DELETE FROM correlation_feedback
+WHERE cve_id = ? AND scope = ? AND scope_key = ? AND verdict = ?
+"""
+
+_DELETE_CORRELATION_FEEDBACK_PG = """
+DELETE FROM correlation_feedback
+WHERE cve_id = $1 AND scope = $2 AND scope_key = $3 AND verdict = $4
+"""
+
+
+async def list_correlation_feedback(db: DbConnection, cve_id: str) -> list[dict]:
+    sql = (
+        _LIST_CORRELATION_FEEDBACK_PG
+        if _is_postgres_connection(db)
+        else _LIST_CORRELATION_FEEDBACK_SQLITE
+    )
+    rows = await db.execute_fetchall(sql, (cve_id.upper(),))
+    return [dict(row) for row in rows]
+
+
+async def insert_correlation_feedback(
+    db: DbConnection,
+    cve_id: str,
+    scope: str,
+    scope_key: str,
+    verdict: str,
+    reason: str = "",
+    created_by: str = "",
+) -> dict:
+    pg = _is_postgres_connection(db)
+    upsert_sql = (
+        _UPSERT_CORRELATION_FEEDBACK_PG if pg else _UPSERT_CORRELATION_FEEDBACK_SQLITE
+    )
+    select_sql = (
+        _SELECT_CORRELATION_FEEDBACK_PG if pg else _SELECT_CORRELATION_FEEDBACK_SQLITE
+    )
+    key = cve_id.upper()
+    now = utcnow_str()
+    await db.execute(
+        upsert_sql,
+        (key, scope, scope_key, verdict, reason, created_by, now),
+    )
+    rows = await db.execute_fetchall(select_sql, (key, scope, scope_key, verdict))
+    return dict(rows[0]) if rows else {
+        "cve_id": key,
+        "scope": scope,
+        "scope_key": scope_key,
+        "verdict": verdict,
+        "reason": reason,
+        "created_by": created_by,
+        "created_at": now,
+    }
+
+
+async def delete_correlation_feedback(
+    db: DbConnection,
+    cve_id: str,
+    scope: str,
+    scope_key: str,
+    verdict: str,
+) -> bool:
+    sql = (
+        _DELETE_CORRELATION_FEEDBACK_PG
+        if _is_postgres_connection(db)
+        else _DELETE_CORRELATION_FEEDBACK_SQLITE
+    )
+    cursor = await db.execute(sql, (cve_id.upper(), scope, scope_key, verdict))
+    return (cursor.rowcount or 0) > 0

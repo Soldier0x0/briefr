@@ -809,6 +809,56 @@ Scopes: `campaign_id`, `cve_pair`, `pulse_id`, `infrastructure`.
 
 Query params: `scope` plus `campaign_id`, `cve_id_b`, or `pulse_id` depending on scope.
 
+### GET /api/cves/{cve_id}/correlation/feedback
+
+List persisted analyst feedback for correlation findings on this CVE.
+
+**Response:**
+
+```json
+{
+  "cve_id": "CVE-2024-0001",
+  "feedback": [
+    {
+      "id": 1,
+      "cve_id": "CVE-2024-0001",
+      "scope": "campaign_id",
+      "scope_key": "camp_abc123",
+      "verdict": "confirm",
+      "reason": "validated in case",
+      "created_by": "analyst@example.com",
+      "created_at": "2026-07-14 12:00:00"
+    }
+  ]
+}
+```
+
+Verdicts: `confirm`, `reject`, `resolve_conflict`. Scopes match suppress:
+`campaign_id`, `cve_pair`, `pulse_id`, `infrastructure`.
+
+### POST /api/cves/{cve_id}/correlation/feedback
+
+Record analyst confirm/reject/resolve feedback. Upserts on
+`(cve_id, scope, scope_key, verdict)`; writes an `audit_log` entry
+(`correlation.feedback.<verdict>`).
+
+**Body:**
+
+```json
+{
+  "scope": "campaign_id",
+  "key": {"campaign_id": "camp_abc123"},
+  "verdict": "confirm",
+  "reason": "optional analyst note",
+  "created_by": "analyst@example.com"
+}
+```
+
+### DELETE /api/cves/{cve_id}/correlation/feedback
+
+Query params: `scope`, `verdict`, plus `campaign_id`, `cve_id_b`, or `pulse_id`
+depending on scope. Writes `correlation.feedback.delete` to `audit_log`.
+
 ### GET /api/correlation/clusters
 
 | Param | Type | Default | Description |
