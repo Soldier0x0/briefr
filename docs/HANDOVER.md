@@ -12,12 +12,13 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-14 — O-3: WALLBOARD_TOKEN in admin config
+## 2026-07-14 — O-3: WALLBOARD_TOKEN in admin config — merged #514
 
 **What:** `WALLBOARD_TOKEN` added to `config_schema` (secret, `restart_required`).
 Admin GET config returns masked value under `security`; API keys & config page has
 Security / kiosk accordion. Save/rotate via existing config apply flow with audit
 redaction. Closes docs-vs-reality gap (Security page already pointed at config UI).
+Gemini: test env isolation fix (`monkeypatch.delenv` + `finally` cleanup).
 
 **Next:** Sprint tail / codebase audit PRs per BACKLOG.
 
