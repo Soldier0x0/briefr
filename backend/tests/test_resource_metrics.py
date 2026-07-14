@@ -10,8 +10,19 @@ from db.config import is_postgres
 from db.resource_metrics import purge_old_resource_metrics
 from database import get_db, init_db
 from metrics.request_counter import read_and_reset_request_count, reset_for_tests
-from resource_collector import _pg_derived_rates, _rate_per_sec
+from resource_collector import _cpu_pct_from_times, _pg_derived_rates, _rate_per_sec
 from tests.conftest import run_db_test
+
+
+def test_cpu_pct_from_times_uses_elapsed_wall_clock():
+    import psutil
+
+    prev = {1: (1.0, 0.5)}
+    curr = {1: (2.0, 1.0)}
+    pct = _cpu_pct_from_times(curr, prev, 60.0)
+    cpus = psutil.cpu_count() or 1
+    expected = min(100.0, (1.5 / 60.0) / cpus * 100.0)
+    assert pct == expected
 
 
 def test_rate_per_sec_first_sample_is_none():
