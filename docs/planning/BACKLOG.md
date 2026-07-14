@@ -27,7 +27,7 @@ shipped this pass — see `docs/HANDOVER.md`'s 2026-07-12 entries for the full P
 
 | ID | Item | Status | Source |
 |----|------|--------|--------|
-| **O-3** | `WALLBOARD_TOKEN` in `config_schema` + admin save/rotate (Security copy already points at API keys & config; field is **env-only** today) | 📋 | Sprint Track O; [`specs/ux-audit.md`](specs/ux-audit.md) Issue 23–24 |
+| **O-3** | `WALLBOARD_TOKEN` in `config_schema` + admin save/rotate (Security copy already points at API keys & config; field is **env-only** today) | ✅ #514 |
 | **G0** | Refresh `LEARNING_PATH.md` + `ONBOARDING.md` for final shipped system | 🅿️ end-of-lifecycle | Sprint §G |
 | **G1–G4** | Maintainer modules 1–4 (trace + private notes) | 🅿️ end-of-lifecycle | Sprint §G |
 | **Phase 4 STIX/Sigma export** | V1.5 tail | 🅿️ | Sprint V1.5 |
@@ -272,7 +272,7 @@ wasn't available — see `docs/HANDOVER.md`.)
 
 | Item | Status |
 |------|--------|
-| **O-3 / N-1** | `WALLBOARD_TOKEN` in `config_schema` (same as §1) | 📋 |
+| **O-3 / N-1** | `WALLBOARD_TOKEN` in `config_schema` (same as §1) | ✅ #514 |
 | `?density=compact` layout mode | 📋 optional |
 | Campaign tile, EPSS movers, enriched backend tiles | 📋 optional |
 | QR / one-time setup card on Security page (N-4) | 🔶 docs in OPERATIONS.md; QR card not built |

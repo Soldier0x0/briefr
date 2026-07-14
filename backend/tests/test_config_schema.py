@@ -92,6 +92,7 @@ def test_list_schema_shape():
     "key,expected_strategy",
     [
         ("NVD_API_KEY", APPLY_IMMEDIATE),
+        ("WALLBOARD_TOKEN", APPLY_RESTART),
         ("NVD_SYNC_INTERVAL_HOURS", APPLY_SCHEDULER_RESCHEDULE),
         ("DATABASE_POOL_SIZE", APPLY_RESTART),
         ("ALLOWED_ORIGINS", APPLY_RESTART),
@@ -132,6 +133,7 @@ def test_config_schema_endpoint(admin_client):
     data = resp.json()
     keys = {f["key"] for f in data}
     assert "NVD_API_KEY" in keys
+    assert "WALLBOARD_TOKEN" in keys
     assert "DISCORD_WEBHOOK_URL" in keys
     assert len(data) == len(WRITABLE_CONFIG_KEYS)
 

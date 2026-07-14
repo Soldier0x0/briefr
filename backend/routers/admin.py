@@ -1227,6 +1227,9 @@ def _get_config_response() -> dict[str, Any]:
             "CIRCL_API_KEY": _mask_key(_env("CIRCL_API_KEY")),
             "ABUSECH_AUTH_KEY": _mask_key(_env("ABUSECH_AUTH_KEY")),
         },
+        "security": {
+            "WALLBOARD_TOKEN": _mask_key(_env("WALLBOARD_TOKEN")),
+        },
         "webhooks": {
             "DISCORD_WEBHOOK_URL": _mask_url(_env("DISCORD_WEBHOOK_URL")),
             "DISCORD_WEBHOOK_ENABLED": _env("DISCORD_WEBHOOK_ENABLED", "1"),
