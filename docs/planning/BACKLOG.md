@@ -227,7 +227,7 @@ Flat backlog after major programs above — **no strict order**; pick from here 
 
 | Bucket | IDs |
 |--------|-----|
-| Codebase audit | PR-P3, PR-O1, PR-O2, PR-F1–F4 (PR-P4 optional) |
+| Codebase audit | PR-P4 optional (PR-P3/O1/O2/F1–F4 ✅) |
 | API key health tail | AKH-2 (remove dead `/api/usage`, HelpTip on Inbound limits) |
 | QA / UX | QA-U2–U3, UX-J1, UX-L1 |
 | Durability | PR-R1, PR-R2, PR-R4 (PR-R3 verify vs #449) |
