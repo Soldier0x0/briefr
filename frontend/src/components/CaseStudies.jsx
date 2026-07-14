@@ -8,6 +8,7 @@ import {
 } from '../utils/caseStudyFeed.js'
 import { notifyApiError } from './Toast.jsx'
 import { ingestLogUrl } from '../utils/adminLinks.js'
+import { safeExternalUrl } from '../utils/safeExternalUrl.js'
 import './CaseStudies.css'
 
 function SkeletonCards({ count = 4 }) {
@@ -34,6 +35,7 @@ function TechniqueChips({ techniques }) {
 function FeedCard({ card, query }) {
   const titleParts = highlightParts(card.title, query)
   const descParts = highlightParts(card.description, query)
+  const safeUrl = safeExternalUrl(card.url)
 
   return (
     <article className="cs-card">
@@ -46,11 +48,19 @@ function FeedCard({ card, query }) {
         </time>
       </div>
       <h3 className="cs-card-title">
-        <a href={card.url} target="_blank" rel="noopener noreferrer">
-          {titleParts.map((p, i) =>
-            p.match ? <mark key={i} className="cs-highlight">{p.text}</mark> : <span key={i}>{p.text}</span>,
-          )}
-        </a>
+        {safeUrl ? (
+          <a href={safeUrl} target="_blank" rel="noopener noreferrer">
+            {titleParts.map((p, i) =>
+              p.match ? <mark key={i} className="cs-highlight">{p.text}</mark> : <span key={i}>{p.text}</span>,
+            )}
+          </a>
+        ) : (
+          <span>
+            {titleParts.map((p, i) =>
+              p.match ? <mark key={i} className="cs-highlight">{p.text}</mark> : <span key={i}>{p.text}</span>,
+            )}
+          </span>
+        )}
       </h3>
       {card.actor && (
         <p className="cs-card-actor mono">Actor: {card.actor}</p>

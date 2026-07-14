@@ -77,10 +77,10 @@ before PR-9.
 | PR-P4 | KEV upsert batching | 📋 optional |
 | PR-O1 | Feed empty → scheduler `had_error` | ✅ in PR |
 | PR-O2 | Correlation GET read-only split (CACHE-001) | 📋 |
-| PR-F1 | Admin nav role gate + 403 redirect | 📋 |
-| PR-F2 | `safeExternalUrl` for feed links | 📋 |
-| PR-F3 | Font-weight token alignment | 📋 |
-| PR-F4 | `loadStats` sequence guard | 📋 |
+| PR-F1 | Admin nav role gate + 403 redirect | ✅ in PR |
+| PR-F2 | `safeExternalUrl` for feed links | ✅ in PR |
+| PR-F3 | Font-weight token alignment | ✅ in PR |
+| PR-F4 | `loadStats` sequence guard | ✅ in PR |
 
 ### API key health & quota clarity (found 2026-07-12)
 
