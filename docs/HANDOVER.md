@@ -12,7 +12,20 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-14 — Issue 21 UI + wallboard tile upgrades — merged (this PR)
+## 2026-07-14 — Webhook health UI + unit test/README sync — merged (this PR)
+
+**What:** Admin → Webhooks refactored to destination health cards (`feed-source-card` pattern)
+with per-destination last success/failure, 24h ok/fail counts, and masked errors.
+`GET /api/admin/webhooks/health` merges destinations with `webhook_delivery_log` aggregates;
+delivery-log API masks `error` on read. Delivery log and legacy dedupe log use separate state.
+Fixed frontend unit tests (Tooltip import path, apiQueue aria label). README tech stack
+versions synced to `requirements.txt` / `package.json`.
+
+**Next:** parked programs (QR kiosk N-4 optional, correlation tail, etc.).
+
+---
+
+## 2026-07-14 — Issue 21 UI + wallboard tile upgrades — merged (#542)
 
 **What:** Admin → API keys gains a provider health table (`GET/POST /api/admin/api-keys/health`),
 key suffix beside masked secrets, and Run check now. Wallboard EPSS movers tile now uses

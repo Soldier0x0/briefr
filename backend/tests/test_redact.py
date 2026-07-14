@@ -5,7 +5,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from redact import mask_audit_log_target, mask_config_value, mask_secret_value, redact_audit_target
+from redact import (
+    mask_audit_log_target,
+    mask_config_value,
+    mask_secret_value,
+    mask_webhook_delivery_error,
+    redact_audit_target,
+)
 
 
 def test_mask_secret_value_first4_last4():
@@ -72,3 +78,20 @@ def test_redact_audit_metadata_preserves_config_apply_key_names():
 
     masked = mask_audit_log_metadata("config.apply", raw)
     assert masked["changed_keys"] == [long_key]
+
+
+def test_mask_webhook_delivery_error_redacts_urls():
+    err = "HTTP 401 https://discord.com/api/webhooks/abc/TOKEN123"
+    masked = mask_webhook_delivery_error(err)
+    assert "discord.com" not in masked
+    assert "TOKEN123" not in masked
+    assert "[redacted-url]" in masked
+
+
+def test_mask_webhook_delivery_error_redacts_sensitive_keywords():
+    assert mask_webhook_delivery_error("invalid token in payload") == "[redacted]"
+
+
+def test_mask_webhook_delivery_error_passes_short_safe_errors():
+    assert mask_webhook_delivery_error("timeout") == "timeout"
+    assert mask_webhook_delivery_error(None) is None

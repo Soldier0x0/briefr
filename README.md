@@ -86,11 +86,11 @@ Three main tabs:
 
 | Backend | Frontend |
 |---------|----------|
-| FastAPI 0.137.2 | React 19.2.7 |
-| Uvicorn 0.49.0 | React Router 7.18.0 |
-| httpx 0.28.1 | Vite 8.0.16 |
-| APScheduler 3.11.2 | ExcelJS 4.4.0 |
-| asyncpg 0.30.0 + psycopg 3.2.6 (Alembic) | jsPDF 4.2.1 + html2canvas |
+| FastAPI 0.139.0 | React 19.2.7 |
+| Uvicorn 0.51.0 | React Router 7.18.1 |
+| httpx 0.28.1 | Vite 8.1.4 |
+| APScheduler 3.11.3 | ExcelJS 4.4.0 |
+| asyncpg 0.31.0 + psycopg 3.3.4 (Alembic) | jsPDF 4.2.1 + html2canvas |
 | Pydantic 2.13.4 | Plain JSX + CSS (no component library) |
 | python-dotenv, PyYAML | |
 

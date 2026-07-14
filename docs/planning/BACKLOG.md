@@ -295,7 +295,7 @@ tiles only.
 
 | Item | Status |
 |------|--------|
-| Destination health UI from `webhook_delivery_log` (last success/error) | 📋 optional — only if operators ask |
+| Destination health UI from `webhook_delivery_log` (last success/error) | ✅ optional — Admin → Webhooks card grid + `GET /api/admin/webhooks/health` |
 | Encrypting `config_json` at rest | 🅿️ |
 | New webhook provider kinds | 🅿️ |
 

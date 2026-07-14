@@ -1,0 +1,106 @@
+.webhook-dest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 0.85rem;
+}
+
+.webhook-dest-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-height: 0;
+}
+
+.webhook-dest-card--disabled {
+  opacity: 0.72;
+}
+
+.webhook-dest-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.webhook-dest-card-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.webhook-dest-card-id {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text3);
+  margin-top: 0.15rem;
+}
+
+.webhook-dest-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.webhook-dest-health-lines {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  color: var(--text2);
+}
+
+.webhook-dest-health-line {
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.webhook-dest-health-key {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  flex-shrink: 0;
+  width: 4.5rem;
+}
+
+.webhook-dest-health-val {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.webhook-dest-health-val--error {
+  color: var(--amber);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.webhook-dest-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: auto;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--border);
+}
+
+.webhook-dest-expand {
+  padding: 0.65rem 0.75rem;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-top: 0.35rem;
+}
+
+.webhook-delivery-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}

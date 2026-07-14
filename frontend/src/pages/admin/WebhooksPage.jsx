@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, Fragment } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { adminApi, fetchUserStack } from '../../api.js'
 import { fmtIso } from './formatters.js'
 import AsyncSection from './shared/AsyncSection.jsx'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import HelpTip from './shared/HelpTip.jsx'
-import ToggleSwitch from './shared/ToggleSwitch.jsx'
+import AdminDataGrid from './shared/AdminDataGrid.jsx'
+import WebhookDestinationCard from './WebhookDestinationCard.jsx'
+import './WebhooksPage.css'
 
 const EVENT_OPTIONS = [
   { id: 'kev_alert', label: 'KEV stack match' },
@@ -28,25 +30,6 @@ const EMPTY_CREATE = {
   event_types: EVENT_OPTIONS.map(e => e.id),
 }
 
-function sourceBadge(source) {
-  if (source === 'env') {
-    return <span className="badge badge-info" title="Bootstrapped from .env — disable here; secrets stay on API keys page">env</span>
-  }
-  return <span className="badge badge-muted" title="Created in BRIEFR — config stored in database">db</span>
-}
-
-function configSummary(dest) {
-  const cfg = dest.config || {}
-  if (dest.kind === 'telegram') {
-    const parts = []
-    if (cfg.token) parts.push(`token: ${cfg.token}`)
-    if (cfg.chat_id) parts.push(`chat: ${cfg.chat_id}`)
-    return parts.join(' · ') || '—'
-  }
-  if (cfg.url) return cfg.url
-  return '—'
-}
-
 export default function WebhooksPage({ toast }) {
   const [destinations, setDestinations] = useState(null)
   const [loadError, setLoadError] = useState(null)
@@ -61,8 +44,15 @@ export default function WebhooksPage({ toast }) {
   const [showCreate, setShowCreate] = useState(false)
   const [createForm, setCreateForm] = useState(EMPTY_CREATE)
   const [deleteTarget, setDeleteTarget] = useState(null)
-  const [log, setLog] = useState(null)
-  const [logOffset, setLogOffset] = useState(0)
+  const [health, setHealth] = useState(null)
+  const [healthError, setHealthError] = useState(null)
+  const [deliveryLog, setDeliveryLog] = useState(null)
+  const [deliveryLogError, setDeliveryLogError] = useState(null)
+  const [deliveryLogOffset, setDeliveryLogOffset] = useState(0)
+  const [deliveryLogFilter, setDeliveryLogFilter] = useState('')
+  const [dedupeLog, setDedupeLog] = useState(null)
+  const [dedupeLogError, setDedupeLogError] = useState(null)
+  const [dedupeLogOffset, setDedupeLogOffset] = useState(0)
   const logLimit = 50
 
   const loadDestinations = useCallback(async () => {
@@ -75,23 +65,54 @@ export default function WebhooksPage({ toast }) {
     }
   }, [])
 
+  const loadHealth = useCallback(async () => {
+    try {
+      const { data } = await adminApi.getJson('/webhooks/health')
+      setHealth(data.destinations || [])
+      setHealthError(null)
+    } catch (e) {
+      setHealthError(e)
+      setHealth(null)
+    }
+  }, [])
+
   useEffect(() => {
     loadDestinations()
+    loadHealth()
     adminApi.get('/config').then(r => r.json()).then(c => {
       setEnvStack((c?.app?.BRIEFR_STACK_TERMS || '').trim())
     }).catch(() => {})
     fetchUserStack().then(d => setUserStack(d?.stack_terms || '')).catch(() => {})
-  }, [loadDestinations])
+  }, [loadDestinations, loadHealth])
 
-  async function loadLog(offset = 0) {
+  const loadDeliveryLog = useCallback(async (offset = 0, destinationId = deliveryLogFilter) => {
+    try {
+      const params = new URLSearchParams({ limit: String(logLimit), offset: String(offset) })
+      if (destinationId) params.set('destination_id', destinationId)
+      const res = await adminApi.get(`/webhooks/delivery-log?${params}`)
+      setDeliveryLog(await res.json())
+      setDeliveryLogOffset(offset)
+      setDeliveryLogError(null)
+    } catch (e) {
+      setDeliveryLogError(e)
+      setDeliveryLog(null)
+    }
+  }, [deliveryLogFilter])
+
+  const loadDedupeLog = useCallback(async (offset = 0) => {
     try {
       const res = await adminApi.get(`/webhooks/log?limit=${logLimit}&offset=${offset}`)
-      setLog(await res.json())
-      setLogOffset(offset)
-    } catch { /* ignore */ }
-  }
+      setDedupeLog(await res.json())
+      setDedupeLogOffset(offset)
+      setDedupeLogError(null)
+    } catch (e) {
+      setDedupeLogError(e)
+      setDedupeLog(null)
+    }
+  }, [])
 
-  useEffect(() => { loadLog() }, [])
+  useEffect(() => { loadDeliveryLog(0, deliveryLogFilter) }, [deliveryLogFilter, loadDeliveryLog])
+  useEffect(() => { loadDedupeLog(0) }, [loadDedupeLog])
 
   async function testDestination(destinationId) {
     setTesting(t => ({ ...t, [destinationId]: true }))
@@ -105,6 +126,12 @@ export default function WebhooksPage({ toast }) {
         data.ok ? `${destinationId} delivered${refNote}` : `${destinationId} failed: ${data.error}${refNote}`,
         data.ok,
       )
+      try {
+        await loadHealth()
+        await loadDeliveryLog(deliveryLogOffset, deliveryLogFilter)
+      } catch {
+        /* refresh failure must not mask test result toast */
+      }
     } catch (e) {
       toast(String(e.message), false)
     }
@@ -116,6 +143,7 @@ export default function WebhooksPage({ toast }) {
     try {
       await adminApi.patchJson(`/webhooks/destinations/${id}`, body)
       await loadDestinations()
+      await loadHealth()
       toast(label, true)
       return true
     } catch (e) {
@@ -164,6 +192,7 @@ export default function WebhooksPage({ toast }) {
       setCreateForm(EMPTY_CREATE)
       setShowCreate(false)
       await loadDestinations()
+      await loadHealth()
       toast('Destination created', true)
     } catch (e) {
       toast(`Create failed: ${e.message}`, false)
@@ -177,6 +206,7 @@ export default function WebhooksPage({ toast }) {
       await adminApi.delJson(`/webhooks/destinations/${id}`, { confirm_text: 'delete' })
       setDeleteTarget(null)
       await loadDestinations()
+      await loadHealth()
       toast('Destination deleted', true)
     } catch (e) {
       toast(`Delete failed: ${e.message}`, false)
@@ -202,6 +232,69 @@ export default function WebhooksPage({ toast }) {
 
   const stackTerms = envStack || userStack
 
+  const healthById = useMemo(() => {
+    const map = {}
+    for (const row of health || []) map[row.id] = row
+    return map
+  }, [health])
+
+  const deliveryColumns = useMemo(() => [
+    {
+      id: 'attempted_at',
+      label: 'Time',
+      defaultVisible: true,
+      render: (row) => <span className="mono">{fmtIso(row.attempted_at)}</span>,
+    },
+    {
+      id: 'destination_id',
+      label: 'Destination',
+      defaultVisible: true,
+      render: (row) => <span className="mono">{row.destination_id}</span>,
+    },
+    {
+      id: 'event_type',
+      label: 'Event',
+      defaultVisible: true,
+      render: (row) => <span className="badge badge-muted">{row.event_type}</span>,
+    },
+    {
+      id: 'status',
+      label: 'Status',
+      defaultVisible: true,
+      render: (row) => (
+        <span className={`badge ${row.status === 'ok' ? 'badge-ok' : 'badge-error'}`}>
+          {row.status}
+        </span>
+      ),
+    },
+    {
+      id: 'dedupe_key',
+      label: 'Dedupe key',
+      defaultVisible: true,
+      render: (row) => (
+        <span className="mono" style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>
+          {row.dedupe_key || '—'}
+        </span>
+      ),
+    },
+    {
+      id: 'error',
+      label: 'Error',
+      defaultVisible: true,
+      render: (row) => (
+        <span style={{ fontSize: '0.7rem', color: row.error ? 'var(--amber)' : 'var(--text3)' }}>
+          {row.error || '—'}
+        </span>
+      ),
+    },
+  ], [])
+
+  const destinationFilterOptions = useMemo(() => {
+    const ids = new Set((destinations || []).map(d => d.id))
+    for (const row of health || []) ids.add(row.id)
+    return Array.from(ids).sort()
+  }, [destinations, health])
+
   return (
     <div>
       <h1 className="admin-page-title">
@@ -220,7 +313,7 @@ export default function WebhooksPage({ toast }) {
         >
           {showCreate ? 'Cancel' : 'Add destination'}
         </button>
-        <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.8125rem' }} onClick={loadDestinations}>
+        <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.8125rem' }} onClick={() => { loadDestinations(); loadHealth() }}>
           Refresh
         </button>
       </div>
@@ -309,138 +402,78 @@ export default function WebhooksPage({ toast }) {
         </div>
       )}
 
-      <AsyncSection data={destinations} error={loadError} onRetry={loadDestinations} emptyMessage="No webhook destinations">
+      <AsyncSection data={destinations} error={loadError} onRetry={() => { loadDestinations(); loadHealth() }} emptyMessage="No webhook destinations">
         {(rows) => (
           <div className="admin-card">
-            <div className="admin-card-title">Destinations ({rows.length})</div>
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>KIND</th>
-                  <th>SOURCE</th>
-                  <th>ENABLED</th>
-                  <th>CONFIG</th>
-                  <th>EVENTS</th>
-                  <th>TEST</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(dest => (
-                  <Fragment key={dest.id}>
-                    <tr>
-                      <td>
-                        <div style={{ fontWeight: 600 }}>{dest.label || dest.id}</div>
-                        <div className="mono" style={{ fontSize: '0.65rem', color: 'var(--text3)' }}>{dest.id}</div>
-                      </td>
-                      <td style={{ textTransform: 'capitalize' }}>{dest.kind}</td>
-                      <td>{sourceBadge(dest.source)}</td>
-                      <td>
-                        <ToggleSwitch
-                          on={!!dest.enabled}
-                          disabled={!!saving[dest.id]}
-                          onChange={v => toggleEnabled(dest, v)}
-                        />
-                      </td>
-                      <td className="mono" style={{ fontSize: '0.65rem', maxWidth: '14rem' }} title={configSummary(dest)}>
-                        {configSummary(dest)}
-                      </td>
-                      <td style={{ fontSize: '0.7rem' }}>
-                        {dest.event_types?.length || 0} subscribed
-                        <button
-                          className="admin-btn admin-btn-ghost"
-                          style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', marginLeft: '0.35rem' }}
-                          onClick={() => openEventEditor(dest)}
-                        >
-                          Edit
-                        </button>
-                      </td>
-                      <td>
-                        {results[dest.id] && (
-                          <span className={`badge ${results[dest.id].ok ? 'badge-ok' : 'badge-error'}`} style={{ fontSize: '0.6rem', marginRight: '0.35rem' }}>
-                            {results[dest.id].ok ? 'ok' : 'fail'}
-                          </span>
-                        )}
-                        <button
-                          className="admin-btn admin-btn-ghost"
-                          style={{ fontSize: '0.75rem', padding: '0.15rem 0.45rem' }}
-                          onClick={() => testDestination(dest.id)}
-                          disabled={testing[dest.id]}
-                        >
-                          {testing[dest.id] ? '…' : 'Test'}
-                        </button>
-                      </td>
-                      <td>
-                        {dest.source === 'db' && (
-                          <button
-                            className="admin-btn admin-btn-ghost"
-                            style={{ fontSize: '0.7rem', color: 'var(--red)' }}
-                            onClick={() => setDeleteTarget(dest.id)}
-                          >
-                            Delete
-                          </button>
-                        )}
-                        {dest.source === 'db' && (
-                          <button
-                            className="admin-btn admin-btn-ghost"
-                            style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', marginLeft: '0.25rem' }}
-                            onClick={() => openConfigEditor(dest)}
-                          >
-                            Config
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                    {expanded[dest.id] && eventDraft[dest.id] && (
-                      <tr key={`${dest.id}-events`}>
-                        <td colSpan={8} style={{ background: 'var(--surface2)' }}>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 1rem', padding: '0.5rem 0' }}>
-                            {EVENT_OPTIONS.map(opt => (
-                              <label key={opt.id} style={{ fontSize: '0.75rem', display: 'flex', gap: '0.35rem' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={eventDraft[dest.id].includes(opt.id)}
-                                  onChange={e => {
-                                    setEventDraft(d => ({
-                                      ...d,
-                                      [dest.id]: e.target.checked
-                                        ? [...d[dest.id], opt.id]
-                                        : d[dest.id].filter(x => x !== opt.id),
-                                    }))
-                                  }}
-                                />
-                                {opt.label}
-                              </label>
-                            ))}
-                          </div>
-                          <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.75rem', marginTop: '0.35rem' }} disabled={saving[dest.id]} onClick={() => saveEventTypes(dest)}>
-                            Save events
-                          </button>
-                        </td>
-                      </tr>
-                    )}
-                    {expanded[`cfg-${dest.id}`] && configDraft[dest.id] && dest.source === 'db' && (
-                      <tr key={`${dest.id}-cfg`}>
-                        <td colSpan={8} style={{ background: 'var(--surface2)' }}>
-                          {dest.kind === 'telegram' ? (
-                            <div className="admin-filter-bar" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
-                              <input className="admin-input" type="password" placeholder="New bot token" value={configDraft[dest.id].token} onChange={e => setConfigDraft(d => ({ ...d, [dest.id]: { ...d[dest.id], token: e.target.value } }))} />
-                              <input className="admin-input" placeholder="Chat ID" value={configDraft[dest.id].chat_id} onChange={e => setConfigDraft(d => ({ ...d, [dest.id]: { ...d[dest.id], chat_id: e.target.value } }))} />
-                            </div>
-                          ) : (
-                            <input className="admin-input" style={{ width: '100%', maxWidth: '32rem' }} type="password" placeholder="New HTTPS webhook URL" value={configDraft[dest.id].url} onChange={e => setConfigDraft(d => ({ ...d, [dest.id]: { ...d[dest.id], url: e.target.value } }))} />
-                          )}
-                          <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.75rem', marginTop: '0.35rem' }} disabled={saving[dest.id]} onClick={() => saveConfig(dest)}>
-                            Save config
-                          </button>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
+            <div className="admin-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              Destinations ({rows.length})
+              <HelpTip text="Delivery health is derived from webhook_delivery_log — last success, last failure, and 24h attempt counts. Test send writes a health event immediately." />
+            </div>
+            {healthError && (
+              <p style={{ fontSize: '0.75rem', color: 'var(--amber)', margin: '0 0 0.65rem' }}>
+                Health summary unavailable: {healthError.message || String(healthError)}
+              </p>
+            )}
+            <div className="webhook-dest-grid">
+              {rows.map(dest => (
+                <div key={dest.id}>
+                  <WebhookDestinationCard
+                    dest={dest}
+                    health={healthById[dest.id]}
+                    testResult={results[dest.id]}
+                    testing={!!testing[dest.id]}
+                    saving={!!saving[dest.id]}
+                    onToggleEnabled={(v) => toggleEnabled(dest, v)}
+                    onTest={() => testDestination(dest.id)}
+                    onEditEvents={() => openEventEditor(dest)}
+                    onEditConfig={() => openConfigEditor(dest)}
+                    onDelete={() => setDeleteTarget(dest.id)}
+                  />
+                  {expanded[dest.id] && eventDraft[dest.id] && (
+                    <div className="webhook-dest-expand">
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text3)', marginBottom: '0.35rem' }}>Subscribed events</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 1rem' }}>
+                        {EVENT_OPTIONS.map(opt => (
+                          <label key={opt.id} style={{ fontSize: '0.75rem', display: 'flex', gap: '0.35rem' }}>
+                            <input
+                              type="checkbox"
+                              checked={eventDraft[dest.id].includes(opt.id)}
+                              onChange={e => {
+                                setEventDraft(d => ({
+                                  ...d,
+                                  [dest.id]: e.target.checked
+                                    ? [...d[dest.id], opt.id]
+                                    : d[dest.id].filter(x => x !== opt.id),
+                                }))
+                              }}
+                            />
+                            {opt.label}
+                          </label>
+                        ))}
+                      </div>
+                      <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.75rem', marginTop: '0.5rem' }} disabled={saving[dest.id]} onClick={() => saveEventTypes(dest)}>
+                        Save events
+                      </button>
+                    </div>
+                  )}
+                  {expanded[`cfg-${dest.id}`] && configDraft[dest.id] && dest.source === 'db' && (
+                    <div className="webhook-dest-expand">
+                      {dest.kind === 'telegram' ? (
+                        <div className="admin-filter-bar" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <input className="admin-input" type="password" placeholder="New bot token" value={configDraft[dest.id].token} onChange={e => setConfigDraft(d => ({ ...d, [dest.id]: { ...d[dest.id], token: e.target.value } }))} />
+                          <input className="admin-input" placeholder="Chat ID" value={configDraft[dest.id].chat_id} onChange={e => setConfigDraft(d => ({ ...d, [dest.id]: { ...d[dest.id], chat_id: e.target.value } }))} />
+                        </div>
+                      ) : (
+                        <input className="admin-input" style={{ width: '100%' }} type="password" placeholder="New HTTPS webhook URL" value={configDraft[dest.id].url} onChange={e => setConfigDraft(d => ({ ...d, [dest.id]: { ...d[dest.id], url: e.target.value } }))} />
+                      )}
+                      <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.75rem', marginTop: '0.5rem' }} disabled={saving[dest.id]} onClick={() => saveConfig(dest)}>
+                        Save config
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </AsyncSection>
@@ -466,31 +499,90 @@ export default function WebhooksPage({ toast }) {
       </div>
 
       <div className="admin-card">
+        <div className="admin-card-title">Delivery log</div>
+        <div className="webhook-delivery-toolbar">
+          <label style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>
+            Destination
+            <select
+              className="admin-select"
+              style={{ marginLeft: '0.35rem' }}
+              value={deliveryLogFilter}
+              onChange={(e) => setDeliveryLogFilter(e.target.value)}
+            >
+              <option value="">All destinations</option>
+              {destinationFilterOptions.map((id) => (
+                <option key={id} value={id}>{id}</option>
+              ))}
+            </select>
+          </label>
+          <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={() => loadDeliveryLog(deliveryLogOffset, deliveryLogFilter)}>
+            Refresh
+          </button>
+        </div>
+        <AsyncSection
+          data={deliveryLogError ? null : (deliveryLog?.rows ?? null)}
+          error={deliveryLogError}
+          loading={deliveryLog === null && !deliveryLogError}
+          onRetry={() => loadDeliveryLog(deliveryLogOffset, deliveryLogFilter)}
+          emptyMessage="No delivery attempts logged yet"
+        >
+          {(deliveryRows) => (
+            <AdminDataGrid
+              gridId="webhook-delivery-log"
+              columns={deliveryColumns}
+              rows={deliveryRows}
+              rowKey={(row) => row.id}
+              emptyMessage="No delivery rows"
+            />
+          )}
+        </AsyncSection>
+        {deliveryLog && (
+          <div className="admin-pagination">
+            <button className="admin-btn admin-btn-ghost" disabled={deliveryLogOffset === 0} onClick={() => loadDeliveryLog(Math.max(0, deliveryLogOffset - logLimit), deliveryLogFilter)}>← Prev</button>
+            <span style={{ color: 'var(--text3)', fontSize: '0.8125rem' }}>
+              {deliveryLog.total === 0 ? '0 rows' : `${deliveryLogOffset + 1}–${Math.min(deliveryLogOffset + logLimit, deliveryLog.total)} of ${deliveryLog.total}`}
+            </span>
+            <button className="admin-btn admin-btn-ghost" disabled={deliveryLogOffset + logLimit >= deliveryLog.total} onClick={() => loadDeliveryLog(deliveryLogOffset + logLimit, deliveryLogFilter)}>Next →</button>
+          </div>
+        )}
+      </div>
+
+      <div className="admin-card">
         <div className="admin-card-title">Dedupe log (legacy)</div>
         <div className="admin-filter-bar">
-          <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={() => loadLog(0)}>Refresh</button>
+          <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={() => loadDedupeLog(dedupeLogOffset)}>
+            Refresh dedupe
+          </button>
         </div>
-        <table className="admin-table">
-          <thead><tr><th>EVENT TYPE</th><th>TARGET</th><th>ALERTED AT</th></tr></thead>
-          <tbody>
-            {log === null && <tr><td colSpan={3} className="admin-empty">Loading…</td></tr>}
-            {log?.rows?.length === 0 && <tr><td colSpan={3} className="admin-empty">No webhook alerts logged yet</td></tr>}
-            {log?.rows?.map((r, i) => (
-              <tr key={i}>
-                <td><span className="badge badge-muted">{r.alert_type}</span></td>
-                <td className="mono" style={{ fontSize: '0.75rem' }}>{r.target}</td>
-                <td style={{ fontSize: '0.75rem' }}>{fmtIso(r.alerted_at)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {log && (
+        <AsyncSection
+          data={dedupeLogError ? null : (dedupeLog?.rows ?? null)}
+          error={dedupeLogError}
+          loading={dedupeLog === null && !dedupeLogError}
+          onRetry={() => loadDedupeLog(dedupeLogOffset)}
+          emptyMessage="No webhook alerts logged yet"
+        >
+          {(rows) => (
+            <table className="admin-table">
+              <thead><tr><th>EVENT TYPE</th><th>TARGET</th><th>ALERTED AT</th></tr></thead>
+              <tbody>
+                {rows.map((r, i) => (
+                  <tr key={i}>
+                    <td><span className="badge badge-muted">{r.alert_type}</span></td>
+                    <td className="mono" style={{ fontSize: '0.75rem' }}>{r.target}</td>
+                    <td style={{ fontSize: '0.75rem' }}>{fmtIso(r.alerted_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </AsyncSection>
+        {dedupeLog && (
           <div className="admin-pagination">
-            <button className="admin-btn admin-btn-ghost" disabled={logOffset === 0} onClick={() => loadLog(Math.max(0, logOffset - logLimit))}>← Prev</button>
+            <button className="admin-btn admin-btn-ghost" disabled={dedupeLogOffset === 0} onClick={() => loadDedupeLog(Math.max(0, dedupeLogOffset - logLimit))}>← Prev</button>
             <span style={{ color: 'var(--text3)', fontSize: '0.8125rem' }}>
-              {logOffset + 1}–{Math.min(logOffset + logLimit, log.total)} of {log.total}
+              {dedupeLog.total === 0 ? '0 rows' : `${dedupeLogOffset + 1}–${Math.min(dedupeLogOffset + logLimit, dedupeLog.total)} of ${dedupeLog.total}`}
             </span>
-            <button className="admin-btn admin-btn-ghost" disabled={logOffset + logLimit >= log.total} onClick={() => loadLog(logOffset + logLimit)}>Next →</button>
+            <button className="admin-btn admin-btn-ghost" disabled={dedupeLogOffset + logLimit >= dedupeLog.total} onClick={() => loadDedupeLog(dedupeLogOffset + logLimit)}>Next →</button>
           </div>
         )}
       </div>

@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import db.webhooks as webhooks_mod
 from db.config import is_postgres
 from db.webhooks import (
+    build_webhook_destination_health,
     clear_webhook_alert,
     list_webhook_delivery_log,
     record_webhook_alert,
@@ -100,6 +101,50 @@ def test_webhook_delivery_log_list(tmp_path, monkeypatch):
             assert filtered_total == 1
             assert filtered[0]["event_type"] == "kev_alert"
             assert filtered[0]["dedupe_key"] == "CVE-2024-1"
+        finally:
+            await db.close()
+
+    run_db_test(_run())
+
+
+def test_webhook_destination_health_summary(tmp_path, monkeypatch):
+    if not is_postgres():
+        db_path = tmp_path / "webhooks_health.db"
+        monkeypatch.setenv("DB_PATH", str(db_path))
+        monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    async def _run():
+        await init_db()
+        db = await get_db()
+        try:
+            dest_id = "env:discord_health_test"
+            await record_webhook_delivery(
+                db,
+                destination_id=dest_id,
+                event_type="health",
+                dedupe_key=None,
+                status="ok",
+                error=None,
+            )
+            await record_webhook_delivery(
+                db,
+                destination_id=dest_id,
+                event_type="kev_alert",
+                dedupe_key="CVE-2024-99",
+                status="failed",
+                error="HTTP 503 gateway timeout",
+            )
+            await db.commit()
+
+            rows = await build_webhook_destination_health(db)
+            row = next(r for r in rows if r["destination_id"] == dest_id)
+            assert row["last_status"] == "failed"
+            assert row["last_event_type"] == "kev_alert"
+            assert row["last_success_at"] is not None
+            assert row["last_failure_at"] is not None
+            assert row["failed_24h"] >= 1
+            assert row["ok_24h"] >= 1
+            assert row["last_error"] == "HTTP 503 gateway timeout"
         finally:
             await db.close()
 

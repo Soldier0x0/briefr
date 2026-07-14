@@ -155,7 +155,7 @@ describe('apiQueuePresentation', () => {
       ],
     })
     assert.match(summary.ariaLabel, /1 API request active/)
-    assert.match(summary.ariaLabel, /waiting/)
+    assert.match(summary.ariaLabel, /1 API request queued/)
     assert.equal(summary.count, 2)
     assert.equal(summary.tone, 'pending')
   })
