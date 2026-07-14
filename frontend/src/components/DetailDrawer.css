@@ -599,6 +599,13 @@
   margin-bottom: 8px;
 }
 
+/* QA-U2: one deliberate accent anchor per drawer tab — signature gold without decoration spread */
+.drawer-tab-anchor {
+  color: var(--accent);
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;
+}
+
 .drawer-human-text {
   font-size: var(--type-body);
   color: var(--text2);

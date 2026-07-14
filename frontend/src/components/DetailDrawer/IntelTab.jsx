@@ -317,7 +317,7 @@ function CorrelationFindings({
   if (loading) {
     return (
       <section className="drawer-section" aria-labelledby="corr-heading">
-        <h3 id="corr-heading" className="drawer-human-label mono">
+        <h3 id="corr-heading" className="drawer-human-label drawer-tab-anchor mono">
           // CORRELATION FINDINGS
         </h3>
         <p className="drawer-intel-empty mono">// Loading correlation analysis…</p>
@@ -335,7 +335,7 @@ function CorrelationFindings({
 
   return (
     <section className="drawer-section" aria-labelledby="corr-heading">
-      <h3 id="corr-heading" className="drawer-human-label mono">
+      <h3 id="corr-heading" className="drawer-human-label drawer-tab-anchor mono">
         // CORRELATION FINDINGS
       </h3>
 

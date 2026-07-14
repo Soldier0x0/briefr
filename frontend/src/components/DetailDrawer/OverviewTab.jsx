@@ -561,7 +561,7 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, momentumData }) 
       <section className="drawer-section drawer-risk-hero-section" aria-labelledby="op-priority-heading">
         <h3
           id="op-priority-heading"
-          className="drawer-risk-section-label mono"
+          className="drawer-risk-section-label drawer-tab-anchor mono"
           title="BRIEFR's rule-based P1–P4 band from threat signals and environment relevance. Separate from CVSS."
         >
           // OPERATIONAL PRIORITY
@@ -586,7 +586,7 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, momentumData }) 
     <section className="drawer-section drawer-risk-hero-section" aria-labelledby="op-priority-heading">
       <h3
         id="op-priority-heading"
-        className="drawer-risk-section-label mono"
+        className="drawer-risk-section-label drawer-tab-anchor mono"
         title="BRIEFR's rule-based P1–P4 band from threat signals and environment relevance. Separate from CVSS."
       >
         // OPERATIONAL PRIORITY

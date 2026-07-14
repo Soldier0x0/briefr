@@ -96,7 +96,7 @@ before PR-9.
 |----|-------|--------|
 | **QA-F1** | DetailDrawer DETECT tab: parallelize external rule-source calls (GitHub Search blocks the whole response 15-30s, unauthenticated in dev); fix frontend/backend timeout mismatch causing a false "request timed out" on every uncached CVE | ✅ #484 — shipped as skip-when-unauthenticated, not parallelization (see PR body: parallelizing would have reintroduced a pool-poisoning regression) |
 | **QA-U1** | DetailDrawer header: real 193px clip (not wrap) at 375px width — action button row needs a responsive collapse/overflow menu. Folds into UX-C1/C2 scope | ✅ #520 |
-| **QA-U2** | Accent-color design pass for drawer content — token renders correctly but only 2-3 touches per tab, reads as "lost." Design judgment, not a coded fix | 📋 |
+| **QA-U2** | Accent-color design pass for drawer content — token renders correctly but only 2-3 touches per tab, reads as "lost." Design judgment, not a coded fix | ✅ (this PR) |
 | **QA-U3** | Global header: 29px real overflow at ~375px width (narrow-device edge case) | ✅ (this PR) |
 
 ### QA live audit round 2 (found 2026-07-12, `qa-live-audit-2026-07-12-part2.md`)
@@ -229,7 +229,7 @@ Flat backlog after major programs above — **no strict order**; pick from here 
 |--------|-----|
 | Codebase audit | — complete (PR-P3/P4/O1/O2/F1–F4 ✅) |
 | API key health tail | AKH-2 (remove dead `/api/usage`, HelpTip on Inbound limits) |
-| QA / UX | QA-U2 (design pass, deferred) |
+| QA / UX | QA-U2 (design pass, deferred) | ✅ (this PR) |
 | Durability | — (PR-R1/R2/R4 ✅; PR-R3 verified as IDEM-001 overlap in #449 scope — see §3) |
 | Ops / test infra | — (M-9 ✅, M-10 verified, PG-002/003 ✅) |
 | Resource benchmarking | — (RB-1/RB-2 complete) |

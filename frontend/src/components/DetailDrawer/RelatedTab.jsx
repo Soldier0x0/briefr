@@ -27,7 +27,7 @@ export default function TabRelated({ related, relatedMethod, loading, onSelectRe
 
   return (
     <section className="drawer-section" aria-labelledby="related-heading">
-      <h3 id="related-heading" className="drawer-human-label mono">
+      <h3 id="related-heading" className="drawer-human-label drawer-tab-anchor mono">
         {semantic ? 'SIMILAR DESCRIPTION' : 'SAME PRODUCT FAMILY'}
       </h3>
       <p className="drawer-related-lane-note mono">
