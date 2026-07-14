@@ -3005,3 +3005,52 @@
 .feed-health-table-wrap {
   margin-bottom: 1rem;
 }
+
+/* ── Resources page (RB-2) ─────────────────────────────────────────────── */
+.admin-resources-window-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.admin-resources-window-btn {
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: var(--type-micro);
+  letter-spacing: 0.08em;
+  color: var(--text2);
+  background: transparent;
+  border: 1px solid var(--border2);
+  cursor: pointer;
+}
+
+.admin-resources-window-btn-active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+}
+
+.admin-resources-summary-row {
+  margin-bottom: 0.75rem;
+}
+
+.admin-resources-summary-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text2);
+  margin-bottom: 0.5rem;
+}
+
+.admin-resources-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-resources-chart-card {
+  margin-bottom: 1rem;
+}

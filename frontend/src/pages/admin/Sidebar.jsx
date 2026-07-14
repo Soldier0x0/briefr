@@ -1,14 +1,14 @@
 import {
   Activity, Archive, HardDrive, Database, Bookmark, KeyRound, Clock, Webhook,
   ShieldAlert, HeartPulse, ScrollText, ClipboardList, Settings2, LogIn, Users,
-  Gauge, BellRing, ArrowRightLeft, Sparkles,
+  Gauge, BellRing, ArrowRightLeft, Sparkles, Cpu,
 } from 'lucide-react'
 import { NAV, ANALYST_NAV } from './constants.js'
 
 const ICONS = {
   Activity, Archive, HardDrive, Database, Bookmark, KeyRound, Clock, Webhook,
   ShieldAlert, HeartPulse, ScrollText, ClipboardList, Settings2, LogIn, Users,
-  Gauge, BellRing, Sparkles,
+  Gauge, BellRing, Sparkles, Cpu,
 }
 
 export default function Sidebar({ activePage, setPage, system, ingestErrorCount, mode, setMode }) {

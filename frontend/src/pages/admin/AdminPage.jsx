@@ -30,6 +30,7 @@ import DisplayPage from './DisplayPage.jsx'
 import ComingSoonPage from './ComingSoonPage.jsx'
 import SessionsPage from './SessionsPage.jsx'
 import RateLimitPage from './RateLimitPage.jsx'
+import ResourcesPage from './ResourcesPage.jsx'
 import AiOperationsPage from './AiOperationsPage.jsx'
 import UserMenu from '../../components/UserMenu.jsx'
 import { loadJobAcks, markAllJobErrorsRead, filterUnacknowledgedErrors } from './adminJobAck.js'
@@ -38,7 +39,7 @@ import '../AdminPage.css'
 
 const ANALYST_PAGE_IDS = new Set(ANALYST_NAV.flatMap(section => section.items.map(i => i.id)))
 const VALID_ADMIN_PAGES = new Set([
-  'overview', 'backups', 'storage', 'database', 'watchlist', 'apikeys', 'scheduler',
+  'overview', 'backups', 'storage', 'resources', 'database', 'watchlist', 'apikeys', 'scheduler',
   'webhooks', 'aiops', 'alerts', 'security', 'feedhealth', 'ingestlog', 'auditlog', 'display',
   'sessions', 'ratelimit',
 ])
@@ -211,6 +212,7 @@ function AdminPageBody({ toast }) {
     ),
     backups: <BackupsPage toast={toast} system={system} />,
     storage: <StoragePage toast={toast} />,
+    resources: <ResourcesPage />,
     database: <DatabasePage toast={toast} active={page === 'database'} />,
     watchlist: <WatchlistPage toast={toast} mode={mode} />,
     apikeys: <ApiKeysPage toast={toast} />,

@@ -474,7 +474,7 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 | Caching Strategy | PARTIAL | `feed_cache`/`ioc_cache` exist; add React Query + stats cache |
 | API Consistency | PARTIAL | v1.2 response envelope (`data` + `meta`) |
 | Config Management | PARTIAL | `settings.py`; centralize weights and TTLs |
-| Observability | PARTIAL | ✅ Shipped — JSON structured logs with `request_id` (`structured_logging.py`), `X-Request-ID` on every response, token-bucket rate limiting on `/api/ioc/lookup` + `/api/refresh*`; admin log viewer (`GET /api/admin/logs`, 500-line ring buffer) |
+| Observability | PARTIAL | ✅ Shipped — JSON structured logs with `request_id` (`structured_logging.py`), `X-Request-ID` on every response, token-bucket rate limiting on `/api/ioc/lookup` + `/api/refresh*`; admin log viewer (`GET /api/admin/logs`, 500-line ring buffer); **resource utilization** — `resource_metrics` table + `resource_metrics_sample` scheduler job (60s, `psutil` + `pg_stat_database`), admin **Resources** page (`GET /api/admin/resources`) |
 
 ---
 

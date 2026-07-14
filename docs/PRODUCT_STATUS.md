@@ -82,8 +82,8 @@
 | Track L Wave 4: monitor alerts, onboarding, doctor, operator settings (#366–#372) | RSS↔CVE linking |
 | K5 LLM pacing (#433), AI-3 quota snapshots (#432), embeddings auto-on-ingest (#438) | Codebase audit tail: PR-P3, PR-O1/O2, PR-F1–F4 |
 | Chart.js admin ops dashboard, logrotate deploy artifacts, F2 AGPL (#423) | QA/UX: QA-U1–U3, UX-J1, UX-L1; AKH-2 tail |
-| Architecture diagrams (phase A); session auth middleware (#441); M-5 backup owner + N-4 kiosk docs (#442) | Durability: PR-R1–R4; RB-1/RB-2; PG-002/003 |
-| UX-C1/C2 button standard (#474, #475) | |
+| Architecture diagrams (phase A); session auth middleware (#441); M-5 backup owner + N-4 kiosk docs (#442) | Durability: PR-R1–R4; PG-002/003 |
+| UX-C1/C2 button standard (#474, #475) | Resource benchmarking: RB-1 collector ✅; RB-2 admin Resources page ✅ |
 
 Details: [`ROADMAP.md`](planning/ROADMAP.md). Historical beta specs → `docs/archive/` (phase 2).
 

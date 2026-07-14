@@ -3,6 +3,7 @@ export const NAV = [
   { section: 'DATA', items: [
     { id: 'backups', label: 'Backups', icon: 'Archive' },
     { id: 'storage', label: 'Storage', icon: 'HardDrive' },
+    { id: 'resources', label: 'Resources', icon: 'Cpu' },
     { id: 'database', label: 'Database', icon: 'Database' },
     { id: 'watchlist', label: 'Watchlist & cache', icon: 'Bookmark' },
   ]},

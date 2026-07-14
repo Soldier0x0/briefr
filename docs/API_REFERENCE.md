@@ -1678,6 +1678,24 @@ Durable operator notification feed for the admin StatusBar panel (#439). Params:
 ### GET /api/admin/storage
 Returns disk partition info (`db_partition`, `backup_partition` with free/total/used bytes), DB file size, table row counts, per-table size estimates (`table_sizes`), growth estimate (`growth_estimate`), host disk I/O counters (`disk_io` when available), archive count.
 
+### GET /api/admin/resources
+Query `window` = `1d` | `3d` | `7d` | `30d` (default `1d`). Returns utilization telemetry from `resource_metrics` (RB-1 collector, 60s samples):
+
+```json
+{
+  "window": "7d",
+  "sample_count": 1200,
+  "postgres_backend": true,
+  "degraded": { "code": "ok|empty|sqlite|remote_pg", "message": "..." },
+  "series": [ { "ts": "...", "briefr_cpu_pct": 1.2, ... } ],
+  "summary": {
+    "briefr_cpu_pct": { "peak": 5.1, "peak_at": "...", "avg": 2.0, "low": 0.4 }
+  }
+}
+```
+
+`series` is downsampled server-side to ≤500 points (bucket-average). `summary` aggregates raw rows in the window (peaks are real peaks). On SQLite dev, `pg_*` SQL-derived fields are NULL and `degraded.code` is `sqlite`. When Postgres runs remotely/in a container, process metrics (`pg_cpu_pct`, etc.) may be NULL while SQL stats remain live (`degraded.code` = `remote_pg`).
+
 ### POST /api/admin/storage/purge
 Body `{target, confirm_text, days_back?}`. Targets: `ioc_cache` (confirm `"clear"`), `feed_cache` (confirm `"clear"`), `epss_history_old` (confirm `"prune"`), `change_history_old` (confirm `"prune"`), `rejected_cves` (confirm `"purge"`), `nvd_watermark` (confirm `"backfill"`), `epss_backfill_reset` (no confirm).
 Response: `{ok, rows_deleted, target}`.

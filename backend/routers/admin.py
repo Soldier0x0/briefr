@@ -928,6 +928,22 @@ async def export_db(request: Request, background_tasks: BackgroundTasks):
     )
 
 
+# ── Resource metrics (RB-2) ────────────────────────────────────────────────
+
+
+@router.get("/resources")
+async def get_resources(window: str = "1d"):
+    if window not in ("1d", "3d", "7d", "30d"):
+        raise HTTPException(400, "window must be 1d, 3d, 7d, or 30d")
+    from db.resource_metrics import fetch_resources_response
+
+    db = await get_db()
+    try:
+        return await fetch_resources_response(db, window)
+    finally:
+        await db.close()
+
+
 # ── Watchlist ──────────────────────────────────────────────────────────────
 
 
