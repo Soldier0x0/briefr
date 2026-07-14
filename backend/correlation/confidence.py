@@ -30,6 +30,9 @@ def confidence_for_ioc_edge(
     confirmations: dict[str, Any] | None = None,
     is_noise_ip: bool = False,
     degree: int = 0,
+    observed_at: Any = None,
+    ingested_at: Any = None,
+    now: Any = None,
 ) -> tuple[str, str | None, list[dict[str, Any]]]:
     """Return (confidence, why_not_higher, confidence_factors).
 
@@ -94,6 +97,27 @@ def confidence_for_ioc_edge(
             factors.append({"factor": "degree", "value": degree, "reason": why})
         level = downranked
 
+    from correlation.freshness import freshness_context, numeric_edge_level
+
+    fresh = freshness_context(
+        t,
+        observed_at=observed_at,
+        ingested_at=ingested_at,
+        now=now,
+    )
+    fresh_level = numeric_edge_level(
+        t, degree=degree, freshness=fresh["freshness_factor"]
+    )
+    if _level_index(fresh_level) < _level_index(level):
+        level = fresh_level
+        why = fresh["freshness_reason"]
+    factors.append({
+        "factor": "freshness",
+        "value": fresh["freshness_factor"],
+        "reason": fresh["freshness_reason"],
+        **({"freshness_fallback": True} if fresh["freshness_fallback"] else {}),
+    })
+
     return level, why, factors
 
 
@@ -114,6 +138,31 @@ def aggregate_infrastructure_confidence(
             "ioc_type": edge.get("ioc_type", ""),
             "value": edge.get("ioc_value", ""),
             **({"confirmation": edge["confirmation"]} if edge.get("confirmation") else {}),
+            **(
+                {"observed_at": edge["observed_at"]}
+                if edge.get("observed_at") is not None
+                else {}
+            ),
+            **(
+                {"ingested_at": edge["ingested_at"]}
+                if edge.get("ingested_at") is not None
+                else {}
+            ),
+            **(
+                {"freshness_factor": edge["freshness_factor"]}
+                if edge.get("freshness_factor") is not None
+                else {}
+            ),
+            **(
+                {"freshness_reason": edge["freshness_reason"]}
+                if edge.get("freshness_reason")
+                else {}
+            ),
+            **(
+                {"freshness_fallback": True}
+                if edge.get("freshness_fallback")
+                else {}
+            ),
         })
 
     why_parts = [

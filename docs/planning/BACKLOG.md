@@ -50,8 +50,8 @@ blocker.
 | PR-4 | Remove severity/size from confidence (1) | ✅ #488 |
 | PR-5 | Confidence factor vector in API + drawer (1) | ✅ #489 |
 | PR-6 | Capture `observed_at` on pulse IOCs (2) | ✅ #501 |
-| PR-7 | Lifecycle + momentum use observation time (2) | 📋 in PR |
-| PR-8 | Read-time freshness decay + UI staleness (2) | 📋 |
+| PR-7 | Lifecycle + momentum use observation time (2) | ✅ #506 |
+| PR-8 | Read-time freshness decay + UI staleness (2) | 📋 in PR |
 | PR-9 | Pulse families + campaign dedup + retraction (3) | 📋 |
 | PR-10 | ThreatFox corroboration on IOC edges (3) | 📋 |
 | PR-11 | Alias-aware attribution + conflict surfacing (4) | 📋 |

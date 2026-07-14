@@ -1548,6 +1548,18 @@
   background: transparent;
 }
 
+.corr-badge-stale {
+  opacity: 0.72;
+  border-style: dashed;
+}
+
+.corr-connection-timeline {
+  font-size: 0.625rem;
+  color: var(--text2);
+  letter-spacing: 0.04em;
+  margin: 0 0 6px;
+}
+
 .corr-lane-tag {
   font-size: 0.625rem;
   letter-spacing: 0.06em;

@@ -94,6 +94,68 @@ export const SUPPRESSION_REASONS = [
 ]
 
 /**
+ * CORR-PR-8: evidence freshness metadata for drawer staleness tint + timeline.
+ * @param {object | null | undefined} ev
+ * @returns {{ stale: boolean, timeline: string | null, title: string | null }}
+ */
+export function evidenceFreshnessMeta(ev) {
+  if (!ev || typeof ev !== 'object') {
+    return { stale: false, timeline: null, title: null }
+  }
+  const factor = ev.freshness_factor
+  const stale = typeof factor === 'number' && factor < 0.5 && !ev.freshness_fallback
+  const parts = []
+  if (ev.observed_at) {
+    parts.push(`Observed ${String(ev.observed_at).slice(0, 10)}`)
+  }
+  if (ev.ingested_at) {
+    parts.push(`Ingested ${String(ev.ingested_at).slice(0, 10)}`)
+  }
+  const timeline = parts.length ? parts.join(' · ') : null
+  const title = ev.freshness_reason || (
+    ev.freshness_fallback
+      ? 'Observation time unknown — staleness decay was not applied'
+      : stale
+        ? 'Shared indicator evidence is stale relative to its type half-life'
+        : null
+  )
+  return { stale, timeline, title }
+}
+
+/**
+ * @param {object[]} evidence
+ * @returns {boolean}
+ */
+export function correlationEvidenceIsStale(evidence = []) {
+  return evidence.some(ev => evidenceFreshnessMeta(ev).stale)
+}
+
+/**
+ * @param {object} item — infrastructure or campaign correlation row
+ * @returns {boolean}
+ */
+export function correlationItemIsStale(item) {
+  const evidence = Array.isArray(item?.evidence) ? item.evidence : []
+  return correlationEvidenceIsStale(evidence)
+}
+
+/**
+ * @param {string} confidence
+ * @param {{ stale?: boolean }} [opts]
+ * @returns {string}
+ */
+export function confidenceBadgeClass(confidence, opts = {}) {
+  const level = String(confidence || 'low').toLowerCase()
+  const base =
+    level === 'high'
+      ? 'corr-badge-high'
+      : level === 'medium'
+        ? 'corr-badge-medium'
+        : 'corr-badge-low'
+  return opts.stale ? `${base} corr-badge-stale` : base
+}
+
+/**
  * @param {string} confidence
  * @returns {string}
  */
@@ -145,6 +207,13 @@ export function formatEvidenceItem(ev) {
     const iocType = String(ev.ioc_type || '').toUpperCase()
     const typeLabel = IOC_TYPE_LABELS[iocType] || iocType || 'Observable'
     const lines = [`Type: ${typeLabel}`]
+    const freshness = evidenceFreshnessMeta(ev)
+    if (freshness.timeline) {
+      lines.push(freshness.timeline)
+    }
+    if (ev.freshness_reason) {
+      lines.push(ev.freshness_reason)
+    }
     if (ev.confirmation) {
       const confLabel = CONFIRMATION_LABELS[ev.confirmation] || ev.confirmation
       lines.push(`Confirmation: ${confLabel}`)
@@ -154,6 +223,9 @@ export function formatEvidenceItem(ev) {
       value: ev.value || '—',
       lines,
       source: 'AlienVault OTX',
+      stale: freshness.stale,
+      timeline: freshness.timeline,
+      freshnessTitle: freshness.title,
     }
   }
 
@@ -199,6 +271,8 @@ export function buildConnectionPanel(item, cveIdA) {
     limitedConfidence: limited,
     relatedCve: item?.cve_id_b,
     confidenceFactors: confidenceFactorReasons(item?.confidence_factors),
+    stale: correlationItemIsStale(item),
+    timeline: primary?.timeline || null,
   }
 }
 

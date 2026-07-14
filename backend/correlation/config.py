@@ -7,6 +7,13 @@ import os
 ENGINE_VERSION = "2.0"
 CAMPAIGN_ALGORITHM_VERSION = "2.0.0-phase2"
 
+_DEFAULT_FRESHNESS_HALF_LIFE_DAYS = {
+    "IP": 30,
+    "URL": 60,
+    "DOMAIN": 120,
+    "HASH": 365,
+}
+
 
 def get_otx_ioc_sync_max_per_run() -> int:
     return max(1, int(os.environ.get("OTX_IOC_SYNC_MAX_PER_RUN", "500")))
@@ -38,3 +45,19 @@ def get_max_campaign_members() -> int:
 
 def get_mitre_min_overlap() -> float:
     return max(0.0, float(os.environ.get("CORRELATION_MITRE_MIN_OVERLAP", "0.25")))
+
+
+def get_freshness_half_life_days(ioc_type: str) -> int:
+    """Per-type observation half-life in days (CORR-PR-8, spec §7)."""
+    key = (ioc_type or "").upper()
+    if key in ("IPV4", "IPV6"):
+        key = "IP"
+    env_key = f"CORRELATION_FRESHNESS_HALF_LIFE_{key}"
+    raw = os.environ.get(env_key, "").strip()
+    if raw:
+        return max(1, int(raw))
+    return _DEFAULT_FRESHNESS_HALF_LIFE_DAYS.get(key, 120)
+
+
+def get_freshness_floor() -> float:
+    return max(0.0, min(1.0, float(os.environ.get("CORRELATION_FRESHNESS_FLOOR", "0.25"))))

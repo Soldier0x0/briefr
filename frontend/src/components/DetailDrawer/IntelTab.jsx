@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react'
 import { displayText } from '../../utils/displayText.js'
 import {
   buildConnectionPanel,
+  confidenceBadgeClass,
   confidenceFactorReasons,
+  correlationItemIsStale,
   formatEvidenceItem,
   linkStrengthLabel,
 } from '../../utils/correlationPresentation.js'
@@ -33,16 +35,13 @@ function exploitDisplayTitle(exp) {
 
 // ── Correlation Findings (Intel tab) ─────────────────────
 
-function ConfidenceBadge({ confidence }) {
+function ConfidenceBadge({ confidence, stale = false }) {
   const level = (confidence || 'low').toLowerCase()
-  const cls =
-    level === 'high'
-      ? 'corr-badge-high'
-      : level === 'medium'
-        ? 'corr-badge-medium'
-        : 'corr-badge-low'
+  const cls = confidenceBadgeClass(confidence, { stale })
   const title =
-    level === 'high'
+    stale
+      ? 'Stale shared-indicator evidence — observation age exceeds type half-life'
+      : level === 'high'
       ? 'Strong OTX or multi-IOC evidence'
       : level === 'medium'
         ? 'Moderate community or shared-pulse link'
@@ -68,6 +67,11 @@ function ConnectionEvidence({ item, cveId, onSelectCve }) {
           <p className="corr-connection-heading mono">{panel.title}</p>
           {panel.primary && (
             <>
+              {panel.timeline && (
+                <p className="corr-connection-timeline mono" title="Observation timeline for shared evidence">
+                  {panel.timeline}
+                </p>
+              )}
               <p className="corr-connection-meta">{panel.primary.heading}</p>
               <p className="corr-connection-value mono">{panel.primary.value}</p>
               {panel.primary.lines.map(line => (
@@ -241,7 +245,7 @@ function InfrastructureList({ items, onSelectCve, onRequestSuppress, cveId }) {
               </button>
             </span>
             <span className="corr-infra-conf corr-infra-col-strength" role="cell">
-              <ConfidenceBadge confidence={item.confidence} />
+              <ConfidenceBadge confidence={item.confidence} stale={correlationItemIsStale(item)} />
             </span>
             <span className="corr-infra-ips mono corr-infra-col-observables" role="cell">
               {formatSharedObservablesSummary(item)}

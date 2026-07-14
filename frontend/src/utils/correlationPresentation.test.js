@@ -3,7 +3,9 @@ import assert from 'node:assert/strict'
 
 import {
   buildConnectionPanel,
+  confidenceBadgeClass,
   confidenceFactorReasons,
+  evidenceFreshnessMeta,
   explainLimitedConfidence,
   formatEvidenceItem,
   linkStrengthLabel,
@@ -56,6 +58,32 @@ describe('correlationPresentation', () => {
   it('confidenceFactorReasons handles missing/non-array input', () => {
     assert.deepEqual(confidenceFactorReasons(undefined), [])
     assert.deepEqual(confidenceFactorReasons(null), [])
+  })
+
+  it('formatEvidenceItem includes observation timeline when present', () => {
+    const item = formatEvidenceItem({
+      type: 'shared_indicator',
+      ioc_type: 'DOMAIN',
+      value: 'evil.example',
+      observed_at: '2024-01-15T00:00:00Z',
+      ingested_at: '2026-07-01T00:00:00Z',
+      freshness_factor: 0.3,
+      freshness_reason: 'Indicator observed 200d ago (DOMAIN half-life 120d)',
+    })
+    assert.match(item.lines.join(' '), /Observed 2024-01-15/)
+    assert.equal(item.stale, true)
+  })
+
+  it('evidenceFreshnessMeta skips stale tint when fallback flag set', () => {
+    const meta = evidenceFreshnessMeta({
+      freshness_factor: 0.25,
+      freshness_fallback: true,
+    })
+    assert.equal(meta.stale, false)
+  })
+
+  it('confidenceBadgeClass adds stale modifier', () => {
+    assert.match(confidenceBadgeClass('medium', { stale: true }), /corr-badge-stale/)
   })
 
   it('buildConnectionPanel surfaces confidenceFactors from backend factor vector', () => {
