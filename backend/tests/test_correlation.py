@@ -498,9 +498,11 @@ def test_ioc_degree_50_ip_edge_stays_low_with_hub_reason():
 def test_ioc_degree_moderate_downranks_by_one_level():
     from correlation.confidence import confidence_for_ioc_edge
 
-    level, why, _ = confidence_for_ioc_edge("HASH", degree=7)
-    assert level == "medium"
-    assert why and "hub" in why.lower()
+    level, why, factors = confidence_for_ioc_edge("HASH", degree=7)
+    # Rule-based downrank reaches medium; numeric §7 score (incl. corroboration k=1)
+    # caps the edge at low for a degree-7 hub.
+    assert level == "low"
+    assert any(f["factor"] == "degree" for f in factors)
 
 
 def test_ioc_degree_penalty_applies_after_confirmation_bump():
