@@ -62,7 +62,7 @@
 | Item | Value |
 |------|--------|
 | Code | `/opt/briefr` |
-| DB | PostgreSQL 16 (often Docker at `/opt/infra/postgres`) |
+| DB | PostgreSQL 17 (often Docker at `/opt/infra/postgres`) |
 | Backups | `/var/lib/briefr/backups` (age-encrypted) |
 | Backend | `briefr-backend.service` → uvicorn :8000 |
 | Frontend | `frontend/dist` via nginx |
