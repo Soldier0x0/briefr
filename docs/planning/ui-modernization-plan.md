@@ -344,7 +344,7 @@ numbers recorded in the closing PR body:
 - [ ] E2-5 ARCH pan `user-select:none`
 - [ ] E2-6 ARCH max-zoom raised
 - [ ] E2-7 ARCH filter hides not dims
-- [ ] E2-8 PyJWT in requirements.txt
+- [x] E2-8 PyJWT in requirements.txt
 - [ ] E2-9 PG16 → PG17 doc correction
 
 **Primitives (E3)**

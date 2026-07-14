@@ -192,6 +192,14 @@ terms:
   origin: generated
   term: pydantic-settings
   source: backend/requirements.txt
+- id: self-stack-pyjwt
+  title: PyJWT
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: PyJWT
+  source: backend/requirements.txt
 - id: self-stack-pyrage
   title: pyrage
   summary: BRIEFR dependency term derived from backend/requirements.txt.
