@@ -20,6 +20,22 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — PM Phase 0 complete (P0 bugs PM-0a…e)
+
+**What:** Shipped all five Phase 0 tickets from the post–UI E2E UX audit:
+
+| Ticket | PR | Fix |
+|--------|-----|-----|
+| PM-0a | #604 | EPSS movers severity join (`get_recent_cve_changes` → `severity`) |
+| PM-0b | #605 | Drawer score tooltips `hover`-only (no stick on open) |
+| PM-0c | #606 | Threat breakdown grid — label column widened |
+| PM-0d | #607 | Admin `/api/admin/system` 500 — webhook `attempted_at::timestamptz` |
+| PM-0e | #608 | Alembic 026 — `cve_change_history.detected_at` → `timestamptz` |
+
+**Next:** **PM-1a** — Recharts tooltip + bar hover contrast. Phase 1 (PM-1a…d).
+
+---
+
 ## 2026-07-15 — Post–UI E2E UX kickoff (plan + audit + orange accent)
 
 **What:** Consolidated **#601 + #602 + #603** into one merge to `main`:
