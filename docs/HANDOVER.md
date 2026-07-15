@@ -24,6 +24,8 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 **What:** Shipped `Select`, `Tabs`, and `DropdownMenu` primitives (`@radix-ui/react-select`, `tabs`, `dropdown-menu`). Migrated all native `<select>` elements app-wide to `Select` (grep gate `nativeSelectGate.test.js`). Proof-of-fit: `UserMenu` → `DropdownMenu`; Forge nav → `Tabs`.
 
+**PR:** #595 (merged)
+
 **Next:** E3-6 Slider/range primitive.
 
 ---
