@@ -58,20 +58,26 @@
 /* ── Toggles ── */
 .sidebar-filter-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+  align-items: start;
   margin-bottom: 4px;
 }
 
 .toggle-cell {
   position: relative;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 2.75rem;
 }
 
 .toggle-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
+  min-height: var(--hit-target-min);
 }
 
 .toggle-row:last-of-type {
@@ -145,6 +151,8 @@
   color: var(--text2);
   cursor: pointer;
   user-select: none;
+  line-height: 1.25;
+  padding-top: 2px;
 }
 
 .sidebar-filter-hint {
