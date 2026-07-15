@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Checkbox } from '../../components/ui/index.js'
+import { Checkbox, Select } from '../../components/ui/index.js'
 import { adminApi, fetchUserStack } from '../../api.js'
 import { fmtIso } from './formatters.js'
 import AsyncSection from './shared/AsyncSection.jsx'
@@ -325,14 +325,13 @@ export default function WebhooksPage({ toast }) {
           <div className="admin-filter-bar" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
             <label style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>
               Kind
-              <select
+              <Select
                 className="admin-select"
                 style={{ marginLeft: '0.35rem' }}
                 value={createForm.kind}
-                onChange={e => setCreateForm(f => ({ ...f, kind: e.target.value }))}
-              >
-                {KIND_OPTIONS.map(k => <option key={k} value={k}>{k}</option>)}
-              </select>
+                onChange={(v) => setCreateForm(f => ({ ...f, kind: v }))}
+                options={KIND_OPTIONS.map(k => ({ value: k, label: k }))}
+              />
             </label>
             <label style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>
               Id (optional)
@@ -504,17 +503,16 @@ export default function WebhooksPage({ toast }) {
         <div className="webhook-delivery-toolbar">
           <label style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>
             Destination
-            <select
+            <Select
               className="admin-select"
               style={{ marginLeft: '0.35rem' }}
               value={deliveryLogFilter}
-              onChange={(e) => setDeliveryLogFilter(e.target.value)}
-            >
-              <option value="">All destinations</option>
-              {destinationFilterOptions.map((id) => (
-                <option key={id} value={id}>{id}</option>
-              ))}
-            </select>
+              onChange={setDeliveryLogFilter}
+              options={[
+                { value: '', label: 'All destinations' },
+                ...destinationFilterOptions.map((id) => ({ value: id, label: id })),
+              ]}
+            />
           </label>
           <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={() => loadDeliveryLog(deliveryLogOffset, deliveryLogFilter)}>
             Refresh

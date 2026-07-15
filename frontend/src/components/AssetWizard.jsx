@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { Select } from './ui/index.js'
 import {
   AI_PRODUCTS,
   APP_CATEGORIES,
@@ -172,13 +173,12 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
           <div className="asset-wizard-body">
             {(profile.applications?.length ? profile.applications : [{ category: 'Web Server', product: '', version: '' }]).map((app, idx) => (
               <div key={idx} className="asset-app-row">
-                <select
+                <Select
                   className="asset-select mono"
                   value={app.category || 'Other'}
-                  onChange={e => updateApp(idx, 'category', e.target.value)}
-                >
-                  {APP_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                  onChange={(v) => updateApp(idx, 'category', v)}
+                  options={APP_CATEGORIES.map(c => ({ value: c, label: c }))}
+                />
                 <input
                   className="asset-input mono"
                   placeholder="Product"
@@ -219,33 +219,30 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
           <div className="asset-wizard-body asset-env">
             <label className="asset-label mono">
               Internet-facing
-              <select
+              <Select
                 className="asset-select mono"
                 value={profile.environment?.internetFacing || 'Some'}
-                onChange={e => updateEnv('internetFacing', e.target.value)}
-              >
-                {INTERNET_FACING_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-              </select>
+                onChange={(v) => updateEnv('internetFacing', v)}
+                options={INTERNET_FACING_OPTIONS.map(o => ({ value: o, label: o }))}
+              />
             </label>
             <label className="asset-label mono">
               Industry sector
-              <select
+              <Select
                 className="asset-select mono"
                 value={profile.environment?.industry || 'Technology'}
-                onChange={e => updateEnv('industry', e.target.value)}
-              >
-                {INDUSTRY_SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+                onChange={(v) => updateEnv('industry', v)}
+                options={INDUSTRY_SECTORS.map(s => ({ value: s, label: s }))}
+              />
             </label>
             <label className="asset-label mono">
               Criticality
-              <select
+              <Select
                 className="asset-select mono"
                 value={profile.environment?.criticality || 'Medium'}
-                onChange={e => updateEnv('criticality', e.target.value)}
-              >
-                {CRITICALITY_LEVELS.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+                onChange={(v) => updateEnv('criticality', v)}
+                options={CRITICALITY_LEVELS.map(c => ({ value: c, label: c }))}
+              />
             </label>
           </div>
         )}

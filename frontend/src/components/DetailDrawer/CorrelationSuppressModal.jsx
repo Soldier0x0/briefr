@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
+import { Select } from '../ui/index.js'
 import { SUPPRESSION_REASONS, suppressionDialogCopy } from '../../utils/correlationPresentation.js'
 import './CorrelationSuppressModal.css'
 
@@ -11,12 +12,12 @@ export default function CorrelationSuppressModal({
   onConfirm,
   submitting,
 }) {
-  const reasonRef = useRef(null)
+  const [reason, setReason] = useState('shared_hosting')
   const copy = body ? suppressionDialogCopy(body, cveId, peerCve) : null
 
   useEffect(() => {
-    if (open && reasonRef.current) {
-      reasonRef.current.focus()
+    if (open) {
+      setReason('shared_hosting')
     }
   }, [open])
 
@@ -24,7 +25,6 @@ export default function CorrelationSuppressModal({
 
   function handleSubmit(e) {
     e.preventDefault()
-    const reason = reasonRef.current?.value || 'other'
     const reasonLabel = SUPPRESSION_REASONS.find(r => r.id === reason)?.label || reason
     onConfirm?.({ ...body, reason: reasonLabel })
   }
@@ -48,16 +48,13 @@ export default function CorrelationSuppressModal({
           <label htmlFor="corr-suppress-reason" className="corr-suppress-reason-label mono">
             Reason
           </label>
-          <select
+          <Select
             id="corr-suppress-reason"
-            ref={reasonRef}
             className="corr-suppress-reason mono"
-            defaultValue="shared_hosting"
-          >
-            {SUPPRESSION_REASONS.map(r => (
-              <option key={r.id} value={r.id}>{r.label}</option>
-            ))}
-          </select>
+            value={reason}
+            onChange={setReason}
+            options={SUPPRESSION_REASONS.map(r => ({ value: r.id, label: r.label }))}
+          />
 
           <div className="corr-suppress-actions">
             <button

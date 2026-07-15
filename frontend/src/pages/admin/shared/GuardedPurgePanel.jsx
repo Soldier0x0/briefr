@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Select } from '../../../components/ui/index.js'
 
 // Single guarded entry point for destructive bulk-clear actions: pick a
 // target from a dropdown, then type "clear" (case-insensitive) to enable
@@ -28,9 +29,12 @@ export default function GuardedPurgePanel({ targets }) {
 
   return (
     <div className="purge-panel purge-panel--compact">
-      <select className="admin-select" value={selected} onChange={e => selectTarget(e.target.value)}>
-        {targets.map(t => <option key={t.target} value={t.target}>{t.title}</option>)}
-      </select>
+      <Select
+        className="admin-select"
+        value={selected}
+        onChange={selectTarget}
+        options={targets.map(t => ({ value: t.target, label: t.title }))}
+      />
 
       <div className="purge-card" style={{ marginTop: '0.5rem' }}>
         <div className="purge-card-desc">{target.desc}</div>

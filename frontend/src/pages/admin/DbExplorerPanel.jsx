@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { adminApi } from '../../api.js'
+import { Select } from '../../components/ui/index.js'
 import AsyncSection from './shared/AsyncSection.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 
@@ -114,41 +115,39 @@ export default function DbExplorerPanel({ toast }) {
           <div className="admin-filter-bar" style={{ flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <label style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
               Table
-              <select
+              <Select
                 className="admin-input"
                 style={{ marginLeft: '0.35rem', minWidth: 220 }}
                 value={selectedTable}
-                onChange={(e) => {
-                  setSelectedTable(e.target.value)
+                placeholder="Select table…"
+                onChange={(v) => {
+                  setSelectedTable(v)
                   setRowsPayload(null)
                   setRowsError(null)
                   setOffset(0)
                 }}
-              >
-                <option value="">Select table…</option>
-                {catalog.tables.map((t) => (
-                  <option key={t.name} value={t.name}>
-                    {t.label} ({t.row_count.toLocaleString()} rows){t.tier === 2 ? ' · masked' : ''}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: '', label: 'Select table…' },
+                  ...catalog.tables.map((t) => ({
+                    value: t.name,
+                    label: `${t.label} (${t.row_count.toLocaleString()} rows)${t.tier === 2 ? ' · masked' : ''}`,
+                  })),
+                ]}
+              />
             </label>
 
             {tableMeta && tableMeta.filter_columns.length > 0 && (
               <>
                 <label style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
                   Filter column
-                  <select
+                  <Select
                     className="admin-input"
                     style={{ marginLeft: '0.35rem', minWidth: 140 }}
                     value={filterColumn}
                     disabled={Boolean(tableMeta.required_filter)}
-                    onChange={(e) => setFilterColumn(e.target.value)}
-                  >
-                    {tableMeta.filter_columns.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                    onChange={setFilterColumn}
+                    options={tableMeta.filter_columns.map((c) => ({ value: c, label: c }))}
+                  />
                 </label>
                 <label style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
                   Filter value

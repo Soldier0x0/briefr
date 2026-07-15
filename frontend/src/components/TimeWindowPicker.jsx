@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react'
+import { Select } from './ui/index.js'
 import { parseDatetimeLocalToIso, toDatetimeLocalValue } from './timeWindowDateUtils.js'
 import './TimeWindowPicker.css'
 
@@ -81,8 +82,7 @@ export default function TimeWindowPicker({
     onChange?.({ mode: 'custom', since, until })
   }
 
-  function handleSelectChange(e) {
-    const next = e.target.value
+  function handleSelectChange(next) {
     setSelectValue(next)
     if (next === CUSTOM_VALUE) {
       emitCustom(customSince, customUntil)
@@ -106,18 +106,17 @@ export default function TimeWindowPicker({
   return (
     <div className="time-window-picker" role="group" aria-label={ariaLabel}>
       <label htmlFor={selectId} className="sr-only">{ariaLabel}</label>
-      <select
+      <Select
         id={selectId}
         className="time-window-select mono"
         value={selectValue}
         onChange={handleSelectChange}
         aria-label={ariaLabel}
-      >
-        {presets.map(p => (
-          <option key={p.id} value={p.id}>{p.label}</option>
-        ))}
-        <option value={CUSTOM_VALUE}>Custom range…</option>
-      </select>
+        options={[
+          ...presets.map(p => ({ value: p.id, label: p.label })),
+          { value: CUSTOM_VALUE, label: 'Custom range…' },
+        ]}
+      />
       {selectValue === CUSTOM_VALUE && (
         <div className="time-window-custom" aria-label="Custom date and time range">
           <label className="time-window-custom-field">

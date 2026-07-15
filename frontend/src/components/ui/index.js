@@ -15,3 +15,22 @@ export { default as DataGrid } from './DataGrid.jsx'
 export { default as ChartDataTable } from './ChartDataTable.jsx'
 export { default as AlertDialog } from './AlertDialog.jsx'
 export { default as ChartShell } from './ChartShell.jsx'
+export { default as Select, SelectGroup, SelectLabel, SelectItem } from './Select.jsx'
+export { default as Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs.jsx'
+export {
+  default as DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuPortal,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuGroup,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuArrow,
+} from './DropdownMenu.jsx'

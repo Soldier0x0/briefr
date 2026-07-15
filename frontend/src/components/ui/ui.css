@@ -548,3 +548,160 @@
   width: 100% !important;
   height: 100% !important;
 }
+
+/* Select (Radix primitive — E3-5) */
+.ui-select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui-select-trigger[data-disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ui-select-icon {
+  display: inline-flex;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.ui-select-content {
+  z-index: var(--z-dropdown);
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  min-width: var(--radix-select-trigger-width);
+  max-height: min(280px, var(--radix-select-content-available-height));
+}
+
+.ui-select-viewport {
+  padding: 4px;
+}
+
+.ui-select-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+
+.ui-select-item[data-highlighted] {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.ui-select-item[data-disabled] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.ui-select-item-indicator {
+  display: inline-flex;
+  color: var(--accent-primary);
+}
+
+.ui-select-label-group {
+  padding: 0.35rem 0.65rem 0.15rem;
+  font-size: var(--type-micro);
+  color: var(--text3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Tabs (Radix primitive — E3-5) */
+.ui-tabs-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.ui-tabs-trigger {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+.ui-tabs-trigger:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.ui-tabs-trigger[data-state='active'] {
+  color: var(--text);
+}
+
+.ui-tabs-content {
+  outline: none;
+}
+
+.ui-tabs-content:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+/* Dropdown menu (Radix primitive — E3-5) */
+.ui-dropdown-content {
+  z-index: var(--z-dropdown);
+  min-width: 12rem;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.ui-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  font-size: 0.875rem;
+  text-decoration: none;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+
+.ui-dropdown-item[data-highlighted] {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.ui-dropdown-item[data-disabled] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.ui-dropdown-separator {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--border);
+}
+
+.ui-dropdown-label {
+  padding: 0.35rem 0.65rem;
+  font-size: var(--type-micro);
+  color: var(--text3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
