@@ -26,8 +26,8 @@
 }
 
 .time-window-select:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 1px;
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .time-window-custom {
@@ -66,8 +66,8 @@
 }
 
 .time-window-datetime:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 1px;
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 @media (max-width: 640px) {

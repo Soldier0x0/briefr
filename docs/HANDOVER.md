@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E6-2 standard focus ring
+
+**What:** Global `:focus-visible` rules in `App.css` use `--focus-ring` (accent-based, not red). Fixed LoginPage red focus; migrated outline-only rings on feed cards, brief rows, filter inputs, drawer close, stats, IOC history, etc.
+
+**Next:** E5-3 ARCH sidebar active → E6-3 aria-labels → E3-3 DataGrid.
+
+---
+
 ## 2026-07-15 — E4-4 status/severity legends and portaled tooltips
 
 **What:** Shared `severitySemantics.js` + `SeverityLegend` component. Collapsible legends on CVE feed and BriefCharts EPSS movers; Forge coverage status legend in nav. Portaled `ControlTooltip` on drawer severity badge, Forge `StatusChip`, BriefCharts severity dots, and admin `JobStatusBadge` (replaces native `title`).
