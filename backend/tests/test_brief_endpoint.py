@@ -14,7 +14,9 @@ import pytest
 from brief.service import (
     build_morning_brief,
     _build_epss_movers,
+    _detected_at_since_clause,
     _epss_delta,
+    _since_hours_cutoff,
     _stack_profile_id,
 )
 from database import get_db, init_db
@@ -247,13 +249,21 @@ def test_brief_epss_sql_avoids_real_cast_on_postgres():
         """
         SELECT ch.cve_id FROM cve_change_history ch
         WHERE ch.field_name = 'epss_score'
-          AND ch.detected_at >= datetime('now', ?)
+          AND ch.detected_at >= ?
         ORDER BY ch.detected_at DESC, ch.id DESC
         LIMIT ?
         """,
         backend="postgresql",
     )
     assert "AS REAL" not in sql.upper()
+    assert "TO_CHAR" not in sql.upper()
+
+
+def test_brief_detected_at_clause_uses_bound_cutoff_on_postgres():
+    assert _detected_at_since_clause(pg=True) == "ch.detected_at >= ?"
+    cutoff = _since_hours_cutoff(24, pg=True)
+    assert isinstance(cutoff, datetime)
+    assert cutoff.tzinfo is not None
 
 
 def test_epss_delta_counts_zero_to_positive():

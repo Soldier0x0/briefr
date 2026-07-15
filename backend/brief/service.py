@@ -3,13 +3,32 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from correlation.copy import sanitize_pulse_text
 from routers.cves import CVE_SELECT, _row_to_cve_dict, _stack_match_clause
 
 _ISO_DATE_LIKE = "____-__-__"
+
+
+def _is_postgres_connection(db: Any) -> bool:
+    return type(db).__name__ == "PostgresConnection"
+
+
+def _since_hours_cutoff(hours: float, *, pg: bool) -> object:
+    """Postgres timestamptz columns need aware datetimes; SQLite keeps TEXT."""
+    dt = datetime.now(timezone.utc) - timedelta(hours=hours)
+    if pg:
+        return dt
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _detected_at_since_clause(*, pg: bool) -> str:
+    """``cve_change_history.detected_at`` is TIMESTAMPTZ on Postgres (migration 026)."""
+    if pg:
+        return "ch.detected_at >= ?"
+    return "ch.detected_at >= datetime('now', ?)"
 
 
 def _stack_profile_id(stack_terms: list[str]) -> str | None:
@@ -147,6 +166,9 @@ async def build_morning_brief(
 ) -> dict[str, Any]:
     """Aggregate analyst action queue sections from existing DB state."""
     since_sql = f"-{since_hours} hours"
+    pg = _is_postgres_connection(db)
+    detected_since = _since_hours_cutoff(since_hours, pg=pg) if pg else since_sql
+    detected_clause = _detected_at_since_clause(pg=pg)
     stack_sql, stack_params, stack_terms = _stack_filter_sql(stack)
     profile_id = _stack_profile_id(stack_terms)
 
@@ -165,12 +187,12 @@ async def build_morning_brief(
         FROM cve_change_history ch
         JOIN cves c ON c.cve_id = ch.cve_id
         WHERE ch.field_name = 'epss_score'
-          AND ch.detected_at >= datetime('now', ?)
+          AND {detected_clause}
           {stack_sql}
         ORDER BY ch.detected_at DESC, ch.id DESC
         LIMIT ?
         """,
-        [since_sql, *stack_params, epss_scan_limit],
+        [detected_since, *stack_params, epss_scan_limit],
     )
     epss_items = _build_epss_movers(epss_rows, limit=limit)
 
@@ -247,7 +269,7 @@ async def build_morning_brief(
                 OR EXISTS (
                   SELECT 1 FROM cve_change_history ch
                   WHERE ch.cve_id = c.cve_id
-                    AND ch.detected_at >= datetime('now', ?)
+                    AND {detected_clause}
                 )
               )
             ORDER BY
@@ -256,7 +278,7 @@ async def build_morning_brief(
               published DESC
             LIMIT ?
             """,
-            [*stack_clause_params, since_sql, since_sql, since_sql, limit],
+            [*stack_clause_params, since_sql, since_sql, detected_since, limit],
         )
         stack_items = [
             _brief_cve_item(dict(row), reasons=["stack_match"])
