@@ -498,12 +498,12 @@ async def get_recent_cve_changes(
     params: list[object] = []
     pg_n = 1
     if field_name:
-        clauses.append(f"field_name = {_placeholder(pg, pg_n)}")
+        clauses.append(f"ch.field_name = {_placeholder(pg, pg_n)}")
         if pg:
             pg_n += 1
         params.append(field_name)
     if since_hours is not None and since_hours > 0:
-        clauses.append(f"detected_at >= {_placeholder(pg, pg_n)}")
+        clauses.append(f"ch.detected_at >= {_placeholder(pg, pg_n)}")
         if pg:
             pg_n += 1
         params.append(_cutoff_datetime_hours_ago(since_hours))
@@ -512,10 +512,12 @@ async def get_recent_cve_changes(
     params.append(limit)
     rows = await db.execute_fetchall(
         f"""
-        SELECT id, cve_id, field_name, old_value, new_value, detected_at
-        FROM cve_change_history
+        SELECT ch.id, ch.cve_id, ch.field_name, ch.old_value, ch.new_value,
+               ch.detected_at, c.severity
+        FROM cve_change_history ch
+        LEFT JOIN cves c ON c.cve_id = ch.cve_id
         {where}
-        ORDER BY detected_at DESC, id DESC
+        ORDER BY ch.detected_at DESC, ch.id DESC
         LIMIT {limit_ph}
         """,
         params,

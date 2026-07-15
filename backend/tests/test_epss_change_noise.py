@@ -45,8 +45,8 @@ def test_update_epss_scores_skips_display_identical_changes(tmp_path, monkeypatc
         try:
             await db.execute(
                 """
-                INSERT INTO cves (cve_id, description, epss_score)
-                VALUES ('CVE-2026-9732', 'test', 0.0001)
+                INSERT INTO cves (cve_id, description, epss_score, severity)
+                VALUES ('CVE-2026-9732', 'test', 0.0001, 'HIGH')
                 """
             )
             await db.commit()
@@ -60,6 +60,7 @@ def test_update_epss_scores_skips_display_identical_changes(tmp_path, monkeypatc
             real = await get_recent_cve_changes(db, field_name="epss_score", limit=10)
             assert len(real) == 1
             assert real[0]["cve_id"] == "CVE-2026-9732"
+            assert real[0]["severity"] == "HIGH"
         finally:
             await db.close()
 
