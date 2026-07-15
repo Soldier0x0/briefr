@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { fetchSecurityArchitectureSection } from '../../../api.js'
 import { notifyApiError } from '../../../components/Toast.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
 import Tooltip from '../../../components/ui/Tooltip.jsx'
+import ArchDataGrid from '../shared/ArchDataGrid.jsx'
 
 const STALE_HELP = 'This review record has not been refreshed in over 90 days (spec §4.1 staleness decay).'
 const ORIGIN_HELP = {
@@ -15,17 +16,14 @@ function eventTimestamp(item) {
 }
 
 /**
- * Review History (spec §5.14, §8 TM-5): chronological timeline merging
- * curated reviews.yaml (real security-review passes this program
- * performed) with live audit_log security events (auth/backup/config/
- * restart/scheduler/integrity actions) -- reuses the existing audit_log
- * table and its masking rule, not a duplicate query.
+ * Review History (spec §5.14, §8 TM-5).
  */
 export default function ReviewHistorySection() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [selectedId, setSelectedId] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -44,6 +42,43 @@ export default function ReviewHistorySection() {
   }, [reloadKey])
 
   const rows = [...(data?.items || [])].sort((a, b) => (eventTimestamp(b) > eventTimestamp(a) ? 1 : -1))
+  const selected = rows.find(r => r.id === selectedId)
+
+  const columns = useMemo(() => [
+    {
+      id: 'title', label: 'Event', minWidth: 220,
+      render: (r) => r.title || r.action || '—',
+    },
+    {
+      id: 'origin', label: 'Origin', width: 100,
+      render: (r) => (
+        <Tooltip text={ORIGIN_HELP[r.origin] || ''}>
+          <span className={`sa-row-origin sa-row-origin-${r.origin} mono`}>{r.origin}</span>
+        </Tooltip>
+      ),
+    },
+    { id: 'review_type', label: 'Type', width: 120, render: (r) => r.review_type || '—' },
+    { id: 'status', label: 'Status', width: 100, render: (r) => r.status || '—' },
+    {
+      id: 'stale', label: 'Review', width: 90,
+      sortValue: (r) => (r.stale ? 1 : 0),
+      render: (r) => (
+        r.stale
+          ? (
+            <Tooltip text={STALE_HELP}>
+              <span className="sa-status-chip sa-status-critical mono">STALE</span>
+            </Tooltip>
+          )
+          : '—'
+      ),
+    },
+    {
+      id: 'when', label: 'When', width: 140,
+      sortValue: (r) => eventTimestamp(r),
+      render: (r) => eventTimestamp(r) || '—',
+    },
+    { id: 'summary', label: 'Summary', minWidth: 260, render: (r) => r.summary || '—' },
+  ], [])
 
   return (
     <div className="sa-section">
@@ -60,39 +95,31 @@ export default function ReviewHistorySection() {
         onRetry={() => setReloadKey(k => k + 1)}
         skeleton={<div className="sa-skeleton-row" aria-hidden="true" />}
       >
-        <ul className="sa-row-list sa-review-timeline" aria-label="Review history">
-          {rows.map(r => (
-            <li key={r.id} className="sa-row">
-              <div className="sa-row-main">
-                <span className="sa-row-title">{r.title || r.action}</span>
-                <Tooltip text={ORIGIN_HELP[r.origin] || ''}>
-                  <span className={`sa-row-origin sa-row-origin-${r.origin} mono`}>{r.origin}</span>
-                </Tooltip>
-                {r.review_type && <span className="sa-row-tag mono">{r.review_type}</span>}
-                {r.status && <span className="sa-row-tag mono">{r.status}</span>}
-                {r.stale && (
-                  <Tooltip text={STALE_HELP}>
-                    <span className="sa-status-chip sa-status-critical mono">STALE</span>
-                  </Tooltip>
-                )}
-                <span className="sa-row-tag mono">{eventTimestamp(r)}</span>
+        <ArchDataGrid
+          gridId="sa-review-history"
+          columns={columns}
+          rows={rows}
+          rowKey={(r) => r.id}
+          emptyMessage="No review events"
+          onRowClick={(r) => setSelectedId(prev => (prev === r.id ? null : r.id))}
+          activeRowKey={selectedId}
+        />
+        {selected && (
+          <div className="sa-arch-grid-detail">
+            {selected.outcome && (
+              <div className="sa-decision-field">
+                <h4 className="sa-subsection-label mono">OUTCOME</h4>
+                <p>{selected.outcome}</p>
               </div>
-              {r.summary && <p className="sa-row-summary">{r.summary}</p>}
-              {r.outcome && (
-                <div className="sa-decision-field">
-                  <h4 className="sa-subsection-label mono">OUTCOME</h4>
-                  <p>{r.outcome}</p>
-                </div>
-              )}
-              {Array.isArray(r.participants) && r.participants.length > 0 && (
-                <p className="sa-rail-meta mono">participants: {r.participants.join(', ')}</p>
-              )}
-              {r.actor && r.origin === 'live' && (
-                <p className="sa-rail-meta mono">actor: {r.actor}{r.target ? ` — target: ${r.target}` : ''}</p>
-              )}
-            </li>
-          ))}
-        </ul>
+            )}
+            {Array.isArray(selected.participants) && selected.participants.length > 0 && (
+              <p className="sa-rail-meta mono">participants: {selected.participants.join(', ')}</p>
+            )}
+            {selected.actor && selected.origin === 'live' && (
+              <p className="sa-rail-meta mono">actor: {selected.actor}{selected.target ? ` — target: ${selected.target}` : ''}</p>
+            )}
+          </div>
+        )}
       </AsyncState>
     </div>
   )

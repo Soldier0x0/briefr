@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { fetchSecurityArchitectureStale } from '../../../api.js'
 import { notifyApiError } from '../../../components/Toast.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
+import ArchDataGrid from '../shared/ArchDataGrid.jsx'
 
 const SECTION_LABEL = {
   components: 'Components', trust_boundaries: 'Trust Boundaries', controls: 'Controls',
@@ -10,10 +11,7 @@ const SECTION_LABEL = {
 }
 
 /**
- * Stale Records (spec §5.1 "Stale Records" tile drill-through, §9.6): every
- * curated record across every section past the 90-day review window. Not a
- * manifest nav section of its own -- reached only via the Overview tile,
- * same convention as `components` fanning across generated collections.
+ * Stale Records (spec §5.1 "Stale Records" tile drill-through, §9.6).
  */
 export default function StaleRecordsSection({ onOpenSection }) {
   const [data, setData] = useState(null)
@@ -39,6 +37,29 @@ export default function StaleRecordsSection({ onOpenSection }) {
 
   const rows = data?.items || []
 
+  const columns = useMemo(() => [
+    { id: 'title', label: 'Record', minWidth: 220 },
+    {
+      id: 'section', label: 'Section', width: 160,
+      render: (r) => (
+        <button
+          type="button"
+          className="sa-row-tag mono sa-mitre-link"
+          onClick={(e) => { e.stopPropagation(); onOpenSection(r.section) }}
+          title={`Open ${SECTION_LABEL[r.section] || r.section}`}
+        >
+          {SECTION_LABEL[r.section] || r.section}
+        </button>
+      ),
+    },
+    {
+      id: 'stale', label: 'Status', width: 90, sortable: false,
+      render: () => <span className="sa-status-chip sa-status-critical mono">STALE</span>,
+    },
+    { id: 'review_date', label: 'Last Review', width: 120, render: (r) => r.review_date || '—' },
+    { id: 'summary', label: 'Summary', minWidth: 260, render: (r) => r.summary || '—' },
+  ], [onOpenSection])
+
   return (
     <div className="sa-section">
       <div className="sa-section-head">
@@ -54,26 +75,13 @@ export default function StaleRecordsSection({ onOpenSection }) {
         onRetry={() => setReloadKey(k => k + 1)}
         skeleton={<div className="sa-skeleton-row" aria-hidden="true" />}
       >
-        <ul className="sa-row-list" aria-label="Stale records">
-          {rows.map((r, i) => (
-            <li key={`${r.section}-${r.id || i}`} className="sa-row">
-              <div className="sa-row-main">
-                <span className="sa-row-title">{r.title}</span>
-                <button
-                  type="button"
-                  className="sa-row-tag mono sa-mitre-link"
-                  onClick={() => onOpenSection(r.section)}
-                  title={`Open ${SECTION_LABEL[r.section] || r.section}`}
-                >
-                  {SECTION_LABEL[r.section] || r.section}
-                </button>
-                <span className="sa-status-chip sa-status-critical mono">STALE</span>
-                {r.review_date && <span className="sa-row-tag mono">reviewed {r.review_date}</span>}
-              </div>
-              {r.summary && <p className="sa-row-summary">{r.summary}</p>}
-            </li>
-          ))}
-        </ul>
+        <ArchDataGrid
+          gridId="sa-stale-records"
+          columns={columns}
+          rows={rows}
+          rowKey={(r, i) => `${r.section}-${r.id || i}`}
+          emptyMessage="No stale records"
+        />
       </AsyncState>
     </div>
   )

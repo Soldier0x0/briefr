@@ -6,6 +6,7 @@ import {
 } from '../../../api.js'
 import { notifyApiError } from '../../../components/Toast.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
+import ArchDataGrid from '../shared/ArchDataGrid.jsx'
 import { downloadScenarioPdf } from '../../../utils/securityArchitecturePdf.js'
 
 const CATALOGS = [
@@ -17,15 +18,7 @@ const CATALOGS = [
 const STATUS_LABEL = { yours: 'YOURS', community: 'COMMUNITY', gap: 'GAP' }
 
 /**
- * Threat Scenarios section (TM-3, spec §5.10) -- three catalogs behind one
- * toggle, matching Forge's profileStack convention (frontend/src/components/
- * forge/ScenariosView.jsx): "your stack" reads GET /api/me/stack (spec
- * §5.10: "stack filter inherits user stack from /api/me/stack for type 2"),
- * "self-stack" needs no client input at all -- the server resolves the
- * generated self-stack terms from the corpus (§4.5), computed once at
- * corpus-generation time, never recomputed per request (CLAUDE.md danger
- * zone 6). "Operational paths" reuses the existing generic section read
- * (curated threat_scenarios.yaml, currently an empty pre-review stub).
+ * Threat Scenarios section (TM-3, spec §5.10).
  */
 export default function ThreatScenariosSection({ corpusVersion } = {}) {
   const [catalog, setCatalog] = useState('self-stack')
@@ -64,9 +57,6 @@ export default function ThreatScenariosSection({ corpusVersion } = {}) {
   }, [operationalCount, visibleCatalogs, catalog])
 
   useEffect(() => {
-    // "Your stack" with no saved profile has nothing to query -- the empty
-    // state below explains why; firing the request anyway would just be a
-    // network round-trip for a result we already know is empty.
     if (catalog === 'stack' && !userStack) {
       setData(null)
       setLoading(false)
@@ -100,6 +90,69 @@ export default function ThreatScenariosSection({ corpusVersion } = {}) {
   const isCurated = catalog === 'operational'
   const rows = isCurated ? (data?.items || []) : (data?.scenarios || [])
   const needsProfile = catalog === 'stack' && !userStack
+
+  const curatedColumns = useMemo(() => [
+    { id: 'title', label: 'Scenario', minWidth: 220 },
+    {
+      id: 'origin', label: 'Origin', width: 100,
+      render: (r) => (r.origin ? <span className={`sa-row-origin sa-row-origin-${r.origin} mono`}>{r.origin}</span> : '—'),
+    },
+    {
+      id: 'export', label: 'Export', width: 110, sortable: false,
+      render: (r) => (
+        <button
+          type="button"
+          className="sa-row-tag mono"
+          onClick={(e) => { e.stopPropagation(); downloadScenarioPdf(r, { corpusVersion }) }}
+        >
+          EXPORT PDF
+        </button>
+      ),
+    },
+    { id: 'summary', label: 'Summary', minWidth: 280, render: (r) => r.summary || '—' },
+  ], [corpusVersion])
+
+  const stackColumns = useMemo(() => [
+    {
+      id: 'technique', label: 'Technique', minWidth: 240,
+      sortValue: (r) => r.technique_id,
+      render: (r) => (
+        <a
+          className="sa-row-title sa-mitre-link"
+          href={`/?view=scenarios&technique=${encodeURIComponent(r.technique_id)}`}
+          title="Open in Forge"
+        >
+          {r.technique_id} — {r.name}
+        </a>
+      ),
+    },
+    {
+      id: 'coverage_status', label: 'Coverage', width: 130,
+      render: (r) => (
+        <span className={`sa-status-chip sa-status-${r.coverage_status} mono`}>
+          {STATUS_LABEL[r.coverage_status] || r.coverage_status}
+        </span>
+      ),
+    },
+    {
+      id: 'kev_count', label: 'KEV', width: 80,
+      sortValue: (r) => r.kev_count ?? 0,
+      render: (r) => (r.kev_count > 0 ? <span className="sa-row-tag sa-row-tag-kev mono">{r.kev_count}</span> : '—'),
+    },
+    {
+      id: 'export', label: 'Export', width: 110, sortable: false,
+      render: (r) => (
+        <button
+          type="button"
+          className="sa-row-tag mono"
+          onClick={(e) => { e.stopPropagation(); downloadScenarioPdf(r, { corpusVersion }) }}
+        >
+          EXPORT PDF
+        </button>
+      ),
+    },
+    { id: 'scenario', label: 'Scenario', minWidth: 300, render: (r) => r.scenario || '—' },
+  ], [corpusVersion])
 
   return (
     <div className="sa-section">
@@ -138,54 +191,13 @@ export default function ThreatScenariosSection({ corpusVersion } = {}) {
         onRetry={() => setReloadKey(k => k + 1)}
         skeleton={<div className="sa-skeleton-row" aria-hidden="true" />}
       >
-        {isCurated ? (
-          <ul className="sa-row-list" aria-label="Operational threat scenarios">
-            {rows.map(item => (
-              <li key={item.id} className="sa-row">
-                <div className="sa-row-main">
-                  <span className="sa-row-title">{item.title}</span>
-                  {item.origin && <span className={`sa-row-origin sa-row-origin-${item.origin} mono`}>{item.origin}</span>}
-                  <button
-                    type="button"
-                    className="sa-row-tag mono"
-                    onClick={() => downloadScenarioPdf(item, { corpusVersion })}
-                  >
-                    EXPORT PDF
-                  </button>
-                </div>
-                {item.summary && <p className="sa-row-summary">{item.summary}</p>}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <ul className="sa-row-list" aria-label="Stack-scoped threat scenarios">
-            {rows.map(scenario => (
-              <li key={scenario.technique_id} className="sa-row">
-                <div className="sa-row-main">
-                  <a
-                    className="sa-row-title sa-mitre-link"
-                    href={`/?view=scenarios&technique=${encodeURIComponent(scenario.technique_id)}`}
-                    title="Open in Forge"
-                  >
-                    {scenario.technique_id} — {scenario.name}
-                  </a>
-                  <span className={`sa-status-chip sa-status-${scenario.coverage_status} mono`}>
-                    {STATUS_LABEL[scenario.coverage_status] || scenario.coverage_status}
-                  </span>
-                  {scenario.kev_count > 0 && <span className="sa-row-tag sa-row-tag-kev mono">{scenario.kev_count} KEV</span>}
-                  <button
-                    type="button"
-                    className="sa-row-tag mono"
-                    onClick={() => downloadScenarioPdf(scenario, { corpusVersion })}
-                  >
-                    EXPORT PDF
-                  </button>
-                </div>
-                <p className="sa-row-summary">{scenario.scenario}</p>
-              </li>
-            ))}
-          </ul>
-        )}
+        <ArchDataGrid
+          gridId={`sa-threat-scenarios-${catalog}`}
+          columns={isCurated ? curatedColumns : stackColumns}
+          rows={rows}
+          rowKey={(r) => r.id || r.technique_id}
+          emptyMessage="No scenarios"
+        />
       </AsyncState>
       {data?.meta?.stack_terms?.length > 0 && catalog !== 'operational' && (
         <p className="sa-section-count mono">

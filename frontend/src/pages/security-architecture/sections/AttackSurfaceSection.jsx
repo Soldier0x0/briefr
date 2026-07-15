@@ -1,18 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { fetchSecurityArchitectureAttackSurface } from '../../../api.js'
 import { notifyApiError } from '../../../components/Toast.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
 import Tooltip from '../../../components/ui/Tooltip.jsx'
+import ArchDataGrid from '../shared/ArchDataGrid.jsx'
 
 const REVIEWED_HELP = 'At least one curated control\'s related_apis covers this endpoint.'
 const UNREVIEWED_HELP = 'No curated control record covers this endpoint yet — not a vulnerability finding, just an unreviewed row.'
 
 /**
- * Attack Surface (spec §8 TM-4): "generated endpoint inventory × linked
- * controls (counts, not scores)". No composite score renders here by
- * design (central principle, v2 note 3) -- every endpoint row shows its
- * own linked-control count and which controls, so "unreviewed" is a
- * visible, drillable fact, not an invented severity.
+ * Attack Surface (spec §8 TM-4): generated endpoint inventory × linked controls.
  */
 export default function AttackSurfaceSection() {
   const [data, setData] = useState(null)
@@ -39,6 +36,27 @@ export default function AttackSurfaceSection() {
 
   const endpoints = data?.endpoints || []
   const rows = onlyUnreviewed ? endpoints.filter(e => e.linked_control_count === 0) : endpoints
+
+  const columns = useMemo(() => [
+    { id: 'method', label: 'Method', width: 90 },
+    { id: 'path', label: 'Path', minWidth: 260 },
+    {
+      id: 'linked_control_count', label: 'Controls', width: 110,
+      sortValue: (r) => r.linked_control_count ?? 0,
+      render: (r) => (
+        <Tooltip text={r.linked_control_count > 0 ? REVIEWED_HELP : UNREVIEWED_HELP}>
+          <span className={`sa-active-flag sa-active-${r.linked_control_count > 0} mono`}>
+            {r.linked_control_count} control{r.linked_control_count === 1 ? '' : 's'}
+          </span>
+        </Tooltip>
+      ),
+    },
+    {
+      id: 'linked_control_ids', label: 'Linked IDs', minWidth: 200,
+      sortable: false,
+      render: (r) => (r.linked_control_ids || []).join(', ') || '—',
+    },
+  ], [])
 
   return (
     <div className="sa-section">
@@ -76,24 +94,13 @@ export default function AttackSurfaceSection() {
         onRetry={() => setReloadKey(k => k + 1)}
         skeleton={<div className="sa-skeleton-row" aria-hidden="true" />}
       >
-        <ul className="sa-row-list" aria-label="Endpoint attack surface">
-          {rows.map(e => (
-            <li key={`${e.method}-${e.path}`} className="sa-row">
-              <div className="sa-row-main">
-                <span className="sa-row-tag mono">{e.method}</span>
-                <span className="sa-row-title">{e.path}</span>
-                <Tooltip text={e.linked_control_count > 0 ? REVIEWED_HELP : UNREVIEWED_HELP}>
-                  <span className={`sa-active-flag sa-active-${e.linked_control_count > 0} mono`}>
-                    {e.linked_control_count} control{e.linked_control_count === 1 ? '' : 's'}
-                  </span>
-                </Tooltip>
-                {(e.linked_control_ids || []).map(id => (
-                  <span key={id} className="sa-row-tag mono">{id}</span>
-                ))}
-              </div>
-            </li>
-          ))}
-        </ul>
+        <ArchDataGrid
+          gridId="sa-attack-surface"
+          columns={columns}
+          rows={rows}
+          rowKey={(r) => `${r.method}-${r.path}`}
+          emptyMessage="No endpoints"
+        />
       </AsyncState>
     </div>
   )

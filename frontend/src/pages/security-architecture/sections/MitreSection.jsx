@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { fetchSecurityArchitectureMitre } from '../../../api.js'
 import { notifyApiError } from '../../../components/Toast.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
 import Tooltip from '../../../components/ui/Tooltip.jsx'
+import ArchDataGrid from '../shared/ArchDataGrid.jsx'
 
 const STATUS_LABEL = { yours: 'YOURS', community: 'COMMUNITY', gap: 'GAP' }
 const STATUS_HELP = {
@@ -12,18 +13,7 @@ const STATUS_HELP = {
 }
 
 /**
- * MITRE ATT&CK section (TM-3, spec §5.6). Live coverage matrix -- reuses
- * routers.forge.build_coverage_map (security_architecture/merge.py
- * docstring), so "coverage matches DB" holds by construction rather than by
- * a second implementation staying in sync with the first.
- *
- * Grouped-by-tactic dense list rather than the spec's aspirational SVG heat
- * matrix -- TM-3 acceptance (technique click opens Forge link; coverage
- * matches DB; stack filter works) doesn't require the matrix visualization,
- * and the only *live* coverage layer this codebase actually has is
- * Detection (hunt packs / bundled templates) -- Correlation/YARA/AI layers
- * from spec §5.6's table have no live data source yet, so they're not
- * fabricated here (central principle: no invented arithmetic/rows).
+ * MITRE ATT&CK section (TM-3, spec §5.6). Live coverage matrix grouped by tactic.
  */
 export default function MitreSection() {
   const [stackInput, setStackInput] = useState('')
@@ -55,6 +45,38 @@ export default function MitreSection() {
     ;(acc[key] ||= []).push(t)
     return acc
   }, {})
+
+  const columns = useMemo(() => [
+    {
+      id: 'technique', label: 'Technique', minWidth: 260,
+      sortValue: (r) => r.technique_id,
+      render: (r) => (
+        <a
+          className="sa-row-title sa-mitre-link"
+          href={`/?view=coverage&technique=${encodeURIComponent(r.technique_id)}`}
+          title="Open in Forge"
+        >
+          {r.technique_id} — {r.name || r.technique_id}
+        </a>
+      ),
+    },
+    {
+      id: 'status', label: 'Coverage', width: 130,
+      render: (r) => (
+        <Tooltip text={STATUS_HELP[r.status] || r.status}>
+          <span className={`sa-status-chip sa-status-${r.status} mono`}>
+            {STATUS_LABEL[r.status] || r.status}
+          </span>
+        </Tooltip>
+      ),
+    },
+    { id: 'cve_count', label: 'CVEs', width: 80, sortValue: (r) => r.cve_count ?? 0 },
+    {
+      id: 'kev_count', label: 'KEV', width: 80,
+      sortValue: (r) => r.kev_count ?? 0,
+      render: (r) => (r.kev_count > 0 ? <span className="sa-row-tag sa-row-tag-kev mono">{r.kev_count}</span> : '—'),
+    },
+  ], [])
 
   return (
     <div className="sa-section">
@@ -103,28 +125,13 @@ export default function MitreSection() {
         {Object.entries(byTactic).sort(([a], [b]) => a.localeCompare(b)).map(([tactic, items]) => (
           <div key={tactic} className="sa-mitre-tactic-group">
             <h3 className="sa-subsection-label mono">{tactic.toUpperCase()}</h3>
-            <ul className="sa-row-list" aria-label={`${tactic} techniques`}>
-              {items.map(t => (
-                <li key={t.technique_id} className="sa-row">
-                  <div className="sa-row-main">
-                    <a
-                      className="sa-row-title sa-mitre-link"
-                      href={`/?view=coverage&technique=${encodeURIComponent(t.technique_id)}`}
-                      title="Open in Forge"
-                    >
-                      {t.technique_id} — {t.name || t.technique_id}
-                    </a>
-                    <Tooltip text={STATUS_HELP[t.status] || t.status}>
-                      <span className={`sa-status-chip sa-status-${t.status} mono`}>
-                        {STATUS_LABEL[t.status] || t.status}
-                      </span>
-                    </Tooltip>
-                    <span className="sa-row-tag mono">{t.cve_count} CVE</span>
-                    {t.kev_count > 0 && <span className="sa-row-tag sa-row-tag-kev mono">{t.kev_count} KEV</span>}
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <ArchDataGrid
+              gridId={`sa-mitre-${tactic}`}
+              columns={columns}
+              rows={items}
+              rowKey={(r) => r.technique_id}
+              emptyMessage="No techniques"
+            />
           </div>
         ))}
       </AsyncState>

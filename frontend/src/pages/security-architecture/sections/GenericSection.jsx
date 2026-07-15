@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { fetchSecurityArchitectureSection } from '../../../api.js'
 import { notifyApiError } from '../../../components/Toast.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
+import ArchDataGrid from '../shared/ArchDataGrid.jsx'
 import { humanizeSectionId } from '../constants.js'
 
 const TYPE_LABELS = {
@@ -15,8 +16,7 @@ const TYPE_LABELS = {
  * TM-2 stub section view (spec §8 TM-2: "even if that view is just a stub
  * in TM-2, TM-3 builds it out"). Shows the exact corpus rows behind an
  * Overview tile click via the generic GET /section/{id} endpoint -- real
- * data, not mocked, just a plain table instead of the typed
- * matrix/timeline/graph components later phases add.
+ * data, not mocked, via the shared ArchDataGrid primitive (E5-2).
  */
 export default function GenericSection({ sectionId, filters, onFilterChange }) {
   const [data, setData] = useState(null)
@@ -42,6 +42,53 @@ export default function GenericSection({ sectionId, filters, onFilterChange }) {
 
   const items = data?.items || []
   const activeFilters = ['status', 'severity', 'origin'].filter(k => filters[k])
+  const resolvedType = data?.type || ''
+
+  const columns = useMemo(() => {
+    if (resolvedType === 'endpoints') {
+      return [
+        { id: 'method', label: 'Method', width: 90 },
+        { id: 'path', label: 'Path', minWidth: 220, render: (r) => r.path || r.title || r.id },
+        { id: 'summary', label: 'Summary', minWidth: 260, render: (r) => r.summary || '—' },
+      ]
+    }
+    if (resolvedType === 'components' || resolvedType === 'jobs' || resolvedType === 'tables') {
+      return [
+        { id: 'id', label: 'ID', width: 160, render: (r) => r.id || '—' },
+        { id: 'title', label: 'Title', minWidth: 200, render: (r) => r.title || r.path || '—' },
+        { id: 'summary', label: 'Summary', minWidth: 280, render: (r) => r.summary || '—' },
+      ]
+    }
+    return [
+      {
+        id: 'title', label: 'Title', minWidth: 200,
+        render: (r) => r.title || r.path || r.id || '—',
+      },
+      { id: 'status', label: 'Status', width: 100, render: (r) => r.status || '—' },
+      { id: 'severity', label: 'Severity', width: 100, render: (r) => r.severity || '—' },
+      {
+        id: 'origin', label: 'Origin', width: 100,
+        render: (r) => (r.origin ? <span className={`sa-row-origin sa-row-origin-${r.origin} mono`}>{r.origin}</span> : '—'),
+      },
+      {
+        id: 'active', label: 'Active', width: 100,
+        render: (r) => (
+          typeof r.active === 'boolean'
+            ? (
+              <span className={`sa-active-flag sa-active-${r.active} mono`} title={r.live_flag ? `live_flag: ${r.live_flag}` : 'structural control'}>
+                {r.active ? 'ACTIVE' : 'INACTIVE'}
+              </span>
+            )
+            : '—'
+        ),
+      },
+      {
+        id: 'matched_term', label: 'Term', width: 120,
+        render: (r) => r.matched_term || '—',
+      },
+      { id: 'summary', label: 'Summary', minWidth: 260, render: (r) => r.summary || '—' },
+    ]
+  }, [resolvedType])
 
   return (
     <div className="sa-section">
@@ -95,26 +142,13 @@ export default function GenericSection({ sectionId, filters, onFilterChange }) {
         onRetry={() => setReloadKey(k => k + 1)}
         skeleton={<div className="sa-skeleton-row" aria-hidden="true" />}
       >
-        <ul className="sa-row-list" aria-label={`${humanizeSectionId(sectionId)} records`}>
-          {items.map((item, i) => (
-            <li key={item.id || (item.method ? `${item.method}-${item.path}` : item.path) || i} className="sa-row">
-              <div className="sa-row-main">
-                <span className="sa-row-title">{item.title || item.path || item.id}</span>
-                {item.method && <span className="sa-row-tag mono">{item.method}</span>}
-                {item.origin && <span className={`sa-row-origin sa-row-origin-${item.origin} mono`}>{item.origin}</span>}
-                {typeof item.active === 'boolean' && (
-                  <span className={`sa-active-flag sa-active-${item.active} mono`} title={item.live_flag ? `live_flag: ${item.live_flag}` : 'structural control (always active)'}>
-                    {item.active ? 'ACTIVE' : 'INACTIVE'}
-                  </span>
-                )}
-                {item.status && <span className="sa-row-tag mono">{item.status}</span>}
-                {item.severity && <span className="sa-row-tag mono">{item.severity}</span>}
-                {item.matched_term && <span className="sa-row-tag sa-row-tag-term mono">term: {item.matched_term}</span>}
-              </div>
-              {item.summary && <p className="sa-row-summary">{item.summary}</p>}
-            </li>
-          ))}
-        </ul>
+        <ArchDataGrid
+          gridId={`sa-generic-${sectionId}-${resolvedType || 'default'}`}
+          columns={columns}
+          rows={items}
+          rowKey={(r, i) => r.id || (r.method ? `${r.method}-${r.path}` : r.path) || i}
+          emptyMessage="No records"
+        />
       </AsyncState>
       {data && (
         <p className="sa-section-count mono">{data.count} record{data.count === 1 ? '' : 's'}</p>

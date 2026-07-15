@@ -380,7 +380,29 @@
   color: var(--text3);
 }
 
-/* ── Generic section (stub list view) ─────────────────────────────── */
+/* ── ArchDataGrid (E5-2) ───────────────────────────────────────────── */
+
+.sa-arch-grid {
+  margin-top: 4px;
+}
+
+.sa-arch-grid .data-grid-toolbar {
+  margin-bottom: 4px;
+}
+
+.sa-arch-grid-table td {
+  font-size: 0.8125rem;
+  vertical-align: top;
+}
+
+.sa-arch-grid-detail {
+  margin: 8px 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+}
+
+/* ── Generic section row list (legacy / detail panels) ───────────────── */
 
 .sa-active-filters {
   display: flex;

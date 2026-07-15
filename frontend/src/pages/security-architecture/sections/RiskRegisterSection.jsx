@@ -3,7 +3,7 @@ import { fetchSecurityArchitectureSection } from '../../../api.js'
 import { notifyApiError } from '../../../components/Toast.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
 import Tooltip from '../../../components/ui/Tooltip.jsx'
-import AdminDataGrid from '../../admin/shared/AdminDataGrid.jsx'
+import ArchDataGrid from '../shared/ArchDataGrid.jsx'
 import { downloadCsv, exportFilename } from '../../../utils/exportCsv.js'
 import { downloadRiskRegisterPdf } from '../../../utils/securityArchitecturePdf.js'
 
@@ -28,7 +28,7 @@ function riskCsvRows(rows) {
 }
 
 /**
- * Risk Register (spec §5.12, §8 TM-5): AdminDataGrid wrapper over curated +
+ * Risk Register (spec §5.12, §8 TM-5): ArchDataGrid wrapper over curated +
  * live risk rows. Two row origins render distinctly (curated vs live, spec
  * §5.12) and every curated row carries a visible STALE badge sourced from
  * the server's `stale` flag (security_architecture/merge.py::annotate_stale)
@@ -147,7 +147,7 @@ export default function RiskRegisterSection({ filters, onFilterChange, corpusVer
         onRetry={() => setReloadKey(k => k + 1)}
         skeleton={<div className="sa-skeleton-row" aria-hidden="true" />}
       >
-        <AdminDataGrid
+        <ArchDataGrid
           gridId="sa-risk-register"
           columns={columns}
           rows={rows}
