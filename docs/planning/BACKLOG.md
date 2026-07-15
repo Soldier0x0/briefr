@@ -17,10 +17,8 @@ docs so nothing is lost when specs move to [`archive/superseded/`](../archive/su
 [`../HANDOVER.md`](../HANDOVER.md). **Build order when activated:** add checkboxes to
 [`SPRINT_2026-07.md`](SPRINT_2026-07.md) or a future sprint doc.
 
-**Last reconciled:** 2026-07-14 against `main` post-#514 (O-3). Correlation v3
-(PR-1…PR-13), forge-redesign (FR-1…FR-3 #490–#495), threat-modeling ARCH program
-(TM-0…TM-5 #491–#497), and UX-C2 (#475) verified shipped in code — see
-`docs/HANDOVER.md` 2026-07-14 docs-reconcile entry.
+**Last reconciled:** 2026-07-15 against `main` post-#600 (E8-3; UI plan §13 complete).
+Post–UI modernization audit program added — [`specs/post-ui-audit-2026-07-15.md`](specs/post-ui-audit-2026-07-15.md).
 
 ---
 
@@ -331,6 +329,25 @@ ADR-005 (UI library allow/deny). **Design SSOT:** [`../design/design-system.md`]
 | Plan Phase 1 (E1 correlation precompute, E2 standalone bugs incl. REL-7 PyJWT) | 📋 |
 | Plan Phase 2 (E3 primitives, E4 semantics, E6 a11y core) | 📋 after Phase 0 |
 | Plan Phase 3 (E5 ARCH re-skin, E7 polish incl. Recharts migration, E8/E9) | 📋 after Phase 2 |
+
+---
+
+## 12. Post–UI modernization UX audit (2026-07-15)
+
+**Canonical spec:** [`specs/post-ui-audit-2026-07-15.md`](specs/post-ui-audit-2026-07-15.md) — live browser
+audit on Postgres prod snapshot; P0 bugs, design-system enforcement, ARCH demotion, Forge MITRE
+navigator. **UI modernization E0–E9 is complete** — this is the next UX wave.
+
+| Phase | Scope | PRs | Status |
+|-------|--------|-----|--------|
+| **0** | P0 bugs (EPSS severity, sticky tooltips, drawer overlap, admin system 500, `detected_at` timestamptz) | PM-0a…PM-0e | 📋 |
+| **1** | Charts + FEED filters + Forge Library toolbar | PM-1a…PM-1d | 📋 after Phase 0 |
+| **2** | Global accent audit, DataGrid standard, ARCH layout polish | PM-2a…PM-2d | 📋 after Phase 1 |
+| **3** | Architecture graph viewport/zoom/fit + corpus drift | PM-3a…PM-3d | 📋 after Phase 0 |
+| **4** | IA: Admin Security posture, remove ARCH tab, Forge MITRE navigator | PM-4a…PM-4e | 📋 after Phase 3 |
+
+**Maintainer decisions (spec §7):** accent tan vs orange (Q1); analyst read-only posture (Q2);
+MITRE navigator shape (Q3); route redirect policy (Q4).
 
 ---
 

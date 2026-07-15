@@ -19,3 +19,4 @@ Open checklist rows: [`../BACKLOG.md`](../BACKLOG.md).
 | [`resource-benchmarking.md`](resource-benchmarking.md) | BRIEFR + Postgres utilization telemetry (admin RESOURCES page) | RB-1…RB-2 |
 | [`api-key-health-and-quota-findings.md`](api-key-health-and-quota-findings.md) | Findings — RCA doc, most findings now shipped | AKH-1 shipped (#482); AKH-2 nav rename shipped (#486), dead-endpoint removal + HelpTip still open |
 | [`qa-audit-2026-07-12.md`](qa-audit-2026-07-12.md) | Findings — RCA doc, most findings now shipped | QA-F1 shipped (#484); QA-U1…U3 still open |
+| [`post-ui-audit-2026-07-15.md`](post-ui-audit-2026-07-15.md) | Post–UI modernization UX remediation + ARCH IA | PM-0…PM-4 phases — see BACKLOG §12 |
