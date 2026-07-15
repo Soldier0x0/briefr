@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { RotateCcw } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
-import { Card, CardTitle, Pill, PillGroup, Slider } from '../../components/ui/index.js'
+import { Card, CardTitle, Pill, PillGroup, Select } from '../../components/ui/index.js'
 import ToggleSwitch from './shared/ToggleSwitch.jsx'
 import {
   getDisplayPrefs,
@@ -16,8 +16,7 @@ import {
 import {
   clearTypographyPreview,
   normalizeTypographyPx,
-  PX_MIN,
-  PX_MAX,
+  PX_OPTIONS,
   setTypographyPreview,
   TYPOGRAPHY_LABELS,
   TYPOGRAPHY_ROLES,
@@ -127,16 +126,22 @@ export default function DisplayPage() {
         </p>
         <div className="display-typography-grid">
           {TYPOGRAPHY_ROLES.map(role => (
-            <Slider
-              key={role}
-              label={TYPOGRAPHY_LABELS[role]}
-              value={typographyDraft[role]}
-              min={PX_MIN}
-              max={PX_MAX}
-              step={1}
-              valueSuffix="px"
-              onChange={px => updateTypographyRole(role, px)}
-            />
+            <div key={role} className="display-typography-row">
+              <label className="display-typography-row-label" htmlFor={`typography-${role}`}>
+                {TYPOGRAPHY_LABELS[role]}
+              </label>
+              <Select
+                id={`typography-${role}`}
+                className="display-typography-select"
+                value={String(typographyDraft[role])}
+                onValueChange={(val) => updateTypographyRole(role, Number(val))}
+                options={PX_OPTIONS.map(px => ({
+                  value: String(px),
+                  label: `${px}px`,
+                }))}
+                aria-label={`${TYPOGRAPHY_LABELS[role]} size`}
+              />
+            </div>
           ))}
         </div>
         <div className="display-typography-actions">
@@ -152,7 +157,7 @@ export default function DisplayPage() {
             </button>
           ) : null}
           <button type="button" className="admin-btn admin-btn-ghost" onClick={resetTypographyDraft} disabled={saving}>
-            Reset draft
+            Reset to default
           </button>
         </div>
         {status ? (

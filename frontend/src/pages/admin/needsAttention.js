@@ -1,4 +1,4 @@
-import { sourceLabel, fmtAge } from './formatters.js'
+import { fmtAge, sourceLabel } from './formatters.js'
 import { jobLabel } from './catalog.js'
 import { nvdStaleDetail } from './intelStatus.js'
 import { CIRCUIT_UI } from './circuitLabels.js'
@@ -107,9 +107,9 @@ export function collectNeedsAttentionItems(
       id: 'nvd-stale',
       severity: nvdAge > NVD_RED_SECONDS ? 'error' : 'warning',
       title: 'NIST CVE feed is stale',
-      detail: nvdStaleDetail(system) || `Last sync ${fmtAge(nvdAge)} ago.`,
-      pageId: 'feedhealth',
-      actionLabel: 'View feed health',
+      detail: `${nvdStaleDetail(system) || `Last sync ${fmtAge(nvdAge)} ago.`} The NVD API may still show OK on Feed health — that only means the last HTTP check succeeded, not that the scheduled sync ran on time.`,
+      pageId: 'scheduler',
+      actionLabel: 'Run NVD sync',
     })
   }
 

@@ -51,7 +51,7 @@ describe('collectNeedsAttentionItems (E8-3)', () => {
       last_nvd_sync_age_seconds: 20000,
       last_backup_age_seconds: 50000,
     })
-    assert.ok(items.some(i => i.id === 'nvd-stale' && i.severity === 'error'))
+    assert.ok(items.some(i => i.id === 'nvd-stale' && i.severity === 'error' && i.pageId === 'scheduler'))
     assert.ok(items.some(i => i.id === 'backup-stale'))
   })
 })

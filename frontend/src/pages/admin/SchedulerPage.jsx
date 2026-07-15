@@ -37,6 +37,13 @@ export default function SchedulerPage({ toast, system }) {
 
   useEffect(() => { loadJobs() }, [])
 
+  useEffect(() => {
+    const locked = jobs?.some((j) => j.status === 'LOCKED')
+    if (!locked) return undefined
+    const id = setInterval(loadJobs, 3000)
+    return () => clearInterval(id)
+  }, [jobs])
+
   async function runNow(jobId, { retry = false } = {}) {
     setRunning(r => ({ ...r, [jobId]: true }))
     try {
@@ -172,8 +179,23 @@ export default function SchedulerPage({ toast, system }) {
           })}
         </div>
         {activeLocks.length > 0 && (
-          <div style={{ fontSize: '0.75rem', color: 'var(--amber)', marginTop: '0.5rem' }}>
-            {activeLocks.map(l => jobLabel(l.job_id, 'operator')).join(', ')} currently running
+          <div className="admin-job-running-banner" role="status">
+            <span className="admin-spinner" aria-hidden="true" />
+            <div>
+              <div className="admin-job-running-banner-title">Jobs running now</div>
+              <ul className="admin-job-running-banner-list">
+                {activeLocks.map((lock) => {
+                  const job = (jobs || []).find((j) => j.id === lock.job_id)
+                  const progress = job?.progress_message
+                  return (
+                    <li key={lock.job_id}>
+                      <strong>{jobLabel(lock.job_id, 'operator')}</strong>
+                      {progress ? ` — ${progress}` : ' — working…'}
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
           </div>
         )}
       </div>

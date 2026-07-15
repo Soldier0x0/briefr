@@ -91,7 +91,21 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
               <tr key={job.id}>
                 {showIds && <td className="mono" style={{ fontSize: '0.7rem' }}>{job.id}</td>}
                 <td style={{ fontSize: '0.8rem' }}>{jobLabel(job.id, 'operator') || job.name}</td>
-                <td><JobStatusBadge status={job.status} mode="operator" /></td>
+                <td>
+                  {job.status === 'LOCKED' ? (
+                    <div className="admin-job-progress-cell">
+                      <JobStatusBadge status={job.status} mode="operator" />
+                      <div className="admin-job-progress-track" aria-hidden="true">
+                        <div className="admin-job-progress-indeterminate" />
+                      </div>
+                      <div className="admin-job-progress-message">
+                        {job.progress_message || 'Running — waiting for status update…'}
+                      </div>
+                    </div>
+                  ) : (
+                    <JobStatusBadge status={job.status} mode="operator" />
+                  )}
+                </td>
                 <td style={{ fontSize: '0.75rem' }}>{fmtIso(job.last_run_utc)}</td>
                 <td>{fmtDur(job.last_run_duration_seconds)}</td>
                 <td>{job.last_run_records_upserted ?? '—'}</td>

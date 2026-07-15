@@ -1693,9 +1693,23 @@
   flex-shrink: 0;
 }
 
-.admin-statusbar-clock .header-clock-btn {
-  font-size: 11px;
-  padding: 4px 8px;
+/* Softer accent highlights in admin (focus rings, active chips, toggles) */
+.admin-page,
+.admin-statusbar {
+  --focus-ring: 0 0 0 1px var(--background-primary),
+    0 0 0 2px color-mix(in srgb, var(--accent-primary) 38%, transparent);
+}
+
+.admin-mode-toggle-btn.active {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-primary) 32%, transparent);
+}
+
+.filter-chip.active {
+  border-color: color-mix(in srgb, var(--accent-primary) 45%, var(--border-strong));
+}
+
+.admin-sidebar .nav-item.active {
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--accent-selected) 65%, transparent);
 }
 
 .admin-mode-toggle-group {
@@ -2193,9 +2207,24 @@
 
 .display-typography-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-  gap: 0.75rem 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.65rem 1rem;
   margin-bottom: 0.85rem;
+}
+
+.display-typography-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.display-typography-row-label {
+  font-size: var(--type-meta, 0.75rem);
+  color: var(--text2);
+}
+
+.display-typography-select {
+  width: 100%;
 }
 
 .display-typography-actions {
@@ -2209,6 +2238,71 @@
   margin: 0.65rem 0 0;
   font-size: var(--type-meta);
   color: var(--text3);
+}
+
+.admin-job-running-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  background: color-mix(in srgb, var(--amber) 8%, var(--bg3));
+  border: 1px solid color-mix(in srgb, var(--amber) 28%, var(--border));
+  border-radius: var(--radius-sm, 4px);
+  font-size: 0.75rem;
+  color: var(--text2);
+}
+
+.admin-job-running-banner-title {
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+
+.admin-job-running-banner-list {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.admin-job-progress-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 22rem;
+}
+
+.admin-job-progress-track {
+  height: 3px;
+  background: var(--border2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.admin-job-progress-indeterminate {
+  width: 40%;
+  height: 100%;
+  background: color-mix(in srgb, var(--accent-primary) 55%, transparent);
+  border-radius: 999px;
+  animation: admin-job-progress-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes admin-job-progress-slide {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
+}
+
+.admin-job-progress-message {
+  font-size: 0.7rem;
+  color: var(--text3);
+  line-height: 1.35;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-job-progress-indeterminate {
+    animation: none;
+    width: 100%;
+    opacity: 0.45;
+  }
 }
 
 /* ── Toggle switch ──────────────────────────────────────────────────────── */
