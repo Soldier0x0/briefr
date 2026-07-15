@@ -19,18 +19,15 @@ import {
   barActiveProps,
   chartAnimationDuration,
   getRechartsTheme,
+  categoryAxisWidth,
   legendStyle,
   rechartsMargin,
   tooltipContentStyle,
   tooltipCursorStyle,
   tooltipItemStyle,
   tooltipLabelStyle,
+  verticalBarChartHeight,
 } from '../../../utils/rechartsTheme.js'
-
-function ingestJobTickLabel(label) {
-  if (!label) return ''
-  return label.length > 18 ? `${label.slice(0, 18)}…` : label
-}
 
 function ingestScaleMax(secondsList) {
   if (!secondsList.length) return undefined
@@ -48,23 +45,25 @@ function backupSparklineLabel(row) {
 
 export function IngestDurationChart({ rows }) {
   const theme = getRechartsTheme()
+  const labels = rows.map((r) => r.label)
   const durations = rows.map((r) => r.seconds)
   const scaleMax = ingestScaleMax(durations)
+  const yAxisWidth = categoryAxisWidth(labels)
+  const chartHeight = verticalBarChartHeight(rows.length)
   const data = rows.map((row) => ({
-    label: ingestJobTickLabel(row.label),
-    fullLabel: row.label,
+    label: row.label,
     seconds: row.seconds,
     hadError: row.hadError,
   }))
   const anim = chartAnimationDuration()
 
   return (
-    <ChartShell height={200} ariaLabel="Ingest job duration chart" className="admin-ops-chart-wrap">
+    <ChartShell height={chartHeight} ariaLabel="Ingest job duration chart" className="admin-ops-chart-wrap">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={data}
           layout="vertical"
-          margin={rechartsMargin({ left: 12, right: 12, top: 8, bottom: 8 })}
+          margin={rechartsMargin({ left: 8, right: 12, top: 8, bottom: 8 })}
         >
           <CartesianGrid stroke={theme.grid} horizontal={false} />
           <XAxis
@@ -82,8 +81,8 @@ export function IngestDurationChart({ rows }) {
           <YAxis
             type="category"
             dataKey="label"
-            width={132}
-            tick={axisTickStyle(theme)}
+            width={yAxisWidth}
+            tick={{ ...axisTickStyle(theme), textAnchor: 'end' }}
             interval={0}
           />
           <Tooltip
@@ -95,7 +94,6 @@ export function IngestDurationChart({ rows }) {
               const err = item?.payload?.hadError ? ' (last run errored)' : ''
               return [`${fmtDur(Number(value))}${err}`, 'Last run duration']
             }}
-            labelFormatter={(_label, payload) => payload?.[0]?.payload?.fullLabel || _label}
           />
           <Bar
             dataKey="seconds"

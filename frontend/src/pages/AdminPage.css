@@ -2051,7 +2051,7 @@
 
 .admin-ops-chart-wrap {
   position: relative;
-  height: 200px;
+  min-height: 200px;
 }
 
 .admin-ops-chart-empty {

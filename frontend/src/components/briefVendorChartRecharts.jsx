@@ -13,6 +13,7 @@ import {
   axisLabelStyle,
   axisTickStyle,
   barActiveProps,
+  categoryAxisWidth,
   chartAnimationDuration,
   getRechartsTheme,
   rechartsMargin,
@@ -20,25 +21,24 @@ import {
   tooltipCursorStyle,
   tooltipItemStyle,
   tooltipLabelStyle,
+  verticalBarChartHeight,
 } from '../utils/rechartsTheme.js'
-
-function shortVendorLabel(name) {
-  if (!name) return 'Unknown'
-  return name.length > 28 ? `${name.slice(0, 28)}…` : name
-}
 
 export function VendorKevChart({ rows }) {
   const theme = getRechartsTheme()
   const anim = chartAnimationDuration()
+  const vendors = rows.map((row) => row.vendor || 'Unknown')
+  const yAxisWidth = categoryAxisWidth(vendors, { min: 100, max: 220 })
+  const chartHeight = verticalBarChartHeight(rows.length, { min: 180 })
   const data = rows.map((row) => ({
-    label: shortVendorLabel(row.vendor),
+    label: row.vendor || 'Unknown',
     vendor: row.vendor,
     kev_count: row.kev_count,
   }))
 
   return (
     <ChartShell
-      height={200}
+      height={chartHeight}
       ariaLabel="Top KEV vendors by entry count"
       className="brief-chart-canvas-wrap brief-chart-canvas-wrap--kev"
     >
@@ -46,7 +46,7 @@ export function VendorKevChart({ rows }) {
         <BarChart
           data={data}
           layout="vertical"
-          margin={rechartsMargin({ left: 8, right: 12 })}
+          margin={rechartsMargin({ left: 8, right: 12, top: 8, bottom: 8 })}
         >
           <CartesianGrid stroke={theme.grid} horizontal={false} />
           <XAxis
@@ -63,8 +63,8 @@ export function VendorKevChart({ rows }) {
           <YAxis
             type="category"
             dataKey="label"
-            width={120}
-            tick={axisTickStyle(theme)}
+            width={yAxisWidth}
+            tick={{ ...axisTickStyle(theme), textAnchor: 'end' }}
             interval={0}
           />
           <Tooltip

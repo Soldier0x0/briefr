@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timedelta, timezone
 
-from db.timeutil import utcnow_str
+from db.timeutil import utcnow_for_db, utcnow_str
 from db.types import DbConnection
 
 TRACKED_CVE_FIELDS = frozenset({"cvss_score", "epss_score", "is_kev", "has_poc"})
@@ -378,12 +378,10 @@ async def _insert_cve_changes_batch(
 ) -> None:
     if not rows:
         return
-    sql = (
-        _INSERT_CVE_CHANGE_PG
-        if _is_postgres_connection(db)
-        else _INSERT_CVE_CHANGE_SQLITE
-    )
-    await db.executemany(sql, [(*r, utcnow_str()) for r in rows])
+    pg = _is_postgres_connection(db)
+    sql = _INSERT_CVE_CHANGE_PG if pg else _INSERT_CVE_CHANGE_SQLITE
+    detected_at = utcnow_for_db(pg=pg)
+    await db.executemany(sql, [(*r, detected_at) for r in rows])
 
 
 async def _load_cve_change_snapshots(
