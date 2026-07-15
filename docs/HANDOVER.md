@@ -24,6 +24,8 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 **What:** `Slider` primitive (`@radix-ui/react-slider`) with token-styled track/thumb; `nativeRangeGate.test.js` grep gate. Proof-of-fit: Admin → Display typography px controls use sliders (9–20px) instead of per-role dropdowns; removed orphan `UiSelect`.
 
+**PR:** #596 (merged)
+
 **Next:** E3-7 Badge/Card/StatCard/EmptyState/Toast consolidation.
 
 ---
