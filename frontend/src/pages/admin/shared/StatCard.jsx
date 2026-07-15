@@ -4,7 +4,7 @@ const TONE_CLASS = {
   'color-red': 'admin-stat-card--err',
 }
 
-export default function StatCard({ label, value, subLabel, colorClass, valueStyle }) {
+export default function StatCard({ label, value, subLabel, subLabelTitle, colorClass, valueStyle }) {
   const tone = TONE_CLASS[colorClass] || ''
   return (
     <div className={`stat-card admin-stat-card ${tone}`}>
@@ -15,7 +15,14 @@ export default function StatCard({ label, value, subLabel, colorClass, valueStyl
       >
         {value ?? '—'}
       </div>
-      {subLabel && <div className="stat-card-sub admin-stat-card-sub">{subLabel}</div>}
+      {subLabel && (
+        <div
+          className="stat-card-sub admin-stat-card-sub"
+          title={subLabelTitle || (subLabel.length > 36 ? subLabel : undefined)}
+        >
+          {subLabel}
+        </div>
+      )}
     </div>
   )
 }

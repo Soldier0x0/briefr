@@ -1872,6 +1872,17 @@
   margin-top: 4px;
   font-size: var(--type-meta);
   color: var(--admin-text-muted);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.admin-env-key {
+  display: inline-block;
+  max-width: 14rem;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  vertical-align: middle;
 }
 
 .admin-stat-card--ok .admin-stat-card-value { color: var(--admin-success); }

@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E9-3 AI ops label wrap/truncation
+
+**What:** StatCard sublabels use human copy + `title` tooltip; `.admin-stat-card-sub` and `.admin-env-key` wrap long env var names (AI_OPERATIONS_RECORD).
+
+**Next:** E9-1 failure-rate alert styling → E3-3 DataGrid.
+
+---
+
 ## 2026-07-15 — E5-5 threat scenarios drop empty operational tab
 
 **What:** Threat Scenarios hides the placeholder "Operational paths" catalog until `threat_scenarios.yaml` has rows; defaults to self-stack; tab strip hidden when only one catalog remains.
