@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E3-7 Badge/Card/StatCard/EmptyState/Toast consolidation
+
+**What:** Consolidated composite primitives into `components/ui/`: `StatCard`, `Card`/`CardTitle`, `Pill`/`PillGroup`, `Toast` (moved from `components/Toast.jsx` with re-export shim). `Badge`/`EmptyState` already in ui. Proof-of-fit: Admin → Display uses `Card` + `Pill`; `main.jsx` mounts `ToastProvider` from ui.
+
+**Next:** E8-1 unify active-state across shells (or remaining E3 tail if any).
+
+---
+
 ## 2026-07-15 — E3-6 Radix Slider primitive
 
 **What:** `Slider` primitive (`@radix-ui/react-slider`) with token-styled track/thumb; `nativeRangeGate.test.js` grep gate. Proof-of-fit: Admin → Display typography px controls use sliders (9–20px) instead of per-role dropdowns; removed orphan `UiSelect`.
