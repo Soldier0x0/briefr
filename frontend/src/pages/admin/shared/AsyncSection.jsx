@@ -1,17 +1,17 @@
-import { Loader2, AlertCircle, Inbox } from 'lucide-react'
+import { AlertCircle, Inbox } from 'lucide-react'
+import { AdminPageSkeleton } from './AdminSkeletons.jsx'
 
 // Wraps a page's primary data load in a consistent loading / error / empty / success
-// state, so failed API calls surface a retry button instead of hanging on "Loading…"
+// state, so failed API calls surface a retry button instead of hanging on spinners
 // forever (the old PageBackups/PageStorage/etc. pattern of catch { setX([]) }).
-export default function AsyncSection({ data, error, loading, onRetry, emptyMessage = 'No entries', children }) {
-  if (loading && data == null) {
-    return (
-      <div className="admin-empty">
-        <Loader2 className="admin-empty-icon spin" size={20} strokeWidth={2} />
-        <div>Loading…</div>
-      </div>
-    )
-  }
+export default function AsyncSection({
+  data,
+  error,
+  onRetry,
+  emptyMessage = 'No entries',
+  skeletonVariant = 'default',
+  children,
+}) {
   if (error) {
     return (
       <div className="admin-empty" style={{ color: 'var(--red)' }}>
@@ -25,14 +25,11 @@ export default function AsyncSection({ data, error, loading, onRetry, emptyMessa
       </div>
     )
   }
+
   if (data == null) {
-    return (
-      <div className="admin-empty">
-        <Loader2 className="admin-empty-icon spin" size={20} strokeWidth={2} />
-        <div>Loading…</div>
-      </div>
-    )
+    return <AdminPageSkeleton variant={skeletonVariant} />
   }
+
   if (Array.isArray(data) && data.length === 0) {
     return (
       <div className="admin-empty">
@@ -41,5 +38,6 @@ export default function AsyncSection({ data, error, loading, onRetry, emptyMessa
       </div>
     )
   }
+
   return children(data)
 }

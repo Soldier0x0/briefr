@@ -8,6 +8,7 @@ import {
 } from '../utils/notificationsApi.js'
 import { playNotificationChime } from '../utils/notificationChime.js'
 import { fmtIso } from '../pages/admin/formatters.js'
+import { NotificationListSkeleton } from '../pages/admin/shared/AdminSkeletons.jsx'
 import './NotificationBell.css'
 
 const UNDO_MS = 5000
@@ -208,7 +209,7 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
             </div>
           </div>
           {loading && !items.length && (
-            <p className="notification-bell-empty mono">Loading…</p>
+            <NotificationListSkeleton rows={3} />
           )}
           {!loading && !visibleItems.length && (
             <p className="notification-bell-empty mono">No notifications.</p>

@@ -278,7 +278,7 @@ export default function ResourcesPage() {
         ))}
       </div>
 
-      <AsyncSection data={payload} error={loadError} onRetry={load}>
+      <AsyncSection data={payload} error={loadError} onRetry={load} skeletonVariant="chart">
         {() => (
           <>
             {degraded?.code && degraded.code !== 'ok' && (

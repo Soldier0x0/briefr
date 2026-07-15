@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { adminApi } from '../../api.js'
 import HelpTip from './shared/HelpTip.jsx'
+import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
 
 function BucketRow({ bucket, expanded, onToggle }) {
   return (
@@ -70,7 +71,11 @@ export default function RateLimitPage({ toast }) {
       <div className="admin-card">
         <div className="admin-card-title">Buckets</div>
         {!data ? (
-          <p style={{ color: 'var(--fg3)', fontSize: '0.85rem', margin: '0.5rem 0 0' }}>Loading…</p>
+          <table className="admin-table admin-skeleton-table" role="status" aria-label="Loading rate limit buckets">
+            <tbody>
+              <AdminTableBodySkeletonRows rows={5} cols={5} />
+            </tbody>
+          </table>
         ) : (
           <div style={{ overflowX: 'auto', marginTop: '0.5rem' }}>
             <table className="admin-table">

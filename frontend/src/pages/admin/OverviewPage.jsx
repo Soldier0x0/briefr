@@ -14,6 +14,7 @@ import {
   schedulerJobRetry,
 } from './toastCopy.js'
 import OpsCharts from './shared/OpsCharts.jsx'
+import { AdminPageSkeleton } from './shared/AdminSkeletons.jsx'
 
 function AnalystOverview({ system, toast }) {
   const [running, setRunning] = useState({})
@@ -421,7 +422,7 @@ function OperatorOverview({ system, toast }) {
 }
 
 export default function OverviewPage({ system, toast, mode = 'analyst' }) {
-  if (!system) return <div className="admin-empty">Loading…</div>
+  if (!system) return <AdminPageSkeleton variant="default" />
   return mode === 'analyst'
     ? <AnalystOverview system={system} toast={toast} />
     : <OperatorOverview system={system} toast={toast} />

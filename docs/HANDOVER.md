@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E7-2 loading skeletons
+
+**What:** Shared `AdminSkeletons` (table rows, stat row, chart block, page/form layouts) + `SkeletonStack` default for `AsyncState`; `AsyncSection` drops Loader2 spinner for skeleton variants; admin tables (watchlist, audit, ingest log, job table, rate limits), overview, API keys, notification bell, and OpsCharts use layout-preserving skeletons instead of "Loading…" text.
+
+**Next:** E7-3 copy/export feedback → E7-4 spacing.
+
+---
+
 ## 2026-07-15 — E7-1 hover/press affordance
 
 **What:** Motion-token transitions + `:active` press on feed filter/vendor chips, header icon controls, notification bell, chart toggles; stronger vendor-chip hover; admin StatCards static (`cursor: default`, no false hover); ARCH clickable stat cards keep hover/press.

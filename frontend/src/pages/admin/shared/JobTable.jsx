@@ -7,6 +7,7 @@ import { fmtIso, fmtDur } from '../formatters.js'
 import { jobLabel, statusLabel, statusHint } from '../catalog.js'
 import { canPauseResume, canRunNow, nextRunCell, nextRunTitle } from '../jobActions.js'
 import { getDisplayPrefs, setDisplayPrefs } from '../../../utils/displayPrefs.js'
+import { AdminTableBodySkeletonRows } from './AdminSkeletons.jsx'
 
 export function JobStatusBadge({ status, mode = 'operator' }) {
   const map = {
@@ -35,7 +36,15 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
     setDisplayPrefs({ showTechnicalIds: v })
   }
 
-  if (!jobs) return <div className="admin-empty">Loading…</div>
+  if (!jobs) {
+    return (
+      <table className="admin-table admin-skeleton-table" role="status" aria-label="Loading scheduler jobs">
+        <tbody>
+          <AdminTableBodySkeletonRows rows={6} cols={mode === 'analyst' ? 4 : 8} />
+        </tbody>
+      </table>
+    )
+  }
   if (jobs.length === 0) return <div className="admin-empty">No scheduled jobs found — jobs register when the backend scheduler starts. Try restarting the backend service.</div>
 
   if (mode === 'analyst') {

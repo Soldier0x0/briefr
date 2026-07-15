@@ -193,7 +193,7 @@ export default function BackupsPage({ toast, system }) {
       </div>
 
       <div className="admin-card">
-        <AsyncSection data={backups} error={loadError} onRetry={load} emptyMessage="No backups found">
+        <AsyncSection data={backups} error={loadError} onRetry={load} emptyMessage="No backups found" skeletonVariant="table">
           {() => (
             <>
               <table className="admin-table">
