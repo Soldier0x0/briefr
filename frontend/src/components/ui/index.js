@@ -16,6 +16,7 @@ export { default as ChartDataTable } from './ChartDataTable.jsx'
 export { default as AlertDialog } from './AlertDialog.jsx'
 export { default as ChartShell } from './ChartShell.jsx'
 export { default as Select, SelectGroup, SelectLabel, SelectItem } from './Select.jsx'
+export { default as Slider } from './Slider.jsx'
 export { default as Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs.jsx'
 export {
   default as DropdownMenu,

@@ -349,7 +349,7 @@ numbers recorded in the closing PR body:
 
 **Primitives (E3)**
 - [x] E3-1 Checkbox/Switch/Radio (admin surfaces) — #568  [x] E3-2 Tooltip/Popover — #563  [x] E3-3 Table/DataGrid
-- [x] E3-4 Dialog/AlertDialog  [x] E3-5 Tabs/Dropdown/Select — #595  [ ] E3-6 Slider  [ ] E3-7 Badge/Card/StatCard/EmptyState/Toast
+- [x] E3-4 Dialog/AlertDialog  [x] E3-5 Tabs/Dropdown/Select — #595  [ ] E3-6 Slider — #TBD  [ ] E3-7 Badge/Card/StatCard/EmptyState/Toast
 
 **Semantics (E4)**
 - [x] E4-1 one selection accent  [x] E4-2 red reserved  [x] E4-3 card severity accent — #TBD  [x] E4-4 legends — #TBD
