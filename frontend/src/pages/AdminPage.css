@@ -1199,11 +1199,7 @@
 .admin-modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  z-index: var(--z-modal);
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(4px);
 }
@@ -2587,17 +2583,17 @@
 /* ── Modal ──────────────────────────────────────────────────────────────── */
 
 @keyframes admin-modal-fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes admin-modal-scale-in { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes admin-modal-scale-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1) translateY(0); }
+}
 
 .admin-modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(2px);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  z-index: var(--z-modal);
   animation: admin-modal-fade-in 0.15s ease-out;
 }
 
