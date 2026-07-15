@@ -5,7 +5,7 @@ import { notifyApiError } from './Toast.jsx'
 import { useAssetProfileOptional } from '../context/AssetProfileContext.jsx'
 import { profileToMatchAssets } from '../utils/assetProfileIo.js'
 import { Checkbox } from './ui/index.js'
-import { StatusChip } from './forge/shared.jsx'
+import { StatusChip, ForgeStatusLegend } from './forge/shared.jsx'
 import CoverageView from './forge/CoverageView.jsx'
 import ScenariosView from './forge/ScenariosView.jsx'
 import CampaignsView from './forge/CampaignsView.jsx'
@@ -192,13 +192,13 @@ export default function Forge() {
 
           {counts && (
             <div className="fg-counts fg-counts-nav" role="status" aria-label="Coverage summary">
-              <span className="fg-count mono" title={`${counts.gap ?? 0} technique${(counts.gap ?? 0) === 1 ? '' : 's'} with no detection content — no bundled or saved hunt pack yet`}>
+              <span className="fg-count mono">
                 <StatusChip status="gap" /> {counts.gap}
               </span>
-              <span className="fg-count mono" title={`${counts.community ?? 0} technique${(counts.community ?? 0) === 1 ? '' : 's'} with community hunt templates available — validate before production`}>
+              <span className="fg-count mono">
                 <StatusChip status="community" /> {counts.community}
               </span>
-              <span className="fg-count mono" title={`${counts.yours ?? 0} technique${(counts.yours ?? 0) === 1 ? '' : 's'} with a hunt pack you've saved`}>
+              <span className="fg-count mono">
                 <StatusChip status="yours" /> {counts.yours}
               </span>
             </div>
@@ -212,6 +212,10 @@ export default function Forge() {
               className="fg-stack-toggle fg-stack-toggle-nav mono"
             />
           )}
+          <details className="severity-legend-feed forge-status-legend-details">
+            <summary className="severity-legend-feed-summary mono">STATUS LEGEND</summary>
+            <ForgeStatusLegend />
+          </details>
         </nav>
 
         <div className="fg-workspace">

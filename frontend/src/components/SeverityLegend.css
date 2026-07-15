@@ -1,0 +1,87 @@
+.severity-legend {
+  font-size: 0.75rem;
+  color: var(--text2);
+  line-height: 1.45;
+}
+
+.severity-legend-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 0.5rem;
+}
+
+.severity-legend-row {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 0.5rem;
+  align-items: start;
+  padding: 0.25rem 0;
+}
+
+.severity-legend-row:last-child {
+  padding-bottom: 0;
+}
+
+.severity-legend-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.severity-legend-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+}
+
+.severity-legend-desc {
+  color: var(--text3);
+}
+
+.severity-legend-feed {
+  margin: 0 0 0.75rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bg2) 55%, transparent);
+}
+
+.severity-legend-feed-summary {
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.severity-legend-feed-summary::-webkit-details-marker {
+  display: none;
+}
+
+.severity-legend-feed-summary:hover {
+  color: var(--text2);
+}
+
+.severity-legend-feed[open] .severity-legend-feed-summary {
+  margin-bottom: 0.5rem;
+  color: var(--text2);
+}
+
+.forge-status-legend {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.forge-status-legend-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.6875rem;
+  color: var(--text3);
+  margin-top: 0.35rem;
+}

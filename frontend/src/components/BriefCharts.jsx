@@ -16,6 +16,9 @@ import TimeWindowPicker, {
   defaultPresetWindow,
   hoursFromWindow,
 } from './TimeWindowPicker.jsx'
+import ControlTooltip from './ControlTooltip.jsx'
+import SeverityLegend from './SeverityLegend.jsx'
+import { severityTooltip } from '../utils/severitySemantics.js'
 import './BriefCharts.css'
 
 const POLL_MS = 5 * 60 * 1000
@@ -112,6 +115,10 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel 
 
   return (
     <div className="brief-epss-table-wrap">
+      <details className="severity-legend-feed brief-epss-severity-legend">
+        <summary className="severity-legend-feed-summary mono">SEVERITY KEY</summary>
+        <SeverityLegend compact />
+      </details>
       <table className="brief-epss-table" aria-label={`Top EPSS movers in the last ${windowLabel}`}>
         <thead>
           <tr>
@@ -135,11 +142,15 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel 
                   >
                     <span className="brief-epss-id mono">{row.cve_id}</span>
                     <span className="brief-epss-sev">
-                      <span
-                        className={`sev-dot ${severityDotClass(row.severity)}`}
-                        title={row.severity || 'Unknown severity'}
-                        aria-hidden="true"
-                      />
+                      <ControlTooltip
+                        text={severityTooltip(row.severity)}
+                        trigger="hover-focus"
+                      >
+                        <span
+                          className={`sev-dot ${severityDotClass(row.severity)}`}
+                          aria-hidden="true"
+                        />
+                      </ControlTooltip>
                     </span>
                     <span className="brief-epss-sparkline-cell">
                       {loading && !history.length ? (

@@ -7,6 +7,7 @@ import { scrollBehavior } from '../utils/motion.js'
 import { buildCombinedReport, copyToClipboard } from '../utils/report.js'
 import PdfExportModal from './PdfExportModal.jsx'
 import FilterBar from './FilterBar.jsx'
+import SeverityLegend from './SeverityLegend.jsx'
 import CVECard from './CVECard.jsx'
 import ScrollToTop from './ScrollToTop.jsx'
 import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
@@ -397,6 +398,10 @@ export default function CVEFeed({
         onGenerateDigest={() => onGenerateDigest && onGenerateDigest(cves)}
         searchFocusTrigger={searchFocusTrigger}
       />
+      <details className="severity-legend-feed">
+        <summary className="severity-legend-feed-summary mono">SEVERITY LEGEND</summary>
+        <SeverityLegend compact />
+      </details>
       <ScrollToTop />
 
       {showError && (

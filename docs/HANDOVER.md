@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E4-4 status/severity legends and portaled tooltips
+
+**What:** Shared `severitySemantics.js` + `SeverityLegend` component. Collapsible legends on CVE feed and BriefCharts EPSS movers; Forge coverage status legend in nav. Portaled `ControlTooltip` on drawer severity badge, Forge `StatusChip`, BriefCharts severity dots, and admin `JobStatusBadge` (replaces native `title`).
+
+**Next:** E3-3 DataGrid primitive → E5-* ARCH re-skin.
+
+---
+
 ## 2026-07-15 — E2-3 column resize via shared colgroup
 
 **What:** `AdminDataGrid` now drives column widths through `<colgroup><col>` with `table-layout:fixed` instead of per-cell `th`/`td` width styles — header and body stay aligned during resize.
