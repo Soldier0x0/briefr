@@ -130,4 +130,5 @@
 
 .data-grid-row-clickable[aria-selected='true'] td {
   background: var(--surface-selected);
+  box-shadow: inset 2px 0 0 var(--accent-selected);
 }

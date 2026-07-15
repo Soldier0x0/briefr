@@ -1041,9 +1041,13 @@
   transition: background-color 0.12s ease-out;
 }
 
-.sa-search-result:hover,
-.sa-search-result.active {
+.sa-search-result:hover {
   background: var(--bg3);
+}
+
+.sa-search-result.active {
+  background: var(--surface-selected);
+  color: var(--accent-selected);
 }
 
 .sa-search-result-title {

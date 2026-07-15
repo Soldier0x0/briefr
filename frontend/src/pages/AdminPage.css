@@ -249,14 +249,10 @@
   color: var(--admin-text);
 }
 
-.admin-mode-btn--active.admin-mode-btn--analyst {
-  background: var(--admin-accent-dim);
-  color: var(--admin-accent-text);
-}
-
+.admin-mode-btn--active.admin-mode-btn--analyst,
 .admin-mode-btn--active.admin-mode-btn--operator {
-  background: var(--admin-purple-dim);
-  color: var(--admin-secondary-text);
+  background: var(--surface-selected);
+  color: var(--accent-selected);
 }
 
 .admin-status-action {
@@ -388,14 +384,14 @@
 }
 
 .admin-nav-item--active {
-  background: var(--admin-mode-dim, var(--admin-accent-dim));
-  color: var(--admin-text);
-  box-shadow: inset 3px 0 0 var(--admin-mode-accent, var(--admin-accent));
+  background: var(--surface-selected);
+  color: var(--accent-selected);
+  box-shadow: inset 3px 0 0 var(--accent-selected);
 }
 
 .admin-nav-item--active svg {
   opacity: 1;
-  color: var(--admin-mode-accent, var(--admin-accent));
+  color: var(--accent-selected);
 }
 
 .admin-nav-badge {
@@ -634,9 +630,10 @@
 }
 
 .admin-subtab--active {
-  background: var(--admin-mode-dim, var(--admin-accent-dim));
-  color: var(--admin-text);
+  background: var(--surface-selected);
+  color: var(--accent-selected);
   font-weight: 600;
+  box-shadow: inset 0 -2px 0 var(--accent-selected);
 }
 
 /* ── Tables ───────────────────────────────────────────────────────────────── */
@@ -1391,13 +1388,13 @@
 }
 
 .admin-sidebar .nav-item.active {
-  background: var(--admin-mode-dim, var(--admin-accent-dim));
-  color: var(--admin-text);
-  box-shadow: inset 3px 0 0 var(--admin-mode-accent, var(--admin-accent));
+  background: var(--surface-selected);
+  color: var(--accent-selected);
+  box-shadow: inset 3px 0 0 var(--accent-selected);
 }
 
 .admin-sidebar .nav-item.active .nav-icon {
-  color: var(--admin-mode-accent, var(--admin-accent));
+  color: var(--accent-selected);
 }
 
 .admin-sidebar .nav-badge {
@@ -1597,14 +1594,11 @@
   color: var(--admin-text);
 }
 
-.admin-mode-toggle-btn.active:first-child {
-  background: var(--admin-accent-dim);
-  color: var(--admin-accent-text);
-}
-
+.admin-mode-toggle-btn.active,
+.admin-mode-toggle-btn.active:first-child,
 .admin-mode-toggle-btn.active:last-child {
-  background: var(--admin-purple-dim);
-  color: var(--admin-secondary-text);
+  background: var(--surface-selected);
+  color: var(--accent-selected);
 }
 
 .intel-banner {
@@ -2690,8 +2684,8 @@
 }
 
 .admin-mode-toggle-btn.active {
-  background: var(--accent);
-  color: var(--bg1);
+  background: var(--surface-selected);
+  color: var(--accent-selected);
 }
 
 /* ── Intel banner (Analyst overview health summary) ────────────────────── */
@@ -3045,8 +3039,8 @@
 }
 
 .admin-data-grid-row-clickable[aria-selected="true"] td {
-  background: var(--admin-accent-dim);
-  box-shadow: inset 2px 0 0 var(--admin-accent);
+  background: var(--surface-selected);
+  box-shadow: inset 2px 0 0 var(--accent-selected);
 }
 
 .config-section-header {

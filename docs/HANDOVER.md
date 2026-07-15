@@ -20,13 +20,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E8-1 unify active-state across shells
+
+**What:** Routed nav/sidebar/tab/chip/row selection styling to `--accent-selected` + `--surface-selected` across Admin (sidebar, mode toggles, subtabs, data-grid rows), Forge (nav tabs, technique/scenario selection), DetailDrawer tabs, feed bulk-select, IOC lookup, timeline heatmap, ARCH search results, command palette, and wallboard. Added `activeStateGate.test.js` to block admin-orange selection tokens in active/selected rules.
+
+**Next:** E8-2 Admin breadcrumbs / "you are here".
+
+---
+
 ## 2026-07-15 — E3-7 Badge/Card/StatCard/EmptyState/Toast consolidation
 
 **What:** Consolidated composite primitives into `components/ui/`: `StatCard`, `Card`/`CardTitle`, `Pill`/`PillGroup`, `Toast` (moved from `components/Toast.jsx` with re-export shim). `Badge`/`EmptyState` already in ui. Proof-of-fit: Admin → Display uses `Card` + `Pill`; `main.jsx` mounts `ToastProvider` from ui.
 
 **PR:** #597 (merged)
 
-**Next:** E8-1 unify active-state across shells.
+**Next:** E8-2 Admin breadcrumbs / "you are here".
 
 ---
 

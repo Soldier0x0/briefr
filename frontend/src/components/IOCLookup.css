@@ -68,8 +68,9 @@
 
 .ioc-indicator-chip:hover,
 .ioc-indicator-chip.selected {
-  border-color: var(--accent);
-  color: var(--text);
+  border-color: var(--accent-selected);
+  color: var(--accent-selected);
+  background: var(--surface-selected);
 }
 
 .ioc-chip-type {
@@ -192,9 +193,9 @@
 }
 
 .ioc-type-btn.selected {
-  color: var(--text);
-  background: var(--bg2);
-  border-bottom: 2px solid var(--accent);
+  color: var(--accent-selected);
+  background: var(--surface-selected);
+  border-bottom: 2px solid var(--accent-selected);
 }
 
 .ioc-type-btn.detected:not(.selected) {

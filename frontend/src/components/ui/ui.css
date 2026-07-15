@@ -825,7 +825,9 @@
 }
 
 .ui-tabs-trigger[data-state='active'] {
-  color: var(--text);
+  color: var(--accent-selected);
+  border-color: var(--accent-selected);
+  background: var(--surface-selected);
 }
 
 .ui-tabs-content {

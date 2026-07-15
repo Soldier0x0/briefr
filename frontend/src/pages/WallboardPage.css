@@ -58,8 +58,9 @@
 }
 
 .wallboard-page-btn--active {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-selected);
+  color: var(--accent-selected);
+  background: var(--surface-selected);
 }
 
 .wallboard-banner {
@@ -132,7 +133,8 @@
 }
 
 .wallboard-tile--active {
-  border-color: var(--accent);
+  border-color: var(--accent-selected);
+  background: var(--surface-selected);
 }
 
 .wallboard-tile--wide {
