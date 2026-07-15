@@ -30,11 +30,11 @@
 .cve-card.accent-amber-dim  { border-left-color: color-mix(in srgb, var(--amber) 45%, var(--border)); }
 .cve-card.accent-neutral    { border-left-color: var(--border); }
 
-/* Legacy severity border variants (unused on feed cards; kept for reference) */
-.cve-card.sev-critical { border-left-color: var(--red); }
-.cve-card.sev-high     { border-left-color: var(--amber); }
-.cve-card.sev-medium   { border-left-color: var(--border2); }
-.cve-card.sev-low      { border-left-color: var(--text3); }
+/* Legacy severity border variants — CVSS left accent on feed cards (E4-3) */
+.cve-card.sev-critical { border-left-color: var(--red); border-left-width: 4px; }
+.cve-card.sev-high     { border-left-color: #d4622a; border-left-width: 4px; }
+.cve-card.sev-medium   { border-left-color: var(--amber); border-left-width: 3px; }
+.cve-card.sev-low      { border-left-color: var(--border-strong); border-left-width: 3px; }
 .cve-card.sev-unknown  { border-left-color: var(--border); }
 
 /* Bulk-select highlight */
@@ -388,21 +388,21 @@
 }
 
 .badge-cvss-high {
+  color: #e88a4a;
+  background: color-mix(in srgb, #d4622a 18%, var(--bg));
+  border-color: #d4622a;
+}
+
+.badge-cvss-medium {
   color: var(--amber);
   background: var(--amber-dim);
   border-color: var(--amber);
 }
 
-.badge-cvss-medium {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
-  border-color: var(--accent);
-}
-
 .badge-cvss-low {
-  color: var(--green);
-  background: var(--green-dim);
-  border-color: var(--green);
+  color: var(--text2);
+  background: var(--bg3);
+  border-color: var(--border-strong);
 }
 
 .badge-cvss-unknown {

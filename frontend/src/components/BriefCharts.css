@@ -143,9 +143,9 @@
 }
 
 .badge-epss-delta--low {
-  color: var(--green);
-  border-color: var(--green);
-  background: var(--green-dim);
+  color: var(--text2);
+  border-color: var(--border-strong);
+  background: var(--bg3);
 }
 
 .brief-chart-card-hint {
