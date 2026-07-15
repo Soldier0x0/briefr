@@ -88,21 +88,23 @@ export default function DataGrid({
   const [sorting, setSorting] = useState([])
   const [showColumns, setShowColumns] = useState(false)
   const resizeRef = useRef({ colId: null, startX: 0, startW: 0 })
-  const lastLoadedGridIdRef = useRef(gridId)
+  const isLoadingRef = useRef(false)
 
   useEffect(() => {
+    isLoadingRef.current = true
     const nextPrefs = loadPrefs(gridId, columnIds)
     setVisibleIds(nextPrefs?.visible?.length ? nextPrefs.visible : defaultVisible)
     setWrapCells(nextPrefs ? nextPrefs.wrap : false)
     setCenterCells(nextPrefs ? nextPrefs.center : false)
     setWidths(nextPrefs ? nextPrefs.widths : {})
-    lastLoadedGridIdRef.current = gridId
   }, [gridId, columnIds, defaultVisible])
 
   useEffect(() => {
-    if (lastLoadedGridIdRef.current === gridId) {
-      savePrefs(gridId, { visible: visibleIds, wrap: wrapCells, center: centerCells, widths })
+    if (isLoadingRef.current) {
+      isLoadingRef.current = false
+      return
     }
+    savePrefs(gridId, { visible: visibleIds, wrap: wrapCells, center: centerCells, widths })
   }, [gridId, visibleIds, wrapCells, centerCells, widths])
 
   const tanstackColumns = useMemo(

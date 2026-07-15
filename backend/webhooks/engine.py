@@ -216,10 +216,12 @@ async def dispatch_event(
                     )
                     await db.commit()
                 except Exception as exc:
-                    try:
-                        await db.rollback()
-                    except Exception:
-                        pass
+                    rollback = getattr(db, "rollback", None)
+                    if rollback is not None:
+                        try:
+                            await rollback()
+                        except Exception:
+                            pass
                     logger.warning(
                         "Failed to emit webhook failure notification for %s: %s",
                         dest.id,
