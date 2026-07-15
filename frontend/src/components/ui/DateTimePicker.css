@@ -1,0 +1,160 @@
+.ui-datetime-picker-trigger {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0.35rem 0.65rem;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 4px);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  cursor: pointer;
+  min-width: 11rem;
+  text-align: left;
+  transition: border-color var(--motion-fast, 120ms ease-out),
+    box-shadow var(--motion-fast, 120ms ease-out);
+}
+
+.ui-datetime-picker-trigger:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+.ui-datetime-picker-trigger:focus-visible {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.ui-datetime-picker-trigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ui-datetime-picker-placeholder {
+  color: var(--text3);
+}
+
+.ui-datetime-picker-content {
+  padding: 10px;
+  min-width: 17.5rem;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm, 4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+.ui-datetime-picker-calendar {
+  --rdp-accent-color: var(--accent-primary);
+  --rdp-accent-background-color: var(--red-dim);
+  --rdp-day-height: 2rem;
+  --rdp-day-width: 2rem;
+  --rdp-day_button-border-radius: var(--radius-sm, 4px);
+  --rdp-selected-border: 1px solid var(--accent-primary);
+  --rdp-today-color: var(--accent-primary);
+  --rdp-outside-opacity: 0.45;
+  --rdp-disabled-opacity: 0.35;
+  --rdp-weekday-opacity: 0.75;
+  --rdp-nav_button-height: 1.75rem;
+  --rdp-nav_button-width: 1.75rem;
+  --rdp-nav_button-border-radius: var(--radius-sm, 4px);
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text);
+}
+
+.ui-datetime-picker-calendar .rdp-months {
+  justify-content: center;
+}
+
+.ui-datetime-picker-calendar .rdp-month_caption {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.ui-datetime-picker-calendar .rdp-weekday {
+  color: var(--text3);
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+}
+
+.ui-datetime-picker-calendar .rdp-day_button {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  transition: background var(--motion-fast, 120ms ease-out),
+    border-color var(--motion-fast, 120ms ease-out);
+}
+
+.ui-datetime-picker-calendar .rdp-day_button:hover:not(:disabled) {
+  background: var(--bg3);
+  border-color: var(--border2);
+}
+
+.ui-datetime-picker-calendar .rdp-selected .rdp-day_button {
+  background: var(--red-dim);
+  border-color: var(--accent-primary);
+  color: var(--text);
+}
+
+.ui-datetime-picker-calendar .rdp-nav button {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+}
+
+.ui-datetime-picker-calendar .rdp-nav button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.ui-datetime-picker-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border2);
+}
+
+.ui-datetime-picker-time-label {
+  font-size: 0.5625rem;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  text-transform: uppercase;
+}
+
+.ui-datetime-picker-time-select {
+  font-size: 0.75rem;
+  padding: 4px 6px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm, 4px);
+  color: var(--text);
+  color-scheme: dark;
+  cursor: pointer;
+}
+
+.ui-datetime-picker-time-select:focus-visible {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.ui-datetime-picker-time-sep {
+  color: var(--text3);
+  font-size: 0.75rem;
+}
+
+.ui-datetime-picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border2);
+}

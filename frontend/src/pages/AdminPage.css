@@ -2173,6 +2173,11 @@
 
 .admin-input:focus { border-color: var(--accent-primary); box-shadow: var(--focus-ring); }
 
+.admin-datetime-picker.ui-datetime-picker-trigger {
+  min-width: 10.5rem;
+  font-size: 0.8125rem;
+}
+
 .admin-select {
   padding: 0.35rem 0.65rem;
   background: var(--bg3);

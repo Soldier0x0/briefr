@@ -107,6 +107,15 @@ def test_webhook_delivery_log_list(tmp_path, monkeypatch):
     run_db_test(_run())
 
 
+def test_webhook_health_postgres_counts_sql_casts_attempted_at():
+    """Regression: TEXT attempted_at must cast before comparing to timestamptz interval."""
+    import inspect
+
+    source = inspect.getsource(build_webhook_destination_health)
+    assert "attempted_at::timestamptz" in source
+    assert "attempted_cutoff_expr" in source
+
+
 def test_webhook_destination_health_summary(tmp_path, monkeypatch):
     if not is_postgres():
         db_path = tmp_path / "webhooks_health.db"

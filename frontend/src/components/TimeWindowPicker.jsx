@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react'
-import { Select } from './ui/index.js'
+import { DateTimePicker, Select } from './ui/index.js'
 import { parseDatetimeLocalToIso, toDatetimeLocalValue } from './timeWindowDateUtils.js'
 import './TimeWindowPicker.css'
 
@@ -91,18 +91,6 @@ export default function TimeWindowPicker({
     }
   }
 
-  function handleSinceChange(e) {
-    const next = e.target.value
-    setCustomSince(next)
-    emitCustom(next, customUntil)
-  }
-
-  function handleUntilChange(e) {
-    const next = e.target.value
-    setCustomUntil(next)
-    emitCustom(customSince, next)
-  }
-
   return (
     <div className="time-window-picker" role="group" aria-label={ariaLabel}>
       <label htmlFor={selectId} className="sr-only">{ariaLabel}</label>
@@ -121,22 +109,28 @@ export default function TimeWindowPicker({
         <div className="time-window-custom" aria-label="Custom date and time range">
           <label className="time-window-custom-field">
             <span className="time-window-custom-label mono">From</span>
-            <input
-              type="datetime-local"
-              className="time-window-datetime mono"
+            <DateTimePicker
+              className="time-window-datetime"
               value={customSince}
-              onChange={handleSinceChange}
-              aria-label="Range start date and time"
+              onChange={(next) => {
+                setCustomSince(next)
+                emitCustom(next, customUntil)
+              }}
+              placeholder="From…"
+              ariaLabel="Range start date and time"
             />
           </label>
           <label className="time-window-custom-field">
             <span className="time-window-custom-label mono">To</span>
-            <input
-              type="datetime-local"
-              className="time-window-datetime mono"
+            <DateTimePicker
+              className="time-window-datetime"
               value={customUntil}
-              onChange={handleUntilChange}
-              aria-label="Range end date and time"
+              onChange={(next) => {
+                setCustomUntil(next)
+                emitCustom(customSince, next)
+              }}
+              placeholder="To…"
+              ariaLabel="Range end date and time"
             />
           </label>
         </div>
