@@ -1389,6 +1389,83 @@
   font-weight: 600;
 }
 
+/* E8-3 — needs-attention landing on overview */
+.admin-needs-attention {
+  margin-bottom: 1.25rem;
+  padding: 14px 16px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface-raised);
+}
+
+.admin-needs-attention-header {
+  margin-bottom: 0.75rem;
+}
+
+.admin-needs-attention-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--admin-text);
+}
+
+.admin-needs-attention-summary {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--admin-text-muted);
+}
+
+.admin-needs-attention-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-needs-attention-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--admin-border);
+  border-left-width: 3px;
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+}
+
+.admin-needs-attention-item--error {
+  border-left-color: var(--status-error, var(--red));
+}
+
+.admin-needs-attention-item--warning {
+  border-left-color: var(--status-warning, var(--amber));
+}
+
+.admin-needs-attention-item-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--admin-text);
+}
+
+.admin-needs-attention-item-detail {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+  line-height: 1.45;
+}
+
+.admin-needs-attention-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-needs-attention-action {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+}
+
 .admin-content > div:not([hidden]) {
   animation: admin-page-in 0.25s var(--admin-ease);
 }

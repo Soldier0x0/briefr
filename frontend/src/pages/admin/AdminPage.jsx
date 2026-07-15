@@ -207,6 +207,9 @@ function AdminPageBody({ toast }) {
         system={system}
         toast={toast}
         mode={mode}
+        setPage={setPage}
+        ingestErrorCount={ingestErrorCount}
+        unackJobErrorCount={unackJobErrorCount}
         jobAcks={jobAcks}
         onMarkJobErrorsRead={handleMarkJobErrorsRead}
       />
