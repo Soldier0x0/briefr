@@ -190,6 +190,24 @@
   width: 100%;
 }
 
+.ui-skeleton-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ui-skeleton-stack-block {
+  margin-top: 0.35rem;
+  min-height: 5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-skeleton {
+    animation: none;
+    background: var(--bg3);
+  }
+}
+
 .ui-error {
   display: flex;
   align-items: center;

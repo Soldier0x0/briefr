@@ -6,6 +6,7 @@ import { ChartDataTable } from '../../../components/ui/index.js'
 import HelpTip from './HelpTip.jsx'
 import { jobLabel } from '../catalog.js'
 import { fmtBytes, fmtDur } from '../formatters.js'
+import { AdminChartSkeleton } from './AdminSkeletons.jsx'
 
 const INGEST_JOB_IDS = [
   'nvd_incremental_sync',
@@ -353,7 +354,7 @@ export default function OpsCharts({ schedulerJobs }) {
           <HelpTip text="Trend of the eight most recent encrypted backup archives on disk (oldest left, newest right)." />
         </div>
         {backupRows.length === 0 ? (
-          <div className="admin-empty admin-ops-chart-empty">{extraLoaded ? 'No backups listed yet' : 'Loading…'}</div>
+          <div className="admin-empty admin-ops-chart-empty">{extraLoaded ? 'No backups listed yet' : <AdminChartSkeleton height={160} />}</div>
         ) : (
           <>
             <div className="admin-ops-chart-wrap">
@@ -383,7 +384,7 @@ export default function OpsCharts({ schedulerJobs }) {
           <HelpTip text="Daily count of successful vs failed webhook delivery attempts from the delivery log (last 200 rows)." />
         </div>
         {whBuckets.length === 0 ? (
-          <div className="admin-empty admin-ops-chart-empty">{extraLoaded ? 'No webhook deliveries yet' : 'Loading…'}</div>
+          <div className="admin-empty admin-ops-chart-empty">{extraLoaded ? 'No webhook deliveries yet' : <AdminChartSkeleton height={160} />}</div>
         ) : (
           <>
             <div className="admin-ops-chart-wrap">

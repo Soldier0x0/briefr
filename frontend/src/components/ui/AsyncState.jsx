@@ -1,6 +1,7 @@
 import ErrorState from './ErrorState.jsx'
 import EmptyState from './EmptyState.jsx'
 import Skeleton from './Skeleton.jsx'
+import SkeletonStack from './SkeletonStack.jsx'
 
 /**
  * @param {object} props
@@ -31,7 +32,7 @@ export default function AsyncState({
   if (loading && !refreshing) {
     return (
       <div role="status" aria-live="polite" {...rest}>
-        {skeleton || <p className="ui-async-loading">Loading…</p>}
+        {skeleton || <SkeletonStack />}
       </div>
     )
   }

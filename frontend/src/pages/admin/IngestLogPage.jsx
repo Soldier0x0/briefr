@@ -1,6 +1,7 @@
 import { Fragment, useState, useEffect, useRef } from 'react'
 import { adminApi } from '../../api.js'
 import { Switch } from '../../components/ui/index.js'
+import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
 
 const SEARCH_DEBOUNCE_MS = 300
 const DETAIL_KEYS = new Set([
@@ -193,7 +194,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
             <tr><th>TIMESTAMP</th><th>LEVEL</th><th>CATEGORY</th><th>LOGGER</th><th>MESSAGE</th><th>JOB</th><th>RUN</th><th>REQUEST ID</th></tr>
           </thead>
           <tbody>
-            {logs.length === 0 && !logData && <tr><td colSpan={8} className="admin-empty">Loading…</td></tr>}
+            {logs.length === 0 && !logData && <AdminTableBodySkeletonRows rows={8} cols={8} />}
             {logs.length === 0 && logData && <tr><td colSpan={8} className="admin-empty">{level || category || loggerFilter || reqId || jobId || runId || since || until ? 'No log entries match the current filters — try a broader level, wider time range, or clear the filters' : 'Log buffer is empty — backend activity will appear here once jobs run'}</td></tr>}
             {logs.map((entry) => {
               const expandable = hasDetail(entry)

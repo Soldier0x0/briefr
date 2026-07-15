@@ -3,6 +3,7 @@ import { adminApi } from '../../api.js'
 import { AUDIT_PREFIXES } from './constants.js'
 import { fmtIsoMono } from './formatters.js'
 import { auditActionLabel } from './catalog.js'
+import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
 
 function hasAuditDetail(row) {
   if (!row) return false
@@ -100,7 +101,7 @@ export default function AuditLogPage({ toast, urlFilters = {} }) {
         <table className="admin-table">
           <thead><tr><th>ID</th><th>ACTOR</th><th>ACTION</th><th>TARGET</th><th>CREATED AT</th></tr></thead>
           <tbody>
-            {data === null && <tr><td colSpan={5} className="admin-empty">Loading…</td></tr>}
+            {data === null && <AdminTableBodySkeletonRows rows={6} cols={5} />}
             {data?.rows?.length === 0 && <tr><td colSpan={5} className="admin-empty">{search || activePrefix ? 'No audit events match your filters — try a different action type or clear the search' : 'No audit events recorded yet'}</td></tr>}
             {data?.rows?.map(r => {
               const expandable = hasAuditDetail(r)

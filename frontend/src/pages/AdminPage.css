@@ -2887,12 +2887,76 @@
 .reduce-motion .nav-item,
 .reduce-motion .filter-chip,
 .reduce-motion .admin-subtab,
-.reduce-motion .disk-bar-fill {
+.reduce-motion .disk-bar-fill,
+.reduce-motion .ui-skeleton,
+.reduce-motion .sk {
   animation: none !important;
   transition: none !important;
 }
 
 .reduce-motion .admin-btn:active { transform: none !important; }
+
+.reduce-motion .ui-skeleton,
+.reduce-motion .sk {
+  animation: none !important;
+}
+
+/* ── Loading skeletons (E7-2) ─────────────────────────────────────────── */
+
+.admin-skeleton-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-skeleton-stat-row .admin-skeleton-stat-card {
+  min-height: 5.25rem;
+  border-radius: var(--admin-radius, 12px);
+}
+
+.admin-skeleton-panel {
+  min-height: 12rem;
+  border-radius: var(--admin-radius, 8px);
+}
+
+.admin-skeleton-chart {
+  width: 100%;
+  border-radius: var(--admin-radius, 8px);
+}
+
+.admin-skeleton-table .admin-skeleton-cell {
+  min-height: 0.75rem;
+}
+
+.admin-skeleton-tr td {
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+}
+
+.admin-skeleton-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.admin-skeleton-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.admin-skeleton-form-field {
+  min-height: 2.25rem;
+}
+
+.notification-bell-list--skeleton {
+  pointer-events: none;
+}
+
+.notification-bell-skeleton-item {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
 
 /* ── AdminDataGrid + config apply bar (Operator UX P1) ─────────────────── */
 

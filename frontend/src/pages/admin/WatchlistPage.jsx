@@ -4,6 +4,7 @@ import DangerZone from './shared/DangerZone.jsx'
 import GuardedPurgePanel from './shared/GuardedPurgePanel.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import { fmtAge, fmtIso } from './formatters.js'
+import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
 
 export default function WatchlistPage({ toast, mode = 'operator' }) {
   const isAnalyst = mode === 'analyst'
@@ -136,7 +137,9 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
             <table className="admin-table">
               <thead><tr><th>CVE ID</th><th>SEVERITY</th><th>EPSS</th><th>KEV</th><th>STATE</th><th>CREATED</th><th></th></tr></thead>
               <tbody>
-                {watchlistRows === null && <tr><td colSpan={7} className="admin-empty admin-empty--compact">Loading…</td></tr>}
+                {watchlistRows === null && (
+                  <AdminTableBodySkeletonRows rows={5} cols={7} />
+                )}
                 {watchlistRows?.length === 0 && <tr><td colSpan={7} className="admin-empty admin-empty--compact">{watchlistState === 'snooze' ? 'No snoozed CVEs' : watchlistState === 'pin' ? 'No pinned CVEs — pin CVEs from the main feed to track them here' : 'No watchlist entries yet — pin or snooze CVEs from the main feed to see them here'}</td></tr>}
                 {watchlistRows?.map(r => (
                   <tr key={r.cve_id}>
@@ -184,7 +187,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
             <table className="admin-table">
               <thead><tr><th>VALUE</th><th>TYPE</th><th>CACHED AT</th><th>AGE</th><th></th></tr></thead>
               <tbody>
-                {iocRows === null && <tr><td colSpan={5} className="admin-empty admin-empty--compact">Loading…</td></tr>}
+                {iocRows === null && <AdminTableBodySkeletonRows rows={5} cols={5} />}
                 {iocRows?.length === 0 && <tr><td colSpan={5} className="admin-empty admin-empty--compact">{iocType || iocSearch ? 'No IOC cache entries match the current filters' : 'IOC cache is empty — lookups populate it automatically as you search indicators from CVE details'}</td></tr>}
                 {iocRows?.map((r, i) => (
                   <tr key={i}>
@@ -223,7 +226,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
             <table className="admin-table">
               <thead><tr><th>PACK ID</th><th>TECHNIQUE</th><th>CVE</th><th>PRIORITY</th><th>CREATED</th><th></th></tr></thead>
               <tbody>
-                {huntRows === null && <tr><td colSpan={6} className="admin-empty">Loading…</td></tr>}
+                {huntRows === null && <AdminTableBodySkeletonRows rows={5} cols={6} />}
                 {huntRows?.length === 0 && <tr><td colSpan={6} className="admin-empty">{huntTechnique ? 'No hunt packs match that technique ID' : 'No hunt packs yet — these are created when you run a technique-based threat hunt from a CVE detail page'}</td></tr>}
                 {huntRows?.map(r => (
                   <tr key={r.id}>

@@ -5,6 +5,7 @@ import HelpTip from './shared/HelpTip.jsx'
 import ToggleSwitch from './shared/ToggleSwitch.jsx'
 import DiffReviewModal from './shared/DiffReviewModal.jsx'
 import ApiKeyHealthPanel from './ApiKeyHealthPanel.jsx'
+import { AdminPageSkeleton } from './shared/AdminSkeletons.jsx'
 import { TIMEZONES_BY_CONTINENT } from '../../utils/timezone.js'
 import { RATE_LIMIT_HINTS } from './rateLimits.js'
 
@@ -380,7 +381,7 @@ export default function ApiKeysPage({ toast }) {
     return out
   }, [schema])
 
-  if (!config || !schema) return <div className="admin-empty">Loading…</div>
+  if (!config || !schema) return <AdminPageSkeleton variant="form" />
 
   const schemaKeys = new Set(schema.map(f => f.key))
   const merged = Object.assign({}, ...SECTIONS.map(s => config[s.backendKey] || {}))
