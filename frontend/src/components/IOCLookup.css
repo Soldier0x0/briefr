@@ -151,9 +151,6 @@
   white-space: nowrap;
 }
 
-.ioc-greynoise-opt input {
-  accent-color: var(--accent);
-}
 
 /* Type selector */
 .ioc-detected-badge {

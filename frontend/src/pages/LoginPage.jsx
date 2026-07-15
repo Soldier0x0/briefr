@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
+import { Checkbox } from '../components/ui/index.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import './LoginPage.css'
 
@@ -101,11 +102,11 @@ export default function LoginPage() {
           </label>
 
           {!setupRequired && (
-            <label className="login-remember mono">
-              <input
-                type="checkbox"
+            <label className="login-remember mono" htmlFor="login-remember">
+              <Checkbox
+                id="login-remember"
                 checked={rememberMe}
-                onChange={e => setRememberMe(e.target.checked)}
+                onCheckedChange={setRememberMe}
               />
               <span>
                 Remember me

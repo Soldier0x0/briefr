@@ -60,9 +60,6 @@
   user-select: none;
 }
 
-.fg-stack-toggle input {
-  accent-color: var(--accent);
-}
 
 /* ── Three-panel shell (FR-2) ───────────────────────────
    Mirrors AdminPage.css's .admin-body/.admin-sidebar/.admin-content

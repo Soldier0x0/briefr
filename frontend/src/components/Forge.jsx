@@ -4,6 +4,7 @@ import { fetchForgeCoverage, generateHuntPack } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
 import { useAssetProfileOptional } from '../context/AssetProfileContext.jsx'
 import { profileToMatchAssets } from '../utils/assetProfileIo.js'
+import { Checkbox } from './ui/index.js'
 import { StatusChip } from './forge/shared.jsx'
 import CoverageView from './forge/CoverageView.jsx'
 import ScenariosView from './forge/ScenariosView.jsx'
@@ -203,14 +204,13 @@ export default function Forge() {
             </div>
           )}
           {profileStack && (
-            <label className="fg-stack-toggle fg-stack-toggle-nav mono">
-              <input
-                type="checkbox"
-                checked={stackOnly}
-                onChange={e => setStackOnly(e.target.checked)}
-              />
-              MY STACK ONLY ({profileStack})
-            </label>
+            <Checkbox
+              id="forge-stack-only-nav"
+              checked={stackOnly}
+              onCheckedChange={setStackOnly}
+              label={`MY STACK ONLY (${profileStack})`}
+              className="fg-stack-toggle fg-stack-toggle-nav mono"
+            />
           )}
         </nav>
 

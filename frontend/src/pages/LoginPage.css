@@ -144,7 +144,7 @@
   cursor: pointer;
 }
 
-.login-remember input {
+.login-remember .ui-checkbox {
   margin-top: 0.15rem;
 }
 

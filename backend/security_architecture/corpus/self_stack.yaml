@@ -240,6 +240,14 @@ terms:
   origin: generated
   term: '@radix-ui/react-checkbox'
   source: frontend/package.json
+- id: self-stack-radix-ui-react-switch
+  title: '@radix-ui/react-switch'
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: '@radix-ui/react-switch'
+  source: frontend/package.json
 - id: self-stack-react
   title: react
   summary: BRIEFR dependency term derived from frontend/package.json.

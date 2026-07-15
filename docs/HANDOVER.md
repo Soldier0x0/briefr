@@ -20,6 +20,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E3-1 complete: zero native checkboxes
+
+**What:** Migrated remaining native `<input type="checkbox">` to Radix `Checkbox` primitive in WebhooksPage (edit events), LoginPage (remember me), Forge (stack-only nav toggle), IOCLookup (GreyNoise opt). Grep gate: zero matches in `frontend/`. CSS updated to target `.ui-checkbox` instead of native `input`.
+
+**PR:** #568 (pending merge)
+
+**Next:** E2-3 column resize → E4-4 status/severity legends → E3-3 DataGrid primitive.
+
+---
+
 ## 2026-07-15 — E1-3 correlation/risk four-state UI
 
 **What:** Drawer distinguishes loading / empty / degraded / error for correlation (`correlation_unavailable`, `otx_status=degraded`) and operational priority (`riskError` from failed `/risk`). Uses `ErrorState` for degraded/error; empty copy unchanged but class-tagged.
