@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E5-2 ARCH lists → ArchDataGrid
+
+**What:** `shared/ArchDataGrid.jsx` wraps `ui/DataGrid` for ARCH workspace. Ported GenericSection, AttackSurface, StaleRecords, Mitre (per tactic), AbuseCases, Decisions, ReviewHistory, ThreatScenarios, and RiskRegister to sortable/resizable grids; row-click detail panels for expandable content.
+
+**Next:** E6-1 contrast/type AA tokens → E7-1 hover/press.
+
+---
+
 ## 2026-07-15 — E5-1 ARCH Overview StatCard grid + connectors
 
 **What:** Overview evidence tiles use shared `StatCard` (`plain` variant) in a responsive `sa-stat-grid`; architecture stack tiers use the same cards with CSS gradient connectors (horizontal → vertical on narrow viewports) replacing literal `→` text.

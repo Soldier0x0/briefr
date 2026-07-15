@@ -3,6 +3,7 @@ import { fetchSecurityArchitectureSection } from '../../../api.js'
 import { notifyApiError } from '../../../components/Toast.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
 import Tooltip from '../../../components/ui/Tooltip.jsx'
+import ArchDataGrid from '../shared/ArchDataGrid.jsx'
 
 const STALE_HELP = 'This abuse case has not been reviewed in over 90 days (spec §4.1 staleness decay).'
 const STATUS_HELP = {
@@ -12,11 +13,7 @@ const STATUS_HELP = {
 }
 
 /**
- * Abuse Case Catalog (spec §5.11, §8 TM-5): searchable list. Every entry's
- * `current_protection` cites real code (security_architecture/corpus/
- * abuse_cases.yaml) -- a curated abuse case with no verifiable protection
- * behind it would be exactly the "documentation viewer" the module's
- * central principle forbids.
+ * Abuse Case Catalog (spec §5.11, §8 TM-5).
  */
 export default function AbuseCasesSection() {
   const [data, setData] = useState(null)
@@ -24,6 +21,7 @@ export default function AbuseCasesSection() {
   const [error, setError] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
   const [query, setQuery] = useState('')
+  const [selectedId, setSelectedId] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -51,6 +49,41 @@ export default function AbuseCasesSection() {
       (r.category || '').toLowerCase().includes(q),
     )
   }, [allRows, query])
+
+  const selected = rows.find(r => r.id === selectedId)
+
+  const columns = useMemo(() => [
+    { id: 'title', label: 'Case', minWidth: 220 },
+    { id: 'category', label: 'Category', width: 140, render: (r) => r.category || '—' },
+    {
+      id: 'status', label: 'Status', width: 110,
+      render: (r) => (
+        r.status
+          ? (
+            <Tooltip text={STATUS_HELP[r.status] || r.status}>
+              <span className={`sa-status-chip sa-status-${r.status === 'open' ? 'critical' : r.status === 'partial' ? 'medium' : 'low'} mono`}>
+                {r.status.toUpperCase()}
+              </span>
+            </Tooltip>
+          )
+          : '—'
+      ),
+    },
+    {
+      id: 'stale', label: 'Review', width: 90,
+      sortValue: (r) => (r.stale ? 1 : 0),
+      render: (r) => (
+        r.stale
+          ? (
+            <Tooltip text={STALE_HELP}>
+              <span className="sa-status-chip sa-status-critical mono">STALE</span>
+            </Tooltip>
+          )
+          : '—'
+      ),
+    },
+    { id: 'summary', label: 'Summary', minWidth: 280, render: (r) => r.summary || '—' },
+  ], [])
 
   return (
     <div className="sa-section">
@@ -85,56 +118,45 @@ export default function AbuseCasesSection() {
         onRetry={() => setReloadKey(k => k + 1)}
         skeleton={<div className="sa-skeleton-row" aria-hidden="true" />}
       >
-        <ul className="sa-row-list" aria-label="Abuse case catalog">
-          {rows.map(a => (
-            <li key={a.id} className="sa-row">
-              <div className="sa-row-main">
-                <span className="sa-row-title">{a.title}</span>
-                {a.category && <span className="sa-row-tag mono">{a.category}</span>}
-                {a.status && (
-                  <Tooltip text={STATUS_HELP[a.status] || a.status}>
-                    <span className={`sa-status-chip sa-status-${a.status === 'open' ? 'critical' : a.status === 'partial' ? 'medium' : 'low'} mono`}>
-                      {a.status.toUpperCase()}
-                    </span>
-                  </Tooltip>
-                )}
-                {a.stale && (
-                  <Tooltip text={STALE_HELP}>
-                    <span className="sa-status-chip sa-status-critical mono">STALE</span>
-                  </Tooltip>
-                )}
+        <ArchDataGrid
+          gridId="sa-abuse-cases"
+          columns={columns}
+          rows={rows}
+          rowKey={(r) => r.id}
+          emptyMessage="No abuse cases"
+          onRowClick={(r) => setSelectedId(prev => (prev === r.id ? null : r.id))}
+          activeRowKey={selectedId}
+        />
+        {selected && (
+          <div className="sa-arch-grid-detail">
+            {Array.isArray(selected.attack_flow) && selected.attack_flow.length > 0 && (
+              <div className="sa-decision-field">
+                <h4 className="sa-subsection-label mono">ATTACK FLOW</h4>
+                <ol>
+                  {selected.attack_flow.map((step, i) => <li key={i}>{step}</li>)}
+                </ol>
               </div>
-              {a.summary && <p className="sa-row-summary">{a.summary}</p>}
-
-              {Array.isArray(a.attack_flow) && a.attack_flow.length > 0 && (
-                <div className="sa-decision-field">
-                  <h4 className="sa-subsection-label mono">ATTACK FLOW</h4>
-                  <ol>
-                    {a.attack_flow.map((step, i) => <li key={i}>{step}</li>)}
-                  </ol>
-                </div>
-              )}
-              {a.impact && (
-                <div className="sa-decision-field">
-                  <h4 className="sa-subsection-label mono">IMPACT</h4>
-                  <p>{a.impact}</p>
-                </div>
-              )}
-              {a.current_protection && (
-                <div className="sa-decision-field">
-                  <h4 className="sa-subsection-label mono">CURRENT PROTECTION</h4>
-                  <p>{a.current_protection}</p>
-                </div>
-              )}
-              {a.remaining_risk && (
-                <div className="sa-decision-field">
-                  <h4 className="sa-subsection-label mono">REMAINING RISK</h4>
-                  <p>{a.remaining_risk}</p>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+            )}
+            {selected.impact && (
+              <div className="sa-decision-field">
+                <h4 className="sa-subsection-label mono">IMPACT</h4>
+                <p>{selected.impact}</p>
+              </div>
+            )}
+            {selected.current_protection && (
+              <div className="sa-decision-field">
+                <h4 className="sa-subsection-label mono">CURRENT PROTECTION</h4>
+                <p>{selected.current_protection}</p>
+              </div>
+            )}
+            {selected.remaining_risk && (
+              <div className="sa-decision-field">
+                <h4 className="sa-subsection-label mono">REMAINING RISK</h4>
+                <p>{selected.remaining_risk}</p>
+              </div>
+            )}
+          </div>
+        )}
       </AsyncState>
     </div>
   )
