@@ -126,8 +126,8 @@
 
 .card-checkbox-input:checked ~ .card-checkbox-box,
 .card-checkbox-input:checked + .card-checkbox-box {
-  background: var(--red);
-  border-color: var(--red);
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
 }
 
 /* White checkmark when checked */

@@ -325,8 +325,8 @@
 .tz-item:hover { background: var(--bg3); }
 
 .tz-item-active {
-  border-left-color: var(--red);
-  background: var(--bg3);
+  border-left-color: var(--accent-indicator);
+  background: var(--surface-selected);
 }
 
 .tz-item-abbr {
