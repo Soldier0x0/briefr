@@ -261,10 +261,9 @@ Three layers. Higher layers compose lower ones; never re-implement a lower layer
   primitives (audit: raw default checkboxes across Storage/Feed-health/Scheduler/FEED were
   the top "amateur" signal).
 - One primitive per pattern; do not fork a second tooltip/button/table implementation.
-- Tooltips use **`@radix-ui/react-tooltip`** (shadcn pattern): app root wraps
-  `TooltipProvider`; content in `.ui-tooltip-content` (`--bg2`, `--border2`, overlay
-  shadow). Legacy `<Tooltip text="…">` API preserved; compound exports:
-  `TooltipTrigger`, `TooltipContent`, `TooltipRoot`.
+- Tooltips use the portaled `Tooltip` primitive (`ui-tooltip-bubble`, opaque
+  `--bg3` surface). Drawer header badges use **hover-only** triggers so tooltips
+  do not flash on drawer open.
 - Tooltips/popovers are **portaled and collision-aware** (audit UI-BUG-3, plan ticket E2-4: reference tooltip
   overflowed over other content).
 - Tables use `DataGrid` with `table-layout: fixed` + shared `<col>` so column resize keeps
@@ -330,16 +329,14 @@ exception: filled selection is allowed; neon **borders** are not.
 
 ### 23.2 Date and time inputs
 
-- All user-facing date/time pickers use the shared `DateTimePicker` primitive
-  (shadcn card: `react-day-picker` calendar + bordered footer with native `type="time"`
-  `step="1"` input, leading clock icon, hidden webkit picker indicator). Never ship
-  standalone native `datetime-local` or unstyled calendar popovers in new code.
-- Popover layout: calendar in `.ui-datetime-picker-body` (body font, rounded day
-  hover/selection), labeled time band in `.ui-datetime-picker-footer` (`timeLabel`
-  prop — e.g. "Start time" / "End time"). Selection is live; popover closes on
-  outside click.
-- `TimeWindowPicker` (analyst BRIEF charts) and admin ingest filters are the
-  reference implementations.
+- Range filters use `DateTimeRangeField` — dual-input layout (MUI
+  `MultiInputDateTimeRangeField` pattern): start + `–` + end, each opening the
+  shared `DateTimePicker` popover.
+- `DateTimePicker`: `react-day-picker` + hour/minute `Select` controls in the
+  popover footer. Never ship standalone native `datetime-local` or unstyled
+  calendar popovers in new code.
+- `TimeWindowPicker` (BRIEF charts) and admin ingest filters are the reference
+  implementations.
 
 ### 23.3 Discrete settings → dropdowns, not sliders
 

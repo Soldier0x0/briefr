@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react'
-import { DateTimePicker, Select } from './ui/index.js'
+import { DateTimeRangeField, Select } from './ui/index.js'
 import { parseDatetimeLocalToIso, toDatetimeLocalValue } from './timeWindowDateUtils.js'
 import './TimeWindowPicker.css'
 
@@ -106,36 +106,22 @@ export default function TimeWindowPicker({
         ]}
       />
       {selectValue === CUSTOM_VALUE && (
-        <div className="time-window-custom" aria-label="Custom date and time range">
-          <label className="time-window-custom-field">
-            <span className="time-window-custom-label mono">From</span>
-            <DateTimePicker
-              className="time-window-datetime"
-              value={customSince}
-              timeLabel="Start time"
-              onChange={(next) => {
-                setCustomSince(next)
-                emitCustom(next, customUntil)
-              }}
-              placeholder="From…"
-              ariaLabel="Range start date and time"
-            />
-          </label>
-          <label className="time-window-custom-field">
-            <span className="time-window-custom-label mono">To</span>
-            <DateTimePicker
-              className="time-window-datetime"
-              value={customUntil}
-              timeLabel="End time"
-              onChange={(next) => {
-                setCustomUntil(next)
-                emitCustom(customSince, next)
-              }}
-              placeholder="To…"
-              ariaLabel="Range end date and time"
-            />
-          </label>
-        </div>
+        <DateTimeRangeField
+          className="time-window-datetime-range"
+          startValue={customSince}
+          endValue={customUntil}
+          onStartChange={(next) => {
+            setCustomSince(next)
+            emitCustom(next, customUntil)
+          }}
+          onEndChange={(next) => {
+            setCustomUntil(next)
+            emitCustom(customSince, next)
+          }}
+          startPlaceholder="From…"
+          endPlaceholder="To…"
+          clearable={false}
+        />
       )}
     </div>
   )

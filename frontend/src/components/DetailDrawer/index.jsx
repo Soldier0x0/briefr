@@ -435,6 +435,28 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
   }, [isOpen])
 
   useEffect(() => {
+    if (!isOpen) return undefined
+
+    function onWheel(e) {
+      const panel = e.target.closest?.('.drawer-tab-panel')
+      if (!panel || !sheetRef.current?.contains(panel)) {
+        e.preventDefault()
+        return
+      }
+      const { scrollTop, scrollHeight, clientHeight } = panel
+      const atTop = scrollTop <= 0 && e.deltaY < 0
+      const atBottom = scrollTop + clientHeight >= scrollHeight - 1 && e.deltaY > 0
+      if (atTop || atBottom) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    }
+
+    document.addEventListener('wheel', onWheel, { passive: false, capture: true })
+    return () => document.removeEventListener('wheel', onWheel, { capture: true })
+  }, [isOpen])
+
+  useEffect(() => {
     if (!reportOpen) return
     function onDocClick(e) {
       if (reportRef.current && !reportRef.current.contains(e.target)) {
@@ -583,7 +605,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
               {cve.severity && (
                 <ControlTooltip
                   text={severityTooltip(cve.severity, cve.cvss_score)}
-                  trigger="hover-focus"
+                  trigger="hover"
                 >
                   <span
                     className="drawer-sev-badge mono"
@@ -594,7 +616,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
                 </ControlTooltip>
               )}
               {cve.kev_ransomware_use && (
-                <ControlTooltip text="Known ransomware campaign use (CISA KEV)" trigger="hover-focus">
+                <ControlTooltip text="Known ransomware campaign use (CISA KEV)" trigger="hover">
                   <span
                     className="drawer-ransomware-badge mono"
                     aria-label="Known ransomware campaign use"
@@ -604,7 +626,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
                 </ControlTooltip>
               )}
               {campaignChip && (
-                <ControlTooltip text={campaignBadgeTooltip(campaignChip.lifecycle)} trigger="hover-focus">
+                <ControlTooltip text={campaignBadgeTooltip(campaignChip.lifecycle)} trigger="hover">
                   <span className={`drawer-campaign-badge mono ${campaignLifecycleClass(campaignChip.lifecycle)}`}>
                     Campaign · {campaignChip.linkedCount} linked CVE{campaignChip.linkedCount === 1 ? '' : 's'}
                   </span>

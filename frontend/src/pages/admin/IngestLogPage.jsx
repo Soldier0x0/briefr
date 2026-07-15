@@ -1,6 +1,6 @@
 import { Fragment, useState, useEffect, useRef } from 'react'
 import { adminApi } from '../../api.js'
-import { DateTimePicker, Select, Switch } from '../../components/ui/index.js'
+import { DateTimeRangeField, Select, Switch } from '../../components/ui/index.js'
 import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -174,21 +174,14 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
         <input className="admin-input" placeholder="job_id…" value={jobId} onChange={e => setJobId(e.target.value)} style={{ minWidth: 140 }} />
         <input className="admin-input" placeholder="run_id…" value={runId} onChange={e => setRunId(e.target.value)} style={{ minWidth: 120 }} />
         <input className="admin-input" placeholder="request_id…" value={reqId} onChange={e => setReqId(e.target.value)} style={{ minWidth: 160 }} />
-        <DateTimePicker
-          className="admin-datetime-picker"
-          value={since}
-          onChange={setSince}
-          placeholder="From…"
-          ariaLabel="From time"
-          timeLabel="Start time"
-        />
-        <DateTimePicker
-          className="admin-datetime-picker"
-          value={until}
-          onChange={setUntil}
-          placeholder="To…"
-          ariaLabel="To time"
-          timeLabel="End time"
+        <DateTimeRangeField
+          className="admin-datetime-range"
+          startValue={since}
+          endValue={until}
+          onStartChange={setSince}
+          onEndChange={setUntil}
+          startPlaceholder="From…"
+          endPlaceholder="To…"
         />
         <Select
           className="admin-select"
