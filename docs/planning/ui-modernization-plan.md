@@ -355,10 +355,10 @@ numbers recorded in the closing PR body:
 - [x] E4-1 one selection accent  [x] E4-2 red reserved  [x] E4-3 card severity accent — #TBD  [x] E4-4 legends — #TBD
 
 **ARCH (E5)**
-- [ ] E5-1 Overview grid  [ ] E5-2 lists→DataGrid  [x] E5-3 sidebar active — #TBD  [ ] E5-4 badge wording  [ ] E5-5 empty state
+- [ ] E5-1 Overview grid  [ ] E5-2 lists→DataGrid  [x] E5-3 sidebar active — #572  [x] E5-4 badge wording — #573  [ ] E5-5 empty state
 
 **A11y (E6)**
-- [ ] E6-1 contrast/type  [x] E6-2 focus ring — #TBD  [ ] E6-3 aria-labels  [ ] E6-4 shortcuts  [ ] E6-5 target size/charts
+- [ ] E6-1 contrast/type  [x] E6-2 focus ring — #571  [x] E6-3 aria-labels — #573  [ ] E6-4 shortcuts  [ ] E6-5 target size/charts
 
 **Polish / IA / Observability (E7/E8/E9)**
 - [ ] E7-1 hover/press  [ ] E7-2 skeletons  [ ] E7-3 copy/export feedback  [ ] E7-4 spacing/borders  [ ] E7-5 charts → Recharts (remove Chart.js)

@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E6-3 aria-labels + E5-4 trust boundary badge
+
+**What:** `aria-label` on HelpTip, toast copy-ID, IOC watchlist controls, admin mode toggle; trust-boundary residual chip labeled. Added `iconOnlyAriaGate.test.js` grep gate.
+
+**Next:** E5-5 threat scenarios empty state → E3-3 DataGrid.
+
+---
+
 ## 2026-07-15 — E5-3 ARCH sidebar active uses --accent-selected
 
 **What:** `.sa-nav-btn.active` and `.sa-type-tab.active` now use `--accent-selected` + `--surface-selected` (matches admin/feed selection semantics).
