@@ -18,6 +18,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+---
+
+## 2026-07-15 — E1-3 correlation/risk four-state UI
+
+**What:** Drawer distinguishes loading / empty / degraded / error for correlation (`correlation_unavailable`, `otx_status=degraded`) and operational priority (`riskError` from failed `/risk`). Uses `ErrorState` for degraded/error; empty copy unchanged but class-tagged.
+
+**Next:** E3-1 Switch/Radio adoption → E2-3 column resize → E4-3…
+
+---
+
 ## 2026-07-14 — E1-2 OP hero decoupled from correlation
 
 **What:** `POST /api/cves/{id}/risk` no longer awaits `get_correlation_for_cve`. Drawer maps full threat/environment/OP fields from the response and applies campaign escalation via `applyCorrelationEscalationToRiskScore` when correlation bundle data arrives.

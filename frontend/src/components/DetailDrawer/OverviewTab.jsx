@@ -33,6 +33,7 @@ import { safeExternalUrl } from '../../utils/safeExternalUrl.js'
 import { buildExploitationDisplay } from '../../utils/exploitationDisplay.js'
 import ControlTooltip from '../ControlTooltip.jsx'
 import ReferenceTooltip from '../ui/ReferenceTooltip.jsx'
+import ErrorState from '../ui/ErrorState.jsx'
 import { drawerEpssBarColor, capecHref, capecLabel, flattenOsvPackageRows } from './helpers.js'
 
 const OP_PRIORITY_TOOLTIP =
@@ -567,7 +568,7 @@ function OperationalPriorityBreakdown({ riskScore, momentumData }) {
   )
 }
 
-function OperationalPriorityHero({ cve, riskScore, riskLoading, momentumData }) {
+function OperationalPriorityHero({ cve, riskScore, riskLoading, riskError, momentumData }) {
   const [expanded, setExpanded] = useState(false)
 
   if (riskLoading) {
@@ -584,6 +585,21 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, momentumData }) 
         <p className="drawer-risk-summary mono" style={{ color: 'var(--text-muted, var(--text3))' }}>
           Computing priority…
         </p>
+      </section>
+    )
+  }
+  if (riskError) {
+    return (
+      <section className="drawer-section drawer-risk-hero-section" aria-labelledby="op-priority-heading">
+        <ControlTooltip text={OP_PRIORITY_TOOLTIP} trigger="hover-focus">
+          <h3
+            id="op-priority-heading"
+            className="drawer-risk-section-label drawer-tab-anchor mono"
+          >
+            // OPERATIONAL PRIORITY
+          </h3>
+        </ControlTooltip>
+        <ErrorState error={riskError} compact />
       </section>
     )
   }
@@ -669,6 +685,7 @@ export default function TabOverview({
   cve,
   riskScore,
   riskLoading,
+  riskError,
   onOpenProfile,
   momentumData,
   products,
@@ -687,6 +704,7 @@ export default function TabOverview({
         cve={cve}
         riskScore={riskScore}
         riskLoading={riskLoading}
+        riskError={riskError}
         momentumData={momentumData}
       />
 

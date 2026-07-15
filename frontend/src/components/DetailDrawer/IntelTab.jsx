@@ -11,6 +11,7 @@ import {
 import { formatSharedObservablesSummary } from '../../utils/sharedObservables.js'
 import DrawerAtlasSection from '../DrawerAtlasSection.jsx'
 import ControlTooltip from '../ControlTooltip.jsx'
+import ErrorState from '../ui/ErrorState.jsx'
 import IntelProvenanceLine from './IntelProvenanceLine.jsx'
 import { exploitTypeLabel, techniqueLink } from './helpers.js'
 
@@ -333,6 +334,26 @@ function CorrelationFindings({
     )
   }
 
+  const isDegraded = correlation?.error === 'correlation_unavailable'
+    || correlation?.otx_status === 'degraded'
+
+  if (isDegraded) {
+    return (
+      <section className="drawer-section" aria-labelledby="corr-heading">
+        <h3 id="corr-heading" className="drawer-human-label drawer-tab-anchor mono">
+          // CORRELATION FINDINGS
+        </h3>
+        <IntelProvenanceLine provenance={correlation?.provenance} />
+        <ErrorState
+          error={{
+            message: 'Correlation analysis timed out or is temporarily unavailable. Campaign links may be incomplete until the nightly job completes.',
+          }}
+          compact
+        />
+      </section>
+    )
+  }
+
   const campaigns = correlation?.campaigns || []
   const infra = correlation?.infrastructure || []
   const actor = correlation?.actor || []
@@ -352,13 +373,13 @@ function CorrelationFindings({
       <CorrelationPriority priority={priority} />
 
       {!hasFindings && otxStatus === 'not_configured' && (
-        <p className="drawer-intel-empty mono">
+        <p className="drawer-intel-empty mono drawer-state-empty">
           Campaign and infrastructure linking needs OTX intelligence — not configured on this server.
         </p>
       )}
 
       {!hasFindings && otxStatus !== 'not_configured' && (
-        <p className="drawer-intel-empty mono">
+        <p className="drawer-intel-empty mono drawer-state-empty">
           No correlation signals detected for this CVE in configured sources.
         </p>
       )}

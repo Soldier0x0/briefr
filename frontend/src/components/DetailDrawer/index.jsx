@@ -97,6 +97,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
   const [momentumData, setMomentumData] = useState(null)
   const [riskScore, setRiskScore] = useState(null)
   const [riskLoading, setRiskLoading] = useState(false)
+  const [riskError, setRiskError] = useState(null)
   const [backStack, setBackStack] = useState([])
   const [pdfModalOpen, setPdfModalOpen] = useState(false)
   const [pdfBusy, setPdfBusy] = useState(false)
@@ -118,10 +119,12 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     if (!cve?.cve_id) {
       setRiskScore(null)
       setRiskLoading(false)
+      setRiskError(null)
       return
     }
     let cancelled = false
     setRiskLoading(true)
+    setRiskError(null)
     const payload =
       assetCtx?.isLoaded && assetCtx?.profile
         ? {
@@ -147,8 +150,11 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
           weights: legacy.weights,
         })
       })
-      .catch(() => {
-        if (!cancelled) setRiskScore(null)
+      .catch((err) => {
+        if (!cancelled) {
+          setRiskScore(null)
+          setRiskError(err)
+        }
       })
       .finally(() => {
         if (!cancelled) setRiskLoading(false)
@@ -830,6 +836,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
               cve={cve}
               riskScore={displayRiskScore}
               riskLoading={riskLoading}
+              riskError={riskError}
               onOpenProfile={assetCtx?.openProfileFlow}
               momentumData={momentumData}
               products={products}
