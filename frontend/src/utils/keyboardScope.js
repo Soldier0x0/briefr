@@ -7,21 +7,22 @@ export function isEditableTarget(node) {
   const el = node instanceof Element ? node : null
   if (!el) return false
 
-  const field = el.closest(
-    'input, textarea, select, [contenteditable=""], [contenteditable="true"], [data-keyboard-suspend]',
-  )
+  const field = el.closest('input, textarea, select, [data-keyboard-suspend]')
   if (field) {
     if (field instanceof HTMLInputElement) {
       const type = (field.type || 'text').toLowerCase()
-      if (type === 'button' || type === 'submit' || type === 'reset' || type === 'checkbox' || type === 'radio') {
+      if (type === 'button' || type === 'submit' || type === 'reset' || type === 'checkbox') {
         return false
       }
     }
     return true
   }
 
-  const role = el.getAttribute('role')
-  if (role === 'textbox' || role === 'combobox' || role === 'searchbox') return true
+  const editable = el.closest('[contenteditable]')
+  if (editable && editable.isContentEditable) return true
+
+  const roleEl = el.closest('[role="textbox"], [role="combobox"], [role="searchbox"]')
+  if (roleEl) return true
 
   return false
 }

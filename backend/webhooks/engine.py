@@ -202,6 +202,7 @@ async def dispatch_event(
                 status="ok" if result["ok"] else "failed",
                 error=result["error"],
             )
+            await db.commit()
             if not result["ok"] and result["error"]:
                 try:
                     from notifications.emit import emit_webhook_failure_notification
@@ -213,13 +214,19 @@ async def dispatch_event(
                         error=result["error"],
                         event_type=normalized,
                     )
+                    await db.commit()
                 except Exception as exc:
+                    rollback = getattr(db, "rollback", None)
+                    if rollback is not None:
+                        try:
+                            await rollback()
+                        except Exception:
+                            pass
                     logger.warning(
                         "Failed to emit webhook failure notification for %s: %s",
                         dest.id,
                         exc,
                     )
-            await db.commit()
         finally:
             await db.close()
 

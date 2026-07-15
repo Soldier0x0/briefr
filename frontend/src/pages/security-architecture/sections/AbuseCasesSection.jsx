@@ -57,6 +57,7 @@ export default function AbuseCasesSection() {
     { id: 'category', label: 'Category', width: 140, render: (r) => r.category || '—' },
     {
       id: 'status', label: 'Status', width: 110,
+      sortValue: (r) => r.status || '',
       render: (r) => (
         r.status
           ? (

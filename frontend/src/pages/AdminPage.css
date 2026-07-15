@@ -1890,6 +1890,8 @@
 .admin-env-key {
   display: inline-block;
   max-width: 14rem;
+  margin-left: 0.35rem;
+  color: var(--admin-text-dim);
   overflow-wrap: anywhere;
   word-break: break-all;
   vertical-align: middle;

@@ -7,6 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from correlation.config import get_correlation_precompute_max_per_run
 from correlation.engine import _compute_correlation_for_cve, get_correlation_for_cve, run_nightly_correlation
 from correlation.ioc_graph import count_hub_suppressed_ioc_peers
 from database import init_db, replace_otx_cve_pulses, replace_otx_pulse_iocs
@@ -157,6 +158,45 @@ def test_nightly_precompute_writes_snapshots(tmp_path, monkeypatch):
             assert snap["payload"]["cve_id"] == "CVE-2024-1001"
             ids = await list_cve_ids_for_precompute(db, limit=3)
             assert "CVE-2024-1001" in ids
+        finally:
+            await db.close()
+
+    run_db_test(_run())
+
+
+def test_precompute_max_per_run_invalid_env_falls_back(monkeypatch):
+    monkeypatch.setenv("CORRELATION_PRECOMPUTE_MAX_PER_RUN", "not-a-number")
+    assert get_correlation_precompute_max_per_run() == 500
+
+
+def test_precompute_failure_does_not_discard_prior_snapshots(tmp_path, monkeypatch):
+    db_path = str(tmp_path / "corr_precompute_txn.db")
+    monkeypatch.setenv("DB_PATH", db_path)
+    monkeypatch.setenv("CORRELATION_PRECOMPUTE_ENABLED", "1")
+    monkeypatch.setenv("CORRELATION_PRECOMPUTE_MAX_PER_RUN", "5")
+
+    original_compute = _compute_correlation_for_cve
+
+    async def flaky_compute(db, cve_id, user_sector=""):
+        if cve_id == "CVE-2024-1002":
+            raise RuntimeError("simulated precompute failure")
+        return await original_compute(db, cve_id, user_sector=user_sector)
+
+    monkeypatch.setattr(
+        "correlation.engine._compute_correlation_for_cve",
+        flaky_compute,
+    )
+
+    async def _run():
+        db = await _seed_precompute_db(db_path)
+        try:
+            stats = await run_nightly_correlation(db)
+            assert stats.get("precompute_snapshots", 0) >= 1
+            first = await get_correlation_cve_snapshot(db, "CVE-2024-1001")
+            assert first is not None
+            assert first["payload"]["cve_id"] == "CVE-2024-1001"
+            failed = await get_correlation_cve_snapshot(db, "CVE-2024-1002")
+            assert failed is None
         finally:
             await db.close()
 

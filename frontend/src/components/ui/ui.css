@@ -162,9 +162,7 @@
 }
 
 .reference-tooltip-bubble {
-  word-break: break-all;
   overflow-wrap: anywhere;
-  hyphens: auto;
 }
 
 .ui-skeleton {
@@ -456,7 +454,7 @@
   user-select: none;
 }
 
-.ui-switch-label:has(.ui-switch:disabled) {
+.ui-switch-label--disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }

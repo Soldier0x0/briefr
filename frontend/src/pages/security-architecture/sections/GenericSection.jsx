@@ -68,10 +68,12 @@ export default function GenericSection({ sectionId, filters, onFilterChange }) {
       { id: 'severity', label: 'Severity', width: 100, render: (r) => r.severity || '—' },
       {
         id: 'origin', label: 'Origin', width: 100,
+        sortValue: (r) => r.origin || '',
         render: (r) => (r.origin ? <span className={`sa-row-origin sa-row-origin-${r.origin} mono`}>{r.origin}</span> : '—'),
       },
       {
         id: 'active', label: 'Active', width: 100,
+        sortValue: (r) => (r.active ? 1 : 0),
         render: (r) => (
           typeof r.active === 'boolean'
             ? (

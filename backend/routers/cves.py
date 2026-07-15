@@ -1475,6 +1475,10 @@ async def cve_risk_score(cve_id: str, body: RiskScoreRequest | None = None):
         except Exception as exc:
             logger.error("Exploit load failed for risk score %s: %s", cve_id, exc)
             cve["public_exploits"] = []
+            try:
+                await db.rollback()
+            except Exception:
+                pass
 
         momentum = await calculate_momentum(cve_key, db)
 
@@ -1503,6 +1507,14 @@ async def cve_risk_score(cve_id: str, body: RiskScoreRequest | None = None):
         # E1-2 / ADR-004: OP hero uses cheap signals only on this path.
         # Correlation-based escalation is applied client-side when correlation
         # data arrives (or from precomputed snapshots on the correlation route).
+        try:
+            await db.commit()
+        except Exception as exc:
+            logger.warning("Failed to commit risk score transaction: %s", exc)
+            try:
+                await db.rollback()
+            except Exception:
+                pass
         operational_priority = derive_operational_priority(
             threat.get("band", "LOW"),
             environment.get("tier", "UNKNOWN"),

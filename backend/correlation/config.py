@@ -75,4 +75,8 @@ def get_correlation_precompute_enabled() -> bool:
 
 
 def get_correlation_precompute_max_per_run() -> int:
-    return max(1, int(os.environ.get("CORRELATION_PRECOMPUTE_MAX_PER_RUN", "500")))
+    raw = os.environ.get("CORRELATION_PRECOMPUTE_MAX_PER_RUN", "500").strip()
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return 500

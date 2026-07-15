@@ -69,7 +69,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
 
   function webhookPillTitle(destId, label, circuitFailed) {
     const fail = webhookFailingById[destId]
-    if (fail?.last_error) return `${label}: ${fail.last_error}`
+    if (fail) return `${label}: delivery failed${fail.last_error ? ` — ${fail.last_error}` : ''}`
     if (circuitFailed) return `${label}: circuit open — recent delivery failures`
     return `${label} webhook — open Admin → Webhooks for delivery health`
   }

@@ -46,6 +46,7 @@
 .data-grid-scroll {
   overflow: auto;
   max-width: 100%;
+  max-height: var(--data-grid-max-height, 70vh);
 }
 
 .data-grid-table {

@@ -62,6 +62,7 @@ export default function MitreSection() {
     },
     {
       id: 'status', label: 'Coverage', width: 130,
+      sortValue: (r) => r.status || '',
       render: (r) => (
         <Tooltip text={STATUS_HELP[r.status] || r.status}>
           <span className={`sa-status-chip sa-status-${r.status} mono`}>

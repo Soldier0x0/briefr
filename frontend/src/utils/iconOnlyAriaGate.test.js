@@ -27,8 +27,9 @@ function isIconOnlyBody(body) {
     .replace(/\{[^}]+\}/g, '')
     .replace(/\s+/g, ' ')
     .trim()
+  if (text === '&middot;&middot;&middot;') return true
   if (text && /[A-Za-z]{2,}/.test(text)) return false
-  if (text && !/^[✕×↑↓•….\-&;]+$/.test(text) && text !== '&middot;&middot;&middot;') {
+  if (text && !/^[✕×↑↓•….\-&;]+$/.test(text)) {
     return false
   }
   return (

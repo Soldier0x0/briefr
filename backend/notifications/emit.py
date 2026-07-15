@@ -197,7 +197,7 @@ async def emit_webhook_failure_notification(
     db,
     *,
     destination_id: str,
-    label: str,
+    label: str | None,
     error: str,
     event_type: str = "",
     dedupe_key: str | None = None,

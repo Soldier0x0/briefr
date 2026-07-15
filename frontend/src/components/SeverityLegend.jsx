@@ -17,8 +17,8 @@ export default function SeverityLegend({ compact = false, className = '' }) {
       </div>
       {SEVERITY_LEVELS.map((row) => (
         <div key={row.id} className="severity-legend-row">
-          <span className="severity-legend-marker" aria-hidden>
-            <span className={`sev-dot sev-dot-${row.className}`} />
+          <span className="severity-legend-marker">
+            <span className={`sev-dot sev-dot-${row.className}`} aria-hidden="true" />
             <span className="severity-legend-label mono">{row.label}</span>
           </span>
           <span className="severity-legend-desc">{row.desc}</span>

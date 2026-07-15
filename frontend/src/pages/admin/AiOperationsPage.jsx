@@ -85,7 +85,7 @@ function OverviewTab({ overview, setPage }) {
   const u24 = overview?.usage?.['24h'] || {}
   const circuits = overview?.active_circuit_count || 0
   const configured = overview?.configured_provider_count || 0
-  const failRate = u24.failure_rate ?? 0
+  const failRate = u24.failure_rate
   const failTone = failRateTone(failRate, u24.total ?? 0)
 
   return (

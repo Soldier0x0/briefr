@@ -57,6 +57,19 @@
   cursor: pointer;
   user-select: none;
   list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.severity-legend-feed-summary::before {
+  content: '▶';
+  font-size: 0.5rem;
+  transition: transform 0.1s ease;
+}
+
+.severity-legend-feed[open] .severity-legend-feed-summary::before {
+  transform: rotate(90deg);
 }
 
 .severity-legend-feed-summary::-webkit-details-marker {

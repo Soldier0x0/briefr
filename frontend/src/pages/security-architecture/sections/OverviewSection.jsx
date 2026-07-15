@@ -73,7 +73,13 @@ export default function OverviewSection({ onDrill, corpusVersion }) {
         error={error}
         empty={Boolean(error)}
         onRetry={() => setReloadKey(k => k + 1)}
-        skeleton={<div className="sa-stat-grid sa-skeleton-row" aria-hidden="true" />}
+        skeleton={
+          <div className="sa-stat-grid" aria-hidden="true">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="sa-skeleton-row" />
+            ))}
+          </div>
+        }
       >
         <div className="sa-stat-grid" role="list" aria-label="Security posture evidence tiles">
           {tiles.map(tile => (
@@ -106,19 +112,21 @@ export default function OverviewSection({ onDrill, corpusVersion }) {
         <div className="sa-arch-flow" role="list" aria-label="Generated architecture tiers">
           {stackTiers.map((tier, i) => (
             <div key={tier.type} className="sa-arch-flow-item" role="listitem">
-              <Tooltip text={tier.help}>
-                <button
-                  type="button"
-                  className="sa-stat-card-btn"
-                  onClick={() => onDrill('components', { type: tier.type })}
-                >
-                  <StatCard
-                    plain
-                    label={tier.label}
-                    value={countByType[tier.type] ?? '—'}
-                  />
-                </button>
-              </Tooltip>
+              <div className="sa-stat-card-wrap">
+                <Tooltip text={tier.help}>
+                  <button
+                    type="button"
+                    className="sa-stat-card-btn"
+                    onClick={() => onDrill('components', { type: tier.type })}
+                  >
+                    <StatCard
+                      plain
+                      label={tier.label}
+                      value={countByType[tier.type] ?? '—'}
+                    />
+                  </button>
+                </Tooltip>
+              </div>
               {i < stackTiers.length - 1 && (
                 <span className="sa-arch-connector" aria-hidden="true" />
               )}

@@ -20,6 +20,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — Gemini remediation PR #560–#586 (full retrospective)
+
+**What:** Single remediation PR addressing validated Gemini inline comments across merged session PRs #560–#586 (27 PRs). Backend: correlation precompute per-snapshot commits + env parse guard; `/risk` exploit-cache commit restored; webhook delivery log commits before failure notification. Frontend: DataGrid sort/rowKey/prefs race/colStyle fixes; arch grid `sortValue` columns; a11y (SeverityLegend, CVECard checkbox, keyboardScope radio/contenteditable, HelpTip, Switch useId); defensive null guards; design-token alias cleanup in cited files; Overview stat-card layout/skeleton.
+
+**Disposition:** #583–#586 items already on main via #587 — skipped. #577 `admin.py` `.get()` on rows — false positive (rows are dicts). #566 CVECard.css raw hex — deferred (allowlisted Phase 2). #581 AdminPage `--type-*` redefinitions — deferred (cosmetic). #571 redundant focus-ring CSS — deferred (low priority; ExplainTip hover/focus bug fixed).
+
+**Next:** Merge after Gemini review on this PR; resume E7-3.
+
+---
+
 ## 2026-07-15 — Gemini remediation PR (session #560–#586)
 
 **What:** Consolidated fixes for Gemini findings on #584–#586: EPSS movers grid column widths (HIGH), ChartDataTable chevron, ExplainTip flex centering, deduped `.pressable-surface` transitions, removed duplicate reduce-motion skeleton CSS, bash-3.2-safe `lint-design-tokens.sh`, explicit `bash` in token lint test.
