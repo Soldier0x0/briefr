@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 import { extractActorTags } from '../utils/investigationActors.js'
 import { isValidDomain } from '../utils/domainValidation.js'
 import { IOC_NOT_FOUND_IN_DATABASES } from '../utils/iocLookupMessages.js'
+import { Checkbox } from './ui/index.js'
 import './IOCLookup.css'
 
 // ── Type detection ────────────────────────────────────────
@@ -1150,14 +1151,13 @@ export default function IOCLookup({ prefill }) {
             </span>
           )}
           {detectedType === 'ip' && (
-            <label className="ioc-greynoise-opt mono">
-              <input
-                type="checkbox"
-                checked={includeGreynoise}
-                onChange={e => setIncludeGreynoise(e.target.checked)}
-              />
-              Include GreyNoise (uses weekly quota)
-            </label>
+            <Checkbox
+              id="ioc-include-greynoise"
+              checked={includeGreynoise}
+              onCheckedChange={setIncludeGreynoise}
+              label="Include GreyNoise (uses weekly quota)"
+              className="ioc-greynoise-opt mono"
+            />
           )}
           <button
             className="ioc-lookup-btn"

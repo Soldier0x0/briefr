@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Checkbox } from '../../components/ui/index.js'
 import { adminApi, fetchUserStack } from '../../api.js'
 import { fmtIso } from './formatters.js'
 import AsyncSection from './shared/AsyncSection.jsx'
@@ -372,21 +373,21 @@ export default function WebhooksPage({ toast }) {
           <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: 'var(--text2)' }}>Subscribed events</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 1rem', marginTop: '0.35rem' }}>
             {EVENT_OPTIONS.map(opt => (
-              <label key={opt.id} style={{ fontSize: '0.75rem', display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                <input
-                  type="checkbox"
-                  checked={createForm.event_types.includes(opt.id)}
-                  onChange={e => {
-                    setCreateForm(f => ({
-                      ...f,
-                      event_types: e.target.checked
-                        ? [...f.event_types, opt.id]
-                        : f.event_types.filter(x => x !== opt.id),
-                    }))
-                  }}
-                />
-                {opt.label}
-              </label>
+              <Checkbox
+                key={opt.id}
+                id={`webhook-create-event-${opt.id}`}
+                checked={createForm.event_types.includes(opt.id)}
+                onCheckedChange={(checked) => {
+                  setCreateForm(f => ({
+                    ...f,
+                    event_types: checked
+                      ? [...f.event_types, opt.id]
+                      : f.event_types.filter(x => x !== opt.id),
+                  }))
+                }}
+                label={opt.label}
+                className="admin-webhook-event-option"
+              />
             ))}
           </div>
           <div style={{ marginTop: '0.75rem' }}>
@@ -434,21 +435,21 @@ export default function WebhooksPage({ toast }) {
                       <div style={{ fontSize: '0.7rem', color: 'var(--text3)', marginBottom: '0.35rem' }}>Subscribed events</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 1rem' }}>
                         {EVENT_OPTIONS.map(opt => (
-                          <label key={opt.id} style={{ fontSize: '0.75rem', display: 'flex', gap: '0.35rem' }}>
-                            <input
-                              type="checkbox"
-                              checked={eventDraft[dest.id].includes(opt.id)}
-                              onChange={e => {
-                                setEventDraft(d => ({
-                                  ...d,
-                                  [dest.id]: e.target.checked
-                                    ? [...d[dest.id], opt.id]
-                                    : d[dest.id].filter(x => x !== opt.id),
-                                }))
-                              }}
-                            />
-                            {opt.label}
-                          </label>
+                          <Checkbox
+                            key={opt.id}
+                            id={`webhook-edit-event-${dest.id}-${opt.id}`}
+                            checked={eventDraft[dest.id].includes(opt.id)}
+                            onCheckedChange={(checked) => {
+                              setEventDraft(d => ({
+                                ...d,
+                                [dest.id]: checked
+                                  ? [...d[dest.id], opt.id]
+                                  : d[dest.id].filter(x => x !== opt.id),
+                              }))
+                            }}
+                            label={opt.label}
+                            className="admin-webhook-event-option"
+                          />
                         ))}
                       </div>
                       <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.75rem', marginTop: '0.5rem' }} disabled={saving[dest.id]} onClick={() => saveEventTypes(dest)}>
