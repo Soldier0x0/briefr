@@ -17,10 +17,8 @@ docs so nothing is lost when specs move to [`archive/superseded/`](../archive/su
 [`../HANDOVER.md`](../HANDOVER.md). **Build order when activated:** add checkboxes to
 [`SPRINT_2026-07.md`](SPRINT_2026-07.md) or a future sprint doc.
 
-**Last reconciled:** 2026-07-14 against `main` post-#514 (O-3). Correlation v3
-(PR-1…PR-13), forge-redesign (FR-1…FR-3 #490–#495), threat-modeling ARCH program
-(TM-0…TM-5 #491–#497), and UX-C2 (#475) verified shipped in code — see
-`docs/HANDOVER.md` 2026-07-14 docs-reconcile entry.
+**Last reconciled:** 2026-07-15 against `main`. Post–UI E2E UX observations master plan added
+([`specs/e2e-ux-observations-2026-07-15.md`](specs/e2e-ux-observations-2026-07-15.md)).
 
 ---
 
@@ -379,6 +377,27 @@ ADR-005 (UI library allow/deny). **Design SSOT:** [`../design/design-system.md`]
 | Threat modeling TM-1…TM-5 | #491, #493–#497 |
 | UX-C1 / UX-C2 (Issue 37) | #474, #475 |
 | O-3 wallboard token in admin config | #514 |
+
+---
+
+## 12. Post–UI E2E UX observations (2026-07-15)
+
+**Canonical spec:** [`specs/e2e-ux-observations-2026-07-15.md`](specs/e2e-ux-observations-2026-07-15.md) —
+ordered E2E observations, accent decision (orange `#e85533`), IA locks, and PM-0…PM-4
+remediation queue. Supporting artifacts: [`e2e-click-map-2026-07-15.md`](specs/e2e-click-map-2026-07-15.md),
+[`e2e-audit-results-2026-07-15.md`](specs/e2e-audit-results-2026-07-15.md),
+[`post-ui-audit-2026-07-15.md`](specs/post-ui-audit-2026-07-15.md) (phase detail).
+
+| Phase | Scope | PRs | Status |
+|-------|--------|-----|--------|
+| **Accent** | Brand orange vs tan | PR #602 | 📋 open |
+| **0** | P0 bugs (EPSS severity, sticky tooltips, drawer overlap, admin 500, `detected_at`) | PM-0a…PM-0e | 📋 |
+| **1** | Charts + FEED filters + Forge Library toolbar | PM-1a…PM-1d | 📋 after Phase 0 |
+| **2** | Accent sweep, DataGrid standard, ARCH layout | PM-2a…PM-2d | 📋 after Phase 1 |
+| **3** | Architecture graph viewport/zoom/fit | PM-3a…PM-3d | 📋 after Phase 0 |
+| **4** | IA: Admin Security posture, remove ARCH tab, Forge MITRE navigator | PM-4a…PM-4e | 📋 after Phase 3 |
+
+**E2E automation:** `scripts/e2e_audit_exhaustive.py` (276 steps, 2026-07-15 run).
 
 ---
 
