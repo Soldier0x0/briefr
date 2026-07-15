@@ -237,12 +237,18 @@
   background: var(--bg2);
   border: 1px solid var(--border);
   padding: 4px 11px;
-  transition: color var(--motion-fast), background-color var(--motion-fast), border-color var(--motion-fast);
+  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
 }
 
 .filter-btn:hover {
   color: var(--text);
   border-color: var(--border2);
+  background: var(--bg3);
+}
+
+.filter-btn:active:not(:disabled) {
+  transform: scale(0.98);
+  opacity: 0.94;
 }
 
 /* Selected filter — neutral state, not destructive/severity, so accent not red. */
@@ -429,18 +435,23 @@
   letter-spacing: 0.06em;
   padding: 6px 14px;
   border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg2);
+  color: var(--text2);
   border-radius: 0;
   white-space: nowrap;
   cursor: pointer;
-  transition: color var(--motion-fast), border-color var(--motion-fast), background-color var(--motion-fast);
+  transition: color var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
 }
 
 .vendor-btn:hover {
   color: var(--text);
-  border-color: var(--border);
-  background: var(--bg);
+  border-color: var(--border2);
+  background: var(--bg3);
+}
+
+.vendor-btn:active:not(:disabled) {
+  transform: scale(0.98);
+  opacity: 0.94;
 }
 
 /* Selected vendor filter — neutral state, not destructive/severity, so accent not red. */

@@ -19,10 +19,17 @@
   padding: 0;
   color: var(--text3);
   flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .what-changed-toggle:hover {
   color: var(--text2);
+  background: var(--bg3);
+}
+
+.what-changed-toggle:active {
+  transform: scale(0.96);
 }
 
 .what-changed-chevron {

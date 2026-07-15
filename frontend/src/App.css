@@ -195,6 +195,25 @@ textarea:focus-visible {
   box-sizing: border-box;
 }
 
+/* E7-1 — shared motion-token hover/press for chip-like controls */
+.pressable-surface {
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.pressable-surface:active:not(:disabled) {
+  transform: scale(0.98);
+  opacity: 0.94;
+}
+
+.surface-static {
+  cursor: default;
+}
+
 /* ── Last refreshed bar ────────────────────────────────── */
 .last-refreshed {
   font-size: 0.75rem;

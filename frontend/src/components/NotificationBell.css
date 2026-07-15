@@ -14,6 +14,16 @@
   color: var(--text);
   cursor: pointer;
   position: relative;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.notification-bell-trigger:hover {
+  background: var(--bg3);
+  border-color: var(--border2);
+}
+
+.notification-bell-trigger:active {
+  transform: scale(0.96);
 }
 
 .notification-bell-badge {
