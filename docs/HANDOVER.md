@@ -20,6 +20,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — PM-1a Recharts tooltip + KEV bar hover (#609)
+
+**What:** KEV vendor chart — readable tooltip body (`--text` on panel) and accent/surface-selected bar hover (no white flash). Shared helpers in `rechartsTheme.js`.
+
+**PR:** #609 (merged)
+
+**Next:** **PM-1b** — chart audit sweep. Then PM-1c, PM-1d.
+
+---
+
 ## 2026-07-15 — PM Phase 0 complete (P0 bugs PM-0a…e)
 
 **What:** Shipped all five Phase 0 tickets from the post–UI E2E UX audit:
