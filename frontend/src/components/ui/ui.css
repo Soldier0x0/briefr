@@ -161,6 +161,12 @@
   top: calc(100% + 6px);
 }
 
+.reference-tooltip-bubble {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
 .ui-skeleton {
   display: block;
   border-radius: var(--radius-sm);
