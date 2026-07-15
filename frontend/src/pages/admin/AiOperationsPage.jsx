@@ -35,6 +35,13 @@ function pct(rate) {
   return `${Math.round(rate * 100)}%`
 }
 
+function failRateTone(rate, attempts = 0) {
+  if (!attempts || rate == null || Number.isNaN(rate)) return undefined
+  if (rate >= 0.5) return 'color-red'
+  if (rate >= 0.2) return 'color-amber'
+  return undefined
+}
+
 function successBadge(success) {
   const ok = success === true || success === 1
   return (
@@ -78,9 +85,21 @@ function OverviewTab({ overview, setPage }) {
   const u24 = overview?.usage?.['24h'] || {}
   const circuits = overview?.active_circuit_count || 0
   const configured = overview?.configured_provider_count || 0
+  const failRate = u24.failure_rate ?? 0
+  const failTone = failRateTone(failRate, u24.total ?? 0)
 
   return (
     <div>
+      {failTone && (u24.total ?? 0) > 0 && (
+        <div
+          className={`admin-callout ${failRate >= 0.5 ? 'admin-callout-red' : 'admin-callout-amber'}`}
+          role="alert"
+          style={{ marginBottom: '1rem' }}
+        >
+          LLM failure rate is {pct(failRate)} in the last 24 hours ({u24.failures ?? 0} of {u24.total} attempts).
+          Review the Providers tab for circuit state and API keys.
+        </div>
+      )}
       <div className="admin-stat-grid" style={{ marginBottom: '1rem' }}>
         <StatCard
           label="Providers configured"
@@ -91,7 +110,9 @@ function OverviewTab({ overview, setPage }) {
         <StatCard
           label="24h attempts"
           value={u24.total ?? 0}
-          subLabel={`${u24.failures ?? 0} failed · ${pct(u24.failure_rate)} fail rate`}
+          subLabel={`${u24.failures ?? 0} failed · ${pct(failRate)} fail rate`}
+          colorClass={failTone}
+          subLabelTitle={failTone ? 'Elevated LLM failure rate in the last 24 hours' : undefined}
         />
         <StatCard
           label="Active circuits"
@@ -267,7 +288,16 @@ function UsageTab({ overview }) {
             <div className="admin-stat-grid" style={{ marginBottom: '0.75rem' }}>
               <StatCard label="Total attempts" value={u.total ?? 0} />
               <StatCard label="Successes" value={u.successes ?? 0} colorClass="color-green" />
-              <StatCard label="Failures" value={u.failures ?? 0} colorClass={u.failures ? 'color-amber' : undefined} />
+              <StatCard
+                label="Failures"
+                value={u.failures ?? 0}
+                colorClass={(u.failures ?? 0) > 0 ? 'color-amber' : undefined}
+              />
+              <StatCard
+                label="Fail rate"
+                value={pct(u.failure_rate)}
+                colorClass={failRateTone(u.failure_rate, u.total ?? 0)}
+              />
               <StatCard label="Failover wins" value={u.fallback_successes ?? 0} subLabel="Succeeded after prior provider failed" />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>

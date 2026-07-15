@@ -363,7 +363,7 @@ numbers recorded in the closing PR body:
 **Polish / IA / Observability (E7/E8/E9)**
 - [ ] E7-1 hover/press  [ ] E7-2 skeletons  [ ] E7-3 copy/export feedback  [ ] E7-4 spacing/borders  [ ] E7-5 charts → Recharts (remove Chart.js)
 - [ ] E8-1 unify active  [ ] E8-2 breadcrumbs  [ ] E8-3 needs-attention landing
-- [ ] E9-1 failure alerts  [ ] E9-2 global webhook/key surfacing  [x] E9-3 AI-ops label fix — #575
+- [x] E9-1 failure alerts — #576  [ ] E9-2 global webhook/key surfacing  [x] E9-3 AI-ops label fix — #575
 
 ---
 
