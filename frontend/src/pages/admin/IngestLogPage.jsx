@@ -1,6 +1,6 @@
 import { Fragment, useState, useEffect, useRef } from 'react'
 import { adminApi } from '../../api.js'
-import { Select, Switch } from '../../components/ui/index.js'
+import { DateTimePicker, Select, Switch } from '../../components/ui/index.js'
 import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -174,21 +174,19 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
         <input className="admin-input" placeholder="job_id…" value={jobId} onChange={e => setJobId(e.target.value)} style={{ minWidth: 140 }} />
         <input className="admin-input" placeholder="run_id…" value={runId} onChange={e => setRunId(e.target.value)} style={{ minWidth: 120 }} />
         <input className="admin-input" placeholder="request_id…" value={reqId} onChange={e => setReqId(e.target.value)} style={{ minWidth: 160 }} />
-        <input
-          className="admin-input"
-          type="datetime-local"
+        <DateTimePicker
+          className="admin-datetime-picker"
           value={since}
-          onChange={e => setSince(e.target.value)}
-          title="Only entries at or after this time (local, converted to UTC)"
-          aria-label="From time"
+          onChange={setSince}
+          placeholder="From…"
+          ariaLabel="From time"
         />
-        <input
-          className="admin-input"
-          type="datetime-local"
+        <DateTimePicker
+          className="admin-datetime-picker"
           value={until}
-          onChange={e => setUntil(e.target.value)}
-          title="Only entries at or before this time (local, converted to UTC)"
-          aria-label="To time"
+          onChange={setUntil}
+          placeholder="To…"
+          ariaLabel="To time"
         />
         <Select
           className="admin-select"
