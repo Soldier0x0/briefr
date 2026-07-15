@@ -321,6 +321,9 @@ and are enforced repo-wide via `tokens.css` + `.cursor/rules/design-system.mdc`.
 Primary nav fills (e.g. header tab with `--accent-selected` background) are the
 exception: filled selection is allowed; neon **borders** are not.
 
+**FEED sidebar filter toggles** (KEV, PoC, EPSS, My stack) use accent
+(`--surface-selected` / `--border-active`), not red — red is not a filter-on signal.
+
 ### 23.2 Date and time inputs
 
 - All user-facing date/time pickers use the shared `DateTimePicker` primitive
