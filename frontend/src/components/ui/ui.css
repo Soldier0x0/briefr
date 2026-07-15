@@ -221,19 +221,20 @@
 .ui-tooltip-content {
   z-index: 10000;
   min-width: 0;
-  padding: 6px 10px;
+  max-width: min(320px, calc(100vw - 2rem));
+  padding: 8px 12px;
   border-radius: var(--radius-md, 8px);
   border: 1px solid var(--border2);
   background: var(--bg2);
   color: var(--text);
   font-family: var(--font-body);
-  font-size: var(--type-secondary, 0.8125rem);
+  font-size: 0.875rem;
   font-weight: 400;
-  line-height: 1.4;
+  line-height: 1.45;
   text-transform: none;
   letter-spacing: normal;
   white-space: normal;
-  box-shadow: var(--shadow-overlay, 0 12px 40px rgba(0, 0, 0, 0.5));
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
   animation: ui-tooltip-in var(--motion-fast, 120ms ease-out);
 }
 

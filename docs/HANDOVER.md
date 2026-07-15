@@ -20,6 +20,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — Tooltip v2 (Radix / shadcn pattern)
+
+**What:** Migrated `Tooltip` to `@radix-ui/react-tooltip` with `TooltipProvider` at app root, shadcn-style `.ui-tooltip-content` surface, compound exports (`TooltipTrigger`, `TooltipContent`). Legacy `<Tooltip text="…">` API + `ControlTooltip` hover-only mode preserved.
+
+**PR:** #624 (pending)
+
+**Next:** **PM-3a** — Architecture graph viewport/zoom + corpus drift.
+
+---
+
 ## 2026-07-15 — DateTimePicker v2 (shadcn-style card layout)
 
 **What:** Refactored shared `DateTimePicker` to shadcn-inspired card layout (calendar body + bordered time footer with clock icon). Radix hour/minute selects retained (no native `type="time"`). `timeLabel` prop for Start/End in `TimeWindowPicker` and ingest filters. `dateTimePickerLayoutGate.test.js` locks structure.
