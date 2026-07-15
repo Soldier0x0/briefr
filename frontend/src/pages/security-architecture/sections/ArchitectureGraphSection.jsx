@@ -4,7 +4,7 @@ import { notifyApiError } from '../../../components/Toast.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
 
 const MIN_SCALE = 0.4
-const MAX_SCALE = 2.5
+const MAX_SCALE = 4
 const COL_WIDTH = 320
 const ROW_HEIGHT = 40
 const NODE_W = 260
@@ -92,11 +92,21 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
   const viewHeight = maxRows * ROW_HEIGHT + CLUSTER_TOP + 40
 
   const searchLower = search.trim().toLowerCase()
-  const isDimmed = useCallback((node) => {
+  const isHidden = useCallback((node) => {
     if (clusterFilter !== FILTER_ALL && node.cluster !== clusterFilter) return true
     if (searchLower && !node.label.toLowerCase().includes(searchLower)) return true
     return false
   }, [clusterFilter, searchLower])
+
+  const visibleNodes = useMemo(
+    () => layout.positioned.filter(node => !isHidden(node)),
+    [layout.positioned, isHidden],
+  )
+
+  const visibleNodeIds = useMemo(
+    () => new Set(visibleNodes.map(node => node.id)),
+    [visibleNodes],
+  )
 
   const connectedEdgeIds = useMemo(() => {
     const activeId = hoveredId || selectedNodeId
@@ -210,7 +220,9 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
         >
           <svg viewBox={`0 0 ${viewWidth} ${viewHeight}`} width="100%" height="560" role="img" aria-label="System architecture graph">
             <g transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}>
-              {clusters.map((c, ci) => (
+              {clusters.map((c, ci) => {
+                if (clusterFilter !== FILTER_ALL && c.id !== clusterFilter) return null
+                return (
                 <text
                   key={c.id}
                   x={ci * COL_WIDTH + 20}
@@ -219,8 +231,10 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
                 >
                   {c.label}
                 </text>
-              ))}
+                )
+              })}
               {graph?.edges.map(e => {
+                if (!visibleNodeIds.has(e.source) || !visibleNodeIds.has(e.target)) return null
                 const s = layout.byId.get(e.source)
                 const t = layout.byId.get(e.target)
                 if (!s || !t) return null
@@ -234,8 +248,7 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
                   />
                 )
               })}
-              {layout.positioned.map(node => {
-                const dimmed = isDimmed(node)
+              {visibleNodes.map(node => {
                 const selected = node.id === selectedNodeId
                 const matched = searchLower && node.label.toLowerCase().includes(searchLower)
                 return (
@@ -246,7 +259,6 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
                     className={[
                       'sa-graph-node',
                       `sa-graph-node-${node.kind}`,
-                      dimmed ? 'sa-graph-node-dim' : '',
                       selected ? 'sa-graph-node-selected' : '',
                       matched ? 'sa-graph-node-match' : '',
                     ].filter(Boolean).join(' ')}
@@ -268,7 +280,7 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
           </svg>
         </div>
         <p className="sa-graph-hint mono">
-          Scroll to zoom (0.4×–2.5×) · drag to pan · click a node to select it
+          Scroll to zoom (0.4×–4×) · drag to pan · click a node to select it
         </p>
       </AsyncState>
     </div>
