@@ -6,6 +6,11 @@ import {
 } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import Checkbox from './Checkbox.jsx'
+import {
+  layoutPrefsKey,
+  loadLayoutPrefs,
+  saveLayoutPrefs,
+} from '../../utils/gridLayoutPrefs.js'
 import './DataGrid.css'
 
 const STORAGE_PREFIX = 'briefr-grid-'
@@ -21,9 +26,11 @@ function loadPrefs(gridId, columnIds) {
       : null
     return {
       visible,
-      wrap: Boolean(parsed.wrap),
-      center: Boolean(parsed.center),
       widths: parsed.widths && typeof parsed.widths === 'object' ? parsed.widths : {},
+      /** @deprecated migrated to gridLayoutPrefs */
+      wrap: Boolean(parsed.wrap),
+      /** @deprecated migrated to gridLayoutPrefs */
+      center: Boolean(parsed.center),
     }
   } catch {
     return null
@@ -65,6 +72,8 @@ export default function DataGrid({
   className = '',
   tableClassName = 'data-grid-table',
   stickyHeader = true,
+  layoutGroupId = null,
+  showLayoutToggles = true,
 }) {
   const columnIds = useMemo(() => columns.map((c) => c.id), [columns])
   const defaultVisible = useMemo(
@@ -73,15 +82,18 @@ export default function DataGrid({
   )
 
   const [prefs] = useState(() => loadPrefs(gridId, columnIds))
+  const layoutKey = layoutPrefsKey(gridId, layoutGroupId)
+  const [layoutPrefs] = useState(() => {
+    const fromLayout = loadLayoutPrefs(layoutKey)
+    if (fromLayout.wrap || fromLayout.center) return fromLayout
+    if (prefs?.wrap || prefs?.center) return { wrap: Boolean(prefs.wrap), center: Boolean(prefs.center) }
+    return fromLayout
+  })
   const [visibleIds, setVisibleIds] = useState(() => {
     return prefs?.visible?.length ? prefs.visible : defaultVisible
   })
-  const [wrapCells, setWrapCells] = useState(() => {
-    return prefs ? prefs.wrap : false
-  })
-  const [centerCells, setCenterCells] = useState(() => {
-    return prefs ? prefs.center : false
-  })
+  const [wrapCells, setWrapCells] = useState(() => layoutPrefs.wrap)
+  const [centerCells, setCenterCells] = useState(() => layoutPrefs.center)
   const [widths, setWidths] = useState(() => {
     return prefs ? prefs.widths : {}
   })
@@ -93,19 +105,25 @@ export default function DataGrid({
   useEffect(() => {
     isLoadingRef.current = true
     const nextPrefs = loadPrefs(gridId, columnIds)
+    const nextLayout = loadLayoutPrefs(layoutKey)
     setVisibleIds(nextPrefs?.visible?.length ? nextPrefs.visible : defaultVisible)
-    setWrapCells(nextPrefs ? nextPrefs.wrap : false)
-    setCenterCells(nextPrefs ? nextPrefs.center : false)
+    setWrapCells(nextLayout.wrap)
+    setCenterCells(nextLayout.center)
     setWidths(nextPrefs ? nextPrefs.widths : {})
-  }, [gridId, columnIds, defaultVisible])
+  }, [gridId, columnIds, defaultVisible, layoutKey])
 
   useEffect(() => {
     if (isLoadingRef.current) {
       isLoadingRef.current = false
       return
     }
-    savePrefs(gridId, { visible: visibleIds, wrap: wrapCells, center: centerCells, widths })
-  }, [gridId, visibleIds, wrapCells, centerCells, widths])
+    savePrefs(gridId, { visible: visibleIds, widths })
+  }, [gridId, visibleIds, widths])
+
+  useEffect(() => {
+    if (isLoadingRef.current) return
+    saveLayoutPrefs(layoutKey, { wrap: wrapCells, center: centerCells })
+  }, [layoutKey, wrapCells, centerCells])
 
   const tanstackColumns = useMemo(
     () => columns.map((col) => ({
@@ -247,20 +265,24 @@ export default function DataGrid({
               ))}
             </div>
           )}
-          <Checkbox
-            id={`${gridId}-wrap`}
-            checked={wrapCells}
-            onCheckedChange={setWrapCells}
-            label="Wrap"
-            className="data-grid-toggle"
-          />
-          <Checkbox
-            id={`${gridId}-center`}
-            checked={centerCells}
-            onCheckedChange={setCenterCells}
-            label="Center"
-            className="data-grid-toggle"
-          />
+          {showLayoutToggles && (
+            <>
+              <Checkbox
+                id={`${gridId}-wrap`}
+                checked={wrapCells}
+                onCheckedChange={setWrapCells}
+                label="Wrap"
+                className="data-grid-toggle"
+              />
+              <Checkbox
+                id={`${gridId}-center`}
+                checked={centerCells}
+                onCheckedChange={setCenterCells}
+                label="Center"
+                className="data-grid-toggle"
+              />
+            </>
+          )}
         </div>
         {toolbarExtra}
       </div>
