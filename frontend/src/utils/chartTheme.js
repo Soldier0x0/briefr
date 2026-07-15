@@ -21,5 +21,7 @@ export function readChartTheme() {
     sans: pick('--font-sans') || "'IBM Plex Sans', system-ui, sans-serif",
     chart1: pick('--chart-1') || pick('--accent'),
     chart2: pick('--chart-2') || pick('--text2'),
+    surfaceSelected: pick('--surface-selected') || pick('--chip-active-bg'),
+    borderStrong: pick('--border-strong') || pick('--border'),
   }
 }

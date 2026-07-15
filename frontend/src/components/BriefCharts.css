@@ -171,8 +171,14 @@
   width: 100%;
 }
 
-.brief-chart-canvas-wrap--kev {
-  min-height: 180px;
+.brief-chart-canvas-wrap--kev .recharts-tooltip-cursor {
+  fill: var(--surface-selected) !important;
+  stroke: var(--border) !important;
+}
+
+.brief-chart-canvas-wrap--kev .recharts-active-bar {
+  fill: var(--accent) !important;
+  opacity: 0.88;
 }
 
 .brief-chart-empty {
