@@ -115,7 +115,7 @@
 .fg-nav-btn.active,
 .fg-nav-btn[data-state='active'] {
   background: var(--surface-selected);
-  border-color: var(--accent-selected);
+  border-color: var(--border-active);
   color: var(--accent-selected);
 }
 
@@ -219,7 +219,7 @@
 }
 
 .fg-tech-row-active {
-  border-color: var(--accent-selected);
+  border-color: var(--border-active);
   background: var(--surface-selected);
   color: var(--accent-selected);
 }
@@ -644,7 +644,7 @@
 }
 
 .fg-scenario-card-active {
-  border-color: var(--accent-selected);
+  border-color: var(--border-active);
   background: var(--surface-selected);
 }
 

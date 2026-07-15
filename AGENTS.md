@@ -7,6 +7,8 @@ Read in this order before making changes:
 2. [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md) — what is true in production (wins over stale docs)
 3. [`docs/HANDOVER.md`](docs/HANDOVER.md) — recent session context: what changed, why, decisions made
 4. [`docs/planning/SPRINT_2026-07.md`](docs/planning/SPRINT_2026-07.md) — current work queue with acceptance criteria
+5. **UI work:** [`docs/design/design-system.md`](docs/design/design-system.md) §23 (repo-wide UX standards —
+   applies to analyst + admin + all surfaces; enforced by `.cursor/rules/design-system.mdc`)
 
 ## Execution contract (autonomous loop — mandatory)
 

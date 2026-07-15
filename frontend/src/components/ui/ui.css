@@ -184,7 +184,7 @@
 .ui-pill[aria-pressed='true'] {
   background: var(--surface-selected);
   color: var(--accent-selected);
-  border-color: var(--accent-selected);
+  border-color: var(--border-active);
 }
 
 .ui-pill:focus-visible {
@@ -837,7 +837,7 @@
 
 .ui-tabs-trigger[data-state='active'] {
   color: var(--accent-selected);
-  border-color: var(--accent-selected);
+  border-color: var(--border-active);
   background: var(--surface-selected);
 }
 

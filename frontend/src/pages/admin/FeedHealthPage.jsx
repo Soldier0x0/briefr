@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { CheckCircle2, AlertTriangle, XCircle, RefreshCw } from 'lucide-react'
 import { adminApi } from '../../api.js'
-import { fmtIso, sourceLabel } from './formatters.js'
+import { fmtIso, sourceLabel, fmtAge } from './formatters.js'
+import { nvdCadenceLabel, nvdStaleDetail } from './intelStatus.js'
 import HelpTip from './shared/HelpTip.jsx'
 import AdminDataGrid from './shared/AdminDataGrid.jsx'
 import { useOperations } from './shared/OperationTracker.jsx'
@@ -85,6 +86,8 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
   const sources = system?.feeds?.sources || {}
   const incidents = system?.feeds?.incidents
   const incidentSources = incidents?.sources || []
+  const nvdAge = system?.last_nvd_sync_age_seconds
+  const nvdSyncStale = nvdAge != null && nvdAge > 7200
 
   async function resetCircuit(sourceId) {
     setResetting(prev => ({ ...prev, [sourceId]: true }))
@@ -179,8 +182,18 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
       <p className="admin-page-subtitle">
         {isAnalyst
           ? 'Which intel sources are current and which need attention.'
-          : 'Per-source ingest status and consecutive-failure counts for every upstream feed (NVD, KEV, EPSS, etc.).'}
+          : 'Per-source API reachability and failure counts. OK means the last HTTP check succeeded — scheduled sync freshness is tracked separately below.'}
       </p>
+
+      {nvdSyncStale && (
+        <div className="admin-callout admin-callout-amber" role="alert" style={{ marginBottom: '1rem' }}>
+          <strong>Scheduled NVD sync is overdue.</strong>{' '}
+          {nvdStaleDetail(system) || `Last successful ingest was ${fmtAge(nvdAge)} ago.`}{' '}
+          Expected cadence: {nvdCadenceLabel(system)}.
+          {' '}The NVD API row may still show OK if a recent health check passed — run{' '}
+          <strong>NVD Incremental Sync</strong> from Scheduler to refresh CVE data.
+        </div>
+      )}
 
       {entries.length === 0 ? (
         <div className="admin-empty">No health data yet — sources initialize on first fetch.</div>

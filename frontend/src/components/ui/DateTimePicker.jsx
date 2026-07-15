@@ -1,13 +1,16 @@
 import { useEffect, useId, useState } from 'react'
 import { DayPicker } from 'react-day-picker'
 import { format } from 'date-fns'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import Button from './Button.jsx'
+import Select from './Select.jsx'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
 } from './DropdownMenu.jsx'
 import { toDatetimeLocalValue } from '../timeWindowDateUtils.js'
+import 'react-day-picker/style.css'
 import './DateTimePicker.css'
 
 const DISPLAY_FMT = 'yyyy-MM-dd HH:mm'
@@ -51,7 +54,7 @@ function displayLabel(value, placeholder) {
 }
 
 /**
- * Dark-themed date + time picker (react-day-picker calendar in a Radix dropdown).
+ * Dark-themed date + time picker (react-day-picker + Radix dropdown).
  * Value/onChange use the same datetime-local string format as native inputs.
  */
 export default function DateTimePicker({
@@ -132,45 +135,59 @@ export default function DateTimePicker({
           selected={draftDate}
           onSelect={handleDaySelect}
           defaultMonth={draftDate}
-          className="ui-datetime-picker-calendar"
           showOutsideDays
+          className="ui-day-picker"
+          classNames={{
+            months: 'ui-day-picker-months',
+            month: 'ui-day-picker-month',
+            month_caption: 'ui-day-picker-caption',
+            caption_label: 'ui-day-picker-caption-label',
+            nav: 'ui-day-picker-nav',
+            button_previous: 'ui-day-picker-nav-btn',
+            button_next: 'ui-day-picker-nav-btn',
+            weekdays: 'ui-day-picker-weekdays',
+            weekday: 'ui-day-picker-weekday',
+            week: 'ui-day-picker-week',
+            day: 'ui-day-picker-day',
+            day_button: 'ui-day-picker-day-btn',
+            selected: 'ui-day-picker-selected',
+            today: 'ui-day-picker-today',
+            outside: 'ui-day-picker-outside',
+            disabled: 'ui-day-picker-disabled',
+          }}
+          components={{
+            Chevron: ({ orientation, className: chevronClass, ...props }) => {
+              const Icon = orientation === 'left' ? ChevronLeft : ChevronRight
+              return <Icon size={15} strokeWidth={2} className={chevronClass} {...props} />
+            },
+          }}
         />
         <div className="ui-datetime-picker-time" role="group" aria-label="Time">
-          <label className="ui-datetime-picker-time-label" htmlFor={`${listId}-hour`}>
-            Hour
-          </label>
-          <select
+          <Select
             id={`${listId}-hour`}
-            className="ui-datetime-picker-time-select mono"
-            value={draftHours}
-            onChange={(e) => handleHoursChange(e.target.value)}
+            className="ui-datetime-picker-time-select"
+            value={String(draftHours)}
+            onValueChange={(val) => handleHoursChange(val)}
+            options={Array.from({ length: 24 }, (_, hour) => ({
+              value: String(hour),
+              label: String(hour).padStart(2, '0'),
+            }))}
             aria-label="Hour"
-          >
-            {Array.from({ length: 24 }, (_, hour) => (
-              <option key={hour} value={hour}>
-                {String(hour).padStart(2, '0')}
-              </option>
-            ))}
-          </select>
+          />
           <span className="ui-datetime-picker-time-sep mono" aria-hidden="true">
             :
           </span>
-          <label className="ui-datetime-picker-time-label" htmlFor={`${listId}-minute`}>
-            Min
-          </label>
-          <select
+          <Select
             id={`${listId}-minute`}
-            className="ui-datetime-picker-time-select mono"
-            value={draftMinutes}
-            onChange={(e) => handleMinutesChange(e.target.value)}
+            className="ui-datetime-picker-time-select"
+            value={String(draftMinutes)}
+            onValueChange={(val) => handleMinutesChange(val)}
+            options={Array.from({ length: 60 }, (_, minute) => ({
+              value: String(minute),
+              label: String(minute).padStart(2, '0'),
+            }))}
             aria-label="Minute"
-          >
-            {Array.from({ length: 60 }, (_, minute) => (
-              <option key={minute} value={minute}>
-                {String(minute).padStart(2, '0')}
-              </option>
-            ))}
-          </select>
+          />
         </div>
         <div className="ui-datetime-picker-actions">
           {clearable && (

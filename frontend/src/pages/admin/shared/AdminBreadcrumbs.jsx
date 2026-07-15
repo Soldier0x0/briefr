@@ -1,12 +1,16 @@
 import { ADMIN_MODE_LABELS, resolveAdminPage } from '../constants.js'
 
+function upperLabel(text) {
+  return String(text || '').toUpperCase()
+}
+
 /**
  * "You are here" trail for the admin shell (E8-2).
  * Admin → view mode → section → current page.
  */
 export default function AdminBreadcrumbs({ pageId, mode, setPage }) {
   const { section, label } = resolveAdminPage(pageId, mode)
-  const modeLabel = ADMIN_MODE_LABELS[mode] || mode
+  const modeLabel = upperLabel(ADMIN_MODE_LABELS[mode] || mode)
 
   return (
     <nav className="admin-breadcrumbs" aria-label="You are here">
@@ -15,18 +19,18 @@ export default function AdminBreadcrumbs({ pageId, mode, setPage }) {
         className="admin-breadcrumb-link"
         onClick={() => setPage('overview')}
       >
-        Admin
+        ADMIN
       </button>
       <span className="admin-breadcrumb-sep" aria-hidden="true">›</span>
       <span className="admin-breadcrumb-segment">{modeLabel}</span>
       {section && (
         <>
           <span className="admin-breadcrumb-sep" aria-hidden="true">›</span>
-          <span className="admin-breadcrumb-segment admin-breadcrumb-section">{section}</span>
+          <span className="admin-breadcrumb-segment admin-breadcrumb-section">{upperLabel(section)}</span>
         </>
       )}
       <span className="admin-breadcrumb-sep" aria-hidden="true">›</span>
-      <span className="admin-breadcrumb-current" aria-current="page">{label}</span>
+      <span className="admin-breadcrumb-current" aria-current="page">{upperLabel(label)}</span>
     </nav>
   )
 }

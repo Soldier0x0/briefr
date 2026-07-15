@@ -105,6 +105,11 @@ JSX/CSS + semantic tokens + Radix primitives per ADR-003; no Tailwind), **Postgr
   `prefers-reduced-motion` respected (global rule exists — keep it).
 - Every status word, pill, or badge ships with a discoverable explanation
   (tooltip/legend) — `docs/PRODUCT.md` design principle 1.
+- **Repo-wide UX standards (permanent):** admin UX review findings apply to the
+  whole product, not admin-only. Follow `docs/design/design-system.md` §23 and
+  `.cursor/rules/design-system.mdc` — soft accent focus/active tokens, shared
+  `DateTimePicker`, dropdowns for discrete settings, "Reset to default" labels,
+  uppercase wayfinding, health-vs-freshness callouts, job progress while LOCKED.
 
 ## Docs rules
 

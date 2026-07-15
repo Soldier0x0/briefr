@@ -152,7 +152,7 @@
 }
 
 .timeline-cell--selected {
-  outline: 2px solid var(--accent-selected);
+  outline: var(--outline-active);
   outline-offset: 1px;
   z-index: 2;
 }
