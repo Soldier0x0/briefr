@@ -155,7 +155,7 @@
 .sa-stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
+  gap: 16px;
   margin-bottom: 28px;
 }
 
@@ -221,8 +221,9 @@
 }
 
 .sa-stat-card-btn:hover .sa-stat-card {
-  border-color: var(--border2);
+  border-color: var(--border-active);
   background: var(--bg3);
+  transform: translateY(-1px);
 }
 
 .sa-stat-card-btn:active .sa-stat-card {
@@ -306,14 +307,14 @@
 .sa-arch-flow {
   display: flex;
   align-items: stretch;
-  gap: 0;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .sa-arch-flow-item {
   display: flex;
   align-items: center;
-  flex: 1 1 160px;
+  flex: 1 1 180px;
   min-width: 0;
   gap: 0;
 }
@@ -844,42 +845,55 @@
 .sa-tb-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   margin-top: 16px;
 }
 
 .sa-tb-card {
   background: var(--bg2);
   border: 1px solid var(--border);
-  padding: 16px;
+  border-radius: 12px;
+  padding: 18px 20px;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.sa-tb-card:hover {
+  border-color: var(--border-active);
+  background: var(--bg3);
 }
 
 .sa-tb-flow {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  margin-bottom: 10px;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 12px;
+  width: 100%;
 }
 
 .sa-tb-flow-step {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
 }
 
 .sa-tb-flow-node {
   font-size: 0.8125rem;
-  padding: 4px 10px;
+  padding: 6px 12px;
   border: 1px solid var(--border2);
+  border-radius: 6px;
   background: var(--bg3);
   color: var(--text);
+  min-width: min(100%, 280px);
+  text-align: center;
 }
 
 .sa-tb-flow-arrow {
-  color: var(--text3);
+  color: var(--accent-indicator, var(--accent));
   line-height: 1;
-  padding: 2px 0;
+  padding: 4px 0;
+  font-size: 1rem;
 }
 
 .sa-tb-fields {

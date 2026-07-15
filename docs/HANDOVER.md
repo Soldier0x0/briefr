@@ -20,6 +20,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — PM Phase 2 complete (PM-2a…d)
+
+**What:** Shipped all four Phase 2 tickets (TDD, one PR each):
+
+| Ticket | PR | Fix |
+|--------|-----|-----|
+| PM-2a | #619 | Accent audit — selection/toggle rules use accent tokens (`selectionAccentGate`) |
+| PM-2b | #620 | DataGrid v2 — row borders, 10px/12px padding, `gridLayoutPrefs` shared wrap/center |
+| PM-2c | #621 | MITRE ATT&CK nav label + one shared Wrap/Center toolbar for tactic grids |
+| PM-2d | #622 | ARCH Overview tile spacing/hover + Trust Boundaries centered flow layout |
+
+**Next:** **PM-3a** — Architecture graph viewport/zoom + corpus drift (Phase 3).
+
+---
+
 ## 2026-07-15 — PM Phase 1 complete (PM-1a…d)
 
 **What:** Shipped all four Phase 1 tickets:
