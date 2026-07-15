@@ -482,6 +482,7 @@
 
 .chart-data-table-summary::before {
   content: '▸';
+  display: inline-block;
   font-size: var(--type-micro);
   color: var(--text-muted, var(--text3));
   transition: transform var(--transition-fast);
