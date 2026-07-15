@@ -24,6 +24,8 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 **What:** `collectNeedsAttentionItems()` aggregates circuits, webhooks, job errors, ingest errors, auth failures, stale NVD/backup/incidents into `NeedsAttentionPanel` on overview (analyst + operator). Wired `JobErrorsPanel` on both overviews for actionable retries/ack.
 
+**PR:** #600 (merged)
+
 **Next:** UI modernization plan §13 complete — pick next sprint item from `SPRINT_2026-07.md`.
 
 ---
