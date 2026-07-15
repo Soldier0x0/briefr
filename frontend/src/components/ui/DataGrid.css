@@ -44,7 +44,8 @@
 }
 
 .data-grid-scroll {
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: auto;
   max-width: 100%;
   max-height: var(--data-grid-max-height, 70vh);
 }
@@ -53,6 +54,27 @@
   width: 100%;
   table-layout: fixed;
   border-collapse: collapse;
+}
+
+.data-grid-table th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--type-meta, 0.75rem);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text3);
+}
+
+.data-grid-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--type-secondary, 0.8125rem);
+  color: var(--text);
+}
+
+.data-grid-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .data-grid-table thead th {
