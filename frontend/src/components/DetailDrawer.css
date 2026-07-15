@@ -2046,8 +2046,15 @@
 }
 
 .drawer-risk-comp-header--semantics {
-  grid-template-columns: 5.5rem 1fr 5.5rem;
+  grid-template-columns: minmax(7.25rem, auto) minmax(0, 1fr) 5.5rem;
   align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .drawer-risk-comp-header--semantics {
+    grid-template-columns: minmax(6.75rem, auto) minmax(0, 1fr) 5rem;
+    gap: 8px;
+  }
 }
 
 .drawer-risk-signal-col {
