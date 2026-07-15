@@ -131,7 +131,10 @@ async def ai_operations_usage_since(
         SELECT
             COUNT(*) AS total,
             SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) AS successes,
-            SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) AS failures,
+            SUM(CASE WHEN success = 0 AND COALESCE(error_class, '') != 'circuit_open'
+                THEN 1 ELSE 0 END) AS failures,
+            SUM(CASE WHEN success = 0 AND error_class = 'circuit_open'
+                THEN 1 ELSE 0 END) AS skipped_cooldown,
             SUM(CASE WHEN fallback_from_provider IS NOT NULL AND success = 1
                 THEN 1 ELSE 0 END) AS fallback_successes,
             SUM(input_tokens) AS input_tokens,
@@ -146,8 +149,10 @@ async def ai_operations_usage_since(
     total = int(row.get("total") or 0)
     successes = int(row.get("successes") or 0)
     failures = int(row.get("failures") or 0)
+    skipped_cooldown = int(row.get("skipped_cooldown") or 0)
     fallback_successes = int(row.get("fallback_successes") or 0)
-    failure_rate = round(failures / total, 4) if total else 0.0
+    api_attempts = max(0, total - skipped_cooldown)
+    failure_rate = round(failures / api_attempts, 4) if api_attempts else 0.0
     input_tokens = int(row.get("input_tokens") or 0)
     output_tokens = int(row.get("output_tokens") or 0)
     total_tokens = int(row.get("total_tokens") or 0)
@@ -183,6 +188,8 @@ async def ai_operations_usage_since(
         "total": total,
         "successes": successes,
         "failures": failures,
+        "skipped_cooldown": skipped_cooldown,
+        "api_attempts": api_attempts,
         "failure_rate": failure_rate,
         "fallback_successes": fallback_successes,
         "by_provider": [dict(r) for r in by_provider_rows],

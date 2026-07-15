@@ -256,16 +256,6 @@ async def chat_completion_task(
                 step.provider,
                 task,
             )
-            await _record_attempt(
-                task=task,
-                step=step,
-                timer=AttemptTimer(),
-                success=False,
-                retry_index=attempt_index,
-                queue_context_type=queue_context_type,
-                queue_context_id=queue_context_id,
-                error_class="circuit_open",
-            )
             last_failed_provider = step.provider
             last_failed_model = step.model
             attempt_index += 1

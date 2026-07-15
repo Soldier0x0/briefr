@@ -17,6 +17,7 @@ import OpsCharts from './shared/OpsCharts.jsx'
 import { AdminPageSkeleton } from './shared/AdminSkeletons.jsx'
 import NeedsAttentionPanel from './shared/NeedsAttentionPanel.jsx'
 import JobErrorsPanel from './shared/JobErrorsPanel.jsx'
+import { CIRCUIT_UI } from './circuitLabels.js'
 
 function AnalystOverview({ system, toast, setPage, ingestErrorCount, unackJobErrorCount, jobAcks, onMarkJobErrorsRead }) {
   const [running, setRunning] = useState({})
@@ -341,7 +342,7 @@ function OperatorOverview({ system, toast, setPage, ingestErrorCount, unackJobEr
         <StatCard label="NVD SYNC AGE" value={fmtAge(system.last_nvd_sync_age_seconds)} colorClass={nvdAgeColorClass} />
         <StatCard label="LAST BACKUP" value={fmtAge(system.last_backup_age_seconds)} colorClass={backupAgeColorClass} />
         <StatCard label="DB INTEGRITY" value={db_integrity?.ok ? 'OK' : 'FAILED'} colorClass={db_integrity?.ok ? 'color-green' : 'color-red'} />
-        <StatCard label="TRIPPED CIRCUITS" value={system.open_circuit_count ?? 0} colorClass={system.open_circuit_count > 0 ? 'color-red' : 'color-green'} />
+        <StatCard label={CIRCUIT_UI.overviewTripped} value={system.open_circuit_count ?? 0} colorClass={system.open_circuit_count > 0 ? 'color-red' : 'color-green'} />
         <StatCard label="JOBS WITH ERRORS" value={system.jobs_with_errors_count ?? 0} colorClass={system.jobs_with_errors_count > 0 ? 'color-red' : 'color-green'} />
       </div>
 

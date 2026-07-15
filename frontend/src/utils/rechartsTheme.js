@@ -9,6 +9,20 @@ export function rechartsMargin({ left = 4, right = 8, top = 4, bottom = 4 } = {}
   return { top, right, bottom, left }
 }
 
+/** Pixel width for a Recharts category Y-axis from label strings (no truncation). */
+export function categoryAxisWidth(labels, { min = 120, max = 300, charPx = 7.2, pad = 20 } = {}) {
+  const longest = Math.max(0, ...(labels || []).map((label) => String(label || '').length))
+  if (!longest) return min
+  return Math.min(max, Math.max(min, Math.ceil(longest * charPx) + pad))
+}
+
+/** Height for horizontal bar charts — one row per category plus axis padding. */
+export function verticalBarChartHeight(rowCount, { min = 200, rowPx = 28, pad = 48 } = {}) {
+  const rows = Math.max(0, Number(rowCount) || 0)
+  if (!rows) return min
+  return Math.max(min, rows * rowPx + pad)
+}
+
 export function axisTickStyle(theme) {
   return {
     fill: theme.textMuted,
