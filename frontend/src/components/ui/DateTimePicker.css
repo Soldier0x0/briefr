@@ -38,13 +38,34 @@
 }
 
 .ui-datetime-picker-content {
-  padding: 12px;
+  padding: 0;
   min-width: 18.5rem;
+  width: fit-content;
   background: var(--bg2);
   border: 1px solid var(--border2);
-  border-radius: var(--radius-sm, 4px);
+  border-radius: var(--radius-md, 8px);
   box-shadow: var(--shadow-overlay, 0 12px 40px rgba(0, 0, 0, 0.5));
   color-scheme: dark;
+  overflow: hidden;
+}
+
+.ui-datetime-picker-card {
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+}
+
+.ui-datetime-picker-body {
+  padding: 12px 12px 8px;
+}
+
+.ui-datetime-picker-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
 }
 
 /* ── shadcn-inspired dark calendar (react-day-picker v9) ───────────────── */
@@ -54,7 +75,7 @@
   --rdp-accent-background-color: color-mix(in srgb, var(--accent-primary) 16%, var(--bg3));
   --rdp-day-height: 2rem;
   --rdp-day-width: 2rem;
-  --rdp-day_button-border-radius: var(--radius-sm, 4px);
+  --rdp-day_button-border-radius: 999px;
   --rdp-selected-border: none;
   --rdp-today-color: var(--text);
   --rdp-outside-opacity: 0.38;
@@ -151,12 +172,12 @@
 }
 
 .ui-day-picker-selected .ui-day-picker-day-btn {
-  background: color-mix(in srgb, var(--accent-primary) 18%, var(--bg3));
-  color: var(--text);
+  background: var(--text);
+  color: var(--bg);
   font-weight: 600;
 }
 
-.ui-day-picker-today .ui-day-picker-day-btn {
+.ui-day-picker-today:not(.ui-day-picker-selected) .ui-day-picker-day-btn {
   color: var(--accent-primary);
 }
 
@@ -164,30 +185,48 @@
   color: var(--text3);
 }
 
-.ui-datetime-picker-time {
+.ui-datetime-picker-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ui-datetime-picker-field-label {
+  font-size: var(--type-meta, 0.6875rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+.ui-datetime-picker-time-input {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border2);
+  gap: 6px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--bg3);
 }
 
 .ui-datetime-picker-time-select {
-  min-width: 4.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .ui-datetime-picker-time-sep {
   color: var(--text3);
   font-size: 0.75rem;
+  flex: 0 0 auto;
+}
+
+.ui-datetime-picker-clock {
+  flex: 0 0 auto;
+  color: var(--text3);
+  margin-left: auto;
 }
 
 .ui-datetime-picker-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 6px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border2);
 }

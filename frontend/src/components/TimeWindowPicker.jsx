@@ -112,6 +112,7 @@ export default function TimeWindowPicker({
             <DateTimePicker
               className="time-window-datetime"
               value={customSince}
+              timeLabel="Start time"
               onChange={(next) => {
                 setCustomSince(next)
                 emitCustom(next, customUntil)
@@ -125,6 +126,7 @@ export default function TimeWindowPicker({
             <DateTimePicker
               className="time-window-datetime"
               value={customUntil}
+              timeLabel="End time"
               onChange={(next) => {
                 setCustomUntil(next)
                 emitCustom(customSince, next)
