@@ -377,3 +377,67 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* Switch (Radix primitive — E3-1) */
+.ui-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid var(--border-default);
+  background: var(--surface-input);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.ui-switch:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.ui-switch:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.ui-switch[data-state='checked'] {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.ui-switch:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ui-switch-thumb {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text);
+  transform: translateX(2px);
+  transition: transform var(--transition-fast);
+  will-change: transform;
+}
+
+.ui-switch[data-state='checked'] .ui-switch-thumb {
+  transform: translateX(18px);
+  background: var(--text-on-accent);
+}
+
+.ui-switch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ui-switch-label:has(.ui-switch:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

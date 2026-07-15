@@ -1,5 +1,6 @@
 export { default as Button } from './Button.jsx'
 export { default as Checkbox } from './Checkbox.jsx'
+export { default as Switch } from './Switch.jsx'
 export { default as Badge } from './Badge.jsx'
 export { default as Tooltip } from './Tooltip.jsx'
 export { default as ReferenceTooltip } from './ReferenceTooltip.jsx'
