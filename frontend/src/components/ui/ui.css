@@ -384,7 +384,8 @@
   display: inline-flex;
   align-items: center;
   width: 36px;
-  height: 20px;
+  min-height: var(--hit-target-min);
+  height: 24px;
   flex-shrink: 0;
   border-radius: 999px;
   border: 1px solid var(--border-default);
@@ -440,4 +441,69 @@
 .ui-switch-label:has(.ui-switch:disabled) {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+/* Chart data table fallback (E6-5) */
+.chart-data-table {
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border-subtle, var(--border));
+}
+
+.chart-data-table-summary {
+  cursor: pointer;
+  font-size: var(--type-meta);
+  color: var(--text-muted, var(--text3));
+  letter-spacing: 0.05em;
+  padding: 0.45rem 0;
+  min-height: var(--hit-target-min);
+  display: inline-flex;
+  align-items: center;
+  list-style: none;
+}
+
+.chart-data-table-summary::-webkit-details-marker {
+  display: none;
+}
+
+.chart-data-table-summary:hover,
+.chart-data-table-summary:focus-visible {
+  color: var(--text-secondary, var(--text2));
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.chart-data-table-wrap {
+  overflow-x: auto;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.chart-data-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--type-meta);
+}
+
+.chart-data-table th,
+.chart-data-table td {
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--border-subtle, var(--border));
+  white-space: nowrap;
+}
+
+.chart-data-table th {
+  color: var(--text-muted, var(--text3));
+  font-weight: 500;
+  position: sticky;
+  top: 0;
+  background: var(--surface-raised, var(--bg2));
+}
+
+.chart-data-table td {
+  color: var(--text-secondary, var(--text2));
+}
+
+.chart-data-table tr:last-child td {
+  border-bottom: none;
 }

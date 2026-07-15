@@ -35,6 +35,13 @@ export const SEVERITY_LEVELS = [
 
 const SEVERITY_BY_ID = Object.fromEntries(SEVERITY_LEVELS.map((row) => [row.id, row]))
 
+/** Compact visible label for color+text pairs (E6-5 color-not-alone). */
+export function severityShortLabel(severity) {
+  const key = (severity || 'unknown').toLowerCase()
+  const row = SEVERITY_BY_ID[key] || SEVERITY_BY_ID.unknown
+  return row.label
+}
+
 export function severityTooltip(severity, cvssScore = null) {
   const key = (severity || 'unknown').toLowerCase()
   const row = SEVERITY_BY_ID[key] || SEVERITY_BY_ID.unknown

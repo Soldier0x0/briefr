@@ -14,8 +14,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: var(--hit-target-min);
+  height: var(--hit-target-min);
   padding: 0;
   color: var(--text3);
   flex-shrink: 0;
@@ -103,7 +103,8 @@
 .brief-chart-filter-chip {
   font-size: var(--type-micro);
   letter-spacing: 0.06em;
-  padding: 3px 6px;
+  min-height: var(--hit-target-min);
+  padding: 4px 8px;
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text3);
@@ -202,7 +203,20 @@
 }
 
 .brief-epss-col-sev {
-  width: 20px;
+  width: auto;
+  min-width: 4.5rem;
+}
+
+.brief-epss-sev-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.brief-epss-sev-label {
+  font-size: var(--type-micro);
+  color: var(--text2);
+  letter-spacing: 0.04em;
 }
 
 .brief-epss-col-delta {

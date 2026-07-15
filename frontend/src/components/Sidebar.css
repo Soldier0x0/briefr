@@ -103,7 +103,8 @@
 
 .toggle {
   width: 36px;
-  height: 18px;
+  min-height: var(--hit-target-min);
+  height: 24px;
   background: var(--bg3);
   border: 1px solid var(--border2);
   border-radius: 0;
@@ -136,7 +137,7 @@
 
 .toggle-on .toggle-thumb {
   background: var(--red);
-  transform: translateX(18px);
+  transform: translateX(20px);
 }
 
 .toggle-label {

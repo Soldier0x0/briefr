@@ -4,6 +4,7 @@ import { adminApi } from '../../api.js'
 import AsyncSection from './shared/AsyncSection.jsx'
 import StatCard from './shared/StatCard.jsx'
 import HelpTip from './shared/HelpTip.jsx'
+import { ChartDataTable } from '../../components/ui/index.js'
 import { loadChartJs, readChartTheme } from '../../utils/chartLoader.js'
 import { baseChartOptions } from '../../utils/chartOptions.js'
 import { fmtBytes, fmtIsoMono } from './formatters.js'
@@ -48,8 +49,42 @@ function seriesHasPlottableData(series, fields) {
   )
 }
 
-function ResourceLineChart({ id, series, fields, labels, canvasRef, chartsRef }) {
+function ResourceLineChart({ id, series, fields, labels, canvasRef, chartsRef, tableTitle }) {
   const hasData = seriesHasPlottableData(series, fields)
+
+  const tableRows = useMemo(() => {
+    if (!hasData) return []
+    return series
+      .filter((row) =>
+        fields.some((field) => {
+          const v = row[field]
+          return v != null && !Number.isNaN(Number(v))
+        }),
+      )
+      .slice(-48)
+      .map((row, index) => {
+        const entry = {
+          _key: row.ts || index,
+          ts: row.ts ? String(row.ts).slice(0, 19) : '—',
+        }
+        fields.forEach((field) => {
+          entry[field] = fmtMetric(field, row[field])
+        })
+        return entry
+      })
+  }, [series, fields, hasData])
+
+  const tableColumns = useMemo(() => {
+    const cols = [{ key: 'ts', label: 'Sample (UTC)', className: 'mono' }]
+    fields.forEach((field, idx) => {
+      cols.push({
+        key: field,
+        label: labels[idx] || field,
+        className: 'mono',
+      })
+    })
+    return cols
+  }, [fields, labels])
 
   useEffect(() => {
     let cancelled = false
@@ -101,9 +136,16 @@ function ResourceLineChart({ id, series, fields, labels, canvasRef, chartsRef })
   }
 
   return (
-    <div className="admin-resources-chart-wrap">
-      <canvas ref={canvasRef} aria-hidden="true" />
-    </div>
+    <>
+      <div className="admin-resources-chart-wrap">
+        <canvas ref={canvasRef} role="img" aria-label={tableTitle || 'Resource utilization chart'} />
+      </div>
+      <ChartDataTable
+        title={tableTitle || 'Resource utilization data'}
+        columns={tableColumns}
+        rows={tableRows}
+      />
+    </>
   )
 }
 
@@ -260,6 +302,7 @@ export default function ResourcesPage() {
                   labels={section.labels}
                   canvasRef={section.ref}
                   chartsRef={chartsRef}
+                  tableTitle={section.label}
                 />
               </div>
             ))}

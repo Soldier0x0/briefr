@@ -185,6 +185,16 @@ textarea:focus-visible {
   border-width: 0;
 }
 
+/* WCAG 2.5.8 target size — expand interactive hit area without oversized visuals */
+.hit-target {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit-target-min);
+  min-height: var(--hit-target-min);
+  box-sizing: border-box;
+}
+
 /* ── Last refreshed bar ────────────────────────────────── */
 .last-refreshed {
   font-size: 0.75rem;

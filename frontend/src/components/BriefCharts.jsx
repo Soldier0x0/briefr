@@ -3,7 +3,7 @@ import { fetchTopVendors, fetchChanges, fetchCVEEpssHistory } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
 import useAsync from '../hooks/useAsync.js'
 import useVisibilityAwareInterval from '../hooks/useVisibilityAwareInterval.js'
-import { AsyncState, ErrorState, Skeleton } from './ui/index.js'
+import { AsyncState, ErrorState, Skeleton, ChartDataTable } from './ui/index.js'
 import { loadChartJs, readChartTheme } from '../utils/chartLoader.js'
 import { axisTitle, baseChartOptions } from '../utils/chartOptions.js'
 import {
@@ -18,7 +18,7 @@ import TimeWindowPicker, {
 } from './TimeWindowPicker.jsx'
 import ControlTooltip from './ControlTooltip.jsx'
 import SeverityLegend from './SeverityLegend.jsx'
-import { severityTooltip } from '../utils/severitySemantics.js'
+import { severityTooltip, severityShortLabel } from '../utils/severitySemantics.js'
 import './BriefCharts.css'
 
 const POLL_MS = 5 * 60 * 1000
@@ -123,7 +123,7 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel 
         <thead>
           <tr>
             <th scope="col" className="mono">CVE</th>
-            <th scope="col" className="mono brief-epss-col-sev" aria-label="Severity" />
+            <th scope="col" className="mono brief-epss-col-sev">Severity</th>
             <th scope="col" className="mono">7d trend</th>
             <th scope="col" className="mono brief-epss-col-delta">Δ</th>
           </tr>
@@ -146,10 +146,15 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel 
                         text={severityTooltip(row.severity)}
                         trigger="hover-focus"
                       >
-                        <span
-                          className={`sev-dot ${severityDotClass(row.severity)}`}
-                          aria-hidden="true"
-                        />
+                        <span className="brief-epss-sev-inner">
+                          <span
+                            className={`sev-dot ${severityDotClass(row.severity)}`}
+                            aria-hidden="true"
+                          />
+                          <span className="brief-epss-sev-label mono">
+                            {severityShortLabel(row.severity)}
+                          </span>
+                        </span>
                       </ControlTooltip>
                     </span>
                     <span className="brief-epss-sparkline-cell">
@@ -401,9 +406,23 @@ export default function BriefCharts({ onSelectCVE, pollEnabled = true }) {
                 {vendorRows.length === 0 ? (
                   <div className="brief-chart-empty mono">No vendor breakdown available</div>
                 ) : (
-                  <div className="brief-chart-canvas-wrap brief-chart-canvas-wrap--kev">
-                    <canvas ref={vendorRef} role="img" aria-label="Top KEV vendors by entry count" />
-                  </div>
+                  <>
+                    <div className="brief-chart-canvas-wrap brief-chart-canvas-wrap--kev">
+                      <canvas ref={vendorRef} role="img" aria-label="Top KEV vendors by entry count" />
+                    </div>
+                    <ChartDataTable
+                      title="Top KEV vendors by entry count"
+                      columns={[
+                        { key: 'vendor', label: 'Vendor' },
+                        { key: 'kev_count', label: 'KEV entries', className: 'mono' },
+                      ]}
+                      rows={vendorRows.map((row) => ({
+                        _key: row.vendor,
+                        vendor: row.vendor,
+                        kev_count: row.kev_count,
+                      }))}
+                    />
+                  </>
                 )}
               </article>
               <article className="brief-chart-card brief-chart-card--table" aria-label="Top EPSS movers">

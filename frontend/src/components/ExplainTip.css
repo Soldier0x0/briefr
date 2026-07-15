@@ -6,10 +6,10 @@
 }
 
 .explain-tip-btn {
-  width: 14px;
-  height: 14px;
+  width: var(--hit-target-min);
+  height: var(--hit-target-min);
   padding: 0;
-  font-size: 9px;
+  font-size: var(--type-micro);
   line-height: 1;
   color: var(--text3);
   background: var(--bg3);
