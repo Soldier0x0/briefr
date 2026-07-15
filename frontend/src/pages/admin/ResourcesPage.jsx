@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { adminApi } from '../../api.js'
+import { ChartDataTable } from '../../components/ui/index.js'
 import AsyncSection from './shared/AsyncSection.jsx'
 import StatCard from './shared/StatCard.jsx'
 import HelpTip from './shared/HelpTip.jsx'
-import { ChartDataTable } from '../../components/ui/index.js'
-import { loadChartJs, readChartTheme } from '../../utils/chartLoader.js'
-import { baseChartOptions } from '../../utils/chartOptions.js'
+import { AdminChartSkeleton } from './shared/AdminSkeletons.jsx'
 import { fmtBytes, fmtIsoMono } from './formatters.js'
+
+const ResourceLineChart = lazy(() =>
+  import('./resourcesChartsRecharts.jsx').then((mod) => ({ default: mod.ResourceLineChart })),
+)
 
 const WINDOWS = ['1d', '3d', '7d', '30d']
 
@@ -49,7 +52,7 @@ function seriesHasPlottableData(series, fields) {
   )
 }
 
-function ResourceLineChart({ id, series, fields, labels, canvasRef, chartsRef, tableTitle }) {
+function ResourceChartSection({ series, fields, labels, tableTitle }) {
   const hasData = seriesHasPlottableData(series, fields)
 
   const tableRows = useMemo(() => {
@@ -86,47 +89,6 @@ function ResourceLineChart({ id, series, fields, labels, canvasRef, chartsRef, t
     return cols
   }, [fields, labels])
 
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      if (!hasData) {
-        chartsRef.current[id]?.destroy?.()
-        delete chartsRef.current[id]
-        return
-      }
-      if (!canvasRef.current) return
-      const Chart = await loadChartJs()
-      if (cancelled) return
-      const theme = readChartTheme()
-      const shared = baseChartOptions(theme)
-      chartsRef.current[id]?.destroy()
-      const datasets = fields.map((field, idx) => ({
-        label: labels[idx],
-        data: series.map(row => row[field]),
-        borderColor: idx === 0 ? theme.accent : theme.text2,
-        backgroundColor: 'transparent',
-        tension: 0.2,
-        pointRadius: 0,
-        borderWidth: 1.5,
-      }))
-      chartsRef.current[id] = new Chart(canvasRef.current, {
-        type: 'line',
-        data: {
-          labels: series.map(row => row.ts?.slice(11, 16) || ''),
-          datasets,
-        },
-        options: {
-          ...shared,
-          scales: {
-            x: { ...shared.scales?.x, ticks: { maxTicksLimit: 8 } },
-            y: { ...shared.scales?.y, beginAtZero: true },
-          },
-        },
-      })
-    })()
-    return () => { cancelled = true }
-  }, [series, fields, labels, id, canvasRef, chartsRef, hasData])
-
   if (!hasData) {
     return (
       <div className="admin-empty admin-ops-chart-empty" role="status">
@@ -137,9 +99,14 @@ function ResourceLineChart({ id, series, fields, labels, canvasRef, chartsRef, t
 
   return (
     <>
-      <div className="admin-resources-chart-wrap">
-        <canvas ref={canvasRef} role="img" aria-label={tableTitle || 'Resource utilization chart'} />
-      </div>
+      <Suspense fallback={<AdminChartSkeleton height={200} />}>
+        <ResourceLineChart
+          series={series}
+          fields={fields}
+          labels={labels}
+          tableTitle={tableTitle}
+        />
+      </Suspense>
       <ChartDataTable
         title={tableTitle || 'Resource utilization data'}
         columns={tableColumns}
@@ -154,14 +121,6 @@ export default function ResourcesPage() {
   const windowKey = WINDOWS.includes(searchParams.get('window')) ? searchParams.get('window') : '1d'
   const [payload, setPayload] = useState(null)
   const [loadError, setLoadError] = useState(null)
-  const chartsRef = useRef({})
-  const cpuRef = useRef(null)
-  const ramRef = useRef(null)
-  const iopsRef = useRef(null)
-  const reqRef = useRef(null)
-  const pgRef = useRef(null)
-  const cacheRef = useRef(null)
-  const diskRef = useRef(null)
 
   const setWindow = useCallback((next) => {
     const params = new URLSearchParams(searchParams)
@@ -183,10 +142,6 @@ export default function ResourcesPage() {
 
   useEffect(() => { load() }, [load])
 
-  useEffect(() => () => {
-    Object.values(chartsRef.current).forEach(c => c?.destroy?.())
-  }, [])
-
   const series = payload?.series || []
   const summary = payload?.summary || {}
   const degraded = payload?.degraded || {}
@@ -194,7 +149,6 @@ export default function ResourcesPage() {
   const chartSections = useMemo(() => ([
     {
       id: 'cpu',
-      ref: cpuRef,
       fields: ['briefr_cpu_pct', 'pg_cpu_pct'],
       labels: ['BRIEFR CPU %', 'Postgres CPU %'],
       field: 'briefr_cpu_pct',
@@ -203,7 +157,6 @@ export default function ResourcesPage() {
     },
     {
       id: 'ram',
-      ref: ramRef,
       fields: ['briefr_rss_bytes', 'pg_rss_bytes'],
       labels: ['BRIEFR RSS', 'Postgres RSS'],
       field: 'briefr_rss_bytes',
@@ -212,7 +165,6 @@ export default function ResourcesPage() {
     },
     {
       id: 'iops',
-      ref: iopsRef,
       fields: ['briefr_iops_r', 'briefr_iops_w'],
       labels: ['BRIEFR read IOPS', 'BRIEFR write IOPS'],
       field: 'briefr_iops_r',
@@ -221,7 +173,6 @@ export default function ResourcesPage() {
     },
     {
       id: 'req',
-      ref: reqRef,
       fields: ['req_count'],
       labels: ['Requests / sample'],
       field: 'req_count',
@@ -230,7 +181,6 @@ export default function ResourcesPage() {
     },
     {
       id: 'pg_xact',
-      ref: pgRef,
       fields: ['pg_xact_per_min'],
       labels: ['PG transactions / min'],
       field: 'pg_xact_per_min',
@@ -239,7 +189,6 @@ export default function ResourcesPage() {
     },
     {
       id: 'pg_cache',
-      ref: cacheRef,
       fields: ['pg_cache_hit_pct'],
       labels: ['Cache hit %'],
       field: 'pg_cache_hit_pct',
@@ -248,7 +197,6 @@ export default function ResourcesPage() {
     },
     {
       id: 'disk_free',
-      ref: diskRef,
       fields: ['disk_free_bytes'],
       labels: ['Free bytes'],
       field: 'disk_free_bytes',
@@ -295,13 +243,10 @@ export default function ResourcesPage() {
             {chartSections.map(section => (
               <div className="admin-card admin-resources-chart-card" key={section.id}>
                 {summaryCards(summary, section.field, section.label, section.tip)}
-                <ResourceLineChart
-                  id={section.id}
+                <ResourceChartSection
                   series={series}
                   fields={section.fields}
                   labels={section.labels}
-                  canvasRef={section.ref}
-                  chartsRef={chartsRef}
                   tableTitle={section.label}
                 />
               </div>
