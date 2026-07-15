@@ -77,8 +77,8 @@ export default memo(function CVECard({
   const cwes = Array.isArray(cve.cwe_ids) ? cve.cwe_ids : []
   const kevDueDays = cve.is_kev ? daysUntilDue(cve.kev_due_date) : null
   const kevDueText = kevDueLabel(kevDueDays)
-  const accentClass = cve.is_kev ? kevAccentBarClass(kevDueDays) : 'accent-neutral'
   const cvssClass = cvssBadgeClass(cve.cvss_score, cve.severity)
+  const accentClass = cve.is_kev ? kevAccentBarClass(kevDueDays) : `sev-${cvssClass}`
 
   function handleClick() {
     if (onSelect) onSelect(cve)
