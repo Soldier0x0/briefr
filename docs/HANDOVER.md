@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E9-1 LLM failure-rate alerts on AI Operations
+
+**What:** Overview shows amber/red callout when 24h LLM fail rate ≥20%; stat cards use `color-amber`/`color-red` instead of dim gray. Usage tab adds explicit fail-rate StatCard.
+
+**Next:** E9-2 webhook surfacing → E3-3 DataGrid.
+
+---
+
 ## 2026-07-15 — E9-3 AI ops label wrap/truncation
 
 **What:** StatCard sublabels use human copy + `title` tooltip; `.admin-stat-card-sub` and `.admin-env-key` wrap long env var names (AI_OPERATIONS_RECORD).
