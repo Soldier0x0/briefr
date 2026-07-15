@@ -19,10 +19,17 @@
   padding: 0;
   color: var(--text3);
   flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .brief-charts-toggle:hover {
   color: var(--text2);
+  background: var(--bg3);
+}
+
+.brief-charts-toggle:active {
+  transform: scale(0.96);
 }
 
 .brief-charts-chevron {
@@ -109,11 +116,18 @@
   background: var(--bg);
   color: var(--text3);
   cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
 }
 
 .brief-chart-filter-chip:hover {
   border-color: var(--border2);
   color: var(--text2);
+  background: var(--bg3);
+}
+
+.brief-chart-filter-chip:active:not(:disabled) {
+  transform: scale(0.98);
+  opacity: 0.94;
 }
 
 .brief-chart-filter-chip--active {

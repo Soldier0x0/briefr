@@ -1818,6 +1818,7 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
+  cursor: default;
 }
 
 .stat-card-label {
@@ -1848,12 +1849,7 @@
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius);
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.admin-stat-card:hover {
-  border-color: var(--admin-border-strong);
-  box-shadow: var(--admin-shadow-sm);
+  cursor: default;
 }
 
 .admin-stat-card-label {
@@ -2225,6 +2221,7 @@
 
 .filter-chip {
   padding: 0.2rem 0.65rem;
+  min-height: var(--hit-target-min);
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--text3);
@@ -2232,10 +2229,11 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
 }
 
-.filter-chip:hover { background: var(--bg3); color: var(--text2); }
+.filter-chip:hover { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+.filter-chip:active { transform: scale(0.98); opacity: 0.94; }
 .filter-chip.active { background: var(--surface-selected); color: var(--accent-selected); border-color: var(--accent-selected); }
 
 /* ── Action bar ─────────────────────────────────────────────────────────── */

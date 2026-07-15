@@ -193,7 +193,7 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px 16px;
-  transition: border-color 0.15s ease-out, background-color 0.15s ease-out;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .sa-stat-card .stat-card-label {
@@ -222,6 +222,10 @@
 .sa-stat-card-btn:hover .sa-stat-card {
   border-color: var(--border2);
   background: var(--bg3);
+}
+
+.sa-stat-card-btn:active .sa-stat-card {
+  transform: scale(0.99);
 }
 /* Legacy tile classes — retained for PDF/export parity if referenced elsewhere */
 .sa-tile-row {

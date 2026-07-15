@@ -35,10 +35,15 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  transition: color 0.12s;
+  transition: color var(--transition-fast), opacity var(--transition-fast), transform var(--transition-fast);
 }
 
 .header-logo-btn:hover { color: var(--text); }
+
+.header-logo-btn:active {
+  opacity: 0.9;
+  transform: scale(0.98);
+}
 
 .header-divider {
   font-family: var(--font-mono);
@@ -70,7 +75,7 @@
   min-width: 7.25rem;
   padding: 6px 14px;
   cursor: pointer;
-  transition: color 0.12s, background 0.12s, border-color 0.12s;
+  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
   text-align: center;
   white-space: nowrap;
 }
@@ -83,6 +88,11 @@
   color: var(--text);
   border-color: var(--border);
   background: var(--bg3);
+}
+
+.header-tab:active:not(.active) {
+  transform: scale(0.98);
+  opacity: 0.94;
 }
 
 .header-tab.active {
@@ -235,18 +245,28 @@
   font-size: 0.6875rem;
   color: var(--text2);
   background: none;
-  border: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  padding: 0;
+  padding: 4px 6px;
+  min-height: var(--hit-target-min);
   letter-spacing: 0.02em;
   white-space: nowrap;
-  transition: color 0.1s;
+  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
   display: flex;
   align-items: center;
   gap: 0;
 }
 
-.header-clock-btn:hover { color: var(--text); }
+.header-clock-btn:hover {
+  color: var(--text);
+  background: var(--bg3);
+  border-color: var(--border);
+}
+
+.header-clock-btn:active {
+  transform: scale(0.98);
+}
 
 .clock-local {
   color: var(--text);
@@ -366,14 +386,25 @@
   font-size: 14px;
   color: var(--text3);
   background: none;
-  border: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  padding: 0 4px;
+  min-width: var(--hit-target-min);
+  min-height: var(--hit-target-min);
+  padding: 0 6px;
   letter-spacing: 0.1em;
-  transition: color 0.1s;
+  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
 }
 
-.header-overflow-btn:hover { color: var(--text2); }
+.header-overflow-btn:hover {
+  color: var(--text2);
+  background: var(--bg3);
+  border-color: var(--border);
+}
+
+.header-overflow-btn:active {
+  transform: scale(0.96);
+}
 
 .header-overflow-dropdown {
   position: absolute;

@@ -361,7 +361,7 @@ numbers recorded in the closing PR body:
 - [x] E6-1 contrast/type  [x] E6-2 focus ring — #571  [x] E6-3 aria-labels — #573  [x] E6-4 shortcuts  [x] E6-5 target size/charts
 
 **Polish / IA / Observability (E7/E8/E9)**
-- [ ] E7-1 hover/press  [ ] E7-2 skeletons  [ ] E7-3 copy/export feedback  [ ] E7-4 spacing/borders  [ ] E7-5 charts → Recharts (remove Chart.js)
+- [x] E7-1 hover/press  [ ] E7-2 skeletons  [ ] E7-3 copy/export feedback  [ ] E7-4 spacing/borders  [ ] E7-5 charts → Recharts (remove Chart.js)
 - [ ] E8-1 unify active  [ ] E8-2 breadcrumbs  [ ] E8-3 needs-attention landing
 - [x] E9-1 failure alerts — #576  [x] E9-2 global webhook/key surfacing  [x] E9-3 AI-ops label fix — #575
 

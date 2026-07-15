@@ -4,7 +4,7 @@
   border-left: 3px solid var(--border);
   background: var(--bg);
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--transition-fast);
   display: block;
   width: 100%;
   text-align: left;
@@ -17,6 +17,10 @@
 
 .cve-card:hover {
   background: var(--bg2);
+}
+
+.cve-card:active {
+  background: var(--bg3);
 }
 
 .cve-card:focus-visible {
