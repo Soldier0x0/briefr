@@ -20,6 +20,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — PM Phase 1 complete (PM-1a…d)
+
+**What:** Shipped all four Phase 1 tickets:
+
+| Ticket | PR | Fix |
+|--------|-----|-----|
+| PM-1a | #609 | KEV chart tooltip contrast + bar hover |
+| PM-1b | #610 | Admin Recharts audit (`rechartsTheme` everywhere) |
+| PM-1c | #611 | FEED sidebar YOUR FILTERS grid alignment |
+| PM-1d | #612 | Forge Library single-row filter toolbar |
+
+**Next:** **PM-2a** — accent application audit. Phase 2 (PM-2a…d).
+
+---
+
 ## 2026-07-15 — PM-1a Recharts tooltip + KEV bar hover (#609)
 
 **What:** KEV vendor chart — readable tooltip body (`--text` on panel) and accent/surface-selected bar hover (no white flash). Shared helpers in `rechartsTheme.js`.
@@ -42,7 +57,7 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 | PM-0d | #607 | Admin `/api/admin/system` 500 — webhook `attempted_at::timestamptz` |
 | PM-0e | #608 | Alembic 026 — `cve_change_history.detected_at` → `timestamptz` |
 
-**Next:** **PM-1a** — Recharts tooltip + bar hover contrast. Phase 1 (PM-1a…d).
+**Next:** ~~PM-1a~~ done (#609). **PM-1b** next.
 
 ---
 
