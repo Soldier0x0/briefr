@@ -3,14 +3,14 @@
 SQLite test/dev fallback keeps TEXT via db/init.py — this migration is
 Postgres-only (Alembic production path).
 
-Revision ID: 026_cve_change_detected_at_timestamptz
+Revision ID: 026_cve_detected_at_tz (<=32 chars for alembic_version.version_num)
 """
 
 from __future__ import annotations
 
 from alembic import op
 
-revision = "026_cve_change_detected_at_timestamptz"
+revision = "026_cve_detected_at_tz"
 down_revision = "025_correlation_cve_snapshot"
 branch_labels = None
 depends_on = None
