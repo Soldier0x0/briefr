@@ -529,7 +529,7 @@ function OperationalPriorityBreakdown({ riskScore, momentumData }) {
         {rows.map(row => (
           <div key={row.key} className="drawer-risk-component">
             <div className="drawer-risk-comp-header drawer-risk-comp-header--semantics">
-              <ControlTooltip text={THREAT_COMPONENT_TOOLTIPS[row.key]} trigger="hover-focus">
+              <ControlTooltip text={THREAT_COMPONENT_TOOLTIPS[row.key]} trigger="hover">
                 <span className="drawer-risk-comp-label mono">{row.label}</span>
               </ControlTooltip>
               <div className="drawer-risk-signal-col">
@@ -574,7 +574,7 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, riskError, momen
   if (riskLoading) {
     return (
       <section className="drawer-section drawer-risk-hero-section" aria-labelledby="op-priority-heading">
-        <ControlTooltip text={OP_PRIORITY_TOOLTIP} trigger="hover-focus">
+        <ControlTooltip text={OP_PRIORITY_TOOLTIP} trigger="hover">
           <h3
             id="op-priority-heading"
             className="drawer-risk-section-label drawer-tab-anchor mono"
@@ -591,7 +591,7 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, riskError, momen
   if (riskError) {
     return (
       <section className="drawer-section drawer-risk-hero-section" aria-labelledby="op-priority-heading">
-        <ControlTooltip text={OP_PRIORITY_TOOLTIP} trigger="hover-focus">
+        <ControlTooltip text={OP_PRIORITY_TOOLTIP} trigger="hover">
           <h3
             id="op-priority-heading"
             className="drawer-risk-section-label drawer-tab-anchor mono"
@@ -615,7 +615,7 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, riskError, momen
 
   return (
     <section className="drawer-section drawer-risk-hero-section" aria-labelledby="op-priority-heading">
-      <ControlTooltip text={OP_PRIORITY_TOOLTIP} trigger="hover-focus">
+      <ControlTooltip text={OP_PRIORITY_TOOLTIP} trigger="hover">
         <h3
           id="op-priority-heading"
           className="drawer-risk-section-label drawer-tab-anchor mono"
@@ -633,7 +633,7 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, riskError, momen
           {op.provisional && (
             <ControlTooltip
               text="No My Stack profile loaded — priority is provisional and may change once environment relevance is known"
-              trigger="hover-focus"
+              trigger="hover"
             >
               <span className="drawer-op-provisional">*</span>
             </ControlTooltip>
