@@ -74,6 +74,8 @@ export default function DataGrid({
   stickyHeader = true,
   layoutGroupId = null,
   showLayoutToggles = true,
+  layoutWrap,
+  layoutCenter,
 }) {
   const columnIds = useMemo(() => columns.map((c) => c.id), [columns])
   const defaultVisible = useMemo(
@@ -92,8 +94,11 @@ export default function DataGrid({
   const [visibleIds, setVisibleIds] = useState(() => {
     return prefs?.visible?.length ? prefs.visible : defaultVisible
   })
-  const [wrapCells, setWrapCells] = useState(() => layoutPrefs.wrap)
-  const [centerCells, setCenterCells] = useState(() => layoutPrefs.center)
+  const [wrapCellsInternal, setWrapCellsInternal] = useState(() => layoutPrefs.wrap)
+  const [centerCellsInternal, setCenterCellsInternal] = useState(() => layoutPrefs.center)
+  const isLayoutControlled = layoutWrap !== undefined && layoutCenter !== undefined
+  const wrapCells = isLayoutControlled ? layoutWrap : wrapCellsInternal
+  const centerCells = isLayoutControlled ? layoutCenter : centerCellsInternal
   const [widths, setWidths] = useState(() => {
     return prefs ? prefs.widths : {}
   })
@@ -107,10 +112,12 @@ export default function DataGrid({
     const nextPrefs = loadPrefs(gridId, columnIds)
     const nextLayout = loadLayoutPrefs(layoutKey)
     setVisibleIds(nextPrefs?.visible?.length ? nextPrefs.visible : defaultVisible)
-    setWrapCells(nextLayout.wrap)
-    setCenterCells(nextLayout.center)
+    if (!isLayoutControlled) {
+      setWrapCellsInternal(nextLayout.wrap)
+      setCenterCellsInternal(nextLayout.center)
+    }
     setWidths(nextPrefs ? nextPrefs.widths : {})
-  }, [gridId, columnIds, defaultVisible, layoutKey])
+  }, [gridId, columnIds, defaultVisible, layoutKey, isLayoutControlled])
 
   useEffect(() => {
     if (isLoadingRef.current) {
@@ -121,9 +128,10 @@ export default function DataGrid({
   }, [gridId, visibleIds, widths])
 
   useEffect(() => {
+    if (isLayoutControlled) return
     if (isLoadingRef.current) return
-    saveLayoutPrefs(layoutKey, { wrap: wrapCells, center: centerCells })
-  }, [layoutKey, wrapCells, centerCells])
+    saveLayoutPrefs(layoutKey, { wrap: wrapCellsInternal, center: centerCellsInternal })
+  }, [layoutKey, wrapCellsInternal, centerCellsInternal, isLayoutControlled])
 
   const tanstackColumns = useMemo(
     () => columns.map((col) => ({
@@ -270,14 +278,14 @@ export default function DataGrid({
               <Checkbox
                 id={`${gridId}-wrap`}
                 checked={wrapCells}
-                onCheckedChange={setWrapCells}
+                onCheckedChange={setWrapCellsInternal}
                 label="Wrap"
                 className="data-grid-toggle"
               />
               <Checkbox
                 id={`${gridId}-center`}
                 checked={centerCells}
-                onCheckedChange={setCenterCells}
+                onCheckedChange={setCenterCellsInternal}
                 label="Center"
                 className="data-grid-toggle"
               />
