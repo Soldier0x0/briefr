@@ -172,6 +172,13 @@ def _cutoff_datetime_hours_ago(hours: float) -> str:
     ).strftime("%Y-%m-%d %H:%M:%S")
 
 
+def _since_hours_cutoff(hours: float, *, pg: bool) -> object:
+    dt = datetime.now(timezone.utc) - timedelta(hours=hours)
+    if pg:
+        return dt
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
 def _cutoff_date_days_ago(days: int) -> str:
     return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
 
@@ -258,12 +265,9 @@ async def purge_old_cve_change_history(
     db: DbConnection,
     retention_days: int = CVE_CHANGE_HISTORY_RETENTION_DAYS,
 ) -> int:
-    cutoff = _cutoff_datetime_hours_ago(retention_days * 24)
-    sql = (
-        _PURGE_CVE_CHANGE_HISTORY_PG
-        if _is_postgres_connection(db)
-        else _PURGE_CVE_CHANGE_HISTORY_SQLITE
-    )
+    pg = _is_postgres_connection(db)
+    cutoff = _since_hours_cutoff(retention_days * 24, pg=pg)
+    sql = _PURGE_CVE_CHANGE_HISTORY_PG if pg else _PURGE_CVE_CHANGE_HISTORY_SQLITE
     cursor = await db.execute(sql, (cutoff,))
     return await _rows_deleted(db, cursor)
 

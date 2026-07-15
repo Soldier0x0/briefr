@@ -193,6 +193,14 @@ def _cutoff_datetime_hours_ago(hours: float) -> str:
     ).strftime("%Y-%m-%d %H:%M:%S")
 
 
+def _since_hours_cutoff(hours: float, *, pg: bool) -> object:
+    """Postgres timestamptz columns need aware datetimes; SQLite keeps TEXT."""
+    dt = datetime.now(timezone.utc) - timedelta(hours=hours)
+    if pg:
+        return dt
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
 def _renumber_qmark_placeholders(sql: str, start: int) -> str:
     """Rewrite ``?`` placeholders to ``$n`` starting at *start*."""
     out: list[str] = []
@@ -506,7 +514,7 @@ async def get_recent_cve_changes(
         clauses.append(f"ch.detected_at >= {_placeholder(pg, pg_n)}")
         if pg:
             pg_n += 1
-        params.append(_cutoff_datetime_hours_ago(since_hours))
+        params.append(_since_hours_cutoff(since_hours, pg=pg))
     where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
     limit_ph = _placeholder(pg, pg_n)
     params.append(limit)
