@@ -770,6 +770,7 @@ function WatchlistPanel({ items, loading, error, errorRequestId, onRemove, remov
                 type="button"
                 className="history-item ioc-watchlist-item"
                 onClick={() => onRerun({ value: item.ioc_value, iocType: item.ioc_type, malicious: 0, total: 0 })}
+                aria-label={`Re-run lookup for ${item.ioc_value}`}
               >
                 <span className="history-value mono">{item.ioc_value}</span>
                 <div className="history-badges">
@@ -782,6 +783,7 @@ function WatchlistPanel({ items, loading, error, errorRequestId, onRemove, remov
                 className="ioc-watchlist-remove mono"
                 onClick={() => onRemove(item.id)}
                 disabled={removingId === item.id}
+                aria-label={`Remove ${item.ioc_value} from watchlist`}
               >
                 {removingId === item.id ? '…' : 'REMOVE'}
               </button>

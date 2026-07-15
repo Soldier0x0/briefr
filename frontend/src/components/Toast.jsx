@@ -208,9 +208,9 @@ function ToastItem({ toast, onDismiss }) {
                 type="button"
                 className="admin-toast-copy"
                 onClick={copyRequestId}
-                title="Copy request ID"
+                aria-label={copied ? 'Request ID copied' : 'Copy request ID'}
               >
-                <Copy size={12} strokeWidth={2} />
+                <Copy size={12} strokeWidth={2} aria-hidden="true" />
                 {copied ? <span className="admin-toast-copied">Copied</span> : null}
               </button>
             )}

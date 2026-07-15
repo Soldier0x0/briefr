@@ -93,7 +93,10 @@ export default function TrustBoundariesSection() {
               </dl>
               {b.residual_risk && (
                 <Tooltip text={RESIDUAL_HELP[b.residual_risk] || b.residual_risk}>
-                  <span className={`sa-status-chip sa-status-${b.residual_risk} mono sa-tb-residual`}>
+                  <span
+                    className={`sa-status-chip sa-status-${b.residual_risk} mono sa-tb-residual`}
+                    aria-label={`Residual risk: ${b.residual_risk}. ${RESIDUAL_HELP[b.residual_risk] || ''}`}
+                  >
                     RESIDUAL RISK: {b.residual_risk.toUpperCase()}
                   </span>
                 </Tooltip>

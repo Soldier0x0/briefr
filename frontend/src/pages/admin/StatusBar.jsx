@@ -112,13 +112,15 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
             <button
               className={`admin-mode-toggle-btn ${mode === 'analyst' ? 'active' : ''}`}
               onClick={() => handleModeClick('analyst')}
+              aria-label="Analyst view — CVE triage, simplified language"
               title="Analyst view — CVE triage, simplified language, no destructive actions"
-            ><Eye size={13} strokeWidth={2} /> Analyst</button>
+            ><Eye size={13} strokeWidth={2} aria-hidden="true" /> Analyst</button>
             <button
               className={`admin-mode-toggle-btn ${mode === 'operator' ? 'active' : ''}`}
               onClick={() => handleModeClick('operator')}
+              aria-label="Operator view — system management and configuration"
               title="Operator view — system management: restart, full ingest, purge, config"
-            ><Wrench size={13} strokeWidth={2} /> Operator</button>
+            ><Wrench size={13} strokeWidth={2} aria-hidden="true" /> Operator</button>
           </div>
         </div>
         <div className="sb-sep" />
