@@ -376,6 +376,25 @@ async def get_system(request: Request):
             (auth_cutoff,),
         )
         failed_auth = auth_row[0]["cnt"] if auth_row else 0
+
+        from database import build_webhook_destination_health, list_webhook_destinations
+
+        webhook_destinations = await list_webhook_destinations(db)
+        webhook_health_rows = await build_webhook_destination_health(db)
+        health_by_dest = {row["destination_id"]: row for row in webhook_health_rows}
+        webhook_failing = []
+        for dest in webhook_destinations:
+            if not dest.get("enabled"):
+                continue
+            health = health_by_dest.get(dest["id"])
+            if health and health.get("last_status") not in (None, "ok"):
+                webhook_failing.append({
+                    "id": dest["id"],
+                    "kind": dest.get("kind"),
+                    "label": dest.get("label") or dest["id"],
+                    "last_error": health.get("last_error"),
+                    "last_event_type": health.get("last_event_type"),
+                })
     finally:
         await db.close()
 
@@ -465,6 +484,10 @@ async def get_system(request: Request):
         "epss_backfill_done": epss_backfill_done,
         "version": version_info,
         "failed_auth_last_24h": failed_auth,
+        "webhooks": {
+            "failing_count": len(webhook_failing),
+            "failing": webhook_failing,
+        },
     }
 
 

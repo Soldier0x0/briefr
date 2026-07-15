@@ -20,11 +20,19 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E9-2 global webhook failure surfacing
+
+**What:** Webhook delivery failures emit operator-scope `NotificationBell` alerts (`emit_webhook_failure_notification` from `webhooks/engine.py`); `GET /api/admin/system` includes `webhooks.failing` summary; StatusBar Discord/Telegram pills turn red + link to Admin → Webhooks when last delivery failed; bell deep-links webhook/api_key/job notifications.
+
+**Next:** E3-3 DataGrid primitive → E5-1 ARCH StatCard grid.
+
+---
+
 ## 2026-07-15 — E9-1 LLM failure-rate alerts on AI Operations
 
 **What:** Overview shows amber/red callout when 24h LLM fail rate ≥20%; stat cards use `color-amber`/`color-red` instead of dim gray. Usage tab adds explicit fail-rate StatCard.
 
-**Next:** E9-2 webhook surfacing → E3-3 DataGrid.
+**Next:** E3-3 DataGrid primitive → E5-1 ARCH StatCard grid.
 
 ---
 

@@ -3,10 +3,20 @@
 from __future__ import annotations
 
 import logging
+import re
 
 from db.user_notifications import insert_notification, list_active_user_ids
+from redact import mask_webhook_delivery_error
 
 logger = logging.getLogger(__name__)
+
+_DIGITS_RE = re.compile(r"\d+")
+
+
+def _normalize_for_dedupe(error_text: str) -> str:
+    """Collapse digit runs so dedupe keys stay stable when errors embed
+    changing values (HTTP status codes, timestamps, ports)."""
+    return _DIGITS_RE.sub("#", error_text)
 
 SCOPE_ANALYST = "analyst"
 SCOPE_OPERATOR = "operator"
@@ -180,4 +190,40 @@ async def emit_api_key_unhealthy_notification(
         entity_type="api_key",
         entity_id=provider,
         dedupe_key=dedupe_key,
+    )
+
+
+async def emit_webhook_failure_notification(
+    db,
+    *,
+    destination_id: str,
+    label: str,
+    error: str,
+    event_type: str = "",
+    dedupe_key: str | None = None,
+) -> int:
+    """Operator alert when a webhook destination delivery fails (REL-4 / E9-2)."""
+    user_ids = await list_active_user_ids(db, scope=SCOPE_OPERATOR)
+    if not user_ids:
+        return 0
+    safe_error = mask_webhook_delivery_error(error) or "Delivery failed"
+    title_label = (label or destination_id).strip() or destination_id
+    body_parts = [safe_error]
+    if event_type:
+        body_parts.append(f"Event: {event_type}")
+    body = " — ".join(body_parts)[:500]
+    key = dedupe_key or (
+        f"webhook:{destination_id}:{_normalize_for_dedupe(safe_error)}"
+    )
+    return await _emit_to_users(
+        db,
+        scope=SCOPE_OPERATOR,
+        user_ids=user_ids,
+        category="webhook_failure",
+        severity="high",
+        title=f"Webhook delivery failed: {title_label}",
+        body=body,
+        entity_type="webhook",
+        entity_id=destination_id,
+        dedupe_key=key,
     )

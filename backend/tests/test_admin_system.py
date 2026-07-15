@@ -69,3 +69,12 @@ def test_failed_auth_is_int(admin_client):
     assert resp.status_code == 200
     data = resp.json()
     assert isinstance(data["failed_auth_last_24h"], int)
+
+
+def test_system_includes_webhook_health(admin_client):
+    resp = admin_client.get("/api/admin/system")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "webhooks" in data
+    assert isinstance(data["webhooks"]["failing_count"], int)
+    assert isinstance(data["webhooks"]["failing"], list)
