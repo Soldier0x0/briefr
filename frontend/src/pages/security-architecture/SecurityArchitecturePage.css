@@ -591,6 +591,7 @@
   overflow: hidden;
   touch-action: none;
   cursor: grab;
+  user-select: none;
 }
 
 .sa-graph-canvas:active {
@@ -628,6 +629,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   pointer-events: none;
+  user-select: none;
 }
 
 .sa-graph-node {

@@ -341,9 +341,9 @@ numbers recorded in the closing PR body:
 - [x] E2-2 per-process CPU metric
 - [ ] E2-3 column resize alignment
 - [ ] E2-4 reference tooltip portaled
-- [ ] E2-5 ARCH pan `user-select:none`
-- [ ] E2-6 ARCH max-zoom raised
-- [ ] E2-7 ARCH filter hides not dims
+- [x] E2-5 ARCH pan `user-select:none` — #TBD
+- [x] E2-6 ARCH max-zoom raised — #TBD
+- [x] E2-7 ARCH filter hides not dims — #TBD
 - [x] E2-8 PyJWT in requirements.txt
 - [x] E2-9 PG16 → PG17 doc correction
 
