@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from 'rea
 import { Routes, Route, useLocation, Link, useSearchParams } from 'react-router-dom'
 import { InvestigationProvider } from './context/InvestigationContext.jsx'
 import { overlayDepth } from './hooks/useModalLayer.js'
+import { shouldIgnoreGlobalShortcut } from './utils/keyboardScope.js'
 import Header from './components/Header.jsx'
 import Hero from './components/Hero.jsx'
 import StatsRow from './components/StatsRow.jsx'
@@ -642,8 +643,7 @@ export default function App() {
         if (selectedCVE)  { handleCloseCVE(); return }
         return
       }
-      const tag = document.activeElement?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (shouldIgnoreGlobalShortcut(e)) return
 
       // Feed shortcuts must not act behind an open overlay (drawer / digest /
       // about / PDF modal) — F used to silently change filters under the drawer.

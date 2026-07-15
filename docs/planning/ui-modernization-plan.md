@@ -358,7 +358,7 @@ numbers recorded in the closing PR body:
 - [x] E5-1 Overview grid  [x] E5-2 lists→DataGrid  [x] E5-3 sidebar active — #572  [x] E5-4 badge wording — #573  [x] E5-5 empty state — #574
 
 **A11y (E6)**
-- [x] E6-1 contrast/type  [x] E6-2 focus ring — #571  [x] E6-3 aria-labels — #573  [ ] E6-4 shortcuts  [ ] E6-5 target size/charts
+- [x] E6-1 contrast/type  [x] E6-2 focus ring — #571  [x] E6-3 aria-labels — #573  [x] E6-4 shortcuts  [ ] E6-5 target size/charts
 
 **Polish / IA / Observability (E7/E8/E9)**
 - [ ] E7-1 hover/press  [ ] E7-2 skeletons  [ ] E7-3 copy/export feedback  [ ] E7-4 spacing/borders  [ ] E7-5 charts → Recharts (remove Chart.js)

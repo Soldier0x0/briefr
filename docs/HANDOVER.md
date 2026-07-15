@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E6-4 global shortcut scoping
+
+**What:** `utils/keyboardScope.js` centralizes editable-target detection (inputs, textareas, contenteditable, ARIA text roles, IME compose); App.jsx feed shortcuts and CVEFeed arrow nav respect it; ShortcutsPanel copy clarifies which keys suspend while typing.
+
+**Next:** E6-5 target sizes → E7-1 hover/press.
+
+---
+
 ## 2026-07-15 — E6-1 contrast + shared type scale
 
 **What:** Raised admin `--admin-text-dim` / `--admin-text-muted` to semantic `--text-muted` / `--text-secondary` (WCAG AA on dark surfaces); wired `--type-*` scale into `.admin-root`; global `::placeholder` uses `--text-muted`; bumped sub-12px literals in Admin + ARCH CSS to `--type-micro` / `--type-meta`.

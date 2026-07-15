@@ -3,14 +3,14 @@ import useModalLayer from '../hooks/useModalLayer.js'
 import './ShortcutsPanel.css'
 
 const SHORTCUTS = [
-  { key: '⌘K',    desc: 'Command palette' },
-  { key: '/',     desc: 'Focus search' },
-  { key: 'F',     desc: 'Cycle filters' },
+  { key: '⌘K',    desc: 'Command palette (works while typing)' },
+  { key: '/',     desc: 'Focus feed search (when search is not focused)' },
+  { key: 'F',     desc: 'Cycle feed filters (not while typing)' },
   { key: 'Esc',   desc: 'Close drawer or modal' },
-  { key: '↑ ↓',   desc: 'Navigate CVE cards' },
+  { key: '↑ ↓',   desc: 'Navigate CVE cards (feed, search unfocused)' },
   { key: 'Enter', desc: 'Open selected card' },
-  { key: 'G D',   desc: 'Generate digest' },
-  { key: 'C',     desc: 'Copy report (drawer open)' },
+  { key: 'G then D', desc: 'Generate digest (feed only, not while typing)' },
+  { key: 'C',     desc: 'Copy report (drawer open, not while typing)' },
 ]
 
 export default function ShortcutsPanel({ placement = 'header', listOnly = false, onClose }) {
