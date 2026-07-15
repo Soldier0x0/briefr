@@ -171,7 +171,7 @@ export default function LibraryView({ selectedPackId, onOpenPack, onPackDeleted 
       <div className="fg-library-filters">
         <input
           type="text"
-          className="fg-library-input mono"
+          className="fg-library-input fg-library-input--technique mono"
           placeholder="Filter by technique (e.g. T1190)"
           value={technique}
           onChange={e => setTechnique(e.target.value)}
@@ -194,7 +194,7 @@ export default function LibraryView({ selectedPackId, onOpenPack, onPackDeleted 
         />
         <input
           type="search"
-          className="fg-library-input mono"
+          className="fg-library-input fg-library-input--search mono"
           placeholder="Search title…"
           value={q}
           onChange={e => setQ(e.target.value)}
