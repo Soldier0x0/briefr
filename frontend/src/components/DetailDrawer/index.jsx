@@ -14,6 +14,7 @@ import {
   suppressCVECorrelation,
 } from '../../api.js'
 import { buildSingleReport, copyToClipboard } from '../../utils/report.js'
+import { notifyCopyFailure, notifyCopySuccess, notifyExportError, notifyExportSuccess } from '../Toast.jsx'
 import PdfExportModal from '../PdfExportModal.jsx'
 import { useInvestigationOptional } from '../../context/InvestigationContext.jsx'
 import { useAssetProfileOptional } from '../../context/AssetProfileContext.jsx'
@@ -461,7 +462,10 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     if (ok) {
       setCopied(true)
       setReportOpen(false)
+      notifyCopySuccess(`Markdown report copied for ${cve.cve_id}`)
       setTimeout(() => setCopied(false), 2000)
+    } else {
+      notifyCopyFailure()
     }
   }
 
@@ -482,8 +486,11 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
         sparklineElement: epssSparklineRef.current,
       })
       setPdfModalOpen(false)
+      notifyExportSuccess(`PDF downloaded for ${cve.cve_id}`)
     } catch (err) {
-      setPdfError(err?.message || 'PDF generation failed.')
+      const message = err?.message || 'PDF generation failed.'
+      setPdfError(message)
+      notifyExportError(message)
     } finally {
       setPdfBusy(false)
     }
@@ -933,6 +940,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
         open={pdfModalOpen}
         title={`PDF report — ${cve.cve_id}`}
         busy={pdfBusy}
+        busyLabel="Generating PDF report…"
         error={pdfError}
         onConfirm={handlePdfConfirm}
         onCancel={() => {

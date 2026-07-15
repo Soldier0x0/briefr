@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { copyToClipboard } from '../../utils/report.js'
+import { notifyCopyFailure, notifyCopySuccess } from '../Toast.jsx'
 
 import { confidenceMatchLabel } from '../../utils/detectLabels.js'
 import ControlTooltip from '../ControlTooltip.jsx'
@@ -60,7 +61,10 @@ function CopyButton({ text, label = 'Copy' }) {
     const ok = await copyToClipboard(text)
     if (ok) {
       setCopied(true)
+      notifyCopySuccess('Rule copied to clipboard')
       setTimeout(() => setCopied(false), 1500)
+    } else {
+      notifyCopyFailure()
     }
   }
   return (

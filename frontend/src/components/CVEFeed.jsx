@@ -6,6 +6,7 @@ import { toApiCveParams } from '../utils/cveFilters.js'
 import { scrollBehavior } from '../utils/motion.js'
 import { shouldIgnoreGlobalShortcut } from '../utils/keyboardScope.js'
 import { buildCombinedReport, copyToClipboard } from '../utils/report.js'
+import { notifyCopyFailure, notifyCopySuccess, notifyExportError, notifyExportProgress, notifyExportSuccess } from './Toast.jsx'
 import PdfExportModal from './PdfExportModal.jsx'
 import FilterBar from './FilterBar.jsx'
 import SeverityLegend from './SeverityLegend.jsx'
@@ -353,7 +354,10 @@ export default function CVEFeed({
     if (ok) {
       setCopyAllState('copied')
       setBulkMenuOpen(false)
+      notifyCopySuccess(`Markdown copied for ${selected.length} CVE${selected.length === 1 ? '' : 's'}`)
       setTimeout(() => setCopyAllState('idle'), 2000)
+    } else {
+      notifyCopyFailure()
     }
   }
 
@@ -369,11 +373,15 @@ export default function CVEFeed({
     setBulkPdfBusy(true)
     setBulkPdfError(null)
     try {
+      notifyExportProgress(`Generating PDF for ${selected.length} CVE${selected.length === 1 ? '' : 's'}…`)
       const { downloadBulkCvePdf } = await import('../utils/pdfReport.js')
       await downloadBulkCvePdf(selected, { analystName })
       setBulkPdfModalOpen(false)
+      notifyExportSuccess(`PDF downloaded for ${selected.length} CVE${selected.length === 1 ? '' : 's'}`)
     } catch (err) {
-      setBulkPdfError(err?.message || 'PDF generation failed.')
+      const message = err?.message || 'PDF generation failed.'
+      setBulkPdfError(message)
+      notifyExportError(message)
     } finally {
       setBulkPdfBusy(false)
     }
@@ -565,6 +573,7 @@ export default function CVEFeed({
         open={bulkPdfModalOpen}
         title={`Bulk PDF — ${selectedCount} CVE${selectedCount === 1 ? '' : 's'}`}
         busy={bulkPdfBusy}
+        busyLabel={`Generating PDF for ${selectedCount} CVE${selectedCount === 1 ? '' : 's'}…`}
         error={bulkPdfError}
         onConfirm={handleBulkPdfConfirm}
         onCancel={() => {
