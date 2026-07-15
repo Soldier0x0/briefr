@@ -2815,6 +2815,7 @@
 
 .pill-green { background: var(--green-dim); color: var(--green); }
 .pill-amber { background: var(--amber-dim); color: var(--amber); }
+.pill-red { background: var(--red-dim); color: var(--red); }
 .pill-gray  { background: var(--bg3); color: var(--text3); }
 
 /* ── Responsive ─────────────────────────────────────────────────────────── */

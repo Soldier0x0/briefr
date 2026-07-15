@@ -169,6 +169,12 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
       url.pathname = '/'
       url.searchParams.set('view', 'backlog')
       window.location.assign(url.toString())
+    } else if (item.entity_type === 'webhook' && item.entity_id) {
+      window.location.assign(`/admin?p=webhooks`)
+    } else if (item.entity_type === 'api_key' && item.entity_id) {
+      window.location.assign('/admin?p=apikeys')
+    } else if (item.entity_type === 'job' && item.entity_id) {
+      window.location.assign(`/admin?p=scheduler&job_id=${encodeURIComponent(item.entity_id)}`)
     }
   }
 

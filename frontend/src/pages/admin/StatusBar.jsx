@@ -57,16 +57,21 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
   const discordFailed = system?.feeds?.sources?.['webhook.discord']?.circuit_open
   const telegramConfigured = system?.feeds?.sources?.['webhook.telegram']?.last_success
   const telegramFailed = system?.feeds?.sources?.['webhook.telegram']?.circuit_open
+  const webhookFailing = system?.webhooks?.failing || []
+  const webhookFailingById = Object.fromEntries(webhookFailing.map(row => [row.id, row]))
   const commit = system?.version?.commit
 
-  function discordPillClass() {
-    if (!discordConfigured) return 'pill-gray'
-    return discordFailed ? 'pill-amber' : 'pill-green'
+  function webhookPillClass(destId, circuitFailed, configured) {
+    if (!configured) return 'pill-gray'
+    if (webhookFailingById[destId]) return 'pill-red'
+    return circuitFailed ? 'pill-amber' : 'pill-green'
   }
 
-  function telegramPillClass() {
-    if (!telegramConfigured) return 'pill-gray'
-    return telegramFailed ? 'pill-amber' : 'pill-green'
+  function webhookPillTitle(destId, label, circuitFailed) {
+    const fail = webhookFailingById[destId]
+    if (fail?.last_error) return `${label}: ${fail.last_error}`
+    if (circuitFailed) return `${label}: circuit open — recent delivery failures`
+    return `${label} webhook — open Admin → Webhooks for delivery health`
   }
 
   const worst = mode === 'analyst' ? worstSource(system) : null
@@ -185,11 +190,33 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
             </span>
             <div className="sb-sep" />
             <span className="sb-item">
-              <span className={`pill ${discordPillClass()}`} title="Discord webhook">Discord</span>
+              <Link
+                to="/admin?p=webhooks"
+                className={`pill ${webhookPillClass('discord', discordFailed, discordConfigured)}`}
+                title={webhookPillTitle('discord', 'Discord', discordFailed)}
+              >
+                Discord
+              </Link>
             </span>
             <span className="sb-item">
-              <span className={`pill ${telegramPillClass()}`} title="Telegram webhook">Telegram</span>
+              <Link
+                to="/admin?p=webhooks"
+                className={`pill ${webhookPillClass('telegram', telegramFailed, telegramConfigured)}`}
+                title={webhookPillTitle('telegram', 'Telegram', telegramFailed)}
+              >
+                Telegram
+              </Link>
             </span>
+            {webhookFailing.length > 0 && (
+              <>
+                <div className="sb-sep" />
+                <span className="sb-item">
+                  <Link to="/admin?p=webhooks" className="pill pill-red" title="Open Webhooks for delivery errors">
+                    {webhookFailing.length} webhook{webhookFailing.length === 1 ? '' : 's'} failing
+                  </Link>
+                </span>
+              </>
+            )}
             {commit && (
               <>
                 <div className="sb-sep" />

@@ -256,3 +256,61 @@ def test_webhooks_enabled_uses_db_enabled_state(monkeypatch, tmp_path):
     run_db_test(disable_in_db())
     assert run_db_test(webhooks_enabled()) is False
     assert run_db_test(configured_channels()) == []
+
+
+def test_delivery_failure_emits_operator_notification(monkeypatch, tmp_path):
+    """E9-2: failing destinations surface in the operator notification bell."""
+    from auth.repo import create_user
+    from db.user_notifications import list_notifications
+
+    _setup_db(tmp_path, monkeypatch)
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
+    run_db_test(sync_env_destinations_to_db())
+
+    async def seed_admin():
+        db = await get_db()
+        try:
+            await create_user(db, "admin1", "correct-horse-battery", role="admin")
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(seed_admin())
+
+    async def fake_resolve(_host):
+        return ["93.184.216.34"]
+
+    def handler(request):
+        return httpx.Response(500, text="Internal Server Error")
+
+    _install_transport(monkeypatch, handler)
+    monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
+
+    result = run_db_test(
+        dispatch_event(EVENT_HEALTH, "health ping", dedupe_key="probe-fail", skip_dedupe=True)
+    )
+    assert result["status"] == "failed"
+    assert "discord" in result["errors"]
+
+    async def check_notifications():
+        db = await get_db()
+        try:
+            rows = await db.execute_fetchall("SELECT id FROM users WHERE username = ?", ("admin1",))
+            user_id = int(rows[0]["id"])
+            return await list_notifications(db, user_id=user_id, scope="operator")
+        finally:
+            await db.close()
+
+    notes = run_db_test(check_notifications())
+    assert len(notes) == 1
+    assert notes[0]["category"] == "webhook_failure"
+    assert notes[0]["entity_type"] == "webhook"
+    assert notes[0]["entity_id"] == "discord"
+    assert "Event: health" in notes[0]["body"]
+
+    # Same error class should dedupe on repeat delivery.
+    run_db_test(
+        dispatch_event(EVENT_HEALTH, "health ping", dedupe_key="probe-fail-2", skip_dedupe=True)
+    )
+    notes_again = run_db_test(check_notifications())
+    assert len(notes_again) == 1
