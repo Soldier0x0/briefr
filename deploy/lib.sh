@@ -295,11 +295,14 @@ run_alembic_upgrade() {
     return 0
   fi
   echo "==> Running Alembic migrations (forward-only upgrade head)"
-  as_app_user bash -c "
+  if ! as_app_user bash -c "
     set -euo pipefail
     cd '${INSTALL_DIR}/backend'
     '${INSTALL_DIR}/venv/bin/alembic' upgrade head
-  "
+  "; then
+    echo "FAIL: Alembic upgrade exited non-zero"
+    return 1
+  fi
   echo "    Alembic OK"
 }
 
