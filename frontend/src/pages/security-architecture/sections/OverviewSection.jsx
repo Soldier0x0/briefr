@@ -3,6 +3,7 @@ import { fetchSecurityArchitectureOverview } from '../../../api.js'
 import { notifyApiError } from '../../../components/Toast.jsx'
 import Tooltip from '../../../components/ui/Tooltip.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
+import StatCard from '../../admin/shared/StatCard.jsx'
 import { downloadOverviewPdf } from '../../../utils/securityArchitecturePdf.js'
 
 /**
@@ -72,22 +73,23 @@ export default function OverviewSection({ onDrill, corpusVersion }) {
         error={error}
         empty={Boolean(error)}
         onRetry={() => setReloadKey(k => k + 1)}
-        skeleton={<div className="sa-tile-row sa-skeleton-row" aria-hidden="true" />}
+        skeleton={<div className="sa-stat-grid sa-skeleton-row" aria-hidden="true" />}
       >
-        <div className="sa-tile-row" role="list" aria-label="Security posture evidence tiles">
+        <div className="sa-stat-grid" role="list" aria-label="Security posture evidence tiles">
           {tiles.map(tile => (
-            <div key={tile.id} role="listitem">
+            <div key={tile.id} role="listitem" className="sa-stat-card-wrap">
               <Tooltip text={tile.help}>
                 <button
                   type="button"
-                  className="sa-tile"
+                  className="sa-stat-card-btn"
                   onClick={() => onDrill(tile.section, tile.filter)}
                 >
-                  <span className="sa-tile-label mono">{tile.label}</span>
-                  <span className="sa-tile-value">
-                    {tile.value}
-                    {tile.unit && <span className="sa-tile-unit"> {tile.unit}</span>}
-                  </span>
+                  <StatCard
+                    plain
+                    label={tile.label}
+                    value={tile.value}
+                    subLabel={tile.unit || undefined}
+                  />
                 </button>
               </Tooltip>
             </div>
@@ -101,20 +103,25 @@ export default function OverviewSection({ onDrill, corpusVersion }) {
           Generated layer only — routers, scheduler jobs, and DB tables discovered from code.
           See the System Architecture section for the full interactive graph with edges.
         </p>
-        <div className="sa-arch-tiers" role="list" aria-label="Generated architecture tiers">
+        <div className="sa-arch-flow" role="list" aria-label="Generated architecture tiers">
           {stackTiers.map((tier, i) => (
-            <div key={tier.type} className="sa-arch-tier-wrap" role="listitem">
+            <div key={tier.type} className="sa-arch-flow-item" role="listitem">
               <Tooltip text={tier.help}>
                 <button
                   type="button"
-                  className="sa-arch-tier"
+                  className="sa-stat-card-btn"
                   onClick={() => onDrill('components', { type: tier.type })}
                 >
-                  <span className="sa-arch-tier-label mono">{tier.label}</span>
-                  <span className="sa-arch-tier-count">{countByType[tier.type] ?? '—'}</span>
+                  <StatCard
+                    plain
+                    label={tier.label}
+                    value={countByType[tier.type] ?? '—'}
+                  />
                 </button>
               </Tooltip>
-              {i < stackTiers.length - 1 && <span className="sa-arch-tier-arrow" aria-hidden="true">→</span>}
+              {i < stackTiers.length - 1 && (
+                <span className="sa-arch-connector" aria-hidden="true" />
+              )}
             </div>
           ))}
         </div>

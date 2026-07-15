@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E5-1 ARCH Overview StatCard grid + connectors
+
+**What:** Overview evidence tiles use shared `StatCard` (`plain` variant) in a responsive `sa-stat-grid`; architecture stack tiers use the same cards with CSS gradient connectors (horizontal → vertical on narrow viewports) replacing literal `→` text.
+
+**Next:** E5-2 port ARCH lists to DataGrid → E6-1 contrast/type tokens.
+
+---
+
 ## 2026-07-15 — E3-3 shared DataGrid primitive (TanStack headless)
 
 **What:** `components/ui/DataGrid.jsx` — fixed layout, sticky header, column sort/resize/visibility, wrap/center prefs; `AdminDataGrid` is now a thin admin-styled wrapper. Dependency: `@tanstack/react-table` (headless). Lazy chunk ~20.7 kB gzip (slightly over 15 kB ADR target — TanStack core cost).
