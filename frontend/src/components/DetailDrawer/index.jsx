@@ -24,6 +24,7 @@ import { ingestLogUrl } from '../../utils/adminLinks.js'
 import { campaignBadgeTooltip, campaignLifecycleClass, primaryCampaignChip } from '../../utils/correlationPresentation.js'
 import useModalLayer from '../../hooks/useModalLayer.js'
 import { severityColor } from './helpers.js'
+import { severityTooltip } from '../../utils/severitySemantics.js'
 import TabOverview from './OverviewTab.jsx'
 import TabIntel from './IntelTab.jsx'
 import TabDetect from './DetectTab.jsx'
@@ -568,12 +569,17 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
               )}
               <span className="drawer-cve-id mono">{cve.cve_id}</span>
               {cve.severity && (
-                <span
-                  className="drawer-sev-badge mono"
-                  style={{ color: sevColor, borderColor: sevColor }}
+                <ControlTooltip
+                  text={severityTooltip(cve.severity, cve.cvss_score)}
+                  trigger="hover-focus"
                 >
-                  {cve.severity}
-                </span>
+                  <span
+                    className="drawer-sev-badge mono"
+                    style={{ color: sevColor, borderColor: sevColor }}
+                  >
+                    {cve.severity}
+                  </span>
+                </ControlTooltip>
               )}
               {cve.kev_ransomware_use && (
                 <ControlTooltip text="Known ransomware campaign use (CISA KEV)" trigger="hover-focus">

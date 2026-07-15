@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Checkbox } from '../../../components/ui/index.js'
+import ControlTooltip from '../../../components/ControlTooltip.jsx'
 import { ingestLogUrl } from '../../../utils/adminLinks.js'
 import { fmtIso, fmtDur } from '../formatters.js'
 import { jobLabel, statusLabel, statusHint } from '../catalog.js'
@@ -15,10 +16,12 @@ export function JobStatusBadge({ status, mode = 'operator' }) {
     DISABLED: 'badge-muted',
   }
   return (
-    <span>
-      <span className={`badge ${map[status] || 'badge-muted'}`} title={statusHint(status)}>{statusLabel(status, mode)}</span>
-      {mode === 'analyst' && <span className="status-hint-text">{statusHint(status)}</span>}
-    </span>
+    <ControlTooltip text={statusHint(status)} trigger="hover-focus">
+      <span>
+        <span className={`badge ${map[status] || 'badge-muted'}`}>{statusLabel(status, mode)}</span>
+        {mode === 'analyst' && <span className="status-hint-text">{statusHint(status)}</span>}
+      </span>
+    </ControlTooltip>
   )
 }
 
