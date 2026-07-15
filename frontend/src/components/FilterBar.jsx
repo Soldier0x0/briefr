@@ -207,7 +207,7 @@ export default function FilterBar({
       showExportSuccess(message)
       notifyExportSuccess(message)
     } catch (err) {
-      const message = err.message || 'Export failed. Restart the backend and try again.'
+      const message = err?.message || 'Export failed. Restart the backend and try again.'
       setExportError(message)
       notifyExportError(message)
     } finally {
@@ -229,7 +229,7 @@ export default function FilterBar({
       showExportSuccess(message)
       notifyExportSuccess(message)
     } catch (err) {
-      const message = err.message || 'Excel export failed. Restart the backend and try again.'
+      const message = err?.message || 'Excel export failed. Restart the backend and try again.'
       setExportError(message)
       notifyExportError(message)
     } finally {
