@@ -10,8 +10,8 @@
   --admin-border: #2a2a25;
   --admin-border-strong: #3d3d38;
   --admin-text: #e8e6df;
-  --admin-text-muted: #9a9890;
-  --admin-text-dim: #5a5850;
+  --admin-text-muted: var(--text-secondary, #c4c1b8);
+  --admin-text-dim: var(--text-muted, #a7a396);
   --admin-accent: #e85533;
   --admin-accent-dim: rgba(232, 85, 51, 0.12);
   --admin-accent-glow: rgba(232, 85, 51, 0.25);
@@ -60,6 +60,17 @@
   --font-mono: var(--admin-mono);
   --font-body: var(--admin-font);
   --on-red: #fff;
+
+  /* Shared type scale (E6-1 — parity with analyst surfaces) */
+  --type-title: var(--font-size-title);
+  --type-heading: var(--font-size-heading);
+  --type-subheading: var(--font-size-subheading);
+  --type-id: var(--font-size-id);
+  --type-body: var(--font-size-body);
+  --type-secondary: var(--font-size-secondary);
+  --type-meta: var(--font-size-meta);
+  --type-micro: var(--font-size-micro);
+  --type-min: var(--font-size-micro);
 
   display: flex;
   flex-direction: column;
@@ -1739,7 +1750,7 @@
   height: 18px;
   padding: 0 4px;
   border-radius: 999px;
-  font-size: 0.625rem;
+  font-size: var(--type-micro);
   font-weight: 700;
   margin-left: auto;
   color: #fff;
@@ -2445,7 +2456,7 @@
 /* ── Log level badges ───────────────────────────────────────────────────── */
 
 .level-badge {
-  font-size: 0.6875rem;
+  font-size: var(--type-meta);
   font-weight: 700;
   padding: 0.1rem 0.35rem;
   border-radius: 3px;
@@ -2665,7 +2676,7 @@
 }
 
 .admin-mode-toggle-label {
-  font-size: 0.625rem;
+  font-size: var(--type-micro);
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--text3);
@@ -2766,7 +2777,7 @@
 
 .status-hint-text {
   display: block;
-  font-size: 0.6875rem;
+  font-size: var(--type-meta);
   color: var(--text3);
   margin-top: 0.15rem;
 }
@@ -2809,7 +2820,7 @@
   align-items: center;
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
-  font-size: 0.6875rem;
+  font-size: var(--type-meta);
   font-weight: 600;
 }
 
