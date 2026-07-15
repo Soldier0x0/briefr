@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E5-3 ARCH sidebar active uses --accent-selected
+
+**What:** `.sa-nav-btn.active` and `.sa-type-tab.active` now use `--accent-selected` + `--surface-selected` (matches admin/feed selection semantics).
+
+**Next:** E6-3 aria-labels → E3-3 DataGrid → E5-4 badge wording.
+
+---
+
 ## 2026-07-15 — E6-2 standard focus ring
 
 **What:** Global `:focus-visible` rules in `App.css` use `--focus-ring` (accent-based, not red). Fixed LoginPage red focus; migrated outline-only rings on feed cards, brief rows, filter inputs, drawer close, stats, IOC history, etc.
