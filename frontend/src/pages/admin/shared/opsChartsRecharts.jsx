@@ -27,6 +27,11 @@ import {
   tooltipLabelStyle,
 } from '../../../utils/rechartsTheme.js'
 
+function ingestJobTickLabel(label) {
+  if (!label) return ''
+  return label.length > 18 ? `${label.slice(0, 18)}…` : label
+}
+
 function ingestScaleMax(secondsList) {
   if (!secondsList.length) return undefined
   const sorted = [...secondsList].sort((a, b) => a - b)
@@ -46,7 +51,8 @@ export function IngestDurationChart({ rows }) {
   const durations = rows.map((r) => r.seconds)
   const scaleMax = ingestScaleMax(durations)
   const data = rows.map((row) => ({
-    label: row.label,
+    label: ingestJobTickLabel(row.label),
+    fullLabel: row.label,
     seconds: row.seconds,
     hadError: row.hadError,
   }))
@@ -58,7 +64,7 @@ export function IngestDurationChart({ rows }) {
         <BarChart
           data={data}
           layout="vertical"
-          margin={rechartsMargin({ left: 8, right: 12 })}
+          margin={rechartsMargin({ left: 12, right: 12, top: 8, bottom: 8 })}
         >
           <CartesianGrid stroke={theme.grid} horizontal={false} />
           <XAxis
@@ -76,7 +82,7 @@ export function IngestDurationChart({ rows }) {
           <YAxis
             type="category"
             dataKey="label"
-            width={110}
+            width={132}
             tick={axisTickStyle(theme)}
             interval={0}
           />
@@ -89,6 +95,7 @@ export function IngestDurationChart({ rows }) {
               const err = item?.payload?.hadError ? ' (last run errored)' : ''
               return [`${fmtDur(Number(value))}${err}`, 'Last run duration']
             }}
+            labelFormatter={(_label, payload) => payload?.[0]?.payload?.fullLabel || _label}
           />
           <Bar
             dataKey="seconds"
@@ -123,26 +130,32 @@ export function BackupSizesChart({ rows }) {
   return (
     <ChartShell height={200} ariaLabel="Backup archive sizes chart" className="admin-ops-chart-wrap">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={rechartsMargin({ left: 8, right: 12, bottom: 16 })}>
+        <LineChart data={data} margin={rechartsMargin({ left: 16, right: 12, top: 8, bottom: 28 })}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis
             dataKey="label"
             tick={axisTickStyle(theme)}
-            interval={0}
+            interval="preserveStartEnd"
+            minTickGap={20}
+            angle={-35}
+            textAnchor="end"
+            height={48}
             label={{
               value: 'Newest →',
               position: 'insideBottom',
-              offset: -2,
+              offset: -4,
               style: axisLabelStyle(theme),
             }}
           />
           <YAxis
+            width={72}
             tick={axisTickStyle(theme)}
             tickFormatter={(v) => fmtBytes(Number(v))}
             label={{
               value: 'Size',
               angle: -90,
               position: 'insideLeft',
+              offset: 8,
               style: axisLabelStyle(theme),
             }}
           />
