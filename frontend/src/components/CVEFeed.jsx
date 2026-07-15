@@ -4,6 +4,7 @@ import { notifyApiError } from './Toast.jsx'
 import { ingestLogUrl } from '../utils/adminLinks.js'
 import { toApiCveParams } from '../utils/cveFilters.js'
 import { scrollBehavior } from '../utils/motion.js'
+import { shouldIgnoreGlobalShortcut } from '../utils/keyboardScope.js'
 import { buildCombinedReport, copyToClipboard } from '../utils/report.js'
 import PdfExportModal from './PdfExportModal.jsx'
 import FilterBar from './FilterBar.jsx'
@@ -284,8 +285,7 @@ export default function CVEFeed({
   useEffect(() => {
     if (overlayOpen) return
     function handleNav(e) {
-      const tag = document.activeElement?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (shouldIgnoreGlobalShortcut(e)) return
       if (!cves.length) return
 
       if (e.key === 'ArrowDown') {
