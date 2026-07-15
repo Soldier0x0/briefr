@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E7-5 Recharts Resources page (PR 2/4)
+
+**What:** Admin → Resources line charts migrated from Chart.js to Recharts (`resourcesChartsRecharts.jsx`, lazy-loaded). Fixed-height `ChartShell` on all seven metric charts.
+
+**Next:** E7-5 PR 3 — BRIEF vendor bar chart; PR 4 — remove Chart.js.
+
+---
+
 ## 2026-07-15 — E7-5 Recharts admin ops charts (PR 1/4)
 
 **What:** `ChartShell` fixed-height wrapper; shared `chartTheme` + `rechartsTheme` helpers; Admin Overview `OpsCharts` migrated from Chart.js to Recharts (lazy `opsChartsRecharts` chunk ~101 kB gzip). Motion toggle respected via `chartAnimationDuration()`.
