@@ -82,7 +82,7 @@
 [data-theme="light"] .filter-btn.active {
   color: var(--accent-selected);
   background: var(--surface-selected);
-  border-color: var(--accent-selected);
+  border-color: var(--border-active);
 }
 
 [data-theme="light"] .vendor-filter-block {
@@ -102,9 +102,9 @@
 
 [data-theme="light"] .vendor-btn.active {
   background: var(--surface-selected);
-  border-color: var(--accent-selected);
+  border-color: var(--border-active);
   color: var(--accent-selected);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-selected) 25%, transparent);
+  box-shadow: var(--focus-ring-inset);
 }
 
 [data-theme="light"] .digest-btn,

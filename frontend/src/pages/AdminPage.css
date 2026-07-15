@@ -386,7 +386,7 @@
 .admin-nav-item--active {
   background: var(--surface-selected);
   color: var(--accent-selected);
-  box-shadow: inset 3px 0 0 var(--accent-selected);
+  box-shadow: var(--shadow-inset-indicator-start-lg);
 }
 
 .admin-nav-item--active svg {
@@ -633,7 +633,7 @@
   background: var(--surface-selected);
   color: var(--accent-selected);
   font-weight: 600;
-  box-shadow: inset 0 -2px 0 var(--accent-selected);
+  box-shadow: var(--shadow-inset-indicator-bottom);
 }
 
 /* ── Tables ───────────────────────────────────────────────────────────────── */
@@ -1521,7 +1521,7 @@
 .admin-sidebar .nav-item.active {
   background: var(--surface-selected);
   color: var(--accent-selected);
-  box-shadow: inset 3px 0 0 var(--accent-selected);
+  box-shadow: var(--shadow-inset-indicator-start-lg);
 }
 
 .admin-sidebar .nav-item.active .nav-icon {
@@ -1691,25 +1691,6 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-}
-
-/* Softer accent highlights in admin (focus rings, active chips, toggles) */
-.admin-page,
-.admin-statusbar {
-  --focus-ring: 0 0 0 1px var(--background-primary),
-    0 0 0 2px color-mix(in srgb, var(--accent-primary) 38%, transparent);
-}
-
-.admin-mode-toggle-btn.active {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-primary) 32%, transparent);
-}
-
-.filter-chip.active {
-  border-color: color-mix(in srgb, var(--accent-primary) 45%, var(--border-strong));
-}
-
-.admin-sidebar .nav-item.active {
-  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--accent-selected) 65%, transparent);
 }
 
 .admin-mode-toggle-group {
@@ -2419,7 +2400,7 @@
 }
 
 .admin-subtab { transition: color 0.15s, border-bottom-color 0.15s; }
-.admin-subtab.active { color: var(--accent-selected); border-bottom-color: var(--accent-selected); }
+.admin-subtab.active { color: var(--accent-selected); border-bottom-color: var(--accent-indicator); }
 .admin-subtab:hover  { color: var(--text2); }
 
 /* ── Filter chips ───────────────────────────────────────────────────────── */
@@ -2443,7 +2424,7 @@
 }
 
 .filter-chip:hover { background: var(--bg3); color: var(--text); border-color: var(--border2); }
-.filter-chip.active { background: var(--surface-selected); color: var(--accent-selected); border-color: var(--accent-selected); }
+.filter-chip.active { background: var(--surface-selected); color: var(--accent-selected); border-color: var(--border-active); }
 
 /* ── Action bar ─────────────────────────────────────────────────────────── */
 
@@ -2921,6 +2902,7 @@
 .admin-mode-toggle-btn.active {
   background: var(--surface-selected);
   color: var(--accent-selected);
+  box-shadow: var(--focus-ring-inset);
 }
 
 /* ── Intel banner (Analyst overview health summary) ────────────────────── */
@@ -3275,7 +3257,7 @@
 
 .admin-data-grid-row-clickable[aria-selected="true"] td {
   background: var(--surface-selected);
-  box-shadow: inset 2px 0 0 var(--accent-selected);
+  box-shadow: var(--shadow-inset-indicator-start);
 }
 
 .config-section-header {

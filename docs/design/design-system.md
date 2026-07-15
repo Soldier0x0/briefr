@@ -82,7 +82,7 @@ detection engineering. It is not a marketing surface. The system optimizes for:
 |---|---|
 | Text contrast | ≥ 4.5:1 for < 18px; ≥ 3:1 for ≥ 18px or bold. `--text-muted` is defined to meet this (raised from prior ~3:1 grays). |
 | Non-text contrast | ≥ 3:1 for borders, focus rings, control boundaries, chart lines. |
-| Focus visible | Every interactive element shows `--focus-ring` (2px, accent, high-contrast). Never remove outlines without a replacement. |
+| Focus visible | Every interactive element shows `--focus-ring` (soft accent halo via `color-mix`, not a neon 4px ring). Never remove outlines without a replacement. |
 | Color independence | Severity/status never encoded by color alone — pair with label, icon, or shape. |
 | Target size | ≥ `--hit-target-min` (24px); primary buttons ≥ `--control-height-md` (30px). |
 | Keyboard | All controls reachable + operable; logical tab order; visible focus; no traps; Esc closes overlays and restores focus. |
@@ -300,7 +300,68 @@ Three layers. Higher layers compose lower ones; never re-implement a lower layer
 - **Open Q2:** whether the command palette becomes the primary nav (affects sidebar work).
 - **Open Q3:** icon library choice (existing inline SVGs vs a set like Lucide).
 
-## 22. Suggested additional documentation (future)
+## 23. Repo-wide UX standards (permanent)
+
+These rules apply to **every surface** — analyst shell, admin, ARCH, Forge, wallboard —
+not only the admin control plane. They were introduced after admin UX review (2026-07)
+and are enforced repo-wide via `tokens.css` + `.cursor/rules/design-system.mdc`.
+
+### 23.1 Focus and active accent (soft orange)
+
+- **Focus rings** use the global `--focus-ring` token (38% accent mix). Do not
+  reintroduce page-scoped overrides or full-strength `4px` accent halos.
+- **Active/selected borders** on chips, pills, filters, and cards use
+  `--border-active` (45% accent mix), not raw `--accent-selected` as a border color.
+- **Inset indicators** (sidebar nav, selected table rows, subtabs) use
+  `--accent-indicator` via `--shadow-inset-indicator-*` tokens — never full-strength
+  `inset … var(--accent-selected)` bars.
+- **Tab underlines / cell selection outlines** use `--accent-indicator` /
+  `--outline-active`, not solid full-accent strokes.
+
+Primary nav fills (e.g. header tab with `--accent-selected` background) are the
+exception: filled selection is allowed; neon **borders** are not.
+
+### 23.2 Date and time inputs
+
+- All user-facing date/time pickers use the shared `DateTimePicker` primitive
+  (Radix `Select` for hour/minute + `react-day-picker` dark calendar). Never ship
+  native `datetime-local` or unstyled calendar popovers in new code.
+- `TimeWindowPicker` (analyst BRIEF charts) and admin ingest filters are the
+  reference implementations.
+
+### 23.3 Discrete settings → dropdowns, not sliders
+
+- When a setting has a **finite set of values** (typography px steps, enum
+  choices), use `Select` dropdowns — not `Slider` or native `range` inputs.
+- `Slider` remains for continuous values only (e.g. a true 0–100 scale).
+
+### 23.4 Reset actions
+
+- Revert-to-default controls are labeled **"Reset to default"** (or **"Reset to
+  defaults"** when multiple fields). Never **"Reset draft"** — that implies
+  unpublished state the product does not have.
+
+### 23.5 Wayfinding labels
+
+- Breadcrumb and section wayfinding labels use **consistent uppercase** mono
+  styling (`letter-spacing`, `text-transform: uppercase`) — see `AdminBreadcrumbs`
+  and shared `PageHeader` patterns. Do not mix Title Case and ALL CAPS in one trail.
+
+### 23.6 Health vs freshness (ops surfaces)
+
+- **Circuit/HTTP health "OK"** and **scheduled sync freshness** are different
+  concepts. When a feed is healthy but stale, show an explicit callout with a
+  concrete action (e.g. link to Scheduler → "Run NVD sync") — never imply "all OK"
+  covers data age. `FeedHealthPage` is the reference pattern.
+
+### 23.7 Long-running work
+
+- When backend jobs expose `progress_message` (scheduler locks), the UI must show
+  that message plus an indeterminate progress bar while status is `LOCKED`, and
+  poll until the lock clears. `JobTable` + `SchedulerPage` are the reference;
+  apply the same pattern anywhere else long-running jobs surface.
+
+## 24. Suggested additional documentation (future)
 
 - `docs/design/component-inventory.md` — per-control migration map (raw → primitive → files).
 - `docs/design/accessibility-vpat.md` — conformance statement + audit results.

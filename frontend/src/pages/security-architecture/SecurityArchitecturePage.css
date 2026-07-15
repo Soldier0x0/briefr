@@ -98,7 +98,7 @@
 
 .sa-nav-btn.active {
   background: var(--surface-selected);
-  border-color: var(--accent-selected);
+  border-color: var(--border-active);
   color: var(--accent-selected);
 }
 
@@ -460,7 +460,7 @@
 
 .sa-type-tab.active {
   background: var(--surface-selected);
-  border-color: var(--accent-selected);
+  border-color: var(--border-active);
   color: var(--accent-selected);
 }
 

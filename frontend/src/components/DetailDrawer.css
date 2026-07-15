@@ -555,7 +555,7 @@
 
 .drawer-tab-active {
   color: var(--accent-selected);
-  border-bottom-color: var(--accent-selected);
+  border-bottom-color: var(--accent-indicator);
 }
 
 .drawer-tab:focus-visible {

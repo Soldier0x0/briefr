@@ -204,9 +204,16 @@
   --shadow-lg:   none;
   --shadow-overlay: 0 12px 40px rgba(0, 0, 0, 0.5); /* modals/drawers even in dark */
 
-  /* ── Focus ring (audit E6-2: high-contrast, accent-based, NOT red) ── */
-  --focus-ring:        0 0 0 2px var(--background-primary), 0 0 0 4px var(--accent-primary);
-  --focus-ring-inset:  inset 0 0 0 2px var(--accent-primary);
+  /* ── Focus + active accent (repo-wide — soft orange, not neon borders) ── */
+  --focus-ring: 0 0 0 1px var(--background-primary),
+    0 0 0 2px color-mix(in srgb, var(--accent-primary) 38%, transparent);
+  --focus-ring-inset: inset 0 0 0 1px color-mix(in srgb, var(--accent-primary) 32%, transparent);
+  --border-active: color-mix(in srgb, var(--accent-primary) 45%, var(--border-strong));
+  --accent-indicator: color-mix(in srgb, var(--accent-selected) 65%, transparent);
+  --shadow-inset-indicator-start: inset 2px 0 0 var(--accent-indicator);
+  --shadow-inset-indicator-start-lg: inset 3px 0 0 var(--accent-indicator);
+  --shadow-inset-indicator-bottom: inset 0 -2px 0 var(--accent-indicator);
+  --outline-active: 2px solid var(--accent-indicator);
 
   /* ── Z-index scale ── */
   --z-base:        0;

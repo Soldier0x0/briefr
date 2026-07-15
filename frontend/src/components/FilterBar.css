@@ -250,7 +250,7 @@
 .filter-btn.active {
   color: var(--accent-selected);
   background: var(--surface-selected);
-  border-color: var(--accent-selected);
+  border-color: var(--border-active);
 }
 
 .filter-search {
@@ -445,7 +445,7 @@
 
 /* Selected vendor filter — neutral state, not destructive/severity, so accent not red. */
 .vendor-btn.active {
-  border-color: var(--accent-selected);
+  border-color: var(--border-active);
   color: var(--accent-selected);
   background: var(--surface-selected);
 }

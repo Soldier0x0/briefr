@@ -125,7 +125,7 @@
 }
 
 .brief-chart-filter-chip--active {
-  border-color: var(--accent-selected);
+  border-color: var(--border-active);
   color: var(--accent-selected);
   background: var(--surface-selected);
 }
