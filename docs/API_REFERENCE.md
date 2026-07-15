@@ -787,7 +787,7 @@ Per-campaign `boosters` reflect KEV/exploit signals among that campaign's member
 
 **`confidence_factors`** (CORR-PR-5, additive): on both `campaigns[]` and `infrastructure[]` items, an ordered list of `{factor, value?, reason}` objects tracing every step that moved the confidence level — e.g. `ioc_type` (base level), `confirmation` (GreyNoise/MalwareBazaar/URLhaus), `degree` (shared-IOC hub penalty, CORR-PR-3), `noise_ip`, `same_pulse`, `shared_indicators`, `attribution_conflict`. `why_not_higher` is kept for compatibility and equals the last factor's `reason` when present. The drawer's connection panel renders each factor's `reason` as a bulleted "why this level" list.
 
-Cached 6 hours in `feed_cache` (`correlation:v2:{cve}:{sector}`). On engine error, returns empty arrays + `"error"` string.
+Cached 6 hours in `feed_cache` (`correlation:v2:{cve}:{sector}`). When `CORRELATION_PRECOMPUTE_ENABLED=1`, the handler prefers a scheduler-written row in `correlation_cve_snapshot` (cheap indexed read); actor sector matching still runs live when `sector` is set. Nightly job backfills snapshots for tier-prioritized CVEs (`CORRELATION_PRECOMPUTE_MAX_PER_RUN`, default 500). Hub IOCs above `CORRELATION_HUB_CVE_PULSE_CAP` are excluded from shared-IOC joins. On engine error, returns empty arrays + `"error"` string.
 
 ### POST /api/cves/{cve_id}/correlation/suppress
 

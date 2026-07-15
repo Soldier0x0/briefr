@@ -81,6 +81,15 @@ tables:
   source_refs:
   - type: table
     ref: correlation_campaigns
+- id: correlation_cve_snapshot
+  title: correlation_cve_snapshot
+  summary: Database table defined in db/init.py (name=correlation_cve_snapshot).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: correlation_cve_snapshot
 - id: correlation_feedback
   title: correlation_feedback
   summary: Database table defined in db/init.py (name=correlation_feedback).

@@ -8,6 +8,7 @@ from correlation.confidence import (
     aggregate_infrastructure_confidence,
     confidence_for_ioc_edge,
 )
+from correlation.config import get_hub_cve_pulse_cap
 from correlation.confirm import confirmation_receipt, confirmations_for_iocs_batch
 from correlation.copy import infrastructure_summary
 from correlation.ioc_normalize import is_noise_ip
@@ -22,6 +23,7 @@ _CONFIDENCE_RANK = {"low": 0, "medium": 1, "high": 2}
 
 async def _shared_ioc_rows(db, cve_id: str) -> list:
     cve_upper = cve_id.upper()
+    hub_cap = get_hub_cve_pulse_cap()
     return await db.execute_fetchall(
         """
         SELECT ocp2.cve_id AS cve_id_b,
@@ -38,11 +40,37 @@ async def _shared_ioc_rows(db, cve_id: str) -> list:
         JOIN cves c ON c.cve_id = ocp2.cve_id
         LEFT JOIN ioc_degree deg
             ON deg.ioc_type = oi.ioc_type AND deg.ioc_value = oi.ioc_value
+        WHERE COALESCE(deg.cve_count, 0) <= ?
         GROUP BY ocp2.cve_id, oi.ioc_type, oi.ioc_value, deg.cve_count
         ORDER BY ocp2.cve_id ASC
         """,
-        (cve_upper, cve_upper),
+        (cve_upper, cve_upper, hub_cap),
     )
+
+
+async def count_hub_suppressed_ioc_peers(db, cve_id: str) -> int:
+    """Distinct peer CVE edges suppressed by hub IOC degree cap (ADR-004 telemetry)."""
+    cve_upper = cve_id.upper()
+    hub_cap = get_hub_cve_pulse_cap()
+    rows = await db.execute_fetchall(
+        """
+        SELECT COUNT(DISTINCT ocp2.cve_id) AS n
+        FROM otx_pulse_iocs oi
+        JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id AND ocp.cve_id = ?
+        JOIN otx_pulse_iocs oi2
+            ON oi2.ioc_type = oi.ioc_type AND oi2.ioc_value = oi.ioc_value
+        JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi2.pulse_id AND ocp2.cve_id != ?
+        JOIN cves c ON c.cve_id = ocp2.cve_id
+        LEFT JOIN ioc_degree deg
+            ON deg.ioc_type = oi.ioc_type AND deg.ioc_value = oi.ioc_value
+        WHERE COALESCE(deg.cve_count, 0) > ?
+        """,
+        (cve_upper, cve_upper, hub_cap),
+    )
+    if not rows:
+        return 0
+    row = rows[0]
+    return int(row["n"] if isinstance(row, dict) else row[0])
 
 
 def _count_by_type(edges: list[dict]) -> dict[str, int]:

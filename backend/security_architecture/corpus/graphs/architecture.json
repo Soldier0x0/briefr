@@ -711,6 +711,18 @@
       ]
     },
     {
+      "id": "table:correlation_cve_snapshot",
+      "label": "correlation_cve_snapshot",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "correlation_cve_snapshot"
+        }
+      ]
+    },
+    {
       "id": "table:correlation_feedback",
       "label": "correlation_feedback",
       "kind": "table",

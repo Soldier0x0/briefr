@@ -495,6 +495,17 @@ async def init_db() -> None:
                 detected_at TEXT DEFAULT (datetime('now'))
             );
 
+            CREATE TABLE IF NOT EXISTS correlation_cve_snapshot (
+                cve_id TEXT PRIMARY KEY,
+                payload TEXT NOT NULL,
+                engine_version TEXT NOT NULL DEFAULT '',
+                computed_at TEXT NOT NULL,
+                hub_edges_suppressed INTEGER NOT NULL DEFAULT 0
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_correlation_cve_snapshot_computed
+                ON correlation_cve_snapshot(computed_at);
+
             CREATE TABLE IF NOT EXISTS mitre_groups (
                 group_id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -667,6 +678,16 @@ async def init_db() -> None:
             "CREATE TABLE IF NOT EXISTS correlation_actor (cve_id TEXT NOT NULL, actor_name TEXT NOT NULL, actor_sectors TEXT DEFAULT '[]', user_sector_match INTEGER DEFAULT 0, confidence TEXT DEFAULT 'low', detected_at TEXT DEFAULT (datetime('now')), PRIMARY KEY (cve_id, actor_name))",
             "CREATE INDEX IF NOT EXISTS idx_correlation_actor_cve ON correlation_actor(cve_id)",
             "CREATE TABLE IF NOT EXISTS correlation_temporal (vendor TEXT PRIMARY KEY, current_week_count INTEGER DEFAULT 0, average_weekly_count REAL DEFAULT 0, anomaly_score REAL DEFAULT 0, detected_at TEXT DEFAULT (datetime('now')))",
+            """
+            CREATE TABLE IF NOT EXISTS correlation_cve_snapshot (
+                cve_id TEXT PRIMARY KEY,
+                payload TEXT NOT NULL,
+                engine_version TEXT NOT NULL DEFAULT '',
+                computed_at TEXT NOT NULL,
+                hub_edges_suppressed INTEGER NOT NULL DEFAULT 0
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_correlation_cve_snapshot_computed ON correlation_cve_snapshot(computed_at)",
             "CREATE TABLE IF NOT EXISTS mitre_groups (group_id TEXT PRIMARY KEY, name TEXT NOT NULL, aliases TEXT DEFAULT '[]', description TEXT DEFAULT '', sectors TEXT DEFAULT '[]', url TEXT DEFAULT '')",
             "CREATE TABLE IF NOT EXISTS group_technique_map (group_id TEXT NOT NULL, technique_id TEXT NOT NULL, PRIMARY KEY (group_id, technique_id))",
             "CREATE INDEX IF NOT EXISTS idx_group_technique_map_technique ON group_technique_map(technique_id)",

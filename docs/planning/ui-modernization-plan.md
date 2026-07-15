@@ -332,7 +332,7 @@ numbers recorded in the closing PR body:
 - [x] E0-4 docs sync on ADR acceptance (CLAUDE.md / AGENTS.md / PRODUCT_STATUS)
 
 **Reliability (E1) — see backlog**
-- [ ] E1-1 correlation precompute (ADR-004)
+- [x] E1-1 correlation precompute (ADR-004) — PR TBD
 - [ ] E1-2 OP hero decoupled from correlation
 - [ ] E1-3 four-state correlation/risk
 

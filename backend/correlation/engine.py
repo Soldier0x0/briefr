@@ -24,6 +24,8 @@ logger = logging.getLogger(__name__)
 from correlation.config import (
     ENGINE_VERSION,
     get_correlation_cache_hours,
+    get_correlation_precompute_enabled,
+    get_correlation_precompute_max_per_run,
     get_mitre_min_overlap,
     get_otx_ioc_sync_max_per_run,
 )
@@ -336,6 +338,81 @@ async def _get_temporal_for_cve(db, cve_id: str) -> list[dict]:
 
 # ── On-demand entry point (with 6-hour cache) ─────────────
 
+async def _compute_correlation_for_cve(
+    db,
+    cve_id: str,
+    user_sector: str = "",
+) -> dict:
+    """
+    Live correlation compute — shared by the request path (fallback) and the
+    nightly precompute job (ADR-004).
+    """
+    from correlation.campaigns import get_campaigns_for_cve
+    from correlation.ioc_graph import count_hub_suppressed_ioc_peers, find_shared_infrastructure_v2
+    from correlation.priority import compute_correlation_priority
+    from correlation.suppressions import is_infrastructure_suppressed, load_suppressions
+
+    import os
+
+    cve_upper = cve_id.upper()
+    otx_configured = bool(os.environ.get("OTX_API_KEY", "").strip())
+
+    suppressions = await load_suppressions(db, cve_upper)
+    infrastructure = await find_shared_infrastructure_v2(db, cve_upper)
+    infrastructure = [
+        row for row in infrastructure
+        if not is_infrastructure_suppressed(suppressions, row["cve_id_b"])
+    ]
+    actor = await find_actor_sector_correlation(db, cve_upper, user_sector)
+    temporal = await _get_temporal_for_cve(db, cve_upper)
+    hub_edges_suppressed = await count_hub_suppressed_ioc_peers(db, cve_upper)
+
+    strong_infra_peers = {
+        row["cve_id_b"]
+        for row in infrastructure
+        if row["shared_hash_count"] or row["shared_domain_count"]
+    }
+    campaigns = await get_campaigns_for_cve(
+        db, cve_upper, strong_infra_peers=strong_infra_peers
+    )
+
+    campaign_members = {m for c in campaigns for m in c.get("members", [])}
+    infrastructure = [
+        row for row in infrastructure
+        if row["cve_id_b"] not in campaign_members
+    ]
+
+    if campaigns:
+        otx_status = "ok"
+    elif otx_configured:
+        otx_status = "ok"
+    else:
+        otx_status = "not_configured"
+
+    boosters = {
+        "kev": sorted({cve for c in campaigns for cve in (c.get("boosters") or {}).get("kev", [])}),
+        "exploit": sorted({cve for c in campaigns for cve in (c.get("boosters") or {}).get("exploit", [])}),
+    }
+
+    result = {
+        "cve_id": cve_upper,
+        "campaigns": campaigns,
+        "infrastructure": infrastructure,
+        "actor": actor,
+        "temporal": temporal,
+        "boosters": boosters,
+        "computed_at": datetime.now(timezone.utc).isoformat(),
+        "otx_status": otx_status,
+        "meta": {
+            "engine_version": ENGINE_VERSION,
+            "cache_hit": False,
+            "hub_edges_suppressed": hub_edges_suppressed,
+        },
+    }
+    result["priority"] = compute_correlation_priority(result)
+    return result
+
+
 async def get_correlation_for_cve(
     db,
     cve_id: str,
@@ -344,12 +421,12 @@ async def get_correlation_for_cve(
 ) -> dict:
     """
     Return correlation findings for a single CVE with a 6-hour cache.
-    Campaigns/infrastructure/actor are computed live; temporal anomalies use
-    pre-computed nightly data. Includes a combined priority score.
+    When CORRELATION_PRECOMPUTE_ENABLED=1, reads a scheduler-written snapshot
+    when available; otherwise computes live (same path as precompute job).
     """
     from database import get_feed_cache, set_feed_cache
-    from correlation.campaigns import get_campaigns_for_cve
     from correlation.priority import compute_correlation_priority
+    from db.correlation import get_correlation_cve_snapshot
 
     if cache_hours is None:
         cache_hours = get_correlation_cache_hours()
@@ -361,81 +438,28 @@ async def get_correlation_for_cve(
     if cached is not None:
         return cached
 
-    import os
-    otx_configured = bool(os.environ.get("OTX_API_KEY", "").strip())
+    if get_correlation_precompute_enabled():
+        snapshot = await get_correlation_cve_snapshot(db, cve_upper)
+        if snapshot and snapshot.get("payload"):
+            result = dict(snapshot["payload"])
+            result.setdefault("meta", {})
+            result["meta"]["cache_hit"] = True
+            result["meta"]["precompute"] = True
+            result["meta"]["engine_version"] = snapshot.get("engine_version") or ENGINE_VERSION
+            result["meta"]["hub_edges_suppressed"] = int(
+                snapshot.get("hub_edges_suppressed") or 0
+            )
+            result["computed_at"] = snapshot.get("computed_at") or result.get("computed_at")
+            if user_sector:
+                result["actor"] = await find_actor_sector_correlation(
+                    db, cve_upper, user_sector
+                )
+                result["priority"] = compute_correlation_priority(result)
+            await set_feed_cache(db, cache_key, result)
+            return result
 
     try:
-        from correlation.ioc_graph import find_shared_infrastructure_v2
-        from correlation.suppressions import (
-            is_infrastructure_suppressed,
-            load_suppressions,
-        )
-
-        suppressions = await load_suppressions(db, cve_upper)
-        infrastructure = await find_shared_infrastructure_v2(db, cve_upper)
-        infrastructure = [
-            row for row in infrastructure
-            if not is_infrastructure_suppressed(suppressions, row["cve_id_b"])
-        ]
-        actor = await find_actor_sector_correlation(db, cve_upper, user_sector)
-        temporal = await _get_temporal_for_cve(db, cve_upper)
-
-        # Reuse the infrastructure rows already fetched above instead of
-        # having get_campaigns_for_cve run find_shared_infrastructure_v2
-        # again — also ensures suppressed infra peers aren't promoted into
-        # campaign membership, since `infrastructure` here is already
-        # suppression-filtered.
-        strong_infra_peers = {
-            row["cve_id_b"]
-            for row in infrastructure
-            if row["shared_hash_count"] or row["shared_domain_count"]
-        }
-        campaigns = await get_campaigns_for_cve(
-            db, cve_upper, strong_infra_peers=strong_infra_peers
-        )
-
-        # Exclude infrastructure peers already promoted into a campaign above
-        # (strong shared IOCs) so campaigns and infrastructure are
-        # non-overlapping tiers rather than two views of the same data.
-        campaign_members = {m for c in campaigns for m in c.get("members", [])}
-        infrastructure = [
-            row for row in infrastructure
-            if row["cve_id_b"] not in campaign_members
-        ]
-
-        # PR-O2 (CACHE-001): no correlation_actor write here. This is the GET
-        # read path — actor findings above are computed live for the response;
-        # durable persistence is scheduler-only (run_correlation_analysis
-        # stores actor rows nightly for recent CVEs). The feed_cache write
-        # below is the documented 6-hour read-through cache, not domain state.
-
-        if campaigns:
-            otx_status = "ok"
-        elif otx_configured:
-            otx_status = "ok"
-        else:
-            otx_status = "not_configured"
-
-        boosters = {
-            "kev": sorted({cve for c in campaigns for cve in (c.get("boosters") or {}).get("kev", [])}),
-            "exploit": sorted({cve for c in campaigns for cve in (c.get("boosters") or {}).get("exploit", [])}),
-        }
-
-        result = {
-            "cve_id": cve_upper,
-            "campaigns": campaigns,
-            "infrastructure": infrastructure,
-            "actor": actor,
-            "temporal": temporal,
-            "boosters": boosters,
-            "computed_at": datetime.now(timezone.utc).isoformat(),
-            "otx_status": otx_status,
-            "meta": {
-                "engine_version": ENGINE_VERSION,
-                "cache_hit": False,
-            },
-        }
-        result["priority"] = compute_correlation_priority(result)
+        result = await _compute_correlation_for_cve(db, cve_upper, user_sector)
         await set_feed_cache(db, cache_key, result)
         return result
 
@@ -567,13 +591,44 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
         )
         await _recover_db_transaction(db)
 
+    stats["precompute_snapshots"] = 0
+    if get_correlation_precompute_enabled():
+        from db.correlation import list_cve_ids_for_precompute, upsert_correlation_cve_snapshot
+
+        max_per_run = get_correlation_precompute_max_per_run()
+        precompute_ids = await list_cve_ids_for_precompute(db, max_per_run)
+        if progress_cb:
+            progress_cb(
+                f"Precomputing correlation snapshots for {len(precompute_ids)} CVEs…"
+            )
+        for index, pre_cve_id in enumerate(precompute_ids):
+            if progress_cb and index % 25 == 0:
+                progress_cb(
+                    f"Precompute snapshot {pre_cve_id} ({index + 1}/{len(precompute_ids)})…"
+                )
+            try:
+                result = await _compute_correlation_for_cve(db, pre_cve_id, user_sector="")
+                hub_suppressed = int(
+                    (result.get("meta") or {}).get("hub_edges_suppressed") or 0
+                )
+                await upsert_correlation_cve_snapshot(
+                    db,
+                    pre_cve_id,
+                    result,
+                    hub_edges_suppressed=hub_suppressed,
+                )
+                stats["precompute_snapshots"] += 1
+            except Exception as exc:
+                logger.warning("Correlation precompute skip %s: %s", pre_cve_id, exc)
+                await _recover_db_transaction(db)
+
     await delete_feed_cache_prefix(db, "correlation:v2:")
     await delete_feed_cache_prefix(db, "correlation:v1:")
 
     await db.commit()
     logger.info(
         "Nightly correlation done: %d CVEs, %d infra pairs, %d actors, %d anomalies, "
-        "%d campaigns (%d members), %d ioc_degree rows",
+        "%d campaigns (%d members), %d ioc_degree rows, %d precompute snapshots",
         stats["cves_processed"],
         stats["infrastructure_pairs"],
         stats["actor_findings"],
@@ -581,6 +636,7 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
         stats["campaigns_built"],
         stats["campaign_members"],
         stats["ioc_degree_rows"],
+        stats.get("precompute_snapshots", 0),
     )
     return stats
 
