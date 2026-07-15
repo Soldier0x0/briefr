@@ -25,6 +25,13 @@ body {
   overflow-x: hidden;
 }
 
+/* Block feed scroll chaining while CVE drawer is open */
+.briefr-drawer-open .cve-feed,
+.briefr-drawer-open .cve-list {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 a {
   color: var(--text-link);
   text-decoration: none;

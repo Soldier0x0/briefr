@@ -1,0 +1,20 @@
+.ui-datetime-range-field {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.65rem;
+  min-width: 0;
+}
+
+.ui-datetime-range-sep {
+  color: var(--text3);
+  font-size: 0.875rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.ui-datetime-range-start,
+.ui-datetime-range-end {
+  flex: 1 1 10.5rem;
+  min-width: 10.5rem;
+}

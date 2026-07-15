@@ -206,10 +206,11 @@
   margin: 0;
   border: none;
   background: transparent;
-  color: inherit;
-  font: inherit;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
   line-height: 1;
-  cursor: inherit;
+  cursor: help;
 }
 
 .ui-tooltip-trigger:focus-visible {
@@ -218,68 +219,51 @@
   border-radius: var(--radius-sm);
 }
 
-.ui-tooltip-content {
-  z-index: 10000;
-  min-width: 0;
-  max-width: min(320px, calc(100vw - 2rem));
-  padding: 8px 12px;
-  border-radius: var(--radius-md, 8px);
+.ui-tooltip-bubble {
+  min-width: 140px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border2);
-  background: var(--bg2);
-  color: var(--text);
+  background: var(--bg3);
+  color: var(--text2);
   font-family: var(--font-body);
-  font-size: 0.875rem;
+  font-size: var(--type-secondary);
   font-weight: 400;
-  line-height: 1.45;
+  line-height: 1.35;
   text-transform: none;
   letter-spacing: normal;
   white-space: normal;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
-  animation: ui-tooltip-in var(--motion-fast, 120ms ease-out);
+  pointer-events: none;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
 }
 
-.ui-tooltip-content[data-state='closed'] {
-  animation: ui-tooltip-out var(--motion-fast, 120ms ease-out);
+.ui-tooltip-bubble--portal {
+  opacity: 1;
+  visibility: visible;
 }
 
-@keyframes ui-tooltip-in {
-  from {
-    opacity: 0;
-    transform: translateY(2px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+.ui-tooltip-wrap:not(:has(.ui-tooltip-bubble--portal)) .ui-tooltip-bubble {
+  position: absolute;
+  z-index: calc(var(--z-drawer) + 100);
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(280px, calc(100vw - 2rem));
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--motion-fast), transform var(--motion-fast);
 }
 
-@keyframes ui-tooltip-out {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(2px) scale(0.98);
-  }
+.ui-tooltip-wrap:hover .ui-tooltip-bubble:not(.ui-tooltip-bubble--portal),
+.ui-tooltip-wrap:focus-within .ui-tooltip-bubble:not(.ui-tooltip-bubble--portal),
+.ui-tooltip-wrap.ui-tooltip-wrap--open .ui-tooltip-bubble:not(.ui-tooltip-bubble--portal) {
+  opacity: 1;
+  visibility: visible;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ui-tooltip-content {
-    animation: none;
-  }
-}
-
-/* Legacy bubble class aliases (ControlTooltip, ReferenceTooltip) */
-.ui-tooltip-bubble,
-.control-tooltip-bubble,
-.reference-tooltip-bubble {
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  box-shadow: none;
+.ui-tooltip-bubble--flip {
+  bottom: auto;
+  top: calc(100% + 6px);
 }
 
 .reference-tooltip-bubble {

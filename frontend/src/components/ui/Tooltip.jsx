@@ -1,9 +1,23 @@
 import {
   cloneElement,
   isValidElement,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
   useState,
 } from 'react'
-import * as TooltipPrimitive from '@radix-ui/react-tooltip'
+import { createPortal } from 'react-dom'
+
+const GAP = 8
+const VIEWPORT_PAD = 8
+
+let dismissActive = null
+let activeTooltipId = null
+
+function clamp(n, min, max) {
+  return Math.min(max, Math.max(min, n))
+}
 
 const FOCUSABLE_TAGS = new Set(['a', 'button', 'input', 'select', 'textarea'])
 
@@ -15,81 +29,17 @@ function childCanReceiveFocus(child) {
   return FOCUSABLE_TAGS.has(tag)
 }
 
-export function TooltipProvider({
-  children,
-  delayDuration = 200,
-  skipDelayDuration = 0,
-}) {
-  return (
-    <TooltipPrimitive.Provider delayDuration={delayDuration} skipDelayDuration={skipDelayDuration}>
-      {children}
-    </TooltipPrimitive.Provider>
-  )
-}
-
-export const TooltipRoot = TooltipPrimitive.Root
-export const TooltipTrigger = TooltipPrimitive.Trigger
-
-export function TooltipContent({
-  children,
-  className = '',
-  sideOffset = 6,
-  maxWidth = 280,
-  ...props
-}) {
-  return (
-    <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Content
-        sideOffset={sideOffset}
-        className={`ui-tooltip-content ${className}`.trim()}
-        style={{ maxWidth }}
-        {...props}
-      >
-        {children}
-      </TooltipPrimitive.Content>
-    </TooltipPrimitive.Portal>
-  )
-}
-
-function HoverOnlyTooltip({
-  text,
-  children,
-  asChild = false,
-  className = '',
-  bubbleClassName = '',
-  maxWidth = 280,
-}) {
-  const [open, setOpen] = useState(false)
-
-  const triggerChild = asChild && isValidElement(children)
-    ? children
-    : (
-        <span className="ui-tooltip-trigger" tabIndex={-1}>
-          {children}
-        </span>
-      )
-
-  return (
-    <span className={`ui-tooltip-wrap ${className}`.trim()}>
-      <TooltipPrimitive.Root open={open}>
-        <TooltipPrimitive.Trigger
-          asChild
-          onPointerEnter={() => setOpen(true)}
-          onPointerLeave={() => setOpen(false)}
-        >
-          {triggerChild}
-        </TooltipPrimitive.Trigger>
-        <TooltipContent className={bubbleClassName} maxWidth={maxWidth}>
-          {text}
-        </TooltipContent>
-      </TooltipPrimitive.Root>
-    </span>
-  )
-}
-
 /**
- * Radix-based tooltip primitive (shadcn pattern): TooltipTrigger + TooltipContent.
- * Legacy `text` prop API preserved for existing call sites.
+ * Portaled tooltip primitive (E3-2): collision-aware placement, single-open coordinator.
+ *
+ * @param {object} props
+ * @param {string} props.text
+ * @param {React.ReactNode} props.children
+ * @param {boolean} [props.asChild] - merge aria props into the child element
+ * @param {'hover'|'hover-focus'} [props.trigger] - hover-only avoids sticky filter tooltips after click
+ * @param {string} [props.className] - wrapper class
+ * @param {string} [props.bubbleClassName] - bubble class extension
+ * @param {number} [props.maxWidth=280]
  */
 export default function Tooltip({
   text,
@@ -100,42 +50,121 @@ export default function Tooltip({
   bubbleClassName = '',
   maxWidth = 280,
 }) {
+  const id = useId()
+  const wrapRef = useRef(null)
+  const [open, setOpen] = useState(false)
+  const [coords, setCoords] = useState({ top: 0, left: 0, placement: 'top' })
+
+  const updatePosition = useCallback(() => {
+    const el = wrapRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const placeAbove = rect.top > 100
+    const placement = placeAbove ? 'top' : 'bottom'
+    const top = placeAbove ? rect.top - GAP : rect.bottom + GAP
+    const left = clamp(rect.left + rect.width / 2, VIEWPORT_PAD + maxWidth / 2, window.innerWidth - VIEWPORT_PAD - maxWidth / 2)
+    setCoords({ top, left, placement })
+  }, [maxWidth])
+
+  const show = useCallback(() => {
+    if (!text) return
+    if (dismissActive && activeTooltipId !== id) {
+      dismissActive()
+    }
+    dismissActive = () => setOpen(false)
+    activeTooltipId = id
+    setOpen(true)
+    updatePosition()
+  }, [text, updatePosition, id])
+
+  const hide = useCallback(() => {
+    setOpen(false)
+    if (activeTooltipId === id) {
+      dismissActive = null
+      activeTooltipId = null
+    }
+  }, [id])
+
+  useEffect(() => {
+    if (!open) return undefined
+    updatePosition()
+    const onScroll = () => updatePosition()
+    window.addEventListener('scroll', onScroll, true)
+    window.addEventListener('resize', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll, true)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [open, updatePosition])
+
+  useEffect(() => () => {
+    if (activeTooltipId === id) {
+      dismissActive = null
+      activeTooltipId = null
+    }
+  }, [id])
+
   if (!text) return children
 
-  if (trigger === 'hover') {
-    return (
-      <HoverOnlyTooltip
-        text={text}
-        asChild={asChild}
-        className={className}
-        bubbleClassName={bubbleClassName}
-        maxWidth={maxWidth}
-      >
-        {children}
-      </HoverOnlyTooltip>
-    )
+  const hoverHandlers = {
+    onMouseEnter: show,
+    onMouseLeave: hide,
   }
 
-  const triggerChild = asChild && isValidElement(children)
+  const focusHandlers = trigger === 'hover-focus'
+    ? {
+        onFocus: show,
+        onBlur: (e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) hide()
+        },
+      }
+    : {}
+
+  const child = asChild && isValidElement(children)
     ? cloneElement(children, {
         ...(trigger === 'hover-focus' && !childCanReceiveFocus(children) ? { tabIndex: 0 } : {}),
+        'aria-describedby': [children.props?.['aria-describedby'], id].filter(Boolean).join(' ') || id,
       })
-    : (
-        <span className={`ui-tooltip-trigger ${className}`.trim()} tabIndex={0}>
-          {children}
-        </span>
+    : children
+
+  const bubble = open && typeof document !== 'undefined'
+    ? createPortal(
+        <span
+          role="tooltip"
+          id={id}
+          className={`ui-tooltip-bubble ui-tooltip-bubble--portal ui-tooltip-bubble--${coords.placement} ${bubbleClassName}`.trim()}
+          style={{
+            position: 'fixed',
+            top: coords.top,
+            left: coords.left,
+            transform: coords.placement === 'top'
+              ? 'translate(-50%, -100%)'
+              : 'translate(-50%, 0)',
+            maxWidth,
+            zIndex: 10000,
+          }}
+        >
+          {text}
+        </span>,
+        document.body,
       )
+    : null
 
   return (
-    <span className={`ui-tooltip-wrap ${className}`.trim()}>
-      <TooltipPrimitive.Root>
-        <TooltipPrimitive.Trigger asChild>
-          {triggerChild}
-        </TooltipPrimitive.Trigger>
-        <TooltipContent className={bubbleClassName} maxWidth={maxWidth}>
-          {text}
-        </TooltipContent>
-      </TooltipPrimitive.Root>
-    </span>
+    <>
+      <span
+        ref={wrapRef}
+        className={`ui-tooltip-wrap ${className}`.trim()}
+        {...hoverHandlers}
+        {...focusHandlers}
+      >
+        {asChild ? child : (
+          <span className="ui-tooltip-trigger" tabIndex={trigger === 'hover-focus' ? 0 : undefined} aria-describedby={id}>
+            {children}
+          </span>
+        )}
+      </span>
+      {bubble}
+    </>
   )
 }
