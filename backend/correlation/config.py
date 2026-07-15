@@ -64,3 +64,15 @@ def get_freshness_half_life_days(ioc_type: str) -> int:
 
 def get_freshness_floor() -> float:
     return max(0.0, min(1.0, float(os.environ.get("CORRELATION_FRESHNESS_FLOOR", "0.25"))))
+
+
+def get_correlation_precompute_enabled() -> bool:
+    return os.environ.get("CORRELATION_PRECOMPUTE_ENABLED", "0").strip() not in (
+        "0",
+        "false",
+        "False",
+    )
+
+
+def get_correlation_precompute_max_per_run() -> int:
+    return max(1, int(os.environ.get("CORRELATION_PRECOMPUTE_MAX_PER_RUN", "500")))

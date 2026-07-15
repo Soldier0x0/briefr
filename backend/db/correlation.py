@@ -987,3 +987,95 @@ async def get_correlation_metrics_for_day(db: DbConnection, day: str) -> dict | 
     )
     rows = await db.execute_fetchall(sql, (day,))
     return dict(rows[0]) if rows else None
+
+
+_UPSERT_CORRELATION_CVE_SNAPSHOT_SQLITE = """
+INSERT INTO correlation_cve_snapshot (
+    cve_id, payload, engine_version, computed_at, hub_edges_suppressed
+) VALUES (?, ?, ?, ?, ?)
+ON CONFLICT(cve_id) DO UPDATE SET
+    payload = excluded.payload,
+    engine_version = excluded.engine_version,
+    computed_at = excluded.computed_at,
+    hub_edges_suppressed = excluded.hub_edges_suppressed
+"""
+
+_UPSERT_CORRELATION_CVE_SNAPSHOT_PG = """
+INSERT INTO correlation_cve_snapshot (
+    cve_id, payload, engine_version, computed_at, hub_edges_suppressed
+) VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT(cve_id) DO UPDATE SET
+    payload = excluded.payload,
+    engine_version = excluded.engine_version,
+    computed_at = excluded.computed_at,
+    hub_edges_suppressed = excluded.hub_edges_suppressed
+"""
+
+_GET_CORRELATION_CVE_SNAPSHOT_SQLITE = """
+SELECT cve_id, payload, engine_version, computed_at, hub_edges_suppressed
+FROM correlation_cve_snapshot
+WHERE cve_id = ?
+"""
+
+_GET_CORRELATION_CVE_SNAPSHOT_PG = """
+SELECT cve_id, payload, engine_version, computed_at, hub_edges_suppressed
+FROM correlation_cve_snapshot
+WHERE cve_id = $1
+"""
+
+
+async def upsert_correlation_cve_snapshot(
+    db: DbConnection,
+    cve_id: str,
+    payload: dict,
+    *,
+    hub_edges_suppressed: int = 0,
+) -> None:
+    from correlation.config import ENGINE_VERSION
+
+    pg = _is_postgres_connection(db)
+    sql = (
+        _UPSERT_CORRELATION_CVE_SNAPSHOT_PG
+        if pg
+        else _UPSERT_CORRELATION_CVE_SNAPSHOT_SQLITE
+    )
+    computed_at = payload.get("computed_at") or utcnow_str()
+    await db.execute(
+        sql,
+        (
+            cve_id.upper(),
+            json.dumps(payload),
+            ENGINE_VERSION,
+            computed_at,
+            int(hub_edges_suppressed),
+        ),
+    )
+
+
+async def get_correlation_cve_snapshot(
+    db: DbConnection, cve_id: str
+) -> dict | None:
+    sql = (
+        _GET_CORRELATION_CVE_SNAPSHOT_PG
+        if _is_postgres_connection(db)
+        else _GET_CORRELATION_CVE_SNAPSHOT_SQLITE
+    )
+    rows = await db.execute_fetchall(sql, (cve_id.upper(),))
+    if not rows:
+        return None
+    row = dict(rows[0])
+    try:
+        row["payload"] = json.loads(row["payload"] or "{}")
+    except json.JSONDecodeError:
+        row["payload"] = {}
+    return row
+
+
+async def list_cve_ids_for_precompute(
+    db: DbConnection, limit: int | None = None
+) -> list[str]:
+    """Tiered CVE ids for nightly correlation snapshot precompute (ADR-004)."""
+    from correlation.config import get_correlation_precompute_max_per_run
+
+    cap = limit if limit is not None else get_correlation_precompute_max_per_run()
+    return await get_prioritized_cve_ids_for_otx(db, backlog_cap=cap)

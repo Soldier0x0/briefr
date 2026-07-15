@@ -14,6 +14,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+---
+
+## 2026-07-14 — E1-1 correlation precompute (ADR-004)
+
+**What:** Correlation moved off the request path behind `CORRELATION_PRECOMPUTE_ENABLED` (default off). Nightly `run_nightly_correlation` writes per-CVE JSON snapshots to `correlation_cve_snapshot` (migration `025`); `get_correlation_for_cve` reads snapshots when the flag is on. Hub IOC degree cap pushed into `_shared_ioc_rows` SQL (`CORRELATION_HUB_CVE_PULSE_CAP`). Tests: `test_correlation_precompute.py`.
+
+**Next:** E1-2 OP hero decoupled from correlation (DetailDrawer) → E2-3… → E3 primitives…
+
+---
+
 ## 2026-07-14 — UI-M automated PR loop started (E0-1 → E0-2)
 
 **What:** Autonomous UI modernization execution loop began. Merged PRs:
