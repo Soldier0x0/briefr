@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E3-4 Radix Dialog / AlertDialog
+
+**What:** `Modal` rebuilt on `@radix-ui/react-dialog` (focus trap, scroll lock, Esc, return focus). New `AlertDialog` primitive; `ConfirmModal` uses AlertDialog for simple confirms and Dialog for typed confirm gates.
+
+**Next:** E3-5 Tabs/Dropdown/Select.
+
+---
+
 ## 2026-07-15 — E7-5 Chart.js → Recharts complete
 
 **What:** BRIEF vendor KEV bar chart migrated to Recharts; Chart.js + `chartLoader.js` + `chartOptions.js` removed. All charts now use Recharts lazy chunk (~98 kB gzip) or custom SVG (EPSS sparklines). `ChartShell` enforces fixed height on every chart.

@@ -224,6 +224,14 @@ terms:
   origin: generated
   term: PyYAML
   source: backend/requirements.txt
+- id: self-stack-radix-ui-react-alert-dialog
+  title: '@radix-ui/react-alert-dialog'
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: '@radix-ui/react-alert-dialog'
+  source: frontend/package.json
 - id: self-stack-radix-ui-react-checkbox
   title: '@radix-ui/react-checkbox'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -231,6 +239,14 @@ terms:
   status: active
   origin: generated
   term: '@radix-ui/react-checkbox'
+  source: frontend/package.json
+- id: self-stack-radix-ui-react-dialog
+  title: '@radix-ui/react-dialog'
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: '@radix-ui/react-dialog'
   source: frontend/package.json
 - id: self-stack-radix-ui-react-switch
   title: '@radix-ui/react-switch'

@@ -1,7 +1,9 @@
-import { useEffect, useId, useRef } from 'react'
+import { useId, useRef } from 'react'
+import * as Dialog from '@radix-ui/react-dialog'
 import useModalLayer from '../../hooks/useModalLayer.js'
 
 /**
+ * Radix-backed dialog primitive (E3-4). Preserves the legacy Modal API.
  * @param {object} props
  * @param {boolean} props.open
  * @param {() => void} props.onClose
@@ -27,31 +29,11 @@ export default function Modal({
   children,
   ...rest
 }) {
-  const dialogRef = useRef(null)
+  const contentRef = useRef(null)
   const generatedId = useId()
   const headingId = titleId || generatedId
 
-  useModalLayer(open, dialogRef, { trackDepth: true })
-
-  useEffect(() => {
-    if (!open) return undefined
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prev
-    }
-  }, [open])
-
-  useEffect(() => {
-    if (!open) return undefined
-    function onKey(e) {
-      if (e.key === 'Escape' && !busy) onClose()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [open, busy, onClose])
-
-  if (!open) return null
+  useModalLayer(open, contentRef, { trackDepth: true, trapFocus: false })
 
   const dialogClasses = [
     'ui-modal',
@@ -62,29 +44,38 @@ export default function Modal({
   const overlayClasses = ['ui-modal-overlay', overlayClassName].filter(Boolean).join(' ')
 
   return (
-    <div
-      className={overlayClasses}
-      onClick={busy ? undefined : onClose}
-      role="presentation"
+    <Dialog.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (!next && !busy) onClose()
+      }}
     >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={title ? headingId : undefined}
-        className={dialogClasses}
-        onClick={e => e.stopPropagation()}
-        tabIndex={-1}
-        {...rest}
-      >
-        {title && (
-          <h2 id={headingId} className="ui-modal-title">
-            {title}
-          </h2>
-        )}
-        <div className="ui-modal-body">{children}</div>
-        {footer && <div className="ui-modal-footer">{footer}</div>}
-      </div>
-    </div>
+      <Dialog.Portal>
+        <Dialog.Overlay className={overlayClasses} />
+        <Dialog.Content
+          ref={contentRef}
+          className={dialogClasses}
+          aria-labelledby={title ? headingId : undefined}
+          onPointerDownOutside={(event) => {
+            if (busy) event.preventDefault()
+          }}
+          onInteractOutside={(event) => {
+            if (busy) event.preventDefault()
+          }}
+          onEscapeKeyDown={(event) => {
+            if (busy) event.preventDefault()
+          }}
+          {...rest}
+        >
+          {title && (
+            <Dialog.Title id={headingId} className="ui-modal-title">
+              {title}
+            </Dialog.Title>
+          )}
+          <div className="ui-modal-body">{children}</div>
+          {footer && <div className="ui-modal-footer">{footer}</div>}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }

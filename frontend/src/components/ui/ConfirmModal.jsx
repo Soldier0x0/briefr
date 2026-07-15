@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Modal from './Modal.jsx'
+import UiAlertDialog from './AlertDialog.jsx'
 import Button from './Button.jsx'
 
 /**
@@ -40,18 +41,34 @@ export default function ConfirmModal({
   }, [open])
 
   useEffect(() => {
-    if (!open) return undefined
+    if (!open || !confirmWord) return undefined
     function onKey(e) {
       const { input, confirmWord, onConfirm, onClose: dismiss } = stateRef.current
       if (e.key === 'Escape') dismiss()
-      else if (e.key === 'Enter' && (!confirmWord || input === confirmWord)) onConfirm(input)
+      else if (e.key === 'Enter' && input === confirmWord) onConfirm(input)
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [open])
+  }, [open, confirmWord])
 
   const word = confirmWord || ''
   const canConfirm = !word || input === word
+
+  if (!word) {
+    return (
+      <UiAlertDialog
+        open={open}
+        onOpenChange={(next) => { if (!next) close() }}
+        title={title}
+        description={message}
+        cancelLabel={cancelLabel}
+        confirmLabel={confirmLabel}
+        onConfirm={() => onConfirm('')}
+        className={className}
+        overlayClassName={overlayClassName}
+      />
+    )
+  }
 
   const footer = (
     <>
