@@ -82,10 +82,10 @@
 /* ── Custom rectangular checkbox ─────────────────────────── */
 .card-checkbox-wrap {
   position: absolute;
-  top: 13px;
-  left: 8px;
-  width: 16px;
-  height: 16px;
+  top: 10px;
+  left: 6px;
+  width: var(--hit-target-min);
+  height: var(--hit-target-min);
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.12s;
@@ -110,8 +110,8 @@
 
 .card-checkbox-box {
   display: block;
-  width: 16px;
-  height: 16px;
+  width: var(--control-height-sm);
+  height: var(--control-height-sm);
   border: 1px solid var(--border2);
   border-radius: 0;
   background: transparent;

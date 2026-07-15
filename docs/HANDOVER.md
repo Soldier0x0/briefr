@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E6-5 target sizes + chart table fallbacks
+
+**What:** Global `.hit-target` utility; bumped icon-only controls (ExplainTip, HelpTip, chart toggles, card checkboxes, sidebar toggles, ui-switch) to ≥24px; shared `ChartDataTable` collapsible fallback on BriefCharts KEV chart, Admin OpsCharts (3), and Resources charts; EPSS movers severity column shows dot + text label (color-not-alone).
+
+**Next:** E7-1 hover/press states → E7-2 skeletons.
+
+---
+
 ## 2026-07-15 — E6-4 global shortcut scoping
 
 **What:** `utils/keyboardScope.js` centralizes editable-target detection (inputs, textareas, contenteditable, ARIA text roles, IME compose); App.jsx feed shortcuts and CVEFeed arrow nav respect it; ShortcutsPanel copy clarifies which keys suspend while typing.

@@ -2,6 +2,7 @@ import { useEffect, useRef, useMemo, useState } from 'react'
 import { adminApi } from '../../../api.js'
 import { loadChartJs, readChartTheme } from '../../../utils/chartLoader.js'
 import { axisTitle, baseChartOptions } from '../../../utils/chartOptions.js'
+import { ChartDataTable } from '../../../components/ui/index.js'
 import HelpTip from './HelpTip.jsx'
 import { jobLabel } from '../catalog.js'
 import { fmtBytes, fmtDur } from '../formatters.js'
@@ -319,7 +320,30 @@ export default function OpsCharts({ schedulerJobs }) {
         {ingestRows.length === 0 ? (
           <div className="admin-empty admin-ops-chart-empty">No ingest runs recorded yet</div>
         ) : (
-          <div className="admin-ops-chart-wrap"><canvas ref={ingestRef} /></div>
+          <>
+            <div className="admin-ops-chart-wrap">
+              <canvas ref={ingestRef} role="img" aria-label="Ingest job duration chart" />
+            </div>
+            <ChartDataTable
+              title="Ingest job duration (last run)"
+              columns={[
+                { key: 'label', label: 'Job' },
+                { key: 'duration', label: 'Duration', className: 'mono' },
+                {
+                  key: 'status',
+                  label: 'Status',
+                  className: 'mono',
+                  render: (row) => (row.hadError ? 'Error' : 'OK'),
+                },
+              ]}
+              rows={ingestRows.map((row) => ({
+                _key: row.id,
+                label: row.label,
+                duration: fmtDur(row.seconds),
+                hadError: row.hadError,
+              }))}
+            />
+          </>
         )}
       </div>
 
@@ -331,7 +355,25 @@ export default function OpsCharts({ schedulerJobs }) {
         {backupRows.length === 0 ? (
           <div className="admin-empty admin-ops-chart-empty">{extraLoaded ? 'No backups listed yet' : 'Loading…'}</div>
         ) : (
-          <div className="admin-ops-chart-wrap"><canvas ref={backupRef} /></div>
+          <>
+            <div className="admin-ops-chart-wrap">
+              <canvas ref={backupRef} role="img" aria-label="Backup archive sizes chart" />
+            </div>
+            <ChartDataTable
+              title="Backup archive sizes"
+              columns={[
+                { key: 'filename', label: 'Archive' },
+                { key: 'size', label: 'Size', className: 'mono' },
+                { key: 'created_at', label: 'Created (UTC)', className: 'mono' },
+              ]}
+              rows={backupRows.map((row) => ({
+                _key: row.filename,
+                filename: row.filename,
+                size: fmtBytes(row.size_bytes || 0),
+                created_at: row.created_at ? String(row.created_at).slice(0, 19) : '—',
+              }))}
+            />
+          </>
         )}
       </div>
 
@@ -343,7 +385,25 @@ export default function OpsCharts({ schedulerJobs }) {
         {whBuckets.length === 0 ? (
           <div className="admin-empty admin-ops-chart-empty">{extraLoaded ? 'No webhook deliveries yet' : 'Loading…'}</div>
         ) : (
-          <div className="admin-ops-chart-wrap"><canvas ref={webhookRef} /></div>
+          <>
+            <div className="admin-ops-chart-wrap">
+              <canvas ref={webhookRef} role="img" aria-label="Webhook deliveries chart" />
+            </div>
+            <ChartDataTable
+              title="Webhook deliveries (7d)"
+              columns={[
+                { key: 'day', label: 'Day (UTC)', className: 'mono' },
+                { key: 'ok', label: 'Delivered', className: 'mono' },
+                { key: 'failed', label: 'Failed', className: 'mono' },
+              ]}
+              rows={whBuckets.map((row) => ({
+                _key: row.day,
+                day: row.day,
+                ok: row.ok,
+                failed: row.failed,
+              }))}
+            />
+          </>
         )}
       </div>
     </div>

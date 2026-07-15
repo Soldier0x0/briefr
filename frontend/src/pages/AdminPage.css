@@ -1185,10 +1185,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: var(--hit-target-min);
+  height: var(--hit-target-min);
   margin-left: 4px;
-  font-size: 10px;
+  font-size: var(--type-micro);
   font-weight: 700;
   border-radius: 50%;
   border: 1px solid var(--admin-border-strong);
@@ -1787,6 +1787,9 @@
 .info-tip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-width: var(--hit-target-min);
+  min-height: var(--hit-target-min);
   font-size: 0.875rem;
   color: var(--text3);
   cursor: help;
