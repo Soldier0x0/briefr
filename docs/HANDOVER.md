@@ -44,7 +44,7 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 **PR:** #598 (merged)
 
-**Next:** E8-2 Admin breadcrumbs / "you are here".
+**Next:** E8-2 Admin breadcrumbs / "you are here" (done #599) → E8-3 (this PR).
 
 ---
 
@@ -54,7 +54,7 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 **PR:** #597 (merged)
 
-**Next:** E8-2 Admin breadcrumbs / "you are here".
+**Next:** E8-2 Admin breadcrumbs / "you are here" (done #599) → E8-3 (this PR).
 
 ---
 
