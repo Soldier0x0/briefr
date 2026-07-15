@@ -12,9 +12,9 @@
   --admin-text: #e8e6df;
   --admin-text-muted: var(--text-secondary, #c4c1b8);
   --admin-text-dim: var(--text-muted, #a7a396);
-  --admin-accent: #e85533;
-  --admin-accent-dim: rgba(232, 85, 51, 0.12);
-  --admin-accent-glow: rgba(232, 85, 51, 0.25);
+  --admin-accent: var(--accent-primary);
+  --admin-accent-dim: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  --admin-accent-glow: color-mix(in srgb, var(--accent-primary) 25%, transparent);
   --admin-success: #4a9e6a;
   --admin-success-dim: rgba(74, 158, 106, 0.12);
   --admin-warning: #d4860a;

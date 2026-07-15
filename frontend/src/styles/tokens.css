@@ -49,9 +49,9 @@
   --c-ink-3:       #a7a396; /* muted — RAISED from #969388 to reach AA on --bg */
   --c-ink-disabled:#6c6a62; /* RAISED from #5c5a54 for a legible disabled state */
 
-  /* Brand / accent */
-  --c-accent:      #c8b88a; /* BRIEFR signature tan/gold */
-  --c-accent-strong:#d8c79a;
+  /* Brand / accent — BRIEFR signature orange (matches admin control-plane) */
+  --c-accent:      #e85533;
+  --c-accent-strong:#f26b4a;
   --c-link:        #7eb8f0;
 
   /* Signal hues */
@@ -63,7 +63,7 @@
   --c-slate:       #7d8aa0; --c-slate-dim:#161a20;
 
   /* Chart categorical ramp (colorblind-aware ordering) */
-  --c-chart-1:#c8b88a; --c-chart-2:#7eb8f0; --c-chart-3:#5cb87e;
+  --c-chart-1:#e85533; --c-chart-2:#7eb8f0; --c-chart-3:#5cb87e;
   --c-chart-4:#d4860a; --c-chart-5:#b07dd6; --c-chart-6:#e0715a;
   --c-chart-7:#5bc0c0; --c-chart-8:#c9c05a;
 
@@ -98,7 +98,7 @@
   --text-heading:    var(--c-ink-0);
   --text-disabled:   var(--c-ink-disabled);
   --text-link:       var(--c-link);
-  --text-on-accent:  #17140c;
+  --text-on-accent:  #ffffff;
   --text-on-danger:  #ffffff;
 
   /* Borders */
@@ -353,7 +353,7 @@
   --text-muted:     #55514a;   /* AA on light bg */
   --text-heading:   #100e0a;
   --text-disabled:  #8a857c;
-  --text-on-accent: #17140c;
+  --text-on-accent: #ffffff;
 
   --border-subtle:  #c9c4bb;
   --border-default: #b8b2a8;
