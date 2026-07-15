@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E5-5 threat scenarios drop empty operational tab
+
+**What:** Threat Scenarios hides the placeholder "Operational paths" catalog until `threat_scenarios.yaml` has rows; defaults to self-stack; tab strip hidden when only one catalog remains.
+
+**Next:** E9-3 AI-ops label → E3-3 DataGrid → E5-1 overview grid.
+
+---
+
 ## 2026-07-15 — E6-3 aria-labels + E5-4 trust boundary badge
 
 **What:** `aria-label` on HelpTip, toast copy-ID, IOC watchlist controls, admin mode toggle; trust-boundary residual chip labeled. Added `iconOnlyAriaGate.test.js` grep gate.
