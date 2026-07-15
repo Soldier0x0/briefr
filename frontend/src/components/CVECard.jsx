@@ -15,6 +15,7 @@ import {
 } from '../utils/correlationPresentation.js'
 import CveDescriptionClamp from './CveDescriptionClamp.jsx'
 import ControlTooltip from './ControlTooltip.jsx'
+import { Checkbox } from './ui/index.js'
 import './CVECard.css'
 
 function timeAgo(isoString) {
@@ -91,13 +92,12 @@ export default memo(function CVECard({
     }
   }
 
-  function handleCheckChange(e) {
-    e.stopPropagation()
-    if (onToggleSelect) onToggleSelect(cve)
-  }
-
   function handleCheckClick(e) {
     e.stopPropagation()
+  }
+
+  function handleCheckedChange(checked) {
+    if (onToggleSelect) onToggleSelect(cve)
   }
 
   function handleInvestigate(e) {
@@ -140,21 +140,17 @@ export default memo(function CVECard({
       aria-label={`CVE ${cve.cve_id}, severity ${cve.severity || 'unknown'}. Click to view details.`}
       aria-current={navSelected ? 'true' : undefined}
     >
-      {/* Custom rectangular checkbox — top-left, hover-only */}
-      <label
+      <div
         className="card-checkbox-wrap"
         onClick={handleCheckClick}
-        aria-label={`Select ${cve.cve_id} for bulk report`}
       >
-        <input
-          type="checkbox"
-          className="card-checkbox-input"
+        <Checkbox
           checked={!!selected}
-          onChange={handleCheckChange}
-          tabIndex={-1}
+          onCheckedChange={handleCheckedChange}
+          aria-label={`Select ${cve.cve_id} for bulk report`}
+          className="card-checkbox-primitive"
         />
-        <span className="card-checkbox-box" aria-hidden="true" />
-      </label>
+      </div>
 
       {inThread && (
         <span className="cve-thread-badge mono" aria-label="In investigation session">

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Checkbox } from '../ui/index.js'
 import AdminDataGrid from '../../pages/admin/shared/AdminDataGrid.jsx'
 import ConfirmModal from '../ui/ConfirmModal.jsx'
 import { deleteHuntPack, fetchHuntPacks } from '../../api.js'
@@ -185,10 +186,13 @@ export default function LibraryView({ selectedPackId, onOpenPack, onPackDeleted 
             <option key={p} value={p}>{p.toUpperCase()}</option>
           ))}
         </select>
-        <label className="fg-stack-toggle mono">
-          <input type="checkbox" checked={kevOnly} onChange={e => setKevOnly(e.target.checked)} />
-          KEV ONLY
-        </label>
+        <Checkbox
+          id="forge-library-kev-only"
+          checked={kevOnly}
+          onCheckedChange={setKevOnly}
+          label="KEV ONLY"
+          className="fg-stack-toggle mono"
+        />
         <input
           type="search"
           className="fg-library-input mono"
