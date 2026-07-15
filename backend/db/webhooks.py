@@ -271,6 +271,7 @@ async def build_webhook_destination_health(db: DbConnection) -> list[dict[str, A
             ORDER BY destination_id, attempted_at DESC, id DESC
         """
         since_expr = "NOW() - INTERVAL '24 hours'"
+        attempted_cutoff_expr = "attempted_at::timestamptz"
     else:
         latest_sql = """
             SELECT d.destination_id, d.status, d.error, d.attempted_at, d.event_type
@@ -283,6 +284,7 @@ async def build_webhook_destination_health(db: DbConnection) -> list[dict[str, A
               ON d.id = latest.max_id
         """
         since_expr = "datetime('now', '-24 hours')"
+        attempted_cutoff_expr = "attempted_at"
 
     latest_rows = await db.execute_fetchall(latest_sql)
     success_failure_sql = """
@@ -297,7 +299,7 @@ async def build_webhook_destination_health(db: DbConnection) -> list[dict[str, A
                SUM(CASE WHEN status = 'ok' THEN 1 ELSE 0 END) AS ok_24h,
                SUM(CASE WHEN status != 'ok' THEN 1 ELSE 0 END) AS failed_24h
         FROM webhook_delivery_log
-        WHERE attempted_at >= {since_expr}
+        WHERE {attempted_cutoff_expr} >= {since_expr}
         GROUP BY destination_id
     """
 
