@@ -206,11 +206,10 @@
   margin: 0;
   border: none;
   background: transparent;
-  color: var(--text3);
-  font-family: var(--font-mono);
-  font-size: var(--type-micro);
+  color: inherit;
+  font: inherit;
   line-height: 1;
-  cursor: help;
+  cursor: inherit;
 }
 
 .ui-tooltip-trigger:focus-visible {
@@ -219,52 +218,67 @@
   border-radius: var(--radius-sm);
 }
 
-.ui-tooltip-bubble {
-  min-width: 140px;
-  padding: 6px 8px;
-  border-radius: var(--radius-md);
+.ui-tooltip-content {
+  z-index: 10000;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: var(--radius-md, 8px);
   border: 1px solid var(--border2);
-  background: var(--bg3);
-  color: var(--text2);
+  background: var(--bg2);
+  color: var(--text);
   font-family: var(--font-body);
-  font-size: var(--type-secondary);
+  font-size: var(--type-secondary, 0.8125rem);
   font-weight: 400;
-  line-height: 1.35;
+  line-height: 1.4;
   text-transform: none;
   letter-spacing: normal;
   white-space: normal;
-  pointer-events: none;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-overlay, 0 12px 40px rgba(0, 0, 0, 0.5));
+  animation: ui-tooltip-in var(--motion-fast, 120ms ease-out);
 }
 
-.ui-tooltip-bubble--portal {
-  opacity: 1;
-  visibility: visible;
+.ui-tooltip-content[data-state='closed'] {
+  animation: ui-tooltip-out var(--motion-fast, 120ms ease-out);
 }
 
-/* Legacy non-portaled bubbles (unused after PR3 migration) */
-.ui-tooltip-wrap:not(:has(.ui-tooltip-bubble--portal)) .ui-tooltip-bubble {
-  position: absolute;
-  z-index: calc(var(--z-drawer) + 100);
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  max-width: min(280px, calc(100vw - 2rem));
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity var(--motion-fast), transform var(--motion-fast);
+@keyframes ui-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-.ui-tooltip-wrap:hover .ui-tooltip-bubble:not(.ui-tooltip-bubble--portal),
-.ui-tooltip-wrap:focus-within .ui-tooltip-bubble:not(.ui-tooltip-bubble--portal),
-.ui-tooltip-wrap.ui-tooltip-wrap--open .ui-tooltip-bubble:not(.ui-tooltip-bubble--portal) {
-  opacity: 1;
-  visibility: visible;
+@keyframes ui-tooltip-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(2px) scale(0.98);
+  }
 }
 
-.ui-tooltip-bubble--flip {
-  bottom: auto;
-  top: calc(100% + 6px);
+@media (prefers-reduced-motion: reduce) {
+  .ui-tooltip-content {
+    animation: none;
+  }
+}
+
+/* Legacy bubble class aliases (ControlTooltip, ReferenceTooltip) */
+.ui-tooltip-bubble,
+.control-tooltip-bubble,
+.reference-tooltip-bubble {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
 }
 
 .reference-tooltip-bubble {

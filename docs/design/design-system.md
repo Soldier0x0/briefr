@@ -261,6 +261,10 @@ Three layers. Higher layers compose lower ones; never re-implement a lower layer
   primitives (audit: raw default checkboxes across Storage/Feed-health/Scheduler/FEED were
   the top "amateur" signal).
 - One primitive per pattern; do not fork a second tooltip/button/table implementation.
+- Tooltips use **`@radix-ui/react-tooltip`** (shadcn pattern): app root wraps
+  `TooltipProvider`; content in `.ui-tooltip-content` (`--bg2`, `--border2`, overlay
+  shadow). Legacy `<Tooltip text="…">` API preserved; compound exports:
+  `TooltipTrigger`, `TooltipContent`, `TooltipRoot`.
 - Tooltips/popovers are **portaled and collision-aware** (audit UI-BUG-3, plan ticket E2-4: reference tooltip
   overflowed over other content).
 - Tables use `DataGrid` with `table-layout: fixed` + shared `<col>` so column resize keeps
