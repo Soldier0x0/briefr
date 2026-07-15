@@ -32,6 +32,7 @@ import { buildReferenceRows } from '../../utils/referenceRows.js'
 import { safeExternalUrl } from '../../utils/safeExternalUrl.js'
 import { buildExploitationDisplay } from '../../utils/exploitationDisplay.js'
 import ControlTooltip from '../ControlTooltip.jsx'
+import ReferenceTooltip from '../ui/ReferenceTooltip.jsx'
 import { drawerEpssBarColor, capecHref, capecLabel, flattenOsvPackageRows } from './helpers.js'
 
 const OP_PRIORITY_TOOLTIP =
@@ -314,9 +315,9 @@ function ReferencesSection({ urls, cve }) {
         {rows.map(row => (
           <li key={row.url} className="drawer-ref-row">
             <span className="drawer-ref-vendor mono">{row.vendor}</span>
-            <ControlTooltip text={row.url} trigger="hover-focus">
+            <ReferenceTooltip text={row.url}>
               <span className="drawer-ref-title">{row.title}</span>
-            </ControlTooltip>
+            </ReferenceTooltip>
             <a
               className="drawer-ref-link mono"
               href={row.url}

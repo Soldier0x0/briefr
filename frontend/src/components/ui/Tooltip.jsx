@@ -30,7 +30,7 @@ function childCanReceiveFocus(child) {
 }
 
 /**
- * Portaled tooltip — single coordinator closes the previous bubble when a new one opens.
+ * Portaled tooltip primitive (E3-2): collision-aware placement, single-open coordinator.
  *
  * @param {object} props
  * @param {string} props.text
