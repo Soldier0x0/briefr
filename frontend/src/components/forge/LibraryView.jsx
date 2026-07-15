@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Checkbox } from '../ui/index.js'
+import { Checkbox, Select } from '../ui/index.js'
 import AdminDataGrid from '../../pages/admin/shared/AdminDataGrid.jsx'
 import ConfirmModal from '../ui/ConfirmModal.jsx'
 import { deleteHuntPack, fetchHuntPacks } from '../../api.js'
@@ -176,16 +176,15 @@ export default function LibraryView({ selectedPackId, onOpenPack, onPackDeleted 
           value={technique}
           onChange={e => setTechnique(e.target.value)}
         />
-        <select
+        <Select
           className="fg-library-select mono"
           value={priority}
-          onChange={e => setPriority(e.target.value)}
-        >
-          <option value="">ALL PRIORITIES</option>
-          {PRIORITIES.map(p => (
-            <option key={p} value={p}>{p.toUpperCase()}</option>
-          ))}
-        </select>
+          onChange={setPriority}
+          options={[
+            { value: '', label: 'ALL PRIORITIES' },
+            ...PRIORITIES.map(p => ({ value: p, label: p.toUpperCase() })),
+          ]}
+        />
         <Checkbox
           id="forge-library-kev-only"
           checked={kevOnly}

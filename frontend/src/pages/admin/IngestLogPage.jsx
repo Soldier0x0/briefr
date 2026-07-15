@@ -1,6 +1,6 @@
 import { Fragment, useState, useEffect, useRef } from 'react'
 import { adminApi } from '../../api.js'
-import { Switch } from '../../components/ui/index.js'
+import { Select, Switch } from '../../components/ui/index.js'
 import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -144,18 +144,33 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
           onChange={e => setSearchInput(e.target.value)}
           style={{ minWidth: 220 }}
         />
-        <select className="admin-select" value={level} onChange={e => setLevel(e.target.value)}>
-          <option value="">All levels</option>
-          {['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'].map(l => <option key={l} value={l}>{l}</option>)}
-        </select>
-        <select className="admin-select" value={category} onChange={e => setCategory(e.target.value)}>
-          <option value="">All categories</option>
-          {categories.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <select className="admin-select" value={loggerFilter} onChange={e => setLoggerFilter(e.target.value)}>
-          <option value="">All loggers</option>
-          {knownLoggers.map(l => <option key={l} value={l}>{l}</option>)}
-        </select>
+        <Select
+          className="admin-select"
+          value={level}
+          onChange={setLevel}
+          options={[
+            { value: '', label: 'All levels' },
+            ...['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'].map(l => ({ value: l, label: l })),
+          ]}
+        />
+        <Select
+          className="admin-select"
+          value={category}
+          onChange={setCategory}
+          options={[
+            { value: '', label: 'All categories' },
+            ...categories.map(c => ({ value: c, label: c })),
+          ]}
+        />
+        <Select
+          className="admin-select"
+          value={loggerFilter}
+          onChange={setLoggerFilter}
+          options={[
+            { value: '', label: 'All loggers' },
+            ...knownLoggers.map(l => ({ value: l, label: l })),
+          ]}
+        />
         <input className="admin-input" placeholder="job_id…" value={jobId} onChange={e => setJobId(e.target.value)} style={{ minWidth: 140 }} />
         <input className="admin-input" placeholder="run_id…" value={runId} onChange={e => setRunId(e.target.value)} style={{ minWidth: 120 }} />
         <input className="admin-input" placeholder="request_id…" value={reqId} onChange={e => setReqId(e.target.value)} style={{ minWidth: 160 }} />
@@ -175,9 +190,12 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
           title="Only entries at or before this time (local, converted to UTC)"
           aria-label="To time"
         />
-        <select className="admin-select" value={limit} onChange={e => setLimit(Number(e.target.value))}>
-          {[50, 100, 250, 500].map(n => <option key={n} value={n}>{n} entries</option>)}
-        </select>
+        <Select
+          className="admin-select"
+          value={String(limit)}
+          onChange={(v) => setLimit(Number(v))}
+          options={[50, 100, 250, 500].map(n => ({ value: String(n), label: `${n} entries` }))}
+        />
         <button className="admin-btn admin-btn-ghost" onClick={loadLogs}>Refresh</button>
         <button className="admin-btn admin-btn-ghost" onClick={exportLogs} title="Export as NDJSON">Export logs</button>
         <Switch

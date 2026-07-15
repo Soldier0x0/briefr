@@ -4,7 +4,7 @@ import { fetchForgeCoverage, generateHuntPack } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
 import { useAssetProfileOptional } from '../context/AssetProfileContext.jsx'
 import { profileToMatchAssets } from '../utils/assetProfileIo.js'
-import { Checkbox } from './ui/index.js'
+import { Checkbox, Tabs, TabsList, TabsTrigger } from './ui/index.js'
 import { StatusChip, ForgeStatusLegend } from './forge/shared.jsx'
 import CoverageView from './forge/CoverageView.jsx'
 import ScenariosView from './forge/ScenariosView.jsx'
@@ -175,20 +175,19 @@ export default function Forge() {
 
       <div className="fg-shell">
         <nav className="fg-nav" aria-label="Forge views">
-          <div className="fg-nav-tabs mono" role="tablist" aria-label="Forge view">
-            {NAV_ITEMS.map(item => (
-              <button
-                key={item.id}
-                type="button"
-                role="tab"
-                className={`fg-nav-btn${viewMode === item.id ? ' active' : ''}`}
-                aria-selected={viewMode === item.id}
-                onClick={() => setViewMode(item.id)}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+          <Tabs value={viewMode} onValueChange={setViewMode} className="fg-nav-tabs-wrap">
+            <TabsList className="fg-nav-tabs mono" aria-label="Forge view">
+              {NAV_ITEMS.map(item => (
+                <TabsTrigger
+                  key={item.id}
+                  value={item.id}
+                  className="fg-nav-btn"
+                >
+                  {item.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
 
           {counts && (
             <div className="fg-counts fg-counts-nav" role="status" aria-label="Coverage summary">

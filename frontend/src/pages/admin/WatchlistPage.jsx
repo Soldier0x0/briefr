@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { adminApi } from '../../api.js'
+import { Select } from '../../components/ui/index.js'
 import DangerZone from './shared/DangerZone.jsx'
 import GuardedPurgePanel from './shared/GuardedPurgePanel.jsx'
 import HelpTip from './shared/HelpTip.jsx'
@@ -175,12 +176,17 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
             {iocOldestAge ? ` · oldest ${fmtAge(iocOldestAge)}` : ''}
           </div>
           <div className="admin-filter-bar">
-            <select className="admin-select" value={iocType} onChange={e => setIocType(e.target.value)}>
-              <option value="">All types</option>
-              <option value="ip">IP</option>
-              <option value="hash">Hash</option>
-              <option value="domain">Domain</option>
-            </select>
+            <Select
+              className="admin-select"
+              value={iocType}
+              onChange={setIocType}
+              options={[
+                { value: '', label: 'All types' },
+                { value: 'ip', label: 'IP' },
+                { value: 'hash', label: 'Hash' },
+                { value: 'domain', label: 'Domain' },
+              ]}
+            />
             <input className="admin-input" placeholder="Search value…" value={iocSearch} onChange={e => setIocSearch(e.target.value)} />
           </div>
           <div className="admin-card">

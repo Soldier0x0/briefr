@@ -112,7 +112,8 @@
   color: var(--text);
 }
 
-.fg-nav-btn.active {
+.fg-nav-btn.active,
+.fg-nav-btn[data-state='active'] {
   background: var(--bg3);
   border-color: var(--border2);
   color: var(--text);

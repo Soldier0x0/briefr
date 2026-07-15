@@ -248,6 +248,22 @@ terms:
   origin: generated
   term: '@radix-ui/react-dialog'
   source: frontend/package.json
+- id: self-stack-radix-ui-react-dropdown-menu
+  title: '@radix-ui/react-dropdown-menu'
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: '@radix-ui/react-dropdown-menu'
+  source: frontend/package.json
+- id: self-stack-radix-ui-react-select
+  title: '@radix-ui/react-select'
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: '@radix-ui/react-select'
+  source: frontend/package.json
 - id: self-stack-radix-ui-react-switch
   title: '@radix-ui/react-switch'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -255,6 +271,14 @@ terms:
   status: active
   origin: generated
   term: '@radix-ui/react-switch'
+  source: frontend/package.json
+- id: self-stack-radix-ui-react-tabs
+  title: '@radix-ui/react-tabs'
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: '@radix-ui/react-tabs'
   source: frontend/package.json
 - id: self-stack-react
   title: react

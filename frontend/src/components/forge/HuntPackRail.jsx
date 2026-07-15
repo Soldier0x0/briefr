@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Select } from '../ui/index.js'
 import { fetchHuntPack, generateHuntPack, runProofBench } from '../../api.js'
 import { notifyApiError } from '../Toast.jsx'
 import Tooltip from '../ui/Tooltip.jsx'
@@ -114,15 +115,12 @@ function ProofBenchSection({ packs }) {
       {packs.length > 1 && (
         <label className="fg-proof-pack-select">
           <span className="mono">PACK</span>
-          <select
+          <Select
             className="fg-proof-select mono"
-            value={selectedPack?.id ?? ''}
-            onChange={e => setSelectedPackId(Number(e.target.value))}
-          >
-            {packs.map(pack => (
-              <option key={pack.id} value={pack.id}>{pack.title}</option>
-            ))}
-          </select>
+            value={selectedPack?.id != null ? String(selectedPack.id) : ''}
+            onChange={(v) => setSelectedPackId(Number(v))}
+            options={packs.map(pack => ({ value: String(pack.id), label: pack.title }))}
+          />
         </label>
       )}
       <label className="fg-proof-lines-label">

@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E3-5 Radix Tabs / DropdownMenu / Select
+
+**What:** Shipped `Select`, `Tabs`, and `DropdownMenu` primitives (`@radix-ui/react-select`, `tabs`, `dropdown-menu`). Migrated all native `<select>` elements app-wide to `Select` (grep gate `nativeSelectGate.test.js`). Proof-of-fit: `UserMenu` → `DropdownMenu`; Forge nav → `Tabs`.
+
+**Next:** E3-6 Slider/range primitive.
+
+---
+
 ## 2026-07-15 — E3-4 Radix Dialog / AlertDialog
 
 **What:** `Modal` rebuilt on `@radix-ui/react-dialog` (focus trap, scroll lock, Esc, return focus). New `AlertDialog` primitive; `ConfirmModal` uses AlertDialog for simple confirms and Dialog for typed confirm gates.

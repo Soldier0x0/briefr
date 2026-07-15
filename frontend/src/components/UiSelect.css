@@ -10,22 +10,17 @@
   color: var(--text2);
 }
 
-.ui-select {
+.ui-select-field .ui-select-trigger,
+.ui-select-field .ui-select-label + .ui-select-trigger {
   width: 100%;
-  min-width: 5.5rem;
-  padding-right: 1.75rem;
-  appearance: none;
-  background-image:
-    linear-gradient(45deg, transparent 50%, var(--text3) 50%),
-    linear-gradient(135deg, var(--text3) 50%, transparent 50%);
-  background-position:
-    calc(100% - 14px) calc(50% - 2px),
-    calc(100% - 9px) calc(50% - 2px);
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
 }
 
-.ui-select:disabled {
+.ui-select-trigger {
+  min-width: 5.5rem;
+  padding-right: 1.75rem;
+}
+
+.ui-select-trigger[data-disabled] {
   opacity: 0.55;
   cursor: not-allowed;
 }

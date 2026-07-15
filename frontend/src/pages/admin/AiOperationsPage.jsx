@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { adminApi } from '../../api.js'
+import { Select } from '../../components/ui/index.js'
 import { fmtIso } from './formatters.js'
 import AsyncSection from './shared/AsyncSection.jsx'
 import HelpTip from './shared/HelpTip.jsx'
@@ -399,31 +400,29 @@ function ActivityTab({ toast, providerOptions }) {
       <div className="admin-filter-bar" style={{ marginBottom: '0.75rem', gap: '0.75rem' }}>
         <label style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>
           Task
-          <select
+          <Select
             className="admin-select"
             style={{ marginLeft: '0.35rem' }}
             value={taskFilter}
-            onChange={e => changeFilter(setTaskFilter, e.target.value)}
-          >
-            <option value="">All</option>
-            {Object.entries(TASK_LABELS).map(([id, label]) => (
-              <option key={id} value={id}>{label}</option>
-            ))}
-          </select>
+            onChange={(v) => changeFilter(setTaskFilter, v)}
+            options={[
+              { value: '', label: 'All' },
+              ...Object.entries(TASK_LABELS).map(([id, label]) => ({ value: id, label })),
+            ]}
+          />
         </label>
         <label style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>
           Provider
-          <select
+          <Select
             className="admin-select"
             style={{ marginLeft: '0.35rem' }}
             value={providerFilter}
-            onChange={e => changeFilter(setProviderFilter, e.target.value)}
-          >
-            <option value="">All</option>
-            {(providerOptions || []).map(p => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
+            onChange={(v) => changeFilter(setProviderFilter, v)}
+            options={[
+              { value: '', label: 'All' },
+              ...(providerOptions || []).map(p => ({ value: p, label: p })),
+            ]}
+          />
         </label>
         {(taskFilter || providerFilter) && (
           <button

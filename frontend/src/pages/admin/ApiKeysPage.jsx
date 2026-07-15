@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { adminApi } from '../../api.js'
+import { Select, SelectGroup, SelectItem, SelectLabel } from '../../components/ui/index.js'
 import { notifyBackendRestarting } from '../../utils/backendRestart.js'
 import HelpTip from './shared/HelpTip.jsx'
 import ToggleSwitch from './shared/ToggleSwitch.jsx'
@@ -318,30 +319,32 @@ export default function ApiKeysPage({ toast }) {
           ) : (
             <div className="config-row-value-control config-row-value-control--edit">
               {field?.type === 'enum' && field.enum_values?.length ? (
-                <select
+                <Select
                   className="admin-select config-row-input"
                   value={editVal}
-                  onChange={e => setEditing(ed => ({ ...ed, [envKey]: e.target.value }))}
+                  onChange={(v) => setEditing(ed => ({ ...ed, [envKey]: v }))}
+                  options={field.enum_values.map(v => ({ value: v, label: v }))}
                   autoFocus
-                >
-                  {field.enum_values.map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
+                />
               ) : TIMEZONE_KEYS.has(envKey) ? (
-                <select
+                <Select
                   className="admin-select config-row-input"
                   value={editVal}
-                  onChange={e => setEditing(ed => ({ ...ed, [envKey]: e.target.value }))}
+                  onChange={(v) => setEditing(ed => ({ ...ed, [envKey]: v }))}
                   autoFocus
                 >
                   {editVal && !TIMEZONES_BY_CONTINENT.some(g => g.zones.some(z => z.tz === editVal)) && (
-                    <option value={editVal}>{editVal} (current)</option>
+                    <SelectItem value={editVal}>{editVal} (current)</SelectItem>
                   )}
                   {TIMEZONES_BY_CONTINENT.map(group => (
-                    <optgroup key={group.continent} label={group.continent}>
-                      {group.zones.map(z => <option key={z.tz} value={z.tz}>{z.label}</option>)}
-                    </optgroup>
+                    <SelectGroup key={group.continent}>
+                      <SelectLabel>{group.continent}</SelectLabel>
+                      {group.zones.map(z => (
+                        <SelectItem key={z.tz} value={z.tz}>{z.label}</SelectItem>
+                      ))}
+                    </SelectGroup>
                   ))}
-                </select>
+                </Select>
               ) : (
                 <input
                   className="admin-input config-row-input"
