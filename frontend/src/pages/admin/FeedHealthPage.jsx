@@ -5,6 +5,7 @@ import { fmtIso, sourceLabel } from './formatters.js'
 import HelpTip from './shared/HelpTip.jsx'
 import AdminDataGrid from './shared/AdminDataGrid.jsx'
 import { useOperations } from './shared/OperationTracker.jsx'
+import { CIRCUIT_UI } from './circuitLabels.js'
 
 function FeedSourceCard({
   entryKey,
@@ -22,7 +23,7 @@ function FeedSourceCard({
   else if (isDegraded || hasError) { borderColor = 'var(--amber)'; StatusIcon = AlertTriangle }
   const canReset = Boolean(s.circuit_open || isDegraded || hasError)
   const statusLabel = s.circuit_open
-    ? (isAnalyst ? 'PAUSED' : 'TRIPPED')
+    ? (isAnalyst ? 'PAUSED' : CIRCUIT_UI.feedTrippedOperator)
     : (hasError || isDegraded)
       ? (isAnalyst ? 'Needs attention' : 'DEGRADED')
       : (isAnalyst ? 'Healthy' : 'OK')
@@ -63,13 +64,13 @@ function FeedSourceCard({
         onClick={() => onReset(entryKey)}
         title={
           canReset
-            ? (isAnalyst ? 'Clear the error state and try fetching again' : 'Reset circuit breaker and clear last error')
+            ? (isAnalyst ? 'Clear the error state and try fetching again' : CIRCUIT_UI.resetPauseTitle)
             : 'No errors to clear — source is healthy'
         }
       >
         {resetting
-          ? <><span className="admin-spinner" /> {isAnalyst ? 'Retrying…' : 'Resetting…'}</>
-          : (isAnalyst ? 'Try again' : 'Reset circuit')}
+          ? <><span className="admin-spinner" /> {isAnalyst ? 'Retrying…' : CIRCUIT_UI.resetPauseProgress}</>
+          : (isAnalyst ? 'Try again' : CIRCUIT_UI.resetPause)}
       </button>
     </div>
   )

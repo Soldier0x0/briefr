@@ -258,7 +258,7 @@ export const TERM_GLOSSARY = {
   },
   circuit_reset: {
     analyst: 'Try again',
-    operator: 'Reset circuit',
+    operator: 'Resume retries',
     explanation: 'Clears the pause and retries the source.',
   },
 }

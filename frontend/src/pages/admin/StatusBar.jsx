@@ -5,8 +5,10 @@ import { Eye, Wrench, RefreshCw, RotateCw, Hourglass, ChevronDown, Clock } from 
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import NotificationCenter from './shared/NotificationCenter.jsx'
+import HeaderClock from '../../components/HeaderClock.jsx'
 import { fmtAge } from './formatters.js'
 import { worstSource } from './intelStatus.js'
+import { CIRCUIT_UI } from './circuitLabels.js'
 
 export default function StatusBar({ system, onRunIngest, onRestart, onDrainRestart, refreshInProgress, mode, setMode, lastUpdated, userMenu }) {
   const [restartMenu, setRestartMenu] = useState(false)
@@ -70,7 +72,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
   function webhookPillTitle(destId, label, circuitFailed) {
     const fail = webhookFailingById[destId]
     if (fail) return `${label}: delivery failed${fail.last_error ? ` — ${fail.last_error}` : ''}`
-    if (circuitFailed) return `${label}: circuit open — recent delivery failures`
+    if (circuitFailed) return CIRCUIT_UI.webhookPausedTitle(label)
     return `${label} webhook — open Admin → Webhooks for delivery health`
   }
 
@@ -180,8 +182,10 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
             )}
             <div className="sb-sep" />
             <span className="sb-item">
-              <span className="sb-label">Circuits</span>
-              <span className={`sb-value ${openCircuits > 0 ? 'sb-warn' : ''}`}>{openCircuits > 0 ? `${openCircuits} tripped` : 'OK'}</span>
+              <span className="sb-label">{CIRCUIT_UI.statusBar}</span>
+              <span className={`sb-value ${openCircuits > 0 ? 'sb-warn' : ''}`}>
+                {openCircuits > 0 ? CIRCUIT_UI.statusBarPaused(openCircuits) : CIRCUIT_UI.statusBarOk}
+              </span>
             </span>
             <div className="sb-sep" />
             <span className="sb-item" title={integrityOk ? 'Last integrity check passed' : 'Last integrity check found a problem'}>
@@ -232,6 +236,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
         </div>
 
         <div className="sb-actions">
+          <HeaderClock className="admin-statusbar-clock" />
           <NotificationCenter />
           {userMenu}
           {mode === 'analyst' && (

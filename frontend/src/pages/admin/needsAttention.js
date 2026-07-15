@@ -1,6 +1,7 @@
 import { sourceLabel, fmtAge } from './formatters.js'
 import { jobLabel } from './catalog.js'
 import { nvdStaleDetail } from './intelStatus.js'
+import { CIRCUIT_UI } from './circuitLabels.js'
 
 const NVD_AMBER_SECONDS = 7200
 const NVD_RED_SECONDS = 14400
@@ -40,7 +41,7 @@ export function collectNeedsAttentionItems(
       id: `circuit-${key}`,
       severity: 'error',
       title: `${sourceLabel(key)} temporarily unavailable`,
-      detail: `Circuit open after ${failures} consecutive failure${failures === 1 ? '' : 's'}. BRIEFR will retry automatically.`,
+      detail: CIRCUIT_UI.needsAttentionDetail(failures),
       pageId: 'feedhealth',
       actionLabel: 'View feed health',
     })

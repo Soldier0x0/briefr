@@ -142,6 +142,69 @@ def test_usage_since_sums_tokens(tmp_path, monkeypatch):
     assert usage["tokens_recorded"] is True
 
 
+def test_usage_since_excludes_circuit_open_from_failure_rate(tmp_path, monkeypatch):
+    if not is_postgres():
+        db_path = tmp_path / "ai_ops_circuit.db"
+        monkeypatch.setenv("DB_PATH", str(db_path))
+        monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    async def _run():
+        from database import ai_operations_usage_since
+
+        await init_db()
+        db = await get_db()
+        try:
+            await insert_ai_operation(
+                db,
+                operation_id="ok-1",
+                request_id=None,
+                started_at=utcnow_str(),
+                latency_ms=10,
+                feature="product_extraction",
+                task_class="product_extraction",
+                provider="groq",
+                model="m",
+                success=True,
+            )
+            await insert_ai_operation(
+                db,
+                operation_id="skip-1",
+                request_id=None,
+                started_at=utcnow_str(),
+                latency_ms=0,
+                feature="product_extraction",
+                task_class="product_extraction",
+                provider="gemini",
+                model="m",
+                success=False,
+                error_class="circuit_open",
+            )
+            await insert_ai_operation(
+                db,
+                operation_id="fail-1",
+                request_id=None,
+                started_at=utcnow_str(),
+                latency_ms=50,
+                feature="product_extraction",
+                task_class="product_extraction",
+                provider="openrouter",
+                model="m",
+                success=False,
+                error_class="empty",
+            )
+            await db.commit()
+            return await ai_operations_usage_since(db, hours=24)
+        finally:
+            await db.close()
+
+    usage = run_db_test(_run())
+    assert usage["total"] == 3
+    assert usage["skipped_cooldown"] == 1
+    assert usage["api_attempts"] == 2
+    assert usage["failures"] == 1
+    assert usage["failure_rate"] == 0.5
+
+
 def test_models_catalog_payload_structure():
     payload = models_catalog_payload()
     assert payload["providers"] == ["groq", "gemini", "cerebras", "openrouter"]

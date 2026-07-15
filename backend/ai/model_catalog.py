@@ -37,16 +37,16 @@ def openrouter_model(task: LLMTask) -> str:
     if task == "pdf_summary":
         return env_model(
             "OPENROUTER_MODEL_PDF",
-            "google/gemini-2.0-flash-lite-001:free",
+            "google/gemini-2.0-flash-lite-001",
         )
     if task == "detection_context":
         return env_model(
             "OPENROUTER_MODEL_DETECTION",
-            "google/gemini-2.0-flash-lite-001:free",
+            "google/gemini-2.0-flash-lite-001",
         )
     return env_model(
         "OPENROUTER_MODEL_PRODUCT",
-        "google/gemini-2.0-flash-lite-001:free",
+        "google/gemini-2.0-flash-lite-001",
     )
 
 
@@ -60,6 +60,7 @@ def task_chain(task: LLMTask) -> list[ProviderStep]:
         return [
             ProviderStep("groq", GROQ_MODEL),
             ProviderStep("gemini", gemini_model()),
+            ProviderStep("cerebras", cerebras_model()),
             ProviderStep("openrouter", openrouter_model(task)),
         ]
     if task == "pdf_summary":

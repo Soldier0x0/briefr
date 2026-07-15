@@ -6,6 +6,7 @@ import { fmtIso } from './formatters.js'
 import AsyncSection from './shared/AsyncSection.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import StatCard from './shared/StatCard.jsx'
+import { CIRCUIT_UI, LLM_ERROR_LABELS } from './circuitLabels.js'
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -21,15 +22,7 @@ const TASK_LABELS = {
   detection_context: 'Detection context',
 }
 
-const ERROR_CLASS_LABELS = {
-  empty: 'empty response',
-  rate_limit: 'rate limited',
-  circuit_open: 'circuit open',
-  timeout: 'timeout',
-  auth: 'auth error',
-  model_not_found: 'model not found',
-  unknown: 'unknown error',
-}
+const ERROR_CLASS_LABELS = LLM_ERROR_LABELS
 
 function pct(rate) {
   if (rate == null || Number.isNaN(rate)) return '—'
@@ -56,6 +49,15 @@ function resultCell(row) {
   const ok = row.success === true || row.success === 1
   if (ok) return successBadge(true)
 
+  if (row.error_class === 'circuit_open') {
+    return (
+      <span className="admin-result-cell">
+        <span className="badge badge-muted">skipped</span>
+        <span className="admin-result-reason">{ERROR_CLASS_LABELS.circuit_open}</span>
+      </span>
+    )
+  }
+
   const reason = row.error_class
     ? (ERROR_CLASS_LABELS[row.error_class] || row.error_class.replace(/_/g, ' '))
     : null
@@ -75,9 +77,9 @@ function resultCell(row) {
 
 function providerStatus(p) {
   if (!p.configured) return { label: 'No key', className: 'badge-muted' }
-  if (p.circuit_open) return { label: 'Circuit open', className: 'badge-error' }
+  if (p.circuit_open) return { label: CIRCUIT_UI.pausedProvider, className: 'badge-error' }
   if ((p.consecutive_failures || 0) > 0 || p.last_error) {
-    return { label: 'Degraded', className: 'badge-warn' }
+    return { label: CIRCUIT_UI.unstable, className: 'badge-warn' }
   }
   return { label: 'Healthy', className: 'badge-ok' }
 }
@@ -87,18 +89,21 @@ function OverviewTab({ overview, setPage }) {
   const circuits = overview?.active_circuit_count || 0
   const configured = overview?.configured_provider_count || 0
   const failRate = u24.failure_rate
-  const failTone = failRateTone(failRate, u24.total ?? 0)
+  const apiAttempts = u24.api_attempts ?? Math.max(0, (u24.total ?? 0) - (u24.skipped_cooldown ?? 0))
+  const failTone = failRateTone(failRate, apiAttempts)
+  const skippedCooldown = u24.skipped_cooldown ?? 0
 
   return (
     <div>
-      {failTone && (u24.total ?? 0) > 0 && (
+      {failTone && apiAttempts > 0 && (
         <div
           className={`admin-callout ${failRate >= 0.5 ? 'admin-callout-red' : 'admin-callout-amber'}`}
           role="alert"
           style={{ marginBottom: '1rem' }}
         >
-          LLM failure rate is {pct(failRate)} in the last 24 hours ({u24.failures ?? 0} of {u24.total} attempts).
-          Review the Providers tab for circuit state and API keys.
+          LLM API error rate is {pct(failRate)} in the last 24 hours ({u24.failures ?? 0} of {apiAttempts} API attempts).
+          {skippedCooldown > 0 ? ` ${skippedCooldown} cooldown skip${skippedCooldown === 1 ? '' : 's'} excluded.` : ''}
+          {' '}Review the Providers tab for paused providers and API keys.
         </div>
       )}
       <div className="admin-stat-grid" style={{ marginBottom: '1rem' }}>
@@ -109,17 +114,17 @@ function OverviewTab({ overview, setPage }) {
           colorClass={overview?.any_provider_configured ? 'color-green' : 'color-amber'}
         />
         <StatCard
-          label="24h attempts"
-          value={u24.total ?? 0}
-          subLabel={`${u24.failures ?? 0} failed · ${pct(failRate)} fail rate`}
+          label="24h API attempts"
+          value={apiAttempts}
+          subLabel={`${u24.failures ?? 0} API errors · ${pct(failRate)} error rate`}
           colorClass={failTone}
-          subLabelTitle={failTone ? 'Elevated LLM failure rate in the last 24 hours' : undefined}
+          subLabelTitle={failTone ? 'Elevated LLM API error rate in the last 24 hours (cooldown skips excluded)' : undefined}
         />
         <StatCard
-          label="Active circuits"
+          label={CIRCUIT_UI.providersInCooldown}
           value={circuits}
           colorClass={circuits > 0 ? 'color-red' : 'color-green'}
-          subLabel={circuits > 0 ? 'One or more providers paused' : 'No open circuits'}
+          subLabel={circuits > 0 ? CIRCUIT_UI.oneOrMorePaused : CIRCUIT_UI.nonePaused}
         />
         <StatCard
           label="Recorded operations"

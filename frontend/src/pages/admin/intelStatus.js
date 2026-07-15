@@ -2,6 +2,7 @@
 import { sourceLabel } from './formatters.js'
 import { fmtAge } from './formatters.js'
 import { jobLabel } from './catalog.js'
+import { CIRCUIT_UI } from './circuitLabels.js'
 
 export const ANALYST_SCHEDULE_TABLE_JOB_IDS = [
   'nvd_incremental_sync',
@@ -49,7 +50,7 @@ export function collectHealthIssues(system) {
   const sources = system.feeds?.sources || {}
   for (const [key, s] of Object.entries(sources)) {
     if (s.circuit_open) {
-      issues.push(`${sourceLabel(key)} — circuit open (${s.consecutive_failures || 0} consecutive failures)`)
+      issues.push(CIRCUIT_UI.intelIssue(sourceLabel(key), s.consecutive_failures || 0))
     }
   }
   if (system.feeds?.incidents?.stale) {
@@ -84,7 +85,7 @@ export function overallHealth(system) {
 
   if (issues.length > 0) {
     return {
-      level: nvdAged && issues.length === 1 ? 'amber' : issues.some(i => i.includes('circuit open')) ? 'red' : 'amber',
+      level: nvdAged && issues.length === 1 ? 'amber' : issues.some(i => i.includes('paused after')) ? 'red' : 'amber',
       headline: issues.length === 1 ? issues[0] : `${issues.length} items need attention`,
       detail: issues.length === 1 ? 'See details below.' : issues.join(' · '),
       issues,
