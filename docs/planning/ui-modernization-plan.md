@@ -334,7 +334,7 @@ numbers recorded in the closing PR body:
 **Reliability (E1) — see backlog**
 - [x] E1-1 correlation precompute (ADR-004) — #560
 - [x] E1-2 OP hero decoupled from correlation — #561
-- [x] E1-3 four-state correlation/risk — #TBD
+- [x] E1-3 four-state correlation/risk — #564
 
 **Standalone bugs (E2)**
 - [x] E2-1 Resources chart bounded + empty state
@@ -348,7 +348,7 @@ numbers recorded in the closing PR body:
 - [x] E2-9 PG16 → PG17 doc correction
 
 **Primitives (E3)**
-- [ ] E3-1 Checkbox/Switch/Radio  [x] E3-2 Tooltip/Popover — #563  [ ] E3-3 Table/DataGrid
+- [ ] E3-1 Checkbox/Switch/Radio (admin surfaces) — #TBD  [x] E3-2 Tooltip/Popover — #563  [ ] E3-3 Table/DataGrid
 - [ ] E3-4 Dialog/AlertDialog  [ ] E3-5 Tabs/Dropdown/Select  [ ] E3-6 Slider  [ ] E3-7 Badge/Card/StatCard/EmptyState/Toast
 
 **Semantics (E4)**

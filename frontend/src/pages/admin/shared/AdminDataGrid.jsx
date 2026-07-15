@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Checkbox } from '../../../components/ui/index.js'
 
 const STORAGE_PREFIX = 'briefr-grid-'
 
@@ -147,25 +148,31 @@ export default function AdminDataGrid({
           {showColumns && (
             <div className="admin-data-grid-col-picker" role="group" aria-label="Visible columns">
               {columns.map((c) => (
-                <label key={c.id} className="admin-data-grid-col-option">
-                  <input
-                    type="checkbox"
-                    checked={visibleIds.includes(c.id)}
-                    onChange={() => toggleColumn(c.id)}
-                  />
-                  {c.label}
-                </label>
+                <Checkbox
+                  key={c.id}
+                  id={`${gridId}-col-${c.id}`}
+                  checked={visibleIds.includes(c.id)}
+                  onCheckedChange={() => toggleColumn(c.id)}
+                  label={c.label}
+                  className="admin-data-grid-col-option"
+                />
               ))}
             </div>
           )}
-          <label className="admin-data-grid-toggle">
-            <input type="checkbox" checked={wrapCells} onChange={(e) => setWrapCells(e.target.checked)} />
-            Wrap
-          </label>
-          <label className="admin-data-grid-toggle">
-            <input type="checkbox" checked={centerCells} onChange={(e) => setCenterCells(e.target.checked)} />
-            Center
-          </label>
+          <Checkbox
+            id={`${gridId}-wrap`}
+            checked={wrapCells}
+            onCheckedChange={setWrapCells}
+            label="Wrap"
+            className="admin-data-grid-toggle"
+          />
+          <Checkbox
+            id={`${gridId}-center`}
+            checked={centerCells}
+            onCheckedChange={setCenterCells}
+            label="Center"
+            className="admin-data-grid-toggle"
+          />
         </div>
         {toolbarExtra}
       </div>

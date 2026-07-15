@@ -1,5 +1,6 @@
 import { Fragment, useState, useEffect, useRef } from 'react'
 import { adminApi } from '../../api.js'
+import { Switch } from '../../components/ui/index.js'
 
 const SEARCH_DEBOUNCE_MS = 300
 const DETAIL_KEYS = new Set([
@@ -178,13 +179,13 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
         </select>
         <button className="admin-btn admin-btn-ghost" onClick={loadLogs}>Refresh</button>
         <button className="admin-btn admin-btn-ghost" onClick={exportLogs} title="Export as NDJSON">Export logs</button>
-        <label className="admin-toggle-label">
-          <div className="admin-toggle-wrap">
-            <input type="checkbox" checked={autoRefresh} onChange={e => setAutoRefresh(e.target.checked)} />
-            <span className="admin-toggle-slider" />
-          </div>
-          Auto (10s)
-        </label>
+        <Switch
+          id="ingest-log-auto-refresh"
+          checked={autoRefresh}
+          onCheckedChange={setAutoRefresh}
+          label="Auto (10s)"
+          className="admin-ingest-auto-refresh"
+        />
       </div>
       <div className="admin-card" style={{ padding: 0 }}>
         <table className="admin-table">
