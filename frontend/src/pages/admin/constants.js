@@ -66,3 +66,24 @@ export const COMING_SOON_INFO = {
     message: 'Ships in V1.4. Will show rate-limit usage statistics.',
   },
 }
+
+export const ADMIN_MODE_LABELS = {
+  analyst: 'Analyst view',
+  operator: 'Operator view',
+}
+
+/** Resolve sidebar section + page label for breadcrumbs (E8-2). */
+export function resolveAdminPage(pageId, mode = 'operator') {
+  const nav = mode === 'analyst' ? ANALYST_NAV : NAV
+  for (const section of nav) {
+    const item = section.items.find(i => i.id === pageId)
+    if (item) {
+      return { section: section.section, label: item.label, pageId: item.id }
+    }
+  }
+  const coming = COMING_SOON_INFO[pageId]
+  if (coming) {
+    return { section: 'COMING SOON', label: coming.title, pageId }
+  }
+  return { section: null, label: pageId, pageId }
+}

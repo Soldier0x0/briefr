@@ -35,6 +35,7 @@ import AiOperationsPage from './AiOperationsPage.jsx'
 import UserMenu from '../../components/UserMenu.jsx'
 import { loadJobAcks, markAllJobErrorsRead, filterUnacknowledgedErrors } from './adminJobAck.js'
 import { jobErrorsFromSystem } from './shared/JobErrorsPanel.jsx'
+import AdminBreadcrumbs from './shared/AdminBreadcrumbs.jsx'
 import '../AdminPage.css'
 
 const ANALYST_PAGE_IDS = new Set(ANALYST_NAV.flatMap(section => section.items.map(i => i.id)))
@@ -273,6 +274,11 @@ function AdminPageBody({ toast }) {
           open={sidebarOpen}
         />
         <div className="admin-content">
+          {!isComingSoon && (
+            <div className="admin-breadcrumbs-wrap">
+              <AdminBreadcrumbs pageId={page} mode={mode} setPage={setPage} />
+            </div>
+          )}
           {isComingSoon ? (
             <ComingSoonPage pageId={page} setPage={setPage} />
           ) : (
