@@ -75,7 +75,6 @@
   min-width: 7.25rem;
   padding: 6px 14px;
   cursor: pointer;
-  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
   text-align: center;
   white-space: nowrap;
 }
@@ -88,11 +87,6 @@
   color: var(--text);
   border-color: var(--border);
   background: var(--bg3);
-}
-
-.header-tab:active:not(.active) {
-  transform: scale(0.98);
-  opacity: 0.94;
 }
 
 .header-tab.active {

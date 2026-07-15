@@ -6,6 +6,9 @@
 }
 
 .explain-tip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: var(--hit-target-min);
   height: var(--hit-target-min);
   padding: 0;

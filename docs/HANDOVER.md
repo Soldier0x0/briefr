@@ -20,6 +20,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — Gemini remediation PR (session #560–#586)
+
+**What:** Consolidated fixes for Gemini findings on #584–#586: EPSS movers grid column widths (HIGH), ChartDataTable chevron, ExplainTip flex centering, deduped `.pressable-surface` transitions, removed duplicate reduce-motion skeleton CSS, bash-3.2-safe `lint-design-tokens.sh`, explicit `bash` in token lint test.
+
+**Blocked:** Cloud agent token cannot post PR comments (`403 Resource not accessible by integration`) — `/gemini review` could not be triggered on quota-blocked PRs #560–#582. Maintainer must post `/gemini review` on those PRs manually if retrospective review is still needed.
+
+**Next:** Merge remediation PR after Gemini review + local verify; resume E7-3.
+
+---
+
 ## 2026-07-15 — E7-2 loading skeletons
 
 **What:** Shared `AdminSkeletons` (table rows, stat row, chart block, page/form layouts) + `SkeletonStack` default for `AsyncState`; `AsyncSection` drops Loader2 spinner for skeleton variants; admin tables (watchlist, audit, ingest log, job table, rate limits), overview, API keys, notification bell, and OpsCharts use layout-preserving skeletons instead of "Loading…" text.

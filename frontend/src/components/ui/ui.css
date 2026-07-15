@@ -476,7 +476,20 @@
   min-height: var(--hit-target-min);
   display: inline-flex;
   align-items: center;
+  gap: 0.35rem;
   list-style: none;
+}
+
+.chart-data-table-summary::before {
+  content: '▸';
+  display: inline-block;
+  font-size: var(--type-micro);
+  color: var(--text-muted, var(--text3));
+  transition: transform var(--transition-fast);
+}
+
+.chart-data-table[open] .chart-data-table-summary::before {
+  transform: rotate(90deg);
 }
 
 .chart-data-table-summary::-webkit-details-marker {

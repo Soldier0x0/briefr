@@ -27,22 +27,23 @@ ALLOW_GLOB=(
   'frontend/src/components/PdfExportModal.css'
 )
 
-mapfile -t HEX_HITS < <(
-  rg -n '#[0-9a-fA-F]{3,8}\b' frontend/src \
-    --glob '*.css' --glob '*.jsx' --glob '*.js' --glob '*.tsx' --glob '*.ts' \
-    | while IFS= read -r line; do
-        file="${line%%:*}"
-        skip=0
-        for allowed in "${ALLOW_GLOB[@]}"; do
-          if [[ "$file" == "$allowed" ]]; then skip=1; break; fi
-        done
-        # Export/PDF utilities use fixed palette for off-screen renders (migrate later).
-        if [[ "$file" == frontend/src/utils/* ]] || [[ "$file" == frontend/src/scoring/riskScore.js ]]; then
-          skip=1
-        fi
-        [[ "$skip" -eq 0 ]] && printf '%s\n' "$line"
-      done
-)
+HEX_HITS=()
+while IFS= read -r line || [ -n "$line" ]; do
+  [[ -z "$line" ]] && continue
+  file="${line%%:*}"
+  skip=0
+  for allowed in "${ALLOW_GLOB[@]}"; do
+    if [[ "$file" == "$allowed" ]]; then skip=1; break; fi
+  done
+  # Export/PDF utilities use fixed palette for off-screen renders (migrate later).
+  if [[ "$file" == frontend/src/utils/* ]] || [[ "$file" == frontend/src/scoring/riskScore.js ]]; then
+    skip=1
+  fi
+  if [[ "$skip" -eq 0 ]]; then
+    HEX_HITS+=("$line")
+  fi
+done < <(rg -n '#[0-9a-fA-F]{3,8}\b' frontend/src \
+  --glob '*.css' --glob '*.jsx' --glob '*.js' --glob '*.tsx' --glob '*.ts' 2>/dev/null || true)
 
 if ((${#HEX_HITS[@]} > 0)); then
   printf 'Raw hex found in component code (use semantic tokens):\n'
