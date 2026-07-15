@@ -55,7 +55,7 @@ detection engineering. It is not a marketing surface. The system optimizes for:
 - **Borders over shadows** for separation. Every distinct container gets a
   `--border-subtle`; do not rely on background contrast alone (audit finding: BRIEF stat
   cards had no borders).
-- **Signature accent:** `--accent-primary` (`#c8b88a`, tan/gold). This — not red — is the
+- **Signature accent:** `--accent-primary` (`#e85533`, BRIEFR orange). This — not red — is the
   brand accent and the selection color.
 
 ---
