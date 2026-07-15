@@ -15,8 +15,18 @@ down_revision = "025_correlation_cve_snapshot"
 branch_labels = None
 depends_on = None
 
+_TS = "TO_CHAR((NOW() AT TIME ZONE 'utc'), 'YYYY-MM-DD HH24:MI:SS')"
+
 
 def upgrade() -> None:
+    # Drop the TEXT default before TYPE change — Postgres cannot auto-cast
+    # TO_CHAR(...) defaults to timestamptz (026 deploy failure on production).
+    op.execute(
+        """
+        ALTER TABLE cve_change_history
+        ALTER COLUMN detected_at DROP DEFAULT
+        """
+    )
     op.execute(
         """
         ALTER TABLE cve_change_history
@@ -47,5 +57,11 @@ def downgrade() -> None:
             detected_at AT TIME ZONE 'UTC',
             'YYYY-MM-DD HH24:MI:SS'
         )
+        """
+    )
+    op.execute(
+        f"""
+        ALTER TABLE cve_change_history
+        ALTER COLUMN detected_at SET DEFAULT ({_TS})
         """
     )
