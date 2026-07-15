@@ -24,6 +24,8 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 **What:** Routed nav/sidebar/tab/chip/row selection styling to `--accent-selected` + `--surface-selected` across Admin (sidebar, mode toggles, subtabs, data-grid rows), Forge (nav tabs, technique/scenario selection), DetailDrawer tabs, feed bulk-select, IOC lookup, timeline heatmap, ARCH search results, command palette, and wallboard. Added `activeStateGate.test.js` to block admin-orange selection tokens in active/selected rules.
 
+**PR:** #598 (merged)
+
 **Next:** E8-2 Admin breadcrumbs / "you are here".
 
 ---
