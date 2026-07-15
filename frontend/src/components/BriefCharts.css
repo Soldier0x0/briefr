@@ -235,8 +235,8 @@
 }
 
 .brief-epss-row-btn:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: -1px;
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .brief-epss-id {

@@ -153,8 +153,8 @@
 }
 
 .what-changed-row:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: -1px;
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .what-changed-cve {

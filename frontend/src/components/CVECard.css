@@ -20,8 +20,8 @@
 }
 
 .cve-card:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: -1px;
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 /* Urgency accent bar — KEV due-date driven; non-KEV rows stay neutral */

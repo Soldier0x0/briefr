@@ -119,6 +119,7 @@
   border-color: var(--border2);
   border-left-color: var(--accent);
   outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .ioc-input-hint {
@@ -546,8 +547,8 @@
 }
 
 .history-item:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: -1px;
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .history-value {

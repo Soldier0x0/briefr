@@ -32,7 +32,3 @@
   border-color: var(--text3);
 }
 
-.scroll-to-top:focus-visible {
-  outline: 1px solid var(--border2);
-  outline-offset: 2px;
-}

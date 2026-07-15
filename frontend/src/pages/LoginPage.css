@@ -102,10 +102,10 @@
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.login-input:focus {
+.login-input:focus-visible {
   outline: none;
-  border-color: var(--red);
-  box-shadow: 0 0 0 3px var(--red-dim);
+  border-color: var(--accent-primary);
+  box-shadow: var(--focus-ring);
 }
 
 .login-password-wrap {

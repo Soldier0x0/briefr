@@ -169,6 +169,7 @@
   outline: none;
   border-color: var(--border2);
   border-left-color: var(--accent);
+  box-shadow: var(--focus-ring);
 }
 
 .filter-stack-input::placeholder {
@@ -267,6 +268,7 @@
   outline: none;
   border-color: var(--border2);
   border-left-color: var(--accent);
+  box-shadow: var(--focus-ring);
 }
 
 .filter-search::placeholder {

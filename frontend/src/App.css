@@ -58,6 +58,23 @@ input:focus, textarea:focus {
   border-color: var(--accent-primary);
 }
 
+/* E6-2: standard high-contrast focus ring (accent-based, not red) */
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: var(--focus-ring);
+}
+
 /* ── Layout ────────────────────────────────────────────── */
 .app {
   display: flex;
