@@ -97,9 +97,9 @@
 }
 
 .sa-nav-btn.active {
-  background: var(--bg3);
-  border-color: var(--border2);
-  color: var(--text);
+  background: var(--surface-selected);
+  border-color: var(--accent-selected);
+  color: var(--accent-selected);
 }
 
 .sa-nav-meta {
@@ -321,9 +321,9 @@
 }
 
 .sa-type-tab.active {
-  background: var(--bg3);
-  border-color: var(--border2);
-  color: var(--text);
+  background: var(--surface-selected);
+  border-color: var(--accent-selected);
+  color: var(--accent-selected);
 }
 
 .sa-row-list {

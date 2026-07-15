@@ -355,7 +355,7 @@ numbers recorded in the closing PR body:
 - [x] E4-1 one selection accent  [x] E4-2 red reserved  [x] E4-3 card severity accent — #TBD  [x] E4-4 legends — #TBD
 
 **ARCH (E5)**
-- [ ] E5-1 Overview grid  [ ] E5-2 lists→DataGrid  [ ] E5-3 sidebar active  [ ] E5-4 badge wording  [ ] E5-5 empty state
+- [ ] E5-1 Overview grid  [ ] E5-2 lists→DataGrid  [x] E5-3 sidebar active — #TBD  [ ] E5-4 badge wording  [ ] E5-5 empty state
 
 **A11y (E6)**
 - [ ] E6-1 contrast/type  [x] E6-2 focus ring — #TBD  [ ] E6-3 aria-labels  [ ] E6-4 shortcuts  [ ] E6-5 target size/charts
