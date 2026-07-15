@@ -442,7 +442,7 @@ Dismiss one notification (removed from list). **Response:** `{ok: true}` or `404
 | `field` | str | null | Filter to one tracked field |
 | `since_hours` | int | 24 | 1–168 |
 
-**Response:** `{"data": [...], "count": N}` — each change row: `id`, `cve_id`, `field_name`, `old_value`, `new_value`, `detected_at`.
+**Response:** `{"data": [...], "count": N}` — each change row: `id`, `cve_id`, `field_name`, `old_value`, `new_value`, `detected_at`, `severity` (joined from `cves`; null when the CVE row is missing).
 
 **EPSS noise:** `update_epss_scores` only writes history when the score would display differently at **0.1%** precision (matching the What changed panel). Sub-threshold float jitter (e.g. `0.0001` → `0.0002`, both shown as `0.0%`) is ignored.
 
