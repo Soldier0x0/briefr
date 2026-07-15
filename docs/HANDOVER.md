@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E7-5 Recharts admin ops charts (PR 1/4)
+
+**What:** `ChartShell` fixed-height wrapper; shared `chartTheme` + `rechartsTheme` helpers; Admin Overview `OpsCharts` migrated from Chart.js to Recharts (lazy `opsChartsRecharts` chunk ~101 kB gzip). Motion toggle respected via `chartAnimationDuration()`.
+
+**Next:** E7-5 PR 2 — Resources page charts; then BRIEF vendor chart; then remove Chart.js.
+
+---
+
 ## 2026-07-15 — E7-4 spacing/border pass
 
 **What:** UI-14 spacing tokens on FEED filter panel (`FilterBar.css`); BRIEF stat row cells get bordered card surfaces with grid gap (`StatsRow.css`); feed health `feed-source-card` padding/gap increased, highlight cards extra padding (`AdminPage.css`).

@@ -1,6 +1,6 @@
 # BRIEFR product status
 
-**Last updated:** 2026-07-14  
+**Last updated:** 2026-07-15  
 **Purpose:** Single page for “what’s true in production today.” When README or beta docs disagree, this wins.
 
 ---
