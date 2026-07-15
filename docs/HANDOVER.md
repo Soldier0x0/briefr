@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — DateTimePicker v2 (shadcn-style card layout)
+
+**What:** Refactored shared `DateTimePicker` to shadcn-inspired card layout (calendar body + bordered time footer with clock icon). Radix hour/minute selects retained (no native `type="time"`). `timeLabel` prop for Start/End in `TimeWindowPicker` and ingest filters. `dateTimePickerLayoutGate.test.js` locks structure.
+
+**Next:** **PM-3a** — Architecture graph viewport/zoom + corpus drift.
+
+---
+
 ## 2026-07-15 — PM Phase 2 complete (PM-2a…d)
 
 **What:** Shipped all four Phase 2 tickets (TDD, one PR each):

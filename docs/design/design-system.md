@@ -327,8 +327,12 @@ exception: filled selection is allowed; neon **borders** are not.
 ### 23.2 Date and time inputs
 
 - All user-facing date/time pickers use the shared `DateTimePicker` primitive
-  (Radix `Select` for hour/minute + `react-day-picker` dark calendar). Never ship
-  native `datetime-local` or unstyled calendar popovers in new code.
+  (shadcn-style card: `react-day-picker` calendar body + bordered time footer with
+  Radix `Select` hour/minute and clock icon). Never ship native `datetime-local`
+  or unstyled calendar popovers in new code.
+- Popover layout: calendar in `.ui-datetime-picker-body`, labeled time band in
+  `.ui-datetime-picker-footer` (`timeLabel` prop — e.g. "Start time" / "End time"
+  in `TimeWindowPicker`). Selection is live; popover closes on outside click.
 - `TimeWindowPicker` (analyst BRIEF charts) and admin ingest filters are the
   reference implementations.
 

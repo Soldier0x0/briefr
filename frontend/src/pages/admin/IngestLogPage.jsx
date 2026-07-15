@@ -180,6 +180,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
           onChange={setSince}
           placeholder="From…"
           ariaLabel="From time"
+          timeLabel="Start time"
         />
         <DateTimePicker
           className="admin-datetime-picker"
@@ -187,6 +188,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
           onChange={setUntil}
           placeholder="To…"
           ariaLabel="To time"
+          timeLabel="End time"
         />
         <Select
           className="admin-select"
