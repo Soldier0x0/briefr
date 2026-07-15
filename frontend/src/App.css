@@ -196,7 +196,12 @@ textarea:focus-visible {
 }
 
 /* E7-1 — shared motion-token hover/press for chip-like controls */
-.pressable-surface {
+.pressable-surface,
+.brief-chart-filter-chip,
+.filter-btn,
+.vendor-btn,
+.header-tab,
+.filter-chip {
   transition:
     color var(--transition-fast),
     background-color var(--transition-fast),
@@ -205,7 +210,12 @@ textarea:focus-visible {
     transform var(--transition-fast);
 }
 
-.pressable-surface:active:not(:disabled) {
+.pressable-surface:active:not(:disabled),
+.brief-chart-filter-chip:active:not(:disabled),
+.filter-btn:active:not(:disabled),
+.vendor-btn:active:not(:disabled),
+.header-tab:active:not(.active),
+.filter-chip:active:not(:disabled) {
   transform: scale(0.98);
   opacity: 0.94;
 }

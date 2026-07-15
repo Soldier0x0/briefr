@@ -116,18 +116,12 @@
   background: var(--bg);
   color: var(--text3);
   cursor: pointer;
-  transition: color var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
 }
 
 .brief-chart-filter-chip:hover {
   border-color: var(--border2);
   color: var(--text2);
   background: var(--bg3);
-}
-
-.brief-chart-filter-chip:active:not(:disabled) {
-  transform: scale(0.98);
-  opacity: 0.94;
 }
 
 .brief-chart-filter-chip--active {
@@ -246,7 +240,7 @@
 .brief-epss-row-btn {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(7rem, 1fr) 20px minmax(5rem, 1.4fr) 4.5rem;
+  grid-template-columns: minmax(7rem, 1fr) minmax(4.5rem, auto) minmax(5rem, 1.4fr) 4.5rem;
   align-items: center;
   gap: 8px;
   padding: 6px 4px;
@@ -343,7 +337,7 @@
   }
 
   .brief-epss-row-btn {
-    grid-template-columns: 1fr 16px 1fr 3.5rem;
+    grid-template-columns: minmax(0, 1fr) minmax(3.5rem, auto) minmax(0, 1fr) 3.5rem;
     gap: 6px;
   }
 

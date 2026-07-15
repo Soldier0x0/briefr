@@ -2229,11 +2229,9 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
 }
 
 .filter-chip:hover { background: var(--bg3); color: var(--text); border-color: var(--border2); }
-.filter-chip:active { transform: scale(0.98); opacity: 0.94; }
 .filter-chip.active { background: var(--surface-selected); color: var(--accent-selected); border-color: var(--accent-selected); }
 
 /* ── Action bar ─────────────────────────────────────────────────────────── */
@@ -2895,11 +2893,6 @@
 }
 
 .reduce-motion .admin-btn:active { transform: none !important; }
-
-.reduce-motion .ui-skeleton,
-.reduce-motion .sk {
-  animation: none !important;
-}
 
 /* ── Loading skeletons (E7-2) ─────────────────────────────────────────── */
 
