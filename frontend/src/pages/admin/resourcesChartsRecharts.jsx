@@ -14,6 +14,8 @@ import {
   getRechartsTheme,
   rechartsMargin,
   tooltipContentStyle,
+  tooltipCursorStyle,
+  tooltipItemStyle,
   tooltipLabelStyle,
 } from '../../utils/rechartsTheme.js'
 import { fmtBytes } from './formatters.js'
@@ -80,6 +82,8 @@ export function ResourceLineChart({ series, fields, labels, tableTitle }) {
           <Tooltip
             contentStyle={tooltipContentStyle(theme)}
             labelStyle={tooltipLabelStyle(theme)}
+            itemStyle={tooltipItemStyle(theme)}
+            cursor={tooltipCursorStyle(theme)}
             labelFormatter={(_label, payload) => payload?.[0]?.payload?.tsFull || _label}
             formatter={(value, name) => {
               const idx = labels.indexOf(name)
@@ -96,6 +100,7 @@ export function ResourceLineChart({ series, fields, labels, tableTitle }) {
               stroke={lineColors[idx] || theme.textSecondary}
               strokeWidth={1.5}
               dot={false}
+              activeDot={{ r: 4, fill: lineColors[idx] || theme.textSecondary, stroke: theme.text, strokeWidth: 1 }}
               connectNulls
               isAnimationActive={anim > 0}
               animationDuration={anim}

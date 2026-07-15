@@ -655,6 +655,15 @@
   height: 100% !important;
 }
 
+.chart-shell .recharts-tooltip-cursor {
+  fill: var(--surface-selected) !important;
+  stroke: var(--border) !important;
+}
+
+.chart-shell .recharts-active-bar {
+  opacity: 0.88;
+}
+
 /* Slider (Radix primitive — E3-6) */
 .ui-slider-field {
   display: flex;
