@@ -555,6 +555,36 @@ export function deriveOperationalPriority(threatBandName, envTier, corrEscalatio
   }
 }
 
+/** Merge async correlation escalation into a /risk response once correlation loads. */
+export function applyCorrelationEscalationToRiskScore(riskScore, correlation) {
+  if (!riskScore?.operational_priority || !riskScore?.threat) return riskScore
+  if (!correlation || correlation.error) return riskScore
+  if (!correlationEscalation(correlation)) return riskScore
+
+  const envTier = riskScore.environment?.tier || 'UNKNOWN'
+  const bumped = deriveOperationalPriority(riskScore.threat.band, envTier, true)
+  if (!bumped.escalated_by_correlation) return riskScore
+
+  const base = riskScore.operational_priority
+  if (base.escalated_by_correlation && base.band === bumped.band) return riskScore
+
+  let rationale = base.rationale || ''
+  if (!rationale.includes('Escalated one band')) {
+    rationale = `${rationale} Escalated one band due to high-confidence active campaign linkage.`.trim()
+  }
+
+  return {
+    ...riskScore,
+    operational_priority: {
+      ...base,
+      band: bumped.band,
+      escalated_by_correlation: true,
+      base_band: bumped.base_band,
+      rationale,
+    },
+  }
+}
+
 /** Exploit / momentum raw for sections still reading legacy component shape. */
 export function threatComponentRaw(riskScore, key) {
   return riskScore?.threat?.components?.[key]?.raw

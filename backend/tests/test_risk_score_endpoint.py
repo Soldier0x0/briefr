@@ -84,6 +84,19 @@ def test_risk_endpoint_invalid_id(client):
     assert res.status_code == 400
 
 
+def test_risk_endpoint_does_not_call_correlation(client, monkeypatch):
+    """E1-2: /risk must not block on correlation — escalation is async client-side."""
+
+    async def _forbidden_correlation(*_args, **_kwargs):
+        raise AssertionError("get_correlation_for_cve should not run on /risk")
+
+    monkeypatch.setattr("routers.cves.get_correlation_for_cve", _forbidden_correlation)
+    res = client.post("/api/cves/CVE-2024-RISK/risk", json={})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["operational_priority"]["escalated_by_correlation"] is False
+
+
 def test_risk_endpoint_with_profile(client):
     profile = {
         "applications": [

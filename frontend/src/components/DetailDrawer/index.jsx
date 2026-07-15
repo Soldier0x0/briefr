@@ -1,4 +1,4 @@
-import { Component, useCallback, useEffect, useRef, useState } from 'react'
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   fetchCVE,
   fetchCVEDrawerBundle,
@@ -18,6 +18,7 @@ import PdfExportModal from '../PdfExportModal.jsx'
 import { useInvestigationOptional } from '../../context/InvestigationContext.jsx'
 import { useAssetProfileOptional } from '../../context/AssetProfileContext.jsx'
 import { profileToMatchAssets } from '../../utils/assetProfileIo.js'
+import { applyCorrelationEscalationToRiskScore } from '../../scoring/riskScore.js'
 import { setMomentumScore } from '../../utils/momentumCache.js'
 import { ingestLogUrl } from '../../utils/adminLinks.js'
 import { campaignBadgeTooltip, campaignLifecycleClass, primaryCampaignChip } from '../../utils/correlationPresentation.js'
@@ -131,13 +132,19 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     fetchCVERisk(cve.cve_id, payload)
       .then(data => {
         if (cancelled) return
+        const legacy = data.legacy_risk_v11b || {}
         setRiskScore({
-          total: data.total,
-          components: data.components,
+          threat: data.threat,
+          environment: data.environment,
+          operational_priority: data.operational_priority,
+          legacy_risk_v11b: legacy,
+          momentum: data.momentum,
           hasProfile: data.hasProfile,
-          assetMatchType: data.assetMatchType,
           momentumScore: data.momentumScore,
-          weights: data.weights,
+          total: legacy.total,
+          components: legacy.components,
+          assetMatchType: legacy.assetMatchType,
+          weights: legacy.weights,
         })
       })
       .catch(() => {
@@ -276,6 +283,11 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
       })
     return cancel
   }, [cve?.cve_id, cve?.affected_products])
+
+  const displayRiskScore = useMemo(
+    () => applyCorrelationEscalationToRiskScore(riskScore, correlation),
+    [riskScore, correlation],
+  )
 
   // Detection: lazy-fetch when Detect tab first activated
   useEffect(() => {
@@ -816,7 +828,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
           {activeTab === 'overview' && (
             <TabOverview
               cve={cve}
-              riskScore={riskScore}
+              riskScore={displayRiskScore}
               riskLoading={riskLoading}
               onOpenProfile={assetCtx?.openProfileFlow}
               momentumData={momentumData}

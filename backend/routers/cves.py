@@ -86,7 +86,7 @@ from intel.provenance import (
     derive_exploit_provenance,
     otx_configured_from_env,
 )
-from scoring.priority import correlation_escalation, derive_operational_priority
+from scoring.priority import derive_operational_priority
 from scoring.risk import calculate_momentum, calculate_risk_score
 from scoring.threat import calculate_threat_score
 from templates.intelligence import (
@@ -1500,13 +1500,13 @@ async def cve_risk_score(cve_id: str, body: RiskScoreRequest | None = None):
         )
         threat = calculate_threat_score(cve, momentum_score=mom_score)
         environment = classify_environment(cve, profile, backend_match)
-        correlation = await get_correlation_for_cve(db, cve_key)
-        await db.commit()
-        corr_escalate = correlation_escalation(correlation)
+        # E1-2 / ADR-004: OP hero uses cheap signals only on this path.
+        # Correlation-based escalation is applied client-side when correlation
+        # data arrives (or from precomputed snapshots on the correlation route).
         operational_priority = derive_operational_priority(
             threat.get("band", "LOW"),
             environment.get("tier", "UNKNOWN"),
-            corr_escalation=corr_escalate,
+            corr_escalation=False,
         )
     finally:
         await db.close()
