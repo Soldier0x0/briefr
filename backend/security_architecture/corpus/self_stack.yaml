@@ -272,6 +272,14 @@ terms:
   origin: generated
   term: react-router-dom
   source: frontend/package.json
+- id: self-stack-tanstack-react-table
+  title: '@tanstack/react-table'
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: '@tanstack/react-table'
+  source: frontend/package.json
 - id: self-stack-uvicorn
   title: uvicorn
   summary: BRIEFR dependency term derived from backend/requirements.txt.

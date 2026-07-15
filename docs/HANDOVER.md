@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E3-3 shared DataGrid primitive (TanStack headless)
+
+**What:** `components/ui/DataGrid.jsx` — fixed layout, sticky header, column sort/resize/visibility, wrap/center prefs; `AdminDataGrid` is now a thin admin-styled wrapper. Dependency: `@tanstack/react-table` (headless). Lazy chunk ~20.7 kB gzip (slightly over 15 kB ADR target — TanStack core cost).
+
+**Next:** E5-1 ARCH Overview StatCard grid → E5-2 port ARCH lists to DataGrid.
+
+---
+
 ## 2026-07-15 — E9-2 global webhook failure surfacing
 
 **What:** Webhook delivery failures emit operator-scope `NotificationBell` alerts (`emit_webhook_failure_notification` from `webhooks/engine.py`); `GET /api/admin/system` includes `webhooks.failing` summary; StatusBar Discord/Telegram pills turn red + link to Admin → Webhooks when last delivery failed; bell deep-links webhook/api_key/job notifications.

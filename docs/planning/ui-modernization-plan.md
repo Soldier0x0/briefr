@@ -348,7 +348,7 @@ numbers recorded in the closing PR body:
 - [x] E2-9 PG16 → PG17 doc correction
 
 **Primitives (E3)**
-- [x] E3-1 Checkbox/Switch/Radio (admin surfaces) — #568  [x] E3-2 Tooltip/Popover — #563  [ ] E3-3 Table/DataGrid
+- [x] E3-1 Checkbox/Switch/Radio (admin surfaces) — #568  [x] E3-2 Tooltip/Popover — #563  [x] E3-3 Table/DataGrid
 - [ ] E3-4 Dialog/AlertDialog  [ ] E3-5 Tabs/Dropdown/Select  [ ] E3-6 Slider  [ ] E3-7 Badge/Card/StatCard/EmptyState/Toast
 
 **Semantics (E4)**

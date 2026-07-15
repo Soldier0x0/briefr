@@ -1,0 +1,132 @@
+.data-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.data-grid-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.data-grid-toolbar-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.data-grid-btn {
+  font-size: 0.8125rem;
+}
+
+.data-grid-col-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-raised);
+  max-width: min(100%, 42rem);
+}
+
+.data-grid-col-option {
+  font-size: 0.8125rem;
+}
+
+.data-grid-toggle {
+  font-size: 0.8125rem;
+}
+
+.data-grid-scroll {
+  overflow: auto;
+  max-width: 100%;
+}
+
+.data-grid-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.data-grid-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-raised);
+}
+
+.data-grid-th {
+  position: relative;
+  user-select: none;
+}
+
+.data-grid-th-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: calc(100% - 0.5rem);
+}
+
+.data-grid-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: inherit;
+  max-width: 100%;
+}
+
+.data-grid-sort-btn:hover {
+  color: var(--accent);
+}
+
+.data-grid-sort-icon {
+  flex: 0 0 auto;
+  opacity: 0.45;
+}
+
+.data-grid-sort-icon--active {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.data-grid-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.data-grid-th:hover .data-grid-resize-handle {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.data-grid-table thead.data-grid-thead-static th {
+  position: static;
+}
+
+.data-grid-row-clickable {
+  cursor: pointer;
+}
+
+.data-grid-row-clickable:hover td {
+  background: var(--surface-hover);
+}
+
+.data-grid-row-clickable[aria-selected='true'] td {
+  background: var(--surface-selected);
+}
