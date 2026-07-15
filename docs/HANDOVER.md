@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E2-3 column resize via shared colgroup
+
+**What:** `AdminDataGrid` now drives column widths through `<colgroup><col>` with `table-layout:fixed` instead of per-cell `th`/`td` width styles — header and body stay aligned during resize.
+
+**Next:** E4-4 status/severity legends → E3-3 DataGrid primitive.
+
+---
+
 ## 2026-07-15 — E3-1 complete: zero native checkboxes
 
 **What:** Migrated remaining native `<input type="checkbox">` to Radix `Checkbox` primitive in WebhooksPage (edit events), LoginPage (remember me), Forge (stack-only nav toggle), IOCLookup (GreyNoise opt). Grep gate: zero matches in `frontend/`. CSS updated to target `.ui-checkbox` instead of native `input`.
