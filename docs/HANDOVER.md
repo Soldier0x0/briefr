@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E7-4 spacing/border pass
+
+**What:** UI-14 spacing tokens on FEED filter panel (`FilterBar.css`); BRIEF stat row cells get bordered card surfaces with grid gap (`StatsRow.css`); feed health `feed-source-card` padding/gap increased, highlight cards extra padding (`AdminPage.css`).
+
+**Next:** E7-5 Chart.js → Recharts migration (page-atomic PRs).
+
+---
+
 ## 2026-07-15 — E7-3 copy/export feedback
 
 **What:** Global `notifyUserToast` helpers in `Toast.jsx` (via `briefr-toast` event). Copy actions (drawer markdown, bulk feed, CVE share, detect rules, digest) toast success/failure. Exports (CSV/XLSX, PDF single/bulk/investigation/arch overview) show progress toasts + success/error; PDF modals get descriptive `busyLabel`; overview export button shows EXPORTING state.

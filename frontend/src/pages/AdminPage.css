@@ -1652,26 +1652,6 @@
   color: var(--admin-text-muted);
 }
 
-.feed-card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
-}
-
-.feed-source-card {
-  padding: 16px;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-left: 3px solid var(--admin-border-strong);
-  border-radius: var(--admin-radius);
-}
-
-.feed-source-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--admin-text);
-}
-
 .pending-bar {
   position: sticky;
   bottom: 0;
@@ -2433,24 +2413,25 @@
 
 /* ── Feed source cards ──────────────────────────────────────────────────── */
 
-.feed-card-grid {
+.admin-root .feed-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
   margin-bottom: 1rem;
 }
 
-.feed-source-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.75rem;
+.admin-root .feed-source-card {
+  padding: var(--space-4);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-left: 3px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius);
 }
 
-.feed-source-name {
-  font-size: 0.8125rem;
+.admin-root .feed-source-name {
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--admin-text);
   margin-bottom: 0.25rem;
 }
 
@@ -2628,8 +2609,9 @@
   text-underline-offset: 2px;
 }
 
-.feed-source-card--highlight {
+.admin-root .feed-source-card--highlight {
   box-shadow: 0 0 0 1px var(--admin-accent), 0 0 12px var(--admin-accent-glow);
+  padding: var(--space-5) var(--space-4);
 }
 
 /* ── Pagination ─────────────────────────────────────────────────────────── */

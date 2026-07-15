@@ -1,6 +1,8 @@
 .stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-4) var(--gutter);
   border-bottom: 1px solid var(--border);
 }
 
@@ -9,27 +11,13 @@
   .stats-row {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  .stat-cell:nth-child(2) {
-    border-right: none;
-  }
-
-  .stat-cell:nth-child(3) {
-    border-top: 1px solid var(--border);
-  }
-
-  .stat-cell:nth-child(4) {
-    border-top: 1px solid var(--border);
-  }
 }
 
 .stat-cell {
-  padding: 24px 20px;
-  border-right: 1px solid var(--border);
-}
-
-.stat-cell:last-child {
-  border-right: none;
+  padding: var(--space-5) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
 }
 
 .stat-number {
@@ -42,8 +30,8 @@
 .stat-number-row {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  margin-bottom: 6px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
 .stat-delta {
@@ -86,15 +74,12 @@
   cursor: pointer;
   text-align: left;
   width: 100%;
-  background: transparent;
-  border: none;
-  border-right: 1px solid var(--border);
   font: inherit;
   color: inherit;
 }
 
 .stat-cell-interactive:hover {
-  background: var(--bg2);
+  background: var(--bg3);
 }
 
 .stat-cell-interactive:focus-visible {
@@ -126,32 +111,12 @@
   }
 }
 
-.stat-ai .stat-number { color: var(--amber); }
-
-.stat-cell-interactive {
-  cursor: pointer;
-  text-align: left;
-  width: 100%;
-  background: transparent;
-  border: none;
-  border-right: 1px solid var(--border);
-  font: inherit;
-  color: inherit;
-}
-
-.stat-cell-interactive:hover { background: var(--bg2); }
-
-.stat-cell-interactive:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
 .stats-row-error {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 20px;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--gutter);
   font-family: var(--font-mono);
   font-size: 0.8125rem;
   color: var(--red);

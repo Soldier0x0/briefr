@@ -18,8 +18,8 @@
 .filter-bar {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px 20px;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--gutter);
   border-bottom: 1px solid var(--border);
 }
 
@@ -27,20 +27,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
 .filter-bar-bottom {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
 @media (max-width: 960px) {
   .filter-bar {
-    padding: 10px 14px;
+    padding: var(--space-4);
   }
 
   .filter-bar-top {
@@ -60,7 +60,7 @@
   }
 
   .filter-bar {
-    padding: 10px 12px;
+    padding: var(--space-4) var(--space-3);
   }
 
   .filter-bar-filters {
@@ -122,10 +122,11 @@
 .filter-bar-stack {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--border2);
   background: var(--bg2);
+  border-radius: var(--radius-sm);
 }
 
 .filter-bar-search-row {
