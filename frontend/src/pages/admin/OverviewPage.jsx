@@ -15,8 +15,10 @@ import {
 } from './toastCopy.js'
 import OpsCharts from './shared/OpsCharts.jsx'
 import { AdminPageSkeleton } from './shared/AdminSkeletons.jsx'
+import NeedsAttentionPanel from './shared/NeedsAttentionPanel.jsx'
+import JobErrorsPanel from './shared/JobErrorsPanel.jsx'
 
-function AnalystOverview({ system, toast }) {
+function AnalystOverview({ system, toast, setPage, ingestErrorCount, unackJobErrorCount, jobAcks, onMarkJobErrorsRead }) {
   const [running, setRunning] = useState({})
   const [correlationStatus, setCorrelationStatus] = useState(null)
 
@@ -53,6 +55,14 @@ function AnalystOverview({ system, toast }) {
     <div>
       <h1 className="admin-page-title">Intel status</h1>
       <p className="admin-page-subtitle">Live snapshot — refreshes every 30 seconds.</p>
+
+      <NeedsAttentionPanel
+        system={system}
+        setPage={setPage}
+        ingestErrorCount={ingestErrorCount}
+        unackJobErrorCount={unackJobErrorCount}
+        mode="analyst"
+      />
 
       <div className={`intel-banner intel-banner-${health.level}`}>
         <strong>{health.headline}</strong>
@@ -170,11 +180,20 @@ function AnalystOverview({ system, toast }) {
         <div className="admin-card-title">Data refresh schedule</div>
         <JobTable jobs={analystScheduleJobs(scheduler_jobs)} onRunNow={runNow} mode="analyst" />
       </div>
+
+      <JobErrorsPanel
+        system={system}
+        jobAcks={jobAcks}
+        onMarkAllRead={onMarkJobErrorsRead}
+        onRetry={runNow}
+        running={running}
+        mode="analyst"
+      />
     </div>
   )
 }
 
-function OperatorOverview({ system, toast }) {
+function OperatorOverview({ system, toast, setPage, ingestErrorCount, unackJobErrorCount, jobAcks, onMarkJobErrorsRead }) {
   const [diagResult, setDiagResult] = useState(null)
   const [intResult, setIntResult] = useState(null)
   const [running, setRunning] = useState({})
@@ -274,7 +293,7 @@ function OperatorOverview({ system, toast }) {
     setRunning(r => ({ ...r, supportPack: false }))
   }
 
-  const { db_integrity, scheduler_jobs, active_locks, recent_errors } = system
+  const { db_integrity, scheduler_jobs, active_locks } = system
   const nvdAgeColorClass = ageColor(system.last_nvd_sync_age_seconds, 7200, 14400)
   const backupAgeColorClass = ageColor(system.last_backup_age_seconds, 28800, 43200)
 
@@ -282,6 +301,14 @@ function OperatorOverview({ system, toast }) {
     <div>
       <h1 className="admin-page-title">System health</h1>
       <p className="admin-page-subtitle">At-a-glance status: DB integrity, sync ages, active locks, and recent job errors.</p>
+
+      <NeedsAttentionPanel
+        system={system}
+        setPage={setPage}
+        ingestErrorCount={ingestErrorCount}
+        unackJobErrorCount={unackJobErrorCount}
+        mode="operator"
+      />
 
       {onboarding && !onboarding.dismissed && !onboarding.complete && (
         <div className="admin-card" style={{ borderColor: 'var(--amber)', marginBottom: '1rem' }}>
@@ -391,27 +418,16 @@ function OperatorOverview({ system, toast }) {
             </table>
           )}
         </div>
-        <div className="admin-card" style={{ flex: 1 }}>
-          <div className="admin-card-title">Recent errors</div>
-          {(!recent_errors || recent_errors.length === 0) ? (
-            <div className="admin-empty admin-empty--compact" style={{ color: 'var(--green)' }}>All jobs clean</div>
-          ) : (
-            <table className="admin-table">
-              <thead><tr><th>JOB ID</th><th>ERROR</th><th>LAST RUN</th><th></th></tr></thead>
-              <tbody>
-                {recent_errors.map(e => (
-                  <tr key={e.job_id}>
-                    <td className="mono" style={{ fontSize: '0.75rem' }}>{e.job_id}</td>
-                    <td style={{ fontSize: '0.75rem', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.error || '—'}</td>
-                    <td style={{ fontSize: '0.75rem' }}>{fmtIso(e.last_run_utc)}</td>
-                    <td><button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }} onClick={() => runNow(e.job_id, { retry: true })}>Retry</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
       </div>
+
+      <JobErrorsPanel
+        system={system}
+        jobAcks={jobAcks}
+        onMarkAllRead={onMarkJobErrorsRead}
+        onRetry={(jobId) => runNow(jobId, { retry: true })}
+        running={running}
+        mode="operator"
+      />
 
       <div className="admin-card">
         <div className="admin-card-title">Scheduler jobs</div>
@@ -421,9 +437,27 @@ function OperatorOverview({ system, toast }) {
   )
 }
 
-export default function OverviewPage({ system, toast, mode = 'analyst' }) {
+export default function OverviewPage({
+  system,
+  toast,
+  mode = 'analyst',
+  setPage,
+  ingestErrorCount = 0,
+  unackJobErrorCount = 0,
+  jobAcks,
+  onMarkJobErrorsRead,
+}) {
   if (!system) return <AdminPageSkeleton variant="default" />
+  const shared = {
+    system,
+    toast,
+    setPage,
+    ingestErrorCount,
+    unackJobErrorCount,
+    jobAcks,
+    onMarkJobErrorsRead,
+  }
   return mode === 'analyst'
-    ? <AnalystOverview system={system} toast={toast} />
-    : <OperatorOverview system={system} toast={toast} />
+    ? <AnalystOverview {...shared} />
+    : <OperatorOverview {...shared} />
 }

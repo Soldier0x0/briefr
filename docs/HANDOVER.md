@@ -20,6 +20,24 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E8-3 Admin needs-attention landing
+
+**What:** `collectNeedsAttentionItems()` aggregates circuits, webhooks, job errors, ingest errors, auth failures, stale NVD/backup/incidents into `NeedsAttentionPanel` on overview (analyst + operator). Wired `JobErrorsPanel` on both overviews for actionable retries/ack.
+
+**Next:** UI modernization plan §13 complete — pick next sprint item from `SPRINT_2026-07.md`.
+
+---
+
+## 2026-07-15 — E8-2 Admin breadcrumbs / you are here
+
+**What:** `AdminBreadcrumbs` shows Admin → view mode → section → page above content; `resolveAdminPage()` maps ids via operator/analyst nav.
+
+**PR:** #599 (merged)
+
+**Next:** E8-3 needs-attention landing.
+
+---
+
 ## 2026-07-15 — E8-1 unify active-state across shells
 
 **What:** Routed nav/sidebar/tab/chip/row selection styling to `--accent-selected` + `--surface-selected` across Admin (sidebar, mode toggles, subtabs, data-grid rows), Forge (nav tabs, technique/scenario selection), DetailDrawer tabs, feed bulk-select, IOC lookup, timeline heatmap, ARCH search results, command palette, and wallboard. Added `activeStateGate.test.js` to block admin-orange selection tokens in active/selected rules.
