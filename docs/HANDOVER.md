@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E7-5 Chart.js → Recharts complete
+
+**What:** BRIEF vendor KEV bar chart migrated to Recharts; Chart.js + `chartLoader.js` + `chartOptions.js` removed. All charts now use Recharts lazy chunk (~98 kB gzip) or custom SVG (EPSS sparklines). `ChartShell` enforces fixed height on every chart.
+
+**Next:** E3-4 Dialog/AlertDialog (Radix primitives wave).
+
+---
+
 ## 2026-07-15 — E7-5 Recharts Resources page (PR 2/4)
 
 **What:** Admin → Resources line charts migrated from Chart.js to Recharts (`resourcesChartsRecharts.jsx`, lazy-loaded). Fixed-height `ChartShell` on all seven metric charts.

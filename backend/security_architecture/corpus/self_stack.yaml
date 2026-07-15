@@ -40,14 +40,6 @@ terms:
   origin: generated
   term: bcrypt
   source: backend/requirements.txt
-- id: self-stack-chart-js
-  title: chart.js
-  summary: BRIEFR dependency term derived from frontend/package.json.
-  owner: platform
-  status: active
-  origin: generated
-  term: chart.js
-  source: frontend/package.json
 - id: self-stack-fastapi
   title: fastapi
   summary: BRIEFR dependency term derived from backend/requirements.txt.

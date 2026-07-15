@@ -1,11 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { lazy, Suspense, useState, useEffect, useRef, useMemo } from 'react'
 import { fetchTopVendors, fetchChanges, fetchCVEEpssHistory } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
 import useAsync from '../hooks/useAsync.js'
 import useVisibilityAwareInterval from '../hooks/useVisibilityAwareInterval.js'
 import { AsyncState, ErrorState, Skeleton, ChartDataTable } from './ui/index.js'
-import { loadChartJs, readChartTheme } from '../utils/chartLoader.js'
-import { axisTitle, baseChartOptions } from '../utils/chartOptions.js'
 import {
   buildEpssSparklinePoints,
   epssSparklinePolyline,
@@ -21,6 +19,10 @@ import SeverityLegend from './SeverityLegend.jsx'
 import { severityTooltip, severityShortLabel } from '../utils/severitySemantics.js'
 import './BriefCharts.css'
 
+const VendorKevChart = lazy(() =>
+  import('./briefVendorChartRecharts.jsx').then((mod) => ({ default: mod.VendorKevChart })),
+)
+
 const POLL_MS = 5 * 60 * 1000
 const EPSS_MOVERS_LIMIT = 10
 const TOP_VENDOR_LIMIT = 10
@@ -34,11 +36,6 @@ function epssDeltaClass(delta) {
   if (delta >= 0.2) return 'badge-epss-delta--high'
   if (delta >= 0.05) return 'badge-epss-delta--medium'
   return 'badge-epss-delta--low'
-}
-
-function shortVendorLabel(name) {
-  if (!name) return 'Unknown'
-  return name.length > 28 ? `${name.slice(0, 28)}…` : name
 }
 
 function epssDelta(row) {
@@ -184,8 +181,6 @@ export default function BriefCharts({ onSelectCVE, pollEnabled = true }) {
   const [epssHistoryLoading, setEpssHistoryLoading] = useState(false)
   const [epssWindow, setEpssWindow] = useState(() => defaultPresetWindow('7d'))
 
-  const vendorRef = useRef(null)
-  const chartsRef = useRef({ vendor: null })
   const lastFetchedIdsRef = useRef('')
 
   const epssHours = hoursFromWindow(epssWindow)
@@ -272,83 +267,6 @@ export default function BriefCharts({ onSelectCVE, pollEnabled = true }) {
     return () => { cancelled = true }
   }, [epssMovers])
 
-  useEffect(() => {
-    if (collapsed || loading || !vendorRows.length) return undefined
-
-    let cancelled = false
-
-    async function renderVendorChart() {
-      const Chart = await loadChartJs()
-      if (cancelled || !vendorRef.current) return
-
-      const theme = readChartTheme()
-      const shared = baseChartOptions(theme, { animationDuration: 400, maxRotation: 0 })
-
-      chartsRef.current.vendor?.destroy()
-      chartsRef.current.vendor = new Chart(vendorRef.current, {
-        type: 'bar',
-        data: {
-          labels: vendorRows.map(row => shortVendorLabel(row.vendor)),
-          datasets: [{
-            label: 'KEV entries',
-            data: vendorRows.map(row => row.kev_count),
-            backgroundColor: theme.accent,
-            borderWidth: 0,
-            borderRadius: 0,
-          }],
-        },
-        options: {
-          ...shared,
-          indexAxis: 'y',
-          plugins: {
-            ...shared.plugins,
-            legend: { display: false },
-            tooltip: {
-              ...shared.plugins.tooltip,
-              callbacks: {
-                title(ctx) {
-                  const row = vendorRows[ctx[0]?.dataIndex]
-                  return row?.vendor || ctx[0]?.label || ''
-                },
-                label(ctx) {
-                  const count = ctx.parsed.x
-                  return `${count} KEV ${count === 1 ? 'entry' : 'entries'}`
-                },
-              },
-            },
-          },
-          scales: {
-            x: {
-              ...shared.scales.x,
-              ticks: {
-                ...shared.scales.x.ticks,
-                precision: 0,
-              },
-              title: axisTitle(theme, 'KEV count'),
-            },
-            y: {
-              ...shared.scales.y,
-              ticks: {
-                ...shared.scales.y.ticks,
-                autoSkip: false,
-                maxRotation: 0,
-                minRotation: 0,
-              },
-            },
-          },
-        },
-      })
-    }
-
-    renderVendorChart().catch(() => {})
-
-    return () => {
-      cancelled = true
-      chartsRef.current.vendor?.destroy()
-      chartsRef.current.vendor = null
-    }
-  }, [collapsed, loading, vendorRows])
-
   const hasData = vendorRows.length > 0 || epssMovers.length > 0
 
   return (
@@ -407,9 +325,9 @@ export default function BriefCharts({ onSelectCVE, pollEnabled = true }) {
                   <div className="brief-chart-empty mono">No vendor breakdown available</div>
                 ) : (
                   <>
-                    <div className="brief-chart-canvas-wrap brief-chart-canvas-wrap--kev">
-                      <canvas ref={vendorRef} role="img" aria-label="Top KEV vendors by entry count" />
-                    </div>
+                    <Suspense fallback={<Skeleton variant="text" className="brief-charts-skeleton" />}>
+                      <VendorKevChart rows={vendorRows} />
+                    </Suspense>
                     <ChartDataTable
                       title="Top KEV vendors by entry count"
                       columns={[
