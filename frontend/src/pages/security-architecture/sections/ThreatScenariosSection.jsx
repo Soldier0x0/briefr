@@ -95,6 +95,7 @@ export default function ThreatScenariosSection({ corpusVersion } = {}) {
     { id: 'title', label: 'Scenario', minWidth: 220 },
     {
       id: 'origin', label: 'Origin', width: 100,
+      sortValue: (r) => r.origin || '',
       render: (r) => (r.origin ? <span className={`sa-row-origin sa-row-origin-${r.origin} mono`}>{r.origin}</span> : '—'),
     },
     {
@@ -128,6 +129,7 @@ export default function ThreatScenariosSection({ corpusVersion } = {}) {
     },
     {
       id: 'coverage_status', label: 'Coverage', width: 130,
+      sortValue: (r) => r.coverage_status || '',
       render: (r) => (
         <span className={`sa-status-chip sa-status-${r.coverage_status} mono`}>
           {STATUS_LABEL[r.coverage_status] || r.coverage_status}

@@ -41,6 +41,7 @@ export default function StaleRecordsSection({ onOpenSection }) {
     { id: 'title', label: 'Record', minWidth: 220 },
     {
       id: 'section', label: 'Section', width: 160,
+      sortValue: (r) => r.section || '',
       render: (r) => (
         <button
           type="button"

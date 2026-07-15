@@ -168,6 +168,7 @@
 
 .sa-stat-card-wrap {
   min-width: 0;
+  flex: 1;
 }
 
 .sa-stat-card-btn {
@@ -707,7 +708,12 @@
     align-items: stretch;
   }
 
+  .sa-arch-flow-item .sa-stat-card-wrap {
+    flex: none;
+  }
+
   .sa-arch-connector {
+    flex: none;
     width: 2px;
     min-width: 2px;
     max-width: 2px;
@@ -820,10 +826,6 @@
 .sa-graph-node-selected rect {
   stroke: var(--accent);
   stroke-width: 2;
-}
-
-.sa-graph-node-dim {
-  opacity: 0.25;
 }
 
 .sa-graph-node-match rect {

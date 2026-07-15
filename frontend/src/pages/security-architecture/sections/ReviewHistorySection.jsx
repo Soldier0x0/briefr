@@ -51,6 +51,7 @@ export default function ReviewHistorySection() {
     },
     {
       id: 'origin', label: 'Origin', width: 100,
+      sortValue: (r) => r.origin || '',
       render: (r) => (
         <Tooltip text={ORIGIN_HELP[r.origin] || ''}>
           <span className={`sa-row-origin sa-row-origin-${r.origin} mono`}>{r.origin}</span>

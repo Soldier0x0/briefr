@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import * as RadixSwitch from '@radix-ui/react-switch'
 import './ui.css'
 
@@ -14,9 +15,12 @@ export default function Switch({
   label,
   ...rest
 }) {
+  const defaultId = useId()
+  const switchId = id || defaultId
+
   const root = (
     <RadixSwitch.Root
-      id={id}
+      id={switchId}
       className={`ui-switch${className ? ` ${className}` : ''}`}
       checked={checked}
       defaultChecked={defaultChecked}
@@ -31,7 +35,10 @@ export default function Switch({
   if (!label) return root
 
   return (
-    <label className="ui-switch-label" htmlFor={id}>
+    <label
+      className={`ui-switch-label${disabled ? ' ui-switch-label--disabled' : ''}`}
+      htmlFor={switchId}
+    >
       {root}
       <span className="ui-switch-label-text">{label}</span>
     </label>

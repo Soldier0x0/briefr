@@ -152,9 +152,9 @@
 }
 
 .badge-epss-delta--low {
-  color: var(--text2);
+  color: var(--text-secondary);
   border-color: var(--border-strong);
-  background: var(--bg3);
+  background: var(--background-tertiary);
 }
 
 .brief-chart-card-hint {

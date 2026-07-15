@@ -102,7 +102,7 @@ export default function LoginPage() {
           </label>
 
           {!setupRequired && (
-            <label className="login-remember mono" htmlFor="login-remember">
+            <label className="login-remember mono">
               <Checkbox
                 id="login-remember"
                 checked={rememberMe}

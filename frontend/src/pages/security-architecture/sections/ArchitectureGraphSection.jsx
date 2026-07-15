@@ -94,7 +94,7 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
   const searchLower = search.trim().toLowerCase()
   const isHidden = useCallback((node) => {
     if (clusterFilter !== FILTER_ALL && node.cluster !== clusterFilter) return true
-    if (searchLower && !node.label.toLowerCase().includes(searchLower)) return true
+    if (searchLower && !node.label?.toLowerCase().includes(searchLower)) return true
     return false
   }, [clusterFilter, searchLower])
 
@@ -250,7 +250,7 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
               })}
               {visibleNodes.map(node => {
                 const selected = node.id === selectedNodeId
-                const matched = searchLower && node.label.toLowerCase().includes(searchLower)
+                const matched = searchLower && node.label?.toLowerCase().includes(searchLower)
                 return (
                   <g
                     key={node.id}

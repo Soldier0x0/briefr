@@ -562,7 +562,7 @@ export function applyCorrelationEscalationToRiskScore(riskScore, correlation) {
   if (!correlationEscalation(correlation)) return riskScore
 
   const envTier = riskScore.environment?.tier || 'UNKNOWN'
-  const bumped = deriveOperationalPriority(riskScore.threat.band, envTier, true)
+  const bumped = deriveOperationalPriority(riskScore.threat.band || 'LOW', envTier, true)
   if (!bumped.escalated_by_correlation) return riskScore
 
   const base = riskScore.operational_priority

@@ -143,6 +143,7 @@ export default memo(function CVECard({
       <div
         className="card-checkbox-wrap"
         onClick={handleCheckClick}
+        onKeyDown={(e) => e.stopPropagation()}
       >
         <Checkbox
           checked={!!selected}

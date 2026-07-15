@@ -1503,6 +1503,7 @@ async def cve_risk_score(cve_id: str, body: RiskScoreRequest | None = None):
         # E1-2 / ADR-004: OP hero uses cheap signals only on this path.
         # Correlation-based escalation is applied client-side when correlation
         # data arrives (or from precomputed snapshots on the correlation route).
+        await db.commit()
         operational_priority = derive_operational_priority(
             threat.get("band", "LOW"),
             environment.get("tier", "UNKNOWN"),

@@ -230,7 +230,7 @@
 }
 
 .morning-brief-row-metric--epss-low {
-  color: var(--text2);
+  color: var(--text-secondary);
 }
 
 .morning-brief-row-desc.cve-description-clamp,

@@ -595,6 +595,9 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
     if get_correlation_precompute_enabled():
         from db.correlation import list_cve_ids_for_precompute, upsert_correlation_cve_snapshot
 
+        # Commit nightly correlation work so a precompute failure cannot roll it back.
+        await db.commit()
+
         max_per_run = get_correlation_precompute_max_per_run()
         precompute_ids = await list_cve_ids_for_precompute(db, max_per_run)
         if progress_cb:
@@ -617,6 +620,7 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
                     result,
                     hub_edges_suppressed=hub_suppressed,
                 )
+                await db.commit()
                 stats["precompute_snapshots"] += 1
             except Exception as exc:
                 logger.warning("Correlation precompute skip %s: %s", pre_cve_id, exc)

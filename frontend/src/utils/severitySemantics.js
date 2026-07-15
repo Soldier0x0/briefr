@@ -45,8 +45,9 @@ export function severityShortLabel(severity) {
 export function severityTooltip(severity, cvssScore = null) {
   const key = (severity || 'unknown').toLowerCase()
   const row = SEVERITY_BY_ID[key] || SEVERITY_BY_ID.unknown
-  if (cvssScore != null && Number.isFinite(cvssScore)) {
-    return `CVSS ${cvssScore} (${row.label}) — ${row.desc}`
+  const score = cvssScore !== null && cvssScore !== undefined ? Number(cvssScore) : null
+  if (score !== null && Number.isFinite(score)) {
+    return `CVSS ${score} (${row.label}) — ${row.desc}`
   }
   return `${row.label} — ${row.desc}`
 }

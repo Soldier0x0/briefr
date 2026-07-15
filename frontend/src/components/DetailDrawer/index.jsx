@@ -136,6 +136,10 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     fetchCVERisk(cve.cve_id, payload)
       .then(data => {
         if (cancelled) return
+        if (!data) {
+          setRiskScore(null)
+          return
+        }
         const legacy = data.legacy_risk_v11b || {}
         setRiskScore({
           threat: data.threat,
@@ -152,6 +156,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
         })
       })
       .catch((err) => {
+        console.error('Failed to fetch CVE risk:', err)
         if (!cancelled) {
           setRiskScore(null)
           setRiskError(err)

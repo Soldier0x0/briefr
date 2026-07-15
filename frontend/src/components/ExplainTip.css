@@ -23,12 +23,9 @@
   transition: color 0.1s, border-color 0.1s;
 }
 
-.explain-tip-btn:hover,
-.explain-tip-btn:focus-visible {
+.explain-tip-btn:hover {
   color: var(--text);
   border-color: var(--text3);
-  outline: none;
-  box-shadow: var(--focus-ring);
 }
 
 .explain-tip-bubble {

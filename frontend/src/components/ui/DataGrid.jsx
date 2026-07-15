@@ -38,7 +38,6 @@ function savePrefs(gridId, prefs) {
 
 function sortValueForColumn(col, row) {
   if (typeof col.sortValue === 'function') return col.sortValue(row)
-  if (col.render) return col.render(row)
   return row[col.id]
 }
 
@@ -58,7 +57,7 @@ export default function DataGrid({
   gridId,
   columns,
   rows,
-  rowKey = (row, index) => index,
+  rowKey = (row, index) => row.id ?? row.uuid ?? index,
   emptyMessage = 'No rows',
   toolbarExtra = null,
   onRowClick = null,
@@ -73,36 +72,37 @@ export default function DataGrid({
     [columns],
   )
 
+  const [prefs] = useState(() => loadPrefs(gridId, columnIds))
   const [visibleIds, setVisibleIds] = useState(() => {
-    const prefs = loadPrefs(gridId, columnIds)
     return prefs?.visible?.length ? prefs.visible : defaultVisible
   })
   const [wrapCells, setWrapCells] = useState(() => {
-    const prefs = loadPrefs(gridId, columnIds)
     return prefs ? prefs.wrap : false
   })
   const [centerCells, setCenterCells] = useState(() => {
-    const prefs = loadPrefs(gridId, columnIds)
     return prefs ? prefs.center : false
   })
   const [widths, setWidths] = useState(() => {
-    const prefs = loadPrefs(gridId, columnIds)
     return prefs ? prefs.widths : {}
   })
   const [sorting, setSorting] = useState([])
   const [showColumns, setShowColumns] = useState(false)
   const resizeRef = useRef({ colId: null, startX: 0, startW: 0 })
+  const lastLoadedGridIdRef = useRef(gridId)
 
   useEffect(() => {
-    const prefs = loadPrefs(gridId, columnIds)
-    setVisibleIds(prefs?.visible?.length ? prefs.visible : defaultVisible)
-    setWrapCells(prefs ? prefs.wrap : false)
-    setCenterCells(prefs ? prefs.center : false)
-    setWidths(prefs ? prefs.widths : {})
+    const nextPrefs = loadPrefs(gridId, columnIds)
+    setVisibleIds(nextPrefs?.visible?.length ? nextPrefs.visible : defaultVisible)
+    setWrapCells(nextPrefs ? nextPrefs.wrap : false)
+    setCenterCells(nextPrefs ? nextPrefs.center : false)
+    setWidths(nextPrefs ? nextPrefs.widths : {})
+    lastLoadedGridIdRef.current = gridId
   }, [gridId, columnIds, defaultVisible])
 
   useEffect(() => {
-    savePrefs(gridId, { visible: visibleIds, wrap: wrapCells, center: centerCells, widths })
+    if (lastLoadedGridIdRef.current === gridId) {
+      savePrefs(gridId, { visible: visibleIds, wrap: wrapCells, center: centerCells, widths })
+    }
   }, [gridId, visibleIds, wrapCells, centerCells, widths])
 
   const tanstackColumns = useMemo(
@@ -197,19 +197,20 @@ export default function DataGrid({
 
   const colStyle = (col) => {
     const w = widths[col.id]
-    const widthPx = w || col.width
+    if (w) {
+      return {
+        width: `${w}px`,
+        minWidth: `${w}px`,
+      }
+    }
     return {
-      width: widthPx ? `${widthPx}px` : undefined,
-      minWidth: widthPx
-        ? `${widthPx}px`
-        : col.minWidth
-          ? `${col.minWidth}px`
-          : '72px',
+      width: col.width ? `${col.width}px` : undefined,
+      minWidth: col.minWidth ? `${col.minWidth}px` : '72px',
     }
   }
 
   const cellStyle = (col) => ({
-    textAlign: centerCells || col.align === 'center' ? 'center' : 'left',
+    textAlign: centerCells ? 'center' : (col.align || 'left'),
     whiteSpace: wrapCells ? 'normal' : 'nowrap',
     overflow: wrapCells ? 'visible' : 'hidden',
     textOverflow: wrapCells ? 'clip' : 'ellipsis',
