@@ -7,7 +7,12 @@
  * nav the moment the manifest lists it -- no frontend redeploy needed for
  * the nav item itself (the section's content component is a separate story).
  */
+const SECTION_LABEL_OVERRIDES = {
+  mitre_attack: 'MITRE ATT&CK',
+}
+
 export function humanizeSectionId(id) {
+  if (SECTION_LABEL_OVERRIDES[id]) return SECTION_LABEL_OVERRIDES[id]
   return String(id)
     .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
