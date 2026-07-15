@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   fetchSecurityArchitectureSection,
   fetchSecurityArchitectureThreatScenarios,
@@ -28,12 +28,17 @@ const STATUS_LABEL = { yours: 'YOURS', community: 'COMMUNITY', gap: 'GAP' }
  * (curated threat_scenarios.yaml, currently an empty pre-review stub).
  */
 export default function ThreatScenariosSection({ corpusVersion } = {}) {
-  const [catalog, setCatalog] = useState('operational')
+  const [catalog, setCatalog] = useState('self-stack')
   const [userStack, setUserStack] = useState('')
+  const [operationalCount, setOperationalCount] = useState(null)
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
+
+  const visibleCatalogs = useMemo(() => (
+    CATALOGS.filter((c) => c.id !== 'operational' || (operationalCount ?? 0) > 0)
+  ), [operationalCount])
 
   useEffect(() => {
     let cancelled = false
@@ -42,6 +47,21 @@ export default function ThreatScenariosSection({ corpusVersion } = {}) {
       .catch(() => { /* stack catalog just shows its own empty state */ })
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    fetchSecurityArchitectureSection('threat_scenarios', {})
+      .then(res => { if (!cancelled) setOperationalCount((res?.items || []).length) })
+      .catch(() => { if (!cancelled) setOperationalCount(0) })
+    return () => { cancelled = true }
+  }, [reloadKey])
+
+  useEffect(() => {
+    if (operationalCount === null) return
+    if (!visibleCatalogs.some(c => c.id === catalog)) {
+      setCatalog(visibleCatalogs[0]?.id || 'self-stack')
+    }
+  }, [operationalCount, visibleCatalogs, catalog])
 
   useEffect(() => {
     // "Your stack" with no saved profile has nothing to query -- the empty
@@ -85,20 +105,22 @@ export default function ThreatScenariosSection({ corpusVersion } = {}) {
     <div className="sa-section">
       <h2 className="sa-section-title mono">THREAT SCENARIOS</h2>
 
-      <div className="sa-type-tabs mono" role="tablist" aria-label="Scenario catalog">
-        {CATALOGS.map(c => (
-          <button
-            key={c.id}
-            type="button"
-            role="tab"
-            aria-selected={catalog === c.id}
-            className={`sa-type-tab${catalog === c.id ? ' active' : ''}`}
-            onClick={() => setCatalog(c.id)}
-          >
-            {c.label}
-          </button>
-        ))}
-      </div>
+      {visibleCatalogs.length > 1 && (
+        <div className="sa-type-tabs mono" role="tablist" aria-label="Scenario catalog">
+          {visibleCatalogs.map(c => (
+            <button
+              key={c.id}
+              type="button"
+              role="tab"
+              aria-selected={catalog === c.id}
+              className={`sa-type-tab${catalog === c.id ? ' active' : ''}`}
+              onClick={() => setCatalog(c.id)}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <AsyncState
         loading={loading}
