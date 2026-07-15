@@ -49,6 +49,12 @@ input, textarea {
   outline: none;
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
 input:focus, textarea:focus {
   border-color: var(--accent);
 }
@@ -483,7 +489,7 @@ html.density-spacious body {
 }
 
 .admin-toast-copied {
-  font-size: 0.625rem;
+  font-size: var(--type-micro);
   font-weight: 600;
   letter-spacing: 0.02em;
   opacity: 0.9;

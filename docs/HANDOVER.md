@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E6-1 contrast + shared type scale
+
+**What:** Raised admin `--admin-text-dim` / `--admin-text-muted` to semantic `--text-muted` / `--text-secondary` (WCAG AA on dark surfaces); wired `--type-*` scale into `.admin-root`; global `::placeholder` uses `--text-muted`; bumped sub-12px literals in Admin + ARCH CSS to `--type-micro` / `--type-meta`.
+
+**Next:** E6-4 shortcut scoping → E7-1 hover/press.
+
+---
+
 ## 2026-07-15 — E5-2 ARCH lists → ArchDataGrid
 
 **What:** `shared/ArchDataGrid.jsx` wraps `ui/DataGrid` for ARCH workspace. Ported GenericSection, AttackSurface, StaleRecords, Mitre (per tactic), AbuseCases, Decisions, ReviewHistory, ThreatScenarios, and RiskRegister to sortable/resizable grids; row-click detail panels for expandable content.
