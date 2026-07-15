@@ -20,6 +20,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — Gemini remediation #588 merged
+
+**What:** Merged #588 (full retrospective fixes for #560–#586) after Gemini round-2: `/risk` txn rollback on exploit failure + resilient commit; DataGrid `isLoadingRef` prefs guard; webhook rollback getattr; severityTooltip empty-string guard.
+
+**Closed:** #583 obsolete (E6-5 on main via #584/#587) — close manually if still open (cloud token lacks `closePullRequest`).
+
+**Next:** Resume E7-3 copy/export feedback.
+
+---
+
 ## 2026-07-15 — Gemini remediation PR #560–#586 (full retrospective)
 
 **What:** Single remediation PR addressing validated Gemini inline comments across merged session PRs #560–#586 (27 PRs). Backend: correlation precompute per-snapshot commits + env parse guard; `/risk` exploit-cache commit restored; webhook delivery log commits before failure notification. Frontend: DataGrid sort/rowKey/prefs race/colStyle fixes; arch grid `sortValue` columns; a11y (SeverityLegend, CVECard checkbox, keyboardScope radio/contenteditable, HelpTip, Switch useId); defensive null guards; design-token alias cleanup in cited files; Overview stat-card layout/skeleton.
