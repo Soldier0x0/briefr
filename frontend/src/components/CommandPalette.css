@@ -55,10 +55,14 @@
   font-size: 0.8125rem;
 }
 
-.cmdk-item:hover,
-.cmdk-item--active {
+.cmdk-item:hover {
   background: var(--bg3);
   color: var(--text);
+}
+
+.cmdk-item--active {
+  background: var(--surface-selected);
+  color: var(--accent-selected);
 }
 
 .cmdk-hint {
