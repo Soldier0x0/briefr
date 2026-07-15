@@ -30,7 +30,7 @@ function savePrefs(gridId, prefs) {
 }
 
 /**
- * Dense admin table: column picker, optional wrap/center, header-only resize on hover.
+ * Dense admin table: column picker, optional wrap/center, header resize via shared <col> widths.
  */
 export default function AdminDataGrid({
   gridId,
@@ -122,20 +122,27 @@ export default function AdminDataGrid({
     })
   }
 
-  const cellStyle = (col) => {
+  const colStyle = (col) => {
     const w = widths[col.id]
+    const widthPx = w || col.width
     return {
-      width: w ? `${w}px` : col.width ? `${col.width}px` : undefined,
-      minWidth: w ? `${w}px` : col.minWidth ? `${col.minWidth}px` : '72px',
-      maxWidth: w ? `${w}px` : undefined,
-      textAlign: centerCells || col.align === 'center' ? 'center' : 'left',
-      whiteSpace: wrapCells ? 'normal' : 'nowrap',
-      overflow: wrapCells ? 'visible' : 'hidden',
-      textOverflow: wrapCells ? 'clip' : 'ellipsis',
-      wordBreak: wrapCells ? 'break-word' : 'normal',
-      verticalAlign: 'top',
+      width: widthPx ? `${widthPx}px` : undefined,
+      minWidth: widthPx
+        ? `${widthPx}px`
+        : col.minWidth
+          ? `${col.minWidth}px`
+          : '72px',
     }
   }
+
+  const cellStyle = (col) => ({
+    textAlign: centerCells || col.align === 'center' ? 'center' : 'left',
+    whiteSpace: wrapCells ? 'normal' : 'nowrap',
+    overflow: wrapCells ? 'visible' : 'hidden',
+    textOverflow: wrapCells ? 'clip' : 'ellipsis',
+    wordBreak: wrapCells ? 'break-word' : 'normal',
+    verticalAlign: 'top',
+  })
 
   return (
     <div className="admin-data-grid">
@@ -179,6 +186,11 @@ export default function AdminDataGrid({
 
       <div className="admin-data-grid-scroll">
         <table className="admin-table admin-data-grid-table">
+          <colgroup>
+            {visibleColumns.map((col) => (
+              <col key={col.id} style={colStyle(col)} />
+            ))}
+          </colgroup>
           <thead>
             <tr>
               {visibleColumns.map((col) => (
