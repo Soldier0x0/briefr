@@ -102,7 +102,12 @@ function OverviewTab({ overview, setPage }) {
         <StatCard
           label="Recorded operations"
           value={overview?.total_operations ?? 0}
-          subLabel={overview?.recording_enabled ? 'AI_OPERATIONS_RECORD on' : 'Recording disabled'}
+          subLabel={overview?.recording_enabled ? 'Recording enabled' : 'Recording disabled'}
+          subLabelTitle={
+            overview?.recording_enabled
+              ? 'AI_OPERATIONS_RECORD is enabled — call metadata is persisted'
+              : 'Set AI_OPERATIONS_RECORD to persist LLM call metadata'
+          }
         />
       </div>
 
@@ -193,7 +198,7 @@ function ProvidersTab({ providers }) {
                     <span className={`badge ${p.configured ? 'badge-ok' : 'badge-muted'}`}>
                       {p.configured ? 'configured' : 'missing'}
                     </span>
-                    <span style={{ marginLeft: '0.35rem', fontSize: '0.72rem', color: 'var(--text3)' }}>{p.env_key}</span>
+                    <span className="admin-env-key mono" title={p.env_key}>{p.env_key}</span>
                   </td>
                   <td><span className={`badge ${st.className}`}>{st.label}</span></td>
                   <td style={{ fontSize: '0.78rem' }}>{p.last_success ? fmtIso(p.last_success) : '—'}</td>
