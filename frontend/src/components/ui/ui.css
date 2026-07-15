@@ -86,6 +86,112 @@
 .ui-badge--danger { color: var(--red); border-color: var(--red-dim); background: var(--red-dim); }
 .ui-badge--success { color: var(--green); border-color: var(--green-dim); background: var(--green-dim); }
 
+/* StatCard (E3-7) */
+.ui-stat-card {
+  background: var(--surface-raised, var(--bg2));
+  border: 1px solid var(--border-default, var(--border));
+  border-radius: var(--radius-md, 12px);
+  padding: 14px 16px;
+  cursor: default;
+}
+
+.ui-stat-card-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+  font-size: var(--type-meta);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted, var(--text3));
+}
+
+.ui-stat-card-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.ui-stat-card-sub {
+  margin-top: 4px;
+  font-size: var(--type-meta);
+  color: var(--text-muted, var(--text3));
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.ui-stat-card--ok .ui-stat-card-value { color: var(--status-success, var(--green)); }
+.ui-stat-card--warn .ui-stat-card-value { color: var(--status-warning, var(--amber)); }
+.ui-stat-card--err .ui-stat-card-value { color: var(--status-error, var(--red)); }
+
+/* Card (E3-7) */
+.ui-card {
+  background: var(--surface-raised, var(--bg2));
+  border: 1px solid var(--border-default, var(--border));
+  border-radius: var(--radius-md, 8px);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.ui-card-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary, var(--text2));
+  margin: 0 0 0.75rem;
+}
+
+.ui-card-body {
+  min-width: 0;
+}
+
+/* Pill (E3-7) */
+.ui-pill-group {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.ui-pill {
+  padding: 0.2rem 0.65rem;
+  min-height: var(--hit-target-min);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted, var(--text3));
+  background: var(--surface-raised, var(--bg2));
+  border: 1px solid var(--border-default, var(--border));
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  transition:
+    background var(--motion-fast),
+    color var(--motion-fast),
+    border-color var(--motion-fast);
+}
+
+.ui-pill:hover {
+  background: var(--surface-hover, var(--bg3));
+  color: var(--text);
+  border-color: var(--border-strong, var(--border2));
+}
+
+.ui-pill.active,
+.ui-pill[aria-pressed='true'] {
+  background: var(--surface-selected);
+  color: var(--accent-selected);
+  border-color: var(--accent-selected);
+}
+
+.ui-pill:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 .ui-tooltip-wrap {
   position: relative;
   display: inline-flex;

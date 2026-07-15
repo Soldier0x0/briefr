@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { RotateCcw } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
-import { Slider } from '../../components/ui/index.js'
+import { Card, CardTitle, Pill, PillGroup, Slider } from '../../components/ui/index.js'
 import ToggleSwitch from './shared/ToggleSwitch.jsx'
 import {
   getDisplayPrefs,
@@ -120,8 +120,8 @@ export default function DisplayPage() {
       <h1 className="admin-page-title">Display</h1>
       <p className="admin-page-subtitle">Display preferences saved to your account when signed in — synced across devices on this instance.</p>
 
-      <div className="admin-card">
-        <div className="admin-card-title">Typography (px)</div>
+      <Card>
+        <CardTitle>Typography (px)</CardTitle>
         <p style={{ fontSize: 'var(--type-meta)', color: 'var(--text3)', margin: '0 0 0.75rem' }}>
           Set pixel sizes per text role. Apply previews in this browser session; Save stores your profile; admins can also set the instance default for users who have not customized typography.
         </p>
@@ -158,82 +158,82 @@ export default function DisplayPage() {
         {status ? (
           <p className="display-typography-status mono">{status}</p>
         ) : null}
-      </div>
+      </Card>
 
-      <div className="admin-card">
-        <div className="admin-card-title">Font size</div>
-        <div className="admin-filter-chips">
+      <Card>
+        <CardTitle>Font size</CardTitle>
+        <PillGroup>
           {FONT_SCALE_OPTIONS.map(opt => (
-            <button
+            <Pill
               key={opt}
-              className={`filter-chip ${prefs.fontScale === opt ? 'active' : ''}`}
+              active={prefs.fontScale === opt}
               onClick={() => update('fontScale', opt)}
             >
               {FONT_LABELS[opt]}
-            </button>
+            </Pill>
           ))}
-        </div>
-      </div>
+        </PillGroup>
+      </Card>
 
-      <div className="admin-card">
-        <div className="admin-card-title">Density</div>
-        <div className="admin-filter-chips">
+      <Card>
+        <CardTitle>Density</CardTitle>
+        <PillGroup>
           {DENSITY_OPTIONS.map(opt => (
-            <button
+            <Pill
               key={opt}
-              className={`filter-chip ${prefs.density === opt ? 'active' : ''}`}
+              active={prefs.density === opt}
               onClick={() => update('density', opt)}
             >
               {DENSITY_LABELS[opt]}
-            </button>
+            </Pill>
           ))}
-        </div>
-      </div>
+        </PillGroup>
+      </Card>
 
-      <div className="admin-card">
-        <div className="admin-card-title">Status refresh</div>
-        <div className="admin-filter-chips">
+      <Card>
+        <CardTitle>Status refresh</CardTitle>
+        <PillGroup>
           {POLL_INTERVAL_OPTIONS.map(opt => (
-            <button
+            <Pill
               key={opt}
-              className={`filter-chip ${prefs.pollIntervalSeconds === opt ? 'active' : ''}`}
+              active={prefs.pollIntervalSeconds === opt}
               onClick={() => update('pollIntervalSeconds', opt)}
             >
               Every {opt}s
-            </button>
+            </Pill>
           ))}
-        </div>
+        </PillGroup>
         <p style={{ fontSize: '0.75rem', color: 'var(--text3)', margin: '0.4rem 0 0' }}>
           How often the status bar polls the backend for live system stats.
         </p>
-      </div>
+      </Card>
 
-      <div className="admin-card">
-        <div className="admin-card-title">Timestamps</div>
+      <Card>
+        <CardTitle>Timestamps</CardTitle>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
           <ToggleSwitch on={!!prefs.utcTime} onChange={v => update('utcTime', v)} />
           Show times in UTC instead of your browser's local time
         </label>
-      </div>
+      </Card>
 
-      <div className="admin-card">
-        <div className="admin-card-title">Notifications</div>
+      <Card>
+        <CardTitle>Notifications</CardTitle>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
           <ToggleSwitch on={!!prefs.notificationSound} onChange={v => update('notificationSound', v)} />
           Play a short chime when new high-priority notifications arrive
         </label>
-      </div>
+      </Card>
 
-      <div className="admin-card">
-        <div className="admin-card-title">Motion</div>
+      <Card>
+        <CardTitle>Motion</CardTitle>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
           <ToggleSwitch on={!!prefs.reduceMotion} onChange={v => update('reduceMotion', v)} />
           Reduce interface motion (disables toast, modal, and button animations)
         </label>
-      </div>
+      </Card>
 
-      <div className="admin-card">
-        <div className="admin-card-title">Tables</div>
+      <Card>
+        <CardTitle>Tables</CardTitle>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
           <ToggleSwitch on={!!prefs.showTechnicalIds} onChange={v => update('showTechnicalIds', v)} />
           Show technical job IDs in scheduler tables
@@ -241,7 +241,7 @@ export default function DisplayPage() {
         <p style={{ fontSize: '0.75rem', color: 'var(--text3)', margin: '0.4rem 0 0' }}>
           Remembered across pages and sessions, instead of resetting every time you leave the Scheduler page.
         </p>
-      </div>
+      </Card>
 
       <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={reset}>
         <RotateCcw size={13} strokeWidth={2} /> Reset to defaults
