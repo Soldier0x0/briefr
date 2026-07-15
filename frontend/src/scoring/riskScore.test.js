@@ -6,6 +6,7 @@ import {
   classifyEnvironment,
   correlationEscalation,
   deriveOperationalPriority,
+  applyCorrelationEscalationToRiskScore,
   inferAssetMatchSemantics,
   getAssetExposureStatus,
   KEV_FLOOR,
@@ -139,5 +140,35 @@ describe('getAssetExposureStatus', () => {
     assert.equal(status.headline, 'EXPOSURE UNKNOWN')
     assert.match(status.detail, /No My Stack profile is loaded/)
     assert.ok(status.formulaNote)
+  })
+})
+
+describe('applyCorrelationEscalationToRiskScore', () => {
+  it('bumps P2 to P1 when correlation qualifies', () => {
+    const riskScore = {
+      threat: { band: 'HIGH', score: 72 },
+      environment: { tier: 'UNKNOWN' },
+      operational_priority: {
+        band: 'P2',
+        base_band: 'P2',
+        provisional: true,
+        escalated_by_correlation: false,
+        rationale: 'High threat; environment unknown — provisional priority.',
+      },
+    }
+    const correlation = {
+      campaigns: [{
+        lifecycle: 'active',
+        confidence: 'high',
+        member_count: 3,
+        evidence: [
+          { type: 'same_pulse' },
+          { type: 'shared_indicator', ioc_type: 'HASH' },
+        ],
+      }],
+    }
+    const merged = applyCorrelationEscalationToRiskScore(riskScore, correlation)
+    assert.equal(merged.operational_priority.band, 'P1')
+    assert.equal(merged.operational_priority.escalated_by_correlation, true)
   })
 })

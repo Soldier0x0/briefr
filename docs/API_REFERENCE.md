@@ -730,7 +730,7 @@ When `GREYNOISE_API_KEY` is unset: `{"configured": false, "scans": []}`.
 |---|---|---|---|
 | `sector` | str | `""` | User industry for actor sector matching |
 
-**Response (v2):**
+**Response:** Threat, Environment, Operational Priority (ADR-002), legacy v1.1b blend, momentum. Correlation-based OP escalation is **not** computed on this path (E1-2) — the drawer applies campaign escalation client-side when correlation data arrives.
 
 ```json
 {
