@@ -16,11 +16,14 @@ import { fmtBytes, fmtDur } from '../formatters.js'
 import {
   axisLabelStyle,
   axisTickStyle,
+  barActiveProps,
   chartAnimationDuration,
   getRechartsTheme,
   legendStyle,
   rechartsMargin,
   tooltipContentStyle,
+  tooltipCursorStyle,
+  tooltipItemStyle,
   tooltipLabelStyle,
 } from '../../../utils/rechartsTheme.js'
 
@@ -80,12 +83,20 @@ export function IngestDurationChart({ rows }) {
           <Tooltip
             contentStyle={tooltipContentStyle(theme)}
             labelStyle={tooltipLabelStyle(theme)}
+            itemStyle={tooltipItemStyle(theme)}
+            cursor={tooltipCursorStyle(theme)}
             formatter={(value, _name, item) => {
               const err = item?.payload?.hadError ? ' (last run errored)' : ''
               return [`${fmtDur(Number(value))}${err}`, 'Last run duration']
             }}
           />
-          <Bar dataKey="seconds" radius={0} isAnimationActive={anim > 0} animationDuration={anim}>
+          <Bar
+            dataKey="seconds"
+            radius={0}
+            isAnimationActive={anim > 0}
+            animationDuration={anim}
+            activeBar={barActiveProps(theme)}
+          >
             {data.map((entry, index) => (
               <Cell
                 key={entry.label || index}
@@ -138,6 +149,8 @@ export function BackupSizesChart({ rows }) {
           <Tooltip
             contentStyle={tooltipContentStyle(theme)}
             labelStyle={tooltipLabelStyle(theme)}
+            itemStyle={tooltipItemStyle(theme)}
+            cursor={tooltipCursorStyle(theme)}
             formatter={(value) => [fmtBytes(Number(value)), 'Archive size']}
             labelFormatter={(_label, payload) => payload?.[0]?.payload?.filename || _label}
           />
@@ -148,7 +161,7 @@ export function BackupSizesChart({ rows }) {
             fill={theme.greenDim}
             strokeWidth={2}
             dot={{ r: 3, fill: theme.green }}
-            activeDot={{ r: 4 }}
+            activeDot={{ r: 4, fill: theme.green, stroke: theme.text, strokeWidth: 1 }}
             isAnimationActive={anim > 0}
             animationDuration={anim}
           />
@@ -196,6 +209,8 @@ export function WebhookDeliveriesChart({ buckets }) {
           <Tooltip
             contentStyle={tooltipContentStyle(theme)}
             labelStyle={tooltipLabelStyle(theme)}
+            itemStyle={tooltipItemStyle(theme)}
+            cursor={tooltipCursorStyle(theme)}
             labelFormatter={(_label, payload) => payload?.[0]?.payload?.fullDay || _label}
           />
           <Legend
@@ -212,6 +227,7 @@ export function WebhookDeliveriesChart({ buckets }) {
             radius={0}
             isAnimationActive={anim > 0}
             animationDuration={anim}
+            activeBar={barActiveProps(theme)}
           />
           <Bar
             dataKey="failed"
@@ -221,6 +237,7 @@ export function WebhookDeliveriesChart({ buckets }) {
             radius={0}
             isAnimationActive={anim > 0}
             animationDuration={anim}
+            activeBar={barActiveProps(theme)}
           />
         </BarChart>
       </ResponsiveContainer>
