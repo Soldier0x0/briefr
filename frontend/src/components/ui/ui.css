@@ -536,3 +536,15 @@
 .chart-data-table tr:last-child td {
   border-bottom: none;
 }
+
+.chart-shell {
+  position: relative;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chart-shell .recharts-responsive-container {
+  width: 100% !important;
+  height: 100% !important;
+}

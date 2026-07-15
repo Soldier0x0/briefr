@@ -272,6 +272,14 @@ terms:
   origin: generated
   term: react-router-dom
   source: frontend/package.json
+- id: self-stack-recharts
+  title: recharts
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: recharts
+  source: frontend/package.json
 - id: self-stack-tanstack-react-table
   title: '@tanstack/react-table'
   summary: BRIEFR dependency term derived from frontend/package.json.

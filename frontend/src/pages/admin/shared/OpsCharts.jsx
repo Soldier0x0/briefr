@@ -1,12 +1,20 @@
-import { useEffect, useRef, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { adminApi } from '../../../api.js'
-import { loadChartJs, readChartTheme } from '../../../utils/chartLoader.js'
-import { axisTitle, baseChartOptions } from '../../../utils/chartOptions.js'
 import { ChartDataTable } from '../../../components/ui/index.js'
 import HelpTip from './HelpTip.jsx'
 import { jobLabel } from '../catalog.js'
 import { fmtBytes, fmtDur } from '../formatters.js'
 import { AdminChartSkeleton } from './AdminSkeletons.jsx'
+
+const IngestDurationChart = lazy(() =>
+  import('./opsChartsRecharts.jsx').then((mod) => ({ default: mod.IngestDurationChart })),
+)
+const BackupSizesChart = lazy(() =>
+  import('./opsChartsRecharts.jsx').then((mod) => ({ default: mod.BackupSizesChart })),
+)
+const WebhookDeliveriesChart = lazy(() =>
+  import('./opsChartsRecharts.jsx').then((mod) => ({ default: mod.WebhookDeliveriesChart })),
+)
 
 const INGEST_JOB_IDS = [
   'nvd_incremental_sync',
@@ -45,12 +53,6 @@ function backupSizeRows(backups) {
     .reverse()
 }
 
-function backupSparklineLabel(row) {
-  const name = (row?.filename || '').replace(/^briefr-backup-/, '').replace(/\.tar\.gz$/, '')
-  if (!name) return 'backup'
-  return name.length > 12 ? `${name.slice(0, 12)}…` : name
-}
-
 function webhookDayBuckets(rows) {
   const buckets = new Map()
   for (const row of rows || []) {
@@ -69,19 +71,15 @@ function webhookDayBuckets(rows) {
   }))
 }
 
-function ingestScaleMax(secondsList) {
-  if (!secondsList.length) return undefined
-  const sorted = [...secondsList].sort((a, b) => a - b)
-  const p75 = sorted[Math.floor(sorted.length * 0.75)] || sorted[sorted.length - 1]
-  const cap = Math.max(p75 * 1.25, sorted[0])
-  return cap > 0 ? cap : undefined
+function ChartSuspense({ children }) {
+  return (
+    <Suspense fallback={<AdminChartSkeleton height={200} />}>
+      {children}
+    </Suspense>
+  )
 }
 
 export default function OpsCharts({ schedulerJobs }) {
-  const ingestRef = useRef(null)
-  const backupRef = useRef(null)
-  const webhookRef = useRef(null)
-  const chartsRef = useRef({})
   const [backups, setBackups] = useState([])
   const [webhookRows, setWebhookRows] = useState([])
   const [extraLoaded, setExtraLoaded] = useState(false)
@@ -114,203 +112,6 @@ export default function OpsCharts({ schedulerJobs }) {
     return () => { cancelled = true }
   }, [])
 
-  useEffect(() => {
-    let cancelled = false
-
-    async function render() {
-      const Chart = await loadChartJs()
-      if (cancelled) return
-      const theme = readChartTheme()
-      const shared = baseChartOptions(theme)
-
-      chartsRef.current.ingest?.destroy()
-      if (ingestRef.current && ingestRows.length) {
-        const durations = ingestRows.map(r => r.seconds)
-        const scaleMax = ingestScaleMax(durations)
-        chartsRef.current.ingest = new Chart(ingestRef.current, {
-          type: 'bar',
-          data: {
-            labels: ingestRows.map(r => r.label),
-            datasets: [{
-              label: 'Last run duration',
-              data: durations,
-              backgroundColor: ingestRows.map(r => (
-                r.hadError ? theme.redDim : theme.accent
-              )),
-              borderWidth: 0,
-              borderRadius: 0,
-            }],
-          },
-          options: {
-            ...shared,
-            indexAxis: 'y',
-            plugins: {
-              ...shared.plugins,
-              legend: { display: false },
-              tooltip: {
-                ...shared.plugins.tooltip,
-                callbacks: {
-                  title(ctx) {
-                    const row = ingestRows[ctx[0]?.dataIndex]
-                    return row?.label || ctx[0]?.label || ''
-                  },
-                  label(ctx) {
-                    const row = ingestRows[ctx.dataIndex]
-                    const err = row?.hadError ? ' (last run errored)' : ''
-                    return `${fmtDur(ctx.parsed.x)}${err}`
-                  },
-                },
-              },
-            },
-            scales: {
-              x: {
-                ...shared.scales.x,
-                suggestedMax: scaleMax,
-                ticks: {
-                  ...shared.scales.x.ticks,
-                  callback: (v) => fmtDur(Number(v)),
-                },
-                title: axisTitle(theme, 'Duration'),
-              },
-              y: {
-                ...shared.scales.y,
-                ticks: {
-                  ...shared.scales.y.ticks,
-                  autoSkip: false,
-                  maxRotation: 0,
-                  minRotation: 0,
-                },
-              },
-            },
-          },
-        })
-      }
-
-      chartsRef.current.backup?.destroy()
-      if (backupRef.current && backupRows.length) {
-        chartsRef.current.backup = new Chart(backupRef.current, {
-          type: 'line',
-          data: {
-            labels: backupRows.map(backupSparklineLabel),
-            datasets: [{
-              label: 'Archive size',
-              data: backupRows.map(b => b.size_bytes || 0),
-              borderColor: theme.green,
-              backgroundColor: theme.greenDim,
-              fill: true,
-              tension: 0.25,
-              pointRadius: 3,
-              pointHoverRadius: 4,
-              borderWidth: 2,
-            }],
-          },
-          options: {
-            ...shared,
-            plugins: {
-              ...shared.plugins,
-              legend: { display: false },
-              tooltip: {
-                ...shared.plugins.tooltip,
-                callbacks: {
-                  title(ctx) {
-                    const row = backupRows[ctx[0]?.dataIndex]
-                    return row?.filename || ctx[0]?.label || ''
-                  },
-                  label(ctx) {
-                    return fmtBytes(ctx.parsed.y)
-                  },
-                  afterLabel(ctx) {
-                    const row = backupRows[ctx.dataIndex]
-                    return row?.created_at ? String(row.created_at).slice(0, 19) : ''
-                  },
-                },
-              },
-            },
-            scales: {
-              x: {
-                ...shared.scales.x,
-                ticks: {
-                  ...shared.scales.x.ticks,
-                  maxRotation: 0,
-                },
-                title: axisTitle(theme, 'Newest →'),
-              },
-              y: {
-                ...shared.scales.y,
-                ticks: {
-                  ...shared.scales.y.ticks,
-                  callback: (v) => fmtBytes(Number(v)),
-                },
-                title: axisTitle(theme, 'Size'),
-              },
-            },
-          },
-        })
-      }
-
-      chartsRef.current.webhook?.destroy()
-      if (webhookRef.current && whBuckets.length) {
-        chartsRef.current.webhook = new Chart(webhookRef.current, {
-          type: 'bar',
-          data: {
-            labels: whBuckets.map(b => b.day.slice(5)),
-            datasets: [
-              {
-                label: 'Delivered',
-                data: whBuckets.map(b => b.ok),
-                backgroundColor: theme.greenDim,
-                borderWidth: 0,
-                borderRadius: 0,
-              },
-              {
-                label: 'Failed',
-                data: whBuckets.map(b => b.failed),
-                backgroundColor: theme.redDim,
-                borderWidth: 0,
-                borderRadius: 0,
-              },
-            ],
-          },
-          options: {
-            ...shared,
-            plugins: {
-              ...shared.plugins,
-              legend: {
-                ...shared.plugins.legend,
-                position: 'bottom',
-              },
-            },
-            scales: {
-              ...shared.scales,
-              x: {
-                ...shared.scales.x,
-                stacked: true,
-                title: axisTitle(theme, 'Day (UTC)'),
-              },
-              y: {
-                ...shared.scales.y,
-                stacked: true,
-                ticks: {
-                  ...shared.scales.y.ticks,
-                  precision: 0,
-                },
-                title: axisTitle(theme, 'Deliveries'),
-              },
-            },
-          },
-        })
-      }
-    }
-
-    const timer = setTimeout(() => { render() }, 300)
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
-      Object.values(chartsRef.current).forEach(c => c?.destroy())
-      chartsRef.current = {}
-    }
-  }, [ingestRows, backupRows, whBuckets, extraLoaded])
-
   return (
     <div className="admin-ops-charts">
       <div className="admin-card admin-ops-chart-card">
@@ -322,9 +123,9 @@ export default function OpsCharts({ schedulerJobs }) {
           <div className="admin-empty admin-ops-chart-empty">No ingest runs recorded yet</div>
         ) : (
           <>
-            <div className="admin-ops-chart-wrap">
-              <canvas ref={ingestRef} role="img" aria-label="Ingest job duration chart" />
-            </div>
+            <ChartSuspense>
+              <IngestDurationChart rows={ingestRows} />
+            </ChartSuspense>
             <ChartDataTable
               title="Ingest job duration (last run)"
               columns={[
@@ -357,9 +158,9 @@ export default function OpsCharts({ schedulerJobs }) {
           <div className="admin-empty admin-ops-chart-empty">{extraLoaded ? 'No backups listed yet' : <AdminChartSkeleton height={160} />}</div>
         ) : (
           <>
-            <div className="admin-ops-chart-wrap">
-              <canvas ref={backupRef} role="img" aria-label="Backup archive sizes chart" />
-            </div>
+            <ChartSuspense>
+              <BackupSizesChart rows={backupRows} />
+            </ChartSuspense>
             <ChartDataTable
               title="Backup archive sizes"
               columns={[
@@ -387,9 +188,9 @@ export default function OpsCharts({ schedulerJobs }) {
           <div className="admin-empty admin-ops-chart-empty">{extraLoaded ? 'No webhook deliveries yet' : <AdminChartSkeleton height={160} />}</div>
         ) : (
           <>
-            <div className="admin-ops-chart-wrap">
-              <canvas ref={webhookRef} role="img" aria-label="Webhook deliveries chart" />
-            </div>
+            <ChartSuspense>
+              <WebhookDeliveriesChart buckets={whBuckets} />
+            </ChartSuspense>
             <ChartDataTable
               title="Webhook deliveries (7d)"
               columns={[
