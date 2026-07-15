@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E3-6 Radix Slider primitive
+
+**What:** `Slider` primitive (`@radix-ui/react-slider`) with token-styled track/thumb; `nativeRangeGate.test.js` grep gate. Proof-of-fit: Admin → Display typography px controls use sliders (9–20px) instead of per-role dropdowns; removed orphan `UiSelect`.
+
+**Next:** E3-7 Badge/Card/StatCard/EmptyState/Toast consolidation.
+
+---
+
 ## 2026-07-15 — E3-5 Radix Tabs / DropdownMenu / Select
 
 **What:** Shipped `Select`, `Tabs`, and `DropdownMenu` primitives (`@radix-ui/react-select`, `tabs`, `dropdown-menu`). Migrated all native `<select>` elements app-wide to `Select` (grep gate `nativeSelectGate.test.js`). Proof-of-fit: `UserMenu` → `DropdownMenu`; Forge nav → `Tabs`.

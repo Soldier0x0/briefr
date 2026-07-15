@@ -264,6 +264,14 @@ terms:
   origin: generated
   term: '@radix-ui/react-select'
   source: frontend/package.json
+- id: self-stack-radix-ui-react-slider
+  title: '@radix-ui/react-slider'
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: '@radix-ui/react-slider'
+  source: frontend/package.json
 - id: self-stack-radix-ui-react-switch
   title: '@radix-ui/react-switch'
   summary: BRIEFR dependency term derived from frontend/package.json.

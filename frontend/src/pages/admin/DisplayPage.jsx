@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { RotateCcw } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
-import UiSelect from '../../components/UiSelect.jsx'
+import { Slider } from '../../components/ui/index.js'
 import ToggleSwitch from './shared/ToggleSwitch.jsx'
 import {
   getDisplayPrefs,
@@ -16,7 +16,8 @@ import {
 import {
   clearTypographyPreview,
   normalizeTypographyPx,
-  PX_OPTIONS,
+  PX_MIN,
+  PX_MAX,
   setTypographyPreview,
   TYPOGRAPHY_LABELS,
   TYPOGRAPHY_ROLES,
@@ -126,11 +127,14 @@ export default function DisplayPage() {
         </p>
         <div className="display-typography-grid">
           {TYPOGRAPHY_ROLES.map(role => (
-            <UiSelect
+            <Slider
               key={role}
               label={TYPOGRAPHY_LABELS[role]}
               value={typographyDraft[role]}
-              options={PX_OPTIONS}
+              min={PX_MIN}
+              max={PX_MAX}
+              step={1}
+              valueSuffix="px"
               onChange={px => updateTypographyRole(role, px)}
             />
           ))}

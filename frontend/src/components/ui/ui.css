@@ -549,6 +549,82 @@
   height: 100% !important;
 }
 
+/* Slider (Radix primitive — E3-6) */
+.ui-slider-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.ui-slider-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ui-slider-label {
+  font-size: var(--type-meta);
+  color: var(--text2);
+}
+
+.ui-slider-value {
+  font-size: var(--type-meta);
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.ui-slider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--hit-target-min);
+  touch-action: none;
+  user-select: none;
+}
+
+.ui-slider-track {
+  position: relative;
+  flex-grow: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.ui-slider-range {
+  position: absolute;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent-primary);
+}
+
+.ui-slider-thumb {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: var(--text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  cursor: grab;
+}
+
+.ui-slider-thumb:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.ui-slider-thumb:active {
+  cursor: grabbing;
+}
+
+.ui-slider[data-disabled] .ui-slider-thumb {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* Select (Radix primitive — E3-5) */
 .ui-select-trigger {
   display: inline-flex;
