@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { getReportTimestamp } from '../utils/timezone.js'
 import useModalLayer from '../hooks/useModalLayer.js'
+import { notifyCopyFailure, notifyCopySuccess } from './Toast.jsx'
 import './DigestModal.css'
 
 function severityTag(sev) {
@@ -84,11 +85,19 @@ export default function DigestModal({ cves, filters, onClose }) {
     try {
       await navigator.clipboard.writeText(digest)
       flashCopied()
+      notifyCopySuccess('Digest copied to clipboard')
     } catch {
       if (textRef.current) {
         textRef.current.select()
-        document.execCommand('copy')
-        flashCopied()
+        const ok = document.execCommand('copy')
+        if (ok) {
+          flashCopied()
+          notifyCopySuccess('Digest copied to clipboard')
+        } else {
+          notifyCopyFailure()
+        }
+      } else {
+        notifyCopyFailure()
       }
     }
   }

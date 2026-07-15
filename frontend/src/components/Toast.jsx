@@ -52,6 +52,35 @@ export function notifyApiError(err) {
   }))
 }
 
+/** Global toast dispatch — works outside React tree (copy/export feedback, E7-3). */
+export function notifyUserToast(payload) {
+  window.dispatchEvent(new CustomEvent('briefr-toast', { detail: payload }))
+}
+
+export function notifyCopySuccess(message = 'Copied to clipboard') {
+  notifyUserToast({ message, variant: 'success' })
+}
+
+export function notifyCopyFailure(message = 'Could not copy — check browser permissions') {
+  notifyUserToast({ message, variant: 'error' })
+}
+
+export function notifyExportSuccess(message) {
+  notifyUserToast({ message, variant: 'success' })
+}
+
+export function notifyExportError(message, requestId = null) {
+  notifyUserToast({
+    message: message || 'Export failed',
+    variant: 'error',
+    requestId,
+  })
+}
+
+export function notifyExportProgress(message) {
+  notifyUserToast({ message, variant: 'info', duration: 6000 })
+}
+
 function useToastState() {
   const [toasts, setToasts] = useState([])
   const lastShownRef = useRef({ message: '', variant: '', requestId: null, at: 0 })
@@ -92,6 +121,17 @@ function useToastState() {
 
 export function ToastProvider({ children }) {
   const { toasts, show, dismiss } = useToastState()
+
+  useEffect(() => {
+    const onUserToast = (e) => {
+      const detail = e.detail || {}
+      if (!detail.message) return
+      show(detail)
+    }
+    window.addEventListener('briefr-toast', onUserToast)
+    return () => window.removeEventListener('briefr-toast', onUserToast)
+  }, [show])
+
   const api = useMemo(() => ({ show, dismiss }), [show, dismiss])
   return (
     <ToastContext.Provider value={api}>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useInvestigation, INV_TYPES } from '../context/InvestigationContext.jsx'
 import { techniqueBadgeLabel } from '../utils/investigationLabels.js'
 import PdfExportModal from './PdfExportModal.jsx'
+import { notifyExportError, notifyExportProgress, notifyExportSuccess } from './Toast.jsx'
 import './InvestigationPanel.css'
 
 function typeBadge(item) {
@@ -130,11 +131,15 @@ export default function InvestigationPanel() {
     setPdfBusy(true)
     setPdfError(null)
     try {
+      notifyExportProgress(`Generating investigation PDF (${items.length} item${items.length === 1 ? '' : 's'})…`)
       const { downloadInvestigationPdf } = await import('../utils/investigationPdf.js')
       await downloadInvestigationPdf(items, startTime, { analystName })
       setPdfModalOpen(false)
+      notifyExportSuccess('Investigation PDF downloaded')
     } catch (err) {
-      setPdfError(err?.message || 'PDF generation failed.')
+      const message = err?.message || 'PDF generation failed.'
+      setPdfError(message)
+      notifyExportError(message)
     } finally {
       setPdfBusy(false)
     }
@@ -225,6 +230,7 @@ export default function InvestigationPanel() {
         open={pdfModalOpen}
         title="Investigation PDF report"
         busy={pdfBusy}
+        busyLabel={`Generating investigation PDF (${items.length} item${items.length === 1 ? '' : 's'})…`}
         error={pdfError}
         onConfirm={handlePdfConfirm}
         onCancel={() => {

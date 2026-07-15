@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { fetchCVEsForExport } from '../api.js'
+import { notifyExportError, notifyExportProgress, notifyExportSuccess } from './Toast.jsx'
 import { notifyApiError } from './Toast.jsx'
 import { toApiCveParams } from '../utils/cveFilters.js'
 import { saveUserStack } from '../utils/userStack.js'
@@ -198,13 +199,17 @@ export default function FilterBar({
     setExporting('csv')
     setExportError(null)
     setExportSuccess(null)
+    notifyExportProgress('Preparing CSV export…')
     try {
       const rows = await fetchExportRows()
-      const csv = cvesToCsvRows(rows)
-      downloadCsv(csv, exportFilename())
-      showExportSuccess(`Downloaded ${rows.length.toLocaleString()} CVEs as CSV.`)
+      downloadCsv(cvesToCsvRows(rows), exportFilename())
+      const message = `Downloaded ${rows.length.toLocaleString()} CVEs as CSV.`
+      showExportSuccess(message)
+      notifyExportSuccess(message)
     } catch (err) {
-      setExportError(err.message || 'Export failed. Restart the backend and try again.')
+      const message = err.message || 'Export failed. Restart the backend and try again.'
+      setExportError(message)
+      notifyExportError(message)
     } finally {
       setExporting(null)
     }
@@ -215,13 +220,18 @@ export default function FilterBar({
     setExporting('xlsx')
     setExportError(null)
     setExportSuccess(null)
+    notifyExportProgress('Preparing Excel export…')
     try {
       const rows = await fetchExportRows()
       const { downloadCvesXlsx, exportXlsxFilename } = await import('../utils/exportXlsx.js')
       await downloadCvesXlsx(rows, exportXlsxFilename())
-      showExportSuccess(`Downloaded ${rows.length.toLocaleString()} CVEs as Excel (.xlsx).`)
+      const message = `Downloaded ${rows.length.toLocaleString()} CVEs as Excel (.xlsx).`
+      showExportSuccess(message)
+      notifyExportSuccess(message)
     } catch (err) {
-      setExportError(err.message || 'Excel export failed. Restart the backend and try again.')
+      const message = err.message || 'Excel export failed. Restart the backend and try again.'
+      setExportError(message)
+      notifyExportError(message)
     } finally {
       setExporting(null)
     }

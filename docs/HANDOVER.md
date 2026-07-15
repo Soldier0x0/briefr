@@ -20,6 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-15 — E7-3 copy/export feedback
+
+**What:** Global `notifyUserToast` helpers in `Toast.jsx` (via `briefr-toast` event). Copy actions (drawer markdown, bulk feed, CVE share, detect rules, digest) toast success/failure. Exports (CSV/XLSX, PDF single/bulk/investigation/arch overview) show progress toasts + success/error; PDF modals get descriptive `busyLabel`; overview export button shows EXPORTING state.
+
+**Next:** E7-4 spacing/border pass.
+
+---
+
 ## 2026-07-15 — Gemini remediation #588 merged
 
 **What:** Merged #588 (full retrospective fixes for #560–#586) after Gemini round-2: `/risk` txn rollback on exploit failure + resilient commit; DataGrid `isLoadingRef` prefs guard; webhook rollback getattr; severityTooltip empty-string guard.

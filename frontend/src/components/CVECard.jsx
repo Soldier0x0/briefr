@@ -1,5 +1,6 @@
 import { useState, memo } from 'react'
 import { copyToClipboard } from '../utils/report.js'
+import { notifyCopyFailure, notifyCopySuccess } from './Toast.jsx'
 import { formatAbsolute } from '../utils/timezone.js'
 import { publishedAgeClass } from '../utils/cveAge.js'
 import { useMomentumScore } from '../utils/momentumCache.js'
@@ -118,7 +119,10 @@ export default memo(function CVECard({
     const ok = await copyToClipboard(text)
     if (ok) {
       setShareCopied(true)
+      notifyCopySuccess(`Share link copied for ${cve.cve_id}`)
       setTimeout(() => setShareCopied(false), 1500)
+    } else {
+      notifyCopyFailure()
     }
   }
 

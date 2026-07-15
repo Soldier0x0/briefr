@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchSecurityArchitectureOverview } from '../../../api.js'
-import { notifyApiError } from '../../../components/Toast.jsx'
+import { notifyApiError, notifyExportError, notifyExportProgress, notifyExportSuccess } from '../../../components/Toast.jsx'
 import Tooltip from '../../../components/ui/Tooltip.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
 import StatCard from '../../admin/shared/StatCard.jsx'
@@ -25,6 +25,7 @@ export default function OverviewSection({ onDrill, corpusVersion }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [pdfBusy, setPdfBusy] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -54,6 +55,20 @@ export default function OverviewSection({ onDrill, corpusVersion }) {
     tables: data?.generated?.db_tables,
   }
 
+  async function handleExportPdf() {
+    if (!data || pdfBusy) return
+    setPdfBusy(true)
+    notifyExportProgress('Generating overview PDF…')
+    try {
+      await downloadOverviewPdf({ ...data, corpus_version: corpusVersion })
+      notifyExportSuccess('Overview PDF downloaded')
+    } catch (err) {
+      notifyExportError(err?.message || 'PDF export failed')
+    } finally {
+      setPdfBusy(false)
+    }
+  }
+
   return (
     <div className="sa-section">
       <div className="sa-section-head">
@@ -61,10 +76,10 @@ export default function OverviewSection({ onDrill, corpusVersion }) {
         <button
           type="button"
           className="admin-btn admin-btn-ghost mono"
-          onClick={() => downloadOverviewPdf({ ...data, corpus_version: corpusVersion })}
-          disabled={!data}
+          onClick={handleExportPdf}
+          disabled={!data || pdfBusy}
         >
-          EXPORT PDF
+          {pdfBusy ? 'EXPORTING…' : 'EXPORT PDF'}
         </button>
       </div>
 
