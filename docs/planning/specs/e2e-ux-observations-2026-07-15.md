@@ -360,4 +360,6 @@ Ship in this order. Do **not** start Phase 4 until Phase 0 P0s are merged.
 | [`SPRINT_2026-07.md`](../SPRINT_2026-07.md) PM track | Sprint activation |
 | [`post-ui-audit-2026-07-15.md`](post-ui-audit-2026-07-15.md) | Phase detail (archive sibling; prefer §6 here) |
 
-**Related PRs:** [#601](https://github.com/Soldier0x0/briefr/pull/601) exhaustive audit script · [#602](https://github.com/Soldier0x0/briefr/pull/602) orange accent
+**Related PRs (consolidated kickoff):** This branch merges **#601** (audit script) + **#602** (orange accent) + **#603** (master plan) into one merge to `main`. After merge, execute **PM-0a** next.
+
+**Implementation queue (22 PRs after kickoff):** see §6.

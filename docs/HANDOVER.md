@@ -20,7 +20,19 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-15 — E8-3 Admin needs-attention landing
+## 2026-07-15 — Post–UI E2E UX kickoff (plan + audit + orange accent)
+
+**What:** Consolidated **#601 + #602 + #603** into one merge to `main`:
+- Master plan [`specs/e2e-ux-observations-2026-07-15.md`](planning/specs/e2e-ux-observations-2026-07-15.md) — ordered A→L observations, UX-PM registry, IA locks, PM-0…PM-4 queue (22 implementation PRs after kickoff)
+- Playwright exhaustive audit (`scripts/e2e_audit_exhaustive.py`, 276 steps)
+- Brand accent tan → **BRIEFR orange** `#e85533` (`tokens.css`, admin bridge)
+- BACKLOG §12 + SPRINT PM track wired
+
+**PR:** #603 (supersedes #601, #602)
+
+**Next:** **PM-0a** — EPSS movers severity join (`get_recent_cve_changes` + `BriefCharts`). Then PM-0b…0e before Phase 1.
+
+---
 
 **What:** `collectNeedsAttentionItems()` aggregates circuits, webhooks, job errors, ingest errors, auth failures, stale NVD/backup/incidents into `NeedsAttentionPanel` on overview (analyst + operator). Wired `JobErrorsPanel` on both overviews for actionable retries/ack.
 
