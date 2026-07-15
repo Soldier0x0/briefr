@@ -24,7 +24,9 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 **What:** Consolidated composite primitives into `components/ui/`: `StatCard`, `Card`/`CardTitle`, `Pill`/`PillGroup`, `Toast` (moved from `components/Toast.jsx` with re-export shim). `Badge`/`EmptyState` already in ui. Proof-of-fit: Admin → Display uses `Card` + `Pill`; `main.jsx` mounts `ToastProvider` from ui.
 
-**Next:** E8-1 unify active-state across shells (or remaining E3 tail if any).
+**PR:** #597 (merged)
+
+**Next:** E8-1 unify active-state across shells.
 
 ---
 
