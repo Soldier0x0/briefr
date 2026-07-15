@@ -12,10 +12,13 @@ import { ChartShell } from './ui/index.js'
 import {
   axisLabelStyle,
   axisTickStyle,
+  barActiveProps,
   chartAnimationDuration,
   getRechartsTheme,
   rechartsMargin,
   tooltipContentStyle,
+  tooltipCursorStyle,
+  tooltipItemStyle,
   tooltipLabelStyle,
 } from '../utils/rechartsTheme.js'
 
@@ -67,6 +70,8 @@ export function VendorKevChart({ rows }) {
           <Tooltip
             contentStyle={tooltipContentStyle(theme)}
             labelStyle={tooltipLabelStyle(theme)}
+            itemStyle={tooltipItemStyle(theme)}
+            cursor={tooltipCursorStyle(theme)}
             formatter={(value) => [
               `${value} KEV ${value === 1 ? 'entry' : 'entries'}`,
               'KEV entries',
@@ -78,6 +83,7 @@ export function VendorKevChart({ rows }) {
             radius={0}
             isAnimationActive={anim > 0}
             animationDuration={anim}
+            activeBar={barActiveProps(theme)}
           >
             {data.map((entry) => (
               <Cell key={entry.vendor} fill={theme.accent} />

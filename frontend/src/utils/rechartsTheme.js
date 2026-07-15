@@ -28,11 +28,38 @@ export function axisLabelStyle(theme) {
 export function tooltipContentStyle(theme) {
   return {
     backgroundColor: theme.panel,
-    border: `1px solid ${theme.grid}`,
+    border: `1px solid ${theme.borderStrong || theme.grid}`,
     borderRadius: 0,
     fontFamily: theme.mono,
     fontSize: 13,
-    color: theme.textSecondary,
+    color: theme.text,
+    boxShadow: 'none',
+  }
+}
+
+export function tooltipItemStyle(theme) {
+  return {
+    color: theme.text,
+    fontFamily: theme.mono,
+    fontSize: 13,
+    padding: 0,
+  }
+}
+
+export function tooltipCursorStyle(theme) {
+  return {
+    fill: theme.surfaceSelected || theme.redDim,
+    stroke: theme.grid,
+    strokeWidth: 1,
+  }
+}
+
+export function barActiveProps(theme) {
+  return {
+    fill: theme.accent,
+    stroke: theme.accent,
+    strokeWidth: 1,
+    opacity: 0.88,
   }
 }
 
