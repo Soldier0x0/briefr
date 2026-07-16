@@ -194,7 +194,7 @@ def _artifact_tokens(artifacts: list[Any]) -> list[str]:
         if not isinstance(art, dict):
             continue
         for key in ("paths", "keywords"):
-            for raw in art.get(key) or []:
+            for raw in _ensure_list(art.get(key)):
                 token = str(raw or "").strip()
                 if not token:
                     continue
@@ -211,19 +211,43 @@ def _artifact_tokens(artifacts: list[Any]) -> list[str]:
 def _inject_artifacts_into_siem(
     siem: dict[str, Any], artifacts: list[Any]
 ) -> dict[str, Any]:
+    """Inject evidence tokens into SIEM queries without breaking dialect syntax.
+
+    Elastic/Splunk tolerate trailing OR clauses. Sentinel gets a Kusto
+    ``has_any`` pipe. QRadar AQL is left untouched (naive suffixes break
+    ``LAST`` / ``WHERE`` clauses).
+    """
     tokens = _artifact_tokens(artifacts)
     if not tokens:
         return siem
-    suffix = " " + " ".join(f'"{t}"' for t in tokens)
+    quoted = ", ".join(f'"{t}"' for t in tokens)
+    space_quoted = " ".join(f'"{t}"' for t in tokens)
     out = dict(siem)
-    for platform in ("elastic_kql", "splunk_spl", "sentinel_kql", "qradar_aql"):
-        block = out.get(platform)
-        if not isinstance(block, dict):
-            continue
-        query = block.get("query")
-        if not isinstance(query, str) or not query.strip():
-            continue
-        out[platform] = {**block, "query": query + suffix}
+
+    elastic = out.get("elastic_kql")
+    if isinstance(elastic, dict) and isinstance(elastic.get("query"), str):
+        out["elastic_kql"] = {
+            **elastic,
+            "query": f'{elastic["query"]} or url.path:({quoted})',
+        }
+
+    splunk = out.get("splunk_spl")
+    if isinstance(splunk, dict) and isinstance(splunk.get("query"), str):
+        out["splunk_spl"] = {
+            **splunk,
+            "query": f'{splunk["query"]} OR ({space_quoted})',
+        }
+
+    sentinel = out.get("sentinel_kql")
+    if isinstance(sentinel, dict) and isinstance(sentinel.get("query"), str):
+        out["sentinel_kql"] = {
+            **sentinel,
+            "query": (
+                f'{sentinel["query"].rstrip()}\n'
+                f'| where * has_any ({quoted})'
+            ),
+        }
+
     return out
 
 

@@ -94,6 +94,20 @@ def test_emit_artifacts_inject_sigma_and_siem():
     assert "briefr-dc2-marker" in rule["detection"]["keywords"]
     assert "/api/widget/traverse" in out["siem_queries"]["elastic_kql"]["query"]
     assert "/api/widget/traverse" in out["siem_queries"]["splunk_spl"]["query"]
+    assert 'has_any ("/api/widget/traverse", "briefr-dc2-marker")' in out[
+        "siem_queries"
+    ]["sentinel_kql"]["query"]
+    # QRadar AQL must not get a naive suffix that breaks LAST/WHERE clauses.
+    assert "/api/widget/traverse" not in out["siem_queries"]["qradar_aql"]["query"]
+
+
+def test_artifact_tokens_wrap_string_fields():
+    from detection.composer import _artifact_tokens
+
+    tokens = _artifact_tokens(
+        [{"paths": "/api/v1", "keywords": "marker", "params": []}]
+    )
+    assert tokens == ["/api/v1", "marker"]
 
 
 def test_emit_community_basis_passes_yara_through():
