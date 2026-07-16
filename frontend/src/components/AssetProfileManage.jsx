@@ -41,11 +41,7 @@ export default function AssetProfileManage({
       >
         <pre id="asset-manage-title" className="asset-warning-text mono">{`// MY STACK ALREADY LOADED
 
-You have an active My Stack in this session.
-
-Update My Stack to change operating systems, applications,
-or environment details. Upload a saved file to replace
-the current one. Keep current to continue without changes.`}</pre>
+You have an active My Stack in this session. Update My Stack to change operating systems, applications, or environment details. Upload a saved file to replace the current one, or keep current to continue without changes.`}</pre>
         {showRememberToggle && (
           <AssetRememberToggle
             enabled={rememberOnServer}

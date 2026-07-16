@@ -176,7 +176,16 @@ async def run_detection_context_llm_sync(
                 continue
 
             try:
-                result = await extract_artifacts_via_llm(source_text)
+                def _provider_progress(provider: str, _idx=index, _total=stats["candidates"], _cve=cve_id):
+                    if progress_cb:
+                        progress_cb(
+                            f"DetectionContext LLM: {_idx + 1}/{_total} ({_cve}) — {provider}…"
+                        )
+
+                result = await extract_artifacts_via_llm(
+                    source_text,
+                    on_provider_attempt=_provider_progress,
+                )
             except Exception as exc:
                 stats["errors"] += 1
                 logger.error("DetectionContext LLM extract failed for %s: %s", cve_id, exc)

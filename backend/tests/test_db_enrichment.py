@@ -12,6 +12,7 @@ from db.enrichment import (
     get_epss_history,
     insert_epss_history_rows,
     mark_cves_as_kev,
+    sync_vulncheck_exploited_flags,
     update_epss_scores,
     write_audit_log,
 )
@@ -88,6 +89,46 @@ def test_mark_cves_as_kev_transitions(tmp_path, monkeypatch):
             )
             assert rows[0]["is_kev"] == 1
             assert rows[1]["is_kev"] == 1
+        finally:
+            await db.close()
+
+    run_db_test(_run())
+
+
+def test_sync_vulncheck_exploited_flags_batch(tmp_path, monkeypatch):
+    if not is_postgres():
+        db_path = tmp_path / "enrichment_vulncheck.db"
+        monkeypatch.setenv("DB_PATH", str(db_path))
+        monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    async def _run():
+        await init_db()
+        db = await get_db()
+        try:
+            cve_ph = (
+                "$1, $2, $3"
+                if is_postgres()
+                else "?, ?, ?"
+            )
+            await db.execute(
+                f"INSERT INTO cves (cve_id, description, is_vulncheck_exploited) VALUES ({cve_ph})",
+                (CVE_A, "a", 1),
+            )
+            await db.execute(
+                f"INSERT INTO cves (cve_id, description, is_vulncheck_exploited) VALUES ({cve_ph})",
+                (CVE_B, "b", 0),
+            )
+            await db.commit()
+
+            updated = await sync_vulncheck_exploited_flags(db, [CVE_B, "cve-2024-2003"])
+            await db.commit()
+            assert updated == 1
+
+            rows = await db.execute_fetchall(
+                "SELECT cve_id, is_vulncheck_exploited FROM cves ORDER BY cve_id"
+            )
+            assert rows[0]["is_vulncheck_exploited"] == 0
+            assert rows[1]["is_vulncheck_exploited"] == 1
         finally:
             await db.close()
 

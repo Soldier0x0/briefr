@@ -2,7 +2,7 @@
 
 Extracts structured ``{paths, params, keywords, method}`` artifacts from CVE
 description text and exploit metadata. Scheduler-side only — never on the
-request path. Uses the multi-provider LLM router (Groq → Gemini → OpenRouter).
+request path. Uses the multi-provider LLM router (Groq → Cerebras → OpenRouter → Gemini).
 """
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ import re
 
 from ai.llm_router import LLMCompletion, chat_completion_task
 from ai.llm_payload import has_substantive_source_text
+from ai.groq_config import scheduler_llm_timeout
 
 logger = logging.getLogger(__name__)
 
@@ -201,7 +202,11 @@ async def build_extraction_text(
     return "\n\n".join(parts).strip()
 
 
-async def extract_artifacts_via_llm(text: str) -> tuple[list[dict], LLMCompletion] | None:
+async def extract_artifacts_via_llm(
+    text: str,
+    *,
+    on_provider_attempt=None,
+) -> tuple[list[dict], LLMCompletion] | None:
     if not has_substantive_source_text(text):
         logger.info("Skipping LLM detection context extraction — empty source text")
         return None
@@ -216,7 +221,8 @@ async def extract_artifacts_via_llm(text: str) -> tuple[list[dict], LLMCompletio
         ],
         max_tokens=700,
         temperature=0.0,
-        timeout=60.0,
+        timeout=scheduler_llm_timeout(),
+        on_provider_attempt=on_provider_attempt,
     )
     if not completion:
         return None

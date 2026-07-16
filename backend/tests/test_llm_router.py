@@ -42,17 +42,23 @@ def test_task_chain_pdf_summary_uses_summary_groq_model(monkeypatch):
     assert chain[0].model == "openai/gpt-oss-120b"
 
 
-def test_task_chain_product_extraction_uses_default_groq_model(monkeypatch):
+def test_task_chain_product_extraction_uses_groq_model(monkeypatch):
     monkeypatch.delenv("GROQ_MODEL", raising=False)
     chain = router._task_chain("product_extraction")
     assert chain[0].provider == "groq"
     assert chain[0].model == "openai/gpt-oss-20b"
+    assert [step.provider for step in chain] == [
+        "groq",
+        "cerebras",
+        "openrouter",
+        "gemini",
+    ]
 
 
 def test_task_chain_detection_context_includes_cerebras(monkeypatch):
     chain = router._task_chain("detection_context")
     providers = [step.provider for step in chain]
-    assert providers == ["groq", "gemini", "cerebras", "openrouter"]
+    assert providers == ["groq", "cerebras", "openrouter", "gemini"]
 
 
 def test_chat_completion_task_skips_empty_payload(monkeypatch):

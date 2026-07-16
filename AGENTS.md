@@ -54,6 +54,25 @@ outside spec, or a spec contradiction that cannot be resolved from repo docs.
 **Session resume:** if context limits interrupt the loop, pull main, read HANDOVER,
 continue the next unchecked item — do not restart from scratch or ask for permission.
 
+### Error investigation — RCA-first (mandatory)
+
+When the user reports an error (screenshot, log line, failed job, UI bug) **or you
+detect one during work**, do not patch symptoms blindly.
+
+1. **Reproduce or verify** — confirm the failure on current code with logs, tests, or
+   a minimal repro path.
+2. **Root cause analysis** — trace the failing path end-to-end (scheduler lock, DB
+   query shape, API timeout, UI state, etc.) and state the *why*, not only the *what*.
+3. **Fix the class of failure** — prefer structural fixes (chunked queries, correct
+   failover order, indexed lookups, missing loading states) over one-off retries or
+   wider timeouts unless the timeout itself is wrong.
+4. **Regression guard** — add or extend a test, gate, or doc note when the bug could
+   recur (e.g. full-table scan under load, deprecated model id, layout regression).
+5. **Record briefly** — append `docs/HANDOVER.md` when the RCA changes runtime
+   behavior or operator expectations.
+
+Symptom-only fixes without RCA are not done.
+
 ## Cursor Cloud specific instructions
 
 BRIEFR is a self-hosted CVE intelligence dashboard: a **FastAPI (Python) backend** in `backend/`
