@@ -108,13 +108,6 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTutorial
             >
               FORGE
             </button>
-            <Link
-              to="/security-architecture"
-              className="header-tab"
-              aria-label="Go to Security Architecture"
-            >
-              ARCH
-            </Link>
           </nav>
         )}
 
@@ -247,9 +240,6 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTutorial
             {t.label}
           </button>
         ))}
-        <Link to="/security-architecture" className="mobile-tab" aria-label="Go to Security Architecture">
-          ARCH
-        </Link>
       </nav>
     )}
     </>

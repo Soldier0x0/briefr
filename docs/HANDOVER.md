@@ -22,6 +22,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — PM-4c Remove ARCH tab + redirect
+
+**What:** Drop **ARCH** from desktop + mobile header. `/security-architecture` → `/admin?p=securityposture` (known sections + node preserved). Security posture no longer links to the stand-alone ARCH shell; non-posture overview drills stay in Admin Overview.
+
+**Next:** PM-4d (FORGE MITRE navigator MVP) → PM-4e (drawer ↔ Forge cross-links).
+
+---
+
 ## 2026-07-16 — PM-4b Analyst ARCH cleanup
 
 **What:** Drop Security Decisions, Reviews, and Components from the analyst ARCH nav; remove the corpus version footer (`sa-nav-meta`). Deep links / search / overview drills to those sections resolve to Overview (or System Architecture for the simplified stack). Admin Security posture already excludes them. Corpus YAML + `/section/{id}` API unchanged.

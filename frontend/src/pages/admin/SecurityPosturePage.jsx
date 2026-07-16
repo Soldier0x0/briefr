@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import OverviewSection from '../security-architecture/sections/OverviewSection.jsx'
 import ArchitectureGraphSection from '../security-architecture/sections/ArchitectureGraphSection.jsx'
 import TrustBoundariesSection from '../security-architecture/sections/TrustBoundariesSection.jsx'
@@ -13,7 +13,7 @@ import {
 import '../security-architecture/SecurityArchitecturePage.css'
 import './SecurityPosturePage.css'
 
-/** PM-4a: posture sections hosted under Admin (ARCH tab remains until PM-4c). */
+/** Posture sections hosted under Admin (PM-4a); stand-alone ARCH route retired in PM-4c. */
 export const POSTURE_SECTIONS = [
   'overview',
   'system_architecture',
@@ -28,6 +28,7 @@ const DEFAULT_SECTION = 'overview'
  * Admin → Security posture: embeds the operator-facing ARCH surfaces
  * (Overview, System Architecture, Trust Boundaries, Attack Surface, Risks)
  * inside Admin chrome. Deep links: `/admin?p=securityposture&section=…&node=…`.
+ * Legacy `/security-architecture` URLs redirect here (PM-4c).
  */
 export default function SecurityPosturePage({ mode = 'operator' }) {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -43,28 +44,17 @@ export default function SecurityPosturePage({ mode = 'operator' }) {
   }), [searchParams])
 
   const setSection = useCallback((nextSection, nextFilters = {}) => {
-    // PM-4b: ADR / Reviews / Components stay out of the product UI.
-    if (isAnalystHiddenSection(nextSection)) {
-      nextSection = DEFAULT_SECTION
+    // PM-4b/4c: ADR / Reviews / Components stay out; non-posture drills
+    // (controls, stale, mitre, …) land on Overview inside Admin.
+    let target = resolveAnalystSection(nextSection)
+    if (isAnalystHiddenSection(nextSection) || !POSTURE_SECTIONS.includes(target)) {
+      target = DEFAULT_SECTION
       nextFilters = {}
-    }
-
-    if (!POSTURE_SECTIONS.includes(nextSection)) {
-      // Overview tiles may drill to ARCH-only sections (controls, stale, …)
-      // — send them to the stand-alone ARCH route until PM-4c retires that shell.
-      const params = new URLSearchParams({ section: resolveAnalystSection(nextSection) })
-      for (const [key, value] of Object.entries(nextFilters)) {
-        if (value !== undefined && value !== null && value !== '') {
-          params.set(key, String(value))
-        }
-      }
-      window.location.assign(`/security-architecture?${params}`)
-      return
     }
     setSearchParams(prev => {
       const next = new URLSearchParams(prev)
       next.set('p', 'securityposture')
-      next.set('section', nextSection)
+      next.set('section', target)
       next.delete('node')
       for (const key of ['type', 'status', 'severity', 'origin']) {
         next.delete(key)
@@ -126,9 +116,6 @@ export default function SecurityPosturePage({ mode = 'operator' }) {
           <p className="admin-page-desc">
             Platform architecture, trust boundaries, attack surface, and risk register
             {mode === 'analyst' ? ' (read-only)' : ''}.
-            {' '}Full ARCH workspace (all sections) remains at{' '}
-            <Link to="/security-architecture">/security-architecture</Link>
-            {' '}until the ARCH tab is retired (PM-4c).
           </p>
         </div>
       </div>
