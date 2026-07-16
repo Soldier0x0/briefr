@@ -118,8 +118,8 @@ export default function TimeWindowPicker({
             setCustomUntil(next)
             emitCustom(customSince, next)
           }}
-          startPlaceholder="From…"
-          endPlaceholder="To…"
+          startPlaceholder="Start DD-MM-YY HH:mm:ss"
+          endPlaceholder="End DD-MM-YY HH:mm:ss"
           clearable={false}
         />
       )}

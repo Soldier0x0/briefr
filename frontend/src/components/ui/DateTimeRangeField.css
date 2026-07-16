@@ -15,6 +15,6 @@
 
 .ui-datetime-range-start,
 .ui-datetime-range-end {
-  flex: 1 1 10.5rem;
-  min-width: 10.5rem;
+  flex: 1 1 12.5rem;
+  min-width: 12.5rem;
 }

@@ -180,8 +180,8 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
           endValue={until}
           onStartChange={setSince}
           onEndChange={setUntil}
-          startPlaceholder="From…"
-          endPlaceholder="To…"
+          startPlaceholder="Start DD-MM-YY HH:mm:ss"
+          endPlaceholder="End DD-MM-YY HH:mm:ss"
         />
         <Select
           className="admin-select"

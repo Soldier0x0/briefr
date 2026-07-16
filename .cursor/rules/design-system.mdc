@@ -47,7 +47,7 @@ planning docs).
   Popover, Dialog/AlertDialog, DropdownMenu, ScrollArea) styled with BRIEFR tokens.
 - NEVER use native `<input type="checkbox">`, `<input type="radio">`, or `<select>` — use the
   primitives (native defaults are a known "amateur" defect).
-- Date/time: use shared `DateTimePicker` — never native `datetime-local` in new code.
+- Date/time: use shared `DateTimePicker` / `DateTimeRangeField` (DD-MM-YY HH:mm:ss + select dropdowns) — never native `datetime-local` in new code.
 - Discrete settings (finite px steps, enums): use `Select` dropdowns, not `Slider` / `range`.
 - Reset actions: label **"Reset to default"** / **"Reset to defaults"** — never "Reset draft".
 - Tooltips/popovers MUST be portaled and collision-aware. Tables MUST use the shared

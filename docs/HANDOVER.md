@@ -22,11 +22,19 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — Simple DD-MM-YY datetime dropdowns (replaces calendar picker)
+
+**What:** Removed react-day-picker / shadcn calendar `DateTimePicker`. Replaced with compact **DD-MM-YY HH:mm:ss** display and native `<select>` dropdowns for day/month/year/hour/minute/second in start/end `DateTimeRangeField`. Dropped `react-day-picker` + `date-fns` deps.
+
+**PR:** #631 (`cursor/simple-datetime-dropdown-021b`)
+
+---
+
 ## 2026-07-16 — RCA-first agent instruction + My Stack warning layout
 
 **What:** Mandatory RCA-first error investigation added to `AGENTS.md`, `CLAUDE.md`, and `.cursor/rules/rca-first-debugging.mdc`. My Stack pre-setup modal widened to 600px, copy reflowed to fewer lines, action buttons in a 2-column grid (stacks on narrow viewports).
 
-**PR:** #630 (`cursor/rca-instruction-mystack-layout-021b`)
+**PR:** #630 (merged)
 
 ---
 
