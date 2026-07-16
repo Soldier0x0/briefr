@@ -612,7 +612,13 @@ async def enrich_cve_circl(db, cve: dict) -> dict:
     return merged
 
 
-async def enrich_cves_extended(db, cve_ids: list[str], *, max_per_run: int = 40) -> dict[str, int]:
+async def enrich_cves_extended(
+    db,
+    cve_ids: list[str],
+    *,
+    max_per_run: int = 40,
+    progress_cb=None,
+) -> dict[str, int]:
     """Scheduler pass: Sploitus for PoC/KEV CVEs; CIRCL for entries missing CAPEC."""
     stats = {"sploitus": 0, "circl": 0}
     if not cve_ids:
@@ -632,7 +638,11 @@ async def enrich_cves_extended(db, cve_ids: list[str], *, max_per_run: int = 40)
             if row["has_poc"] or row["is_kev"]:
                 sploitus_ids.append(row["cve_id"].upper())
 
-    for cve_id in sploitus_ids:
+    for idx, cve_id in enumerate(sploitus_ids):
+        if progress_cb:
+            progress_cb(
+                f"Sploitus exploit refs {idx + 1}/{len(sploitus_ids)} ({cve_id})…"
+            )
         try:
             await load_sploitus_exploits_for_cve(db, cve_id)
             stats["sploitus"] += 1
@@ -646,7 +656,11 @@ async def enrich_cves_extended(db, cve_ids: list[str], *, max_per_run: int = 40)
             f"SELECT cve_id, source_urls, cwe_ids FROM cves WHERE cve_id IN ({placeholders})",
             [cid.upper() for cid in circl_ids],
         )
-        for row in cve_rows:
+        for circl_idx, row in enumerate(cve_rows):
+            if progress_cb:
+                progress_cb(
+                    f"CIRCL CAPEC {circl_idx + 1}/{len(cve_rows)} ({row['cve_id']})…"
+                )
             try:
                 urls = row["source_urls"] or "[]"
                 if isinstance(urls, str):

@@ -380,10 +380,22 @@ async def _run_nvd_incremental_sync() -> None:
             else:
                 stripped = filled = poc_marked = 0
             if updated_ids:
-                _job_progress["nvd_incremental_sync"] = f"Cross-enriching {len(updated_ids)} CVEs via Sploitus and CIRCL exploit references…"
+                enrich_cap = 40
+                enrich_batch = min(len(updated_ids), enrich_cap)
+                _job_progress["nvd_incremental_sync"] = (
+                    f"Cross-enriching up to {enrich_batch} of {len(updated_ids)} CVEs "
+                    f"(Sploitus/CIRCL, max {enrich_cap}/run)…"
+                )
                 from feeds.extended import enrich_cves_extended
 
-                ext_stats = await enrich_cves_extended(db, updated_ids)
+                def _enrich_progress(msg: str) -> None:
+                    _job_progress["nvd_incremental_sync"] = msg
+
+                ext_stats = await enrich_cves_extended(
+                    db,
+                    updated_ids,
+                    progress_cb=_enrich_progress,
+                )
                 logger.info(
                     "Extended enrichment: Sploitus %d, CIRCL %d",
                     ext_stats.get("sploitus", 0),

@@ -41,7 +41,7 @@ def admin_client(tmp_path, monkeypatch, auth_token):
 def test_providers_payload_lists_four_providers():
     payload = build_providers_payload()
     names = [p["provider"] for p in payload["providers"]]
-    assert names == ["groq", "gemini", "cerebras", "openrouter"]
+    assert names == ["groq", "cerebras", "openrouter", "gemini"]
     assert all("configured" in p for p in payload["providers"])
 
 
