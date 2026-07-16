@@ -819,6 +819,9 @@ async def run_vulncheck_kev_sync() -> bool:
             cve_ids = await fetch_vulncheck_kev_cve_ids(api_key)
             db = await get_db()
             try:
+                _job_progress["vulncheck_kev_sync"] = (
+                    f"Updating VulnCheck exploited flags for {len(cve_ids)} catalog CVEs…"
+                )
                 updated = await sync_vulncheck_exploited_flags(db, cve_ids)
                 await db.commit()
             finally:

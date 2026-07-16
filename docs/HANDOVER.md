@@ -22,13 +22,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-16 — KEV Metadata Sync database timeout
+## 2026-07-16 — KEV + VulnCheck sync database timeouts
 
-**What:** `KEV Metadata Sync` failed with **Database command timeout** on large Postgres. Cross-fetch used `get_all_cve_ids()` (full `cves` scan) while NVD/LLM jobs were active. Fix: `missing_cve_ids()` chunked IN over KEV catalog only; PG JOIN for `enrich_kev_summaries`; per-phase commits in KEV sync.
+**What:** Scheduler jobs failed with **Database command timeout** on large Postgres (23k+ CVEs) under concurrent NVD/LLM load.
 
-**PR:** pending (`cursor/kev-sync-db-timeout-021b`)
+- **KEV Metadata Sync:** cross-fetch used `get_all_cve_ids()` (full-table scan). Fix: `missing_cve_ids()` / `filter_cve_ids_present()` chunked IN over catalog IDs only; PG JOIN for `enrich_kev_summaries`; per-phase commits in KEV sync.
+- **VulnCheck KEV Tier Sync:** `sync_vulncheck_exploited_flags()` did table-wide reset + per-row UPDATE loop (up to 5000 statements). Fix: indexed lookup of currently flagged IDs, chunked IN for clear/set only.
 
-**Next:** merge + restart backend → **Retry now** on KEV Metadata Sync.
+**PR:** #629 (`cursor/kev-sync-db-timeout-021b`)
+
+**Next:** merge #628 + #629 → restart backend → **Retry now** on failed scheduler jobs.
 
 ---
 

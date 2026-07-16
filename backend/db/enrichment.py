@@ -645,17 +645,32 @@ async def insert_epss_history_rows(db: DbConnection, rows: list[dict]) -> int:
 
 
 async def sync_vulncheck_exploited_flags(db: DbConnection, cve_ids: list[str]) -> int:
-    """Mark CVEs present in VulnCheck KEV catalog (resets prior flags)."""
-    await db.execute("UPDATE cves SET is_vulncheck_exploited = 0 WHERE is_vulncheck_exploited = 1")
-    updated = 0
-    for cve_id in cve_ids:
-        cve_id = (cve_id or "").strip().upper()
-        if not cve_id:
-            continue
-        cursor = await db.execute(
-            "UPDATE cves SET is_vulncheck_exploited = 1 WHERE cve_id = ?",
-            (cve_id,),
+    """Mark CVEs present in VulnCheck KEV catalog (clears stale flags via indexed lookup)."""
+    catalog = sorted({(c or "").strip().upper() for c in cve_ids if c})
+    pg = _is_postgres_connection(db)
+
+    flagged_rows = await db.execute_fetchall(
+        "SELECT cve_id FROM cves WHERE is_vulncheck_exploited = 1"
+    )
+    currently_flagged = {row["cve_id"] for row in flagged_rows}
+    catalog_set = set(catalog)
+    to_clear = sorted(currently_flagged - catalog_set)
+
+    for i in range(0, len(to_clear), _SQLITE_IN_CHUNK):
+        chunk = to_clear[i : i + _SQLITE_IN_CHUNK]
+        placeholders = _in_placeholders(len(chunk), pg=pg, start=1)
+        await db.execute(
+            f"UPDATE cves SET is_vulncheck_exploited = 0 WHERE cve_id IN ({placeholders})",
+            tuple(chunk),
         )
-        if cursor.rowcount:
-            updated += 1
+
+    updated = 0
+    for i in range(0, len(catalog), _SQLITE_IN_CHUNK):
+        chunk = catalog[i : i + _SQLITE_IN_CHUNK]
+        placeholders = _in_placeholders(len(chunk), pg=pg, start=1)
+        cursor = await db.execute(
+            f"UPDATE cves SET is_vulncheck_exploited = 1 WHERE cve_id IN ({placeholders})",
+            tuple(chunk),
+        )
+        updated += cursor.rowcount or 0
     return updated
