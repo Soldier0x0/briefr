@@ -12,6 +12,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — DC-3 Detect tab evidence / compose_basis
+
+**What:** Detect tab shows evidence-pack summary (`formatEvidenceSummary`) and an Evidence `compose_basis` badge on the generated Sigma section. Labels/tooltips in `detectLabels.js`. No LLM; DetailDrawer Detect only.
+
+**Next:** DC-4 Forge hunt packs share composer engine. Then Q1–Q5 → E1–E6. Parked: STIX, V2 compose, G0–G4.
+
+---
+
 ## 2026-07-16 — DC-2 emit composed detection from evidence
 
 **What:** `emit_composed_detection(evidence)` builds Sigma + SIEM (KQL/SPL/Sentinel/QRadar) + YARA from the DC-1 evidence pack. Artifact paths/keywords inject into Sigma and SIEM; `compose_basis` on meta (`community|nuclei_artifacts|yara|template_fallback`). Detect API wired through the emitter. No LLM.

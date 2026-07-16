@@ -2,7 +2,12 @@ import { useState } from 'react'
 import { copyToClipboard } from '../../utils/report.js'
 import { notifyCopyFailure, notifyCopySuccess } from '../Toast.jsx'
 
-import { confidenceMatchLabel } from '../../utils/detectLabels.js'
+import {
+  confidenceMatchLabel,
+  composeBasisLabel,
+  composeBasisTooltip,
+  formatEvidenceSummary,
+} from '../../utils/detectLabels.js'
 import ControlTooltip from '../ControlTooltip.jsx'
 import IntelProvenanceLine from './IntelProvenanceLine.jsx'
 
@@ -49,6 +54,17 @@ function BasisBadge({ basis }) {
     <ControlTooltip text={tip} trigger="hover-focus">
       <span className="det-basis-badge mono">
         Based on {label}
+      </span>
+    </ControlTooltip>
+  )
+}
+
+function ComposeBasisBadge({ basis }) {
+  if (!basis) return null
+  return (
+    <ControlTooltip text={composeBasisTooltip(basis)} trigger="hover-focus">
+      <span className="det-compose-basis-badge mono">
+        Evidence: {composeBasisLabel(basis)}
       </span>
     </ControlTooltip>
   )
@@ -205,6 +221,7 @@ function GeneratedSigmaSection({
       <div className="det-generated-meta">
         <StatusBadge status={meta?.status || 'experimental'} title={EXPERIMENTAL_TOOLTIP} />
         <BasisBadge basis={meta?.briefr_basis} />
+        <ComposeBasisBadge basis={meta?.compose_basis} />
         <ControlTooltip text="BRIEFR confidence in this template match" trigger="hover-focus">
           <span className={`${confidenceCls} mono`}>
             {confidenceMatchLabel(confidence)}
@@ -285,6 +302,7 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
   const siemQueries = detection.siem_queries || {}
   const logPatterns = siemQueries.log_patterns || []
   const detectionClass = siemQueries.detection_class || generatedMeta.briefr_class || ''
+  const evidenceSummary = formatEvidenceSummary(detection.evidence)
 
   return (
     <>
@@ -295,6 +313,16 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
           Class-aware hunt starters — SIEM queries, log patterns, and a generated Sigma template
           keyed to this CVE&apos;s weakness class. Community rules stay primary when present.
         </p>
+        {evidenceSummary && (
+          <ControlTooltip
+            text="Evidence pack from the detection composer (community rules, Nuclei artifacts, YARA). No LLM on this path."
+            trigger="hover-focus"
+          >
+            <p className="det-evidence-summary mono" data-testid="det-evidence-summary">
+              {evidenceSummary}
+            </p>
+          </ControlTooltip>
+        )}
       </section>
 
       <section className="drawer-section" aria-labelledby="det-community-heading">

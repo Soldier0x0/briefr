@@ -2585,6 +2585,15 @@ a.drawer-related-news-title:focus-visible {
   letter-spacing: 0.02em;
 }
 
+.det-evidence-summary {
+  font-size: 0.6875rem;
+  color: var(--text2);
+  margin: 0 0 8px;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+  cursor: help;
+}
+
 .det-generated-intro {
   font-size: 0.6875rem;
   color: var(--text3);
@@ -2620,7 +2629,8 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .det-basis-badge,
-.det-class-badge {
+.det-class-badge,
+.det-compose-basis-badge {
   font-size: 8px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -2629,6 +2639,10 @@ a.drawer-related-news-title:focus-visible {
   background: var(--bg3);
   padding: 2px 6px;
   cursor: help;
+}
+
+.det-compose-basis-badge {
+  color: var(--text1);
 }
 
 .det-generated-warning {
