@@ -263,6 +263,56 @@ def test_extract_table_refs_covers_join_into_update_delete():
     assert gen.extract_table_refs(source, known) == ["a", "b", "c", "d"]
 
 
+def test_resolve_table_refs_follows_database_shim_and_same_module(tmp_path: Path):
+    """Job wrappers call `_run_*` helpers that use `from database import …`;
+    edges must resolve through the shim into db.* SQL without treating a
+    local `db` connection variable as the db package."""
+    backend = tmp_path / "backend"
+    (backend / "db").mkdir(parents=True)
+    (backend / "database.py").write_text(
+        "from db.enrichment import update_epss_scores\n",
+        encoding="utf-8",
+    )
+    (backend / "db" / "enrichment.py").write_text(
+        'SQL = "UPDATE cves SET epss_score = 1"\n'
+        "async def update_epss_scores(db):\n"
+        "    await db.execute(SQL)\n",
+        encoding="utf-8",
+    )
+    module = (
+        "from database import update_epss_scores\n"
+        "async def run_epss_sync():\n"
+        "    await _run_epss_sync()\n"
+        "async def _run_epss_sync():\n"
+        "    db = await get_db()\n"
+        "    await update_epss_scores(db)\n"
+        "    await db.close()\n"
+    )
+    entry = gen.extract_function_source(module, "run_epss_sync")
+    assert gen.resolve_table_refs(
+        entry, {"cves", "users"}, enclosing_module_source=module, backend_root=backend,
+    ) == ["cves"]
+
+
+def test_resolve_table_refs_follows_imported_service_module(tmp_path: Path):
+    backend = tmp_path / "backend"
+    (backend / "brief").mkdir(parents=True)
+    (backend / "brief" / "service.py").write_text(
+        'Q = "SELECT * FROM cves"\n'
+        "def build_morning_brief(db):\n"
+        "    return Q\n",
+        encoding="utf-8",
+    )
+    router = (
+        "from brief.service import build_morning_brief\n"
+        "async def endpoint(db):\n"
+        "    return build_morning_brief(db)\n"
+    )
+    assert gen.resolve_table_refs(
+        router, {"cves", "users"}, backend_root=backend,
+    ) == ["cves"]
+
+
 def test_extract_function_source_returns_body():
     src = "def alpha():\n    return 1\n\ndef beta():\n    x = 2\n    return x\n"
     body = gen.extract_function_source(src, "beta")

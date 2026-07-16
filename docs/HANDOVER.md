@@ -22,6 +22,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — ARCH graph: toggle deselect + real edge coverage
+
+**What:** (1) Re-clicking a selected node clears `?node=` (deselect). (2) Sparse edges were mostly false negatives — SQL lives in `db/` helpers and job `_run_*` wrappers, not in router/job entry sources. Generator now resolves one-hop: same-module helpers, `database.py` shim → `db.*`, imported backend services; still SQL-keyword anchored. Graph went ~31→536 edges; remaining isolates are honest (e.g. `routers-config`/`routers-proof`, core modules without SQL, a few tables only touched off the hop path).
+
+**Next:** PM-4a when maintainer queues it — do not auto-start without ask after prior overreach.
+
+---
+
 ## 2026-07-16 — ARCH graph viewport lock (no page scroll)
 
 **What:** After #633, canvas was ~70vh but chrome + inline node detail still forced page scroll past the graph. Lock `.sa-root:has(.sa-shell--graph)` to `calc(100dvh - 52px)` and flex the canvas into the remaining space; detail panel scrolls internally (`max-height: 28vh`). Also tick PM-3 complete in SPRINT (#632/#633).

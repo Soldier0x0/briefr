@@ -285,14 +285,23 @@ export default function ArchitectureGraphSection({
                       matched ? 'sa-graph-node-match' : '',
                       dimmed ? 'sa-graph-node-dim' : '',
                     ].filter(Boolean).join(' ')}
-                    onClick={() => onSelectNode(node.id)}
+                    onClick={() => {
+                      if (selected) onClearSelection()
+                      else onSelectNode(node.id)
+                    }}
                     onMouseEnter={() => setHoveredId(node.id)}
                     onMouseLeave={() => setHoveredId(null)}
                     tabIndex={0}
                     role="button"
                     aria-pressed={selected}
                     aria-label={`${node.kind} ${node.label}`}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectNode(node.id) } }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        if (selected) onClearSelection()
+                        else onSelectNode(node.id)
+                      }
+                    }}
                   >
                     <rect width={NODE_W} height={NODE_H} rx={2} />
                     <text x={8} y={NODE_H / 2 + 4}>
@@ -306,8 +315,9 @@ export default function ArchitectureGraphSection({
           </svg>
         </div>
         <p className="sa-graph-hint mono">
-          Hover or select a node to show its links · scroll to zoom · drag to pan ·
-          edges are SQL refs and curated job→source links (not a full call graph)
+          Click a node to select · click again to deselect · hover/select shows links ·
+          scroll to zoom · drag to pan · edges are SQL refs (incl. via db helpers /
+          called modules) and curated job→external links
         </p>
         {selectedNodeId && (
           <div className="sa-graph-detail" aria-label="Selected node detail">
