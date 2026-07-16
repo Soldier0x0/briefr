@@ -2,34 +2,30 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchSecurityArchitectureGraph } from '../../../api.js'
 import { notifyApiError } from '../../../components/Toast.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
+import ContextRail from '../ContextRail.jsx'
+import {
+  computeGraphLayout,
+} from '../../../utils/architectureGraphLayout.js'
+import {
+  DEFAULT_VIEW,
+  computeFitView,
+  computeGraphBounds,
+  zoomAtCursor,
+} from '../../../utils/architectureGraphView.js'
 
-const MIN_SCALE = 0.4
-const MAX_SCALE = 4
-const COL_WIDTH = 320
-const ROW_HEIGHT = 40
+const FILTER_ALL = 'all'
 const NODE_W = 260
 const NODE_H = 26
-const CLUSTER_TOP = 56
-
-const CLUSTER_ORDER = ['api', 'scheduler', 'database']
-const FILTER_ALL = 'all'
 
 /**
  * System Architecture graph (spec §5.2, §8 TM-4): interactive pan/zoom
- * render of the generated `graphs/architecture.json` -- nodes are exactly
- * the generator's components/jobs/tables, edges are its component->table
- * SQL-reference edges. No layout ships in the corpus (advisor note during
- * build: presentation isn't a code fact) -- this component computes a
- * deterministic cluster+index grid layout from the node list itself, so
- * "graph nodes match generator output exactly" (spec acceptance) holds:
- * every node rendered is a node the backend returned, nothing invented.
- *
- * Pan/zoom rides a single `<g transform="translate(...) scale(...)">` --
- * never re-layout during drag (playbook §3 smoothness budget). Wheel zoom
- * uses a native, non-passive listener (React's onWheel is passive and
- * can't preventDefault the page scroll).
+ * render of the generated `graphs/architecture.json`.
  */
-export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode }) {
+export default function ArchitectureGraphSection({
+  selectedNodeId,
+  onSelectNode,
+  onClearSelection,
+}) {
   const [graph, setGraph] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -37,9 +33,9 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
   const [clusterFilter, setClusterFilter] = useState(FILTER_ALL)
   const [search, setSearch] = useState('')
   const [hoveredId, setHoveredId] = useState(null)
-  const [view, setView] = useState({ x: 40, y: 20, scale: 1 })
+  const [view, setView] = useState({ ...DEFAULT_VIEW })
 
-  const svgRef = useRef(null)
+  const canvasRef = useRef(null)
   const dragRef = useRef(null)
 
   useEffect(() => {
@@ -58,38 +54,8 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
     return () => { cancelled = true }
   }, [reloadKey])
 
-  // Deterministic grid layout: one column per cluster (generator order),
-  // rows in the node list's own order (already id-sorted server-side).
-  const layout = useMemo(() => {
-    if (!graph) return { positioned: [], byId: new Map() }
-    const byCluster = new Map()
-    for (const node of graph.nodes) {
-      const list = byCluster.get(node.cluster) || []
-      list.push(node)
-      byCluster.set(node.cluster, list)
-    }
-    const clusterIds = graph.clusters?.map(c => c.id) || CLUSTER_ORDER
-    const positioned = []
-    const byId = new Map()
-    clusterIds.forEach((clusterId, ci) => {
-      const nodes = byCluster.get(clusterId) || []
-      nodes.forEach((node, ni) => {
-        const x = ci * COL_WIDTH + 20
-        const y = ni * ROW_HEIGHT + CLUSTER_TOP
-        const positionedNode = { ...node, x, y }
-        positioned.push(positionedNode)
-        byId.set(node.id, positionedNode)
-      })
-    })
-    return { positioned, byId }
-  }, [graph])
-
-  const clusters = graph?.clusters || []
-  const maxRows = clusters.length
-    ? Math.max(...clusters.map(c => layout.positioned.filter(n => n.cluster === c.id).length), 1)
-    : 1
-  const viewWidth = Math.max(clusters.length, 1) * COL_WIDTH + 40
-  const viewHeight = maxRows * ROW_HEIGHT + CLUSTER_TOP + 40
+  const layout = useMemo(() => computeGraphLayout(graph), [graph])
+  const { positioned, byId, clusters, viewWidth, viewHeight } = layout
 
   const searchLower = search.trim().toLowerCase()
   const isHidden = useCallback((node) => {
@@ -99,8 +65,8 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
   }, [clusterFilter, searchLower])
 
   const visibleNodes = useMemo(
-    () => layout.positioned.filter(node => !isHidden(node)),
-    [layout.positioned, isHidden],
+    () => positioned.filter(node => !isHidden(node)),
+    [positioned, isHidden],
   )
 
   const visibleNodeIds = useMemo(
@@ -112,27 +78,33 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
     const activeId = hoveredId || selectedNodeId
     if (!activeId || !graph) return new Set()
     return new Set(
-      graph.edges.filter(e => e.source === activeId || e.target === activeId).map(e => e.id)
+      graph.edges.filter(e => e.source === activeId || e.target === activeId).map(e => e.id),
     )
   }, [hoveredId, selectedNodeId, graph])
 
-  // Wheel zoom: native listener, not React's (passive) onWheel, so
-  // preventDefault actually stops page scroll while zooming the canvas.
-  // Depends on `graph` (not []): the canvas div is behind AsyncState's
-  // loading state, so it doesn't exist in the DOM yet on first mount --
-  // an empty-deps effect would capture a null ref forever. Re-running
-  // once `graph` arrives (and the canvas actually renders) is what
-  // makes the listener attach to a real element.
+  const fitGraphToView = useCallback(() => {
+    const el = canvasRef.current
+    if (!el || !positioned.length) return
+    const bounds = computeGraphBounds(positioned)
+    setView(computeFitView(bounds, el.clientWidth, el.clientHeight))
+  }, [positioned])
+
   useEffect(() => {
-    const el = svgRef.current
+    if (!graph || !positioned.length) return undefined
+    const frame = requestAnimationFrame(() => fitGraphToView())
+    return () => cancelAnimationFrame(frame)
+  }, [graph, positioned.length, fitGraphToView])
+
+  useEffect(() => {
+    const el = canvasRef.current
     if (!el) return undefined
     const handler = (e) => {
       e.preventDefault()
-      setView(v => {
-        const delta = e.deltaY < 0 ? 1.1 : 1 / 1.1
-        const nextScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, v.scale * delta))
-        return { ...v, scale: nextScale }
-      })
+      const rect = el.getBoundingClientRect()
+      const cursorX = e.clientX - rect.left
+      const cursorY = e.clientY - rect.top
+      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1
+      setView(v => zoomAtCursor(v, cursorX, cursorY, factor))
     }
     el.addEventListener('wheel', handler, { passive: false })
     return () => el.removeEventListener('wheel', handler)
@@ -157,7 +129,7 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
     }
   }, [])
 
-  const resetView = useCallback(() => setView({ x: 40, y: 20, scale: 1 }), [])
+  const resetView = useCallback(() => setView({ ...DEFAULT_VIEW }), [])
 
   return (
     <div className="sa-section">
@@ -197,6 +169,9 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
           onChange={(e) => setSearch(e.target.value)}
           aria-label="Search graph nodes"
         />
+        <button type="button" className="admin-btn admin-btn-ghost mono" onClick={fitGraphToView}>
+          FIT GRAPH
+        </button>
         <button type="button" className="admin-btn admin-btn-ghost mono" onClick={resetView}>
           RESET VIEW
         </button>
@@ -205,38 +180,38 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
       <AsyncState
         loading={loading}
         error={error}
-        empty={Boolean(error) || (!loading && layout.positioned.length === 0)}
+        empty={Boolean(error) || (!loading && positioned.length === 0)}
         emptyTitle={error ? undefined : 'No architecture graph yet — run scripts/generate_security_corpus.py.'}
         onRetry={() => setReloadKey(k => k + 1)}
         skeleton={<div className="sa-skeleton-row" aria-hidden="true" />}
       >
         <div
           className="sa-graph-canvas"
-          ref={svgRef}
+          ref={canvasRef}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerLeave={onPointerUp}
         >
-          <svg viewBox={`0 0 ${viewWidth} ${viewHeight}`} width="100%" height="560" role="img" aria-label="System architecture graph">
+          <svg viewBox={`0 0 ${viewWidth} ${viewHeight}`} width="100%" height="100%" role="img" aria-label="System architecture graph">
             <g transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}>
               {clusters.map((c, ci) => {
                 if (clusterFilter !== FILTER_ALL && c.id !== clusterFilter) return null
                 return (
-                <text
-                  key={c.id}
-                  x={ci * COL_WIDTH + 20}
-                  y={28}
-                  className="sa-graph-cluster-label"
-                >
-                  {c.label}
-                </text>
+                  <text
+                    key={c.id}
+                    x={ci * 320 + 20}
+                    y={28}
+                    className="sa-graph-cluster-label"
+                  >
+                    {c.label}
+                  </text>
                 )
               })}
               {graph?.edges.map(e => {
                 if (!visibleNodeIds.has(e.source) || !visibleNodeIds.has(e.target)) return null
-                const s = layout.byId.get(e.source)
-                const t = layout.byId.get(e.target)
+                const s = byId.get(e.source)
+                const t = byId.get(e.target)
                 if (!s || !t) return null
                 const highlighted = connectedEdgeIds.has(e.id)
                 return (
@@ -280,8 +255,13 @@ export default function ArchitectureGraphSection({ selectedNodeId, onSelectNode 
           </svg>
         </div>
         <p className="sa-graph-hint mono">
-          Scroll to zoom (0.4×–4×) · drag to pan · click a node to select it
+          Scroll to zoom at cursor (0.4×–4×) · drag to pan · click a node for detail
         </p>
+        {selectedNodeId && (
+          <div className="sa-graph-detail" aria-label="Selected node detail">
+            <ContextRail nodeId={selectedNodeId} onClose={onClearSelection} />
+          </div>
+        )}
       </AsyncState>
     </div>
   )

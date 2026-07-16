@@ -122,7 +122,7 @@ export default function SecurityArchitecturePage() {
         <GlobalSearch onOpenSection={(id) => goToSection(id)} />
       </header>
 
-      <div className="sa-shell">
+      <div className={`sa-shell${section === 'system_architecture' ? ' sa-shell--graph' : ''}`}>
         <nav className="sa-nav" aria-label="Security architecture sections">
           <div className="sa-nav-list" role="tablist" aria-label="Section" aria-orientation="vertical">
             {navSections.map((id, i) => (
@@ -163,7 +163,11 @@ export default function SecurityArchitecturePage() {
           ) : section === 'threat_scenarios' ? (
             <ThreatScenariosSection corpusVersion={manifest?.version} />
           ) : section === 'system_architecture' ? (
-            <ArchitectureGraphSection selectedNodeId={selectedNodeId} onSelectNode={selectNode} />
+            <ArchitectureGraphSection
+              selectedNodeId={selectedNodeId}
+              onSelectNode={selectNode}
+              onClearSelection={clearSelection}
+            />
           ) : section === 'trust_boundaries' ? (
             <TrustBoundariesSection />
           ) : section === 'attack_surface' ? (
@@ -183,19 +187,20 @@ export default function SecurityArchitecturePage() {
           )}
         </div>
 
-        <aside className="sa-rail" aria-label="Context">
-          <div className="sa-rail-head">
-            <h2 className="sa-subsection-label mono">CONTEXT</h2>
-          </div>
-          {selectedNodeId ? (
-            <ContextRail nodeId={selectedNodeId} onClose={clearSelection} />
-          ) : (
-            <div className="sa-rail-empty">
-              <p>Select a node, technique, control, or risk to see related context here.</p>
-              <p className="sa-rail-empty-note">Click a node in System Architecture to populate this rail.</p>
+        {section !== 'system_architecture' && (
+          <aside className="sa-rail" aria-label="Context">
+            <div className="sa-rail-head">
+              <h2 className="sa-subsection-label mono">CONTEXT</h2>
             </div>
-          )}
-        </aside>
+            {selectedNodeId ? (
+              <ContextRail nodeId={selectedNodeId} onClose={clearSelection} />
+            ) : (
+              <div className="sa-rail-empty">
+                <p>Select a technique, control, or risk to see related context here.</p>
+              </div>
+            )}
+          </aside>
+        )}
       </div>
     </div>
   )

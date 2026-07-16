@@ -1771,6 +1771,11 @@ Response: `{ok, checks: [{name, passed, detail}], duration_ms}`.
 Runs `PRAGMA integrity_check` and `PRAGMA foreign_key_check`.
 Response: `{ok, integrity_ok, foreign_keys_ok, message, foreign_key_violations}`.
 
+### POST /api/admin/diagnostics/corpus-drift
+Regenerates the security architecture **generated** corpus layer (`components.yaml`, `api_inventory.yaml`, scheduler/DB/self-stack YAML, `graphs/architecture.json`) into a temp directory and diffs against the committed files. Read-only — does not modify the repo.
+
+Response: `{ok, drifted_files: [string], regenerate_command}`. When `ok` is false, `drifted_files` lists paths that differ; run `python scripts/generate_security_corpus.py` and commit. Audit: `diagnostics.corpus_drift` with target `pass` or `fail`.
+
 ### GET /api/admin/diagnostics/support-pack
 Admin-gated export of a redacted operator support pack (health + logs, no secrets). Suitable for attaching to support tickets or saving via `deploy/briefr-doctor.sh --support-pack`.
 

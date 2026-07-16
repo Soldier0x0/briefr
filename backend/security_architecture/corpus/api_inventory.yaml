@@ -73,6 +73,9 @@ endpoints:
   path: /api/admin/destructive-actions
   component_id: routers-admin
 - method: POST
+  path: /api/admin/diagnostics/corpus-drift
+  component_id: routers-admin
+- method: POST
   path: /api/admin/diagnostics/integrity
   component_id: routers-admin
 - method: POST

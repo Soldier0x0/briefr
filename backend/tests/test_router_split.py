@@ -154,6 +154,7 @@ EXPECTED_ROUTES = [
     ("GET", "/api/admin/audit-log"),
     ("POST", "/api/admin/diagnostics/smoke"),
     ("POST", "/api/admin/diagnostics/integrity"),
+    ("POST", "/api/admin/diagnostics/corpus-drift"),
     ("GET", "/api/admin/diagnostics/support-pack"),
     ("GET", "/api/admin/onboarding"),
     ("POST", "/api/admin/onboarding/dismiss"),

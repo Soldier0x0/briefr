@@ -59,6 +59,11 @@
   padding: 20px 24px 48px;
 }
 
+.sa-shell--graph .sa-workspace {
+  flex: 1;
+  min-width: 0;
+}
+
 .sa-nav {
   width: var(--sa-nav-width);
   flex-shrink: 0;
@@ -768,6 +773,14 @@
   touch-action: none;
   cursor: grab;
   user-select: none;
+  min-height: calc(100vh - 52px - 40px);
+}
+
+.sa-graph-canvas svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
 }
 
 .sa-graph-canvas:active {
@@ -838,6 +851,14 @@
   font-size: var(--type-meta);
   color: var(--text3);
   margin: 8px 0 0;
+}
+
+.sa-graph-detail {
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  max-height: min(40vh, 420px);
+  overflow: auto;
 }
 
 /* ── Trust boundaries (TM-4) ──────────────────────────────────────── */

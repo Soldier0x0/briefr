@@ -2452,6 +2452,16 @@ async def check_integrity(request: Request):
     return result.as_dict()
 
 
+@router.post("/diagnostics/corpus-drift")
+async def check_security_corpus_drift(request: Request):
+    """Regenerate the security architecture generated layer and report drift."""
+    from security_architecture.corpus_drift import check_corpus_drift
+
+    result = check_corpus_drift()
+    await audit(request, "diagnostics.corpus_drift", "pass" if result["ok"] else "fail")
+    return result
+
+
 @router.get("/diagnostics/support-pack")
 async def export_support_pack(
     request: Request,
