@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { fetchSecurityArchitectureSearch } from '../../api.js'
+import { isAnalystHiddenSection, resolveAnalystSection } from './constants.js'
 
 const TYPE_LABEL = {
   components: 'ROUTER', endpoints: 'ENDPOINT', jobs: 'JOB', tables: 'TABLE',
@@ -36,8 +37,11 @@ export default function GlobalSearch({ onOpenSection }) {
       fetchSecurityArchitectureSearch(q)
         .then(res => {
           if (!active) return
-          setResults(res.results || [])
-          setOpen(true)
+          const visible = (res.results || []).filter(
+            (r) => !isAnalystHiddenSection(r.section),
+          )
+          setResults(visible)
+          setOpen(Boolean(visible.length))
           setActiveIndex(-1)
         })
         .catch(() => { /* search bar just shows no results */ })
@@ -63,7 +67,7 @@ export default function GlobalSearch({ onOpenSection }) {
     // severity/origin/type per the generic section reads) -- search opens
     // the right section; landing on the exact row is a future enhancement,
     // not invented here.
-    onOpenSection(result.section)
+    onOpenSection(resolveAnalystSection(result.section))
   }
 
   function onKeyDown(e) {

@@ -22,6 +22,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — PM-4b Analyst ARCH cleanup
+
+**What:** Drop Security Decisions, Reviews, and Components from the analyst ARCH nav; remove the corpus version footer (`sa-nav-meta`). Deep links / search / overview drills to those sections resolve to Overview (or System Architecture for the simplified stack). Admin Security posture already excludes them. Corpus YAML + `/section/{id}` API unchanged.
+
+**Next:** PM-4c (remove ARCH tab + redirect) → PM-4d → PM-4e.
+
+---
+
 ## 2026-07-16 — PM-4a Admin Security posture shell
 
 **What:** Admin → **Security posture** (`?p=securityposture`) embeds Overview, System Architecture, Trust Boundaries, Attack Surface, and Risks (reuse ARCH section components). Analyst role + analyst view nav included (read-only). ARCH tab / `/security-architecture` unchanged until PM-4c.

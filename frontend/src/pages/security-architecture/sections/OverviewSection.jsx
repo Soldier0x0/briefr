@@ -5,6 +5,7 @@ import Tooltip from '../../../components/ui/Tooltip.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
 import StatCard from '../../admin/shared/StatCard.jsx'
 import { downloadOverviewPdf } from '../../../utils/securityArchitecturePdf.js'
+import { isAnalystHiddenSection } from '../constants.js'
 
 /**
  * Overview (spec §5.1, §8 TM-2): evidence tiles that are counts or ratios
@@ -43,7 +44,8 @@ export default function OverviewSection({ onDrill, corpusVersion }) {
     return () => { cancelled = true }
   }, [reloadKey])
 
-  const tiles = data?.tiles || []
+  // PM-4b: hide tiles that drill into ADR / Reviews / Components.
+  const tiles = (data?.tiles || []).filter((tile) => !isAnalystHiddenSection(tile.section))
   const stackTiers = [
     { type: 'components', label: 'API Routers', help: 'FastAPI router modules.' },
     { type: 'jobs', label: 'Scheduler Jobs', help: 'Background jobs registered in scheduler.py.' },
@@ -132,7 +134,7 @@ export default function OverviewSection({ onDrill, corpusVersion }) {
                   <button
                     type="button"
                     className="sa-stat-card-btn"
-                    onClick={() => onDrill('components', { type: tier.type })}
+                    onClick={() => onDrill('system_architecture')}
                   >
                     <StatCard
                       plain

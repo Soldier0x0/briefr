@@ -5,7 +5,11 @@ import ArchitectureGraphSection from '../security-architecture/sections/Architec
 import TrustBoundariesSection from '../security-architecture/sections/TrustBoundariesSection.jsx'
 import AttackSurfaceSection from '../security-architecture/sections/AttackSurfaceSection.jsx'
 import RiskRegisterSection from '../security-architecture/sections/RiskRegisterSection.jsx'
-import { humanizeSectionId } from '../security-architecture/constants.js'
+import {
+  humanizeSectionId,
+  isAnalystHiddenSection,
+  resolveAnalystSection,
+} from '../security-architecture/constants.js'
 import '../security-architecture/SecurityArchitecturePage.css'
 import './SecurityPosturePage.css'
 
@@ -39,10 +43,16 @@ export default function SecurityPosturePage({ mode = 'operator' }) {
   }), [searchParams])
 
   const setSection = useCallback((nextSection, nextFilters = {}) => {
+    // PM-4b: ADR / Reviews / Components stay out of the product UI.
+    if (isAnalystHiddenSection(nextSection)) {
+      nextSection = DEFAULT_SECTION
+      nextFilters = {}
+    }
+
     if (!POSTURE_SECTIONS.includes(nextSection)) {
-      // Overview tiles may drill to ARCH-only sections — send them to the
-      // stand-alone ARCH route until PM-4c retires that shell.
-      const params = new URLSearchParams({ section: nextSection })
+      // Overview tiles may drill to ARCH-only sections (controls, stale, …)
+      // — send them to the stand-alone ARCH route until PM-4c retires that shell.
+      const params = new URLSearchParams({ section: resolveAnalystSection(nextSection) })
       for (const [key, value] of Object.entries(nextFilters)) {
         if (value !== undefined && value !== null && value !== '') {
           params.set(key, String(value))

@@ -163,10 +163,7 @@
 }
 
 .sa-nav-meta {
-  font-size: var(--type-meta);
-  color: var(--text3);
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
+  display: none; /* PM-4b: corpus footer removed from analyst UI */
 }
 
 .sa-workspace {
@@ -748,10 +745,6 @@
   .sa-nav-list {
     flex-direction: row;
     flex-wrap: wrap;
-  }
-
-  .sa-nav-meta {
-    display: none;
   }
 
   .sa-stat-grid,

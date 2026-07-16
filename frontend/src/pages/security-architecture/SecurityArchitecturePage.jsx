@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { fetchSecurityArchitectureManifest } from '../../api.js'
 import { notifyApiError } from '../../components/Toast.jsx'
-import { humanizeSectionId, DEFAULT_SECTION } from './constants.js'
+import {
+  humanizeSectionId,
+  DEFAULT_SECTION,
+  isAnalystHiddenSection,
+  resolveAnalystSection,
+} from './constants.js'
 import OverviewSection from './sections/OverviewSection.jsx'
 import GenericSection from './sections/GenericSection.jsx'
 import MitreSection from './sections/MitreSection.jsx'
@@ -11,9 +16,7 @@ import ArchitectureGraphSection from './sections/ArchitectureGraphSection.jsx'
 import TrustBoundariesSection from './sections/TrustBoundariesSection.jsx'
 import AttackSurfaceSection from './sections/AttackSurfaceSection.jsx'
 import RiskRegisterSection from './sections/RiskRegisterSection.jsx'
-import DecisionsSection from './sections/DecisionsSection.jsx'
 import AbuseCasesSection from './sections/AbuseCasesSection.jsx'
-import ReviewHistorySection from './sections/ReviewHistorySection.jsx'
 import StaleRecordsSection from './sections/StaleRecordsSection.jsx'
 import ContextRail from './ContextRail.jsx'
 import GlobalSearch from './GlobalSearch.jsx'
@@ -37,6 +40,10 @@ import './SecurityArchitecturePage.css'
  * Context rail starts and stays in an empty state in TM-2 -- sections that
  * populate it (component detail, technique detail, risk detail, ...) are
  * TM-3+ scope (spec §8 TM-2: "context rail empty state").
+ *
+ * PM-4b: Security Decisions, Reviews, and Components are filtered out of the
+ * analyst nav (and deep-linked away); the corpus version footer is gone.
+ * YAML + API for those sections remain for operators/devs.
  */
 export default function SecurityArchitecturePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -71,12 +78,19 @@ export default function SecurityArchitecturePage() {
 
   const goToSection = useCallback((nextSection, nextFilters = {}) => {
     const next = new URLSearchParams()
-    next.set('section', nextSection)
+    next.set('section', resolveAnalystSection(nextSection))
     for (const [key, value] of Object.entries(nextFilters)) {
       if (value !== undefined && value !== null && value !== '') next.set(key, String(value))
     }
     setSearchParams(next)
   }, [setSearchParams])
+
+  // PM-4b: deep links to ADR / Reviews / Components land on Overview.
+  useEffect(() => {
+    if (isAnalystHiddenSection(section)) {
+      goToSection(DEFAULT_SECTION)
+    }
+  }, [section, goToSection])
 
   const setFilters = useCallback((nextFilters) => {
     goToSection(section, nextFilters)
@@ -98,7 +112,10 @@ export default function SecurityArchitecturePage() {
     })
   }, [setSearchParams])
 
-  const navSections = manifest?.sections || (manifestError ? [] : [DEFAULT_SECTION])
+  const navSections = useMemo(() => {
+    const raw = manifest?.sections || (manifestError ? [] : [DEFAULT_SECTION])
+    return raw.filter((id) => !isAnalystHiddenSection(id))
+  }, [manifest, manifestError])
 
   // Roving-tabindex arrow-key navigation between nav sections (spec §9.10:
   // "Tab through nav, Enter to select" -- arrow keys are the standard
@@ -113,6 +130,8 @@ export default function SecurityArchitecturePage() {
     goToSection(nextId)
   }, [navSections, goToSection])
 
+  const activeSection = isAnalystHiddenSection(section) ? DEFAULT_SECTION : section
+
   return (
     <div className="sa-root">
       <header className="sa-topbar">
@@ -122,7 +141,7 @@ export default function SecurityArchitecturePage() {
         <GlobalSearch onOpenSection={(id) => goToSection(id)} />
       </header>
 
-      <div className={`sa-shell${section === 'system_architecture' ? ' sa-shell--graph' : ''}`}>
+      <div className={`sa-shell${activeSection === 'system_architecture' ? ' sa-shell--graph' : ''}`}>
         <nav className="sa-nav" aria-label="Security architecture sections">
           <div className="sa-nav-list" role="tablist" aria-label="Section" aria-orientation="vertical">
             {navSections.map((id, i) => (
@@ -131,10 +150,10 @@ export default function SecurityArchitecturePage() {
                 ref={el => { navRefs.current[id] = el }}
                 type="button"
                 role="tab"
-                tabIndex={section === id ? 0 : -1}
-                aria-selected={section === id}
-                aria-current={section === id ? 'page' : undefined}
-                className={`sa-nav-btn${section === id ? ' active' : ''}`}
+                tabIndex={activeSection === id ? 0 : -1}
+                aria-selected={activeSection === id}
+                aria-current={activeSection === id ? 'page' : undefined}
+                className={`sa-nav-btn${activeSection === id ? ' active' : ''}`}
                 onClick={() => goToSection(id)}
                 onKeyDown={(e) => handleNavKeyDown(e, i)}
               >
@@ -142,11 +161,6 @@ export default function SecurityArchitecturePage() {
               </button>
             ))}
           </div>
-          {manifest && (
-            <p className="sa-nav-meta mono">
-              corpus v{manifest.version} · reviewed {manifest.last_reviewed}
-            </p>
-          )}
         </nav>
 
         <div className="sa-workspace">
@@ -156,38 +170,34 @@ export default function SecurityArchitecturePage() {
             </div>
           )}
 
-          {section === 'overview' ? (
+          {activeSection === 'overview' ? (
             <OverviewSection onDrill={goToSection} corpusVersion={manifest?.version} />
-          ) : section === 'mitre_attack' ? (
+          ) : activeSection === 'mitre_attack' ? (
             <MitreSection />
-          ) : section === 'threat_scenarios' ? (
+          ) : activeSection === 'threat_scenarios' ? (
             <ThreatScenariosSection corpusVersion={manifest?.version} />
-          ) : section === 'system_architecture' ? (
+          ) : activeSection === 'system_architecture' ? (
             <ArchitectureGraphSection
               selectedNodeId={selectedNodeId}
               onSelectNode={selectNode}
               onClearSelection={clearSelection}
             />
-          ) : section === 'trust_boundaries' ? (
+          ) : activeSection === 'trust_boundaries' ? (
             <TrustBoundariesSection />
-          ) : section === 'attack_surface' ? (
+          ) : activeSection === 'attack_surface' ? (
             <AttackSurfaceSection />
-          ) : section === 'risks' ? (
+          ) : activeSection === 'risks' ? (
             <RiskRegisterSection filters={filters} onFilterChange={setFilters} corpusVersion={manifest?.version} />
-          ) : section === 'security_decisions' ? (
-            <DecisionsSection />
-          ) : section === 'abuse_cases' ? (
+          ) : activeSection === 'abuse_cases' ? (
             <AbuseCasesSection />
-          ) : section === 'reviews' ? (
-            <ReviewHistorySection />
-          ) : section === 'stale' ? (
+          ) : activeSection === 'stale' ? (
             <StaleRecordsSection onOpenSection={goToSection} />
           ) : (
-            <GenericSection sectionId={section} filters={filters} onFilterChange={setFilters} />
+            <GenericSection sectionId={activeSection} filters={filters} onFilterChange={setFilters} />
           )}
         </div>
 
-        {section !== 'system_architecture' && (
+        {activeSection !== 'system_architecture' && (
           <aside className="sa-rail" aria-label="Context">
             <div className="sa-rail-head">
               <h2 className="sa-subsection-label mono">CONTEXT</h2>
