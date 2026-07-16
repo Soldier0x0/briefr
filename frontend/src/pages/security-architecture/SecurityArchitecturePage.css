@@ -59,9 +59,64 @@
   padding: 20px 24px 48px;
 }
 
+/* Graph mode: lock the whole ARCH page into the viewport so the canvas
+   pan/zooms in place — no page-length scroll past the graph to reach APIs. */
+.sa-root:has(.sa-shell--graph) {
+  height: calc(100dvh - 52px);
+  min-height: 0;
+  max-height: calc(100dvh - 52px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sa-root:has(.sa-shell--graph) .sa-topbar {
+  flex-shrink: 0;
+}
+
+.sa-shell--graph {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-items: stretch;
+  padding-bottom: 16px;
+  overflow: hidden;
+}
+
 .sa-shell--graph .sa-workspace {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sa-shell--graph .sa-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sa-shell--graph .sa-section-head,
+.sa-shell--graph .sa-graph-toolbar,
+.sa-shell--graph .sa-graph-hint {
+  flex-shrink: 0;
+}
+
+.sa-shell--graph .ui-async-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sa-shell--graph .sa-graph-detail {
+  flex: 0 1 28vh;
+  max-height: 28vh;
+  margin-top: 8px;
 }
 
 .sa-nav {
@@ -773,10 +828,18 @@
   touch-action: none;
   cursor: grab;
   user-select: none;
-  /* Lock to ~70% viewport — pan/zoom inside; no page-length canvas scroll. */
+  /* Fallback when not inside .sa-shell--graph flex lock. */
   height: min(70vh, calc(100vh - 240px));
-  min-height: 420px;
+  min-height: 280px;
   max-height: 70vh;
+}
+
+.sa-shell--graph .sa-graph-canvas {
+  /* Fill remaining viewport under chrome; pan/zoom instead of page scroll. */
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 240px;
+  max-height: none;
 }
 
 .sa-graph-canvas svg {
