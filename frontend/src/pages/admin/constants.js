@@ -15,6 +15,9 @@ export const NAV = [
     { id: 'security', label: 'Security', icon: 'ShieldAlert', badgeKey: 'failed_auth_last_24h' },
     { id: 'ratelimit', label: 'Inbound limits', icon: 'Gauge' },
   ]},
+  { section: 'SECURITY POSTURE', items: [
+    { id: 'securityposture', label: 'Security posture', icon: 'Shield' },
+  ]},
   { section: 'OBSERVABILITY', items: [
     { id: 'feedhealth', label: 'Feed health', icon: 'HeartPulse', badgeKey: 'open_circuit_count' },
     { id: 'ingestlog', label: 'Application logs', icon: 'ScrollText', badgeKey: 'ingest_error_count' },
@@ -32,6 +35,7 @@ export const ANALYST_NAV = [
     { id: 'overview', label: 'Intel status', icon: 'Activity', badgeKey: 'jobs_with_errors_count' },
     { id: 'feedhealth', label: 'Source status', icon: 'HeartPulse', badgeKey: 'open_circuit_count' },
     { id: 'alerts', label: 'Alert channels', icon: 'BellRing' },
+    { id: 'securityposture', label: 'Security posture', icon: 'Shield' },
   ]},
   { section: 'YOUR DATA', items: [
     { id: 'watchlist', label: 'Pinned CVEs', icon: 'Bookmark' },

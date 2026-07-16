@@ -16,6 +16,15 @@ describe('resolveAdminPage (E8-2)', () => {
     assert.equal(page.label, 'Source status')
   })
 
+  it('resolves Security posture in operator and analyst nav (PM-4a)', () => {
+    const op = resolveAdminPage('securityposture', 'operator')
+    assert.equal(op.section, 'SECURITY POSTURE')
+    assert.equal(op.label, 'Security posture')
+    const an = resolveAdminPage('securityposture', 'analyst')
+    assert.equal(an.section, 'INTEL')
+    assert.equal(an.label, 'Security posture')
+  })
+
   it('falls back for unknown page ids', () => {
     const page = resolveAdminPage('unknown-page', 'operator')
     assert.equal(page.label, 'unknown-page')

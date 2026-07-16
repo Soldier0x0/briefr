@@ -1,0 +1,70 @@
+/* PM-4a: Security posture inside Admin — reuse ARCH section CSS with
+   admin-chrome height, not the full-page ARCH topbar. */
+
+.admin-security-posture.sa-root {
+  min-height: 0;
+  background: transparent;
+}
+
+.admin-security-posture .sa-shell {
+  padding: 0;
+  gap: 0;
+}
+
+.admin-security-posture-workspace {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Graph mode: lock into remaining admin viewport (app header + admin chrome). */
+.admin-security-posture--graph.sa-root {
+  height: calc(100dvh - 140px);
+  max-height: calc(100dvh - 140px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-security-posture--graph .admin-page-header,
+.admin-security-posture--graph .admin-subtabs {
+  flex-shrink: 0;
+}
+
+.admin-security-posture--graph .sa-shell--graph {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-items: stretch;
+  padding-bottom: 8px;
+  overflow: hidden;
+}
+
+.admin-security-posture--graph .sa-workspace {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.admin-security-posture--graph .sa-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.admin-security-posture--graph .ui-async-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.admin-security-posture--graph .sa-graph-canvas {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 240px;
+  max-height: none;
+}

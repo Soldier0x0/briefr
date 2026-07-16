@@ -22,6 +22,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — PM-4a Admin Security posture shell
+
+**What:** Admin → **Security posture** (`?p=securityposture`) embeds Overview, System Architecture, Trust Boundaries, Attack Surface, and Risks (reuse ARCH section components). Analyst role + analyst view nav included (read-only). ARCH tab / `/security-architecture` unchanged until PM-4c.
+
+**Also parked (future, not this PR):** Evidence-composed Sigma/KQL/SPL/QRadar/YARA composer (replace Forge keyword templates) — retrieve CVE-grounded community/Nuclei/observables first; shared engine for drawer Detect + Forge; no LLM default. Start after PM-4 + when Forge quality is queued.
+
+**Next:** PM-4b (drop ADR/Reviews/footer from analyst ARCH) → PM-4c → PM-4d → PM-4e.
+
+---
+
 ## 2026-07-16 — ARCH graph: toggle deselect + real edge coverage
 
 **What:** (1) Re-clicking a selected node clears `?node=` (deselect). (2) Sparse edges were mostly false negatives — SQL lives in `db/` helpers and job `_run_*` wrappers, not in router/job entry sources. Generator now resolves one-hop: same-module helpers, `database.py` shim → `db.*`, imported backend services; still SQL-keyword anchored. Graph went ~31→536 edges; remaining isolates are honest (e.g. `routers-config`/`routers-proof`, core modules without SQL, a few tables only touched off the hop path).
