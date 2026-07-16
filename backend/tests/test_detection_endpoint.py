@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from unittest.mock import AsyncMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -60,9 +61,14 @@ def client(tmp_path, monkeypatch):
     async def _fake_yara(*_args, **_kwargs):
         return []
 
-    monkeypatch.setattr("routers.cves.find_sigma_rules", _fake_sigma)
-    monkeypatch.setattr("routers.cves.find_elastic_rules", _fake_elastic)
     monkeypatch.setattr("detection.yara_generator.find_yara_rules_for_cve", _fake_yara)
+    monkeypatch.setattr("detection.composer.find_sigma_rules", _fake_sigma)
+    monkeypatch.setattr("detection.composer.find_elastic_rules", _fake_elastic)
+    monkeypatch.setattr("detection.composer.find_yara_rules_for_cve", _fake_yara)
+    monkeypatch.setattr(
+        "detection.composer.read_cve_exploits_from_db",
+        AsyncMock(return_value=[]),
+    )
 
     with TestClient(app) as test_client:
         yield test_client
@@ -80,3 +86,15 @@ def test_detection_always_returns_generated_sigma_supplement(client):
     assert meta["briefr_class"] == "path_traversal"
     assert meta["status"] == "experimental"
     assert body["siem_queries"]["detection_class"] == "path_traversal"
+
+
+def test_detection_includes_evidence_pack(client):
+    res = client.get("/api/cves/CVE-2024-DET5/detection")
+    assert res.status_code == 200
+    body = res.json()
+    evidence = body["evidence"]
+    assert evidence["cve_id"] == "CVE-2024-DET5"
+    assert evidence["community"]["has_community_rules"] is True
+    assert evidence["evidence_summary"]["primary_source"] == "community"
+    assert "artifacts" in evidence
+    assert "observables" in evidence

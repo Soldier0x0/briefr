@@ -67,10 +67,9 @@ from database import (
     get_watchlist_entry,
     match_cves_for_assets,
 )
-from detection.rule_sources import find_elastic_rules, find_sigma_rules
+from detection.composer import compose_detection_evidence
 from detection.siem_queries import get_siem_queries
 from detection.sigma_generator import generate_sigma_rule_bundle
-from detection.context import get_detection_context
 from feeds.case_study_feed import get_related_news_for_cve
 from feeds.extended import (
     enrich_cve_circl,
@@ -1583,6 +1582,7 @@ async def cve_detection(
     detection_context = None
     siem_queries: dict = {}
     yara_rules: list = []
+    evidence: dict | None = None
     detection_provenance = None
     db = await get_db()
     try:
@@ -1615,18 +1615,26 @@ async def cve_detection(
         if primary_technique and primary_technique not in technique_ids:
             technique_ids.insert(0, primary_technique)
 
-        # Sigma + Elastic lookups must not share one asyncpg connection — unlike
-        # SQLite, Postgres connections reject concurrent queries on the same
-        # session ("another operation is in progress"), which poisoned the pool
-        # when close() could not roll back and never released the connection.
-        sigma_rules = await find_sigma_rules(db, cve_upper, technique_ids, github_token)
-        elastic_rules = await find_elastic_rules(db, technique_ids, github_token)
+        # Shared evidence pack (DC-1) — community / Nuclei artifacts / YARA.
+        # Sequential on one connection (asyncpg is single-flight per conn).
+        evidence = await compose_detection_evidence(
+            db,
+            cve_id=cve_upper,
+            technique_ids=technique_ids,
+            cwe_ids=cwe_ids,
+            product=product.strip(),
+            github_token=github_token,
+            include_community=True,
+        )
         await db.commit()
 
-        # Generate Sigma rule if no community rules found
+        sigma_rules = evidence["community"]["sigma_rules"]
+        elastic_rules = evidence["community"]["elastic_rules"]
+        has_community_rules = evidence["community"]["has_community_rules"]
+        detection_context = evidence.get("detection_context")
+        yara_rules = evidence["observables"]["yara_rules"]
+
         first_technique = technique_ids[0] if technique_ids else ""
-        has_community_rules = bool(sigma_rules or elastic_rules)
-        detection_context = await get_detection_context(db, cve_upper)
         generated_sigma, generated_sigma_meta = generate_sigma_rule_bundle(
             cve_id=cve_upper,
             technique_id=first_technique,
@@ -1636,7 +1644,6 @@ async def cve_detection(
             detection_context=detection_context,
         )
 
-        # SIEM queries based on primary technique
         siem_queries = get_siem_queries(
             technique_id=first_technique,
             cve_id=cve_upper,
@@ -1644,10 +1651,6 @@ async def cve_detection(
             cwe_ids=cwe_ids,
             detection_context=detection_context,
         )
-
-        from detection.yara_generator import find_yara_rules_for_cve
-
-        yara_rules = await find_yara_rules_for_cve(db, cve_upper)
 
         detection_provenance = await derive_detection_provenance(
             db,
@@ -1675,6 +1678,7 @@ async def cve_detection(
         "detection_context": detection_context,
         "siem_queries": siem_queries,
         "yara_rules": yara_rules,
+        "evidence": evidence,
         "provenance": detection_provenance,
     }
 

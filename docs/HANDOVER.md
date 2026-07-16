@@ -12,6 +12,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — DC-1 detection composer evidence engine
+
+**What:** `detection/composer.py` → `compose_detection_evidence()` aggregates community Sigma/Elastic, detection_context artifacts, Nuclei exploit URLs, and YARA hashes into an evidence pack (no LLM). `GET /api/cves/{id}/detection` now includes additive `evidence` and uses the composer for community/context/YARA retrieval. Design: `docs/planning/specs/detection-composer-design.md`.
+
+**Next:** DC-2 (emit composed Sigma/KQL/SPL/QRadar/YARA from evidence) → DC-3 Detect UI → DC-4 Forge. Then Q1–Q5 → E1–E6. Parked: STIX, V2 compose, G0–G4.
+
+---
+
 ## 2026-07-16 — RSS ↔ CVE linking
 
 **What:** Incident/news RSS cards extract `cve_ids` from title/body at parse time. Incidents tab shows CVE chips that open the drawer. Drawer RELATED tab lists matching Incidents/News from the snapshot (`related_news` on `/api/cves/{id}/drawer`). Stale snapshots backfill IDs from title/description on serve. No new News tab.
