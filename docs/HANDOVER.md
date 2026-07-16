@@ -20,6 +20,24 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+<<<<<<< HEAD
+---
+
+## 2026-07-16 — KEV + VulnCheck sync database timeouts
+
+**What:** Scheduler jobs failed with **Database command timeout** on large Postgres (23k+ CVEs) under concurrent NVD/LLM load.
+
+- **KEV Metadata Sync:** cross-fetch used `get_all_cve_ids()` (full-table scan). Fix: `missing_cve_ids()` / `filter_cve_ids_present()` chunked IN over catalog IDs only; PG JOIN for `enrich_kev_summaries`; per-phase commits in KEV sync.
+- **VulnCheck KEV Tier Sync:** `sync_vulncheck_exploited_flags()` did table-wide reset + per-row UPDATE loop (up to 5000 statements). Fix: indexed lookup of currently flagged IDs, chunked IN for clear/set only.
+
+**PR:** #629 (`cursor/kev-sync-db-timeout-021b`)
+
+**Next:** merge #628 + #629 → restart backend → **Retry now** on failed scheduler jobs.
+
+---
+
+## 2026-07-15 — Tooltip v2 (Radix / shadcn pattern)
+=======
 ## 2026-07-16 — LLM provider priority + scheduler progress (slow jobs)
 
 **What:** Jobs stuck at "CVE 1/10" were mostly **API-queue pacing** (~9–13s between Groq calls) plus **Gemini as 2nd failover** (60s timeouts). Failover order is now **Groq → Cerebras → OpenRouter → Gemini** (Gemini last). Scheduler tasks use repo SSOT Groq models (`GROQ_MODEL=openai/gpt-oss-20b`, `GROQ_MODEL_SUMMARY=openai/gpt-oss-120b` — not deprecated Llama 3.1). 30s per-provider timeout; finer admin progress.
@@ -29,6 +47,7 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 **Next:** PM-3a — Architecture graph viewport/zoom + corpus drift.
 
 ---
+>>>>>>> origin/main
 
 **What:** Migrated `Tooltip` to `@radix-ui/react-tooltip` with `TooltipProvider` at app root, shadcn-style `.ui-tooltip-content` surface, compound exports (`TooltipTrigger`, `TooltipContent`). Legacy `<Tooltip text="…">` API + `ControlTooltip` hover-only mode preserved.
 
