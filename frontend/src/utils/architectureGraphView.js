@@ -1,7 +1,10 @@
 import { NODE_H, NODE_W } from './architectureGraphLayout.js'
 
-export const MIN_SCALE = 0.4
+/** Wheel-zoom floor — users can still zoom out further via Fit. */
+export const MIN_SCALE = 0.15
 export const MAX_SCALE = 4
+/** Fit may go slightly lower so a tall multi-column graph still frames. */
+export const FIT_MIN_SCALE = 0.08
 export const DEFAULT_VIEW = { x: 40, y: 20, scale: 1 }
 
 export function clampScale(scale, min = MIN_SCALE, max = MAX_SCALE) {
@@ -48,13 +51,15 @@ export function computeGraphBounds(positioned, nodeW = NODE_W, nodeH = NODE_H, p
 
 /**
  * Fit all laid-out nodes inside the viewport with uniform scale.
+ * Does not use wheel MIN_SCALE — tall graphs must be allowed to shrink.
  */
 export function computeFitView(bounds, viewportWidth, viewportHeight) {
   if (viewportWidth <= 0 || viewportHeight <= 0) return { ...DEFAULT_VIEW }
   const contentW = bounds.maxX - bounds.minX
   const contentH = bounds.maxY - bounds.minY
   if (contentW <= 0 || contentH <= 0) return { ...DEFAULT_VIEW }
-  const scale = clampScale(Math.min(viewportWidth / contentW, viewportHeight / contentH))
+  const raw = Math.min(viewportWidth / contentW, viewportHeight / contentH)
+  const scale = clampScale(raw, FIT_MIN_SCALE, MAX_SCALE)
   const cx = (bounds.minX + bounds.maxX) / 2
   const cy = (bounds.minY + bounds.maxY) / 2
   return {
@@ -62,4 +67,11 @@ export function computeFitView(bounds, viewportWidth, viewportHeight) {
     y: viewportHeight / 2 - cy * scale,
     scale,
   }
+}
+
+/** Truncate node labels so SVG text stays inside the node rect. */
+export function truncateNodeLabel(label, maxChars = 26) {
+  const text = String(label || '')
+  if (text.length <= maxChars) return text
+  return `${text.slice(0, Math.max(1, maxChars - 1))}…`
 }

@@ -10,6 +10,7 @@ import {
 import {
   computeFitView,
   computeGraphBounds,
+  truncateNodeLabel,
   zoomAtCursor,
 } from '../../../utils/architectureGraphView.js'
 
@@ -88,19 +89,21 @@ export default function ArchitectureGraphSection({
 
   const fitGraphToView = useCallback(() => {
     const el = canvasRef.current
-    if (!el || !positioned.length) return
+    if (!el || !visibleNodes.length) return
     const width = el.clientWidth
     const height = el.clientHeight
     if (width <= 0 || height <= 0) return
-    const bounds = computeGraphBounds(positioned)
+    // Fit only what is on screen (cluster/search filters) so zoom is not
+    // forced by off-filter columns.
+    const bounds = computeGraphBounds(visibleNodes)
     setView(computeFitView(bounds, width, height))
-  }, [positioned])
+  }, [visibleNodes])
 
   useEffect(() => {
-    if (!graph || !positioned.length) return undefined
+    if (!graph || !visibleNodes.length) return undefined
     const frame = requestAnimationFrame(() => fitGraphToView())
     return () => cancelAnimationFrame(frame)
-  }, [graph, positioned.length, clusterFilter, fitGraphToView])
+  }, [graph, visibleNodes.length, clusterFilter, searchLower, fitGraphToView])
 
   useEffect(() => {
     const el = canvasRef.current
@@ -291,7 +294,10 @@ export default function ArchitectureGraphSection({
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectNode(node.id) } }}
                   >
                     <rect width={NODE_W} height={NODE_H} rx={2} />
-                    <text x={8} y={NODE_H / 2 + 4}>{node.label}</text>
+                    <text x={8} y={NODE_H / 2 + 4}>
+                      <title>{node.label}</title>
+                      {truncateNodeLabel(node.label)}
+                    </text>
                   </g>
                 )
               })}

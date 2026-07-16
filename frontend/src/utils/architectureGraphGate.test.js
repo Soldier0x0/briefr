@@ -23,11 +23,21 @@ describe('PM-3 architecture graph gate', () => {
   it('PM-3a: graph canvas uses compact height and blocks text selection', () => {
     const css = read(CSS_PATH)
     const canvas = blockForSelector(css, '.sa-graph-canvas')
-    assert.match(canvas, /height:\s*min\(560px/, 'graph canvas should use compact height, not full viewport')
+    assert.match(canvas, /height:\s*min\(70vh/, 'graph canvas should lock to ~70vh, not a page-length scroll')
+    assert.match(canvas, /max-height:\s*70vh/, 'graph canvas should cap height at 70vh')
     assert.match(canvas, /user-select:\s*none/, 'graph canvas should disable text selection while panning')
     const graphSection = read(GRAPH_SECTION)
     assert.match(graphSection, /zoomAtCursor/, 'wheel zoom should anchor at cursor')
+    assert.match(graphSection, /truncateNodeLabel/, 'node labels should truncate inside the rect')
     assert.doesNotMatch(graphSection, /viewBox=\{`0 0 \$\{viewWidth\}/, 'fit uses CSS pixels without content viewBox')
+  })
+
+  it('PM-3a-focus: non-neighbors dim strongly when a node is focused', () => {
+    const css = read(CSS_PATH)
+    const dim = blockForSelector(css, '.sa-graph-node-dim')
+    assert.match(dim, /opacity:\s*0\.1/, 'focused selection should dim non-neighbors strongly')
+    const graphSection = read(GRAPH_SECTION)
+    assert.match(graphSection, /sa-graph-node-dim/, 'nodes use dim class for non-neighbors')
   })
 
   it('PM-3b: graph toolbar exposes fit-to-view control', () => {

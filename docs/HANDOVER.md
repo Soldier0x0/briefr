@@ -22,6 +22,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — ARCH graph fit floor + focus dim + 70vh lock
+
+**What:** Follow-up on #633 UX from screenshots: (1) `FIT_MIN_SCALE=0.08` so tall multi-column graphs can frame (wheel `MIN_SCALE` stays 0.15 — fit was clamping at 0.4 and looked “zoomed in”); (2) non-neighbor nodes dim to `opacity: 0.1` on hover/select; (3) canvas locked to `min(70vh, calc(100vh - 240px))` with `max-height: 70vh` — pan/zoom inside, no page-length canvas scroll; (4) `truncateNodeLabel` + smaller mono label so text stays inside node rects; (5) fit uses **visible** nodes (cluster/search filters).
+
+**Next:** Merge #633 → PM-4 IA / navigator.
+
+---
+
 ## 2026-07-16 — ARCH graph fit/size + core/external enrichment
 
 **What:** Follow-up to PM-3 (#632) UX: compact canvas (`min(560px, 62vh)`), removed content-sized SVG `viewBox` so fit-to-view uses CSS pixels (fixes wrong initial zoom), ResizeObserver re-fit, edges only on hover/select (no spaghetti), honesty hint. Corpus: core modules (`auth_middleware`, `dependencies`, `resilient_client`), curated externals (NVD/KEV/EPSS/OTX/ThreatFox), job→external edges; job→table SQL when present in job callables. No `db/` helper cluster (deferred).

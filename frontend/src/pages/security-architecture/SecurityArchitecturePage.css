@@ -773,8 +773,10 @@
   touch-action: none;
   cursor: grab;
   user-select: none;
-  height: min(560px, 62vh);
+  /* Lock to ~70% viewport — pan/zoom inside; no page-length canvas scroll. */
+  height: min(70vh, calc(100vh - 240px));
   min-height: 420px;
+  max-height: 70vh;
 }
 
 .sa-graph-canvas svg {
@@ -822,7 +824,8 @@
 }
 
 .sa-graph-node-dim {
-  opacity: 0.28;
+  opacity: 0.1;
+  filter: grayscale(0.4);
 }
 
 .sa-graph-node-core rect {
@@ -837,7 +840,7 @@
 .sa-graph-node text {
   fill: var(--text);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10px;
   pointer-events: none;
   user-select: none;
 }

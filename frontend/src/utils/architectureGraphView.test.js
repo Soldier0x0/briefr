@@ -2,9 +2,12 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  FIT_MIN_SCALE,
+  MIN_SCALE,
   clampScale,
   computeFitView,
   computeGraphBounds,
+  truncateNodeLabel,
   zoomAtCursor,
 } from './architectureGraphView.js'
 
@@ -75,12 +78,42 @@ describe('computeFitView', () => {
     assert.ok(Math.abs(screenCenterX - 200) < 1)
     assert.ok(Math.abs(screenCenterY - 200) < 1)
   })
+
+  it('allows fit below wheel MIN_SCALE for tall graphs', () => {
+    // Content taller than a ~70vh canvas at wheel min — fit may go lower.
+    const bounds = { minX: 0, minY: 0, maxX: 900, maxY: 5000 }
+    const fit = computeFitView(bounds, 900, 560)
+    assert.ok(fit.scale < MIN_SCALE, `fit scale ${fit.scale} should be below wheel min`)
+    assert.ok(fit.scale >= FIT_MIN_SCALE)
+    assert.ok(Math.abs(fit.scale - (560 / 5000)) < 0.001)
+    const bottom = fit.y + bounds.maxY * fit.scale
+    assert.ok(bottom <= 561, `bottom ${bottom} should fit in viewport`)
+  })
 })
 
 describe('clampScale', () => {
-  it('clamps below minimum and above maximum', () => {
-    assert.equal(clampScale(0.1), 0.4)
+  it('clamps below wheel minimum and above maximum by default', () => {
+    assert.equal(clampScale(0.05), MIN_SCALE)
     assert.equal(clampScale(10), 4)
     assert.equal(clampScale(1.5), 1.5)
+  })
+
+  it('accepts an explicit fit floor below wheel MIN_SCALE', () => {
+    assert.equal(clampScale(0.05, FIT_MIN_SCALE, 4), FIT_MIN_SCALE)
+    assert.equal(clampScale(0.1, FIT_MIN_SCALE, 4), 0.1)
+  })
+})
+
+describe('truncateNodeLabel', () => {
+  it('leaves short labels unchanged', () => {
+    assert.equal(truncateNodeLabel('routers.cves'), 'routers.cves')
+  })
+
+  it('truncates long labels with an ellipsis inside the char budget', () => {
+    const long = 'LLM Product Extraction (NVD-unanalyzed CVEs)'
+    const out = truncateNodeLabel(long, 26)
+    assert.ok(out.length <= 26)
+    assert.ok(out.endsWith('…'))
+    assert.equal(out, 'LLM Product Extraction (N…')
   })
 })
