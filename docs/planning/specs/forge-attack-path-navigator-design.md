@@ -142,9 +142,35 @@ Probed with HTTP from this environment; statuses below are live as of research d
 | HuggingFace CVE→ATT&CK datasets | Usually no | Eval/training only — never paint as observed path |
 | Local open CVE→CWE classifiers | No | Later inferred-entry improvement |
 
-### 4.4 Research conclusion
+### 4.4 GitHub rate limits vs this design (quota-safe)
 
-Endpoints needed for **PR-2 path quality are live and keyless**. Primary path evidence (CTID CSV + KEV JSON + ATT&CK STIX) is **already integrated**; design work is UI + using CTID **impact/exploitation columns** as a visible path, plus CWE/CAPEC bridges. Watch **versioned KEV JSON path** and prefer **attack-stix-data** when touching the MITRE feed next.
+BRIEFR already uses `GITHUB_TOKEN` for **REST API** work (PoC GitHub feed, Sigma/Elastic **code search**, Atlas case-study listing, key health). Path-quality files mostly live on GitHub too — we must not compete with that budget.
+
+| Channel | Limit (typical) | Counts against your PAT? | Used for |
+|---------|-----------------|---------------------------|----------|
+| `api.github.com` REST (authenticated) | **5,000 req/hour** per user | **Yes** | Search, contents API, repo metadata |
+| `api.github.com` REST (no auth) | **60 req/hour** per IP | No | Avoid for production sync |
+| **Search API** (code/issues/…) | **Much tighter** (e.g. ~30 search req/min authenticated) | **Yes** | Existing Sigma/rule search — protect this |
+| `raw.githubusercontent.com` | Separate / IP-based unauth limits (429s reported after 2025 unauth tightening); **raw does not accept Authorization** | **No** (token unused on raw) | Bulk public file download |
+| Release assets (`…/releases/latest/download/…`) | CDN-style download; still subject to abuse/unauth limits | Usually no if unauthenticated GET | FKIE year xz |
+
+**Important:** Hitting `raw.githubusercontent.com` with `GITHUB_TOKEN` does **not** spend the 5k REST budget (and often does not authenticate). Over-fetching raw can still 429 the **server IP**. Hitting `api.github.com` with the token **does** spend the same 5k bucket as PoC/Sigma search.
+
+**Quota-safe rules for this design (required):**
+
+1. **Never fetch path mappings on the request path** (drawer click / Forge tab). Serve from DB / feed cache only.
+2. **Scheduler-only sync**, low frequency: CTID CSV + KEV JSON + (optional) CWE/CAPEC — on the order of **a few GETs per day**, not per CVE.
+3. Prefer **raw URLs + ETag / If-None-Match / feed_cache** (304 = almost free). Do not re-download unchanged multi‑MB blobs.
+4. **Do not** use GitHub **code search** or Contents API to build ATT&CK paths. Search stays for existing detection-rule helpers only.
+5. **Do not** loop `database/CVE-{YYYY}.jsonl.gz` for all years every hour. If CVE2CAPEC is used: rare full sync or on-demand year file + cache; treat as weak labels.
+6. KEV “latest folder” discovery: **at most one** `api.github.com` contents/tree call per sync window (or parse known path with fallback) — not per request.
+7. Optional: sync jobs that only need public raw files should **omit** `Authorization` so they do not burn the PAT; keep the token for Search/PoC/Atlas.
+
+**Rough budget if done right:** ~5–20 GitHub-related requests/day for path mapping sync — negligible next to 5,000/hour and far safer than per-CVE API fanout.
+
+### 4.5 Research conclusion
+
+Endpoints needed for **PR-2 path quality are live and keyless**. Primary path evidence (CTID CSV + KEV JSON + ATT&CK STIX) is **already integrated**; design work is UI + using CTID **impact/exploitation columns** as a visible path, plus CWE/CAPEC bridges. Watch **versioned KEV JSON path** and prefer **attack-stix-data** when touching the MITRE feed next. Protect `GITHUB_TOKEN` by keeping mapping sync on raw+cache and off the Search/REST hot path.
 
 ---
 
