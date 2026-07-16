@@ -242,7 +242,7 @@ def test_run_extraction_writes_products_and_negative_caches(tmp_path, monkeypatc
 
     calls: list[str] = []
 
-    async def fake_extract(description: str) -> tuple[list[dict], LLMCompletion] | None:
+    async def fake_extract(description: str, **_kwargs) -> tuple[list[dict], LLMCompletion] | None:
         calls.append(description)
         if "widget" in description:
             return (
@@ -313,7 +313,7 @@ def test_run_extraction_errors_are_not_negative_cached(tmp_path, monkeypatch):
 
     attempts = {"n": 0}
 
-    async def flaky_extract(description: str) -> tuple[list[dict], LLMCompletion] | None:
+    async def flaky_extract(description: str, **_kwargs) -> tuple[list[dict], LLMCompletion] | None:
         attempts["n"] += 1
         if attempts["n"] == 1:
             raise RuntimeError("simulated timeout")  # first run fails
@@ -363,7 +363,7 @@ def test_run_extraction_all_providers_failed_is_not_negative_cached(tmp_path, mo
     monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "fail.db"))
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
 
-    async def no_providers(description: str) -> tuple[list[dict], LLMCompletion] | None:
+    async def no_providers(description: str, **_kwargs) -> tuple[list[dict], LLMCompletion] | None:
         return None
 
     monkeypatch.setattr(pex, "extract_products_via_llm", no_providers)
@@ -397,7 +397,7 @@ def test_run_extraction_replays_staged_response_without_rebilling(tmp_path, monk
     monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "staged.db"))
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
 
-    async def must_not_be_called(description: str):
+    async def must_not_be_called(description: str, **_kwargs):
         raise AssertionError("HTTP call repeated despite staged response")
 
     monkeypatch.setattr(pex, "extract_products_via_llm", must_not_be_called)
@@ -455,7 +455,7 @@ def test_run_extraction_stages_response_before_persist(tmp_path, monkeypatch):
     monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "stage_write.db"))
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
 
-    async def fake_extract(description: str):
+    async def fake_extract(description: str, **_kwargs):
         return (
             [{"vendor": "acme", "product": "widget", "version_range": ""}],
             LLMCompletion(

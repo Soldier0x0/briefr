@@ -24,6 +24,7 @@ from database import (
     enrich_kev_summaries,
     get_all_cve_ids,
     get_cve_count,
+    missing_cve_ids,
     get_cves_needing_intel_enrichment,
     get_db,
     get_nvd_sync_watermark,
@@ -379,10 +380,22 @@ async def _run_nvd_incremental_sync() -> None:
             else:
                 stripped = filled = poc_marked = 0
             if updated_ids:
-                _job_progress["nvd_incremental_sync"] = f"Cross-enriching {len(updated_ids)} CVEs via Sploitus and CIRCL exploit references…"
+                enrich_cap = 40
+                enrich_batch = min(len(updated_ids), enrich_cap)
+                _job_progress["nvd_incremental_sync"] = (
+                    f"Cross-enriching up to {enrich_batch} of {len(updated_ids)} CVEs "
+                    f"(Sploitus/CIRCL, max {enrich_cap}/run)…"
+                )
                 from feeds.extended import enrich_cves_extended
 
-                ext_stats = await enrich_cves_extended(db, updated_ids)
+                def _enrich_progress(msg: str) -> None:
+                    _job_progress["nvd_incremental_sync"] = msg
+
+                ext_stats = await enrich_cves_extended(
+                    db,
+                    updated_ids,
+                    progress_cb=_enrich_progress,
+                )
                 logger.info(
                     "Extended enrichment: Sploitus %d, CIRCL %d",
                     ext_stats.get("sploitus", 0),
@@ -460,8 +473,16 @@ async def _run_kev_sync() -> None:
         try:
             kev_ids = [e["cveID"] for e in kev_entries if e.get("cveID")]
             kev_count = await upsert_kev_batch(db, kev_entries)
+            await db.commit()
+            _job_progress["kev_metadata_sync"] = (
+                f"Marked {len(kev_ids)} KEV catalog entries in database…"
+            )
             newly_kev = await mark_cves_as_kev(db, kev_ids)
-            _job_progress["kev_metadata_sync"] = f"Enriching KEV summaries from CISA descriptions ({len(newly_kev)} newly flagged CVEs)…"
+            await db.commit()
+            _job_progress["kev_metadata_sync"] = (
+                f"Enriching KEV summaries from CISA descriptions "
+                f"({len(newly_kev)} newly flagged CVEs)…"
+            )
             kev_summaries = await enrich_kev_summaries(db)
             await db.commit()
             if kev_summaries:
@@ -510,14 +531,16 @@ async def _cross_fetch_missing_kev_cves(kev_entries: list[dict], nvd_api_key: st
 
         async def _load_missing(db):
             nonlocal missing_kev, kev_short_map
-            existing_ids = set(await get_all_cve_ids(db))
-            missing_kev = [
-                e.get("cveID", "")
+            catalog_ids = [
+                (e.get("cveID") or "").upper()
                 for e in kev_entries
-                if e.get("cveID") and e.get("cveID") not in existing_ids
+                if e.get("cveID")
             ]
+            missing_kev = await missing_cve_ids(db, catalog_ids)
             kev_short_map = {
-                e.get("cveID", ""): e.get("shortDescription", "") for e in kev_entries
+                (e.get("cveID") or "").upper(): e.get("shortDescription", "")
+                for e in kev_entries
+                if e.get("cveID")
             }
 
         await _with_db(_load_missing)
@@ -808,6 +831,9 @@ async def run_vulncheck_kev_sync() -> bool:
             cve_ids = await fetch_vulncheck_kev_cve_ids(api_key)
             db = await get_db()
             try:
+                _job_progress["vulncheck_kev_sync"] = (
+                    f"Updating VulnCheck exploited flags for {len(cve_ids)} catalog CVEs…"
+                )
                 updated = await sync_vulncheck_exploited_flags(db, cve_ids)
                 await db.commit()
             finally:

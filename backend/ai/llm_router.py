@@ -9,10 +9,10 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
-from typing import Literal
+from typing import Callable, Literal
 
 from ai.gemini_client import gemini_chat_completion
-from ai.groq_config import GROQ_URL
+from ai.groq_config import GROQ_URL, scheduler_llm_timeout
 from ai.llm_payload import has_llm_request_payload
 from ai.llm_session import (
     is_provider_skipped_in_job,
@@ -204,10 +204,13 @@ async def chat_completion_task(
     messages: list[dict[str, str]],
     max_tokens: int = 500,
     temperature: float = 0.0,
-    timeout: float = 60.0,
+    timeout: float | None = None,
     cve_id: str | None = None,
+    on_provider_attempt: Callable[[str], None] | None = None,
 ) -> LLMCompletion | None:
     """Try providers in failover order; return first non-empty completion."""
+    if timeout is None:
+        timeout = scheduler_llm_timeout()
     if not has_llm_request_payload(messages):
         logger.info(
             "Skipping LLM task %s — no outbound user/assistant payload (cve=%s)",
@@ -260,6 +263,11 @@ async def chat_completion_task(
             last_failed_model = step.model
             attempt_index += 1
             continue
+        if on_provider_attempt:
+            try:
+                on_provider_attempt(step.provider)
+            except Exception:
+                pass
         timer = AttemptTimer()
         usage: dict = {}
         try:
