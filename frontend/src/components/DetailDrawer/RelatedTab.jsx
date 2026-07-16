@@ -12,9 +12,9 @@ function RelatedNewsSection({ relatedNews }) {
         // Mentions of this CVE ID in the Incidents feed (RSS / ATLAS snapshot)
       </p>
       <ul className="drawer-related-news-list" aria-label="Related news articles">
-        {relatedNews.map(item => {
+        {relatedNews.map((item, index) => {
           const href = safeExternalUrl(item.url)
-          const key = `${item.url || item.title}-${item.publishedAt || ''}`
+          const key = `${item.url || item.title}-${item.publishedAt || ''}-${index}`
           return (
             <li key={key} className="drawer-related-news-item">
               <span className="drawer-related-news-source mono">{item.source || 'News'}</span>

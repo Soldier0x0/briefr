@@ -50,20 +50,24 @@ def _prune_news_cards(cards: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [
         _ensure_news_cve_ids(c)
         for c in cards
-        if c.get("sourceId") in INCIDENT_RSS_SOURCE_IDS
+        if isinstance(c, dict) and c.get("sourceId") in INCIDENT_RSS_SOURCE_IDS
     ]
 
 
 def _card_mentions_cve(card: dict[str, Any], cve_key: str) -> bool:
+    if not isinstance(card, dict):
+        return False
     key = (cve_key or "").strip().upper()
     if not key:
         return False
     ids = card.get("cve_ids")
-    if isinstance(ids, list) and key in {str(x).upper() for x in ids}:
+    if isinstance(ids, list) and key in {str(x).upper() for x in ids if x}:
         return True
-    # Atlas / legacy rows may only mention the CVE in free text.
-    hay = f"{card.get('title') or ''} {card.get('description') or ''}"
-    return key in hay.upper()
+    # Atlas / legacy rows may only mention the CVE in free text — exact ID match.
+    return key in extract_cve_ids(
+        card.get("title") or "",
+        card.get("description") or "",
+    )
 
 
 async def get_related_news_for_cve(

@@ -34,8 +34,12 @@ function TechniqueChips({ techniques }) {
 
 function CveChips({ cveIds, onOpenCve }) {
   if (!cveIds?.length) return null
-  const shown = cveIds.slice(0, 6)
-  const extra = cveIds.length - shown.length
+  const uniqueCves = Array.from(
+    new Set(cveIds.map(id => String(id || '').toUpperCase()).filter(Boolean)),
+  )
+  if (!uniqueCves.length) return null
+  const shown = uniqueCves.slice(0, 6)
+  const extra = uniqueCves.length - shown.length
   return (
     <div className="cs-cve-chips" aria-label="CVE IDs mentioned">
       {shown.map(id => (
@@ -54,7 +58,7 @@ function CveChips({ cveIds, onOpenCve }) {
         )
       ))}
       {extra > 0 && (
-        <span className="cs-cve-chip cs-cve-chip-more mono" title={cveIds.slice(6).join(', ')}>
+        <span className="cs-cve-chip cs-cve-chip-more mono" title={uniqueCves.slice(6).join(', ')}>
           +{extra}
         </span>
       )}
