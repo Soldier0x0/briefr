@@ -20,7 +20,15 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-15 — Tooltip v2 (Radix / shadcn pattern)
+## 2026-07-16 — LLM provider priority + scheduler progress (slow jobs)
+
+**What:** Jobs stuck at "CVE 1/10" were mostly **API-queue pacing** (~9–13s between Groq calls) plus **Gemini as 2nd failover** (60s timeouts). Failover order is now **Groq → Cerebras → OpenRouter → Gemini** (Gemini last). Scheduler extraction uses `GROQ_MODEL_EXTRACTION=llama-3.1-8b-instant`, 30s per-provider timeout, finer admin progress (provider name; NVD enrich per-CVE). NVD cross-enrich message no longer implies all 367 CVEs run in one pass (cap 40/run).
+
+**Ops:** Ensure `GROQ_API_KEY` and/or `CEREBRAS_API_KEY` are real (not placeholders). Optional: `GROQ_MIN_REQUEST_INTERVAL_SECONDS=2` on paid Groq tier. Restart backend after pull.
+
+**Next:** PM-3a — Architecture graph viewport/zoom + corpus drift.
+
+---
 
 **What:** Migrated `Tooltip` to `@radix-ui/react-tooltip` with `TooltipProvider` at app root, shadcn-style `.ui-tooltip-content` surface, compound exports (`TooltipTrigger`, `TooltipContent`). Legacy `<Tooltip text="…">` API + `ControlTooltip` hover-only mode preserved.
 

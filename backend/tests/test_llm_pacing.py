@@ -58,7 +58,8 @@ def test_groq_limits_use_headroom(monkeypatch):
     monkeypatch.setenv("GROQ_HEADROOM_PCT", "85")
     limits = groq_limits()
     assert limits.headroom_pct == 85
-    assert limits.min_interval_seconds >= 13.0
+    assert limits.min_interval_seconds >= 8.0
+    assert limits.min_interval_seconds < 10.0
 
 
 def test_source_rate_limits_wires_llm_providers(monkeypatch):

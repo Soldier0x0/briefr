@@ -7,10 +7,23 @@ from dataclasses import dataclass
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b").strip() or "openai/gpt-oss-20b"
+# Fast scheduler tasks (product extraction, detection context) — lower TPM burn.
+GROQ_MODEL_EXTRACTION = (
+    os.environ.get("GROQ_MODEL_EXTRACTION", "llama-3.1-8b-instant").strip()
+    or "llama-3.1-8b-instant"
+)
 GROQ_MODEL_SUMMARY = (
     os.environ.get("GROQ_MODEL_SUMMARY", "openai/gpt-oss-120b").strip()
     or "openai/gpt-oss-120b"
 )
+
+
+def scheduler_llm_timeout() -> float:
+    """Per-provider HTTP timeout for scheduler-side LLM jobs (fail over faster)."""
+    try:
+        return max(10.0, float(os.environ.get("SCHEDULER_LLM_TIMEOUT_SECONDS", "30")))
+    except ValueError:
+        return 30.0
 
 
 @dataclass(frozen=True)
@@ -30,7 +43,7 @@ def groq_limits() -> GroqLimits:
         "GROQ",
         default_rpm=30,
         default_tpm=8000,
-        default_est_tokens=1500,
+        default_est_tokens=1000,
         floor_seconds=0.5,
     )
     return GroqLimits(

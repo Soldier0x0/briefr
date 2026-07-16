@@ -31,6 +31,7 @@ import aiosqlite
 from ai.llm_router import LLMCompletion, any_llm_provider_configured, chat_completion_task
 from ai.llm_payload import has_substantive_source_text
 from ai.llm_session import llm_job_session
+from ai.groq_config import scheduler_llm_timeout
 from database import (
     get_cves_for_llm_product_extraction,
     get_feed_cache,
@@ -167,7 +168,11 @@ def products_to_affected_keys(products: list[dict]) -> list[str]:
     return [f"{p['vendor']}:{p['product']}" for p in products if p.get("product")]
 
 
-async def extract_products_via_llm(description: str) -> tuple[list[dict], LLMCompletion] | None:
+async def extract_products_via_llm(
+    description: str,
+    *,
+    on_provider_attempt=None,
+) -> tuple[list[dict], LLMCompletion] | None:
     """One router call -> validated product dicts with provider provenance."""
     if not has_substantive_source_text(description):
         logger.info("Skipping LLM product extraction — empty CVE description")
@@ -185,7 +190,8 @@ async def extract_products_via_llm(description: str) -> tuple[list[dict], LLMCom
         ],
         max_tokens=500,
         temperature=0.0,
-        timeout=60.0,
+        timeout=scheduler_llm_timeout(),
+        on_provider_attempt=on_provider_attempt,
     )
     if not completion:
         return None
@@ -284,7 +290,16 @@ async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, pro
                     provider = staged.get("provider")
                     model = staged.get("model")
                 else:
-                    result = await extract_products_via_llm(description)
+                    def _provider_progress(provider: str, _idx=index, _total=stats["candidates"]):
+                        if progress_cb:
+                            progress_cb(
+                                f"CVE {_idx + 1}/{_total}: LLM via {provider}…"
+                            )
+
+                    result = await extract_products_via_llm(
+                        description,
+                        on_provider_attempt=_provider_progress,
+                    )
                     if result is None:
                         stats["errors"] += 1
                         logger.warning(

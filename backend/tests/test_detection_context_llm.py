@@ -149,7 +149,7 @@ def test_run_llm_sync_writes_artifacts_and_negative_cache(tmp_path, monkeypatch)
 
     import detection.context_llm_sync as sync_mod
 
-    async def fake_extract(text: str):
+    async def fake_extract(text: str, **_kwargs):
         return (
             [{"paths": ["/api/login"], "params": ["user"], "keywords": [], "method": "POST"}],
             LLMCompletion(content="{}", provider="groq", model="openai/gpt-oss-20b"),

@@ -7,15 +7,16 @@ from dataclasses import dataclass
 from typing import Literal
 
 from ai.gemini_client import gemini_model as _gemini_model
-from ai.groq_config import GROQ_MODEL, GROQ_MODEL_SUMMARY
+from ai.groq_config import GROQ_MODEL_EXTRACTION, GROQ_MODEL_SUMMARY
 
 LLMTask = Literal["product_extraction", "pdf_summary", "detection_context"]
 
+# Display order in admin — matches failover priority (Gemini is last resort).
 PROVIDER_ENV_KEYS = {
     "groq": "GROQ_API_KEY",
-    "gemini": "GEMINI_API_KEY",
     "cerebras": "CEREBRAS_API_KEY",
     "openrouter": "OPENROUTER_API_KEY",
+    "gemini": "GEMINI_API_KEY",
 }
 
 
@@ -54,28 +55,23 @@ def cerebras_model() -> str:
     return env_model("CEREBRAS_MODEL", "gpt-oss-120b")
 
 
-def task_chain(task: LLMTask) -> list[ProviderStep]:
-    """Failover order per task — not round-robin."""
-    if task == "detection_context":
-        return [
-            ProviderStep("groq", GROQ_MODEL),
-            ProviderStep("gemini", gemini_model()),
-            ProviderStep("cerebras", cerebras_model()),
-            ProviderStep("openrouter", openrouter_model(task)),
-        ]
-    if task == "pdf_summary":
-        return [
-            ProviderStep("groq", GROQ_MODEL_SUMMARY),
-            ProviderStep("gemini", gemini_model()),
-            ProviderStep("cerebras", cerebras_model()),
-            ProviderStep("openrouter", openrouter_model(task)),
-        ]
+def _scheduler_chain(task: LLMTask, *, groq_model: str) -> list[ProviderStep]:
+    """Groq/Cerebras first; Gemini last (slow free-tier fallback)."""
     return [
-        ProviderStep("groq", GROQ_MODEL),
-        ProviderStep("gemini", gemini_model()),
+        ProviderStep("groq", groq_model),
         ProviderStep("cerebras", cerebras_model()),
         ProviderStep("openrouter", openrouter_model(task)),
+        ProviderStep("gemini", gemini_model()),
     ]
+
+
+def task_chain(task: LLMTask) -> list[ProviderStep]:
+    """Failover order per task — not round-robin."""
+    if task == "pdf_summary":
+        return _scheduler_chain(task, groq_model=GROQ_MODEL_SUMMARY)
+    if task == "detection_context":
+        return _scheduler_chain(task, groq_model=GROQ_MODEL_EXTRACTION)
+    return _scheduler_chain(task, groq_model=GROQ_MODEL_EXTRACTION)
 
 
 def models_catalog_payload() -> dict:
@@ -90,7 +86,7 @@ def models_catalog_payload() -> dict:
         "providers": list(PROVIDER_ENV_KEYS.keys()),
         "tasks": tasks,
         "env_keys": {
-            "groq_product": "GROQ_MODEL",
+            "groq_extraction": "GROQ_MODEL_EXTRACTION",
             "groq_summary": "GROQ_MODEL_SUMMARY",
             "gemini": "GEMINI_MODEL",
             "cerebras": "CEREBRAS_MODEL",
