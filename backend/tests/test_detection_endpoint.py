@@ -98,3 +98,4 @@ def test_detection_includes_evidence_pack(client):
     assert evidence["evidence_summary"]["primary_source"] == "community"
     assert "artifacts" in evidence
     assert "observables" in evidence
+    assert body["generated_sigma_meta"]["compose_basis"] == "community"

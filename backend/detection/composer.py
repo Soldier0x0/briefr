@@ -1,7 +1,7 @@
-"""Evidence-composed detection pack (DC-1).
+"""Evidence-composed detection pack (DC-1) + emission (DC-2).
 
 Retrieves CVE-grounded community rules, Nuclei/context artifacts, and YARA
-observables. No LLM. Template Sigma/SIEM emission is DC-2+.
+observables, then emits Sigma/SIEM/YARA from that pack. No LLM.
 """
 
 from __future__ import annotations
@@ -12,9 +12,11 @@ from database import read_cve_exploits_from_db
 from detection.class_router import resolve_detection_class
 from detection.context import get_detection_context
 from detection.rule_sources import find_elastic_rules, find_sigma_rules
+from detection.siem_queries import get_siem_queries
+from detection.sigma_generator import generate_sigma_rule_bundle
 from detection.yara_generator import find_yara_rules_for_cve
 
-__all__ = ["compose_detection_evidence"]
+__all__ = ["compose_detection_evidence", "emit_composed_detection"]
 
 
 def _ensure_list(val: Any) -> list[Any]:
@@ -156,4 +158,144 @@ async def compose_detection_evidence(
             if isinstance(detection_context, dict)
             else ""
         ),
+    }
+
+
+def _compose_basis(evidence: dict[str, Any]) -> str:
+    primary = str(
+        (evidence.get("evidence_summary") or {}).get("primary_source") or "none"
+    ).strip()
+    if primary in ("", "none"):
+        return "template_fallback"
+    return primary
+
+
+def _context_for_emit(evidence: dict[str, Any]) -> dict[str, Any] | None:
+    artifacts = evidence.get("artifacts") or []
+    ctx = evidence.get("detection_context")
+    if isinstance(ctx, dict):
+        merged = dict(ctx)
+        if artifacts:
+            merged["artifacts"] = artifacts
+        return merged
+    if not artifacts and not evidence.get("detection_class"):
+        return None
+    return {
+        "class": evidence.get("detection_class"),
+        "artifacts": artifacts,
+        "product": evidence.get("product") or "",
+    }
+
+
+def _artifact_tokens(artifacts: list[Any]) -> list[str]:
+    tokens: list[str] = []
+    seen: set[str] = set()
+    for art in artifacts:
+        if not isinstance(art, dict):
+            continue
+        for key in ("paths", "keywords"):
+            for raw in _ensure_list(art.get(key)):
+                token = str(raw or "").strip()
+                if not token:
+                    continue
+                low = token.lower()
+                if low in seen:
+                    continue
+                seen.add(low)
+                tokens.append(token)
+                if len(tokens) >= 8:
+                    return tokens
+    return tokens
+
+
+def _inject_artifacts_into_siem(
+    siem: dict[str, Any], artifacts: list[Any]
+) -> dict[str, Any]:
+    """Inject evidence tokens into SIEM queries without breaking dialect syntax.
+
+    Elastic/Splunk tolerate trailing OR clauses. Sentinel gets a Kusto
+    ``has_any`` pipe. QRadar AQL is left untouched (naive suffixes break
+    ``LAST`` / ``WHERE`` clauses).
+    """
+    tokens = _artifact_tokens(artifacts)
+    if not tokens:
+        return siem
+    quoted = ", ".join(f'"{t}"' for t in tokens)
+    space_quoted = " ".join(f'"{t}"' for t in tokens)
+    out = dict(siem)
+
+    elastic = out.get("elastic_kql")
+    if isinstance(elastic, dict) and isinstance(elastic.get("query"), str):
+        out["elastic_kql"] = {
+            **elastic,
+            "query": f'{elastic["query"]} or url.path:({quoted})',
+        }
+
+    splunk = out.get("splunk_spl")
+    if isinstance(splunk, dict) and isinstance(splunk.get("query"), str):
+        out["splunk_spl"] = {
+            **splunk,
+            "query": f'{splunk["query"]} OR ({space_quoted})',
+        }
+
+    sentinel = out.get("sentinel_kql")
+    if isinstance(sentinel, dict) and isinstance(sentinel.get("query"), str):
+        out["sentinel_kql"] = {
+            **sentinel,
+            "query": (
+                f'{sentinel["query"].rstrip()}\n'
+                f'| where * has_any ({quoted})'
+            ),
+        }
+
+    return out
+
+
+def emit_composed_detection(
+    evidence: dict[str, Any],
+    *,
+    description: str = "",
+    cwe_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    """Emit Sigma + SIEM + YARA from a DC-1 evidence pack (no LLM)."""
+    cve_id = str(evidence.get("cve_id") or "").strip().upper()
+    techniques = [
+        str(t).strip()
+        for t in (evidence.get("technique_ids") or [])
+        if str(t).strip()
+    ]
+    first_technique = techniques[0] if techniques else ""
+    product = str(evidence.get("product") or "").strip() or "Affected Product"
+    detection_context = _context_for_emit(evidence)
+    artifacts = evidence.get("artifacts") or []
+    compose_basis = _compose_basis(evidence)
+
+    generated_sigma, generated_sigma_meta = generate_sigma_rule_bundle(
+        cve_id=cve_id or "CVE-UNKNOWN",
+        technique_id=first_technique,
+        product=product,
+        description=description,
+        cwe_ids=cwe_ids,
+        detection_context=detection_context,
+    )
+    meta = dict(generated_sigma_meta or {})
+    meta["compose_basis"] = compose_basis
+
+    siem_queries = get_siem_queries(
+        technique_id=first_technique,
+        cve_id=cve_id,
+        product=product if product != "Affected Product" else "",
+        cwe_ids=cwe_ids,
+        detection_context=detection_context,
+    )
+    siem_queries = _inject_artifacts_into_siem(siem_queries, artifacts)
+
+    yara_rules = list((evidence.get("observables") or {}).get("yara_rules") or [])
+
+    return {
+        "generated_sigma": generated_sigma,
+        "generated_sigma_meta": meta,
+        "siem_queries": siem_queries,
+        "yara_rules": yara_rules,
+        "compose_basis": compose_basis,
     }

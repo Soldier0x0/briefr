@@ -931,7 +931,11 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
   "elastic_rules": [],
   "has_community_rules": false,
   "generated_sigma": "...",
-  "generated_sigma_meta": { "briefr_basis": "cwe", "status": "experimental" },
+  "generated_sigma_meta": {
+    "briefr_basis": "cwe",
+    "status": "experimental",
+    "compose_basis": "template_fallback"
+  },
   "detection_context": null,
   "siem_queries": { },
   "yara_rules": [],
@@ -958,7 +962,7 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
 }
 ```
 
-Sigma/Elastic rules cached 24h. `generated_sigma` is always returned as a labeled supplement (D5). Additive `evidence` (DC-1) is the shared evidence pack for Detect/Forge composer work — no LLM.
+Sigma/Elastic rules cached 24h. `generated_sigma` is always returned as a labeled supplement (D5). Additive `evidence` (DC-1) is the shared evidence pack. DC-2 emits Sigma/SIEM/YARA from that pack via `emit_composed_detection` — artifact paths/keywords are injected into Sigma and SIEM queries; `generated_sigma_meta.compose_basis` is `community|nuclei_artifacts|yara|template_fallback`. No LLM.
 
 ---
 

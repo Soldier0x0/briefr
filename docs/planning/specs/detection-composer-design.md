@@ -1,6 +1,6 @@
 # Detection composer (evidence-composed packs)
 
-**Status:** Active — DC-1 in progress  
+**Status:** Active — DC-1/DC-2 shipped; DC-3 next  
 **Created:** 2026-07-16  
 **Goal:** One shared engine for drawer Detect + Forge: retrieve CVE-grounded community/Nuclei/observables first, then compose Sigma/KQL/SPL/QRadar/YARA — **no LLM default**.
 
@@ -49,6 +49,32 @@
   }
 }
 ```
+
+## DC-2 emission shape
+
+`emit_composed_detection(evidence, *, description="")` → composed pack:
+
+```json
+{
+  "generated_sigma": "…yaml…",
+  "generated_sigma_meta": {
+    "briefr_basis": "cwe|attack_technique|generic",
+    "briefr_class": "path_traversal|…",
+    "status": "experimental",
+    "compose_basis": "community|nuclei_artifacts|yara|template_fallback"
+  },
+  "siem_queries": { "elastic_kql": {}, "splunk_spl": {}, "sentinel_kql": {}, "qradar_aql": {}, "log_patterns": [], "detection_class": "…" },
+  "yara_rules": [],
+  "compose_basis": "community|nuclei_artifacts|yara|template_fallback"
+}
+```
+
+| Rule | Behavior |
+|------|----------|
+| Evidence artifacts | Inject paths/keywords into Sigma **and** SIEM queries |
+| `compose_basis` | From `evidence_summary.primary_source`; `none` → `template_fallback` |
+| Community present | Still emit template Sigma as supplement; basis = `community` |
+| No LLM | Emission is deterministic templates + evidence fields only |
 
 ## Non-goals (this program)
 
