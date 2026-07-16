@@ -1275,10 +1275,904 @@
   ],
   "edges": [
     {
+      "id": "core:dependencies->table:audit_log",
+      "source": "core:dependencies",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "core:dependencies->table:cve_change_history",
+      "source": "core:dependencies",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "core:dependencies->table:cve_embeddings",
+      "source": "core:dependencies",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "core:dependencies->table:cve_exploits",
+      "source": "core:dependencies",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "core:dependencies->table:cves",
+      "source": "core:dependencies",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "core:dependencies->table:epss_history",
+      "source": "core:dependencies",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "core:dependencies->table:feed_cache",
+      "source": "core:dependencies",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "core:dependencies->table:kev_deadlines",
+      "source": "core:dependencies",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:api_key_health_check->table:atlas_case_studies",
+      "source": "job:api_key_health_check",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:api_key_health_check->table:atlas_techniques",
+      "source": "job:api_key_health_check",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:api_key_health_check->table:cve_atlas_map",
+      "source": "job:api_key_health_check",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:api_key_health_check->table:cve_exploits",
+      "source": "job:api_key_health_check",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:api_key_health_check->table:cve_technique_map",
+      "source": "job:api_key_health_check",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:api_key_health_check->table:cves",
+      "source": "job:api_key_health_check",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:api_key_health_check->table:group_technique_map",
+      "source": "job:api_key_health_check",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:api_key_health_check->table:mitre_groups",
+      "source": "job:api_key_health_check",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:api_key_health_check->table:mitre_techniques",
+      "source": "job:api_key_health_check",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:api_key_health_check->table:sync_state",
+      "source": "job:api_key_health_check",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:atlas_version_check->table:atlas_case_studies",
+      "source": "job:atlas_version_check",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:atlas_version_check->table:atlas_techniques",
+      "source": "job:atlas_version_check",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:atlas_version_check->table:cve_atlas_map",
+      "source": "job:atlas_version_check",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:atlas_version_check->table:cve_change_history",
+      "source": "job:atlas_version_check",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:atlas_version_check->table:cve_embeddings",
+      "source": "job:atlas_version_check",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:atlas_version_check->table:cve_exploits",
+      "source": "job:atlas_version_check",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:atlas_version_check->table:cve_technique_map",
+      "source": "job:atlas_version_check",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:atlas_version_check->table:cves",
+      "source": "job:atlas_version_check",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:atlas_version_check->table:feed_cache",
+      "source": "job:atlas_version_check",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:atlas_version_check->table:group_technique_map",
+      "source": "job:atlas_version_check",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:atlas_version_check->table:mitre_groups",
+      "source": "job:atlas_version_check",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:atlas_version_check->table:mitre_techniques",
+      "source": "job:atlas_version_check",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:atlas_version_check->table:sync_state",
+      "source": "job:atlas_version_check",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:atlas_case_studies",
+      "source": "job:backup_deadman_check",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:atlas_techniques",
+      "source": "job:backup_deadman_check",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:audit_log",
+      "source": "job:backup_deadman_check",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:correlation_campaign_members",
+      "source": "job:backup_deadman_check",
+      "target": "table:correlation_campaign_members",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:correlation_campaigns",
+      "source": "job:backup_deadman_check",
+      "target": "table:correlation_campaigns",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:cve_atlas_map",
+      "source": "job:backup_deadman_check",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:cve_change_history",
+      "source": "job:backup_deadman_check",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:cve_exploits",
+      "source": "job:backup_deadman_check",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:cve_technique_map",
+      "source": "job:backup_deadman_check",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:cves",
+      "source": "job:backup_deadman_check",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:epss_history",
+      "source": "job:backup_deadman_check",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:group_technique_map",
+      "source": "job:backup_deadman_check",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:kev_deadlines",
+      "source": "job:backup_deadman_check",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:mitre_groups",
+      "source": "job:backup_deadman_check",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:mitre_techniques",
+      "source": "job:backup_deadman_check",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:sync_state",
+      "source": "job:backup_deadman_check",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:backup_deadman_check->table:watchlist",
+      "source": "job:backup_deadman_check",
+      "target": "table:watchlist",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cache_retention_cleanup->table:cve_exploits",
+      "source": "job:cache_retention_cleanup",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cache_retention_cleanup->table:cves",
+      "source": "job:cache_retention_cleanup",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cvelistv5_incremental_sync->table:atlas_case_studies",
+      "source": "job:cvelistv5_incremental_sync",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cvelistv5_incremental_sync->table:atlas_techniques",
+      "source": "job:cvelistv5_incremental_sync",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cvelistv5_incremental_sync->table:cve_atlas_map",
+      "source": "job:cvelistv5_incremental_sync",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cvelistv5_incremental_sync->table:cve_change_history",
+      "source": "job:cvelistv5_incremental_sync",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cvelistv5_incremental_sync->table:cve_embeddings",
+      "source": "job:cvelistv5_incremental_sync",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cvelistv5_incremental_sync->table:cve_exploits",
+      "source": "job:cvelistv5_incremental_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cvelistv5_incremental_sync->table:cve_technique_map",
+      "source": "job:cvelistv5_incremental_sync",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cvelistv5_incremental_sync->table:cves",
+      "source": "job:cvelistv5_incremental_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cvelistv5_incremental_sync->table:feed_cache",
+      "source": "job:cvelistv5_incremental_sync",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cvelistv5_incremental_sync->table:group_technique_map",
+      "source": "job:cvelistv5_incremental_sync",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cvelistv5_incremental_sync->table:mitre_groups",
+      "source": "job:cvelistv5_incremental_sync",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cvelistv5_incremental_sync->table:mitre_techniques",
+      "source": "job:cvelistv5_incremental_sync",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cvelistv5_incremental_sync->table:sync_state",
+      "source": "job:cvelistv5_incremental_sync",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_llm->table:atlas_case_studies",
+      "source": "job:detection_context_llm",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_llm->table:atlas_techniques",
+      "source": "job:detection_context_llm",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_llm->table:cve_atlas_map",
+      "source": "job:detection_context_llm",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_llm->table:cve_exploits",
+      "source": "job:detection_context_llm",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_llm->table:cve_technique_map",
+      "source": "job:detection_context_llm",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_llm->table:cves",
+      "source": "job:detection_context_llm",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_llm->table:feed_cache",
+      "source": "job:detection_context_llm",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_llm->table:group_technique_map",
+      "source": "job:detection_context_llm",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_llm->table:ioc_cache",
+      "source": "job:detection_context_llm",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_llm->table:mitre_groups",
+      "source": "job:detection_context_llm",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_llm->table:mitre_techniques",
+      "source": "job:detection_context_llm",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_llm->table:sync_state",
+      "source": "job:detection_context_llm",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_sync->table:atlas_case_studies",
+      "source": "job:detection_context_sync",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_sync->table:atlas_techniques",
+      "source": "job:detection_context_sync",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_sync->table:cve_atlas_map",
+      "source": "job:detection_context_sync",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_sync->table:cve_exploits",
+      "source": "job:detection_context_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_sync->table:cve_technique_map",
+      "source": "job:detection_context_sync",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_sync->table:cves",
+      "source": "job:detection_context_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_sync->table:feed_cache",
+      "source": "job:detection_context_sync",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_sync->table:group_technique_map",
+      "source": "job:detection_context_sync",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_sync->table:mitre_groups",
+      "source": "job:detection_context_sync",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_sync->table:mitre_techniques",
+      "source": "job:detection_context_sync",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_sync->table:sync_state",
+      "source": "job:detection_context_sync",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:embeddings_backfill->table:atlas_case_studies",
+      "source": "job:embeddings_backfill",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:embeddings_backfill->table:atlas_techniques",
+      "source": "job:embeddings_backfill",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:embeddings_backfill->table:cve_atlas_map",
+      "source": "job:embeddings_backfill",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:embeddings_backfill->table:cve_change_history",
+      "source": "job:embeddings_backfill",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:embeddings_backfill->table:cve_embeddings",
+      "source": "job:embeddings_backfill",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:embeddings_backfill->table:cve_exploits",
+      "source": "job:embeddings_backfill",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:embeddings_backfill->table:cve_technique_map",
+      "source": "job:embeddings_backfill",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:embeddings_backfill->table:cves",
+      "source": "job:embeddings_backfill",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:embeddings_backfill->table:feed_cache",
+      "source": "job:embeddings_backfill",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:embeddings_backfill->table:group_technique_map",
+      "source": "job:embeddings_backfill",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:embeddings_backfill->table:mitre_groups",
+      "source": "job:embeddings_backfill",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:embeddings_backfill->table:mitre_techniques",
+      "source": "job:embeddings_backfill",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:embeddings_backfill->table:sync_state",
+      "source": "job:embeddings_backfill",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
       "id": "job:epss_score_sync->ext:epss",
       "source": "job:epss_score_sync",
       "target": "ext:epss",
       "kind": "fetches_external"
+    },
+    {
+      "id": "job:epss_score_sync->table:atlas_case_studies",
+      "source": "job:epss_score_sync",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:epss_score_sync->table:atlas_techniques",
+      "source": "job:epss_score_sync",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:epss_score_sync->table:audit_log",
+      "source": "job:epss_score_sync",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:epss_score_sync->table:cve_atlas_map",
+      "source": "job:epss_score_sync",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:epss_score_sync->table:cve_change_history",
+      "source": "job:epss_score_sync",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:epss_score_sync->table:cve_embeddings",
+      "source": "job:epss_score_sync",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:epss_score_sync->table:cve_exploits",
+      "source": "job:epss_score_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:epss_score_sync->table:cve_technique_map",
+      "source": "job:epss_score_sync",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:epss_score_sync->table:cves",
+      "source": "job:epss_score_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:epss_score_sync->table:epss_history",
+      "source": "job:epss_score_sync",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:epss_score_sync->table:feed_cache",
+      "source": "job:epss_score_sync",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:epss_score_sync->table:group_technique_map",
+      "source": "job:epss_score_sync",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:epss_score_sync->table:kev_deadlines",
+      "source": "job:epss_score_sync",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:epss_score_sync->table:mitre_groups",
+      "source": "job:epss_score_sync",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:epss_score_sync->table:mitre_techniques",
+      "source": "job:epss_score_sync",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:epss_score_sync->table:sync_state",
+      "source": "job:epss_score_sync",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:exploit_sources_sync->table:atlas_case_studies",
+      "source": "job:exploit_sources_sync",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:exploit_sources_sync->table:atlas_techniques",
+      "source": "job:exploit_sources_sync",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:exploit_sources_sync->table:cve_atlas_map",
+      "source": "job:exploit_sources_sync",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:exploit_sources_sync->table:cve_exploits",
+      "source": "job:exploit_sources_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:exploit_sources_sync->table:cve_technique_map",
+      "source": "job:exploit_sources_sync",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:exploit_sources_sync->table:cves",
+      "source": "job:exploit_sources_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:exploit_sources_sync->table:feed_cache",
+      "source": "job:exploit_sources_sync",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:exploit_sources_sync->table:group_technique_map",
+      "source": "job:exploit_sources_sync",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:exploit_sources_sync->table:ioc_cache",
+      "source": "job:exploit_sources_sync",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:exploit_sources_sync->table:mitre_groups",
+      "source": "job:exploit_sources_sync",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:exploit_sources_sync->table:mitre_techniques",
+      "source": "job:exploit_sources_sync",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:exploit_sources_sync->table:sync_state",
+      "source": "job:exploit_sources_sync",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:incident_feed_refresh->table:atlas_case_studies",
+      "source": "job:incident_feed_refresh",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:incident_feed_refresh->table:atlas_techniques",
+      "source": "job:incident_feed_refresh",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:incident_feed_refresh->table:cve_atlas_map",
+      "source": "job:incident_feed_refresh",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:incident_feed_refresh->table:cve_exploits",
+      "source": "job:incident_feed_refresh",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:incident_feed_refresh->table:cve_technique_map",
+      "source": "job:incident_feed_refresh",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:incident_feed_refresh->table:cves",
+      "source": "job:incident_feed_refresh",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:incident_feed_refresh->table:feed_cache",
+      "source": "job:incident_feed_refresh",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:incident_feed_refresh->table:group_technique_map",
+      "source": "job:incident_feed_refresh",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:incident_feed_refresh->table:ioc_cache",
+      "source": "job:incident_feed_refresh",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:incident_feed_refresh->table:mitre_groups",
+      "source": "job:incident_feed_refresh",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:incident_feed_refresh->table:mitre_techniques",
+      "source": "job:incident_feed_refresh",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:incident_feed_refresh->table:sync_state",
+      "source": "job:incident_feed_refresh",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:ioc_retro_match->table:atlas_case_studies",
+      "source": "job:ioc_retro_match",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:ioc_retro_match->table:atlas_techniques",
+      "source": "job:ioc_retro_match",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:ioc_retro_match->table:cve_atlas_map",
+      "source": "job:ioc_retro_match",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:ioc_retro_match->table:cve_exploits",
+      "source": "job:ioc_retro_match",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:ioc_retro_match->table:cve_technique_map",
+      "source": "job:ioc_retro_match",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:ioc_retro_match->table:cves",
+      "source": "job:ioc_retro_match",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:ioc_retro_match->table:group_technique_map",
+      "source": "job:ioc_retro_match",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:ioc_retro_match->table:mitre_groups",
+      "source": "job:ioc_retro_match",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:ioc_retro_match->table:mitre_techniques",
+      "source": "job:ioc_retro_match",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:ioc_retro_match->table:sync_state",
+      "source": "job:ioc_retro_match",
+      "target": "table:sync_state",
+      "kind": "references_table"
     },
     {
       "id": "job:kev_backlog_reconcile->ext:cisa_kev",
@@ -1287,10 +2181,328 @@
       "kind": "fetches_external"
     },
     {
+      "id": "job:kev_backlog_reconcile->table:atlas_case_studies",
+      "source": "job:kev_backlog_reconcile",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_backlog_reconcile->table:atlas_techniques",
+      "source": "job:kev_backlog_reconcile",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_backlog_reconcile->table:cve_atlas_map",
+      "source": "job:kev_backlog_reconcile",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_backlog_reconcile->table:cve_exploits",
+      "source": "job:kev_backlog_reconcile",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_backlog_reconcile->table:cve_technique_map",
+      "source": "job:kev_backlog_reconcile",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_backlog_reconcile->table:cves",
+      "source": "job:kev_backlog_reconcile",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_backlog_reconcile->table:group_technique_map",
+      "source": "job:kev_backlog_reconcile",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_backlog_reconcile->table:mitre_groups",
+      "source": "job:kev_backlog_reconcile",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_backlog_reconcile->table:mitre_techniques",
+      "source": "job:kev_backlog_reconcile",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_backlog_reconcile->table:sync_state",
+      "source": "job:kev_backlog_reconcile",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
       "id": "job:kev_metadata_sync->ext:cisa_kev",
       "source": "job:kev_metadata_sync",
       "target": "ext:cisa_kev",
       "kind": "fetches_external"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:atlas_case_studies",
+      "source": "job:kev_metadata_sync",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:atlas_techniques",
+      "source": "job:kev_metadata_sync",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:audit_log",
+      "source": "job:kev_metadata_sync",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:correlation_campaign_members",
+      "source": "job:kev_metadata_sync",
+      "target": "table:correlation_campaign_members",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:correlation_campaigns",
+      "source": "job:kev_metadata_sync",
+      "target": "table:correlation_campaigns",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:cve_atlas_map",
+      "source": "job:kev_metadata_sync",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:cve_change_history",
+      "source": "job:kev_metadata_sync",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:cve_embeddings",
+      "source": "job:kev_metadata_sync",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:cve_exploits",
+      "source": "job:kev_metadata_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:cve_technique_map",
+      "source": "job:kev_metadata_sync",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:cves",
+      "source": "job:kev_metadata_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:epss_history",
+      "source": "job:kev_metadata_sync",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:feed_cache",
+      "source": "job:kev_metadata_sync",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:group_technique_map",
+      "source": "job:kev_metadata_sync",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:kev_deadlines",
+      "source": "job:kev_metadata_sync",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:mitre_groups",
+      "source": "job:kev_metadata_sync",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:mitre_techniques",
+      "source": "job:kev_metadata_sync",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:sync_state",
+      "source": "job:kev_metadata_sync",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_metadata_sync->table:watchlist",
+      "source": "job:kev_metadata_sync",
+      "target": "table:watchlist",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:llm_product_extraction->table:atlas_case_studies",
+      "source": "job:llm_product_extraction",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:llm_product_extraction->table:atlas_techniques",
+      "source": "job:llm_product_extraction",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:llm_product_extraction->table:cve_atlas_map",
+      "source": "job:llm_product_extraction",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:llm_product_extraction->table:cve_change_history",
+      "source": "job:llm_product_extraction",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:llm_product_extraction->table:cve_embeddings",
+      "source": "job:llm_product_extraction",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:llm_product_extraction->table:cve_exploits",
+      "source": "job:llm_product_extraction",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:llm_product_extraction->table:cve_technique_map",
+      "source": "job:llm_product_extraction",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:llm_product_extraction->table:cves",
+      "source": "job:llm_product_extraction",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:llm_product_extraction->table:feed_cache",
+      "source": "job:llm_product_extraction",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:llm_product_extraction->table:group_technique_map",
+      "source": "job:llm_product_extraction",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:llm_product_extraction->table:ioc_cache",
+      "source": "job:llm_product_extraction",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:llm_product_extraction->table:mitre_groups",
+      "source": "job:llm_product_extraction",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:llm_product_extraction->table:mitre_techniques",
+      "source": "job:llm_product_extraction",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:llm_product_extraction->table:sync_state",
+      "source": "job:llm_product_extraction",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nightly_correlation->table:atlas_case_studies",
+      "source": "job:nightly_correlation",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nightly_correlation->table:atlas_techniques",
+      "source": "job:nightly_correlation",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nightly_correlation->table:cve_atlas_map",
+      "source": "job:nightly_correlation",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nightly_correlation->table:cve_exploits",
+      "source": "job:nightly_correlation",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nightly_correlation->table:cve_technique_map",
+      "source": "job:nightly_correlation",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nightly_correlation->table:cves",
+      "source": "job:nightly_correlation",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nightly_correlation->table:group_technique_map",
+      "source": "job:nightly_correlation",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nightly_correlation->table:mitre_groups",
+      "source": "job:nightly_correlation",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nightly_correlation->table:mitre_techniques",
+      "source": "job:nightly_correlation",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nightly_correlation->table:sync_state",
+      "source": "job:nightly_correlation",
+      "target": "table:sync_state",
+      "kind": "references_table"
     },
     {
       "id": "job:nvd_incremental_sync->ext:nvd",
@@ -1299,10 +2511,166 @@
       "kind": "fetches_external"
     },
     {
+      "id": "job:nvd_incremental_sync->table:atlas_case_studies",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:atlas_techniques",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:audit_log",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:cve_atlas_map",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:cve_change_history",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:cve_embeddings",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:cve_exploits",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:cve_technique_map",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:cves",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:epss_history",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:feed_cache",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:group_technique_map",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:kev_deadlines",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:mitre_groups",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:mitre_techniques",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:sync_state",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
       "id": "job:otx_continuous_sync->ext:otx",
       "source": "job:otx_continuous_sync",
       "target": "ext:otx",
       "kind": "fetches_external"
+    },
+    {
+      "id": "job:otx_continuous_sync->table:atlas_case_studies",
+      "source": "job:otx_continuous_sync",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_continuous_sync->table:atlas_techniques",
+      "source": "job:otx_continuous_sync",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_continuous_sync->table:cve_atlas_map",
+      "source": "job:otx_continuous_sync",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_continuous_sync->table:cve_exploits",
+      "source": "job:otx_continuous_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_continuous_sync->table:cve_technique_map",
+      "source": "job:otx_continuous_sync",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_continuous_sync->table:cves",
+      "source": "job:otx_continuous_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_continuous_sync->table:group_technique_map",
+      "source": "job:otx_continuous_sync",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_continuous_sync->table:mitre_groups",
+      "source": "job:otx_continuous_sync",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_continuous_sync->table:mitre_techniques",
+      "source": "job:otx_continuous_sync",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_continuous_sync->table:sync_state",
+      "source": "job:otx_continuous_sync",
+      "target": "table:sync_state",
+      "kind": "references_table"
     },
     {
       "id": "job:otx_nightly_correlation->ext:otx",
@@ -1311,15 +2679,579 @@
       "kind": "fetches_external"
     },
     {
+      "id": "job:otx_nightly_correlation->table:atlas_case_studies",
+      "source": "job:otx_nightly_correlation",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_nightly_correlation->table:atlas_techniques",
+      "source": "job:otx_nightly_correlation",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_nightly_correlation->table:cve_atlas_map",
+      "source": "job:otx_nightly_correlation",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_nightly_correlation->table:cve_exploits",
+      "source": "job:otx_nightly_correlation",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_nightly_correlation->table:cve_technique_map",
+      "source": "job:otx_nightly_correlation",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_nightly_correlation->table:cves",
+      "source": "job:otx_nightly_correlation",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_nightly_correlation->table:group_technique_map",
+      "source": "job:otx_nightly_correlation",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_nightly_correlation->table:mitre_groups",
+      "source": "job:otx_nightly_correlation",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_nightly_correlation->table:mitre_techniques",
+      "source": "job:otx_nightly_correlation",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_nightly_correlation->table:sync_state",
+      "source": "job:otx_nightly_correlation",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:resource_metrics_sample->table:cve_exploits",
+      "source": "job:resource_metrics_sample",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:resource_metrics_sample->table:cves",
+      "source": "job:resource_metrics_sample",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:scheduled_backup->table:atlas_case_studies",
+      "source": "job:scheduled_backup",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:scheduled_backup->table:atlas_techniques",
+      "source": "job:scheduled_backup",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:scheduled_backup->table:cve_atlas_map",
+      "source": "job:scheduled_backup",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:scheduled_backup->table:cve_exploits",
+      "source": "job:scheduled_backup",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:scheduled_backup->table:cve_technique_map",
+      "source": "job:scheduled_backup",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:scheduled_backup->table:cves",
+      "source": "job:scheduled_backup",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:scheduled_backup->table:group_technique_map",
+      "source": "job:scheduled_backup",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:scheduled_backup->table:mitre_groups",
+      "source": "job:scheduled_backup",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:scheduled_backup->table:mitre_techniques",
+      "source": "job:scheduled_backup",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:scheduled_backup->table:sync_state",
+      "source": "job:scheduled_backup",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:session_cleanup->table:cve_exploits",
+      "source": "job:session_cleanup",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:session_cleanup->table:cves",
+      "source": "job:session_cleanup",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
       "id": "job:threatfox_sync->ext:threatfox",
       "source": "job:threatfox_sync",
       "target": "ext:threatfox",
       "kind": "fetches_external"
     },
     {
+      "id": "job:threatfox_sync->table:atlas_case_studies",
+      "source": "job:threatfox_sync",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:threatfox_sync->table:atlas_techniques",
+      "source": "job:threatfox_sync",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:threatfox_sync->table:cve_atlas_map",
+      "source": "job:threatfox_sync",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:threatfox_sync->table:cve_exploits",
+      "source": "job:threatfox_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:threatfox_sync->table:cve_technique_map",
+      "source": "job:threatfox_sync",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:threatfox_sync->table:cves",
+      "source": "job:threatfox_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:threatfox_sync->table:group_technique_map",
+      "source": "job:threatfox_sync",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:threatfox_sync->table:mitre_groups",
+      "source": "job:threatfox_sync",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:threatfox_sync->table:mitre_techniques",
+      "source": "job:threatfox_sync",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:threatfox_sync->table:sync_state",
+      "source": "job:threatfox_sync",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulncheck_kev_sync->table:atlas_case_studies",
+      "source": "job:vulncheck_kev_sync",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulncheck_kev_sync->table:atlas_techniques",
+      "source": "job:vulncheck_kev_sync",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulncheck_kev_sync->table:cve_atlas_map",
+      "source": "job:vulncheck_kev_sync",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulncheck_kev_sync->table:cve_exploits",
+      "source": "job:vulncheck_kev_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulncheck_kev_sync->table:cve_technique_map",
+      "source": "job:vulncheck_kev_sync",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulncheck_kev_sync->table:cves",
+      "source": "job:vulncheck_kev_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulncheck_kev_sync->table:group_technique_map",
+      "source": "job:vulncheck_kev_sync",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulncheck_kev_sync->table:mitre_groups",
+      "source": "job:vulncheck_kev_sync",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulncheck_kev_sync->table:mitre_techniques",
+      "source": "job:vulncheck_kev_sync",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulncheck_kev_sync->table:sync_state",
+      "source": "job:vulncheck_kev_sync",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulnrichment_snapshot_sync->table:atlas_case_studies",
+      "source": "job:vulnrichment_snapshot_sync",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulnrichment_snapshot_sync->table:atlas_techniques",
+      "source": "job:vulnrichment_snapshot_sync",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulnrichment_snapshot_sync->table:cve_atlas_map",
+      "source": "job:vulnrichment_snapshot_sync",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulnrichment_snapshot_sync->table:cve_change_history",
+      "source": "job:vulnrichment_snapshot_sync",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulnrichment_snapshot_sync->table:cve_embeddings",
+      "source": "job:vulnrichment_snapshot_sync",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulnrichment_snapshot_sync->table:cve_exploits",
+      "source": "job:vulnrichment_snapshot_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulnrichment_snapshot_sync->table:cve_technique_map",
+      "source": "job:vulnrichment_snapshot_sync",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulnrichment_snapshot_sync->table:cves",
+      "source": "job:vulnrichment_snapshot_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulnrichment_snapshot_sync->table:feed_cache",
+      "source": "job:vulnrichment_snapshot_sync",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulnrichment_snapshot_sync->table:group_technique_map",
+      "source": "job:vulnrichment_snapshot_sync",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulnrichment_snapshot_sync->table:mitre_groups",
+      "source": "job:vulnrichment_snapshot_sync",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulnrichment_snapshot_sync->table:mitre_techniques",
+      "source": "job:vulnrichment_snapshot_sync",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulnrichment_snapshot_sync->table:sync_state",
+      "source": "job:vulnrichment_snapshot_sync",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:atlas_case_studies",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:atlas_techniques",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:audit_log",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:correlation_campaign_members",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:correlation_campaign_members",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:correlation_campaigns",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:correlation_campaigns",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:cve_atlas_map",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:cve_change_history",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:cve_exploits",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:cve_technique_map",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:cves",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:epss_history",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:group_technique_map",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:kev_deadlines",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:mitre_groups",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:mitre_techniques",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:sync_state",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:watchlist_monitor_alerts->table:watchlist",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:watchlist",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:weekly_mitre_refresh->table:atlas_case_studies",
+      "source": "job:weekly_mitre_refresh",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:weekly_mitre_refresh->table:atlas_techniques",
+      "source": "job:weekly_mitre_refresh",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:weekly_mitre_refresh->table:cve_atlas_map",
+      "source": "job:weekly_mitre_refresh",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:weekly_mitre_refresh->table:cve_change_history",
+      "source": "job:weekly_mitre_refresh",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:weekly_mitre_refresh->table:cve_embeddings",
+      "source": "job:weekly_mitre_refresh",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:weekly_mitre_refresh->table:cve_exploits",
+      "source": "job:weekly_mitre_refresh",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:weekly_mitre_refresh->table:cve_technique_map",
+      "source": "job:weekly_mitre_refresh",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:weekly_mitre_refresh->table:cves",
+      "source": "job:weekly_mitre_refresh",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:weekly_mitre_refresh->table:feed_cache",
+      "source": "job:weekly_mitre_refresh",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:weekly_mitre_refresh->table:group_technique_map",
+      "source": "job:weekly_mitre_refresh",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:weekly_mitre_refresh->table:mitre_groups",
+      "source": "job:weekly_mitre_refresh",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:weekly_mitre_refresh->table:mitre_techniques",
+      "source": "job:weekly_mitre_refresh",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:weekly_mitre_refresh->table:sync_state",
+      "source": "job:weekly_mitre_refresh",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:atlas_case_studies",
+      "source": "routers-admin",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:atlas_techniques",
+      "source": "routers-admin",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin->table:audit_log",
       "source": "routers-admin",
       "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:cve_atlas_map",
+      "source": "routers-admin",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:cve_change_history",
+      "source": "routers-admin",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:cve_embeddings",
+      "source": "routers-admin",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:cve_exploits",
+      "source": "routers-admin",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:cve_technique_map",
+      "source": "routers-admin",
+      "target": "table:cve_technique_map",
       "kind": "references_table"
     },
     {
@@ -1329,9 +3261,21 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin->table:epss_history",
+      "source": "routers-admin",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin->table:feed_cache",
       "source": "routers-admin",
       "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:group_technique_map",
+      "source": "routers-admin",
+      "target": "table:group_technique_map",
       "kind": "references_table"
     },
     {
@@ -1350,6 +3294,18 @@
       "id": "routers-admin->table:kev_deadlines",
       "source": "routers-admin",
       "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:mitre_groups",
+      "source": "routers-admin",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:mitre_techniques",
+      "source": "routers-admin",
+      "target": "table:mitre_techniques",
       "kind": "references_table"
     },
     {
@@ -1377,15 +3333,219 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-atlas->table:atlas_case_studies",
+      "source": "routers-atlas",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-atlas->table:atlas_techniques",
       "source": "routers-atlas",
       "target": "table:atlas_techniques",
       "kind": "references_table"
     },
     {
+      "id": "routers-atlas->table:cve_atlas_map",
+      "source": "routers-atlas",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-atlas->table:cve_change_history",
+      "source": "routers-atlas",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-atlas->table:cve_embeddings",
+      "source": "routers-atlas",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-atlas->table:cve_exploits",
+      "source": "routers-atlas",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-atlas->table:cve_technique_map",
+      "source": "routers-atlas",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-atlas->table:cves",
+      "source": "routers-atlas",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-atlas->table:feed_cache",
+      "source": "routers-atlas",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-atlas->table:group_technique_map",
+      "source": "routers-atlas",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-atlas->table:ioc_cache",
+      "source": "routers-atlas",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-atlas->table:mitre_groups",
+      "source": "routers-atlas",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-atlas->table:mitre_techniques",
+      "source": "routers-atlas",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-auth->table:audit_log",
+      "source": "routers-auth",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-auth->table:cve_change_history",
+      "source": "routers-auth",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-auth->table:cve_exploits",
+      "source": "routers-auth",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-auth->table:cves",
+      "source": "routers-auth",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-auth->table:epss_history",
+      "source": "routers-auth",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-auth->table:kev_deadlines",
+      "source": "routers-auth",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-auth->table:sessions",
       "source": "routers-auth",
       "target": "table:sessions",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-auth->table:users",
+      "source": "routers-auth",
+      "target": "table:users",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-brief->table:correlation_campaign_members",
+      "source": "routers-brief",
+      "target": "table:correlation_campaign_members",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-brief->table:correlation_campaigns",
+      "source": "routers-brief",
+      "target": "table:correlation_campaigns",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-brief->table:cve_change_history",
+      "source": "routers-brief",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-brief->table:cve_exploits",
+      "source": "routers-brief",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-brief->table:cves",
+      "source": "routers-brief",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-brief->table:kev_deadlines",
+      "source": "routers-brief",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-correlation->table:correlation_campaign_members",
+      "source": "routers-correlation",
+      "target": "table:correlation_campaign_members",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-correlation->table:correlation_campaigns",
+      "source": "routers-correlation",
+      "target": "table:correlation_campaigns",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-correlation->table:cve_exploits",
+      "source": "routers-correlation",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-correlation->table:cves",
+      "source": "routers-correlation",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-correlation->table:watchlist",
+      "source": "routers-correlation",
+      "target": "table:watchlist",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:atlas_case_studies",
+      "source": "routers-cves",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:atlas_techniques",
+      "source": "routers-cves",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:audit_log",
+      "source": "routers-cves",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:correlation_actor",
+      "source": "routers-cves",
+      "target": "table:correlation_actor",
       "kind": "references_table"
     },
     {
@@ -1401,6 +3561,60 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-cves->table:correlation_cve_snapshot",
+      "source": "routers-cves",
+      "target": "table:correlation_cve_snapshot",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:correlation_feedback",
+      "source": "routers-cves",
+      "target": "table:correlation_feedback",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:correlation_metrics",
+      "source": "routers-cves",
+      "target": "table:correlation_metrics",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:correlation_suppressions",
+      "source": "routers-cves",
+      "target": "table:correlation_suppressions",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:correlation_temporal",
+      "source": "routers-cves",
+      "target": "table:correlation_temporal",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:cve_atlas_map",
+      "source": "routers-cves",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:cve_change_history",
+      "source": "routers-cves",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:cve_embeddings",
+      "source": "routers-cves",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:cve_exploits",
+      "source": "routers-cves",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-cves->table:cve_technique_map",
       "source": "routers-cves",
       "target": "table:cve_technique_map",
@@ -1413,15 +3627,219 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-cves->table:epss_history",
+      "source": "routers-cves",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:feed_cache",
+      "source": "routers-cves",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:group_technique_map",
+      "source": "routers-cves",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:ioc_cache",
+      "source": "routers-cves",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:ioc_degree",
+      "source": "routers-cves",
+      "target": "table:ioc_degree",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-cves->table:kev_deadlines",
       "source": "routers-cves",
       "target": "table:kev_deadlines",
       "kind": "references_table"
     },
     {
+      "id": "routers-cves->table:mitre_groups",
+      "source": "routers-cves",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:mitre_techniques",
+      "source": "routers-cves",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:otx_cve_pulses",
+      "source": "routers-cves",
+      "target": "table:otx_cve_pulses",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:otx_pulse_iocs",
+      "source": "routers-cves",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:otx_pulses",
+      "source": "routers-cves",
+      "target": "table:otx_pulses",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-cves->table:watchlist",
       "source": "routers-cves",
       "target": "table:watchlist",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-detection_backlog->table:audit_log",
+      "source": "routers-detection_backlog",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-detection_backlog->table:cve_change_history",
+      "source": "routers-detection_backlog",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-detection_backlog->table:cve_exploits",
+      "source": "routers-detection_backlog",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-detection_backlog->table:cve_technique_map",
+      "source": "routers-detection_backlog",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-detection_backlog->table:cves",
+      "source": "routers-detection_backlog",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-detection_backlog->table:detection_backlog",
+      "source": "routers-detection_backlog",
+      "target": "table:detection_backlog",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-detection_backlog->table:epss_history",
+      "source": "routers-detection_backlog",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-detection_backlog->table:hunt_packs",
+      "source": "routers-detection_backlog",
+      "target": "table:hunt_packs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-detection_backlog->table:kev_deadlines",
+      "source": "routers-detection_backlog",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-detection_backlog->table:mitre_techniques",
+      "source": "routers-detection_backlog",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-detection_backlog->table:user_preferences",
+      "source": "routers-detection_backlog",
+      "target": "table:user_preferences",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:atlas_case_studies",
+      "source": "routers-forge",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:atlas_techniques",
+      "source": "routers-forge",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:audit_log",
+      "source": "routers-forge",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:correlation_campaign_members",
+      "source": "routers-forge",
+      "target": "table:correlation_campaign_members",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:correlation_campaigns",
+      "source": "routers-forge",
+      "target": "table:correlation_campaigns",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:correlation_cve_snapshot",
+      "source": "routers-forge",
+      "target": "table:correlation_cve_snapshot",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:correlation_feedback",
+      "source": "routers-forge",
+      "target": "table:correlation_feedback",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:correlation_metrics",
+      "source": "routers-forge",
+      "target": "table:correlation_metrics",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:correlation_suppressions",
+      "source": "routers-forge",
+      "target": "table:correlation_suppressions",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:cve_atlas_map",
+      "source": "routers-forge",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:cve_change_history",
+      "source": "routers-forge",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:cve_embeddings",
+      "source": "routers-forge",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:cve_exploits",
+      "source": "routers-forge",
+      "target": "table:cve_exploits",
       "kind": "references_table"
     },
     {
@@ -1437,9 +3855,51 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-forge->table:epss_history",
+      "source": "routers-forge",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:feed_cache",
+      "source": "routers-forge",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:group_technique_map",
+      "source": "routers-forge",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-forge->table:hunt_packs",
       "source": "routers-forge",
       "target": "table:hunt_packs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:ioc_cache",
+      "source": "routers-forge",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:ioc_degree",
+      "source": "routers-forge",
+      "target": "table:ioc_degree",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:kev_deadlines",
+      "source": "routers-forge",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:mitre_groups",
+      "source": "routers-forge",
+      "target": "table:mitre_groups",
       "kind": "references_table"
     },
     {
@@ -1449,9 +3909,579 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-forge->table:otx_cve_pulses",
+      "source": "routers-forge",
+      "target": "table:otx_cve_pulses",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:otx_pulse_iocs",
+      "source": "routers-forge",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:otx_pulses",
+      "source": "routers-forge",
+      "target": "table:otx_pulses",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:watchlist",
+      "source": "routers-forge",
+      "target": "table:watchlist",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:atlas_case_studies",
+      "source": "routers-health",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:atlas_techniques",
+      "source": "routers-health",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:audit_log",
+      "source": "routers-health",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:cve_atlas_map",
+      "source": "routers-health",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:cve_change_history",
+      "source": "routers-health",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:cve_embeddings",
+      "source": "routers-health",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:cve_exploits",
+      "source": "routers-health",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:cve_technique_map",
+      "source": "routers-health",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:cves",
+      "source": "routers-health",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:epss_history",
+      "source": "routers-health",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:feed_cache",
+      "source": "routers-health",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:group_technique_map",
+      "source": "routers-health",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:ioc_cache",
+      "source": "routers-health",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:kev_deadlines",
+      "source": "routers-health",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:mitre_groups",
+      "source": "routers-health",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:mitre_techniques",
+      "source": "routers-health",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-health->table:sync_state",
+      "source": "routers-health",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-ioc->table:cve_change_history",
+      "source": "routers-ioc",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-ioc->table:cve_embeddings",
+      "source": "routers-ioc",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-ioc->table:cve_exploits",
+      "source": "routers-ioc",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-ioc->table:cves",
+      "source": "routers-ioc",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-ioc->table:feed_cache",
+      "source": "routers-ioc",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-ioc->table:ioc_cache",
+      "source": "routers-ioc",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-ioc->table:ioc_watchlist",
+      "source": "routers-ioc",
+      "target": "table:ioc_watchlist",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-me->table:cve_exploits",
+      "source": "routers-me",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-me->table:cves",
+      "source": "routers-me",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-me->table:user_preferences",
+      "source": "routers-me",
+      "target": "table:user_preferences",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-meta->table:api_usage",
+      "source": "routers-meta",
+      "target": "table:api_usage",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-meta->table:atlas_case_studies",
+      "source": "routers-meta",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-meta->table:atlas_techniques",
+      "source": "routers-meta",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-meta->table:cve_atlas_map",
+      "source": "routers-meta",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-meta->table:cve_exploits",
+      "source": "routers-meta",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-meta->table:cve_technique_map",
+      "source": "routers-meta",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-meta->table:cves",
+      "source": "routers-meta",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-meta->table:group_technique_map",
+      "source": "routers-meta",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-meta->table:mitre_groups",
+      "source": "routers-meta",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-meta->table:mitre_techniques",
+      "source": "routers-meta",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-meta->table:sync_state",
+      "source": "routers-meta",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-notifications_me->table:cve_exploits",
+      "source": "routers-notifications_me",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-notifications_me->table:cves",
+      "source": "routers-notifications_me",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-notifications_me->table:user_notifications",
+      "source": "routers-notifications_me",
+      "target": "table:user_notifications",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-notifications_me->table:users",
+      "source": "routers-notifications_me",
+      "target": "table:users",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:atlas_case_studies",
+      "source": "routers-refresh",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:atlas_techniques",
+      "source": "routers-refresh",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:audit_log",
+      "source": "routers-refresh",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:cve_atlas_map",
+      "source": "routers-refresh",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:cve_change_history",
+      "source": "routers-refresh",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:cve_embeddings",
+      "source": "routers-refresh",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:cve_exploits",
+      "source": "routers-refresh",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:cve_technique_map",
+      "source": "routers-refresh",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:cves",
+      "source": "routers-refresh",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:epss_history",
+      "source": "routers-refresh",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:feed_cache",
+      "source": "routers-refresh",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:group_technique_map",
+      "source": "routers-refresh",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:kev_deadlines",
+      "source": "routers-refresh",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:mitre_groups",
+      "source": "routers-refresh",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:mitre_techniques",
+      "source": "routers-refresh",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:sync_state",
+      "source": "routers-refresh",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-threat_model->table:cve_exploits",
+      "source": "routers-threat_model",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-threat_model->table:cve_technique_map",
+      "source": "routers-threat_model",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-threat_model->table:cves",
+      "source": "routers-threat_model",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-threat_model->table:hunt_packs",
+      "source": "routers-threat_model",
+      "target": "table:hunt_packs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-threat_model->table:mitre_techniques",
+      "source": "routers-threat_model",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:atlas_case_studies",
+      "source": "routers-wallboard",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:atlas_techniques",
+      "source": "routers-wallboard",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:correlation_campaigns",
+      "source": "routers-wallboard",
+      "target": "table:correlation_campaigns",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:cve_atlas_map",
+      "source": "routers-wallboard",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:cve_exploits",
+      "source": "routers-wallboard",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:cve_technique_map",
+      "source": "routers-wallboard",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:cves",
+      "source": "routers-wallboard",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:feed_cache",
+      "source": "routers-wallboard",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:group_technique_map",
+      "source": "routers-wallboard",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:hunt_packs",
+      "source": "routers-wallboard",
+      "target": "table:hunt_packs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:ioc_cache",
+      "source": "routers-wallboard",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:kev_deadlines",
+      "source": "routers-wallboard",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:mitre_groups",
+      "source": "routers-wallboard",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:mitre_techniques",
+      "source": "routers-wallboard",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-watchlist->table:cve_change_history",
+      "source": "routers-watchlist",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-watchlist->table:cve_embeddings",
+      "source": "routers-watchlist",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-watchlist->table:cve_exploits",
+      "source": "routers-watchlist",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-watchlist->table:cves",
+      "source": "routers-watchlist",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-watchlist->table:feed_cache",
+      "source": "routers-watchlist",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-watchlist->table:watchlist",
       "source": "routers-watchlist",
       "target": "table:watchlist",
+      "kind": "references_table"
+    },
+    {
+      "id": "security_architecture-routers-security_architecture->table:atlas_case_studies",
+      "source": "security_architecture-routers-security_architecture",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "security_architecture-routers-security_architecture->table:atlas_techniques",
+      "source": "security_architecture-routers-security_architecture",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "security_architecture-routers-security_architecture->table:cve_atlas_map",
+      "source": "security_architecture-routers-security_architecture",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "security_architecture-routers-security_architecture->table:cve_exploits",
+      "source": "security_architecture-routers-security_architecture",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "security_architecture-routers-security_architecture->table:cve_technique_map",
+      "source": "security_architecture-routers-security_architecture",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "security_architecture-routers-security_architecture->table:cves",
+      "source": "security_architecture-routers-security_architecture",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "security_architecture-routers-security_architecture->table:group_technique_map",
+      "source": "security_architecture-routers-security_architecture",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "security_architecture-routers-security_architecture->table:hunt_packs",
+      "source": "security_architecture-routers-security_architecture",
+      "target": "table:hunt_packs",
+      "kind": "references_table"
+    },
+    {
+      "id": "security_architecture-routers-security_architecture->table:mitre_groups",
+      "source": "security_architecture-routers-security_architecture",
+      "target": "table:mitre_groups",
       "kind": "references_table"
     },
     {

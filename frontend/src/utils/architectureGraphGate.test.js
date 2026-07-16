@@ -57,6 +57,11 @@ describe('PM-3 architecture graph gate', () => {
     assert.match(graphSection, /selectedNodeId/, 'graph section should accept selected node id')
   })
 
+  it('PM-3c-toggle: clicking a selected node clears selection', () => {
+    const graphSection = read(GRAPH_SECTION)
+    assert.match(graphSection, /if \(selected\) onClearSelection\(\)/, 're-clicking a selected node should deselect')
+  })
+
   it('PM-3d: admin overview exposes corpus drift diagnostic', () => {
     const overview = read(OVERVIEW_PAGE)
     assert.match(overview, /corpus-drift|corpusDrift/i, 'admin overview should expose corpus drift check')

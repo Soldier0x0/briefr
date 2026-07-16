@@ -78,7 +78,7 @@
 | Forge redesign FR-1…FR-3 (#490, #492, #495) | **G0** LEARNING_PATH / ONBOARDING refresh |
 | Threat modeling TM-0…TM-5 (#491, #493–#497) | TM-6+ framework workspaces (evidence-gated) |
 | Admin ops, webhooks (#413–#415), wallboard v2 (#430), O-3 kiosk config (#514), AI ops (#416–#420), 12-PR operator bundle (#428–#439), 4-PR tail (#441–#444) | LLM summary auth |
-| **PM-3 ARCH graph** (cursor zoom, fit-to-view with `FIT_MIN_SCALE` below wheel min, viewport-locked graph shell / no page scroll, strong non-neighbor dim, truncated labels, focus-only edges, core/external nodes + job→source links, inline node detail, admin corpus drift check) | **PM-4** IA: Admin Security posture, drop ARCH tab, Forge MITRE navigator |
+| **PM-3 ARCH graph** (cursor zoom, fit-to-view, viewport-locked shell, strong focus dim, truncated labels, toggle-deselect, one-hop SQL edges via db helpers/`database` shim, focus-only edge draw, core/external nodes, inline node detail, admin corpus drift) | **PM-4** IA: Admin Security posture, drop ARCH tab, Forge MITRE navigator |
 | **Forge** threat scenarios, proof bench, KEV backlog, IOC watchlist (V1.5 #373–#376) | `IMAGE_BRIEFS` tail; MkDocs |
 | Track I performance Phases 1–3 (#378–#382, #436–#437, #443–#444) | Encrypted `app_settings` / secrets SSOT |
 | Track L Wave 4: monitor alerts, onboarding, doctor, operator settings (#366–#372) | RSS↔CVE linking |
