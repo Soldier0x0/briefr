@@ -1,4 +1,8 @@
-"""Hydrate operator settings from DB at startup (env wins over DB over .env)."""
+"""Hydrate operator settings from DB at startup (env wins over DB over .env).
+
+Secret-typed keys in `app_settings` are encrypted at rest when
+`BRIEFR_SETTINGS_KEY` is set (ADR-006). Process env still wins.
+"""
 
 from __future__ import annotations
 
@@ -9,10 +13,16 @@ from pathlib import Path
 from config_schema import WRITABLE_CONFIG_KEYS, get_field
 from database import get_db, list_app_settings, set_app_setting
 from settings import PROCESS_ENV_KEYS
+from settings_crypto import decrypt_secret, encrypt_secret, is_encrypted_value
 
 logger = logging.getLogger(__name__)
 
 _DOTENV_PATH = Path(__file__).resolve().parent / ".env"
+
+
+def _is_secret_key(key: str) -> bool:
+    field = get_field(key)
+    return bool(field and field.type == "secret")
 
 
 async def seed_app_settings_from_dotenv() -> int:
@@ -64,7 +74,18 @@ async def hydrate_operator_settings_from_db() -> int:
         value = row.get("value")
         if value is None:
             continue
-        os.environ[key] = str(value)
+        stored = str(value)
+        try:
+            if is_encrypted_value(stored) or _is_secret_key(key):
+                stored = decrypt_secret(stored)
+        except ValueError as exc:
+            logger.warning(
+                "Skipping app_settings key %s during hydrate: %s",
+                key,
+                exc,
+            )
+            continue
+        os.environ[key] = stored
         applied += 1
     if applied:
         logger.info("Hydrated %d operator setting(s) from app_settings", applied)
@@ -77,9 +98,23 @@ async def bootstrap_operator_settings() -> None:
 
 
 async def persist_operator_setting(key: str, value: str) -> None:
+    """Persist a writable setting. Secrets are encrypted when the settings key is set."""
+    to_store = value
+    if _is_secret_key(key):
+        encrypted = encrypt_secret(value)
+        if encrypted is None:
+            logger.info(
+                "Skipping app_settings persist for secret %s "
+                "(set BRIEFR_SETTINGS_KEY to store encrypted secrets in DB; "
+                ".env / process env still apply)",
+                key,
+            )
+            return
+        to_store = encrypted
+
     db = await get_db()
     try:
-        await set_app_setting(db, key, value)
+        await set_app_setting(db, key, to_store)
         await db.commit()
     finally:
         await db.close()

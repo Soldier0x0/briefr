@@ -12,6 +12,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — M-8 encrypted `app_settings` secrets (ADR-006)
+
+**What:** Secret-typed Admin config values encrypt at rest in Postgres `app_settings` when `BRIEFR_SETTINGS_KEY` is set (`enc:v1:` + Fernet via `cryptography`). No key → secrets still go to `.env` / `os.environ` but are **not** persisted to DB (same as seed skip). Process env precedence unchanged — existing `.env` installs keep working. ADR-006 + `settings_crypto.py` + operator_settings persist/hydrate wiring + tests.
+
+**Next:** RSS↔CVE linking → detection composer → Q1–Q5 → E1–E6. Parked: STIX, V2 compose, G0–G4.
+
+---
+
 ## 2026-07-16 — LLM summary auth (session gate)
 
 **What:** Closed the open “LLM summary auth” security tail. `POST /api/ai/summary`, `GET /api/ai/summary`, and `POST /api/investigation/summary` now declare explicit `Depends(require_user)` (defense in depth on top of `session_auth_middleware`). Security invariant sample covers both summary POSTs. Docs: `PRODUCT_STATUS`, `API_REFERENCE`, BACKLOG parked row removed, SPRINT optional note marked shipped.

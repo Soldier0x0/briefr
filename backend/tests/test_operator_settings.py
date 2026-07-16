@@ -131,3 +131,58 @@ def test_persist_operator_setting_round_trip(tmp_path, monkeypatch):
             await db.close()
 
     assert run_db_test(read()) == "8"
+
+
+def test_persist_secret_encrypts_when_settings_key_set(tmp_path, monkeypatch):
+    _sqlite_db(tmp_path, monkeypatch)
+    run_db_test(init_db())
+    monkeypatch.setenv("BRIEFR_SETTINGS_KEY", "unit-test-settings-key")
+
+    run_db_test(persist_operator_setting("NVD_API_KEY", "plain-nvd-secret"))
+
+    async def read():
+        db = await get_db()
+        try:
+            return await get_app_setting(db, "NVD_API_KEY")
+        finally:
+            await db.close()
+
+    stored = run_db_test(read())
+    assert stored is not None
+    assert stored.startswith("enc:v1:")
+    assert "plain-nvd-secret" not in stored
+
+
+def test_persist_secret_skips_db_without_settings_key(tmp_path, monkeypatch):
+    _sqlite_db(tmp_path, monkeypatch)
+    run_db_test(init_db())
+    monkeypatch.delenv("BRIEFR_SETTINGS_KEY", raising=False)
+
+    run_db_test(persist_operator_setting("NVD_API_KEY", "only-in-env"))
+
+    async def read():
+        db = await get_db()
+        try:
+            return await get_app_setting(db, "NVD_API_KEY")
+        finally:
+            await db.close()
+
+    assert run_db_test(read()) is None
+
+
+def test_hydrate_decrypts_secret_rows(tmp_path, monkeypatch):
+    _sqlite_db(tmp_path, monkeypatch)
+    run_db_test(init_db())
+    monkeypatch.setenv("BRIEFR_SETTINGS_KEY", "unit-test-settings-key")
+    # Ensure hydrate is allowed to apply this key (not in process-env snapshot).
+    monkeypatch.setattr(
+        "operator_settings.PROCESS_ENV_KEYS",
+        frozenset(k for k in PROCESS_ENV_KEYS if k != "NVD_API_KEY"),
+    )
+
+    run_db_test(persist_operator_setting("NVD_API_KEY", "hydrated-secret"))
+    monkeypatch.delenv("NVD_API_KEY", raising=False)
+
+    applied = run_db_test(hydrate_operator_settings_from_db())
+    assert applied >= 1
+    assert os.environ["NVD_API_KEY"] == "hydrated-secret"
