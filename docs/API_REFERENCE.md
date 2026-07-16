@@ -919,6 +919,8 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
 |---|---|---|---|
 | `product` | str | `""` | Product name for generated Sigma title |
 
+**Auth:** Required (session cookie).
+
 **Response:**
 
 ```json
@@ -929,11 +931,34 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
   "elastic_rules": [],
   "has_community_rules": false,
   "generated_sigma": "...",
-  "siem_queries": { }
+  "generated_sigma_meta": { "briefr_basis": "cwe", "status": "experimental" },
+  "detection_context": null,
+  "siem_queries": { },
+  "yara_rules": [],
+  "evidence": {
+    "cve_id": "CVE-2024-0001",
+    "technique_ids": ["T1190"],
+    "detection_class": "path_traversal",
+    "community": {
+      "sigma_rules": [],
+      "elastic_rules": [],
+      "has_community_rules": false
+    },
+    "artifacts": [],
+    "observables": { "nuclei_urls": [], "yara_rules": [] },
+    "detection_context": null,
+    "evidence_summary": {
+      "community_count": 0,
+      "artifact_count": 0,
+      "nuclei_count": 0,
+      "primary_source": "none"
+    }
+  },
+  "provenance": { }
 }
 ```
 
-Sigma/Elastic rules cached 24h. `generated_sigma` only when no community rules found.
+Sigma/Elastic rules cached 24h. `generated_sigma` is always returned as a labeled supplement (D5). Additive `evidence` (DC-1) is the shared evidence pack for Detect/Forge composer work — no LLM.
 
 ---
 

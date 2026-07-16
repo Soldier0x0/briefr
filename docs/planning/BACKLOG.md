@@ -30,7 +30,7 @@ docs so nothing is lost when specs move to [`archive/superseded/`](../archive/su
 | **G0** | Refresh `LEARNING_PATH.md` + `ONBOARDING.md` for final shipped system | 🅿️ end-of-lifecycle | Sprint §G |
 | **G1–G4** | Maintainer modules 1–4 (trace + private notes) | 🅿️ end-of-lifecycle | Sprint §G |
 | **Phase 4 STIX/Sigma export** | V1.5 tail | 🅿️ | Sprint V1.5 |
-| **Detection composer** | Evidence-composed Sigma/KQL/SPL/QRadar/YARA (no LLM default); replace Forge keyword templates; shared drawer Detect + Forge | 🅿️ after PM-4 | HANDOVER 2026-07-16 |
+| **Detection composer** | Evidence-composed Sigma/KQL/SPL/QRadar/YARA (no LLM default); replace Forge keyword templates; shared drawer Detect + Forge | 🔶 DC-1 shipped — DC-2…DC-4 open | [`specs/detection-composer-design.md`](specs/detection-composer-design.md) |
 
 ---
 

@@ -24,3 +24,4 @@ Open checklist rows: [`../BACKLOG.md`](../BACKLOG.md).
 | [`durable-outbound-queue-and-stack-backfill.md`](durable-outbound-queue-and-stack-backfill.md) | Procrastinate durable jobs + universal API metering + CPE catalog + Tier-A stack backfill | 📋 awaiting activation; PR-Q1…Q4 (+ optional EPSS identity skip) |
 | [`embeddings-pgvector-hybrid-search-design.md`](embeddings-pgvector-hybrid-search-design.md) | pgvector + hybrid search + agent search token (humans & agents) | 💬 design review — then implementation plan |
 | [`forge-attack-path-navigator-design.md`](forge-attack-path-navigator-design.md) | Forge ATT&CK path navigator (design) | 💬 design review — separate from queue/stack program |
+| [`detection-composer-design.md`](detection-composer-design.md) | Evidence-composed detection packs (Detect + Forge) | DC-1 engine + additive `evidence` on Detect API; DC-2…DC-4 follow |
