@@ -35,6 +35,17 @@ Paths:
   Secrets:  /opt/briefr/backend/.env
 ```
 
+### Operator secrets: `.env` vs encrypted `app_settings` (ADR-006)
+
+Precedence is unchanged: **process env → `app_settings` → `.env`**.
+
+- Keeping API keys only in `.env` / systemd `Environment=` continues to work.
+- Optional `BRIEFR_SETTINGS_KEY` encrypts **secret-typed** Admin saves into
+  Postgres `app_settings` (`enc:v1:…`). Without this key, Admin still writes
+  secrets to `.env` but **does not** store them in the DB.
+- Back up `BRIEFR_SETTINGS_KEY` off-host if you use it — losing it means
+  encrypted rows cannot be decrypted (re-save keys after rotating the key).
+
 ---
 
 ## Stable configuration contract
@@ -44,6 +55,7 @@ These env vars must remain supported across releases (defaults preserved):
 | Variable | Purpose |
 |----------|---------|
 | `DATABASE_URL` | PostgreSQL DSN (**required**) |
+| `BRIEFR_SETTINGS_KEY` | Optional Fernet material for encrypted secret rows in `app_settings` (ADR-006) |
 | `BRIEFR_REQUIRE_POSTGRES` | Refuse startup without Postgres |
 | `DATABASE_POOL_SIZE` | asyncpg pool size |
 | `BACKUP_DIR` | Archive directory |

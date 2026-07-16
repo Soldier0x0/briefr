@@ -173,7 +173,7 @@ no collateral skip-decorator corruption. Full SQLite suite green (no regressions
 
 | ID | Item | Status |
 |----|------|--------|
-| **M-8** | `app_settings` secret policy (env-only vs encrypted DB) | 🅿️ |
+| **M-8** | `app_settings` secret policy — encrypted DB when `BRIEFR_SETTINGS_KEY` set (ADR-006); env still primary | ✅ |
 | **M-9** | Ingest `next_run_time` from `scheduler.last_run` (no immediate NVD/KEV/EPSS on restart) | ✅ (this PR) — `_restore_ingest_next_runs` re-anchors NVD/KEV/EPSS to last-run + interval; overdue jobs run +2min after boot, never postponed beyond the trigger default |
 | **M-10** | Global backup mutex (fcntl) — partial via #431 flock | ✅ verified complete 2026-07-14 — `_create_archive_bundle` + `prune_backups` run only inside `run_backup`'s `.backup.lock` flock; all creators (scheduled job, admin manual) route through `run_backup`. fcntl-less platforms (Windows dev) fall back to no lock by design |
 
@@ -348,7 +348,6 @@ ADR-005 (UI library allow/deny). **Design SSOT:** [`../design/design-system.md`]
 |------|--------|
 | V1.5 Phase 4 STIX/Sigma export | Sprint |
 | Full V2.0 `docker-compose.yml` | Sprint, operator backlog |
-| Encrypted `app_settings` / secrets SSOT (M-8) | Security audit |
 | RSS↔CVE linking | Sprint |
 | Track I Phase 3 remainder (if any beyond #436–#438) | HANDOVER |
 
