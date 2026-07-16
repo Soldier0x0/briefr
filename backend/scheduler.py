@@ -24,6 +24,7 @@ from database import (
     enrich_kev_summaries,
     get_all_cve_ids,
     get_cve_count,
+    missing_cve_ids,
     get_cves_needing_intel_enrichment,
     get_db,
     get_nvd_sync_watermark,
@@ -460,8 +461,16 @@ async def _run_kev_sync() -> None:
         try:
             kev_ids = [e["cveID"] for e in kev_entries if e.get("cveID")]
             kev_count = await upsert_kev_batch(db, kev_entries)
+            await db.commit()
+            _job_progress["kev_metadata_sync"] = (
+                f"Marked {len(kev_ids)} KEV catalog entries in database…"
+            )
             newly_kev = await mark_cves_as_kev(db, kev_ids)
-            _job_progress["kev_metadata_sync"] = f"Enriching KEV summaries from CISA descriptions ({len(newly_kev)} newly flagged CVEs)…"
+            await db.commit()
+            _job_progress["kev_metadata_sync"] = (
+                f"Enriching KEV summaries from CISA descriptions "
+                f"({len(newly_kev)} newly flagged CVEs)…"
+            )
             kev_summaries = await enrich_kev_summaries(db)
             await db.commit()
             if kev_summaries:
@@ -510,14 +519,16 @@ async def _cross_fetch_missing_kev_cves(kev_entries: list[dict], nvd_api_key: st
 
         async def _load_missing(db):
             nonlocal missing_kev, kev_short_map
-            existing_ids = set(await get_all_cve_ids(db))
-            missing_kev = [
-                e.get("cveID", "")
+            catalog_ids = [
+                (e.get("cveID") or "").upper()
                 for e in kev_entries
-                if e.get("cveID") and e.get("cveID") not in existing_ids
+                if e.get("cveID")
             ]
+            missing_kev = await missing_cve_ids(db, catalog_ids)
             kev_short_map = {
-                e.get("cveID", ""): e.get("shortDescription", "") for e in kev_entries
+                (e.get("cveID") or "").upper(): e.get("shortDescription", "")
+                for e in kev_entries
+                if e.get("cveID")
             }
 
         await _with_db(_load_missing)

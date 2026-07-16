@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timedelta, timezone
 
+from db.cve import _SQLITE_IN_CHUNK, _in_placeholders
 from db.types import DbConnection
 
 _COUNT_CVES_SQL = "SELECT COUNT(*) as cnt FROM cves"
@@ -309,6 +310,35 @@ async def get_all_cve_ids(db: DbConnection) -> list:
 async def get_all_cve_ids_set(db: DbConnection) -> set[str]:
     rows = await db.execute_fetchall(_SELECT_ALL_CVE_IDS_SQL)
     return {r["cve_id"] for r in rows}
+
+
+async def filter_cve_ids_present(
+    db: DbConnection, candidate_ids: list[str]
+) -> set[str]:
+    """Return candidate CVE IDs that exist in ``cves`` (chunked IN — no full-table scan)."""
+    normalized = sorted({(c or "").upper() for c in candidate_ids if c})
+    if not normalized:
+        return set()
+    pg = _is_postgres_connection(db)
+    found: set[str] = set()
+    for i in range(0, len(normalized), _SQLITE_IN_CHUNK):
+        chunk = normalized[i : i + _SQLITE_IN_CHUNK]
+        placeholders = _in_placeholders(len(chunk), pg=pg, start=1)
+        rows = await db.execute_fetchall(
+            f"SELECT cve_id FROM cves WHERE cve_id IN ({placeholders})",
+            tuple(chunk),
+        )
+        found.update(row["cve_id"] for row in rows)
+    return found
+
+
+async def missing_cve_ids(db: DbConnection, candidate_ids: list[str]) -> list[str]:
+    """Candidates from ``candidate_ids`` with no row in ``cves`` yet."""
+    normalized = [(c or "").upper() for c in candidate_ids if c]
+    if not normalized:
+        return []
+    present = await filter_cve_ids_present(db, normalized)
+    return [cve_id for cve_id in normalized if cve_id not in present]
 
 
 async def replace_mitre_techniques(db: DbConnection, techniques: list[dict]) -> None:

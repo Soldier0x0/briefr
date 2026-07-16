@@ -20,6 +20,18 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+---
+
+## 2026-07-16 — KEV Metadata Sync database timeout
+
+**What:** `KEV Metadata Sync` failed with **Database command timeout** on large Postgres. Cross-fetch used `get_all_cve_ids()` (full `cves` scan) while NVD/LLM jobs were active. Fix: `missing_cve_ids()` chunked IN over KEV catalog only; PG JOIN for `enrich_kev_summaries`; per-phase commits in KEV sync.
+
+**PR:** pending (`cursor/kev-sync-db-timeout-021b`)
+
+**Next:** merge + restart backend → **Retry now** on KEV Metadata Sync.
+
+---
+
 ## 2026-07-15 — Tooltip v2 (Radix / shadcn pattern)
 
 **What:** Migrated `Tooltip` to `@radix-ui/react-tooltip` with `TooltipProvider` at app root, shadcn-style `.ui-tooltip-content` surface, compound exports (`TooltipTrigger`, `TooltipContent`). Legacy `<Tooltip text="…">` API + `ControlTooltip` hover-only mode preserved.

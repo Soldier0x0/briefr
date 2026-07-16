@@ -86,7 +86,7 @@ _CLEAR_SUMMARY_PG = "UPDATE cves SET summary = NULL WHERE cve_id = $1"
 _BACKFILL_HAS_POC_SQLITE = "UPDATE cves SET has_poc = 1 WHERE cve_id = ?"
 _BACKFILL_HAS_POC_PG = "UPDATE cves SET has_poc = 1 WHERE cve_id = $1"
 
-_ENRICH_KEV_SUMMARIES_SQL = """
+_ENRICH_KEV_SUMMARIES_SQLITE = """
 UPDATE cves
 SET summary = (
     SELECT k.short_description
@@ -103,6 +103,17 @@ WHERE is_kev = 1
       AND k.short_description IS NOT NULL
       AND k.short_description != ''
   )
+"""
+
+_ENRICH_KEV_SUMMARIES_PG = """
+UPDATE cves AS c
+SET summary = k.short_description
+FROM kev_deadlines AS k
+WHERE c.cve_id = k.cve_id
+  AND c.is_kev = 1
+  AND (c.summary IS NULL OR c.summary = '')
+  AND k.short_description IS NOT NULL
+  AND k.short_description != ''
 """
 
 _UPSERT_KEV_SQLITE = """
@@ -535,7 +546,12 @@ async def get_recent_cve_changes(
 
 async def enrich_kev_summaries(db: DbConnection) -> int:
     """Fill plain-English summary from CISA KEV short descriptions."""
-    cursor = await db.execute(_ENRICH_KEV_SUMMARIES_SQL)
+    sql = (
+        _ENRICH_KEV_SUMMARIES_PG
+        if _is_postgres_connection(db)
+        else _ENRICH_KEV_SUMMARIES_SQLITE
+    )
+    cursor = await db.execute(sql)
     return cursor.rowcount
 
 
