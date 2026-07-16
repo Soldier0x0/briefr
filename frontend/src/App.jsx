@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from 'react'
-import { Routes, Route, useLocation, Link, useSearchParams } from 'react-router-dom'
+import { Routes, Route, useLocation, Link, useSearchParams, Navigate } from 'react-router-dom'
 import { InvestigationProvider } from './context/InvestigationContext.jsx'
 import { overlayDepth } from './hooks/useModalLayer.js'
 import { shouldIgnoreGlobalShortcut } from './utils/keyboardScope.js'
@@ -47,7 +47,31 @@ const Forge = lazyWithReload(() => import('./components/Forge.jsx'))
 const DetailDrawer = lazyWithReload(() => import('./components/DetailDrawer'))
 const AdminPage = lazyWithReload(() => import('./pages/admin/AdminPage.jsx'))
 const WallboardPage = lazyWithReload(() => import('./pages/WallboardPage.jsx'))
-const SecurityArchitecturePage = lazyWithReload(() => import('./pages/security-architecture/SecurityArchitecturePage.jsx'))
+
+/** PM-4c: legacy ARCH URL → Admin Security posture (preserve known sections). */
+const POSTURE_REDIRECT_SECTIONS = new Set([
+  'overview',
+  'system_architecture',
+  'trust_boundaries',
+  'attack_surface',
+  'risks',
+])
+
+function SecurityArchitectureRedirect() {
+  const [searchParams] = useSearchParams()
+  const sectionRaw = searchParams.get('section') || 'overview'
+  const section = POSTURE_REDIRECT_SECTIONS.has(sectionRaw) ? sectionRaw : 'overview'
+  const next = new URLSearchParams()
+  next.set('p', 'securityposture')
+  next.set('section', section)
+  const node = searchParams.get('node')
+  if (node && section === 'system_architecture') next.set('node', node)
+  for (const key of ['type', 'status', 'severity', 'origin']) {
+    const value = searchParams.get(key)
+    if (value) next.set(key, value)
+  }
+  return <Navigate to={`/admin?${next.toString()}`} replace />
+}
 
 function TabLoading({ label }) {
   return (
@@ -719,11 +743,7 @@ export default function App() {
         } />
         <Route path="/security-architecture/*" element={
           <RequireAuth>
-            <ToolErrorBoundary label="Security Architecture">
-              <Suspense fallback={<TabLoading label="Security Architecture" />}>
-                <SecurityArchitecturePage />
-              </Suspense>
-            </ToolErrorBoundary>
+            <SecurityArchitectureRedirect />
           </RequireAuth>
         } />
         <Route path="/wallboard" element={
