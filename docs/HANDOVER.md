@@ -22,6 +22,23 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — PM-3 ARCH graph hardening (PM-3a…d)
+
+**What:** Phase 3 of the post–UI E2E UX audit — system architecture graph viewport/zoom, fit-to-view, inline node detail, corpus drift diagnostic.
+
+| Ticket | Fix |
+|--------|-----|
+| PM-3a | Wheel zoom at cursor (`architectureGraphView.zoomAtCursor`); canvas `user-select: none`; viewport `min-height: calc(100vh - header)` |
+| PM-3b | **FIT GRAPH** + auto fit on load (`computeFitView`) |
+| PM-3c | Inline `ContextRail` below graph when a node is selected; hide empty right rail on `system_architecture` section |
+| PM-3d | `POST /api/admin/diagnostics/corpus-drift` + Admin → System health **Check corpus drift**; corpus regen for new route |
+
+**Tests:** `architectureGraphView.test.js`, `architectureGraphGate.test.js`, `test_security_architecture_corpus_drift_admin.py`.
+
+**Next:** **PM-4a** — Admin Security posture shell (IA phase).
+
+---
+
 ## 2026-07-16 — Simple DD-MM-YY datetime dropdowns (replaces calendar picker)
 
 **What:** Removed react-day-picker / shadcn calendar `DateTimePicker`. Replaced with compact **DD-MM-YY HH:mm:ss** display and native `<select>` dropdowns for day/month/year/hour/minute/second in start/end `DateTimeRangeField`. Dropped `react-day-picker` + `date-fns` deps.

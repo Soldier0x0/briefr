@@ -197,6 +197,7 @@ function AnalystOverview({ system, toast, setPage, ingestErrorCount, unackJobErr
 function OperatorOverview({ system, toast, setPage, ingestErrorCount, unackJobErrorCount, jobAcks, onMarkJobErrorsRead }) {
   const [diagResult, setDiagResult] = useState(null)
   const [intResult, setIntResult] = useState(null)
+  const [corpusDriftResult, setCorpusDriftResult] = useState(null)
   const [running, setRunning] = useState({})
   const [showDiag, setShowDiag] = useState(false)
   const [onboarding, setOnboarding] = useState(null)
@@ -271,6 +272,17 @@ function OperatorOverview({ system, toast, setPage, ingestErrorCount, unackJobEr
       setShowDiag(true)
     } catch (e) { toast(String(e.message), false) }
     setRunning(r => ({ ...r, integrity: false }))
+  }
+
+  async function runCorpusDrift() {
+    setRunning(r => ({ ...r, corpusDrift: true }))
+    try {
+      const res = await adminApi.post('/diagnostics/corpus-drift', {})
+      const data = await res.json()
+      setCorpusDriftResult(data)
+      setShowDiag(true)
+    } catch (e) { toast(String(e.message), false) }
+    setRunning(r => ({ ...r, corpusDrift: false }))
   }
 
   async function exportSupportPack() {
@@ -360,6 +372,15 @@ function OperatorOverview({ system, toast, setPage, ingestErrorCount, unackJobEr
           <button
             className="admin-btn admin-btn-ghost"
             style={{ fontSize: '0.75rem' }}
+            onClick={runCorpusDrift}
+            disabled={running.corpusDrift}
+            title="Regenerate security architecture corpus in a temp dir and diff against committed files"
+          >
+            {running.corpusDrift ? <><span className="admin-spinner" /> Checking…</> : 'Check corpus drift'}
+          </button>
+          <button
+            className="admin-btn admin-btn-ghost"
+            style={{ fontSize: '0.75rem' }}
             onClick={exportSupportPack}
             disabled={running.supportPack}
             title="Download redacted health + logs bundle for support (no secrets)"
@@ -396,6 +417,20 @@ function OperatorOverview({ system, toast, setPage, ingestErrorCount, unackJobEr
             <span style={{ color: intResult.foreign_keys_ok ? 'var(--green)' : 'var(--red)' }}>
               {intResult.foreign_keys_ok ? '✓ FK OK' : `✗ ${intResult.foreign_key_violations} FK violations`}
             </span>
+          </div>
+        )}
+        {showDiag && corpusDriftResult && (
+          <div style={{ marginTop: '0.5rem', fontSize: '0.8125rem' }}>
+            <div style={{ marginBottom: '0.25rem', color: corpusDriftResult.ok ? 'var(--green)' : 'var(--red)' }}>
+              {corpusDriftResult.ok
+                ? '✓ Security architecture corpus matches generated layer'
+                : '✗ Corpus drift detected'}
+            </div>
+            {!corpusDriftResult.ok && corpusDriftResult.drifted_files?.length > 0 && (
+              <div style={{ color: 'var(--text3)' }}>
+                Drifted: {corpusDriftResult.drifted_files.join(', ')} — run {corpusDriftResult.regenerate_command}
+              </div>
+            )}
           </div>
         )}
       </div>
