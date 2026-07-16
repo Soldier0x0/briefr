@@ -12,6 +12,15 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — Design: embeddings + pgvector + hybrid search
+
+**What:** Design-only spec for one retrieval engine (humans + agents): pgvector in Postgres 16, hybrid search, bge-small (swappable), Admin hashed search token, CVE-rich embed then techniques. Prod confirmed: PG 16.14, `pg_trgm` installed, **`vector` not in image** — cutover with feature deploy (backup + same volume), not during design.
+
+**Spec:** `docs/planning/specs/embeddings-pgvector-hybrid-search-design.md` · BACKLOG §14 (E1–E6).  
+**Next:** Maintainer reviews design → writing-plans implementation plan → implement E1 first. Do not swap prod Postgres image until E1.
+
+---
+
 ## 2026-07-16 — Plan: durable queue, API metering, stack Tier-A backfill
 
 **What:** Planning-only program spec (no app code). Covers:
