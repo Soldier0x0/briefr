@@ -46,12 +46,14 @@
 
 | Tier | Source | UI | Ship |
 |------|--------|----|------|
-| 1 Observed | Explicit maps (CTID columns, existing `cve_technique_map`) | Solid highlight + solid links in tactic order | PR-2 |
+| 1 Observed | Explicit maps (CTID columns, existing `cve_technique_map`) | Solid highlight; optional **tactic-order edges** (see note) | PR-2 |
 | 2 Inferred entry | One entry technique from CWE/CAPEC/keywords when score ≥ threshold | Labeled inferred | PR-2 |
 | 3 Correlated | Campaigns / Atlas / correlation when linked | Promote when evidence exists | PR-2 |
 | 4 Playbook | Curated class→follow-ons | Dashed + **Suggested** | PR-3 only if entry exists |
 
-**Will not:** invent unlabeled multi-step kill-chains; claim ~95% confidence on a full attacker path without evidence.
+**Tactic-order edges are visualization, not chronology.** Real campaigns skip tactics, loop, or run parallel techniques. Tier-1 solid links drawn in ATT&CK tactic column order are a **layout aid** (“these observed techniques sit along the matrix left→right”), **not** a confirmed attacker sequence. Prefer highlighted nodes alone when only a sparse set of techniques is mapped; draw directional sequential edges only when Tier-3 correlation/campaign evidence supplies an explicit order. Copy in UI must not imply “then the attacker did X next” without that evidence.
+
+**Will not:** invent unlabeled multi-step kill-chains; claim ~95% confidence on a full attacker path without evidence; present tactic-order layout as a verified kill-chain.
 
 Sparse state: one mapped technique → highlight it + honest copy; no mapping + failed inference → no fake path.
 
