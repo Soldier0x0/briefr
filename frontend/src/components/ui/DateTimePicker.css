@@ -1,11 +1,11 @@
 .ui-datetime-picker-trigger {
   display: inline-flex;
   align-items: center;
-  min-height: 30px;
-  padding: 0.35rem 0.65rem;
+  min-height: 32px;
+  padding: 0.4rem 0.7rem;
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm, 4px);
+  border-radius: var(--radius-md, 8px);
   color: var(--text);
   font-family: var(--font-mono);
   font-size: 0.8125rem;
@@ -23,9 +23,7 @@
 
 .ui-datetime-picker-trigger:focus-visible {
   outline: none;
-  border-color: color-mix(in srgb, var(--accent-primary) 55%, var(--border-strong));
-  box-shadow: 0 0 0 1px var(--background-primary),
-    0 0 0 2px color-mix(in srgb, var(--accent-primary) 35%, transparent);
+  box-shadow: var(--focus-ring);
 }
 
 .ui-datetime-picker-trigger:disabled {
@@ -38,40 +36,57 @@
 }
 
 .ui-datetime-picker-content {
-  padding: 12px;
-  min-width: 18.5rem;
+  padding: 0;
+  min-width: 19.5rem;
+  width: fit-content;
   background: var(--bg2);
   border: 1px solid var(--border2);
-  border-radius: var(--radius-sm, 4px);
-  box-shadow: var(--shadow-overlay, 0 12px 40px rgba(0, 0, 0, 0.5));
+  border-radius: var(--radius-md, 10px);
+  box-shadow: var(--shadow-overlay, 0 12px 40px rgba(0, 0, 0, 0.55));
   color-scheme: dark;
+  overflow: hidden;
 }
 
-/* ── shadcn-inspired dark calendar (react-day-picker v9) ───────────────── */
+.ui-datetime-picker-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-datetime-picker-body {
+  padding: 12px 12px 8px;
+}
+
+.ui-datetime-picker-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+}
+
+/* ── shadcn calendar (react-day-picker v9) ─────────────────────────────── */
 
 .ui-day-picker {
-  --rdp-accent-color: var(--accent-primary);
-  --rdp-accent-background-color: color-mix(in srgb, var(--accent-primary) 16%, var(--bg3));
-  --rdp-day-height: 2rem;
-  --rdp-day-width: 2rem;
-  --rdp-day_button-border-radius: var(--radius-sm, 4px);
+  --rdp-accent-color: var(--text);
+  --rdp-accent-background-color: var(--text);
+  --rdp-day-height: 2.25rem;
+  --rdp-day-width: 2.25rem;
+  --rdp-day_button-border-radius: 8px;
   --rdp-selected-border: none;
   --rdp-today-color: var(--text);
-  --rdp-outside-opacity: 0.38;
-  --rdp-disabled-opacity: 0.32;
+  --rdp-outside-opacity: 0.35;
+  --rdp-disabled-opacity: 0.3;
   --rdp-weekday-opacity: 1;
   --rdp-nav_button-height: 1.75rem;
   --rdp-nav_button-width: 1.75rem;
   margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 0.875rem;
   color: var(--text);
 }
 
-.ui-day-picker-months {
-  width: 100%;
-}
-
+.ui-day-picker-months,
 .ui-day-picker-month {
   width: 100%;
 }
@@ -81,21 +96,19 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  margin-bottom: 8px;
-  min-height: 1.75rem;
+  margin-bottom: 12px;
+  min-height: 2rem;
 }
 
 .ui-day-picker-caption-label {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
   color: var(--text);
 }
 
 .ui-day-picker-nav {
   display: flex;
   align-items: center;
-  gap: 4px;
   position: absolute;
   inset: 0;
   justify-content: space-between;
@@ -108,86 +121,119 @@
   justify-content: center;
   width: 1.75rem;
   height: 1.75rem;
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-sm, 4px);
-  background: var(--bg3);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
   color: var(--text2);
   cursor: pointer;
   pointer-events: auto;
-  transition: background var(--motion-fast, 120ms ease-out),
-    border-color var(--motion-fast, 120ms ease-out),
-    color var(--motion-fast, 120ms ease-out);
+  transition: background var(--motion-fast, 120ms ease-out), color var(--motion-fast, 120ms ease-out);
 }
 
 .ui-day-picker-nav-btn:hover:not(:disabled) {
-  background: var(--bg);
-  border-color: var(--border-strong);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
   color: var(--text);
 }
 
 .ui-day-picker-weekdays {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .ui-day-picker-weekday {
   color: var(--text3);
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .ui-day-picker-day-btn {
-  border: 1px solid transparent;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 8px;
   background: transparent;
   color: var(--text);
-  font-size: 0.75rem;
-  transition: background var(--motion-fast, 120ms ease-out),
-    color var(--motion-fast, 120ms ease-out);
+  font-size: 0.875rem;
+  transition: background var(--motion-fast, 120ms ease-out), color var(--motion-fast, 120ms ease-out);
 }
 
 .ui-day-picker-day-btn:hover:not(:disabled) {
-  background: var(--bg3);
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: 8px;
 }
 
 .ui-day-picker-selected .ui-day-picker-day-btn {
-  background: color-mix(in srgb, var(--accent-primary) 18%, var(--bg3));
-  color: var(--text);
+  background: var(--text);
+  color: var(--bg);
   font-weight: 600;
+  border-radius: 8px;
 }
 
-.ui-day-picker-today .ui-day-picker-day-btn {
-  color: var(--accent-primary);
+.ui-day-picker-selected .ui-day-picker-day-btn:hover:not(:disabled) {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.ui-day-picker-today:not(.ui-day-picker-selected) .ui-day-picker-day-btn {
+  font-weight: 600;
 }
 
 .ui-day-picker-outside .ui-day-picker-day-btn {
   color: var(--text3);
 }
 
-.ui-datetime-picker-time {
+.ui-datetime-picker-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ui-datetime-picker-field-label {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.ui-datetime-picker-time-input {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border2);
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg3);
 }
 
-.ui-datetime-picker-time-select {
-  min-width: 4.5rem;
-}
-
-.ui-datetime-picker-time-sep {
+.ui-datetime-picker-clock-leading {
+  flex: 0 0 auto;
   color: var(--text3);
-  font-size: 0.75rem;
+}
+
+.ui-datetime-picker-time-native {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.2;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.ui-datetime-picker-time-native:focus {
+  outline: none;
+}
+
+.ui-datetime-picker-time-native::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
 }
 
 .ui-datetime-picker-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 6px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border2);
 }

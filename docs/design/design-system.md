@@ -329,14 +329,12 @@ exception: filled selection is allowed; neon **borders** are not.
 
 ### 23.2 Date and time inputs
 
-- Range filters use `DateTimeRangeField` — dual-input layout (MUI
-  `MultiInputDateTimeRangeField` pattern): start + `–` + end, each opening the
-  shared `DateTimePicker` popover.
-- `DateTimePicker`: `react-day-picker` + hour/minute `Select` controls in the
-  popover footer. Never ship standalone native `datetime-local` or unstyled
-  calendar popovers in new code.
-- `TimeWindowPicker` (BRIEF charts) and admin ingest filters are the reference
-  implementations.
+- Range filters use `DateTimeRangeField` (start `–` end dual inputs).
+- Each field opens `DateTimePicker` (shadcn option A): card calendar + footer with
+  native `type="time"` `step="1"`, leading clock icon, **no Done button** (closes on
+  outside click). Calendar: body font, rounded hover, white selected day.
+- Never ship standalone native `datetime-local` or unstyled calendar popovers.
+- `TimeWindowPicker` and admin ingest filters are reference implementations.
 
 ### 23.3 Discrete settings → dropdowns, not sliders
 
