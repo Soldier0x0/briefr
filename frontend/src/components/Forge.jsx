@@ -18,7 +18,7 @@ import './Forge.css'
 const VALID_VIEWS = new Set(['coverage', 'scenarios', 'campaigns', 'backlog', 'library'])
 
 const NAV_ITEMS = [
-  { id: 'coverage', label: 'Coverage map' },
+  { id: 'coverage', label: 'ATT&CK navigator' },
   { id: 'scenarios', label: 'Threat scenarios' },
   { id: 'campaigns', label: 'Campaigns' },
   { id: 'backlog', label: 'Backlog' },
