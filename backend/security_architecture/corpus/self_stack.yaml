@@ -40,6 +40,14 @@ terms:
   origin: generated
   term: bcrypt
   source: backend/requirements.txt
+- id: self-stack-cryptography
+  title: cryptography
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: cryptography
+  source: backend/requirements.txt
 - id: self-stack-fastapi
   title: fastapi
   summary: BRIEFR dependency term derived from backend/requirements.txt.
