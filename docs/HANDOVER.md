@@ -12,13 +12,19 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
----
+## 2026-07-16 — Plan: durable queue, API metering, stack Tier-A backfill
 
----
+**What:** Planning-only program spec (no app code). Covers:
 
----
+1. **Procrastinate** (Postgres job queue) — durable outbound work; keep in-memory `api_queue` for pacing  
+2. **Universal metering** — every `resilient_request` attempt attributed (`user` / `job` / `queue` / `cli`)  
+3. **CPE catalog** + stack typeahead/versions  
+4. **Agree → Tier A only** (NVD+KEV+EPSS bulk) with ETA/progress/checkpoints; deep correlation stays on existing schedulers  
+5. Optional **EPSS file identity skip**
 
----
+**Evidence:** prod year histogram ~78% 2026 CVEs — legacy stack blind spot confirmed.  
+**Spec:** `docs/planning/specs/durable-outbound-queue-and-stack-backfill.md` · BACKLOG §13 · SPRINT Q1–Q5 parked.  
+**Next:** Maintainer activate + answer open questions → implement Q1 first. Do not mix with Forge path navigator design (`forge-attack-path-navigator-design.md`).
 
 ---
 

@@ -402,6 +402,25 @@ remediation queue. Supporting artifacts: [`e2e-click-map-2026-07-15.md`](specs/e
 
 ---
 
+## 13. Durable outbound queue, API metering & stack-driven backfill
+
+**Canonical spec:** [`specs/durable-outbound-queue-and-stack-backfill.md`](specs/durable-outbound-queue-and-stack-backfill.md)  
+**Why:** Prod corpus ~78% 2026 publishes — fine for feed, blind for legacy stack (e.g. Java 8). Need Postgres-durable outbound jobs (no RabbitMQ), universal API call metering, CPE catalog autocomplete, opt-in Tier-A historical fetch.
+
+| ID | Item | Status |
+|----|------|--------|
+| **Q1** | Procrastinate foundation (`PROCRASTINATE_ENABLED`, worker, admin job list) | 📋 |
+| **Q2** | Universal outbound metering at `resilient_request` + admin quota UI (actor/job/cli) | 📋 after Q1 preferred |
+| **Q3** | NVD CPE → `software_catalog` + autocomplete API | 📋 (can parallel Q2) |
+| **Q4** | Stack UX (category/typeahead/version) + Agree Tier-A backfill (ETA/progress/checkpoints) | 📋 after Q1+Q3 |
+| **Q5** | Optional: EPSS file identity skip (`score_date` + SHA-256) | 📋 optional |
+
+**Locks:** Agree = Tier A only (NVD+KEV+EPSS bulk); no OTX/exploits/correlation inside Agree. Feature flags default off. UPSERT NVD-owned columns only.
+
+**Open questions:** worker in-process vs systemd; event retention (default 30d); activate on sprint — see spec §Open questions.
+
+---
+
 ## Where to add new items
 
 1. Append a row to the relevant section **here**.

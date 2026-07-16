@@ -21,3 +21,5 @@ Open checklist rows: [`../BACKLOG.md`](../BACKLOG.md).
 | [`qa-audit-2026-07-12.md`](qa-audit-2026-07-12.md) | Findings — RCA doc, most findings now shipped | QA-F1 shipped (#484); QA-U1…U3 still open |
 | [`e2e-ux-observations-2026-07-15.md`](e2e-ux-observations-2026-07-15.md) | **Post–UI E2E UX audit** — ordered observations + PM-0…PM-4 plan | BACKLOG §12; PRs #601–#602 |
 | [`post-ui-audit-2026-07-15.md`](post-ui-audit-2026-07-15.md) | Phase detail (sibling to master observations doc) | See master doc §6 |
+| [`durable-outbound-queue-and-stack-backfill.md`](durable-outbound-queue-and-stack-backfill.md) | Procrastinate durable jobs + universal API metering + CPE catalog + Tier-A stack backfill | 📋 awaiting activation; PR-Q1…Q4 (+ optional EPSS identity skip) |
+| [`forge-attack-path-navigator-design.md`](forge-attack-path-navigator-design.md) | Forge ATT&CK path navigator (design) | 💬 design review — separate from queue/stack program |
