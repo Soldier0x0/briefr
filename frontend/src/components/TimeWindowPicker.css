@@ -54,6 +54,19 @@
   color: var(--text3);
 }
 
+.time-window-datetime-range {
+  width: 100%;
+  max-width: 24rem;
+  justify-content: flex-end;
+}
+
+.time-window-datetime-range .ui-datetime-picker-trigger {
+  font-size: 0.6875rem;
+  padding: 5px 8px;
+  border-color: var(--border2);
+  background: var(--bg);
+}
+
 .time-window-datetime {
   min-width: 0;
   width: 100%;
