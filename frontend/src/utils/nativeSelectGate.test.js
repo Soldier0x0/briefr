@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url'
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 const SKIP_FILES = new Set([
-  'components/ui/Select.jsx', // primitive implementation
+  'components/ui/Select.jsx', // Radix select primitive
+  'components/ui/DateTimePicker.jsx', // datetime primitive — native select dropdowns by design
 ])
 
 function walk(dir, out = []) {

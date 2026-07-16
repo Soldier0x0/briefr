@@ -333,9 +333,8 @@ exception: filled selection is allowed; neon **borders** are not.
 - **Product standard:** all datetime filtering uses `DateTimeRangeField` (start `–`
   end) or single `DateTimePicker` from `components/ui/`. No raw
   `datetime-local` / `date` / `time` inputs elsewhere (`dateTimePickerStandardGate`).
-- Each field opens `DateTimePicker` (shadcn option A): card calendar + footer with
-  native `type="time"` `step="1"`, leading clock icon, **no Done button** (closes on
-  outside click). Calendar: body font, rounded hover, white selected day.
+- Each field shows **DD-MM-YY HH:mm:ss** and opens a compact dropdown of native
+  `<select>` controls for day, month, year, hour, minute, and second (`dateTimePickerSimpleGate`).
 - **Consumers today:** `TimeWindowPicker` (BRIEF charts custom range), admin
   **Application logs** (`IngestLogPage`). New surfaces with absolute datetime bounds
   must reuse these primitives — preset hour chips (e.g. What Changed) stay chips,

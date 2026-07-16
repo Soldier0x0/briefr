@@ -20,6 +20,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+---
+
+## 2026-07-16 — Simple DD-MM-YY datetime dropdowns (replaces calendar picker)
+
+**What:** Removed react-day-picker / shadcn calendar `DateTimePicker`. Replaced with compact **DD-MM-YY HH:mm:ss** display and native `<select>` dropdowns for day/month/year/hour/minute/second in start/end `DateTimeRangeField`. Dropped `react-day-picker` + `date-fns` deps.
+
+**PR:** pending (`cursor/simple-datetime-dropdown-021b`)
+
+---
+
 ## 2026-07-15 — Tooltip v2 (Radix / shadcn pattern)
 
 **What:** Migrated `Tooltip` to `@radix-ui/react-tooltip` with `TooltipProvider` at app root, shadcn-style `.ui-tooltip-content` surface, compound exports (`TooltipTrigger`, `TooltipContent`). Legacy `<Tooltip text="…">` API + `ControlTooltip` hover-only mode preserved.

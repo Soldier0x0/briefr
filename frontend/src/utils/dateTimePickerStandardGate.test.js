@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 const SKIP_FILES = new Set([
-  'components/ui/DateTimePicker.jsx', // primitive — native time input lives here
+  'components/ui/DateTimePicker.jsx', // primitive — datetime select dropdowns live here
 ])
 
 function walk(dir, out = []) {
