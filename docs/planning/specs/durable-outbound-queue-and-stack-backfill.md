@@ -153,11 +153,16 @@ Set via contextvars at scheduler entry, request dependency, CLI main, Procrastin
 
 ```text
 api_call_events (
-  id, ts, source, pacing_key, method, host, path_template,
-  status_code, ok, latency_ms, actor_type, actor_id,
+  id,                          -- bigserial / uuid
+  ts TIMESTAMPTZ NOT NULL,     -- always timestamptz (align with Alembic 026 style)
+  source, pacing_key, method, host, path_template,
+  status_code, ok, latency_ms,
+  actor_type,                  -- user | job | queue | cli | system
+  actor_id TEXT,               -- TEXT: user id, job id, or uuid — never typed as int-only
   job_id, run_id, queue_task, request_id, error_class
 )
--- plus last_called_at on api_usage or sync_state key per source
+-- plus last_called_at TIMESTAMPTZ on api_usage or sync_state key per source
+-- SQLite tests: store ts as ISO text; PG uses timestamptz
 ```
 
 ### Task P1.2 — Choke-point instrumentation
@@ -192,7 +197,7 @@ api_call_events (
 
 **Files:** Alembic, `backend/feeds/cpe_catalog.py`, scheduler or Procrastinate task
 
-- [ ] Columns: `cpe_uri`, `vendor`, `product`, `display_name`, `category`, `title`, `versions_json` (optional cache), `updated_at`
+- [ ] Columns: `cpe_uri` (**PRIMARY KEY** or UNIQUE — required for idempotent incremental sync), `vendor`, `product`, `display_name`, `category`, `title`, `versions_json` (optional cache), `updated_at TIMESTAMPTZ`
 - [ ] Sync incremental where possible; full refresh documented
 
 ### Task P2.2 — Autocomplete API + tests
