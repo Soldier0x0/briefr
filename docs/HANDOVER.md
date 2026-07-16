@@ -22,6 +22,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — ARCH graph fit/size + core/external enrichment
+
+**What:** Follow-up to PM-3 (#632) UX: compact canvas (`min(560px, 62vh)`), removed content-sized SVG `viewBox` so fit-to-view uses CSS pixels (fixes wrong initial zoom), ResizeObserver re-fit, edges only on hover/select (no spaghetti), honesty hint. Corpus: core modules (`auth_middleware`, `dependencies`, `resilient_client`), curated externals (NVD/KEV/EPSS/OTX/ThreatFox), job→external edges; job→table SQL when present in job callables. No `db/` helper cluster (deferred).
+
+**Next:** PM-4 IA / navigator. Optional later: domain `db/` helper nodes.
+
+---
+
 ## 2026-07-16 — PM-3 ARCH graph hardening (PM-3a…d)
 
 **What:** Phase 3 of the post–UI E2E UX audit — system architecture graph viewport/zoom, fit-to-view, inline node detail, corpus drift diagnostic.

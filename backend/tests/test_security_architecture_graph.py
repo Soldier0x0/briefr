@@ -127,7 +127,9 @@ def test_build_node_context_unknown_node_returns_none():
 def test_get_architecture_graph_loads_committed_file():
     graph = graphs.get_architecture_graph()
     assert graph["nodes"]
-    assert {n["kind"] for n in graph["nodes"]} == {"component", "job", "table"}
+    assert {n["kind"] for n in graph["nodes"]} == {
+        "component", "job", "table", "core", "external",
+    }
     # No layout coordinates in the generated file (presentation isn't a
     # code fact -- computed by the frontend instead).
     assert all("x" not in n and "y" not in n for n in graph["nodes"])

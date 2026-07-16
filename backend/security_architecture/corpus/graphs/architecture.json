@@ -7,6 +7,11 @@
       "kind": "component"
     },
     {
+      "id": "core",
+      "label": "Core Modules",
+      "kind": "core"
+    },
+    {
       "id": "scheduler",
       "label": "Scheduler Jobs",
       "kind": "job"
@@ -15,9 +20,110 @@
       "id": "database",
       "label": "Database Tables",
       "kind": "table"
+    },
+    {
+      "id": "external",
+      "label": "External Sources",
+      "kind": "external"
     }
   ],
   "nodes": [
+    {
+      "id": "core:auth_middleware",
+      "label": "auth_middleware",
+      "kind": "core",
+      "cluster": "core",
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/auth_middleware.py"
+        }
+      ]
+    },
+    {
+      "id": "core:dependencies",
+      "label": "dependencies",
+      "kind": "core",
+      "cluster": "core",
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/dependencies.py"
+        }
+      ]
+    },
+    {
+      "id": "core:resilient_client",
+      "label": "resilient_client",
+      "kind": "core",
+      "cluster": "core",
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/resilient_client.py"
+        }
+      ]
+    },
+    {
+      "id": "ext:cisa_kev",
+      "label": "CISA KEV",
+      "kind": "external",
+      "cluster": "external",
+      "source_refs": [
+        {
+          "type": "external",
+          "ref": "ext:cisa_kev"
+        }
+      ]
+    },
+    {
+      "id": "ext:epss",
+      "label": "FIRST EPSS",
+      "kind": "external",
+      "cluster": "external",
+      "source_refs": [
+        {
+          "type": "external",
+          "ref": "ext:epss"
+        }
+      ]
+    },
+    {
+      "id": "ext:nvd",
+      "label": "NVD",
+      "kind": "external",
+      "cluster": "external",
+      "source_refs": [
+        {
+          "type": "external",
+          "ref": "ext:nvd"
+        }
+      ]
+    },
+    {
+      "id": "ext:otx",
+      "label": "AlienVault OTX",
+      "kind": "external",
+      "cluster": "external",
+      "source_refs": [
+        {
+          "type": "external",
+          "ref": "ext:otx"
+        }
+      ]
+    },
+    {
+      "id": "ext:threatfox",
+      "label": "ThreatFox",
+      "kind": "external",
+      "cluster": "external",
+      "source_refs": [
+        {
+          "type": "external",
+          "ref": "ext:threatfox"
+        }
+      ]
+    },
     {
       "id": "job:api_key_health_check",
       "label": "API Key Health Check",
@@ -1168,6 +1274,48 @@
     }
   ],
   "edges": [
+    {
+      "id": "job:epss_score_sync->ext:epss",
+      "source": "job:epss_score_sync",
+      "target": "ext:epss",
+      "kind": "fetches_external"
+    },
+    {
+      "id": "job:kev_backlog_reconcile->ext:cisa_kev",
+      "source": "job:kev_backlog_reconcile",
+      "target": "ext:cisa_kev",
+      "kind": "fetches_external"
+    },
+    {
+      "id": "job:kev_metadata_sync->ext:cisa_kev",
+      "source": "job:kev_metadata_sync",
+      "target": "ext:cisa_kev",
+      "kind": "fetches_external"
+    },
+    {
+      "id": "job:nvd_incremental_sync->ext:nvd",
+      "source": "job:nvd_incremental_sync",
+      "target": "ext:nvd",
+      "kind": "fetches_external"
+    },
+    {
+      "id": "job:otx_continuous_sync->ext:otx",
+      "source": "job:otx_continuous_sync",
+      "target": "ext:otx",
+      "kind": "fetches_external"
+    },
+    {
+      "id": "job:otx_nightly_correlation->ext:otx",
+      "source": "job:otx_nightly_correlation",
+      "target": "ext:otx",
+      "kind": "fetches_external"
+    },
+    {
+      "id": "job:threatfox_sync->ext:threatfox",
+      "source": "job:threatfox_sync",
+      "target": "ext:threatfox",
+      "kind": "fetches_external"
+    },
     {
       "id": "routers-admin->table:audit_log",
       "source": "routers-admin",

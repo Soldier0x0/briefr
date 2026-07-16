@@ -20,13 +20,14 @@ function blockForSelector(css, selector) {
 }
 
 describe('PM-3 architecture graph gate', () => {
-  it('PM-3a: graph canvas uses viewport min-height and blocks text selection', () => {
+  it('PM-3a: graph canvas uses compact height and blocks text selection', () => {
     const css = read(CSS_PATH)
     const canvas = blockForSelector(css, '.sa-graph-canvas')
-    assert.match(canvas, /min-height:\s*calc\(100vh/, 'graph canvas should fill viewport below header')
+    assert.match(canvas, /height:\s*min\(560px/, 'graph canvas should use compact height, not full viewport')
     assert.match(canvas, /user-select:\s*none/, 'graph canvas should disable text selection while panning')
     const graphSection = read(GRAPH_SECTION)
     assert.match(graphSection, /zoomAtCursor/, 'wheel zoom should anchor at cursor')
+    assert.doesNotMatch(graphSection, /viewBox=\{`0 0 \$\{viewWidth\}/, 'fit uses CSS pixels without content viewBox')
   })
 
   it('PM-3b: graph toolbar exposes fit-to-view control', () => {

@@ -140,25 +140,54 @@ def build_db_tables_yaml(tables: list[str]) -> list[dict[str, Any]]:
 
 # ── Architecture graph (spec §4.1, §5.2 -- TM-4) ──────────────────────────
 #
-# Nodes are exactly the generated-layer entities already emitted above
-# (components/jobs/tables) -- the TM-4 acceptance criterion "graph nodes
-# match generator output exactly" holds by construction, not by a second
-# hand-synced node list. Edges are `component -> table` "references" derived
-# by grepping each router module's own source file for the table name
-# appearing directly after a SQL keyword (FROM/JOIN/INTO/UPDATE, or
-# DELETE FROM) -- anchored to real SQL syntax, not a bare substring/word
-# match, so a table named e.g. `users` or `config` doesn't spuriously match
-# unrelated identifiers, comments, or docstrings elsewhere in the file (the
-# central "no opinion rendered as measurement" principle applies to graph
-# edges too: a false negative -- a query routed through a shared helper --
-# is acceptable; a false positive is not). No x/y coordinates here: layout
-# is presentation, not a code fact, and doesn't belong in a drift-checked
-# generated file -- the frontend computes a deterministic layout from
-# cluster + index at render time.
+# Nodes = routers + scheduler jobs + DB tables + a small allowlist of core
+# backend modules + curated external intel sources. Edges:
+#   - component/core/job -> table via SQL keyword refs in that source
+#   - job -> external via a static map of known sync job ids
+# False negatives (SQL only in db/ helpers) remain acceptable; false
+# positives are not. No x/y layout in the corpus.
 
 _SQL_TABLE_REF_RE = re.compile(
     r"(?i)\b(?:FROM|JOIN|INTO|UPDATE|DELETE\s+FROM)\s+(\w+)"
 )
+
+# Allowlisted platform modules (not every backend file — keeps the graph readable).
+_CORE_MODULES: list[dict[str, str]] = [
+    {
+        "id": "core:auth_middleware",
+        "label": "auth_middleware",
+        "path": "backend/auth_middleware.py",
+    },
+    {
+        "id": "core:dependencies",
+        "label": "dependencies",
+        "path": "backend/dependencies.py",
+    },
+    {
+        "id": "core:resilient_client",
+        "label": "resilient_client",
+        "path": "backend/resilient_client.py",
+    },
+]
+
+_EXTERNAL_SOURCES: list[dict[str, str]] = [
+    {"id": "ext:nvd", "label": "NVD"},
+    {"id": "ext:cisa_kev", "label": "CISA KEV"},
+    {"id": "ext:epss", "label": "FIRST EPSS"},
+    {"id": "ext:otx", "label": "AlienVault OTX"},
+    {"id": "ext:threatfox", "label": "ThreatFox"},
+]
+
+# Deterministic job-id → external source edges (sync jobs only).
+_JOB_EXTERNAL_LINKS: dict[str, list[str]] = {
+    "nvd_incremental_sync": ["ext:nvd"],
+    "kev_metadata_sync": ["ext:cisa_kev"],
+    "kev_backlog_reconcile": ["ext:cisa_kev"],
+    "epss_score_sync": ["ext:epss"],
+    "otx_nightly_correlation": ["ext:otx"],
+    "otx_continuous_sync": ["ext:otx"],
+    "threatfox_sync": ["ext:threatfox"],
+}
 
 
 def extract_table_refs(source: str, known_tables: set[str]) -> list[str]:
@@ -174,21 +203,53 @@ def extract_table_refs(source: str, known_tables: set[str]) -> list[str]:
     return sorted(found)
 
 
+def extract_function_source(module_source: str, func_name: str) -> str:
+    """Return the source text of a top-level function, or '' if missing."""
+    import ast
+
+    if not func_name or not module_source:
+        return ""
+    try:
+        tree = ast.parse(module_source)
+    except SyntaxError:
+        return ""
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == func_name:
+            return ast.get_source_segment(module_source, node) or ""
+    return ""
+
+
 def build_architecture_graph(
     components: list[dict[str, Any]],
     jobs_yaml: list[dict[str, Any]],
     tables_yaml: list[dict[str, Any]],
     component_source_by_id: dict[str, str],
+    *,
+    job_source_by_id: dict[str, str] | None = None,
+    core_modules: list[dict[str, str]] | None = None,
+    core_source_by_id: dict[str, str] | None = None,
+    external_sources: list[dict[str, str]] | None = None,
+    job_external_links: dict[str, list[str]] | None = None,
 ) -> dict[str, Any]:
-    """Nodes = union of components/jobs/tables (already generated above);
-    edges = component->table SQL references. Deterministically sorted so
-    the drift test and CI never flake on dict/set ordering."""
+    """Nodes = routers/jobs/tables + core modules + externals; edges =
+    SQL refs and curated job→external links. Deterministically sorted."""
     known_table_ids = {t["id"] for t in tables_yaml}
+    job_source_by_id = job_source_by_id or {}
+    core_modules = core_modules if core_modules is not None else _CORE_MODULES
+    core_source_by_id = core_source_by_id or {}
+    external_sources = (
+        external_sources if external_sources is not None else _EXTERNAL_SOURCES
+    )
+    job_external_links = (
+        job_external_links if job_external_links is not None else _JOB_EXTERNAL_LINKS
+    )
 
     clusters = [
         {"id": "api", "label": "API Routers", "kind": "component"},
+        {"id": "core", "label": "Core Modules", "kind": "core"},
         {"id": "scheduler", "label": "Scheduler Jobs", "kind": "job"},
         {"id": "database", "label": "Database Tables", "kind": "table"},
+        {"id": "external", "label": "External Sources", "kind": "external"},
     ]
 
     nodes: list[dict[str, Any]] = []
@@ -200,6 +261,14 @@ def build_architecture_graph(
             "cluster": "api",
             "endpoint_count": c["endpoint_count"],
             "source_refs": c["source_refs"],
+        })
+    for core in core_modules:
+        nodes.append({
+            "id": core["id"],
+            "label": core["label"],
+            "kind": "core",
+            "cluster": "core",
+            "source_refs": [{"type": "file", "ref": core["path"]}],
         })
     for j in jobs_yaml:
         nodes.append({
@@ -217,6 +286,14 @@ def build_architecture_graph(
             "cluster": "database",
             "source_refs": t["source_refs"],
         })
+    for ext in external_sources:
+        nodes.append({
+            "id": ext["id"],
+            "label": ext["label"],
+            "kind": "external",
+            "cluster": "external",
+            "source_refs": [{"type": "external", "ref": ext["id"]}],
+        })
     nodes.sort(key=lambda n: n["id"])
 
     edges: list[dict[str, Any]] = []
@@ -229,7 +306,33 @@ def build_architecture_graph(
                 "target": f"table:{table}",
                 "kind": "references_table",
             })
-    edges.sort(key=lambda e: (e["source"], e["target"]))
+    for core in core_modules:
+        source_text = core_source_by_id.get(core["id"], "")
+        for table in extract_table_refs(source_text, known_table_ids):
+            edges.append({
+                "id": f"{core['id']}->table:{table}",
+                "source": core["id"],
+                "target": f"table:{table}",
+                "kind": "references_table",
+            })
+    for j in jobs_yaml:
+        job_id = j["id"]
+        source_text = job_source_by_id.get(job_id, "")
+        for table in extract_table_refs(source_text, known_table_ids):
+            edges.append({
+                "id": f"job:{job_id}->table:{table}",
+                "source": f"job:{job_id}",
+                "target": f"table:{table}",
+                "kind": "references_table",
+            })
+        for ext_id in job_external_links.get(job_id, []):
+            edges.append({
+                "id": f"job:{job_id}->{ext_id}",
+                "source": f"job:{job_id}",
+                "target": ext_id,
+                "kind": "fetches_external",
+            })
+    edges.sort(key=lambda e: (e["source"], e["target"], e["kind"]))
 
     return {
         "version": 1,
@@ -368,8 +471,25 @@ def generate(output_dir: Path) -> dict[Path, dict[str, Any]]:
         if abs_path.exists():
             component_source_by_id[c["id"]] = abs_path.read_text(encoding="utf-8")
 
+    job_source_by_id: dict[str, str] = {}
+    for job in jobs:
+        body = extract_function_source(scheduler_source, job.get("callable", ""))
+        if body:
+            job_source_by_id[job["id"]] = body
+
+    core_source_by_id: dict[str, str] = {}
+    for core in _CORE_MODULES:
+        abs_path = ROOT / core["path"]
+        if abs_path.exists():
+            core_source_by_id[core["id"]] = abs_path.read_text(encoding="utf-8")
+
     architecture_graph = build_architecture_graph(
-        components, jobs_yaml, tables_yaml, component_source_by_id
+        components,
+        jobs_yaml,
+        tables_yaml,
+        component_source_by_id,
+        job_source_by_id=job_source_by_id,
+        core_source_by_id=core_source_by_id,
     )
 
     outputs = {

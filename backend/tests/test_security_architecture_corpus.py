@@ -215,10 +215,8 @@ def test_committed_architecture_graph_has_no_drift(tmp_path):
 
 
 def test_architecture_graph_nodes_match_generated_layer_exactly():
-    """TM-4 acceptance (spec §8): 'graph nodes match generator output
-    exactly' -- the node id set is exactly the union of component ids,
-    job ids, and table ids from the other generated-layer files, not a
-    hand-maintained parallel list."""
+    """Graph nodes include generated routers/jobs/tables plus allowlisted
+    core modules and curated external sources from the generator."""
     import json
 
     with open(gen.CORPUS_DIR / "graphs" / "architecture.json", encoding="utf-8") as f:
@@ -234,8 +232,13 @@ def test_architecture_graph_nodes_match_generated_layer_exactly():
         {c["id"] for c in components}
         | {f"job:{j['id']}" for j in jobs}
         | {f"table:{t['id']}" for t in tables}
+        | {c["id"] for c in gen._CORE_MODULES}
+        | {e["id"] for e in gen._EXTERNAL_SOURCES}
     )
     assert {n["id"] for n in graph["nodes"]} == expected_ids
+    assert {c["id"] for c in graph["clusters"]} == {
+        "api", "core", "scheduler", "database", "external",
+    }
 
 
 def test_extract_table_refs_anchors_to_sql_keywords():
@@ -260,31 +263,68 @@ def test_extract_table_refs_covers_join_into_update_delete():
     assert gen.extract_table_refs(source, known) == ["a", "b", "c", "d"]
 
 
+def test_extract_function_source_returns_body():
+    src = "def alpha():\n    return 1\n\ndef beta():\n    x = 2\n    return x\n"
+    body = gen.extract_function_source(src, "beta")
+    assert "x = 2" in body
+    assert gen.extract_function_source(src, "missing") == ""
+
+
 def test_build_architecture_graph_shape_and_determinism():
     components = [{
         "id": "routers-x", "title": "routers.x", "endpoint_count": 1,
         "source_refs": [{"type": "file", "ref": "backend/routers/x.py"}],
     }]
     jobs_yaml = [{
-        "id": "job_x", "title": "Job X",
-        "source_refs": [{"type": "job", "ref": "job_x"}],
+        "id": "nvd_incremental_sync", "title": "NVD Sync",
+        "source_refs": [{"type": "job", "ref": "nvd_incremental_sync"}],
     }]
     tables_yaml = [{
         "id": "tbl_x", "title": "tbl_x",
         "source_refs": [{"type": "table", "ref": "tbl_x"}],
     }]
     sources = {"routers-x": "SELECT * FROM tbl_x"}
+    job_sources = {"nvd_incremental_sync": "INSERT INTO tbl_x VALUES (1)"}
+    core_modules = [{
+        "id": "core:dependencies",
+        "label": "dependencies",
+        "path": "backend/dependencies.py",
+    }]
+    core_sources = {"core:dependencies": "UPDATE tbl_x SET a=1"}
+    externals = [{"id": "ext:nvd", "label": "NVD"}]
+    job_ext = {"nvd_incremental_sync": ["ext:nvd"]}
 
-    graph1 = gen.build_architecture_graph(components, jobs_yaml, tables_yaml, sources)
-    graph2 = gen.build_architecture_graph(components, jobs_yaml, tables_yaml, sources)
+    graph1 = gen.build_architecture_graph(
+        components, jobs_yaml, tables_yaml, sources,
+        job_source_by_id=job_sources,
+        core_modules=core_modules,
+        core_source_by_id=core_sources,
+        external_sources=externals,
+        job_external_links=job_ext,
+    )
+    graph2 = gen.build_architecture_graph(
+        components, jobs_yaml, tables_yaml, sources,
+        job_source_by_id=job_sources,
+        core_modules=core_modules,
+        core_source_by_id=core_sources,
+        external_sources=externals,
+        job_external_links=job_ext,
+    )
     assert graph1 == graph2  # deterministic
 
     node_ids = {n["id"] for n in graph1["nodes"]}
-    assert node_ids == {"routers-x", "job:job_x", "table:tbl_x"}
-    assert graph1["edges"] == [{
-        "id": "routers-x->table:tbl_x", "source": "routers-x",
-        "target": "table:tbl_x", "kind": "references_table",
-    }]
+    assert node_ids == {
+        "routers-x", "job:nvd_incremental_sync", "table:tbl_x",
+        "core:dependencies", "ext:nvd",
+    }
+    edge_ids = {e["id"] for e in graph1["edges"]}
+    assert "routers-x->table:tbl_x" in edge_ids
+    assert "job:nvd_incremental_sync->table:tbl_x" in edge_ids
+    assert "core:dependencies->table:tbl_x" in edge_ids
+    assert "job:nvd_incremental_sync->ext:nvd" in edge_ids
+    assert {c["id"] for c in graph1["clusters"]} == {
+        "api", "core", "scheduler", "database", "external",
+    }
     # No x/y layout coordinates baked into the generated layer (advisor
     # note: presentation isn't a code fact and shouldn't force a corpus
     # regen on every layout tweak).

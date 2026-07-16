@@ -3,7 +3,13 @@ import { fetchSecurityArchitectureNodeContext } from '../../api.js'
 import { notifyApiError } from '../../components/Toast.jsx'
 import AsyncState from '../../components/ui/AsyncState.jsx'
 
-const KIND_LABEL = { component: 'ROUTER', job: 'SCHEDULER JOB', table: 'DB TABLE' }
+const KIND_LABEL = {
+  component: 'ROUTER',
+  job: 'SCHEDULER JOB',
+  table: 'DB TABLE',
+  core: 'CORE MODULE',
+  external: 'EXTERNAL SOURCE',
+}
 
 /**
  * Context rail content for a selected architecture-graph node (spec §5.2
@@ -90,11 +96,33 @@ export default function ContextRail({ nodeId, onClose }) {
               </section>
             )}
 
+            {data.externals?.length > 0 && (
+              <section className="sa-rail-section">
+                <h4 className="sa-subsection-label mono">EXTERNAL SOURCES ({data.externals.length})</h4>
+                <ul className="sa-row-list">
+                  {data.externals.map(n => (
+                    <li key={n.id} className="sa-rail-line mono">{n.label}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
             {data.referenced_by?.length > 0 && (
               <section className="sa-rail-section">
                 <h4 className="sa-subsection-label mono">REFERENCED BY ({data.referenced_by.length})</h4>
                 <ul className="sa-row-list">
                   {data.referenced_by.map(n => (
+                    <li key={n.id} className="sa-rail-line mono">{n.label}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {data.fetched_by?.length > 0 && (
+              <section className="sa-rail-section">
+                <h4 className="sa-subsection-label mono">FETCHED BY ({data.fetched_by.length})</h4>
+                <ul className="sa-row-list">
+                  {data.fetched_by.map(n => (
                     <li key={n.id} className="sa-rail-line mono">{n.label}</li>
                   ))}
                 </ul>
