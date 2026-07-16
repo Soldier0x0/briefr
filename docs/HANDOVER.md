@@ -12,6 +12,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — DC-4 Forge hunt packs use detection composer
+
+**What:** `POST /api/hunt-packs/generate` uses `compose_detection_evidence` + `emit_composed_detection` (`include_community=False` — no GitHub on Forge path). Artifact evidence injects into Sigma/SIEM; response adds `compose_basis` + `evidence_summary`. Detection composer program (DC-1…DC-4) complete.
+
+**Next:** Q1–Q5 (durable queue / stack backfill) → E1–E6 (embeddings). Parked: STIX, V2 compose, G0–G4.
+
+---
+
 ## 2026-07-16 — DC-3 Detect tab evidence / compose_basis
 
 **What:** Detect tab shows evidence-pack summary (`formatEvidenceSummary`) and an Evidence `compose_basis` badge on the generated Sigma section. Labels/tooltips in `detectLabels.js`. No LLM; DetailDrawer Detect only.

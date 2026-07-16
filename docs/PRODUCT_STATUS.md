@@ -84,7 +84,7 @@
 | **PM-4c** ARCH header tab removed; `/security-architecture` redirects to Admin Security posture | |
 | **PM-4d** FORGE MITRE ATT&CK navigator — tactic columns, expandable detail, hunt-pack rail | |
 | **PM-4e** Drawer MITRE → Forge navigator; hunt-pack CVE → drawer | |
-| Detection composer **DC-1…DC-3** — evidence pack, emit Sigma/SIEM/YARA, Detect tab shows evidence/`compose_basis` (no LLM) | DC-4 Forge hunt packs share engine |
+| Detection composer **DC-1…DC-4** — evidence pack, emit Sigma/SIEM/YARA, Detect UI + Forge hunt-pack generate share engine (no LLM) | — |
 | **Forge** threat scenarios, proof bench, KEV backlog, IOC watchlist (V1.5 #373–#376) | `IMAGE_BRIEFS` tail; MkDocs |
 | Track I performance Phases 1–3 (#378–#382, #436–#437, #443–#444); **M-8** encrypted `app_settings` secrets (ADR-006, `BRIEFR_SETTINGS_KEY`) | |
 | Track L Wave 4: monitor alerts, onboarding, doctor, operator settings (#366–#372); RSS↔CVE linking | |

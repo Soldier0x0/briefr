@@ -1070,7 +1070,26 @@ updates the row in place.
 first `cve_technique_map` entry; 400 when the CVE has no technique link and none
 is supplied. 400 on malformed CVE ID, 404 when the CVE is not in the database.
 
-**Response:** `{ "pack": { ...same shape as packs[] above... }, "created": true }`
+**Response:**
+
+```json
+{
+  "pack": { "...": "same shape as packs[] above" },
+  "created": true,
+  "compose_basis": "nuclei_artifacts",
+  "evidence_summary": {
+    "community_count": 0,
+    "artifact_count": 1,
+    "nuclei_count": 0,
+    "primary_source": "nuclei_artifacts"
+  }
+}
+```
+
+Content is emitted via the detection composer (`include_community=False` — no
+GitHub Sigma/Elastic search on this path). Artifact evidence injects into Sigma
+and SIEM; `compose_basis` is `nuclei_artifacts|yara|template_fallback` (community
+basis appears on Detect, not Forge generate).
 
 Pack priority is derived from the CVE: KEV → `critical`; CVSS ≥ 9.0 or
 EPSS ≥ 0.5 → `high`; CVSS ≥ 7.0 or EPSS ≥ 0.1 → `medium`; else `low`.

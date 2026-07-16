@@ -283,6 +283,50 @@ def test_generate_pack_persists_link_and_is_idempotent(forge_client):
     assert coverage["meta"]["counts"]["yours"] == 1
 
 
+def test_generate_pack_uses_composer_when_artifacts_exist(forge_client):
+    """DC-4: hunt-pack generate emits from evidence — not keyword-only default."""
+    client, _ = forge_client
+    from detection.context import set_detection_context
+
+    async def seed_ctx():
+        db = await get_db()
+        try:
+            await set_detection_context(
+                db,
+                "CVE-2021-44228",
+                {
+                    "cwe_ids": ["CWE-502"],
+                    "product": "log4j",
+                    "class": "deserialization",
+                    "artifacts": [
+                        {
+                            "paths": ["/api/log4j"],
+                            "params": [],
+                            "keywords": ["briefr-dc4-forge-marker"],
+                            "method": "GET",
+                            "provenance": "nuclei",
+                        }
+                    ],
+                    "model": "",
+                    "provider": "briefr-nuclei",
+                    "generated_at": "2026-07-16T00:00:00Z",
+                },
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(seed_ctx())
+
+    res = client.post("/api/hunt-packs/generate", json={"cve_id": "CVE-2021-44228"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["compose_basis"] == "nuclei_artifacts"
+    assert body["evidence_summary"]["primary_source"] == "nuclei_artifacts"
+    assert "briefr-dc4-forge-marker" in body["pack"]["sigma_yaml"]
+    assert "/api/log4j" in body["pack"]["siem_queries"]["elastic_kql"]["query"]
+
+
 def test_generate_pack_validation(forge_client):
     client, _ = forge_client
 

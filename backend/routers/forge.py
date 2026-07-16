@@ -7,10 +7,11 @@ Endpoints:
   (saved packs, template baseline, linked CVEs)
 - POST /api/hunt-packs/generate     — generate + persist a CVE→pack link
 
-Everything is local and deterministic: built on the existing template library
-(detection.sigma_generator / detection.siem_queries) and the cve_technique_map
-populated by the MITRE feed. No outbound HTTP — community-rule *search*
-(SigmaHQ/Elastic via GitHub) stays on GET /api/cves/{cve_id}/detection.
+Everything is local and deterministic: hunt-pack generate uses the detection
+composer (`compose_detection_evidence` + `emit_composed_detection`) with
+``include_community=False`` so SigmaHQ/Elastic GitHub search stays on
+GET /api/cves/{cve_id}/detection. Evidence still comes from DB/cache
+(detection_context artifacts, Nuclei URLs, YARA).
 
 Coverage status semantics (MVP):
 - "yours":     at least one saved hunt pack exists for the technique
@@ -39,8 +40,8 @@ from database import (
     get_case_study_counts_by_technique,
     get_db,
 )
-from detection.sigma_generator import TECHNIQUE_TEMPLATES, generate_sigma_rule
-from detection.context import get_detection_context
+from detection.composer import compose_detection_evidence, emit_composed_detection
+from detection.sigma_generator import TECHNIQUE_TEMPLATES
 from detection.siem_queries import TECHNIQUE_QUERIES, get_siem_queries
 from routers.cves import _stack_match_clause
 
@@ -354,23 +355,25 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
             except (json.JSONDecodeError, TypeError):
                 cwe_ids = []
 
-        detection_context = await get_detection_context(db, cve_id)
-        sigma_yaml = generate_sigma_rule(
+        # DC-4: same composer as Detect. No community GitHub fetch on this path.
+        evidence = await compose_detection_evidence(
+            db,
             cve_id=cve_id,
-            technique_id=technique_id,
-            product=product or "Affected Product",
+            technique_ids=[technique_id],
+            cwe_ids=cwe_ids,
+            product=product,
+            include_community=False,
+        )
+        composed = emit_composed_detection(
+            evidence,
             description=description,
             cwe_ids=cwe_ids,
-            detection_context=detection_context,
         )
-        siem = get_siem_queries(
-            technique_id=technique_id,
-            cve_id=cve_id,
-            product=product,
-            cwe_ids=cwe_ids,
-            detection_context=detection_context,
-        )
+        sigma_yaml = composed["generated_sigma"]
+        siem = dict(composed["siem_queries"] or {})
         log_patterns = siem.pop("log_patterns", [])
+        compose_basis = composed["compose_basis"]
+        evidence_summary = evidence.get("evidence_summary") or {}
         title = f"{cve_id} — {technique_name} hunt pack"
 
         existing = await db.execute_fetchall(
@@ -425,7 +428,12 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
     pack["epss_score"] = cve["epss_score"]
     pack["is_kev"] = bool(cve["is_kev"])
 
-    return {"pack": pack, "created": created}
+    return {
+        "pack": pack,
+        "created": created,
+        "compose_basis": compose_basis,
+        "evidence_summary": evidence_summary,
+    }
 
 
 # ── Hunt pack API (registered after the literal /generate sibling) ──
