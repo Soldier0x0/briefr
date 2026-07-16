@@ -577,6 +577,21 @@
   color: var(--text);
 }
 
+.fg-cve-id-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--accent);
+  font: inherit;
+  text-align: left;
+}
+
+.fg-cve-id-link:hover {
+  text-decoration: underline;
+  color: var(--accent-selected);
+}
+
 .fg-cve-meta {
   color: var(--text3);
   flex: 1;

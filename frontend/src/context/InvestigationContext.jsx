@@ -274,17 +274,19 @@ export function InvestigationProvider({ children, navigation }) {
   }, [recordItem, navigation])
 
   const pivotToTechnique = useCallback((techniqueId, name, fromItem) => {
+    if (!techniqueId) return
     const from = fromItem || itemsRef.current[itemsRef.current.length - 1]
     recordItem({
       type: INV_TYPES.TECHNIQUE,
       id: techniqueId,
       title: `${techniqueId} — ${name || ''}`.trim(),
-      description: 'MITRE ATLAS technique',
-      source: INV_SOURCES.ATLAS,
+      description: 'MITRE ATT&CK technique',
+      source: INV_SOURCES.DRAWER,
       pivotFrom: from,
-      meta: { taxonomy: TECHNIQUE_TAXONOMY.ATLAS },
+      meta: { taxonomy: TECHNIQUE_TAXONOMY.ATTACK },
     })
-  }, [recordItem])
+    navigation?.openForgeTechnique?.(techniqueId)
+  }, [recordItem, navigation])
 
   const value = useMemo(() => ({
     items,

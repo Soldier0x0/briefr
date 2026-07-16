@@ -22,6 +22,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — PM-4e Drawer ↔ Forge MITRE cross-links
+
+**What:** CVE drawer Intel MITRE pills get **Open in Forge** → `?view=coverage&technique=` + Forge tab + hunt-pack rail open. Investigation `pivotToTechnique` records ATT&CK taxonomy and calls `openForgeTechnique`. Hunt-pack rail CVE ids open the drawer via `openCveById`. External attack.mitre.org link retained.
+
+**Phase 4 complete** (4a–4e). Parked next: detection composer (BACKLOG); then G0–G4 end-of-lifecycle when queued.
+
+---
+
 ## 2026-07-16 — PM-4d FORGE MITRE ATT&CK navigator MVP
 
 **What:** Forge Coverage map → **ATT&CK navigator**: horizontal tactic columns (kill-chain order), compact technique nodes with status border + KEV/case-study marks, column expand for names, sub-technique trees under parents. Click still opens hunt-pack rail via `?view=coverage&technique=`. No backend change.

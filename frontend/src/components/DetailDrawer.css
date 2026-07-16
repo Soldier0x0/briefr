@@ -1474,16 +1474,32 @@
   margin: 0 0 8px;
 }
 
+.mitre-technique-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+}
+
 .mitre-technique-link {
   font-size: 0.6875rem;
   letter-spacing: 0.04em;
   color: var(--accent);
   text-decoration: none;
   transition: color 0.1s;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .mitre-technique-link:hover {
   color: var(--text);
+}
+
+.mitre-technique-link--ext {
+  color: var(--text2);
 }
 
 /* References */
