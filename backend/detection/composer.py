@@ -17,6 +17,14 @@ from detection.yara_generator import find_yara_rules_for_cve
 __all__ = ["compose_detection_evidence"]
 
 
+def _ensure_list(val: Any) -> list[Any]:
+    if isinstance(val, list):
+        return val
+    if isinstance(val, str):
+        return [val] if val.strip() else []
+    return [val] if val is not None else []
+
+
 def _normalize_artifacts(raw: Any) -> list[dict[str, Any]]:
     if not isinstance(raw, list):
         return []
@@ -26,9 +34,9 @@ def _normalize_artifacts(raw: Any) -> list[dict[str, Any]]:
             continue
         out.append(
             {
-                "paths": list(item.get("paths") or []),
-                "params": list(item.get("params") or []),
-                "keywords": list(item.get("keywords") or []),
+                "paths": _ensure_list(item.get("paths")),
+                "params": _ensure_list(item.get("params")),
+                "keywords": _ensure_list(item.get("keywords")),
                 "method": str(item.get("method") or ""),
                 "provenance": str(
                     item.get("provenance")
@@ -95,7 +103,9 @@ async def compose_detection_evidence(
 
     detection_context = await get_detection_context(db, cve_key)
     artifacts = _normalize_artifacts(
-        (detection_context or {}).get("artifacts") if detection_context else []
+        detection_context.get("artifacts")
+        if isinstance(detection_context, dict)
+        else []
     )
 
     exploits = await read_cve_exploits_from_db(db, cve_key, max_age_hours=24 * 365) or []
@@ -140,9 +150,9 @@ async def compose_detection_evidence(
                 yara_count=yara_count,
             ),
         },
-        "product": (product or "").strip()
+        "product": str(product or "").strip()
         or (
-            str((detection_context or {}).get("product") or "").strip()
+            str(detection_context.get("product") or "").strip()
             if isinstance(detection_context, dict)
             else ""
         ),

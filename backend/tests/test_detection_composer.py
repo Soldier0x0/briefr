@@ -176,3 +176,40 @@ def test_composer_module_does_not_import_llm_router():
     assert "llm_router" not in src
     assert "artifact_extract" not in src or "chat_completion" not in src
     assert "chat_completion" not in src
+
+
+def test_normalize_artifacts_wraps_string_fields(composer_deps):
+    """String paths/params/keywords must not be list()-split into characters."""
+    composer = composer_deps
+    out = composer._normalize_artifacts(
+        [
+            {
+                "paths": "/etc/passwd",
+                "params": "file",
+                "keywords": "../",
+                "method": "GET",
+            }
+        ]
+    )
+    assert out[0]["paths"] == ["/etc/passwd"]
+    assert out[0]["params"] == ["file"]
+    assert out[0]["keywords"] == ["../"]
+
+
+def test_compose_tolerates_non_dict_detection_context(composer_deps):
+    """Corrupt/non-dict cached context must not raise AttributeError."""
+    composer = composer_deps
+    composer.get_detection_context = AsyncMock(return_value="corrupt-cache")
+
+    async def run():
+        return await composer.compose_detection_evidence(
+            db=object(),
+            cve_id="CVE-2026-0005",
+            cwe_ids=["CWE-22"],
+            include_community=False,
+        )
+
+    pack = run_db_test(run())
+    assert pack["artifacts"] == []
+    assert pack["product"] == ""
+    assert pack["detection_class"] == "path_traversal"
