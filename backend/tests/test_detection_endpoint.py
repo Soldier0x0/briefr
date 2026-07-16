@@ -61,8 +61,6 @@ def client(tmp_path, monkeypatch):
     async def _fake_yara(*_args, **_kwargs):
         return []
 
-    monkeypatch.setattr("routers.cves.find_sigma_rules", _fake_sigma)
-    monkeypatch.setattr("routers.cves.find_elastic_rules", _fake_elastic)
     monkeypatch.setattr("detection.yara_generator.find_yara_rules_for_cve", _fake_yara)
     monkeypatch.setattr("detection.composer.find_sigma_rules", _fake_sigma)
     monkeypatch.setattr("detection.composer.find_elastic_rules", _fake_elastic)
