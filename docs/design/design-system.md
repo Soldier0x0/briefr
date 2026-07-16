@@ -272,10 +272,11 @@ Three layers. Higher layers compose lower ones; never re-implement a lower layer
   components; do not hand-roll active styling.
 - Clickable elements must look clickable (hover + cursor + affordance); non-clickable
   cards must not look interactive (audit UI-15: stat cards/header icons).
-- Charts use **Recharts** (the approved engine — ADR-005; shadcn look re-skinned to
+- Charts use **Recharts 3.x** (the approved engine — ADR-005; shadcn look re-skinned to
   `--chart-*` tokens, no Tailwind), wrapped in `ChartShell` (fixed height) and rendering
-  `EmptyState` when series are empty/zero. Chart.js is deprecated (migrating out per plan
-  E7-5). Keep the 90-day heatmap + EPSS sparklines as custom SVG.
+  `EmptyState` when series are empty/zero. Shared styling lives in `rechartsTheme.js`
+  (`rechartsVersionGate` locks v3). Chart.js is removed. Keep the 90-day heatmap + EPSS
+  sparklines as custom SVG.
 
 ## 20. Naming conventions
 
@@ -329,14 +330,16 @@ exception: filled selection is allowed; neon **borders** are not.
 
 ### 23.2 Date and time inputs
 
-- Range filters use `DateTimeRangeField` — dual-input layout (MUI
-  `MultiInputDateTimeRangeField` pattern): start + `–` + end, each opening the
-  shared `DateTimePicker` popover.
-- `DateTimePicker`: `react-day-picker` + hour/minute `Select` controls in the
-  popover footer. Never ship standalone native `datetime-local` or unstyled
-  calendar popovers in new code.
-- `TimeWindowPicker` (BRIEF charts) and admin ingest filters are the reference
-  implementations.
+- **Product standard:** all datetime filtering uses `DateTimeRangeField` (start `–`
+  end) or single `DateTimePicker` from `components/ui/`. No raw
+  `datetime-local` / `date` / `time` inputs elsewhere (`dateTimePickerStandardGate`).
+- Each field opens `DateTimePicker` (shadcn option A): card calendar + footer with
+  native `type="time"` `step="1"`, leading clock icon, **no Done button** (closes on
+  outside click). Calendar: body font, rounded hover, white selected day.
+- **Consumers today:** `TimeWindowPicker` (BRIEF charts custom range), admin
+  **Application logs** (`IngestLogPage`). New surfaces with absolute datetime bounds
+  must reuse these primitives — preset hour chips (e.g. What Changed) stay chips,
+  not alternate pickers.
 
 ### 23.3 Discrete settings → dropdowns, not sliders
 

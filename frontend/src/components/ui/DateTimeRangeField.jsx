@@ -27,6 +27,7 @@ export default function DateTimeRangeField({
         value={startValue}
         onChange={onStartChange}
         placeholder={startPlaceholder}
+        timeLabel="Start time"
         ariaLabel="Range start date and time"
         disabled={disabled}
         clearable={clearable}
@@ -39,6 +40,7 @@ export default function DateTimeRangeField({
         value={endValue}
         onChange={onEndChange}
         placeholder={endPlaceholder}
+        timeLabel="End time"
         ariaLabel="Range end date and time"
         disabled={disabled}
         clearable={clearable}
