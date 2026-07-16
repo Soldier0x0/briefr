@@ -44,6 +44,7 @@ def _analyst_sample_routes():
         ("GET", "/api/cves"),
         ("GET", "/api/stats"),
         ("POST", "/api/ai/summary"),
+        ("POST", "/api/investigation/summary"),
         ("GET", "/api/case-studies/feed"),
     ]
 
@@ -175,6 +176,12 @@ def test_analyst_routes_reject_unauthenticated(client, method, path):
             method,
             path,
             json={"cves": [], "iocs": [], "actors": [], "investigation_duration": 1},
+        )
+    elif method == "POST" and path == "/api/investigation/summary":
+        resp = client.request(
+            method,
+            path,
+            json={"items": [{"type": "cve", "id": "CVE-2024-0001"}], "duration_minutes": 1},
         )
     else:
         resp = client.request(method, path)

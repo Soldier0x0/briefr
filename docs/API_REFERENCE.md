@@ -1448,6 +1448,8 @@ query, not an index subsystem.
 
 **Description:** Executive summary for PDF export only.
 
+**Auth:** Required (`require_user` session cookie). Unauthenticated callers get `401`.
+
 **Body:**
 
 ```json
@@ -1485,6 +1487,8 @@ query, not an index subsystem.
 ### POST /api/investigation/summary
 
 **Description:** Legacy investigation PDF summary. Maps `items[]` to CVE/IOC/actor payloads and delegates to the same multi-provider LLM router (template fallback) as `POST /api/ai/summary`.
+
+**Auth:** Required (`require_user` session cookie). Unauthenticated callers get `401`.
 
 **Request body:** `{ "items": [{ "type": "cve|ioc|actor|technique", "id": "...", "description": "...", "pivotFrom": null }], "duration_minutes": 1 }`  
 **Validation:** `duration_minutes` must be `1`–`10080` (same range as `POST /api/ai/summary` `investigation_duration`).
