@@ -17,6 +17,13 @@ export function techniqueLink(tech) {
   return `https://attack.mitre.org/techniques/${clean}/`
 }
 
+/** In-app Forge ATT&CK navigator deep link (PM-4e). */
+export function forgeCoverageHref(techniqueId) {
+  const id = String(techniqueId || '').trim()
+  if (!id) return null
+  return `/?view=coverage&technique=${encodeURIComponent(id)}`
+}
+
 export function truncateText(text, maxLen) {
   const t = (text || '').trim()
   if (t.length <= maxLen) return t

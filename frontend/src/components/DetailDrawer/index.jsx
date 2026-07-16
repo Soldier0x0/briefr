@@ -922,6 +922,16 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
                   ? (item, cveCtx) => investigation.pivotToCampaign(item, cveCtx)
                   : undefined
               }
+              onOpenForgeTechnique={
+                investigation?.pivotToTechnique
+                  ? (techniqueId, name) => investigation.pivotToTechnique(techniqueId, name, {
+                      type: 'cve',
+                      id: cve.cve_id,
+                      title: cve.cve_id,
+                      description: (cve.summary || '').slice(0, 80),
+                    })
+                  : undefined
+              }
               pivotNotice={investigation?.pivotNotice}
               correlation={correlation}
               correlationLoading={correlationLoading}

@@ -4,6 +4,7 @@ import { fetchHuntPack, generateHuntPack, runProofBench } from '../../api.js'
 import { notifyApiError } from '../Toast.jsx'
 import Tooltip from '../ui/Tooltip.jsx'
 import { ingestLogUrl } from '../../utils/adminLinks.js'
+import { useInvestigationOptional } from '../../context/InvestigationContext.jsx'
 import { CopyButton, SkeletonRows, StatusChip } from './shared.jsx'
 
 const SIEM_PLATFORMS = [
@@ -27,10 +28,21 @@ function SiemQueryBlock({ platform, label, entry }) {
   )
 }
 
-function LinkedCveRow({ cve, pack, generating, onGenerate }) {
+function LinkedCveRow({ cve, pack, generating, onGenerate, onOpenCve }) {
   return (
     <li className="fg-cve-row">
-      <span className="fg-cve-id mono">{cve.cve_id}</span>
+      {onOpenCve ? (
+        <button
+          type="button"
+          className="fg-cve-id mono fg-cve-id-link"
+          onClick={() => onOpenCve(cve.cve_id)}
+          title={`Open ${cve.cve_id} in drawer`}
+        >
+          {cve.cve_id}
+        </button>
+      ) : (
+        <span className="fg-cve-id mono">{cve.cve_id}</span>
+      )}
       <span className="fg-cve-meta mono" title="CVSS = industry severity (0–10) · EPSS = 30-day exploitation probability (FIRST.org)">
         {cve.severity || '—'}
         {cve.cvss_score != null && ` · CVSS ${cve.cvss_score.toFixed(1)}`}
@@ -294,6 +306,7 @@ function CaseStudiesSection({ studies }) {
  * Library row's technique).
  */
 export default function HuntPackRail({ techniqueId, onPackSaved }) {
+  const investigation = useInvestigationOptional()
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -444,6 +457,11 @@ export default function HuntPackRail({ techniqueId, onPackSaved }) {
                 pack={packsByCve[cve.cve_id]}
                 generating={generatingCve === cve.cve_id}
                 onGenerate={handleGenerate}
+                onOpenCve={
+                  investigation?.openCveById
+                    ? (cveId) => investigation.openCveById(cveId)
+                    : undefined
+                }
               />
             ))}
           </ul>

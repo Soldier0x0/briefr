@@ -13,7 +13,7 @@ import DrawerAtlasSection from '../DrawerAtlasSection.jsx'
 import ControlTooltip from '../ControlTooltip.jsx'
 import ErrorState from '../ui/ErrorState.jsx'
 import IntelProvenanceLine from './IntelProvenanceLine.jsx'
-import { exploitTypeLabel, techniqueLink } from './helpers.js'
+import { exploitTypeLabel, techniqueLink, forgeCoverageHref } from './helpers.js'
 
 const GENERIC_EXPLOIT_TITLES = new Set([
   'Vendor or advisory reference',
@@ -679,6 +679,7 @@ export default function TabIntel({
   onInvestigateIp,
   onInvestigatePulse,
   onInvestigateCampaign,
+  onOpenForgeTechnique,
   pivotNotice,
   correlation,
   correlationLoading,
@@ -881,6 +882,7 @@ export default function TabIntel({
             {techList.map(tech => {
               const tid = tech.id || tech.technique_id
               const href = techniqueLink(tech)
+              const forgeHref = forgeCoverageHref(tid)
               return (
                 <article key={tid} className="mitre-technique-card" role="listitem">
                   <div className="mitre-technique-top">
@@ -890,17 +892,32 @@ export default function TabIntel({
                     )}
                   </div>
                   <p className="mitre-technique-name">{tech.name}</p>
-                  {href && (
-                    <a
-                      className="mitre-technique-link mono"
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`View ${tid} on attack.mitre.org (opens new tab)`}
-                    >
-                      attack.mitre.org &rarr;
-                    </a>
-                  )}
+                  <div className="mitre-technique-actions">
+                    {forgeHref && (
+                      <button
+                        type="button"
+                        className="mitre-technique-link mono"
+                        onClick={() => {
+                          if (onOpenForgeTechnique) onOpenForgeTechnique(tid, tech.name)
+                          else window.location.assign(forgeHref)
+                        }}
+                        aria-label={`Open ${tid} in Forge ATT&CK navigator`}
+                      >
+                        Open in Forge →
+                      </button>
+                    )}
+                    {href && (
+                      <a
+                        className="mitre-technique-link mitre-technique-link--ext mono"
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`View ${tid} on attack.mitre.org (opens new tab)`}
+                      >
+                        attack.mitre.org →
+                      </a>
+                    )}
+                  </div>
                 </article>
               )
             })}

@@ -59,9 +59,12 @@ export default function Forge() {
   useEffect(() => {
     const view = VALID_VIEWS.has(searchParams.get('view')) ? searchParams.get('view') : 'coverage'
     setViewModeState(view)
-    setSelectedTechniqueState(searchParams.get('technique') || null)
+    const techniqueId = searchParams.get('technique') || null
+    setSelectedTechniqueState(techniqueId)
     const rawPack = searchParams.get('pack')
     setSelectedPackIdState(rawPack ? Number(rawPack) || null : null)
+    // PM-4e: drawer (and other) deep links must open the hunt-pack rail.
+    if (techniqueId) setRailOpen(true)
   }, [searchParams])
 
   const writeUrl = useCallback((patch) => {

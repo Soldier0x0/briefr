@@ -579,7 +579,19 @@ export default function App() {
       setActiveTab('brief')
       openCveById(cveId)
     },
-  }), [openCveById])
+    // PM-4e: drawer MITRE pills → Forge ATT&CK navigator
+    openForgeTechnique: (techniqueId) => {
+      if (!techniqueId) return
+      setActiveTab('forge')
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('view', 'coverage')
+        next.set('technique', String(techniqueId))
+        next.delete('pack')
+        return next
+      })
+    },
+  }), [openCveById, setSearchParams])
 
   const getPaletteCommands = useCallback((query) => {
     const q = query.trim()
