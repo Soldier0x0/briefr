@@ -25,10 +25,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
 
 from ai.summary import generate_executive_summary, generate_investigation_summary
+from dependencies import require_user
 from routers.health import format_time_in_tz
 from tracking import get_ioc_usage_stats
 
@@ -119,7 +120,7 @@ async def api_usage_ioc():
     }
 
 
-@router.post("/api/ai/summary")
+@router.post("/api/ai/summary", dependencies=[Depends(require_user)])
 async def ai_summary(body: AiSummaryRequest):
     """AI executive summary for PDF export (multi-provider LLM router, template fallback)."""
     return await generate_executive_summary(
@@ -130,7 +131,7 @@ async def ai_summary(body: AiSummaryRequest):
     )
 
 
-@router.get("/api/ai/summary")
+@router.get("/api/ai/summary", dependencies=[Depends(require_user)])
 async def ai_summary_get():
     """Discovery: summaries require POST with CVE/IOC/actor payloads (PDF export only)."""
     return {
@@ -138,7 +139,7 @@ async def ai_summary_get():
     }
 
 
-@router.post("/api/investigation/summary")
+@router.post("/api/investigation/summary", dependencies=[Depends(require_user)])
 async def investigation_summary(body: InvestigationSummaryRequest):
     """Executive summary for investigation PDF (legacy; prefer /api/ai/summary)."""
     payload = [

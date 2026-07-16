@@ -351,7 +351,6 @@ ADR-005 (UI library allow/deny). **Design SSOT:** [`../design/design-system.md`]
 | Encrypted `app_settings` / secrets SSOT (M-8) | Security audit |
 | RSS↔CVE linking | Sprint |
 | Track I Phase 3 remainder (if any beyond #436–#438) | HANDOVER |
-| LLM summary auth | Sprint optional |
 
 ---
 

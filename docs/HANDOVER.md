@@ -12,6 +12,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — LLM summary auth (session gate)
+
+**What:** Closed the open “LLM summary auth” security tail. `POST /api/ai/summary`, `GET /api/ai/summary`, and `POST /api/investigation/summary` now declare explicit `Depends(require_user)` (defense in depth on top of `session_auth_middleware`). Security invariant sample covers both summary POSTs. Docs: `PRODUCT_STATUS`, `API_REFERENCE`, BACKLOG parked row removed, SPRINT optional note marked shipped.
+
+**Not:** password prompt per PDF — logged-in session cookie is enough.
+
+**Next:** Encrypted `app_settings` / secrets SSOT (M-8) — 2 PRs (decision then impl). Then RSS↔CVE → detection composer → Q1–Q5 → E1–E6. Keep parked: STIX, V2 compose, G0–G4.
+
+---
+
 ## 2026-07-16 — Design: embeddings + pgvector + hybrid search
 
 **What:** Design-only spec for one retrieval engine (humans + agents): pgvector in Postgres 16, hybrid search, bge-small (swappable), Admin hashed search token, CVE-rich embed then techniques. Prod confirmed: PG 16.14, `pg_trgm` installed, **`vector` not in image** — cutover with feature deploy (backup + same volume), not during design.
