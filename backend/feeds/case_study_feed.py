@@ -10,6 +10,7 @@ from typing import Any
 
 from database import get_atlas_case_studies, get_db, get_feed_cache, set_feed_cache
 from feeds.incident_news import (
+    extract_cve_ids,
     fetch_all_incident_news_parallel,
     fetch_rss_source,
     get_rss_sources_status,
@@ -31,9 +32,66 @@ _ACTIVE_ERROR_SOURCES = {s["label"] for s in INCIDENT_RSS_SOURCES} | {
 }
 
 
+def _ensure_news_cve_ids(card: dict[str, Any]) -> dict[str, Any]:
+    """Backfill cve_ids on stale snapshot rows that predate RSS↔CVE linking."""
+    if not isinstance(card, dict):
+        return card
+    if card.get("kind") == "atlas":
+        return card
+    existing = card.get("cve_ids")
+    if isinstance(existing, list):
+        return card
+    ids = extract_cve_ids(card.get("title") or "", card.get("description") or "")
+    return {**card, "cve_ids": ids}
+
+
 def _prune_news_cards(cards: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Drop RSS cards from removed sources (stale snapshot rows)."""
-    return [c for c in cards if c.get("sourceId") in INCIDENT_RSS_SOURCE_IDS]
+    return [
+        _ensure_news_cve_ids(c)
+        for c in cards
+        if c.get("sourceId") in INCIDENT_RSS_SOURCE_IDS
+    ]
+
+
+def _card_mentions_cve(card: dict[str, Any], cve_key: str) -> bool:
+    key = (cve_key or "").strip().upper()
+    if not key:
+        return False
+    ids = card.get("cve_ids")
+    if isinstance(ids, list) and key in {str(x).upper() for x in ids}:
+        return True
+    # Atlas / legacy rows may only mention the CVE in free text.
+    hay = f"{card.get('title') or ''} {card.get('description') or ''}"
+    return key in hay.upper()
+
+
+async def get_related_news_for_cve(
+    cve_id: str, *, limit: int = 8
+) -> list[dict[str, Any]]:
+    """News/ATLAS cards from the incident snapshot that mention this CVE."""
+    cve_key = (cve_id or "").strip().upper()
+    if not cve_key.startswith("CVE-"):
+        return []
+    snapshot = await _read_snapshot()
+    if not snapshot:
+        return []
+    cards = _prune_news_cards(list(snapshot.get("news") or []))
+    cards.extend(list(snapshot.get("atlas") or []))
+    hits = [c for c in cards if _card_mentions_cve(c, cve_key)]
+    hits.sort(key=lambda c: c.get("publishedAt") or "", reverse=True)
+    out: list[dict[str, Any]] = []
+    for card in hits[: max(1, min(limit, 20))]:
+        out.append(
+            {
+                "title": card.get("title") or "",
+                "source": card.get("source") or "",
+                "url": card.get("url") or "",
+                "publishedAt": card.get("publishedAt") or "",
+                "kind": card.get("kind") or "news",
+            }
+        )
+    return out
 
 
 def _prune_errors(errors: list[Any]) -> list[Any]:

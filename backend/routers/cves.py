@@ -71,6 +71,7 @@ from detection.rule_sources import find_elastic_rules, find_sigma_rules
 from detection.siem_queries import get_siem_queries
 from detection.sigma_generator import generate_sigma_rule_bundle
 from detection.context import get_detection_context
+from feeds.case_study_feed import get_related_news_for_cve
 from feeds.extended import (
     enrich_cve_circl,
     greynoise_scans_for_cve,
@@ -1165,7 +1166,7 @@ async def _build_cve_drawer_bundle(db, cve_key: str, *, sector: str = "") -> dic
         raise HTTPException(status_code=404, detail=f"CVE {cve_key} not found")
 
     sector_value = sector.strip()
-    sentences, epss_history, related, correlation, momentum = await asyncio.gather(
+    sentences, epss_history, related, correlation, momentum, related_news = await asyncio.gather(
         _drawer_db_task(lambda task_db: _drawer_sentences_payload(task_db, cve_key)),
         _drawer_db_task(lambda task_db: get_epss_history(task_db, cve_key, days=30)),
         _drawer_db_task(lambda task_db: _drawer_related_payload(task_db, cve_key, limit=5)),
@@ -1173,6 +1174,7 @@ async def _build_cve_drawer_bundle(db, cve_key: str, *, sector: str = "") -> dic
             lambda task_db: get_correlation_for_cve(task_db, cve_key, user_sector=sector_value)
         ),
         _drawer_db_task(lambda task_db: calculate_momentum(cve_key, task_db)),
+        get_related_news_for_cve(cve_key, limit=8),
     )
     correlation["provenance"] = derive_correlation_provenance(
         correlation,
@@ -1183,6 +1185,7 @@ async def _build_cve_drawer_bundle(db, cve_key: str, *, sector: str = "") -> dic
         "sentences": sentences,
         "epss_history": epss_history,
         "related": related,
+        "related_news": related_news,
         "correlation": correlation,
         "momentum": momentum,
     }

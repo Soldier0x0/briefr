@@ -32,7 +32,37 @@ function TechniqueChips({ techniques }) {
   )
 }
 
-function FeedCard({ card, query }) {
+function CveChips({ cveIds, onOpenCve }) {
+  if (!cveIds?.length) return null
+  const shown = cveIds.slice(0, 6)
+  const extra = cveIds.length - shown.length
+  return (
+    <div className="cs-cve-chips" aria-label="CVE IDs mentioned">
+      {shown.map(id => (
+        onOpenCve ? (
+          <button
+            key={id}
+            type="button"
+            className="cs-cve-chip mono"
+            onClick={() => onOpenCve(id)}
+            title={`Open ${id} in drawer`}
+          >
+            {id}
+          </button>
+        ) : (
+          <span key={id} className="cs-cve-chip mono">{id}</span>
+        )
+      ))}
+      {extra > 0 && (
+        <span className="cs-cve-chip cs-cve-chip-more mono" title={cveIds.slice(6).join(', ')}>
+          +{extra}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function FeedCard({ card, query, onOpenCve }) {
   const titleParts = highlightParts(card.title, query)
   const descParts = highlightParts(card.description, query)
   const safeUrl = safeExternalUrl(card.url)
@@ -73,12 +103,13 @@ function FeedCard({ card, query }) {
           p.match ? <mark key={i} className="cs-highlight">{p.text}</mark> : <span key={i}>{p.text}</span>,
         )}
       </p>
+      <CveChips cveIds={card.cve_ids} onOpenCve={onOpenCve} />
       <TechniqueChips techniques={card.techniques} />
     </article>
   )
 }
 
-export default function CaseStudies({ initialSearch = '', onClearFilter }) {
+export default function CaseStudies({ initialSearch = '', onClearFilter, onOpenCve }) {
   const [cards, setCards] = useState([])
   const [errors, setErrors] = useState([])
   const [feedFailed, setFeedFailed] = useState(false)
@@ -221,7 +252,7 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
           ) : (
             <div className="cs-feed">
               {filtered.map(card => (
-                <FeedCard key={card.id} card={card} query={debounced} />
+                <FeedCard key={card.id} card={card} query={debounced} onOpenCve={onOpenCve} />
               ))}
             </div>
           )}
@@ -237,7 +268,7 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
             ) : (
               <div className="cs-feed">
                 {atlasLatest.map(card => (
-                  <FeedCard key={card.id} card={card} query={debounced} />
+                  <FeedCard key={card.id} card={card} query={debounced} onOpenCve={onOpenCve} />
                 ))}
               </div>
             )}
@@ -252,7 +283,7 @@ export default function CaseStudies({ initialSearch = '', onClearFilter }) {
             ) : (
               <div className="cs-feed cs-feed-grid">
                 {campaigns.map(card => (
-                  <FeedCard key={card.id} card={card} query={debounced} />
+                  <FeedCard key={card.id} card={card} query={debounced} onOpenCve={onOpenCve} />
                 ))}
               </div>
             )}

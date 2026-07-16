@@ -230,10 +230,15 @@
   overflow: hidden;
 }
 
-.cs-tech-chips {
+.cs-tech-chips,
+.cs-cve-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.cs-cve-chips {
+  margin-top: 8px;
 }
 
 .cs-tech-chip {
@@ -242,6 +247,27 @@
   color: var(--red);
   border: 1px solid var(--red-dim, var(--border2));
   padding: 2px 6px;
+}
+
+.cs-cve-chip {
+  font-size: 0.5625rem;
+  letter-spacing: 0.04em;
+  color: var(--c-accent, var(--amber));
+  border: 1px solid var(--border2);
+  background: transparent;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.cs-cve-chip:hover,
+.cs-cve-chip:focus-visible {
+  border-color: var(--c-accent, var(--amber));
+  outline: none;
+}
+
+.cs-cve-chip-more {
+  cursor: default;
+  color: var(--text2);
 }
 
 .cs-highlight {

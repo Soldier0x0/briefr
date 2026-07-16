@@ -12,6 +12,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — RSS ↔ CVE linking
+
+**What:** Incident/news RSS cards extract `cve_ids` from title/body at parse time. Incidents tab shows CVE chips that open the drawer. Drawer RELATED tab lists matching Incidents/News from the snapshot (`related_news` on `/api/cves/{id}/drawer`). Stale snapshots backfill IDs from title/description on serve. No new News tab.
+
+**Next:** Detection composer → Q1–Q5 → E1–E6. Parked: STIX, V2 compose, G0–G4.
+
+---
+
 ## 2026-07-16 — M-8 encrypted `app_settings` secrets (ADR-006)
 
 **What:** Secret-typed Admin config values encrypt at rest in Postgres `app_settings` when `BRIEFR_SETTINGS_KEY` is set (`enc:v1:` + Fernet via `cryptography`). No key → secrets still go to `.env` / `os.environ` but are **not** persisted to DB (same as seed skip). Process env precedence unchanged — existing `.env` installs keep working. ADR-006 + `settings_crypto.py` + operator_settings persist/hydrate wiring + tests.

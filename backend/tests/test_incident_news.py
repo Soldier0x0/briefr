@@ -38,6 +38,37 @@ def test_parse_rss_xml_excludes_name_that_toon_contest():
     assert "Critical RCE Patched in Popular VPN" in titles
 
 
+def test_parse_rss_xml_extracts_cve_ids_from_title_and_body():
+    source = {"id": "cisa-news", "label": "CISA Advisories"}
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+    <rss version="2.0">
+      <channel>
+        <item>
+          <title>CISA Adds CVE-2026-12345 to KEV</title>
+          <link>https://www.cisa.gov/news-events/alerts/2026/01/01/example</link>
+          <description>
+            Also references cve-2026-99999 and repeats CVE-2026-12345.
+          </description>
+          <pubDate>Mon, 08 Jun 2026 11:00:00 GMT</pubDate>
+        </item>
+      </channel>
+    </rss>"""
+
+    cards = parse_rss_xml(xml, source)
+    assert len(cards) == 1
+    assert cards[0]["cve_ids"] == ["CVE-2026-12345", "CVE-2026-99999"]
+
+
+def test_extract_cve_ids_dedupes_and_caps():
+    from feeds.incident_news import MAX_CVE_IDS_PER_CARD, extract_cve_ids
+
+    many = " ".join(f"CVE-2026-{i:05d}" for i in range(1, 40))
+    ids = extract_cve_ids(many, many)
+    assert len(ids) == MAX_CVE_IDS_PER_CARD
+    assert ids[0] == "CVE-2026-00001"
+    assert len(set(ids)) == len(ids)
+
+
 def test_filter_news_items_applies_to_cached_rows():
     items = [
         {"title": "Name That Toon Contest - June", "kind": "news"},

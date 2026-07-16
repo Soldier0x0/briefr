@@ -26,6 +26,9 @@ RSS_BROWSER_UA = (
 )
 
 TECHNIQUE_RE = re.compile(r"\b(T\d{4}(?:\.\d{3})?|AML\.T\d{4}(?:\.\d{3})?)\b", re.I)
+CVE_RE = re.compile(r"\bCVE-\d{4}-\d{4,}\b", re.I)
+# Cap per card so large CISA advisories stay UI-friendly.
+MAX_CVE_IDS_PER_CARD = 24
 
 TAG_HINTS = [
     "Okta", "nginx", "Kubernetes", "TensorFlow", "PyTorch", "AWS", "Azure",
@@ -87,6 +90,24 @@ def _parse_date(raw: str | None) -> str:
         return datetime.fromisoformat(raw.replace("Z", "+00:00")).isoformat()
     except ValueError:
         return datetime.now(timezone.utc).isoformat()
+
+
+def extract_cve_ids(*texts: str) -> list[str]:
+    """Return unique CVE IDs found in title/body text (uppercase, stable order)."""
+    found: list[str] = []
+    seen: set[str] = set()
+    for text in texts:
+        if not text:
+            continue
+        for match in CVE_RE.finditer(str(text)):
+            cve_id = match.group(0).upper()
+            if cve_id in seen:
+                continue
+            seen.add(cve_id)
+            found.append(cve_id)
+            if len(found) >= MAX_CVE_IDS_PER_CARD:
+                return found
+    return found
 
 
 def _extract_meta(title: str, description: str) -> tuple[list[str], list[str]]:
@@ -166,6 +187,8 @@ def parse_rss_xml(xml_text: str, source: dict) -> list[dict]:
                 break
         published_at = _parse_date(pub_raw)
         techniques, tags = _extract_meta(title, description)
+        # Extract CVEs from full text before truncating the card description.
+        cve_ids = extract_cve_ids(title, description)
         card = {
             "id": url,
             "source": source["label"],
@@ -176,6 +199,7 @@ def parse_rss_xml(xml_text: str, source: dict) -> list[dict]:
             "url": url,
             "techniques": techniques,
             "tags": tags,
+            "cve_ids": cve_ids,
             "kind": "news",
         }
         if _is_relevant_news_item(card):
