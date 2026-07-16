@@ -22,6 +22,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — PM-4d FORGE MITRE ATT&CK navigator MVP
+
+**What:** Forge Coverage map → **ATT&CK navigator**: horizontal tactic columns (kill-chain order), compact technique nodes with status border + KEV/case-study marks, column expand for names, sub-technique trees under parents. Click still opens hunt-pack rail via `?view=coverage&technique=`. No backend change.
+
+**Next:** PM-4e — drawer MITRE pills → Forge navigator deep link.
+
+---
+
 ## 2026-07-16 — PM-4c Remove ARCH tab + redirect
 
 **What:** Drop **ARCH** from desktop + mobile header. `/security-architecture` → `/admin?p=securityposture` (known sections + node preserved). Security posture no longer links to the stand-alone ARCH shell; non-posture overview drills stay in Admin Overview.

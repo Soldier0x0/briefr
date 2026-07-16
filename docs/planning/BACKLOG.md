@@ -396,7 +396,7 @@ remediation queue. Supporting artifacts: [`e2e-click-map-2026-07-15.md`](specs/e
 | **1** | Charts + FEED filters + Forge Library toolbar | PM-1a…PM-1d | 📋 after Phase 0 |
 | **2** | Accent sweep, DataGrid standard, ARCH layout | PM-2a…PM-2d | 📋 after Phase 1 |
 | **3** | Architecture graph viewport/zoom/fit | PM-3a…PM-3d | 📋 after Phase 0 |
-| **4** | IA: Admin Security posture, remove ARCH tab, Forge MITRE navigator | PM-4a–b ✅ #636/#637; PM-4c…e | 🔄 in progress |
+| **4** | IA: Admin Security posture, remove ARCH tab, Forge MITRE navigator | PM-4a–c ✅ #636–#638; PM-4d…e | 🔄 in progress |
 
 **E2E automation:** `scripts/e2e_audit_exhaustive.py` (276 steps, 2026-07-15 run).
 
