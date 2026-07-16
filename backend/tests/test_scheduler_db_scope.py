@@ -40,7 +40,7 @@ def test_llm_extraction_releases_db_during_llm_call(tmp_path, monkeypatch):
 
     monkeypatch.setattr(database, "get_db", tracking_get_db)
 
-    async def fake_extract(description: str) -> tuple[list[dict], LLMCompletion] | None:
+    async def fake_extract(description: str, **_kwargs) -> tuple[list[dict], LLMCompletion] | None:
         assert held == [], "LLM call must not run while a connection is held"
         return (
             [{"vendor": "acme", "product": "widget", "version_range": ""}],
