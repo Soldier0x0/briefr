@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from ai.gemini_client import gemini_model as _gemini_model
-from ai.groq_config import GROQ_MODEL_EXTRACTION, GROQ_MODEL_SUMMARY
+from ai.groq_config import GROQ_MODEL, GROQ_MODEL_SUMMARY
 
 LLMTask = Literal["product_extraction", "pdf_summary", "detection_context"]
 
@@ -69,9 +69,7 @@ def task_chain(task: LLMTask) -> list[ProviderStep]:
     """Failover order per task — not round-robin."""
     if task == "pdf_summary":
         return _scheduler_chain(task, groq_model=GROQ_MODEL_SUMMARY)
-    if task == "detection_context":
-        return _scheduler_chain(task, groq_model=GROQ_MODEL_EXTRACTION)
-    return _scheduler_chain(task, groq_model=GROQ_MODEL_EXTRACTION)
+    return _scheduler_chain(task, groq_model=GROQ_MODEL)
 
 
 def models_catalog_payload() -> dict:
@@ -86,7 +84,7 @@ def models_catalog_payload() -> dict:
         "providers": list(PROVIDER_ENV_KEYS.keys()),
         "tasks": tasks,
         "env_keys": {
-            "groq_extraction": "GROQ_MODEL_EXTRACTION",
+            "groq_product": "GROQ_MODEL",
             "groq_summary": "GROQ_MODEL_SUMMARY",
             "gemini": "GEMINI_MODEL",
             "cerebras": "CEREBRAS_MODEL",

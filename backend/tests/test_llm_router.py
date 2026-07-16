@@ -42,11 +42,11 @@ def test_task_chain_pdf_summary_uses_summary_groq_model(monkeypatch):
     assert chain[0].model == "openai/gpt-oss-120b"
 
 
-def test_task_chain_product_extraction_uses_extraction_groq_model(monkeypatch):
-    monkeypatch.delenv("GROQ_MODEL_EXTRACTION", raising=False)
+def test_task_chain_product_extraction_uses_groq_model(monkeypatch):
+    monkeypatch.delenv("GROQ_MODEL", raising=False)
     chain = router._task_chain("product_extraction")
     assert chain[0].provider == "groq"
-    assert chain[0].model == "llama-3.1-8b-instant"
+    assert chain[0].model == "openai/gpt-oss-20b"
     assert [step.provider for step in chain] == [
         "groq",
         "cerebras",

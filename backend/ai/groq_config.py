@@ -6,12 +6,8 @@ import os
 from dataclasses import dataclass
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+# Groq replacement for deprecated llama-3.1-8b-instant (see console.groq.com/docs/deprecations).
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b").strip() or "openai/gpt-oss-20b"
-# Fast scheduler tasks (product extraction, detection context) — lower TPM burn.
-GROQ_MODEL_EXTRACTION = (
-    os.environ.get("GROQ_MODEL_EXTRACTION", "llama-3.1-8b-instant").strip()
-    or "llama-3.1-8b-instant"
-)
 GROQ_MODEL_SUMMARY = (
     os.environ.get("GROQ_MODEL_SUMMARY", "openai/gpt-oss-120b").strip()
     or "openai/gpt-oss-120b"
