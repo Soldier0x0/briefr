@@ -22,6 +22,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — ARCH graph viewport lock (no page scroll)
+
+**What:** After #633, canvas was ~70vh but chrome + inline node detail still forced page scroll past the graph. Lock `.sa-root:has(.sa-shell--graph)` to `calc(100dvh - 52px)` and flex the canvas into the remaining space; detail panel scrolls internally (`max-height: 28vh`). Also tick PM-3 complete in SPRINT (#632/#633).
+
+**Next:** **PM-4a** — Admin Security posture shell.
+
+---
+
 ## 2026-07-16 — ARCH graph fit floor + focus dim + 70vh lock
 
 **What:** Follow-up on #633 UX from screenshots: (1) `FIT_MIN_SCALE=0.08` so tall multi-column graphs can frame (wheel `MIN_SCALE` stays 0.15 — fit was clamping at 0.4 and looked “zoomed in”); (2) non-neighbor nodes dim to `opacity: 0.1` on hover/select; (3) canvas locked to `min(70vh, calc(100vh - 240px))` with `max-height: 70vh` — pan/zoom inside, no page-length canvas scroll; (4) `truncateNodeLabel` + smaller mono label so text stays inside node rects; (5) fit uses **visible** nodes (cluster/search filters).

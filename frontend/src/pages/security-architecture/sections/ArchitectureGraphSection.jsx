@@ -8,6 +8,7 @@ import {
   computeGraphLayout,
 } from '../../../utils/architectureGraphLayout.js'
 import {
+  DEFAULT_VIEW,
   computeFitView,
   computeGraphBounds,
   truncateNodeLabel,
@@ -37,7 +38,7 @@ export default function ArchitectureGraphSection({
   const [clusterFilter, setClusterFilter] = useState(FILTER_ALL)
   const [search, setSearch] = useState('')
   const [hoveredId, setHoveredId] = useState(null)
-  const [view, setView] = useState({ x: 40, y: 20, scale: 1 })
+  const [view, setView] = useState(() => ({ ...DEFAULT_VIEW }))
 
   const canvasRef = useRef(null)
   const dragRef = useRef(null)
