@@ -4,22 +4,26 @@ import { notifyApiError } from '../../../components/Toast.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
 import ContextRail from '../ContextRail.jsx'
 import {
+  COL_WIDTH,
   computeGraphLayout,
 } from '../../../utils/architectureGraphLayout.js'
 import {
-  DEFAULT_VIEW,
   computeFitView,
   computeGraphBounds,
+  truncateNodeLabel,
   zoomAtCursor,
 } from '../../../utils/architectureGraphView.js'
 
 const FILTER_ALL = 'all'
-const NODE_W = 260
+const NODE_W = 240
 const NODE_H = 26
 
 /**
  * System Architecture graph (spec §5.2, §8 TM-4): interactive pan/zoom
  * render of the generated `graphs/architecture.json`.
+ *
+ * No content-sized SVG viewBox — pan/zoom transform works in CSS pixels so
+ * fit-to-view math stays 1:1 with the canvas (avoids double-scale / wrong zoom).
  */
 export default function ArchitectureGraphSection({
   selectedNodeId,
@@ -33,7 +37,7 @@ export default function ArchitectureGraphSection({
   const [clusterFilter, setClusterFilter] = useState(FILTER_ALL)
   const [search, setSearch] = useState('')
   const [hoveredId, setHoveredId] = useState(null)
-  const [view, setView] = useState({ ...DEFAULT_VIEW })
+  const [view, setView] = useState({ x: 40, y: 20, scale: 1 })
 
   const canvasRef = useRef(null)
   const dragRef = useRef(null)
@@ -55,7 +59,7 @@ export default function ArchitectureGraphSection({
   }, [reloadKey])
 
   const layout = useMemo(() => computeGraphLayout(graph), [graph])
-  const { positioned, byId, clusters, viewWidth, viewHeight } = layout
+  const { positioned, byId, clusters } = layout
 
   const searchLower = search.trim().toLowerCase()
   const isHidden = useCallback((node) => {
@@ -74,26 +78,47 @@ export default function ArchitectureGraphSection({
     [visibleNodes],
   )
 
+  const focusId = hoveredId || selectedNodeId
+
   const connectedEdgeIds = useMemo(() => {
-    const activeId = hoveredId || selectedNodeId
-    if (!activeId || !graph) return new Set()
+    if (!focusId || !graph) return new Set()
     return new Set(
-      graph.edges.filter(e => e.source === activeId || e.target === activeId).map(e => e.id),
+      graph.edges.filter(e => e.source === focusId || e.target === focusId).map(e => e.id),
     )
-  }, [hoveredId, selectedNodeId, graph])
+  }, [focusId, graph])
 
   const fitGraphToView = useCallback(() => {
     const el = canvasRef.current
-    if (!el || !positioned.length) return
-    const bounds = computeGraphBounds(positioned)
-    setView(computeFitView(bounds, el.clientWidth, el.clientHeight))
-  }, [positioned])
+    if (!el || !visibleNodes.length) return
+    const width = el.clientWidth
+    const height = el.clientHeight
+    if (width <= 0 || height <= 0) return
+    // Fit only what is on screen (cluster/search filters) so zoom is not
+    // forced by off-filter columns.
+    const bounds = computeGraphBounds(visibleNodes)
+    setView(computeFitView(bounds, width, height))
+  }, [visibleNodes])
 
   useEffect(() => {
-    if (!graph || !positioned.length) return undefined
+    if (!graph || !visibleNodes.length) return undefined
     const frame = requestAnimationFrame(() => fitGraphToView())
     return () => cancelAnimationFrame(frame)
-  }, [graph, positioned.length, fitGraphToView])
+  }, [graph, visibleNodes.length, clusterFilter, searchLower, fitGraphToView])
+
+  useEffect(() => {
+    const el = canvasRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return undefined
+    let frame = 0
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => fitGraphToView())
+    })
+    ro.observe(el)
+    return () => {
+      cancelAnimationFrame(frame)
+      ro.disconnect()
+    }
+  }, [graph, fitGraphToView])
 
   useEffect(() => {
     const el = canvasRef.current
@@ -129,7 +154,15 @@ export default function ArchitectureGraphSection({
     }
   }, [])
 
-  const resetView = useCallback(() => setView({ ...DEFAULT_VIEW }), [])
+  const resetView = useCallback(() => {
+    fitGraphToView()
+  }, [fitGraphToView])
+
+  const clusterIndex = useMemo(() => {
+    const map = new Map()
+    clusters.forEach((c, i) => map.set(c.id, i))
+    return map
+  }, [clusters])
 
   return (
     <div className="sa-section">
@@ -193,14 +226,18 @@ export default function ArchitectureGraphSection({
           onPointerUp={onPointerUp}
           onPointerLeave={onPointerUp}
         >
-          <svg viewBox={`0 0 ${viewWidth} ${viewHeight}`} width="100%" height="100%" role="img" aria-label="System architecture graph">
-            <g transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}>
-              {clusters.map((c, ci) => {
+          <svg width="100%" height="100%" role="img" aria-label="System architecture graph">
+            <g
+              className="sa-graph-scene"
+              transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}
+            >
+              {clusters.map((c) => {
                 if (clusterFilter !== FILTER_ALL && c.id !== clusterFilter) return null
+                const ci = clusterIndex.get(c.id) ?? 0
                 return (
                   <text
                     key={c.id}
-                    x={ci * 320 + 20}
+                    x={ci * COL_WIDTH + 20}
                     y={28}
                     className="sa-graph-cluster-label"
                   >
@@ -214,18 +251,27 @@ export default function ArchitectureGraphSection({
                 const t = byId.get(e.target)
                 if (!s || !t) return null
                 const highlighted = connectedEdgeIds.has(e.id)
+                // Only draw links for the focused node — avoids overlapping spaghetti.
+                if (focusId && !highlighted) return null
+                if (!focusId) return null
                 return (
                   <line
                     key={e.id}
                     x1={s.x + NODE_W} y1={s.y + NODE_H / 2}
                     x2={t.x} y2={t.y + NODE_H / 2}
-                    className={`sa-graph-edge${highlighted ? ' sa-graph-edge-active' : ''}`}
+                    className="sa-graph-edge sa-graph-edge-active"
                   />
                 )
               })}
               {visibleNodes.map(node => {
                 const selected = node.id === selectedNodeId
                 const matched = searchLower && node.label?.toLowerCase().includes(searchLower)
+                const dimmed = Boolean(focusId)
+                  && focusId !== node.id
+                  && !graph?.edges.some(
+                    e => (e.source === focusId && e.target === node.id)
+                      || (e.target === focusId && e.source === node.id),
+                  )
                 return (
                   <g
                     key={node.id}
@@ -236,6 +282,7 @@ export default function ArchitectureGraphSection({
                       `sa-graph-node-${node.kind}`,
                       selected ? 'sa-graph-node-selected' : '',
                       matched ? 'sa-graph-node-match' : '',
+                      dimmed ? 'sa-graph-node-dim' : '',
                     ].filter(Boolean).join(' ')}
                     onClick={() => onSelectNode(node.id)}
                     onMouseEnter={() => setHoveredId(node.id)}
@@ -247,7 +294,10 @@ export default function ArchitectureGraphSection({
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectNode(node.id) } }}
                   >
                     <rect width={NODE_W} height={NODE_H} rx={2} />
-                    <text x={8} y={NODE_H / 2 + 4}>{node.label}</text>
+                    <text x={8} y={NODE_H / 2 + 4}>
+                      <title>{node.label}</title>
+                      {truncateNodeLabel(node.label)}
+                    </text>
                   </g>
                 )
               })}
@@ -255,7 +305,8 @@ export default function ArchitectureGraphSection({
           </svg>
         </div>
         <p className="sa-graph-hint mono">
-          Scroll to zoom at cursor (0.4×–4×) · drag to pan · click a node for detail
+          Hover or select a node to show its links · scroll to zoom · drag to pan ·
+          edges are SQL refs and curated job→source links (not a full call graph)
         </p>
         {selectedNodeId && (
           <div className="sa-graph-detail" aria-label="Selected node detail">

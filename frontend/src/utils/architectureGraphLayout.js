@@ -1,10 +1,10 @@
-export const COL_WIDTH = 320
+export const COL_WIDTH = 280
 export const ROW_HEIGHT = 40
-export const NODE_W = 260
+export const NODE_W = 240
 export const NODE_H = 26
 export const CLUSTER_TOP = 56
 
-export const CLUSTER_ORDER = ['api', 'scheduler', 'database']
+export const CLUSTER_ORDER = ['api', 'core', 'scheduler', 'database', 'external']
 
 /**
  * Deterministic grid layout for architecture graph nodes.

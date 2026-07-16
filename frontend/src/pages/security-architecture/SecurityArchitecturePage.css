@@ -773,14 +773,21 @@
   touch-action: none;
   cursor: grab;
   user-select: none;
-  min-height: calc(100vh - 52px - 40px);
+  /* Lock to ~70% viewport — pan/zoom inside; no page-length canvas scroll. */
+  height: min(70vh, calc(100vh - 240px));
+  min-height: 420px;
+  max-height: 70vh;
 }
 
 .sa-graph-canvas svg {
   display: block;
   width: 100%;
   height: 100%;
-  min-height: inherit;
+}
+
+.sa-graph-scene {
+  transform-box: fill-box;
+  transform-origin: 0 0;
 }
 
 .sa-graph-canvas:active {
@@ -799,24 +806,41 @@
   stroke: var(--border2);
   stroke-width: 1;
   fill: none;
+  opacity: 0;
+  transition: opacity 0.14s ease-out, stroke 0.14s ease-out;
 }
 
 .sa-graph-edge-active {
   stroke: var(--accent);
   stroke-width: 1.5;
+  opacity: 1;
 }
 
 .sa-graph-node rect {
   fill: var(--bg3);
   stroke: var(--border2);
   stroke-width: 1;
-  transition: stroke-color 0.14s ease-out, opacity 0.14s ease-out;
+  transition: stroke 0.14s ease-out, opacity 0.14s ease-out, fill 0.14s ease-out;
+}
+
+.sa-graph-node-dim {
+  opacity: 0.1;
+  filter: grayscale(0.4);
+}
+
+.sa-graph-node-core rect {
+  fill: color-mix(in srgb, var(--bg3) 80%, var(--accent) 20%);
+}
+
+.sa-graph-node-external rect {
+  fill: color-mix(in srgb, var(--bg3) 82%, var(--text3) 18%);
+  stroke-dasharray: 3 2;
 }
 
 .sa-graph-node text {
   fill: var(--text);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10px;
   pointer-events: none;
   user-select: none;
 }

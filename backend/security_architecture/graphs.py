@@ -156,7 +156,20 @@ def build_node_context(
         result["referenced_by"] = [
             nodes_by_id[e["source"]] for e in inbound if e["source"] in nodes_by_id
         ]
-    # kind == "job": node record + in/out edges (always empty for jobs
-    # today -- no generated job->table edge exists yet) is all there is.
+    elif node["kind"] in ("job", "core"):
+        result["tables"] = [
+            nodes_by_id[e["target"]]
+            for e in outbound
+            if e.get("kind") == "references_table" and e["target"] in nodes_by_id
+        ]
+        result["externals"] = [
+            nodes_by_id[e["target"]]
+            for e in outbound
+            if e.get("kind") == "fetches_external" and e["target"] in nodes_by_id
+        ]
+    elif node["kind"] == "external":
+        result["fetched_by"] = [
+            nodes_by_id[e["source"]] for e in inbound if e["source"] in nodes_by_id
+        ]
 
     return result
