@@ -59,7 +59,7 @@ Prod evidence (2026-07-16): PostgreSQL 16.14; `pg_trgm` installed; `unaccent` av
 | Model | Keep **`BAAI/bge-small-en-v1.5`**; `EMBEDDINGS_MODEL` swappable; model change ⇒ one-time re-embed |
 | Search UX | **Hybrid** under one box (no default Keyword\|Semantic toggle) |
 | API | `mode=hybrid\|keyword\|semantic`; query-shape boosts (CVE id / short query → keyword-heavy) |
-| Agent auth | Admin UI token; **hash at rest**; show-once; rate-limited |
+| Agent auth | Admin UI token; **bcrypt/Argon2 at rest** (show-once); rate-limited |
 | Token scope | Hybrid/semantic search + related + **read-only CVE detail** |
 | Inference | Scheduler / job only — **never** model load on request path |
 | Extensions | Must add `vector`; keep `pg_trgm`; defer `unaccent` |
@@ -198,7 +198,7 @@ Existing read-only detail (or drawer-safe subset) allowed for search token so ag
 | Property | Design |
 |----------|--------|
 | Create / revoke | **Admin UI only** (API keys / security surface) |
-| Storage | **HMAC/SHA-256 hash only** — plaintext shown **once** at create |
+| Storage | **Salted password-style hash only** (prefer **Argon2** or existing **bcrypt** helpers in `backend/auth/` — not bare HMAC/SHA-256) — plaintext shown **once** at create |
 | Scope | `search:semantic`, `cves:related`, `cves:read` (names illustrative) |
 | Transport | `Authorization: Bearer …` or `X-BRIEFR-Search-Token` (pick one; document) |
 | Rate limit | Dedicated bucket (stricter than interactive user) |
