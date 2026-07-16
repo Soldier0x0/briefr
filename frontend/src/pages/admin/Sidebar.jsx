@@ -1,6 +1,6 @@
 import {
   Activity, Archive, HardDrive, Database, Bookmark, KeyRound, Clock, Webhook,
-  ShieldAlert, HeartPulse, ScrollText, ClipboardList, Settings2, LogIn, Users,
+  ShieldAlert, Shield, HeartPulse, ScrollText, ClipboardList, Settings2, LogIn, Users,
   Gauge, BellRing, ArrowRightLeft, Sparkles, Cpu,
 } from 'lucide-react'
 import { NAV, ANALYST_NAV } from './constants.js'
@@ -8,7 +8,7 @@ import StatusLegend from './shared/StatusLegend.jsx'
 
 const ICONS = {
   Activity, Archive, HardDrive, Database, Bookmark, KeyRound, Clock, Webhook,
-  ShieldAlert, HeartPulse, ScrollText, ClipboardList, Settings2, LogIn, Users,
+  ShieldAlert, Shield, HeartPulse, ScrollText, ClipboardList, Settings2, LogIn, Users,
   Gauge, BellRing, Sparkles, Cpu,
 }
 

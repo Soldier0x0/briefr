@@ -2,7 +2,7 @@ import { Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 
 /** Analyst-accessible admin sub-pages (operator routes require admin role). */
-const ANALYST_ADMIN_PAGES = new Set(['display'])
+const ANALYST_ADMIN_PAGES = new Set(['display', 'securityposture'])
 
 export default function RequireAdmin({ children }) {
   const { status, user } = useAuth()
