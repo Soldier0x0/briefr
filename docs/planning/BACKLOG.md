@@ -348,7 +348,6 @@ ADR-005 (UI library allow/deny). **Design SSOT:** [`../design/design-system.md`]
 |------|--------|
 | V1.5 Phase 4 STIX/Sigma export | Sprint |
 | Full V2.0 `docker-compose.yml` | Sprint, operator backlog |
-| RSS↔CVE linking | Sprint |
 | Track I Phase 3 remainder (if any beyond #436–#438) | HANDOVER |
 
 ---

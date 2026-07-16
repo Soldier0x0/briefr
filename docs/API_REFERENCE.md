@@ -479,9 +479,9 @@ Dismiss one notification (removed from list). **Response:** `{ok: true}` or `404
 
 ### GET /api/cves/{cve_id}/drawer
 
-**Description:** Aggregate on-open drawer payloads in one round trip — sentences, EPSS history, related CVEs, correlation, and momentum. Used by `DetailDrawer` on open (#436).
+**Description:** Aggregate on-open drawer payloads in one round trip — sentences, EPSS history, related CVEs, related Incidents/News mentions, correlation, and momentum. Used by `DetailDrawer` on open (#436).
 
-**Auth:** None
+**Auth:** Required (session cookie).
 
 **Query params:**
 
@@ -497,12 +497,21 @@ Dismiss one notification (removed from list). **Response:** `{ok: true}` or `404
   "sentences": { },
   "epss_history": { },
   "related": { },
+  "related_news": [
+    {
+      "title": "CISA Adds CVE-2024-0001 to KEV",
+      "source": "CISA Advisories",
+      "url": "https://www.cisa.gov/…",
+      "publishedAt": "2026-07-01T00:00:00+00:00",
+      "kind": "news"
+    }
+  ],
   "correlation": { },
   "momentum": { }
 }
 ```
 
-Sub-objects match the shapes returned by `GET /api/cves/{cve_id}/sentences`, `/epss-history`, `/related`, `/correlation`, and `/momentum` respectively. Correlation includes `provenance` derived server-side.
+Sub-objects match the shapes returned by `GET /api/cves/{cve_id}/sentences`, `/epss-history`, `/related`, `/correlation`, and `/momentum` respectively. Correlation includes `provenance` derived server-side. `related_news` is built from the Incidents feed snapshot (RSS + ATLAS cards that mention this CVE ID); empty list when none.
 
 **Error responses:** `400` invalid CVE ID; `404` CVE not found.
 

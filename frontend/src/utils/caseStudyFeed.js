@@ -43,6 +43,7 @@ export function filterCaseStudyCards(cards, query) {
       card.target,
       ...(card.tags || []),
       ...(card.techniques || []),
+      ...(card.cve_ids || []),
     ]
       .join(' ')
       .toLowerCase()

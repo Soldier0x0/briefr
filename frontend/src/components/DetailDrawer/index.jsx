@@ -80,6 +80,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
   const [epssLoading, setEpssLoading] = useState(false)
   const [related, setRelated] = useState([])
   const [relatedMethod, setRelatedMethod] = useState('')
+  const [relatedNews, setRelatedNews] = useState([])
   const [relatedLoading, setRelatedLoading] = useState(false)
   const [correlation, setCorrelation] = useState(null)
   const [correlationLoading, setCorrelationLoading] = useState(false)
@@ -183,6 +184,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
       setEpssLoading(false)
       setRelated([])
       setRelatedMethod('')
+      setRelatedNews([])
       setRelatedLoading(false)
       setCorrelation(null)
       setCorrelationLoading(false)
@@ -211,6 +213,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
         const relatedPayload = bundle.related || {}
         setRelated(relatedPayload.data || [])
         setRelatedMethod(relatedPayload.meta?.method || '')
+        setRelatedNews(Array.isArray(bundle.related_news) ? bundle.related_news : [])
         setCorrelation(bundle.correlation || null)
         setCorrelationSuppressions(supData?.suppressions || [])
         setCorrelationFeedback(fbData?.feedback || [])
@@ -228,6 +231,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
           setEpssHistory([])
           setRelated([])
           setRelatedMethod('')
+          setRelatedNews([])
           setCorrelation(null)
           setCorrelationSuppressions([])
           setCorrelationFeedback([])
@@ -960,6 +964,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
             <TabRelated
               related={related}
               relatedMethod={relatedMethod}
+              relatedNews={relatedNews}
               loading={relatedLoading}
               onSelectRelated={handleSelectRelated}
             />

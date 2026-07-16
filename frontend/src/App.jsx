@@ -994,6 +994,7 @@ function AppLayout({
                   <CaseStudies
                     initialSearch={atlasActorFilter || ''}
                     onClearFilter={onClearAtlasFilter}
+                    onOpenCve={openCveById}
                   />
                 </ToolErrorBoundary>
               </Suspense>
