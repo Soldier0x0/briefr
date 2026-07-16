@@ -20,6 +20,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+---
+
+## 2026-07-16 — RCA-first agent instruction + My Stack warning layout
+
+**What:** Mandatory RCA-first error investigation added to `AGENTS.md`, `CLAUDE.md`, and `.cursor/rules/rca-first-debugging.mdc`. My Stack pre-setup modal widened to 600px, copy reflowed to fewer lines, action buttons in a 2-column grid (stacks on narrow viewports).
+
+**PR:** pending (`cursor/rca-instruction-mystack-layout-021b`)
+
+---
+
 ## 2026-07-15 — Tooltip v2 (Radix / shadcn pattern)
 
 **What:** Migrated `Tooltip` to `@radix-ui/react-tooltip` with `TooltipProvider` at app root, shadcn-style `.ui-tooltip-content` surface, compound exports (`TooltipTrigger`, `TooltipContent`). Legacy `<Tooltip text="…">` API + `ControlTooltip` hover-only mode preserved.
