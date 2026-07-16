@@ -37,6 +37,13 @@ JSX/CSS + semantic tokens + Radix primitives per ADR-003; no Tailwind), **Postgr
   checklist file first and tick items off — verbal lists don't survive
   context compaction.
 
+## Error investigation — RCA-first (mandatory)
+
+When the user shows an error or you detect one: **investigate to root cause before
+fixing.** Reproduce/verify → trace the failing path → fix the underlying class of bug
+(not a band-aid) → add a regression test or gate when recurrence is plausible → note in
+`HANDOVER.md` if runtime behavior changed. Symptom-only patches without RCA are not done.
+
 ## PR workflow
 
 - After push, CI + a Gemini review bot run. Wait with

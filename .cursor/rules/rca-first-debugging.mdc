@@ -1,0 +1,16 @@
+---
+description: Investigate errors to root cause before fixing; prevent recurrence
+alwaysApply: true
+---
+
+# RCA-first error handling
+
+When the user reports an error (screenshot, admin job failure, log, UI bug) or you detect one:
+
+1. **Verify** — reproduce or confirm on current HEAD (logs, pytest, minimal repro).
+2. **RCA** — trace end-to-end and explain *why* it failed, not only the symptom.
+3. **Fix the class** — structural fix (query shape, failover, state machine, layout) over blind retries.
+4. **Guard** — test or gate when the bug could return.
+5. **Document** — `HANDOVER.md` when operator-visible behavior changes.
+
+Do not ship symptom-only patches without stated root cause.

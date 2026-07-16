@@ -20,7 +20,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-<<<<<<< HEAD
+---
+
+## 2026-07-16 — RCA-first agent instruction + My Stack warning layout
+
+**What:** Mandatory RCA-first error investigation added to `AGENTS.md`, `CLAUDE.md`, and `.cursor/rules/rca-first-debugging.mdc`. My Stack pre-setup modal widened to 600px, copy reflowed to fewer lines, action buttons in a 2-column grid (stacks on narrow viewports).
+
+**PR:** #630 (`cursor/rca-instruction-mystack-layout-021b`)
+
 ---
 
 ## 2026-07-16 — KEV + VulnCheck sync database timeouts
@@ -30,24 +37,23 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 - **KEV Metadata Sync:** cross-fetch used `get_all_cve_ids()` (full-table scan). Fix: `missing_cve_ids()` / `filter_cve_ids_present()` chunked IN over catalog IDs only; PG JOIN for `enrich_kev_summaries`; per-phase commits in KEV sync.
 - **VulnCheck KEV Tier Sync:** `sync_vulncheck_exploited_flags()` did table-wide reset + per-row UPDATE loop (up to 5000 statements). Fix: indexed lookup of currently flagged IDs, chunked IN for clear/set only.
 
-**PR:** #629 (`cursor/kev-sync-db-timeout-021b`)
+**PR:** #629 (merged)
 
-**Next:** merge #628 + #629 → restart backend → **Retry now** on failed scheduler jobs.
+**Next:** restart backend → **Retry now** on failed scheduler jobs.
 
 ---
 
-## 2026-07-15 — Tooltip v2 (Radix / shadcn pattern)
-=======
 ## 2026-07-16 — LLM provider priority + scheduler progress (slow jobs)
 
 **What:** Jobs stuck at "CVE 1/10" were mostly **API-queue pacing** (~9–13s between Groq calls) plus **Gemini as 2nd failover** (60s timeouts). Failover order is now **Groq → Cerebras → OpenRouter → Gemini** (Gemini last). Scheduler tasks use repo SSOT Groq models (`GROQ_MODEL=openai/gpt-oss-20b`, `GROQ_MODEL_SUMMARY=openai/gpt-oss-120b` — not deprecated Llama 3.1). 30s per-provider timeout; finer admin progress.
 
 **Ops:** Ensure `GROQ_API_KEY` and/or `CEREBRAS_API_KEY` are real (not placeholders). Optional: `GROQ_MIN_REQUEST_INTERVAL_SECONDS=2` on paid Groq tier. Restart backend after pull.
 
-**Next:** PM-3a — Architecture graph viewport/zoom + corpus drift.
+**PR:** #628 (merged)
 
 ---
->>>>>>> origin/main
+
+## 2026-07-15 — Tooltip v2 (Radix / shadcn pattern)
 
 **What:** Migrated `Tooltip` to `@radix-ui/react-tooltip` with `TooltipProvider` at app root, shadcn-style `.ui-tooltip-content` surface, compound exports (`TooltipTrigger`, `TooltipContent`). Legacy `<Tooltip text="…">` API + `ControlTooltip` hover-only mode preserved.
 
