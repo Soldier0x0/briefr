@@ -12,6 +12,14 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-16 — DC-2 emit composed detection from evidence
+
+**What:** `emit_composed_detection(evidence)` builds Sigma + SIEM (KQL/SPL/Sentinel/QRadar) + YARA from the DC-1 evidence pack. Artifact paths/keywords inject into Sigma and SIEM; `compose_basis` on meta (`community|nuclei_artifacts|yara|template_fallback`). Detect API wired through the emitter. No LLM.
+
+**Next:** DC-3 Detect tab UI → DC-4 Forge hunt packs. Then Q1–Q5 → E1–E6. Parked: STIX, V2 compose, G0–G4.
+
+---
+
 ## 2026-07-16 — DC-1 detection composer evidence engine
 
 **What:** `detection/composer.py` → `compose_detection_evidence()` aggregates community Sigma/Elastic, detection_context artifacts, Nuclei exploit URLs, and YARA hashes into an evidence pack (no LLM). `GET /api/cves/{id}/detection` now includes additive `evidence` and uses the composer for community/context/YARA retrieval. Design: `docs/planning/specs/detection-composer-design.md`.

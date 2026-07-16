@@ -67,9 +67,7 @@ from database import (
     get_watchlist_entry,
     match_cves_for_assets,
 )
-from detection.composer import compose_detection_evidence
-from detection.siem_queries import get_siem_queries
-from detection.sigma_generator import generate_sigma_rule_bundle
+from detection.composer import compose_detection_evidence, emit_composed_detection
 from feeds.case_study_feed import get_related_news_for_cve
 from feeds.extended import (
     enrich_cve_circl,
@@ -1632,25 +1630,16 @@ async def cve_detection(
         elastic_rules = evidence["community"]["elastic_rules"]
         has_community_rules = evidence["community"]["has_community_rules"]
         detection_context = evidence.get("detection_context")
-        yara_rules = evidence["observables"]["yara_rules"]
 
-        first_technique = technique_ids[0] if technique_ids else ""
-        generated_sigma, generated_sigma_meta = generate_sigma_rule_bundle(
-            cve_id=cve_upper,
-            technique_id=first_technique,
-            product=product.strip() or "Affected Product",
+        composed = emit_composed_detection(
+            evidence,
             description=cve_desc[:200] if cve_desc else "",
             cwe_ids=cwe_ids,
-            detection_context=detection_context,
         )
-
-        siem_queries = get_siem_queries(
-            technique_id=first_technique,
-            cve_id=cve_upper,
-            product=product.strip(),
-            cwe_ids=cwe_ids,
-            detection_context=detection_context,
-        )
+        generated_sigma = composed["generated_sigma"]
+        generated_sigma_meta = composed["generated_sigma_meta"]
+        siem_queries = composed["siem_queries"]
+        yara_rules = composed["yara_rules"]
 
         detection_provenance = await derive_detection_provenance(
             db,
