@@ -74,10 +74,29 @@
 }
 
 .fg-shell {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: var(--fg-nav-w) minmax(0, 1fr);
+  grid-template-rows: minmax(0, auto) auto;
+  column-gap: var(--space-5);
+  row-gap: var(--space-4);
+  align-items: start;
   position: relative;
+}
+
+.fg-shell > .fg-nav {
+  grid-column: 1;
+  grid-row: 1 / -1;
+}
+
+.fg-shell > .fg-workspace {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.fg-shell > .fg-detail {
+  grid-column: 2;
+  grid-row: 2;
 }
 
 .fg-nav {
@@ -130,11 +149,6 @@
 .fg-stack-toggle-nav {
   padding-top: 12px;
   border-top: 1px solid var(--border);
-}
-
-.fg-workspace {
-  flex: 1;
-  min-width: 0;
 }
 
 .fg-rail-backdrop {
@@ -199,66 +213,63 @@
 
 .fg-navigator-scroll {
   display: flex;
-  gap: 8px;
+  align-items: stretch;
+  gap: var(--space-2);
   overflow-x: auto;
-  padding-bottom: 8px;
+  padding-bottom: var(--space-2);
   scroll-snap-type: x proximity;
+  width: 100%;
+}
+
+.fg-tactic-col-wrap {
+  flex: 1 0 160px;
+  min-width: 160px;
+  max-width: 280px;
+  scroll-snap-align: start;
+  display: flex;
+  min-height: min(70vh, 640px);
 }
 
 .fg-tactic-col {
-  flex: 0 0 148px;
-  scroll-snap-align: start;
+  flex: 1;
+  width: 100%;
   border: 1px solid var(--border);
   background: var(--bg2);
-  padding: 8px;
-  min-height: 200px;
-  max-height: min(62vh, 520px);
+  padding: var(--space-2);
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.fg-tactic-col--expanded {
-  flex-basis: 220px;
+  min-height: 100%;
+  max-height: min(70vh, 640px);
 }
 
 .fg-tactic-col-head {
   display: grid;
-  grid-template-columns: 1fr auto auto;
-  align-items: center;
+  grid-template-columns: 1fr auto;
+  align-items: start;
   gap: 4px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 6px;
+  min-height: 2.75rem;
 }
 
 .fg-tactic-label {
-  font-size: 0.5625rem;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.1em;
   color: var(--accent);
   margin: 0;
-  line-height: 1.3;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .fg-tactic-count {
-  font-size: 0.625rem;
+  font-size: var(--font-size-micro);
   color: var(--text3);
-}
-
-.fg-tactic-expand {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  font-size: 0.875rem;
-  line-height: 1;
-  color: var(--text2);
-  background: transparent;
-  border: 1px solid var(--border);
-  cursor: pointer;
-}
-
-.fg-tactic-expand:hover {
-  border-color: var(--border2);
-  color: var(--text);
+  line-height: 1.25;
+  padding-top: 1px;
 }
 
 .fg-tech-node-list {
@@ -287,41 +298,38 @@
 
 .fg-tech-tree-toggle {
   flex: 0 0 16px;
+  width: 16px;
   padding: 0;
-  font-size: 0.625rem;
+  font-size: var(--font-size-micro);
   color: var(--text3);
   background: transparent;
   border: none;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fg-tech-tree-toggle--spacer {
+  cursor: default;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .fg-tech-node {
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   text-align: left;
-  font-size: 0.6875rem;
+  font-size: var(--font-size-micro);
   color: var(--text);
   background: var(--bg);
   border: 1px solid var(--border);
-  border-left-width: 3px;
   padding: 5px 6px;
   cursor: pointer;
-}
-
-.fg-tech-node--gap {
-  border-left-color: var(--red);
-}
-
-.fg-tech-node--community {
-  border-left-color: var(--amber);
-}
-
-.fg-tech-node--yours {
-  border-left-color: var(--green);
 }
 
 .fg-tech-node:hover {
@@ -333,50 +341,29 @@
   border-color: var(--border-active);
   background: var(--surface-selected);
   color: var(--accent-selected);
+  box-shadow: var(--shadow-inset-indicator-left, inset 2px 0 0 var(--accent-indicator, var(--accent)));
 }
 
 .fg-tech-node-id {
-  font-size: 0.625rem;
+  font-size: var(--font-size-micro);
   color: var(--text3);
 }
 
 .fg-tech-node-active .fg-tech-node-id {
   color: var(--accent-selected);
-}
-
 .fg-tech-node-name {
-  flex: 1 1 100%;
+  grid-column: 1 / -1;
+  grid-row: 2;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.6875rem;
+  font-size: var(--font-size-micro);
+  color: var(--text2);
+  min-width: 0;
 }
 
-.fg-tech-node-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-}
-
-.fg-tech-node-kev,
-.fg-tech-node-cs {
-  font-size: 0.5625rem;
-  letter-spacing: 0.04em;
-  border: 1px solid var(--border);
-  padding: 0 3px;
-  color: var(--text3);
-}
-
-.fg-tech-node-kev {
-  color: var(--red);
-  border-color: var(--red);
-}
-
-.fg-tactic-legend {
-  font-size: 0.5625rem;
-  color: var(--text3);
-  margin: 0;
+.fg-tech-node-active .fg-tech-node-name {
+  color: var(--accent-selected);
 }
 
 /* Legacy row styles kept for any residual references / print */
@@ -455,15 +442,19 @@
   }
 }
 
-/* ── Hunt pack panel / persistent rail (FR-2) ─────────── */
+/* ── Hunt pack panel (bottom of workspace — full width) ── */
 
 .fg-detail {
-  width: var(--fg-rail-w);
-  flex-shrink: 0;
-  position: sticky;
-  top: 16px;
-  max-height: calc(100vh - 32px);
+  width: 100%;
+  max-height: min(42vh, 420px);
   overflow-y: auto;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  padding: var(--space-3);
+}
+
+.fg-detail[hidden] {
+  display: none !important;
 }
 
 .fg-detail-head {
@@ -479,15 +470,20 @@
 }
 
 .fg-detail-close {
-  display: none;
+  display: inline-flex;
   width: 26px;
   height: 26px;
   align-items: center;
   justify-content: center;
-  background: var(--bg2);
+  background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text2);
   cursor: pointer;
+}
+
+.fg-detail-close:hover {
+  border-color: var(--border2);
+  color: var(--text);
 }
 
 .fg-panel {
@@ -1219,59 +1215,34 @@
 }
 
 /* ── Responsive (FR-2) ───────────────────────────────
-   Mirrors threat-modeling-security-architecture.md §3.1:
-   ≥1280px three panels pinned; 960–1279px rail overlays on selection
-   (slide-in, 180ms); ≤959px left nav collapses too. */
-
-@media (max-width: 1279px) {
-  .fg-detail {
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: min(var(--fg-rail-w), 92vw);
-    max-height: none;
-    background: var(--bg);
-    border-left: 1px solid var(--border);
-    padding: 16px;
-    box-shadow: var(--admin-shadow-lg, -8px 0 24px rgba(0, 0, 0, 0.45));
-    transform: translateX(100%);
-    transition: transform 0.18s var(--admin-ease, cubic-bezier(0.4, 0, 0.2, 1));
-    z-index: 90;
-  }
-
-  .fg-detail-open {
-    transform: translateX(0);
-  }
-
-  .fg-detail-close {
-    display: inline-flex;
-  }
-
-  .fg-rail-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 85;
-    background: rgba(0, 0, 0, 0.5);
-    border: none;
-    padding: 0;
-    cursor: pointer;
-  }
-}
+   Desktop: nav | full-width navigator; hunt pack docks below.
+   Narrow: nav stacks; hunt pack becomes a bottom sheet overlay. */
 
 @media (max-width: 959px) {
   .fg-shell {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
   }
 
-  .fg-nav {
+  .fg-shell > .fg-nav {
+    grid-column: 1;
+    grid-row: 1;
     width: 100%;
     position: static;
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
     gap: 12px;
+  }
+
+  .fg-shell > .fg-workspace {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .fg-shell > .fg-detail {
+    grid-column: 1;
+    grid-row: 3;
   }
 
   .fg-nav-tabs {
@@ -1283,6 +1254,38 @@
   .fg-stack-toggle-nav {
     border-top: none;
     padding-top: 0;
+  }
+
+  .fg-detail {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: min(55vh, 480px);
+    z-index: 90;
+    box-shadow: var(--admin-shadow-lg, 0 -8px 24px rgba(0, 0, 0, 0.45));
+    transform: translateY(100%);
+    transition: transform var(--motion-normal, 0.18s) var(--admin-ease, cubic-bezier(0.4, 0, 0.2, 1));
+  }
+
+  .fg-detail-open {
+    transform: translateY(0);
+  }
+
+  .fg-detail[hidden] {
+    display: block !important;
+    pointer-events: none;
+  }
+
+  .fg-rail-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 85;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    padding: 0;
+    cursor: pointer;
   }
 }
 

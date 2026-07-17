@@ -26,8 +26,8 @@ const NAV_ITEMS = [
 ]
 
 /**
- * Forge shell (FR-2, forge-redesign.md §5): three-panel layout — left nav,
- * center workspace (one view at a time), persistent Hunt Pack rail. All
+ * Forge shell (FR-2, forge-redesign.md §5): left nav + workspace; Hunt Pack
+ * opens as a bottom panel so the ATT&CK navigator can use full width. All
  * selection state lives here and round-trips through the URL
  * (?view=&technique=&pack=) so refresh and deep links never lose context —
  * this is the fix for P1 (view state) and P2 (rail vanishing per-view).
@@ -176,7 +176,7 @@ export default function Forge() {
         </p>
       </header>
 
-      <div className="fg-shell">
+      <div className={`fg-shell${railOpen ? ' fg-shell--detail-open' : ''}`}>
         <nav className="fg-nav" aria-label="Forge views">
           <Tabs value={viewMode} onValueChange={setViewMode} className="fg-nav-tabs-wrap">
             <TabsList className="fg-nav-tabs mono" aria-label="Forge view">
@@ -282,14 +282,18 @@ export default function Forge() {
           <button
             type="button"
             className="fg-rail-backdrop"
-            aria-label="Close hunt pack rail"
+            aria-label="Close hunt pack panel"
             onClick={closeRail}
           />
         )}
-        <aside className={`fg-detail${railOpen ? ' fg-detail-open' : ''}`} aria-label="Hunt pack detail">
+        <aside
+          className={`fg-detail${railOpen ? ' fg-detail-open' : ''}`}
+          aria-label="Hunt pack detail"
+          hidden={!railOpen}
+        >
           <div className="fg-detail-head">
             <h2 className="fg-section-label mono">HUNT PACK</h2>
-            <button type="button" className="fg-detail-close mono" onClick={closeRail} aria-label="Close hunt pack rail">
+            <button type="button" className="fg-detail-close mono" onClick={closeRail} aria-label="Close hunt pack panel">
               ✕
             </button>
           </div>
