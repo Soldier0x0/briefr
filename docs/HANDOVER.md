@@ -17,11 +17,13 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 **What / RCA:** Navigator looked uneven because (1) tactic columns started
 collapsed behind a `+` that toggled wider “dense” cards with names, and
 (2) the sub-technique `▸` control only rendered on parents with children,
-so technique cards started at different horizontal offsets.
+so technique cards started at different horizontal offsets. Side hunt-pack
+rail also stole width from the matrix.
 
-**Fix:** Always show id + name; remove column `+`; equal 220px columns with
-shared height; reserve a toggle gutter (spacer) on every row; parents with
-children open by default. Legend moved to navigator header.
+**Fix:** Matrix-style cells (id + name only — no K/GAP/C chips); remove
+column `+`; reserved toggle gutter so `▸` does not break alignment;
+sub-trees stay open until the user collapses; hunt pack docks **below**
+the workspace so ATT&CK uses the full container width.
 
 **Next:** Merge LLM free-model defaults (#651) → activate Q1–Q5 → E1–E6.
 

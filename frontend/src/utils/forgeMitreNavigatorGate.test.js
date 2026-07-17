@@ -24,21 +24,26 @@ describe('PM-4d Forge MITRE navigator gate', () => {
     assert.doesNotMatch(view, /fg-tech-row/)
   })
 
-  it('shows technique names directly — no per-column + expand gate', () => {
+  it('shows technique id + name only — no K/GAP chips or column +', () => {
     const view = read(COVERAGE)
     assert.match(view, /fg-tech-node-name/)
     assert.doesNotMatch(view, /fg-tactic-expand/)
-    assert.doesNotMatch(view, /Collapse column detail/)
+    assert.doesNotMatch(view, /StatusChip/)
+    assert.doesNotMatch(view, /fg-tech-node-kev/)
+    assert.doesNotMatch(view, /fg-tech-node--gap/)
     assert.match(view, /fg-tech-tree-toggle--spacer/)
   })
 
-  it('nav label is ATT&CK navigator; CSS has uniform column width', () => {
-    assert.match(read(FORGE), /label:\s*'ATT&CK navigator'/)
+  it('hunt pack docks below workspace; navigator uses full width', () => {
+    const forge = read(FORGE)
+    assert.match(forge, /label:\s*'ATT&CK navigator'/)
+    assert.match(forge, /fg-shell--detail-open/)
+    assert.match(forge, /hidden=\{!railOpen\}/)
     const css = read(CSS)
     assert.match(css, /\.fg-navigator-scroll/)
     assert.match(css, /\.fg-tactic-col-wrap/)
-    assert.match(css, /\.fg-tactic-col/)
-    assert.match(css, /\.fg-tech-node/)
+    assert.match(css, /grid-template-columns:\s*var\(--fg-nav-w\)/)
+    assert.match(css, /\.fg-detail\[hidden\]/)
     assert.doesNotMatch(css, /\.fg-tactic-col--expanded/)
     assert.doesNotMatch(css, /\.fg-tactic-expand\b/)
   })

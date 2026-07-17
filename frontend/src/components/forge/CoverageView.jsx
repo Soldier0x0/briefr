@@ -1,43 +1,33 @@
 import { useMemo, useState } from 'react'
-import Tooltip from '../ui/Tooltip.jsx'
-import { SkeletonRows, StatusChip } from './shared.jsx'
+import { SkeletonRows } from './shared.jsx'
 import { groupCoverageByTactic } from './mitreTacticOrder.js'
 
 function TechniqueNode({ technique, active, onSelect }) {
-  const caseStudyCount = technique.case_study_count || 0
   const title = [
     technique.technique_id,
     technique.name,
-    `${technique.cve_count} CVE${technique.cve_count === 1 ? '' : 's'}`,
-    technique.kev_count > 0 ? `${technique.kev_count} KEV` : null,
-    caseStudyCount > 0 ? `${caseStudyCount} case stud${caseStudyCount === 1 ? 'y' : 'ies'}` : null,
+    technique.cve_count != null
+      ? `${technique.cve_count} CVE${technique.cve_count === 1 ? '' : 's'}`
+      : null,
   ].filter(Boolean).join(' · ')
 
   return (
     <button
       type="button"
-      className={[
-        'fg-tech-node',
-        `fg-tech-node--${technique.status || 'gap'}`,
-        active ? 'fg-tech-node-active' : '',
-      ].filter(Boolean).join(' ')}
+      className={['fg-tech-node', active ? 'fg-tech-node-active' : ''].filter(Boolean).join(' ')}
       onClick={() => onSelect(technique.technique_id)}
       aria-pressed={active}
       title={title}
     >
       <span className="fg-tech-node-id mono">{technique.technique_id}</span>
       <span className="fg-tech-node-name">{technique.name || technique.technique_id}</span>
-      <span className="fg-tech-node-meta mono" aria-hidden="true">
-        {technique.kev_count > 0 && <span className="fg-tech-node-kev" title="KEV">K</span>}
-        {caseStudyCount > 0 && <span className="fg-tech-node-cs" title="Case studies">C</span>}
-        <StatusChip status={technique.status} />
-      </span>
     </button>
   )
 }
 
 function TacticColumn({ tactic, techniques, trees, selectedTechnique, onSelectTechnique }) {
-  // Parents with children start open so sub-techniques are visible without an extra click.
+  // Expand stays open until the user collapses via ▾ — selecting a technique
+  // must not reset this state (official ATT&CK-style persistence).
   const [openParents, setOpenParents] = useState(() => {
     const initial = new Set()
     for (const { technique, children } of trees) {
@@ -46,11 +36,11 @@ function TacticColumn({ tactic, techniques, trees, selectedTechnique, onSelectTe
     return initial
   })
 
-  function toggleParent(id) {
+  function setParentOpen(id, open) {
     setOpenParents((prev) => {
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+      if (open) next.add(id)
+      else next.delete(id)
       return next
     })
   }
@@ -76,7 +66,10 @@ function TacticColumn({ tactic, techniques, trees, selectedTechnique, onSelectTe
                     className="fg-tech-tree-toggle mono"
                     aria-expanded={parentOpen}
                     aria-label={`${parentOpen ? 'Collapse' : 'Expand'} ${technique.technique_id} sub-techniques`}
-                    onClick={() => toggleParent(technique.technique_id)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setParentOpen(technique.technique_id, !parentOpen)
+                    }}
                   >
                     {parentOpen ? '▾' : '▸'}
                   </button>
@@ -114,18 +107,12 @@ function TacticColumn({ tactic, techniques, trees, selectedTechnique, onSelectTe
 }
 
 /**
- * PM-4d: MITRE ATT&CK navigator — uniform tactic columns with technique
- * id + name always visible. Technique nodes open the hunt-pack rail via
- * onSelectTechnique (?view=coverage&technique=…).
+ * MITRE ATT&CK navigator — tactic columns, technique id + name (matrix-style).
+ * Click a technique to open related CVEs / hunt pack below the matrix.
  */
 export default function CoverageView({ coverage, loading, stackOnly, selectedTechnique, onSelectTechnique }) {
   const columns = useMemo(
     () => groupCoverageByTactic(coverage?.techniques || []),
-    [coverage],
-  )
-
-  const hasCaseStudies = useMemo(
-    () => (coverage?.techniques || []).some((t) => (t.case_study_count || 0) > 0),
     [coverage],
   )
 
@@ -134,17 +121,8 @@ export default function CoverageView({ coverage, loading, stackOnly, selectedTec
       <div className="fg-navigator-head">
         <h2 className="fg-section-label mono">MITRE ATT&amp;CK NAVIGATOR</h2>
         <p className="fg-navigator-hint mono">
-          Tactic columns · click a technique for coverage + hunt packs
+          Tactic columns · click a technique for related CVEs and hunt packs
         </p>
-        {hasCaseStudies && (
-          <p className="fg-tactic-legend mono">
-            <Tooltip text="Real-world MITRE ATLAS incidents linked to CVEs mapped to this technique — open the hunt pack rail to read them.">
-              <span>C = case studies</span>
-            </Tooltip>
-            {' · '}
-            <span>K = KEV</span>
-          </p>
-        )}
       </div>
       {loading ? (
         <SkeletonRows count={10} />
