@@ -117,9 +117,10 @@ if not settings.jwt_secret:
             "No JWT_SECRET configured — generated one in-memory but could not "
             "persist it to .env; it will change on restart until set explicitly"
         )
+    else:
+        logger.warning("No JWT_SECRET configured — generated and persisted a new one to .env")
     os.environ["JWT_SECRET"] = _generated_secret
     settings.jwt_secret = _generated_secret
-    logger.warning("No JWT_SECRET configured — generated and persisted a new one to .env")
 
 
 def production_posture_warnings(config: Settings = settings) -> list[dict[str, str]]:
