@@ -17,7 +17,7 @@ and Quick-Win/Architectural classification.
 | 4 | Functional · E2E · Feature-Completeness · Integration · Regression · Data-Integrity | [PHASE_04_testing.md](PHASE_04_testing.md) |
 | 5 | Product · UX · UI · Design-System · Accessibility · Responsive · Forms · Charts | [PHASE_05_product_ux.md](PHASE_05_product_ux.md) |
 | 6 | Performance · DB-Query · Frontend · Backend · Scalability · Resource | [PHASE_06_performance.md](PHASE_06_performance.md) |
-| 7 | Security · Auth · RBAC · Input-Validation · API-Security · Secrets · Privacy · Supply-Chain | PHASE_07_security.md *(pending)* |
+| 7 | Security · Auth · RBAC · Input-Validation · API-Security · Secrets · Privacy · Supply-Chain | [PHASE_07_security.md](PHASE_07_security.md) |
 | 8 | Logging · Monitoring · Observability · Alerting · Config · Backup · DR · Deploy · Upgrade | PHASE_08_operations.md *(pending)* |
 | 9 | Cross-Browser · Cross-Platform · Compatibility · Reliability · Chaos · Recovery | PHASE_09_reliability.md *(pending)* |
 | 10 | User · Admin · Developer · API · Architecture documentation | PHASE_10_documentation.md *(pending)* |
