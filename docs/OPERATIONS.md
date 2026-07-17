@@ -1,6 +1,6 @@
 # BRIEFR — Operations & Deploy Compatibility
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
+Copyright © 2026 Sai Harsha Vardhan. Licensed under the GNU Affero General Public License v3.0 or later (`SPDX-License-Identifier: AGPL-3.0-or-later`); see the repository `LICENSE` for the full text.
 
 **Last updated:** 2026-07-11  
 **Status:** Planning — ops contract for releases V1.2–V2.0

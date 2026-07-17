@@ -34,12 +34,20 @@ the pytest env has none of the backend deps (no `dotenv`/`pydantic`/`fastapi`/`p
 no pip in the overlay); the JWT change + test were verified by construction. Run
 `cd backend && pytest tests/test_jwt_secret_guard.py -q` on a real dev box before sign-off.
 
-**Not done (awaiting decisions):** F10.1 license contradiction (5 docs say "proprietary
-and confidential" vs AGPL `LICENSE`) — pending open-core-vs-open-source direction;
-F4.1 CI green — reframe needed since GitHub Actions quota is exhausted (local
-verification is the real gate; self-hosted runner is the zero-cost enforcement option).
+**F10.1 (license, HIGH) — DONE (follow-up commit).** Reconciled every active-tree
+"proprietary and confidential" / "Proprietary Software" claim to AGPL-3.0-or-later
+(the repo's actual `LICENSE`/SPDX choice, Track F2). Fixed: 5 doc headers
+(`API_REFERENCE`, `OPERATIONS`, `ONBOARDING`, `SYSTEM_DESIGN`, `planning/ROADMAP`);
+frontend UI footers (`App.jsx`, `AboutModal.jsx`, `LegalPage.jsx`); export footers
+(`exportCommon.js`, `report.js`). `docs/archive/**` left untouched per CLAUDE.md
+(never edit archived docs) — those still say proprietary but are historical. AGPL does
+not foreclose a later open-core model. Grep confirms no active source claims proprietary.
 
-**Next:** license direction → repo-wide AGPL reconciliation; then remaining P1 items.
+**Still pending:** F4.1 CI green — reframe needed since GitHub Actions quota is
+exhausted (local verification is the real gate; self-hosted runner is the zero-cost
+enforcement option).
+
+**Next:** remaining audit P1 items; standalone idempotency audit (docs/audit/).
 
 ---
 
