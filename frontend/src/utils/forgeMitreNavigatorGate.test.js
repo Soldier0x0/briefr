@@ -50,8 +50,13 @@ describe('PM-4d Forge MITRE navigator gate', () => {
 
   it('Forge.css brace-balanced (guards lightningcss @keyframes minify crash)', () => {
     const css = read(CSS)
+    // Ignore braces inside comments/strings so `/* { */` or content: "}" cannot false-fail.
+    const cleanCss = css
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/'[^']*'/g, '')
+      .replace(/"[^"]*"/g, '')
     let bal = 0
-    for (const ch of css) {
+    for (const ch of cleanCss) {
       if (ch === '{') bal += 1
       else if (ch === '}') bal -= 1
       assert.ok(bal >= 0, 'extra closing brace')
