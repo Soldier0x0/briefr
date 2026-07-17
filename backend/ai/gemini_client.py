@@ -12,10 +12,10 @@ GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
 def gemini_model() -> str:
-    # gemini-2.0-flash-lite is deprecated on Google AI; prefer current Flash-Lite.
+    # gemini-2.0-flash-lite is deprecated; 3.1 is current stable Flash-Lite (Google AI).
     return (
-        os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite").strip()
-        or "gemini-2.5-flash-lite"
+        os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite").strip()
+        or "gemini-3.1-flash-lite"
     )
 
 

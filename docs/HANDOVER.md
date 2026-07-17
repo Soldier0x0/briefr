@@ -23,7 +23,8 @@ Groq `openai/gpt-oss-20b` remains valid (occasional `no content returned` is
 empty-body handling, not a bad model id).
 
 **Fix:** Defaults → OpenRouter `google/gemma-4-31b-it:free`, Gemini
-`gemini-2.5-flash-lite`; update `.env.example`, catalog tests, PRODUCT_STATUS.
+`gemini-3.1-flash-lite` (current stable Flash-Lite; 2.5 still valid);
+update `.env.example`, catalog tests, PRODUCT_STATUS.
 **Operator:** clear stale `OPENROUTER_MODEL_*` / `GEMINI_MODEL` in env or
 Admin config if still set to the old IDs — env/DB overrides win over code
 defaults.

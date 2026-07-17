@@ -72,7 +72,7 @@ def test_task_chain_defaults_use_current_free_models(monkeypatch):
     assert by_provider["groq"] == "openai/gpt-oss-20b"
     assert by_provider["openrouter"] == "google/gemma-4-31b-it:free"
     assert by_provider["openrouter"].endswith(":free")
-    assert by_provider["gemini"] == "gemini-2.5-flash-lite"
+    assert by_provider["gemini"] == "gemini-3.1-flash-lite"
     assert "gemini-2.0" not in by_provider["gemini"]
     assert "flash-lite-001" not in by_provider["openrouter"]
     pdf = router._task_chain("pdf_summary")

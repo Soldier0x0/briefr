@@ -371,7 +371,7 @@ required. Admin UI should show "single-provider mode" explicitly.
 |---------|---------|----------|
 | `GROQ_MODEL` | `openai/gpt-oss-20b` | product_extraction, detection_context |
 | `GROQ_MODEL_SUMMARY` | `openai/gpt-oss-120b` | pdf_summary |
-| `GEMINI_MODEL` | `gemini-2.5-flash-lite` | all tasks via `gemini_model()` |
+| `GEMINI_MODEL` | `gemini-3.1-flash-lite` | all tasks via `gemini_model()` |
 | `CEREBRAS_MODEL` | `gpt-oss-120b` | product_extraction, pdf_summary |
 | `OPENROUTER_MODEL_PRODUCT` | `google/gemma-4-31b-it:free` | product_extraction |
 | `OPENROUTER_MODEL_PDF` | `google/gemma-4-31b-it:free` | pdf_summary |
