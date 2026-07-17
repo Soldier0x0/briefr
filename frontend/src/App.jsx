@@ -323,7 +323,7 @@ export default function App() {
       next.delete('pack')
       return next
     }, { replace: true })
-  }, [setSearchParams])
+  }, [setActiveTab, setSearchParams])
   const digestCVEsRef = useRef([])
   const generateDigestRef = useRef(null)
   const [filters, setFilters]                   = useState(DEFAULT_FILTERS)
@@ -554,14 +554,20 @@ export default function App() {
     if (!cveParam || deepLinkHandled.current === cveParam) return
     if (!/^CVE-\d{4}-\d+$/i.test(cveParam.trim())) return
     deepLinkHandled.current = cveParam.trim().toUpperCase()
-    selectAppTab('feed')
+    // One setSearchParams only — RR v6 does not queue like useState; a
+    // second call in the same tick (e.g. via selectAppTab) would overwrite
+    // and leave Forge params stuck beside ?cve=.
+    setActiveTab('feed')
     openCveById(deepLinkHandled.current)
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
       next.delete('cve')
+      next.delete('view')
+      next.delete('technique')
+      next.delete('pack')
       return next
     }, { replace: true })
-  }, [searchParams, openCveById, setSearchParams, selectAppTab])
+  }, [searchParams, openCveById, setSearchParams, setActiveTab])
 
   // Forge owns ?view=/&technique=/&pack= (FR-2 URL state). On first load /
   // refresh, if those params are present, open the Forge tab so the deep
@@ -570,6 +576,8 @@ export default function App() {
   useEffect(() => {
     if (forgeDeepLinkHandled.current) return
     if (!searchParams.get('view')) return
+    // ?cve= wins over Forge deep links in the same URL.
+    if (searchParams.get('cve')) return
     forgeDeepLinkHandled.current = true
     setActiveTab('forge')
   }, [searchParams])

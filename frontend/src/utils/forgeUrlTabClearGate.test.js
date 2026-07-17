@@ -18,4 +18,19 @@ describe('Forge URL cleared when leaving Forge tab', () => {
     // Deep-link into Forge must still use raw setActiveTab so params are kept.
     assert.match(src, /openForgeTechnique:[\s\S]*setActiveTab\('forge'\)/)
   })
+
+  it('?cve= deep link clears Forge params in one setSearchParams', () => {
+    const src = fs.readFileSync(APP, 'utf8')
+    const start = src.indexOf('const deepLinkHandled = useRef(null)')
+    const end = src.indexOf('// Forge owns ?view=')
+    assert.ok(start >= 0 && end > start, 'cve deep-link block markers')
+    const block = src.slice(start, end)
+    // Avoid selectAppTab + setSearchParams in the same tick (RR overwrite).
+    assert.match(block, /setActiveTab\('feed'\)/)
+    assert.match(block, /next\.delete\('cve'\)/)
+    assert.match(block, /next\.delete\('view'\)/)
+    assert.match(block, /next\.delete\('technique'\)/)
+    assert.match(block, /next\.delete\('pack'\)/)
+    assert.doesNotMatch(block, /selectAppTab\('feed'\)/)
+  })
 })
