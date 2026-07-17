@@ -133,7 +133,7 @@ async def _process(run_id: int) -> dict:
                 )
                 await db.commit()
                 return {"ok": True, "status": "deferred"}
-            if err == "http_5xx":
+            if err in ("http_5xx", "error"):
                 await upsert_checkpoint(
                     db,
                     run_id=run_id,
@@ -145,13 +145,13 @@ async def _process(run_id: int) -> dict:
                     start_index=start_index,
                     total_results=int(cp.get("total_results") or 0),
                     cves_upserted=int(cp.get("cves_upserted") or 0),
-                    last_error="http_5xx",
+                    last_error=err,
                 )
                 await update_run(
                     db,
                     run_id,
                     status="on_hold",
-                    progress_message=f"NVD 5xx for {product} — on hold.",
+                    progress_message=f"NVD {err} for {product} — on hold.",
                 )
                 await db.commit()
                 return {"ok": True, "status": "on_hold"}

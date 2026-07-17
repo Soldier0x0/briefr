@@ -141,27 +141,31 @@ export default function FilterBar({
     }
   }, [])
 
+  function startBackfillPolling(runId) {
+    if (pollRef.current) clearInterval(pollRef.current)
+    pollRef.current = setInterval(async () => {
+      try {
+        const st = await fetchStackBackfillRun(runId)
+        setBackfillRun(st.run)
+        if (['completed', 'partial', 'failed'].includes(st.run?.status)) {
+          clearInterval(pollRef.current)
+          pollRef.current = null
+          const cov = await fetchStackCoverage().catch(() => null)
+          if (cov) setCoverage(cov)
+        }
+      } catch {
+        /* ignore poll blips */
+      }
+    }, 2000)
+  }
+
   async function handleAgreeBackfill() {
     setBackfillBusy(true)
     setBackfillError(null)
     try {
       const body = await agreeStackBackfill()
       setBackfillRun({ id: body.run_id, status: 'pending', progress_message: body.message, ...body.eta })
-      if (pollRef.current) clearInterval(pollRef.current)
-      pollRef.current = setInterval(async () => {
-        try {
-          const st = await fetchStackBackfillRun(body.run_id)
-          setBackfillRun(st.run)
-          if (['completed', 'partial', 'failed'].includes(st.run?.status)) {
-            clearInterval(pollRef.current)
-            pollRef.current = null
-            const cov = await fetchStackCoverage().catch(() => null)
-            if (cov) setCoverage(cov)
-          }
-        } catch {
-          /* ignore poll blips */
-        }
-      }, 2000)
+      startBackfillPolling(body.run_id)
     } catch (e) {
       setBackfillError(e?.message || 'Could not start Tier A backfill')
     } finally {
@@ -176,6 +180,7 @@ export default function FilterBar({
       await resumeStackBackfill(backfillRun.id)
       const st = await fetchStackBackfillRun(backfillRun.id)
       setBackfillRun(st.run)
+      startBackfillPolling(backfillRun.id)
     } catch (e) {
       setBackfillError(e?.message || 'Resume failed')
     } finally {

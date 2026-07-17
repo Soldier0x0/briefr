@@ -117,23 +117,31 @@ async def count_corpus_hits(db: DbConnection, products: list[dict[str, Any]]) ->
             results.append({**p, "hit_count": 0, "shallow": True})
             continue
         like = f"%{needle}%"
+        # Stop early once we know coverage clears the shallow threshold.
+        limit = COVERAGE_MIN_PER_PRODUCT
         if is_postgres():
             rows = await db.execute_fetchall(
                 """
-                SELECT COUNT(*)::int AS n FROM cves
-                WHERE lower(affected_products) LIKE $1
-                   OR lower(description) LIKE $1
+                SELECT COUNT(*)::int AS n FROM (
+                    SELECT 1 FROM cves
+                    WHERE lower(affected_products) LIKE $1
+                       OR lower(description) LIKE $1
+                    LIMIT $2
+                ) AS sample
                 """,
-                (like,),
+                (like, limit),
             )
         else:
             rows = await db.execute_fetchall(
                 """
-                SELECT COUNT(*) AS n FROM cves
-                WHERE lower(affected_products) LIKE ?
-                   OR lower(description) LIKE ?
+                SELECT COUNT(*) AS n FROM (
+                    SELECT 1 FROM cves
+                    WHERE lower(affected_products) LIKE ?
+                       OR lower(description) LIKE ?
+                    LIMIT ?
+                )
                 """,
-                (like, like),
+                (like, like, limit),
             )
         n = 0
         row = _row0(rows)

@@ -24,6 +24,7 @@ from preferences.repo import get_user_stack
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/stack", tags=["stack"])
+_background_tasks: set[asyncio.Task] = set()
 
 
 @router.get("/catalog/suggest")
@@ -58,8 +59,10 @@ async def stack_coverage(payload: dict = Depends(require_user)):
     user_id = int(payload["sub"])
     db = await get_db()
     try:
-        stack = await get_user_stack(db, user_id)
-        products = products_from_profile(stack.get("profile"), stack.get("stack_terms") or "")
+        stack = await get_user_stack(db, user_id) or {}
+        products = products_from_profile(
+            stack.get("profile"), stack.get("stack_terms") or ""
+        )
         hits = await count_corpus_hits(db, products)
         shallow = [h for h in hits if h.get("shallow")]
         eta = estimate_eta(shallow or products)
@@ -83,8 +86,10 @@ async def stack_backfill_agree(payload: dict = Depends(require_user)):
     user_id = int(payload["sub"])
     db = await get_db()
     try:
-        stack = await get_user_stack(db, user_id)
-        products = products_from_profile(stack.get("profile"), stack.get("stack_terms") or "")
+        stack = await get_user_stack(db, user_id) or {}
+        products = products_from_profile(
+            stack.get("profile"), stack.get("stack_terms") or ""
+        )
         if not products:
             raise HTTPException(400, "No stack products to backfill — save My Stack first")
         hits = await count_corpus_hits(db, products)
@@ -153,4 +158,6 @@ async def _kick_backfill(run_id: int) -> None:
 
     from services.stack_backfill_worker import process_stack_backfill_run
 
-    asyncio.create_task(process_stack_backfill_run(run_id))
+    task = asyncio.create_task(process_stack_backfill_run(run_id))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
