@@ -35,7 +35,7 @@
 |-------|-------|----------|--------|
 | 1 | Repo Org, Code Quality, Technical Debt | [PHASE_01_repo_code_debt.md](PHASE_01_repo_code_debt.md) | ✅ DONE (pushed) |
 | 2 | Backend/Frontend/DB/API/State-Mgmt Architecture | [PHASE_02_architecture.md](PHASE_02_architecture.md) | ✅ DONE (pushed) |
-| 3 | Correlation / Risk / Detection / AI / Scheduler / Caching engines | `PHASE_03_engines.md` | ⬜ TODO |
+| 3 | Correlation / Risk / Detection / AI / Scheduler / Caching engines | [PHASE_03_engines.md](PHASE_03_engines.md) | ✅ DONE (pushed) |
 | 4 | Functional/E2E/Feature-completeness/Integration/Regression/Data-integrity | `PHASE_04_testing.md` | ⬜ TODO |
 | 5 | Product/UX/UI/Design-system/A11y/Responsive/Forms/Charts (full list) | `PHASE_05_product_ux.md` | ⬜ TODO |
 | 6 | Performance / DB-query / FE / BE / Scalability / Resource | `PHASE_06_performance.md` | ⬜ TODO |
