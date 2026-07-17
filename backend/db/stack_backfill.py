@@ -436,10 +436,15 @@ async def claim_run_running(db: DbConnection, run_id: int) -> bool:
     row = _row0(rows)
     if row is None:
         return False
-    try:
-        return int(_as_dict(row).get("n") or 0) > 0
-    except Exception:
-        return int(row[0] or 0) > 0
+    # Handle both dict-like rows and tuple rows explicitly: _as_dict() returns
+    # {} (not an error) for tuples, so a try/except around it would be dead code.
+    n = _as_dict(row).get("n")
+    if n is None:
+        try:
+            n = row[0]
+        except (TypeError, IndexError, KeyError):
+            n = 0
+    return int(n or 0) > 0
 
 
 async def next_pending_checkpoint(db: DbConnection, run_id: int) -> dict | None:

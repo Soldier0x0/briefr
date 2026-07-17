@@ -161,8 +161,11 @@ async def _kick_backfill(run_id: int) -> None:
                 except Exception as exc:
                     # AlreadyEnqueued: a tick for this run is already queued —
                     # idempotent no-op. Return so we do NOT also kick in-process
-                    # (which would defeat the lock).
-                    if exc.__class__.__name__ == "AlreadyEnqueued":
+                    # (which would defeat the lock). procrastinate is already
+                    # loaded on this path, so import the real exception class.
+                    from procrastinate.exceptions import AlreadyEnqueued
+
+                    if isinstance(exc, AlreadyEnqueued):
                         logger.info(
                             "stack backfill tick already queued for run %s — skipping duplicate",
                             run_id,
