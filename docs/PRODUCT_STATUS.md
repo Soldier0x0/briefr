@@ -1,6 +1,6 @@
 # BRIEFR product status
 
-**Last updated:** 2026-07-16  
+**Last updated:** 2026-07-17  
 **Purpose:** Single page for “what’s true in production today.” When README or beta docs disagree, this wins.
 
 ---
@@ -36,6 +36,7 @@
 | **Wallboard** | **v2 shipped (#430):** session-cookie token storage, responsive tile grid, auto-rotation, stack-aware KEV tile, mono terminal styling. Token via `X-BRIEFR-Wallboard-Token` header or admin config `WALLBOARD_TOKEN` (#514 — Security / kiosk section on API keys & config). Optional `?density=compact` URL mode for denser 4K kiosk layouts. |
 | **Snooze** | Removed from UI (#137). **Watchlist monitor alerts** ship via `watchlist_alert` webhooks when pinned CVEs enter KEV or show EPSS/PoC changes (scheduler job `watchlist_monitor_alerts`). |
 | **Theme** | Dark only. |
+| **Shell URL nav** | Analyst tabs sync `?tab=brief\|feed\|ioc\|atlas\|forge` (Forge still uses `view`/`technique`/`pack`). Admin sidebar syncs `?p=`. Refresh and back/forward follow the URL. |
 | **Docker compose** | Postgres compose exists; full V2.0 platform compose not shipped. |
 
 ---

@@ -21,7 +21,7 @@ export function techniqueLink(tech) {
 export function forgeCoverageHref(techniqueId) {
   const id = String(techniqueId || '').trim()
   if (!id) return null
-  return `/?view=coverage&technique=${encodeURIComponent(id)}`
+  return `/?tab=forge&view=coverage&technique=${encodeURIComponent(id)}`
 }
 
 export function truncateText(text, maxLen) {

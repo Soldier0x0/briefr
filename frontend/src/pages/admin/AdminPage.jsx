@@ -37,6 +37,7 @@ import UserMenu from '../../components/UserMenu.jsx'
 import { loadJobAcks, markAllJobErrorsRead, filterUnacknowledgedErrors } from './adminJobAck.js'
 import { jobErrorsFromSystem } from './shared/JobErrorsPanel.jsx'
 import AdminBreadcrumbs from './shared/AdminBreadcrumbs.jsx'
+import { buildAdminPageSearchParams } from '../../utils/shellUrlState.js'
 import '../AdminPage.css'
 
 const ANALYST_PAGE_IDS = new Set(ANALYST_NAV.flatMap(section => section.items.map(i => i.id)))
@@ -45,17 +46,6 @@ const VALID_ADMIN_PAGES = new Set([
   'webhooks', 'aiops', 'alerts', 'security', 'securityposture', 'feedhealth', 'ingestlog', 'auditlog', 'display',
   'sessions', 'ratelimit',
 ])
-
-/** Page-scoped deep-link keys. Sidebar/breadcrumb navigation must drop these
- *  when changing `p`, or refresh re-applies a stale section/filter (same class
- *  of bug as Forge view/technique sticking on the analyst shell). */
-export const ADMIN_PAGE_SCOPED_PARAMS = [
-  'section', 'node', 'type', 'status', 'severity', 'origin',
-  'window',
-  'level', 'category', 'logger', 'request_id', 'job_id', 'run_id',
-  'action_prefix', 'q',
-  'source', 'highlight',
-]
 
 function AdminPageBody({ toast }) {
   const { runAction } = useOperations()
@@ -72,16 +62,10 @@ function AdminPageBody({ toast }) {
     setPageRaw(id)
     setSidebarOpen(false)
   }, [])
-  // Sidebar / breadcrumbs / in-app jumps: sync `p` and drop page-scoped
-  // params from the previous page so refresh cannot resurrect them.
+  // Sidebar / breadcrumbs / in-app jumps: always write visible `p=`.
   const setPage = useCallback((id) => {
     applyPageState(id)
-    setSearchParams((prev) => {
-      if (prev.get('p') === id) return prev
-      const next = new URLSearchParams()
-      next.set('p', id)
-      return next
-    }, { replace: true })
+    setSearchParams((prev) => buildAdminPageSearchParams(prev, id), { replace: true })
   }, [applyPageState, setSearchParams])
   const [mode, setModeState] = useState(getAdminMode)
   const [system, setSystem] = useState(null)
@@ -141,8 +125,13 @@ function AdminPageBody({ toast }) {
     const requested = searchParams.get('p')
     if (requested && VALID_ADMIN_PAGES.has(requested)) {
       applyPageState(requested)
+      return
     }
-  }, [searchParams, applyPageState])
+    // First paint on /admin with no p= — make the active page visible in the URL.
+    if (!requested) {
+      setSearchParams((prev) => buildAdminPageSearchParams(prev, page), { replace: true })
+    }
+  }, [searchParams, applyPageState, page, setSearchParams])
 
   useEffect(() => {
     function setupPolling() {
