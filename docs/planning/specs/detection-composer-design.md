@@ -1,6 +1,6 @@
 # Detection composer (evidence-composed packs)
 
-**Status:** Active — DC-1…DC-3 shipped; DC-4 next  
+**Status:** Shipped — DC-1…DC-4 complete  
 **Created:** 2026-07-16  
 **Goal:** One shared engine for drawer Detect + Forge: retrieve CVE-grounded community/Nuclei/observables first, then compose Sigma/KQL/SPL/QRadar/YARA — **no LLM default**.
 
