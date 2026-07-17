@@ -12,7 +12,7 @@ backend dependency set.
 
 from __future__ import annotations
 
-import re
+import ast
 import sys
 from pathlib import Path
 
@@ -28,8 +28,30 @@ DOCUMENTED_PROCRASTINATE_TASKS = {"health_ping", "stack_backfill"}
 
 
 def _defined_procrastinate_tasks() -> set[str]:
+    """Parse jobs/tasks.py with ast (robust to quote style, arg order, and
+    multi-line decorators) — and, unlike a naive walk, handles async def tasks."""
     src = (BACKEND / "jobs" / "tasks.py").read_text(encoding="utf-8")
-    return set(re.findall(r'@blueprint\.task\(\s*name="([^"]+)"', src))
+    tree = ast.parse(src)
+    tasks: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        for dec in node.decorator_list:
+            if not isinstance(dec, ast.Call):
+                continue
+            func = dec.func
+            is_task = (
+                isinstance(func, ast.Attribute)
+                and func.attr == "task"
+                and isinstance(func.value, ast.Name)
+                and func.value.id == "blueprint"
+            )
+            if not is_task:
+                continue
+            for kw in dec.keywords:
+                if kw.arg == "name" and isinstance(kw.value, ast.Constant):
+                    tasks.add(kw.value.value)
+    return tasks
 
 
 def test_procrastinate_registry_is_current():
