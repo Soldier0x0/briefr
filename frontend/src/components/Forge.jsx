@@ -5,7 +5,6 @@ import { notifyApiError } from './Toast.jsx'
 import { useAssetProfileOptional } from '../context/AssetProfileContext.jsx'
 import { profileToMatchAssets } from '../utils/assetProfileIo.js'
 import { Checkbox, Tabs, TabsList, TabsTrigger } from './ui/index.js'
-import { StatusChip, ForgeStatusLegend } from './forge/shared.jsx'
 import CoverageView from './forge/CoverageView.jsx'
 import ScenariosView from './forge/ScenariosView.jsx'
 import CampaignsView from './forge/CampaignsView.jsx'
@@ -26,11 +25,9 @@ const NAV_ITEMS = [
 ]
 
 /**
- * Forge shell (FR-2, forge-redesign.md §5): left nav + workspace; Hunt Pack
- * opens as a bottom panel so the ATT&CK navigator can use full width. All
- * selection state lives here and round-trips through the URL
- * (?view=&technique=&pack=) so refresh and deep links never lose context —
- * this is the fix for P1 (view state) and P2 (rail vanishing per-view).
+ * Forge shell: top view tabs + workspace. Hunt pack docks under the ATT&CK
+ * navigator only (coverage). Technique click toggles selection. Selection
+ * clears when leaving coverage so the panel does not follow other views.
  */
 export default function Forge() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -42,7 +39,9 @@ export default function Forge() {
     const raw = searchParams.get('pack')
     return raw ? Number(raw) || null : null
   })
-  const [railOpen, setRailOpen] = useState(() => Boolean(searchParams.get('technique')))
+  const [railOpen, setRailOpen] = useState(
+    () => initialView === 'coverage' && Boolean(searchParams.get('technique')),
+  )
 
   const [coverage, setCoverage] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -53,20 +52,6 @@ export default function Forge() {
   const [generatingFromScenario, setGeneratingFromScenario] = useState(null)
   const assetCtx = useAssetProfileOptional()
 
-  // Browser back/forward (or an external link) changes searchParams outside
-  // our own writeUrl calls — mirror it back into state so the URL stays the
-  // single source of truth for view + selection.
-  useEffect(() => {
-    const view = VALID_VIEWS.has(searchParams.get('view')) ? searchParams.get('view') : 'coverage'
-    setViewModeState(view)
-    const techniqueId = searchParams.get('technique') || null
-    setSelectedTechniqueState(techniqueId)
-    const rawPack = searchParams.get('pack')
-    setSelectedPackIdState(rawPack ? Number(rawPack) || null : null)
-    // PM-4e: drawer (and other) deep links must open the hunt-pack rail.
-    if (techniqueId) setRailOpen(true)
-  }, [searchParams])
-
   const writeUrl = useCallback((patch) => {
     const next = new URLSearchParams(searchParams)
     for (const [key, value] of Object.entries(patch)) {
@@ -76,30 +61,84 @@ export default function Forge() {
     setSearchParams(next, { replace: true })
   }, [searchParams, setSearchParams])
 
+  const clearTechniqueSelection = useCallback(() => {
+    setSelectedTechniqueState(null)
+    setSelectedPackIdState(null)
+    setRailOpen(false)
+    writeUrl({ technique: null, pack: null })
+  }, [writeUrl])
+
+  // Browser back/forward (or an external link) changes searchParams outside
+  // our own writeUrl calls — mirror it back into state so the URL stays the
+  // single source of truth for view + selection.
+  useEffect(() => {
+    const view = VALID_VIEWS.has(searchParams.get('view')) ? searchParams.get('view') : 'coverage'
+    setViewModeState(view)
+    const techniqueId = searchParams.get('technique') || null
+    const rawPack = searchParams.get('pack')
+    const packId = rawPack ? Number(rawPack) || null : null
+
+    // Hunt pack / technique selection is coverage-scoped. Drop URL state when
+    // deep-linking into another view with a stale technique= param.
+    if (view !== 'coverage') {
+      setSelectedTechniqueState(null)
+      setSelectedPackIdState(view === 'library' ? packId : null)
+      setRailOpen(false)
+      if (techniqueId || (view !== 'library' && packId)) {
+        const next = new URLSearchParams(searchParams)
+        next.delete('technique')
+        if (view !== 'library') next.delete('pack')
+        setSearchParams(next, { replace: true })
+      }
+      return
+    }
+
+    setSelectedTechniqueState(techniqueId)
+    setSelectedPackIdState(packId)
+    setRailOpen(Boolean(techniqueId))
+  }, [searchParams, setSearchParams])
+
   const setViewMode = useCallback((view) => {
     setViewModeState(view)
-    writeUrl({ view })
+    setSelectedTechniqueState(null)
+    setSelectedPackIdState(null)
     setRailOpen(false)
+    writeUrl({ view, technique: null, pack: null })
   }, [writeUrl])
 
   const setSelectedTechnique = useCallback((techniqueId) => {
+    if (techniqueId && techniqueId === selectedTechnique && viewMode === 'coverage') {
+      clearTechniqueSelection()
+      return
+    }
+    if (!techniqueId) {
+      clearTechniqueSelection()
+      return
+    }
+    // Technique selection belongs on the ATT&CK navigator (opens hunt pack there).
+    setViewModeState('coverage')
     setSelectedTechniqueState(techniqueId)
     setSelectedPackIdState(null)
-    writeUrl({ technique: techniqueId, pack: null })
-    if (techniqueId) setRailOpen(true)
-  }, [writeUrl])
+    writeUrl({ view: 'coverage', technique: techniqueId, pack: null })
+    setRailOpen(true)
+  }, [writeUrl, selectedTechnique, clearTechniqueSelection, viewMode])
 
   const openPack = useCallback((techniqueId, packId) => {
+    // Library opens a pack in-context; jump to coverage only when a technique
+    // is supplied and keep the panel coverage-scoped.
+    setViewModeState('coverage')
     setSelectedTechniqueState(techniqueId)
     setSelectedPackIdState(packId)
-    writeUrl({ technique: techniqueId, pack: packId })
-    setRailOpen(true)
+    writeUrl({ view: 'coverage', technique: techniqueId, pack: packId })
+    setRailOpen(Boolean(techniqueId))
   }, [writeUrl])
 
-  const closeRail = useCallback(() => setRailOpen(false), [])
+  const closeRail = useCallback(() => {
+    clearTechniqueSelection()
+  }, [clearTechniqueSelection])
 
   useEffect(() => {
-    if (viewMode === 'library') return undefined
+    if (viewMode !== 'coverage') return undefined
     function onKey(e) {
       if (e.key === 'Escape') closeRail()
     }
@@ -139,30 +178,31 @@ export default function Forge() {
 
   const handleRetryCoverage = useCallback(() => setReloadKey(k => k + 1), [])
 
-  // A saved pack flips the technique to "yours" — refetch keeps the map honest.
   const handlePackSaved = useCallback(() => {
     setReloadKey(k => k + 1)
   }, [])
 
   const handleScenarioGenerate = useCallback((cveId, techniqueId) => {
     setGeneratingFromScenario(cveId)
-    setSelectedTechnique(techniqueId)
+    setViewModeState('coverage')
+    setSelectedTechniqueState(techniqueId)
+    setSelectedPackIdState(null)
+    writeUrl({ view: 'coverage', technique: techniqueId, pack: null })
+    setRailOpen(Boolean(techniqueId))
     generateHuntPack(cveId, techniqueId)
       .then(() => handlePackSaved())
       .catch(err => notifyApiError(err))
       .finally(() => setGeneratingFromScenario(null))
-  }, [handlePackSaved, setSelectedTechnique])
+  }, [handlePackSaved, writeUrl])
 
   const handlePackDeleted = useCallback((pack) => {
     if (selectedPackId === pack.id) {
-      setSelectedTechniqueState(null)
-      setSelectedPackIdState(null)
-      writeUrl({ technique: null, pack: null })
+      clearTechniqueSelection()
     }
     setReloadKey(k => k + 1)
-  }, [selectedPackId, writeUrl])
+  }, [selectedPackId, clearTechniqueSelection])
 
-  const counts = coverage?.meta?.counts
+  const showHuntPack = viewMode === 'coverage' && railOpen && Boolean(selectedTechnique)
 
   return (
     <div className="forge" role="region" aria-label="Forge detection engineering">
@@ -176,7 +216,7 @@ export default function Forge() {
         </p>
       </header>
 
-      <div className={`fg-shell${railOpen ? ' fg-shell--detail-open' : ''}`}>
+      <div className={`fg-shell${showHuntPack ? ' fg-shell--detail-open' : ''}`}>
         <nav className="fg-nav" aria-label="Forge views">
           <Tabs value={viewMode} onValueChange={setViewMode} className="fg-nav-tabs-wrap">
             <TabsList className="fg-nav-tabs mono" aria-label="Forge view">
@@ -191,20 +231,6 @@ export default function Forge() {
               ))}
             </TabsList>
           </Tabs>
-
-          {counts && (
-            <div className="fg-counts fg-counts-nav" role="status" aria-label="Coverage summary">
-              <span className="fg-count mono">
-                <StatusChip status="gap" /> {counts.gap}
-              </span>
-              <span className="fg-count mono">
-                <StatusChip status="community" /> {counts.community}
-              </span>
-              <span className="fg-count mono">
-                <StatusChip status="yours" /> {counts.yours}
-              </span>
-            </div>
-          )}
           {profileStack && (
             <Checkbox
               id="forge-stack-only-nav"
@@ -214,10 +240,6 @@ export default function Forge() {
               className="fg-stack-toggle fg-stack-toggle-nav mono"
             />
           )}
-          <details className="severity-legend-feed forge-status-legend-details">
-            <summary className="severity-legend-feed-summary mono">STATUS LEGEND</summary>
-            <ForgeStatusLegend />
-          </details>
         </nav>
 
         <div className="fg-workspace">
@@ -278,7 +300,7 @@ export default function Forge() {
           )}
         </div>
 
-        {railOpen && (
+        {showHuntPack && (
           <button
             type="button"
             className="fg-rail-backdrop"
@@ -287,9 +309,9 @@ export default function Forge() {
           />
         )}
         <aside
-          className={`fg-detail${railOpen ? ' fg-detail-open' : ''}`}
+          className={`fg-detail${showHuntPack ? ' fg-detail-open' : ''}`}
           aria-label="Hunt pack detail"
-          hidden={!railOpen}
+          hidden={!showHuntPack}
         >
           <div className="fg-detail-head">
             <h2 className="fg-section-label mono">HUNT PACK</h2>

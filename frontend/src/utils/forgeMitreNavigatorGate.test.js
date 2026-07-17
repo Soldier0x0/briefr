@@ -34,23 +34,28 @@ describe('PM-4d Forge MITRE navigator gate', () => {
     assert.match(view, /fg-tech-tree-toggle--spacer/)
   })
 
-  it('hunt pack docks below workspace; navigator uses full width', () => {
+  it('top nav, coverage-scoped hunt pack, toggle deselect, no status chrome', () => {
     const forge = read(FORGE)
     assert.match(forge, /label:\s*'ATT&CK navigator'/)
-    assert.match(forge, /fg-shell--detail-open/)
-    assert.match(forge, /hidden=\{!railOpen\}/)
+    assert.match(forge, /showHuntPack/)
+    assert.match(forge, /viewMode === 'coverage'/)
+    assert.match(forge, /clearTechniqueSelection/)
+    assert.match(forge, /techniqueId === selectedTechnique/)
+    assert.doesNotMatch(forge, /StatusChip/)
+    assert.doesNotMatch(forge, /ForgeStatusLegend/)
+    assert.doesNotMatch(forge, /fg-counts-nav/)
     const css = read(CSS)
     assert.match(css, /\.fg-navigator-scroll/)
     assert.match(css, /\.fg-tactic-col-wrap/)
-    assert.match(css, /grid-template-columns:\s*var\(--fg-nav-w\)/)
-    assert.match(css, /\.fg-detail\[hidden\]/)
+    assert.match(css, /flex-direction:\s*column/)
+    assert.match(css, /\.fg-nav-tabs \{[\s\S]*flex-direction:\s*row/)
+    assert.doesNotMatch(css, /grid-template-columns:\s*var\(--fg-nav-w\)/)
     assert.doesNotMatch(css, /\.fg-tactic-col--expanded/)
     assert.doesNotMatch(css, /\.fg-tactic-expand\b/)
   })
 
   it('Forge.css brace-balanced (guards lightningcss @keyframes minify crash)', () => {
     const css = read(CSS)
-    // Ignore braces inside comments/strings so `/* { */` or content: "}" cannot false-fail.
     const cleanCss = css
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/'[^']*'/g, '')
@@ -62,7 +67,6 @@ describe('PM-4d Forge MITRE navigator gate', () => {
       assert.ok(bal >= 0, 'extra closing brace')
     }
     assert.equal(bal, 0)
-    // Regression: #652 merge dropped `}` before `.fg-tech-node-name`
     assert.match(
       css,
       /\.fg-tech-node-active \.fg-tech-node-id \{\s*color: var\(--accent-selected\);\s*\}/,

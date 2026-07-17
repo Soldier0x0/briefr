@@ -12,6 +12,22 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — Forge UX: top nav, toggle deselect, coverage-only hunt pack
+
+**What / RCA:** (1) No way to deselect a technique. (2) Hunt pack followed
+other Forge views because `technique=` stayed in the URL and the sync
+effect re-opened the panel after `setViewMode` closed it. (3) Left nav +
+GAP/COMMUNITY/YOURS chrome crowded the matrix.
+
+**Fix:** Top horizontal view tabs; remove status counts/legend; click same
+technique to deselect (✕ / Esc also clear); hunt pack only when
+`view=coverage` with a selection — leaving coverage clears technique URL
+state.
+
+**Next:** Q1–Q5 (activate) → E1–E6.
+
+---
+
 ## 2026-07-17 — Hotfix: Forge.css missing `}` broke prod build
 
 **RCA:** `#652` on `main` dropped the closing `}` of

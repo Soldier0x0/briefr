@@ -82,7 +82,7 @@
 | **PM-4a** Admin → Security posture (`?p=securityposture`) — Overview / System Architecture / Trust Boundaries / Attack Surface / Risks; analyst read-only | |
 | **PM-4b** Analyst ARCH: no Security Decisions / Reviews / Components nav; no corpus footer (API/YAML kept) | |
 | **PM-4c** ARCH header tab removed; `/security-architecture` redirects to Admin Security posture | |
-| **PM-4d** FORGE MITRE ATT&CK navigator — matrix-style tactic columns (id + name; no K/GAP chips on cells), sub-technique trees stay open until collapsed, hunt pack docks below so the matrix uses full width | |
+| **PM-4d** FORGE MITRE ATT&CK navigator — top view tabs; matrix-style tactic columns (id + name); click toggles selection; hunt pack only on coverage (clears when leaving); no GAP/COMMUNITY/YOURS chrome | |
 | **PM-4e** Drawer MITRE → Forge navigator; hunt-pack CVE → drawer | |
 | Detection composer **DC-1…DC-4** — evidence pack, emit Sigma/SIEM/YARA, Detect UI + Forge hunt-pack generate share engine (no LLM) | — |
 | **Forge** threat scenarios, proof bench, KEV backlog, IOC watchlist (V1.5 #373–#376) | `IMAGE_BRIEFS` tail; MkDocs |
