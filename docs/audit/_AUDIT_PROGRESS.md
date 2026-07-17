@@ -37,7 +37,7 @@
 | 2 | Backend/Frontend/DB/API/State-Mgmt Architecture | [PHASE_02_architecture.md](PHASE_02_architecture.md) | ✅ DONE (pushed) |
 | 3 | Correlation / Risk / Detection / AI / Scheduler / Caching engines | [PHASE_03_engines.md](PHASE_03_engines.md) | ✅ DONE (pushed) |
 | 4 | Functional/E2E/Feature-completeness/Integration/Regression/Data-integrity | [PHASE_04_testing.md](PHASE_04_testing.md) | ✅ DONE (pushed) |
-| 5 | Product/UX/UI/Design-system/A11y/Responsive/Forms/Charts (full list) | `PHASE_05_product_ux.md` | ⬜ TODO |
+| 5 | Product/UX/UI/Design-system/A11y/Responsive/Forms/Charts (full list) | [PHASE_05_product_ux.md](PHASE_05_product_ux.md) | ✅ DONE (pushed) |
 | 6 | Performance / DB-query / FE / BE / Scalability / Resource | `PHASE_06_performance.md` | ⬜ TODO |
 | 7 | Security / Auth / RBAC / Input-val / API-sec / Secrets / Privacy / Supply-chain | `PHASE_07_security.md` | ⬜ TODO |
 | 8 | Logging / Monitoring / Observability / Alerting / Ops / Config / Backup / DR / Deploy / Upgrade | `PHASE_08_operations.md` | ⬜ TODO |
