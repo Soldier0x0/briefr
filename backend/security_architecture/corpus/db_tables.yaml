@@ -351,6 +351,24 @@ tables:
   source_refs:
   - type: table
     ref: software_catalog
+- id: stack_backfill_checkpoints
+  title: stack_backfill_checkpoints
+  summary: Database table defined in db/init.py (name=stack_backfill_checkpoints).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: stack_backfill_checkpoints
+- id: stack_backfill_runs
+  title: stack_backfill_runs
+  summary: Database table defined in db/init.py (name=stack_backfill_runs).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: stack_backfill_runs
 - id: sync_state
   title: sync_state
   summary: Database table defined in db/init.py (name=sync_state).

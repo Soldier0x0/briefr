@@ -434,6 +434,53 @@ async def fetch_nvd_cve_updates(
 
 
 
+async def fetch_cves_keyword_page(
+    keyword: str,
+    *,
+    start_index: int = 0,
+    api_key: str | None = None,
+    results_per_page: int = RESULTS_PER_PAGE,
+) -> tuple[list[dict], int, str | None]:
+    """Fetch one NVD page for keywordSearch (Tier A stack backfill).
+
+    Returns (parsed_cves, total_results, error_class).
+    error_class is ``not_found`` | ``rate_limited`` | ``http_5xx`` | ``error`` | None.
+    """
+    kw = (keyword or "").strip()
+    if len(kw) < 2:
+        return [], 0, "not_found"
+    params = {
+        "keywordSearch": kw,
+        "resultsPerPage": max(1, min(int(results_per_page), RESULTS_PER_PAGE)),
+        "startIndex": max(0, int(start_index)),
+    }
+    client = get_pooled_client()
+    try:
+        page = await _fetch_page(client, params, api_key)
+    except httpx.HTTPStatusError as exc:
+        code = exc.response.status_code
+        if code == 404:
+            return [], 0, "not_found"
+        if code == 429:
+            return [], 0, "rate_limited"
+        if code >= 500:
+            return [], 0, "http_5xx"
+        return [], 0, "error"
+    except Exception:
+        return [], 0, "error"
+
+    total = int(page.get("totalResults") or 0)
+    cves: list[dict] = []
+    for item in page.get("vulnerabilities") or []:
+        if _nvd_rejected_cve_id(item):
+            continue
+        parsed = _parse_cve_item(item)
+        if parsed:
+            cves.append(parsed)
+    await record_api_call("nvd", 1)
+    return cves, total, None
+
+
 async def fetch_cve_by_id(cve_id: str, api_key: str | None = None) -> dict | None:
     """Fetch a single CVE by ID from the NVD API."""
     params: dict = {"cveId": cve_id}

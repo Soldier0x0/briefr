@@ -153,6 +153,12 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 display_label="CPE catalog sync interval", unit="h"),
     ConfigField("CPE_CATALOG_MAX_PAGES", "ingest", "int", min=1,
                 help_text="Max NVD CPE API pages per sync run (checkpointed; default 10)."),
+    ConfigField("STACK_BACKFILL_ENABLED", "ingest", "bool", restart_required=True,
+                help_text="Enable Agree Tier-A historical CVE backfill for shallow stack coverage (default off)."),
+    ConfigField("STACK_BACKFILL_MAX_PRODUCTS", "ingest", "int", min=1,
+                help_text="Max products per Tier A backfill run."),
+    ConfigField("STACK_BACKFILL_MAX_CVES", "ingest", "int", min=100,
+                help_text="Max CVEs upserted per Tier A backfill run."),
 
     # ── ML toggles ───────────────────────────────────────────────────────────
     ConfigField("EMBEDDINGS_ENABLED", "ml", "bool", restart_required=True,

@@ -12,6 +12,18 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — Q4 Stack Tier A backfill + gap banner
+
+**What:** `stack_backfill_runs` / checkpoints (Alembic `031`). Coverage API +
+Agree/resume under `STACK_BACKFILL_ENABLED` (default off). Worker fetches NVD
+`keywordSearch` pages, upserts CVEs, applies EPSS+KEV; never OTX/correlation.
+Procrastinate task `jobs:stack_backfill` when enabled, else in-process kick.
+FEED gap banner with ETA + Agree/Resume.
+
+**Next:** Q5 EPSS identity skip.
+
+---
+
 ## 2026-07-17 — Q3 CPE software catalog + autocomplete
 
 **What:** NVD CPE 2.3 dictionary sync into `software_catalog` (Alembic `030`),

@@ -463,3 +463,21 @@
     padding: 6px 12px;
   }
 }
+
+.stack-gap-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3);
+  border: 1px solid var(--border-active);
+  background: var(--surface-1);
+  border-radius: var(--radius-sm);
+}
+.stack-gap-banner-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  flex: 1;
+  min-width: 12rem;
+}
