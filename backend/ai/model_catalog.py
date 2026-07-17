@@ -34,21 +34,17 @@ def env_model(key: str, default: str) -> str:
     return os.environ.get(key, default).strip() or default
 
 
+# OpenRouter :free defaults — Gemini Flash-Lite :free IDs were removed from the
+# catalog (2026-07); use a live $0 model. Override via OPENROUTER_MODEL_*.
+OPENROUTER_FREE_DEFAULT = "google/gemma-4-31b-it:free"
+
+
 def openrouter_model(task: LLMTask) -> str:
     if task == "pdf_summary":
-        return env_model(
-            "OPENROUTER_MODEL_PDF",
-            "google/gemini-2.0-flash-lite-001",
-        )
+        return env_model("OPENROUTER_MODEL_PDF", OPENROUTER_FREE_DEFAULT)
     if task == "detection_context":
-        return env_model(
-            "OPENROUTER_MODEL_DETECTION",
-            "google/gemini-2.0-flash-lite-001",
-        )
-    return env_model(
-        "OPENROUTER_MODEL_PRODUCT",
-        "google/gemini-2.0-flash-lite-001",
-    )
+        return env_model("OPENROUTER_MODEL_DETECTION", OPENROUTER_FREE_DEFAULT)
+    return env_model("OPENROUTER_MODEL_PRODUCT", OPENROUTER_FREE_DEFAULT)
 
 
 def cerebras_model() -> str:

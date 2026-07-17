@@ -371,11 +371,11 @@ required. Admin UI should show "single-provider mode" explicitly.
 |---------|---------|----------|
 | `GROQ_MODEL` | `openai/gpt-oss-20b` | product_extraction, detection_context |
 | `GROQ_MODEL_SUMMARY` | `openai/gpt-oss-120b` | pdf_summary |
-| `GEMINI_MODEL` | `gemini-2.0-flash-lite` | all tasks via `gemini_model()` |
+| `GEMINI_MODEL` | `gemini-2.5-flash-lite` | all tasks via `gemini_model()` |
 | `CEREBRAS_MODEL` | `gpt-oss-120b` | product_extraction, pdf_summary |
-| `OPENROUTER_MODEL_PRODUCT` | `google/gemini-2.0-flash-lite-001:free` | product_extraction |
-| `OPENROUTER_MODEL_PDF` | `google/gemini-2.0-flash-lite-001:free` | pdf_summary |
-| `OPENROUTER_MODEL_DETECTION` | `google/gemini-2.0-flash-lite-001:free` | detection_context |
+| `OPENROUTER_MODEL_PRODUCT` | `google/gemma-4-31b-it:free` | product_extraction |
+| `OPENROUTER_MODEL_PDF` | `google/gemma-4-31b-it:free` | pdf_summary |
+| `OPENROUTER_MODEL_DETECTION` | `google/gemma-4-31b-it:free` | detection_context |
 | `EMBEDDINGS_MODEL` | `BAAI/bge-small-en-v1.5` | **Separate** embedding catalog row |
 
 ---

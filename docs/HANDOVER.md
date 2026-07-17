@@ -12,6 +12,26 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — LLM free-model defaults (stale OpenRouter/Gemini)
+
+**What / RCA:** AI Operations showed Product extraction failing on OpenRouter
+`google/gemini-2.0-flash-lite-001:free` (`model not found`) and Gemini
+`gemini-2.0-flash-lite` (`unknown error`, multi-minute latency). Live
+OpenRouter `/api/v1/models` (2026-07-17) has **no** Gemini Flash-Lite IDs
+(free or paid); Google docs mark `gemini-2.0-flash-lite` deprecated.
+Groq `openai/gpt-oss-20b` remains valid (occasional `no content returned` is
+empty-body handling, not a bad model id).
+
+**Fix:** Defaults → OpenRouter `google/gemma-4-31b-it:free`, Gemini
+`gemini-2.5-flash-lite`; update `.env.example`, catalog tests, PRODUCT_STATUS.
+**Operator:** clear stale `OPENROUTER_MODEL_*` / `GEMINI_MODEL` in env or
+Admin config if still set to the old IDs — env/DB overrides win over code
+defaults.
+
+**Next:** Q1–Q5 (activate) → E1–E6. Parked: STIX, V2 compose, G0–G4.
+
+---
+
 ## 2026-07-16 — DC-4 Forge hunt packs use detection composer
 
 **What:** `POST /api/hunt-packs/generate` uses `compose_detection_evidence` + `emit_composed_detection` (`include_community=False` — no GitHub on Forge path). Artifact evidence injects into Sigma/SIEM; response adds `compose_basis` + `evidence_summary`. Detection composer program (DC-1…DC-4) complete.

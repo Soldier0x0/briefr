@@ -55,6 +55,30 @@ def test_task_chain_product_extraction_uses_groq_model(monkeypatch):
     ]
 
 
+def test_task_chain_defaults_use_current_free_models(monkeypatch):
+    """OpenRouter Gemini Flash-Lite :free and Gemini 2.0 Flash-Lite are gone/deprecated."""
+    for key in (
+        "GROQ_MODEL",
+        "GROQ_MODEL_SUMMARY",
+        "CEREBRAS_MODEL",
+        "GEMINI_MODEL",
+        "OPENROUTER_MODEL_PRODUCT",
+        "OPENROUTER_MODEL_PDF",
+        "OPENROUTER_MODEL_DETECTION",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    product = router._task_chain("product_extraction")
+    by_provider = {step.provider: step.model for step in product}
+    assert by_provider["groq"] == "openai/gpt-oss-20b"
+    assert by_provider["openrouter"] == "google/gemma-4-31b-it:free"
+    assert by_provider["openrouter"].endswith(":free")
+    assert by_provider["gemini"] == "gemini-2.5-flash-lite"
+    assert "gemini-2.0" not in by_provider["gemini"]
+    assert "flash-lite-001" not in by_provider["openrouter"]
+    pdf = router._task_chain("pdf_summary")
+    assert {s.provider: s.model for s in pdf}["openrouter"] == "google/gemma-4-31b-it:free"
+
+
 def test_task_chain_detection_context_includes_cerebras(monkeypatch):
     chain = router._task_chain("detection_context")
     providers = [step.provider for step in chain]
