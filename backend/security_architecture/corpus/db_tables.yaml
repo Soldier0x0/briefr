@@ -9,6 +9,15 @@ tables:
   source_refs:
   - type: table
     ref: ai_operations
+- id: api_call_events
+  title: api_call_events
+  summary: Database table defined in db/init.py (name=api_call_events).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: api_call_events
 - id: api_usage
   title: api_usage
   summary: Database table defined in db/init.py (name=api_usage).

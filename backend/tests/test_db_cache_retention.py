@@ -98,6 +98,7 @@ def test_run_retention_cleanup_returns_counts(tmp_path, monkeypatch):
                 "ai_operations",
                 "webhook_delivery_log",
                 "audit_log",
+                "api_call_events",
                 "resource_metrics",
             }
             assert all(isinstance(v, int) for v in counts.values())

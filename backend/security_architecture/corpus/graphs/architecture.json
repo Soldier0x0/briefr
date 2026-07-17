@@ -453,7 +453,7 @@
       "label": "routers.admin",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 65,
+      "endpoint_count": 67,
       "source_refs": [
         {
           "type": "file",
@@ -717,6 +717,18 @@
         {
           "type": "table",
           "ref": "ai_operations"
+        }
+      ]
+    },
+    {
+      "id": "table:api_call_events",
+      "label": "api_call_events",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "api_call_events"
         }
       ]
     },
@@ -3204,6 +3216,12 @@
       "id": "job:weekly_mitre_refresh->table:sync_state",
       "source": "job:weekly_mitre_refresh",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin->table:api_call_events",
+      "source": "routers-admin",
+      "target": "table:api_call_events",
       "kind": "references_table"
     },
     {

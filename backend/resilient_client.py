@@ -28,6 +28,21 @@ from api_queue import (
 
 logger = logging.getLogger(__name__)
 
+
+_meter_tasks: set[asyncio.Task] = set()
+
+
+def _meter_attempt(**kwargs) -> None:
+    """Best-effort per-attempt metering (Q2). Never blocks the HTTP caller."""
+    try:
+        from api_metering import record_outbound_attempt
+
+        task = asyncio.create_task(record_outbound_attempt(**kwargs))
+        _meter_tasks.add(task)
+        task.add_done_callback(_meter_tasks.discard)
+    except Exception as exc:
+        logger.warning("metering hook failed: %s", exc)
+
 DEFAULT_TIMEOUT = 30.0
 DEFAULT_RETRIES = 2
 RETRY_BACKOFF_SECONDS = 1.5
@@ -161,6 +176,7 @@ async def _execute_request_attempt(
     last_exc: Exception | None = None
 
     for attempt in range(retries + 1):
+        started = time.perf_counter()
         try:
             response = await client.request(
                 method,
@@ -173,11 +189,30 @@ async def _execute_request_attempt(
             )
         except httpx.HTTPError as exc:
             last_exc = exc
+            _meter_attempt(
+                source=source,
+                method=method,
+                url=url,
+                status_code=None,
+                ok=False,
+                latency_ms=int((time.perf_counter() - started) * 1000),
+                error_class=type(exc).__name__,
+            )
             if attempt < retries:
                 await asyncio.sleep(RETRY_BACKOFF_SECONDS * (2**attempt))
                 continue
             _record_failure(source, f"{type(exc).__name__}: {exc}")
             raise
+
+        _meter_attempt(
+            source=source,
+            method=method,
+            url=url,
+            status_code=response.status_code,
+            ok=not response.is_error,
+            latency_ms=int((time.perf_counter() - started) * 1000),
+            error_class=None if not response.is_error else f"HTTP{response.status_code}",
+        )
 
         if response.status_code in RETRYABLE_STATUS:
             last_exc = httpx.HTTPStatusError(

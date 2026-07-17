@@ -160,6 +160,14 @@ terms:
   origin: generated
   term: postgresql
   source: declared runtime component
+- id: self-stack-procrastinate
+  title: procrastinate
+  summary: BRIEFR dependency term derived from backend/requirements.txt.
+  owner: platform
+  status: active
+  origin: generated
+  term: procrastinate
+  source: backend/requirements.txt
 - id: self-stack-psutil
   title: psutil
   summary: BRIEFR dependency term derived from backend/requirements.txt.

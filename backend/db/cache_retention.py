@@ -326,6 +326,18 @@ async def purge_old_audit_log(
     return await _rows_deleted(db, cursor)
 
 
+API_CALL_EVENTS_RETENTION_DAYS = 30
+
+
+async def purge_old_api_call_events(
+    db: DbConnection,
+    retention_days: int = API_CALL_EVENTS_RETENTION_DAYS,
+) -> int:
+    from db.api_metering import purge_api_call_events
+
+    return await purge_api_call_events(db, retain_days=retention_days)
+
+
 async def run_retention_cleanup(db: DbConnection) -> dict[str, int]:
     """Sweep stale cache/overlay rows. Caller commits."""
     otx = await purge_stale_otx_tables(db)
@@ -337,6 +349,7 @@ async def run_retention_cleanup(db: DbConnection) -> dict[str, int]:
         "ai_operations": await purge_old_ai_operations(db),
         "webhook_delivery_log": await purge_old_webhook_delivery_log(db),
         "audit_log": await purge_old_audit_log(db),
+        "api_call_events": await purge_old_api_call_events(db),
         "resource_metrics": await purge_old_resource_metrics(db),
         **otx,
     }

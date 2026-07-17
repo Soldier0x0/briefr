@@ -199,11 +199,34 @@ async def init_db() -> None:
                 date_utc TEXT NOT NULL,
                 month_utc TEXT NOT NULL,
                 count INTEGER DEFAULT 0,
+                last_called_at TEXT,
                 PRIMARY KEY (service, date_utc)
             );
 
             CREATE INDEX IF NOT EXISTS idx_api_usage_month ON api_usage(month_utc);
             CREATE INDEX IF NOT EXISTS idx_api_usage_date ON api_usage(date_utc);
+
+            CREATE TABLE IF NOT EXISTS api_call_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts TEXT NOT NULL,
+                source TEXT NOT NULL,
+                pacing_key TEXT,
+                method TEXT NOT NULL,
+                host TEXT,
+                path_template TEXT,
+                status_code INTEGER,
+                ok INTEGER NOT NULL DEFAULT 0,
+                latency_ms INTEGER,
+                actor_type TEXT,
+                actor_id TEXT,
+                job_id TEXT,
+                run_id TEXT,
+                queue_task TEXT,
+                request_id TEXT,
+                error_class TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_api_call_events_ts ON api_call_events(ts);
+            CREATE INDEX IF NOT EXISTS idx_api_call_events_source_ts ON api_call_events(source, ts);
 
             CREATE TABLE IF NOT EXISTS sync_state (
                 key TEXT PRIMARY KEY,

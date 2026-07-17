@@ -132,6 +132,8 @@ EXPECTED_ROUTES = [
     ("POST", "/api/admin/database/test-connection"),
     ("POST", "/api/admin/database/migrate"),
     ("GET", "/api/admin/database/migrate/status"),
+    ("GET", "/api/admin/api-usage/metering"),
+    ("GET", "/api/admin/jobs/outbound"),
     ("GET", "/api/admin/scheduler"),
     ("POST", "/api/admin/scheduler/pause"),
     ("POST", "/api/admin/scheduler/resume"),
