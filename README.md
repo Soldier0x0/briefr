@@ -386,7 +386,7 @@ BRIEFR collects no personal data beyond your self-hosted login account, uses htt
 
 ---
 
-## Known limitations (v1.1 beta)
+## Known limitations (v1.5.0)
 
 - Single-node PostgreSQL — not designed for concurrent multi-tenant writes at scale without connection pooling tuning
 - Built-in app login with server sessions; admin/refresh routes require the `admin` role (the interim shared admin-key gate was removed in Sprint A0)

@@ -12,6 +12,45 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — Audit P0 batch: JWT fail-closed + AsyncState error surfacing + README version
+
+**What:** First slice of the `PHASE_11_readiness.md` P0 release-blocker list (audit #661).
+- **F7.1 (JWT, HIGH):** reordered `settings.py` so the production guard runs **before**
+  the dev/test auto-generation block. Previously the auto-gen always populated
+  `jwt_secret`, making `if is_production and not jwt_secret: raise` dead code — prod
+  silently minted a per-replica secret. Now `BRIEFR_ENV=production` with no `JWT_SECRET`
+  raises + exits non-zero. Regression: `tests/test_jwt_secret_guard.py` (subprocess import
+  across prod/dev × secret/no-secret). **Operator action:** production boxes must set
+  `JWT_SECRET` (`openssl rand -hex 32`) or the app won't boot; all replicas share one value.
+- **F5.6 (AsyncState, MEDIUM):** `AsyncState.jsx` no longer gates the error UI on the
+  caller's `empty` flag. Derives `hasData` internally; a first-load error with no data now
+  always renders `ErrorState` (was silently rendering an empty body). Refresh error over
+  existing data keeps the data + a non-blocking `compact` ErrorState. Gate test added.
+- **F10.3 (README, MEDIUM):** "Known limitations (v1.1 beta)" → "(v1.5.0)".
+
+**Verification:** frontend `npm run build` green; full UI unit suite 186/186 green
+(incl. new `AsyncState.test.js`). **Backend suite NOT runnable in this cloud session** —
+the pytest env has none of the backend deps (no `dotenv`/`pydantic`/`fastapi`/`pyrage`,
+no pip in the overlay); the JWT change + test were verified by construction. Run
+`cd backend && pytest tests/test_jwt_secret_guard.py -q` on a real dev box before sign-off.
+
+**F10.1 (license, HIGH) — DONE (follow-up commit).** Reconciled every active-tree
+"proprietary and confidential" / "Proprietary Software" claim to AGPL-3.0-or-later
+(the repo's actual `LICENSE`/SPDX choice, Track F2). Fixed: 5 doc headers
+(`API_REFERENCE`, `OPERATIONS`, `ONBOARDING`, `SYSTEM_DESIGN`, `planning/ROADMAP`);
+frontend UI footers (`App.jsx`, `AboutModal.jsx`, `LegalPage.jsx`); export footers
+(`exportCommon.js`, `report.js`). `docs/archive/**` left untouched per CLAUDE.md
+(never edit archived docs) — those still say proprietary but are historical. AGPL does
+not foreclose a later open-core model. Grep confirms no active source claims proprietary.
+
+**Still pending:** F4.1 CI green — reframe needed since GitHub Actions quota is
+exhausted (local verification is the real gate; self-hosted runner is the zero-cost
+enforcement option).
+
+**Next:** remaining audit P1 items; standalone idempotency audit (docs/audit/).
+
+---
+
 ## 2026-07-17 — Q5 EPSS file-identity skip (Phase Q complete)
 
 **What:** When FIRST EPSS CSV.GZ `sha256` (+ `score_date` header) matches

@@ -37,7 +37,14 @@ export default function AsyncState({
     )
   }
 
-  if (error && empty) {
+  // Stale-while-revalidate keeps existing data on screen; anything else is a
+  // no-data state. Do NOT rely on the caller's `empty` flag to surface errors —
+  // a first-load failure often leaves data null with empty=false (F5.6).
+  const hasData = data != null && (!Array.isArray(data) || data.length > 0)
+
+  // First-load / no-data error: always surface it. Never silently render an
+  // empty body — every async view needs a designed error state (CLAUDE.md).
+  if (error && !hasData) {
     return <ErrorState error={error} onRetry={onRetry} {...rest} />
   }
 
@@ -53,6 +60,8 @@ export default function AsyncState({
       aria-busy={refreshing || undefined}
       {...rest}
     >
+      {/* Refresh failure over existing data: keep the data, add a non-blocking notice. */}
+      {error && <ErrorState error={error} onRetry={onRetry} compact />}
       {body}
     </div>
   )

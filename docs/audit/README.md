@@ -26,6 +26,12 @@ and Quick-Win/Architectural classification.
 **Status: all 11 phases complete.** Program score (self-hosted lens): **7.4/10**. Start with the
 five P0 release-blockers in [PHASE_11_readiness.md](PHASE_11_readiness.md).
 
+## Supplementary focused audits
+
+| Topic | Document | Score |
+|-------|----------|-------|
+| Idempotency & exactly-once (scheduler jobs, durable queue, webhooks, ingest) | [IDEMPOTENCY_AUDIT.md](IDEMPOTENCY_AUDIT.md) | 7.5/10 |
+
 ## Scoring key
 Priority: **Critical / High / Medium / Low**. Each finding is **Quick Win** (hours, low
 risk) or **Architectural Change** (structural, higher effort).

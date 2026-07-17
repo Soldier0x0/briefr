@@ -1023,7 +1023,7 @@ function AppLayout({
                 <div className="footer-left">
                   <span>BRIEFR</span> // CVE intelligence platform
                   <span className="footer-copyright mono">
-                    &copy; 2026 BRIEFR &middot; Proprietary &middot; All Rights Reserved
+                    &copy; 2026 BRIEFR &middot; AGPL-3.0-or-later
                   </span>
                 </div>
                 <nav className="footer-legal" aria-label="Legal links">

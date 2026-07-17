@@ -55,7 +55,7 @@
 | Layer | What | Notes |
 |-------|------|-------|
 | **Edge (optional)** | Cloudflare Tunnel + Zero Trust email OTP | Protects public hostname; not embedded in FastAPI |
-| **Application** | Username/password + server sessions; admin routes check the `admin` role | Portable self-host; CF JWT middleware **dropped** (#93); legacy admin key **removed** (Sprint A0 — it failed open when unset) |
+| **Application** | Username/password + server sessions; admin routes check the `admin` role | Portable self-host; CF JWT middleware **dropped** (#93); legacy admin key **removed** (Sprint A0 — it failed open when unset). Production now **fails closed** without `JWT_SECRET` (guard reordered ahead of dev auto-generation — F7.1). |
 
 ---
 

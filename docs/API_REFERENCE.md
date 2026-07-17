@@ -1,6 +1,6 @@
 # BRIEFR API Reference
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
+Copyright © 2026 Sai Harsha Vardhan. Licensed under the GNU Affero General Public License v3.0 or later (`SPDX-License-Identifier: AGPL-3.0-or-later`); see the repository `LICENSE` for the full text.
 
 **Base URL:** `/api` (proxied from Vite dev server at `http://localhost:5173/api` → `http://localhost:8000/api`)  
 **Auth:** built-in app login (`briefr_at` / `briefr_rt` cookies). **Analyst routes** (`/api/*` except health, auth, wallboard, and dev OpenAPI) require a valid session — 401 without login (#441). **Ingest** `POST /api/refresh*` and all `/api/admin/*` routes require the `admin` role. See [Authentication](#authentication) below.  

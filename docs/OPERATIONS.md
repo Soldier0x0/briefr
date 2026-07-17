@@ -1,6 +1,6 @@
 # BRIEFR — Operations & Deploy Compatibility
 
-Copyright © 2026 Sai Harsha Vardhan. All rights reserved. Proprietary and confidential.
+Copyright © 2026 Sai Harsha Vardhan. Licensed under the GNU Affero General Public License v3.0 or later (`SPDX-License-Identifier: AGPL-3.0-or-later`); see the repository `LICENSE` for the full text.
 
 **Last updated:** 2026-07-11  
 **Status:** Planning — ops contract for releases V1.2–V2.0
@@ -62,7 +62,7 @@ These env vars must remain supported across releases (defaults preserved):
 | `BACKUP_RETENTION_COUNT` | Max archives |
 | `BACKUP_AGE_KEY_FILE` | age identity for archive encryption (empty = plaintext) |
 | `BRIEFR_ENV` | `production` / `development` |
-| `JWT_SECRET` | Signs login session tokens (required in production; admin routes need a logged-in admin) |
+| `JWT_SECRET` | Signs login session tokens. **Required in production — the app fails to start (`RuntimeError`, non-zero exit) if `BRIEFR_ENV=production` and this is unset.** Generate with `openssl rand -hex 32`; all replicas must share the same value. Dev/test auto-generates and persists to `.env`. |
 | `ALLOWED_ORIGINS` | CORS |
 | `GITHUB_TOKEN`, IOC keys | Optional enrichment |
 
