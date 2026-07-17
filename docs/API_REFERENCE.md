@@ -1804,6 +1804,9 @@ List recent **Procrastinate** durable jobs (Q1). Admin auth required.
 
 When `PROCRASTINATE_ENABLED=0` (default), `enabled` is false and `jobs` is empty. No args/payloads are returned (allowlisted fields only).
 
+### GET /api/admin/api-usage/metering
+Params: `hours` (1–168, default 24). Returns outbound call metering from `api_call_events` (Q2): `{ok, hours, by_source: [{source, calls, ok_calls, last_called_at}], by_actor: [{actor_type, calls}], usage_rollups}`. Every `resilient_request` **attempt** is counted (retries included). Disable with `API_CALL_EVENTS_ENABLED=0`. Events retained 30 days via `cache_retention_cleanup`.
+
 ### POST /api/admin/scheduler/run
 Body `{job_id}`. Triggers a scheduler job immediately. Returns `409` if job lock is held, `400` if job_id unknown.
 Audit: `scheduler.run.{job_id}`.

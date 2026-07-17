@@ -19,6 +19,9 @@ endpoints:
   path: /api/admin/api-keys/health/run
   component_id: routers-admin
 - method: GET
+  path: /api/admin/api-usage/metering
+  component_id: routers-admin
+- method: GET
   path: /api/admin/audit-log
   component_id: routers-admin
 - method: GET
@@ -107,6 +110,9 @@ endpoints:
   component_id: routers-admin
 - method: DELETE
   path: /api/admin/ioc-cache/{value:path}
+  component_id: routers-admin
+- method: GET
+  path: /api/admin/jobs/outbound
   component_id: routers-admin
 - method: GET
   path: /api/admin/logs

@@ -26,6 +26,7 @@ const SECTIONS = [
   { id: 'scheduler_cron', title: 'Scheduler intervals — cron & timezone', backendKey: 'scheduler' },
   { id: 'ingest', title: 'Data sync tuning', backendKey: 'ingest' },
   { id: 'ml', title: 'AI/ML enrichment', backendKey: 'ml' },
+  { id: 'queue', title: 'Durable jobs & metering', backendKey: 'queue' },
   { id: 'app', title: 'Application behaviour', backendKey: 'app' },
   { id: 'backup', title: 'Backup', backendKey: 'backup' },
 ]
@@ -96,6 +97,9 @@ export default function ApiKeysPage({ toast }) {
   const [healthLoading, setHealthLoading] = useState(true)
   const [healthError, setHealthError] = useState(null)
   const [healthRunning, setHealthRunning] = useState(false)
+  const [metering, setMetering] = useState(null)
+  const [meteringError, setMeteringError] = useState(null)
+  const [meteringLoading, setMeteringLoading] = useState(true)
 
   const sectionOpen = useCallback((sectionId) => (
     expandedSections[sectionId] ?? (sectionId === 'api_keys')
@@ -135,6 +139,32 @@ export default function ApiKeysPage({ toast }) {
   useEffect(() => {
     loadHealth()
   }, [loadHealth])
+
+  useEffect(() => {
+    let cancelled = false
+    setMeteringLoading(true)
+    adminApi.get('/api-usage/metering?hours=24')
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then((body) => {
+        if (!cancelled) {
+          setMetering(body)
+          setMeteringError(null)
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setMetering(null)
+          setMeteringError(e?.message || 'Metering unavailable')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setMeteringLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [])
 
   const runHealthCheck = useCallback(async () => {
     setHealthRunning(true)
@@ -413,6 +443,57 @@ export default function ApiKeysPage({ toast }) {
         onRefresh={loadHealth}
         onRun={runHealthCheck}
       />
+
+      <div className="admin-card" style={{ marginBottom: 'var(--space-4)' }}>
+        <h3 className="mono" style={{ margin: 0, fontSize: 'var(--font-size-sm)' }}>
+          OUTBOUND API METERING (24h)
+        </h3>
+        <p className="admin-page-desc" style={{ marginTop: 'var(--space-2)' }}>
+          Every resilient_request attempt is counted (retries included). Rollups stay in api_usage;
+          actor breakdown comes from api_call_events.
+        </p>
+        {meteringLoading && (
+          <p className="mono" style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>
+            Loading metering…
+          </p>
+        )}
+        {!meteringLoading && meteringError && (
+          <p className="mono" style={{ color: 'var(--status-error)', fontSize: 'var(--font-size-xs)' }}>
+            {meteringError}
+          </p>
+        )}
+        {!meteringLoading && !meteringError && metering && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+            <div>
+              <div className="mono" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>BY SOURCE</div>
+              <ul style={{ margin: 'var(--space-2) 0 0', paddingLeft: '1.1rem', fontSize: 'var(--font-size-sm)' }}>
+                {(metering.by_source || []).slice(0, 8).map((row) => (
+                  <li key={row.source}>
+                    <span className="mono">{row.source}</span>
+                    {' — '}
+                    {row.calls} calls
+                    {row.last_called_at ? ` · last ${row.last_called_at}` : ''}
+                  </li>
+                ))}
+                {(metering.by_source || []).length === 0 && <li className="mono">No events yet</li>}
+              </ul>
+            </div>
+            <div>
+              <div className="mono" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>BY ACTOR</div>
+              <ul style={{ margin: 'var(--space-2) 0 0', paddingLeft: '1.1rem', fontSize: 'var(--font-size-sm)' }}>
+                {(metering.by_actor || []).map((row) => (
+                  <li key={row.actor_type}>
+                    <span className="mono">{row.actor_type}</span>
+                    {' — '}
+                    {row.calls} calls
+                  </li>
+                ))}
+                {(metering.by_actor || []).length === 0 && <li className="mono">No events yet</li>}
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
 
       {SECTIONS.map(section => {
         const fields = fieldsBySection[section.id] || []

@@ -144,6 +144,8 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
     # ── Durable outbound jobs (Procrastinate; Postgres only) ─────────────────
     ConfigField("PROCRASTINATE_ENABLED", "queue", "bool", restart_required=True,
                 help_text="Enable Postgres-backed durable job queue (Procrastinate). Off = zero behavior change."),
+    ConfigField("API_CALL_EVENTS_ENABLED", "queue", "bool", restart_required=True,
+                help_text="Record every outbound HTTP attempt from resilient_request into api_call_events (default on)."),
 
     # ── ML toggles ───────────────────────────────────────────────────────────
     ConfigField("EMBEDDINGS_ENABLED", "ml", "bool", restart_required=True,

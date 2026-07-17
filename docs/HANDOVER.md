@@ -12,6 +12,18 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — Q2 universal API metering
+
+**What:** Every `resilient_request` attempt records `api_call_events` + updates
+`api_usage.last_called_at` / rollups. Actor attribution via `outbound_context`
+(scheduler `job_log_context` sets `actor_type=job`). Admin → API keys shows
+24h by-source / by-actor; `GET /api/admin/api-usage/metering`. Retention 30d
+in `cache_retention_cleanup`. Flag `API_CALL_EVENTS_ENABLED` (default 1).
+
+**Next:** Q3 → Q4 → Q5.
+
+---
+
 ## 2026-07-17 — Q track activated; Q1 Procrastinate foundation
 
 **What:** Maintainer activated Q1–Q5. Open questions → defaults (in-process

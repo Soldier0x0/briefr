@@ -1222,6 +1222,10 @@ def _get_config_response() -> dict[str, Any]:
             "METASPLOIT_SYNC_ENABLED": _env("METASPLOIT_SYNC_ENABLED", "1"),
             "NUCLEI_SYNC_ENABLED": _env("NUCLEI_SYNC_ENABLED", "1"),
         },
+        "queue": {
+            "PROCRASTINATE_ENABLED": _env("PROCRASTINATE_ENABLED", "0"),
+            "API_CALL_EVENTS_ENABLED": _env("API_CALL_EVENTS_ENABLED", "1"),
+        },
         "backup": {
             "BACKUP_ENABLED": _env("BACKUP_ENABLED", "1"),
             "BACKUP_DIR": _env("BACKUP_DIR", "/var/lib/briefr/backups"),
@@ -1748,6 +1752,21 @@ async def get_database_migration_status(request: Request):
 
 
 # ── Durable outbound jobs (Procrastinate / Q1) ─────────────────────────────
+
+
+@router.get("/api-usage/metering")
+async def get_api_usage_metering(request: Request, hours: int = 24):
+    """Outbound call metering summary (Q2): by source + actor_type."""
+    from db.api_metering import metering_summary
+    from tracking import get_usage_stats
+
+    db = await get_db()
+    try:
+        summary = await metering_summary(db, hours=hours)
+        usage = await get_usage_stats()
+    finally:
+        await db.close()
+    return {"ok": True, **summary, "usage_rollups": usage}
 
 
 @router.get("/jobs/outbound")

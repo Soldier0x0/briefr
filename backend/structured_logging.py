@@ -72,11 +72,19 @@ def derive_log_category(logger_name: str) -> str:
 @asynccontextmanager
 async def job_log_context(job_id: str):
     """Bind scheduler job_id/run_id for structured log entries in this task."""
+    from jobs.context import outbound_context
+
     run_id = uuid.uuid4().hex[:12]
     token_job = job_id_var.set(job_id)
     token_run = run_id_var.set(run_id)
     try:
-        yield run_id
+        with outbound_context(
+            actor_type="job",
+            job_id=job_id,
+            run_id=run_id,
+            trigger="scheduler",
+        ):
+            yield run_id
     finally:
         job_id_var.reset(token_job)
         run_id_var.reset(token_run)
