@@ -20,7 +20,7 @@ and Quick-Win/Architectural classification.
 | 7 | Security · Auth · RBAC · Input-Validation · API-Security · Secrets · Privacy · Supply-Chain | [PHASE_07_security.md](PHASE_07_security.md) |
 | 8 | Logging · Monitoring · Observability · Alerting · Config · Backup · DR · Deploy · Upgrade | [PHASE_08_operations.md](PHASE_08_operations.md) |
 | 9 | Cross-Browser · Cross-Platform · Compatibility · Reliability · Chaos · Recovery | [PHASE_09_reliability.md](PHASE_09_reliability.md) |
-| 10 | User · Admin · Developer · API · Architecture documentation | PHASE_10_documentation.md *(pending)* |
+| 10 | User · Admin · Developer · API · Architecture documentation | [PHASE_10_documentation.md](PHASE_10_documentation.md) |
 | 11 | Enterprise-SaaS · Production · Release readiness | PHASE_11_readiness.md *(pending)* |
 
 ## Scoring key
