@@ -148,19 +148,31 @@ async def fetch_epss_bulk_with_identity(
 ) -> dict[str, Any]:
     """Download EPSS CSV and return scores + file identity metadata (Q5).
 
-    Returns ``{scores, sha256, score_date, skipped}``. Callers that already
-    applied this sha256 may short-circuit before calling this (after download
-    hash check) via ``download_epss_csv_gz`` + ``identity_matches``.
+    Returns ``{scores, sha256, score_date, skipped, raw_gz}``. Callers that
+    already applied this sha256 may short-circuit before calling this (after
+    download hash check) via ``download_epss_csv_gz`` + ``identity_matches``.
     """
     unique = {c.upper() for c in cve_ids}
     raw_gz, digest = await download_epss_csv_gz()
     if not raw_gz or not digest:
-        return {"scores": {}, "sha256": None, "score_date": None, "skipped": False}
+        return {
+            "scores": {},
+            "sha256": None,
+            "score_date": None,
+            "skipped": False,
+            "raw_gz": None,
+        }
     try:
         scores, score_date = parse_epss_csv_gz(raw_gz, unique)
     except Exception as exc:
         logger.error("EPSS bulk CSV parse failed: %s", exc)
-        return {"scores": {}, "sha256": digest, "score_date": None, "skipped": False}
+        return {
+            "scores": {},
+            "sha256": digest,
+            "score_date": None,
+            "skipped": False,
+            "raw_gz": None,
+        }
     return {
         "scores": scores,
         "sha256": digest,

@@ -643,11 +643,22 @@ async def _run_epss_sync() -> None:
         scores: dict = {}
         score_date = None
         if raw_gz and digest:
-            scores, score_date = parse_epss_csv_gz(raw_gz, {c.upper() for c in all_cve_ids})
-            missing = [c for c in all_cve_ids if c.upper() not in scores]
-            if missing:
-                logger.info("EPSS bulk missed %d CVEs — using API fallback", len(missing))
-                scores.update(await fetch_epss_api(missing))
+            try:
+                scores, score_date = parse_epss_csv_gz(
+                    raw_gz, {c.upper() for c in all_cve_ids}
+                )
+            except Exception as exc:
+                logger.error(
+                    "EPSS CSV parse failed — falling back to API: %s", exc
+                )
+                scores = await fetch_epss(all_cve_ids)
+            else:
+                missing = [c for c in all_cve_ids if c.upper() not in scores]
+                if missing:
+                    logger.info(
+                        "EPSS bulk missed %d CVEs — using API fallback", len(missing)
+                    )
+                    scores.update(await fetch_epss_api(missing))
         else:
             scores = await fetch_epss(all_cve_ids)
 

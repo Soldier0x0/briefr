@@ -26,7 +26,7 @@ def sha256_bytes(data: bytes) -> str:
 
 def parse_epss_score_date(csv_text: str) -> str | None:
     """Extract ``#score_date:YYYY-MM-DD`` from EPSS CSV comment header."""
-    for line in csv_text.splitlines()[:20]:
+    for line in csv_text.split("\n", 20)[:20]:
         if not line.startswith("#"):
             continue
         lower = line.lower()
