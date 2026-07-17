@@ -472,7 +472,9 @@ export default function ApiKeysPage({ toast }) {
                     <span className="mono">{row.source}</span>
                     {' — '}
                     {row.calls} calls
-                    {row.last_called_at ? ` · last ${row.last_called_at}` : ''}
+                    {row.last_called_at
+                      ? ` · last ${new Date(row.last_called_at).toLocaleString()}`
+                      : ''}
                   </li>
                 ))}
                 {(metering.by_source || []).length === 0 && <li className="mono">No events yet</li>}

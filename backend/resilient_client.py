@@ -29,12 +29,17 @@ from api_queue import (
 logger = logging.getLogger(__name__)
 
 
-async def _meter_attempt(**kwargs) -> None:
-    """Best-effort per-attempt metering (Q2). Never raises to the caller."""
+_meter_tasks: set[asyncio.Task] = set()
+
+
+def _meter_attempt(**kwargs) -> None:
+    """Best-effort per-attempt metering (Q2). Never blocks the HTTP caller."""
     try:
         from api_metering import record_outbound_attempt
 
-        await record_outbound_attempt(**kwargs)
+        task = asyncio.create_task(record_outbound_attempt(**kwargs))
+        _meter_tasks.add(task)
+        task.add_done_callback(_meter_tasks.discard)
     except Exception as exc:
         logger.warning("metering hook failed: %s", exc)
 
@@ -184,7 +189,7 @@ async def _execute_request_attempt(
             )
         except httpx.HTTPError as exc:
             last_exc = exc
-            await _meter_attempt(
+            _meter_attempt(
                 source=source,
                 method=method,
                 url=url,
@@ -199,7 +204,7 @@ async def _execute_request_attempt(
             _record_failure(source, f"{type(exc).__name__}: {exc}")
             raise
 
-        await _meter_attempt(
+        _meter_attempt(
             source=source,
             method=method,
             url=url,

@@ -17,6 +17,9 @@ ALLOWED_HTTPX_MODULES = {
 }
 
 
+_HTTPX_CLIENT_NAMES = {"AsyncClient", "Client", "request", "get", "post"}
+
+
 def test_no_new_direct_httpx_outside_allowlist():
     """CI guard: outbound HTTP should go through resilient_request."""
     offenders = []
@@ -30,15 +33,23 @@ def test_no_new_direct_httpx_outside_allowlist():
             tree = ast.parse(path.read_text(encoding="utf-8"))
         except SyntaxError:
             continue
+        imported_names: set[str] = set()
         for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module == "httpx":
+                for alias in node.names:
+                    if alias.name in _HTTPX_CLIENT_NAMES:
+                        imported_names.add(alias.asname or alias.name)
+                        offenders.append(
+                            f"{rel}:{node.lineno}:from httpx import {alias.name}"
+                        )
             if isinstance(node, ast.Call):
                 func = node.func
                 name = ""
                 if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
-                    if func.value.id == "httpx" and func.attr in {
-                        "AsyncClient", "Client", "request", "get", "post"
-                    }:
+                    if func.value.id == "httpx" and func.attr in _HTTPX_CLIENT_NAMES:
                         name = f"httpx.{func.attr}"
+                elif isinstance(func, ast.Name) and func.id in imported_names:
+                    name = func.id
                 if name:
                     offenders.append(f"{rel}:{node.lineno}:{name}")
     assert offenders == [], (
@@ -55,6 +66,8 @@ def test_path_template_collapses_ids():
     )
     assert host == "services.nvd.nist.gov"
     assert "{id}" in path
+    _, numeric = path_template_from_url("https://example.com/api/v1/items/12345")
+    assert numeric.endswith("/{id}")
 
 
 def test_metering_records_attempt(tmp_path, monkeypatch, auth_token):

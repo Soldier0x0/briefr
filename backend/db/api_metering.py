@@ -33,13 +33,17 @@ INSERT INTO api_call_events (
 """
 
 _TOUCH_USAGE_PG = """
-UPDATE api_usage SET last_called_at = $1
-WHERE service = $2 AND date_utc = $3
+INSERT INTO api_usage (service, date_utc, month_utc, count, last_called_at)
+VALUES ($1, $2, $3, 0, $4)
+ON CONFLICT (service, date_utc) DO UPDATE
+SET last_called_at = EXCLUDED.last_called_at
 """
 
 _TOUCH_USAGE_SQLITE = """
-UPDATE api_usage SET last_called_at = ?
-WHERE service = ? AND date_utc = ?
+INSERT INTO api_usage (service, date_utc, month_utc, count, last_called_at)
+VALUES (?, ?, ?, 0, ?)
+ON CONFLICT(service, date_utc) DO UPDATE
+SET last_called_at = excluded.last_called_at
 """
 
 
@@ -53,8 +57,10 @@ def path_template_from_url(url: str) -> tuple[str | None, str | None]:
         for seg in path.split("/"):
             if not seg:
                 continue
-            if seg.upper().startswith("CVE-") or (
-                len(seg) >= 32 and all(c.isalnum() or c == "-" for c in seg)
+            if (
+                seg.upper().startswith("CVE-")
+                or seg.isdigit()
+                or (len(seg) >= 32 and all(c.isalnum() or c == "-" for c in seg))
             ):
                 parts.append("{id}")
             else:
@@ -113,9 +119,10 @@ async def touch_api_usage_last_called(
 ) -> None:
     when = when or datetime.now(timezone.utc)
     ts_val: Any = when if is_postgres() else when.replace(tzinfo=None).isoformat(sep=" ")
+    month_utc = date_utc[:7] if len(date_utc) >= 7 else when.strftime("%Y-%m")
     sql = _TOUCH_USAGE_PG if is_postgres() else _TOUCH_USAGE_SQLITE
     try:
-        await db.execute(sql, (ts_val, service, date_utc))
+        await db.execute(sql, (service, date_utc, month_utc, ts_val))
     except Exception:
         # Column may be missing on old SQLite schemas — ignore.
         pass
@@ -130,7 +137,10 @@ async def purge_api_call_events(db: DbConnection, *, retain_days: int = 30) -> i
             (cutoff,),
         )
     else:
-        cutoff = (datetime.now(timezone.utc) - timedelta(days=retain_days)).isoformat()
+        # Match insert_api_call_event SQLite ts format (space sep, no tz).
+        cutoff = (
+            datetime.now(timezone.utc) - timedelta(days=retain_days)
+        ).replace(tzinfo=None).isoformat(sep=" ")
         cur = await db.execute(
             "DELETE FROM api_call_events WHERE ts < ?",
             (cutoff,),
@@ -192,21 +202,23 @@ async def metering_summary(db: DbConnection, *, hours: int = 24) -> dict[str, An
             (f"-{hours} hours",),
         )
 
-    def _as_dict(row: Any) -> dict:
+    def _as_dict(row: Any, keys: list[str]) -> dict:
         try:
             return dict(row)
         except Exception:
             return {
-                "source": row[0] if len(row) > 0 else None,
-                "calls": row[1] if len(row) > 1 else 0,
+                key: (row[i] if i < len(row) else None)
+                for i, key in enumerate(keys)
             }
 
     sources = []
     for r in source_rows or []:
-        d = _as_dict(r)
+        d = _as_dict(r, ["source", "calls", "ok_calls", "last_called_at"])
         last = d.get("last_called_at")
         if hasattr(last, "isoformat"):
             d["last_called_at"] = last.isoformat()
         sources.append(d)
-    actors = [_as_dict(r) for r in (actor_rows or [])]
+    actors = [
+        _as_dict(r, ["actor_type", "calls"]) for r in (actor_rows or [])
+    ]
     return {"hours": hours, "by_source": sources, "by_actor": actors}
