@@ -93,24 +93,33 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
+# Fail closed in production BEFORE any auto-generation: a production box must
+# provide JWT_SECRET explicitly. Auto-generating here would (a) make this guard
+# dead code and (b) mint a different per-replica secret, silently invalidating
+# sessions across replicas / ephemeral containers. This check must stay ahead of
+# the dev/test auto-generation block below.
+if settings.is_production and not settings.jwt_secret:
+    raise RuntimeError(
+        "JWT_SECRET must be set in production (generate with `openssl rand -hex 32`)"
+    )
+
 if not settings.jwt_secret:
-    # First boot with no JWT_SECRET set: generate one and persist it to .env
-    # so it survives restarts (same dotenv.set_key() mechanism routers/admin.py
-    # uses for runtime-writable config) instead of forcing a manual step.
+    # Dev/test only: first boot with no JWT_SECRET set — generate one and persist
+    # it to .env so it survives restarts (same dotenv.set_key() mechanism
+    # routers/admin.py uses for runtime-writable config) instead of forcing a
+    # manual step. Never reached in production (guarded above).
     _generated_secret = secrets.token_hex(32)
     _dotenv_path = Path(__file__).resolve().parent / ".env"
     try:
         set_key(str(_dotenv_path), "JWT_SECRET", _generated_secret)
     except OSError:
-        pass
+        logger.warning(
+            "No JWT_SECRET configured — generated one in-memory but could not "
+            "persist it to .env; it will change on restart until set explicitly"
+        )
     os.environ["JWT_SECRET"] = _generated_secret
     settings.jwt_secret = _generated_secret
     logger.warning("No JWT_SECRET configured — generated and persisted a new one to .env")
-
-if settings.is_production and not settings.jwt_secret:
-    raise RuntimeError(
-        "JWT_SECRET must be set in production (generate with `openssl rand -hex 32`)"
-    )
 
 
 def production_posture_warnings(config: Settings = settings) -> list[dict[str, str]]:
