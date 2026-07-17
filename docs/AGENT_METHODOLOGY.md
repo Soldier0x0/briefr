@@ -33,7 +33,7 @@ Your first job on any task is to make your internal model of the system match
 reality. Everything downstream inherits errors made here.
 
 - **Code beats docs; newest beats oldest.** Trust hierarchy in this repo:
-  source code > `docs/PRODUCT_STATUS.md` > newest `HANDOVER.md` entry > other
+  source code > `docs/PRODUCT_STATUS.md` > newest `docs/HANDOVER.md` entry > other
   living docs > `docs/archive/` (never trust for current behavior). When two
   sources disagree, the one higher in this list wins — and note the
   discrepancy rather than silently picking one.
@@ -44,7 +44,7 @@ reality. Everything downstream inherits errors made here.
   changing anything when the area is unfamiliar. A pre-existing red test
   discovered after your change wastes an hour of false debugging.
 - **Name your assumptions out loud.** Write them in your plan or PR
-  description: "Assumes `scheduler.py` job ids match the admin lock map",
+  description: "Assumes `backend/scheduler.py` job ids match the admin lock map",
   "Assumes this endpoint is only called from FEED". A stated wrong assumption
   gets corrected in review; an unstated one becomes a production bug.
 - **Distinguish the request from the requirement.** Users describe symptoms
@@ -58,7 +58,7 @@ reality. Everything downstream inherits errors made here.
 
 - **Define verification first.** Before the first edit, write down the exact
   commands and observations that will prove the change works: which test
-  files, `npm run build`, which browser flow, which DB modes. If you cannot
+  files, `npm run build` in `frontend/`, which browser flow, which DB modes. If you cannot
   name the verification, you do not yet understand the task.
 - **Decompose by risk, not by file.** List the sub-tasks, then reorder so the
   riskiest/most-uncertain one goes first. If the hard part is impossible,
@@ -69,7 +69,7 @@ reality. Everything downstream inherits errors made here.
   `CLAUDE.md` because it has stalled real sessions.
 - **Identify the blast radius up front.** For every plan, explicitly check it
   against the `CLAUDE.md` danger zones: does it touch `db/` (→ test both
-  SQLite and Postgres)? `scheduler.py` job ids (→ sync `routers/admin.py`
+  SQLite and Postgres)? `backend/scheduler.py` job ids (→ sync `backend/routers/admin.py`
   locks)? migrations (→ forward-only)? `deploy/` (→ additive only)? request
   handlers (→ no heavy work)? Logging (→ no secrets in message strings)?
 - **Prefer the plan that can be abandoned.** When two approaches look equal,
@@ -107,7 +107,7 @@ reality. Everything downstream inherits errors made here.
   translation layer.
 - **Heavy work goes to the scheduler.** If a design puts ML, enrichment,
   external API sweeps, or anything unbounded on a request path, the design is
-  wrong — move it to a `scheduler.py` job and have the handler read cached
+  wrong — move it to a `backend/scheduler.py` job and have the handler read cached
   results.
 - **Architectural decisions get an ADR.** If you're choosing between
   approaches with long-lived consequences (new dependency, storage shape,
@@ -155,7 +155,7 @@ This repo's debugging doctrine is RCA-first (`.cursor/rules/rca-first-debugging.
    in the PR.
 8. **State the RCA in one sentence.** If you cannot write "it failed because
    X caused Y at Z", you have not finished debugging — you have finished
-   experimenting. Record it in `HANDOVER.md` when runtime behavior or
+   experimenting. Record it in `docs/HANDOVER.md` when runtime behavior or
    operator expectations changed.
 
 ---
@@ -190,8 +190,8 @@ This repo's debugging doctrine is RCA-first (`.cursor/rules/rca-first-debugging.
 ## 6. Verify — prove it, don't vibe it
 
 - **Run the verification you defined in §2 — all of it.** Backend: `pytest
-  tests/ -q` from `backend/`. Frontend: `npm run build` must pass before any
-  frontend change is done. `db/` changes: both database modes. UI changes:
+  tests/ -q` from `backend/`. Frontend: `npm run build` from `frontend/` must pass
+  before any frontend change is done. `db/` changes: both database modes. UI changes:
   verified *in the browser*, not just the build — a passing build proves the
   code parses, not that the feature works.
 - **Exercise the change end-to-end, not just its unit.** Drive the affected
@@ -218,9 +218,9 @@ PR, specifically hunting:
 - **Edge inputs** — empty list, first run (cold DB), huge input, concurrent
   scheduler run, missing API key. This repo runs unattended on a self-hosted
   box; "the operator will notice" is not a fallback.
-- **The docs contract** — runtime behavior changed → `PRODUCT_STATUS.md` +
-  `SYSTEM_DESIGN.md` in the same PR. Endpoints changed → `API_REFERENCE.md`
-  in the same PR. Decisions/context → `HANDOVER.md` (newest entry first).
+- **The docs contract** — runtime behavior changed → `docs/PRODUCT_STATUS.md` +
+  `docs/SYSTEM_DESIGN.md` in the same PR. Endpoints changed → `docs/API_REFERENCE.md`
+  in the same PR. Decisions/context → `docs/HANDOVER.md` (newest entry first).
 - **Sunk cost is not an argument.** If mid-review you realize the approach is
   wrong, discard it. Two hours of wrong code plus one hour of the right fix
   beats shipping the wrong code with apologies. Say plainly: "first approach
@@ -300,11 +300,11 @@ Run down this list before every push:
 1. Every changed line traces to the request; no drive-by edits.
 2. Verification defined in the plan actually ran, and I watched it pass.
 3. `db/` touched? → suite ran both SQLite *and* Postgres.
-4. UI touched? → `npm run build` green *and* the flow checked in a browser.
+4. UI touched? → `npm run build` in `frontend/` green *and* the flow checked in a browser.
 5. Scheduler/job ids, migrations, `deploy/` — danger zones re-checked.
 6. No secrets in code, logs, output, or this PR's description.
-7. Docs contract satisfied (`PRODUCT_STATUS` / `SYSTEM_DESIGN` /
-   `API_REFERENCE` / `HANDOVER` as applicable, same PR).
+7. Docs contract satisfied (`docs/PRODUCT_STATUS.md` / `docs/SYSTEM_DESIGN.md` /
+   `docs/API_REFERENCE.md` / `docs/HANDOVER.md` as applicable, same PR).
 8. Commit message says *why*, not just *what*.
 9. If anything above is not true, the work is not done — say so honestly
    instead of pushing.
