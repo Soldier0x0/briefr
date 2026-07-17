@@ -45,7 +45,20 @@ from feeds.cpe_catalog import cpe_catalog_sync_enabled, sync_cpe_catalog
 from feeds.cvelistv5 import SYNC_STATE_KEY as CVELISTV5_SYNC_STATE_KEY
 from feeds.cvelistv5 import fetch_cvelistv5_delta, get_cvelistv5_sync_interval_minutes
 from feeds.vulnrichment import fetch_vulnrichment_enrichments, get_vulnrichment_sync_interval_hours
-from feeds.epss import BACKFILL_BATCH_SIZE, BACKFILL_THROTTLE_SECONDS, fetch_epss_time_series_batch
+from feeds.epss import (
+    BACKFILL_BATCH_SIZE,
+    BACKFILL_THROTTLE_SECONDS,
+    download_epss_csv_gz,
+    fetch_epss_api,
+    fetch_epss_time_series_batch,
+    parse_epss_csv_gz,
+)
+from feeds.file_identity import (
+    EPSS_FILE_IDENTITY_KEY,
+    get_file_identity,
+    identity_matches,
+    set_file_identity,
+)
 from feeds.case_study_feed import (
     build_incident_feed_snapshot,
     get_incident_feed_refresh_minutes,
@@ -606,6 +619,7 @@ async def _run_epss_sync() -> None:
         db = await get_db()
         try:
             all_cve_ids = await get_all_cve_ids(db)
+            stored_identity = await get_file_identity(db, EPSS_FILE_IDENTITY_KEY)
         finally:
             await db.close()
 
@@ -613,15 +627,58 @@ async def _run_epss_sync() -> None:
             logger.info("EPSS sync skipped: no CVEs in database")
             return
 
-        _job_progress["epss_score_sync"] = f"Fetching EPSS exploit-probability scores for {len(all_cve_ids)} CVEs from FIRST.org…"
-        scores = await fetch_epss(all_cve_ids)
+        _job_progress["epss_score_sync"] = (
+            f"Fetching EPSS exploit-probability scores for {len(all_cve_ids)} CVEs…"
+        )
+        raw_gz, digest = await download_epss_csv_gz()
+        if raw_gz and digest and identity_matches(stored_identity, sha256=digest):
+            logger.info(
+                "EPSS sync skipped — file identity unchanged (sha256=%s score_date=%s)",
+                digest[:12],
+                (stored_identity or {}).get("score_date"),
+            )
+            _job_progress["epss_score_sync"] = "EPSS CSV unchanged — skipped apply"
+            return
+
+        scores: dict = {}
+        score_date = None
+        if raw_gz and digest:
+            try:
+                scores, score_date = parse_epss_csv_gz(
+                    raw_gz, {c.upper() for c in all_cve_ids}
+                )
+            except Exception as exc:
+                logger.error(
+                    "EPSS CSV parse failed — falling back to API: %s", exc
+                )
+                scores = await fetch_epss(all_cve_ids)
+            else:
+                missing = [c for c in all_cve_ids if c.upper() not in scores]
+                if missing:
+                    logger.info(
+                        "EPSS bulk missed %d CVEs — using API fallback", len(missing)
+                    )
+                    scores.update(await fetch_epss_api(missing))
+        else:
+            scores = await fetch_epss(all_cve_ids)
+
         epss_updated = len(scores)
 
         db = await get_db()
         try:
-            _job_progress["epss_score_sync"] = f"Snapshotting current EPSS scores for delta tracking, then writing {len(scores)} updated scores…"
+            _job_progress["epss_score_sync"] = (
+                f"Snapshotting current EPSS scores for delta tracking, then writing "
+                f"{len(scores)} updated scores…"
+            )
             snapshotted = await snapshot_epss_scores(db)
             await update_epss_scores(db, scores)
+            if digest:
+                await set_file_identity(
+                    db,
+                    EPSS_FILE_IDENTITY_KEY,
+                    sha256=digest,
+                    score_date=score_date,
+                )
             await db.commit()
             if snapshotted:
                 logger.info("EPSS history snapshot: %d CVE scores saved", snapshotted)

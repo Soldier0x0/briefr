@@ -41,6 +41,7 @@
 | **API metering (Q2)** | Every `resilient_request` attempt writes `api_call_events` (source, host/path template, status, latency, actor/job/run/request ids). Rollups + `api_usage.last_called_at` update on the same path. Admin → API keys shows 24h by-source / by-actor breakdown (`GET /api/admin/api-usage/metering`). Retention 30d. Flag: `API_CALL_EVENTS_ENABLED` (default on). |
 | **CPE catalog (Q3)** | `software_catalog` from NVD CPE 2.3 API (scheduler `cpe_catalog_sync`, `CPE_CATALOG_SYNC_ENABLED=0` default). Checkpointed full then incremental sync; respects NVD pacing + metering. `GET /api/stack/catalog/suggest` (≥3 chars) for stack typeahead; Asset wizard merges server hints with curated lists. |
 | **Stack Tier A (Q4)** | Opt-in historical NVD+KEV+EPSS backfill for shallow stack coverage (`STACK_BACKFILL_ENABLED=0` default). `GET /api/stack/coverage`, `POST /api/stack/backfill/agree`, run status/resume. Checkpointed per product; FEED gap banner + Agree. Deep intel stays on background jobs. |
+| **EPSS identity skip (Q5)** | Scheduled EPSS sync downloads FIRST CSV.GZ and compares `sha256` + `score_date` to `sync_state.epss_csv_file_identity`. Unchanged → skip gunzip/parse/upsert/snapshot. Force: `POST /api/admin/feeds/epss/force-resync`. |
 | **Docker compose** | Postgres compose exists; full V2.0 platform compose not shipped. |
 
 ---

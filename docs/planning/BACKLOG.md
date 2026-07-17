@@ -410,7 +410,7 @@ remediation queue. Supporting artifacts: [`e2e-click-map-2026-07-15.md`](specs/e
 | **Q2** | Universal outbound metering at `resilient_request` + admin quota UI (actor/job/cli) | ✅ |
 | **Q3** | NVD CPE → `software_catalog` + autocomplete API | ✅ |
 | **Q4** | Stack UX (category/typeahead/version) + Agree Tier-A backfill (ETA/progress/checkpoints) | ✅ |
-| **Q5** | Optional: EPSS file identity skip (`score_date` + SHA-256) | 📋 optional |
+| **Q5** | Optional: EPSS file identity skip (`score_date` + SHA-256) | ✅ |
 
 **Locks:** Agree = Tier A only (NVD+KEV+EPSS bulk); no OTX/exploits/correlation inside Agree. Feature flags default off. UPSERT NVD-owned columns only.
 
