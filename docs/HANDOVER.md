@@ -12,6 +12,36 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — Stack backfill idempotency (IDEM-A / IDEM-B)
+
+**What:** Implemented the two Quick-Win findings from `docs/audit/IDEMPOTENCY_AUDIT.md`
+on a fresh branch off `main` (PR #664 already merged).
+- **IDEM-A:** new `db.stack_backfill.claim_run_running(db, run_id)` — atomic conditional
+  `UPDATE stack_backfill_runs SET status='running' … WHERE status NOT IN
+  ('completed','partial','failed') AND (status <> 'running' OR updated_at IS NULL OR
+  updated_at < cutoff)`. `_process` calls it as the gate; a duplicate resume/retry or an
+  overlapping in-process + durable kick loses the claim → `already_running` (no double-count).
+  A crash-stalled `running` run is reclaimable once its heartbeat (`updated_at`, bumped every
+  page) is older than `STACK_BACKFILL_STALE_SECONDS` (default 900s).
+- **IDEM-B:** `_kick_backfill` defers with
+  `.configure(queueing_lock=f"stack_backfill:{run_id}")`; `AlreadyEnqueued` is an idempotent
+  no-op that returns without also kicking the in-process fallback.
+
+**Verification:** the claim SQL semantics (single-winner, stale-reclaim, terminal-never-reclaim)
+validated directly against stdlib `sqlite3` — all pass. `py_compile` clean on all four changed
+files. **Full backend suite still not runnable in the cloud session** (Python 3.11 vs
+`numpy==2.5.1` needs 3.12; pytest overlay has no project deps) — run
+`cd backend && pytest tests/test_stack_backfill_idempotency.py -q` on a real dev box, and per
+danger-zone-1 also with `DATABASE_URL` pointed at Postgres.
+
+**Docs:** PRODUCT_STATUS Stack Tier A row; IDEMPOTENCY_AUDIT IDEM-A/B marked ✅ resolved.
+**New tunable:** `STACK_BACKFILL_STALE_SECONDS` (default 900).
+
+**Next:** remaining idempotency tail is low-severity (IDEM-D webhook stuck-claim TTL, IDEM-C
+job-registry doc); audit P1 items otherwise.
+
+---
+
 ## 2026-07-17 — Audit P0 batch: JWT fail-closed + AsyncState error surfacing + README version
 
 **What:** First slice of the `PHASE_11_readiness.md` P0 release-blocker list (audit #661).
