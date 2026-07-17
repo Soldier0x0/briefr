@@ -12,6 +12,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — Clear Forge URL when leaving to BRIEF/FEED
+
+**RCA:** Main tabs are React state (`activeTab`), but Forge selection is
+written into the global URL (`?view=&technique=&pack=`). Clicking BRIEF/FEED
+only changed `activeTab`, so the URL stayed on e.g. `?view=coverage&technique=T1592`.
+On refresh, App sees `view=` and forces the Forge tab — felt like “stuck”
+navigation.
+
+**Fix:** `selectAppTab()` clears Forge query params whenever leaving Forge;
+header/palette/logo use it. Intentional Forge deep links still set params.
+
+**Next:** Q1–Q5 (activate) → E1–E6.
+
+---
+
 ## 2026-07-17 — Forge UX: top nav, toggle deselect, coverage-only hunt pack
 
 **What / RCA:** (1) No way to deselect a technique. (2) Hunt pack followed

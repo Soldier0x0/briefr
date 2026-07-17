@@ -307,7 +307,23 @@ function FeedView({ isActive, filters, setFilters, selectedCVE, setSelectedCVE,
 
 export default function App() {
   const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [activeTab, setActiveTab]               = useState('brief')
+  // Main tabs are React state; Forge deep-link state lives in the URL
+  // (?view=&technique=&pack=). Leaving Forge must clear those params or a
+  // later refresh re-activates Forge (BRIEF UI + forge URL).
+  const selectAppTab = useCallback((tab) => {
+    setActiveTab(tab)
+    if (tab === 'forge') return
+    setSearchParams((prev) => {
+      if (!prev.has('view') && !prev.has('technique') && !prev.has('pack')) return prev
+      const next = new URLSearchParams(prev)
+      next.delete('view')
+      next.delete('technique')
+      next.delete('pack')
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
   const digestCVEsRef = useRef([])
   const generateDigestRef = useRef(null)
   const [filters, setFilters]                   = useState(DEFAULT_FILTERS)
@@ -481,7 +497,7 @@ export default function App() {
   const handleAiAlertsClick = useCallback(() => {
     const fw = aiFrameworksQueryParam(assetCtx?.profile)
     if (!fw) return
-    setActiveTab('feed')
+    selectAppTab('feed')
     setFilters(prev => ({
       ...prev,
       ai_context_only: true,
@@ -495,10 +511,10 @@ export default function App() {
       search: '',
       stack: '',
     }))
-  }, [assetCtx?.profile])
+  }, [assetCtx?.profile, selectAppTab])
 
   const handleStatTileClick = useCallback((tile) => {
-    setActiveTab('feed')
+    selectAppTab('feed')
     const cleared = {
       severity: null,
       kev_only: false,
@@ -525,13 +541,12 @@ export default function App() {
     } else if (tile === 'patched') {
       setFilters(prev => ({ ...prev, ...cleared, patch_only: true }))
     }
-  }, [])
+  }, [selectAppTab])
 
   const openCveById = useCallback((cveId) => {
     handleOpenCVE({ cve_id: cveId })
   }, [handleOpenCVE])
 
-  const [searchParams, setSearchParams] = useSearchParams()
   const deepLinkHandled = useRef(null)
 
   useEffect(() => {
@@ -539,17 +554,18 @@ export default function App() {
     if (!cveParam || deepLinkHandled.current === cveParam) return
     if (!/^CVE-\d{4}-\d+$/i.test(cveParam.trim())) return
     deepLinkHandled.current = cveParam.trim().toUpperCase()
-    setActiveTab('feed')
+    selectAppTab('feed')
     openCveById(deepLinkHandled.current)
-    const next = new URLSearchParams(searchParams)
-    next.delete('cve')
-    setSearchParams(next, { replace: true })
-  }, [searchParams, openCveById, setSearchParams])
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('cve')
+      return next
+    }, { replace: true })
+  }, [searchParams, openCveById, setSearchParams, selectAppTab])
 
-  // Forge owns ?view=/&technique=/&pack= (FR-2 URL state). Tab switching
-  // itself isn't URL-synced app-wide, so a refresh while on Forge would
-  // otherwise land back on the Brief tab with those params sitting unused —
-  // activate the Forge tab once on load when a Forge view param is present.
+  // Forge owns ?view=/&technique=/&pack= (FR-2 URL state). On first load /
+  // refresh, if those params are present, open the Forge tab so the deep
+  // link is not stranded on BRIEF with unused query state.
   const forgeDeepLinkHandled = useRef(false)
   useEffect(() => {
     if (forgeDeepLinkHandled.current) return
@@ -559,7 +575,7 @@ export default function App() {
   }, [searchParams])
 
   const investigationNav = useMemo(() => ({
-    setActiveTab,
+    setActiveTab: selectAppTab,
     clearIocPrefill: () => setIocPrefill(null),
     resetIocSession: () => setIocSessionKey(k => k + 1),
     setIocPrefill: (payload) => {
@@ -576,7 +592,7 @@ export default function App() {
     setAtlasActorFilter,
     clearAtlasFilter: () => setAtlasActorFilter(null),
     openCve: (cveId) => {
-      setActiveTab('brief')
+      selectAppTab('brief')
       openCveById(cveId)
     },
     // PM-4e: drawer MITRE pills → Forge ATT&CK navigator
@@ -591,17 +607,17 @@ export default function App() {
         return next
       })
     },
-  }), [openCveById, setSearchParams])
+  }), [openCveById, setSearchParams, selectAppTab])
 
   const getPaletteCommands = useCallback((query) => {
     const q = query.trim()
     const ql = q.toLowerCase()
     const items = [
-      { id: 'tab-brief', label: 'Go to BRIEF', hint: 'tab', keywords: ['brief'], run: () => setActiveTab('brief') },
-      { id: 'tab-feed', label: 'Go to FEED', hint: 'tab', keywords: ['feed'], run: () => setActiveTab('feed') },
-      { id: 'tab-ioc', label: 'Go to IOC LOOKUP', hint: 'tab', keywords: ['ioc', 'lookup'], run: () => setActiveTab('ioc') },
-      { id: 'tab-atlas', label: 'Go to INCIDENTS & NEWS', hint: 'tab', keywords: ['incidents', 'news', 'atlas'], run: () => setActiveTab('atlas') },
-      { id: 'tab-forge', label: 'Go to FORGE', hint: 'tab', keywords: ['forge'], run: () => setActiveTab('forge') },
+      { id: 'tab-brief', label: 'Go to BRIEF', hint: 'tab', keywords: ['brief'], run: () => selectAppTab('brief') },
+      { id: 'tab-feed', label: 'Go to FEED', hint: 'tab', keywords: ['feed'], run: () => selectAppTab('feed') },
+      { id: 'tab-ioc', label: 'Go to IOC LOOKUP', hint: 'tab', keywords: ['ioc', 'lookup'], run: () => selectAppTab('ioc') },
+      { id: 'tab-atlas', label: 'Go to INCIDENTS & NEWS', hint: 'tab', keywords: ['incidents', 'news', 'atlas'], run: () => selectAppTab('atlas') },
+      { id: 'tab-forge', label: 'Go to FORGE', hint: 'tab', keywords: ['forge'], run: () => selectAppTab('forge') },
       {
         id: 'refresh-stats',
         label: 'Refresh dashboard stats',
@@ -621,7 +637,7 @@ export default function App() {
         label: `Open ${cve}`,
         hint: 'cve',
         run: () => {
-          setActiveTab('feed')
+          selectAppTab('feed')
           openCveById(cve)
         },
       })
@@ -641,7 +657,7 @@ export default function App() {
         label: `Review indicators: ${display}`,
         hint: 'ioc',
         run: () => {
-          setActiveTab('ioc')
+          selectAppTab('ioc')
           investigationNav.setIocPrefill(q)
         },
       })
@@ -652,7 +668,7 @@ export default function App() {
       cmd.label.toLowerCase().includes(ql)
       || cmd.keywords?.some(k => k.includes(ql) || ql.includes(k))
     )
-  }, [investigationNav, loadHealth, loadStats, openCveById])
+  }, [investigationNav, loadHealth, loadStats, openCveById, selectAppTab])
 
   useEffect(() => {
     function onPaletteKey(e) {
@@ -771,7 +787,7 @@ export default function App() {
             <RequireAuth>
             <AppLayout
               activeTab={activeTab}
-              setActiveTab={setActiveTab}
+              setActiveTab={selectAppTab}
               showFeedShortcuts={showFeedShortcuts}
               onAboutOpen={() => setAboutOpen(true)}
               onTimezoneChange={setTimezone}
