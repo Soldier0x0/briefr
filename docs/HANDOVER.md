@@ -12,6 +12,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — Clear admin URL when leaving a page (same class as Forge)
+
+**RCA:** Admin sidebar/breadcrumbs called `setPage(id)` (React state only).
+Deep links write `/admin?p=…&section=…&job_id=…` etc., but leaving a page
+never updated `p` or cleared scoped params. Refresh re-opened the old page
+with old filters.
+
+**Fix:** `setPage` writes `?p=<id>` alone when the page changes; URL→state
+sync uses `applyPageState` so intentional deep links (ingestLogUrl, etc.)
+keep their filters. Gate: `adminUrlPageClearGate.test.js`.
+
+**Next:** Q1–Q5 (activate) → E1–E6.
+
+---
+
 ## 2026-07-17 — Clear Forge URL when leaving to BRIEF/FEED
 
 **RCA:** Main tabs are React state (`activeTab`), but Forge selection is
