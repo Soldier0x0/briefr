@@ -12,7 +12,11 @@ GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
 def gemini_model() -> str:
-    return os.environ.get("GEMINI_MODEL", "gemini-2.0-flash-lite").strip() or "gemini-2.0-flash-lite"
+    # gemini-2.0-flash-lite is deprecated; 3.1 is current stable Flash-Lite (Google AI).
+    return (
+        os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite").strip()
+        or "gemini-3.1-flash-lite"
+    )
 
 
 def _messages_to_gemini(messages: list[dict[str, str]]) -> tuple[str, list[dict]]:
