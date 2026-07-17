@@ -243,6 +243,41 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_software_catalog_vendor_product
                 ON software_catalog(vendor, product);
 
+            CREATE TABLE IF NOT EXISTS stack_backfill_runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                products_json TEXT NOT NULL DEFAULT '[]',
+                max_products INTEGER NOT NULL DEFAULT 10,
+                max_cves INTEGER NOT NULL DEFAULT 5000,
+                max_runtime_seconds INTEGER NOT NULL DEFAULT 3600,
+                eta_low_seconds INTEGER,
+                eta_high_seconds INTEGER,
+                cves_upserted INTEGER NOT NULL DEFAULT 0,
+                pages_done INTEGER NOT NULL DEFAULT 0,
+                pages_total INTEGER NOT NULL DEFAULT 0,
+                progress_message TEXT,
+                error_message TEXT,
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now')),
+                completed_at TEXT
+            );
+            CREATE TABLE IF NOT EXISTS stack_backfill_checkpoints (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id INTEGER NOT NULL,
+                product_key TEXT NOT NULL,
+                vendor TEXT,
+                product TEXT NOT NULL,
+                version TEXT,
+                status TEXT NOT NULL DEFAULT 'pending',
+                start_index INTEGER NOT NULL DEFAULT 0,
+                total_results INTEGER NOT NULL DEFAULT 0,
+                cves_upserted INTEGER NOT NULL DEFAULT 0,
+                last_error TEXT,
+                updated_at TEXT DEFAULT (datetime('now')),
+                UNIQUE (run_id, product_key)
+            );
+
             CREATE TABLE IF NOT EXISTS sync_state (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL,

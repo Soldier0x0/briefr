@@ -162,11 +162,11 @@ components:
     ref: backend/routers/refresh.py
 - id: routers-stack_catalog
   title: routers.stack_catalog
-  summary: FastAPI router module with 1 endpoint(s).
+  summary: FastAPI router module with 5 endpoint(s).
   owner: platform
   status: active
   origin: generated
-  endpoint_count: 1
+  endpoint_count: 5
   source_refs:
   - type: file
     ref: backend/routers/stack_catalog.py

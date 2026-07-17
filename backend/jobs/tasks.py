@@ -7,6 +7,7 @@ import logging
 import procrastinate
 
 from jobs.context import outbound_context
+from services.stack_backfill_worker import process_stack_backfill_run
 
 logger = logging.getLogger(__name__)
 
@@ -21,3 +22,9 @@ async def health_ping(*, note: str = "ok") -> dict:
     with outbound_context(actor_type="queue", queue_task="jobs:health_ping", trigger="health"):
         logger.info("procrastinate health_ping note=%s", note)
         return {"ok": True, "note": note}
+
+
+@blueprint.task(name="stack_backfill", queue="briefr")
+async def stack_backfill_tick(*, run_id: int) -> dict:
+    """Advance one Tier A stack backfill run (Q4)."""
+    return await process_stack_backfill_run(int(run_id))

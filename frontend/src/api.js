@@ -103,6 +103,23 @@ export function suggestStackCatalog(query, { limit = 20, category } = {}) {
   return request(`/stack/catalog/suggest?${qs.toString()}`)
 }
 
+/** Q4 Tier A stack coverage + backfill. */
+export function fetchStackCoverage() {
+  return request('/stack/coverage')
+}
+
+export function agreeStackBackfill() {
+  return request('/stack/backfill/agree', { method: 'POST' })
+}
+
+export function fetchStackBackfillRun(runId) {
+  return request(`/stack/backfill/${runId}`)
+}
+
+export function resumeStackBackfill(runId) {
+  return request(`/stack/backfill/${runId}/resume`, { method: 'POST' })
+}
+
 export function saveUserStack(body) {
   return request('/me/stack', {
     method: 'PUT',

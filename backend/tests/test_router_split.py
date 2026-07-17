@@ -191,6 +191,11 @@ EXPECTED_ROUTES = [
     ("POST", "/api/me/notifications/dismiss-all"),
     # Q3 CPE software catalog autocomplete
     ("GET", "/api/stack/catalog/suggest"),
+    # Q4 Tier A stack backfill
+    ("GET", "/api/stack/coverage"),
+    ("POST", "/api/stack/backfill/agree"),
+    ("GET", "/api/stack/backfill/{run_id}"),
+    ("POST", "/api/stack/backfill/{run_id}/resume"),
 ]
 
 

@@ -673,7 +673,7 @@
       "label": "routers.stack_catalog",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 1,
+      "endpoint_count": 5,
       "source_refs": [
         {
           "type": "file",
@@ -1198,6 +1198,30 @@
         {
           "type": "table",
           "ref": "software_catalog"
+        }
+      ]
+    },
+    {
+      "id": "table:stack_backfill_checkpoints",
+      "label": "stack_backfill_checkpoints",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "stack_backfill_checkpoints"
+        }
+      ]
+    },
+    {
+      "id": "table:stack_backfill_runs",
+      "label": "stack_backfill_runs",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "stack_backfill_runs"
         }
       ]
     },
@@ -4435,6 +4459,24 @@
       "id": "routers-stack_catalog->table:software_catalog",
       "source": "routers-stack_catalog",
       "target": "table:software_catalog",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-stack_catalog->table:stack_backfill_checkpoints",
+      "source": "routers-stack_catalog",
+      "target": "table:stack_backfill_checkpoints",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-stack_catalog->table:stack_backfill_runs",
+      "source": "routers-stack_catalog",
+      "target": "table:stack_backfill_runs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-stack_catalog->table:user_preferences",
+      "source": "routers-stack_catalog",
+      "target": "table:user_preferences",
       "kind": "references_table"
     },
     {

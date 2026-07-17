@@ -369,6 +369,18 @@ When no row exists yet, `stack_terms` is `""`, `profile` is `null`, and `updated
 
 **Response:** `{ok, query, items: [{vendor, product, display_name, category, versions}]}`. Versions are suggestions; free-typed versions remain allowed in the UI. Catalog is populated by scheduler job `cpe_catalog_sync` when `CPE_CATALOG_SYNC_ENABLED=1`.
 
+### GET /api/stack/coverage
+Auth required. Returns corpus hit counts for saved My Stack products, `needs_backfill` when any product is shallow (&lt;3 matching CVEs) and `STACK_BACKFILL_ENABLED=1`, plus preflight `eta` (low/high seconds).
+
+### POST /api/stack/backfill/agree
+Auth required. Enqueues Tier A backfill (NVD keyword pages → upsert → EPSS + KEV). `403` when `STACK_BACKFILL_ENABLED=0`. Response: `{ok, run_id, eta, message}`. Deep enrichment (OTX/exploits/correlation) is **not** part of Agree.
+
+### GET /api/stack/backfill/{run_id}
+Auth required (owner only). `{ok, run, checkpoints}` with status `pending|running|deferred|on_hold|partial|completed|failed|not_found` per product.
+
+### POST /api/stack/backfill/{run_id}/resume
+Auth required. Re-kicks a deferred/on_hold/partial run.
+
 ### GET /api/me/preferences
 
 **Description:** Read the authenticated user's display preferences and timezone.

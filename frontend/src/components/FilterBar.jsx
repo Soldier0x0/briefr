@@ -1,5 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
-import { fetchCVEsForExport } from '../api.js'
+import {
+  agreeStackBackfill,
+  fetchCVEsForExport,
+  fetchStackBackfillRun,
+  fetchStackCoverage,
+  resumeStackBackfill,
+} from '../api.js'
 import { notifyExportError, notifyExportProgress, notifyExportSuccess } from './Toast.jsx'
 import { notifyApiError } from './Toast.jsx'
 import { toApiCveParams } from '../utils/cveFilters.js'
@@ -84,10 +90,15 @@ export default function FilterBar({
   const [exporting, setExporting] = useState(null)
   const [exportError, setExportError] = useState(null)
   const [exportSuccess, setExportSuccess] = useState(null)
+  const [coverage, setCoverage] = useState(null)
+  const [backfillRun, setBackfillRun] = useState(null)
+  const [backfillBusy, setBackfillBusy] = useState(false)
+  const [backfillError, setBackfillError] = useState(null)
   const debounceRef  = useRef(null)
   const stackDebounceRef = useRef(null)
   const exportSuccessTimeoutRef = useRef(null)
   const searchRef    = useRef(null)
+  const pollRef = useRef(null)
 
   useEffect(() => {
     setLocalSearch(filters.search || '')
@@ -111,6 +122,71 @@ export default function FilterBar({
       searchRef.current.select()
     }
   }, [searchFocusTrigger])
+
+  useEffect(() => {
+    let cancelled = false
+    fetchStackCoverage()
+      .then((body) => {
+        if (!cancelled) setCoverage(body)
+      })
+      .catch(() => {
+        if (!cancelled) setCoverage(null)
+      })
+    return () => { cancelled = true }
+  }, [filters.stack, filters.my_stack_only])
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
+  }, [])
+
+  function startBackfillPolling(runId) {
+    if (pollRef.current) clearInterval(pollRef.current)
+    pollRef.current = setInterval(async () => {
+      try {
+        const st = await fetchStackBackfillRun(runId)
+        setBackfillRun(st.run)
+        if (['completed', 'partial', 'failed'].includes(st.run?.status)) {
+          clearInterval(pollRef.current)
+          pollRef.current = null
+          const cov = await fetchStackCoverage().catch(() => null)
+          if (cov) setCoverage(cov)
+        }
+      } catch {
+        /* ignore poll blips */
+      }
+    }, 2000)
+  }
+
+  async function handleAgreeBackfill() {
+    setBackfillBusy(true)
+    setBackfillError(null)
+    try {
+      const body = await agreeStackBackfill()
+      setBackfillRun({ id: body.run_id, status: 'pending', progress_message: body.message, ...body.eta })
+      startBackfillPolling(body.run_id)
+    } catch (e) {
+      setBackfillError(e?.message || 'Could not start Tier A backfill')
+    } finally {
+      setBackfillBusy(false)
+    }
+  }
+
+  async function handleResumeBackfill() {
+    if (!backfillRun?.id) return
+    setBackfillBusy(true)
+    try {
+      await resumeStackBackfill(backfillRun.id)
+      const st = await fetchStackBackfillRun(backfillRun.id)
+      setBackfillRun(st.run)
+      startBackfillPolling(backfillRun.id)
+    } catch (e) {
+      setBackfillError(e?.message || 'Resume failed')
+    } finally {
+      setBackfillBusy(false)
+    }
+  }
 
   const active = deriveActive(filters)
   const selectedVendors = parseVendors(filters.vendors)
@@ -369,6 +445,52 @@ export default function FilterBar({
             >
               ×
             </button>
+          </div>
+        )}
+
+        {coverage?.needs_backfill && (
+          <div className="stack-gap-banner" role="status" aria-label="Stack corpus gap">
+            <div className="stack-gap-banner-text">
+              <span className="mono stack-hint-label">CORPUS GAP</span>
+              {' '}
+              Shallow history for {coverage.shallow_count} stack product(s).
+              Tier A ETA ~{Math.round((coverage.eta?.eta_low_seconds || 0) / 60)}–
+              {Math.round((coverage.eta?.eta_high_seconds || 0) / 60)} min
+              {!coverage.eta?.has_nvd_key ? ' (anonymous NVD pacing — key recommended)' : ''}.
+              Deep intel stays on background jobs.
+            </div>
+            <button
+              type="button"
+              className="filter-export-btn mono"
+              disabled={backfillBusy}
+              onClick={handleAgreeBackfill}
+              aria-label="Agree to Tier A historical backfill"
+            >
+              {backfillBusy ? 'Starting…' : 'Agree — Tier A backfill'}
+            </button>
+          </div>
+        )}
+        {backfillError && (
+          <p className="mono" style={{ color: 'var(--status-error)', fontSize: 'var(--font-size-xs)', margin: 0 }}>
+            {backfillError}
+          </p>
+        )}
+        {backfillRun && (
+          <div className="stack-gap-banner" role="status" aria-label="Backfill progress">
+            <div className="stack-gap-banner-text mono">
+              Tier A [{backfillRun.status}] — {backfillRun.progress_message || 'Running…'}
+              {backfillRun.cves_upserted != null ? ` · ${backfillRun.cves_upserted} CVEs` : ''}
+            </div>
+            {['deferred', 'on_hold', 'partial'].includes(backfillRun.status) && (
+              <button
+                type="button"
+                className="filter-export-btn mono"
+                disabled={backfillBusy}
+                onClick={handleResumeBackfill}
+              >
+                Resume
+              </button>
+            )}
           </div>
         )}
 

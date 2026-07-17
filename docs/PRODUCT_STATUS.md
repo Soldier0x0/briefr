@@ -1,6 +1,6 @@
 # BRIEFR product status
 
-**Last updated:** 2026-07-17 (Q3 CPE catalog)  
+**Last updated:** 2026-07-17 (Q4 stack backfill)  
 **Purpose:** Single page for “what’s true in production today.” When README or beta docs disagree, this wins.
 
 ---
@@ -40,6 +40,7 @@
 | **Durable jobs (Q1)** | Procrastinate foundation behind `PROCRASTINATE_ENABLED` (default off). Alembic `028` applies schema; in-process worker on lifespan when enabled; `GET /api/admin/jobs/outbound` lists allowlisted job fields. In-memory `api_queue` pacing unchanged. |
 | **API metering (Q2)** | Every `resilient_request` attempt writes `api_call_events` (source, host/path template, status, latency, actor/job/run/request ids). Rollups + `api_usage.last_called_at` update on the same path. Admin → API keys shows 24h by-source / by-actor breakdown (`GET /api/admin/api-usage/metering`). Retention 30d. Flag: `API_CALL_EVENTS_ENABLED` (default on). |
 | **CPE catalog (Q3)** | `software_catalog` from NVD CPE 2.3 API (scheduler `cpe_catalog_sync`, `CPE_CATALOG_SYNC_ENABLED=0` default). Checkpointed full then incremental sync; respects NVD pacing + metering. `GET /api/stack/catalog/suggest` (≥3 chars) for stack typeahead; Asset wizard merges server hints with curated lists. |
+| **Stack Tier A (Q4)** | Opt-in historical NVD+KEV+EPSS backfill for shallow stack coverage (`STACK_BACKFILL_ENABLED=0` default). `GET /api/stack/coverage`, `POST /api/stack/backfill/agree`, run status/resume. Checkpointed per product; FEED gap banner + Agree. Deep intel stays on background jobs. |
 | **Docker compose** | Postgres compose exists; full V2.0 platform compose not shipped. |
 
 ---

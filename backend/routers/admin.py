@@ -1210,6 +1210,9 @@ def _get_config_response() -> dict[str, Any]:
             "CPE_CATALOG_SYNC_ENABLED": _env("CPE_CATALOG_SYNC_ENABLED", "0"),
             "CPE_CATALOG_SYNC_INTERVAL_HOURS": _env_int("CPE_CATALOG_SYNC_INTERVAL_HOURS", 6),
             "CPE_CATALOG_MAX_PAGES": _env_int("CPE_CATALOG_MAX_PAGES", 10),
+            "STACK_BACKFILL_ENABLED": _env("STACK_BACKFILL_ENABLED", "0"),
+            "STACK_BACKFILL_MAX_PRODUCTS": _env_int("STACK_BACKFILL_MAX_PRODUCTS", 10),
+            "STACK_BACKFILL_MAX_CVES": _env_int("STACK_BACKFILL_MAX_CVES", 5000),
         },
         "ml": {
             "EMBEDDINGS_ENABLED": _env("EMBEDDINGS_ENABLED", "0"),
