@@ -22,9 +22,13 @@ def is_procrastinate_enabled() -> bool:
 
 def _database_url() -> str | None:
     url = (os.environ.get("DATABASE_URL") or "").strip()
-    if not url.startswith("postgresql"):
+    if not url.startswith("postgres"):
         return None
-    return url.replace("postgresql+asyncpg://", "postgresql://", 1)
+    return (
+        url.replace("postgresql+asyncpg://", "postgresql://", 1)
+        .replace("postgres+asyncpg://", "postgresql://", 1)
+        .replace("postgres://", "postgresql://", 1)
+    )
 
 
 def get_app(*, create: bool = True) -> "procrastinate.App | None":

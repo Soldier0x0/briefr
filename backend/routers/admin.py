@@ -1757,13 +1757,15 @@ async def list_outbound_jobs(request: Request, limit: int = 50):
     from jobs.app import is_procrastinate_enabled
 
     enabled = is_procrastinate_enabled()
+    if not enabled:
+        return {"enabled": False, "jobs": [], "count": 0}
     db = await get_db()
     try:
-        jobs = await list_recent_outbound_jobs(db, limit=limit) if enabled else []
+        jobs = await list_recent_outbound_jobs(db, limit=limit)
     finally:
         await db.close()
     return {
-        "enabled": enabled,
+        "enabled": True,
         "jobs": jobs,
         "count": len(jobs),
     }

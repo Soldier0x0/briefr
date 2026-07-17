@@ -10,12 +10,11 @@ from task_registry import register_background_task
 logger = logging.getLogger(__name__)
 
 _worker_task: asyncio.Task | None = None
-_stop_event: asyncio.Event | None = None
 
 
 async def start_inprocess_worker() -> bool:
     """Start a background worker when Procrastinate is enabled. Returns True if started."""
-    global _worker_task, _stop_event
+    global _worker_task
     from jobs.app import is_procrastinate_enabled, open_app
 
     if not is_procrastinate_enabled():
@@ -26,12 +25,9 @@ async def start_inprocess_worker() -> bool:
     if _worker_task is not None and not _worker_task.done():
         return True
 
-    _stop_event = asyncio.Event()
-
     async def _run() -> None:
         logger.info("Procrastinate in-process worker starting (queue=briefr)")
         try:
-            # wait=True blocks until cancelled; concurrency bounded.
             await app.run_worker_async(queues=["briefr"], concurrency=1, wait=True)
         except asyncio.CancelledError:
             logger.info("Procrastinate worker cancelled")
@@ -44,7 +40,7 @@ async def start_inprocess_worker() -> bool:
 
 
 async def stop_inprocess_worker() -> None:
-    global _worker_task, _stop_event
+    global _worker_task
     from jobs.app import close_app
 
     if _worker_task is not None and not _worker_task.done():
@@ -54,5 +50,4 @@ async def stop_inprocess_worker() -> None:
         except (asyncio.CancelledError, Exception):
             pass
     _worker_task = None
-    _stop_event = None
     await close_app()

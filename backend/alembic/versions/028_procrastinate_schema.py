@@ -8,7 +8,6 @@ Create Date: 2026-07-17
 from __future__ import annotations
 
 from alembic import op
-from sqlalchemy import text
 
 revision = "028_procrastinate_schema"
 down_revision = "027_alembic_version_num_widen"
@@ -21,8 +20,8 @@ def upgrade() -> None:
 
     sql = SchemaManager.get_schema()
     conn = op.get_bind()
-    # Raw script (DO $$ … ENUM … CREATE TABLE). Avoid Alembic % bind rules.
-    conn.execute(text(sql))
+    # Literal SQL (includes :: casts) — do not use text()/bind parsing.
+    conn.exec_driver_sql(sql)
 
 
 def downgrade() -> None:
