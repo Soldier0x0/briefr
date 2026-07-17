@@ -322,8 +322,7 @@ Flowchart: [`docs/diagrams/startup.mermaid`](diagrams/startup.mermaid) (schedule
      created backlog row, one `user_notifications` insert per active analyst
      (`entity_type="kev_backlog"`, `dedupe_key=f"kev_backlog:{cve_id}:
      {technique_id}"`). `NotificationBell.jsx` deep-links `kev_backlog`
-     clicks to `/?view=backlog`, reusing the same `?view=` App-tab-activation
-     effect FR-2 built for the `?cve=` deep link.
+     clicks to `/?tab=forge&view=backlog` (legacy `?view=backlog` still works).
    - **CWE/EPSS:** `list_hunt_packs` (Library) and `get_hunt_pack` (rail)
      extend their existing `cves` join/query to also select `cwe_ids`,
      `cvss_score`, `epss_score` — no new query, same columns the
