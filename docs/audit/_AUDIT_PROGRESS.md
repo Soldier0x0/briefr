@@ -40,7 +40,7 @@
 | 5 | Product/UX/UI/Design-system/A11y/Responsive/Forms/Charts (full list) | [PHASE_05_product_ux.md](PHASE_05_product_ux.md) | ✅ DONE (pushed) |
 | 6 | Performance / DB-query / FE / BE / Scalability / Resource | [PHASE_06_performance.md](PHASE_06_performance.md) | ✅ DONE (pushed) |
 | 7 | Security / Auth / RBAC / Input-val / API-sec / Secrets / Privacy / Supply-chain | [PHASE_07_security.md](PHASE_07_security.md) | ✅ DONE (pushed) |
-| 8 | Logging / Monitoring / Observability / Alerting / Ops / Config / Backup / DR / Deploy / Upgrade | `PHASE_08_operations.md` | ⬜ TODO |
+| 8 | Logging / Monitoring / Observability / Alerting / Ops / Config / Backup / DR / Deploy / Upgrade | [PHASE_08_operations.md](PHASE_08_operations.md) | ✅ DONE (pushed) |
 | 9 | Cross-browser / Cross-platform / Compatibility / Reliability / Chaos / Recovery | `PHASE_09_reliability.md` | ⬜ TODO |
 | 10 | User / Admin / Developer / API / Architecture documentation | `PHASE_10_documentation.md` | ⬜ TODO |
 | 11 | Enterprise-SaaS / Production / Release readiness | `PHASE_11_readiness.md` | ⬜ TODO |
