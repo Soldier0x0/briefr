@@ -1920,6 +1920,13 @@ Security panel readout. Response: `{failed_auth_last_24h, environment, posture_w
 
 `posture_warnings` (Sprint A6) lists every unsafe flag in the current config — `RATE_LIMIT_ENABLED=0`, `AUTH_COOKIE_SECURE=0`, `WALLBOARD_TOKEN unset` — regardless of environment; at startup the same list is logged as one warning per flag when `BRIEFR_ENV=production`.
 
+### `POST /api/admin/feeds/epss/force-resync`
+
+Clears stored EPSS CSV file identity (`sync_state.epss_csv_file_identity`) so the
+next scheduled or triggered EPSS sync re-parses and applies scores even if the
+remote FIRST CSV.GZ bytes are unchanged. Admin JWT required.
+Returns `{ok, cleared, message}`.
+
 **All other admin endpoints** (`GET/DELETE /api/admin/watchlist*`, `GET/DELETE /api/admin/ioc-cache*`, `GET/DELETE /api/admin/hunt-packs*`, `GET/POST /api/admin/config`, `POST /api/admin/config/webhook-test`, `GET/POST /api/admin/scheduler/*`, `GET/POST /api/admin/feeds/*`, `POST /api/admin/backups/*`, `GET /api/admin/backups`) remain as documented in V1.3; scheduler jobs now include `status` field (ACTIVE/PAUSED/LOCKED/DISABLED), `last_error_message`, and `run_history` (array of last 5 runs).
 
 ---
@@ -2003,3 +2010,4 @@ The `/api/docs` endpoint (Swagger UI) is available at `http://localhost:8000/api
 ## Frontend smoke (CI — no new endpoints)
 
 Beta V1.2 adds Chromium Playwright coverage in GitHub Actions (`playwright-smoke` job). The suite seeds SQLite via `scripts/seed_screenshot_data.py`, serves the built SPA, and exercises existing routes only — for example `GET /api/cves`, `GET /api/stats`, `GET /api/case-studies/feed`, and drawer detail fetches. No request/response shapes change; see `backend/tests/test_playwright_smoke.py`.
+

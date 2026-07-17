@@ -12,6 +12,19 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — Q5 EPSS file-identity skip (Phase Q complete)
+
+**What:** When FIRST EPSS CSV.GZ `sha256` (+ `score_date` header) matches
+`sync_state.epss_csv_file_identity`, skip gunzip/parse/DB writes. Helpers in
+`feeds/file_identity.py` (reusable for future KEV). Force path:
+`POST /api/admin/feeds/epss/force-resync`. Tests: `test_epss_identity_q5.py`.
+
+**Phase Q status:** Q1–Q5 complete.
+
+**Next:** Sprint queue after Q (embeddings E1+, or next unchecked sprint item).
+
+---
+
 ## 2026-07-17 — Q4 Stack Tier A backfill + gap banner
 
 **What:** `stack_backfill_runs` / checkpoints (Alembic `031`). Coverage API +

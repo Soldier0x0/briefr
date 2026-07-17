@@ -2,9 +2,11 @@ import asyncio
 import csv
 import gzip
 import logging
+from typing import Any
 
 import httpx
 
+from feeds.file_identity import parse_epss_score_date, sha256_bytes
 from resilient_client import CircuitOpenError, resilient_get
 from tracking import record_api_call
 
@@ -17,6 +19,50 @@ BATCH_SIZE = 100
 # Backfill constants — 100 CVEs per request, 2 s between batches ≈ 30 req/min
 BACKFILL_BATCH_SIZE = 100
 BACKFILL_THROTTLE_SECONDS = 2.0
+
+
+async def download_epss_csv_gz() -> tuple[bytes, str] | tuple[None, None]:
+    """Download EPSS current CSV gzip. Returns (raw_gz, sha256) or (None, None)."""
+    try:
+        response = await resilient_get(
+            "epss_bulk",
+            EPSS_CSV_URL,
+            timeout=120.0,
+            queue_operation="cve_ingest",
+            queue_context_type="task",
+            queue_context_id="epss_bulk_sync",
+        )
+        raw = response.content
+    except CircuitOpenError:
+        logger.warning("EPSS bulk circuit open — skipping CSV download")
+        return None, None
+    except httpx.HTTPError as exc:
+        logger.error("EPSS bulk CSV download failed: %s", exc)
+        return None, None
+    except Exception as exc:
+        logger.error("EPSS bulk CSV download unexpected error: %s", exc)
+        return None, None
+    await record_api_call("epss", 1)
+    return raw, sha256_bytes(raw)
+
+
+def parse_epss_csv_gz(raw_gz: bytes, needed: set[str] | None = None) -> tuple[dict[str, dict], str | None]:
+    """Gunzip + parse EPSS CSV. Returns (scores, score_date)."""
+    raw = gzip.decompress(raw_gz)
+    text = raw.decode("utf-8", errors="replace")
+    score_date = parse_epss_score_date(text)
+    scores: dict[str, dict] = {}
+    reader = csv.DictReader(
+        (line for line in text.splitlines() if line and not line.startswith("#")),
+    )
+    for row in reader:
+        cve_id = (row.get("cve") or "").upper()
+        if needed is not None and cve_id not in needed:
+            continue
+        parsed = _parse_epss_fields(row.get("epss"), row.get("percentile"))
+        if parsed is not None:
+            scores[cve_id] = parsed
+    return scores, score_date
 
 
 def _parse_epss_fields(epss_val: object, percentile_val: object) -> dict | None:
@@ -80,48 +126,48 @@ async def fetch_epss_bulk(cve_ids: set[str]) -> dict[str, dict]:
         return {}
 
     needed = {c.upper() for c in cve_ids}
-    scores: dict[str, dict] = {}
-
+    raw_gz, _sha = await download_epss_csv_gz()
+    if not raw_gz:
+        return {}
     try:
-        response = await resilient_get(
-            "epss_bulk",
-            EPSS_CSV_URL,
-            timeout=120.0,
-            queue_operation="cve_ingest",
-            queue_context_type="task",
-            queue_context_id="epss_bulk_sync",
-        )
-        raw = gzip.decompress(response.content)
-    except CircuitOpenError:
-        logger.warning("EPSS bulk circuit open — skipping CSV download")
-        return {}
-    except httpx.HTTPError as exc:
-        logger.error("EPSS bulk CSV download failed: %s", exc)
-        return {}
+        scores, _score_date = parse_epss_csv_gz(raw_gz, needed)
     except Exception as exc:
         logger.error("EPSS bulk CSV parse failed: %s", exc)
         return {}
 
-    text = raw.decode("utf-8", errors="replace")
-    reader = csv.DictReader(
-        (line for line in text.splitlines() if line and not line.startswith("#")),
-    )
-
-    for row in reader:
-        cve_id = (row.get("cve") or "").upper()
-        if cve_id not in needed:
-            continue
-        parsed = _parse_epss_fields(row.get("epss"), row.get("percentile"))
-        if parsed is not None:
-            scores[cve_id] = parsed
-
-    await record_api_call("epss", 1)
     logger.info(
         "EPSS bulk CSV: matched %d/%d CVEs from feed",
         len(scores),
         len(needed),
     )
     return scores
+
+
+async def fetch_epss_bulk_with_identity(
+    cve_ids: list[str] | set[str],
+) -> dict[str, Any]:
+    """Download EPSS CSV and return scores + file identity metadata (Q5).
+
+    Returns ``{scores, sha256, score_date, skipped}``. Callers that already
+    applied this sha256 may short-circuit before calling this (after download
+    hash check) via ``download_epss_csv_gz`` + ``identity_matches``.
+    """
+    unique = {c.upper() for c in cve_ids}
+    raw_gz, digest = await download_epss_csv_gz()
+    if not raw_gz or not digest:
+        return {"scores": {}, "sha256": None, "score_date": None, "skipped": False}
+    try:
+        scores, score_date = parse_epss_csv_gz(raw_gz, unique)
+    except Exception as exc:
+        logger.error("EPSS bulk CSV parse failed: %s", exc)
+        return {"scores": {}, "sha256": digest, "score_date": None, "skipped": False}
+    return {
+        "scores": scores,
+        "sha256": digest,
+        "score_date": score_date,
+        "skipped": False,
+        "raw_gz": raw_gz,
+    }
 
 
 async def fetch_epss_api(cve_ids: list) -> dict[str, dict]:

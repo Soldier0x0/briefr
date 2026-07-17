@@ -43,6 +43,7 @@ from database import (
     set_sync_state_value,
 )
 from db.integrity import run_integrity_check
+from feeds.file_identity import EPSS_FILE_IDENTITY_KEY, clear_file_identity
 from config_schema import (
     APPLY_RESTART,
     APPLY_SCHEDULER_RESCHEDULE,
@@ -2032,6 +2033,23 @@ async def reset_feed_circuit(source_id: str, request: Request):
         raise HTTPException(404, f"Source '{source_id}' not found in health registry")
     await audit(request, f"feed.circuit_reset.{source_id}", source_id)
     return {"ok": True, "source_id": source_id}
+
+
+@router.post("/feeds/epss/force-resync")
+async def force_epss_resync(request: Request):
+    """Clear EPSS CSV file identity so the next sync re-applies scores (Q5)."""
+    db = await get_db()
+    try:
+        await clear_file_identity(db, EPSS_FILE_IDENTITY_KEY)
+        await db.commit()
+    finally:
+        await db.close()
+    await audit(request, "feed.epss.force_resync", "epss_csv_file_identity")
+    return {
+        "ok": True,
+        "cleared": EPSS_FILE_IDENTITY_KEY,
+        "message": "EPSS file identity cleared — next epss_score_sync will re-apply",
+    }
 
 
 @router.post("/incidents/refresh")

@@ -94,6 +94,9 @@ endpoints:
   path: /api/admin/display/typography-default
   component_id: routers-admin
 - method: POST
+  path: /api/admin/feeds/epss/force-resync
+  component_id: routers-admin
+- method: POST
   path: /api/admin/feeds/{source_id}/reset-circuit
   component_id: routers-admin
 - method: GET
