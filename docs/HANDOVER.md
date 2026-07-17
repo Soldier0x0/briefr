@@ -12,6 +12,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — Forge ATT&CK navigator uniform layout
+
+**What / RCA:** Navigator looked uneven because (1) tactic columns started
+collapsed behind a `+` that toggled wider “dense” cards with names, and
+(2) the sub-technique `▸` control only rendered on parents with children,
+so technique cards started at different horizontal offsets.
+
+**Fix:** Always show id + name; remove column `+`; equal 220px columns with
+shared height; reserve a toggle gutter (spacer) on every row; parents with
+children open by default. Legend moved to navigator header.
+
+**Next:** Merge LLM free-model defaults (#651) → activate Q1–Q5 → E1–E6.
+
+---
+
 ## 2026-07-16 — DC-4 Forge hunt packs use detection composer
 
 **What:** `POST /api/hunt-packs/generate` uses `compose_detection_evidence` + `emit_composed_detection` (`include_community=False` — no GitHub on Forge path). Artifact evidence injects into Sigma/SIEM; response adds `compose_basis` + `evidence_summary`. Detection composer program (DC-1…DC-4) complete.

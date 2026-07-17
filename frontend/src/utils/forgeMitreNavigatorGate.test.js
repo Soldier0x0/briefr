@@ -24,11 +24,22 @@ describe('PM-4d Forge MITRE navigator gate', () => {
     assert.doesNotMatch(view, /fg-tech-row/)
   })
 
-  it('nav label is ATT&CK navigator; CSS has column scroll', () => {
+  it('shows technique names directly — no per-column + expand gate', () => {
+    const view = read(COVERAGE)
+    assert.match(view, /fg-tech-node-name/)
+    assert.doesNotMatch(view, /fg-tactic-expand/)
+    assert.doesNotMatch(view, /Collapse column detail/)
+    assert.match(view, /fg-tech-tree-toggle--spacer/)
+  })
+
+  it('nav label is ATT&CK navigator; CSS has uniform column width', () => {
     assert.match(read(FORGE), /label:\s*'ATT&CK navigator'/)
     const css = read(CSS)
     assert.match(css, /\.fg-navigator-scroll/)
+    assert.match(css, /\.fg-tactic-col-wrap/)
     assert.match(css, /\.fg-tactic-col/)
     assert.match(css, /\.fg-tech-node/)
+    assert.doesNotMatch(css, /\.fg-tactic-col--expanded/)
+    assert.doesNotMatch(css, /\.fg-tactic-expand\b/)
   })
 })
