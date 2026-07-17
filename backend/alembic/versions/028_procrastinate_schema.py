@@ -21,7 +21,18 @@ def upgrade() -> None:
     sql = SchemaManager.get_schema()
     conn = op.get_bind()
     # Literal SQL (includes :: casts) — do not use text()/bind parsing.
-    conn.exec_driver_sql(sql)
+    #
+    # The vendored Procrastinate DDL contains PL/pgSQL RAISE format strings
+    # such as `RAISE '... (job id: %)', job_id;`. exec_driver_sql still passes
+    # the statement through the DBAPI driver's own placeholder parser, and the
+    # production psycopg3 driver reads `%` as a query-parameter marker — `%)`
+    # is not a valid one, so the whole statement is rejected
+    # ("only '%s', '%b', '%t' are allowed as placeholders, got '%)'"). Doubling
+    # every literal `%` to `%%` is psycopg's escape for a literal percent; the
+    # driver un-doubles it back to `%` before sending to Postgres, so the
+    # stored functions keep their intended `... (job id: %)` text. The schema
+    # has no real bind parameters, so escaping every `%` is safe.
+    conn.exec_driver_sql(sql.replace("%", "%%"))
 
 
 def downgrade() -> None:
