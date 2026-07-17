@@ -31,6 +31,8 @@ SYNC_START_KEY = "cpe_catalog_start_index"
 SYNC_TOTAL_KEY = "cpe_catalog_total_results"
 SYNC_LAST_MOD_KEY = "cpe_catalog_last_mod"
 SYNC_MODE_KEY = "cpe_catalog_mode"  # full | incremental
+SYNC_WINDOW_START_KEY = "cpe_catalog_window_start"
+SYNC_WINDOW_END_KEY = "cpe_catalog_window_end"
 
 
 def cpe_catalog_sync_enabled() -> bool:
@@ -141,7 +143,11 @@ async def fetch_cpe_page(
 
 
 async def sync_cpe_catalog(db, *, progress_cb=None) -> dict[str, Any]:
-    """Checkpointed sync. Returns stats dict."""
+    """Checkpointed sync. Returns stats dict.
+
+    Incremental windows are sticky in sync_state until fully drained so a
+    max_pages stop does not advance the watermark and skip remaining pages.
+    """
     page_size = _page_size()
     max_pages = _max_pages()
     mode = (await get_sync_state_value(db, SYNC_MODE_KEY)) or "full"
@@ -154,15 +160,27 @@ async def sync_cpe_catalog(db, *, progress_cb=None) -> dict[str, Any]:
     last_mod_start = None
     last_mod_end = None
     if mode == "incremental":
-        last = await get_sync_state_value(db, SYNC_LAST_MOD_KEY)
-        now = datetime.now(timezone.utc)
-        # NVD requires both ends; max window 120 days — use last watermark or 7d.
-        if last:
-            last_mod_start = last
+        window_start = await get_sync_state_value(db, SYNC_WINDOW_START_KEY)
+        window_end = await get_sync_state_value(db, SYNC_WINDOW_END_KEY)
+        if window_start and window_end:
+            last_mod_start = window_start
+            last_mod_end = window_end
+            # Resume mid-window from SYNC_START_KEY (already loaded).
         else:
-            last_mod_start = (now - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%S.000")
-        last_mod_end = now.strftime("%Y-%m-%dT%H:%M:%S.000")
-        start_index = 0
+            last = await get_sync_state_value(db, SYNC_LAST_MOD_KEY)
+            now = datetime.now(timezone.utc)
+            if last:
+                last_mod_start = last
+            else:
+                last_mod_start = (now - timedelta(days=7)).strftime(
+                    "%Y-%m-%dT%H:%M:%S.000"
+                )
+            last_mod_end = now.strftime("%Y-%m-%dT%H:%M:%S.000")
+            start_index = 0
+            await set_sync_state_value(db, SYNC_WINDOW_START_KEY, last_mod_start)
+            await set_sync_state_value(db, SYNC_WINDOW_END_KEY, last_mod_end)
+            await set_sync_state_value(db, SYNC_START_KEY, "0")
+            await db.commit()
 
     while pages < max_pages:
         if progress_cb:
@@ -193,22 +211,19 @@ async def sync_cpe_catalog(db, *, progress_cb=None) -> dict[str, Any]:
         if start_index >= total_results or not products:
             break
 
-    complete = start_index >= total_results if total_results else (pages > 0 and not products)
-    if mode == "full" and complete:
-        await set_sync_state_value(db, SYNC_MODE_KEY, "incremental")
+    complete = (
+        start_index >= total_results if total_results else (pages > 0 and not products)
+    )
+    if complete:
+        watermark = last_mod_end or datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%S.000"
+        )
+        if mode == "full":
+            await set_sync_state_value(db, SYNC_MODE_KEY, "incremental")
         await set_sync_state_value(db, SYNC_START_KEY, "0")
-        await set_sync_state_value(
-            db,
-            SYNC_LAST_MOD_KEY,
-            datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000"),
-        )
-        await db.commit()
-    elif mode == "incremental":
-        await set_sync_state_value(
-            db,
-            SYNC_LAST_MOD_KEY,
-            datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000"),
-        )
+        await set_sync_state_value(db, SYNC_LAST_MOD_KEY, watermark)
+        await set_sync_state_value(db, SYNC_WINDOW_START_KEY, "")
+        await set_sync_state_value(db, SYNC_WINDOW_END_KEY, "")
         await db.commit()
 
     stats = {

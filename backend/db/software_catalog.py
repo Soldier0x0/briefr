@@ -129,13 +129,12 @@ async def upsert_catalog_rows(db: DbConnection, rows: list[dict[str, Any]]) -> i
     sql = _UPSERT_PG if is_postgres() else _UPSERT_SQLITE
     now = datetime.now(timezone.utc)
     ts: Any = now if is_postgres() else now.replace(tzinfo=None).isoformat(sep=" ")
-    count = 0
+    params_batch: list[tuple] = []
     for row in rows:
         versions = row.get("versions_json")
         if isinstance(versions, (list, dict)):
             versions = json.dumps(versions)
-        await db.execute(
-            sql,
+        params_batch.append(
             (
                 row["cpe_uri"],
                 row["vendor"],
@@ -146,10 +145,10 @@ async def upsert_catalog_rows(db: DbConnection, rows: list[dict[str, Any]]) -> i
                 row.get("title"),
                 versions,
                 ts,
-            ),
+            )
         )
-        count += 1
-    return count
+    await db.executemany(sql, params_batch)
+    return len(params_batch)
 
 
 async def suggest_software(
@@ -175,7 +174,9 @@ async def suggest_software(
             params = [like, limit, cat]
         rows = await db.execute_fetchall(
             f"""
-            SELECT vendor, product, display_name, category,
+            SELECT vendor, product,
+                   COALESCE(MAX(display_name), MAX(product)) AS display_name,
+                   COALESCE(MAX(category), 'other') AS category,
                    ARRAY_AGG(DISTINCT version) FILTER (
                      WHERE version IS NOT NULL
                        AND version NOT IN ('*', '-', '')
@@ -183,11 +184,11 @@ async def suggest_software(
             FROM software_catalog
             WHERE (
                 lower(product) LIKE $1
-                OR lower(display_name) LIKE $1
+                OR lower(COALESCE(display_name, '')) LIKE $1
                 OR lower(vendor) LIKE $1
             )
             {cat_sql}
-            GROUP BY vendor, product, display_name, category
+            GROUP BY vendor, product
             ORDER BY
               CASE WHEN lower(product) LIKE $1 THEN 0 ELSE 1 END,
               display_name

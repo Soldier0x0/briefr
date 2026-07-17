@@ -38,6 +38,7 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
   const [step, setStep] = useState(0)
   const [profile, setProfile] = useState(() => initialProfile || buildEmptyProfile())
   const [catalogHints, setCatalogHints] = useState([])
+  const [activeRowIdx, setActiveRowIdx] = useState(null)
   const fileRef = useRef(null)
   const catalogQueryRef = useRef('')
 
@@ -47,7 +48,11 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
       return undefined
     }
     const rows = step === 0 ? (profile.operatingSystems || []) : (profile.applications || [])
-    const active = rows.find((r) => (r.product || '').trim().length >= 3)
+    if (activeRowIdx == null || activeRowIdx < 0 || activeRowIdx >= rows.length) {
+      setCatalogHints([])
+      return undefined
+    }
+    const active = rows[activeRowIdx]
     const q = (active?.product || '').trim()
     catalogQueryRef.current = q
     if (q.length < 3) {
@@ -72,7 +77,7 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
       cancelled = true
       clearTimeout(t)
     }
-  }, [step, profile.operatingSystems, profile.applications])
+  }, [step, activeRowIdx, profile.operatingSystems, profile.applications])
 
   function updateOs(idx, field, value) {
     setProfile(prev => {
@@ -195,10 +200,14 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
                   placeholder="Product name"
                   value={os.product}
                   list={`os-suggest-${idx}`}
-                  onChange={e => updateOs(idx, 'product', e.target.value)}
+                  onChange={(e) => {
+                    updateOs(idx, 'product', e.target.value)
+                    setActiveRowIdx(idx)
+                  }}
+                  onFocus={() => setActiveRowIdx(idx)}
                 />
                 <datalist id={`os-suggest-${idx}`}>
-                  {catalogHints.map((h) => (
+                  {activeRowIdx === idx && catalogHints.map((h) => (
                     <option key={`c-${h.vendor}-${h.product}`} value={h.display_name || h.product} />
                   ))}
                   {filterSuggestions(OS_SUGGESTIONS, os.product).map(s => (
@@ -233,10 +242,14 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
                   placeholder="Product"
                   value={app.product}
                   list={`app-suggest-${idx}`}
-                  onChange={e => updateApp(idx, 'product', e.target.value)}
+                  onChange={(e) => {
+                    updateApp(idx, 'product', e.target.value)
+                    setActiveRowIdx(idx)
+                  }}
+                  onFocus={() => setActiveRowIdx(idx)}
                 />
                 <datalist id={`app-suggest-${idx}`}>
-                  {catalogHints.map((h) => (
+                  {activeRowIdx === idx && catalogHints.map((h) => (
                     <option key={`c-${h.vendor}-${h.product}`} value={h.display_name || h.product} />
                   ))}
                   {filterSuggestions(ENTERPRISE_PRODUCTS, app.product).map(p => (
