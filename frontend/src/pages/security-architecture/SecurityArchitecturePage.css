@@ -688,6 +688,182 @@
   border-color: var(--green);
 }
 
+/* ── TM-6 framework workspaces (CWE / OWASP / CAPEC / STRIDE) ───────── */
+
+.sa-fw-subtitle {
+  font-size: 0.8125rem;
+  color: var(--text2);
+  margin: 0 0 14px;
+  max-width: 70ch;
+}
+
+.sa-fw-badge {
+  font-size: var(--type-micro);
+  letter-spacing: 0.06em;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  margin-left: 8px;
+}
+
+.sa-fw-badge-heuristic {
+  color: var(--amber);
+  border-color: var(--amber);
+  cursor: help;
+}
+
+.sa-scope-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 4px 0 14px;
+}
+
+.sa-scope-btn {
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  cursor: pointer;
+}
+
+.sa-scope-btn:hover {
+  background: var(--bg2);
+  color: var(--text);
+}
+
+.sa-scope-btn.active {
+  background: var(--surface-selected);
+  border-color: var(--border-active);
+  color: var(--accent-selected);
+}
+
+.sa-scope-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+  margin: 0 6px;
+}
+
+.sa-fw-select {
+  font-size: 0.75rem;
+  padding: 5px 8px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.sa-fw-select:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.sa-fw-meta {
+  font-size: 0.75rem;
+  color: var(--text3);
+  margin: 0 0 12px;
+}
+
+.sa-fw-trunc {
+  color: var(--amber);
+  cursor: help;
+}
+
+.sa-fw-title-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sa-fw-id {
+  font-size: var(--type-micro);
+  color: var(--text3);
+}
+
+.sa-fw-cat-summary {
+  font-size: 0.75rem;
+  color: var(--text2);
+}
+
+.sa-fw-count {
+  font-size: 0.9375rem;
+  color: var(--text);
+}
+
+.sa-fw-dim {
+  color: var(--text3);
+}
+
+.sa-fw-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.sa-cve-chip {
+  font-size: var(--type-micro);
+  padding: 1px 6px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  cursor: pointer;
+}
+
+.sa-cve-chip:hover {
+  color: var(--accent);
+  border-color: var(--border-active);
+}
+
+.sa-cve-chip-kev {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.sa-cwe-tags,
+.sa-cwe-tag {
+  font-size: var(--type-micro);
+}
+
+.sa-cwe-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.sa-cwe-tag {
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  color: var(--text2);
+}
+
+.sa-cwe-tag-more {
+  color: var(--text3);
+}
+
+.sa-fw-unmapped {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--bg2);
+  border: 1px dashed var(--border);
+}
+
+.sa-fw-unmapped-count {
+  font-size: 0.8125rem;
+  color: var(--text);
+}
+
+.sa-fw-unmapped-note {
+  font-size: 0.75rem;
+  color: var(--text3);
+}
+
 /* ── Context rail ──────────────────────────────────────────────────── */
 
 .sa-rail {

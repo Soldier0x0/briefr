@@ -82,10 +82,11 @@
 | Postgres, auth, rate limits, API queue, shared rate-limit store (#437) | Full `docker-compose.yml` (V2.0) |
 | Correlation v3 complete (#473…#513) | STIX export (excluded from current loop) |
 | Forge redesign FR-1…FR-3 (#490, #492, #495) | **G0** LEARNING_PATH / ONBOARDING refresh |
-| Threat modeling TM-0…TM-5 (#491, #493–#497) | TM-6+ framework workspaces (evidence-gated) |
+| Threat modeling TM-0…TM-5 (#491, #493–#497); **TM-6 CWE/OWASP/CAPEC/STRIDE framework workspaces** | TM-6 NIST CSF / ASVS (operator control-backed, follow-up); self-monitoring/remediation job |
 | Admin ops, webhooks (#413–#415), wallboard v2 (#430), O-3 kiosk config (#514), AI ops (#416–#420), 12-PR operator bundle (#428–#439), 4-PR tail (#441–#444), LLM summary auth | |
 | **PM-3 ARCH graph** (cursor zoom, fit-to-view, viewport-locked shell, strong focus dim, truncated labels, toggle-deselect, one-hop SQL edges via db helpers/`database` shim, focus-only edge draw, core/external nodes, inline node detail, admin corpus drift) | Detection composer (parked); G0–G4 end-of-lifecycle |
 | **PM-4a** Admin → Security posture (`?p=securityposture`) — Overview / System Architecture / Trust Boundaries / Attack Surface / Risks; analyst read-only | |
+| **TM-6** Admin → Security posture FRAMEWORKS group — CWE / OWASP Top 10 (2021) / CAPEC / STRIDE workspaces over the user's own live CVE data (Scope: All / My Stack / Watchlist / KEV + severity), projected from live `cves.cwe_ids`; every count drills through to `example_cves`, unmapped bucket keeps totals honest | |
 | **PM-4b** Analyst ARCH: no Security Decisions / Reviews / Components nav; no corpus footer (API/YAML kept) | |
 | **PM-4c** ARCH header tab removed; `/security-architecture` redirects to Admin Security posture | |
 | **PM-4d** FORGE MITRE ATT&CK navigator — top view tabs; matrix-style tactic columns (id + name); click toggles selection; hunt pack only on coverage (clears when leaving); no GAP/COMMUNITY/YOURS chrome | |

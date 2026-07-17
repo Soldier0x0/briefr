@@ -1251,7 +1251,7 @@ Optional webhook event: `kev_backlog`.
 
 ---
 
-## Security Architecture (TM-0→TM-5 — committed program complete)
+## Security Architecture (TM-0→TM-5 committed program; TM-6 analyst framework workspaces)
 
 Mounted at `/api/security-architecture/*`, session auth required (analyst+). Backed by
 the Security Architecture Corpus (SAC) — versioned YAML under
@@ -1292,9 +1292,20 @@ CSV + PDF export), Decision Records (`DecisionsSection.jsx`), Abuse Cases
 curated + live audit-log timeline), Stale Records (`StaleRecordsSection.jsx`,
 cross-section drill-through), and global search (`GlobalSearch.jsx`, topbar) — this
 closes the committed program (TM-0→TM-5, 5 PRs, 11 sections) per
-`docs/planning/specs/threat-modeling-security-architecture.md` §8. TM-6+ framework
-workspaces (STRIDE/OWASP/CAPEC/CWE/NIST CSF/ASVS) are evidence-gated future work, not
-queued.
+`docs/planning/specs/threat-modeling-security-architecture.md` §8.
+
+**TM-6 framework workspaces (analyst threat-intelligence lens).** Four framework sections
+— `cwe`, `owasp`, `capec`, `stride` — ship as live views over the **user's own** ingested
+CVE corpus rather than the spec §4.5 self-stack. Each is a projection of one live
+aggregation: the CWE weakness classes present in `cves.cwe_ids` across a selected
+**Scope** (`all` | `stack` | `watchlist` | `kev`). CWE is direct; OWASP Top 10 2021,
+CAPEC (MITRE CWE→CAPEC), and STRIDE (documented heuristic) are reference-mapping
+projections of those same CWEs (`security_architecture/frameworks/reference.py`). CWEs
+with no mapping are reported in an explicit `unmapped` bucket so the parts reconcile with
+the whole, and every count drills through to its `example_cves`. No new matching/scoring
+code — `stack` scope reuses `routers.cves._stack_match_clause`. The self-referential
+posture material (self-stack exposure, control active-flags, ASVS/NIST CSF verification)
+stays operator/self-monitoring scope, not the analyst frameworks.
 
 ### GET /api/security-architecture/manifest
 
@@ -1368,6 +1379,46 @@ Wraps `threat_model.scenarios.build_threat_scenarios` — output is identical in
 `"stack"` or `"self-stack"`). No new matching/scoring code. The self-stack is computed
 once at corpus-generation time (`scripts/generate_security_corpus.py`), never
 recomputed per request.
+
+### GET /api/security-architecture/frameworks/{framework_id}
+
+Analyst framework workspace over the user's live threat surface (TM-6). `framework_id` ∈
+`cwe | owasp | capec | stride` (any other value → 404).
+
+**Query params:**
+
+| Param | Effect |
+|-------|--------|
+| `scope` | Live CVE set: `all` (default), `stack`, `watchlist`, `kev` |
+| `stack` | Comma-separated terms overriding the saved stack for `scope=stack` (same matching as `/api/cves`) |
+| `severity` | Narrow to one of `CRITICAL`/`HIGH`/`MEDIUM`/`LOW` |
+
+For `scope=stack` with no saved stack (resolved softly from the `briefr_at` cookie) and no
+`stack=` override, the response is empty with `unavailable: true` and a `reason` — never a
+silent whole-corpus fallback. Aggregation is bounded (KEV + most-recent first); the
+response reports `sample_size` vs `total_in_scope` and a `truncated` flag so a capped
+count is visibly capped.
+
+**Response (shape varies by framework):**
+
+```json
+{
+  "framework": "owasp",
+  "owasp_version": "2021",
+  "items": [
+    {"id": "A03", "title": "A03:2021 – Injection", "summary": "...",
+     "cve_count": 210, "kev_count": 8, "cwe_ids": ["CWE-79", "CWE-89"],
+     "example_cves": [{"cve_id": "CVE-2024-0001", "is_kev": true, "severity": "CRITICAL"}]}
+  ],
+  "unmapped": {"cve_count": 12, "kev_count": 0, "example_cves": ["..."], "note": "..."},
+  "scope": "all", "terms": [], "total_in_scope": 5031, "sample_size": 5031,
+  "cve_with_cwe": 4400, "truncated": false, "unavailable": false, "reason": null
+}
+```
+
+`cwe` items carry `cwe_id`/`name`/`owasp`/`stride`; `capec` items carry `capec_id`/`name`/
+`cwe_ids`; `stride` adds `mapping: "heuristic"`. The `unmapped` bucket is present on
+owasp/capec/stride (CVEs whose CWEs have no mapping in the reference set).
 
 ### GET /api/security-architecture/graph/architecture
 

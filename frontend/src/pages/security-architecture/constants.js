@@ -13,6 +13,17 @@
  */
 const SECTION_LABEL_OVERRIDES = {
   mitre_attack: 'MITRE ATT&CK',
+  cwe: 'CWE',
+  owasp: 'OWASP Top 10',
+  capec: 'CAPEC',
+  stride: 'STRIDE',
+}
+
+/** TM-6: manifest section ids served by the shared FrameworkSection component. */
+export const FRAMEWORK_SECTIONS = Object.freeze(['cwe', 'owasp', 'capec', 'stride'])
+
+export function isFrameworkSection(id) {
+  return FRAMEWORK_SECTIONS.includes(String(id || ''))
 }
 
 export const DEFAULT_SECTION = 'overview'

@@ -68,3 +68,21 @@
   min-height: 240px;
   max-height: none;
 }
+
+/* TM-6: separate the operator posture subtabs from the threat-framework
+   workspaces (CWE / OWASP / CAPEC / STRIDE) within the same subtab row. */
+.admin-subtab-sep {
+  width: 1px;
+  align-self: center;
+  height: 18px;
+  background: var(--border);
+  margin: 0 6px;
+}
+
+.admin-subtab-group-label {
+  align-self: center;
+  font-size: var(--type-micro);
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  padding-right: 2px;
+}
