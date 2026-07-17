@@ -173,6 +173,18 @@
       ]
     },
     {
+      "id": "job:cpe_catalog_sync",
+      "label": "NVD CPE Software Catalog Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "cpe_catalog_sync"
+        }
+      ]
+    },
+    {
       "id": "job:cvelistv5_incremental_sync",
       "label": "cvelistV5 Incremental Sync",
       "kind": "job",
@@ -653,6 +665,19 @@
         {
           "type": "file",
           "ref": "backend/routers/refresh.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-stack_catalog",
+      "label": "routers.stack_catalog",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 1,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/stack_catalog.py"
         }
       ]
     },
@@ -1165,6 +1190,18 @@
       ]
     },
     {
+      "id": "table:software_catalog",
+      "label": "software_catalog",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "software_catalog"
+        }
+      ]
+    },
+    {
       "id": "table:sync_state",
       "label": "sync_state",
       "kind": "table",
@@ -1584,6 +1621,72 @@
       "id": "job:cache_retention_cleanup->table:cves",
       "source": "job:cache_retention_cleanup",
       "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cpe_catalog_sync->table:atlas_case_studies",
+      "source": "job:cpe_catalog_sync",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cpe_catalog_sync->table:atlas_techniques",
+      "source": "job:cpe_catalog_sync",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cpe_catalog_sync->table:cve_atlas_map",
+      "source": "job:cpe_catalog_sync",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cpe_catalog_sync->table:cve_exploits",
+      "source": "job:cpe_catalog_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cpe_catalog_sync->table:cve_technique_map",
+      "source": "job:cpe_catalog_sync",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cpe_catalog_sync->table:cves",
+      "source": "job:cpe_catalog_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cpe_catalog_sync->table:group_technique_map",
+      "source": "job:cpe_catalog_sync",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cpe_catalog_sync->table:mitre_groups",
+      "source": "job:cpe_catalog_sync",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cpe_catalog_sync->table:mitre_techniques",
+      "source": "job:cpe_catalog_sync",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cpe_catalog_sync->table:software_catalog",
+      "source": "job:cpe_catalog_sync",
+      "target": "table:software_catalog",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cpe_catalog_sync->table:sync_state",
+      "source": "job:cpe_catalog_sync",
+      "target": "table:sync_state",
       "kind": "references_table"
     },
     {
@@ -3327,6 +3430,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin->table:software_catalog",
+      "source": "routers-admin",
+      "target": "table:software_catalog",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin->table:sync_state",
       "source": "routers-admin",
       "target": "table:sync_state",
@@ -4047,6 +4156,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-health->table:software_catalog",
+      "source": "routers-health",
+      "target": "table:software_catalog",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-health->table:sync_state",
       "source": "routers-health",
       "target": "table:sync_state",
@@ -4293,9 +4408,33 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-refresh->table:software_catalog",
+      "source": "routers-refresh",
+      "target": "table:software_catalog",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-refresh->table:sync_state",
       "source": "routers-refresh",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-stack_catalog->table:cve_exploits",
+      "source": "routers-stack_catalog",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-stack_catalog->table:cves",
+      "source": "routers-stack_catalog",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-stack_catalog->table:software_catalog",
+      "source": "routers-stack_catalog",
+      "target": "table:software_catalog",
       "kind": "references_table"
     },
     {

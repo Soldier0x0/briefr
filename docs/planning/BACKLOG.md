@@ -408,7 +408,7 @@ remediation queue. Supporting artifacts: [`e2e-click-map-2026-07-15.md`](specs/e
 |----|------|--------|
 | **Q1** | Procrastinate foundation (`PROCRASTINATE_ENABLED`, worker, admin job list) | ✅ #657 |
 | **Q2** | Universal outbound metering at `resilient_request` + admin quota UI (actor/job/cli) | ✅ |
-| **Q3** | NVD CPE → `software_catalog` + autocomplete API | 📋 (can parallel Q2) |
+| **Q3** | NVD CPE → `software_catalog` + autocomplete API | ✅ |
 | **Q4** | Stack UX (category/typeahead/version) + Agree Tier-A backfill (ETA/progress/checkpoints) | 📋 after Q1+Q3 |
 | **Q5** | Optional: EPSS file identity skip (`score_date` + SHA-256) | 📋 optional |
 

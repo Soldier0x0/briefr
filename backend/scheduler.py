@@ -41,6 +41,7 @@ from database import (
     upsert_cves,
     upsert_kev_batch,
 )
+from feeds.cpe_catalog import cpe_catalog_sync_enabled, sync_cpe_catalog
 from feeds.cvelistv5 import SYNC_STATE_KEY as CVELISTV5_SYNC_STATE_KEY
 from feeds.cvelistv5 import fetch_cvelistv5_delta, get_cvelistv5_sync_interval_minutes
 from feeds.vulnrichment import fetch_vulnrichment_enrichments, get_vulnrichment_sync_interval_hours
@@ -1407,6 +1408,45 @@ async def run_otx_continuous_sync() -> bool:
     return True
 
 
+async def run_cpe_catalog_sync() -> bool:
+    """Sync NVD CPE dictionary into software_catalog (Q3).
+
+    No-op unless CPE_CATALOG_SYNC_ENABLED=1. Checkpointed across runs.
+    """
+    if not cpe_catalog_sync_enabled():
+        return False
+    lock = get_lock("cpe_catalog_sync")
+    if lock is None or lock.locked():
+        logger.info("CPE catalog sync already in progress or lock missing — skipping")
+        return False
+
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _error_msg = ""
+    try:
+        async with lock:
+            def _progress(msg: str) -> None:
+                _job_progress["cpe_catalog_sync"] = msg
+
+            db = await get_db()
+            try:
+                await sync_cpe_catalog(db, progress_cb=_progress)
+            finally:
+                await db.close()
+                _job_progress.pop("cpe_catalog_sync", None)
+    except Exception as exc:
+        _had_error = True
+        _error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
+        logger.error("CPE catalog sync failed: %s", exc)
+    await _write_job_last_run(
+        "cpe_catalog_sync",
+        _start,
+        had_error=_had_error,
+        error_message=_error_msg,
+    )
+    return not _had_error
+
+
 async def run_embeddings_sync() -> bool:
     """Embed CVE descriptions missing vectors (V1.3 Theme 7).
 
@@ -1982,6 +2022,18 @@ def start_scheduler() -> AsyncIOScheduler:
         # First pass shortly after boot when enabled; the run-time env gate
         # makes this a no-op while EMBEDDINGS_ENABLED=0 (the default).
         next_run_time=datetime.now(sched_tz) + timedelta(seconds=90),
+    )
+
+    cpe_catalog_hours = int(os.environ.get("CPE_CATALOG_SYNC_INTERVAL_HOURS", "6"))
+    scheduler.add_job(
+        run_cpe_catalog_sync,
+        trigger=IntervalTrigger(hours=max(1, cpe_catalog_hours), timezone=sched_tz),
+        id="cpe_catalog_sync",
+        name="NVD CPE Software Catalog Sync",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=120),
     )
 
     llm_extraction_hours = int(

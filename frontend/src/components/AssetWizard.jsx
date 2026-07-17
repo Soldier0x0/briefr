@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Select } from './ui/index.js'
 import {
   AI_PRODUCTS,
@@ -9,8 +9,19 @@ import {
   INTERNET_FACING_OPTIONS,
   OS_SUGGESTIONS,
 } from '../config/assetCatalog.js'
+import { suggestStackCatalog } from '../api.js'
 import { buildEmptyProfile, downloadProfileJson, parseProfileFile } from '../utils/assetProfileIo.js'
 import './AssetWizard.css'
+
+const CATEGORY_API = {
+  'Web Server': 'web_server',
+  Database: 'database',
+  'Network Device': 'other',
+  'Cloud Platform': 'other',
+  'Security Tool': 'other',
+  Container: 'other',
+  Other: 'other',
+}
 
 const STEPS = ['Operating Systems', 'Applications', 'Environment', 'AI / ML (optional)']
 
@@ -26,7 +37,42 @@ function filterSuggestions(list, query) {
 export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
   const [step, setStep] = useState(0)
   const [profile, setProfile] = useState(() => initialProfile || buildEmptyProfile())
+  const [catalogHints, setCatalogHints] = useState([])
   const fileRef = useRef(null)
+  const catalogQueryRef = useRef('')
+
+  useEffect(() => {
+    if (step !== 0 && step !== 1) {
+      setCatalogHints([])
+      return undefined
+    }
+    const rows = step === 0 ? (profile.operatingSystems || []) : (profile.applications || [])
+    const active = rows.find((r) => (r.product || '').trim().length >= 3)
+    const q = (active?.product || '').trim()
+    catalogQueryRef.current = q
+    if (q.length < 3) {
+      setCatalogHints([])
+      return undefined
+    }
+    const category = step === 0
+      ? 'os'
+      : (CATEGORY_API[active?.category] || undefined)
+    let cancelled = false
+    const t = setTimeout(() => {
+      suggestStackCatalog(q, { limit: 8, category })
+        .then((body) => {
+          if (cancelled || catalogQueryRef.current !== q) return
+          setCatalogHints(Array.isArray(body?.items) ? body.items : [])
+        })
+        .catch(() => {
+          if (!cancelled) setCatalogHints([])
+        })
+    }, 180)
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+  }, [step, profile.operatingSystems, profile.applications])
 
   function updateOs(idx, field, value) {
     setProfile(prev => {
@@ -152,6 +198,9 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
                   onChange={e => updateOs(idx, 'product', e.target.value)}
                 />
                 <datalist id={`os-suggest-${idx}`}>
+                  {catalogHints.map((h) => (
+                    <option key={`c-${h.vendor}-${h.product}`} value={h.display_name || h.product} />
+                  ))}
                   {filterSuggestions(OS_SUGGESTIONS, os.product).map(s => (
                     <option key={s} value={s} />
                   ))}
@@ -187,6 +236,9 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
                   onChange={e => updateApp(idx, 'product', e.target.value)}
                 />
                 <datalist id={`app-suggest-${idx}`}>
+                  {catalogHints.map((h) => (
+                    <option key={`c-${h.vendor}-${h.product}`} value={h.display_name || h.product} />
+                  ))}
                   {filterSuggestions(ENTERPRISE_PRODUCTS, app.product).map(p => (
                     <option key={p.name} value={p.name} />
                   ))}

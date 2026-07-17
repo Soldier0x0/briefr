@@ -436,6 +436,9 @@ endpoints:
   path: /api/security-architecture/threat-scenarios
   component_id: security_architecture-routers-security_architecture
 - method: GET
+  path: /api/stack/catalog/suggest
+  component_id: routers-stack_catalog
+- method: GET
   path: /api/stats
   component_id: routers-cves
 - method: GET

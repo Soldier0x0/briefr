@@ -94,6 +94,15 @@ export function fetchUserStack() {
   return request('/me/stack')
 }
 
+/** Q3 CPE software catalog typeahead (requires ≥3 chars). */
+export function suggestStackCatalog(query, { limit = 20, category } = {}) {
+  const qs = new URLSearchParams()
+  qs.set('q', query || '')
+  if (limit) qs.set('limit', String(limit))
+  if (category) qs.set('category', category)
+  return request(`/stack/catalog/suggest?${qs.toString()}`)
+}
+
 export function saveUserStack(body) {
   return request('/me/stack', {
     method: 'PUT',

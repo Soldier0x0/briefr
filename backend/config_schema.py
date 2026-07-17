@@ -146,6 +146,13 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 help_text="Enable Postgres-backed durable job queue (Procrastinate). Off = zero behavior change."),
     ConfigField("API_CALL_EVENTS_ENABLED", "queue", "bool", restart_required=True,
                 help_text="Record every outbound HTTP attempt from resilient_request into api_call_events (default on)."),
+    ConfigField("CPE_CATALOG_SYNC_ENABLED", "ingest", "bool", restart_required=True,
+                help_text="Sync NVD CPE dictionary into software_catalog for stack autocomplete (default off)."),
+    ConfigField("CPE_CATALOG_SYNC_INTERVAL_HOURS", "ingest", "int", min=1,
+                help_text="How often the CPE catalog sync job runs when enabled.",
+                display_label="CPE catalog sync interval", unit="h"),
+    ConfigField("CPE_CATALOG_MAX_PAGES", "ingest", "int", min=1,
+                help_text="Max NVD CPE API pages per sync run (checkpointed; default 10)."),
 
     # ── ML toggles ───────────────────────────────────────────────────────────
     ConfigField("EMBEDDINGS_ENABLED", "ml", "bool", restart_required=True,

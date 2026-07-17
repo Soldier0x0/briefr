@@ -1207,6 +1207,9 @@ def _get_config_response() -> dict[str, Any]:
             "ATLAS_YAML_URL": _env("ATLAS_YAML_URL", ""),
             "MITRE_CVE_MAPPINGS_JSON_URL": _env("MITRE_CVE_MAPPINGS_JSON_URL", ""),
             "DB_PATH": _env("DB_PATH", "briefr.db"),
+            "CPE_CATALOG_SYNC_ENABLED": _env("CPE_CATALOG_SYNC_ENABLED", "0"),
+            "CPE_CATALOG_SYNC_INTERVAL_HOURS": _env_int("CPE_CATALOG_SYNC_INTERVAL_HOURS", 6),
+            "CPE_CATALOG_MAX_PAGES": _env_int("CPE_CATALOG_MAX_PAGES", 10),
         },
         "ml": {
             "EMBEDDINGS_ENABLED": _env("EMBEDDINGS_ENABLED", "0"),
@@ -1980,6 +1983,7 @@ _JOB_RUN_MAP: dict[str, str] = {
     "session_cleanup": "run_session_cleanup",
     "cache_retention_cleanup": "run_cache_retention_cleanup",
     "resource_metrics_sample": "run_resource_metrics_sample",
+    "cpe_catalog_sync": "run_cpe_catalog_sync",
 }
 
 

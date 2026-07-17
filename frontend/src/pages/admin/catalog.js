@@ -16,6 +16,13 @@ export const JOB_CATALOG = {
     analystDescription: "CISA's list of vulnerabilities being actively exploited.",
     refreshButton: 'Refresh KEV',
   },
+  cpe_catalog_sync: {
+    label: 'Software product catalog (CPE)',
+    short: 'CPE catalog',
+    operatorName: 'NVD CPE Software Catalog Sync',
+    analystDescription: 'NVD CPE dictionary used for stack product autocomplete.',
+    refreshButton: 'Refresh CPE catalog',
+  },
   epss_score_sync: {
     label: 'Exploit prediction scores',
     short: 'EPSS',
