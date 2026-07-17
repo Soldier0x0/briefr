@@ -274,18 +274,15 @@ Flowchart: [`docs/diagrams/startup.mermaid`](diagrams/startup.mermaid) (schedule
      level and renders whichever technique is selected regardless of which
      view set the selection — fixes the pre-FR-2 gap where Campaigns/Backlog
      had no rail and a generated pack's result was invisible.
-   - **URL state:** `?view=coverage|scenarios|campaigns|backlog|library` +
+   - **URL state:** Analyst shell owns `?tab=brief|feed|ioc|atlas|forge`
+     (`shellUrlState.js` / `selectAppTab`). Forge adds
+     `?view=coverage|scenarios|campaigns|backlog|library` +
      `&technique=`/`&pack=`, two-way via `useSearchParams` (`Forge.jsx`
      `writeUrl`) — every view/selection change rewrites the URL
      (`{ replace: true }`), and a `searchParams` effect mirrors browser
-     back/forward into state. This differs from Admin's `?p=`, which is
-     read-only (drives initial page from the URL but never writes it back on
-     click) — Admin's pattern alone doesn't satisfy "refresh preserves
-     selection," so Forge's URL state is one-way-write, not a copy of Admin's.
-     Because Forge lives inside `App.jsx`'s single-page tab switcher (not a
-     router-level route), a new `App.jsx` effect activates the `forge` tab on
-     load when `?view=` is present, or a refresh while on Forge would land
-     back on the Brief tab with the params inert.
+     back/forward into state. Admin sidebar owns `?p=` the same way (writes
+     on click; page-scoped filters clear when `p` changes). Legacy Forge
+     links with `view=` and no `tab=` still resolve to the Forge tab.
    - **Hunt Pack Library (FR-1 backend, FR-2 frontend):** `LibraryView.jsx`
      is an `AdminDataGrid` (`pages/admin/shared/AdminDataGrid.jsx`) over
      `GET /api/hunt-packs` (technique/priority/KEV/title filters, 250ms
@@ -325,8 +322,7 @@ Flowchart: [`docs/diagrams/startup.mermaid`](diagrams/startup.mermaid) (schedule
      created backlog row, one `user_notifications` insert per active analyst
      (`entity_type="kev_backlog"`, `dedupe_key=f"kev_backlog:{cve_id}:
      {technique_id}"`). `NotificationBell.jsx` deep-links `kev_backlog`
-     clicks to `/?view=backlog`, reusing the same `?view=` App-tab-activation
-     effect FR-2 built for the `?cve=` deep link.
+     clicks to `/?tab=forge&view=backlog` (legacy `?view=backlog` still works).
    - **CWE/EPSS:** `list_hunt_packs` (Library) and `get_hunt_pack` (rail)
      extend their existing `cves` join/query to also select `cwe_ids`,
      `cvss_score`, `epss_score` — no new query, same columns the

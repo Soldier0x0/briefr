@@ -37,6 +37,7 @@ import UserMenu from '../../components/UserMenu.jsx'
 import { loadJobAcks, markAllJobErrorsRead, filterUnacknowledgedErrors } from './adminJobAck.js'
 import { jobErrorsFromSystem } from './shared/JobErrorsPanel.jsx'
 import AdminBreadcrumbs from './shared/AdminBreadcrumbs.jsx'
+import { buildAdminPageSearchParams } from '../../utils/shellUrlState.js'
 import '../AdminPage.css'
 
 const ANALYST_PAGE_IDS = new Set(ANALYST_NAV.flatMap(section => section.items.map(i => i.id)))
@@ -48,17 +49,24 @@ const VALID_ADMIN_PAGES = new Set([
 
 function AdminPageBody({ toast }) {
   const { runAction } = useOperations()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [page, setPageRaw] = useState('overview')
   // Tracks which sub-pages have ever been visited, so we only mount (and let
   // fire their data-loading effects) pages the user has actually opened,
   // instead of all of them at once on every admin-panel open.
   const [visitedPages, setVisitedPages] = useState(() => new Set(['overview']))
-  const setPage = useCallback((id) => {
+  // URL → React only (deep links / refresh). Must not rewrite the query string
+  // or ingestLogUrl filters would be wiped on first paint.
+  const applyPageState = useCallback((id) => {
     setVisitedPages(prev => (prev.has(id) ? prev : new Set(prev).add(id)))
     setPageRaw(id)
     setSidebarOpen(false)
   }, [])
+  // Sidebar / breadcrumbs / in-app jumps: always write visible `p=`.
+  const setPage = useCallback((id) => {
+    applyPageState(id)
+    setSearchParams((prev) => buildAdminPageSearchParams(prev, id), { replace: true })
+  }, [applyPageState, setSearchParams])
   const [mode, setModeState] = useState(getAdminMode)
   const [system, setSystem] = useState(null)
   const [ingestErrorCount, setIngestErrorCount] = useState(0)
@@ -116,9 +124,14 @@ function AdminPageBody({ toast }) {
   useEffect(() => {
     const requested = searchParams.get('p')
     if (requested && VALID_ADMIN_PAGES.has(requested)) {
-      setPage(requested)
+      applyPageState(requested)
+      return
     }
-  }, [searchParams, setPage])
+    // First paint on /admin with no p= — make the active page visible in the URL.
+    if (!requested) {
+      setSearchParams((prev) => buildAdminPageSearchParams(prev, page), { replace: true })
+    }
+  }, [searchParams, applyPageState, page, setSearchParams])
 
   useEffect(() => {
     function setupPolling() {

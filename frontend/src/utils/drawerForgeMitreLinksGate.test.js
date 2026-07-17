@@ -13,8 +13,8 @@ function read(rel) {
 
 describe('PM-4e drawer ↔ Forge MITRE cross-links', () => {
   it('builds Forge coverage deep links', () => {
-    assert.equal(forgeCoverageHref('T1190'), '/?view=coverage&technique=T1190')
-    assert.equal(forgeCoverageHref('T1059.001'), '/?view=coverage&technique=T1059.001')
+    assert.equal(forgeCoverageHref('T1190'), '/?tab=forge&view=coverage&technique=T1190')
+    assert.equal(forgeCoverageHref('T1059.001'), '/?tab=forge&view=coverage&technique=T1059.001')
     assert.equal(forgeCoverageHref(''), null)
   })
 
@@ -33,7 +33,8 @@ describe('PM-4e drawer ↔ Forge MITRE cross-links', () => {
     assert.match(ctx, /TECHNIQUE_TAXONOMY\.ATTACK/)
 
     const forge = read('components/Forge.jsx')
-    assert.match(forge, /if \(techniqueId\) setRailOpen\(true\)/)
+    assert.match(forge, /setRailOpen\(true\)/)
+    assert.match(forge, /writeUrl\(\{ view: 'coverage', technique: techniqueId/)
 
     const rail = read('components/forge/HuntPackRail.jsx')
     assert.match(rail, /onOpenCve/)

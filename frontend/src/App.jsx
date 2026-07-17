@@ -34,6 +34,7 @@ import { getSavedStack } from './utils/cveFilters.js'
 import { hasTutorialSeen, markTutorialSeen } from './utils/tutorial.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 import useVisibilityAwareInterval from './hooks/useVisibilityAwareInterval.js'
+import { resolveAppTab, buildAppTabSearchParams } from './utils/shellUrlState.js'
 
 const BriefCharts = lazyWithReload(() => import('./components/BriefCharts.jsx'))
 const MorningBrief = lazyWithReload(() => import('./components/MorningBrief.jsx'))
@@ -308,21 +309,15 @@ function FeedView({ isActive, filters, setFilters, selectedCVE, setSelectedCVE,
 export default function App() {
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [activeTab, setActiveTab]               = useState('brief')
-  // Main tabs are React state; Forge deep-link state lives in the URL
-  // (?view=&technique=&pack=). Leaving Forge must clear those params or a
-  // later refresh re-activates Forge (BRIEF UI + forge URL).
+  // Primary nav is URL-owned (`tab=`). Forge still adds view/technique/pack.
+  const [activeTab, setActiveTab] = useState(() => (
+    typeof window !== 'undefined'
+      ? resolveAppTab(new URLSearchParams(window.location.search))
+      : 'brief'
+  ))
   const selectAppTab = useCallback((tab) => {
     setActiveTab(tab)
-    if (tab === 'forge') return
-    setSearchParams((prev) => {
-      if (!prev.has('view') && !prev.has('technique') && !prev.has('pack')) return prev
-      const next = new URLSearchParams(prev)
-      next.delete('view')
-      next.delete('technique')
-      next.delete('pack')
-      return next
-    }, { replace: true })
+    setSearchParams((prev) => buildAppTabSearchParams(prev, tab), { replace: true })
   }, [setActiveTab, setSearchParams])
   const digestCVEsRef = useRef([])
   const generateDigestRef = useRef(null)
@@ -554,33 +549,21 @@ export default function App() {
     if (!cveParam || deepLinkHandled.current === cveParam) return
     if (!/^CVE-\d{4}-\d+$/i.test(cveParam.trim())) return
     deepLinkHandled.current = cveParam.trim().toUpperCase()
-    // One setSearchParams only — RR v6 does not queue like useState; a
-    // second call in the same tick (e.g. via selectAppTab) would overwrite
-    // and leave Forge params stuck beside ?cve=.
+    // One setSearchParams only — RR v6 does not queue like useState.
     setActiveTab('feed')
     openCveById(deepLinkHandled.current)
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      next.delete('cve')
-      next.delete('view')
-      next.delete('technique')
-      next.delete('pack')
-      return next
-    }, { replace: true })
+    setSearchParams((prev) => buildAppTabSearchParams(prev, 'feed'), { replace: true })
   }, [searchParams, openCveById, setSearchParams, setActiveTab])
 
-  // Forge owns ?view=/&technique=/&pack= (FR-2 URL state). On first load /
-  // refresh, if those params are present, open the Forge tab so the deep
-  // link is not stranded on BRIEF with unused query state.
-  const forgeDeepLinkHandled = useRef(false)
+  // Keep React tab state + visible `tab=` in sync with the URL (back/forward,
+  // legacy view=-only Forge links, first paint without tab=).
   useEffect(() => {
-    if (forgeDeepLinkHandled.current) return
-    if (!searchParams.get('view')) return
-    // ?cve= wins over Forge deep links in the same URL.
     if (searchParams.get('cve')) return
-    forgeDeepLinkHandled.current = true
-    setActiveTab('forge')
-  }, [searchParams])
+    const resolved = resolveAppTab(searchParams)
+    setActiveTab((prev) => (prev === resolved ? prev : resolved))
+    if (searchParams.get('tab') === resolved) return
+    setSearchParams((prev) => buildAppTabSearchParams(prev, resolved), { replace: true })
+  }, [searchParams, setSearchParams])
 
   const investigationNav = useMemo(() => ({
     setActiveTab: selectAppTab,
@@ -608,7 +591,7 @@ export default function App() {
       if (!techniqueId) return
       setActiveTab('forge')
       setSearchParams((prev) => {
-        const next = new URLSearchParams(prev)
+        const next = buildAppTabSearchParams(prev, 'forge')
         next.set('view', 'coverage')
         next.set('technique', String(techniqueId))
         next.delete('pack')

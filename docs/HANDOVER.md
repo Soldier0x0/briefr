@@ -12,6 +12,37 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — Shell navigation owns the URL (tab= / p=)
+
+**RCA:** Primary nav (BRIEF/FEED/IOC/… and Admin sidebar) was React state
+only. The address bar only changed for feature deep links (Forge
+`view`/`technique`, ingest filters). Clicking tabs looked like “URL stuck”
+because nothing wrote the active surface into the query string.
+
+**Fix:** `shellUrlState.js` — `tab=` for analyst shell, `p=` for Admin;
+helpers tested first (TDD). Legacy Forge `view=`-only links still resolve
+to Forge. Deep links (`ingestLogUrl`, posture `section=`) preserved on
+URL→state sync.
+
+**Next:** Q1–Q5 (activate) → E1–E6.
+
+---
+
+## 2026-07-17 — Clear admin URL when leaving a page (same class as Forge)
+
+**RCA:** Admin sidebar/breadcrumbs called `setPage(id)` (React state only).
+Deep links write `/admin?p=…&section=…&job_id=…` etc., but leaving a page
+never updated `p` or cleared scoped params. Refresh re-opened the old page
+with old filters.
+
+**Fix:** `setPage` writes `?p=<id>` alone when the page changes; URL→state
+sync uses `applyPageState` so intentional deep links (ingestLogUrl, etc.)
+keep their filters. Gate: `adminUrlPageClearGate.test.js`.
+
+**Next:** Q1–Q5 (activate) → E1–E6.
+
+---
+
 ## 2026-07-17 — Clear Forge URL when leaving to BRIEF/FEED
 
 **RCA:** Main tabs are React state (`activeTab`), but Forge selection is
