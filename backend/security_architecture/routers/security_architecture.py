@@ -40,12 +40,14 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from database import get_db
 from routers.forge import build_coverage_map, count_coverage_summary
 from security_architecture import graphs, merge
 from security_architecture.corpus_loader import CorpusValidationError, get_corpus
+from security_architecture.frameworks import aggregate as fw_aggregate
+from security_architecture.frameworks import scope as fw_scope
 from security_architecture.graphs import ArchitectureGraphError
 from threat_model.scenarios import build_threat_scenarios
 
@@ -283,6 +285,71 @@ async def get_threat_scenarios(
 
     result["meta"]["catalog"] = "self-stack" if self_stack else "stack"
     return result
+
+
+# section_id -> workspace builder (TM-6 analyst framework workspaces). Each
+# is a projection of the same live scoped-CWE aggregation (frameworks/
+# aggregate.py) -- one live DB read, four lenses.
+_FRAMEWORK_BUILDERS = {
+    "cwe": fw_aggregate.cwe_workspace,
+    "owasp": fw_aggregate.owasp_workspace,
+    "capec": fw_aggregate.capec_workspace,
+    "stride": fw_aggregate.stride_workspace,
+}
+
+
+async def _current_user_id(request: Request) -> int | None:
+    """Soft user-id resolve from the access-token cookie -- None when absent.
+
+    The Security Architecture module is already auth-gated globally by
+    main.py's session middleware (this router isn't in the public-prefix
+    allowlist), so framework reads don't re-gate with require_user. User
+    identity is needed only to resolve the `stack` scope to the caller's
+    saved stack; without it, `stack` falls back to an explicit ?stack= param
+    or reports itself unavailable (frameworks/scope.py) rather than erroring."""
+    from auth.tokens import decode_access_token
+
+    token = request.cookies.get("briefr_at", "")
+    if not token:
+        return None
+    try:
+        payload = decode_access_token(token)
+        user_id = int(payload.get("sub") or 0)
+        return user_id if user_id > 0 else None
+    except Exception:
+        return None
+
+
+@router.get("/frameworks/{framework_id}")
+async def get_framework(
+    framework_id: str,
+    request: Request,
+    scope: str = Query(default="all"),
+    stack: str | None = Query(default=None, max_length=500),
+    severity: str | None = Query(default=None, max_length=20),
+):
+    """Analyst framework workspace over the user's live threat surface (TM-6).
+
+    `framework_id` is one of cwe/owasp/capec/stride. `scope` selects the live
+    CVE set (all | stack | watchlist | kev); `stack=` overrides the saved
+    stack for the `stack` scope; `severity=` narrows to one severity. Every
+    row's count drills through to the exact `example_cves` behind it, and the
+    response reports `sample_size` vs `total_in_scope` so a capped aggregation
+    is visibly capped (frameworks/scope.py, aggregate.py)."""
+    builder = _FRAMEWORK_BUILDERS.get(framework_id)
+    if builder is None:
+        raise HTTPException(status_code=404, detail=f"Unknown framework: {framework_id}")
+
+    user_id = await _current_user_id(request)
+    db = await get_db()
+    try:
+        scoped = await fw_scope.fetch_scoped_cwe_rows(
+            db, scope, explicit_stack=stack, user_id=user_id, severity=severity
+        )
+    finally:
+        await db.close()
+
+    return builder(scoped)
 
 
 @router.get("/graph/architecture")

@@ -403,6 +403,19 @@ export function fetchSecurityArchitectureStale() {
   return request('/security-architecture/stale')
 }
 
+/**
+ * TM-6: analyst framework workspace (cwe | owasp | capec | stride) over the
+ * user's own live threat surface. `scope` = all | stack | watchlist | kev;
+ * `stack` overrides the saved stack for scope=stack; `severity` narrows to one
+ * severity. Every row's count drills through to its `example_cves`.
+ */
+export function fetchSecurityArchitectureFramework(framework, { scope = 'all', stack = '', severity = '' } = {}) {
+  const params = new URLSearchParams({ scope })
+  if (stack) params.set('stack', stack)
+  if (severity) params.set('severity', severity)
+  return request(`/security-architecture/frameworks/${encodeURIComponent(framework)}?${params.toString()}`)
+}
+
 /** V1.5: run Sigma rule against pasted log lines (file-based proof bench). */
 export function runProofBench({ lines, sigmaYaml, patterns, maxSamples = 10 }) {
   const body = { lines, max_samples: maxSamples }

@@ -8,6 +8,10 @@ sections:
   - trust_boundaries
   - attack_surface
   - mitre_attack
+  - cwe
+  - owasp
+  - capec
+  - stride
   - controls
   - abuse_cases
   - threat_scenarios
@@ -44,6 +48,17 @@ notes: >
   scheduler_jobs, db_tables, self_stack, graphs/architecture.json) is real
   and machine-derived; see corpus_loader.py, graphs.py, and
   scripts/generate_security_corpus.py.
+
+  TM-6 (framework workspaces) added four analyst-facing sections with no
+  corpus file of their own -- cwe, owasp, capec, stride. Like mitre_attack
+  they are served entirely from live DB data: the user's own threat surface
+  (ingested `cves.cwe_ids`, scoped to All / My Stack / Watchlist / KEV via
+  GET /api/security-architecture/frameworks/{id}). OWASP/CAPEC/STRIDE are
+  projections of the same live CWE aggregation through published reference
+  mappings (security_architecture/frameworks/reference.py); CWEs with no
+  mapping are reported in an explicit `unmapped` bucket so the totals
+  reconcile. This is the spec §4.5 reframe: frameworks point at the user's
+  data, not BRIEFR's self-stack (which stays operator/self-monitoring scope).
 
   Note on spec §2.2's navigation catalog: that table uses kebab-case
   section ids (`system-architecture`, `trust-boundaries`, `attack-surface`).

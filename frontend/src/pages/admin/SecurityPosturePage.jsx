@@ -5,22 +5,32 @@ import ArchitectureGraphSection from '../security-architecture/sections/Architec
 import TrustBoundariesSection from '../security-architecture/sections/TrustBoundariesSection.jsx'
 import AttackSurfaceSection from '../security-architecture/sections/AttackSurfaceSection.jsx'
 import RiskRegisterSection from '../security-architecture/sections/RiskRegisterSection.jsx'
+import FrameworkSection from '../security-architecture/sections/FrameworkSection.jsx'
 import {
   humanizeSectionId,
   isAnalystHiddenSection,
+  isFrameworkSection,
   resolveAnalystSection,
+  FRAMEWORK_SECTIONS,
 } from '../security-architecture/constants.js'
 import '../security-architecture/SecurityArchitecturePage.css'
 import './SecurityPosturePage.css'
 
-/** Posture sections hosted under Admin (PM-4a); stand-alone ARCH route retired in PM-4c. */
-export const POSTURE_SECTIONS = [
+/** Operator posture sections (PM-4a); stand-alone ARCH route retired in PM-4c. */
+export const POSTURE_ONLY_SECTIONS = [
   'overview',
   'system_architecture',
   'trust_boundaries',
   'attack_surface',
   'risks',
 ]
+
+/**
+ * TM-6: threat-intelligence framework workspaces over the user's own live CVE
+ * data (CWE / OWASP / CAPEC / STRIDE), grouped after the operator posture
+ * sections in the same Admin surface.
+ */
+export const POSTURE_SECTIONS = [...POSTURE_ONLY_SECTIONS, ...FRAMEWORK_SECTIONS]
 
 const DEFAULT_SECTION = 'overview'
 
@@ -114,14 +124,29 @@ export default function SecurityPosturePage({ mode = 'operator' }) {
         <div>
           <h2>Security posture</h2>
           <p className="admin-page-desc">
-            Platform architecture, trust boundaries, attack surface, and risk register
+            Platform architecture, trust boundaries, attack surface, and risk register,
+            plus CWE / OWASP / CAPEC / STRIDE framework workspaces over your live CVE data
             {mode === 'analyst' ? ' (read-only)' : ''}.
           </p>
         </div>
       </div>
 
       <div className="admin-subtabs" role="tablist" aria-label="Security posture sections">
-        {POSTURE_SECTIONS.map(id => (
+        {POSTURE_ONLY_SECTIONS.map(id => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={section === id}
+            className={`admin-subtab${section === id ? ' active' : ''}`}
+            onClick={() => setSection(id)}
+          >
+            {humanizeSectionId(id).toUpperCase()}
+          </button>
+        ))}
+        <span className="admin-subtab-sep" aria-hidden="true" />
+        <span className="admin-subtab-group-label mono" aria-hidden="true">FRAMEWORKS</span>
+        {FRAMEWORK_SECTIONS.map(id => (
           <button
             key={id}
             type="button"
@@ -151,6 +176,8 @@ export default function SecurityPosturePage({ mode = 'operator' }) {
             <AttackSurfaceSection />
           ) : section === 'risks' ? (
             <RiskRegisterSection filters={filters} onFilterChange={setFilters} />
+          ) : isFrameworkSection(section) ? (
+            <FrameworkSection framework={section} />
           ) : null}
         </div>
       </div>

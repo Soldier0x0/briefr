@@ -412,6 +412,9 @@ endpoints:
   path: /api/security-architecture/context/{node_id}
   component_id: security_architecture-routers-security_architecture
 - method: GET
+  path: /api/security-architecture/frameworks/{framework_id}
+  component_id: security_architecture-routers-security_architecture
+- method: GET
   path: /api/security-architecture/graph/architecture
   component_id: security_architecture-routers-security_architecture
 - method: GET

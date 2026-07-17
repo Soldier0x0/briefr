@@ -75,6 +75,7 @@ EXPECTED_ROUTES = [
     ("GET", "/api/security-architecture/overview"),
     ("GET", "/api/security-architecture/mitre"),
     ("GET", "/api/security-architecture/threat-scenarios"),
+    ("GET", "/api/security-architecture/frameworks/{framework_id}"),
     ("GET", "/api/security-architecture/graph/architecture"),
     ("GET", "/api/security-architecture/graph/attack-surface"),
     ("GET", "/api/security-architecture/context/{node_id}"),
