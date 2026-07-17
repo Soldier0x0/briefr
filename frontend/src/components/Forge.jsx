@@ -53,13 +53,15 @@ export default function Forge() {
   const assetCtx = useAssetProfileOptional()
 
   const writeUrl = useCallback((patch) => {
-    const next = new URLSearchParams(searchParams)
-    for (const [key, value] of Object.entries(patch)) {
-      if (value === null || value === undefined || value === '') next.delete(key)
-      else next.set(key, String(value))
-    }
-    setSearchParams(next, { replace: true })
-  }, [searchParams, setSearchParams])
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      for (const [key, value] of Object.entries(patch)) {
+        if (value === null || value === undefined || value === '') next.delete(key)
+        else next.set(key, String(value))
+      }
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
 
   const clearTechniqueSelection = useCallback(() => {
     setSelectedTechniqueState(null)
@@ -124,13 +126,20 @@ export default function Forge() {
   }, [writeUrl, selectedTechnique, clearTechniqueSelection, viewMode])
 
   const openPack = useCallback((techniqueId, packId) => {
-    // Library opens a pack in-context; jump to coverage only when a technique
-    // is supplied and keep the panel coverage-scoped.
-    setViewModeState('coverage')
-    setSelectedTechniqueState(techniqueId)
+    // Library can highlight a pack in-context; jump to coverage + hunt pack
+    // only when a technique is supplied.
+    if (techniqueId) {
+      setViewModeState('coverage')
+      setSelectedTechniqueState(techniqueId)
+      setSelectedPackIdState(packId)
+      writeUrl({ view: 'coverage', technique: techniqueId, pack: packId })
+      setRailOpen(true)
+      return
+    }
+    setSelectedTechniqueState(null)
     setSelectedPackIdState(packId)
-    writeUrl({ view: 'coverage', technique: techniqueId, pack: packId })
-    setRailOpen(Boolean(techniqueId))
+    writeUrl({ technique: null, pack: packId })
+    setRailOpen(false)
   }, [writeUrl])
 
   const closeRail = useCallback(() => {
