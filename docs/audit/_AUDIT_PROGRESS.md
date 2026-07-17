@@ -24,7 +24,7 @@
 
 - **Branch:** `claude/engineering-audit-dzib4j`
 - **Base:** `main`
-- **PR:** (fill in number once created) — draft PR titled "docs(audit): comprehensive 11-phase engineering audit"
+- **PR:** #661 (DRAFT) — https://github.com/Soldier0x0/briefr/pull/661 — "docs(audit): comprehensive 11-phase engineering audit". Keep as draft until all 11 phases committed. DO NOT merge.
 - **Deliverable dir:** `docs/audit/`
 - **Reviewed at commit (Phase 1):** `61c686f`
 - **Session start (UTC):** 2026-07-17T03:17Z — **quota reset ETA ~07:32Z**
@@ -33,8 +33,8 @@
 
 | Phase | Scope | Doc file | Status |
 |-------|-------|----------|--------|
-| 1 | Repo Org, Code Quality, Technical Debt | `PHASE_01_repo_code_debt.md` | ✅ DONE (pushed) |
-| 2 | Backend/Frontend/DB/API/State-Mgmt Architecture | `PHASE_02_architecture.md` | ⬜ TODO |
+| 1 | Repo Org, Code Quality, Technical Debt | [PHASE_01_repo_code_debt.md](PHASE_01_repo_code_debt.md) | ✅ DONE (pushed) |
+| 2 | Backend/Frontend/DB/API/State-Mgmt Architecture | [PHASE_02_architecture.md](PHASE_02_architecture.md) | ✅ DONE (pushed) |
 | 3 | Correlation / Risk / Detection / AI / Scheduler / Caching engines | `PHASE_03_engines.md` | ⬜ TODO |
 | 4 | Functional/E2E/Feature-completeness/Integration/Regression/Data-integrity | `PHASE_04_testing.md` | ⬜ TODO |
 | 5 | Product/UX/UI/Design-system/A11y/Responsive/Forms/Charts (full list) | `PHASE_05_product_ux.md` | ⬜ TODO |
@@ -89,7 +89,21 @@ Assessment.
   quota reset) with instructions to read this file and continue the first ⬜ phase.
 - If a session resumes and is healthy, cancel any stale trigger and re-arm a fresh one
   after the next reset boundary, so the loop self-heals.
-- Trigger id(s) recorded here when created: (fill in)
+- Trigger id(s): `trig_011xaoFQj4LNa2v65s2F51rT` (send_later resume, fires 2026-07-17T07:35Z).
+  If you resume BEFORE it fires and are healthy, let it stand as a safety net; after it
+  fires, re-arm a new one ~4h out. Cancel via delete_trigger only when ALL phases are ✅.
+
+## 6b. Live CI observation (audit evidence — feed into Phase 4 & 8)
+
+On the FIRST push of PR #661 (docs-only, only `docs/audit/*.md` added), ALL CI jobs
+reported `failure`: `test`, `test-postgres`, `playwright-smoke`, `dependency-audit`,
+`gitleaks`. A markdown-only change cannot break pytest/playwright/pip-audit/gitleaks →
+the baseline pipeline on the branch/`main` is red (or runners fail at setup in the
+sandbox). Job logs returned HTTP 404 (unavailable via the MCP proxy). CLAUDE.md already
+lists `dependency-audit` + `gitleaks` as "known-red." The `test`/`test-postgres`/
+`playwright-smoke` reds are a stronger signal to verify in Phase 4 (Regression) and
+Phase 8 (Deployment/CI). Per the user's "don't implement anything" directive, these are
+NOT being fixed here — recorded as findings only.
 
 ## 7. Do-not-forget guardrails
 
