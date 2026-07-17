@@ -45,11 +45,12 @@ export function buildAppTabSearchParams(prev, tab) {
 /**
  * Build the Admin query string when changing sidebar page.
  * Always sets `p=`; drops page-scoped filters from the previous page.
- * Same page → return prev (preserve ingestLogUrl / posture deep links).
+ * Non-scoped keys are preserved. Same page → return prev (keep deep links).
  */
 export function buildAdminPageSearchParams(prev, pageId) {
   if (prev.get('p') === pageId) return prev
-  const next = new URLSearchParams()
+  const next = new URLSearchParams(prev)
+  for (const key of ADMIN_PAGE_SCOPED_PARAMS) next.delete(key)
   next.set('p', pageId)
   return next
 }

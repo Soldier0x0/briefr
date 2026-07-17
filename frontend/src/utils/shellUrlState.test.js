@@ -98,4 +98,12 @@ describe('buildAdminPageSearchParams', () => {
     const next = buildAdminPageSearchParams(prev, 'ingestlog')
     assert.equal(next, prev)
   })
+
+  it('preserves non-scoped query keys when changing pages', () => {
+    const prev = params({ p: 'scheduler', job_id: 'sync_nvd', utm: 'ops' })
+    const next = buildAdminPageSearchParams(prev, 'overview')
+    assert.equal(next.get('p'), 'overview')
+    assert.equal(next.get('job_id'), null)
+    assert.equal(next.get('utm'), 'ops')
+  })
 })
