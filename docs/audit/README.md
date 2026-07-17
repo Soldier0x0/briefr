@@ -14,7 +14,7 @@ and Quick-Win/Architectural classification.
 | 1 | Repository Organization · Code Quality · Technical Debt | [PHASE_01_repo_code_debt.md](PHASE_01_repo_code_debt.md) |
 | 2 | Backend · Frontend · Database · API · State-Management Architecture | [PHASE_02_architecture.md](PHASE_02_architecture.md) |
 | 3 | Correlation · Risk · Detection · AI · Scheduler · Caching | [PHASE_03_engines.md](PHASE_03_engines.md) |
-| 4 | Functional · E2E · Feature-Completeness · Integration · Regression · Data-Integrity | PHASE_04_testing.md *(pending)* |
+| 4 | Functional · E2E · Feature-Completeness · Integration · Regression · Data-Integrity | [PHASE_04_testing.md](PHASE_04_testing.md) |
 | 5 | Product · UX · UI · Design-System · Accessibility · Responsive · Forms · Charts | PHASE_05_product_ux.md *(pending)* |
 | 6 | Performance · DB-Query · Frontend · Backend · Scalability · Resource | PHASE_06_performance.md *(pending)* |
 | 7 | Security · Auth · RBAC · Input-Validation · API-Security · Secrets · Privacy · Supply-Chain | PHASE_07_security.md *(pending)* |
