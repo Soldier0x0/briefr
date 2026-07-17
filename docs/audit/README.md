@@ -21,7 +21,10 @@ and Quick-Win/Architectural classification.
 | 8 | Logging · Monitoring · Observability · Alerting · Config · Backup · DR · Deploy · Upgrade | [PHASE_08_operations.md](PHASE_08_operations.md) |
 | 9 | Cross-Browser · Cross-Platform · Compatibility · Reliability · Chaos · Recovery | [PHASE_09_reliability.md](PHASE_09_reliability.md) |
 | 10 | User · Admin · Developer · API · Architecture documentation | [PHASE_10_documentation.md](PHASE_10_documentation.md) |
-| 11 | Enterprise-SaaS · Production · Release readiness | PHASE_11_readiness.md *(pending)* |
+| 11 | Enterprise-SaaS · Production · Release readiness | [PHASE_11_readiness.md](PHASE_11_readiness.md) |
+
+**Status: all 11 phases complete.** Program score (self-hosted lens): **7.4/10**. Start with the
+five P0 release-blockers in [PHASE_11_readiness.md](PHASE_11_readiness.md).
 
 ## Scoring key
 Priority: **Critical / High / Medium / Low**. Each finding is **Quick Win** (hours, low
