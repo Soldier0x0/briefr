@@ -96,6 +96,7 @@ Verify: `curl -s http://127.0.0.1:8000/api/health` → `"backend": "postgresql"`
 | Runtime driver | **asyncpg** pool (`db/connection.py`) |
 | Migrations | **Alembic** + **psycopg** (sync, migration-time) |
 | SQL compatibility | `db/pg_adapt.py` adapts legacy router SQL at the Postgres connection boundary |
+| Durable jobs | **Procrastinate** (`PROCRASTINATE_ENABLED=0` default). Schema applied by Alembic `028_procrastinate_schema` (official `schema.sql`). In-process worker starts from `main.py` lifespan when enabled. |
 | Embeddings search | NumPy cosine (no pgvector required today) |
 
 ## Backups

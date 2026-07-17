@@ -124,6 +124,14 @@ async def lifespan(app: FastAPI):
             "main.py lifespan: scheduler disabled (BRIEFR_SCHEDULER_ENABLED=0) — API-only worker"
         )
     await maybe_run_on_startup()
+    # Q1: durable Procrastinate worker (feature-flagged; Postgres only).
+    try:
+        from jobs.worker import start_inprocess_worker
+
+        if await start_inprocess_worker():
+            logger.info("main.py lifespan: Procrastinate in-process worker started")
+    except Exception:
+        logger.exception("main.py lifespan: Procrastinate worker failed to start (continuing)")
     logger.info("main.py lifespan: startup complete — accepting requests")
     yield
     logger.info("main.py lifespan: shutting down")
@@ -131,6 +139,12 @@ async def lifespan(app: FastAPI):
     # by SHUTDOWN_DRAIN_TIMEOUT_SECONDS (default 10s) each — for running jobs
     # and fire-and-forget tasks, so an in-flight ingest can finish its commit
     # instead of dying mid-write.
+    try:
+        from jobs.worker import stop_inprocess_worker
+
+        await stop_inprocess_worker()
+    except Exception:
+        logger.exception("main.py lifespan: Procrastinate worker stop failed")
     stop_scheduler()
     await wait_for_running_jobs()
     from task_registry import drain_background_tasks

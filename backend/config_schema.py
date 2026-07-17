@@ -141,6 +141,10 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
     ConfigField("MITRE_CVE_MAPPINGS_JSON_URL", "ingest", "url",
                 help_text="Override URL for the MITRE ATT&CK CVE-mappings JSON (blank = upstream default)."),
 
+    # ── Durable outbound jobs (Procrastinate; Postgres only) ─────────────────
+    ConfigField("PROCRASTINATE_ENABLED", "queue", "bool", restart_required=True,
+                help_text="Enable Postgres-backed durable job queue (Procrastinate). Off = zero behavior change."),
+
     # ── ML toggles ───────────────────────────────────────────────────────────
     ConfigField("EMBEDDINGS_ENABLED", "ml", "bool", restart_required=True,
                 help_text="Enable local ONNX embeddings for semantic 'related CVEs'."),

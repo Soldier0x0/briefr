@@ -1,6 +1,6 @@
 # BRIEFR product status
 
-**Last updated:** 2026-07-17  
+**Last updated:** 2026-07-17 (Q1 Procrastinate)  
 **Purpose:** Single page for “what’s true in production today.” When README or beta docs disagree, this wins.
 
 ---
@@ -37,6 +37,7 @@
 | **Snooze** | Removed from UI (#137). **Watchlist monitor alerts** ship via `watchlist_alert` webhooks when pinned CVEs enter KEV or show EPSS/PoC changes (scheduler job `watchlist_monitor_alerts`). |
 | **Theme** | Dark only. |
 | **Shell URL nav** | Analyst tabs sync `?tab=brief\|feed\|ioc\|atlas\|forge` (Forge still uses `view`/`technique`/`pack`). Admin sidebar syncs `?p=`. Refresh and back/forward follow the URL. |
+| **Durable jobs (Q1)** | Procrastinate foundation behind `PROCRASTINATE_ENABLED` (default off). Alembic `028` applies schema; in-process worker on lifespan when enabled; `GET /api/admin/jobs/outbound` lists allowlisted job fields. In-memory `api_queue` pacing unchanged. |
 | **Docker compose** | Postgres compose exists; full V2.0 platform compose not shipped. |
 
 ---
