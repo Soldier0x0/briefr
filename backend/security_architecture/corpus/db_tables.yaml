@@ -342,6 +342,15 @@ tables:
   source_refs:
   - type: table
     ref: sessions
+- id: software_catalog
+  title: software_catalog
+  summary: Database table defined in db/init.py (name=software_catalog).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: software_catalog
 - id: sync_state
   title: sync_state
   summary: Database table defined in db/init.py (name=sync_state).

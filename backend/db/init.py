@@ -228,6 +228,21 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_api_call_events_ts ON api_call_events(ts);
             CREATE INDEX IF NOT EXISTS idx_api_call_events_source_ts ON api_call_events(source, ts);
 
+            CREATE TABLE IF NOT EXISTS software_catalog (
+                cpe_uri TEXT PRIMARY KEY,
+                vendor TEXT NOT NULL,
+                product TEXT NOT NULL,
+                version TEXT,
+                display_name TEXT,
+                category TEXT NOT NULL DEFAULT 'other',
+                title TEXT,
+                versions_json TEXT,
+                updated_at TEXT DEFAULT (datetime('now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_software_catalog_product ON software_catalog(product);
+            CREATE INDEX IF NOT EXISTS idx_software_catalog_vendor_product
+                ON software_catalog(vendor, product);
+
             CREATE TABLE IF NOT EXISTS sync_state (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL,

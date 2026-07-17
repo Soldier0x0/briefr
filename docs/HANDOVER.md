@@ -12,6 +12,18 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — Q3 CPE software catalog + autocomplete
+
+**What:** NVD CPE 2.3 dictionary sync into `software_catalog` (Alembic `030`),
+scheduler job `cpe_catalog_sync` behind `CPE_CATALOG_SYNC_ENABLED` (default off),
+checkpointed pages via `sync_state`. Autocomplete
+`GET /api/stack/catalog/suggest?q=` (≥3 chars) with category heuristics.
+Asset wizard merges catalog hints with curated datalists.
+
+**Next:** Q4 → Q5.
+
+---
+
 ## 2026-07-17 — Q2 universal API metering
 
 **What:** Every `resilient_request` attempt records `api_call_events` + updates

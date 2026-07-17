@@ -36,6 +36,15 @@ jobs:
   source_refs:
   - type: job
     ref: cache_retention_cleanup
+- id: cpe_catalog_sync
+  title: NVD CPE Software Catalog Sync
+  summary: Scheduled job registered in scheduler.py (id=cpe_catalog_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: cpe_catalog_sync
 - id: cvelistv5_incremental_sync
   title: cvelistV5 Incremental Sync
   summary: Scheduled job registered in scheduler.py (id=cvelistv5_incremental_sync).

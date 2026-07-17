@@ -189,6 +189,8 @@ EXPECTED_ROUTES = [
     ("POST", "/api/me/notifications/seen"),
     ("POST", "/api/me/notifications/{notification_id}/dismiss"),
     ("POST", "/api/me/notifications/dismiss-all"),
+    # Q3 CPE software catalog autocomplete
+    ("GET", "/api/stack/catalog/suggest"),
 ]
 
 

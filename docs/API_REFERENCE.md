@@ -361,6 +361,14 @@ When no row exists yet, `stack_terms` is `""`, `profile` is `null`, and `updated
 
 **Notes:** `BRIEFR_STACK_TERMS` in admin config overrides the saved user stack for KEV-on-stack webhooks and the wallboard tile. When unset, the backend uses the most recently updated non-empty `user_preferences.stack_terms` row.
 
+### GET /api/stack/catalog/suggest
+
+**Description:** Autocomplete products from the NVD CPE–seeded `software_catalog` (Q3). Auth required.
+
+**Params:** `q` (string; results only when length ≥ 3 — shorter queries return `{items: []}` with no table scan), `limit` (1–50, default 20), `category` (optional: `app` \| `library` \| `os` \| `web_server` \| `firewall` \| `database` \| `other`).
+
+**Response:** `{ok, query, items: [{vendor, product, display_name, category, versions}]}`. Versions are suggestions; free-typed versions remain allowed in the UI. Catalog is populated by scheduler job `cpe_catalog_sync` when `CPE_CATALOG_SYNC_ENABLED=1`.
+
 ### GET /api/me/preferences
 
 **Description:** Read the authenticated user's display preferences and timezone.
