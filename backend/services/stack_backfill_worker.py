@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from database import get_db
 from db.enrichment import mark_cves_as_kev, update_epss_scores, upsert_kev_batch
 from db.stack_backfill import (
+    claim_run_running,
     get_run,
     list_checkpoints,
     next_pending_checkpoint,
@@ -49,7 +50,13 @@ async def _process(run_id: int) -> dict:
         if run.get("status") in ("completed", "partial", "failed"):
             return {"ok": True, "status": run["status"]}
 
-        await update_run(db, run_id, status="running", progress_message="Starting Tier A…")
+        # IDEM-A: atomically claim the run. A duplicate resume/retry or an
+        # overlapping in-process + durable kick loses the claim here instead of
+        # double-running the same run_id (which would double-count progress).
+        if not await claim_run_running(db, run_id):
+            logger.info("stack backfill run %s already running — skipping duplicate", run_id)
+            return {"ok": True, "status": "already_running"}
+        await update_run(db, run_id, progress_message="Starting Tier A…")
         await db.commit()
 
         api_key = os.environ.get("NVD_API_KEY")

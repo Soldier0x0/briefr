@@ -151,7 +151,27 @@ async def _kick_backfill(run_id: int) -> None:
 
             app = await open_app()
             if app is not None:
-                await stack_backfill_tick.defer_async(run_id=run_id)
+                try:
+                    # IDEM-B: per-run queueing lock — a duplicate resume while a
+                    # tick for this run is still pending is rejected instead of
+                    # enqueuing a second job for the same run_id.
+                    await stack_backfill_tick.configure(
+                        queueing_lock=f"stack_backfill:{run_id}"
+                    ).defer_async(run_id=run_id)
+                except Exception as exc:
+                    # AlreadyEnqueued: a tick for this run is already queued —
+                    # idempotent no-op. Return so we do NOT also kick in-process
+                    # (which would defeat the lock). procrastinate is already
+                    # loaded on this path, so import the real exception class.
+                    from procrastinate.exceptions import AlreadyEnqueued
+
+                    if isinstance(exc, AlreadyEnqueued):
+                        logger.info(
+                            "stack backfill tick already queued for run %s — skipping duplicate",
+                            run_id,
+                        )
+                    else:
+                        raise
                 return
         except Exception as exc:
             logger.warning("Procrastinate defer failed — falling back: %s", exc)

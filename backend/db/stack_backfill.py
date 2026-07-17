@@ -6,7 +6,7 @@ import json
 import logging
 import math
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from db.config import is_postgres
@@ -383,6 +383,68 @@ async def update_run(
             f"UPDATE stack_backfill_runs SET {sets} WHERE id = ?",
             (*[fields[c] for c in cols], run_id),
         )
+
+
+def _stale_running_seconds() -> int:
+    # A run left in 'running' by a crashed worker is reclaimable once its
+    # heartbeat (updated_at, bumped every page) is older than this. Kept well
+    # above a healthy per-page cadence so a live run is never stolen.
+    try:
+        return max(60, int(os.environ.get("STACK_BACKFILL_STALE_SECONDS", "900")))
+    except ValueError:
+        return 900
+
+
+async def claim_run_running(db: DbConnection, run_id: int) -> bool:
+    """Atomically transition a run into 'running' iff no other worker is
+    actively running it (IDEM-A). Wins the claim when the run is non-terminal
+    and either not already running or its heartbeat is stale (crashed worker).
+    Returns True if this caller won the claim, False otherwise.
+
+    The single conditional UPDATE is the concurrency gate: under READ COMMITTED
+    (Postgres) or the database write lock (SQLite), only one of two concurrent
+    callers observes a matching row, so exactly one advances the run.
+    """
+    now = datetime.now(timezone.utc)
+    stale = timedelta(seconds=_stale_running_seconds())
+    if is_postgres():
+        rows = await db.execute_fetchall(
+            """
+            UPDATE stack_backfill_runs
+            SET status = 'running', updated_at = $2
+            WHERE id = $1
+              AND status NOT IN ('completed', 'partial', 'failed')
+              AND (status <> 'running' OR updated_at IS NULL OR updated_at < $3)
+            RETURNING id
+            """,
+            (run_id, now, now - stale),
+        )
+        return bool(rows)
+    ts = now.replace(tzinfo=None).isoformat(sep=" ")
+    cutoff = (now - stale).replace(tzinfo=None).isoformat(sep=" ")
+    await db.execute(
+        """
+        UPDATE stack_backfill_runs
+        SET status = 'running', updated_at = ?
+        WHERE id = ?
+          AND status NOT IN ('completed', 'partial', 'failed')
+          AND (status <> 'running' OR updated_at IS NULL OR updated_at < ?)
+        """,
+        (ts, run_id, cutoff),
+    )
+    rows = await db.execute_fetchall("SELECT changes() AS n")
+    row = _row0(rows)
+    if row is None:
+        return False
+    # Handle both dict-like rows and tuple rows explicitly: _as_dict() returns
+    # {} (not an error) for tuples, so a try/except around it would be dead code.
+    n = _as_dict(row).get("n")
+    if n is None:
+        try:
+            n = row[0]
+        except (TypeError, IndexError, KeyError):
+            n = 0
+    return int(n or 0) > 0
 
 
 async def next_pending_checkpoint(db: DbConnection, run_id: int) -> dict | None:

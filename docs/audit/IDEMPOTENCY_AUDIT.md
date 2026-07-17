@@ -56,7 +56,9 @@ edges.
 
 ## Findings
 
-### IDEM-A — Stack backfill has no "already-running" guard → concurrent double-run · Priority: MEDIUM · Quick Win
+### IDEM-A — Stack backfill has no "already-running" guard → concurrent double-run · Priority: MEDIUM · Quick Win · ✅ RESOLVED
+> **Resolved:** `db.stack_backfill.claim_run_running` (atomic conditional `UPDATE … WHERE status NOT IN (terminal) AND (status <> 'running' OR stale)`) now gates `_process`; a crash-stalled `running` run is reclaimable after `STACK_BACKFILL_STALE_SECONDS` (default 900s). Tests in `tests/test_stack_backfill_idempotency.py`.
+
 - **Location:** `backend/services/stack_backfill_worker.py:42-53` (`_process`). The early-return
   guard at `:49` covers `status in ("completed", "partial", "failed")` but **not `"running"`**;
   `:52` then sets `status="running"` unconditionally.
@@ -90,7 +92,9 @@ edges.
   Regression test drives two concurrent calls and asserts `cves_upserted` is not double-counted.
 - **Effort:** Quick Win. **Type:** Quick Win.
 
-### IDEM-B — Procrastinate defer carries no `queueing_lock` → duplicate pending jobs · Priority: MEDIUM · Quick Win
+### IDEM-B — Procrastinate defer carries no `queueing_lock` → duplicate pending jobs · Priority: MEDIUM · Quick Win · ✅ RESOLVED
+> **Resolved:** `routers/stack_catalog.py:_kick_backfill` now defers with `.configure(queueing_lock=f"stack_backfill:{run_id}")` and treats `AlreadyEnqueued` as an idempotent no-op (returns without also kicking the in-process fallback).
+
 - **Location:** `backend/routers/stack_catalog.py:154` — `await stack_backfill_tick.defer_async(run_id=run_id)`.
 - **Description:** The defer passes no `queueing_lock`, so repeated *Agree/Resume* clicks enqueue
   multiple `jobs:stack_backfill` rows for the same `run_id`. Procrastinate's `queueing_lock` exists
@@ -186,8 +190,8 @@ edges.
 
 ## Immediate action items (ranked)
 
-1. **IDEM-A** — atomic run claim on stack backfill (highest value; closes the only real double-run). Quick Win.
-2. **IDEM-B** — `queueing_lock` on the backfill defer. Quick Win, pairs with A.
+1. ~~**IDEM-A** — atomic run claim on stack backfill~~ ✅ **done** (`claim_run_running`).
+2. ~~**IDEM-B** — `queueing_lock` on the backfill defer~~ ✅ **done**.
 3. **IDEM-D** — TTL-sweep `webhook_destination_dedupe` to self-heal stuck claims. Quick Win.
 4. **IDEM-C** — job-registry doc + single-owner enforcement for `jobs:stack_backfill` (satisfies F2.2). Medium.
 5. **IDEM-E / IDEM-F** — note-only; revisit if the single-process / single-operator assumptions relax.
