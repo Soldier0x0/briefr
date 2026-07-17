@@ -4,6 +4,10 @@ BRIEFR is a self-hosted CVE intelligence and detection-engineering platform.
 FastAPI backend (`backend/`), React 19 + Vite frontend (`frontend/`, plain
 JSX/CSS + semantic tokens + Radix primitives per ADR-003; no Tailwind), **PostgreSQL required in production**.
 
+This file is the rulebook; `docs/AGENT_METHODOLOGY.md` is the working method
+behind it (orient → plan → design → implement → verify → self-review → record).
+Apply both on every task.
+
 ## Commands
 
 - Backend tests: `cd backend && pytest tests/ -q`

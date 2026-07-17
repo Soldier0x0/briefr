@@ -40,6 +40,7 @@ docs/                  # THE PRESENT — what is true today
 ├── ONBOARDING, OPERATIONS, POSTGRES, LEARNING_PATH           # deep guides
 ├── API_REFERENCE, SYSTEM_DESIGN, PRODUCT,                    # deep reference
 │   DATA_SNAPSHOT, BRIEFR_PRODUCT_VOICE, IMAGE_BRIEFS
+├── AGENT_METHODOLOGY.md                                      # agent working method (linked from AGENTS.md)
 ├── planning/          # THE FUTURE — direction + queue + specs
 │   ├── SPRINT_*.md, BACKLOG.md
 │   ├── STRATEGY.md, ROADMAP.md, PROGRAM_*.md
