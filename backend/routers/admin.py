@@ -1747,6 +1747,28 @@ async def get_database_migration_status(request: Request):
     return await get_status_with_fallback()
 
 
+# ── Durable outbound jobs (Procrastinate / Q1) ─────────────────────────────
+
+
+@router.get("/jobs/outbound")
+async def list_outbound_jobs(request: Request, limit: int = 50):
+    """List recent Procrastinate jobs (allowlisted fields). Empty when disabled."""
+    from db.outbound_jobs import list_recent_outbound_jobs
+    from jobs.app import is_procrastinate_enabled
+
+    enabled = is_procrastinate_enabled()
+    db = await get_db()
+    try:
+        jobs = await list_recent_outbound_jobs(db, limit=limit) if enabled else []
+    finally:
+        await db.close()
+    return {
+        "enabled": enabled,
+        "jobs": jobs,
+        "count": len(jobs),
+    }
+
+
 # ── Scheduler ──────────────────────────────────────────────────────────────
 
 

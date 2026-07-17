@@ -12,6 +12,20 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — Q track activated; Q1 Procrastinate foundation
+
+**What:** Maintainer activated Q1–Q5. Open questions → defaults (in-process
+worker, full CPE sync, 30d retention, no deep-correlation Agree in Q4).
+
+**Q1:** `procrastinate==3.9.0`, Alembic `028_procrastinate_schema`,
+`PROCRASTINATE_ENABLED` (default 0), in-process worker from lifespan,
+`jobs.health_ping` smoke task, `GET /api/admin/jobs/outbound`,
+`jobs.context.outbound_context` for Q2 metering.
+
+**Next:** Q2 → Q3 → Q4 → Q5.
+
+---
+
 ## 2026-07-17 — Shell navigation owns the URL (tab= / p=)
 
 **RCA:** Primary nav (BRIEF/FEED/IOC/… and Admin sidebar) was React state

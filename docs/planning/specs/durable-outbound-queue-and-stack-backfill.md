@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Follow [`execution-playbook.md`](execution-playbook.md) for dual-DB tests and stop-and-replan triggers.
 
-**Status:** Planning — awaiting maintainer activation (do not implement until sprint checkboxes are added and this spec is approved).  
+**Status:** Active — maintainer activated 2026-07-17 (open questions → spec defaults).  
 **Created:** 2026-07-16  
 **Goal:** Persist outbound API work across restarts, count every outbound call with attribution, then let operators declare a versioned stack and opt in to Tier-A historical CVE fetch without breaking existing ingest.
 

@@ -1775,6 +1775,35 @@ Migration progress for the SQLite→Postgres one-shot copy. `status` is `idle` |
 ### GET /api/admin/db-explorer/tables/{table_name}/rows
 Paginated read-only rows for one allowlisted table. Params: `limit` (1–100, default 50), `offset` (0–10000), optional `filter_column` + `filter_value` (single-column equality only — no client SQL). `cves` requires `filter_column=cve_id` with a valid CVE ID. Large text/JSON fields may truncate (~2 KB); Tier-2 tables mask sensitive columns (`audit_log.target`, `webhook_delivery_log.error`). Unknown or forbidden tables return **404**. Audit: `db.explorer.browse.{table}` with filter summary — no row bodies.
 
+### GET /api/admin/jobs/outbound
+
+List recent **Procrastinate** durable jobs (Q1). Admin auth required.
+
+**Query:** `limit` (1–200, default 50).
+
+**Response:**
+```json
+{
+  "enabled": false,
+  "count": 0,
+  "jobs": [
+    {
+      "id": 1,
+      "queue": "briefr",
+      "task": "jobs:health_ping",
+      "status": "succeeded",
+      "scheduled_at": null,
+      "attempts": 1,
+      "priority": 0,
+      "lock": null,
+      "queueing_lock": null
+    }
+  ]
+}
+```
+
+When `PROCRASTINATE_ENABLED=0` (default), `enabled` is false and `jobs` is empty. No args/payloads are returned (allowlisted fields only).
+
 ### POST /api/admin/scheduler/run
 Body `{job_id}`. Triggers a scheduler job immediately. Returns `409` if job lock is held, `400` if job_id unknown.
 Audit: `scheduler.run.{job_id}`.
