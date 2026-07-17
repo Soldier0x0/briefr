@@ -69,56 +69,59 @@
    tokens only. */
 
 .forge {
-  --fg-nav-w: 220px;
   --fg-rail-w: 320px;
 }
 
 .fg-shell {
-  display: grid;
-  grid-template-columns: var(--fg-nav-w) minmax(0, 1fr);
-  grid-template-rows: minmax(0, auto) auto;
-  column-gap: var(--space-5);
-  row-gap: var(--space-4);
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
   position: relative;
 }
 
 .fg-shell > .fg-nav {
-  grid-column: 1;
-  grid-row: 1 / -1;
+  width: 100%;
 }
 
 .fg-shell > .fg-workspace {
-  grid-column: 2;
-  grid-row: 1;
+  width: 100%;
   min-width: 0;
 }
 
 .fg-shell > .fg-detail {
-  grid-column: 2;
-  grid-row: 2;
+  width: 100%;
 }
 
 .fg-nav {
-  width: var(--fg-nav-w);
-  flex-shrink: 0;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
   position: sticky;
-  top: 16px;
+  top: 0;
+  z-index: var(--z-sticky);
+  padding: var(--space-2) 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.fg-nav-tabs-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .fg-nav-tabs {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 2px;
 }
 
 .fg-nav-btn {
-  text-align: left;
-  font-size: 0.8125rem;
-  padding: 8px 10px;
+  text-align: center;
+  font-size: var(--font-size-micro);
+  padding: 8px 12px;
   background: transparent;
   border: 1px solid transparent;
   color: var(--text2);
@@ -138,17 +141,10 @@
   color: var(--accent-selected);
 }
 
-.fg-counts-nav {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-}
-
 .fg-stack-toggle-nav {
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
+  flex: 0 0 auto;
+  padding-top: 0;
+  border-top: none;
 }
 
 .fg-rail-backdrop {
@@ -1215,46 +1211,11 @@
   margin: 12px 0 0;
 }
 
-/* ── Responsive (FR-2) ───────────────────────────────
-   Desktop: nav | full-width navigator; hunt pack docks below.
-   Narrow: nav stacks; hunt pack becomes a bottom sheet overlay. */
+/* ── Responsive: hunt pack becomes a bottom sheet on narrow viewports ── */
 
 @media (max-width: 959px) {
-  .fg-shell {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-  }
-
-  .fg-shell > .fg-nav {
-    grid-column: 1;
-    grid-row: 1;
-    width: 100%;
+  .fg-nav {
     position: static;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .fg-shell > .fg-workspace {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .fg-shell > .fg-detail {
-    grid-column: 1;
-    grid-row: 3;
-  }
-
-  .fg-nav-tabs {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .fg-counts-nav,
-  .fg-stack-toggle-nav {
-    border-top: none;
-    padding-top: 0;
   }
 
   .fg-detail {
