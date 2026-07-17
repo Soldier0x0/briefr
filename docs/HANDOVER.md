@@ -12,20 +12,24 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-17 — Forge ATT&CK navigator uniform layout
+## 2026-07-17 — LLM free-model defaults (stale OpenRouter/Gemini)
 
-**What / RCA:** Navigator looked uneven because (1) tactic columns started
-collapsed behind a `+` that toggled wider “dense” cards with names, and
-(2) the sub-technique `▸` control only rendered on parents with children,
-so technique cards started at different horizontal offsets. Side hunt-pack
-rail also stole width from the matrix.
+**What / RCA:** AI Operations showed Product extraction failing on OpenRouter
+`google/gemini-2.0-flash-lite-001:free` (`model not found`) and Gemini
+`gemini-2.0-flash-lite` (`unknown error`, multi-minute latency). Live
+OpenRouter `/api/v1/models` (2026-07-17) has **no** Gemini Flash-Lite IDs
+(free or paid); Google docs mark `gemini-2.0-flash-lite` deprecated.
+Groq `openai/gpt-oss-20b` remains valid (occasional `no content returned` is
+empty-body handling, not a bad model id).
 
-**Fix:** Matrix-style cells (id + name only — no K/GAP/C chips); remove
-column `+`; reserved toggle gutter so `▸` does not break alignment;
-sub-trees stay open until the user collapses; hunt pack docks **below**
-the workspace so ATT&CK uses the full container width.
+**Fix:** Defaults → OpenRouter `google/gemma-4-31b-it:free`, Gemini
+`gemini-3.1-flash-lite` (current stable Flash-Lite; 2.5 still valid);
+update `.env.example`, catalog tests, PRODUCT_STATUS.
+**Operator:** clear stale `OPENROUTER_MODEL_*` / `GEMINI_MODEL` in env or
+Admin config if still set to the old IDs — env/DB overrides win over code
+defaults.
 
-**Next:** Merge LLM free-model defaults (#651) → activate Q1–Q5 → E1–E6.
+**Next:** Q1–Q5 (activate) → E1–E6. Parked: STIX, V2 compose, G0–G4.
 
 ---
 

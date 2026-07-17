@@ -78,7 +78,7 @@ def test_insert_and_list_ai_operations(tmp_path, monkeypatch):
                 feature="product_extraction",
                 task_class="product_extraction",
                 provider="gemini",
-                model="gemini-2.0-flash-lite",
+                model="gemini-3.1-flash-lite",
                 success=False,
                 error_class="empty",
                 retry_index=1,
