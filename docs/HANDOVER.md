@@ -12,6 +12,37 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — Idempotency completion (IDEM-C / IDEM-D + E/F disposition)
+
+**What:** Closed out the remaining idempotency findings from
+`docs/audit/IDEMPOTENCY_AUDIT.md` (fresh branch off `main`; #665 already merged).
+- **IDEM-D (webhook stuck claim):** new `db.cache_retention.purge_stranded_webhook_dedupe`,
+  wired into the daily `run_retention_cleanup`. Removes dedupe claims with **no successful
+  `webhook_delivery_log` row**, older than a 1h grace but within the delivery-log retention
+  window — so a crash between claim-commit and delivery self-heals without ever re-alerting a
+  genuinely-sent event. (Rejected a TTL/schema change: keys are semantic + long-lived; the
+  delivery-log join distinguishes stranded from sent with no migration.)
+  Tests: `tests/test_webhook_dedupe_stranded.py`.
+- **IDEM-C (dual job systems):** documented **Background-job ownership registry** in
+  `SYSTEM_DESIGN.md` (each job owned by one system; disjoint namespaces — APScheduler ids
+  never carry `jobs:`); `tests/test_job_ownership_registry.py` asserts no id is in both and
+  the registry stays current. Closes audit **F2.2**. Execution-level exactly-once is already
+  guaranteed by IDEM-A, so no `procrastinate_jobs` pre-check was needed.
+- **IDEM-E:** accepted as-is (single-process safe; single-owner flag covers multi-process).
+- **IDEM-F:** deferred non-goal (needs a versioned programmatic API). Audit doc records both.
+
+**Verification:** IDEM-C registry test **runs green in this session** (scheduler_locks is
+stdlib-only). IDEM-D sweep SQL validated directly against stdlib `sqlite3` (only the stranded
+claim removed; sent/mid-flight/beyond-retention kept). `py_compile` clean. Full backend suite
+still not runnable in the cloud session — run `pytest tests/test_webhook_dedupe_stranded.py
+tests/test_job_ownership_registry.py -q` on a dev box (and the sweep against Postgres per
+danger-zone-1).
+
+**Idempotency program: COMPLETE.** All six findings dispositioned (A/B/C/D implemented, E
+accepted, F deferred).
+
+---
+
 ## 2026-07-17 — Stack backfill idempotency (IDEM-A / IDEM-B)
 
 **What:** Implemented the two Quick-Win findings from `docs/audit/IDEMPOTENCY_AUDIT.md`

@@ -6,11 +6,15 @@ counting, or a silently dropped side effect — scheduler jobs, the Procrastinat
 outbound queue, webhook delivery, ingest upserts, and mutating HTTP endpoints. Reviewed at
 commit `f7dd1a7` on branch `claude/next-steps-plan-kl6fhe`.*
 
-> **Assessment document — no code changes implemented here.** Findings are written to be
-> directly executable: concrete `file:line`, evidence, remediation with code sketch,
-> acceptance criteria, effort, and Quick-Win/Architectural classification. Answers the
-> outstanding recommendation in Phase 2 **F2.2** ("each job owned by exactly one system with
-> a documented idempotency key").
+> Findings are written to be directly executable: concrete `file:line`, evidence, remediation
+> with code sketch, acceptance criteria, effort, and Quick-Win/Architectural classification.
+> Answers the outstanding recommendation in Phase 2 **F2.2** ("each job owned by exactly one
+> system with a documented idempotency key").
+
+> **Resolution status (updated):** every finding is now dispositioned. **IDEM-A, IDEM-B,
+> IDEM-C, IDEM-D — ✅ implemented** (#665 + follow-up). **IDEM-E — accepted** (no change).
+> **IDEM-F — deferred** (non-goal until a versioned programmatic API). No open idempotency
+> work remains.
 
 ---
 
@@ -118,7 +122,9 @@ edges.
   the admin outbound list shows a single row; a test asserts the second defer is rejected/no-op.
 - **Effort:** Quick Win. **Type:** Quick Win.
 
-### IDEM-C — Dual job systems can double-run a backfill across the enabled/disabled boundary · Priority: LOW–MEDIUM · Architectural
+### IDEM-C — Dual job systems can double-run a backfill across the enabled/disabled boundary · Priority: LOW–MEDIUM · Architectural · ✅ RESOLVED
+> **Resolved:** documented **Background-job ownership registry** in `docs/SYSTEM_DESIGN.md` (each job owned by exactly one system, disjoint namespaces — APScheduler ids never carry the `jobs:` prefix) and added `tests/test_job_ownership_registry.py` asserting no job id is registered in both and the registry stays current (closes audit F2.2). Execution-level exactly-once is already guaranteed by IDEM-A (`claim_run_running`) regardless of how many kicks reach a run, and duplicate enqueues are rejected by IDEM-B's `queueing_lock` — so a durable/in-process overlap cannot double-run. A `procrastinate_jobs` pre-check in `_kick_backfill` was considered unnecessary given those two guarantees.
+
 - **Location:** `backend/routers/stack_catalog.py:144-163` (`_kick_backfill`); `backend/main.py:130`
   (`start_inprocess_worker`) + `start_scheduler()` in the same lifespan. Cross-references Phase 2 **F2.2**.
 - **Description:** `_kick_backfill` chooses Procrastinate **or** an in-process `asyncio.create_task`
@@ -138,7 +144,9 @@ edges.
   in-process task; the job-registry doc lists each task's owner-system + idempotency key.
 - **Effort:** Medium. **Type:** Architectural.
 
-### IDEM-D — Webhook "stuck claim" on crash between claim-commit and clear · Priority: LOW · Quick Win
+### IDEM-D — Webhook "stuck claim" on crash between claim-commit and clear · Priority: LOW · Quick Win · ✅ RESOLVED
+> **Resolved:** `db.cache_retention.purge_stranded_webhook_dedupe` (wired into the daily `run_retention_cleanup`) removes dedupe claims that have **no successful delivery-log row** once they are older than a 1h grace window but still within the delivery-log retention window — so a crash-stranded claim self-heals without ever removing a legitimately-sent claim (which would re-alert). Tests in `tests/test_webhook_dedupe_stranded.py`. A TTL/`pending`-state schema change was rejected as heavier than the finding warrants: the dedupe keys are semantic and long-lived, and the delivery-log join distinguishes stranded from sent without a migration.
+
 - **Location:** `backend/webhooks/engine.py:179-245`. The dedupe claim is committed at `:185`
   **before** the HTTP send (`:189`); a failed send clears it at `:240`.
 - **Description:** Correct under normal flow, but if the process crashes (or the DB connection drops)
@@ -157,7 +165,9 @@ edges.
   purged after the TTL; delivery can then be re-attempted.
 - **Effort:** Quick Win. **Type:** Quick Win.
 
-### IDEM-E — Manual-refresh guard is check-then-acquire, not an atomic acquire · Priority: LOW · Quick Win
+### IDEM-E — Manual-refresh guard is check-then-acquire, not an atomic acquire · Priority: LOW · Quick Win · ⏸ ACCEPTED (no change)
+> **Disposition:** accepted as-is. Single-process asyncio has no `await` between the `.locked()` check and the acquire, so it is not a real TOCTOU today, and multi-process safety is already provided by the single-owner `BRIEFR_SCHEDULER_ENABLED` flag. Churning the scheduler hot paths for a cosmetic tightening isn't warranted; revisit only if the single-owner assumption is removed.
+
 - **Location:** `backend/scheduler.py:298-301` — `run_nvd_incremental_sync` (and siblings) check
   `get_lock(...).locked()` and return, then acquire the lock later.
 - **Description:** A check-then-act pattern. In single-process asyncio with no `await` between the
@@ -172,7 +182,9 @@ edges.
   safe once the owner-flag assumption is removed.
 - **Effort:** Quick Win. **Type:** Quick Win.
 
-### IDEM-F — No HTTP-level idempotency keys on mutating endpoints · Priority: LOW · Architectural (context)
+### IDEM-F — No HTTP-level idempotency keys on mutating endpoints · Priority: LOW · Architectural (context) · ⏸ DEFERRED (non-goal)
+> **Disposition:** deferred as a deliberate non-goal for the current single-operator, human-driven product. Mutations are already guarded by job-lock 409s and idempotent upserts. Adopt an `Idempotency-Key` convention only if/when a versioned programmatic API (Phase 2 F2.3) with retrying clients lands.
+
 - **Location:** `routers/refresh.py:32+`, `routers/admin.py:2038` (`/feeds/epss/force-resync`),
   `routers/forge.py:300`, etc.
 - **Description:** Mutating endpoints rely on job-lock 409s (`refresh_in_progress`) and idempotent
@@ -192,9 +204,9 @@ edges.
 
 1. ~~**IDEM-A** — atomic run claim on stack backfill~~ ✅ **done** (`claim_run_running`).
 2. ~~**IDEM-B** — `queueing_lock` on the backfill defer~~ ✅ **done**.
-3. **IDEM-D** — TTL-sweep `webhook_destination_dedupe` to self-heal stuck claims. Quick Win.
-4. **IDEM-C** — job-registry doc + single-owner enforcement for `jobs:stack_backfill` (satisfies F2.2). Medium.
-5. **IDEM-E / IDEM-F** — note-only; revisit if the single-process / single-operator assumptions relax.
+3. ~~**IDEM-D** — sweep crash-stranded `webhook_destination_dedupe` claims~~ ✅ **done** (`purge_stranded_webhook_dedupe`).
+4. ~~**IDEM-C** — job-ownership registry + disjoint-namespace test (satisfies F2.2)~~ ✅ **done**.
+5. **IDEM-E / IDEM-F** — accepted / deferred; revisit only if the single-process / single-operator assumptions relax.
 
 ## Long-term
 

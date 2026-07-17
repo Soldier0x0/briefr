@@ -435,6 +435,24 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 - **Why:** No message broker; embedded in FastAPI process; sufficient for ~12 recurring jobs + 1 one-shot startup backfill (`scheduler.py:start_scheduler`).
 - **Trade-off:** Jobs lost on process restart (mitigated by `maybe_run_on_startup` bootstrap when CVE count &lt; 10); no distributed workers.
 
+### Background-job ownership registry (idempotency SSOT — audit F2.2 / IDEM-C)
+
+Two background-job systems coexist. **Every job is owned by exactly one system**, in a
+**disjoint namespace** (APScheduler ids never carry the `jobs:` prefix), so a job can never
+be registered in both — asserted by `tests/test_job_ownership_registry.py`. At-least-once
+delivery means each durable task must be idempotent; the table records the guarantee.
+
+| System | Owner / entrypoint | Jobs | Idempotency mechanism |
+|--------|--------------------|------|-----------------------|
+| **APScheduler** (in-process) | `scheduler.py:start_scheduler`; gated by `BRIEFR_SCHEDULER_ENABLED` (single owner across replicas) | ~12 recurring syncs + startup backfill (ids in `scheduler_locks.py`, e.g. `nvd_incremental_sync`, `epss_score_sync`) | `max_instances=1` + `coalesce=True` per job; per-job `asyncio.Lock` (`scheduler_locks._LOCKS`); manual `/api/refresh*` shares the same locks |
+| **Procrastinate** (durable queue) | `jobs/app.py` + `jobs/worker.py:start_inprocess_worker`; gated by `PROCRASTINATE_ENABLED`, Postgres-only | `jobs:health_ping`, `jobs:stack_backfill` (`jobs/tasks.py`) | `stack_backfill`: per-run `queueing_lock` on defer (IDEM-B) + atomic `claim_run_running` run gate (IDEM-A) — safe under duplicate defer, retry, or overlap with the in-process fallback |
+
+Because `claim_run_running` (IDEM-A) makes stack-backfill execution exactly-once regardless of
+how many kicks reach it, an overlap of the durable job and the in-process fallback across a
+`PROCRASTINATE_ENABLED` flag flip cannot double-run a run — it is contained at execution, and
+duplicate *enqueues* are rejected by the `queueing_lock` (IDEM-B). New durable tasks must add a
+row here with their idempotency key before merge.
+
 ### Plain JSX + CSS over component library
 
 - **Why:** Full control over dark terminal aesthetic; smaller bundle (`package.json` — React + Vite only).
