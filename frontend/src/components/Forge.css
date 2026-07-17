@@ -351,15 +351,16 @@
 
 .fg-tech-node-active .fg-tech-node-id {
   color: var(--accent-selected);
+}
+
 .fg-tech-node-name {
-  grid-column: 1 / -1;
-  grid-row: 2;
+  width: 100%;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--font-size-micro);
   color: var(--text2);
-  min-width: 0;
 }
 
 .fg-tech-node-active .fg-tech-node-name {

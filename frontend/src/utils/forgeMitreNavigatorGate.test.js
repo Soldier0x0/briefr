@@ -47,4 +47,25 @@ describe('PM-4d Forge MITRE navigator gate', () => {
     assert.doesNotMatch(css, /\.fg-tactic-col--expanded/)
     assert.doesNotMatch(css, /\.fg-tactic-expand\b/)
   })
+
+  it('Forge.css brace-balanced (guards lightningcss @keyframes minify crash)', () => {
+    const css = read(CSS)
+    // Ignore braces inside comments/strings so `/* { */` or content: "}" cannot false-fail.
+    const cleanCss = css
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/'[^']*'/g, '')
+      .replace(/"[^"]*"/g, '')
+    let bal = 0
+    for (const ch of cleanCss) {
+      if (ch === '{') bal += 1
+      else if (ch === '}') bal -= 1
+      assert.ok(bal >= 0, 'extra closing brace')
+    }
+    assert.equal(bal, 0)
+    // Regression: #652 merge dropped `}` before `.fg-tech-node-name`
+    assert.match(
+      css,
+      /\.fg-tech-node-active \.fg-tech-node-id \{\s*color: var\(--accent-selected\);\s*\}/,
+    )
+  })
 })

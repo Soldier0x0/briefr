@@ -12,6 +12,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — Hotfix: Forge.css missing `}` broke prod build
+
+**RCA:** `#652` on `main` dropped the closing `}` of
+`.fg-tech-node-active .fg-tech-node-id`, nesting `.fg-tech-node-name` inside
+it. Brace balance ≠ 0 → Vite/lightningcss minify failed with misleading
+`Unknown at rule: @keyframes` at `fg-pulse`. `briefr-update.sh` stopped at
+frontend build.
+
+**Fix:** restore the closed rule + flex name block; gate test asserts CSS
+brace balance. Re-run `briefr-update.sh` after merge.
+
+**Next:** Q1–Q5 (activate) → E1–E6. Parked: STIX, V2 compose, G0–G4.
+
+---
+
 ## 2026-07-17 — LLM free-model defaults (stale OpenRouter/Gemini)
 
 **What / RCA:** AI Operations showed Product extraction failing on OpenRouter
