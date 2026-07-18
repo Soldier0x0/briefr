@@ -151,7 +151,6 @@ export default function DbExplorerPanel({ toast }) {
                   <span className="admin-field-label">Filter value</span>
                   <input
                     className="admin-input mono"
-                    style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}
                     placeholder={tableMeta.required_filter ? 'Required' : 'Optional'}
                     value={filterValue}
                     onChange={(e) => setFilterValue(e.target.value)}

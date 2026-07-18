@@ -32,7 +32,7 @@ describe('product-wide labeled control rows', () => {
     const src = read('pages/admin/DbExplorerPanel.jsx')
     assert.match(src, /admin-filter-bar--fields/)
     assert.match(src, /admin-field-label/)
-    assert.doesNotMatch(src, /marginLeft:\s*'0\.35rem'/)
+    assert.doesNotMatch(src, /marginLeft:\s*['"]0\.35rem['"]/)
   })
 
   it('uses stacked fields on FEED stack, ARCH filters, and Forge pack picker', () => {
@@ -57,8 +57,8 @@ describe('product-wide labeled control rows', () => {
     assert.match(wh, /admin-filter-bar--fields/)
     assert.match(wh, /admin-toolbar--fields/)
     assert.match(backups, /control-field/)
-    assert.doesNotMatch(ai, /marginLeft:\s*'0\.35rem'/)
-    assert.doesNotMatch(wh, /marginLeft:\s*'0\.35rem'/)
-    assert.doesNotMatch(backups, /marginLeft:\s*'0\.5rem'/)
+    assert.doesNotMatch(ai, /marginLeft:\s*['"]0\.35rem['"]/)
+    assert.doesNotMatch(wh, /marginLeft:\s*['"]0\.35rem['"]/)
+    assert.doesNotMatch(backups, /marginLeft:\s*['"]0\.5rem['"]/)
   })
 })
