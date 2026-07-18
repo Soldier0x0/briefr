@@ -12,6 +12,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — E8 campaign entity embeddings
+
+**Done**
+- `ENTITY_TYPE_CAMPAIGN` + `build_campaign_embed_text` (label/adversary/malware/tags).
+- Pending/upsert for non-retracted `correlation_campaigns`; preserve `camp_*` case.
+- Scheduler `run_campaign_embeddings_backfill` after techniques.
+- Hybrid search: `keyword_search_campaigns` + ANN entity type; typed hits + `meta.includes_campaigns`.
+- Tests: `test_embeddings_e8.py`. Plan: `docs/planning/specs/embeddings-e8-implementation-plan.md`.
+
+**Next:** Merged after E7 (#684); admin retrieval health / operator knobs later.
 ## 2026-07-18 — STACK spacebar caret jump + EPSS column realignment
 
 **What:** STACK input caret jumped backward after space (intermittent); TOP EPSS

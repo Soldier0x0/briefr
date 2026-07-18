@@ -43,9 +43,11 @@ from database import (
 from db.embeddings_search import find_similar_via_embeddings_table
 from db.embeddings_store import (
     embeddings_pgvector_writes_enabled,
+    get_campaigns_needing_embeddings,
     get_cves_needing_embeddings,
     get_cves_needing_embeddings_by_ids,
     get_techniques_needing_embeddings,
+    upsert_campaign_embedding_row,
     upsert_cve_embedding_row,
     upsert_technique_embedding_row,
 )
@@ -285,6 +287,64 @@ async def run_technique_embeddings_backfill(
             await upsert_technique_embedding_row(
                 db,
                 item["technique_id"],
+                model_name,
+                dims,
+                blob,
+                item["content_hash"],
+            )
+        await db.commit()
+        embedded += len(batch)
+
+    return {"embedded": embedded, "model": model_name}
+
+
+async def run_campaign_embeddings_backfill(
+    db,
+    progress_cb=None,
+) -> dict:
+    """Embed correlation campaigns missing / hash-mismatched (E8). Scheduler-only."""
+    global _missing_dep_logged
+
+    model_name = get_embeddings_model_name()
+    if not embeddings_pgvector_writes_enabled():
+        return {"embedded": 0, "model": model_name, "skipped": "pgvector writes disabled"}
+
+    cap = get_embeddings_max_per_run()
+    camp_cap = min(cap, 500)
+    pending = await get_campaigns_needing_embeddings(db, model_name, limit=camp_cap)
+    if not pending:
+        return {"embedded": 0, "model": model_name}
+
+    if TextEmbedding is None:
+        if not _missing_dep_logged:
+            logger.warning(
+                "EMBEDDINGS_ENABLED=1 but 'fastembed' is not installed — "
+                "campaign embeddings backfill skipped"
+            )
+            _missing_dep_logged = True
+        return {"embedded": 0, "model": model_name, "skipped": "fastembed missing"}
+
+    model = _get_model(model_name)
+    embedded = 0
+    total = len(pending)
+    total_batches = (total + EMBED_BATCH_SIZE - 1) // EMBED_BATCH_SIZE
+    for batch_num, offset in enumerate(range(0, total, EMBED_BATCH_SIZE), start=1):
+        batch = pending[offset : offset + EMBED_BATCH_SIZE]
+        if progress_cb:
+            progress_cb(
+                f"Embedding campaigns with {model_name}: "
+                f"batch {batch_num}/{total_batches} "
+                f"({min(offset + EMBED_BATCH_SIZE, total)}/{total})…"
+            )
+        texts = [item["embed_text"] for item in batch]
+        vectors = await asyncio.to_thread(_embed_texts, model, texts)
+        for item, vector in zip(batch, vectors):
+            normalized = l2_normalize(vector)
+            blob = vector_to_blob(normalized)
+            dims = int(normalized.size)
+            await upsert_campaign_embedding_row(
+                db,
+                item["campaign_id"],
                 model_name,
                 dims,
                 blob,
