@@ -131,6 +131,9 @@
 }
 
 .brief-chart-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   font-family: var(--font-mono);
   font-size: var(--type-subheading);
   color: var(--text2);
@@ -235,7 +238,7 @@
 
 .brief-epss-col-delta {
   text-align: right;
-  width: 4.5rem;
+  width: 5.75rem;
 }
 
 .brief-epss-row-cell {
@@ -246,7 +249,7 @@
 .brief-epss-row-btn {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(7rem, 1fr) minmax(4.5rem, auto) minmax(5rem, 1.4fr) 4.5rem;
+  grid-template-columns: minmax(7rem, 1fr) minmax(4.5rem, auto) minmax(5rem, 1.4fr) 5.75rem;
   align-items: center;
   gap: 8px;
   padding: 6px 4px;

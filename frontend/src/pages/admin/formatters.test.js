@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { fmtBytes, fmtDur } from './formatters.js'
+import { bytesChartScale, durationChartScale, fmtBytes, fmtDur, niceCeil } from './formatters.js'
 
 describe('fmtDur', () => {
   it('formats sub-minute durations with s unit', () => {
@@ -33,5 +33,59 @@ describe('fmtBytes', () => {
   it('steps through binary units', () => {
     assert.equal(fmtBytes(1536), '1.5 KB')
     assert.equal(fmtBytes(1048576), '1.0 MB')
+  })
+})
+
+describe('niceCeil', () => {
+  it('keeps exact 1/2/5 tier boundaries instead of jumping to the next', () => {
+    assert.equal(niceCeil(1), 1)
+    assert.equal(niceCeil(2), 2)
+    assert.equal(niceCeil(5), 5)
+    assert.equal(niceCeil(10), 10)
+    // Float noise just above a tier must not double the domain.
+    assert.equal(niceCeil(5 * (1 + 1e-13)), 5)
+    assert.equal(niceCeil(2 * (1 + 1e-13)), 2)
+  })
+})
+
+describe('bytesChartScale', () => {
+  it('plots in one display unit so axis ticks match tooltip values', () => {
+    const sizes = [
+      50.3 * 1024 * 1024,
+      50.1 * 1024 * 1024,
+      95.4 * 1024 * 1024,
+    ]
+    const scale = bytesChartScale(sizes)
+    assert.equal(scale.unit, 'MB')
+    assert.equal(scale.format(scale.toDisplay(sizes[0])), '50.3 MB')
+    assert.equal(scale.domainMax, 100)
+    // Mid-grid at domain/2 is 50.0 MB — a 50.3 MB point sits on that line,
+    // not on a misleading "47.7 MB" label from raw-byte nice ticks.
+    assert.equal(scale.format(scale.domainMax / 2), '50.0 MB')
+    assert.ok(Math.abs(scale.toDisplay(sizes[0]) - 50.3) < 1e-9)
+  })
+
+  it('falls back safely for empty or zero series', () => {
+    const scale = bytesChartScale([])
+    assert.equal(scale.unit, 'B')
+    assert.equal(scale.domainMax, 1)
+    assert.equal(scale.format(0), '0.0 B')
+  })
+})
+
+describe('durationChartScale', () => {
+  it('keeps one unit across the axis when values span the minute boundary', () => {
+    const scale = durationChartScale([20, 70, 180])
+    assert.equal(scale.unit, 'min')
+    assert.equal(scale.format(scale.toDisplay(70)), '1.2 min')
+    assert.equal(scale.format(scale.toDisplay(45)), '0.8 min')
+    // No mixed "45.0 s" / "1.5 min" tick pair on the same axis.
+    assert.ok(!scale.format(scale.toDisplay(45)).includes(' s'))
+  })
+
+  it('stays in seconds when the whole series is sub-minute', () => {
+    const scale = durationChartScale([12.4, 30, 55])
+    assert.equal(scale.unit, 's')
+    assert.equal(scale.format(scale.toDisplay(12.4)), '12.4 s')
   })
 })

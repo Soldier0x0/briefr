@@ -27,14 +27,17 @@ import {
 export function VendorKevChart({ rows }) {
   const theme = getRechartsTheme()
   const anim = chartAnimationDuration()
-  const vendors = rows.map((row) => row.vendor || 'Unknown')
-  const yAxisWidth = categoryAxisWidth(vendors, { min: 100, max: 220 })
-  const chartHeight = verticalBarChartHeight(rows.length, { min: 180 })
-  const data = rows.map((row) => ({
+  const data = (rows || []).map((row, index) => ({
+    // Index key — never use display label as the categorical lookup key
+    // (duplicate / empty vendor strings would freeze the tooltip on row 0).
+    pointKey: index,
     label: row.vendor || 'Unknown',
-    vendor: row.vendor,
+    vendor: row.vendor || 'Unknown',
     kev_count: row.kev_count,
   }))
+  const vendors = data.map((row) => row.label)
+  const yAxisWidth = categoryAxisWidth(vendors, { min: 100, max: 220 })
+  const chartHeight = verticalBarChartHeight(data.length, { min: 180 })
 
   return (
     <ChartShell
@@ -62,9 +65,11 @@ export function VendorKevChart({ rows }) {
           />
           <YAxis
             type="category"
-            dataKey="label"
+            dataKey="pointKey"
+            allowDuplicatedCategory={false}
             width={yAxisWidth}
             tick={{ ...axisTickStyle(theme), textAnchor: 'end' }}
+            tickFormatter={(value) => data[Number(value)]?.label || String(value)}
             interval={0}
           />
           <Tooltip
@@ -86,7 +91,7 @@ export function VendorKevChart({ rows }) {
             activeBar={barActiveProps(theme)}
           >
             {data.map((entry) => (
-              <Cell key={entry.vendor} fill={theme.accent} />
+              <Cell key={entry.pointKey} fill={theme.accent} />
             ))}
           </Bar>
         </BarChart>

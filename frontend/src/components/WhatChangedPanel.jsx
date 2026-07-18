@@ -3,14 +3,17 @@ import { fetchChanges } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
 import { ingestLogUrl } from '../utils/adminLinks.js'
 import { scrollBehavior } from '../utils/motion.js'
+import ControlTooltip from './ControlTooltip.jsx'
+import ExplainTip from './ExplainTip.jsx'
+import { DOMAIN_TERM_TIPS } from '../utils/domainTermTips.js'
 import './WhatChangedPanel.css'
 
 const FIELD_CHIPS = [
-  { id: null, label: 'ALL' },
-  { id: 'cvss_score', label: 'CVSS' },
-  { id: 'epss_score', label: 'EPSS' },
-  { id: 'is_kev', label: 'KEV' },
-  { id: 'has_poc', label: 'PoC' },
+  { id: null, label: 'ALL', tip: 'Show every tracked field change in the window.' },
+  { id: 'cvss_score', label: 'CVSS', tip: DOMAIN_TERM_TIPS.cvss },
+  { id: 'epss_score', label: 'EPSS', tip: DOMAIN_TERM_TIPS.epss },
+  { id: 'is_kev', label: 'KEV', tip: DOMAIN_TERM_TIPS.kev },
+  { id: 'has_poc', label: 'PoC', tip: DOMAIN_TERM_TIPS.poc },
 ]
 
 const WINDOW_CHIPS = [
@@ -151,6 +154,7 @@ export default function WhatChangedPanel({ onSelectCVE, fetchEnabled = true }) {
         </button>
         <h2 id="what-changed-heading" className="what-changed-title mono">
           WHAT CHANGED
+          <ExplainTip text={DOMAIN_TERM_TIPS.whatChanged} label="Explain What Changed" />
         </h2>
       </div>
 
@@ -158,15 +162,16 @@ export default function WhatChangedPanel({ onSelectCVE, fetchEnabled = true }) {
         <div id="what-changed-body" className="what-changed-body">
           <div className="what-changed-filters" role="group" aria-label="Change field filters">
             {FIELD_CHIPS.map(chip => (
-              <button
-                key={chip.label}
-                type="button"
-                className={`what-changed-chip${fieldFilter === chip.id ? ' active' : ''}`}
-                aria-pressed={fieldFilter === chip.id}
-                onClick={() => setFieldFilter(chip.id)}
-              >
-                {chip.label}
-              </button>
+              <ControlTooltip key={chip.label} text={chip.tip} trigger="hover-focus">
+                <button
+                  type="button"
+                  className={`what-changed-chip${fieldFilter === chip.id ? ' active' : ''}`}
+                  aria-pressed={fieldFilter === chip.id}
+                  onClick={() => setFieldFilter(chip.id)}
+                >
+                  {chip.label}
+                </button>
+              </ControlTooltip>
             ))}
           </div>
           <div className="what-changed-filters" role="group" aria-label="Change time window">

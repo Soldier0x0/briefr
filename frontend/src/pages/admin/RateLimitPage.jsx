@@ -2,12 +2,19 @@ import { useState, useEffect } from 'react'
 import { adminApi } from '../../api.js'
 import HelpTip from './shared/HelpTip.jsx'
 import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
+import { inboundBucketTip } from '../../utils/domainTermTips.js'
 
 function BucketRow({ bucket, expanded, onToggle }) {
+  const tip = inboundBucketTip(bucket.name)
   return (
     <>
       <tr>
-        <td style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{bucket.name}</td>
+        <td style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+            {bucket.name}
+            {tip && <HelpTip text={tip} />}
+          </span>
+        </td>
         <td>{bucket.rate_per_minute}/min</td>
         <td>{bucket.total_hits.toLocaleString()}</td>
         <td>{bucket.active_keys}</td>
@@ -62,7 +69,7 @@ export default function RateLimitPage({ toast }) {
             <strong style={{ color: data.enabled ? 'var(--green)' : 'var(--amber)' }}>
               {data.enabled ? 'enabled' : 'disabled'}
             </strong>
-            . To change this, update <code>BRIEFR_RATE_LIMIT_ENABLED</code> in{' '}
+            . To change this, update <code>RATE_LIMIT_ENABLED</code> in{' '}
             <a href="#" onClick={e => { e.preventDefault(); }} style={{ color: 'var(--fg2)' }}>API keys &amp; config</a>.
           </span>
         </div>
@@ -84,8 +91,14 @@ export default function RateLimitPage({ toast }) {
                   <th>Bucket</th>
                   <th>Limit</th>
                   <th>Total hits</th>
-                  <th>Active keys</th>
-                  <th>Top consumers</th>
+                  <th>
+                    Active keys
+                    <HelpTip text="Distinct client identities currently holding a token-bucket slot for this limit (usually client IPs)." />
+                  </th>
+                  <th>
+                    Top consumers
+                    <HelpTip text="Highest-hit client keys for this bucket since the last backend restart." />
+                  </th>
                 </tr>
               </thead>
               <tbody>

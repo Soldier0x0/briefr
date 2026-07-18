@@ -1315,6 +1315,12 @@ def _get_config_response() -> dict[str, Any]:
             "RATE_LIMIT_AUTH_REFRESH_PER_MINUTE": _env_int(
                 "RATE_LIMIT_AUTH_REFRESH_PER_MINUTE", 30
             ),
+            "RATE_LIMIT_WALLBOARD_PER_MINUTE": _env_int(
+                "RATE_LIMIT_WALLBOARD_PER_MINUTE", 60
+            ),
+            "RATE_LIMIT_SEARCH_TOKEN_PER_MINUTE": _env_int(
+                "RATE_LIMIT_SEARCH_TOKEN_PER_MINUTE", 30
+            ),
             "DATABASE_URL": (
                 re.sub(r"://[^@]+@", "://***@", _env("DATABASE_URL"))
                 if _env("DATABASE_URL") else "not configured"

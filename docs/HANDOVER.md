@@ -12,6 +12,78 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — Domain jargon tips (Analyst + Admin)
+
+**What:** Locked jargon sweep — unexplained abbreviations across Analyst Charts,
+What Changed, Sidebar TECH/techniques, Watchlist headers, Inbound limit buckets,
+and IOC Lookup (VT/ISP/ASN/OTX + idle providers).
+- Shared copy in `frontend/src/utils/domainTermTips.js`
+- Analyst: revived `ExplainTip` + `ControlTooltip`; Admin: `HelpTip`
+
+**Next:** W2+ (raise `/api/changes` max hours / custom range) if still desired;
+otherwise more maintainer UI issues on the same PR.
+
+---
+
+## 2026-07-18 — EPSS movers: context sparkline + Delta label
+
+**What:** Analyst Charts → Top EPSS movers hardcoded the sparkline column as
+`7d trend` and `Δ`, even when the picker was 6h/12h (EPSS is daily) and the
+delta was for the selected window.
+- Short windows (&lt;7d): sparkline shows labeled **7d context** + tooltip that
+  EPSS updates daily; **Delta (Δ)** remains the selected-window increase
+- ≥7d: column reads `Nd trend` and clips history to that many days
+- Removed illogical 30d/90d presets (API `since_hours` max 168) and awkward
+  empty copy (`last 7d` → `last 7 days`)
+
+**Next:** Remaining window/jargon items (W2+ API max hours, HelpTips on chart
+titles, etc.) on the same PR when reported.
+
+---
+
+## 2026-07-18 — Inbound limits dashboard missing live buckets
+
+**What:** Admin → Inbound limits only listed 7 of 9 enforced token buckets
+(`get_bucket_stats` omitted `admin_read` + `db_explorer`). Callout also
+misnamed the toggle as `BRIEFR_RATE_LIMIT_ENABLED` (real: `RATE_LIMIT_ENABLED`).
+- `get_bucket_stats` / `get_top_consumers` include all live buckets
+- `RATE_LIMIT_SEARCH_TOKEN_PER_MINUTE` added to config schema + security dump
+- UI callout uses `RATE_LIMIT_ENABLED`
+
+**Next:** More maintainer UI issues on `cursor/backup-archive-chart-fix-eee1`.
+
+---
+
+## 2026-07-18 — OpsCharts: backup archive size Y-axis vs tooltip mismatch
+
+**What:** Backup archive sizes chart plotted raw `size_bytes` while Recharts
+picked decimal “nice” ticks (25e6/50e6/100e6). `fmtBytes` labeled those as
+23.8/47.7/95.4 MB, so a 50.3 MB point sat ~5px above the “47.7 MB” grid line
+and looked wrong vs the tooltip.
+- `bytesChartScale()` — convert series to one display unit before plot
+- `BackupSizesChart` uses that scale for data, domain, ticks, and tooltip
+
+**Follow-up (same PR):** Tooltip stuck on one filename/size for every hover
+(far-left ~50 MB and far-right ~95 MB both showed the same archive).
+RCA: XAxis `dataKey` used a 12-char truncation (`briefr-20260…`) so every
+archive shared one Recharts axis-tooltip category; hover always resolved to
+row 0. Fix: `pointKey` = row index (guaranteed unique), timestamp tick labels,
+custom tooltip bound to active payload. Helpers in `backupChartUtils.js`.
+
+**Audit (same class elsewhere) — complete:**
+- **Resources charts** — sticky `HH:MM` + raw-byte Y → fixed (`resourceChartUtils.js`).
+- **Webhook deliveries** — hardened to index keys.
+- **Ingest duration** — raw seconds + `fmtDur` mixed units on one axis →
+  `durationChartScale()` + index category keys.
+- **Vendor KEV** — defensive index category keys (API already unique via GROUP BY).
+- **Not this class:** Timeline heatmap, sidebar sparkline, EPSS sparklines,
+  architecture graph, fmtBytes in tables.
+
+**Next:** Collect more maintainer-reported UI issues on the same PR branch
+`cursor/backup-archive-chart-fix-eee1`.
+
+---
+
 ## 2026-07-18 — Embeddings E6: MITRE technique embeddings + typed hits
 
 **What:** Embed ATT&CK techniques into multi-entity `embeddings` (`entity_type=technique`);

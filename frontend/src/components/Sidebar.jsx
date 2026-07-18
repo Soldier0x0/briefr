@@ -3,6 +3,9 @@ import { fetchStatsTimeline, fetchTopTechniques } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
 import { ingestLogUrl } from '../utils/adminLinks.js'
 import { getSavedStack } from '../utils/cveFilters.js'
+import ControlTooltip from './ControlTooltip.jsx'
+import ExplainTip from './ExplainTip.jsx'
+import { DOMAIN_TERM_TIPS } from '../utils/domainTermTips.js'
 import './Sidebar.css'
 
 const SIDEBAR_FILTERS = [
@@ -26,7 +29,7 @@ const SIDEBAR_FILTERS = [
     id: 'toggle-epss',
     field: 'epss_min',
     label: 'EPSS > 50%',
-    hint: 'Only CVEs with at least 50% EPSS probability of exploitation in 30 days.',
+    hint: DOMAIN_TERM_TIPS.epss + ' This toggle keeps CVEs at or above 50%.',
     toValue: (checked) => ({ epss_min: checked ? 0.5 : null }),
     isChecked: (filters) => filters.epss_min === 0.5,
   },
@@ -312,7 +315,9 @@ export default function Sidebar({ filters, onFiltersChange }) {
         )}
         {filters.technique && (
           <div className="active-stack" aria-label={`Active ATT&CK filter: ${filters.technique}`}>
-            <span className="stack-key">TECH</span>
+            <ControlTooltip text={DOMAIN_TERM_TIPS.tech} trigger="hover-focus">
+              <span className="stack-key">TECH</span>
+            </ControlTooltip>
             <span className="stack-val">{filters.technique}</span>
             <button
               className="stack-clear"
@@ -342,7 +347,13 @@ export default function Sidebar({ filters, onFiltersChange }) {
 
       {/* ── Section 3: Top techniques ── */}
       <section className="sidebar-section" aria-labelledby="techniques-heading">
-        <h2 id="techniques-heading" className="sidebar-heading">// TOP TECHNIQUES THIS WEEK</h2>
+        <h2 id="techniques-heading" className="sidebar-heading">
+          // TOP TECHNIQUES THIS WEEK
+          <ExplainTip
+            text={DOMAIN_TERM_TIPS.topTechniques}
+            label="Explain top techniques"
+          />
+        </h2>
         {techniquesLoading && <SidebarSkeleton rows={3} />}
         {!techniquesLoading && techniquesError && (
           <div className="sidebar-spark-error">

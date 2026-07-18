@@ -212,6 +212,8 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 help_text="Max session refresh requests per minute per client IP."),
     ConfigField("RATE_LIMIT_WALLBOARD_PER_MINUTE", "app", "int", min=1, restart_required=True,
                 help_text="Max wallboard snapshot requests per minute per client IP (kiosk polling)."),
+    ConfigField("RATE_LIMIT_SEARCH_TOKEN_PER_MINUTE", "app", "int", min=1, restart_required=True,
+                help_text="Max Bearer search-token API requests per minute per client IP (Embeddings E5)."),
     ConfigField("ALLOWED_ORIGINS", "app", "str",
                 help_text="Comma-separated CORS origins allowed to call the API.",
                 restart_required=True,

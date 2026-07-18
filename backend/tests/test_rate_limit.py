@@ -259,3 +259,22 @@ def test_get_top_consumers_includes_auth_buckets():
     finally:
         rate_limit.login_bucket._hits.clear()
         rate_limit.auth_refresh_bucket._hits.clear()
+
+
+def test_get_bucket_stats_lists_every_live_bucket():
+    """Inbound limits dashboard must not omit buckets that are still enforced."""
+    by_name = {row["name"]: row for row in rate_limit.get_bucket_stats()}
+    expected = {
+        "ioc": settings.rate_limit_ioc_per_minute,
+        "refresh": settings.rate_limit_refresh_per_minute,
+        "admin_read": settings.rate_limit_admin_read_per_minute,
+        "wallboard": settings.rate_limit_wallboard_per_minute,
+        "login": settings.rate_limit_login_per_minute,
+        "login_username": settings.rate_limit_login_per_minute,
+        "auth_refresh": settings.rate_limit_auth_refresh_per_minute,
+        "db_explorer": 30,
+        "search_token": settings.rate_limit_search_token_per_minute,
+    }
+    assert set(by_name) == set(expected)
+    for name, rate in expected.items():
+        assert by_name[name]["rate_per_minute"] == rate

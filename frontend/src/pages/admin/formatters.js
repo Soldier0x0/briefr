@@ -17,11 +17,108 @@ export function fmtBytes(bytes) {
   return `${val.toFixed(1)} ${units[i]}`
 }
 
+/**
+ * Scale for plotting byte series so Y-axis ticks and tooltip values share
+ * one linear display unit. Plotting raw bytes makes Recharts pick decimal
+ * "nice" ticks (25e6, 50e6, …) that fmtBytes turns into awkward MB labels
+ * (23.8, 47.7, …), so a 50.3 MB point sits almost on the "47.7 MB" grid line.
+ */
+export function bytesChartScale(valuesBytes) {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const nums = (valuesBytes || [])
+    .map((v) => Number(v))
+    .filter((n) => Number.isFinite(n) && n >= 0)
+  const maxBytes = nums.length ? Math.max(...nums) : 0
+  let unitIndex = 0
+  let divisor = 1
+  const peak = maxBytes > 0 ? maxBytes : 1
+  while (peak / divisor >= 1024 && unitIndex < units.length - 1) {
+    divisor *= 1024
+    unitIndex += 1
+  }
+  const unit = units[unitIndex]
+  const toDisplay = (bytes) => {
+    const n = Number(bytes)
+    if (!Number.isFinite(n) || n <= 0) return 0
+    return n / divisor
+  }
+  const format = (displayVal) => {
+    const n = Number(displayVal)
+    if (!Number.isFinite(n)) return '—'
+    return `${n.toFixed(1)} ${unit}`
+  }
+  const maxDisplay = toDisplay(maxBytes)
+  return {
+    unit,
+    divisor,
+    toDisplay,
+    format,
+    domainMax: niceCeil(maxDisplay),
+  }
+}
+
+/** @param {number} n */
+export function niceCeil(n) {
+  if (!Number.isFinite(n) || n <= 0) return 1
+  const exp = Math.floor(Math.log10(n))
+  const mag = 10 ** exp
+  const frac = n / mag
+  // Float noise can push an exact 1/2/5 boundary slightly above the tier
+  // (e.g. 5 → 5.000000000000001), which would incorrectly jump to the next
+  // nice number and double the chart domain.
+  const eps = 1e-12
+  let niceFrac
+  if (frac <= 1 + eps) niceFrac = 1
+  else if (frac <= 2 + eps) niceFrac = 2
+  else if (frac <= 5 + eps) niceFrac = 5
+  else niceFrac = 10
+  return niceFrac * mag
+}
+
 export function fmtDur(sec) {
   if (sec === null || sec === undefined) return '—'
   if (sec < 60) return `${sec.toFixed(1)} s`
   if (sec < 3600) return `${(sec / 60).toFixed(1)} min`
   return `${(sec / 3600).toFixed(1)} h`
+}
+
+/**
+ * Scale for plotting duration series in one unit (s / min / h).
+ * Raw seconds + fmtDur on Recharts nice ticks mixes units on one axis
+ * (e.g. "45.0 s" next to "1.5 min"), the same class of mismatch as
+ * raw bytes + fmtBytes.
+ */
+export function durationChartScale(valuesSeconds) {
+  const nums = (valuesSeconds || [])
+    .map((v) => Number(v))
+    .filter((n) => Number.isFinite(n) && n >= 0)
+  const maxSec = nums.length ? Math.max(...nums) : 0
+  let unit = 's'
+  let divisor = 1
+  if (maxSec >= 3600) {
+    unit = 'h'
+    divisor = 3600
+  } else if (maxSec >= 60) {
+    unit = 'min'
+    divisor = 60
+  }
+  const toDisplay = (seconds) => {
+    const n = Number(seconds)
+    if (!Number.isFinite(n) || n <= 0) return 0
+    return n / divisor
+  }
+  const format = (displayVal) => {
+    const n = Number(displayVal)
+    if (!Number.isFinite(n)) return '—'
+    return `${n.toFixed(1)} ${unit}`
+  }
+  return {
+    unit,
+    divisor,
+    toDisplay,
+    format,
+    domainMax: niceCeil(toDisplay(maxSec)),
+  }
 }
 
 export function fmtIso(iso) {
