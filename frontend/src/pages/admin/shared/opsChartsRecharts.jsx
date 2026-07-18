@@ -130,8 +130,9 @@ function BackupSizeTooltip({ active, payload, scale, theme }) {
 
 export function BackupSizesChart({ rows }) {
   const theme = getRechartsTheme()
-  const scale = bytesChartScale(rows.map((row) => row.size_bytes || 0))
-  const data = backupChartPoints(rows, scale)
+  const safeRows = Array.isArray(rows) ? rows : []
+  const scale = bytesChartScale(safeRows.map((row) => row?.size_bytes || 0))
+  const data = backupChartPoints(safeRows, scale)
   const anim = chartAnimationDuration()
 
   return (

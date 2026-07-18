@@ -57,15 +57,20 @@ export function bytesChartScale(valuesBytes) {
   }
 }
 
-function niceCeil(n) {
+/** @param {number} n */
+export function niceCeil(n) {
   if (!Number.isFinite(n) || n <= 0) return 1
   const exp = Math.floor(Math.log10(n))
   const mag = 10 ** exp
   const frac = n / mag
+  // Float noise can push an exact 1/2/5 boundary slightly above the tier
+  // (e.g. 5 → 5.000000000000001), which would incorrectly jump to the next
+  // nice number and double the chart domain.
+  const eps = 1e-12
   let niceFrac
-  if (frac <= 1) niceFrac = 1
-  else if (frac <= 2) niceFrac = 2
-  else if (frac <= 5) niceFrac = 5
+  if (frac <= 1 + eps) niceFrac = 1
+  else if (frac <= 2 + eps) niceFrac = 2
+  else if (frac <= 5 + eps) niceFrac = 5
   else niceFrac = 10
   return niceFrac * mag
 }

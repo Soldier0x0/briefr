@@ -39,6 +39,15 @@ describe('backupChartTickLabel', () => {
 })
 
 describe('backupChartPoints', () => {
+  it('tolerates null rows and missing size_bytes', () => {
+    const scale = bytesChartScale([1024])
+    const points = backupChartPoints([null, { filename: 'briefr-20260718T120000Z.tar.gz.age' }], scale)
+    assert.equal(points.length, 2)
+    assert.equal(points[0].size, 0)
+    assert.equal(points[0].filename, 'backup-0')
+    assert.equal(points[1].tickLabel, '07-18 12:00')
+  })
+
   it('uses unique index keys so far-left and far-right never share an X category', () => {
     const rows = [
       { filename: 'briefr-20260717T202746Z.tar.gz.age', size_bytes: 50.3 * 1024 * 1024 },

@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { bytesChartScale, durationChartScale, fmtBytes, fmtDur } from './formatters.js'
+import { bytesChartScale, durationChartScale, fmtBytes, fmtDur, niceCeil } from './formatters.js'
 
 describe('fmtDur', () => {
   it('formats sub-minute durations with s unit', () => {
@@ -33,6 +33,18 @@ describe('fmtBytes', () => {
   it('steps through binary units', () => {
     assert.equal(fmtBytes(1536), '1.5 KB')
     assert.equal(fmtBytes(1048576), '1.0 MB')
+  })
+})
+
+describe('niceCeil', () => {
+  it('keeps exact 1/2/5 tier boundaries instead of jumping to the next', () => {
+    assert.equal(niceCeil(1), 1)
+    assert.equal(niceCeil(2), 2)
+    assert.equal(niceCeil(5), 5)
+    assert.equal(niceCeil(10), 10)
+    // Float noise just above a tier must not double the domain.
+    assert.equal(niceCeil(5 * (1 + 1e-13)), 5)
+    assert.equal(niceCeil(2 * (1 + 1e-13)), 2)
   })
 })
 

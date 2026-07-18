@@ -27,13 +27,13 @@ export function backupChartTickLabel(filename) {
  */
 export function backupChartPoints(rows, scale) {
   return (rows || []).map((row, index) => {
-    const filename = row.filename || `backup-${index}`
+    const filename = row?.filename || `backup-${index}`
     return {
       pointKey: index,
       tickLabel: backupChartTickLabel(filename),
-      size: scale.toDisplay(row.size_bytes || 0),
+      size: scale.toDisplay(row?.size_bytes || 0),
       filename,
-      created_at: row.created_at,
+      created_at: row?.created_at,
     }
   })
 }
