@@ -627,7 +627,25 @@ Sub-objects match the shapes returned by `GET /api/cves/{cve_id}/sentences`, `/e
 
 `meta.method` values: `hybrid` \| `keyword` \| `keyword_first` \| `semantic` \| `keyword_fallback`.
 
-**Auth:** Analyst session (same as other `/api/*` routes). Search service token is **E5** (not this endpoint’s auth yet).
+**Auth:** Analyst session **or** search service token (`Authorization: Bearer briefr_search_…` — E5).
+
+---
+
+### Search service tokens (E5)
+
+Admin-managed tokens for agent/script retrieval. Plaintext shown **once** at create; bcrypt hash at rest.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/admin/search-tokens` | List tokens (prefix, scopes, last_used; never plaintext) |
+| `POST` | `/api/admin/search-tokens` | Create — body `{ "name": "…" }`; response includes `token` once |
+| `DELETE` | `/api/admin/search-tokens/{id}` | Soft-revoke |
+
+**Bearer allowlist:** `GET /api/search/semantic`, `GET /api/cves/{cve_id}`, `GET /api/cves/{cve_id}/related`, `GET /api/cves/{cve_id}/drawer`. All other routes → 403 for search tokens.
+
+**Rate limit:** `RATE_LIMIT_SEARCH_TOKEN_PER_MINUTE` (default 30), dedicated bucket.
+
+**Transport:** `Authorization: Bearer briefr_search_<secret>`
 
 ---
 

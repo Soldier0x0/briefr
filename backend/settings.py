@@ -56,6 +56,8 @@ class Settings(BaseSettings):
     auth_cookie_secure: bool = True
     rate_limit_login_per_minute: int = 5
     rate_limit_auth_refresh_per_minute: int = 30
+    # Embeddings E5 — stricter than interactive session for Bearer search tokens
+    rate_limit_search_token_per_minute: int = 30
 
     @field_validator("briefr_env")
     @classmethod

@@ -465,7 +465,7 @@
       "label": "routers.admin",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 68,
+      "endpoint_count": 71,
       "source_refs": [
         {
           "type": "file",
@@ -665,6 +665,19 @@
         {
           "type": "file",
           "ref": "backend/routers/refresh.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-search",
+      "label": "routers.search",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 1,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/search.py"
         }
       ]
     },
@@ -1186,6 +1199,18 @@
         {
           "type": "table",
           "ref": "resource_metrics"
+        }
+      ]
+    },
+    {
+      "id": "table:search_api_tokens",
+      "label": "search_api_tokens",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "search_api_tokens"
         }
       ]
     },
@@ -4471,6 +4496,24 @@
       "id": "routers-refresh->table:sync_state",
       "source": "routers-refresh",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-search->table:cve_exploits",
+      "source": "routers-search",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-search->table:cves",
+      "source": "routers-search",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-search->table:embeddings",
+      "source": "routers-search",
+      "target": "table:embeddings",
       "kind": "references_table"
     },
     {

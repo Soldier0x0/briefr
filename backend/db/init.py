@@ -956,6 +956,21 @@ async def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(refresh_token_hash)",
             "CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)",
             """
+            CREATE TABLE IF NOT EXISTS search_api_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                token_prefix TEXT NOT NULL UNIQUE,
+                token_hash TEXT NOT NULL,
+                scopes TEXT NOT NULL DEFAULT '["search:semantic","cves:related","cves:read"]',
+                created_at TEXT DEFAULT (datetime('now')),
+                created_by TEXT NOT NULL DEFAULT '',
+                last_used_at TEXT,
+                revoked_at TEXT
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_search_api_tokens_prefix "
+            "ON search_api_tokens(token_prefix)",
+            """
             CREATE TABLE IF NOT EXISTS user_preferences (
                 user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
                 stack_terms TEXT NOT NULL DEFAULT '',

@@ -12,6 +12,19 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — Embeddings E5: Admin search service token
+
+**What:** Scoped agent retrieval tokens — `briefr_search_…` Bearer, bcrypt hash,
+show-once plaintext, allowlist (semantic search / related / CVE detail+drawer),
+dedicated rate-limit bucket, Admin create/revoke UI on API keys page.
+- Alembic `033_search_api_tokens`
+- `db/search_tokens.py`, middleware gate, `GET/POST/DELETE /api/admin/search-tokens`
+- `SearchTokensPanel.jsx`
+
+**Next:** **E6** — MITRE technique embeddings + typed hits.
+
+---
+
 ## 2026-07-18 — Embeddings E4: FEED one-box hybrid search
 
 **What:** FEED search box calls `GET /api/search/semantic?mode=hybrid` when the

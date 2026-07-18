@@ -133,6 +133,9 @@ auth_refresh_bucket = TokenBucket(
     settings.rate_limit_auth_refresh_per_minute, name="auth_refresh"
 )
 db_explorer_bucket = TokenBucket(30, name="db_explorer")
+search_token_bucket = TokenBucket(
+    settings.rate_limit_search_token_per_minute, name="search_token"
+)
 
 
 def client_key(request: Request) -> str:
@@ -218,6 +221,11 @@ def rate_limit_db_explorer(request: Request) -> None:
     _enforce(db_explorer_bucket, request)
 
 
+def rate_limit_search_token(request: Request) -> None:
+    """Dedicated bucket for Bearer search API tokens (Embeddings E5)."""
+    _enforce(search_token_bucket, request)
+
+
 def check_login_username_rate_limit(username: str) -> None:
     """Per-username companion to rate_limit_login — called directly from the
     login handler (the username lives in the request body, not the dependency-
@@ -238,6 +246,7 @@ def get_bucket_stats() -> list[dict]:
     buckets = [
         ioc_bucket, refresh_bucket, wallboard_bucket,
         login_bucket, login_username_bucket, auth_refresh_bucket,
+        search_token_bucket,
     ]
     result = []
     for b in buckets:
