@@ -394,7 +394,7 @@ archives until the box is verified stable for 24h.
 ## Intel snapshot import and upgrade runbook
 
 **Purpose:** bootstrap or refresh **intel-only** data from a published
-`briefr-intel-YYYY-MM.pgdump.gz` bundle (open-core monthly snapshot). This is
+`briefr-intel-YYYY-MM.pgdump.gz` bundle (published monthly intel snapshot). This is
 **not** a substitute for the [production restore runbook](#production-restore-runbook-j5)
 — operator backups include `.env`, users, watchlist, and webhooks.
 
