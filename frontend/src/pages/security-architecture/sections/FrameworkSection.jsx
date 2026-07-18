@@ -209,45 +209,50 @@ export default function FrameworkSection({ framework }) {
         </div>
       )}
 
-      <div className="sa-scope-bar" role="group" aria-label="Scope">
-        <span className="sa-subsection-label mono">SCOPE</span>
-        {SCOPES.map(s => (
-          <Tooltip key={s.id} text={s.help}>
-            <button
-              type="button"
-              className={`sa-scope-btn mono${scope === s.id ? ' active' : ''}`}
-              aria-pressed={scope === s.id}
-              onClick={() => setScope(s.id)}
-            >
-              {s.label}
-            </button>
-          </Tooltip>
-        ))}
-        <span className="sa-scope-sep" aria-hidden="true" />
-        <label className="sa-subsection-label mono" htmlFor={`sa-fw-sev-${framework}`}>SEVERITY</label>
-        <Select
-          id={`sa-fw-sev-${framework}`}
-          className="sa-fw-select mono"
-          value={severity}
-          onValueChange={setSeverity}
-          options={SEVERITIES.map(s => ({ value: s, label: s || 'Any' }))}
-        />
+      <div className="sa-scope-bar control-toolbar--fields" role="group" aria-label="Scope">
+        <div className="sa-scope-chips" role="group" aria-label="Scope presets">
+          <span className="sa-subsection-label mono">SCOPE</span>
+          {SCOPES.map(s => (
+            <Tooltip key={s.id} text={s.help}>
+              <button
+                type="button"
+                className={`sa-scope-btn mono${scope === s.id ? ' active' : ''}`}
+                aria-pressed={scope === s.id}
+                onClick={() => setScope(s.id)}
+              >
+                {s.label}
+              </button>
+            </Tooltip>
+          ))}
+        </div>
+        <label className="control-field" htmlFor={`sa-fw-sev-${framework}`}>
+          <span className="control-field-label">SEVERITY</span>
+          <Select
+            id={`sa-fw-sev-${framework}`}
+            className="sa-fw-select mono"
+            value={severity}
+            onValueChange={setSeverity}
+            options={SEVERITIES.map(s => ({ value: s, label: s || 'Any' }))}
+          />
+        </label>
       </div>
 
       {scope === 'stack' && (
         <form
-          className="sa-stack-filter"
+          className="sa-stack-filter control-toolbar--fields"
           onSubmit={(e) => { e.preventDefault(); setStack(stackInput.trim()) }}
         >
-          <label className="sa-subsection-label mono" htmlFor={`sa-fw-stack-${framework}`}>STACK TERMS</label>
-          <input
-            id={`sa-fw-stack-${framework}`}
-            type="text"
-            className="sa-stack-input mono"
-            placeholder="e.g. apache, log4j, postgres — overrides your saved stack"
-            value={stackInput}
-            onChange={(e) => setStackInput(e.target.value)}
-          />
+          <label className="control-field sa-stack-field" htmlFor={`sa-fw-stack-${framework}`}>
+            <span className="control-field-label">STACK TERMS</span>
+            <input
+              id={`sa-fw-stack-${framework}`}
+              type="text"
+              className="sa-stack-input mono"
+              placeholder="e.g. apache, log4j, postgres — overrides your saved stack"
+              value={stackInput}
+              onChange={(e) => setStackInput(e.target.value)}
+            />
+          </label>
           <button type="submit" className="admin-btn admin-btn-ghost mono">APPLY</button>
           {stack && (
             <button type="button" className="admin-btn admin-btn-ghost mono" onClick={() => { setStackInput(''); setStack('') }}>CLEAR</button>

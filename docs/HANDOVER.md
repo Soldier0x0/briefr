@@ -12,17 +12,17 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-## 2026-07-18 — Admin labeled control row alignment
+## 2026-07-18 — Product-wide labeled control row alignment
 
-**What:** Table browser (and similar admin toolbars) put the label + Select
-inline inside a flex row with `align-items: center`, so sibling action buttons
-lined up with the label text and looked shorter / staggered.
-- Shared `.admin-field` / `.admin-filter-bar--fields` (label stacked, row
-  `align-items: flex-end`, controls/buttons share `--control-height-md`)
-- Applied on DbExplorer, AI ops activity filters, Webhooks create + delivery log
+**What:** Table browser (and similar toolbars) put the label + Select inline in a
+flex row with `align-items: center`, so sibling action buttons lined up with the
+label text and looked shorter / staggered — same class across the product.
+- SSOT `.control-field` / `.control-toolbar--fields` in `App.css` (admin aliases)
+- Applied: FEED stack, ARCH scope/stack/search, Forge pack picker, DbExplorer,
+  AI ops, Webhooks, Backups schedule, IngestLog/Watchlist height sync
 - design-system.md §23.8
 
-**Next:** Spot other labeled toolbars if reported.
+**Next:** More maintainer UI issues as reported.
 
 ---
 

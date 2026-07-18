@@ -2534,8 +2534,7 @@
   flex-wrap: wrap;
 }
 
-/* Labeled control rows: stack label above the control, align actions to the
-   control baseline (not the label), and share one control height. */
+/* Admin aliases for product-wide control-field contract (App.css §23.8). */
 .admin-filter-bar--fields,
 .admin-toolbar--fields {
   display: flex;

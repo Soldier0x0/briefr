@@ -93,16 +93,18 @@ export default function AbuseCasesSection() {
         {data && <p className="sa-mitre-counts mono">{allRows.length} case{allRows.length === 1 ? '' : 's'}</p>}
       </div>
 
-      <form className="sa-stack-filter" onSubmit={(e) => e.preventDefault()}>
-        <label className="sa-subsection-label mono" htmlFor="sa-abuse-search">SEARCH</label>
-        <input
-          id="sa-abuse-search"
-          type="text"
-          className="sa-stack-input mono"
-          placeholder="e.g. ssrf, replay, rate limit"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+      <form className="sa-stack-filter control-toolbar--fields" onSubmit={(e) => e.preventDefault()}>
+        <label className="control-field sa-stack-field" htmlFor="sa-abuse-search">
+          <span className="control-field-label">SEARCH</span>
+          <input
+            id="sa-abuse-search"
+            type="text"
+            className="sa-stack-input mono"
+            placeholder="e.g. ssrf, replay, rate limit"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
       </form>
 
       <AsyncState

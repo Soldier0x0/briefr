@@ -405,31 +405,33 @@ export default function FilterBar({
           </div>
         </div>
 
-        <div className="filter-bar-stack">
-          <label htmlFor="feed-stack-input" className="filter-stack-label mono">
-            STACK //
+        <div className="filter-bar-stack control-toolbar--fields">
+          <label className="control-field filter-stack-field" htmlFor="feed-stack-input">
+            <span className="control-field-label filter-stack-label">STACK //</span>
+            <span className="filter-stack-control">
+              <input
+                id="feed-stack-input"
+                type="text"
+                className="filter-stack-input"
+                value={localStack}
+                onChange={handleStackChange}
+                placeholder="nginx, python, linux kernel..."
+                aria-label="Enter stack terms to filter the CVE feed"
+                autoComplete="off"
+                spellCheck="false"
+              />
+              {localStack && (
+                <button
+                  type="button"
+                  className="filter-stack-clear-btn mono"
+                  onClick={handleStackClear}
+                  aria-label="Clear stack filter"
+                >
+                  ×
+                </button>
+              )}
+            </span>
           </label>
-          <input
-            id="feed-stack-input"
-            type="text"
-            className="filter-stack-input"
-            value={localStack}
-            onChange={handleStackChange}
-            placeholder="nginx, python, linux kernel..."
-            aria-label="Enter stack terms to filter the CVE feed"
-            autoComplete="off"
-            spellCheck="false"
-          />
-          {localStack && (
-            <button
-              type="button"
-              className="filter-stack-clear-btn mono"
-              onClick={handleStackClear}
-              aria-label="Clear stack filter"
-            >
-              ×
-            </button>
-          )}
         </div>
 
         {stackHintVisible && !localStack && (

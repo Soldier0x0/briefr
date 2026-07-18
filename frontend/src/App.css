@@ -180,6 +180,48 @@ textarea:focus-visible {
   font-family: var(--font-mono);
 }
 
+/* Product-wide labeled control rows (analyst + admin).
+ * Stack the label above the control; align sibling actions to the control
+ * baseline; share --control-height-md. See design-system.md §23.8. */
+.control-toolbar--fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.control-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.control-field-label {
+  font-family: var(--font-mono);
+  font-size: var(--type-meta, 0.6875rem);
+  letter-spacing: 0.04em;
+  color: var(--text3);
+  line-height: 1.2;
+}
+
+.control-toolbar--fields .admin-input,
+.control-toolbar--fields .admin-select,
+.control-toolbar--fields .ui-select-trigger,
+.control-toolbar--fields .admin-btn,
+.control-toolbar--fields input:not([type='checkbox']):not([type='radio']),
+.control-toolbar--fields button {
+  box-sizing: border-box;
+  min-height: var(--control-height-md);
+}
+
+.control-toolbar--fields .admin-btn,
+.control-toolbar--fields button {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

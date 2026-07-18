@@ -195,7 +195,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
             {iocRows?.length ?? 0} entries
             {iocOldestAge ? ` · oldest ${fmtAge(iocOldestAge)}` : ''}
           </div>
-          <div className="admin-filter-bar">
+          <div className="admin-filter-bar admin-filter-bar--fields">
             <Select
               className="admin-select"
               value={iocType}

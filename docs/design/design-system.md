@@ -372,15 +372,17 @@ exception: filled selection is allowed; neon **borders** are not.
   poll until the lock clears. `JobTable` + `SchedulerPage` are the reference;
   apply the same pattern anywhere else long-running jobs surface.
 
-### 23.8 Admin labeled control rows
+### 23.8 Labeled control rows (product-wide)
 
-- When a filter/toolbar mixes a **label + control** with a sibling **action button**,
-  use stacked fields (`.admin-field` + `.admin-field-label`) inside
-  `.admin-filter-bar--fields` / `.admin-toolbar--fields`.
-- Align the row to the **control baseline** (`align-items: flex-end`), not the label.
+- **SSOT:** `.control-field` + `.control-field-label` + `.control-toolbar--fields`
+  in `frontend/src/App.css` (admin aliases: `.admin-field`, `.admin-filter-bar--fields`).
+- When a toolbar mixes a **label + control** with a sibling **action button**, stack the
+  label above the control and align the row to the **control baseline**
+  (`align-items: flex-end`).
 - Share one control height (`--control-height-md`) across Select triggers, text inputs,
   and action buttons in that row. Do **not** put the label and control inline with
   `marginLeft` on the control — that misaligns buttons against the taller label block.
+- Applies to analyst FEED, ARCH, Forge, and admin — not admin-only.
 
 ## 24. Suggested additional documentation (future)
 
