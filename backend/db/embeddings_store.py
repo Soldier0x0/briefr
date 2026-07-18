@@ -13,8 +13,10 @@ import os
 
 from db.embeddings_pgvector import (
     ENTITY_TYPE_CVE,
+    ENTITY_TYPE_TECHNIQUE,
     blob_to_pgvector_literal,
     build_cve_embed_text,
+    build_technique_embed_text,
     content_hash_for_embed_text,
     is_placeholder_content_hash,
 )
@@ -234,4 +236,81 @@ async def get_cves_needing_embeddings_by_ids(
         item = _row_to_pending(dict(row), model)
         if item:
             out.append(item)
+    return out
+
+
+_GET_TECHNIQUES_NEEDING_SQLITE = """
+SELECT t.technique_id, t.name, t.description, t.tactic,
+       e.content_hash AS existing_hash
+FROM mitre_techniques t
+LEFT JOIN embeddings e
+  ON e.entity_type = 'technique' AND e.entity_id = t.technique_id AND e.model = ?
+ORDER BY t.technique_id
+LIMIT ?
+"""
+
+_GET_TECHNIQUES_NEEDING_PG = """
+SELECT t.technique_id, t.name, t.description, t.tactic,
+       e.content_hash AS existing_hash
+FROM mitre_techniques t
+LEFT JOIN embeddings e
+  ON e.entity_type = 'technique' AND e.entity_id = t.technique_id AND e.model = $1
+ORDER BY t.technique_id
+LIMIT $2
+"""
+
+
+def _technique_row_to_pending(row: dict, model: str) -> dict | None:
+    text = build_technique_embed_text(
+        name=row.get("name"),
+        description=row.get("description"),
+        tactic=row.get("tactic"),
+    )
+    if not text.strip():
+        return None
+    new_hash = content_hash_for_embed_text(text, model)
+    existing = row.get("existing_hash")
+    if existing and not is_placeholder_content_hash(existing) and existing == new_hash:
+        return None
+    return {
+        "technique_id": row["technique_id"],
+        "embed_text": text,
+        "content_hash": new_hash,
+        "existing_hash": existing,
+    }
+
+
+async def upsert_technique_embedding_row(
+    db: DbConnection,
+    technique_id: str,
+    model: str,
+    dims: int,
+    vector_blob: bytes,
+    content_hash: str,
+) -> None:
+    await upsert_embedding_row(
+        db,
+        entity_type=ENTITY_TYPE_TECHNIQUE,
+        entity_id=str(technique_id).upper(),
+        model=model,
+        dims=dims,
+        vector_blob=vector_blob,
+        content_hash=content_hash,
+    )
+
+
+async def get_techniques_needing_embeddings(
+    db: DbConnection, model: str, limit: int = 500
+) -> list[dict]:
+    """Techniques missing / placeholder / content_hash mismatch (ATT&CK refresh)."""
+    pg = _is_postgres_connection(db)
+    sql = _GET_TECHNIQUES_NEEDING_PG if pg else _GET_TECHNIQUES_NEEDING_SQLITE
+    rows = await db.execute_fetchall(sql, (model, max(limit * 4, limit)))
+    out: list[dict] = []
+    for row in rows:
+        item = _technique_row_to_pending(dict(row), model)
+        if item:
+            out.append(item)
+        if len(out) >= limit:
+            break
     return out

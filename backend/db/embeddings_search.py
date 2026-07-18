@@ -44,13 +44,45 @@ LIMIT $4
 """
 
 _ANN_BY_VECTOR_PG = """
-SELECT entity_id AS cve_id,
+SELECT entity_type, entity_id,
        (1.0 - (embedding <=> CAST($1 AS vector)))::float8 AS similarity
 FROM embeddings
-WHERE entity_type = $2
+WHERE entity_type = ANY($2::text[])
   AND model = $3
 ORDER BY embedding <=> CAST($1 AS vector)
 LIMIT $4
+"""
+
+_KEYWORD_TECH_SQLITE = """
+SELECT technique_id, name, description, tactic, url
+FROM mitre_techniques
+WHERE (
+    UPPER(technique_id) = ?
+    OR LOWER(technique_id) LIKE ?
+    OR LOWER(name) LIKE ?
+    OR LOWER(COALESCE(description, '')) LIKE ?
+    OR LOWER(COALESCE(tactic, '')) LIKE ?
+)
+ORDER BY
+  CASE WHEN UPPER(technique_id) = ? THEN 0 ELSE 1 END,
+  technique_id
+LIMIT ?
+"""
+
+_KEYWORD_TECH_PG = """
+SELECT technique_id, name, description, tactic, url
+FROM mitre_techniques
+WHERE (
+    UPPER(technique_id) = $1
+    OR LOWER(technique_id) LIKE $2
+    OR LOWER(name) LIKE $3
+    OR LOWER(COALESCE(description, '')) LIKE $4
+    OR LOWER(COALESCE(tactic, '')) LIKE $5
+)
+ORDER BY
+  CASE WHEN UPPER(technique_id) = $1 THEN 0 ELSE 1 END,
+  technique_id
+LIMIT $6
 """
 
 _GET_CVE_EMBEDDING_BLOB_SQLITE = """
@@ -201,51 +233,86 @@ async def ann_search_by_query_vector(
     *,
     limit: int = 20,
     expected_dim: int = DEFAULT_EMBEDDING_DIMS,
+    entity_types: list[str] | None = None,
 ) -> list[dict]:
     """Vector ANN / cosine scan for a query embedding blob."""
+    types = entity_types or [ENTITY_TYPE_CVE]
     pg = _is_postgres_connection(db)
     if pg:
         literal = blob_to_pgvector_literal(query_blob, expected_dim=expected_dim)
         if literal is None:
             return []
         rows = await db.execute_fetchall(
-            _ANN_BY_VECTOR_PG, (literal, ENTITY_TYPE_CVE, model, limit)
+            _ANN_BY_VECTOR_PG, (literal, types, model, limit)
         )
         return [
             {
-                "cve_id": row["cve_id"],
+                "entity_type": row["entity_type"],
+                "entity_id": row["entity_id"],
+                "cve_id": row["entity_id"] if row["entity_type"] == ENTITY_TYPE_CVE else None,
                 "similarity": round(float(row["similarity"]), 4),
             }
             for row in rows
         ]
 
     query = np.frombuffer(query_blob, dtype="<f4")
+    placeholders = ", ".join("?" for _ in types)
     rows = await db.execute_fetchall(
-        """
-        SELECT entity_id, embedding FROM embeddings
-        WHERE entity_type = ? AND model = ?
+        f"""
+        SELECT entity_type, entity_id, embedding FROM embeddings
+        WHERE entity_type IN ({placeholders}) AND model = ?
         """,
-        (ENTITY_TYPE_CVE, model),
+        (*types, model),
     )
     pairs = [
-        (row["entity_id"], bytes(row["embedding"]))
+        (row["entity_type"], row["entity_id"], bytes(row["embedding"]))
         for row in rows
         if row["embedding"] is not None
         and len(bytes(row["embedding"])) == query.nbytes
     ]
     if not pairs:
         return []
-    ids = [rid for rid, _ in pairs]
-    matrix = np.frombuffer(b"".join(blob for _rid, blob in pairs), dtype="<f4")
+    matrix = np.frombuffer(b"".join(blob for _t, _i, blob in pairs), dtype="<f4")
     matrix = matrix.reshape(len(pairs), query.size)
     similarities = matrix @ query
-    k = min(limit, len(ids))
+    k = min(limit, len(pairs))
     top = np.argpartition(-similarities, k - 1)[:k]
     top = top[np.argsort(-similarities[top])]
-    return [
-        {"cve_id": ids[i], "similarity": round(float(similarities[i]), 4)}
-        for i in top
-    ]
+    out = []
+    for i in top:
+        etype, eid, _blob = pairs[i]
+        out.append(
+            {
+                "entity_type": etype,
+                "entity_id": eid,
+                "cve_id": eid if etype == ENTITY_TYPE_CVE else None,
+                "similarity": round(float(similarities[i]), 4),
+            }
+        )
+    return out
+
+
+async def keyword_search_techniques(
+    db: DbConnection,
+    q: str,
+    *,
+    limit: int = 20,
+) -> list[dict]:
+    text = (q or "").strip()
+    if not text:
+        return []
+    exact = text.upper()
+    like = f"%{text.lower()}%"
+    pg = _is_postgres_connection(db)
+    if pg:
+        rows = await db.execute_fetchall(
+            _KEYWORD_TECH_PG, (exact, like, like, like, like, limit)
+        )
+    else:
+        rows = await db.execute_fetchall(
+            _KEYWORD_TECH_SQLITE, (exact, like, like, like, like, exact, limit)
+        )
+    return [dict(row) for row in rows]
 
 
 async def keyword_search_cves(

@@ -77,6 +77,7 @@ from ml.embeddings import (
     embeddings_auto_on_ingest_enabled,
     embeddings_enabled,
     run_embeddings_backfill,
+    run_technique_embeddings_backfill,
 )
 from ml.product_extraction import (
     llm_product_extraction_enabled,
@@ -1530,7 +1531,16 @@ async def run_embeddings_sync() -> bool:
                 def _emb_progress(msg: str) -> None:
                     _job_progress["embeddings_backfill"] = msg
                 stats = await run_embeddings_backfill(db, progress_cb=_emb_progress)
-                _embedded = int(stats.get("embedded", 0))
+                tech_stats = await run_technique_embeddings_backfill(
+                    db, progress_cb=_emb_progress
+                )
+                stats = {
+                    **stats,
+                    "techniques_embedded": tech_stats.get("embedded", 0),
+                }
+                _embedded = int(stats.get("embedded", 0)) + int(
+                    stats.get("techniques_embedded", 0)
+                )
             finally:
                 await db.close()
                 _job_progress.pop("embeddings_backfill", None)
