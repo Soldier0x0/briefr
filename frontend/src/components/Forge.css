@@ -612,6 +612,10 @@
   background: var(--bg3);
 }
 
+.fg-campaign-open-wrap {
+  display: inline-block;
+}
+
 .fg-generate-btn:disabled {
   opacity: 0.5;
   cursor: default;

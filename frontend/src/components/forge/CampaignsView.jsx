@@ -114,19 +114,22 @@ export default function CampaignsView({ profileStack }) {
                         : 'No openable member CVE for this cluster.'
                     }
                   >
-                    <button
-                      type="button"
-                      className="fg-generate-btn mono"
-                      onClick={() => openClusterCve(cluster)}
-                      disabled={!canOpen}
-                      aria-label={
-                        canOpen
-                          ? `${label}: open ${target} from ${cluster.label || cluster.campaign_id}`
-                          : `${label} unavailable — no member CVE`
-                      }
-                    >
-                      {label}
-                    </button>
+                    {/* span keeps hover/focus tip when the button is disabled */}
+                    <span className="fg-campaign-open-wrap">
+                      <button
+                        type="button"
+                        className="fg-generate-btn mono"
+                        onClick={() => openClusterCve(cluster)}
+                        disabled={!canOpen}
+                        aria-label={
+                          canOpen
+                            ? `${label}: open ${target} from ${cluster.label || cluster.campaign_id}`
+                            : `${label} unavailable — no member CVE`
+                        }
+                      >
+                        {label}
+                      </button>
+                    </span>
                   </Tooltip>
                 </div>
               </li>

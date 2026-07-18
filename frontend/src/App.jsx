@@ -558,7 +558,11 @@ export default function App() {
   const iocDeepLinkHandled = useRef(null)
   useEffect(() => {
     const iocParam = searchParams.get('ioc')
-    if (!iocParam) return
+    if (!iocParam) {
+      // Clear so the same ?ioc= value can deep-link again after navigate-away.
+      iocDeepLinkHandled.current = null
+      return
+    }
     const value = iocParam.trim()
     if (!value || iocDeepLinkHandled.current === value) return
     iocDeepLinkHandled.current = value
