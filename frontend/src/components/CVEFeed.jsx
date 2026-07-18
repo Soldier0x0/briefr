@@ -177,12 +177,12 @@ export default function CVEFeed({
           limit: HYBRID_LIMIT,
         })
         if (controller.signal.aborted) return
-        let pageRows = filterHybridHits(body.data || [], filtersNow)
+        let pageRows = filterHybridHits(body?.data || [], filtersNow)
         const serverStackSort = false
         if (assetAwareRef.current && !serverStackSort) {
           pageRows = sortByExposure(pageRows, getMatchScoreRef.current)
         }
-        setSearchStatus(hybridSearchStatusLabel(body.meta))
+        setSearchStatus(hybridSearchStatusLabel(body?.meta))
         setTotal(pageRows.length)
         setHasMore(false)
         hasMoreRef.current = false

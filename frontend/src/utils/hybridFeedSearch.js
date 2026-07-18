@@ -8,10 +8,10 @@
 export function shouldUseHybridSearch(filters) {
   const q = (filters?.search || '').trim()
   if (!q) return false
-  if (filters.poc_only || filters.kev_overdue_only || filters.watchlist_only) return false
-  if (filters.vendors || filters.stack || filters.my_stack_only) return false
-  if (filters.summary_only || filters.ai_context_only || filters.ai_profile_match) return false
-  if (filters.technique || filters.published_on) return false
+  if (filters?.poc_only || filters?.kev_overdue_only || filters?.watchlist_only) return false
+  if (filters?.vendors || filters?.stack || filters?.my_stack_only) return false
+  if (filters?.summary_only || filters?.ai_context_only || filters?.ai_profile_match) return false
+  if (filters?.technique || filters?.published_on) return false
   return true
 }
 
