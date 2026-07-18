@@ -77,6 +77,45 @@ export function fmtDur(sec) {
   return `${(sec / 3600).toFixed(1)} h`
 }
 
+/**
+ * Scale for plotting duration series in one unit (s / min / h).
+ * Raw seconds + fmtDur on Recharts nice ticks mixes units on one axis
+ * (e.g. "45.0 s" next to "1.5 min"), the same class of mismatch as
+ * raw bytes + fmtBytes.
+ */
+export function durationChartScale(valuesSeconds) {
+  const nums = (valuesSeconds || [])
+    .map((v) => Number(v))
+    .filter((n) => Number.isFinite(n) && n >= 0)
+  const maxSec = nums.length ? Math.max(...nums) : 0
+  let unit = 's'
+  let divisor = 1
+  if (maxSec >= 3600) {
+    unit = 'h'
+    divisor = 3600
+  } else if (maxSec >= 60) {
+    unit = 'min'
+    divisor = 60
+  }
+  const toDisplay = (seconds) => {
+    const n = Number(seconds)
+    if (!Number.isFinite(n) || n <= 0) return 0
+    return n / divisor
+  }
+  const format = (displayVal) => {
+    const n = Number(displayVal)
+    if (!Number.isFinite(n)) return '—'
+    return `${n.toFixed(1)} ${unit}`
+  }
+  return {
+    unit,
+    divisor,
+    toDisplay,
+    format,
+    domainMax: niceCeil(toDisplay(maxSec)),
+  }
+}
+
 export function fmtIso(iso) {
   if (!iso) return '—'
   if (getDisplayPrefs().utcTime) return fmtIsoMono(iso)

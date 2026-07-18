@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { bytesChartScale, fmtBytes, fmtDur } from './formatters.js'
+import { bytesChartScale, durationChartScale, fmtBytes, fmtDur } from './formatters.js'
 
 describe('fmtDur', () => {
   it('formats sub-minute durations with s unit', () => {
@@ -58,5 +58,22 @@ describe('bytesChartScale', () => {
     assert.equal(scale.unit, 'B')
     assert.equal(scale.domainMax, 1)
     assert.equal(scale.format(0), '0.0 B')
+  })
+})
+
+describe('durationChartScale', () => {
+  it('keeps one unit across the axis when values span the minute boundary', () => {
+    const scale = durationChartScale([20, 70, 180])
+    assert.equal(scale.unit, 'min')
+    assert.equal(scale.format(scale.toDisplay(70)), '1.2 min')
+    assert.equal(scale.format(scale.toDisplay(45)), '0.8 min')
+    // No mixed "45.0 s" / "1.5 min" tick pair on the same axis.
+    assert.ok(!scale.format(scale.toDisplay(45)).includes(' s'))
+  })
+
+  it('stays in seconds when the whole series is sub-minute', () => {
+    const scale = durationChartScale([12.4, 30, 55])
+    assert.equal(scale.unit, 's')
+    assert.equal(scale.format(scale.toDisplay(12.4)), '12.4 s')
   })
 })

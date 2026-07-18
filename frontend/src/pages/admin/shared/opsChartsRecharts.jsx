@@ -12,7 +12,7 @@ import {
   YAxis,
 } from 'recharts'
 import { ChartShell } from '../../../components/ui/index.js'
-import { bytesChartScale, fmtDur } from '../formatters.js'
+import { bytesChartScale, durationChartScale } from '../formatters.js'
 import {
   axisLabelStyle,
   axisTickStyle,
@@ -30,9 +30,9 @@ import {
 } from '../../../utils/rechartsTheme.js'
 import { backupChartPoints, backupTooltipModel } from './backupChartUtils.js'
 
-function ingestScaleMax(secondsList) {
-  if (!secondsList.length) return undefined
-  const sorted = [...secondsList].sort((a, b) => a - b)
+function ingestScaleMax(displayValues) {
+  if (!displayValues.length) return undefined
+  const sorted = [...displayValues].sort((a, b) => a - b)
   const p75 = sorted[Math.floor(sorted.length * 0.75)] || sorted[sorted.length - 1]
   const cap = Math.max(p75 * 1.25, sorted[0])
   return cap > 0 ? cap : undefined
@@ -40,16 +40,17 @@ function ingestScaleMax(secondsList) {
 
 export function IngestDurationChart({ rows }) {
   const theme = getRechartsTheme()
-  const labels = rows.map((r) => r.label)
-  const durations = rows.map((r) => r.seconds)
-  const scaleMax = ingestScaleMax(durations)
-  const yAxisWidth = categoryAxisWidth(labels)
-  const chartHeight = verticalBarChartHeight(rows.length)
-  const data = rows.map((row) => ({
+  const scale = durationChartScale(rows.map((r) => r.seconds))
+  const data = rows.map((row, index) => ({
+    pointKey: index,
     label: row.label,
-    seconds: row.seconds,
+    duration: scale.toDisplay(row.seconds),
     hadError: row.hadError,
   }))
+  const labels = data.map((r) => r.label)
+  const scaleMax = ingestScaleMax(data.map((r) => r.duration)) || scale.domainMax
+  const yAxisWidth = categoryAxisWidth(labels)
+  const chartHeight = verticalBarChartHeight(rows.length)
   const anim = chartAnimationDuration()
 
   return (
@@ -65,9 +66,9 @@ export function IngestDurationChart({ rows }) {
             type="number"
             domain={[0, scaleMax || 'auto']}
             tick={axisTickStyle(theme)}
-            tickFormatter={(v) => fmtDur(Number(v))}
+            tickFormatter={(v) => scale.format(Number(v))}
             label={{
-              value: 'Duration',
+              value: `Duration (${scale.unit})`,
               position: 'insideBottom',
               offset: -2,
               style: axisLabelStyle(theme),
@@ -75,9 +76,11 @@ export function IngestDurationChart({ rows }) {
           />
           <YAxis
             type="category"
-            dataKey="label"
+            dataKey="pointKey"
+            allowDuplicatedCategory={false}
             width={yAxisWidth}
             tick={{ ...axisTickStyle(theme), textAnchor: 'end' }}
+            tickFormatter={(value) => data[Number(value)]?.label || String(value)}
             interval={0}
           />
           <Tooltip
@@ -85,21 +88,22 @@ export function IngestDurationChart({ rows }) {
             labelStyle={tooltipLabelStyle(theme)}
             itemStyle={tooltipItemStyle(theme)}
             cursor={tooltipCursorStyle(theme)}
+            labelFormatter={(_label, payload) => payload?.[0]?.payload?.label || _label}
             formatter={(value, _name, item) => {
               const err = item?.payload?.hadError ? ' (last run errored)' : ''
-              return [`${fmtDur(Number(value))}${err}`, 'Last run duration']
+              return [`${scale.format(Number(value))}${err}`, 'Last run duration']
             }}
           />
           <Bar
-            dataKey="seconds"
+            dataKey="duration"
             radius={0}
             isAnimationActive={anim > 0}
             animationDuration={anim}
             activeBar={barActiveProps(theme)}
           >
-            {data.map((entry, index) => (
+            {data.map((entry) => (
               <Cell
-                key={entry.label || index}
+                key={entry.pointKey}
                 fill={entry.hadError ? theme.redDim : theme.accent}
               />
             ))}
