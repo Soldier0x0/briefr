@@ -257,7 +257,8 @@ async def get_cves_needing_embeddings(
         return out
 
     # Over-fetch: many oldest rows may still be hash-fresh.
-    scan = min(max(remaining * 8, remaining), 8000)
+    # Bound the scan so a large remaining budget cannot stall the event loop.
+    scan = min(max(remaining * 8, remaining), 2000)
     resync_sql = (
         _GET_CVES_FOR_HASH_RESYNC_PG if pg else _GET_CVES_FOR_HASH_RESYNC_SQLITE
     )

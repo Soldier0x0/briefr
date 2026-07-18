@@ -29,6 +29,8 @@ from ml.embeddings import (
 logger = logging.getLogger(__name__)
 
 _MAX_LIMIT = 50
+# Internal candidate budget when stack/severity/KEV post-filter (response still ≤ _MAX_LIMIT).
+_MAX_FETCH_LIMIT = 150
 _DEFAULT_LIMIT = 20
 
 
@@ -165,6 +167,7 @@ async def _allowed_cve_ids_for_filters(
         conditions.append("UPPER(c.severity) = ?")
         params.append(sev)
     if kev_only:
+        # is_kev is INTEGER (Alembic 001 / SQLite) — same predicate as /api/cves.
         conditions.append("c.is_kev = 1")
 
     sql = f"SELECT c.cve_id FROM cves c WHERE {' AND '.join(conditions)}"
@@ -205,8 +208,9 @@ async def run_semantic_search(
     )
 
     # Over-fetch before filters so stack/severity don't empty a tiny keyword page.
+    # Cap with _MAX_FETCH_LIMIT (not _MAX_LIMIT) so limit=50 still widens the candidate pool.
     fetch_limit = capped * 3 if (stack or severity or kev_only) else capped
-    fetch_limit = max(1, min(fetch_limit, _MAX_LIMIT))
+    fetch_limit = max(1, min(fetch_limit, _MAX_FETCH_LIMIT))
 
     keyword_rows = await keyword_search_cves(db, text, limit=fetch_limit)
     tech_keyword = await keyword_search_techniques(db, text, limit=max(5, fetch_limit // 2))

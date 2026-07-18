@@ -181,9 +181,8 @@ export default function CVEFeed({
         })
         if (controller.signal.aborted) return
         let pageRows = filterHybridHits(body?.data || [], filtersNow)
-        // Server already applied stack; still exposure-sort when asset-aware.
-        const serverStackSort = Boolean(filtersNow.stack)
-        if (assetAwareRef.current && !serverStackSort) {
+        // Semantic stack is a filter (not I16 stack-relevance sort); keep exposure order.
+        if (assetAwareRef.current) {
           pageRows = sortByExposure(pageRows, getMatchScoreRef.current)
         }
         setSearchStatus(hybridSearchStatusLabel(body?.meta))
