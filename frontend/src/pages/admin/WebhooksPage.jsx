@@ -322,32 +322,29 @@ export default function WebhooksPage({ toast }) {
       {showCreate && (
         <div className="admin-card">
           <div className="admin-card-title">New destination</div>
-          <div className="admin-filter-bar" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>
-              Kind
+          <div className="admin-filter-bar admin-filter-bar--fields">
+            <label className="admin-field">
+              <span className="admin-field-label">Kind</span>
               <Select
                 className="admin-select"
-                style={{ marginLeft: '0.35rem' }}
                 value={createForm.kind}
                 onChange={(v) => setCreateForm(f => ({ ...f, kind: v }))}
                 options={KIND_OPTIONS.map(k => ({ value: k, label: k }))}
               />
             </label>
-            <label style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>
-              Id (optional)
+            <label className="admin-field" style={{ width: '10rem' }}>
+              <span className="admin-field-label">Id (optional)</span>
               <input
                 className="admin-input"
-                style={{ marginLeft: '0.35rem', width: '10rem' }}
                 placeholder="discord-ops"
                 value={createForm.id}
                 onChange={e => setCreateForm(f => ({ ...f, id: e.target.value }))}
               />
             </label>
-            <label style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>
-              Label
+            <label className="admin-field" style={{ width: '12rem' }}>
+              <span className="admin-field-label">Label</span>
               <input
                 className="admin-input"
-                style={{ marginLeft: '0.35rem', width: '12rem' }}
                 value={createForm.label}
                 onChange={e => setCreateForm(f => ({ ...f, label: e.target.value }))}
               />
@@ -500,12 +497,11 @@ export default function WebhooksPage({ toast }) {
 
       <div className="admin-card">
         <div className="admin-card-title">Delivery log</div>
-        <div className="webhook-delivery-toolbar">
-          <label style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>
-            Destination
+        <div className="webhook-delivery-toolbar admin-toolbar--fields">
+          <label className="admin-field">
+            <span className="admin-field-label">Destination</span>
             <Select
               className="admin-select"
-              style={{ marginLeft: '0.35rem' }}
               value={deliveryLogFilter}
               onChange={setDeliveryLogFilter}
               options={[
@@ -514,7 +510,11 @@ export default function WebhooksPage({ toast }) {
               ]}
             />
           </label>
-          <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={() => loadDeliveryLog(deliveryLogOffset, deliveryLogFilter)}>
+          <button
+            type="button"
+            className="admin-btn admin-btn-ghost"
+            onClick={() => loadDeliveryLog(deliveryLogOffset, deliveryLogFilter)}
+          >
             Refresh
           </button>
         </div>

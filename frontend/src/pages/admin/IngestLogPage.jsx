@@ -136,7 +136,7 @@ export default function IngestLogPage({ toast, onErrorCountChange, active = true
     <div>
       <h1 className="admin-page-title">Application logs</h1>
       <p className="admin-page-subtitle">Live backend log stream, filterable by level, category, job, or request. Expand rows for tracebacks and structured fields.</p>
-      <div className="admin-filter-bar">
+      <div className="admin-filter-bar admin-filter-bar--fields">
         <input
           className="admin-input"
           placeholder="Search message / traceback…"

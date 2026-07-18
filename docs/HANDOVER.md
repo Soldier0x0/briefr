@@ -32,7 +32,46 @@ table columns misaligned. Fixed on `cursor/feed-epss-ui-cleanup-eee1`.
 (headerless list) — OK. Other `TimeWindowPicker` consumers keep Custom when they
 honor `since`/`until` (e.g. ingest log). No other hours-capped picker found.
 
-**Next:** Verify locally → PR → Gemini disposition.
+**Next:** Merged after #679; STACK contrast kept with control-field layout.
+
+## 2026-07-18 — Product-wide labeled control row alignment
+
+**What:** Table browser (and similar toolbars) put the label + Select inline in a
+flex row with `align-items: center`, so sibling action buttons lined up with the
+label text and looked shorter / staggered — same class across the product.
+- SSOT `.control-field` / `.control-toolbar--fields` in `App.css` (admin aliases)
+- Applied: FEED stack, ARCH scope/stack/search, Forge pack picker, DbExplorer,
+  AI ops, Webhooks, Backups schedule, IngestLog/Watchlist height sync
+- design-system.md §23.8
+
+**Next:** More maintainer UI issues as reported.
+
+## 2026-07-18 — Feed Health LLM circuits (cerebras/gemini/groq) RCA
+
+**Symptom (post-#677 deploy):** Feed Health showed cerebras + gemini **PAUSED**
+with `ConnectError: [Errno -3] Temporary failure in name resolution`, and groq
+**DEGRADED** with `empty LLM response content`.
+
+**RCA (not caused by #677 UI diff):**
+1. An LLM job ran the router chain (~timestamps clustered).
+2. **Groq** completed HTTP but returned a blank completion →
+   `mark_provider_empty_response("groq")` → DEGRADED.
+3. Failover hit **cerebras** / **gemini**; the production host failed DNS
+   (`EAI_AGAIN`) for `api.cerebras.ai` / `generativelanguage.googleapis.com`
+   → after 3 consecutive fails each source PAUSED.
+4. #677 only touched charts/jargon/rate-limit dashboard — no LLM/DNS code.
+
+**Ops:** On the prod box, `getent hosts api.cerebras.ai generativelanguage.googleapis.com`;
+fix Docker/systemd-resolved egress if NXDOMAIN/EAI_AGAIN; then **Resume retries**.
+Check AI Ops / Groq model for empty completions separately.
+
+**Code guard (merged #678):** API key health probes use `record_circuit=False` +
+`ignore_circuit=True` so monitoring pings cannot open/poison shared Feed Health
+circuits (results still persist under `api_key_health:{provider}`).
+
+**Next:** Confirm prod DNS after deploy.
+
+---
 
 ## 2026-07-18 — Domain jargon tips (Analyst + Admin)
 

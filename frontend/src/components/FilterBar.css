@@ -121,13 +121,26 @@
 
 .filter-bar-stack {
   display: flex;
-  align-items: center;
+  /* control-toolbar--fields: label stacked above input → align to control baseline */
+  align-items: flex-end;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--border2);
   border-left: 3px solid var(--accent-indicator);
   background: var(--surface-raised);
   border-radius: var(--radius-sm);
+}
+
+.filter-stack-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-stack-control {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .filter-bar-search-row {
@@ -157,18 +170,10 @@
 }
 
 .filter-stack-label {
-  display: inline-flex;
-  align-items: center;
-  font-family: var(--font-mono);
-  font-size: var(--type-meta);
-  line-height: 1;
-  letter-spacing: 0.08em;
+  /* Accent override on shared .control-field-label (stacked above input) */
   color: var(--accent);
-  flex-shrink: 0;
+  letter-spacing: 0.08em;
   font-weight: 500;
-  margin: 0;
-  /* Match control height so "STACK //" sits on the input optical midline */
-  min-height: var(--hit-target-min);
 }
 
 .filter-stack-input {
@@ -179,10 +184,11 @@
   background: var(--surface-input);
   border: 1px solid var(--border2);
   border-radius: var(--radius-sm);
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-3);
   flex: 1;
   min-width: 0;
-  min-height: var(--hit-target-min);
+  min-height: var(--control-height-md);
+  box-sizing: border-box;
 }
 
 .filter-stack-input:focus-visible {
@@ -199,10 +205,17 @@
   font-size: 0.875rem;
   line-height: 1;
   color: var(--text3);
-  background: none;
-  border: none;
+  background: var(--bg3);
+  border: 1px solid var(--border);
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 0 var(--space-2);
+  min-width: var(--control-height-md);
+  min-height: var(--control-height-md);
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .filter-stack-clear-btn:hover {
