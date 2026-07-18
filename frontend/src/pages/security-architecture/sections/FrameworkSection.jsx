@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { fetchSecurityArchitectureFramework } from '../../../api.js'
 import { notifyApiError } from '../../../components/Toast.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
+import Select from '../../../components/ui/Select.jsx'
 import Tooltip from '../../../components/ui/Tooltip.jsx'
 import ArchDataGrid from '../shared/ArchDataGrid.jsx'
 
@@ -30,18 +31,26 @@ const FRAMEWORK_META = {
   cwe: {
     title: 'CWE',
     subtitle: 'Weakness classes present across the selected CVEs, ranked by frequency (live cwe_ids).',
+    why: 'The weakness types that keep recurring in your scope’s CVEs — the classes of bug worth prioritizing.',
+    use: 'Sort by CVEs. A weakness with a high count and no detection coverage is your highest-value fix target.',
   },
   owasp: {
     title: 'OWASP Top 10',
     subtitle: 'Selected CVEs rolled up to OWASP Top 10 categories via each weakness’s official CWE list.',
+    why: 'The same CWE data, re-grouped into the industry-standard OWASP Top 10 categories.',
+    use: 'Use this to report exposure in language auditors and stakeholders already recognize.',
   },
   capec: {
     title: 'CAPEC',
     subtitle: 'Attack patterns implied by the selected CVEs’ CWE weaknesses (MITRE CWE→CAPEC).',
+    why: 'The actual attack pattern an adversary would use to exploit each weakness — directly actionable.',
+    use: 'Open the CAPEC link to read the technique, then check Forge for matching Sigma/SIEM coverage.',
   },
   stride: {
     title: 'STRIDE',
     subtitle: 'Threat classes of the selected CVEs’ CWE weaknesses (documented heuristic mapping).',
+    why: 'The same CWE data grouped into STRIDE threat classes, via a documented heuristic (not an official MITRE mapping).',
+    use: 'Best for formal threat-modeling exercises — check each row’s underlying CWEs since the mapping is a judgment call, not authoritative.',
   },
 }
 
@@ -193,6 +202,12 @@ export default function FrameworkSection({ framework }) {
         )}
       </div>
       <p className="sa-fw-subtitle">{meta.subtitle}</p>
+      {(meta.why || meta.use) && (
+        <div className="sa-fw-guidance">
+          {meta.why && <p><span className="sa-fw-guidance-label mono">WHY IT MATTERS</span> {meta.why}</p>}
+          {meta.use && <p><span className="sa-fw-guidance-label mono">HOW TO USE IT</span> {meta.use}</p>}
+        </div>
+      )}
 
       <div className="sa-scope-bar" role="group" aria-label="Scope">
         <span className="sa-subsection-label mono">SCOPE</span>
@@ -210,14 +225,13 @@ export default function FrameworkSection({ framework }) {
         ))}
         <span className="sa-scope-sep" aria-hidden="true" />
         <label className="sa-subsection-label mono" htmlFor={`sa-fw-sev-${framework}`}>SEVERITY</label>
-        <select
+        <Select
           id={`sa-fw-sev-${framework}`}
           className="sa-fw-select mono"
           value={severity}
-          onChange={(e) => setSeverity(e.target.value)}
-        >
-          {SEVERITIES.map(s => <option key={s || 'any'} value={s}>{s || 'Any'}</option>)}
-        </select>
+          onValueChange={setSeverity}
+          options={SEVERITIES.map(s => ({ value: s, label: s || 'Any' }))}
+        />
       </div>
 
       {scope === 'stack' && (

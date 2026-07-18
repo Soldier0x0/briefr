@@ -1311,8 +1311,6 @@ async def get_config_schema(request: Request):
 
 @router.post("/config")
 async def set_config(request: Request, body: dict):
-    from dotenv import set_key as dotenv_set_key
-
     key = body.get("key", "")
     value = str(body.get("value", ""))
 
@@ -1323,8 +1321,6 @@ async def set_config(request: Request, body: dict):
     if validation_error:
         raise HTTPException(400, validation_error)
 
-    dotenv_path = str(_DOTENV_PATH.resolve())
-    dotenv_set_key(dotenv_path, key, value)
     os.environ[key] = value
     _propagate_to_settings(key, value)
 
@@ -1358,9 +1354,7 @@ async def set_config(request: Request, body: dict):
 
 @router.post("/config/apply-all")
 async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
-    """Write multiple config keys to .env and trigger a restart."""
-    from dotenv import set_key as dotenv_set_key
-
+    """Write multiple config keys to the DB-backed app_settings store and trigger a restart."""
     try:
         body = await request.json()
     except Exception:
@@ -1369,7 +1363,6 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
     if not isinstance(body, list):
         raise HTTPException(400, "Body must be a JSON array of {key, value} objects")
 
-    dotenv_path = str(_DOTENV_PATH.resolve())
     allowed = WRITABLE_CONFIG_KEYS
     errors: list[str] = []
     validated: list[tuple[str, str]] = []
@@ -1402,7 +1395,6 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
     from operator_settings import persist_operator_setting
 
     for key, value in validated:
-        dotenv_set_key(dotenv_path, key, value)
         os.environ[key] = value
         _propagate_to_settings(key, value)
         await persist_operator_setting(key, value)

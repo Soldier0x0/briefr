@@ -12,6 +12,86 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-17 — Admin UX fix pass (metering panel, table standardization, scroll isolation, framework explainability, graph panel, config DB-only, stat tile bug)
+
+**Context:** local `main` was 296 commits behind `origin/main` at session start —
+fast-forwarded first (clean, no local commits lost) before doing any of this
+work; everything below is against current code.
+
+**What changed** (7-item request):
+1. `ApiKeysPage.jsx` — "Outbound API metering (24h)" panel was bare inline-styled
+   divs; rebuilt as a proper `admin-card` with bar-meter rows (`AdminPage.css`
+   `.metering-*` classes).
+2. `components/ui/DataGrid.jsx` — removed the Wrap/Center toggle entirely
+   (and the now-dead `utils/gridLayoutPrefs.js`); cells center by default,
+   fixed-column/truncated look matches Audit/App-logs tables which were left
+   untouched. `MitreSection.jsx` lost its own duplicate wrap/center toolbar.
+3. `routers/admin.py` `/config` and `/config/apply-all` — stopped writing to
+   `backend/.env` on save (removed `dotenv_set_key` calls). DB (`app_settings`)
+   is now the sole source of truth for UI-edited config; `.env` survives only
+   as the one-time first-boot seed via existing `seed_app_settings_from_dotenv`.
+   User confirmed DB-only explicitly.
+4. `AdminPage.jsx`/`AdminPage.css` — `.admin-content` was one shared scroll
+   container across every `hidden`-toggled admin page, so switching tabs kept
+   whatever scrollTop the last tab had. Moved `overflow-y:auto` onto a new
+   per-page `.admin-page-scroll` wrapper — each tab now owns its own scroll
+   state independently (verified live: switching tabs opens fresh at top,
+   revisiting a tab restores its own prior position, not another tab's).
+5. `FrameworkSection.jsx` (CWE/OWASP/CAPEC/STRIDE) — user's real objection was
+   "no explainability, looks bolted on," not the feature itself. Added an
+   always-visible (not tooltip-only) "WHY IT MATTERS" / "HOW TO USE IT" block
+   per framework. Also fixed a real pre-existing bug found along the way: its
+   severity `<select>` was native HTML, violating the repo's native-select gate
+   test — the gate test itself had a path-separator bug (`SKIP_FILES` used
+   `/`, `path.relative` on Windows returns `\`) masking the failure; fixed both.
+6. `ArchitectureGraphSection.jsx` / `SecurityArchitecturePage.css` — removed
+   the `ContextRail` detail panel that opened below the graph on node click
+   (`.sa-graph-detail`); canvas now keeps full size on click (flex:1 already
+   absorbs the freed space). Bumped the non-graph-mode fallback canvas height
+   70vh→85vh. Updated `architectureGraphGate.test.js` (was asserting the old
+   inline-panel behavior).
+7. Overview stat tiles — real bug found via live DOM measurement, **not** the
+   grid CSS (which was already correct 1fr columns): `Tooltip`'s default
+   (non-`asChild`) wrapper is two nested `inline-flex` spans that shrink-to-fit
+   content, collapsing short-label tiles ("Open Risks" 119px vs "MITRE
+   Detection Coverage" 163px in the same row). Fixed with a scoped override
+   (`.sa-stat-card-wrap .ui-tooltip-wrap, .sa-stat-card-wrap .ui-tooltip-trigger
+   { display:flex; width:100% }`) rather than touching the shared `Tooltip`
+   component (other tooltips elsewhere rely on shrink-to-fit). `DisplayPage.jsx`
+   — removed the Font size and Density controls per user request; Typography
+   (px-per-role) stays as the only sizing control.
+
+**Deliberately NOT done — flagged to user, they chose to defer:** typography
+CSS variables (`--type-*`) only apply to ~195 of ~910 font-size declarations
+across the codebase (695 in CSS, 215 inline in JSX) — the Display preference
+"Typography" control is real but mostly inert today. User chose "leave for a
+dedicated session" over a partial or full sweep; this is a known, real gap,
+not an oversight. Whoever picks this up next: it's a large mechanical
+conversion with real regression risk (every card/badge/table touched), not a
+quick fix.
+
+**Verification:** `npm run build` clean after every change. Frontend
+`node --test` suite: 153/153 pass (fixed the pre-existing `nativeSelectGate`
+path-separator bug and the `architectureGraphGate`/`sectionLabels` tests that
+asserted removed behavior along the way). Backend `pytest tests/ -q`: 1392
+passed, 17 failed — all 17 pre-existing environment gaps unrelated to this
+diff (missing `cryptography` pip package, a Windows bash/path resolution
+issue in `test_design_token_lint.py`, an aiosqlite thread-teardown flake) —
+confirmed `test_admin_set_config_persists_to_app_settings` (the test that
+actually covers item 3) passes. All 7 items also visually verified live in
+the browser (dev servers + a throwaway `claude_verify` admin account created
+via `backend/scripts/create_user.py` for verification only, removed after).
+
+**Landmine for next agent:** `backend/scripts/create_user.py` resolves
+`DB_PATH` relative to its own chdir'd cwd (`backend/`), but the dev servers
+started via `.claude/launch.json`'s `--app-dir backend` run with cwd at the
+repo root — so the two can silently write to **different sqlite files**
+(`backend/briefr.db` vs `briefr.db` at repo root). If a user you create via
+the script can't log in, check which `briefr.db` the running server actually
+opened before assuming a hashing/auth bug.
+
+---
+
 ## 2026-07-17 — Idempotency completion (IDEM-C / IDEM-D + E/F disposition)
 
 **What:** Closed out the remaining idempotency findings from

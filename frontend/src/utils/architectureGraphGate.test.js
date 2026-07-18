@@ -23,7 +23,7 @@ describe('PM-3 architecture graph gate', () => {
   it('PM-3a: graph canvas uses compact height and blocks text selection', () => {
     const css = read(CSS_PATH)
     const canvas = blockForSelector(css, '.sa-graph-canvas')
-    assert.match(canvas, /height:\s*min\(70vh/, 'graph canvas fallback height stays compact')
+    assert.match(canvas, /height:\s*min\(85vh/, 'graph canvas fallback height stays compact')
     assert.match(canvas, /user-select:\s*none/, 'graph canvas should disable text selection while panning')
     const graphCanvas = blockForSelector(css, '.sa-shell--graph .sa-graph-canvas')
     assert.match(graphCanvas, /flex:\s*1/, 'graph mode canvas fills remaining viewport')
@@ -49,12 +49,12 @@ describe('PM-3 architecture graph gate', () => {
     assert.match(graphSection, /computeFitView/, 'initial view should use fit-to-view helper')
   })
 
-  it('PM-3c: system architecture section inlines node detail and hides empty rail', () => {
+  it('PM-3c: system architecture section uses the full-width shell without an empty rail or detail panel', () => {
     const saPage = read(SA_PAGE)
     const graphSection = read(GRAPH_SECTION)
     assert.match(saPage, /system_architecture.*sa-shell--graph/, 'graph section should use full-width shell without empty rail')
-    assert.match(graphSection, /ContextRail/, 'graph section should render inline node detail panel')
-    assert.match(graphSection, /selectedNodeId/, 'graph section should accept selected node id')
+    assert.doesNotMatch(graphSection, /ContextRail/, 'graph section no longer opens a detail panel on node click — canvas stays full size')
+    assert.match(graphSection, /selectedNodeId/, 'graph section should still accept selected node id for highlighting')
   })
 
   it('PM-3c-toggle: clicking a selected node clears selection', () => {
