@@ -160,6 +160,15 @@ endpoints:
   path: /api/admin/scheduler/run
   component_id: routers-admin
 - method: GET
+  path: /api/admin/search-tokens
+  component_id: routers-admin
+- method: POST
+  path: /api/admin/search-tokens
+  component_id: routers-admin
+- method: DELETE
+  path: /api/admin/search-tokens/{token_id}
+  component_id: routers-admin
+- method: GET
   path: /api/admin/security
   component_id: routers-admin
 - method: GET
@@ -408,6 +417,9 @@ endpoints:
 - method: POST
   path: /api/refresh/nvd
   component_id: routers-refresh
+- method: GET
+  path: /api/search/semantic
+  component_id: routers-search
 - method: GET
   path: /api/security-architecture/context/{node_id}
   component_id: security_architecture-routers-security_architecture

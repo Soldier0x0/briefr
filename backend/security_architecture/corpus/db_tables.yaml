@@ -342,6 +342,15 @@ tables:
   source_refs:
   - type: table
     ref: resource_metrics
+- id: search_api_tokens
+  title: search_api_tokens
+  summary: Database table defined in db/init.py (name=search_api_tokens).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: search_api_tokens
 - id: sessions
   title: sessions
   summary: Database table defined in db/init.py (name=sessions).
