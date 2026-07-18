@@ -16,7 +16,7 @@
     </marker>
   </defs>
   <rect class="bg" width="920" height="420"/>
-  <text x="24" y="32" class="title">Correlation engine v2  explainable lanes (no black-box ML)</text>
+  <text x="24" y="32" class="title">Correlation engine v2 â€” explainable lanes (no black-box ML)</text>
 
   <rect class="node accent" x="24" y="56" width="130" height="64" rx="6"/>
   <text x="40" y="84" class="label">OTX nightly</text>
@@ -25,12 +25,12 @@
   <line class="arrow" x1="154" y1="88" x2="188" y2="88"/>
   <rect class="node" x="188" y="56" width="150" height="64" rx="6"/>
   <text x="204" y="84" class="label">PostgreSQL</text>
-  <text x="204" y="102" class="sub">otx_pulse_iocs · campaigns</text>
+  <text x="204" y="102" class="sub">otx_pulse_iocs Â· campaigns</text>
 
   <line class="arrow" x1="338" y1="88" x2="372" y2="88"/>
   <rect class="purple" x="372" y="56" width="170" height="64" rx="6"/>
   <text x="388" y="84" class="label">correlation/engine</text>
-  <text x="388" y="102" class="sub">DB-only · no live OTX on drawer open</text>
+  <text x="388" y="102" class="sub">DB-only Â· no live OTX on drawer open</text>
 
   <line class="arrow" x1="542" y1="88" x2="576" y2="88"/>
   <rect class="node accent" x="576" y="56" width="150" height="64" rx="6"/>
@@ -46,17 +46,17 @@
 
   <rect class="lane" x="24" y="164" width="200" height="88" rx="6"/>
   <text x="40" y="192" class="label">Campaigns</text>
-  <text x="40" y="212" class="sub">Shared OTX pulses · watchlist peer boost</text>
-  <text x="40" y="232" class="sub">Forge Campaigns tab · PDF paragraph</text>
+  <text x="40" y="212" class="sub">Shared OTX pulses Â· watchlist peer boost</text>
+  <text x="40" y="232" class="sub">Forge Campaigns tab Â· PDF paragraph</text>
 
   <rect class="lane" x="240" y="164" width="200" height="88" rx="6"/>
   <text x="256" y="192" class="label">Infrastructure</text>
-  <text x="256" y="212" class="sub">Hostnames · IPs · URLs from pulses</text>
+  <text x="256" y="212" class="sub">Hostnames Â· IPs Â· URLs from pulses</text>
   <text x="256" y="232" class="sub">Typed IOC edges with provenance</text>
 
   <rect class="lane" x="456" y="164" width="200" height="88" rx="6"/>
   <text x="472" y="192" class="label">Actor / sector</text>
-  <text x="472" y="212" class="sub">Targeted countries · sectors</text>
+  <text x="472" y="212" class="sub">Targeted countries Â· sectors</text>
   <text x="472" y="232" class="sub">Hub suppression for noisy IOCs</text>
 
   <rect class="lane" x="672" y="164" width="224" height="88" rx="6"/>
@@ -65,7 +65,7 @@
   <text x="688" y="232" class="sub">Dismiss + lifecycle in drawer</text>
 
   <rect x="24" y="280" width="872" height="48" rx="6" fill="#1a1a17" stroke="#c8b88a" stroke-dasharray="4 3"/>
-  <text x="40" y="308" class="sub">Drawer open reads PostgreSQL only  upstream OTX is never called per CVE view</text>
+  <text x="40" y="308" class="sub">Drawer open reads PostgreSQL only â€” upstream OTX is never called per CVE view</text>
 
-  <text x="24" y="360" class="sub">Admin: GET /api/admin/correlation/status · Feed badge surfaces cluster priority</text>
+  <text x="24" y="360" class="sub">Admin: GET /api/admin/correlation/status Â· Feed badge surfaces cluster priority</text>
 </svg>
