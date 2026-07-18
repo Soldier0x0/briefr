@@ -198,6 +198,8 @@ EXPECTED_ROUTES = [
     ("POST", "/api/stack/backfill/agree"),
     ("GET", "/api/stack/backfill/{run_id}"),
     ("POST", "/api/stack/backfill/{run_id}/resume"),
+    # Embeddings E3: hybrid / semantic search API
+    ("GET", "/api/search/semantic"),
 ]
 
 
@@ -273,6 +275,7 @@ def test_moved_endpoints_live_in_routers():
     assert by_path["/api/ioc/watchlist"] == "routers.ioc"
     assert by_path["/api/watchlist"] == "routers.watchlist"
     assert by_path["/api/admin/system"] == "routers.admin"
+    assert by_path["/api/search/semantic"] == "routers.search"
     # main.py owns only app wiring now (V1.2 exit criterion: <300 lines)
     assert not any(module == "main" for module in by_path.values())
 

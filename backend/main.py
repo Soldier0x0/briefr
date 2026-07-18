@@ -54,6 +54,7 @@ from routers import threat_model as threat_model_router
 from security_architecture.routers import security_architecture as security_architecture_router
 from routers import wallboard as wallboard_router
 from routers import watchlist as watchlist_router
+from routers import search as search_router
 from scheduler import (
     maybe_run_on_startup,
     start_scheduler,
@@ -322,6 +323,7 @@ app.include_router(auth_router.router)
 app.include_router(me_router.router)
 app.include_router(notifications_me_router.router)
 app.include_router(stack_catalog_router.router)
+app.include_router(search_router.router)
 
 
 if __name__ == "__main__":

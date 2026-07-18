@@ -1,7 +1,7 @@
-"""Runtime read/write for the multi-entity ``embeddings`` table (E2).
+"""Runtime read/write for the multi-entity ``embeddings`` table (E2/E3).
 
-Dual-writes with legacy ``cve_embeddings`` until E3 switches related/search to ANN.
-SQLite stores float32 BLOBs; Postgres uses ``vector(384)`` via text literals.
+Dual-writes with legacy ``cve_embeddings``. E3 related/search prefer this table
+(pgvector ANN on Postgres; BLOB cosine on SQLite).
 
 Copyright © 2026 Sai Harsha Vardhan
 SPDX-License-Identifier: AGPL-3.0-or-later
