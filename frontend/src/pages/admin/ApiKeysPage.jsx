@@ -74,6 +74,33 @@ function applyStrategyBadge(strategy) {
   return null
 }
 
+function MeteringColumn({ title, rows }) {
+  const max = Math.max(1, ...rows.map(r => r.calls || 0))
+  return (
+    <div>
+      <p className="metering-col-title mono">{title}</p>
+      {rows.length === 0 ? (
+        <p className="metering-empty mono">No events yet</p>
+      ) : (
+        <ul className="metering-list">
+          {rows.map(row => (
+            <li key={row.key} className="metering-row">
+              <span className="metering-row-label">
+                <span className="metering-row-name mono">{row.name}</span>
+                {row.meta && <span className="metering-row-meta">{row.meta}</span>}
+              </span>
+              <span className="metering-bar-track">
+                <span className="metering-bar-fill" style={{ width: `${((row.calls || 0) / max) * 100}%` }} />
+              </span>
+              <span className="metering-row-count mono">{row.calls}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 export default function ApiKeysPage({ toast }) {
   const [config, setConfig] = useState(null)
   const [schema, setSchema] = useState(null)
@@ -423,7 +450,7 @@ export default function ApiKeysPage({ toast }) {
     <div>
       <h1 className="admin-page-title">
         API keys & config
-        <HelpTip text="Changes write to backend/.env and update the running process. Rows tagged restart reload the backend (CORS, DB pool, rate limits). Rows tagged reschedule update APScheduler job triggers without a full restart. Process-level env vars (systemd, secrets manager) override .env and cannot be changed here." />
+        <HelpTip text="Changes save to the database and update the running process — backend/.env is no longer written to. Rows tagged restart reload the backend (CORS, DB pool, rate limits). Rows tagged reschedule update APScheduler job triggers without a full restart. Process-level env vars (systemd, secrets manager) always win and cannot be changed here." />
       </h1>
       <p className="admin-page-subtitle">
         Edit a value and click Save. Most API keys and toggles are
@@ -445,56 +472,39 @@ export default function ApiKeysPage({ toast }) {
       />
 
       <div className="admin-card" style={{ marginBottom: 'var(--space-4)' }}>
-        <h3 className="mono" style={{ margin: 0, fontSize: 'var(--font-size-sm)' }}>
-          OUTBOUND API METERING (24h)
-        </h3>
-        <p className="admin-page-desc" style={{ marginTop: 'var(--space-2)' }}>
-          Every resilient_request attempt is counted (retries included). Rollups stay in api_usage;
-          actor breakdown comes from api_call_events.
-        </p>
-        {meteringLoading && (
-          <p className="mono" style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>
-            Loading metering…
-          </p>
-        )}
-        {!meteringLoading && meteringError && (
-          <p className="mono" style={{ color: 'var(--status-error)', fontSize: 'var(--font-size-xs)' }}>
-            {meteringError}
-          </p>
-        )}
-        {!meteringLoading && !meteringError && metering && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
-            <div>
-              <div className="mono" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>BY SOURCE</div>
-              <ul style={{ margin: 'var(--space-2) 0 0', paddingLeft: '1.1rem', fontSize: 'var(--font-size-sm)' }}>
-                {(metering.by_source || []).slice(0, 8).map((row) => (
-                  <li key={row.source}>
-                    <span className="mono">{row.source}</span>
-                    {' — '}
-                    {row.calls} calls
-                    {row.last_called_at
-                      ? ` · last ${new Date(row.last_called_at).toLocaleString()}`
-                      : ''}
-                  </li>
-                ))}
-                {(metering.by_source || []).length === 0 && <li className="mono">No events yet</li>}
-              </ul>
-            </div>
-            <div>
-              <div className="mono" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>BY ACTOR</div>
-              <ul style={{ margin: 'var(--space-2) 0 0', paddingLeft: '1.1rem', fontSize: 'var(--font-size-sm)' }}>
-                {(metering.by_actor || []).map((row) => (
-                  <li key={row.actor_type}>
-                    <span className="mono">{row.actor_type}</span>
-                    {' — '}
-                    {row.calls} calls
-                  </li>
-                ))}
-                {(metering.by_actor || []).length === 0 && <li className="mono">No events yet</li>}
-              </ul>
-            </div>
+        <div className="admin-card-header">
+          <div className="admin-card-title">
+            Outbound API metering (24h)
+            <HelpTip text="Every resilient_request attempt is counted, including retries. Rollups come from api_usage; the actor breakdown comes from api_call_events." />
           </div>
-        )}
+        </div>
+        <div className="admin-card-body">
+          {meteringLoading && <p className="metering-empty mono">Loading metering…</p>}
+          {!meteringLoading && meteringError && (
+            <p className="metering-empty mono" style={{ color: 'var(--status-error)' }}>{meteringError}</p>
+          )}
+          {!meteringLoading && !meteringError && metering && (
+            <div className="metering-cols">
+              <MeteringColumn
+                title="BY SOURCE"
+                rows={(metering.by_source || []).slice(0, 8).map(row => ({
+                  key: row.source,
+                  name: row.source,
+                  calls: row.calls,
+                  meta: row.last_called_at ? `last ${new Date(row.last_called_at).toLocaleString()}` : null,
+                }))}
+              />
+              <MeteringColumn
+                title="BY ACTOR"
+                rows={(metering.by_actor || []).map(row => ({
+                  key: row.actor_type,
+                  name: row.actor_type,
+                  calls: row.calls,
+                }))}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {SECTIONS.map(section => {

@@ -39,18 +39,6 @@
   font-size: 0.8125rem;
 }
 
-.data-grid-toggle {
-  font-size: 0.8125rem;
-}
-
-.data-grid-layout-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
 .data-grid-scroll {
   overflow-x: auto;
   overflow-y: auto;

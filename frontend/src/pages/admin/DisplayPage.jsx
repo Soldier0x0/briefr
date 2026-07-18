@@ -8,8 +8,6 @@ import {
   getDisplayPrefs,
   setDisplayPrefs,
   resetDisplayPrefs,
-  FONT_SCALE_OPTIONS,
-  DENSITY_OPTIONS,
   POLL_INTERVAL_OPTIONS,
   DEFAULT_TYPOGRAPHY_PX,
 } from '../../utils/displayPrefs.js'
@@ -22,9 +20,6 @@ import {
   TYPOGRAPHY_ROLES,
 } from '../../utils/typographyPrefs.js'
 import { applyDisplayPrefs } from '../../utils/displayPrefsCore.js'
-
-const FONT_LABELS = { xsmall: 'Extra small', small: 'Small', medium: 'Medium (default)', large: 'Large', xlarge: 'Extra large' }
-const DENSITY_LABELS = { compact: 'Compact', comfortable: 'Comfortable (default)', spacious: 'Spacious' }
 
 export default function DisplayPage() {
   const { user } = useAuth()
@@ -163,36 +158,6 @@ export default function DisplayPage() {
         {status ? (
           <p className="display-typography-status mono">{status}</p>
         ) : null}
-      </Card>
-
-      <Card>
-        <CardTitle>Font size</CardTitle>
-        <PillGroup>
-          {FONT_SCALE_OPTIONS.map(opt => (
-            <Pill
-              key={opt}
-              active={prefs.fontScale === opt}
-              onClick={() => update('fontScale', opt)}
-            >
-              {FONT_LABELS[opt]}
-            </Pill>
-          ))}
-        </PillGroup>
-      </Card>
-
-      <Card>
-        <CardTitle>Density</CardTitle>
-        <PillGroup>
-          {DENSITY_OPTIONS.map(opt => (
-            <Pill
-              key={opt}
-              active={prefs.density === opt}
-              onClick={() => update('density', opt)}
-            >
-              {DENSITY_LABELS[opt]}
-            </Pill>
-          ))}
-        </PillGroup>
       </Card>
 
       <Card>
