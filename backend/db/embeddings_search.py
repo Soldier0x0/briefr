@@ -85,6 +85,42 @@ ORDER BY
 LIMIT $6
 """
 
+_KEYWORD_CAMPAIGN_SQLITE = """
+SELECT campaign_id, label, adversary, malware_families, tags,
+       lifecycle, member_count, confidence
+FROM correlation_campaigns
+WHERE retracted_at IS NULL
+  AND (
+    LOWER(campaign_id) = ?
+    OR LOWER(COALESCE(label, '')) LIKE ?
+    OR LOWER(COALESCE(adversary, '')) LIKE ?
+    OR LOWER(COALESCE(malware_families, '')) LIKE ?
+    OR LOWER(COALESCE(tags, '')) LIKE ?
+)
+ORDER BY
+  CASE WHEN LOWER(campaign_id) = ? THEN 0 ELSE 1 END,
+  COALESCE(last_seen, computed_at) DESC
+LIMIT ?
+"""
+
+_KEYWORD_CAMPAIGN_PG = """
+SELECT campaign_id, label, adversary, malware_families, tags,
+       lifecycle, member_count, confidence
+FROM correlation_campaigns
+WHERE retracted_at IS NULL
+  AND (
+    LOWER(campaign_id) = $1
+    OR LOWER(COALESCE(label, '')) LIKE $2
+    OR LOWER(COALESCE(adversary, '')) LIKE $3
+    OR LOWER(COALESCE(malware_families, '')) LIKE $4
+    OR LOWER(COALESCE(tags, '')) LIKE $5
+)
+ORDER BY
+  CASE WHEN LOWER(campaign_id) = $1 THEN 0 ELSE 1 END,
+  COALESCE(last_seen, computed_at) DESC NULLS LAST
+LIMIT $6
+"""
+
 _GET_CVE_EMBEDDING_BLOB_SQLITE = """
 SELECT embedding FROM embeddings
 WHERE entity_type = ? AND entity_id = ? AND model = ?
@@ -311,6 +347,31 @@ async def keyword_search_techniques(
     else:
         rows = await db.execute_fetchall(
             _KEYWORD_TECH_SQLITE, (exact, like, like, like, like, exact, limit)
+        )
+    return [dict(row) for row in rows]
+
+
+async def keyword_search_campaigns(
+    db: DbConnection,
+    q: str,
+    *,
+    limit: int = 20,
+) -> list[dict]:
+    """Substring match on campaign label / adversary / malware / tags (E8)."""
+    text = (q or "").strip()
+    if not text:
+        return []
+    exact = text.lower()
+    like = f"%{exact}%"
+    capped = max(1, min(int(limit), 50))
+    pg = _is_postgres_connection(db)
+    if pg:
+        rows = await db.execute_fetchall(
+            _KEYWORD_CAMPAIGN_PG, (exact, like, like, like, like, capped)
+        )
+    else:
+        rows = await db.execute_fetchall(
+            _KEYWORD_CAMPAIGN_SQLITE, (exact, like, like, like, like, exact, capped)
         )
     return [dict(row) for row in rows]
 

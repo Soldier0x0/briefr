@@ -76,6 +76,7 @@ from feeds.exploit_sync import (
 from ml.embeddings import (
     embeddings_auto_on_ingest_enabled,
     embeddings_enabled,
+    run_campaign_embeddings_backfill,
     run_embeddings_backfill,
     run_technique_embeddings_backfill,
 )
@@ -1534,12 +1535,18 @@ async def run_embeddings_sync() -> bool:
                 tech_stats = await run_technique_embeddings_backfill(
                     db, progress_cb=_emb_progress
                 )
+                camp_stats = await run_campaign_embeddings_backfill(
+                    db, progress_cb=_emb_progress
+                )
                 stats = {
                     **stats,
                     "techniques_embedded": tech_stats.get("embedded", 0),
+                    "campaigns_embedded": camp_stats.get("embedded", 0),
                 }
-                _embedded = int(stats.get("embedded", 0)) + int(
-                    stats.get("techniques_embedded", 0)
+                _embedded = (
+                    int(stats.get("embedded", 0))
+                    + int(stats.get("techniques_embedded", 0))
+                    + int(stats.get("campaigns_embedded", 0))
                 )
             finally:
                 await db.close()

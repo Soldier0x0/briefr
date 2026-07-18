@@ -17,6 +17,7 @@ DEFAULT_EMBEDDINGS_MODEL = "BAAI/bge-small-en-v1.5"
 EMBED_TEXT_MAX_CHARS = 2000
 ENTITY_TYPE_CVE = "cve"
 ENTITY_TYPE_TECHNIQUE = "technique"
+ENTITY_TYPE_CAMPAIGN = "campaign"
 
 
 def blob_to_pgvector_literal(
@@ -108,6 +109,34 @@ def build_technique_embed_text(
     desc = (description or "").strip()
     if desc:
         parts.append(desc)
+    text = "\n".join(parts)
+    if len(text) > max_chars:
+        return text[:max_chars]
+    return text
+
+
+def build_campaign_embed_text(
+    *,
+    label: str | None,
+    adversary: str | None = None,
+    malware_families: Any = None,
+    tags: Any = None,
+    max_chars: int = EMBED_TEXT_MAX_CHARS,
+) -> str:
+    """Deterministic correlation-campaign text (E8). No description column on campaigns."""
+    parts: list[str] = []
+    title = (label or "").strip()
+    if title:
+        parts.append(title)
+    actor = (adversary or "").strip()
+    if actor:
+        parts.append(actor)
+    malware = _join_json_list(malware_families)
+    if malware:
+        parts.append(malware)
+    tag_text = _join_json_list(tags)
+    if tag_text:
+        parts.append(tag_text)
     text = "\n".join(parts)
     if len(text) > max_chars:
         return text[:max_chars]

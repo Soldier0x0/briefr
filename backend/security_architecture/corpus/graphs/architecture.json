@@ -1979,6 +1979,12 @@
       "kind": "references_table"
     },
     {
+      "id": "job:embeddings_backfill->table:correlation_campaigns",
+      "source": "job:embeddings_backfill",
+      "target": "table:correlation_campaigns",
+      "kind": "references_table"
+    },
+    {
       "id": "job:embeddings_backfill->table:cve_atlas_map",
       "source": "job:embeddings_backfill",
       "target": "table:cve_atlas_map",
@@ -2708,6 +2714,12 @@
       "id": "job:nvd_incremental_sync->table:audit_log",
       "source": "job:nvd_incremental_sync",
       "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:correlation_campaigns",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:correlation_campaigns",
       "kind": "references_table"
     },
     {
@@ -4496,6 +4508,12 @@
       "id": "routers-refresh->table:sync_state",
       "source": "routers-refresh",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-search->table:correlation_campaigns",
+      "source": "routers-search",
+      "target": "table:correlation_campaigns",
       "kind": "references_table"
     },
     {

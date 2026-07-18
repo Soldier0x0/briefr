@@ -12,9 +12,11 @@ from __future__ import annotations
 import os
 
 from db.embeddings_pgvector import (
+    ENTITY_TYPE_CAMPAIGN,
     ENTITY_TYPE_CVE,
     ENTITY_TYPE_TECHNIQUE,
     blob_to_pgvector_literal,
+    build_campaign_embed_text,
     build_cve_embed_text,
     build_technique_embed_text,
     content_hash_for_embed_text,
@@ -380,5 +382,85 @@ async def get_techniques_needing_embeddings(
         if item:
             out.append(item)
         if len(out) >= limit:
+            break
+    return out
+
+
+_GET_CAMPAIGNS_NEEDING_SQLITE = """
+SELECT c.campaign_id, c.label, c.adversary, c.malware_families, c.tags,
+       e.content_hash AS existing_hash
+FROM correlation_campaigns c
+LEFT JOIN embeddings e
+  ON e.entity_type = 'campaign' AND e.entity_id = c.campaign_id AND e.model = ?
+WHERE c.retracted_at IS NULL
+ORDER BY COALESCE(c.last_seen, c.computed_at) DESC, c.campaign_id
+"""
+
+_GET_CAMPAIGNS_NEEDING_PG = """
+SELECT c.campaign_id, c.label, c.adversary, c.malware_families, c.tags,
+       e.content_hash AS existing_hash
+FROM correlation_campaigns c
+LEFT JOIN embeddings e
+  ON e.entity_type = 'campaign' AND e.entity_id = c.campaign_id AND e.model = $1
+WHERE c.retracted_at IS NULL
+ORDER BY COALESCE(c.last_seen, c.computed_at) DESC NULLS LAST, c.campaign_id
+"""
+
+
+def _campaign_row_to_pending(row: dict, model: str) -> dict | None:
+    text = build_campaign_embed_text(
+        label=row.get("label"),
+        adversary=row.get("adversary"),
+        malware_families=row.get("malware_families"),
+        tags=row.get("tags"),
+    )
+    if not text.strip():
+        return None
+    new_hash = content_hash_for_embed_text(text, model)
+    existing = row.get("existing_hash")
+    if existing and not is_placeholder_content_hash(existing) and existing == new_hash:
+        return None
+    return {
+        "campaign_id": row["campaign_id"],
+        "embed_text": text,
+        "content_hash": new_hash,
+        "existing_hash": existing,
+    }
+
+
+async def upsert_campaign_embedding_row(
+    db: DbConnection,
+    campaign_id: str,
+    model: str,
+    dims: int,
+    vector_blob: bytes,
+    content_hash: str,
+) -> None:
+    # Preserve camp_* case — do not upper() (unlike CVE / technique IDs).
+    await upsert_embedding_row(
+        db,
+        entity_type=ENTITY_TYPE_CAMPAIGN,
+        entity_id=str(campaign_id),
+        model=model,
+        dims=dims,
+        vector_blob=vector_blob,
+        content_hash=content_hash,
+    )
+
+
+async def get_campaigns_needing_embeddings(
+    db: DbConnection, model: str, limit: int = 500
+) -> list[dict]:
+    """Non-retracted campaigns missing / placeholder / content_hash mismatch (E8)."""
+    capped = max(1, int(limit))
+    pg = _is_postgres_connection(db)
+    sql = _GET_CAMPAIGNS_NEEDING_PG if pg else _GET_CAMPAIGNS_NEEDING_SQLITE
+    rows = await db.execute_fetchall(sql, (model,))
+    out: list[dict] = []
+    for row in rows:
+        item = _campaign_row_to_pending(dict(row), model)
+        if item:
+            out.append(item)
+        if len(out) >= capped:
             break
     return out

@@ -9,13 +9,19 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from db.embeddings_pgvector import DEFAULT_EMBEDDING_DIMS, ENTITY_TYPE_CVE, ENTITY_TYPE_TECHNIQUE
+from db.embeddings_pgvector import (
+    DEFAULT_EMBEDDING_DIMS,
+    ENTITY_TYPE_CAMPAIGN,
+    ENTITY_TYPE_CVE,
+    ENTITY_TYPE_TECHNIQUE,
+)
 from db.embeddings_search import (
     SearchMode,
     ann_search_by_query_vector,
     build_hybrid_results,
     classify_query_shape,
     find_similar_via_embeddings_table,
+    keyword_search_campaigns,
     keyword_search_cves,
     keyword_search_techniques,
 )
@@ -174,6 +180,77 @@ async def _allowed_cve_ids_for_filters(
     rows = await db.execute_fetchall(sql, tuple(params))
     return {r["cve_id"] for r in rows}, stack_terms
 
+async def _hydrate_campaign_cards(
+    db: DbConnection, campaign_ids: list[str]
+) -> dict[str, dict]:
+    normalized = [c for c in campaign_ids if c]
+    if not normalized:
+        return {}
+    pg = _is_postgres_connection(db)
+    out: dict[str, dict] = {}
+    if pg:
+        placeholders = ", ".join(f"${j}" for j in range(1, len(normalized) + 1))
+    else:
+        placeholders = ", ".join("?" for _ in normalized)
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT campaign_id, label, adversary, malware_families, tags,
+               lifecycle, member_count, confidence
+        FROM correlation_campaigns
+        WHERE campaign_id IN ({placeholders}) AND retracted_at IS NULL
+        """,
+        tuple(normalized),
+    )
+    for row in rows:
+        out[row["campaign_id"]] = dict(row)
+    return out
+
+
+def _campaign_results(
+    keyword_rows: list[dict],
+    vector_hits: list[dict],
+    cards: dict[str, dict],
+    limit: int,
+) -> list[dict]:
+    kw_ids = [r["campaign_id"] for r in keyword_rows if r.get("campaign_id")]
+    vec_ids = [
+        h["entity_id"]
+        for h in vector_hits
+        if h.get("entity_type") == ENTITY_TYPE_CAMPAIGN and h.get("entity_id")
+    ]
+    vec_sim = {
+        h["entity_id"]: float(h.get("similarity") or 0.0)
+        for h in vector_hits
+        if h.get("entity_type") == ENTITY_TYPE_CAMPAIGN and h.get("entity_id")
+    }
+    ordered = list(dict.fromkeys(kw_ids + vec_ids))[:limit]
+    out: list[dict] = []
+    for cid in ordered:
+        card = cards.get(cid)
+        if not card:
+            continue
+        reasons: list[str] = []
+        if cid in kw_ids:
+            reasons.append("keyword")
+        if cid in vec_ids:
+            reasons.append("vector")
+        item: dict[str, Any] = {
+            "entity_type": ENTITY_TYPE_CAMPAIGN,
+            "entity_id": cid,
+            "campaign_id": cid,
+            "label": card.get("label") or cid,
+            "adversary": card.get("adversary") or "",
+            "lifecycle": card.get("lifecycle") or "",
+            "member_count": int(card.get("member_count") or 0),
+            "confidence": card.get("confidence") or "",
+            "score": round(vec_sim.get(cid, float(limit - len(out))), 6),
+            "match_reasons": reasons or ["keyword"],
+        }
+        if cid in vec_sim:
+            item["similarity"] = round(vec_sim[cid], 4)
+        out.append(item)
+    return out
+
 
 async def run_semantic_search(
     db,
@@ -214,6 +291,7 @@ async def run_semantic_search(
 
     keyword_rows = await keyword_search_cves(db, text, limit=fetch_limit)
     tech_keyword = await keyword_search_techniques(db, text, limit=max(5, fetch_limit // 2))
+    camp_keyword = await keyword_search_campaigns(db, text, limit=max(5, fetch_limit // 3))
     vector_hits: list[dict] = []
 
     need_vector = False
@@ -252,7 +330,11 @@ async def run_semantic_search(
                         query_blob,
                         limit=fetch_limit,
                         expected_dim=dims or DEFAULT_EMBEDDING_DIMS,
-                        entity_types=[ENTITY_TYPE_CVE, ENTITY_TYPE_TECHNIQUE],
+                        entity_types=[
+                            ENTITY_TYPE_CVE,
+                            ENTITY_TYPE_TECHNIQUE,
+                            ENTITY_TYPE_CAMPAIGN,
+                        ],
                     )
                 except Exception:
                     logger.exception("vector ANN search failed — keyword only")
@@ -299,16 +381,47 @@ async def run_semantic_search(
             ]
         )
     )
-    # Stack/severity/KEV are CVE filters — techniques stay unfiltered (typed hits).
+    # Stack/severity/KEV are CVE filters — techniques/campaigns stay unfiltered.
     tech_cards = await _hydrate_technique_cards(db, tech_ids)
     for row in tech_keyword:
         tech_cards[row["technique_id"]] = row
-    tech_budget = (
-        min(max(3, capped // 4), capped - 1)
-        if capped > 1 and tech_ids and allowed_ids is None
-        else (min(max(2, capped // 5), capped - 1) if capped > 1 and tech_ids else 0)
+
+    camp_ids = list(
+        dict.fromkeys(
+            [r["campaign_id"] for r in camp_keyword]
+            + [
+                h["entity_id"]
+                for h in vector_hits
+                if h.get("entity_type") == ENTITY_TYPE_CAMPAIGN
+            ]
+        )
     )
-    cve_budget = max(1, capped - tech_budget)
+    camp_cards = await _hydrate_campaign_cards(db, camp_ids)
+    for row in camp_keyword:
+        camp_cards[row["campaign_id"]] = row
+
+    # When CVE filters are active, shrink typed-hit budgets so filters keep CVE slots.
+    if allowed_ids is not None:
+        tech_budget = (
+            min(max(2, capped // 5), capped - 1) if capped > 1 and tech_ids else 0
+        )
+        camp_budget = (
+            min(max(1, capped // 8), capped - 1) if capped > 1 and camp_ids else 0
+        )
+    else:
+        tech_budget = (
+            min(max(3, capped // 4), capped - 1) if capped > 1 and tech_ids else 0
+        )
+        camp_budget = (
+            min(max(2, capped // 6), capped - 1) if capped > 1 and camp_ids else 0
+        )
+    # Keep at least one CVE slot when typed hits compete for the page.
+    reserved = min(tech_budget + camp_budget, max(0, capped - 1))
+    if reserved and tech_budget + camp_budget > reserved:
+        # Prefer techniques slightly when both present.
+        camp_budget = min(camp_budget, max(0, reserved - min(tech_budget, reserved)))
+        tech_budget = min(tech_budget, reserved - camp_budget)
+    cve_budget = max(1, capped - tech_budget - camp_budget)
 
     cve_results, method = build_hybrid_results(
         keyword_rows=keyword_rows,
@@ -322,11 +435,14 @@ async def run_semantic_search(
     tech_results = _technique_results(
         tech_keyword, vector_hits, tech_cards, limit=tech_budget
     )
+    camp_results = _campaign_results(
+        camp_keyword, vector_hits, camp_cards, limit=camp_budget
+    )
 
-    # Reserve slots so technique hits are not sliced away when CVE fill is full.
+    # Reserve slots so typed hits are not sliced away when CVE fill is full.
     combined = list(cve_results)
     seen = {r["entity_id"] for r in combined}
-    for hit in tech_results:
+    for hit in tech_results + camp_results:
         if hit["entity_id"] in seen:
             continue
         if len(combined) >= capped:
@@ -343,6 +459,7 @@ async def run_semantic_search(
             "q": text[:200],
             "embeddings_enabled": embeddings_enabled(),
             "includes_techniques": bool(tech_results),
+            "includes_campaigns": bool(camp_results),
             "stack_terms": stack_terms,
             "severity": (severity or "").strip().upper() or None,
             "kev_only": bool(kev_only),

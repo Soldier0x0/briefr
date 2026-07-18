@@ -584,7 +584,7 @@ Sub-objects match the shapes returned by `GET /api/cves/{cve_id}/sentences`, `/e
 
 ### GET /api/search/semantic
 
-**Description (E3/E7):** One-box CVE (+ technique) search — hybrid (default), keyword, or semantic. Keyword uses CVE-id exact / description+summary substring match. Semantic/hybrid may use stored vectors (ANN) when `EMBEDDINGS_ENABLED=1`; free-text semantic embeds the query once (design §7.1). Cold index / disabled embeddings → keyword fallback. Honest `meta.method` reports the path used. Optional filters keep hybrid usable with My Stack / severity chips.
+**Description (E3/E6/E7/E8):** One-box CVE (+ technique + campaign) search — hybrid (default), keyword, or semantic. Keyword uses CVE-id exact / description+summary substring match, plus ATT&CK technique and correlation-campaign label/adversary/malware/tags. Semantic/hybrid may use stored vectors (ANN) when `EMBEDDINGS_ENABLED=1`; free-text semantic embeds the query once (design §7.1). Cold index / disabled embeddings → keyword fallback. Honest `meta.method` reports the path used. Optional filters (`stack` / `severity` / `kev_only`) keep hybrid usable with My Stack / severity chips.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -619,6 +619,18 @@ Sub-objects match the shapes returned by `GET /api/cves/{cve_id}/sentences`, `/e
       "tactic": "initial-access",
       "match_reasons": ["keyword"],
       "score": 0.01
+    },
+    {
+      "entity_type": "campaign",
+      "entity_id": "camp_ab12cd34ef56",
+      "campaign_id": "camp_ab12cd34ef56",
+      "label": "APT29 cloud spearphish",
+      "adversary": "APT29",
+      "lifecycle": "active",
+      "member_count": 3,
+      "confidence": "high",
+      "match_reasons": ["keyword"],
+      "score": 0.01
     }
   ],
   "meta": {
@@ -626,6 +638,7 @@ Sub-objects match the shapes returned by `GET /api/cves/{cve_id}/sentences`, `/e
     "mode_requested": "hybrid",
     "query_shape": "long",
     "includes_techniques": true,
+    "includes_campaigns": true,
     "stack_terms": ["nginx"],
     "severity": null,
     "kev_only": false
@@ -635,7 +648,8 @@ Sub-objects match the shapes returned by `GET /api/cves/{cve_id}/sentences`, `/e
 
 `meta.method` values: `hybrid` \| `keyword` \| `keyword_first` \| `semantic` \| `keyword_fallback`.
 Technique hits (E6) appear when keyword/vector matches ATT&CK catalog rows.
-`stack` / `severity` / `kev_only` filter **CVE** hits only (techniques remain typed hits).
+Campaign hits (E8) appear for non-retracted `correlation_campaigns` (keyword + ANN).
+`stack` / `severity` / `kev_only` filter **CVE** hits only (techniques/campaigns remain typed hits).
 
 **Auth:** Analyst session **or** search service token (`Authorization: Bearer briefr_search_…` — E5).
 
