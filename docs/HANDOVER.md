@@ -12,6 +12,30 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — Embeddings E1: pgvector foundation (activated)
+
+**What:** Activated the embeddings program (design accepted) and shipped **E1**
+foundation — no search/pipeline behavior change yet.
+- Images: `deploy/docker-compose.postgres.yml`, `scripts/postgres-dev.sh`, CI
+  `test-postgres` → `pgvector/pgvector:pg16`. Prod cutover docs →
+  `pgvector/pgvector:pg17` (`docs/POSTGRES.md` § pgvector cutover) — **not**
+  executed on the live box in this PR.
+- Alembic `032_embeddings_pgvector`: `CREATE EXTENSION vector`, multi-entity
+  `embeddings` (`vector(384)`, HNSW for active CVE model), migrate
+  `cve_embeddings` float32 BLOBs → pgvector (`content_hash` = `migrated:…`).
+- SQLite dual-DB shim: BLOB `embeddings` table in `db/init.py`. Helpers in
+  `db/embeddings_pgvector.py`. Tests: `tests/test_embeddings_pgvector_e1.py`.
+- Specs: `embeddings-e1-implementation-plan.md`; design status → Accepted;
+  SPRINT active E track; BACKLOG §14 E1 shipping.
+
+**Next:** **E2** — embed pipeline writes `embeddings` + real `content_hash`
+(rich CVE text); keep `EMBEDDINGS_ENABLED`. Then E3 hybrid/related ANN.
+
+**Operator note:** recreate disposable Postgres if it was started on plain
+`postgres:16-alpine` (`./scripts/postgres-dev.sh destroy && … start`).
+
+---
+
 ## 2026-07-17 — Admin UX fix pass (metering panel, table standardization, scroll isolation, framework explainability, graph panel, config DB-only, stat tile bug)
 
 **Context:** local `main` was 296 commits behind `origin/main` at session start —

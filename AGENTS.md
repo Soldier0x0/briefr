@@ -110,7 +110,9 @@ dependencies, and ensures `backend/.env` exists (copied from `backend/.env.examp
   backend must be running first or the UI shows `/api` 404s.
 
 Local dev without production infra: `docker compose -f deploy/docker-compose.postgres.yml up -d`
-(Postgres 16 image for local dev; production is 17).
+(Postgres **16 + pgvector** image for local/CI; production is **17** — cut over
+`/opt/infra/postgres` to `pgvector/pgvector:pg17` with embeddings E1 feature deploy;
+see `docs/POSTGRES.md`).
 
 ### Tests / build / lint
 
