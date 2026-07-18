@@ -246,7 +246,6 @@ FROM mitre_techniques t
 LEFT JOIN embeddings e
   ON e.entity_type = 'technique' AND e.entity_id = t.technique_id AND e.model = ?
 ORDER BY t.technique_id
-LIMIT ?
 """
 
 _GET_TECHNIQUES_NEEDING_PG = """
@@ -256,7 +255,6 @@ FROM mitre_techniques t
 LEFT JOIN embeddings e
   ON e.entity_type = 'technique' AND e.entity_id = t.technique_id AND e.model = $1
 ORDER BY t.technique_id
-LIMIT $2
 """
 
 
@@ -302,10 +300,14 @@ async def upsert_technique_embedding_row(
 async def get_techniques_needing_embeddings(
     db: DbConnection, model: str, limit: int = 500
 ) -> list[dict]:
-    """Techniques missing / placeholder / content_hash mismatch (ATT&CK refresh)."""
+    """Techniques missing / placeholder / content_hash mismatch (ATT&CK refresh).
+
+    Scans the full ATT&CK catalog (hundreds of rows) so early up-to-date IDs
+    cannot starve later techniques (Gemini #676).
+    """
     pg = _is_postgres_connection(db)
     sql = _GET_TECHNIQUES_NEEDING_PG if pg else _GET_TECHNIQUES_NEEDING_SQLITE
-    rows = await db.execute_fetchall(sql, (model, max(limit * 4, limit)))
+    rows = await db.execute_fetchall(sql, (model,))
     out: list[dict] = []
     for row in rows:
         item = _technique_row_to_pending(dict(row), model)

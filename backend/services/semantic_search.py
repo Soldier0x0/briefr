@@ -222,15 +222,6 @@ async def run_semantic_search(
     for row in keyword_rows:
         cards[row["cve_id"]] = row
 
-    cve_results, method = build_hybrid_results(
-        keyword_rows=keyword_rows,
-        vector_hits=cve_vector_hits,
-        cards_by_id=cards,
-        limit=capped,
-        query_shape=shape,
-        mode=mode_norm,
-    )
-
     tech_ids = list(
         dict.fromkeys(
             [r["technique_id"] for r in tech_keyword]
@@ -244,20 +235,36 @@ async def run_semantic_search(
     tech_cards = await _hydrate_technique_cards(db, tech_ids)
     for row in tech_keyword:
         tech_cards[row["technique_id"]] = row
-    tech_results = _technique_results(
-        tech_keyword, vector_hits, tech_cards, limit=max(5, capped // 3)
+    tech_budget = (
+        min(max(3, capped // 4), capped - 1)
+        if capped > 1 and tech_ids
+        else 0
+    )
+    cve_budget = max(1, capped - tech_budget)
+
+    cve_results, method = build_hybrid_results(
+        keyword_rows=keyword_rows,
+        vector_hits=cve_vector_hits,
+        cards_by_id=cards,
+        limit=cve_budget,
+        query_shape=shape,
+        mode=mode_norm,
     )
 
-    # Interleave: keep CVE ranking primary; append typed technique hits.
+    tech_results = _technique_results(
+        tech_keyword, vector_hits, tech_cards, limit=tech_budget
+    )
+
+    # Reserve slots so technique hits are not sliced away when CVE fill is full.
     combined = list(cve_results)
     seen = {r["entity_id"] for r in combined}
     for hit in tech_results:
         if hit["entity_id"] in seen:
             continue
-        combined.append(hit)
-        seen.add(hit["entity_id"])
         if len(combined) >= capped:
             break
+        combined.append(hit)
+        seen.add(hit["entity_id"])
 
     return {
         "data": combined[:capped],
