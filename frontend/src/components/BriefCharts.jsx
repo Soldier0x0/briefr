@@ -7,10 +7,13 @@ import { AsyncState, ErrorState, Skeleton, ChartDataTable } from './ui/index.js'
 import {
   buildEpssSparklinePoints,
   epssSparklinePolyline,
+  epssSparklineWindowSpec,
+  filterEpssHistoryToDays,
   EPSS_SPARKLINE_WIDTH,
   EPSS_SPARKLINE_HEIGHT,
 } from '../utils/epssSparkline.js'
 import TimeWindowPicker, {
+  TIME_PRESETS,
   defaultPresetWindow,
   hoursFromWindow,
 } from './TimeWindowPicker.jsx'
@@ -26,11 +29,21 @@ const VendorKevChart = lazy(() =>
 const POLL_MS = 5 * 60 * 1000
 const EPSS_MOVERS_LIMIT = 10
 const TOP_VENDOR_LIMIT = 10
+/** `/api/changes` caps `since_hours` at 168 — hide longer presets that only fail. */
+const EPSS_MOVERS_PRESET_IDS = ['6h', '12h', '24h', '2d', '7d']
+const EPSS_DELTA_TOOLTIP =
+  'EPSS score increase within the selected time window (percentage points).'
 // Stable reference so `data?.field ?? EMPTY_ARRAY` doesn't recreate a new
 // array every render while `data` is still null (useAsync's initial/loading
 // state) — a fresh `[]` there would retrigger the useMemo/useEffect below on
 // every render and never converge (#loop).
 const EMPTY_ARRAY = []
+
+function epssWindowDisplayLabel(window, hours) {
+  if (!window || window.mode === 'custom') return 'selected range'
+  const preset = TIME_PRESETS.find((p) => p.id === window.presetId)
+  return preset?.label || `${hours}h`
+}
 
 function epssDeltaClass(delta) {
   if (delta >= 0.2) return 'badge-epss-delta--high'
@@ -78,7 +91,7 @@ function severityDotClass(severity) {
   return 'sev-dot-neutral'
 }
 
-function EpssSparklineCell({ history, currentScore }) {
+function EpssSparklineCell({ history, currentScore, seriesLabel }) {
   const points = buildEpssSparklinePoints(history, currentScore)
   const polyline = epssSparklinePolyline(points)
   if (!polyline) {
@@ -91,7 +104,7 @@ function EpssSparklineCell({ history, currentScore }) {
       height={EPSS_SPARKLINE_HEIGHT}
       viewBox={`0 0 ${EPSS_SPARKLINE_WIDTH} ${EPSS_SPARKLINE_HEIGHT}`}
       role="img"
-      aria-label={`EPSS trend, ${points.length} days`}
+      aria-label={`EPSS ${seriesLabel}, ${points.length} days`}
     >
       <polyline
         points={polyline}
@@ -105,10 +118,12 @@ function EpssSparklineCell({ history, currentScore }) {
   )
 }
 
-function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel }) {
+function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel, sparkSpec }) {
   if (!movers.length && !loading) {
     return <p className="brief-charts-empty mono">No EPSS increases in the last {windowLabel}.</p>
   }
+
+  const seriesLabel = sparkSpec.isContext ? 'context' : 'trend'
 
   return (
     <div className="brief-epss-table-wrap">
@@ -121,13 +136,24 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel 
           <tr>
             <th scope="col" className="mono">CVE</th>
             <th scope="col" className="mono brief-epss-col-sev">Severity</th>
-            <th scope="col" className="mono">7d trend</th>
-            <th scope="col" className="mono brief-epss-col-delta">Δ</th>
+            <th scope="col" className="mono">
+              <ControlTooltip text={sparkSpec.columnTooltip} trigger="hover-focus">
+                <span>{sparkSpec.columnLabel}</span>
+              </ControlTooltip>
+            </th>
+            <th scope="col" className="mono brief-epss-col-delta">
+              <ControlTooltip text={EPSS_DELTA_TOOLTIP} trigger="hover-focus">
+                <span>Delta (Δ)</span>
+              </ControlTooltip>
+            </th>
           </tr>
         </thead>
         <tbody>
           {movers.map(row => {
-            const history = histories[row.cve_id] || []
+            const history = filterEpssHistoryToDays(
+              histories[row.cve_id] || [],
+              sparkSpec.days,
+            )
             return (
               <tr key={row.cve_id}>
                 <td colSpan={4} className="brief-epss-row-cell">
@@ -158,7 +184,11 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel 
                       {loading && !history.length ? (
                         <span className="brief-epss-sparkline brief-epss-sparkline--loading" aria-hidden="true" />
                       ) : (
-                        <EpssSparklineCell history={history} currentScore={row.new_score} />
+                        <EpssSparklineCell
+                          history={history}
+                          currentScore={row.new_score}
+                          seriesLabel={seriesLabel}
+                        />
                       )}
                     </span>
                     <span className={`brief-epss-delta badge badge-epss-delta mono ${epssDeltaClass(row.delta)}`}>
@@ -184,6 +214,11 @@ export default function BriefCharts({ onSelectCVE, pollEnabled = true }) {
   const lastFetchedIdsRef = useRef('')
 
   const epssHours = hoursFromWindow(epssWindow)
+  const epssSparkSpec = useMemo(() => epssSparklineWindowSpec(epssHours), [epssHours])
+  const epssWindowLabel = useMemo(
+    () => epssWindowDisplayLabel(epssWindow, epssHours),
+    [epssWindow, epssHours],
+  )
 
   const { data, error, loading, refreshing, retry } = useAsync(async (signal) => {
     const [vendorRes, changesRes] = await Promise.allSettled([
@@ -350,6 +385,7 @@ export default function BriefCharts({ onSelectCVE, pollEnabled = true }) {
                     value={epssWindow}
                     onChange={setEpssWindow}
                     ariaLabel="EPSS change window"
+                    presetIds={EPSS_MOVERS_PRESET_IDS}
                   />
                 </div>
                 <EpssMoversTable
@@ -357,9 +393,8 @@ export default function BriefCharts({ onSelectCVE, pollEnabled = true }) {
                   histories={epssHistories}
                   loading={epssHistoryLoading}
                   onSelectCVE={onSelectCVE}
-                  windowLabel={epssWindow.mode === 'custom'
-                    ? 'selected range'
-                    : (epssWindow.presetId || `${epssHours}h`)}
+                  windowLabel={epssWindowLabel}
+                  sparkSpec={epssSparkSpec}
                 />
               </article>
                 </div>

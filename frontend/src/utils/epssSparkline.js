@@ -3,8 +3,69 @@ const SPARK_H = 40
 const PAD = 3
 
 export const EPSS_SPARKLINE_MIN_DAYS = 7
+/** Days of daily EPSS context when the selected change window is shorter than a week. */
+export const EPSS_CONTEXT_DAYS = 7
 
 /** @typedef {{ date: string, score: number }} EpssPoint */
+
+/**
+ * Map a change-window (hours) to sparkline length + column copy.
+ * EPSS updates about once per day, so sub-week windows get a labeled
+ * recent-daily context series while Delta still uses the selected window.
+ *
+ * @param {number | null | undefined} windowHours
+ * @returns {{ days: number, isContext: boolean, columnLabel: string, columnTooltip: string }}
+ */
+function epssContextWindowSpec() {
+  return {
+    days: EPSS_CONTEXT_DAYS,
+    isContext: true,
+    columnLabel: `${EPSS_CONTEXT_DAYS}d context`,
+    columnTooltip:
+      'EPSS updates about once per day, so this sparkline shows recent daily scores for context. Delta still uses the selected time window.',
+  }
+}
+
+export function epssSparklineWindowSpec(windowHours) {
+  const hours = Number(windowHours)
+  if (!Number.isFinite(hours) || hours <= 0) {
+    return epssContextWindowSpec()
+  }
+
+  const requestedDays = Math.max(1, Math.ceil(hours / 24))
+  if (requestedDays < EPSS_CONTEXT_DAYS) {
+    return epssContextWindowSpec()
+  }
+
+  return {
+    days: requestedDays,
+    isContext: false,
+    columnLabel: `${requestedDays}d trend`,
+    columnTooltip: `Daily EPSS scores over the last ${requestedDays} days.`,
+  }
+}
+
+/**
+ * Keep history points inside the trailing `days` calendar-day window ending at `asOf`.
+ *
+ * @param {EpssPoint[] | null | undefined} history
+ * @param {number} days
+ * @param {{ asOf?: Date | string | number }} [opts]
+ * @returns {EpssPoint[]}
+ */
+export function filterEpssHistoryToDays(history, days, { asOf = new Date() } = {}) {
+  if (!Array.isArray(history) || !history.length) return []
+  const n = Math.max(1, Number(days) || EPSS_CONTEXT_DAYS)
+  const end = asOf instanceof Date ? asOf : new Date(asOf)
+  if (Number.isNaN(end.getTime())) return [...history]
+  const endDate = end.toISOString().slice(0, 10)
+  const startMs = Date.parse(`${endDate}T12:00:00Z`) - (n - 1) * 86400000
+  const startDate = new Date(startMs).toISOString().slice(0, 10)
+  return history.filter((p) => {
+    const d = String(p?.date || '').slice(0, 10)
+    return d.length === 10 && d >= startDate && d <= endDate
+  })
+}
 
 /**
  * @param {EpssPoint[]} history

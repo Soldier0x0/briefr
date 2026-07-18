@@ -12,6 +12,22 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — EPSS movers: context sparkline + Delta label
+
+**What:** Analyst Charts → Top EPSS movers hardcoded the sparkline column as
+`7d trend` and `Δ`, even when the picker was 6h/12h (EPSS is daily) and the
+delta was for the selected window.
+- Short windows (&lt;7d): sparkline shows labeled **7d context** + tooltip that
+  EPSS updates daily; **Delta (Δ)** remains the selected-window increase
+- ≥7d: column reads `Nd trend` and clips history to that many days
+- Removed illogical 30d/90d presets (API `since_hours` max 168) and awkward
+  empty copy (`last 7d` → `last 7 days`)
+
+**Next:** Remaining window/jargon items (W2+ API max hours, HelpTips on chart
+titles, etc.) on the same PR when reported.
+
+---
+
 ## 2026-07-18 — Inbound limits dashboard missing live buckets
 
 **What:** Admin → Inbound limits only listed 7 of 9 enforced token buckets
