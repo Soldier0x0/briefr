@@ -41,7 +41,6 @@ async def search_semantic(
         payload = await run_semantic_search(
             db, q, mode=mode_norm, limit=limit  # type: ignore[arg-type]
         )
-        await db.commit()
     finally:
         await db.close()
     return payload

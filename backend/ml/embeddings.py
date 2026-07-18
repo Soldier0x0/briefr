@@ -304,8 +304,13 @@ async def embed_query_text(text: str) -> bytes | None:
         return None
     model_name = get_embeddings_model_name()
     try:
-        model = _get_model(model_name)
-        vectors = await asyncio.to_thread(_embed_texts, model, [cleaned])
+
+        def _load_and_embed() -> list[np.ndarray]:
+            model = _get_model(model_name)
+            return _embed_texts(model, [cleaned])
+
+        # Model load + ONNX inference are CPU-heavy — never block the event loop.
+        vectors = await asyncio.to_thread(_load_and_embed)
     except Exception:
         logger.exception("query embedding failed")
         return None
