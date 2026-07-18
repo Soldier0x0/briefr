@@ -12,6 +12,20 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — STACK spacebar caret jump + EPSS column realignment
+
+**What:** STACK input caret jumped backward after space (intermittent); TOP EPSS
+MOVERS headers still did not line up with row cells after the prior grid-on-`<tr>`
+attempt.
+
+**RCA:**
+| ID | Symptom | Root cause | Fix |
+|----|---------|------------|-----|
+| S1 | Spacebar / caret snaps back while typing STACK | Debounce `trim()` → `filters.stack` → `useEffect` overwrote `localStack` and reset caret | `nextLocalStack`: ignore external updates that only differ by surrounding whitespace |
+| E1 | CVE/Severity/trend/Δ headers vs cells skewed | `display:grid` on `<tr>` + `td[colSpan=4]` still fought table layout; header tracks ≠ body | Drop table; shared `.brief-epss-cols` CSS grid for head + row buttons |
+
+**Next:** Verify in browser → merge.
+
 ## 2026-07-18 — Forge Campaigns OPEN CVEs + dead-control sweep
 
 **What:** Campaigns **OPEN CVE** looked enabled but often no-oped; label was

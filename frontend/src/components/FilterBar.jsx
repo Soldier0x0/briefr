@@ -13,6 +13,7 @@ import { saveUserStack } from '../utils/userStack.js'
 import { cvesToCsvRows, downloadCsv, exportFilename } from '../utils/exportCsv.js'
 import ControlTooltip from './ControlTooltip.jsx'
 import FeedVisibleRange from './FeedVisibleRange.jsx'
+import { nextLocalStack } from '../utils/stackLocalSync.js'
 import './FilterBar.css'
 
 const STACK_DEBOUNCE_MS = 400
@@ -106,7 +107,7 @@ export default function FilterBar({
   }, [filters.search])
 
   useEffect(() => {
-    setLocalStack(filters.stack || '')
+    setLocalStack((prev) => nextLocalStack(prev, filters.stack))
   }, [filters.stack])
 
   useEffect(() => {
