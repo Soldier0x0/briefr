@@ -1,6 +1,7 @@
 # Embeddings, pgvector & hybrid search — design
 
-**Status:** Design — awaiting maintainer review before implementation plan  
+**Status:** Accepted (maintainer go 2026-07-18) — E1 implementation active  
+**Implementation plan:** [`embeddings-e1-implementation-plan.md`](embeddings-e1-implementation-plan.md)  
 **Created:** 2026-07-16  
 **Audience:** Implementers (Cursor agents / maintainers)
 
@@ -51,7 +52,7 @@ Prod evidence (2026-07-16): PostgreSQL 16.14; `pg_trgm` installed; `unaccent` av
 |-------|----------|
 | Architecture | Single retrieval engine; UI + agents are clients |
 | Storage | **pgvector inside existing BRIEFR Postgres** |
-| PG version | **16** (prod confirmed); use `pgvector/pgvector:pg16` (pin tag at implement) |
+| PG version | **16** everywhere for E1 — `pgvector/pgvector:pg16` (dev, CI, and `/opt/infra/postgres` cutover). Match server major; do not jump to pg17 for this feature. |
 | Image cutover | **With feature deploy**, not during design; backup + **same volume** |
 | Corpus v1 | **CVE-rich** text (description + summary + products/CWE signals) |
 | Corpus next | **MITRE techniques** in same table (same program, next PR after CVE path green) |
@@ -223,14 +224,14 @@ Humans continue using normal session/JWT. Same handlers resolve identity → cal
 
 | Env | Today | Target |
 |-----|-------|--------|
-| Prod `/opt/infra/postgres` | Image **without** `vector` | `pgvector/pgvector:pg16` (pin digest/tag) |
-| `deploy/docker-compose.postgres.yml` | `postgres:16-alpine` | pgvector pg16 |
-| `scripts/postgres-dev.sh` / CI | `postgres:16-alpine` | pgvector pg16 |
+| Prod `/opt/infra/postgres` | Image **without** `vector` | `pgvector/pgvector:pg16` (same major as current prod; pin digest/tag) |
+| `deploy/docker-compose.postgres.yml` | `postgres:16-alpine` | `pgvector/pgvector:pg16` |
+| `scripts/postgres-dev.sh` / CI | `postgres:16-alpine` | `pgvector/pgvector:pg16` |
 
 ### 10.2 Cutover sequence (prod) — **with feature deploy, not during design**
 
 1. Backup (`pg_dump` / existing backup job)  
-2. Stop container; set image to pgvector pg16; **same volume mounts**  
+2. Stop container; set image to `pgvector/pgvector:pg16`; **same volume mounts**  
 3. Start; verify `SELECT version()`, CVE count  
 4. `CREATE EXTENSION IF NOT EXISTS vector` (Alembic)  
 5. App migrate BLOB → `embeddings.embedding`  
@@ -312,13 +313,13 @@ Optional: wire backfill to Procrastinate after Q1 lands.
 
 ## 16. Success criteria
 
-- [ ] Prod/dev on pg16+pgvector; `vector` installed  
-- [ ] CVE embeddings in pgvector; related uses ANN  
-- [ ] Human hybrid search works with keyword fallback  
-- [ ] Agent token can search + related + CVE detail only  
-- [ ] Model change documented as one-time re-embed  
+- [ ] Prod/dev on pg16+pgvector; `vector` installed — **E1**  
+- [ ] CVE embeddings in pgvector; related uses ANN — E2/E3  
+- [ ] Human hybrid search works with keyword fallback — E3/E4  
+- [ ] Agent token can search + related + CVE detail only — E5  
+- [ ] Model change documented as one-time re-embed — E2  
 - [ ] Technique slice designed; shipped as E6 without schema rewrite  
-- [ ] Docs: `PRODUCT_STATUS`, `API_REFERENCE`, `POSTGRES`, `SYSTEM_DESIGN`  
+- [ ] Docs: `PRODUCT_STATUS`, `API_REFERENCE`, `POSTGRES`, `SYSTEM_DESIGN` — **E1 partial** (API_REFERENCE with E3)  
 
 ---
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Disposable PostgreSQL 16 for dev/CI pytest (PG-002).
+# Disposable PostgreSQL 16 + pgvector for dev/CI pytest (PG-002 / embeddings E1).
 #
 # Starts a throwaway container on 127.0.0.1:5433 so the dual-DB test rule in
 # CLAUDE.md does not collide with production (:5432) or
@@ -16,12 +16,17 @@
 # Example pytest both-ways:
 #   DATABASE_URL="$(./scripts/postgres-dev.sh url)" BRIEFR_REQUIRE_POSTGRES=1 \
 #     python3 -m pytest tests/ -q   # from backend/
+#
+# Override image: BRIEFR_PG_DEV_IMAGE=pgvector/pgvector:pg16 (default).
+# Existing containers started on plain postgres:16-alpine lack `vector` —
+# run `./scripts/postgres-dev.sh destroy && ./scripts/postgres-dev.sh start`
+# once after pulling this change.
 
 set -eu
 set -o pipefail 2>/dev/null || true
 
 CONTAINER_NAME="${BRIEFR_PG_DEV_CONTAINER:-briefr-pg-test}"
-PG_IMAGE="${BRIEFR_PG_DEV_IMAGE:-postgres:16-alpine}"
+PG_IMAGE="${BRIEFR_PG_DEV_IMAGE:-pgvector/pgvector:pg16}"
 PG_PORT="${BRIEFR_PG_DEV_PORT:-5433}"
 PG_USER="${BRIEFR_PG_DEV_USER:-briefr}"
 PG_PASSWORD="${BRIEFR_PG_DEV_PASSWORD:-briefr}"

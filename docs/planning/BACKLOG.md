@@ -425,12 +425,12 @@ remediation queue. Supporting artifacts: [`e2e-click-map-2026-07-15.md`](specs/e
 
 | ID | Item | Status |
 |----|------|--------|
-| **E1** | pgvector pg16 images + `CREATE EXTENSION vector` + `embeddings` table / migrate BLOBs | 💬 design |
-| **E2** | Embed pipeline → pgvector (hash, backfill, flags) | 💬 after E1 |
-| **E3** | Related + hybrid search API (`mode`, query-shape, fallbacks) | 💬 after E2 |
-| **E4** | UI one-box hybrid | 💬 after E3 |
-| **E5** | Admin search service token (hash, show-once, scope, rate limit) | 💬 after E3 |
-| **E6** | MITRE technique embeddings + typed hits | 💬 after E3–E5 |
+| **E1** | pgvector pg16 images + `CREATE EXTENSION vector` + `embeddings` table / migrate BLOBs | ✅ #671 (prod cutover to `pgvector/pgvector:pg16` documented, not executed) |
+| **E2** | Embed pipeline → pgvector (hash, backfill, flags) | 📋 after E1 |
+| **E3** | Related + hybrid search API (`mode`, query-shape, fallbacks) | 📋 after E2 |
+| **E4** | UI one-box hybrid | 📋 after E3 |
+| **E5** | Admin search service token (hash, show-once, scope, rate limit) | 📋 after E3 |
+| **E6** | MITRE technique embeddings + typed hits | 📋 after E3–E5 |
 
 **Locks:** No prod image swap until E1 deploy; no request-path model inference; techniques same schema, next slice.
 

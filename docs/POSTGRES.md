@@ -1,8 +1,8 @@
 # PostgreSQL database (production)
 
-BRIEFR stores all intel data in **PostgreSQL**. Production runs Postgres **17** in Docker at `/opt/infra/postgres`; the BRIEFR app on the host connects via `DATABASE_URL` (published port `127.0.0.1:5432`).
+BRIEFR stores all intel data in **PostgreSQL**. Production runs Postgres **16** in Docker at `/opt/infra/postgres`; the BRIEFR app on the host connects via `DATABASE_URL` (published port `127.0.0.1:5432`).
 
-Use a host `postgresql-client` whose **major version matches** the server (17 in production; local compose may differ — see below). The deploy scripts install `postgresql-client` and fall back across supported majors.
+Use a host `postgresql-client` whose **major version matches** the server (16 in production). The deploy scripts install `postgresql-client` and fall back across supported majors.
 
 ## Required configuration
 
@@ -41,16 +41,22 @@ BRIEFR only needs TCP access to the mapped port. Schema is applied by Alembic on
 **Persistent dev Postgres (port 5432)** — shares the default port with production-style setups; use when you want a named volume:
 
 ```bash
-docker compose -f deploy/docker-compose.postgres.yml up -d   # Postgres 16 image (local dev); production is 17
+docker compose -f deploy/docker-compose.postgres.yml up -d   # pgvector/pgvector:pg16 (local + prod major)
 ```
 
 **Disposable test Postgres (port 5433, PG-002)** — recommended for the dual-DB pytest rule when `:5432` is already taken (production, compose stack, or cloud VM):
 
 ```bash
-./scripts/postgres-dev.sh start   # container briefr-pg-test on 127.0.0.1:5433
+./scripts/postgres-dev.sh start   # briefr-pg-test on 127.0.0.1:5433 (image pgvector/pgvector:pg16)
 # prints DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5433/briefr
 
 cd backend && DATABASE_URL="$(../scripts/postgres-dev.sh url)" BRIEFR_REQUIRE_POSTGRES=1 python3 -m pytest tests/ -q
+```
+
+If you previously started `briefr-pg-test` on plain `postgres:16-alpine`, recreate once so `vector` is available:
+
+```bash
+./scripts/postgres-dev.sh destroy && ./scripts/postgres-dev.sh start
 ```
 
 `./scripts/verify-local.sh --full` auto-starts `briefr-pg-test` when `DATABASE_URL` is unset and compose on `:5432` is not running.
@@ -83,7 +89,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 Requirements:
 
-- Postgres **17** in production (match production major for `pg_dump` / restore); local dev compose image may lag — use a client matching the server you connect to
+- Postgres **16** in production (match production major for `pg_dump` / restore); use a client matching the server you connect to
 - Network reachability from the BRIEFR host to the DB port
 - Alembic migrations run on backend startup (`init_db()`)
 
@@ -97,7 +103,7 @@ Verify: `curl -s http://127.0.0.1:8000/api/health` → `"backend": "postgresql"`
 | Migrations | **Alembic** + **psycopg** (sync, migration-time) |
 | SQL compatibility | `db/pg_adapt.py` adapts legacy router SQL at the Postgres connection boundary |
 | Durable jobs | **Procrastinate** (`PROCRASTINATE_ENABLED=0` default). Schema applied by Alembic `028_procrastinate_schema` (official `schema.sql`). In-process worker starts from `main.py` lifespan when enabled. |
-| Embeddings search | NumPy cosine (no pgvector required today) |
+| Embeddings search | **E1 foundation:** Alembic `032` installs `vector` + `embeddings` (`vector(384)`). Related lookup still NumPy over legacy `cve_embeddings` BLOBs until E2/E3. Requires pgvector image (below). |
 
 ## Backups
 
@@ -110,7 +116,7 @@ Verify: `curl -s http://127.0.0.1:8000/api/health` → `"backend": "postgresql"`
 **Host requirements:**
 
 ```bash
-sudo apt install postgresql-client-17    # match production Postgres major
+sudo apt install postgresql-client-16    # match production Postgres major
 # or: apt install postgresql-client        # when the meta package tracks your major
 ```
 
@@ -167,11 +173,39 @@ curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool | grep cve_count
 | `PostgreSQL pool is not initialized` | Backend lifespan failed — check `journalctl -u briefr-backend` |
 | `relation "cves" does not exist` | Run `alembic upgrade head` from `backend/` or restart backend |
 | `pg_dump: connection refused` | Docker Postgres down — `cd /opt/infra/postgres && docker compose up -d` |
-| `pg_dump: server version mismatch` | Install matching client, e.g. `apt install postgresql-client-17` (production) |
+| `pg_dump: server version mismatch` | Install matching client, e.g. `apt install postgresql-client-16` (production) |
 | Timeline/charts empty but `cve_count` > 0 | Fixed in app — ensure `/api/stats/timeline` returns non-zero counts; hard-refresh browser |
 | Empty feed on first boot | Fewer than 10 CVE rows triggers NVD ingest, or run `scripts/seed_screenshot_data.py` with `DATABASE_URL` set |
+| `extension "vector" is not available` / Alembic 032 fails | Postgres image lacks pgvector — use `pgvector/pgvector:pg16` (same major as prod); recreate disposable containers after the image change |
 
-## Log rotation
+## pgvector cutover (embeddings E1)
+
+Embeddings ANN and hybrid search need the **`vector`** extension. Plain `postgres:*-alpine` images do **not** ship it.
+
+| Env | Image |
+|-----|--------|
+| Local compose (`deploy/docker-compose.postgres.yml`) | `pgvector/pgvector:pg16` |
+| Disposable / CI (`scripts/postgres-dev.sh`, GitHub `test-postgres`) | `pgvector/pgvector:pg16` |
+| Production `/opt/infra/postgres` | Cut over to **`pgvector/pgvector:pg16`** with the E1 feature deploy (**stay on major 16** — do not jump to pg17 for this) |
+
+**Production cutover sequence** (with feature deploy — do **not** run during design-only work):
+
+1. Backup (`pg_dump` / existing backup job)
+2. Stop container; set image to `pgvector/pgvector:pg16`; **same volume mounts**
+3. Start; verify `SELECT version()`, CVE count
+4. Backend startup runs Alembic → `CREATE EXTENSION IF NOT EXISTS vector` + `embeddings` table + BLOB migrate from `cve_embeddings`
+5. Smoke: `/api/health`, feed, related CVEs (still BLOB/NumPy until E2/E3)
+
+**Data loss risk:** wrong volume on recreate — backup + keep the same volume name. Extension install itself is non-destructive.
+
+Verify extension after migrate:
+
+```bash
+psql "$DATABASE_URL" -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';"
+psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM embeddings;"
+```
+
+Legacy `cve_embeddings` remains for one release (read-fallback). E2 switches the write path to `embeddings`; E3 switches related/search to ANN.
 
 | Log | Location |
 |-----|----------|

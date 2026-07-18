@@ -608,6 +608,23 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_cve_embeddings_model
                 ON cve_embeddings(model);
 
+            -- Embeddings E1: multi-entity store (SQLite BLOB shim; Postgres uses
+            -- pgvector vector(384) via Alembic 032). Legacy cve_embeddings kept
+            -- for one release as read-fallback while the pipeline migrates (E2).
+            CREATE TABLE IF NOT EXISTS embeddings (
+                entity_type TEXT NOT NULL,
+                entity_id TEXT NOT NULL,
+                model TEXT NOT NULL,
+                dims INTEGER NOT NULL,
+                embedding BLOB NOT NULL,
+                content_hash TEXT NOT NULL DEFAULT '',
+                updated_at TEXT DEFAULT (datetime('now')),
+                PRIMARY KEY (entity_type, entity_id, model)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_embeddings_entity
+                ON embeddings(entity_type, entity_id);
+
             CREATE TABLE IF NOT EXISTS hunt_packs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 technique_id TEXT NOT NULL,

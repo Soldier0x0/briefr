@@ -1,4 +1,4 @@
-# PostgreSQL dev stack (Postgres 16 — matches production major)
+# PostgreSQL + pgvector dev stack (Postgres 16 + vector extension — E1)
 #
 # Bundled dev Postgres (local container, port 5432):
 #   docker compose -f deploy/docker-compose.postgres.yml up -d
@@ -8,11 +8,15 @@
 #
 # External Postgres (managed DB, /opt/infra/postgres, etc.):
 #   Skip this compose file. Set DATABASE_URL — see deploy/external-postgres.env.example
-#   and docs/POSTGRES.md § External Postgres.
+#   and docs/POSTGRES.md § External Postgres / § pgvector cutover.
+#
+# Image must ship the `vector` extension (plain postgres:16-alpine does not).
+# Production /opt/infra/postgres cutover: same major — pgvector/pgvector:pg16
+# (backup + same volume); see docs/POSTGRES.md.
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: briefr-postgres
     restart: unless-stopped
     environment:
