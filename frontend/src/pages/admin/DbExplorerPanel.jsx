@@ -112,12 +112,11 @@ export default function DbExplorerPanel({ toast }) {
 
       <AsyncSection data={catalog} error={catalogError} onRetry={loadCatalog}>
         {() => (
-          <div className="admin-filter-bar" style={{ flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            <label style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
-              Table
+          <div className="admin-filter-bar admin-filter-bar--fields" style={{ marginBottom: '0.75rem' }}>
+            <label className="admin-field" style={{ minWidth: 220 }}>
+              <span className="admin-field-label">Table</span>
               <Select
-                className="admin-input"
-                style={{ marginLeft: '0.35rem', minWidth: 220 }}
+                className="admin-select"
                 value={selectedTable}
                 placeholder="Select table…"
                 onChange={(v) => {
@@ -138,22 +137,20 @@ export default function DbExplorerPanel({ toast }) {
 
             {tableMeta && tableMeta.filter_columns.length > 0 && (
               <>
-                <label style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
-                  Filter column
+                <label className="admin-field" style={{ minWidth: 140 }}>
+                  <span className="admin-field-label">Filter column</span>
                   <Select
-                    className="admin-input"
-                    style={{ marginLeft: '0.35rem', minWidth: 140 }}
+                    className="admin-select"
                     value={filterColumn}
                     disabled={Boolean(tableMeta.required_filter)}
                     onChange={setFilterColumn}
                     options={tableMeta.filter_columns.map((c) => ({ value: c, label: c }))}
                   />
                 </label>
-                <label style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
-                  Filter value
+                <label className="admin-field" style={{ minWidth: 200 }}>
+                  <span className="admin-field-label">Filter value</span>
                   <input
-                    className="admin-input"
-                    style={{ marginLeft: '0.35rem', minWidth: 200, fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}
+                    className="admin-input mono"
                     placeholder={tableMeta.required_filter ? 'Required' : 'Optional'}
                     value={filterValue}
                     onChange={(e) => setFilterValue(e.target.value)}

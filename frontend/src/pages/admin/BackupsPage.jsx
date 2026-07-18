@@ -152,28 +152,37 @@ export default function BackupsPage({ toast, system }) {
                 <ToggleSwitch on={scheduleForm.BACKUP_ENABLED} onChange={v => setScheduleForm(f => ({ ...f, BACKUP_ENABLED: v }))} />
                 Scheduled backups enabled
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
-                Run every
-                <input
-                  className="admin-input" type="number" min={1} style={{ width: 80, marginLeft: '0.5rem' }}
-                  value={scheduleForm.BACKUP_INTERVAL_HOURS}
-                  onChange={e => setScheduleForm(f => ({ ...f, BACKUP_INTERVAL_HOURS: e.target.value }))}
-                  disabled={!scheduleForm.BACKUP_ENABLED}
-                /> hour(s)
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
-                Keep the latest
-                <input
-                  className="admin-input" type="number" min={1} style={{ width: 80, marginLeft: '0.5rem' }}
-                  value={scheduleForm.BACKUP_RETENTION_COUNT}
-                  onChange={e => setScheduleForm(f => ({ ...f, BACKUP_RETENTION_COUNT: e.target.value }))}
-                /> archives (older ones auto-deleted)
-              </label>
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.3rem' }}>
-                <button className="admin-btn admin-btn-primary" style={{ fontSize: '0.75rem' }} onClick={saveSchedule} disabled={savingSchedule}>
+              <div className="control-toolbar--fields">
+                <label className="control-field" style={{ width: '8rem' }}>
+                  <span className="control-field-label">Run every (hours)</span>
+                  <input
+                    className="admin-input"
+                    type="number"
+                    min={1}
+                    value={scheduleForm.BACKUP_INTERVAL_HOURS}
+                    onChange={e => setScheduleForm(f => ({ ...f, BACKUP_INTERVAL_HOURS: e.target.value }))}
+                    disabled={!scheduleForm.BACKUP_ENABLED}
+                  />
+                </label>
+                <label className="control-field" style={{ width: '8rem' }}>
+                  <span className="control-field-label">Keep latest</span>
+                  <input
+                    className="admin-input"
+                    type="number"
+                    min={1}
+                    value={scheduleForm.BACKUP_RETENTION_COUNT}
+                    onChange={e => setScheduleForm(f => ({ ...f, BACKUP_RETENTION_COUNT: e.target.value }))}
+                  />
+                </label>
+              </div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text3)', margin: 0 }}>
+                Older archives beyond the keep-latest count are auto-deleted.
+              </p>
+              <div className="control-toolbar--fields" style={{ marginTop: '0.3rem' }}>
+                <button type="button" className="admin-btn admin-btn-primary" onClick={saveSchedule} disabled={savingSchedule}>
                   {savingSchedule ? <><span className="admin-spinner" /> Saving…</> : 'Save (restarts backend)'}
                 </button>
-                <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={() => setEditingSchedule(false)} disabled={savingSchedule}>
+                <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setEditingSchedule(false)} disabled={savingSchedule}>
                   Cancel
                 </button>
               </div>

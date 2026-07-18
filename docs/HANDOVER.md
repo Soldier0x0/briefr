@@ -12,6 +12,18 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — Product-wide labeled control row alignment
+
+**What:** Table browser (and similar toolbars) put the label + Select inline in a
+flex row with `align-items: center`, so sibling action buttons lined up with the
+label text and looked shorter / staggered — same class across the product.
+- SSOT `.control-field` / `.control-toolbar--fields` in `App.css` (admin aliases)
+- Applied: FEED stack, ARCH scope/stack/search, Forge pack picker, DbExplorer,
+  AI ops, Webhooks, Backups schedule, IngestLog/Watchlist height sync
+- design-system.md §23.8
+
+**Next:** More maintainer UI issues as reported.
+
 ## 2026-07-18 — Feed Health LLM circuits (cerebras/gemini/groq) RCA
 
 **Symptom (post-#677 deploy):** Feed Health showed cerebras + gemini **PAUSED**
@@ -31,11 +43,11 @@ with `ConnectError: [Errno -3] Temporary failure in name resolution`, and groq
 fix Docker/systemd-resolved egress if NXDOMAIN/EAI_AGAIN; then **Resume retries**.
 Check AI Ops / Groq model for empty completions separately.
 
-**Code guard (this PR):** API key health probes use `record_circuit=False` +
+**Code guard (merged #678):** API key health probes use `record_circuit=False` +
 `ignore_circuit=True` so monitoring pings cannot open/poison shared Feed Health
 circuits (results still persist under `api_key_health:{provider}`).
 
-**Next:** Confirm prod DNS after deploy; merge probe isolation when green.
+**Next:** Confirm prod DNS after deploy.
 
 ---
 
