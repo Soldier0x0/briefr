@@ -608,6 +608,11 @@
   border: 1px solid var(--border);
 }
 
+.control-tooltip-wrap .idle-node,
+.control-tooltip-wrap .ioc-meta-key {
+  cursor: help;
+}
+
 .idle-arrow {
   color: var(--border2);
 }
@@ -620,6 +625,9 @@
 }
 
 .ioc-enrichment-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   font-size: 0.6875rem;
   letter-spacing: 0.08em;
   color: var(--text3);

@@ -12,6 +12,19 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — Domain jargon tips (Analyst + Admin)
+
+**What:** Locked jargon sweep — unexplained abbreviations across Analyst Charts,
+What Changed, Sidebar TECH/techniques, Watchlist headers, Inbound limit buckets,
+and IOC Lookup (VT/ISP/ASN/OTX + idle providers).
+- Shared copy in `frontend/src/utils/domainTermTips.js`
+- Analyst: revived `ExplainTip` + `ControlTooltip`; Admin: `HelpTip`
+
+**Next:** W2+ (raise `/api/changes` max hours / custom range) if still desired;
+otherwise more maintainer UI issues on the same PR.
+
+---
+
 ## 2026-07-18 — EPSS movers: context sparkline + Delta label
 
 **What:** Analyst Charts → Top EPSS movers hardcoded the sparkline column as

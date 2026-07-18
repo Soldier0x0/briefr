@@ -4,6 +4,7 @@ import { Select } from '../../components/ui/index.js'
 import DangerZone from './shared/DangerZone.jsx'
 import GuardedPurgePanel from './shared/GuardedPurgePanel.jsx'
 import HelpTip from './shared/HelpTip.jsx'
+import { DOMAIN_TERM_TIPS } from '../../utils/domainTermTips.js'
 import { fmtAge, fmtIso } from './formatters.js'
 import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
 
@@ -108,7 +109,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
       {!isAnalyst && (
         <div className="admin-subtabs">
           {[
-            ['watchlist', 'WATCHLIST', null],
+            ['watchlist', 'WATCHLIST', DOMAIN_TERM_TIPS.watchlistSubtab],
             ['ioc', 'IOC CACHE', 'Indicator of Compromise results cached from threat-intel APIs (OTX, etc.). Populates automatically when analysts look up IPs, hashes, or domains from a CVE detail page.'],
             ['hunt', 'HUNT PACKS', 'Pre-computed detection packs grouped by MITRE ATT&CK technique. Created when a technique-based threat hunt is triggered from a CVE detail page.'],
           ].map(([id, label, tip]) => (
@@ -136,7 +137,26 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
           </div>
           <div className="admin-card">
             <table className="admin-table">
-              <thead><tr><th>CVE ID</th><th>SEVERITY</th><th>EPSS</th><th>KEV</th><th>STATE</th><th>CREATED</th><th></th></tr></thead>
+              <thead>
+                <tr>
+                  <th>CVE ID</th>
+                  <th>SEVERITY</th>
+                  <th>
+                    EPSS
+                    <HelpTip text={DOMAIN_TERM_TIPS.epss} />
+                  </th>
+                  <th>
+                    KEV
+                    <HelpTip text={DOMAIN_TERM_TIPS.kev} />
+                  </th>
+                  <th>
+                    STATE
+                    <HelpTip text={DOMAIN_TERM_TIPS.watchlistState} />
+                  </th>
+                  <th>CREATED</th>
+                  <th></th>
+                </tr>
+              </thead>
               <tbody>
                 {watchlistRows === null && (
                   <AdminTableBodySkeletonRows rows={5} cols={7} />
@@ -230,7 +250,22 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
           </div>
           <div className="admin-card">
             <table className="admin-table">
-              <thead><tr><th>PACK ID</th><th>TECHNIQUE</th><th>CVE</th><th>PRIORITY</th><th>CREATED</th><th></th></tr></thead>
+              <thead>
+                <tr>
+                  <th>PACK ID</th>
+                  <th>
+                    TECHNIQUE
+                    <HelpTip text={DOMAIN_TERM_TIPS.huntTechnique} />
+                  </th>
+                  <th>CVE</th>
+                  <th>
+                    PRIORITY
+                    <HelpTip text={DOMAIN_TERM_TIPS.huntPriority} />
+                  </th>
+                  <th>CREATED</th>
+                  <th></th>
+                </tr>
+              </thead>
               <tbody>
                 {huntRows === null && <AdminTableBodySkeletonRows rows={5} cols={6} />}
                 {huntRows?.length === 0 && <tr><td colSpan={6} className="admin-empty">{huntTechnique ? 'No hunt packs match that technique ID' : 'No hunt packs yet — these are created when you run a technique-based threat hunt from a CVE detail page'}</td></tr>}

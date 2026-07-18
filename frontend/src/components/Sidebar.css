@@ -42,6 +42,10 @@
 }
 
 .sidebar-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
   font-family: var(--font-mono);
   font-size: 0.625rem;
   letter-spacing: 0.12em;

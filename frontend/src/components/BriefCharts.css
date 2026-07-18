@@ -131,6 +131,9 @@
 }
 
 .brief-chart-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   font-family: var(--font-mono);
   font-size: var(--type-subheading);
   color: var(--text2);

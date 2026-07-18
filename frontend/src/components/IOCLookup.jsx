@@ -8,6 +8,9 @@ import { extractActorTags } from '../utils/investigationActors.js'
 import { isValidDomain } from '../utils/domainValidation.js'
 import { IOC_NOT_FOUND_IN_DATABASES } from '../utils/iocLookupMessages.js'
 import { Checkbox } from './ui/index.js'
+import ControlTooltip from './ControlTooltip.jsx'
+import ExplainTip from './ExplainTip.jsx'
+import { DOMAIN_TERM_TIPS } from '../utils/domainTermTips.js'
 import './IOCLookup.css'
 
 // ── Type detection ────────────────────────────────────────
@@ -508,11 +511,15 @@ function IPResultBody({ result, onViewActorTechniques, onOpenCve }) {
         <div className="ioc-meta-card">
           <h3 className="ioc-meta-card-title">// NETWORK</h3>
           <div className="ioc-meta-row">
-            <span className="ioc-meta-key">ISP</span>
+            <ControlTooltip text={DOMAIN_TERM_TIPS.isp} trigger="hover-focus">
+              <span className="ioc-meta-key">ISP</span>
+            </ControlTooltip>
             <span className="ioc-meta-val">{abuse.isp || '—'}</span>
           </div>
           <div className="ioc-meta-row">
-            <span className="ioc-meta-key">Usage</span>
+            <ControlTooltip text={DOMAIN_TERM_TIPS.usageType} trigger="hover-focus">
+              <span className="ioc-meta-key">Usage</span>
+            </ControlTooltip>
             <span className="ioc-meta-val">{abuse.usage_type || '—'}</span>
           </div>
           <div className="ioc-meta-row">
@@ -520,7 +527,9 @@ function IPResultBody({ result, onViewActorTechniques, onOpenCve }) {
             <span className="ioc-meta-val">{abuse.domain || '—'}</span>
           </div>
           <div className="ioc-meta-row">
-            <span className="ioc-meta-key">ASN</span>
+            <ControlTooltip text={DOMAIN_TERM_TIPS.asn} trigger="hover-focus">
+              <span className="ioc-meta-key">ASN</span>
+            </ControlTooltip>
             <span className="ioc-meta-val">
               {result.vt_network?.asn || '—'}
               {result.vt_network?.as_owner ? ` · ${result.vt_network.as_owner}` : ''}
@@ -605,7 +614,11 @@ function IPResultBody({ result, onViewActorTechniques, onOpenCve }) {
       </div>
 
       {result.greynoise_sentence && (
-        <EnrichmentBlock heading="// GREYNOISE" sentence={result.greynoise_sentence}>
+        <EnrichmentBlock
+          heading="// GREYNOISE"
+          sentence={result.greynoise_sentence}
+          tip={DOMAIN_TERM_TIPS.greynoise}
+        >
           {result.greynoise?.link && (
             <a className="ioc-enrichment-link mono" href={result.greynoise.link} target="_blank" rel="noopener noreferrer">
               View on GreyNoise &rarr;
@@ -648,7 +661,7 @@ function OtxEnrichment({ result, onOpenCve }) {
   const pulses = Array.isArray(otx.pulses) ? otx.pulses : []
   const cves = Array.isArray(otx.related_cves) ? otx.related_cves : []
   return (
-    <EnrichmentBlock heading="// OTX" sentence={result.otx_sentence}>
+    <EnrichmentBlock heading="// OTX" sentence={result.otx_sentence} tip={DOMAIN_TERM_TIPS.otx}>
       {pulses.length > 0 && (
         <ul className="ioc-otx-pulse-list">
           {pulses.slice(0, 6).map(p => (
@@ -669,12 +682,15 @@ function OtxEnrichment({ result, onOpenCve }) {
   )
 }
 
-function EnrichmentBlock({ heading, sentence, children }) {
+function EnrichmentBlock({ heading, sentence, children, tip }) {
   if (!sentence && !children) return null
   const headingId = `ioc-${heading.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`
   return (
     <section className="ioc-enrichment-block" aria-labelledby={headingId}>
-      <h3 id={headingId} className="ioc-enrichment-heading mono">{heading}</h3>
+      <h3 id={headingId} className="ioc-enrichment-heading mono">
+        {heading}
+        {tip ? <ExplainTip text={tip} label={`Explain ${heading}`} /> : null}
+      </h3>
       {sentence && <p className="ioc-enrichment-sentence">{sentence}</p>}
       {children}
     </section>
@@ -1269,6 +1285,7 @@ export default function IOCLookup({ prefill }) {
             <EnrichmentBlock
               heading="// GREYNOISE"
               sentence={result.greynoise_sentence}
+              tip={DOMAIN_TERM_TIPS.greynoise}
             >
               {result.greynoise?.link && (
                 <a
@@ -1293,6 +1310,7 @@ export default function IOCLookup({ prefill }) {
             <EnrichmentBlock
               heading="// MALWAREBAZAAR"
               sentence={result.malwarebazaar_sentence}
+              tip={DOMAIN_TERM_TIPS.malwarebazaar}
             />
           )}
 
@@ -1300,6 +1318,7 @@ export default function IOCLookup({ prefill }) {
             <EnrichmentBlock
               heading="// URLHAUS"
               sentence={result.urlhaus_sentence}
+              tip={DOMAIN_TERM_TIPS.urlhaus}
             >
               {result.urlhaus?.reference && (
                 <a
@@ -1355,20 +1374,30 @@ export default function IOCLookup({ prefill }) {
       {/* ── Idle state ── */}
       {!hasResult && !error && !loading && history.length === 0 && (
         <div className="ioc-idle" aria-label="Awaiting input">
-          <div className="idle-flow mono" aria-hidden="true">
-            <span className="idle-node">INDICATOR</span>
-            <span className="idle-arrow">--&gt;</span>
-            <span className="idle-node">VT</span>
-            <span className="idle-arrow">+</span>
-            <span className="idle-node">ABUSEIPDB</span>
-            <span className="idle-arrow">+</span>
-            <span className="idle-node">GREYNOISE</span>
-            <span className="idle-arrow">+</span>
-            <span className="idle-node">MALWAREBAZAAR</span>
-            <span className="idle-arrow">+</span>
-            <span className="idle-node">URLHAUS</span>
-            <span className="idle-arrow">--&gt;</span>
-            <span className="idle-node">VERDICT</span>
+          <div className="idle-flow mono">
+            <span className="idle-node" aria-hidden="true">INDICATOR</span>
+            <span className="idle-arrow" aria-hidden="true">--&gt;</span>
+            <ControlTooltip text={DOMAIN_TERM_TIPS.vt} trigger="hover-focus">
+              <span className="idle-node">VT</span>
+            </ControlTooltip>
+            <span className="idle-arrow" aria-hidden="true">+</span>
+            <ControlTooltip text={DOMAIN_TERM_TIPS.abuseipdb} trigger="hover-focus">
+              <span className="idle-node">ABUSEIPDB</span>
+            </ControlTooltip>
+            <span className="idle-arrow" aria-hidden="true">+</span>
+            <ControlTooltip text={DOMAIN_TERM_TIPS.greynoise} trigger="hover-focus">
+              <span className="idle-node">GREYNOISE</span>
+            </ControlTooltip>
+            <span className="idle-arrow" aria-hidden="true">+</span>
+            <ControlTooltip text={DOMAIN_TERM_TIPS.malwarebazaar} trigger="hover-focus">
+              <span className="idle-node">MALWAREBAZAAR</span>
+            </ControlTooltip>
+            <span className="idle-arrow" aria-hidden="true">+</span>
+            <ControlTooltip text={DOMAIN_TERM_TIPS.urlhaus} trigger="hover-focus">
+              <span className="idle-node">URLHAUS</span>
+            </ControlTooltip>
+            <span className="idle-arrow" aria-hidden="true">--&gt;</span>
+            <span className="idle-node" aria-hidden="true">VERDICT</span>
           </div>
           <p>Enter an IP, file hash, or domain above and press LOOKUP.</p>
         </div>

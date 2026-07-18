@@ -18,8 +18,10 @@ import TimeWindowPicker, {
   hoursFromWindow,
 } from './TimeWindowPicker.jsx'
 import ControlTooltip from './ControlTooltip.jsx'
+import ExplainTip from './ExplainTip.jsx'
 import SeverityLegend from './SeverityLegend.jsx'
 import { severityTooltip, severityShortLabel } from '../utils/severitySemantics.js'
+import { DOMAIN_TERM_TIPS } from '../utils/domainTermTips.js'
 import './BriefCharts.css'
 
 const VendorKevChart = lazy(() =>
@@ -349,7 +351,13 @@ export default function BriefCharts({ onSelectCVE, pollEnabled = true }) {
                 <div className="brief-charts-grid">
               <article className="brief-chart-card" aria-label="Top KEV vendors">
                 <div className="brief-chart-card-head">
-                  <h3 className="brief-chart-card-title">TOP KEV VENDORS</h3>
+                  <h3 className="brief-chart-card-title">
+                    TOP KEV VENDORS
+                    <ExplainTip
+                      text={DOMAIN_TERM_TIPS.topKevVendors}
+                      label="Explain Top KEV vendors"
+                    />
+                  </h3>
                 </div>
                 <p className="brief-chart-card-hint mono">
                   {totalKev > 0
@@ -380,7 +388,13 @@ export default function BriefCharts({ onSelectCVE, pollEnabled = true }) {
               </article>
               <article className="brief-chart-card brief-chart-card--table" aria-label="Top EPSS movers">
                 <div className="brief-chart-card-head">
-                  <h3 className="brief-chart-card-title">TOP EPSS MOVERS</h3>
+                  <h3 className="brief-chart-card-title">
+                    TOP EPSS MOVERS
+                    <ExplainTip
+                      text={DOMAIN_TERM_TIPS.topEpssMovers}
+                      label="Explain Top EPSS movers"
+                    />
+                  </h3>
                   <TimeWindowPicker
                     value={epssWindow}
                     onChange={setEpssWindow}
