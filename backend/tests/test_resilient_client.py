@@ -16,6 +16,7 @@ from resilient_client import (
     get_feed_health,
     reset_feed_health,
     resilient_get,
+    resilient_request,
 )
 
 
@@ -229,3 +230,68 @@ def test_rate_limit_waits_and_retries(monkeypatch):
     health = get_feed_health()["dead"]
     assert health["consecutive_failures"] == 1
     assert "ConnectError" in health["last_error"]
+
+
+def test_record_circuit_false_does_not_open_feed_health(monkeypatch):
+    """Probes must not poison the shared circuit used by real traffic."""
+    calls = {"n": 0}
+
+    def handler(request):
+        calls["n"] += 1
+        raise httpx.ConnectError(
+            "[Errno -3] Temporary failure in name resolution",
+            request=request,
+        )
+
+    _install_transport(monkeypatch, handler)
+    monkeypatch.setattr(resilient_client, "CIRCUIT_FAILURE_THRESHOLD", 1)
+
+    async def run():
+        for _ in range(3):
+            with pytest.raises(httpx.ConnectError):
+                await resilient_request(
+                    "gemini",
+                    "GET",
+                    "https://example.com/models",
+                    retries=0,
+                    record_circuit=False,
+                    ignore_circuit=True,
+                )
+
+    asyncio.run(run())
+    assert calls["n"] == 3
+    health = get_feed_health().get("gemini")
+    assert health is None or (
+        health["circuit_open"] is False
+        and health["consecutive_failures"] == 0
+        and health["last_error"] is None
+    )
+
+
+def test_ignore_circuit_allows_probe_while_open(monkeypatch):
+    def handler(request):
+        return httpx.Response(500)
+
+    _install_transport(monkeypatch, handler)
+    monkeypatch.setattr(resilient_client, "CIRCUIT_FAILURE_THRESHOLD", 1)
+
+    async def run():
+        with pytest.raises(httpx.HTTPStatusError):
+            await resilient_get("cerebras", "https://example.com/models", retries=0)
+        assert get_feed_health()["cerebras"]["circuit_open"] is True
+
+        with pytest.raises(CircuitOpenError):
+            await resilient_get("cerebras", "https://example.com/models", retries=0)
+
+        # Probe can still dial while the circuit is open.
+        with pytest.raises(httpx.HTTPStatusError):
+            await resilient_request(
+                "cerebras",
+                "GET",
+                "https://example.com/models",
+                retries=0,
+                record_circuit=False,
+                ignore_circuit=True,
+            )
+
+    asyncio.run(run())

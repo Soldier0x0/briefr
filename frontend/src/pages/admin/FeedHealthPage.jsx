@@ -203,7 +203,7 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
             <div style={{ marginBottom: '1.25rem' }}>
               <div className="admin-card-title" style={{ color: 'var(--red)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 {isAnalyst ? `Sources temporarily paused (${openCircuits.length})` : `Circuit tripped (${openCircuits.length})`}
-                {!isAnalyst && <HelpTip text="A circuit trips after repeated fetch failures to stop hammering an unresponsive upstream source. BRIEFR retries automatically after a cooldown, or you can force-reset below." />}
+                {!isAnalyst && <HelpTip text="A circuit trips after repeated fetch failures to stop hammering an unresponsive upstream source. BRIEFR retries automatically after a cooldown, or you can force-reset below. LLM rows (groq/gemini/cerebras/…) reflect real chat traffic — ConnectError / name-resolution usually means host DNS or egress cannot reach that provider. Empty LLM response content means HTTP succeeded but the model returned a blank body." />}
               </div>
               <div className="feed-card-grid">
                 {sortByFailures(openCircuits).map(([key, s]) => (

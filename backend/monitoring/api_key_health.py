@@ -65,6 +65,10 @@ async def _ping_json(
             params=params,
             timeout=20.0,
             record_client_error=False,
+            # Persist probe results in sync_state only — do not open/clear the
+            # shared feed-health circuit used by real LLM / ingest traffic.
+            record_circuit=False,
+            ignore_circuit=True,
         )
         latency_ms = int((time.monotonic() - started) * 1000)
         healthy = response.status_code in ok_statuses
