@@ -12,32 +12,32 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-<<<<<<< HEAD
 ## 2026-07-18 — Forge Campaigns OPEN CVEs + dead-control sweep
 
 **What:** Campaigns **OPEN CVE** looked enabled but often no-oped; label was
 singular next to “N CVEs”. Broader dead-control audit + fixes on
 `cursor/forge-campaigns-open-cve-eee1`.
-=======
-## 2026-07-18 — FEED STACK/search contrast + EPSS movers dead UI / alignment
-
-**What:** Maintainer screenshots — STACK label spacing, semantic search blending into
-page black, TOP EPSS MOVERS dropdown offering non-working Custom range, and EPSS
-table columns misaligned. Fixed on `cursor/feed-epss-ui-cleanup-eee1`.
->>>>>>> origin/main
 
 **RCA (locked):**
 | ID | Symptom | Root cause | Fix |
 |----|---------|------------|-----|
-<<<<<<< HEAD
 | D1 | OPEN CVE click does nothing (esp. without My Stack) | UI only used `members_on_stack` / `watchlisted_members`; API omitted full `members`; disable ignored empty target | API `members`; fallback open target; plural **OPEN CVEs**; disable when no target |
 | D2 | IOC watchlist notification title click no-ops | `entity_type=ioc` had no handler branch | `?tab=ioc&ioc=` + App prefill deep-link |
 | D3 | Rate limit “API keys & config” dead `#` link | `preventDefault` empty handler | `<Link to="/admin?p=apikeys">` |
 | D4 | Scenario evidence CVE IDs not openable | Plain text, no `openCveById` | `fg-cve-id-link` buttons |
 | D5 | Backlog CVE ID not openable | Same | Wire like HuntPackRail |
 
-**Next:** Verify → PR → Gemini disposition.
-=======
+**Next:** Merged after #680.
+
+## 2026-07-18 — FEED STACK/search contrast + EPSS movers dead UI / alignment
+
+**What:** Maintainer screenshots — STACK label spacing, semantic search blending into
+page black, TOP EPSS MOVERS dropdown offering non-working Custom range, and EPSS
+table columns misaligned. Fixed on `cursor/feed-epss-ui-cleanup-eee1`.
+
+**RCA (locked):**
+| ID | Symptom | Root cause | Fix |
+|----|---------|------------|-----|
 | A1 | STACK // optically high / awkward gap | Label inherited body line-height; `gap: --space-3`; input `--bg2` same as panel | Midline label (`min-height: --hit-target-min`, `line-height: 1`); tighter gap; input `--surface-input` on raised panel |
 | A2 | Search/semantic bar blends in | `.filter-search` used `--bg2` + `--border` (`--border-subtle`) on `--bg` page | `--surface-input` + `--border2`; stronger left edge on focus via `--accent-indicator` |
 | B1 | EPSS “Custom range…” half-dead | `TimeWindowPicker` always offered custom; BriefCharts only sends `since_hours` (API `le=168`); calendar range ignored | `allowCustom={false}` on EPSS; clamp hours ≤168 |
@@ -89,7 +89,6 @@ circuits (results still persist under `api_key_health:{provider}`).
 **Next:** Confirm prod DNS after deploy.
 
 ---
->>>>>>> origin/main
 
 ## 2026-07-18 — Domain jargon tips (Analyst + Admin)
 
