@@ -24,11 +24,24 @@ describe('FEED / EPSS movers UI cleanup gate', () => {
     assert.match(src, /allowCustom \? \[\{ value: CUSTOM_VALUE/)
   })
 
-  it('EPSS movers header and rows share --brief-epss-cols grid tracks', () => {
+  it('EPSS movers header and rows share one CSS grid (no table colspan layout)', () => {
     const css = fs.readFileSync(path.join(ROOT, 'components/BriefCharts.css'), 'utf8')
+    const jsx = fs.readFileSync(path.join(ROOT, 'components/BriefCharts.jsx'), 'utf8')
     assert.match(css, /--brief-epss-cols:/)
-    assert.match(css, /thead tr\.brief-epss-cols/)
+    assert.match(css, /\.brief-epss-cols\s*\{[^}]*display:\s*grid/s)
+    assert.match(css, /\.brief-epss-head\b/)
+    assert.match(jsx, /className="brief-epss-grid"/)
+    assert.match(jsx, /brief-epss-cols brief-epss-head/)
+    assert.doesNotMatch(jsx, /colSpan=\{4\}/)
+    // Native buttons must keep button semantics — never role="row"/"cell".
+    assert.doesNotMatch(jsx, /role=["']row["']/)
+    assert.doesNotMatch(jsx, /role=["']cell["']/)
     assert.match(css, /\.brief-epss-sev\s*\{[^}]*justify-content:\s*flex-start/s)
+  })
+
+  it('STACK local sync uses nextLocalStack (trim must not yank caret)', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'components/FilterBar.jsx'), 'utf8')
+    assert.match(src, /nextLocalStack/)
   })
 
   it('FEED search and STACK inputs use surface-input (not page-blending bg2)', () => {

@@ -133,76 +133,79 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel,
         <summary className="severity-legend-feed-summary mono">SEVERITY KEY</summary>
         <SeverityLegend compact />
       </details>
-      <table className="brief-epss-table" aria-label={`Top EPSS movers in the last ${windowLabel}`}>
-        <thead>
-          <tr className="brief-epss-cols">
-            <th scope="col" className="mono brief-epss-col-cve">CVE</th>
-            <th scope="col" className="mono brief-epss-col-sev">Severity</th>
-            <th scope="col" className="mono brief-epss-col-spark">
-              <ControlTooltip text={sparkSpec.columnTooltip} trigger="hover-focus">
-                <span>{sparkSpec.columnLabel}</span>
-              </ControlTooltip>
-            </th>
-            <th scope="col" className="mono brief-epss-col-delta">
-              <ControlTooltip text={EPSS_DELTA_TOOLTIP} trigger="hover-focus">
-                <span>Delta (Δ)</span>
-              </ControlTooltip>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {movers.map(row => {
-            const history = filterEpssHistoryToDays(
-              histories[row.cve_id] || [],
-              sparkSpec.days,
-            )
-            return (
-              <tr key={row.cve_id} className="brief-epss-data-row">
-                <td className="brief-epss-row-cell" colSpan={4}>
-                  <button
-                    type="button"
-                    className="brief-epss-row-btn brief-epss-cols"
-                    onClick={() => onSelectCVE?.({ cve_id: row.cve_id })}
-                    aria-label={`Open ${row.cve_id} details, EPSS increased ${(row.delta * 100).toFixed(1)} percentage points`}
-                  >
-                    <span className="brief-epss-id mono">{row.cve_id}</span>
-                    <span className="brief-epss-sev">
-                      <ControlTooltip
-                        text={severityTooltip(row.severity)}
-                        trigger="hover-focus"
-                      >
-                        <span className="brief-epss-sev-inner">
-                          <span
-                            className={`sev-dot ${severityDotClass(row.severity)}`}
-                            aria-hidden="true"
-                          />
-                          <span className="brief-epss-sev-label mono">
-                            {severityShortLabel(row.severity)}
-                          </span>
-                        </span>
-                      </ControlTooltip>
+      {/*
+        Pure CSS grid (not <table>): grid-on-<tr> + td[colSpan] fought table
+        layout so headers and body tracks drifted. Rows are native <button>s —
+        do not overlay table row/cell roles (destroys button semantics).
+      */}
+      <div
+        className="brief-epss-grid"
+        aria-label={`Top EPSS movers in the last ${windowLabel}`}
+      >
+        <div className="brief-epss-cols brief-epss-head" aria-hidden="true">
+          <span className="mono brief-epss-col-cve">CVE</span>
+          <span className="mono brief-epss-col-sev">Severity</span>
+          <span className="mono brief-epss-col-spark">
+            <ControlTooltip text={sparkSpec.columnTooltip} trigger="hover-focus">
+              <span>{sparkSpec.columnLabel}</span>
+            </ControlTooltip>
+          </span>
+          <span className="mono brief-epss-col-delta">
+            <ControlTooltip text={EPSS_DELTA_TOOLTIP} trigger="hover-focus">
+              <span>Delta (Δ)</span>
+            </ControlTooltip>
+          </span>
+        </div>
+        {movers.map(row => {
+          const history = filterEpssHistoryToDays(
+            histories[row.cve_id] || [],
+            sparkSpec.days,
+          )
+          return (
+            <button
+              key={row.cve_id}
+              type="button"
+              className="brief-epss-row-btn brief-epss-cols"
+              onClick={() => onSelectCVE?.({ cve_id: row.cve_id })}
+              aria-label={`Open ${row.cve_id} details, EPSS increased ${(row.delta * 100).toFixed(1)} percentage points`}
+            >
+              <span className="brief-epss-id mono">{row.cve_id}</span>
+              <span className="brief-epss-sev">
+                <ControlTooltip
+                  text={severityTooltip(row.severity)}
+                  trigger="hover-focus"
+                >
+                  <span className="brief-epss-sev-inner">
+                    <span
+                      className={`sev-dot ${severityDotClass(row.severity)}`}
+                      aria-hidden="true"
+                    />
+                    <span className="brief-epss-sev-label mono">
+                      {severityShortLabel(row.severity)}
                     </span>
-                    <span className="brief-epss-sparkline-cell">
-                      {loading && !history.length ? (
-                        <span className="brief-epss-sparkline brief-epss-sparkline--loading" aria-hidden="true" />
-                      ) : (
-                        <EpssSparklineCell
-                          history={history}
-                          currentScore={row.new_score}
-                          seriesLabel={seriesLabel}
-                        />
-                      )}
-                    </span>
-                    <span className={`brief-epss-delta badge badge-epss-delta mono ${epssDeltaClass(row.delta)}`}>
-                      +{(row.delta * 100).toFixed(1)}%
-                    </span>
-                  </button>
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+                  </span>
+                </ControlTooltip>
+              </span>
+              <span className="brief-epss-sparkline-cell">
+                {loading && !history.length ? (
+                  <span className="brief-epss-sparkline brief-epss-sparkline--loading" aria-hidden="true" />
+                ) : (
+                  <EpssSparklineCell
+                    history={history}
+                    currentScore={row.new_score}
+                    seriesLabel={seriesLabel}
+                  />
+                )}
+              </span>
+              <span
+                className={`brief-epss-delta badge badge-epss-delta mono ${epssDeltaClass(row.delta)}`}
+              >
+                +{(row.delta * 100).toFixed(1)}%
+              </span>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
