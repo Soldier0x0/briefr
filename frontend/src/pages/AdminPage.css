@@ -601,6 +601,82 @@
   margin-bottom: 20px;
 }
 
+/* ── Metering panel (e.g. outbound API metering) ─────────────────────────── */
+
+.metering-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.metering-col-title {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--admin-text-muted);
+  margin: 0 0 8px;
+}
+
+.metering-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metering-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px 34px;
+  align-items: center;
+  gap: 10px;
+}
+
+.metering-row-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.metering-row-name {
+  font-size: var(--type-body, 13px);
+  color: var(--admin-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metering-row-meta {
+  font-size: 11px;
+  color: var(--admin-text-muted);
+}
+
+.metering-bar-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--admin-border);
+  overflow: hidden;
+}
+
+.metering-bar-fill {
+  height: 100%;
+  background: var(--admin-accent);
+  border-radius: 3px;
+}
+
+.metering-row-count {
+  text-align: right;
+  font-size: 12px;
+  color: var(--admin-text);
+}
+
+.metering-empty {
+  font-size: 12px;
+  color: var(--admin-text-muted);
+  margin: 0;
+}
+
 /* Operator sub-tabs */
 .admin-subtabs {
   display: flex;
@@ -1323,6 +1399,16 @@
 .admin-content {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Each tab owns its own scroll position -- switching tabs must not carry
+   over the scrollTop of whichever tab you scrolled last. */
+.admin-page-scroll {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -1868,7 +1954,9 @@
 
 .admin-content {
   flex: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 1.5rem;
 }
 
@@ -3039,32 +3127,32 @@
 
 /* ── Scrollbars ─────────────────────────────────────────────────────────── */
 
-.admin-sidebar, .admin-content, .admin-modal {
+.admin-sidebar, .admin-page-scroll, .admin-modal {
   scrollbar-width: thin;
   scrollbar-color: var(--border2) transparent;
 }
 
 .admin-sidebar::-webkit-scrollbar,
-.admin-content::-webkit-scrollbar,
+.admin-page-scroll::-webkit-scrollbar,
 .admin-modal::-webkit-scrollbar {
   width: 8px;
 }
 
 .admin-sidebar::-webkit-scrollbar-track,
-.admin-content::-webkit-scrollbar-track,
+.admin-page-scroll::-webkit-scrollbar-track,
 .admin-modal::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .admin-sidebar::-webkit-scrollbar-thumb,
-.admin-content::-webkit-scrollbar-thumb,
+.admin-page-scroll::-webkit-scrollbar-thumb,
 .admin-modal::-webkit-scrollbar-thumb {
   background: var(--border2);
   border-radius: 4px;
 }
 
 .admin-sidebar::-webkit-scrollbar-thumb:hover,
-.admin-content::-webkit-scrollbar-thumb:hover,
+.admin-page-scroll::-webkit-scrollbar-thumb:hover,
 .admin-modal::-webkit-scrollbar-thumb:hover {
   background: var(--text3);
 }

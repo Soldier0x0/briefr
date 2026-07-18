@@ -2,12 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { fetchSecurityArchitectureMitre } from '../../../api.js'
 import { notifyApiError } from '../../../components/Toast.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
-import Checkbox from '../../../components/ui/Checkbox.jsx'
 import Tooltip from '../../../components/ui/Tooltip.jsx'
-import { loadLayoutPrefs, saveLayoutPrefs } from '../../../utils/gridLayoutPrefs.js'
 import ArchDataGrid from '../shared/ArchDataGrid.jsx'
-
-const MITRE_LAYOUT_KEY = 'sa-mitre'
 
 const STATUS_LABEL = { yours: 'YOURS', community: 'COMMUNITY', gap: 'GAP' }
 const STATUS_HELP = {
@@ -26,12 +22,6 @@ export default function MitreSection() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
-  const [wrapCells, setWrapCells] = useState(() => loadLayoutPrefs(MITRE_LAYOUT_KEY).wrap)
-  const [centerCells, setCenterCells] = useState(() => loadLayoutPrefs(MITRE_LAYOUT_KEY).center)
-
-  useEffect(() => {
-    saveLayoutPrefs(MITRE_LAYOUT_KEY, { wrap: wrapCells, center: centerCells })
-  }, [wrapCells, centerCells])
 
   useEffect(() => {
     let cancelled = false
@@ -133,33 +123,11 @@ export default function MitreSection() {
         onRetry={() => setReloadKey(k => k + 1)}
         skeleton={<div className="sa-skeleton-row" aria-hidden="true" />}
       >
-        {techniques.length > 0 && (
-          <div className="data-grid-layout-toolbar" role="group" aria-label="Table layout">
-            <Checkbox
-              id="sa-mitre-wrap"
-              checked={wrapCells}
-              onCheckedChange={setWrapCells}
-              label="Wrap"
-              className="data-grid-toggle"
-            />
-            <Checkbox
-              id="sa-mitre-center"
-              checked={centerCells}
-              onCheckedChange={setCenterCells}
-              label="Center"
-              className="data-grid-toggle"
-            />
-          </div>
-        )}
         {Object.entries(byTactic).sort(([a], [b]) => a.localeCompare(b)).map(([tactic, items]) => (
           <div key={tactic} className="sa-mitre-tactic-group">
             <h3 className="sa-subsection-label mono">{tactic.toUpperCase()}</h3>
             <ArchDataGrid
               gridId={`sa-mitre-${tactic}`}
-              layoutGroupId="sa-mitre"
-              layoutWrap={wrapCells}
-              layoutCenter={centerCells}
-              showLayoutToggles={false}
               columns={columns}
               rows={items}
               rowKey={(r) => r.technique_id}

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchSecurityArchitectureGraph } from '../../../api.js'
 import { notifyApiError } from '../../../components/Toast.jsx'
 import AsyncState from '../../../components/ui/AsyncState.jsx'
-import ContextRail from '../ContextRail.jsx'
 import {
   COL_WIDTH,
   computeGraphLayout,
@@ -319,11 +318,6 @@ export default function ArchitectureGraphSection({
           scroll to zoom · drag to pan · edges are SQL refs (incl. via db helpers /
           called modules) and curated job→external links
         </p>
-        {selectedNodeId && (
-          <div className="sa-graph-detail" aria-label="Selected node detail">
-            <ContextRail nodeId={selectedNodeId} onClose={onClearSelection} />
-          </div>
-        )}
       </AsyncState>
     </div>
   )

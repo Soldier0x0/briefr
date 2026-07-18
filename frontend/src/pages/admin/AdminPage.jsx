@@ -298,12 +298,14 @@ function AdminPageBody({ toast }) {
             </div>
           )}
           {isComingSoon ? (
-            <ComingSoonPage pageId={page} setPage={setPage} />
+            <div className="admin-page-scroll">
+              <ComingSoonPage pageId={page} setPage={setPage} />
+            </div>
           ) : (
             Object.entries(pages)
               .filter(([id]) => visitedPages.has(id))
               .map(([id, content]) => (
-                <div key={id} hidden={page !== id}>
+                <div key={id} className="admin-page-scroll" hidden={page !== id}>
                   <ErrorBoundary>{content}</ErrorBoundary>
                 </div>
               ))

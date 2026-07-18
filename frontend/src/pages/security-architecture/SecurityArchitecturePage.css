@@ -113,12 +113,6 @@
   overflow: hidden;
 }
 
-.sa-shell--graph .sa-graph-detail {
-  flex: 0 1 28vh;
-  max-height: 28vh;
-  margin-top: 8px;
-}
-
 .sa-nav {
   width: var(--sa-nav-width);
   flex-shrink: 0;
@@ -226,6 +220,16 @@
 .sa-stat-card-wrap {
   min-width: 0;
   flex: 1;
+}
+
+/* Tooltip wraps its child in two nested inline-flex layers (shrink-to-fit
+   by design elsewhere) -- force both to fill the tile so every stat tile is
+   the same width regardless of label length, instead of shrink-wrapping
+   around short labels. */
+.sa-stat-card-wrap .ui-tooltip-wrap,
+.sa-stat-card-wrap .ui-tooltip-trigger {
+  display: flex;
+  width: 100%;
 }
 
 .sa-stat-card-btn {
@@ -697,6 +701,30 @@
   max-width: 70ch;
 }
 
+.sa-fw-guidance {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: -6px 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+}
+
+.sa-fw-guidance p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text2);
+  max-width: 78ch;
+}
+
+.sa-fw-guidance-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--text3);
+  margin-right: 6px;
+}
+
 .sa-fw-badge {
   font-size: var(--type-micro);
   letter-spacing: 0.06em;
@@ -998,9 +1026,9 @@
   cursor: grab;
   user-select: none;
   /* Fallback when not inside .sa-shell--graph flex lock. */
-  height: min(70vh, calc(100vh - 240px));
+  height: min(85vh, calc(100vh - 200px));
   min-height: 280px;
-  max-height: 70vh;
+  max-height: 85vh;
 }
 
 .sa-shell--graph .sa-graph-canvas {
@@ -1107,14 +1135,6 @@
   font-size: var(--type-meta);
   color: var(--text3);
   margin: 8px 0 0;
-}
-
-.sa-graph-detail {
-  margin-top: 16px;
-  border: 1px solid var(--border);
-  background: var(--bg2);
-  max-height: min(40vh, 420px);
-  overflow: auto;
 }
 
 /* ── Trust boundaries (TM-4) ──────────────────────────────────────── */
