@@ -99,7 +99,7 @@ WHERE retracted_at IS NULL
 )
 ORDER BY
   CASE WHEN LOWER(campaign_id) = ? THEN 0 ELSE 1 END,
-  COALESCE(last_seen, computed_at, '') DESC
+  COALESCE(last_seen, computed_at) DESC
 LIMIT ?
 """
 
@@ -117,7 +117,7 @@ WHERE retracted_at IS NULL
 )
 ORDER BY
   CASE WHEN LOWER(campaign_id) = $1 THEN 0 ELSE 1 END,
-  COALESCE(last_seen, computed_at, '') DESC
+  COALESCE(last_seen, computed_at) DESC NULLS LAST
 LIMIT $6
 """
 

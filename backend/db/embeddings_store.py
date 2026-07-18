@@ -393,7 +393,7 @@ FROM correlation_campaigns c
 LEFT JOIN embeddings e
   ON e.entity_type = 'campaign' AND e.entity_id = c.campaign_id AND e.model = ?
 WHERE c.retracted_at IS NULL
-ORDER BY COALESCE(c.last_seen, c.computed_at, '') DESC, c.campaign_id
+ORDER BY COALESCE(c.last_seen, c.computed_at) DESC, c.campaign_id
 """
 
 _GET_CAMPAIGNS_NEEDING_PG = """
@@ -403,7 +403,7 @@ FROM correlation_campaigns c
 LEFT JOIN embeddings e
   ON e.entity_type = 'campaign' AND e.entity_id = c.campaign_id AND e.model = $1
 WHERE c.retracted_at IS NULL
-ORDER BY COALESCE(c.last_seen, c.computed_at, '') DESC, c.campaign_id
+ORDER BY COALESCE(c.last_seen, c.computed_at) DESC NULLS LAST, c.campaign_id
 """
 
 
