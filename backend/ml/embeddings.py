@@ -1,15 +1,15 @@
-"""CVE description embeddings — env-gated, CPU-only, scheduler-side (V1.3).
+"""CVE description embeddings — env-gated, CPU-only, scheduler-side (V1.3 / E2).
 
-Vectors are stored as float32 little-endian byte strings in the
-``cve_embeddings`` table (bytea on PostgreSQL in production; blob on the
-SQLite dev/test path). The similarity path is exact brute-force cosine with
-NumPy — adequate at BRIEFR scale (tens of thousands of embedded rows).
+**E2 write path:** vectors are dual-written to:
+- ``embeddings`` (pgvector ``vector(384)`` on Postgres; BLOB on SQLite) with
+  rich CVE text + ``content_hash``
+- legacy ``cve_embeddings`` BLOBs (one-release read-fallback for related until E3)
 
-Disabled by default (``EMBEDDINGS_ENABLED=0``): the tool stays fully
-functional without it — ``GET /api/cves/{id}/related`` falls back to the
-shared-product heuristic. Model inference (fastembed/ONNX) runs only inside
-the scheduler backfill job, never on the request path; request-time
-similarity is a pure lookup over vectors already in the DB.
+Similarity on the request path still scans legacy BLOBs with NumPy until E3.
+Model inference (fastembed/ONNX) runs only inside the scheduler backfill job.
+
+Disabled by default (``EMBEDDINGS_ENABLED=0``). Set ``EMBEDDINGS_PGVECTOR=0``
+to skip writes to the ``embeddings`` table (legacy-only).
 
 Copyright © 2026 Sai Harsha Vardhan
 SPDX-License-Identifier: AGPL-3.0-or-later
@@ -36,8 +36,13 @@ import numpy as np
 from database import (
     get_all_cve_embeddings,
     get_cve_embedding,
-    get_cves_missing_embeddings,
     upsert_cve_embedding,
+)
+from db.embeddings_store import (
+    embeddings_pgvector_writes_enabled,
+    get_cves_needing_embeddings,
+    get_cves_needing_embeddings_by_ids,
+    upsert_cve_embedding_row,
 )
 
 try:  # optional local model — only needed when EMBEDDINGS_ENABLED=1
@@ -49,6 +54,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_EMBEDDINGS_MODEL = "BAAI/bge-small-en-v1.5"
 EMBED_BATCH_SIZE = 64
+# Re-export for callers/tests that imported the constant from this module.
 EMBED_TEXT_MAX_CHARS = 2000
 
 # Lazy singleton — loading the ONNX weights costs ~100 MB RSS, so the model
@@ -147,7 +153,7 @@ async def run_embeddings_backfill(
     *,
     cve_id_filter: set[str] | None = None,
 ) -> dict:
-    """Embed CVE descriptions that have no vector for the active model.
+    """Embed CVE rich-text that is missing / migrated: / hash-mismatched.
 
     Scheduler-side only. Batched + committed per batch so an interrupted run
     resumes where it left off; capped per run by EMBEDDINGS_MAX_PER_RUN (or
@@ -161,10 +167,13 @@ async def run_embeddings_backfill(
         if cve_id_filter
         else get_embeddings_max_per_run()
     )
-    pending = await get_cves_missing_embeddings(db, model_name, limit=cap * 4)
     if cve_id_filter:
-        pending = [row for row in pending if row["cve_id"] in cve_id_filter][:cap]
+        pending = await get_cves_needing_embeddings_by_ids(
+            db, model_name, cve_id_filter
+        )
+        pending = pending[:cap]
     else:
+        pending = await get_cves_needing_embeddings(db, model_name, limit=cap * 4)
         pending = pending[:cap]
     if not pending:
         return {"embedded": 0, "model": model_name}
@@ -179,28 +188,48 @@ async def run_embeddings_backfill(
         return {"embedded": 0, "model": model_name, "skipped": "fastembed missing"}
 
     model = _get_model(model_name)
+    write_pgvector = embeddings_pgvector_writes_enabled()
     embedded = 0
     total = len(pending)
     total_batches = (total + EMBED_BATCH_SIZE - 1) // EMBED_BATCH_SIZE
     for batch_num, offset in enumerate(range(0, total, EMBED_BATCH_SIZE), start=1):
         batch = pending[offset : offset + EMBED_BATCH_SIZE]
         if progress_cb:
-            progress_cb(f"Embedding CVE descriptions with {model_name}: batch {batch_num}/{total_batches} ({min(offset + EMBED_BATCH_SIZE, total)}/{total} CVEs)…")
-        texts = [(item["description"] or "")[:EMBED_TEXT_MAX_CHARS] for item in batch]
+            progress_cb(
+                f"Embedding CVE descriptions with {model_name}: "
+                f"batch {batch_num}/{total_batches} "
+                f"({min(offset + EMBED_BATCH_SIZE, total)}/{total} CVEs)…"
+            )
+        texts = [item["embed_text"] for item in batch]
         vectors = await asyncio.to_thread(_embed_texts, model, texts)
         for item, vector in zip(batch, vectors):
             normalized = l2_normalize(vector)
+            blob = vector_to_blob(normalized)
+            dims = int(normalized.size)
             await upsert_cve_embedding(
                 db,
                 item["cve_id"],
                 model_name,
-                int(normalized.size),
-                vector_to_blob(normalized),
+                dims,
+                blob,
             )
+            if write_pgvector:
+                await upsert_cve_embedding_row(
+                    db,
+                    item["cve_id"],
+                    model_name,
+                    dims,
+                    blob,
+                    item["content_hash"],
+                )
         await db.commit()
         embedded += len(batch)
 
-    return {"embedded": embedded, "model": model_name}
+    return {
+        "embedded": embedded,
+        "model": model_name,
+        "pgvector_writes": write_pgvector,
+    }
 
 
 async def find_similar_cves(db, cve_id: str, limit: int = 5) -> list[dict] | None:

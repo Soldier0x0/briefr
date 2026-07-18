@@ -12,6 +12,26 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — Embeddings E2: dual-write rich text + content_hash
+
+**What:** Scheduler embed pipeline writes to multi-entity `embeddings` with
+rich CVE text + real `content_hash`, while keeping legacy `cve_embeddings`
+dual-write for related/NumPy until E3.
+- `db/embeddings_pgvector.py` — `build_cve_embed_text`, `content_hash_for_embed_text`
+- `db/embeddings_store.py` — upsert + pending queries (missing / `migrated:` /
+  hash mismatch on ingest filter)
+- `ml/embeddings.py` — dual-write; `EMBEDDINGS_PGVECTOR` (default on)
+- Tests: `tests/test_embeddings_e2.py`
+- Docs: PRODUCT_STATUS, SYSTEM_DESIGN, SPRINT, BACKLOG, `.env.example`
+
+**Operator:** After E1, ~23k `migrated:` rows re-embed over successive
+`embeddings_backfill` runs (`EMBEDDINGS_MAX_PER_RUN`, default 2000) when
+`EMBEDDINGS_ENABLED=1`. No Postgres image change.
+
+**Next:** **E3** — related + hybrid search API (ANN over `embeddings`).
+
+---
+
 ## 2026-07-18 — Embeddings E1: pgvector foundation (activated)
 
 **What:** Activated the embeddings program (design accepted) and shipped **E1**
