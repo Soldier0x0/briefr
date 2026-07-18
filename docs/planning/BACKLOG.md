@@ -426,8 +426,8 @@ remediation queue. Supporting artifacts: [`e2e-click-map-2026-07-15.md`](specs/e
 | ID | Item | Status |
 |----|------|--------|
 | **E1** | pgvector pg16 images + `CREATE EXTENSION vector` + `embeddings` table / migrate BLOBs | ✅ #671 |
-| **E2** | Embed pipeline → pgvector (hash, backfill, flags) | ✅ shipping (this PR) |
-| **E3** | Related + hybrid search API (`mode`, query-shape, fallbacks) | 📋 after E2 |
+| **E2** | Embed pipeline → pgvector (hash, backfill, flags) | ✅ #672 |
+| **E3** | Related + hybrid search API (`mode`, query-shape, fallbacks) | 🔄 this PR |
 | **E4** | UI one-box hybrid | 📋 after E3 |
 | **E5** | Admin search service token (hash, show-once, scope, rate limit) | 📋 after E3 |
 | **E6** | MITRE technique embeddings + typed hits | 📋 after E3–E5 |

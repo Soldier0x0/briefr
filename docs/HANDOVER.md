@@ -12,6 +12,25 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — Embeddings E3: related ANN + hybrid search API
+
+**What:** Related CVEs prefer pgvector ANN on `embeddings` (SQLite BLOB cosine /
+legacy `cve_embeddings` NumPy fallback). New `GET /api/search/semantic` with
+`mode=hybrid|keyword|semantic`, query-shape routing, RRF merge, keyword fallback.
+- `db/embeddings_search.py` — ANN SQL, keyword search, RRF / hybrid merge
+- `services/semantic_search.py` — orchestration
+- `routers/search.py` — `/api/search/semantic`
+- `ml/embeddings.py` — `find_similar_cves` ANN-first; `embed_query_text` for search only
+- Tests: `tests/test_embeddings_e3.py`
+- Docs: API_REFERENCE, PRODUCT_STATUS, SPRINT, BACKLOG
+
+**Operator:** No image swap. Ensure E2 backfill has real (non-`migrated:`) vectors
+for good ANN quality. UI one-box wiring is **E4**.
+
+**Next:** **E4** — UI one-box hybrid search.
+
+---
+
 ## 2026-07-18 — Embeddings E2: dual-write rich text + content_hash
 
 **What:** Scheduler embed pipeline writes to multi-entity `embeddings` with

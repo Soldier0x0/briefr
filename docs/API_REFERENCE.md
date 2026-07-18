@@ -566,7 +566,7 @@ Sub-objects match the shapes returned by `GET /api/cves/{cve_id}/sentences`, `/e
 
 ### GET /api/cves/{cve_id}/related
 
-**Description:** Related CVEs. Default: shared-product heuristic (last 30 days). When `EMBEDDINGS_ENABLED=1` and both the target and candidates have stored vectors, returns semantically similar CVEs instead (NumPy brute-force cosine over `cve_embeddings` vectors). Vectors are written by the `embeddings_backfill` scheduler job and, when `EMBEDDINGS_AUTO_ON_INGEST=1`, incrementally after NVD sync (#438).
+**Description:** Related CVEs. Default: shared-product heuristic (last 30 days). When `EMBEDDINGS_ENABLED=1` and the target has a stored vector, returns semantically similar CVEs: prefers **pgvector ANN** (or SQLite BLOB cosine) on the multi-entity `embeddings` table, then legacy `cve_embeddings` NumPy scan. Vectors are written by `embeddings_backfill` / auto-on-ingest (E2 dual-write).
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -574,10 +574,60 @@ Sub-objects match the shapes returned by `GET /api/cves/{cve_id}/sentences`, `/e
 
 **Response:** `{"data": [ related CVE summaries ], "meta": {"method": "product_heuristic" | "embeddings"}}`
 
-**Notes (additive — added in V1.3):**
+**Notes (additive — added in V1.3; E3 upgraded retrieval):**
 
 - `meta.method` reports which path produced the results. Embeddings disabled/absent, target CVE not yet embedded, or zero semantic hits → automatic fallback to `product_heuristic` (the pre-V1.3 response shape, plus `meta`).
 - When `meta.method` is `"embeddings"`, each item additionally carries `similarity` (cosine, 0–1, higher = closer). Heuristic items have no `similarity` field.
+- Related never runs model inference on the request path — only stored vectors.
+
+---
+
+### GET /api/search/semantic
+
+**Description (E3):** One-box CVE search — hybrid (default), keyword, or semantic. Keyword uses CVE-id exact / description+summary substring match. Semantic/hybrid may use stored vectors (ANN) when `EMBEDDINGS_ENABLED=1`; free-text semantic embeds the query once (design §7.1). Cold index / disabled embeddings → keyword fallback. Honest `meta.method` reports the path used.
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `q` | str | `""` | Query text (max 500) |
+| `mode` | str | `hybrid` | `hybrid` \| `keyword` \| `semantic` |
+| `limit` | int | 20 | 1–50 |
+
+**Query-shape (hybrid):** CVE-id → keyword-first; 1–2 tokens → keyword-heavy RRF; longer natural language → vector-heavier RRF.
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "entity_type": "cve",
+      "entity_id": "CVE-2024-0001",
+      "cve_id": "CVE-2024-0001",
+      "score": 0.012345,
+      "match_reasons": ["keyword", "vector"],
+      "description": "...",
+      "summary": "...",
+      "cvss_score": 9.8,
+      "severity": "CRITICAL",
+      "published": "2024-01-01",
+      "epss_score": 0.5,
+      "is_kev": false,
+      "similarity": 0.91
+    }
+  ],
+  "meta": {
+    "method": "hybrid",
+    "mode_requested": "hybrid",
+    "query_shape": "long",
+    "q": "...",
+    "embeddings_enabled": true
+  }
+}
+```
+
+`meta.method` values: `hybrid` \| `keyword` \| `keyword_first` \| `semantic` \| `keyword_fallback`.
+
+**Auth:** Analyst session (same as other `/api/*` routes). Search service token is **E5** (not this endpoint’s auth yet).
 
 ---
 

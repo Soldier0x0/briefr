@@ -1,12 +1,14 @@
-"""CVE description embeddings — env-gated, CPU-only, scheduler-side (V1.3 / E2).
+"""CVE description embeddings — env-gated, CPU-only (V1.3 / E2–E3).
 
-**E2 write path:** vectors are dual-written to:
-- ``embeddings`` (pgvector ``vector(384)`` on Postgres; BLOB on SQLite) with
-  rich CVE text + ``content_hash``
-- legacy ``cve_embeddings`` BLOBs (one-release read-fallback for related until E3)
+**Write path (E2):** dual-write to ``embeddings`` + legacy ``cve_embeddings``.
 
-Similarity on the request path still scans legacy BLOBs with NumPy until E3.
-Model inference (fastembed/ONNX) runs only inside the scheduler backfill job.
+**Related (E3):** request path uses stored vectors only — pgvector ANN (or
+SQLite BLOB cosine) on ``embeddings``, then legacy ``cve_embeddings`` NumPy
+scan. No model inference for related.
+
+**Semantic search (E3):** may embed a single query string when
+``EMBEDDINGS_ENABLED=1`` (design §7.1). Bulk corpus embedding stays
+scheduler-only (``run_embeddings_backfill``).
 
 Disabled by default (``EMBEDDINGS_ENABLED=0``). Set ``EMBEDDINGS_PGVECTOR=0``
 to skip writes to the ``embeddings`` table (legacy-only).
@@ -38,6 +40,7 @@ from database import (
     get_cve_embedding,
     upsert_cve_embedding,
 )
+from db.embeddings_search import find_similar_via_embeddings_table
 from db.embeddings_store import (
     embeddings_pgvector_writes_enabled,
     get_cves_needing_embeddings,
@@ -235,11 +238,25 @@ async def run_embeddings_backfill(
 async def find_similar_cves(db, cve_id: str, limit: int = 5) -> list[dict] | None:
     """Top-k semantically similar CVEs by cosine similarity.
 
+    Prefer the multi-entity ``embeddings`` table (pgvector ANN on Postgres,
+    BLOB cosine on SQLite). Fall back to legacy ``cve_embeddings`` NumPy scan.
     Returns None when the target CVE has no stored vector — the caller must
     fall back to the deterministic shared-product heuristic. No model
-    inference happens here: this is a pure scan over stored BLOBs.
+    inference happens here.
     """
     model_name = get_embeddings_model_name()
+    try:
+        ann = await find_similar_via_embeddings_table(
+            db, cve_id, model_name, limit=limit
+        )
+    except Exception:
+        logger.exception(
+            "embeddings-table ANN failed for %s — trying legacy BLOBs", cve_id
+        )
+        ann = None
+    if ann is not None:
+        return ann
+
     target_blob = await get_cve_embedding(db, cve_id, model_name)
     if target_blob is None:
         return None
@@ -263,3 +280,40 @@ async def find_similar_cves(db, cve_id: str, limit: int = 5) -> list[dict] | Non
         {"cve_id": ids[i], "similarity": round(float(similarities[i]), 4)}
         for i in top
     ]
+
+
+async def embed_query_text(text: str) -> bytes | None:
+    """Embed one search query. Returns L2-normalized float32 blob, or None.
+
+    Request-path use is limited to semantic/hybrid search (design §7.1).
+    Related CVEs must not call this — they use stored vectors only.
+    """
+    global _missing_dep_logged
+    if not embeddings_enabled():
+        return None
+    cleaned = (text or "").strip()
+    if not cleaned:
+        return None
+    if TextEmbedding is None:
+        if not _missing_dep_logged:
+            logger.warning(
+                "EMBEDDINGS_ENABLED=1 but 'fastembed' is not installed — "
+                "semantic search falls back to keyword"
+            )
+            _missing_dep_logged = True
+        return None
+    model_name = get_embeddings_model_name()
+    try:
+
+        def _load_and_embed() -> list[np.ndarray]:
+            model = _get_model(model_name)
+            return _embed_texts(model, [cleaned])
+
+        # Model load + ONNX inference are CPU-heavy — never block the event loop.
+        vectors = await asyncio.to_thread(_load_and_embed)
+    except Exception:
+        logger.exception("query embedding failed")
+        return None
+    if not vectors:
+        return None
+    return vector_to_blob(l2_normalize(vectors[0]))
