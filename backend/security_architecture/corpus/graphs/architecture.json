@@ -998,6 +998,18 @@
       ]
     },
     {
+      "id": "table:embeddings",
+      "label": "embeddings",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "embeddings"
+        }
+      ]
+    },
+    {
       "id": "table:epss_history",
       "label": "epss_history",
       "kind": "table",
@@ -1978,6 +1990,12 @@
       "kind": "references_table"
     },
     {
+      "id": "job:embeddings_backfill->table:embeddings",
+      "source": "job:embeddings_backfill",
+      "target": "table:embeddings",
+      "kind": "references_table"
+    },
+    {
       "id": "job:embeddings_backfill->table:feed_cache",
       "source": "job:embeddings_backfill",
       "target": "table:feed_cache",
@@ -2701,6 +2719,12 @@
       "id": "job:nvd_incremental_sync->table:cves",
       "source": "job:nvd_incremental_sync",
       "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nvd_incremental_sync->table:embeddings",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:embeddings",
       "kind": "references_table"
     },
     {
@@ -3775,6 +3799,12 @@
       "id": "routers-cves->table:cves",
       "source": "routers-cves",
       "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves->table:embeddings",
+      "source": "routers-cves",
+      "target": "table:embeddings",
       "kind": "references_table"
     },
     {
