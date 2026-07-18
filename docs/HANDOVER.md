@@ -12,6 +12,33 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — Feed Health LLM circuits (cerebras/gemini/groq) RCA
+
+**Symptom (post-#677 deploy):** Feed Health showed cerebras + gemini **PAUSED**
+with `ConnectError: [Errno -3] Temporary failure in name resolution`, and groq
+**DEGRADED** with `empty LLM response content`.
+
+**RCA (not caused by #677 UI diff):**
+1. An LLM job ran the router chain (~timestamps clustered).
+2. **Groq** completed HTTP but returned a blank completion →
+   `mark_provider_empty_response("groq")` → DEGRADED.
+3. Failover hit **cerebras** / **gemini**; the production host failed DNS
+   (`EAI_AGAIN`) for `api.cerebras.ai` / `generativelanguage.googleapis.com`
+   → after 3 consecutive fails each source PAUSED.
+4. #677 only touched charts/jargon/rate-limit dashboard — no LLM/DNS code.
+
+**Ops:** On the prod box, `getent hosts api.cerebras.ai generativelanguage.googleapis.com`;
+fix Docker/systemd-resolved egress if NXDOMAIN/EAI_AGAIN; then **Resume retries**.
+Check AI Ops / Groq model for empty completions separately.
+
+**Code guard (this PR):** API key health probes use `record_circuit=False` +
+`ignore_circuit=True` so monitoring pings cannot open/poison shared Feed Health
+circuits (results still persist under `api_key_health:{provider}`).
+
+**Next:** Confirm prod DNS after deploy; merge probe isolation when green.
+
+---
+
 ## 2026-07-18 — Domain jargon tips (Analyst + Admin)
 
 **What:** Locked jargon sweep — unexplained abbreviations across Analyst Charts,
