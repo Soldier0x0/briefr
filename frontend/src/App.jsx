@@ -555,10 +555,30 @@ export default function App() {
     setSearchParams((prev) => buildAppTabSearchParams(prev, 'feed'), { replace: true })
   }, [searchParams, openCveById, setSearchParams, setActiveTab])
 
+  const iocDeepLinkHandled = useRef(null)
+  useEffect(() => {
+    const iocParam = searchParams.get('ioc')
+    if (!iocParam) return
+    const value = iocParam.trim()
+    if (!value || iocDeepLinkHandled.current === value) return
+    iocDeepLinkHandled.current = value
+    setActiveTab('ioc')
+    setIocPrefill({
+      value,
+      indicators: [{ type: 'ip', value }],
+      trigger: Date.now(),
+    })
+    setSearchParams((prev) => {
+      const next = buildAppTabSearchParams(prev, 'ioc')
+      next.delete('ioc')
+      return next
+    }, { replace: true })
+  }, [searchParams, setSearchParams, setActiveTab])
+
   // Keep React tab state + visible `tab=` in sync with the URL (back/forward,
   // legacy view=-only Forge links, first paint without tab=).
   useEffect(() => {
-    if (searchParams.get('cve')) return
+    if (searchParams.get('cve') || searchParams.get('ioc')) return
     const resolved = resolveAppTab(searchParams)
     setActiveTab((prev) => (prev === resolved ? prev : resolved))
     if (searchParams.get('tab') === resolved) return

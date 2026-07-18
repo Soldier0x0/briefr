@@ -123,6 +123,9 @@ async def list_correlation_clusters(
                 "member_count": len(members),
                 "stack_member_count": len(members_on_stack),
                 "watchlisted_member_count": len(watchlisted_members),
+                # Full member list so UI can open a CVE without My Stack / pins
+                # (members_on_stack / watchlisted_members alone are often empty).
+                "members": members,
                 "members_on_stack": members_on_stack,
                 "watchlisted_members": watchlisted_members,
             }

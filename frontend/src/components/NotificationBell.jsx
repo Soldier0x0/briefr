@@ -163,6 +163,12 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
       url.searchParams.set('tab', 'feed')
       url.searchParams.set('cve', item.entity_id)
       window.location.assign(url.toString())
+    } else if (item.entity_type === 'ioc' && item.entity_id) {
+      const url = new URL(window.location.href)
+      url.pathname = '/'
+      url.searchParams.set('tab', 'ioc')
+      url.searchParams.set('ioc', item.entity_id)
+      window.location.assign(url.toString())
     } else if (item.entity_type === 'kev_backlog') {
       // Analyst shell uses tab=; Forge still owns view=/technique=/pack=.
       const url = new URL(window.location.href)

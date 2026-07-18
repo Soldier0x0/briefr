@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { adminApi } from '../../api.js'
 import HelpTip from './shared/HelpTip.jsx'
 import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
@@ -70,7 +71,7 @@ export default function RateLimitPage({ toast }) {
               {data.enabled ? 'enabled' : 'disabled'}
             </strong>
             . To change this, update <code>RATE_LIMIT_ENABLED</code> in{' '}
-            <a href="#" onClick={e => { e.preventDefault(); }} style={{ color: 'var(--fg2)' }}>API keys &amp; config</a>.
+            <Link to="/admin?p=apikeys" style={{ color: 'var(--accent)' }}>API keys &amp; config</Link>.
           </span>
         </div>
       )}
