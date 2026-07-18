@@ -1,8 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { fetchCVEs } from '../api.js'
+import { fetchCVEs, fetchSemanticSearch } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
 import { ingestLogUrl } from '../utils/adminLinks.js'
 import { toApiCveParams } from '../utils/cveFilters.js'
+import {
+  filterHybridHits,
+  hybridSearchStatusLabel,
+  shouldUseHybridSearch,
+} from '../utils/hybridFeedSearch.js'
 import { scrollBehavior } from '../utils/motion.js'
 import { shouldIgnoreGlobalShortcut } from '../utils/keyboardScope.js'
 import { buildCombinedReport, copyToClipboard } from '../utils/report.js'
@@ -17,6 +22,7 @@ import { useAssetProfileOptional } from '../context/AssetProfileContext.jsx'
 import './CVEFeed.css'
 
 const PAGE_LIMIT = 20
+const HYBRID_LIMIT = 40
 const LAST_VISIT_KEY = 'briefr_last_visit'
 
 function SkeletonCard() {
@@ -68,6 +74,7 @@ export default function CVEFeed({
   const [error, setError] = useState(null)
   const [errorRequestId, setErrorRequestId] = useState(null)
   const [hasMore, setHasMore] = useState(true)
+  const [searchStatus, setSearchStatus] = useState('')
   const [selectedMap, setSelectedMap] = useState({})
   const [copyAllState, setCopyAllState] = useState('idle')
   const [bulkMenuOpen, setBulkMenuOpen] = useState(false)
@@ -161,7 +168,32 @@ export default function CVEFeed({
     setErrorRequestId(null)
 
     try {
-      const apiParams = toApiCveParams(filtersRef.current)
+      const filtersNow = filtersRef.current
+      if (!append && shouldUseHybridSearch(filtersNow)) {
+        const q = (filtersNow.search || '').trim()
+        const body = await fetchSemanticSearch({
+          q,
+          mode: 'hybrid',
+          limit: HYBRID_LIMIT,
+        })
+        if (controller.signal.aborted) return
+        let pageRows = filterHybridHits(body.data || [], filtersNow)
+        const serverStackSort = false
+        if (assetAwareRef.current && !serverStackSort) {
+          pageRows = sortByExposure(pageRows, getMatchScoreRef.current)
+        }
+        setSearchStatus(hybridSearchStatusLabel(body.meta))
+        setTotal(pageRows.length)
+        setHasMore(false)
+        hasMoreRef.current = false
+        setCves(pageRows)
+        pageRef.current = 1
+        setPage(1)
+        return
+      }
+
+      setSearchStatus('')
+      const apiParams = toApiCveParams(filtersNow)
       const data = await fetchCVEs({
         ...apiParams,
         page: pageNum,
@@ -189,6 +221,7 @@ export default function CVEFeed({
         if (!append) {
           setCves([])
           setTotal(0)
+          setSearchStatus('')
         }
       }
     } finally {
@@ -405,6 +438,7 @@ export default function CVEFeed({
         feedCardCount={cves.length}
         onGenerateDigest={() => onGenerateDigest && onGenerateDigest(cves)}
         searchFocusTrigger={searchFocusTrigger}
+        searchStatus={searchStatus}
       />
       <details className="severity-legend-feed">
         <summary className="severity-legend-feed-summary mono">SEVERITY LEGEND</summary>

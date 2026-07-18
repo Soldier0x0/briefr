@@ -12,6 +12,20 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — Embeddings E4: FEED one-box hybrid search
+
+**What:** FEED search box calls `GET /api/search/semantic?mode=hybrid` when the
+query is the primary retrieval signal (no Keyword|Semantic toggle). Quiet
+status when API reports `keyword_fallback`. Stack/PoC/vendor/watchlist filters
+still use `/api/cves` so server-side filter semantics stay correct.
+- `frontend/src/api.js` — `fetchSemanticSearch`
+- `frontend/src/utils/hybridFeedSearch.js` — gate + map + status label
+- `CVEFeed.jsx` / `FilterBar.jsx` — wiring + placeholder + status
+
+**Next:** **E5** — Admin search service token.
+
+---
+
 ## 2026-07-18 — Embeddings E3: related ANN + hybrid search API
 
 **What:** Related CVEs prefer pgvector ANN on `embeddings` (SQLite BLOB cosine /

@@ -188,6 +188,16 @@ export function fetchCVEs(params = {}) {
   return request(`/cves${query ? `?${query}` : ''}`)
 }
 
+/** Embeddings E4 — hybrid / keyword / semantic CVE search (default hybrid). */
+export function fetchSemanticSearch({ q = '', mode = 'hybrid', limit = 20 } = {}) {
+  const qs = new URLSearchParams()
+  if (q) qs.set('q', q)
+  if (mode) qs.set('mode', mode)
+  if (limit != null) qs.set('limit', String(limit))
+  const query = qs.toString()
+  return request(`/search/semantic${query ? `?${query}` : ''}`)
+}
+
 export function fetchCVE(cveId) {
   return request(`/cves/${encodeURIComponent(cveId)}`)
 }
