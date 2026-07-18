@@ -12,7 +12,7 @@ import {
   YAxis,
 } from 'recharts'
 import { ChartShell } from '../../../components/ui/index.js'
-import { fmtBytes, fmtDur } from '../formatters.js'
+import { bytesChartScale, fmtDur } from '../formatters.js'
 import {
   axisLabelStyle,
   axisTickStyle,
@@ -117,9 +117,10 @@ export function IngestDurationChart({ rows }) {
 
 export function BackupSizesChart({ rows }) {
   const theme = getRechartsTheme()
+  const scale = bytesChartScale(rows.map((row) => row.size_bytes || 0))
   const data = rows.map((row) => ({
     label: backupSparklineLabel(row),
-    size: row.size_bytes || 0,
+    size: scale.toDisplay(row.size_bytes || 0),
     filename: row.filename,
     created_at: row.created_at,
   }))
@@ -147,10 +148,11 @@ export function BackupSizesChart({ rows }) {
           />
           <YAxis
             width={72}
+            domain={[0, scale.domainMax]}
             tick={axisTickStyle(theme)}
-            tickFormatter={(v) => fmtBytes(Number(v))}
+            tickFormatter={(v) => scale.format(Number(v))}
             label={{
-              value: 'Size',
+              value: `Size (${scale.unit})`,
               angle: -90,
               position: 'insideLeft',
               offset: 8,
@@ -162,7 +164,7 @@ export function BackupSizesChart({ rows }) {
             labelStyle={tooltipLabelStyle(theme)}
             itemStyle={tooltipItemStyle(theme)}
             cursor={tooltipCursorStyle(theme)}
-            formatter={(value) => [fmtBytes(Number(value)), 'Archive size']}
+            formatter={(value) => [scale.format(Number(value)), 'Archive size']}
             labelFormatter={(_label, payload) => payload?.[0]?.payload?.filename || _label}
           />
           <Line

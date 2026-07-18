@@ -17,6 +17,59 @@ export function fmtBytes(bytes) {
   return `${val.toFixed(1)} ${units[i]}`
 }
 
+/**
+ * Scale for plotting byte series so Y-axis ticks and tooltip values share
+ * one linear display unit. Plotting raw bytes makes Recharts pick decimal
+ * "nice" ticks (25e6, 50e6, …) that fmtBytes turns into awkward MB labels
+ * (23.8, 47.7, …), so a 50.3 MB point sits almost on the "47.7 MB" grid line.
+ */
+export function bytesChartScale(valuesBytes) {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const nums = (valuesBytes || [])
+    .map((v) => Number(v))
+    .filter((n) => Number.isFinite(n) && n >= 0)
+  const maxBytes = nums.length ? Math.max(...nums) : 0
+  let unitIndex = 0
+  let divisor = 1
+  const peak = maxBytes > 0 ? maxBytes : 1
+  while (peak / divisor >= 1024 && unitIndex < units.length - 1) {
+    divisor *= 1024
+    unitIndex += 1
+  }
+  const unit = units[unitIndex]
+  const toDisplay = (bytes) => {
+    const n = Number(bytes)
+    if (!Number.isFinite(n) || n <= 0) return 0
+    return n / divisor
+  }
+  const format = (displayVal) => {
+    const n = Number(displayVal)
+    if (!Number.isFinite(n)) return '—'
+    return `${n.toFixed(1)} ${unit}`
+  }
+  const maxDisplay = toDisplay(maxBytes)
+  return {
+    unit,
+    divisor,
+    toDisplay,
+    format,
+    domainMax: niceCeil(maxDisplay),
+  }
+}
+
+function niceCeil(n) {
+  if (!Number.isFinite(n) || n <= 0) return 1
+  const exp = Math.floor(Math.log10(n))
+  const mag = 10 ** exp
+  const frac = n / mag
+  let niceFrac
+  if (frac <= 1) niceFrac = 1
+  else if (frac <= 2) niceFrac = 2
+  else if (frac <= 5) niceFrac = 5
+  else niceFrac = 10
+  return niceFrac * mag
+}
+
 export function fmtDur(sec) {
   if (sec === null || sec === undefined) return '—'
   if (sec < 60) return `${sec.toFixed(1)} s`

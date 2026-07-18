@@ -12,6 +12,20 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — OpsCharts: backup archive size Y-axis vs tooltip mismatch
+
+**What:** Backup archive sizes chart plotted raw `size_bytes` while Recharts
+picked decimal “nice” ticks (25e6/50e6/100e6). `fmtBytes` labeled those as
+23.8/47.7/95.4 MB, so a 50.3 MB point sat ~5px above the “47.7 MB” grid line
+and looked wrong vs the tooltip.
+- `bytesChartScale()` — convert series to one display unit before plot
+- `BackupSizesChart` uses that scale for data, domain, ticks, and tooltip
+
+**Next:** Collect more maintainer-reported UI issues on the same PR branch
+`cursor/backup-archive-chart-fix-eee1`.
+
+---
+
 ## 2026-07-18 — Embeddings E6: MITRE technique embeddings + typed hits
 
 **What:** Embed ATT&CK techniques into multi-entity `embeddings` (`entity_type=technique`);
