@@ -136,7 +136,7 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel,
       {/*
         Pure CSS grid (not <table>): grid-on-<tr> + td[colSpan] fought table
         layout so headers and body tracks drifted. Rows are native <button>s —
-        do not overlay role="row"/"cell" (destroys button semantics).
+        do not overlay table row/cell roles (destroys button semantics).
       */}
       <div
         className="brief-epss-grid"
