@@ -125,8 +125,8 @@ function ProofBenchSection({ packs }) {
         </Tooltip>
       </div>
       {packs.length > 1 && (
-        <label className="fg-proof-pack-select">
-          <span className="mono">PACK</span>
+        <label className="fg-proof-pack-select control-field">
+          <span className="control-field-label mono">PACK</span>
           <Select
             className="fg-proof-select mono"
             value={selectedPack?.id != null ? String(selectedPack.id) : ''}

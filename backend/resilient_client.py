@@ -170,6 +170,7 @@ async def _execute_request_attempt(
     timeout: float,
     retries: int,
     record_client_error: bool,
+    record_circuit: bool = True,
 ) -> httpx.Response:
     """Single logical request with bounded retries for transport/5xx errors."""
     client = _get_client()
@@ -201,7 +202,8 @@ async def _execute_request_attempt(
             if attempt < retries:
                 await asyncio.sleep(RETRY_BACKOFF_SECONDS * (2**attempt))
                 continue
-            _record_failure(source, f"{type(exc).__name__}: {exc}")
+            if record_circuit:
+                _record_failure(source, f"{type(exc).__name__}: {exc}")
             raise
 
         _meter_attempt(
@@ -226,9 +228,10 @@ async def _execute_request_attempt(
             cooldown = max(
                 _retry_after_seconds(response, attempt), CIRCUIT_COOLDOWN_SECONDS
             )
-            _record_failure(
-                source, f"HTTP {response.status_code}", cooldown_seconds=cooldown
-            )
+            if record_circuit:
+                _record_failure(
+                    source, f"HTTP {response.status_code}", cooldown_seconds=cooldown
+                )
             response.raise_for_status()
 
         if response.status_code == 429:
@@ -262,7 +265,8 @@ async def _execute_request_attempt(
                     pass
 
         if response.is_server_error:
-            _record_failure(source, f"HTTP {response.status_code}")
+            if record_circuit:
+                _record_failure(source, f"HTTP {response.status_code}")
             response.raise_for_status()
 
         if response.is_client_error:
@@ -270,7 +274,8 @@ async def _execute_request_attempt(
                 _state(source)["last_error"] = f"HTTP {response.status_code}"
             response.raise_for_status()
 
-        _record_success(source)
+        if record_circuit:
+            _record_success(source)
         apply_rate_limit_headers(source, response.headers)
         return response
 
@@ -291,6 +296,8 @@ async def resilient_request(
     wait_on_rate_limit: bool = True,
     wait_on_circuit: bool = False,
     record_client_error: bool = True,
+    record_circuit: bool = True,
+    ignore_circuit: bool = False,
     queue_operation: str | None = None,
     queue_context_type: str | None = None,
     queue_context_id: str | None = None,
@@ -300,10 +307,15 @@ async def resilient_request(
     Rate limits (HTTP 429) never drop the request when ``wait_on_rate_limit``
     is True — the call waits in the API queue and retries. Circuit-open behavior
     is controlled by ``wait_on_circuit`` (False = fail fast for optional feeds).
+
+    Probes (API key health) should pass ``record_circuit=False`` and
+    ``ignore_circuit=True`` so a monitoring ping cannot open/poison the shared
+    feed-health circuit used by real ingest/LLM traffic, and can still verify
+    recovery while a circuit is open.
     """
     while True:
         open_until = _circuit_open_until(source)
-        if open_until and time.time() < open_until:
+        if open_until and time.time() < open_until and not ignore_circuit:
             if wait_on_circuit:
                 wait = open_until - time.time() + 0.1
                 schedule_source_pause(source, wait, reason="circuit_open")
@@ -334,6 +346,7 @@ async def resilient_request(
                 timeout=timeout,
                 retries=retries,
                 record_client_error=record_client_error,
+                record_circuit=record_circuit,
             )
         except httpx.HTTPStatusError as exc:
             is_rate_limited = exc.response.status_code == 429 or (

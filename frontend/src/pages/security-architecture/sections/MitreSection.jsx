@@ -91,18 +91,20 @@ export default function MitreSection() {
       </div>
 
       <form
-        className="sa-stack-filter"
+        className="sa-stack-filter control-toolbar--fields"
         onSubmit={(e) => { e.preventDefault(); setStack(stackInput.trim()) }}
       >
-        <label className="sa-subsection-label mono" htmlFor="sa-mitre-stack">STACK FILTER</label>
-        <input
-          id="sa-mitre-stack"
-          type="text"
-          className="sa-stack-input mono"
-          placeholder="e.g. apache, log4j (comma-separated, same matching as Forge)"
-          value={stackInput}
-          onChange={(e) => setStackInput(e.target.value)}
-        />
+        <label className="control-field sa-stack-field" htmlFor="sa-mitre-stack">
+          <span className="control-field-label">STACK FILTER</span>
+          <input
+            id="sa-mitre-stack"
+            type="text"
+            className="sa-stack-input mono"
+            placeholder="e.g. apache, log4j (comma-separated, same matching as Forge)"
+            value={stackInput}
+            onChange={(e) => setStackInput(e.target.value)}
+          />
+        </label>
         <button type="submit" className="admin-btn admin-btn-ghost mono">APPLY</button>
         {stack && (
           <button

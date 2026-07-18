@@ -12,15 +12,24 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+<<<<<<< HEAD
 ## 2026-07-18 — Forge Campaigns OPEN CVEs + dead-control sweep
 
 **What:** Campaigns **OPEN CVE** looked enabled but often no-oped; label was
 singular next to “N CVEs”. Broader dead-control audit + fixes on
 `cursor/forge-campaigns-open-cve-eee1`.
+=======
+## 2026-07-18 — FEED STACK/search contrast + EPSS movers dead UI / alignment
+
+**What:** Maintainer screenshots — STACK label spacing, semantic search blending into
+page black, TOP EPSS MOVERS dropdown offering non-working Custom range, and EPSS
+table columns misaligned. Fixed on `cursor/feed-epss-ui-cleanup-eee1`.
+>>>>>>> origin/main
 
 **RCA (locked):**
 | ID | Symptom | Root cause | Fix |
 |----|---------|------------|-----|
+<<<<<<< HEAD
 | D1 | OPEN CVE click does nothing (esp. without My Stack) | UI only used `members_on_stack` / `watchlisted_members`; API omitted full `members`; disable ignored empty target | API `members`; fallback open target; plural **OPEN CVEs**; disable when no target |
 | D2 | IOC watchlist notification title click no-ops | `entity_type=ioc` had no handler branch | `?tab=ioc&ioc=` + App prefill deep-link |
 | D3 | Rate limit “API keys & config” dead `#` link | `preventDefault` empty handler | `<Link to="/admin?p=apikeys">` |
@@ -28,6 +37,59 @@ singular next to “N CVEs”. Broader dead-control audit + fixes on
 | D5 | Backlog CVE ID not openable | Same | Wire like HuntPackRail |
 
 **Next:** Verify → PR → Gemini disposition.
+=======
+| A1 | STACK // optically high / awkward gap | Label inherited body line-height; `gap: --space-3`; input `--bg2` same as panel | Midline label (`min-height: --hit-target-min`, `line-height: 1`); tighter gap; input `--surface-input` on raised panel |
+| A2 | Search/semantic bar blends in | `.filter-search` used `--bg2` + `--border` (`--border-subtle`) on `--bg` page | `--surface-input` + `--border2`; stronger left edge on focus via `--accent-indicator` |
+| B1 | EPSS “Custom range…” half-dead | `TimeWindowPicker` always offered custom; BriefCharts only sends `since_hours` (API `le=168`); calendar range ignored | `allowCustom={false}` on EPSS; clamp hours ≤168 |
+| B2 | 30d/90d presets | Already filtered via `EPSS_MOVERS_PRESET_IDS`; landmine if caller omits `presetIds` | Keep filter; gate test asserts EPSS does not pass full `TIME_PRESETS` |
+| B3 | Severity header vs cells / cramped sparkline | `<th>` table columns vs body `td[colSpan=4]` + CSS grid; severity cell `justify-content: center` | Shared `--brief-epss-cols` on thead + row button; left-align severity |
+| C1 | Watchlist empty copy says “pin or snooze” | Snooze removed from analyst UI; copy lag | Pin-only empty copy; clarify legacy snooze |
+
+**Similar audit (not same defect class):** What Changed rows already share one grid
+(headerless list) — OK. Other `TimeWindowPicker` consumers keep Custom when they
+honor `since`/`until` (e.g. ingest log). No other hours-capped picker found.
+
+**Next:** Merged after #679; STACK contrast kept with control-field layout.
+
+## 2026-07-18 — Product-wide labeled control row alignment
+
+**What:** Table browser (and similar toolbars) put the label + Select inline in a
+flex row with `align-items: center`, so sibling action buttons lined up with the
+label text and looked shorter / staggered — same class across the product.
+- SSOT `.control-field` / `.control-toolbar--fields` in `App.css` (admin aliases)
+- Applied: FEED stack, ARCH scope/stack/search, Forge pack picker, DbExplorer,
+  AI ops, Webhooks, Backups schedule, IngestLog/Watchlist height sync
+- design-system.md §23.8
+
+**Next:** More maintainer UI issues as reported.
+
+## 2026-07-18 — Feed Health LLM circuits (cerebras/gemini/groq) RCA
+
+**Symptom (post-#677 deploy):** Feed Health showed cerebras + gemini **PAUSED**
+with `ConnectError: [Errno -3] Temporary failure in name resolution`, and groq
+**DEGRADED** with `empty LLM response content`.
+
+**RCA (not caused by #677 UI diff):**
+1. An LLM job ran the router chain (~timestamps clustered).
+2. **Groq** completed HTTP but returned a blank completion →
+   `mark_provider_empty_response("groq")` → DEGRADED.
+3. Failover hit **cerebras** / **gemini**; the production host failed DNS
+   (`EAI_AGAIN`) for `api.cerebras.ai` / `generativelanguage.googleapis.com`
+   → after 3 consecutive fails each source PAUSED.
+4. #677 only touched charts/jargon/rate-limit dashboard — no LLM/DNS code.
+
+**Ops:** On the prod box, `getent hosts api.cerebras.ai generativelanguage.googleapis.com`;
+fix Docker/systemd-resolved egress if NXDOMAIN/EAI_AGAIN; then **Resume retries**.
+Check AI Ops / Groq model for empty completions separately.
+
+**Code guard (merged #678):** API key health probes use `record_circuit=False` +
+`ignore_circuit=True` so monitoring pings cannot open/poison shared Feed Health
+circuits (results still persist under `api_key_health:{provider}`).
+
+**Next:** Confirm prod DNS after deploy.
+
+---
+>>>>>>> origin/main
 
 ## 2026-07-18 — Domain jargon tips (Analyst + Admin)
 

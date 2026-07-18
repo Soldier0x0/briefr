@@ -135,10 +135,10 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel,
       </details>
       <table className="brief-epss-table" aria-label={`Top EPSS movers in the last ${windowLabel}`}>
         <thead>
-          <tr>
-            <th scope="col" className="mono">CVE</th>
+          <tr className="brief-epss-cols">
+            <th scope="col" className="mono brief-epss-col-cve">CVE</th>
             <th scope="col" className="mono brief-epss-col-sev">Severity</th>
-            <th scope="col" className="mono">
+            <th scope="col" className="mono brief-epss-col-spark">
               <ControlTooltip text={sparkSpec.columnTooltip} trigger="hover-focus">
                 <span>{sparkSpec.columnLabel}</span>
               </ControlTooltip>
@@ -157,11 +157,11 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel,
               sparkSpec.days,
             )
             return (
-              <tr key={row.cve_id}>
-                <td colSpan={4} className="brief-epss-row-cell">
+              <tr key={row.cve_id} className="brief-epss-data-row">
+                <td className="brief-epss-row-cell" colSpan={4}>
                   <button
                     type="button"
-                    className="brief-epss-row-btn"
+                    className="brief-epss-row-btn brief-epss-cols"
                     onClick={() => onSelectCVE?.({ cve_id: row.cve_id })}
                     aria-label={`Open ${row.cve_id} details, EPSS increased ${(row.delta * 100).toFixed(1)} percentage points`}
                   >
@@ -215,7 +215,8 @@ export default function BriefCharts({ onSelectCVE, pollEnabled = true }) {
 
   const lastFetchedIdsRef = useRef('')
 
-  const epssHours = hoursFromWindow(epssWindow)
+  // API /api/changes since_hours is capped at 168; never request beyond that.
+  const epssHours = Math.min(168, hoursFromWindow(epssWindow))
   const epssSparkSpec = useMemo(() => epssSparklineWindowSpec(epssHours), [epssHours])
   const epssWindowLabel = useMemo(
     () => epssWindowDisplayLabel(epssWindow, epssHours),
@@ -400,6 +401,7 @@ export default function BriefCharts({ onSelectCVE, pollEnabled = true }) {
                     onChange={setEpssWindow}
                     ariaLabel="EPSS change window"
                     presetIds={EPSS_MOVERS_PRESET_IDS}
+                    allowCustom={false}
                   />
                 </div>
                 <EpssMoversTable

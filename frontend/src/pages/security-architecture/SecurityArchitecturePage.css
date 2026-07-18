@@ -635,17 +635,24 @@
 
 .sa-stack-filter {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-end;
+  gap: var(--space-2);
   flex-wrap: wrap;
   margin: 14px 0;
 }
 
-.sa-stack-input {
+.sa-stack-field {
   flex: 1;
   min-width: 220px;
+}
+
+.sa-stack-input {
+  width: 100%;
+  min-width: 0;
   font-size: 0.8125rem;
-  padding: 6px 10px;
+  padding: 0 var(--space-3);
+  min-height: var(--control-height-md);
+  box-sizing: border-box;
   background: var(--bg2);
   border: 1px solid var(--border);
   color: var(--text);
@@ -742,15 +749,25 @@
 
 .sa-scope-bar {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: flex-end;
+  gap: var(--space-2);
   flex-wrap: wrap;
   margin: 4px 0 14px;
 }
 
+.sa-scope-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-height: var(--control-height-md);
+}
+
 .sa-scope-btn {
   font-size: 0.75rem;
-  padding: 5px 10px;
+  padding: 0 10px;
+  min-height: var(--control-height-md);
+  box-sizing: border-box;
   background: transparent;
   border: 1px solid var(--border);
   color: var(--text2);
@@ -777,7 +794,9 @@
 
 .sa-fw-select {
   font-size: 0.75rem;
-  padding: 5px 8px;
+  padding: 0 8px;
+  min-height: var(--control-height-md);
+  box-sizing: border-box;
   background: var(--bg2);
   border: 1px solid var(--border);
   color: var(--text);
