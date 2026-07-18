@@ -4517,6 +4517,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-search->table:mitre_techniques",
+      "source": "routers-search",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-stack_catalog->table:cve_exploits",
       "source": "routers-stack_catalog",
       "target": "table:cve_exploits",

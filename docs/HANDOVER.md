@@ -24,7 +24,33 @@ attempt.
 | S1 | Spacebar / caret snaps back while typing STACK | Debounce `trim()` → `filters.stack` → `useEffect` overwrote `localStack` and reset caret | `nextLocalStack`: ignore external updates that only differ by surrounding whitespace |
 | E1 | CVE/Severity/trend/Δ headers vs cells skewed | `display:grid` on `<tr>` + `td[colSpan=4]` still fought table layout; header tracks ≠ body | Drop table; shared `.brief-epss-cols` CSS grid for head + row buttons |
 
-**Next:** Verify in browser → merge.
+**A11y:** EPSS rows stay native `<button>`s (no table row/cell role overlays).
+
+**Next:** Merged #682.
+
+## 2026-07-18 — E7 retrieval Phase 1 (stack hybrid + freshness + golden)
+
+**Done**
+- Design + plan: `docs/planning/specs/retrieval-engine-e7-design.md`,
+  `retrieval-engine-e7-implementation-plan.md` (Approach A + multi-entity;
+  retrieval only, no RAG; campaigns after techniques).
+- **Freshness:** scheduled CVE backfill scans oldest embeds for
+  `content_hash` drift (`migrated:` or mismatched hash) and requeues
+  (`db/embeddings_store.py`).
+- **API:** `GET /api/search/semantic` accepts `stack`, `severity`,
+  `kev_only` — post-filter after hybrid ranking (`services/semantic_search.py`).
+- **FEED:** hybrid stays on with My Stack; passes stack/severity/KEV into
+  semantic search (`hybridFeedSearch.js`, `CVEFeed.jsx`, `api.js`).
+- **Eval:** `backend/tests/fixtures/retrieval_golden_queries.json` +
+  `test_retrieval_golden.py` (contract; ranking needs live vectors).
+- Docs: `API_REFERENCE.md`, `PRODUCT_STATUS.md`, sprint E7/E8.
+
+**Verify:** `pytest tests/test_embeddings_e7_*.py tests/test_retrieval_golden.py -q`;
+frontend hybrid unit test + `npm run build`.
+
+**Next:** E8 campaign `entity_type` embeddings + semantic search; then
+admin retrieval health + operator knobs (design §6).
+
 
 ## 2026-07-18 — Forge Campaigns OPEN CVEs + dead-control sweep
 

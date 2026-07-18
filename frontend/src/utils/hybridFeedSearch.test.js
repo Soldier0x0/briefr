@@ -16,10 +16,16 @@ describe('hybridFeedSearch', () => {
     )
   })
 
-  it('defers to /api/cves when list filters need server fields', () => {
+  it('defers to /api/cves when list filters need server fields hybrid lacks', () => {
     assert.equal(shouldUseHybridSearch({ search: 'x', poc_only: true }), false)
-    assert.equal(shouldUseHybridSearch({ search: 'x', stack: 'nginx' }), false)
+    assert.equal(shouldUseHybridSearch({ search: 'x', vendors: 'Microsoft' }), false)
     assert.equal(shouldUseHybridSearch({ search: '' }), false)
+  })
+
+  it('keeps hybrid when My Stack / severity / KEV chips are active (E7)', () => {
+    assert.equal(shouldUseHybridSearch({ search: 'rce', stack: 'nginx' }), true)
+    assert.equal(shouldUseHybridSearch({ search: 'rce', my_stack_only: true }), true)
+    assert.equal(shouldUseHybridSearch({ search: 'rce', severity: 'HIGH', kev_only: true }), true)
   })
 
   it('maps hits and applies severity/kev filters', () => {

@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "note": "Contract-level golden shapes for the retrieval engine (not nDCG). Expand with real corpus IDs when embeddings are on in CI.",
+  "queries": [
+    {
+      "id": "cve_id",
+      "q": "CVE-2024-3094",
+      "expect_shape": "cve_id",
+      "expect_mode_paths": ["keyword_first", "keyword", "semantic"]
+    },
+    {
+      "id": "short",
+      "q": "nginx rce",
+      "expect_shape": "short",
+      "expect_mode_paths": ["hybrid", "keyword", "keyword_fallback", "semantic"]
+    },
+    {
+      "id": "long",
+      "q": "remote code execution in our edge reverse proxy before authentication",
+      "expect_shape": "long",
+      "expect_mode_paths": ["hybrid", "keyword", "keyword_fallback", "semantic"]
+    }
+  ]
+}

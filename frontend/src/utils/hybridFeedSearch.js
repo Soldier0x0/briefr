@@ -2,14 +2,17 @@
 
 /**
  * Use /api/search/semantic when the query is the primary retrieval signal.
- * Fall back to /api/cves?search= when list filters need server-side fields
- * the hybrid payload does not carry (PoC, vendors, stack, watchlist, …).
+ * Fall back to /api/cves?search= when list filters need fields hybrid cannot
+ * express yet (PoC, vendors, watchlist, technique day, …).
+ *
+ * E7: stack / My Stack stay on hybrid — API accepts ``stack`` and filters CVE hits.
+ * Severity / KEV chips also stay on hybrid (API + client filter).
  */
 export function shouldUseHybridSearch(filters) {
   const q = (filters?.search || '').trim()
   if (!q) return false
   if (filters?.poc_only || filters?.kev_overdue_only || filters?.watchlist_only) return false
-  if (filters?.vendors || filters?.stack || filters?.my_stack_only) return false
+  if (filters?.vendors) return false
   if (filters?.summary_only || filters?.ai_context_only || filters?.ai_profile_match) return false
   if (filters?.technique || filters?.published_on) return false
   return true
