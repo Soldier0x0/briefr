@@ -16,6 +16,7 @@ DEFAULT_EMBEDDING_DIMS = 384
 DEFAULT_EMBEDDINGS_MODEL = "BAAI/bge-small-en-v1.5"
 EMBED_TEXT_MAX_CHARS = 2000
 ENTITY_TYPE_CVE = "cve"
+ENTITY_TYPE_TECHNIQUE = "technique"
 
 
 def blob_to_pgvector_literal(
@@ -83,6 +84,30 @@ def build_cve_embed_text(
     cwes = _join_json_list(cwe_ids)
     if cwes:
         parts.append(cwes)
+    text = "\n".join(parts)
+    if len(text) > max_chars:
+        return text[:max_chars]
+    return text
+
+
+def build_technique_embed_text(
+    *,
+    name: str | None,
+    description: str | None = None,
+    tactic: str | None = None,
+    max_chars: int = EMBED_TEXT_MAX_CHARS,
+) -> str:
+    """Deterministic ATT&CK technique text (design §5 / E6)."""
+    parts: list[str] = []
+    title = (name or "").strip()
+    if title:
+        parts.append(title)
+    tac = (tactic or "").strip()
+    if tac:
+        parts.append(tac)
+    desc = (description or "").strip()
+    if desc:
+        parts.append(desc)
     text = "\n".join(parts)
     if len(text) > max_chars:
         return text[:max_chars]
