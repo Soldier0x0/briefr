@@ -141,6 +141,13 @@ async def revoke_search_token(db: DbConnection, token_id: int) -> bool:
             (token_id,),
         )
         return bool(rows)
+    # SQLite: only succeed when an active row exists (match Postgres RETURNING).
+    active = await db.execute_fetchall(
+        "SELECT id FROM search_api_tokens WHERE id = ? AND revoked_at IS NULL",
+        (token_id,),
+    )
+    if not active:
+        return False
     await db.execute(
         """
         UPDATE search_api_tokens
@@ -149,11 +156,7 @@ async def revoke_search_token(db: DbConnection, token_id: int) -> bool:
         """,
         (utcnow_str(), token_id),
     )
-    rows = await db.execute_fetchall(
-        "SELECT id FROM search_api_tokens WHERE id = ? AND revoked_at IS NOT NULL",
-        (token_id,),
-    )
-    return bool(rows)
+    return True
 
 
 async def verify_search_token(db: DbConnection, plaintext: str) -> dict | None:

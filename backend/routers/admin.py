@@ -554,9 +554,8 @@ async def create_search_api_token(request: Request):
         body = await request.json()
     except Exception:
         body = {}
-    name = str((body or {}).get("name") or "Search token").strip()[:120]
-    if not name:
-        raise HTTPException(status_code=400, detail="name is required")
+    name = str((body or {}).get("name") or "").strip() or "Search token"
+    name = name[:120]
     created_by = getattr(request.state, "user_username", "") or ""
     db = await get_db()
     try:
