@@ -12,6 +12,19 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — Inbound limits dashboard missing live buckets
+
+**What:** Admin → Inbound limits only listed 7 of 9 enforced token buckets
+(`get_bucket_stats` omitted `admin_read` + `db_explorer`). Callout also
+misnamed the toggle as `BRIEFR_RATE_LIMIT_ENABLED` (real: `RATE_LIMIT_ENABLED`).
+- `get_bucket_stats` / `get_top_consumers` include all live buckets
+- `RATE_LIMIT_SEARCH_TOKEN_PER_MINUTE` added to config schema + security dump
+- UI callout uses `RATE_LIMIT_ENABLED`
+
+**Next:** More maintainer UI issues on `cursor/backup-archive-chart-fix-eee1`.
+
+---
+
 ## 2026-07-18 — OpsCharts: backup archive size Y-axis vs tooltip mismatch
 
 **What:** Backup archive sizes chart plotted raw `size_bytes` while Recharts

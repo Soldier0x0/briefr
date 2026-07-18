@@ -62,7 +62,7 @@ export default function RateLimitPage({ toast }) {
             <strong style={{ color: data.enabled ? 'var(--green)' : 'var(--amber)' }}>
               {data.enabled ? 'enabled' : 'disabled'}
             </strong>
-            . To change this, update <code>BRIEFR_RATE_LIMIT_ENABLED</code> in{' '}
+            . To change this, update <code>RATE_LIMIT_ENABLED</code> in{' '}
             <a href="#" onClick={e => { e.preventDefault(); }} style={{ color: 'var(--fg2)' }}>API keys &amp; config</a>.
           </span>
         </div>

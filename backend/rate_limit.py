@@ -242,10 +242,19 @@ def check_login_username_rate_limit(username: str) -> None:
 
 
 def get_bucket_stats() -> list[dict]:
-    """Return per-bucket stats for the rate limit dashboard."""
+    """Return per-bucket stats for the rate limit dashboard.
+
+    Includes every live TokenBucket enforced on a route — not a subset.
+    """
     buckets = [
-        ioc_bucket, refresh_bucket, wallboard_bucket,
-        login_bucket, login_username_bucket, auth_refresh_bucket,
+        ioc_bucket,
+        refresh_bucket,
+        admin_read_bucket,
+        wallboard_bucket,
+        login_bucket,
+        login_username_bucket,
+        auth_refresh_bucket,
+        db_explorer_bucket,
         search_token_bucket,
     ]
     result = []
@@ -272,6 +281,8 @@ def get_top_consumers(n: int = 5) -> list[dict]:
         ("login", login_bucket),
         ("login_username", login_username_bucket),
         ("auth_refresh", auth_refresh_bucket),
+        ("db_explorer", db_explorer_bucket),
+        ("search_token", search_token_bucket),
     ):
         for key, hits in getattr(bucket, "_hits", {}).items():
             merged.append({"key": key, "hits": hits, "bucket": bucket_name})
