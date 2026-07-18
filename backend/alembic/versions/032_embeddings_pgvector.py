@@ -4,9 +4,9 @@ Revision ID: 032_embeddings_pgvector
 Revises: 031_stack_backfill
 Create Date: 2026-07-18
 
-Requires a pgvector-capable Postgres image (local/CI: pgvector/pgvector:pg16;
-production cutover: pgvector/pgvector:pg17 — see docs/POSTGRES.md).
-Legacy cve_embeddings is left in place for one release (read-fallback).
+Requires a pgvector-capable Postgres image (pgvector/pgvector:pg16 —
+see docs/POSTGRES.md). Legacy cve_embeddings is left in place for one
+release (read-fallback).
 """
 
 from __future__ import annotations

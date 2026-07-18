@@ -17,9 +17,10 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 **What:** Activated the embeddings program (design accepted) and shipped **E1**
 foundation — no search/pipeline behavior change yet.
 - Images: `deploy/docker-compose.postgres.yml`, `scripts/postgres-dev.sh`, CI
-  `test-postgres` → `pgvector/pgvector:pg16`. Prod cutover docs →
-  `pgvector/pgvector:pg17` (`docs/POSTGRES.md` § pgvector cutover) — **not**
-  executed on the live box in this PR.
+  `test-postgres` → `pgvector/pgvector:pg16`. Prod cutover docs → **same**
+  `pgvector/pgvector:pg16` (operator runs Postgres 16 — do not jump to pg17 for
+  E1; `docs/POSTGRES.md` § pgvector cutover) — **not** executed on the live box
+  in this PR.
 - Alembic `032_embeddings_pgvector`: `CREATE EXTENSION vector`, multi-entity
   `embeddings` (`vector(384)`, HNSW for active CVE model), migrate
   `cve_embeddings` float32 BLOBs → pgvector (`content_hash` = `migrated:…`).

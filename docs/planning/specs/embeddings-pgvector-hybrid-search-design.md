@@ -52,7 +52,7 @@ Prod evidence (2026-07-16): PostgreSQL 16.14; `pg_trgm` installed; `unaccent` av
 |-------|----------|
 | Architecture | Single retrieval engine; UI + agents are clients |
 | Storage | **pgvector inside existing BRIEFR Postgres** |
-| PG version | **Dev/CI: 16** (`pgvector/pgvector:pg16`); **production: 17** (`pgvector/pgvector:pg17` at E1 feature deploy) |
+| PG version | **16** everywhere for E1 — `pgvector/pgvector:pg16` (dev, CI, and `/opt/infra/postgres` cutover). Match server major; do not jump to pg17 for this feature. |
 | Image cutover | **With feature deploy**, not during design; backup + **same volume** |
 | Corpus v1 | **CVE-rich** text (description + summary + products/CWE signals) |
 | Corpus next | **MITRE techniques** in same table (same program, next PR after CVE path green) |
@@ -224,14 +224,14 @@ Humans continue using normal session/JWT. Same handlers resolve identity → cal
 
 | Env | Today | Target |
 |-----|-------|--------|
-| Prod `/opt/infra/postgres` | Image **without** `vector` | `pgvector/pgvector:pg17` (prod major 17; pin digest/tag) |
+| Prod `/opt/infra/postgres` | Image **without** `vector` | `pgvector/pgvector:pg16` (same major as current prod; pin digest/tag) |
 | `deploy/docker-compose.postgres.yml` | `postgres:16-alpine` | `pgvector/pgvector:pg16` |
 | `scripts/postgres-dev.sh` / CI | `postgres:16-alpine` | `pgvector/pgvector:pg16` |
 
 ### 10.2 Cutover sequence (prod) — **with feature deploy, not during design**
 
 1. Backup (`pg_dump` / existing backup job)  
-2. Stop container; set image to `pgvector/pgvector:pg17`; **same volume mounts**  
+2. Stop container; set image to `pgvector/pgvector:pg16`; **same volume mounts**  
 3. Start; verify `SELECT version()`, CVE count  
 4. `CREATE EXTENSION IF NOT EXISTS vector` (Alembic)  
 5. App migrate BLOB → `embeddings.embedding`  
@@ -313,7 +313,7 @@ Optional: wire backfill to Procrastinate after Q1 lands.
 
 ## 16. Success criteria
 
-- [ ] Prod/dev on pg16+pgvector (dev) / pg17+pgvector (prod); `vector` installed — **E1**  
+- [ ] Prod/dev on pg16+pgvector; `vector` installed — **E1**  
 - [ ] CVE embeddings in pgvector; related uses ANN — E2/E3  
 - [ ] Human hybrid search works with keyword fallback — E3/E4  
 - [ ] Agent token can search + related + CVE detail only — E5  

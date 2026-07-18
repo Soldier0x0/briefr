@@ -11,8 +11,8 @@
 #   and docs/POSTGRES.md § External Postgres / § pgvector cutover.
 #
 # Image must ship the `vector` extension (plain postgres:16-alpine does not).
-# Production major is 17 — cut over /opt/infra/postgres to pgvector/pgvector:pg17
-# with the E1 feature deploy (backup + same volume); see docs/POSTGRES.md.
+# Production /opt/infra/postgres cutover: same major — pgvector/pgvector:pg16
+# (backup + same volume); see docs/POSTGRES.md.
 
 services:
   postgres:

@@ -9,7 +9,7 @@
 | In | Out (later PRs) |
 |----|-----------------|
 | Swap local/CI/dev images → `pgvector/pgvector:pg16` | Embed pipeline writes pgvector (**E2**) |
-| Prod cutover docs → `pgvector/pgvector:pg17` (prod major) | Hybrid / related ANN API (**E3**) |
+| Prod cutover docs → `pgvector/pgvector:pg16` (same major as prod) | Hybrid / related ANN API (**E3**) |
 | Alembic `032`: `CREATE EXTENSION vector` + `embeddings` table | UI one-box (**E4**) |
 | Migrate existing `cve_embeddings` BLOBs → `embeddings.embedding` | Search token (**E5**) |
 | SQLite BLOB shim table for dual-DB tests | Technique rows (**E6**) |

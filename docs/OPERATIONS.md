@@ -30,8 +30,8 @@ Use `deploy/briefr-pg-backup.sh` for manual, pre-update, and pre-restore backups
 Paths:
   Code:     /opt/briefr
   Database: PostgreSQL via DATABASE_URL
-            (production: Docker Postgres 17 at /opt/infra/postgres, host 127.0.0.1:5432;
-             embeddings E1: cut over image to pgvector/pgvector:pg17 with feature deploy —
+            (production: Docker Postgres 16 at /opt/infra/postgres, host 127.0.0.1:5432;
+             embeddings E1: cut over image to pgvector/pgvector:pg16 with feature deploy —
              see docs/POSTGRES.md § pgvector cutover)
   Backups:  /var/lib/briefr/backups
   Secrets:  /opt/briefr/backend/.env

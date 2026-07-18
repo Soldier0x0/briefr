@@ -1,8 +1,8 @@
 # PostgreSQL database (production)
 
-BRIEFR stores all intel data in **PostgreSQL**. Production runs Postgres **17** in Docker at `/opt/infra/postgres`; the BRIEFR app on the host connects via `DATABASE_URL` (published port `127.0.0.1:5432`).
+BRIEFR stores all intel data in **PostgreSQL**. Production runs Postgres **16** in Docker at `/opt/infra/postgres`; the BRIEFR app on the host connects via `DATABASE_URL` (published port `127.0.0.1:5432`).
 
-Use a host `postgresql-client` whose **major version matches** the server (17 in production; local compose may differ — see below). The deploy scripts install `postgresql-client` and fall back across supported majors.
+Use a host `postgresql-client` whose **major version matches** the server (16 in production). The deploy scripts install `postgresql-client` and fall back across supported majors.
 
 ## Required configuration
 
@@ -41,7 +41,7 @@ BRIEFR only needs TCP access to the mapped port. Schema is applied by Alembic on
 **Persistent dev Postgres (port 5432)** — shares the default port with production-style setups; use when you want a named volume:
 
 ```bash
-docker compose -f deploy/docker-compose.postgres.yml up -d   # pgvector/pgvector:pg16 (local); production is 17 + pgvector at feature deploy
+docker compose -f deploy/docker-compose.postgres.yml up -d   # pgvector/pgvector:pg16 (local + prod major)
 ```
 
 **Disposable test Postgres (port 5433, PG-002)** — recommended for the dual-DB pytest rule when `:5432` is already taken (production, compose stack, or cloud VM):
@@ -89,7 +89,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 Requirements:
 
-- Postgres **17** in production (match production major for `pg_dump` / restore); local dev compose image may lag — use a client matching the server you connect to
+- Postgres **16** in production (match production major for `pg_dump` / restore); use a client matching the server you connect to
 - Network reachability from the BRIEFR host to the DB port
 - Alembic migrations run on backend startup (`init_db()`)
 
@@ -116,7 +116,7 @@ Verify: `curl -s http://127.0.0.1:8000/api/health` → `"backend": "postgresql"`
 **Host requirements:**
 
 ```bash
-sudo apt install postgresql-client-17    # match production Postgres major
+sudo apt install postgresql-client-16    # match production Postgres major
 # or: apt install postgresql-client        # when the meta package tracks your major
 ```
 
@@ -173,10 +173,10 @@ curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool | grep cve_count
 | `PostgreSQL pool is not initialized` | Backend lifespan failed — check `journalctl -u briefr-backend` |
 | `relation "cves" does not exist` | Run `alembic upgrade head` from `backend/` or restart backend |
 | `pg_dump: connection refused` | Docker Postgres down — `cd /opt/infra/postgres && docker compose up -d` |
-| `pg_dump: server version mismatch` | Install matching client, e.g. `apt install postgresql-client-17` (production) |
+| `pg_dump: server version mismatch` | Install matching client, e.g. `apt install postgresql-client-16` (production) |
 | Timeline/charts empty but `cve_count` > 0 | Fixed in app — ensure `/api/stats/timeline` returns non-zero counts; hard-refresh browser |
 | Empty feed on first boot | Fewer than 10 CVE rows triggers NVD ingest, or run `scripts/seed_screenshot_data.py` with `DATABASE_URL` set |
-| `extension "vector" is not available` / Alembic 032 fails | Postgres image lacks pgvector — use `pgvector/pgvector:pg16` (local/CI) or `pgvector/pgvector:pg17` (prod cutover); recreate disposable containers after the image change |
+| `extension "vector" is not available` / Alembic 032 fails | Postgres image lacks pgvector — use `pgvector/pgvector:pg16` (same major as prod); recreate disposable containers after the image change |
 
 ## pgvector cutover (embeddings E1)
 
@@ -186,12 +186,12 @@ Embeddings ANN and hybrid search need the **`vector`** extension. Plain `postgre
 |-----|--------|
 | Local compose (`deploy/docker-compose.postgres.yml`) | `pgvector/pgvector:pg16` |
 | Disposable / CI (`scripts/postgres-dev.sh`, GitHub `test-postgres`) | `pgvector/pgvector:pg16` |
-| Production `/opt/infra/postgres` | Cut over to **`pgvector/pgvector:pg17`** with the E1 feature deploy (prod major is 17) |
+| Production `/opt/infra/postgres` | Cut over to **`pgvector/pgvector:pg16`** with the E1 feature deploy (**stay on major 16** — do not jump to pg17 for this) |
 
 **Production cutover sequence** (with feature deploy — do **not** run during design-only work):
 
 1. Backup (`pg_dump` / existing backup job)
-2. Stop container; set image to `pgvector/pgvector:pg17`; **same volume mounts**
+2. Stop container; set image to `pgvector/pgvector:pg16`; **same volume mounts**
 3. Start; verify `SELECT version()`, CVE count
 4. Backend startup runs Alembic → `CREATE EXTENSION IF NOT EXISTS vector` + `embeddings` table + BLOB migrate from `cve_embeddings`
 5. Smoke: `/api/health`, feed, related CVEs (still BLOB/NumPy until E2/E3)
