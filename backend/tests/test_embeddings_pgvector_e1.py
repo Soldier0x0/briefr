@@ -36,6 +36,12 @@ def test_032_revision_file_and_chain():
     assert "CREATE EXTENSION IF NOT EXISTS vector" in source
     assert "vector(384)" in source
     assert "hnsw" in source.lower()
+    # Gemini: dims/model frozen in migration; inserts batched
+    assert "_MIGRATION_EMBEDDING_DIMS = 384" in source
+    assert "_MIGRATE_BATCH_SIZE" in source
+    assert "from db.embeddings_pgvector import" in source
+    assert "DEFAULT_EMBEDDING_DIMS," not in source
+    assert "DEFAULT_EMBEDDINGS_MODEL," not in source
 
 
 def test_blob_to_pgvector_literal_round_trip_shape():

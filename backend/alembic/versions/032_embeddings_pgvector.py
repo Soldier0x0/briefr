@@ -23,12 +23,17 @@ if str(_BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(_BACKEND_ROOT))
 
 from db.embeddings_pgvector import (  # noqa: E402
-    DEFAULT_EMBEDDING_DIMS,
-    DEFAULT_EMBEDDINGS_MODEL,
     blob_to_pgvector_literal,
     migrated_content_hash,
     parse_embedding_updated_at,
 )
+
+# Frozen at migration write-time — do not import app defaults (Gemini: if
+# EMBEDDINGS_MODEL / dims change later, replaying this revision must still
+# match vector(384) and migrate legacy 384-d BLOBs).
+_MIGRATION_EMBEDDING_DIMS = 384
+_MIGRATION_EMBEDDINGS_MODEL = "BAAI/bge-small-en-v1.5"
+_MIGRATE_BATCH_SIZE = 1000
 
 revision = "032_embeddings_pgvector"
 down_revision = "031_stack_backfill"
@@ -57,7 +62,7 @@ def upgrade() -> None:
         f"""
         CREATE INDEX IF NOT EXISTS idx_embeddings_cve_hnsw
         ON embeddings USING hnsw (embedding vector_cosine_ops)
-        WHERE entity_type = 'cve' AND model = '{DEFAULT_EMBEDDINGS_MODEL}'
+        WHERE entity_type = 'cve' AND model = '{_MIGRATION_EMBEDDINGS_MODEL}'
         """
     )
     op.execute(
@@ -72,6 +77,7 @@ def _migrate_cve_embeddings_blobs() -> None:
 
     Rows with dim != 384 or corrupt byte length are skipped (E2 re-embeds).
     content_hash is a migrated: placeholder — E2 recomputes from rich CVE text.
+    Inserts are chunked (Gemini) to avoid per-row round-trips on large corpora.
     """
     conn = op.get_bind()
     rows = conn.execute(
@@ -94,9 +100,10 @@ def _migrate_cve_embeddings_blobs() -> None:
         """
     )
 
+    params: list[dict] = []
     for row in rows:
         dim = int(row["dim"] or 0)
-        if dim != DEFAULT_EMBEDDING_DIMS:
+        if dim != _MIGRATION_EMBEDDING_DIMS:
             continue
         raw = row["vector"]
         if raw is None:
@@ -105,8 +112,7 @@ def _migrate_cve_embeddings_blobs() -> None:
         vec_literal = blob_to_pgvector_literal(blob, expected_dim=dim)
         if vec_literal is None:
             continue
-        conn.execute(
-            insert_sql,
+        params.append(
             {
                 "entity_id": str(row["cve_id"]).upper(),
                 "model": str(row["model"]),
@@ -114,8 +120,13 @@ def _migrate_cve_embeddings_blobs() -> None:
                 "embedding": vec_literal,
                 "content_hash": migrated_content_hash(blob),
                 "updated_at": parse_embedding_updated_at(row.get("updated_at")),
-            },
+            }
         )
+
+    for i in range(0, len(params), _MIGRATE_BATCH_SIZE):
+        chunk = params[i : i + _MIGRATE_BATCH_SIZE]
+        if chunk:
+            conn.execute(insert_sql, chunk)
 
 
 def downgrade() -> None:
