@@ -26,7 +26,7 @@ foundation — no search/pipeline behavior change yet.
 - SQLite dual-DB shim: BLOB `embeddings` table in `db/init.py`. Helpers in
   `db/embeddings_pgvector.py`. Tests: `tests/test_embeddings_pgvector_e1.py`.
 - Specs: `embeddings-e1-implementation-plan.md`; design status → Accepted;
-  SPRINT active E track; BACKLOG §14 E1 shipping.
+  SPRINT active E track; BACKLOG §14 E1 shipping. **PR #671**.
 
 **Next:** **E2** — embed pipeline writes `embeddings` + real `content_hash`
 (rich CVE text); keep `EMBEDDINGS_ENABLED`. Then E3 hybrid/related ANN.
