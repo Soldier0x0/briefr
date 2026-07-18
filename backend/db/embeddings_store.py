@@ -215,7 +215,10 @@ async def get_cves_needing_embeddings_by_ids(
     """Auto-on-ingest path: re-embed when missing, migrated, or content_hash mismatch."""
     if not cve_ids:
         return []
-    normalized = sorted({c.upper() for c in cve_ids if c})
+    # Filter empties/whitespace so we never build `IN ()` (invalid SQL).
+    normalized = sorted({c.strip().upper() for c in cve_ids if c and str(c).strip()})
+    if not normalized:
+        return []
     pg = _is_postgres_connection(db)
     if pg:
         # $1 = model; CVE ids start at $2

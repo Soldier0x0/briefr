@@ -21,6 +21,7 @@ from db.embeddings_pgvector import (
     is_placeholder_content_hash,
     migrated_content_hash,
 )
+from db.embeddings_store import get_cves_needing_embeddings_by_ids
 from ml.embeddings import (
     blob_to_vector,
     l2_normalize,
@@ -168,6 +169,29 @@ def test_backfill_reembeds_migrated_placeholder(tmp_path, monkeypatch):
     assert stats["embedded"] == 1
     assert is_placeholder_content_hash(before)
     assert not is_placeholder_content_hash(after)
+
+
+def test_get_cves_needing_embeddings_by_ids_skips_empty_ids(tmp_path, monkeypatch):
+    """Gemini #672: empty/whitespace-only ids must not build `IN ()`."""
+    if os.environ.get("DATABASE_URL", "").startswith("postgresql"):
+        pytest.skip("SQLite path")
+    monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "e2empty.db"))
+
+    async def run():
+        await init_db()
+        db = await database.get_db()
+        try:
+            empty = await get_cves_needing_embeddings_by_ids(db, MODEL, set())
+            blanks = await get_cves_needing_embeddings_by_ids(
+                db, MODEL, {"", "   ", "\t"}
+            )
+            return empty, blanks
+        finally:
+            await db.close()
+
+    empty, blanks = run_db_test(run())
+    assert empty == []
+    assert blanks == []
 
 
 def test_pgvector_writes_can_be_disabled(tmp_path, monkeypatch):
