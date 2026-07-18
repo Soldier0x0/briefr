@@ -81,6 +81,7 @@ export default function FilterBar({
   feedCardCount = 0,
   onGenerateDigest,
   searchFocusTrigger,
+  searchStatus = '',
 }) {
   const [localSearch, setLocalSearch] = useState(filters.search || '')
   const [localStack, setLocalStack] = useState(() => filters.stack || '')
@@ -501,11 +502,16 @@ export default function FilterBar({
             className="filter-search"
             value={localSearch}
             onChange={handleSearchChange}
-            placeholder="search CVE-ID or keyword..."
-            aria-label="Search CVEs by ID or keyword (press / to focus)"
+            placeholder="search CVE-ID, keyword, or describe an issue…"
+            aria-label="Search CVEs by ID, keyword, or natural language (press / to focus)"
             autoComplete="off"
             spellCheck="false"
           />
+          {searchStatus && (filters.search || '').trim() && (
+            <span className="filter-search-status mono" role="status">
+              {searchStatus}
+            </span>
+          )}
         </div>
 
         <div className="filter-bar-filters">

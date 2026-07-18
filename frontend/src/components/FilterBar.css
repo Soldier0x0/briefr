@@ -131,7 +131,16 @@
 
 .filter-bar-search-row {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+}
+
+.filter-search-status {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 .filter-bar-filters {
