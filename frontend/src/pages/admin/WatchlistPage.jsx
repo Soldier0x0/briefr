@@ -161,7 +161,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
                 {watchlistRows === null && (
                   <AdminTableBodySkeletonRows rows={5} cols={7} />
                 )}
-                {watchlistRows?.length === 0 && <tr><td colSpan={7} className="admin-empty admin-empty--compact">{watchlistState === 'snooze' ? 'No snoozed CVEs' : watchlistState === 'pin' ? 'No pinned CVEs — pin CVEs from the main feed to track them here' : 'No watchlist entries yet — pin or snooze CVEs from the main feed to see them here'}</td></tr>}
+                {watchlistRows?.length === 0 && <tr><td colSpan={7} className="admin-empty admin-empty--compact">{watchlistState === 'snooze' ? 'No snoozed CVEs (legacy entries only — snooze was removed from the analyst feed)' : watchlistState === 'pin' ? 'No pinned CVEs — pin CVEs from the main feed to track them here' : 'No watchlist entries yet — pin CVEs from the main feed to see them here'}</td></tr>}
                 {watchlistRows?.map(r => (
                   <tr key={r.cve_id}>
                     <td className="mono" style={{ fontSize: '0.75rem' }}>{r.cve_id}</td>

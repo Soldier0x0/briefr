@@ -12,6 +12,28 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — FEED STACK/search contrast + EPSS movers dead UI / alignment
+
+**What:** Maintainer screenshots — STACK label spacing, semantic search blending into
+page black, TOP EPSS MOVERS dropdown offering non-working Custom range, and EPSS
+table columns misaligned. Fixed on `cursor/feed-epss-ui-cleanup-eee1`.
+
+**RCA (locked):**
+| ID | Symptom | Root cause | Fix |
+|----|---------|------------|-----|
+| A1 | STACK // optically high / awkward gap | Label inherited body line-height; `gap: --space-3`; input `--bg2` same as panel | Midline label (`min-height: --hit-target-min`, `line-height: 1`); tighter gap; input `--surface-input` on raised panel |
+| A2 | Search/semantic bar blends in | `.filter-search` used `--bg2` + `--border` (`--border-subtle`) on `--bg` page | `--surface-input` + `--border2`; stronger left edge on focus via `--accent-indicator` |
+| B1 | EPSS “Custom range…” half-dead | `TimeWindowPicker` always offered custom; BriefCharts only sends `since_hours` (API `le=168`); calendar range ignored | `allowCustom={false}` on EPSS; clamp hours ≤168 |
+| B2 | 30d/90d presets | Already filtered via `EPSS_MOVERS_PRESET_IDS`; landmine if caller omits `presetIds` | Keep filter; gate test asserts EPSS does not pass full `TIME_PRESETS` |
+| B3 | Severity header vs cells / cramped sparkline | `<th>` table columns vs body `td[colSpan=4]` + CSS grid; severity cell `justify-content: center` | Shared `--brief-epss-cols` on thead + row button; left-align severity |
+| C1 | Watchlist empty copy says “pin or snooze” | Snooze removed from analyst UI; copy lag | Pin-only empty copy; clarify legacy snooze |
+
+**Similar audit (not same defect class):** What Changed rows already share one grid
+(headerless list) — OK. Other `TimeWindowPicker` consumers keep Custom when they
+honor `since`/`until` (e.g. ingest log). No other hours-capped picker found.
+
+**Next:** Verify locally → PR → Gemini disposition.
+
 ## 2026-07-18 — Domain jargon tips (Analyst + Admin)
 
 **What:** Locked jargon sweep — unexplained abbreviations across Analyst Charts,

@@ -196,7 +196,7 @@
   height: 100% !important;
 }
 
-/* EPSS movers table */
+/* EPSS movers table — shared column track for thead + row button */
 .brief-epss-table-wrap {
   flex: 1;
   overflow-x: auto;
@@ -204,9 +204,20 @@
 }
 
 .brief-epss-table {
+  --brief-epss-cols: minmax(8.5rem, 1.15fr) minmax(5.75rem, 0.9fr) minmax(6.5rem, 1.25fr) 5.75rem;
+  --brief-epss-gap: var(--space-2);
   width: 100%;
   border-collapse: collapse;
   font-size: var(--type-body);
+}
+
+.brief-epss-table thead tr.brief-epss-cols {
+  display: grid;
+  grid-template-columns: var(--brief-epss-cols);
+  column-gap: var(--brief-epss-gap);
+  align-items: end;
+  padding: 0 var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--border);
 }
 
 .brief-epss-table th {
@@ -214,31 +225,26 @@
   color: var(--text3);
   font-weight: 400;
   letter-spacing: 0.05em;
-  padding: 0 4px 6px;
-  border-bottom: 1px solid var(--border);
+  padding: 0;
+  border-bottom: none;
   font-size: var(--type-meta);
+  min-width: 0;
 }
 
-.brief-epss-col-sev {
-  width: auto;
-  min-width: 4.5rem;
+.brief-epss-col-delta {
+  text-align: right;
 }
 
 .brief-epss-sev-inner {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .brief-epss-sev-label {
   font-size: var(--type-micro);
   color: var(--text2);
   letter-spacing: 0.04em;
-}
-
-.brief-epss-col-delta {
-  text-align: right;
-  width: 5.75rem;
 }
 
 .brief-epss-row-cell {
@@ -249,10 +255,10 @@
 .brief-epss-row-btn {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(7rem, 1fr) minmax(4.5rem, auto) minmax(5rem, 1.4fr) 5.75rem;
+  grid-template-columns: var(--brief-epss-cols);
+  column-gap: var(--brief-epss-gap);
   align-items: center;
-  gap: 8px;
-  padding: 6px 4px;
+  padding: var(--space-2) var(--space-1);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -273,30 +279,35 @@
 .brief-epss-id {
   color: var(--text);
   letter-spacing: 0.02em;
+  min-width: 0;
 }
 
 .brief-epss-sev {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
+  align-items: center;
+  min-width: 0;
 }
 
 .brief-epss-sparkline-cell {
   min-width: 0;
   overflow: hidden;
+  display: flex;
+  align-items: center;
 }
 
 .brief-epss-sparkline {
   display: block;
   width: 100%;
-  max-width: 120px;
+  max-width: 7.5rem;
   height: auto;
 }
 
 .brief-epss-sparkline--empty,
 .brief-epss-sparkline--loading {
   display: block;
-  width: 80px;
-  height: 20px;
+  width: 5rem;
+  height: 1.25rem;
   background: var(--bg3);
 }
 
@@ -345,12 +356,12 @@
     min-height: 140px;
   }
 
-  .brief-epss-row-btn {
-    grid-template-columns: minmax(0, 1fr) minmax(3.5rem, auto) minmax(0, 1fr) 3.5rem;
-    gap: 6px;
+  .brief-epss-table {
+    --brief-epss-cols: minmax(0, 1.1fr) minmax(4.5rem, 0.85fr) minmax(4rem, 1fr) 3.75rem;
+    --brief-epss-gap: var(--space-1);
   }
 
   .brief-epss-sparkline {
-    max-width: 88px;
+    max-width: 5.5rem;
   }
 }
