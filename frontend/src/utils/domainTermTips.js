@@ -17,8 +17,8 @@ export const DOMAIN_TERM_TIPS = {
     "Vendors with the most entries in CISA's Known Exploited Vulnerabilities (KEV) catalog — confirmed active exploitation, not theoretical risk.",
   topEpssMovers:
     'CVEs whose FIRST.org EPSS score rose most in the selected window — probability of exploitation in the wild within 30 days.',
-  watchlistSubtab: "CVEs you've pinned or snoozed from the main feed.",
-  watchlistState: 'pin = tracked on the watchlist; snooze = legacy hide-until-cleared entries.',
+  watchlistSubtab: "CVEs you've pinned from the main feed (legacy snoozes may still appear for admins).",
+  watchlistState: 'pin = tracked on the watchlist; snooze = legacy hide-until-cleared entries (analyst snooze UI removed).',
   huntTechnique: 'MITRE ATT&CK technique ID for this hunt pack.',
   huntPriority: 'Relative hunt priority set when the pack was created from a CVE detail hunt.',
   isp: 'Internet Service Provider reported for this IP (AbuseIPDB).',

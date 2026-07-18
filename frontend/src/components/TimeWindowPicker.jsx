@@ -47,12 +47,16 @@ export default function TimeWindowPicker({
   onChange,
   ariaLabel = 'Select time window',
   presetIds = TIME_PRESETS.map(p => p.id),
+  /** When false, hide Custom range… (use when the consumer only accepts preset hours). */
+  allowCustom = true,
 }) {
   const selectId = useId()
   const presets = TIME_PRESETS.filter(p => presetIds.includes(p.id))
-  const [selectValue, setSelectValue] = useState(() =>
-    value?.mode === 'custom' ? CUSTOM_VALUE : (value?.presetId || presets[0]?.id || '7d')
-  )
+  const fallbackPresetId = presets[0]?.id || '7d'
+  const [selectValue, setSelectValue] = useState(() => {
+    if (value?.mode === 'custom' && allowCustom) return CUSTOM_VALUE
+    return value?.presetId || fallbackPresetId
+  })
   const [customSince, setCustomSince] = useState(() =>
     value?.mode === 'custom' && value.since ? toDatetimeLocalValue(value.since) : defaultCustomSince()
   )
@@ -62,13 +66,18 @@ export default function TimeWindowPicker({
 
   useEffect(() => {
     if (value?.mode === 'custom') {
-      setSelectValue(CUSTOM_VALUE)
-      if (value.since) setCustomSince(toDatetimeLocalValue(value.since))
-      if (value.until) setCustomUntil(toDatetimeLocalValue(value.until))
-    } else if (value?.presetId) {
-      setSelectValue(value.presetId)
+      if (allowCustom) {
+        setSelectValue(CUSTOM_VALUE)
+        if (value.since) setCustomSince(toDatetimeLocalValue(value.since))
+        if (value.until) setCustomUntil(toDatetimeLocalValue(value.until))
+      } else {
+        setSelectValue(fallbackPresetId)
+      }
+      return
     }
-  }, [value?.mode, value?.presetId, value?.since, value?.until])
+    // Falsy / reset → fall back so selectValue never stays stale.
+    setSelectValue(value?.presetId || fallbackPresetId)
+  }, [value?.mode, value?.presetId, value?.since, value?.until, allowCustom, fallbackPresetId])
 
   function emitPreset(presetId) {
     const preset = TIME_PRESETS.find(p => p.id === presetId)
@@ -77,6 +86,7 @@ export default function TimeWindowPicker({
   }
 
   function emitCustom(sinceLocal, untilLocal) {
+    if (!allowCustom) return
     const since = parseDatetimeLocalToIso(sinceLocal)
     const until = parseDatetimeLocalToIso(untilLocal) || new Date().toISOString()
     onChange?.({ mode: 'custom', since, until })
@@ -91,21 +101,23 @@ export default function TimeWindowPicker({
     }
   }
 
+  const options = [
+    ...presets.map(p => ({ value: p.id, label: p.label })),
+    ...(allowCustom ? [{ value: CUSTOM_VALUE, label: 'Custom range…' }] : []),
+  ]
+
   return (
     <div className="time-window-picker" role="group" aria-label={ariaLabel}>
       <label htmlFor={selectId} className="sr-only">{ariaLabel}</label>
       <Select
         id={selectId}
         className="time-window-select mono"
-        value={selectValue}
+        value={selectValue === CUSTOM_VALUE && !allowCustom ? fallbackPresetId : selectValue}
         onChange={handleSelectChange}
         aria-label={ariaLabel}
-        options={[
-          ...presets.map(p => ({ value: p.id, label: p.label })),
-          { value: CUSTOM_VALUE, label: 'Custom range…' },
-        ]}
+        options={options}
       />
-      {selectValue === CUSTOM_VALUE && (
+      {allowCustom && selectValue === CUSTOM_VALUE && (
         <DateTimeRangeField
           className="time-window-datetime-range"
           startValue={customSince}
