@@ -334,9 +334,9 @@ Ship in this order. Do **not** start Phase 4 until Phase 0 P0s are merged.
 | Q1 | Tan vs orange accent? | **Resolved — orange `#e85533` (#602)** |
 | Q2 | Analyst read-only Security posture? | Default yes |
 | Q3 | FORGE MITRE: matrix vs graph? | Default tactic columns + expand |
-| Q4 | `/security-architecture` redirect? | Default 302 one release, then remove |
-| Q5 | 14-day publication accuracy? | Park; validate after PM-0e |
-| Q6 | Sidebar toggles: red vs orange when on? | **Open** — PM-2a |
+| Q4 | `/security-architecture` redirect? | **Kept — reassessed 2026-07-18.** No release has been cut since PM-4c (#638, 2026-07-16; repo has no tags/version-bump process, continuous deploy off `main`). "One release" has no signal to trigger on yet — leave the redirect until a deliberate release process exists or the route sees zero traffic in access logs. |
+| Q5 | 14-day publication accuracy? | **Resolved by audit — 2026-07-18.** `/api/stats/timeline` groups by `DATE(published)` where `published` is written verbatim from the NVD API's own `published` field (UTC, unmodified) — no transform to introduce drift. `cve_id` is the upsert conflict key everywhere (`db/cve.py`), so no duplicate-row inflation. Postgres date-object vs SQLite string normalization is covered by `tests/test_stats_timeline.py`. Local dev DB has only synthetic seed data (not real NVD history), so a live count-for-count diff against NVD wasn't possible in this session — no code defect found; if a discrepancy is ever reported, it'll be a data-freshness question (scheduler lag under the FEED gap banner), not a query bug. |
+| Q6 | Sidebar toggles: red vs orange when on? | **Resolved — already shipped.** `1b4f685` (PM-2a, 2026-07-15) moved `.toggle-on`/`.toggle-thumb` onto `--accent-primary`/`--surface-selected` tokens (orange `#e85533`), no red. Grid alignment fixed same window in `55edb6d` (PM-1c, #611, 2026-07-16). This row was just never marked done. |
 
 ---
 
