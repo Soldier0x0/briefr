@@ -991,12 +991,17 @@ depending on scope. Writes `correlation.feedback.delete` to `audit_log`.
       "member_count": 3,
       "stack_member_count": 2,
       "watchlisted_member_count": 1,
+      "members": ["CVE-2024-0001", "CVE-2024-0002", "CVE-2024-0003"],
       "members_on_stack": ["CVE-2024-0001", "CVE-2024-0002"],
       "watchlisted_members": ["CVE-2024-0002"]
     }
   ]
 }
 ```
+
+`members` is the full campaign CVE list (ordered). `members_on_stack` /
+`watchlisted_members` are subsets for ranking and UI priority when opening a
+representative CVE in the drawer.
 
 Clusters rank by stack overlap, then watchlisted members, then size and lifecycle.
 

@@ -12,6 +12,23 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — Forge Campaigns OPEN CVEs + dead-control sweep
+
+**What:** Campaigns **OPEN CVE** looked enabled but often no-oped; label was
+singular next to “N CVEs”. Broader dead-control audit + fixes on
+`cursor/forge-campaigns-open-cve-eee1`.
+
+**RCA (locked):**
+| ID | Symptom | Root cause | Fix |
+|----|---------|------------|-----|
+| D1 | OPEN CVE click does nothing (esp. without My Stack) | UI only used `members_on_stack` / `watchlisted_members`; API omitted full `members`; disable ignored empty target | API `members`; fallback open target; plural **OPEN CVEs**; disable when no target |
+| D2 | IOC watchlist notification title click no-ops | `entity_type=ioc` had no handler branch | `?tab=ioc&ioc=` + App prefill deep-link |
+| D3 | Rate limit “API keys & config” dead `#` link | `preventDefault` empty handler | `<Link to="/admin?p=apikeys">` |
+| D4 | Scenario evidence CVE IDs not openable | Plain text, no `openCveById` | `fg-cve-id-link` buttons |
+| D5 | Backlog CVE ID not openable | Same | Wire like HuntPackRail |
+
+**Next:** Merged after #680.
+
 ## 2026-07-18 — FEED STACK/search contrast + EPSS movers dead UI / alignment
 
 **What:** Maintainer screenshots — STACK label spacing, semantic search blending into

@@ -189,6 +189,8 @@ def test_correlation_clusters_stack_filter_and_watchlist_boost(client):
     assert log4j["stack_member_count"] >= 2
     assert log4j["watchlisted_member_count"] >= 1
     assert "CVE-2026-CLU-002" in log4j["watchlisted_members"]
+    assert isinstance(log4j.get("members"), list) and len(log4j["members"]) >= 2
+    assert set(log4j["members_on_stack"]).issubset(set(log4j["members"]))
     assert clusters[0]["label"] == "Log4j campaign"
 
 

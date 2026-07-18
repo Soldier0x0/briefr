@@ -5,6 +5,7 @@ import Tooltip from '../ui/Tooltip.jsx'
 import { ingestLogUrl } from '../../utils/adminLinks.js'
 import { useInvestigationOptional } from '../../context/InvestigationContext.jsx'
 import { campaignBadgeTooltip, campaignLifecycleClass } from '../../utils/correlationPresentation.js'
+import { clusterOpenTarget, openCvesLabel } from '../../utils/campaignClusterOpen.js'
 import { SkeletonRows } from './shared.jsx'
 
 export default function CampaignsView({ profileStack }) {
@@ -36,12 +37,9 @@ export default function CampaignsView({ profileStack }) {
   }, [reloadClusters])
 
   const openClusterCve = (cluster) => {
-    const target = (
-      cluster.members_on_stack?.[0]
-      || cluster.watchlisted_members?.[0]
-      || null
-    )
-    if (target && investigation?.openCveById) investigation.openCveById(target)
+    const target = clusterOpenTarget(cluster)
+    if (!target || !investigation?.openCveById) return
+    investigation.openCveById(target)
   }
 
   return (
@@ -79,6 +77,9 @@ export default function CampaignsView({ profileStack }) {
         <ul className="fg-backlog-list fg-campaign-list">
           {data.clusters.map(cluster => {
             const lifecycle = cluster.lifecycle || 'active'
+            const target = clusterOpenTarget(cluster)
+            const canOpen = Boolean(target && investigation?.openCveById)
+            const label = openCvesLabel(cluster.member_count)
             return (
               <li key={cluster.campaign_id} className="fg-backlog-row fg-campaign-row">
                 <div className="fg-backlog-main">
@@ -106,14 +107,30 @@ export default function CampaignsView({ profileStack }) {
                   )}
                 </div>
                 <div className="fg-backlog-actions">
-                  <button
-                    type="button"
-                    className="fg-generate-btn mono"
-                    onClick={() => openClusterCve(cluster)}
-                    disabled={!investigation?.openCveById}
+                  <Tooltip
+                    text={
+                      canOpen
+                        ? `Open ${target} in the drawer (first stack, pinned, or campaign member).`
+                        : 'No openable member CVE for this cluster.'
+                    }
                   >
-                    OPEN CVE
-                  </button>
+                    {/* span keeps hover/focus tip when the button is disabled */}
+                    <span className="fg-campaign-open-wrap">
+                      <button
+                        type="button"
+                        className="fg-generate-btn mono"
+                        onClick={() => openClusterCve(cluster)}
+                        disabled={!canOpen}
+                        aria-label={
+                          canOpen
+                            ? `${label}: open ${target} from ${cluster.label || cluster.campaign_id}`
+                            : `${label} unavailable — no member CVE`
+                        }
+                      >
+                        {label}
+                      </button>
+                    </span>
+                  </Tooltip>
                 </div>
               </li>
             )

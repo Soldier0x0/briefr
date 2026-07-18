@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchThreatModelScenarios } from '../../api.js'
 import { notifyApiError } from '../Toast.jsx'
+import { useInvestigationOptional } from '../../context/InvestigationContext.jsx'
 import { SkeletonRows, StatusChip } from './shared.jsx'
 
 export default function ScenariosView({
@@ -10,6 +11,8 @@ export default function ScenariosView({
   onGeneratePack,
   generatingCve,
 }) {
+  const investigation = useInvestigationOptional()
+  const openCve = investigation?.openCveById
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -77,7 +80,18 @@ export default function ScenariosView({
                     <ul className="fg-scenario-cves">
                       {scenario.evidence_cves.map(cve => (
                         <li key={cve.cve_id} className="mono">
-                          {cve.cve_id}
+                          {openCve ? (
+                            <button
+                              type="button"
+                              className="fg-cve-id mono fg-cve-id-link"
+                              onClick={() => openCve(cve.cve_id)}
+                              title={`Open ${cve.cve_id} in drawer`}
+                            >
+                              {cve.cve_id}
+                            </button>
+                          ) : (
+                            <span className="fg-cve-id mono">{cve.cve_id}</span>
+                          )}
                           {cve.is_kev && <span className="fg-kev-badge" title="CISA Known Exploited Vulnerabilities — confirmed active exploitation in the wild">KEV</span>}
                         </li>
                       ))}

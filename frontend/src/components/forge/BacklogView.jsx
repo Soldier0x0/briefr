@@ -3,9 +3,12 @@ import { dismissDetectionBacklogItem, fetchDetectionBacklog } from '../../api.js
 import { notifyApiError } from '../Toast.jsx'
 import Tooltip from '../ui/Tooltip.jsx'
 import { ingestLogUrl } from '../../utils/adminLinks.js'
+import { useInvestigationOptional } from '../../context/InvestigationContext.jsx'
 import { SkeletonRows, StatusChip } from './shared.jsx'
 
 export default function BacklogView({ profileStack, onGeneratePack, generatingCve, onDismissed }) {
+  const investigation = useInvestigationOptional()
+  const openCve = investigation?.openCveById
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -81,7 +84,18 @@ export default function BacklogView({ profileStack, onGeneratePack, generatingCv
           {items.map(item => (
             <li key={item.id} className="fg-backlog-row">
               <div className="fg-backlog-main">
-                <span className="fg-cve-id mono">{item.cve_id}</span>
+                {openCve ? (
+                  <button
+                    type="button"
+                    className="fg-cve-id mono fg-cve-id-link"
+                    onClick={() => openCve(item.cve_id)}
+                    title={`Open ${item.cve_id} in drawer`}
+                  >
+                    {item.cve_id}
+                  </button>
+                ) : (
+                  <span className="fg-cve-id mono">{item.cve_id}</span>
+                )}
                 <span className="fg-backlog-tech mono">{item.technique_id}</span>
                 <span className="fg-backlog-tech-name">{item.technique_name}</span>
                 <Tooltip text="Derived from KEV status plus CVSS/EPSS when not KEV.">
