@@ -2,7 +2,11 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { bytesChartScale } from '../formatters.js'
-import { backupChartPoints, backupChartTickLabel } from './backupChartUtils.js'
+import {
+  backupChartPoints,
+  backupChartTickLabel,
+  backupTooltipModel,
+} from './backupChartUtils.js'
 
 describe('backupChartTickLabel', () => {
   it('uses distinct timestamp ticks for age-encrypted archives', () => {
@@ -35,20 +39,32 @@ describe('backupChartTickLabel', () => {
 })
 
 describe('backupChartPoints', () => {
-  it('keeps unique pointKey values even when tick labels were previously colliding', () => {
+  it('uses unique index keys so far-left and far-right never share an X category', () => {
     const rows = [
       { filename: 'briefr-20260717T202746Z.tar.gz.age', size_bytes: 50.3 * 1024 * 1024 },
       { filename: 'briefr-20260717T120000Z.tar.gz.age', size_bytes: 48.0 * 1024 * 1024 },
-      { filename: 'briefr-20260716T202746Z.tar.gz.age', size_bytes: 47.5 * 1024 * 1024 },
+      { filename: 'briefr-20260718T010000Z.tar.gz.age', size_bytes: 95.4 * 1024 * 1024 },
     ]
     const scale = bytesChartScale(rows.map((r) => r.size_bytes))
     const points = backupChartPoints(rows, scale)
+
+    assert.deepEqual(points.map((p) => p.pointKey), [0, 1, 2])
     assert.equal(new Set(points.map((p) => p.pointKey)).size, rows.length)
-    assert.deepEqual(
-      points.map((p) => p.filename),
-      rows.map((r) => r.filename),
-    )
-    assert.ok(Math.abs(points[0].size - 50.3) < 1e-9)
-    assert.ok(Math.abs(points[1].size - 48.0) < 1e-9)
+
+    // Simulate Recharts axis tooltip payload for far-left vs far-right.
+    const leftTip = backupTooltipModel([{ payload: points[0] }])
+    const rightTip = backupTooltipModel([{ payload: points[2] }])
+    assert.equal(leftTip.filename, rows[0].filename)
+    assert.equal(rightTip.filename, rows[2].filename)
+    assert.notEqual(leftTip.filename, rightTip.filename)
+    assert.ok(Math.abs(leftTip.size - 50.3) < 1e-9)
+    assert.ok(Math.abs(rightTip.size - 95.4) < 1e-9)
+  })
+})
+
+describe('backupTooltipModel', () => {
+  it('returns null when payload is empty', () => {
+    assert.equal(backupTooltipModel([]), null)
+    assert.equal(backupTooltipModel(null), null)
   })
 })

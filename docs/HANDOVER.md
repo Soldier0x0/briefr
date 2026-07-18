@@ -21,11 +21,12 @@ and looked wrong vs the tooltip.
 - `bytesChartScale()` — convert series to one display unit before plot
 - `BackupSizesChart` uses that scale for data, domain, ticks, and tooltip
 
-**Follow-up (same PR):** Tooltip stuck on one filename/size for every hover.
+**Follow-up (same PR):** Tooltip stuck on one filename/size for every hover
+(far-left ~50 MB and far-right ~95 MB both showed the same archive).
 RCA: XAxis `dataKey` used a 12-char truncation (`briefr-20260…`) so every
-archive shared one category key; Recharts resolved tooltip to the first row.
-Fix: unique `pointKey` (= full filename), timestamp tick labels
-(`07-17 20:27`), tooltip reads active payload. Helpers in `backupChartUtils.js`.
+archive shared one Recharts axis-tooltip category; hover always resolved to
+row 0. Fix: `pointKey` = row index (guaranteed unique), timestamp tick labels,
+custom tooltip bound to active payload. Helpers in `backupChartUtils.js`.
 
 **Next:** Collect more maintainer-reported UI issues on the same PR branch
 `cursor/backup-archive-chart-fix-eee1`.

@@ -28,7 +28,7 @@ import {
   tooltipLabelStyle,
   verticalBarChartHeight,
 } from '../../../utils/rechartsTheme.js'
-import { backupChartPoints, backupChartTickLabel } from './backupChartUtils.js'
+import { backupChartPoints, backupTooltipModel } from './backupChartUtils.js'
 
 function ingestScaleMax(secondsList) {
   if (!secondsList.length) return undefined
@@ -110,11 +110,24 @@ export function IngestDurationChart({ rows }) {
   )
 }
 
+function BackupSizeTooltip({ active, payload, scale, theme }) {
+  if (!active) return null
+  const model = backupTooltipModel(payload)
+  if (!model) return null
+  return (
+    <div style={tooltipContentStyle(theme)}>
+      <div style={tooltipLabelStyle(theme)}>{model.filename}</div>
+      <div style={tooltipItemStyle(theme)}>
+        {`Archive size : ${scale.format(model.size)}`}
+      </div>
+    </div>
+  )
+}
+
 export function BackupSizesChart({ rows }) {
   const theme = getRechartsTheme()
   const scale = bytesChartScale(rows.map((row) => row.size_bytes || 0))
   const data = backupChartPoints(rows, scale)
-  const tickByKey = new Map(data.map((row) => [row.pointKey, row.tickLabel]))
   const anim = chartAnimationDuration()
 
   return (
@@ -123,14 +136,16 @@ export function BackupSizesChart({ rows }) {
         <LineChart data={data} margin={rechartsMargin({ left: 16, right: 12, top: 8, bottom: 28 })}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis
+            type="category"
             dataKey="pointKey"
+            allowDuplicatedCategory={false}
             tick={axisTickStyle(theme)}
             interval="preserveStartEnd"
             minTickGap={20}
             angle={-35}
             textAnchor="end"
             height={48}
-            tickFormatter={(value) => tickByKey.get(value) || backupChartTickLabel(value)}
+            tickFormatter={(value) => data[Number(value)]?.tickLabel || String(value)}
             label={{
               value: 'Newest →',
               position: 'insideBottom',
@@ -152,18 +167,10 @@ export function BackupSizesChart({ rows }) {
             }}
           />
           <Tooltip
-            contentStyle={tooltipContentStyle(theme)}
-            labelStyle={tooltipLabelStyle(theme)}
-            itemStyle={tooltipItemStyle(theme)}
             cursor={tooltipCursorStyle(theme)}
-            formatter={(value, _name, item) => [
-              scale.format(Number(item?.payload?.size ?? value)),
-              'Archive size',
-            ]}
-            labelFormatter={(_label, payload) => {
-              const point = Array.isArray(payload) ? payload[0]?.payload : null
-              return point?.filename || _label
-            }}
+            content={({ active, payload }) => (
+              <BackupSizeTooltip active={active} payload={payload} scale={scale} theme={theme} />
+            )}
           />
           <Line
             type="monotone"
