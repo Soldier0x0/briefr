@@ -92,7 +92,7 @@ function MeteringColumn({ title, rows }) {
               <span className="metering-bar-track">
                 <span className="metering-bar-fill" style={{ width: `${((row.calls || 0) / max) * 100}%` }} />
               </span>
-              <span className="metering-row-count mono">{row.calls}</span>
+              <span className="metering-row-count mono">{row.calls || 0}</span>
             </li>
           ))}
         </ul>
