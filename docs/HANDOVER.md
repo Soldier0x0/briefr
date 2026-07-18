@@ -28,6 +28,13 @@ archive shared one Recharts axis-tooltip category; hover always resolved to
 row 0. Fix: `pointKey` = row index (guaranteed unique), timestamp tick labels,
 custom tooltip bound to active payload. Helpers in `backupChartUtils.js`.
 
+**Audit (same class elsewhere):**
+- **Resources charts** — same sticky-tooltip risk: X key was `HH:MM` only,
+  collides on 3d/7d/30d. Also raw-byte Y for RSS/disk. Fixed via
+  `resourceChartUtils.js` (index keys + `bytesChartScale` for `*_bytes`).
+- **Webhook deliveries** — hardened to index keys (MM-DD was low risk in 7d).
+- **Ingest duration / Vendor KEV** — OK (unique category labels).
+
 **Next:** Collect more maintainer-reported UI issues on the same PR branch
 `cursor/backup-archive-chart-fix-eee1`.
 

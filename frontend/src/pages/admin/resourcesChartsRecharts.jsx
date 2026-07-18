@@ -19,6 +19,7 @@ import {
   tooltipLabelStyle,
 } from '../../utils/rechartsTheme.js'
 import { fmtBytes } from './formatters.js'
+import { resourceChartPoints } from './resourceChartUtils.js'
 
 function fmtMetric(field, value) {
   if (value == null || Number.isNaN(value)) return '—'
@@ -50,17 +51,7 @@ export function ResourceLineChart({ series, fields, labels, tableTitle }) {
     )
   }
 
-  const data = plottable.map((row) => {
-    const entry = {
-      tsLabel: row.ts?.slice(11, 16) || '',
-      tsFull: row.ts ? String(row.ts).slice(0, 19) : '—',
-    }
-    fields.forEach((field) => {
-      entry[field] = row[field] != null ? Number(row[field]) : null
-    })
-    return entry
-  })
-
+  const { data, scale } = resourceChartPoints(plottable, fields)
   const lineColors = [theme.accent, theme.chart2, theme.textSecondary]
 
   return (
@@ -73,12 +64,19 @@ export function ResourceLineChart({ series, fields, labels, tableTitle }) {
         <LineChart data={data} margin={rechartsMargin({ left: 8, right: 12 })}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis
-            dataKey="tsLabel"
+            type="category"
+            dataKey="pointKey"
+            allowDuplicatedCategory={false}
             tick={axisTickStyle(theme)}
             interval="preserveStartEnd"
             minTickGap={24}
+            tickFormatter={(value) => data[Number(value)]?.tsLabel || ''}
           />
-          <YAxis tick={axisTickStyle(theme)} domain={['auto', 'auto']} />
+          <YAxis
+            tick={axisTickStyle(theme)}
+            domain={scale ? [0, scale.domainMax] : ['auto', 'auto']}
+            tickFormatter={scale ? (v) => scale.format(Number(v)) : undefined}
+          />
           <Tooltip
             contentStyle={tooltipContentStyle(theme)}
             labelStyle={tooltipLabelStyle(theme)}
@@ -88,6 +86,9 @@ export function ResourceLineChart({ series, fields, labels, tableTitle }) {
             formatter={(value, name) => {
               const idx = labels.indexOf(name)
               const field = fields[idx >= 0 ? idx : 0]
+              if (scale && field?.endsWith('_bytes')) {
+                return [scale.format(Number(value)), name]
+              }
               return [fmtMetric(field, value), name]
             }}
           />

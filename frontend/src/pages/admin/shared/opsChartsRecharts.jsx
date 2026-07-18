@@ -192,7 +192,8 @@ export function BackupSizesChart({ rows }) {
 
 export function WebhookDeliveriesChart({ buckets }) {
   const theme = getRechartsTheme()
-  const data = buckets.map((b) => ({
+  const data = buckets.map((b, index) => ({
+    pointKey: index,
     day: b.day.slice(5),
     ok: b.ok,
     failed: b.failed,
@@ -206,8 +207,11 @@ export function WebhookDeliveriesChart({ buckets }) {
         <BarChart data={data} margin={rechartsMargin({ left: 8, right: 12, bottom: 24 })}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis
-            dataKey="day"
+            type="category"
+            dataKey="pointKey"
+            allowDuplicatedCategory={false}
             tick={axisTickStyle(theme)}
+            tickFormatter={(value) => data[Number(value)]?.day || String(value)}
             label={{
               value: 'Day (UTC)',
               position: 'insideBottom',
