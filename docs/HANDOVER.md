@@ -12,6 +12,41 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — PM track closeout: Q4/Q5/Q6 dispositioned (docs-only, no code change)
+
+**What:** Closed the three remaining open questions on the Post–UI E2E UX audit
+(`specs/e2e-ux-observations-2026-07-15.md` §9), completing the PM track (PM-0→PM-4e
+were already merged; only these three rows were left open).
+
+- **Q6 (sidebar toggle red vs orange):** already fixed — `1b4f685` (PM-2a, 2026-07-15)
+  moved `.toggle-on`/`.toggle-thumb` onto `--accent-primary` tokens; grid alignment
+  fixed in `55edb6d` (PM-1c, #611). The spec row was just never ticked. No code change.
+- **Q5 (14-day publication accuracy):** audited, not reproducible as a bug. `/api/stats/timeline`
+  groups by `DATE(published)`, and `published` is written verbatim from NVD's own field with
+  `cve_id` as the sole upsert key (`db/cve.py`) — no transform or duplication to introduce
+  drift. Postgres/SQLite date-object normalization already covered by
+  `tests/test_stats_timeline.py`. Couldn't diff against real NVD counts in this session — the
+  local dev DB only has synthetic seed rows, not ingested history. If a real discrepancy
+  surfaces later it's most likely scheduler-lag/freshness (already surfaced via the Q4 FEED
+  gap banner), not a query defect.
+- **Q4 (`/security-architecture` redirect removal):** kept, not removed. The spec's default
+  was "one release, then remove," but the repo has no tags/version-bump/release-cut process —
+  everything ships continuously off `main` — so "one release" has no signal to fire on, and
+  PM-4c (#638) landed only two days ago (2026-07-16). Revisit once there's a real release
+  process, or after confirming zero traffic to the legacy route in access logs.
+
+**Verification:** docs-only change; no backend/frontend code touched. No test run needed.
+
+**Docs:** `specs/e2e-ux-observations-2026-07-15.md` §9 updated in place; PM track header in
+`SPRINT_2026-07.md` marked CLOSED.
+
+**Next:** UI-M track (`ui-modernization-plan.md` §13, epics E0–E9) is also fully checked off
+but still labeled "Active program" in `SPRINT_2026-07.md` — same staleness as PM track had;
+worth flipping to CLOSED in a follow-up pass. TM-6 (#667) and the migration fix (#668) still
+have no HANDOVER entry of their own.
+
+---
+
 ## 2026-07-17 — Idempotency completion (IDEM-C / IDEM-D + E/F disposition)
 
 **What:** Closed out the remaining idempotency findings from
