@@ -12,6 +12,18 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — Embeddings E6: MITRE technique embeddings + typed hits
+
+**What:** Embed ATT&CK techniques into multi-entity `embeddings` (`entity_type=technique`);
+`embeddings_backfill` also embeds techniques; hybrid search returns typed technique hits.
+- `build_technique_embed_text`, `get_techniques_needing_embeddings`
+- `run_technique_embeddings_backfill` (scheduler)
+- `GET /api/search/semantic` includes technique keyword + vector hits
+
+**Next:** Embeddings program complete (E1–E6). Optional: UI surfacing of technique hits in FEED.
+
+---
+
 ## 2026-07-18 — Embeddings E5: Admin search service token
 
 **What:** Scoped agent retrieval tokens — `briefr_search_…` Bearer, bcrypt hash,

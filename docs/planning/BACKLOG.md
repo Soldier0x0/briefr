@@ -429,8 +429,8 @@ remediation queue. Supporting artifacts: [`e2e-click-map-2026-07-15.md`](specs/e
 | **E2** | Embed pipeline → pgvector (hash, backfill, flags) | ✅ #672 |
 | **E3** | Related + hybrid search API (`mode`, query-shape, fallbacks) | ✅ #673 |
 | **E4** | UI one-box hybrid | ✅ #674 |
-| **E5** | Admin search service token (hash, show-once, scope, rate limit) | 🔄 this PR |
-| **E6** | MITRE technique embeddings + typed hits | 📋 after E3–E5 |
+| **E5** | Admin search service token (hash, show-once, scope, rate limit) | ✅ #675 |
+| **E6** | MITRE technique embeddings + typed hits | 🔄 this PR |
 
 **Locks:** No prod image swap until E1 deploy; no request-path model inference; techniques same schema, next slice.
 

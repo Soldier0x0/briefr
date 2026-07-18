@@ -606,26 +606,29 @@ Sub-objects match the shapes returned by `GET /api/cves/{cve_id}/sentences`, `/e
       "score": 0.012345,
       "match_reasons": ["keyword", "vector"],
       "description": "...",
-      "summary": "...",
-      "cvss_score": 9.8,
-      "severity": "CRITICAL",
-      "published": "2024-01-01",
-      "epss_score": 0.5,
-      "is_kev": false,
-      "similarity": 0.91
+      "severity": "CRITICAL"
+    },
+    {
+      "entity_type": "technique",
+      "entity_id": "T1566.001",
+      "technique_id": "T1566.001",
+      "name": "Spearphishing Attachment",
+      "tactic": "initial-access",
+      "match_reasons": ["keyword"],
+      "score": 0.01
     }
   ],
   "meta": {
     "method": "hybrid",
     "mode_requested": "hybrid",
     "query_shape": "long",
-    "q": "...",
-    "embeddings_enabled": true
+    "includes_techniques": true
   }
 }
 ```
 
 `meta.method` values: `hybrid` \| `keyword` \| `keyword_first` \| `semantic` \| `keyword_fallback`.
+Technique hits (E6) appear when keyword/vector matches ATT&CK catalog rows.
 
 **Auth:** Analyst session **or** search service token (`Authorization: Bearer briefr_search_…` — E5).
 
