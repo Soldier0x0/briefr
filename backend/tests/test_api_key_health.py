@@ -155,6 +155,48 @@ def test_ping_json_actually_reaches_the_http_layer(monkeypatch):
     assert seen_requests[0].url.host == "example.com"
 
 
+def test_ping_json_connect_error_does_not_trip_feed_circuit(monkeypatch):
+    """API key health probes must not open Feed Health circuits."""
+    import resilient_client
+    from monitoring.api_key_health import _ping_json
+    from resilient_client import get_feed_health, reset_feed_health
+
+    reset_feed_health()
+    monkeypatch.setattr(resilient_client, "CIRCUIT_FAILURE_THRESHOLD", 1)
+
+    def handler(request):
+        raise httpx.ConnectError(
+            "[Errno -3] Temporary failure in name resolution",
+            request=request,
+        )
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    monkeypatch.setattr(resilient_client, "_client", client)
+
+    async def no_sleep(_seconds):
+        return None
+
+    monkeypatch.setattr(resilient_client.asyncio, "sleep", no_sleep)
+
+    async def run():
+        return await _ping_json(
+            source="cerebras",
+            method="GET",
+            url="https://api.cerebras.ai/v1/models",
+        )
+
+    result = asyncio.run(run())
+    assert result["healthy"] is False
+    assert "ConnectError" in (result["error"] or "")
+    health = get_feed_health().get("cerebras")
+    assert health is None or (
+        health["circuit_open"] is False
+        and health["consecutive_failures"] == 0
+        and health["last_error"] is None
+    )
+    reset_feed_health()
+
+
 def test_repeated_identical_failure_notifies_once_not_every_run(monkeypatch, tmp_path):
     """Regression test for the dedupe_key bug: it used to embed checked_at
     (a fresh per-run timestamp), so deduplication never fired and a
