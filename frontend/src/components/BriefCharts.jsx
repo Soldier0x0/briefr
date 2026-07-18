@@ -135,22 +135,22 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel,
       </details>
       {/*
         Pure CSS grid (not <table>): grid-on-<tr> + td[colSpan] fought table
-        layout so headers and body tracks drifted (Severity under CVE, etc.).
+        layout so headers and body tracks drifted. Rows are native <button>s —
+        do not overlay role="row"/"cell" (destroys button semantics).
       */}
       <div
         className="brief-epss-grid"
-        role="table"
         aria-label={`Top EPSS movers in the last ${windowLabel}`}
       >
-        <div className="brief-epss-cols brief-epss-head" role="row">
-          <span className="mono brief-epss-col-cve" role="columnheader">CVE</span>
-          <span className="mono brief-epss-col-sev" role="columnheader">Severity</span>
-          <span className="mono brief-epss-col-spark" role="columnheader">
+        <div className="brief-epss-cols brief-epss-head" aria-hidden="true">
+          <span className="mono brief-epss-col-cve">CVE</span>
+          <span className="mono brief-epss-col-sev">Severity</span>
+          <span className="mono brief-epss-col-spark">
             <ControlTooltip text={sparkSpec.columnTooltip} trigger="hover-focus">
               <span>{sparkSpec.columnLabel}</span>
             </ControlTooltip>
           </span>
-          <span className="mono brief-epss-col-delta" role="columnheader">
+          <span className="mono brief-epss-col-delta">
             <ControlTooltip text={EPSS_DELTA_TOOLTIP} trigger="hover-focus">
               <span>Delta (Δ)</span>
             </ControlTooltip>
@@ -165,13 +165,12 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel,
             <button
               key={row.cve_id}
               type="button"
-              role="row"
               className="brief-epss-row-btn brief-epss-cols"
               onClick={() => onSelectCVE?.({ cve_id: row.cve_id })}
               aria-label={`Open ${row.cve_id} details, EPSS increased ${(row.delta * 100).toFixed(1)} percentage points`}
             >
-              <span className="brief-epss-id mono" role="cell">{row.cve_id}</span>
-              <span className="brief-epss-sev" role="cell">
+              <span className="brief-epss-id mono">{row.cve_id}</span>
+              <span className="brief-epss-sev">
                 <ControlTooltip
                   text={severityTooltip(row.severity)}
                   trigger="hover-focus"
@@ -187,7 +186,7 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel,
                   </span>
                 </ControlTooltip>
               </span>
-              <span className="brief-epss-sparkline-cell" role="cell">
+              <span className="brief-epss-sparkline-cell">
                 {loading && !history.length ? (
                   <span className="brief-epss-sparkline brief-epss-sparkline--loading" aria-hidden="true" />
                 ) : (
@@ -200,7 +199,6 @@ function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel,
               </span>
               <span
                 className={`brief-epss-delta badge badge-epss-delta mono ${epssDeltaClass(row.delta)}`}
-                role="cell"
               >
                 +{(row.delta * 100).toFixed(1)}%
               </span>

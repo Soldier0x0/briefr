@@ -33,6 +33,9 @@ describe('FEED / EPSS movers UI cleanup gate', () => {
     assert.match(jsx, /className="brief-epss-grid"/)
     assert.match(jsx, /brief-epss-cols brief-epss-head/)
     assert.doesNotMatch(jsx, /colSpan=\{4\}/)
+    // Native buttons must keep button semantics — never role="row"/"cell".
+    assert.doesNotMatch(jsx, /role=["']row["']/)
+    assert.doesNotMatch(jsx, /role=["']cell["']/)
     assert.match(css, /\.brief-epss-sev\s*\{[^}]*justify-content:\s*flex-start/s)
   })
 
