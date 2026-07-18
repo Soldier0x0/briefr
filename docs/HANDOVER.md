@@ -12,6 +12,20 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-18 — Admin labeled control row alignment
+
+**What:** Table browser (and similar admin toolbars) put the label + Select
+inline inside a flex row with `align-items: center`, so sibling action buttons
+lined up with the label text and looked shorter / staggered.
+- Shared `.admin-field` / `.admin-filter-bar--fields` (label stacked, row
+  `align-items: flex-end`, controls/buttons share `--control-height-md`)
+- Applied on DbExplorer, AI ops activity filters, Webhooks create + delivery log
+- design-system.md §23.8
+
+**Next:** Spot other labeled toolbars if reported.
+
+---
+
 ## 2026-07-18 — Domain jargon tips (Analyst + Admin)
 
 **What:** Locked jargon sweep — unexplained abbreviations across Analyst Charts,

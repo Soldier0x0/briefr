@@ -402,12 +402,11 @@ function ActivityTab({ toast, providerOptions }) {
         Recent operations
         <HelpTip text="Redacted attempt log — no prompts or completions. Newest first." />
       </div>
-      <div className="admin-filter-bar" style={{ marginBottom: '0.75rem', gap: '0.75rem' }}>
-        <label style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>
-          Task
+      <div className="admin-filter-bar admin-filter-bar--fields" style={{ marginBottom: '0.75rem' }}>
+        <label className="admin-field">
+          <span className="admin-field-label">Task</span>
           <Select
             className="admin-select"
-            style={{ marginLeft: '0.35rem' }}
             value={taskFilter}
             onChange={(v) => changeFilter(setTaskFilter, v)}
             options={[
@@ -416,11 +415,10 @@ function ActivityTab({ toast, providerOptions }) {
             ]}
           />
         </label>
-        <label style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>
-          Provider
+        <label className="admin-field">
+          <span className="admin-field-label">Provider</span>
           <Select
             className="admin-select"
-            style={{ marginLeft: '0.35rem' }}
             value={providerFilter}
             onChange={(v) => changeFilter(setProviderFilter, v)}
             options={[
@@ -431,8 +429,8 @@ function ActivityTab({ toast, providerOptions }) {
         </label>
         {(taskFilter || providerFilter) && (
           <button
+            type="button"
             className="admin-btn admin-btn-ghost"
-            style={{ fontSize: '0.75rem' }}
             onClick={() => { setOffset(0); setTaskFilter(''); setProviderFilter('') }}
           >
             Clear

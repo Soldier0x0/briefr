@@ -2534,6 +2534,50 @@
   flex-wrap: wrap;
 }
 
+/* Labeled control rows: stack label above the control, align actions to the
+   control baseline (not the label), and share one control height. */
+.admin-filter-bar--fields,
+.admin-toolbar--fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.admin-field-label {
+  font-family: var(--font-mono);
+  font-size: var(--type-meta, 0.6875rem);
+  letter-spacing: 0.04em;
+  color: var(--text3);
+  line-height: 1.2;
+}
+
+.admin-filter-bar--fields .admin-input,
+.admin-filter-bar--fields .admin-select,
+.admin-filter-bar--fields .ui-select-trigger,
+.admin-filter-bar--fields .admin-btn,
+.admin-toolbar--fields .admin-input,
+.admin-toolbar--fields .admin-select,
+.admin-toolbar--fields .ui-select-trigger,
+.admin-toolbar--fields .admin-btn {
+  box-sizing: border-box;
+  min-height: var(--control-height-md);
+}
+
+.admin-filter-bar--fields .admin-btn,
+.admin-toolbar--fields .admin-btn {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 /* ── Disk usage bar ─────────────────────────────────────────────────────── */
 
 .disk-bar {

@@ -372,6 +372,16 @@ exception: filled selection is allowed; neon **borders** are not.
   poll until the lock clears. `JobTable` + `SchedulerPage` are the reference;
   apply the same pattern anywhere else long-running jobs surface.
 
+### 23.8 Admin labeled control rows
+
+- When a filter/toolbar mixes a **label + control** with a sibling **action button**,
+  use stacked fields (`.admin-field` + `.admin-field-label`) inside
+  `.admin-filter-bar--fields` / `.admin-toolbar--fields`.
+- Align the row to the **control baseline** (`align-items: flex-end`), not the label.
+- Share one control height (`--control-height-md`) across Select triggers, text inputs,
+  and action buttons in that row. Do **not** put the label and control inline with
+  `marginLeft` on the control — that misaligns buttons against the taller label block.
+
 ## 24. Suggested additional documentation (future)
 
 - `docs/design/component-inventory.md` — per-control migration map (raw → primitive → files).
