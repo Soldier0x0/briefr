@@ -188,12 +188,22 @@ export function fetchCVEs(params = {}) {
   return request(`/cves${query ? `?${query}` : ''}`)
 }
 
-/** Embeddings E4 — hybrid / keyword / semantic CVE search (default hybrid). */
-export function fetchSemanticSearch({ q = '', mode = 'hybrid', limit = 20 } = {}) {
+/** Embeddings E4/E7 — hybrid / keyword / semantic CVE search (default hybrid). */
+export function fetchSemanticSearch({
+  q = '',
+  mode = 'hybrid',
+  limit = 20,
+  stack = '',
+  severity = '',
+  kev_only = false,
+} = {}) {
   const qs = new URLSearchParams()
   if (q) qs.set('q', q)
   if (mode) qs.set('mode', mode)
   if (limit != null) qs.set('limit', String(limit))
+  if (stack) qs.set('stack', stack)
+  if (severity) qs.set('severity', severity)
+  if (kev_only) qs.set('kev_only', 'true')
   const query = qs.toString()
   return request(`/search/semantic${query ? `?${query}` : ''}`)
 }

@@ -82,6 +82,35 @@ ORDER BY c.published DESC
 LIMIT $2
 """
 
+# Oldest existing embeds first — Python `_row_to_pending` drops fresh hashes.
+_GET_CVES_FOR_HASH_RESYNC_SQLITE = """
+SELECT c.cve_id, c.description, c.summary, c.affected_products, c.cwe_ids,
+       e.content_hash AS existing_hash
+FROM embeddings e
+INNER JOIN cves c ON c.cve_id = e.entity_id
+WHERE e.entity_type = 'cve'
+  AND e.model = ?
+  AND e.content_hash NOT LIKE 'migrated:%'
+  AND c.description IS NOT NULL
+  AND c.description != ''
+ORDER BY e.updated_at ASC
+LIMIT ?
+"""
+
+_GET_CVES_FOR_HASH_RESYNC_PG = """
+SELECT c.cve_id, c.description, c.summary, c.affected_products, c.cwe_ids,
+       e.content_hash AS existing_hash
+FROM embeddings e
+INNER JOIN cves c ON c.cve_id = e.entity_id
+WHERE e.entity_type = 'cve'
+  AND e.model = $1
+  AND e.content_hash NOT LIKE 'migrated:%'
+  AND c.description IS NOT NULL
+  AND c.description != ''
+ORDER BY e.updated_at ASC NULLS LAST
+LIMIT $2
+"""
+
 _GET_CVES_BY_IDS_SQLITE = """
 SELECT c.cve_id, c.description, c.summary, c.affected_products, c.cwe_ids,
        e.content_hash AS existing_hash
@@ -199,15 +228,51 @@ def _row_to_pending(row: dict, model: str) -> dict | None:
 async def get_cves_needing_embeddings(
     db: DbConnection, model: str, limit: int = 500
 ) -> list[dict]:
-    """CVEs missing an ``embeddings`` row or still on a migrated: placeholder."""
+    """CVEs missing / migrated / content_hash drift (E7 freshness).
+
+    1) Prefer never-embedded or ``migrated:`` placeholders (newest CVEs first).
+    2) Fill remaining budget by scanning oldest existing embeds for hash drift
+       so description/summary updates are not stuck forever after first embed.
+    """
+    capped = max(1, int(limit))
     pg = _is_postgres_connection(db)
     sql = _GET_CVES_NEEDING_EMBEDDINGS_PG if pg else _GET_CVES_NEEDING_EMBEDDINGS_SQLITE
-    rows = await db.execute_fetchall(sql, (model, limit))
+    rows = await db.execute_fetchall(sql, (model, capped))
     out: list[dict] = []
+    seen: set[str] = set()
     for row in rows:
         item = _row_to_pending(dict(row), model)
-        if item:
-            out.append(item)
+        if not item:
+            continue
+        cid = item["cve_id"]
+        if cid in seen:
+            continue
+        seen.add(cid)
+        out.append(item)
+        if len(out) >= capped:
+            return out
+
+    remaining = capped - len(out)
+    if remaining <= 0:
+        return out
+
+    # Over-fetch: many oldest rows may still be hash-fresh.
+    scan = min(max(remaining * 8, remaining), 8000)
+    resync_sql = (
+        _GET_CVES_FOR_HASH_RESYNC_PG if pg else _GET_CVES_FOR_HASH_RESYNC_SQLITE
+    )
+    resync_rows = await db.execute_fetchall(resync_sql, (model, scan))
+    for row in resync_rows:
+        item = _row_to_pending(dict(row), model)
+        if not item:
+            continue
+        cid = item["cve_id"]
+        if cid in seen:
+            continue
+        seen.add(cid)
+        out.append(item)
+        if len(out) >= capped:
+            break
     return out
 
 

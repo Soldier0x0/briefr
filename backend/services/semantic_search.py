@@ -131,12 +131,56 @@ def _technique_results(
     return out
 
 
+async def _allowed_cve_ids_for_filters(
+    db: DbConnection,
+    candidate_ids: list[str],
+    *,
+    stack: str | None,
+    severity: str | None,
+    kev_only: bool,
+) -> tuple[set[str] | None, list[str]]:
+    """Return allowed CVE id set, or None when no CVE filters apply.
+
+    Uses ``?`` placeholders (PostgresConnection adapts via ``pg_adapt``).
+    Also returns normalized stack terms for ``meta``.
+    """
+    from routers.cves import _stack_match_clause
+
+    stack_clause, stack_params, stack_terms = _stack_match_clause(stack)
+    sev = (severity or "").strip().upper() or None
+    if not stack_clause and not sev and not kev_only:
+        return None, stack_terms
+    if not candidate_ids:
+        return set(), stack_terms
+
+    normalized = [c.upper() for c in candidate_ids if c]
+    placeholders = ", ".join("?" for _ in normalized)
+    conditions = [f"c.cve_id IN ({placeholders})"]
+    params: list = list(normalized)
+
+    if stack_clause:
+        conditions.append(stack_clause)
+        params.extend(stack_params)
+    if sev:
+        conditions.append("UPPER(c.severity) = ?")
+        params.append(sev)
+    if kev_only:
+        conditions.append("c.is_kev = 1")
+
+    sql = f"SELECT c.cve_id FROM cves c WHERE {' AND '.join(conditions)}"
+    rows = await db.execute_fetchall(sql, tuple(params))
+    return {r["cve_id"] for r in rows}, stack_terms
+
+
 async def run_semantic_search(
     db,
     q: str,
     *,
     mode: SearchMode = "hybrid",
     limit: int = _DEFAULT_LIMIT,
+    stack: str | None = None,
+    severity: str | None = None,
+    kev_only: bool = False,
 ) -> dict[str, Any]:
     """Run keyword / semantic / hybrid search with honest ``meta.method``."""
     text = (q or "").strip()
@@ -148,6 +192,9 @@ async def run_semantic_search(
                 "mode_requested": mode,
                 "query_shape": "short",
                 "q": "",
+                "stack_terms": [],
+                "severity": None,
+                "kev_only": False,
             },
         }
 
@@ -157,8 +204,12 @@ async def run_semantic_search(
         mode if mode in ("hybrid", "keyword", "semantic") else "hybrid"
     )
 
-    keyword_rows = await keyword_search_cves(db, text, limit=capped)
-    tech_keyword = await keyword_search_techniques(db, text, limit=max(5, capped // 2))
+    # Over-fetch before filters so stack/severity don't empty a tiny keyword page.
+    fetch_limit = capped * 3 if (stack or severity or kev_only) else capped
+    fetch_limit = max(1, min(fetch_limit, _MAX_LIMIT))
+
+    keyword_rows = await keyword_search_cves(db, text, limit=fetch_limit)
+    tech_keyword = await keyword_search_techniques(db, text, limit=max(5, fetch_limit // 2))
     vector_hits: list[dict] = []
 
     need_vector = False
@@ -171,7 +222,7 @@ async def run_semantic_search(
         if shape == "cve_id":
             try:
                 similar = await find_similar_via_embeddings_table(
-                    db, text.upper(), get_embeddings_model_name(), limit=capped
+                    db, text.upper(), get_embeddings_model_name(), limit=fetch_limit
                 )
             except Exception:
                 logger.exception("CVE-id semantic neighbor lookup failed")
@@ -195,7 +246,7 @@ async def run_semantic_search(
                         db,
                         get_embeddings_model_name(),
                         query_blob,
-                        limit=capped,
+                        limit=fetch_limit,
                         expected_dim=dims or DEFAULT_EMBEDDING_DIMS,
                         entity_types=[ENTITY_TYPE_CVE, ENTITY_TYPE_TECHNIQUE],
                     )
@@ -218,6 +269,18 @@ async def run_semantic_search(
             + [h["cve_id"] for h in cve_vector_hits if h.get("cve_id")]
         )
     )
+    allowed_ids, stack_terms = await _allowed_cve_ids_for_filters(
+        db,
+        ids,
+        stack=stack,
+        severity=severity,
+        kev_only=bool(kev_only),
+    )
+    if allowed_ids is not None:
+        keyword_rows = [r for r in keyword_rows if r.get("cve_id") in allowed_ids]
+        cve_vector_hits = [h for h in cve_vector_hits if h.get("cve_id") in allowed_ids]
+        ids = [i for i in ids if i in allowed_ids]
+
     cards = await _hydrate_cve_cards(db, ids)
     for row in keyword_rows:
         cards[row["cve_id"]] = row
@@ -232,13 +295,14 @@ async def run_semantic_search(
             ]
         )
     )
+    # Stack/severity/KEV are CVE filters — techniques stay unfiltered (typed hits).
     tech_cards = await _hydrate_technique_cards(db, tech_ids)
     for row in tech_keyword:
         tech_cards[row["technique_id"]] = row
     tech_budget = (
         min(max(3, capped // 4), capped - 1)
-        if capped > 1 and tech_ids
-        else 0
+        if capped > 1 and tech_ids and allowed_ids is None
+        else (min(max(2, capped // 5), capped - 1) if capped > 1 and tech_ids else 0)
     )
     cve_budget = max(1, capped - tech_budget)
 
@@ -275,5 +339,8 @@ async def run_semantic_search(
             "q": text[:200],
             "embeddings_enabled": embeddings_enabled(),
             "includes_techniques": bool(tech_results),
+            "stack_terms": stack_terms,
+            "severity": (severity or "").strip().upper() or None,
+            "kev_only": bool(kev_only),
         },
     }

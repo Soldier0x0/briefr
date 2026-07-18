@@ -584,13 +584,16 @@ Sub-objects match the shapes returned by `GET /api/cves/{cve_id}/sentences`, `/e
 
 ### GET /api/search/semantic
 
-**Description (E3):** One-box CVE search — hybrid (default), keyword, or semantic. Keyword uses CVE-id exact / description+summary substring match. Semantic/hybrid may use stored vectors (ANN) when `EMBEDDINGS_ENABLED=1`; free-text semantic embeds the query once (design §7.1). Cold index / disabled embeddings → keyword fallback. Honest `meta.method` reports the path used.
+**Description (E3/E7):** One-box CVE (+ technique) search — hybrid (default), keyword, or semantic. Keyword uses CVE-id exact / description+summary substring match. Semantic/hybrid may use stored vectors (ANN) when `EMBEDDINGS_ENABLED=1`; free-text semantic embeds the query once (design §7.1). Cold index / disabled embeddings → keyword fallback. Honest `meta.method` reports the path used. Optional filters keep hybrid usable with My Stack / severity chips.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `q` | str | `""` | Query text (max 500) |
 | `mode` | str | `hybrid` | `hybrid` \| `keyword` \| `semantic` |
 | `limit` | int | 20 | 1–50 |
+| `stack` | str | `null` | Comma-separated stack terms (same matching as `/api/cves`) — narrows **CVE** hits |
+| `severity` | str | `null` | Exact severity match on CVE hits (e.g. `CRITICAL`) |
+| `kev_only` | bool | `false` | Only KEV CVE hits |
 
 **Query-shape (hybrid):** CVE-id → keyword-first; 1–2 tokens → keyword-heavy RRF; longer natural language → vector-heavier RRF.
 
@@ -622,13 +625,17 @@ Sub-objects match the shapes returned by `GET /api/cves/{cve_id}/sentences`, `/e
     "method": "hybrid",
     "mode_requested": "hybrid",
     "query_shape": "long",
-    "includes_techniques": true
+    "includes_techniques": true,
+    "stack_terms": ["nginx"],
+    "severity": null,
+    "kev_only": false
   }
 }
 ```
 
 `meta.method` values: `hybrid` \| `keyword` \| `keyword_first` \| `semantic` \| `keyword_fallback`.
 Technique hits (E6) appear when keyword/vector matches ATT&CK catalog rows.
+`stack` / `severity` / `kev_only` filter **CVE** hits only (techniques remain typed hits).
 
 **Auth:** Analyst session **or** search service token (`Authorization: Bearer briefr_search_…` — E5).
 

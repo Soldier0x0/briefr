@@ -175,10 +175,14 @@ export default function CVEFeed({
           q,
           mode: 'hybrid',
           limit: HYBRID_LIMIT,
+          stack: filtersNow.stack || '',
+          severity: filtersNow.severity || '',
+          kev_only: Boolean(filtersNow.kev_only),
         })
         if (controller.signal.aborted) return
         let pageRows = filterHybridHits(body?.data || [], filtersNow)
-        const serverStackSort = false
+        // Server already applied stack; still exposure-sort when asset-aware.
+        const serverStackSort = Boolean(filtersNow.stack)
         if (assetAwareRef.current && !serverStackSort) {
           pageRows = sortByExposure(pageRows, getMatchScoreRef.current)
         }
