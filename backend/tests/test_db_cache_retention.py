@@ -97,6 +97,7 @@ def test_run_retention_cleanup_returns_counts(tmp_path, monkeypatch):
                 "otx_pulse_iocs",
                 "ai_operations",
                 "webhook_delivery_log",
+                "webhook_dedupe_stranded",
                 "audit_log",
                 "api_call_events",
                 "resource_metrics",

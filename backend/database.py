@@ -16,6 +16,12 @@ DB_PATH = os.environ.get("DB_PATH", "briefr.db")
 
 from db.init import get_db, init_db, run_postgres_migrations
 from db.cve import *
+from db.embeddings_store import (
+    embeddings_pgvector_writes_enabled,
+    get_cves_needing_embeddings,
+    get_cves_needing_embeddings_by_ids,
+    upsert_cve_embedding_row,
+)
 from db.enrichment import *
 from db.cache import *
 from db.cache_retention import (

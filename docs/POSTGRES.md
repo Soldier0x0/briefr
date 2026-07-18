@@ -103,7 +103,7 @@ Verify: `curl -s http://127.0.0.1:8000/api/health` → `"backend": "postgresql"`
 | Migrations | **Alembic** + **psycopg** (sync, migration-time) |
 | SQL compatibility | `db/pg_adapt.py` adapts legacy router SQL at the Postgres connection boundary |
 | Durable jobs | **Procrastinate** (`PROCRASTINATE_ENABLED=0` default). Schema applied by Alembic `028_procrastinate_schema` (official `schema.sql`). In-process worker starts from `main.py` lifespan when enabled. |
-| Embeddings search | **E1 foundation:** Alembic `032` installs `vector` + `embeddings` (`vector(384)`). Related lookup still NumPy over legacy `cve_embeddings` BLOBs until E2/E3. Requires pgvector image (below). |
+| Embeddings search | **E1+E2:** `embeddings` (`vector(384)`) + dual-write from scheduler with `content_hash`. Related still NumPy over `cve_embeddings` until E3. Requires `pgvector/pgvector:pg16`. |
 
 ## Backups
 

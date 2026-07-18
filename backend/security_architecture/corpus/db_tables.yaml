@@ -198,6 +198,15 @@ tables:
   source_refs:
   - type: table
     ref: detection_backlog
+- id: embeddings
+  title: embeddings
+  summary: Database table defined in db/init.py (name=embeddings).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: embeddings
 - id: epss_history
   title: epss_history
   summary: Database table defined in db/init.py (name=epss_history).

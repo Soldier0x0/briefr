@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 from fastapi.testclient import TestClient
 
 from db.software_catalog import (
@@ -12,6 +11,7 @@ from db.software_catalog import (
     upsert_catalog_rows,
 )
 from feeds.cpe_catalog import normalize_cpe_product
+from tests.conftest import run_db_test
 
 
 def test_parse_and_categorize_cpe():
@@ -37,8 +37,7 @@ def test_normalize_cpe_product_from_api_shape():
     assert "nginx" in row["display_name"].lower()
 
 
-@pytest.mark.asyncio
-async def test_suggest_requires_three_chars(tmp_path, monkeypatch):
+def test_suggest_requires_three_chars(tmp_path, monkeypatch):
     db_path = tmp_path / "cpe.db"
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "0")
@@ -53,32 +52,35 @@ async def test_suggest_requires_three_chars(tmp_path, monkeypatch):
 
     from database import get_db, init_db
 
-    await init_db()
-    db = await get_db()
-    try:
-        await upsert_catalog_rows(
-            db,
-            [
-                {
-                    "cpe_uri": "cpe:2.3:a:apache:http_server:2.4.49:*:*:*:*:*:*:*",
-                    "vendor": "apache",
-                    "product": "http_server",
-                    "version": "2.4.49",
-                    "display_name": "Apache HTTP Server",
-                    "category": "web_server",
-                    "title": "Apache HTTP Server",
-                    "versions_json": ["2.4.49"],
-                }
-            ],
-        )
-        await db.commit()
-        assert await suggest_software(db, query="ap") == []
-        items = await suggest_software(db, query="apa")
-        assert items
-        assert items[0]["product"] == "http_server"
-        assert "2.4.49" in items[0]["versions"]
-    finally:
-        await db.close()
+    async def _run():
+        await init_db()
+        db = await get_db()
+        try:
+            await upsert_catalog_rows(
+                db,
+                [
+                    {
+                        "cpe_uri": "cpe:2.3:a:apache:http_server:2.4.49:*:*:*:*:*:*:*",
+                        "vendor": "apache",
+                        "product": "http_server",
+                        "version": "2.4.49",
+                        "display_name": "Apache HTTP Server",
+                        "category": "web_server",
+                        "title": "Apache HTTP Server",
+                        "versions_json": ["2.4.49"],
+                    }
+                ],
+            )
+            await db.commit()
+            assert await suggest_software(db, query="ap") == []
+            items = await suggest_software(db, query="apa")
+            assert items
+            assert items[0]["product"] == "http_server"
+            assert "2.4.49" in items[0]["versions"]
+        finally:
+            await db.close()
+
+    run_db_test(_run())
 
 
 def test_catalog_suggest_endpoint(tmp_path, monkeypatch, auth_token):

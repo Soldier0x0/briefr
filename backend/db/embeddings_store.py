@@ -1,0 +1,237 @@
+"""Runtime read/write for the multi-entity ``embeddings`` table (E2).
+
+Dual-writes with legacy ``cve_embeddings`` until E3 switches related/search to ANN.
+SQLite stores float32 BLOBs; Postgres uses ``vector(384)`` via text literals.
+
+Copyright © 2026 Sai Harsha Vardhan
+SPDX-License-Identifier: AGPL-3.0-or-later
+"""
+
+from __future__ import annotations
+
+import os
+
+from db.embeddings_pgvector import (
+    ENTITY_TYPE_CVE,
+    blob_to_pgvector_literal,
+    build_cve_embed_text,
+    content_hash_for_embed_text,
+    is_placeholder_content_hash,
+)
+from db.timeutil import utcnow_str
+from db.types import DbConnection
+
+_UPSERT_EMBEDDING_SQLITE = """
+INSERT INTO embeddings (
+    entity_type, entity_id, model, dims, embedding, content_hash, updated_at
+)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(entity_type, entity_id, model) DO UPDATE SET
+    dims = excluded.dims,
+    embedding = excluded.embedding,
+    content_hash = excluded.content_hash,
+    updated_at = excluded.updated_at
+"""
+
+_UPSERT_EMBEDDING_PG = """
+INSERT INTO embeddings (
+    entity_type, entity_id, model, dims, embedding, content_hash, updated_at
+)
+VALUES (
+    $1, $2, $3, $4, CAST($5 AS vector), $6, NOW()
+)
+ON CONFLICT (entity_type, entity_id, model) DO UPDATE SET
+    dims = EXCLUDED.dims,
+    embedding = EXCLUDED.embedding,
+    content_hash = EXCLUDED.content_hash,
+    updated_at = NOW()
+"""
+
+# Missing row OR E1 migrated: placeholder — newest CVEs first.
+_GET_CVES_NEEDING_EMBEDDINGS_SQLITE = """
+SELECT c.cve_id, c.description, c.summary, c.affected_products, c.cwe_ids,
+       e.content_hash AS existing_hash
+FROM cves c
+LEFT JOIN embeddings e
+  ON e.entity_type = 'cve' AND e.entity_id = c.cve_id AND e.model = ?
+WHERE c.description IS NOT NULL
+  AND c.description != ''
+  AND (
+    e.entity_id IS NULL
+    OR e.content_hash LIKE 'migrated:%'
+  )
+ORDER BY c.published DESC
+LIMIT ?
+"""
+
+_GET_CVES_NEEDING_EMBEDDINGS_PG = """
+SELECT c.cve_id, c.description, c.summary, c.affected_products, c.cwe_ids,
+       e.content_hash AS existing_hash
+FROM cves c
+LEFT JOIN embeddings e
+  ON e.entity_type = 'cve' AND e.entity_id = c.cve_id AND e.model = $1
+WHERE c.description IS NOT NULL
+  AND c.description != ''
+  AND (
+    e.entity_id IS NULL
+    OR e.content_hash LIKE 'migrated:%'
+  )
+ORDER BY c.published DESC
+LIMIT $2
+"""
+
+_GET_CVES_BY_IDS_SQLITE = """
+SELECT c.cve_id, c.description, c.summary, c.affected_products, c.cwe_ids,
+       e.content_hash AS existing_hash
+FROM cves c
+LEFT JOIN embeddings e
+  ON e.entity_type = 'cve' AND e.entity_id = c.cve_id AND e.model = ?
+WHERE c.cve_id IN ({placeholders})
+"""
+
+_GET_CVES_BY_IDS_PG = """
+SELECT c.cve_id, c.description, c.summary, c.affected_products, c.cwe_ids,
+       e.content_hash AS existing_hash
+FROM cves c
+LEFT JOIN embeddings e
+  ON e.entity_type = 'cve' AND e.entity_id = c.cve_id AND e.model = $1
+WHERE c.cve_id IN ({placeholders})
+"""
+
+
+def _is_postgres_connection(db: DbConnection) -> bool:
+    return type(db).__name__ == "PostgresConnection"
+
+
+def embeddings_pgvector_writes_enabled() -> bool:
+    """Write to ``embeddings`` unless explicitly disabled.
+
+    Default on: E1 migration + extension (or SQLite BLOB shim) is the storage
+    target for new vectors. Set ``EMBEDDINGS_PGVECTOR=0`` to legacy-only writes.
+    """
+    return os.environ.get("EMBEDDINGS_PGVECTOR", "1").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+    )
+
+
+async def upsert_embedding_row(
+    db: DbConnection,
+    *,
+    entity_type: str,
+    entity_id: str,
+    model: str,
+    dims: int,
+    vector_blob: bytes,
+    content_hash: str,
+) -> None:
+    """Upsert one row into ``embeddings`` (BLOB on SQLite, vector on Postgres)."""
+    pg = _is_postgres_connection(db)
+    if pg:
+        literal = blob_to_pgvector_literal(vector_blob, expected_dim=dims)
+        if literal is None:
+            raise ValueError(
+                f"invalid embedding blob for {entity_type}/{entity_id} dims={dims}"
+            )
+        await db.execute(
+            _UPSERT_EMBEDDING_PG,
+            (entity_type, entity_id, model, dims, literal, content_hash),
+        )
+    else:
+        await db.execute(
+            _UPSERT_EMBEDDING_SQLITE,
+            (
+                entity_type,
+                entity_id,
+                model,
+                dims,
+                vector_blob,
+                content_hash,
+                utcnow_str(),
+            ),
+        )
+
+
+async def upsert_cve_embedding_row(
+    db: DbConnection,
+    cve_id: str,
+    model: str,
+    dims: int,
+    vector_blob: bytes,
+    content_hash: str,
+) -> None:
+    await upsert_embedding_row(
+        db,
+        entity_type=ENTITY_TYPE_CVE,
+        entity_id=cve_id.upper(),
+        model=model,
+        dims=dims,
+        vector_blob=vector_blob,
+        content_hash=content_hash,
+    )
+
+
+def _row_to_pending(row: dict, model: str) -> dict | None:
+    text = build_cve_embed_text(
+        description=row.get("description"),
+        summary=row.get("summary"),
+        affected_products=row.get("affected_products"),
+        cwe_ids=row.get("cwe_ids"),
+    )
+    if not text.strip():
+        return None
+    new_hash = content_hash_for_embed_text(text, model)
+    existing = row.get("existing_hash")
+    if existing and not is_placeholder_content_hash(existing) and existing == new_hash:
+        return None
+    return {
+        "cve_id": row["cve_id"],
+        "description": row.get("description") or "",
+        "embed_text": text,
+        "content_hash": new_hash,
+        "existing_hash": existing,
+    }
+
+
+async def get_cves_needing_embeddings(
+    db: DbConnection, model: str, limit: int = 500
+) -> list[dict]:
+    """CVEs missing an ``embeddings`` row or still on a migrated: placeholder."""
+    pg = _is_postgres_connection(db)
+    sql = _GET_CVES_NEEDING_EMBEDDINGS_PG if pg else _GET_CVES_NEEDING_EMBEDDINGS_SQLITE
+    rows = await db.execute_fetchall(sql, (model, limit))
+    out: list[dict] = []
+    for row in rows:
+        item = _row_to_pending(dict(row), model)
+        if item:
+            out.append(item)
+    return out
+
+
+async def get_cves_needing_embeddings_by_ids(
+    db: DbConnection, model: str, cve_ids: set[str]
+) -> list[dict]:
+    """Auto-on-ingest path: re-embed when missing, migrated, or content_hash mismatch."""
+    if not cve_ids:
+        return []
+    # Filter empties/whitespace so we never build `IN ()` (invalid SQL).
+    normalized = sorted({c.strip().upper() for c in cve_ids if c and str(c).strip()})
+    if not normalized:
+        return []
+    pg = _is_postgres_connection(db)
+    if pg:
+        # $1 = model; CVE ids start at $2
+        placeholders = ", ".join(f"${i}" for i in range(2, len(normalized) + 2))
+        sql = _GET_CVES_BY_IDS_PG.format(placeholders=placeholders)
+        rows = await db.execute_fetchall(sql, (model, *normalized))
+    else:
+        placeholders = ", ".join("?" for _ in normalized)
+        sql = _GET_CVES_BY_IDS_SQLITE.format(placeholders=placeholders)
+        rows = await db.execute_fetchall(sql, (model, *normalized))
+    out: list[dict] = []
+    for row in rows:
+        item = _row_to_pending(dict(row), model)
+        if item:
+            out.append(item)
+    return out
