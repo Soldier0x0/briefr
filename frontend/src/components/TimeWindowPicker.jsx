@@ -65,19 +65,18 @@ export default function TimeWindowPicker({
   )
 
   useEffect(() => {
-    if (value?.mode === 'custom' && allowCustom) {
-      setSelectValue(CUSTOM_VALUE)
-      if (value.since) setCustomSince(toDatetimeLocalValue(value.since))
-      if (value.until) setCustomUntil(toDatetimeLocalValue(value.until))
+    if (value?.mode === 'custom') {
+      if (allowCustom) {
+        setSelectValue(CUSTOM_VALUE)
+        if (value.since) setCustomSince(toDatetimeLocalValue(value.since))
+        if (value.until) setCustomUntil(toDatetimeLocalValue(value.until))
+      } else {
+        setSelectValue(fallbackPresetId)
+      }
       return
     }
-    if (value?.mode === 'custom' && !allowCustom) {
-      setSelectValue(fallbackPresetId)
-      return
-    }
-    if (value?.presetId) {
-      setSelectValue(value.presetId)
-    }
+    // Falsy / reset → fall back so selectValue never stays stale.
+    setSelectValue(value?.presetId || fallbackPresetId)
   }, [value?.mode, value?.presetId, value?.since, value?.until, allowCustom, fallbackPresetId])
 
   function emitPreset(presetId) {

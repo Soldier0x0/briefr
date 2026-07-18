@@ -283,7 +283,7 @@
   padding: var(--space-2) var(--space-3);
   width: 100%;
   flex: 1 1 100%;
-  min-height: calc(var(--hit-target-min) + var(--space-1));
+  min-height: var(--hit-target-min);
 }
 
 .filter-search:hover {
