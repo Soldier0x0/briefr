@@ -24,13 +24,67 @@ def _load():
 
 @pytest.fixture(scope="module")
 def learn_mod():
-    return _load()
+    mod = _load()
+    yield mod
+    sys.modules.pop("build_learn_site", None)
+
+
+def _mini_book(tmp_path: Path, page_ids: list[str]) -> Path:
+    book = tmp_path / "study-guide"
+    pages = book / "pages"
+    pages.mkdir(parents=True)
+    for pid in page_ids:
+        (pages / f"{pid}.html").write_text(f"<html>{pid}</html>", encoding="utf-8")
+    return book
 
 
 def test_build_learn_links_sibling_study_guide(learn_mod, tmp_path: Path):
-    book = ROOT / "docs" / "study-guide"
-    pathways = ROOT / "docs" / "learn" / "pathways.json"
-    assert book.is_dir()
+    page_ids = ["preface", "system-design", "fe-analyst-shell", "be-auth", "sec-identity"]
+    book = _mini_book(tmp_path, page_ids)
+    pathways = tmp_path / "pathways.json"
+    pathways.write_text(
+        json.dumps(
+            {
+                "title": "BRIEFR Learn",
+                "tagline": "t",
+                "pathways": [
+                    {
+                        "id": "analyst",
+                        "title": "Analyst",
+                        "eyebrow": "Role",
+                        "blurb": "b",
+                        "audience": "a",
+                        "steps": [
+                            {"id": "preface", "label": "Preface"},
+                            {"id": "fe-analyst-shell", "label": "Shell"},
+                        ],
+                    },
+                    {
+                        "id": "system-design",
+                        "title": "SD",
+                        "eyebrow": "Track",
+                        "blurb": "b",
+                        "audience": "a",
+                        "steps": [
+                            {"id": "system-design", "label": "Diagrams"},
+                            {"id": "be-auth", "label": "Auth"},
+                        ],
+                    },
+                    {
+                        "id": "architect",
+                        "title": "Architect",
+                        "eyebrow": "Role",
+                        "blurb": "b",
+                        "audience": "a",
+                        "steps": [
+                            {"id": "sec-identity", "label": "Identity"},
+                        ],
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
     out = tmp_path / "learn"
     out.mkdir()
     (out / "pathways.json").write_text(pathways.read_text(encoding="utf-8"), encoding="utf-8")
@@ -39,14 +93,13 @@ def test_build_learn_links_sibling_study_guide(learn_mod, tmp_path: Path):
     assert (out / "index.html").is_file()
     assert not (out / "book").exists()
     page = (out / "pathways" / "analyst.html").read_text(encoding="utf-8")
-    assert "../study-guide/pages/" in page
-    assert (out / "pathways.json").is_file()  # preserved
+    assert "../study-guide/pages/preface.html" in page
+    assert "../study-guide/pages/fe-analyst-shell.html" in page
+    assert (out / "pathways.json").is_file()
 
 
 def test_build_fails_on_missing_step(learn_mod, tmp_path: Path):
-    book = tmp_path / "book"
-    (book / "pages").mkdir(parents=True)
-    (book / "pages" / "preface.html").write_text("x", encoding="utf-8")
+    book = _mini_book(tmp_path, ["preface"])
     pathways = tmp_path / "pathways.json"
     pathways.write_text(
         json.dumps(
