@@ -1,62 +1,31 @@
 <title>BRIEFR — The Study Guide</title>
 <!-- Preferred: docs/study-guide/ (python scripts/build_study_guide_book.py). This file is the editable source. -->
+<!-- Shared palette SSOT: docs/assets/briefr-docs-tokens.css (book/learn builders prepend it). -->
+<link rel="stylesheet" href="assets/briefr-docs-tokens.css">
 <style>
-  /* Palette lifted directly from frontend/src/styles/tokens.css — BRIEFR's
-     actual dark-terminal token system (--c-neutral-*, --c-accent, --c-chart-*),
-     not an invented one. Light theme follows the same file's :root[data-theme="light"]
-     block, extending its darken-for-AA pattern to the two roles (faq/security tags)
-     that have no direct severity-scale counterpart there. */
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0a0a08; --bg-elevated: #111110; --bg-card: #121211;
-      --border: #2a2a25; --border-soft: #222220;
-      --text: #e8e6df; --text-muted: #a7a396; --text-faint: #6c6a62;
-      --accent: #e85533; --accent-soft: rgba(232,85,51,0.14); --accent-strong: #f26b4a;
-      --tag-what: #7eb8f0; --tag-why: #d4860a; --tag-how: #5cb87e; --tag-faq: #b07dd6; --tag-security: #e0715a;
-      --tag-what-bg: rgba(126,184,240,0.13); --tag-why-bg: rgba(212,134,10,0.14); --tag-how-bg: rgba(92,184,126,0.13);
-      --tag-faq-bg: rgba(176,125,214,0.13); --tag-security-bg: rgba(224,113,90,0.15);
-      --code-bg: #1a1a17; --code-border: #333330; --shadow: rgba(0,0,0,0.35);
-      --primer-bg: #111110;
-    }
-  }
-  @media (prefers-color-scheme: light) {
-    :root {
-      --bg: #f0ece4; --bg-elevated: #ffffff; --bg-card: #ffffff;
-      --border: #b8b2a8; --border-soft: #c9c4bb;
-      --text: #1a1814; --text-muted: #55514a; --text-faint: #8a857c;
-      --accent: #b93312; --accent-soft: rgba(185,51,18,0.10); --accent-strong: #d1481f;
-      --tag-what: #14568f; --tag-why: #8f5a00; --tag-how: #22693f; --tag-faq: #6a4fae; --tag-security: #a54430;
-      --tag-what-bg: rgba(20,86,143,0.08); --tag-why-bg: rgba(143,90,0,0.09); --tag-how-bg: rgba(34,105,63,0.08);
-      --tag-faq-bg: rgba(106,79,174,0.08); --tag-security-bg: rgba(165,68,48,0.09);
-      --code-bg: #ebe7df; --code-border: #c9c4bb; --shadow: rgba(26,24,20,0.08);
-      --primer-bg: #f4f1ea;
-    }
-  }
-  :root[data-theme="dark"] {
+  /* Component styles only — palette/a11y tokens live in briefr-docs-tokens.css.
+     Inline :root below is a dark-only fallback when the link is unavailable (file open).
+     Matches product dark terminal (frontend/src/styles/tokens.css); no light theme. */
+  :root {
     --bg: #0a0a08; --bg-elevated: #111110; --bg-card: #121211;
-    --border: #2a2a25; --border-soft: #222220;
-    --text: #e8e6df; --text-muted: #a7a396; --text-faint: #6c6a62;
+    --border: #2a2a25; --border-soft: #222220; --border-strong: #3d3d38;
+    --border-active: color-mix(in srgb, var(--accent) 45%, var(--border-strong));
+    --text: #e8e6df; --text-muted: #a7a396; --text-faint: #6c6a62; --text-heading: #f2f0ea;
     --accent: #e85533; --accent-soft: rgba(232,85,51,0.14); --accent-strong: #f26b4a;
+    --accent-indicator: color-mix(in srgb, var(--accent) 65%, transparent);
     --tag-what: #7eb8f0; --tag-why: #d4860a; --tag-how: #5cb87e; --tag-faq: #b07dd6; --tag-security: #e0715a;
     --tag-what-bg: rgba(126,184,240,0.13); --tag-why-bg: rgba(212,134,10,0.14); --tag-how-bg: rgba(92,184,126,0.13);
     --tag-faq-bg: rgba(176,125,214,0.13); --tag-security-bg: rgba(224,113,90,0.15);
     --code-bg: #1a1a17; --code-border: #333330; --shadow: rgba(0,0,0,0.35);
     --primer-bg: #111110;
-  }
-  :root[data-theme="light"] {
-    --bg: #f0ece4; --bg-elevated: #ffffff; --bg-card: #ffffff;
-    --border: #b8b2a8; --border-soft: #c9c4bb;
-    --text: #1a1814; --text-muted: #55514a; --text-faint: #8a857c;
-    --accent: #b93312; --accent-soft: rgba(185,51,18,0.10); --accent-strong: #d1481f;
-    --tag-what: #14568f; --tag-why: #8f5a00; --tag-how: #22693f; --tag-faq: #6a4fae; --tag-security: #a54430;
-    --tag-what-bg: rgba(20,86,143,0.08); --tag-why-bg: rgba(143,90,0,0.09); --tag-how-bg: rgba(34,105,63,0.08);
-    --tag-faq-bg: rgba(106,79,174,0.08); --tag-security-bg: rgba(165,68,48,0.09);
-    --code-bg: #ebe7df; --code-border: #c9c4bb; --shadow: rgba(26,24,20,0.08);
-    --primer-bg: #f4f1ea;
+    --focus-ring: 0 0 0 1px var(--bg), 0 0 0 3px color-mix(in srgb, var(--accent) 38%, transparent);
+    --motion-fast: 120ms; --motion-normal: 160ms;
+    --radius-sm: 4px; --radius-md: 8px; --radius-lg: 10px;
+    color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
-  html { color-scheme: light dark; }
+  html { color-scheme: dark; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
     font-family: ui-sans-serif, "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
@@ -86,11 +55,11 @@
   .brand-sub { color: var(--text-faint); font-size: 0.76rem; margin: 0 0 18px; letter-spacing: 0.03em; text-transform: uppercase; }
 
   #search {
-    width: 100%; padding: 9px 11px; border-radius: 7px; border: 1px solid var(--border);
+    width: 100%; padding: 9px 11px; border-radius: var(--radius-md, 8px); border: 1px solid var(--border);
     background: var(--bg-card); color: var(--text); font-size: 0.86rem; margin-bottom: 16px;
     outline: none;
   }
-  #search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  #search:focus-visible { border-color: var(--border-active); box-shadow: var(--focus-ring); }
   #search-empty { display: none; color: var(--text-faint); font-size: 0.82rem; padding: 8px 4px; }
 
   .toc-group { margin-bottom: 4px; }
@@ -103,7 +72,10 @@
     font-size: 0.85rem; line-height: 1.35;
   }
   .toc-link:hover { background: var(--bg-card); color: var(--text); }
-  .toc-link.active { background: var(--accent-soft); color: var(--text); }
+  .toc-link.active {
+    background: var(--accent-soft); color: var(--text);
+    box-shadow: inset 3px 0 0 var(--accent-indicator);
+  }
   .toc-sub { padding-left: 16px; font-size: 0.8rem; }
 
   /* ---------- Main content ---------- */
@@ -235,15 +207,22 @@
     border: solid var(--bg); border-width: 0 2px 2px 0; transform: rotate(45deg);
   }
   .toc-link .toc-label { flex: 1; }
-  .toc-link.active { background: var(--accent-soft); color: var(--text); }
+  .toc-link.active {
+    background: var(--accent-soft); color: var(--text);
+    box-shadow: inset 3px 0 0 var(--accent-indicator);
+  }
   .toc-progress {
     font-size: 0.7rem; color: var(--text-faint); padding: 8px 6px 2px; display: flex;
     justify-content: space-between; align-items: center;
   }
   .toc-progress-bar { height: 3px; border-radius: 2px; background: var(--border-soft); overflow: hidden; margin: 4px 6px 10px; }
-  .toc-progress-bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s ease-out; }
-  .toc-reset { background: none; border: none; color: var(--text-faint); font-size: 0.68rem; cursor: pointer; text-decoration: underline; padding: 0; }
+  .toc-progress-bar-fill {
+    height: 100%; background: var(--accent); width: 0%;
+    transition: width var(--motion-normal, 160ms) var(--ease-standard, ease-out);
+  }
+  .toc-reset { background: none; border: none; color: var(--text-faint); font-size: 0.68rem; cursor: pointer; text-decoration: underline; padding: 0; min-height: 24px; }
   .toc-reset:hover { color: var(--text); }
+  .toc-reset:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
 
   /* ---------- Diagram figures ---------- */
   .diagram-figure { margin: 22px 0 28px; }
@@ -254,15 +233,16 @@
   @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
 <div class="shell">
-  <aside>
+  <aside aria-label="Table of contents">
     <div class="brand"><span class="mark">▮</span><h1>BRIEFR — Study Guide</h1></div>
     <p class="brand-sub">A full architecture textbook</p>
-    <input id="search" type="text" placeholder="Search files, functions, concepts…" autocomplete="off">
-    <p id="search-empty">No matches. Try a shorter term.</p>
-    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
     <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
-    <nav id="toc">
+    <nav id="toc" aria-label="Chapters">
       <div class="toc-group">
         <a class="toc-link" href="#preface">Preface — how to use this book</a>
         <a class="toc-link" href="#system-design">System Design — 4 diagrams</a>
@@ -373,7 +353,7 @@
     </nav>
   </aside>
 
-  <main>
+  <main id="main-content">
     <div class="how-to-use" style="margin:16px clamp(20px,5vw,64px) 0;max-width:900px">
       <h3>Multi-file book available</h3>
       <p>Prefer the clean responsive edition: open

@@ -56,6 +56,14 @@ def test_extract_and_build_minimal_book(build_mod, tmp_path: Path):
     assert 'href="ch1.html"' in preface
     assert "nav-toggle" in preface
     assert "book.css" in preface
+    assert 'href="#main-content"' in preface
+    assert 'id="main-content"' in preface
+    assert 'aria-label="Search study guide"' in preface
+    css = (out / "assets" / "book.css").read_text(encoding="utf-8")
+    assert "--bg: #0a0a08" in css
+    assert "--accent: #e85533" in css
+    assert "color-scheme: dark" in css
+    assert ".skip-link" in css
 
 
 def test_committed_book_matches_fresh_rebuild(build_mod, tmp_path: Path):

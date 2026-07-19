@@ -12,11 +12,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
----
+## 2026-07-19 — Docs UI: shared palette + a11y (study-guide + learn)
 
----
+**Done**
+- Shared dark-only palette SSOT: `docs/assets/briefr-docs-tokens.css` (mirrors product `tokens.css` dark neutrals / accent / soft focus-ring).
+- Study guide + learn builders prepend that file; learn no longer uses cooler `#0c0e12` / `#e8ecf4` neutrals.
+- Light theme removed from study guide (product is dark-only).
+- A11y: skip link, `main#main-content`, search `aria-label`, soft focus-visible, “Reset to default” progress control, landmarks.
+- Regenerated `docs/study-guide/` + `docs/learn/`; builder tests assert shared `--bg` / `--accent`.
 
----
+**Next:** publish `docs/` as usual; say “update” after features for study-guide re-audit.
 
 ---
 

@@ -1,0 +1,117 @@
+/* =============================================================================
+ * BRIEFR docs surfaces — shared dark-only palette
+ * -----------------------------------------------------------------------------
+ * Authority: frontend/src/styles/tokens.css (product dark terminal).
+ * Consumers: docs/study-guide (book builder) + docs/learn (pathway builder).
+ * Product UI is dark-only; these surfaces match — no light theme flip.
+ *
+ * Do not invent cooler/warmer neutrals here. Change tokens.css first, then
+ * mirror the dark semantic values into this file.
+ * ========================================================================== */
+
+:root {
+  /* Surfaces (← --c-neutral-0/1/raised) */
+  --bg: #0a0a08;
+  --bg-elevated: #111110;
+  --bg-card: #121211;
+
+  /* Borders (← --c-line-*) */
+  --border: #2a2a25;
+  --border-soft: #222220;
+  --border-strong: #3d3d38;
+  --border-active: color-mix(in srgb, var(--accent) 45%, var(--border-strong));
+
+  /* Text (← --c-ink-* — muted raised for WCAG AA on --bg) */
+  --text: #e8e6df;
+  --text-muted: #a7a396;
+  --text-faint: #6c6a62;
+  --text-heading: #f2f0ea;
+  --text-link: #7eb8f0;
+
+  /* Brand (← --c-accent) */
+  --accent: #e85533;
+  --accent-soft: rgba(232, 85, 51, 0.14);
+  --accent-strong: #f26b4a;
+  --accent-indicator: color-mix(in srgb, var(--accent) 65%, transparent);
+
+  /* Role tags (← chart / severity hues) */
+  --tag-what: #7eb8f0;
+  --tag-why: #d4860a;
+  --tag-how: #5cb87e;
+  --tag-faq: #b07dd6;
+  --tag-security: #e0715a;
+  --tag-what-bg: rgba(126, 184, 240, 0.13);
+  --tag-why-bg: rgba(212, 134, 10, 0.14);
+  --tag-how-bg: rgba(92, 184, 126, 0.13);
+  --tag-faq-bg: rgba(176, 125, 214, 0.13);
+  --tag-security-bg: rgba(224, 113, 90, 0.15);
+
+  /* Code */
+  --code-bg: #1a1a17;
+  --code-border: #333330;
+  --shadow: rgba(0, 0, 0, 0.35);
+  --primer-bg: #111110;
+
+  /* Soft focus (← product --focus-ring; not neon full-strength borders) */
+  --focus-ring: 0 0 0 1px var(--bg),
+    0 0 0 3px color-mix(in srgb, var(--accent) 38%, transparent);
+
+  /* Motion / radius (docs-local aliases of product scales) */
+  --motion-fast: 120ms;
+  --motion-normal: 160ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-normal: 0ms;
+  }
+}
+
+/* Shared a11y primitives */
+.skip-link {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  z-index: 100;
+}
+.skip-link:focus {
+  position: fixed;
+  left: 12px;
+  top: 12px;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  padding: 8px 12px;
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--focus-ring);
+  text-decoration: none;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+summary:focus-visible,
+.card:focus-visible,
+.toc-link:focus-visible,
+.nav-toggle:focus-visible,
+.steps a:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

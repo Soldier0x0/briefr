@@ -2,6 +2,8 @@
 
 Static pathway chooser (System Design / Security analyst / Security architect) that links into the audited textbook at [`../study-guide/`](../study-guide/).
 
+Uses the same dark-only BRIEFR palette as the study guide: [`../assets/briefr-docs-tokens.css`](../assets/briefr-docs-tokens.css).
+
 ## Files
 
 | Path | Role |
@@ -9,6 +11,7 @@ Static pathway chooser (System Design / Security analyst / Security architect) t
 | `pathways.json` | Editable pathway order (source of truth) |
 | `index.html`, `pathways/*.html`, `assets/` | Generated — do not hand-edit |
 | `../study-guide/` | Textbook chapters |
+| `../assets/briefr-docs-tokens.css` | Shared docs palette (SSOT) |
 
 ## Regenerate
 

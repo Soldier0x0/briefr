@@ -9,6 +9,10 @@
   function setNav(open) {
     document.body.classList.toggle('nav-open', open);
     if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (backdrop) {
+      if (open) backdrop.removeAttribute('hidden');
+      else backdrop.setAttribute('hidden', '');
+    }
   }
   if (toggle) toggle.addEventListener('click', () => setNav(!document.body.classList.contains('nav-open')));
   if (backdrop) backdrop.addEventListener('click', () => setNav(false));

@@ -4,4 +4,6 @@ Open [`index.html`](index.html) in a browser.
 
 Generated from `docs/STUDY_GUIDE.html` by `scripts/build_study_guide_book.py`.
 
-Features: responsive sidebar drawer (≤880px), cross-page search index, read progress, prev/next.
+Features: shared BRIEFR dark palette (`docs/assets/briefr-docs-tokens.css`),
+responsive sidebar drawer (≤880px), skip link + landmarks, cross-page search,
+read progress, prev/next. Sibling learn pathways: [`../learn/`](../learn/).

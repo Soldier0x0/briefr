@@ -21,56 +21,104 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PATHWAYS = ROOT / "docs" / "learn" / "pathways.json"
 DEFAULT_BOOK = ROOT / "docs" / "study-guide"
 DEFAULT_OUT = ROOT / "docs" / "learn"
+DOCS_TOKENS = ROOT / "docs" / "assets" / "briefr-docs-tokens.css"
 
+# Component styles only — palette/a11y from briefr-docs-tokens.css (prepended).
 LEARN_CSS = """
-:root {
-  --bg: #0c0e12;
-  --bg-elevated: #141820;
-  --border: #2a3140;
-  --text: #e8ecf4;
-  --text-muted: #9aa3b5;
-  --accent: #e85533;
-  --accent-soft: rgba(232, 85, 51, 0.28);
-  --focus-ring: 0 0 0 3px var(--accent-soft);
-  --radius: 10px;
-  --font: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, monospace;
-}
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--font); }
-a { color: var(--accent); }
-a:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 4px; }
-.wrap { max-width: 920px; margin: 0 auto; padding: 48px 24px 96px; }
-.eyebrow { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 10px; }
-h1 { font-size: clamp(1.8rem, 3vw, 2.4rem); margin: 0 0 12px; letter-spacing: -0.02em; }
-.lede { color: var(--text-muted); font-size: 1.05rem; line-height: 1.55; margin: 0 0 36px; max-width: 62ch; }
-.chooser { display: grid; gap: 16px; }
-@media (min-width: 720px) { .chooser { grid-template-columns: repeat(3, 1fr); } }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg); color: var(--text);
+  font-family: ui-sans-serif, "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  font-size: 16.5px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--text-link, var(--tag-what)); }
+.wrap {
+  max-width: none;
+  margin: 0;
+  padding: var(--space-wrap, 48px) clamp(20px, 4vw, 32px) 96px;
+}
+@media (min-width: 1100px) {
+  .wrap { padding-left: 32px; padding-right: 32px; }
+}
+.eyebrow {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-muted); margin: 0 0 10px;
+}
+h1 {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem, 3vw, 2.4rem); margin: 0 0 12px;
+  letter-spacing: -0.02em; color: var(--text-heading, var(--text)); font-weight: 600;
+}
+.lede {
+  color: var(--text-muted); font-size: 1.05rem; line-height: 1.55;
+  margin: 0 0 36px; max-width: 62ch;
+}
+.chooser {
+  display: grid; gap: 16px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 560px) {
+  .chooser { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 900px) {
+  .chooser { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 .card {
   display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: inherit;
-  background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 20px 18px; min-height: 180px; transition: border-color 0.15s ease, transform 0.15s ease;
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 10px);
+  padding: 20px 18px; min-height: 180px; min-width: 0;
+  transition: border-color var(--motion-fast, 120ms) var(--ease-standard, ease),
+    transform var(--motion-fast, 120ms) var(--ease-standard, ease),
+    box-shadow var(--motion-fast, 120ms) var(--ease-standard, ease);
 }
-.card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.card:hover {
+  border-color: var(--border-active, var(--accent));
+  transform: translateY(-1px);
+}
 .card:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.card h2 { margin: 0; font-size: 1.15rem; }
+.card h2 {
+  margin: 0; font-size: 1.15rem;
+  font-family: ui-serif, Georgia, "Times New Roman", serif; font-weight: 600;
+}
 .card p { margin: 0; color: var(--text-muted); font-size: 0.92rem; line-height: 1.45; flex: 1; }
-.card .meta { font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
-.foot { margin-top: 40px; font-size: 0.85rem; color: var(--text-muted); }
-.foot code { font-family: var(--mono); font-size: 0.8rem; }
-.back { display: inline-block; margin-bottom: 24px; font-family: var(--mono); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; text-decoration: none; }
+.card .meta {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;
+}
+.foot { margin-top: 40px; font-size: 0.85rem; color: var(--text-muted); max-width: 74ch; }
+.foot code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.8rem; background: var(--code-bg); padding: 0.1em 0.35em;
+  border-radius: var(--radius-sm, 4px); color: var(--accent-strong);
+}
+.back {
+  display: inline-flex; align-items: center; min-height: 30px; margin-bottom: 24px;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; text-decoration: none;
+  color: var(--text-link, var(--tag-what));
+}
 .steps { list-style: none; margin: 28px 0 0; padding: 0; border-top: 1px solid var(--border); }
 .steps li { border-bottom: 1px solid var(--border); }
 .steps a {
-  display: grid; grid-template-columns: 48px 1fr; gap: 12px; align-items: baseline;
-  padding: 14px 4px; text-decoration: none; color: inherit;
+  display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; align-items: baseline;
+  padding: 14px 4px; text-decoration: none; color: inherit; border-radius: var(--radius-sm, 4px);
 }
 .steps a:hover .title { color: var(--accent); }
-.steps .n { font-family: var(--mono); font-size: 0.75rem; color: var(--text-muted); }
+.steps a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.steps .n {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.75rem; color: var(--text-muted);
+}
 .steps .title { font-size: 1rem; }
 .banner {
-  margin: 0 0 28px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius);
+  margin: 0 0 28px; padding: 12px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 10px);
   background: var(--bg-elevated); color: var(--text-muted); font-size: 0.9rem; line-height: 1.45;
+  max-width: 74ch;
 }
 @media (prefers-reduced-motion: reduce) {
   .card { transition: none; }
@@ -83,6 +131,30 @@ KEEP_NAMES = frozenset({"pathways.json", "README.md"})
 
 def _esc(s: str) -> str:
     return html.escape(s, quote=True)
+
+
+def _load_docs_tokens() -> str:
+    if not DOCS_TOKENS.is_file():
+        raise SystemExit(f"missing shared docs tokens: {DOCS_TOKENS}")
+    return DOCS_TOKENS.read_text(encoding="utf-8").strip() + "\n"
+
+
+def _page_shell(title: str, css_href: str, body: str) -> str:
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>{_esc(title)} — BRIEFR Learn</title>
+  <link rel="stylesheet" href="{_esc(css_href)}">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+{body}
+</body>
+</html>
+"""
 
 
 def build(
@@ -121,7 +193,7 @@ def build(
     pathways_dir = out / "pathways"
     assets.mkdir()
     pathways_dir.mkdir()
-    (assets / "learn.css").write_text(LEARN_CSS, encoding="utf-8")
+    (assets / "learn.css").write_text(_load_docs_tokens() + LEARN_CSS, encoding="utf-8")
 
     # Sibling link: docs/learn/pathways/x.html → docs/study-guide/pages/y.html
     book_href_prefix = "../study-guide/pages"
@@ -136,30 +208,18 @@ def build(
   </a>"""
         )
 
-    index_body = f"""<main class="wrap">
+    index_body = f"""<main id="main-content" class="wrap">
   <p class="eyebrow">BRIEFR Learn</p>
   <h1>{_esc(data.get('title', 'BRIEFR Learn'))}</h1>
   <p class="lede">{_esc(data.get('tagline', ''))}</p>
   <div class="chooser">
 {chr(10).join(cards)}
   </div>
-  <p class="foot">Chapters open from the study guide at <code>docs/study-guide/</code>. Edit pathway order in <code>pathways.json</code>, then re-run this builder.</p>
+  <p class="foot">Chapters open from the study guide at <code>docs/study-guide/</code>. Edit pathway order in <code>pathways.json</code>, then re-run this builder. Shared palette: <code>docs/assets/briefr-docs-tokens.css</code>.</p>
 </main>
 """
     (out / "index.html").write_text(
-        f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{_esc(data.get('title', 'BRIEFR Learn'))} — BRIEFR Learn</title>
-  <link rel="stylesheet" href="assets/learn.css">
-</head>
-<body>
-{index_body}
-</body>
-</html>
-""",
+        _page_shell(data.get("title", "BRIEFR Learn"), "assets/learn.css", index_body),
         encoding="utf-8",
     )
 
@@ -170,7 +230,7 @@ def build(
             steps_html.append(
                 f"""  <li><a href="{_esc(href)}"><span class="n">{i:02d}</span><span class="title">{_esc(step['label'])}</span></a></li>"""
             )
-        body = f"""<main class="wrap">
+        body = f"""<main id="main-content" class="wrap">
   <a class="back" href="../index.html">← All pathways</a>
   <p class="eyebrow">{_esc(pw.get('eyebrow', 'Pathway'))}</p>
   <h1>{_esc(pw['title'])}</h1>
@@ -182,19 +242,7 @@ def build(
 </main>
 """
         (pathways_dir / f"{pw['id']}.html").write_text(
-            f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{_esc(pw['title'])} — BRIEFR Learn</title>
-  <link rel="stylesheet" href="../assets/learn.css">
-</head>
-<body>
-{body}
-</body>
-</html>
-""",
+            _page_shell(pw["title"], "../assets/learn.css", body),
             encoding="utf-8",
         )
 
