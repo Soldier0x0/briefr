@@ -32,28 +32,19 @@ _Proposed outline after 2026-07-19 audit. Stub titles only — prose rewrites ar
 |----|-------|-------|
 | `fe-react` … `fe-tooling` | Ch 1–5 | Keep substance |
 
-### Part I-B — Frontend surface map (**new**)
+### Part I-B — Frontend surface map (**shipped 2026-07-19**)
 | Id | Title | Owns gaps |
 |----|-------|-----------|
-| `fe-analyst-shell` | Analyst shell: tabs, feed, drawer, URL nav | `pages/*` analyst, shared layout components |
-| `fe-admin-shell` | Admin shell: sidebar, grids, ops pages | `pages/admin/**`, admin components |
-| `fe-forge-wallboard` | Forge, ATLAS, wallboard, brief UI | Forge/wallboard/brief pages + related components |
-| `fe-shared-utils` | Shared hooks, utils, scoring helpers | `hooks/`, `utils/`, `scoring/` — pattern chapter, not every file narrated |
+| `fe-analyst-shell` | Analyst shell: tabs, feed, drawer, URL nav | App.jsx, feed, drawer, filters |
+| `fe-admin-shell` | Admin shell: sidebar, grids, ops pages | pages/admin/* core |
+| `fe-forge-wallboard` | Forge, ATLAS, wallboard, brief UI | Forge + WallboardPage |
+| `fe-shared-utils` | Shared hooks, utils, scoring helpers | hooks/, utils/, scoring/ patterns |
 
-### Part II — Backend foundations (keep + chip fixes)
+### Part IV — Intelligence (keep + retrieval ops) **shipped 24C**
 | Id | Title | Delta |
 |----|-------|-------|
-| `be-bootstrap` … `be-logging` | Ch 6–13 | Add chips: `operator_settings.py`, `read_cache.py` where appropriate |
-
-### Part III — Ingest & scheduling (keep + extend)
-| Id | Title | Delta |
-|----|-------|-------|
-| `in-feeds` … `in-jobs` | Ch 14–17 | Extend `in-queue` with `api_queue_operations.py`, `api_metering.py` |
-
-### Part IV — Intelligence (keep + retrieval ops)
-| Id | Title | Delta |
-|----|-------|-------|
-| `ie-scoring` … `ie-ml-providers` | Ch 18–24B | **Add** `ie-retrieval-ops` (or section): retrieval health API, auto-on-ingest, AI ops panel |
+| `ie-scoring` … `ie-ml-providers` | Ch 18–24B | Keep |
+| `ie-retrieval-ops` | Ch 24C · Retrieval ops & auto-on-ingest | **Shipped** |
 
 ### Part V — API & ops (keep + extend)
 | Id | Title | Delta |

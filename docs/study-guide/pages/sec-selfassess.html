@@ -47,6 +47,14 @@
       </div>
 
       <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
         <div class="toc-group-title">Part II · Backend foundations</div>
         <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
         <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
@@ -76,6 +84,7 @@
         <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
         <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
         <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
       </div>
 
       <div class="toc-group">
@@ -127,7 +136,16 @@
       <div class="prose">
         <p>Chapter 26's <code>security_architecture/</code> module deserves a place in this closing chapter specifically because it's an unusually mature thing for a project of this size to have built at all: a structured, evidence-gated, self-updating record of the system's own trust boundaries and controls, engineered so it cannot silently drift from what the code actually does, and that ages out of validity automatically rather than silently going stale. Most projects treat "our threat model" as a document written once and never revisited; BRIEFR treats it as a living artifact with the same freshness discipline as anything else that matters — a design instinct worth noticing on its own, independent of any of the specific findings it happens to surface.</p>
       </div>
-    </section>
+    
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>What freshness discipline does security_architecture apply that a one-shot threat-model doc usually lacks?</li>
+          <li>Why must generated corpus layers be drift-checked against committed files?</li>
+          <li>Connect this chapter back to one control you already met in Part II or V.</li>
+        </ol>
+      </div>
+</section>
     <div class="page-nav" id="page-nav"><a class="prev" href="sec-availability.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Availability, and the request-path discipline underneath all of it</span></a><a class="next" href="roadmap.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Roadmap, reversals, and open gaps</span></a></div>
     <footer>
       Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.

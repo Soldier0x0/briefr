@@ -47,6 +47,14 @@
       </div>
 
       <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
         <div class="toc-group-title">Part II · Backend foundations</div>
         <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
         <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
@@ -76,6 +84,7 @@
         <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
         <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
         <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
       </div>
 
       <div class="toc-group">
@@ -124,7 +133,7 @@
         <span class="chapter-num">Part V · Chapter 26</span>
         <h3>security_architecture/ — the tool documenting its own posture</h3>
         <p class="dek">Not exploit tracking, not a diagramming feature — BRIEFR turning its own threat model into a living, evidence-gated artifact instead of a document that goes stale the moment it's written.</p>
-        <div class="files"><span class="chip">security_architecture/*.py — 12 files</span></div>
+        <div class="files"><span class="chip">security_architecture/*.py — 12 files</span><span class="chip">security_architecture/corpus/*</span><span class="chip">security_architecture/frameworks/*.py</span></div>
       </div>
       <div class="prose">
         <p>The name is genuinely ambiguous on first encounter, so it's worth stating plainly what this module actually is, confirmed by reading the code rather than guessing from the directory name: BRIEFR introspectively documenting its <em>own</em> architecture, trust boundaries, security controls, and threat model — mounted at <code>/api/security-architecture/*</code>, gated behind session auth for analyst-and-above roles. The underlying data is a structured YAML corpus split cleanly into two categories with very different trust levels: <strong>generated</strong> facts (components, the API inventory, scheduler job list, database table list, BRIEFR's own detected tech-stack terms — all regenerated automatically by <code>scripts/generate_security_corpus.py</code> directly from the codebase) and <strong>curated</strong> judgment (trust boundaries, security controls, abuse-case scenarios, documented security decisions, known risks, and their review history — each curated record requires an explicit <code>review_date</code> and supporting <code>evidence</code>, not just an assertion).</p>

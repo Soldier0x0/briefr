@@ -47,6 +47,14 @@
       </div>
 
       <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
         <div class="toc-group-title">Part II · Backend foundations</div>
         <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
         <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
@@ -76,6 +84,7 @@
         <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
         <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
         <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
       </div>
 
       <div class="toc-group">
@@ -132,6 +141,7 @@
           <li>Close the chapter and explain it out loud, unaided, as if to an interviewer who will ask a follow-up.</li>
           <li>Answer every self-check question at the end without looking back. If you can't, that's the signal to re-read — not a failure, that's what the question is for.</li>
           <li>Move on only when you could defend a design decision, not just describe it.</li>
+          <li>Prefer the multi-file book at <code>docs/study-guide/</code> for reading (responsive TOC drawer, faster page loads). Edit this monolith, then run <code>python scripts/build_study_guide_book.py</code> to regenerate.</li>
         </ol>
         <p style="margin-bottom:0;">Part 0 covers concepts you'll need before anything else makes sense — read it first even if some of it is familiar, because a few terms (watermark, hub suppression, operational priority) are BRIEFR-specific and get redefined here. Before that, the <a href="#system-design">System Design</a> page gives you the whole shape of the system in four pictures — worth a first look now, and worth returning to after every Part as a reality check.</p>
       </div>

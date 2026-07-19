@@ -47,6 +47,14 @@
       </div>
 
       <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
         <div class="toc-group-title">Part II · Backend foundations</div>
         <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
         <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
@@ -76,6 +84,7 @@
         <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
         <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
         <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
       </div>
 
       <div class="toc-group">
@@ -124,7 +133,7 @@
         <span class="chapter-num">Part V-B · Chapter 32</span>
         <h3>Deployment and infrastructure — the real systemd unit and nginx config, read closely</h3>
         <p class="dek">Every hardening flag in these two files is a specific, named decision — not boilerplate copied from a tutorial.</p>
-        <div class="files"><span class="chip">deploy/briefr-backend.service</span><span class="chip">deploy/nginx-briefr.conf</span><span class="chip">deploy/setup.sh</span></div>
+        <div class="files"><span class="chip">deploy/briefr-backend.service</span><span class="chip">deploy/nginx-briefr.conf</span><span class="chip">deploy/setup.sh</span><span class="chip">deploy/briefr-doctor.sh</span><span class="chip">deploy/briefr-backup.sh</span><span class="chip">deploy/briefr-update.sh</span><span class="chip">deploy/docker-compose.postgres.yml</span></div>
       </div>
 
       <h4 class="subhead how">The systemd unit — hardening flags that are each a real decision</h4>
@@ -138,7 +147,12 @@
         <p><code>deploy/nginx-briefr.conf</code> sits in front of uvicorn and does three jobs. First, unconditional HTTP→HTTPS redirect plus certbot-managed TLS. Second, a layered set of security headers <em>in addition to</em> the ones FastAPI's own middleware already sets (Chapter 6) — defense in depth rather than relying on the application layer alone, including <code>server_tokens off</code> to stop nginx from advertising its own version in response headers. Third, and worth understanding precisely because getting it wrong breaks deploys in a confusing way: a deliberate caching split between two kinds of static asset. Hashed Vite build output under <code>/assets/</code> gets <code>Cache-Control: public, max-age=31536000, immutable</code> — safe to cache essentially forever, because Vite's build process changes the filename itself whenever the content changes, so a stale cache simply can't serve wrong content. <code>index.html</code> — the SPA shell — gets the opposite treatment, explicitly never cached, because it's the one file that references the current build's hashed asset filenames; caching it would mean a browser could keep loading old references to asset files a fresh deploy already deleted, breaking the app in a way that only clears on a hard refresh.</p>
       </div>
 
-      <div class="self-check">
+      
+      <h4 class="subhead how">Doctor, backup, update, compose</h4>
+      <div class="prose">
+        <p>Beyond the systemd unit and nginx conf: <code>deploy/briefr-doctor.sh</code> runs health/import checks (and can fetch a support pack); <code>briefr-backup.sh</code> / timers and Postgres variants cover host backups; <code>briefr-update.sh</code> / <code>briefr-restore.sh</code> are the operator upgrade/restore path; <code>docker-compose.postgres.yml</code> is the local/dev Postgres+pgvector posture. Know the map even if you only run a subset on a given box.</p>
+      </div>
+<div class="self-check">
         <h4>Self-check</h4>
         <ol>
           <li>Why is <code>--workers 1</code> a load-bearing constraint rather than a conservative default, and what exact change would you need to make elsewhere before safely raising it?</li>
