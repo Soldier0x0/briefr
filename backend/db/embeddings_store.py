@@ -464,3 +464,43 @@ async def get_campaigns_needing_embeddings(
         if len(out) >= capped:
             break
     return out
+
+
+async def count_embeddings_by_entity(
+    db: DbConnection, model: str
+) -> dict[str, int]:
+    """Row counts in ``embeddings`` for ``model``, keyed by entity_type + total."""
+    pg = _is_postgres_connection(db)
+    if pg:
+        rows = await db.execute_fetchall(
+            """
+            SELECT entity_type, COUNT(*)::bigint AS cnt
+            FROM embeddings
+            WHERE model = $1
+            GROUP BY entity_type
+            """,
+            (model,),
+        )
+    else:
+        rows = await db.execute_fetchall(
+            """
+            SELECT entity_type, COUNT(*) AS cnt
+            FROM embeddings
+            WHERE model = ?
+            GROUP BY entity_type
+            """,
+            (model,),
+        )
+    out = {
+        ENTITY_TYPE_CVE: 0,
+        ENTITY_TYPE_TECHNIQUE: 0,
+        ENTITY_TYPE_CAMPAIGN: 0,
+        "total": 0,
+    }
+    for row in rows:
+        et = str(row["entity_type"] or "")
+        n = int(row["cnt"] or 0)
+        if et in out:
+            out[et] = n
+        out["total"] += n
+    return out

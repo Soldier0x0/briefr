@@ -1891,6 +1891,9 @@ sum deviates by more than 1 × 10⁻⁶.
 
 All admin endpoints require an authenticated session (`briefr_at` cookie) with the `admin` role — 401 without a session, 403 for non-admin roles (Sprint A0). All are rate-limited by the refresh bucket.
 
+### GET /api/admin/retrieval/health
+Ops honesty for the live hybrid/embeddings index (Admin → AI operations). Returns flags (`embeddings_enabled`, `auto_on_ingest`, `pgvector_writes`), `model`, `extension_vector` (`present` \| `absent` \| `n/a` on SQLite), `counts` by `entity_type` from the **`embeddings`** table, capped `pending` estimates, `last_backfill` from `scheduler.last_run.embeddings_backfill`, and optional `degraded.reason` (`disabled` \| `no_vector_extension` \| `cold_index`). No model inference on this path.
+
 ### GET /api/admin/system
 Returns system health: CVE count, NVD sync age, backup age, DB integrity, scheduler jobs (with `status`, `last_error_message`, `run_history`), feed sources, active locks, recent errors, open circuit count.
 

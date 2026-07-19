@@ -145,6 +145,33 @@ def _apply_config_side_effects(keys: list[str]) -> dict[str, Any]:
     }
 
 
+def _env_flag_on(value: str | None, *, default: str = "0") -> bool:
+    return (value if value is not None else default).strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
+def _couple_embeddings_auto_on_enable(
+    changed: list[tuple[str, str]],
+    *,
+    previous_enabled: bool,
+) -> list[tuple[str, str]]:
+    """When embeddings flip off→on, also set AUTO_ON_INGEST=1 unless explicitly set."""
+    by_key = {k: v for k, v in changed}
+    if "EMBEDDINGS_ENABLED" not in by_key:
+        return changed
+    if not _env_flag_on(by_key["EMBEDDINGS_ENABLED"]):
+        return changed
+    if previous_enabled:
+        return changed
+    if "EMBEDDINGS_AUTO_ON_INGEST" in by_key:
+        return changed
+    return list(changed) + [("EMBEDDINGS_AUTO_ON_INGEST", "1")]
+
+
 def _config_apply_message(
     keys: list[str],
     *,
@@ -753,7 +780,8 @@ _STORAGE_TABLES = [
     "cve_exploits",
     "cve_change_history", "ioc_cache", "feed_cache",
     "correlation_actor", "correlation_temporal", "correlation_campaigns",
-    "correlation_campaign_members", "correlation_suppressions", "cve_embeddings", "api_usage",
+    "correlation_campaign_members", "correlation_suppressions", "cve_embeddings", "embeddings",
+    "api_usage",
     "audit_log", "sync_state", "app_settings", "watchlist", "hunt_packs", "webhook_alert_log",
 ]
 
@@ -1276,6 +1304,8 @@ def _get_config_response() -> dict[str, Any]:
         },
         "ml": {
             "EMBEDDINGS_ENABLED": _env("EMBEDDINGS_ENABLED", "0"),
+            "EMBEDDINGS_AUTO_ON_INGEST": _env("EMBEDDINGS_AUTO_ON_INGEST", "1"),
+            "EMBEDDINGS_INGEST_MAX_PER_RUN": _env_int("EMBEDDINGS_INGEST_MAX_PER_RUN", 25),
             "EMBEDDINGS_MODEL": _env("EMBEDDINGS_MODEL", "BAAI/bge-small-en-v1.5"),
             "EMBEDDINGS_CACHE_DIR": _env("EMBEDDINGS_CACHE_DIR", ""),
             "EMBEDDINGS_SYNC_INTERVAL_HOURS": _env_int("EMBEDDINGS_SYNC_INTERVAL_HOURS", 6),
@@ -1386,20 +1416,38 @@ async def set_config(request: Request, body: dict):
     if validation_error:
         raise HTTPException(400, validation_error)
 
-    os.environ[key] = value
-    _propagate_to_settings(key, value)
+    previous_enabled = _env_flag_on(os.environ.get("EMBEDDINGS_ENABLED"), default="0")
+    to_write = _couple_embeddings_auto_on_enable(
+        [(key, value)],
+        previous_enabled=previous_enabled,
+    )
 
     from operator_settings import persist_operator_setting
-
-    await persist_operator_setting(key, value)
-
     from redact import redact_audit_target
 
-    await audit(request, f"config.set.{key}", redact_audit_target(f"config.set.{key}", key, value))
+    written_keys: list[str] = []
+    for write_key, write_value in to_write:
+        os.environ[write_key] = write_value
+        _propagate_to_settings(write_key, write_value)
+        await persist_operator_setting(write_key, write_value)
+        written_keys.append(write_key)
+        await audit(
+            request,
+            f"config.set.{write_key}",
+            redact_audit_target(f"config.set.{write_key}", write_key, write_value),
+        )
 
     field = get_field(key)
     strategy = resolved_apply_strategy(field) if field else APPLY_RESTART
-    side_effects = _apply_config_side_effects([key]) if strategy == APPLY_SCHEDULER_RESCHEDULE else {}
+    side_effects = (
+        _apply_config_side_effects(written_keys)
+        if strategy == APPLY_SCHEDULER_RESCHEDULE
+        or any(
+            get_field(k) and resolved_apply_strategy(get_field(k)) == APPLY_SCHEDULER_RESCHEDULE
+            for k in written_keys
+        )
+        else {}
+    )
 
     masked = _mask_config_response_value(key, value)
     return {
@@ -1409,8 +1457,9 @@ async def set_config(request: Request, body: dict):
         "apply_strategy": strategy,
         "warning_restart_required": strategy == APPLY_RESTART,
         "rescheduled_jobs": side_effects.get("rescheduled_jobs", []),
+        "coupled_keys": [k for k in written_keys if k != key],
         "message": _config_apply_message(
-            [key],
+            written_keys,
             restart_needed=False,
             side_effects=side_effects,
         ),
@@ -1456,6 +1505,19 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
         raise HTTPException(400, {"errors": errors, "partial_keys": []})
 
     # Pass 2: write only after full validation passes
+    previous_enabled = _env_flag_on(os.environ.get("EMBEDDINGS_ENABLED"), default="0")
+    validated = _couple_embeddings_auto_on_enable(
+        validated,
+        previous_enabled=previous_enabled,
+    )
+    # Re-validate coupled keys (allowlisted bool)
+    for key, value in validated:
+        if key not in allowed:
+            raise HTTPException(400, {"errors": [f"Key '{key}' is not in the writable allowlist"], "partial_keys": []})
+        validation_error = validate_value(key, value)
+        if validation_error:
+            raise HTTPException(400, {"errors": [validation_error], "partial_keys": []})
+
     changed_keys: list[str] = []
     from operator_settings import persist_operator_setting
 
@@ -2288,13 +2350,16 @@ async def get_ai_operations_overview(request: Request):
         count_cve_embeddings,
         get_db,
     )
+    from db.embeddings_store import count_embeddings_by_entity
+    from ml.embeddings import get_embeddings_model_name
 
     db = await get_db()
     try:
         usage_24h = await ai_operations_usage_since(db, hours=24)
         usage_7d = await ai_operations_usage_since(db, hours=24 * 7)
         total = await count_ai_operations(db)
-        embeddings_count = await count_cve_embeddings(db)
+        live_counts = await count_embeddings_by_entity(db, get_embeddings_model_name())
+        legacy_count = await count_cve_embeddings(db)
     finally:
         await db.close()
 
@@ -2302,8 +2367,23 @@ async def get_ai_operations_overview(request: Request):
         usage_24h=usage_24h,
         usage_7d=usage_7d,
         total_operations=total,
-        embeddings_vector_count=embeddings_count,
+        embeddings_vector_count=int(live_counts.get("total") or 0),
+        legacy_cve_embeddings=legacy_count,
+        embeddings_counts=live_counts,
     )
+
+
+@router.get("/retrieval/health")
+async def get_retrieval_health(request: Request):
+    """Ops honesty for the live embeddings / hybrid retrieval index."""
+    from database import get_db
+    from services.retrieval_health import build_retrieval_health
+
+    db = await get_db()
+    try:
+        return await build_retrieval_health(db)
+    finally:
+        await db.close()
 
 
 @router.get("/ai/operations/providers")

@@ -84,7 +84,87 @@ function providerStatus(p) {
   return { label: 'Healthy', className: 'badge-ok' }
 }
 
-function OverviewTab({ overview, setPage }) {
+function RetrievalHealthPanel({ health, loading, error, onRetry }) {
+  if (loading && !health) {
+    return (
+      <div className="admin-card" style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="admin-card-title">Retrieval health</div>
+        <p className="admin-muted mono">Loading…</p>
+      </div>
+    )
+  }
+  if (error && !health) {
+    return (
+      <div className="admin-card" style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="admin-card-title">Retrieval health</div>
+        <p className="admin-muted">
+          Could not load retrieval health
+          {error?.requestId ? ` (ref: ${error.requestId})` : ''}.
+          {' '}
+          <button type="button" className="admin-btn admin-btn-ghost" onClick={onRetry}>Retry</button>
+        </p>
+      </div>
+    )
+  }
+  if (!health) return null
+
+  const counts = health.counts || {}
+  const pending = health.pending || {}
+  const last = health.last_backfill || {}
+  const degraded = health.degraded
+
+  return (
+    <div className="admin-card" style={{ marginBottom: 'var(--space-4)' }}>
+      <div className="admin-card-title">
+        Retrieval health
+        <HelpTip text="Live embeddings index used by hybrid search. Counts are from the embeddings table (not legacy cve_embeddings)." />
+      </div>
+      {degraded?.reason && (
+        <div className="admin-callout admin-callout-amber" style={{ marginBottom: 'var(--space-3)' }}>
+          Degraded: {degraded.reason.replace(/_/g, ' ')}
+          {degraded.reason === 'disabled' && ' — turn on EMBEDDINGS_ENABLED to use hybrid search.'}
+          {degraded.reason === 'cold_index' && ' — run Rebuild search index on Scheduler.'}
+          {degraded.reason === 'no_vector_extension' && ' — Postgres needs pgvector (vector extension).'}
+        </div>
+      )}
+      <div className="admin-stat-grid" style={{ marginBottom: 'var(--space-3)' }}>
+        <StatCard label="Enabled" value={health.embeddings_enabled ? 'yes' : 'no'} />
+        <StatCard label="Auto on ingest" value={health.auto_on_ingest ? 'yes' : 'no'} />
+        <StatCard label="Extension" value={health.extension_vector || '—'} />
+        <StatCard label="Index rows" value={counts.total ?? 0} />
+      </div>
+      <table className="admin-table">
+        <thead>
+          <tr>
+            <th>Entity</th>
+            <th>Indexed</th>
+            <th>Pending (capped)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {['cve', 'technique', 'campaign'].map((et) => (
+            <tr key={et}>
+              <td className="mono">{et}</td>
+              <td>{counts[et] ?? 0}</td>
+              <td>{pending[et] ?? 0}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="admin-muted mono" style={{ marginTop: 'var(--space-3)', marginBottom: 0 }}>
+        Model: {health.model || '—'}
+        {' · '}
+        Last backfill: {last.last_run_utc ? fmtIso(last.last_run_utc) : 'never'}
+        {last.records_upserted != null ? ` (${last.records_upserted} records)` : ''}
+        {last.had_error ? ' · error' : ''}
+        {' · '}
+        <Link to="/admin?p=scheduler" style={{ color: 'var(--accent)' }}>Scheduler</Link>
+      </p>
+    </div>
+  )
+}
+
+function OverviewTab({ overview, setPage, retrievalHealth, retrievalLoading, retrievalError, onRetryRetrieval }) {
   const u24 = overview?.usage?.['24h'] || {}
   const circuits = overview?.active_circuit_count || 0
   const configured = overview?.configured_provider_count || 0
@@ -95,10 +175,15 @@ function OverviewTab({ overview, setPage }) {
 
   return (
     <div>
+      <RetrievalHealthPanel
+        health={retrievalHealth}
+        loading={retrievalLoading}
+        error={retrievalError}
+        onRetry={onRetryRetrieval}
+      />
       {failTone && apiAttempts > 0 && (
         <div
-          className={`admin-callout ${failRate >= 0.5 ? 'admin-callout-red' : 'admin-callout-amber'}`}
-          role="alert"
+          className={`admin-callout ${failRate >= 0.5 ? 'admin-callout-red' : 'admin-callout-amber'}`}          role="alert"
           style={{ marginBottom: '1rem' }}
         >
           LLM API error rate is {pct(failRate)} in the last 24 hours ({u24.failures ?? 0} of {apiAttempts} API attempts).
@@ -169,8 +254,15 @@ function OverviewTab({ overview, setPage }) {
                     </span>
                   )}
                   {'vector_count' in feat && (
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text3)' }}>
-                      {feat.enabled ? `${feat.vector_count ?? 0} vectors` : 'off'}
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      {feat.enabled
+                        ? `${feat.vector_count ?? 0} indexed`
+                        : 'off'}
+                      {feat.enabled && feat.legacy_cve_embeddings != null && (
+                        <span title="Legacy cve_embeddings row count">
+                          {` · legacy ${feat.legacy_cve_embeddings}`}
+                        </span>
+                      )}
                     </span>
                   )}
                 </td>
@@ -507,6 +599,23 @@ export default function AiOperationsPage({ toast, setPage }) {
   const [models, setModels] = useState(null)
   const [loadError, setLoadError] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [retrievalHealth, setRetrievalHealth] = useState(null)
+  const [retrievalLoading, setRetrievalLoading] = useState(true)
+  const [retrievalError, setRetrievalError] = useState(null)
+
+  const loadRetrieval = useCallback(async () => {
+    setRetrievalLoading(true)
+    try {
+      const res = await adminApi.getJson('/retrieval/health')
+      setRetrievalHealth(res.data)
+      setRetrievalError(null)
+    } catch (e) {
+      setRetrievalError(e)
+      setRetrievalHealth(null)
+    } finally {
+      setRetrievalLoading(false)
+    }
+  }, [])
 
   const loadCore = useCallback(async () => {
     setLoading(true)
@@ -528,12 +637,13 @@ export default function AiOperationsPage({ toast, setPage }) {
   }, [])
 
   useEffect(() => { loadCore() }, [loadCore])
+  useEffect(() => { loadRetrieval() }, [loadRetrieval])
 
   return (
     <div>
       <h1 className="admin-page-title">AI operations</h1>
       <p className="admin-page-subtitle">
-        LLM provider health, model failover chains, and redacted usage — read-only.
+        LLM provider health, retrieval index, model failover chains, and redacted usage — read-only.
         {' '}
         <Link to="/admin?p=apikeys" style={{ color: 'var(--accent)' }}>API keys &amp; config</Link>
       </p>
@@ -560,7 +670,16 @@ export default function AiOperationsPage({ toast, setPage }) {
         >
           {(list) => (
             <>
-              {tab === 'overview' && <OverviewTab overview={overview} setPage={setPage} />}
+              {tab === 'overview' && (
+                <OverviewTab
+                  overview={overview}
+                  setPage={setPage}
+                  retrievalHealth={retrievalHealth}
+                  retrievalLoading={retrievalLoading}
+                  retrievalError={retrievalError}
+                  onRetryRetrieval={loadRetrieval}
+                />
+              )}
               {tab === 'providers' && <ProvidersTab providers={providers} />}
               {tab === 'models' && <ModelsTab models={models} />}
               {tab === 'usage' && <UsageTab overview={overview} />}
